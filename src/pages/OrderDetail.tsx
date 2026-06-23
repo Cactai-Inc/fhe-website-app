@@ -7,6 +7,7 @@ import type { Order, OrderItem, Payment, OrderDocument } from '../lib/types';
 import { formatPrice } from '../lib/services';
 import OrderDocuments from '../components/order/OrderDocuments';
 import OrderPayment from '../components/order/OrderPayment';
+import BookingStep from '../components/order/BookingStep';
 
 const STATUS_COPY: Record<string, { title: string; body: string }> = {
   draft: { title: 'Let’s finish setting this up', body: 'Review the details below, agree to the documents, and choose how you’d like to pay.' },
@@ -100,6 +101,11 @@ export default function OrderDetail() {
         {/* Documents */}
         {documents.length > 0 && order.status !== 'confirmed' && (
           <OrderDocuments documents={documents} onSigned={reload} />
+        )}
+
+        {/* Booking — choose a time once documents are agreed, before payment */}
+        {needsPayment && allDocsSigned && (
+          <BookingStep orderId={order.id} onHeld={reload} />
         )}
 
         {/* Payment */}

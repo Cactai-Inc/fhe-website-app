@@ -114,6 +114,26 @@ export async function fetchOpenSlots(): Promise<AvailabilitySlot[]> {
   return (data ?? []) as AvailabilitySlot[];
 }
 
+/** Atomically place a hold on an open slot for an order. Returns booking id. */
+export async function holdSlot(orderId: string, slotId: string): Promise<string> {
+  const { data, error } = await supabase.rpc('hold_slot', {
+    p_order_id: orderId,
+    p_slot_id: slotId,
+  });
+  if (error) throw error;
+  return data as string;
+}
+
+export async function getOrderBooking(orderId: string): Promise<{ id: string; slot_id: string | null; status: string } | null> {
+  const { data, error } = await supabase
+    .from('bookings_v2')
+    .select('id, slot_id, status')
+    .eq('order_id', orderId)
+    .maybeSingle();
+  if (error) throw error;
+  return data ?? null;
+}
+
 // ─── Orders (authenticated purchase flow) ───────────────────────────────────
 
 export interface DraftOrderInput {
