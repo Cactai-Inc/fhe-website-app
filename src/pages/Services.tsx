@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
+import { useDocumentTitle } from '../lib/hooks';
 import type { FunnelType } from '../lib/supabase';
 
-const RIDER_IMG   = 'https://images.pexels.com/photos/1996337/pexels-photo-1996337.jpeg?auto=compress&cs=tinysrgb&w=900&q=80';
+const RIDER_IMG   = '/reference-images/Gemini_Generated_Image_f3u06df3u06df3u0.png';
 const HORSE_IMG   = 'https://images.pexels.com/photos/635499/pexels-photo-635499.jpeg?auto=compress&cs=tinysrgb&w=900&q=80';
 const SUPPORT_IMG = 'https://images.pexels.com/photos/2123375/pexels-photo-2123375.jpeg?auto=compress&cs=tinysrgb&w=900&q=80';
 
@@ -22,55 +23,56 @@ interface PathCard {
 const PATHS: PathCard[] = [
   {
     funnel: 'rider',
-    eyebrow: 'For the Rider',
-    heading: 'Rider Services',
-    subheading: 'Instruction, Training & Horsemanship',
+    eyebrow: 'For you',
+    heading: 'Ride with us',
+    subheading: 'Lessons, training & horsemanship',
     description:
-      'Whether you are picking up the reins for the first time or refining your technique for the show ring, our rider programs meet you exactly where you are.',
+      "However you like to spend your mornings, there is a place for it here — lessons to find your seat again, a regular weekly ride, or time in the arena with the group. No wrong way in, and no need to know exactly what you want yet.",
     services: [
-      'Private Horseback Riding Lessons',
-      'Hunter Jumper Training Programs',
-      'Horsemanship Classes',
+      'Private riding lessons',
+      'Hunter/jumper training',
+      'Horsemanship classes',
     ],
-    cta: 'Select Rider Services',
+    cta: 'See the ways to ride',
     href: '/book/rider',
     img: RIDER_IMG,
   },
   {
     funnel: 'horse',
-    eyebrow: 'For the Horse',
-    heading: 'Horse Services',
-    subheading: 'Training, Turnout & Care',
+    eyebrow: 'For horse owners',
+    heading: 'Care that comes to you',
+    subheading: 'Training, turnout & clipping',
     description:
-      'Your horse deserves the same level of care and attention when you cannot be there. We offer professional training, riding and turnout, and expert clipping services.',
+      'Already have a horse of your own? We bring classical training and hands-on care to where your horse lives — training, riding, turnout, and a clean functional clip, done with patience and a real feel for the animal, never force.',
     services: [
-      'Hands-On Horse Training',
-      'Riding & Turnout Service',
-      'Hair Clipping',
+      'Hands-on horse training',
+      'Riding & turnout service',
+      'Functional clipping',
     ],
-    cta: 'Select Horse Services',
+    cta: 'Care for your horse',
     href: '/book/horse',
     img: HORSE_IMG,
   },
   {
     funnel: 'support',
-    eyebrow: 'For the Journey',
-    heading: 'Rider Support',
-    subheading: 'Find, Evaluate & Acquire',
+    eyebrow: 'When the time comes',
+    heading: 'Find your horse',
+    subheading: 'Search, evaluate & broker',
     description:
-      'Searching for the right horse is one of the most consequential decisions an equestrian makes. We provide expert guidance, thorough evaluations, and professional brokering from first look to final signature.',
+      "When you're ready to lease or buy, we help you do it well — drawing on years in the hunter/jumper world to find the right horse, evaluate it honestly, and handle the details from first look to final handshake.",
     services: [
-      'Horse Locator Service',
-      'Pre-Purchase & Lease Evaluations',
-      'Purchase & Lease Brokering',
+      'Horse locator service',
+      'Pre-purchase & lease evaluation',
+      'Purchase & lease brokering',
     ],
-    cta: 'Select Support Services',
+    cta: 'We will handle it',
     href: '/book/support',
     img: SUPPORT_IMG,
   },
 ];
 
 export default function Services() {
+  useDocumentTitle('Ways to Ride');
   const { setFunnel } = useCart();
 
   return (
@@ -78,12 +80,14 @@ export default function Services() {
       {/* ── Page header ─────────────────────────────────────────────── */}
       <section className="pt-32 pb-16 bg-cream">
         <div className="container-site text-center">
-          <p className="eyebrow mb-4">Services</p>
+          <p className="eyebrow mb-4">Ways to ride with us</p>
           <h1 className="heading-section text-green-800 max-w-xl mx-auto mb-6">
-            Where Would You Like to Begin?
+            What are you drawn to?
           </h1>
           <p className="body-text max-w-2xl mx-auto">
-            French Heritage Equestrian offers three distinct lines of service — each designed to stand on its own, and each able to complement the others. Choose the path that speaks to you most. We will introduce what else might serve you naturally along the way.
+            Tell us what caught your eye and a little about you. There is no commitment here — just
+            the start of a conversation. We read every note ourselves, and we will get back to you
+            the same day, usually within the hour.
           </p>
         </div>
       </section>
@@ -94,14 +98,9 @@ export default function Services() {
           {PATHS.map((path, i) => (
             <article
               key={path.funnel}
-              className="group grid grid-cols-1 lg:grid-cols-2 border border-green-800/10 overflow-hidden hover:shadow-xl hover:shadow-green-900/8 transition-all duration-300"
+              className="group grid grid-cols-1 lg:grid-cols-2 border border-green-800/10 overflow-hidden hover:shadow-xl hover:shadow-green-900/[0.08] transition-all duration-300"
             >
-              {/* Photo — alternates side */}
-              <div
-                className={`relative overflow-hidden aspect-[4/3] lg:aspect-auto ${
-                  i % 2 === 1 ? 'lg:order-2' : ''
-                }`}
-              >
+              <div className={`relative overflow-hidden aspect-[4/3] lg:aspect-auto ${i % 2 === 1 ? 'lg:order-2' : ''}`}>
                 <img
                   src={path.img}
                   alt={path.heading}
@@ -111,37 +110,22 @@ export default function Services() {
                 <div className="absolute inset-0 bg-green-900/15 group-hover:bg-green-900/5 transition-colors duration-300" />
               </div>
 
-              {/* Content */}
-              <div
-                className={`flex flex-col justify-center p-10 lg:p-14 bg-white ${
-                  i % 2 === 1 ? 'lg:order-1' : ''
-                }`}
-              >
+              <div className={`flex flex-col justify-center p-10 lg:p-14 bg-white ${i % 2 === 1 ? 'lg:order-1' : ''}`}>
                 <p className="eyebrow mb-4">{path.eyebrow}</p>
-                <h2 className="heading-card text-green-800 text-2xl sm:text-3xl mb-2">
-                  {path.heading}
-                </h2>
-                <p className="text-sm font-sans text-gold-700 font-medium mb-5 italic"
-                  style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: '1rem' }}>
-                  {path.subheading}
-                </p>
+                <h2 className="heading-card text-green-800 text-2xl sm:text-3xl mb-2">{path.heading}</h2>
+                <p className="font-serif text-gold-ink italic mb-5 text-[1rem]">{path.subheading}</p>
                 <p className="body-text text-sm mb-6">{path.description}</p>
 
-                {/* Services list */}
                 <ul className="flex flex-col gap-2.5 mb-8">
                   {path.services.map((service) => (
-                    <li key={service} className="flex items-center gap-3 text-sm font-sans text-green-800/70">
+                    <li key={service} className="flex items-center gap-3 text-sm font-sans text-secondary">
                       <div className="w-1 h-1 bg-gold-600 rounded-full flex-shrink-0" />
                       {service}
                     </li>
                   ))}
                 </ul>
 
-                <Link
-                  to={path.href}
-                  onClick={() => setFunnel(path.funnel)}
-                  className="btn-primary self-start"
-                >
+                <Link to={path.href} onClick={() => setFunnel(path.funnel)} className="btn-primary self-start">
                   {path.cta}
                   <ArrowRight size={16} />
                 </Link>
@@ -163,7 +147,7 @@ export default function Services() {
             ].map((item) => (
               <div key={item} className="flex items-center gap-2">
                 <div className="w-1 h-1 bg-gold-600 rounded-full" />
-                <span className="text-xs font-sans text-green-800/60 tracking-wide">{item}</span>
+                <span className="text-xs font-sans text-muted tracking-wide">{item}</span>
               </div>
             ))}
           </div>
