@@ -101,7 +101,7 @@ export default function Header() {
           {cartLink('hidden sm:flex')}
 
           <Link
-            to={user ? '/account' : '/login'}
+            to={user ? '/app' : '/login'}
             className="hidden sm:inline-flex items-center gap-1.5 text-xs font-sans tracking-widest uppercase text-white/80 hover:text-white transition-colors focus-ring-dark"
             aria-label={user ? 'Your account' : 'Sign in'}
           >
@@ -148,7 +148,7 @@ export default function Header() {
               </Link>
             ))}
             <Link
-              to={user ? '/account' : '/login'}
+              to={user ? '/app' : '/login'}
               className="text-sm font-sans tracking-widest uppercase text-white/80 hover:text-white transition-colors focus-ring-dark"
             >
               {user ? 'Account' : 'Sign In'}

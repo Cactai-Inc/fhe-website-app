@@ -2,15 +2,18 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 /** Gates a route behind authentication. Redirects unauthenticated visitors to
- *  /login (preserving where they were headed). Optionally requires admin. */
+ *  /login (preserving where they were headed). Optionally requires admin or an
+ *  active membership. */
 export default function ProtectedRoute({
   children,
   requireAdmin = false,
+  requireMember = false,
 }: {
   children: React.ReactNode;
   requireAdmin?: boolean;
+  requireMember?: boolean;
 }) {
-  const { user, isAdmin, loading } = useAuth();
+  const { user, isAdmin, isMember, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -27,6 +30,12 @@ export default function ProtectedRoute({
 
   if (requireAdmin && !isAdmin) {
     return <Navigate to="/account" replace />;
+  }
+
+  // Member-only areas: signed-in but without an active membership → account page,
+  // where a "your membership isn't active yet" note lives.
+  if (requireMember && !isMember) {
+    return <Navigate to="/account" replace state={{ needsMembership: true }} />;
   }
 
   return <>{children}</>;

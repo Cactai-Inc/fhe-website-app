@@ -252,6 +252,20 @@ export async function fetchOrderDocuments(orderId: string): Promise<OrderDocumen
   return (data ?? []) as OrderDocument[];
 }
 
+/** All of the current user's documents across every order (RLS scopes to owner). */
+export async function fetchMyDocuments(): Promise<(OrderDocument & { order_created_at?: string })[]> {
+  const { data, error } = await supabase
+    .from('order_documents')
+    .select('*, order:orders!order_documents_order_id_fkey(created_at)')
+    .order('agreed_at', { ascending: false, nullsFirst: false });
+  if (error) throw error;
+  // Flatten the joined order timestamp for display.
+  return (data ?? []).map((d: OrderDocument & { order?: { created_at: string } }) => ({
+    ...d,
+    order_created_at: d.order?.created_at,
+  }));
+}
+
 export async function signOrderDocument(
   documentId: string,
   signerName: string,

@@ -2,13 +2,16 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import type { Profile } from '../lib/types';
+import type { Membership } from '../lib/community-types';
 
 interface AuthContextValue {
   session: Session | null;
   user: User | null;
   profile: Profile | null;
+  membership: Membership | null;
   loading: boolean;
   isAdmin: boolean;
+  isMember: boolean; // active membership OR admin
   signInWithPassword: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
@@ -20,19 +23,21 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [membership, setMembership] = useState<Membership | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadProfile = useCallback(async (userId: string | undefined) => {
     if (!userId) {
       setProfile(null);
+      setMembership(null);
       return;
     }
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', userId)
-      .maybeSingle();
-    setProfile((data as Profile) ?? null);
+    const [{ data: prof }, { data: mem }] = await Promise.all([
+      supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle(),
+      supabase.from('memberships').select('*').eq('user_id', userId).maybeSingle(),
+    ]);
+    setProfile((prof as Profile) ?? null);
+    setMembership((mem as Membership) ?? null);
   }, []);
 
   useEffect(() => {
@@ -70,6 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setProfile(null);
+    setMembership(null);
   }, []);
 
   const refreshProfile = useCallback(async () => {
@@ -82,8 +88,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         session,
         user: session?.user ?? null,
         profile,
+        membership,
         loading,
         isAdmin: !!profile?.is_admin,
+        isMember: (!profile?.is_suspended) && (!!profile?.is_admin || membership?.status === 'active'),
         signInWithPassword,
         signUp,
         signOut,

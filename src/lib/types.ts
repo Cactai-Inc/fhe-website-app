@@ -34,6 +34,12 @@ export interface Profile {
   created_from_request_id: string | null;
   created_at: string;
   updated_at: string;
+  // Community / social layer (migration 20260623040000)
+  display_name: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  riding_level: string | null;
+  is_suspended: boolean;
 }
 
 export interface Offering {

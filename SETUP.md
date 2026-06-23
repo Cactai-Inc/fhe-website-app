@@ -214,6 +214,76 @@ function under `/api` that fires after `confirm_booking_for_order`, using
 
 ---
 
+## 8b. Members community app
+
+The logged-in community app lives under `/app` (its own layout + nav) and is gated to
+**active members** (`is_active_member()` = admin, or a `memberships` row with
+`status = 'active'`). Admins additionally see `/app/admin`.
+
+### Make someone a member
+Members are created by you (after the invitation → registration flow). Grant membership:
+
+```sql
+insert into memberships (user_id, tier, status)
+values ('<user-uuid>', 'community', 'active')
+on conflict (user_id) do update set status = 'active';
+```
+
+…or use the **Admin → Members** tab (set the membership dropdown to `active`).
+
+### Seed chat channels (so the chat board has rooms)
+```sql
+insert into channels (name, slug, sort_order) values
+  ('General', 'general', 1),
+  ('Rides', 'rides', 2),
+  ('Off-topic', 'off-topic', 3)
+on conflict (slug) do nothing;
+```
+
+### Realtime
+The migration adds `channel_messages`, `direct_messages`, `thread_posts`, and
+`announcements` to the `supabase_realtime` publication. Confirm Realtime is enabled
+for the project (Database → Replication). No extra code needed — the client
+subscribes via `supabase.channel(...)`.
+
+### Storage bucket for the resource library (file-kind resources)
+Create a **private** bucket named `members`:
+
+```sql
+insert into storage.buckets (id, name, public) values ('members', 'members', false)
+on conflict (id) do nothing;
+```
+
+Add a read policy so active members can download (signed URLs are used in-app):
+
+```sql
+create policy "members read files" on storage.objects
+  for select to authenticated
+  using (bucket_id = 'members' and is_active_member());
+```
+
+Upload files via the Supabase dashboard, then add a resource in **Admin → Resources**
+with kind `file` and the storage path (e.g. `guides/seat-basics.pdf`).
+
+### Invitation emails (Admin → Invite)
+`/api/admin-send-invitation` creates the token and emails the register link. It uses
+**Resend** if configured; otherwise it still creates the invite and returns the link
+for you to copy. Set in Vercel:
+
+| Variable | Notes |
+|---|---|
+| `RESEND_API_KEY` | from resend.com (or swap the `sendEmail` impl for your provider) |
+| `INVITE_FROM_EMAIL` | defaults to `Hello@FHEquestrian.com` (must be a verified sender) |
+
+The same function path is the manual, admin-sent invitation you asked for: an admin
+types an email in the Invite tab → token created → registration email sent.
+
+### Moderation
+Admins can hide/remove chat messages, threads, and thread posts, and suspend members
+(Admin → Members). Every action is logged to `moderation_actions`.
+
+---
+
 ## 9. What's built vs. what's configuration
 
 **Built (code, in this repo):** full UI redesign + copy, design system, auth +
