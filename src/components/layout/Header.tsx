@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, ShoppingBag } from 'lucide-react';
+import { Menu, X, ShoppingBag, UserRound } from 'lucide-react';
 import { useCart } from '../../contexts/CartContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 const NAV_LINKS = [
   { label: 'Our Story', href: '/about' },
@@ -13,6 +14,7 @@ export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
   const { itemCount } = useCart();
+  const { user } = useAuth();
   const isHome = location.pathname === '/';
   const menuButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -99,6 +101,15 @@ export default function Header() {
           {cartLink('hidden sm:flex')}
 
           <Link
+            to={user ? '/account' : '/login'}
+            className="hidden sm:inline-flex items-center gap-1.5 text-xs font-sans tracking-widest uppercase text-white/80 hover:text-white transition-colors focus-ring-dark"
+            aria-label={user ? 'Your account' : 'Sign in'}
+          >
+            <UserRound size={16} aria-hidden="true" />
+            {user ? 'Account' : 'Sign In'}
+          </Link>
+
+          <Link
             to="/services"
             className="hidden sm:inline-flex items-center gap-2 px-5 py-2 border border-gold-600/60 text-white text-xs font-sans tracking-widest uppercase transition-all duration-200 hover:bg-gold-600 hover:border-gold-600 hover:text-green-900 focus-ring-dark"
           >
@@ -136,6 +147,12 @@ export default function Header() {
                 {link.label}
               </Link>
             ))}
+            <Link
+              to={user ? '/account' : '/login'}
+              className="text-sm font-sans tracking-widest uppercase text-white/80 hover:text-white transition-colors focus-ring-dark"
+            >
+              {user ? 'Account' : 'Sign In'}
+            </Link>
             <Link to="/services" className="mt-2 btn-ghost-white text-center justify-center">
               Say Hello
             </Link>
