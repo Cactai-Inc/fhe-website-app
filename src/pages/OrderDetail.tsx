@@ -1,13 +1,15 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { getOrder, getOrderPayment, fetchOrderDocuments } from '../lib/api';
+import { getOrder, getOrderPayment, fetchOrderDocuments, getOrderBooking } from '../lib/api';
+import { supabase } from '../lib/supabase';
 import { useDocumentTitle } from '../lib/hooks';
 import type { Order, OrderItem, Payment, OrderDocument } from '../lib/types';
 import { formatPrice } from '../lib/services';
 import OrderDocuments from '../components/order/OrderDocuments';
 import OrderPayment from '../components/order/OrderPayment';
 import BookingStep from '../components/order/BookingStep';
+import AddToCalendar from '../components/order/AddToCalendar';
 
 const STATUS_COPY: Record<string, { title: string; body: string }> = {
   draft: { title: 'Let’s finish setting this up', body: 'Review the details below, agree to the documents, and choose how you’d like to pay.' },
@@ -24,18 +26,31 @@ export default function OrderDetail() {
   const [order, setOrder] = useState<(Order & { items: OrderItem[] }) | null>(null);
   const [payment, setPayment] = useState<Payment | null>(null);
   const [documents, setDocuments] = useState<OrderDocument[]>([]);
+  const [bookedSlot, setBookedSlot] = useState<{ start: Date; end: Date } | null>(null);
   const [loading, setLoading] = useState(true);
 
   const reload = useCallback(async () => {
     if (!id) return;
-    const [o, p, d] = await Promise.all([
+    const [o, p, d, booking] = await Promise.all([
       getOrder(id),
       getOrderPayment(id).catch(() => null),
       fetchOrderDocuments(id).catch(() => []),
+      getOrderBooking(id).catch(() => null),
     ]);
     setOrder(o);
     setPayment(p);
     setDocuments(d);
+
+    if (booking?.slot_id) {
+      const { data: slot } = await supabase
+        .from('availability_slots')
+        .select('start_at, end_at')
+        .eq('id', booking.slot_id)
+        .maybeSingle();
+      if (slot) setBookedSlot({ start: new Date(slot.start_at), end: new Date(slot.end_at) });
+    } else {
+      setBookedSlot(null);
+    }
   }, [id]);
 
   useEffect(() => {
@@ -121,10 +136,20 @@ export default function OrderDetail() {
 
         {order.status === 'confirmed' && (
           <div className="bg-green-50 border border-green-200 p-8 text-center">
-            <p className="body-text text-green-800">
+            <p className="body-text text-green-800 mb-6">
               Everything is confirmed and copies are on their way to your inbox. We can’t wait to
               ride with you.
             </p>
+            {bookedSlot && (
+              <div className="flex justify-center">
+                <AddToCalendar
+                  title="French Heritage Equestrian"
+                  start={bookedSlot.start}
+                  end={bookedSlot.end}
+                  description="Your session at Carmel Creek Ranch."
+                />
+              </div>
+            )}
           </div>
         )}
       </div>
