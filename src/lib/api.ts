@@ -119,6 +119,7 @@ export async function fetchOpenSlots(): Promise<AvailabilitySlot[]> {
 export interface DraftOrderInput {
   items: Array<{
     offering_id?: string;
+    offering_slug?: string;  // resolved to offering_id server-side
     tier_id?: string;
     label: string;
     price_amount: number;
@@ -132,6 +133,17 @@ export interface DraftOrderInput {
 export async function createDraftOrder(input: DraftOrderInput): Promise<{ orderId: string }> {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) throw new Error('Not authenticated');
+
+  // Resolve any offering_slug references to offering_id from the catalog.
+  const slugs = input.items.map((i) => i.offering_slug).filter(Boolean) as string[];
+  const slugToId = new Map<string, string>();
+  if (slugs.length > 0) {
+    const { data: offerings } = await supabase
+      .from('offerings')
+      .select('id, slug')
+      .in('slug', slugs);
+    for (const o of offerings ?? []) slugToId.set(o.slug, o.id);
+  }
 
   const { data: order, error } = await supabase
     .from('orders')
@@ -148,7 +160,7 @@ export async function createDraftOrder(input: DraftOrderInput): Promise<{ orderI
   if (input.items.length > 0) {
     const rows = input.items.map((i) => ({
       order_id: order.id,
-      offering_id: i.offering_id ?? null,
+      offering_id: i.offering_id ?? (i.offering_slug ? slugToId.get(i.offering_slug) ?? null : null),
       tier_id: i.tier_id ?? null,
       label: i.label,
       price_amount: i.price_amount,

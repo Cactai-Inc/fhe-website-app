@@ -2,8 +2,10 @@ import { useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, X, ShieldCheck } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
+import { useAuth } from '../contexts/AuthContext';
 import { submitBooking } from '../lib/supabase';
 import type { ContactMethod } from '../lib/supabase';
+import { submitRequest, createDraftOrder } from '../lib/api';
 import { formatPrice } from '../lib/services';
 import { useDocumentTitle } from '../lib/hooks';
 
@@ -34,6 +36,7 @@ const usd = (n: number) =>
 export default function Checkout() {
   useDocumentTitle('Your Inquiry');
   const { state, removeItem, subtotal, toSelectedServices, clearCart, inquirySummary } = useCart();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState<FormState>({
     first_name: '',
@@ -73,8 +76,42 @@ export default function Checkout() {
     return newErrors;
   }
 
+  // Authenticated, invited members advance into the purchase flow instead of
+  // sending a request: a draft order is created and they go to the order hub
+  // (documents → payment → confirmation). This is the single boundary from the spec.
+  async function handleStartPurchase() {
+    if (state.items.length === 0) return;
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const { orderId } = await createDraftOrder({
+        items: state.items.map((i) => ({
+          offering_slug: i.serviceId,
+          label: `${i.serviceName} — ${i.tierLabel}`,
+          price_amount: i.price,
+          price_unit: i.unit,
+        })),
+        qualifiers: state.qualifierAnswers,
+        subtotal,
+      });
+      clearCart();
+      navigate(`/order/${orderId}`);
+    } catch (err) {
+      console.error(err);
+      setSubmitError('Something went wrong starting your order. Please try again or reach us directly.');
+      requestAnimationFrame(() => errorBannerRef.current?.focus());
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    // Signed-in member → purchase flow (no request form needed).
+    if (user) {
+      await handleStartPurchase();
+      return;
+    }
     const newErrors = validate();
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) {
@@ -90,7 +127,27 @@ export default function Checkout() {
     setSubmitError(null);
 
     try {
-      await submitBooking({
+      const fullName = [form.first_name.trim(), form.last_name.trim()].filter(Boolean).join(' ');
+      // Primary: write a structured request + selections (architecture-flow-spec).
+      await submitRequest(
+        {
+          contact_name: fullName,
+          contact_email: form.email.trim(),
+          contact_phone: form.phone.trim(),
+          contact_method: contactMethod,
+          proposed_times: form.preferred_times.trim()
+            ? [{ date: '', time: form.preferred_times.trim() }]
+            : [],
+          notes: form.notes.trim() || undefined,
+        },
+        state.items.map((i) => ({
+          offering_slug: i.serviceId,
+          label: `${i.serviceName} — ${i.tierLabel}`,
+        })),
+      );
+
+      // Backward-compat: also record in the legacy bookings table (non-blocking).
+      submitBooking({
         first_name: form.first_name.trim(),
         last_name: form.last_name.trim() || undefined,
         email: form.email.trim(),
@@ -102,7 +159,8 @@ export default function Checkout() {
         notes: form.notes.trim() || undefined,
         contact_method: contactMethod,
         preferred_times: form.preferred_times.trim() || undefined,
-      });
+      }).catch((e) => console.warn('legacy booking write failed', e));
+
       // Remember the chosen contact method for the confirmation copy.
       try {
         window.sessionStorage.setItem('fhe-contact-method', contactMethod);
@@ -151,8 +209,10 @@ export default function Checkout() {
             <ArrowLeft size={16} />
             Back to Selection
           </Link>
-          <p className="eyebrow mb-2">Say hello</p>
-          <h1 className="heading-section text-green-800">Send Us Your Inquiry</h1>
+          <p className="eyebrow mb-2">{user ? 'Your order' : 'Say hello'}</p>
+          <h1 className="heading-section text-green-800">
+            {user ? 'Review & Continue' : 'Send Us Your Inquiry'}
+          </h1>
           {state.funnel && (
             <p className="body-text text-sm mt-2">
               Path: <span className="font-medium text-green-800">{FUNNEL_LABELS[state.funnel]}</span>
@@ -162,8 +222,36 @@ export default function Checkout() {
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-10 lg:gap-14">
 
-          {/* ── Left: Contact form ── */}
+          {/* ── Left: member purchase panel OR guest contact form ── */}
           <div className="lg:col-span-3">
+            {user ? (
+              <div className="bg-white border border-green-800/10 p-8">
+                <h2 className="font-serif font-medium text-green-800 text-xl mb-3">You're signed in</h2>
+                <p className="body-text text-sm mb-6">
+                  We'll use the details on your account. On the next screen you'll review any
+                  documents and choose how you'd like to pay. Nothing is charged until you confirm.
+                </p>
+                {submitError && (
+                  <div
+                    ref={errorBannerRef}
+                    tabIndex={-1}
+                    role="alert"
+                    className="bg-red-50 border border-red-200 text-red-700 text-sm font-sans px-5 py-4 mb-6 focus:outline-none"
+                  >
+                    {submitError}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={handleStartPurchase}
+                  disabled={submitting || state.items.length === 0}
+                  className="btn-primary w-full justify-center"
+                >
+                  {submitting ? 'Setting up your order…' : 'Continue to Your Order'}
+                  {!submitting && <ArrowRight size={16} />}
+                </button>
+              </div>
+            ) : (
             <form onSubmit={handleSubmit} noValidate>
               <p className="text-xs font-sans text-muted mb-4">Fields marked * are required.</p>
               <div className="bg-white border border-green-800/10 p-8 mb-6">
@@ -350,6 +438,7 @@ export default function Checkout() {
                 {!submitting && <ArrowRight size={16} />}
               </button>
             </form>
+            )}
           </div>
 
           {/* ── Right: Inquiry summary ── */}
