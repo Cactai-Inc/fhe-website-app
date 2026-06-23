@@ -1,0 +1,190 @@
+/*
+ * French Heritage Equestrian — Global Styles
+ *
+ * Color Palette:
+ *   White:         #FFFFFF
+ *   Cream:         #faf8f4
+ *   Brand Green:   #143321  (deep forest, authority, nature)
+ *   Gold:          #BA9935  (prestige, warmth, heritage)
+ *   Gold Dark:     #7a6421  (text on light backgrounds)
+ *   Green Dark:    #0d2118  (deep shadow, text)
+ *
+ * Typography:
+ *   Display/Logo:  Big Caslon → Cormorant Garamond (fallback)
+ *   Body:          Inter
+ *   Letter spacing: tracked for subheadings (0.1–0.25em)
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600&family=Inter:wght@300;400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Base resets ───────────────────────────────────────────── */
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-cream text-green-900 font-sans;
+    font-size: 16px;
+    line-height: 1.7;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif text-green-800 leading-tight;
+  }
+
+  ::selection {
+    background-color: #BA9935;
+    color: #fff;
+  }
+}
+
+/* ─── Utility classes ───────────────────────────────────────── */
+@layer components {
+
+  /* Section container */
+  .container-site {
+    @apply max-w-7xl mx-auto px-5 sm:px-8 lg:px-12;
+  }
+
+  /* Eyebrow label above headings */
+  .eyebrow {
+    @apply text-xs font-sans font-medium tracking-widest uppercase text-gold-600;
+  }
+
+  /* Display heading (hero) */
+  .heading-display {
+    @apply font-display font-light text-5xl sm:text-6xl lg:text-7xl leading-tight;
+  }
+
+  /* Section heading */
+  .heading-section {
+    @apply font-serif font-light text-3xl sm:text-4xl lg:text-5xl leading-tight;
+  }
+
+  /* Card heading */
+  .heading-card {
+    @apply font-serif font-medium text-xl sm:text-2xl leading-snug;
+  }
+
+  /* Body text */
+  .body-text {
+    @apply font-sans text-base leading-relaxed text-green-800/80;
+  }
+
+  /* Divider rule */
+  .rule-gold {
+    @apply border-t border-gold-600/30;
+  }
+
+  /* Full-bleed photo section overlay */
+  .photo-overlay {
+    @apply absolute inset-0 bg-gradient-to-b from-green-900/60 via-green-900/40 to-green-900/70;
+  }
+
+  /* Primary button */
+  .btn-primary {
+    @apply inline-flex items-center gap-2 px-8 py-3.5 bg-green-800 text-white font-sans text-sm font-medium
+           tracking-wide uppercase transition-all duration-300
+           hover:bg-green-700 hover:shadow-lg hover:shadow-green-900/20
+           focus:outline-none focus:ring-2 focus:ring-gold-600 focus:ring-offset-2;
+  }
+
+  /* Gold outline button */
+  .btn-outline-gold {
+    @apply inline-flex items-center gap-2 px-8 py-3.5 border border-gold-600 text-gold-600 font-sans text-sm font-medium
+           tracking-wide uppercase transition-all duration-300
+           hover:bg-gold-600 hover:text-white
+           focus:outline-none focus:ring-2 focus:ring-gold-600 focus:ring-offset-2;
+  }
+
+  /* Ghost button (white on dark) */
+  .btn-ghost-white {
+    @apply inline-flex items-center gap-2 px-8 py-3.5 border border-white/60 text-white font-sans text-sm font-medium
+           tracking-wide uppercase transition-all duration-300
+           hover:bg-white hover:text-green-800
+           focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-green-800;
+  }
+
+  /* Service card */
+  .service-card {
+    @apply bg-white border border-green-800/10 transition-all duration-300
+           hover:shadow-xl hover:shadow-green-900/10 hover:-translate-y-1;
+  }
+
+  /* Form input */
+  .form-input {
+    @apply w-full border border-green-800/20 bg-white px-4 py-3 text-sm text-green-900 font-sans
+           focus:outline-none focus:border-gold-600 focus:ring-1 focus:ring-gold-600/30
+           placeholder:text-green-800/30 transition-colors duration-200;
+  }
+
+  /* Form label */
+  .form-label {
+    @apply block text-xs font-sans font-medium tracking-wide uppercase text-green-800/60 mb-1.5;
+  }
+
+  /* Step indicator */
+  .step-active {
+    @apply w-8 h-8 flex items-center justify-center rounded-full bg-green-800 text-white text-xs font-medium;
+  }
+
+  .step-complete {
+    @apply w-8 h-8 flex items-center justify-center rounded-full bg-gold-600 text-white text-xs font-medium;
+  }
+
+  .step-inactive {
+    @apply w-8 h-8 flex items-center justify-center rounded-full border border-green-800/20 text-green-800/40 text-xs font-medium;
+  }
+
+  /* Tier card (service pricing) */
+  .tier-card {
+    @apply relative border transition-all duration-200 cursor-pointer p-5;
+  }
+
+  .tier-card-unselected {
+    @apply border-green-800/15 bg-white hover:border-green-800/40;
+  }
+
+  .tier-card-selected {
+    @apply border-green-800 bg-green-800/5 ring-1 ring-green-800/20;
+  }
+}
+
+/* ─── Animations ─────────────────────────────────────────────── */
+@layer utilities {
+  .animate-fade-up {
+    animation: fadeUp 0.7s ease-out forwards;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 1s ease-out forwards;
+  }
+
+  .delay-100 { animation-delay: 100ms; }
+  .delay-200 { animation-delay: 200ms; }
+  .delay-300 { animation-delay: 300ms; }
+  .delay-500 { animation-delay: 500ms; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+}
