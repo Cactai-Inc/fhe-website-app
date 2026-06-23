@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { MapPin, Phone, Mail } from 'lucide-react';
+import { BRAND } from '../../lib/brand';
 
 export default function Footer() {
   return (
@@ -11,29 +12,27 @@ export default function Footer() {
         {/* Brand column */}
         <div>
           <div className="mb-6">
-            <p
-              className="font-display text-white text-xl tracking-wide uppercase"
-              style={{ fontFamily: '"Big Caslon", "Cormorant Garamond", Georgia, serif' }}
-            >
+            <p className="font-display text-white text-xl tracking-wide uppercase">
               French Heritage
             </p>
             <p className="text-gold-400 text-[10px] tracking-widest uppercase font-sans font-light">
               Equestrian
             </p>
           </div>
-          <p className="text-sm font-sans text-white/60 leading-relaxed max-w-xs">
-            A family-owned equestrian business rooted in European tradition, offering world-class riding instruction, horse care, and acquisition services in the heart of San Diego.
+          <p className="text-sm font-sans text-white/[0.7] leading-relaxed max-w-xs">
+            A family-run hunter/jumper barn and community, rooted in classical European
+            horsemanship, offering lessons, horse care, and acquisition support in coastal San Diego.
           </p>
         </div>
 
         {/* Navigation */}
         <div>
-          <p className="eyebrow text-gold-400 mb-5">Navigation</p>
-          <nav className="flex flex-col gap-3">
+          <p className="eyebrow-on-dark mb-5">Navigation</p>
+          <nav className="flex flex-col gap-3" aria-label="Footer">
             {[
               { label: 'Home', href: '/' },
               { label: 'Our Story', href: '/about' },
-              { label: 'Services', href: '/services' },
+              { label: 'Ways to Ride', href: '/services' },
               { label: 'Rider Services', href: '/book/rider' },
               { label: 'Horse Services', href: '/book/horse' },
               { label: 'Rider Support', href: '/book/support' },
@@ -41,7 +40,7 @@ export default function Footer() {
               <Link
                 key={link.label}
                 to={link.href}
-                className="text-sm font-sans text-white/60 hover:text-white transition-colors"
+                className="text-sm font-sans text-white/[0.7] hover:text-white transition-colors focus-ring-dark"
               >
                 {link.label}
               </Link>
@@ -51,38 +50,38 @@ export default function Footer() {
 
         {/* Contact */}
         <div>
-          <p className="eyebrow text-gold-400 mb-5">Find Us</p>
+          <p className="eyebrow-on-dark mb-5">Find Us</p>
           <div className="flex flex-col gap-4">
             <div className="flex items-start gap-3">
-              <MapPin size={16} className="text-gold-600 mt-0.5 flex-shrink-0" />
+              <MapPin size={16} className="text-gold-400 mt-0.5 flex-shrink-0" aria-hidden="true" />
               <div>
-                <p className="text-sm font-sans text-white/80">Carmel Creek Ranch</p>
-                <p className="text-sm font-sans text-white/60">San Diego, CA</p>
-                <p className="text-xs font-sans text-white/40 mt-0.5">2.5 miles from Torrey Pines Beach</p>
+                <p className="text-sm font-sans text-white/85">Carmel Creek Ranch</p>
+                <p className="text-sm font-sans text-white/[0.7]">San Diego, CA</p>
+                <p className="text-xs font-sans text-white/[0.6] mt-0.5">2.5 miles from Torrey Pines Beach</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <Phone size={16} className="text-gold-600 flex-shrink-0" />
+              <Phone size={16} className="text-gold-400 flex-shrink-0" aria-hidden="true" />
               <a
-                href="tel:+16195550000"
-                className="text-sm font-sans text-white/60 hover:text-white transition-colors"
+                href={BRAND.phoneHref}
+                className="text-sm font-sans text-white/[0.7] hover:text-white transition-colors focus-ring-dark"
               >
-                (619) 555-0000
+                {BRAND.phoneDisplay}
               </a>
             </div>
             <div className="flex items-center gap-3">
-              <Mail size={16} className="text-gold-600 flex-shrink-0" />
+              <Mail size={16} className="text-gold-400 flex-shrink-0" aria-hidden="true" />
               <a
-                href="mailto:hello@frenchheritagequestrian.com"
-                className="text-sm font-sans text-white/60 hover:text-white transition-colors break-all"
+                href={BRAND.emailHref}
+                className="text-sm font-sans text-white/[0.7] hover:text-white transition-colors break-all focus-ring-dark"
               >
-                hello@frenchheritage.com
+                {BRAND.email}
               </a>
             </div>
           </div>
 
           <div className="mt-8 pt-8 border-t border-white/10">
-            <p className="text-xs font-sans text-white/40 leading-relaxed">
+            <p className="text-xs font-sans text-white/[0.6] leading-relaxed">
               Fully licensed &amp; insured equestrian business.
               <br />Operating at Carmel Creek Ranch, San Diego, CA.
             </p>
@@ -93,10 +92,10 @@ export default function Footer() {
       {/* Bottom bar */}
       <div className="border-t border-white/10">
         <div className="container-site py-5 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs font-sans text-white/40">
+          <p className="text-xs font-sans text-white/[0.6]">
             &copy; {new Date().getFullYear()} French Heritage Equestrian. All rights reserved.
           </p>
-          <p className="text-xs font-sans text-white/30">
+          <p className="text-xs font-sans text-white/[0.6]">
             San Diego, California
           </p>
         </div>

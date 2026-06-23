@@ -1,12 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, ShoppingBag } from 'lucide-react';
 import { useCart } from '../../contexts/CartContext';
 
 const NAV_LINKS = [
   { label: 'Our Story', href: '/about' },
-  { label: 'Services', href: '/services' },
-  { label: 'Book', href: '/services' },
+  { label: 'Ways to Ride', href: '/services' },
 ];
 
 export default function Header() {
@@ -15,6 +14,7 @@ export default function Header() {
   const location = useLocation();
   const { itemCount } = useCart();
   const isHome = location.pathname === '/';
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 60);
@@ -24,8 +24,37 @@ export default function Header() {
 
   useEffect(() => setOpen(false), [location]);
 
+  // Close the mobile menu on Escape and return focus to the toggle.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setOpen(false);
+        menuButtonRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open]);
+
   // On home, header is transparent until scrolled; on other pages always solid
   const solid = !isHome || scrolled;
+
+  const cartLink = (extraClass: string) =>
+    itemCount > 0 && (
+      <Link
+        to="/checkout"
+        className={`items-center gap-2 text-xs font-sans tracking-wide text-white/80 hover:text-white transition-colors focus-ring-dark ${extraClass}`}
+        aria-label={`${itemCount} ${itemCount === 1 ? 'item' : 'items'} in your inquiry`}
+      >
+        <span className="relative">
+          <ShoppingBag size={18} aria-hidden="true" />
+          <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-gold-600 text-green-900 text-[9px] flex items-center justify-center rounded-full font-medium">
+            {itemCount}
+          </span>
+        </span>
+      </Link>
+    );
 
   return (
     <header
@@ -38,13 +67,10 @@ export default function Header() {
         {/* Logo */}
         <Link
           to="/"
-          className="flex flex-col items-start leading-none group"
+          className="flex flex-col items-start leading-none group focus-ring-dark"
           aria-label="French Heritage Equestrian — Home"
         >
-          <span
-            className="font-display text-white text-base sm:text-lg tracking-wide uppercase"
-            style={{ fontFamily: '"Big Caslon", "Cormorant Garamond", Georgia, serif' }}
-          >
+          <span className="font-display text-white text-base sm:text-lg tracking-wide uppercase">
             French Heritage
           </span>
           <span className="text-gold-400 text-[10px] tracking-widest uppercase font-sans font-light">
@@ -53,15 +79,14 @@ export default function Header() {
         </Link>
 
         {/* Desktop nav */}
-        <nav className="hidden md:flex items-center gap-10">
+        <nav className="hidden md:flex items-center gap-10" aria-label="Primary">
           {NAV_LINKS.map((link) => (
             <Link
               key={link.label}
               to={link.href}
-              className={`text-xs font-sans tracking-widest uppercase transition-colors duration-200 ${
-                location.pathname === link.href
-                  ? 'text-gold-400'
-                  : 'text-white/80 hover:text-white'
+              aria-current={location.pathname === link.href ? 'page' : undefined}
+              className={`text-xs font-sans tracking-widest uppercase transition-colors duration-200 focus-ring-dark ${
+                location.pathname === link.href ? 'text-gold-400' : 'text-white/80 hover:text-white'
               }`}
             >
               {link.label}
@@ -71,57 +96,48 @@ export default function Header() {
 
         {/* Right side */}
         <div className="flex items-center gap-4">
-          {itemCount > 0 && (
-            <Link
-              to="/checkout"
-              className="hidden sm:flex items-center gap-2 text-xs font-sans tracking-wide text-white/80 hover:text-white transition-colors"
-              aria-label={`${itemCount} items in cart`}
-            >
-              <span className="relative">
-                <ShoppingBag size={18} />
-                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-gold-600 text-white text-[9px] flex items-center justify-center rounded-full font-medium">
-                  {itemCount}
-                </span>
-              </span>
-            </Link>
-          )}
+          {cartLink('hidden sm:flex')}
 
           <Link
             to="/services"
-            className="hidden sm:inline-flex items-center gap-2 px-5 py-2 border border-gold-600/60 text-white text-xs font-sans tracking-widest uppercase transition-all duration-200 hover:bg-gold-600 hover:border-gold-600"
+            className="hidden sm:inline-flex items-center gap-2 px-5 py-2 border border-gold-600/60 text-white text-xs font-sans tracking-widest uppercase transition-all duration-200 hover:bg-gold-600 hover:border-gold-600 hover:text-green-900 focus-ring-dark"
           >
-            Book Now
+            Say Hello
           </Link>
+
+          {/* Mobile cart affordance (visible below sm) */}
+          {cartLink('flex sm:hidden')}
 
           {/* Mobile menu button */}
           <button
-            className="md:hidden text-white p-1"
+            ref={menuButtonRef}
+            type="button"
+            className="md:hidden text-white p-2.5 -mr-2 focus-ring-dark"
             onClick={() => setOpen((v) => !v)}
-            aria-label="Toggle menu"
+            aria-label={open ? 'Close menu' : 'Open menu'}
+            aria-expanded={open}
+            aria-controls="mobile-menu"
           >
-            {open ? <X size={22} /> : <Menu size={22} />}
+            {open ? <X size={22} aria-hidden="true" /> : <Menu size={22} aria-hidden="true" />}
           </button>
         </div>
       </div>
 
       {/* Mobile menu */}
       {open && (
-        <div className="md:hidden bg-green-900 border-t border-white/10">
-          <nav className="container-site py-6 flex flex-col gap-5">
+        <div id="mobile-menu" className="md:hidden bg-green-900 border-t border-white/10">
+          <nav className="container-site py-6 flex flex-col gap-5" aria-label="Mobile">
             {NAV_LINKS.map((link) => (
               <Link
                 key={link.label}
                 to={link.href}
-                className="text-sm font-sans tracking-widest uppercase text-white/80 hover:text-white transition-colors"
+                className="text-sm font-sans tracking-widest uppercase text-white/80 hover:text-white transition-colors focus-ring-dark"
               >
                 {link.label}
               </Link>
             ))}
-            <Link
-              to="/services"
-              className="mt-2 btn-ghost-white text-center justify-center"
-            >
-              Book Now
+            <Link to="/services" className="mt-2 btn-ghost-white text-center justify-center">
+              Say Hello
             </Link>
           </nav>
         </div>

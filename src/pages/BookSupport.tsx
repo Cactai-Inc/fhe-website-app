@@ -1,20 +1,17 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Check, ArrowRight, ArrowLeft } from 'lucide-react';
 import {
   SUPPORT_SERVICES,
-  HORSE_LOCATOR,
-  EVALUATION,
-  BROKERING,
-  RIDING_LESSON,
   HORSE_TRAINING,
   RIDING_TURNOUT,
   HAIR_CLIPPING,
   formatPrice,
 } from '../lib/services';
-import type { Service, ServiceTier } from '../lib/services';
 import { useCart } from '../contexts/CartContext';
-import type { CartItem } from '../contexts/CartContext';
+import { useDocumentTitle } from '../lib/hooks';
+import ServiceSelector from '../components/ServiceSelector';
+import QualifierGroup from '../components/QualifierGroup';
 
 const STEPS = [
   { label: 'Select Services' },
@@ -22,80 +19,10 @@ const STEPS = [
   { label: 'Review & Continue' },
 ];
 
-function ServiceSelector({ service, compact = false, label = '' }: { service: Service; compact?: boolean; label?: string }) {
-  const { toggleItem, isSelected } = useCart();
-
-  return (
-    <div className={compact ? '' : 'border border-green-800/10 bg-white p-6 sm:p-8'}>
-      {!compact && (
-        <>
-          <p className="eyebrow mb-2">Rider Support</p>
-          <h3 className="heading-card text-green-800 mb-1">{service.name}</h3>
-          <p className="text-xs font-sans italic text-gold-700 mb-3"
-            style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: '0.95rem' }}>
-            {service.tagline}
-          </p>
-          <p className="body-text text-sm mb-6">{service.description}</p>
-        </>
-      )}
-      {compact && (
-        <>
-          <h3 className="font-serif font-medium text-green-800 text-lg mb-1">{service.name}</h3>
-          <p className="text-sm font-sans text-green-800/60 mb-4">{service.tagline}</p>
-        </>
-      )}
-      {label && (
-        <p className="text-xs font-sans font-medium tracking-wide uppercase text-gold-700 mb-3">{label}</p>
-      )}
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {service.tiers.map((tier: ServiceTier) => {
-          const selected = isSelected(service.id, tier.id);
-          const item: CartItem = {
-            serviceId: service.id,
-            serviceName: service.name,
-            tierId: tier.id,
-            tierLabel: tier.label,
-            price: tier.price,
-            unit: tier.unit,
-          };
-          return (
-            <button
-              key={tier.id}
-              onClick={() => toggleItem(item)}
-              className={`tier-card text-left ${selected ? 'tier-card-selected' : 'tier-card-unselected'}`}
-            >
-              {tier.popular && (
-                <span className="absolute top-3 right-3 text-[9px] font-sans font-medium tracking-wider uppercase bg-gold-600 text-white px-2 py-0.5">
-                  Popular
-                </span>
-              )}
-              <div className="flex items-start justify-between gap-3 mb-2">
-                <span className="text-sm font-sans font-medium text-green-900 pr-8">{tier.label}</span>
-                <div className={`w-4 h-4 rounded-full border flex-shrink-0 flex items-center justify-center mt-0.5 transition-colors ${
-                  selected ? 'bg-green-800 border-green-800' : 'border-green-800/30'
-                }`}>
-                  {selected && <Check size={10} className="text-white" />}
-                </div>
-              </div>
-              <p className="text-xs font-sans text-green-800/60 mb-3 leading-snug">{tier.description}</p>
-              <p className="text-base font-serif font-medium text-green-800" style={{ fontFamily: '"Cormorant Garamond", Georgia, serif' }}>
-                {formatPrice(tier.price, tier.unit)}
-              </p>
-              {tier.note && (
-                <p className="text-[10px] font-sans text-gold-700 mt-1">{tier.note}</p>
-              )}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 export default function BookSupport() {
+  useDocumentTitle('Rider Support — Find, Evaluate & Acquire');
   const [step, setStep] = useState(0);
-  const { state, setFunnel, setQualifier, itemCount } = useCart();
+  const { state, setFunnel, itemCount } = useCart();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -105,7 +32,6 @@ export default function BookSupport() {
 
   const experience   = state.qualifierAnswers['experience'];
   const wantsLessons = state.qualifierAnswers['wants_lessons'];
-  const horseCount   = state.qualifierAnswers['how_many_horses'];
 
   const trainingSelected = state.items.some((i) => i.serviceId === HORSE_TRAINING.id);
   const turnoutSelected  = state.items.some((i) => i.serviceId === RIDING_TURNOUT.id);
@@ -138,23 +64,26 @@ export default function BookSupport() {
 
         {/* Step indicator */}
         <div className="mb-12">
-          <div className="flex items-center gap-3 mb-6">
+          <ol className="flex items-center gap-3 mb-6">
             {STEPS.map((s, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <div className={i < step ? 'step-complete' : i === step ? 'step-active' : 'step-inactive'}>
+              <li key={i} className="flex items-center gap-3">
+                <div
+                  aria-current={i === step ? 'step' : undefined}
+                  className={i < step ? 'step-complete' : i === step ? 'step-active' : 'step-inactive'}
+                >
                   {i < step ? <Check size={12} /> : i + 1}
                 </div>
                 <span className={`text-xs font-sans tracking-wide hidden sm:block ${
-                  i === step ? 'text-green-800 font-medium' : 'text-green-800/40'
+                  i === step ? 'text-green-800 font-medium' : 'text-muted'
                 }`}>
                   {s.label}
                 </span>
                 {i < STEPS.length - 1 && (
                   <div className="w-8 h-px bg-green-800/15 hidden sm:block" />
                 )}
-              </div>
+              </li>
             ))}
-          </div>
+          </ol>
           <div className="rule-gold" />
         </div>
 
@@ -168,7 +97,7 @@ export default function BookSupport() {
             </p>
             <div className="flex flex-col gap-8">
               {SUPPORT_SERVICES.map((svc) => (
-                <ServiceSelector key={svc.id} service={svc} />
+                <ServiceSelector key={svc.id} service={svc} category="Rider Support" />
               ))}
             </div>
           </div>
@@ -183,94 +112,44 @@ export default function BookSupport() {
               A few questions help us shape the right experience for you — and ensure we recommend only what is genuinely relevant.
             </p>
 
-            {/* Q: Experience */}
-            <div className="bg-white border border-green-800/10 p-8 mb-6">
-              <h3 className="font-serif font-medium text-green-800 text-lg mb-2">
-                How would you describe your equestrian experience?
-              </h3>
-              <p className="text-sm font-sans text-green-800/60 mb-5">
-                We want to match our guidance to your actual background.
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {[
-                  { value: 'first-horse', label: 'This will be my first horse' },
-                  { value: 'returning', label: 'I owned a horse in the past' },
-                  { value: 'experienced', label: 'I am an experienced horse owner' },
-                  { value: 'professional', label: 'I ride professionally or competitively' },
-                ].map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setQualifier('experience', opt.value)}
-                    className={`py-4 px-5 border text-sm font-sans text-left transition-all duration-200 ${
-                      experience === opt.value
-                        ? 'border-green-800 bg-green-800/5 text-green-900 font-medium'
-                        : 'border-green-800/15 bg-white text-green-800/70 hover:border-green-800/40'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <QualifierGroup
+              qualifierKey="experience"
+              question="How would you describe your equestrian experience?"
+              help="We want to match our guidance to your actual background."
+              options={[
+                { value: 'first-horse', label: 'This will be my first horse' },
+                { value: 'returning', label: 'I owned a horse in the past' },
+                { value: 'experienced', label: 'I am an experienced horse owner' },
+                { value: 'professional', label: 'I ride professionally or competitively' },
+              ]}
+            />
 
-            {/* Q: How many horses? */}
             {experience && (
-              <div className="bg-white border border-green-800/10 p-8 mb-6">
-                <h3 className="font-serif font-medium text-green-800 text-lg mb-2">
-                  How many horses are you considering?
-                </h3>
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                  {[
-                    { value: 'one', label: 'One' },
-                    { value: 'two', label: 'Two' },
-                    { value: 'three-plus', label: 'Three or more' },
-                    { value: 'not-sure', label: 'Not sure yet' },
-                  ].map((opt) => (
-                    <button
-                      key={opt.value}
-                      onClick={() => setQualifier('how_many_horses', opt.value)}
-                      className={`py-3 px-4 border text-sm font-sans text-center transition-all duration-200 ${
-                        horseCount === opt.value
-                          ? 'border-green-800 bg-green-800/5 text-green-900 font-medium'
-                          : 'border-green-800/15 bg-white text-green-800/70 hover:border-green-800/40'
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <QualifierGroup
+                qualifierKey="how_many_horses"
+                question="How many horses are you considering?"
+                layout="compact"
+                options={[
+                  { value: 'one', label: 'One' },
+                  { value: 'two', label: 'Two' },
+                  { value: 'three-plus', label: 'Three or more' },
+                  { value: 'not-sure', label: 'Not sure yet' },
+                ]}
+              />
             )}
 
-            {/* Q: Interest in lessons */}
             {experience && (
-              <div className="bg-white border border-green-800/10 p-8 mb-6">
-                <h3 className="font-serif font-medium text-green-800 text-lg mb-2">
-                  Are you interested in riding lessons or training once your horse is here?
-                </h3>
-                <p className="text-sm font-sans text-green-800/60 mb-5">
-                  Many of our clients combine acquisition support with an ongoing lessons program.
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {[
-                    { value: 'yes', label: 'Yes, definitely' },
-                    { value: 'maybe', label: 'Possibly, interested to learn more' },
-                    { value: 'no', label: 'Not at this stage' },
-                  ].map((opt) => (
-                    <button
-                      key={opt.value}
-                      onClick={() => setQualifier('wants_lessons', opt.value)}
-                      className={`py-4 px-5 border text-sm font-sans text-left transition-all duration-200 ${
-                        wantsLessons === opt.value
-                          ? 'border-green-800 bg-green-800/5 text-green-900 font-medium'
-                          : 'border-green-800/15 bg-white text-green-800/70 hover:border-green-800/40'
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <QualifierGroup
+                qualifierKey="wants_lessons"
+                question="Are you interested in riding lessons or training once your horse is here?"
+                help="Many of our clients combine acquisition support with an ongoing lessons program."
+                layout="wide"
+                options={[
+                  { value: 'yes', label: 'Yes, definitely' },
+                  { value: 'maybe', label: 'Possibly, interested to learn more' },
+                  { value: 'no', label: 'Not at this stage' },
+                ]}
+              />
             )}
           </div>
         )}
@@ -288,17 +167,17 @@ export default function BookSupport() {
             <div className="bg-white border border-green-800/10 p-8 mb-8">
               <p className="eyebrow mb-5">Your Selection</p>
               {state.items.length === 0 ? (
-                <p className="text-sm font-sans text-green-800/50 italic">No services selected yet.</p>
+                <p className="text-sm font-sans text-muted italic">No services selected yet.</p>
               ) : (
-                <div className="flex flex-col divide-y divide-green-800/8">
+                <div className="flex flex-col divide-y divide-green-800/[0.08]">
                   {state.items.map((item) => (
                     <div key={`${item.serviceId}-${item.tierId}`} className="flex items-center justify-between py-3">
                       <div>
                         <p className="text-sm font-sans font-medium text-green-900">{item.tierLabel}</p>
-                        <p className="text-xs font-sans text-green-800/50">{item.serviceName}</p>
+                        <p className="text-xs font-sans text-muted">{item.serviceName}</p>
                       </div>
-                      <p className="text-sm font-serif font-medium text-green-800" style={{ fontFamily: '"Cormorant Garamond", Georgia, serif' }}>
-                        {formatPrice(item.price, item.unit as any)}
+                      <p className="text-sm font-serif font-medium text-green-800">
+                        {formatPrice(item.price, item.unit)}
                       </p>
                     </div>
                   ))}
@@ -306,82 +185,63 @@ export default function BookSupport() {
               )}
             </div>
 
-            {/* Add-on: Horse Training (always relevant for new horse owners) */}
-            {!trainingSelected && experience !== 'professional' && (
-              <div className="mb-6">
-                <div className="bg-gold-50 border border-gold-200 p-5 mb-4">
-                  <p className="text-xs font-sans font-medium tracking-wide uppercase text-gold-700 mb-1">Suggested Add-On</p>
-                  <p className="text-sm font-sans text-green-800/70">
-                    {experience === 'first-horse'
-                      ? 'A professional training program for your new horse ensures a smooth, safe start to your partnership. We work with your horse so you can focus on bonding.'
-                      : 'Professional training keeps your horse developing and responsive — particularly valuable in the first months at a new facility.'}
-                  </p>
-                </div>
-                <ServiceSelector service={HORSE_TRAINING} compact />
-              </div>
-            )}
-
-            {/* Add-on: Riding & Turnout */}
-            {!turnoutSelected && (
-              <div className="mb-6">
-                <div className="bg-gold-50 border border-gold-200 p-5 mb-4">
-                  <p className="text-xs font-sans font-medium tracking-wide uppercase text-gold-700 mb-1">Keep Your Horse Active</p>
-                  <p className="text-sm font-sans text-green-800/70">
-                    Our riding and turnout service ensures your horse stays fit, stimulated, and content — especially helpful during the transition period after acquisition.
-                  </p>
-                </div>
-                <ServiceSelector service={RIDING_TURNOUT} compact />
-              </div>
-            )}
-
-            {/* Add-on: Hair Clipping (for new horse owners) */}
-            {!clippingSelected && (experience === 'first-horse' || experience === 'returning') && (
-              <div className="mb-6">
-                <div className="bg-gold-50 border border-gold-200 p-5 mb-4">
-                  <p className="text-xs font-sans font-medium tracking-wide uppercase text-gold-700 mb-1">Presentation & Comfort</p>
-                  <p className="text-sm font-sans text-green-800/70">
-                    New horses often arrive needing a clip. Our professional clipping service is a simple way to start your horse's time with us on the right note.
-                  </p>
-                </div>
-                <ServiceSelector service={HAIR_CLIPPING} compact />
-              </div>
-            )}
-
-            {/* Add-on: Riding Lessons (if interested) */}
-            {(wantsLessons === 'yes' || wantsLessons === 'maybe') && (
+            {/*
+              Cross-sell gating (per ux-synthesis): within the support funnel, only
+              evaluation follows search and only brokering follows evaluation. Horse
+              CARE cross-sells (training, turnout, clipping) and rider lessons are NOT
+              shown here — they belong post-acquisition, not in this booking flow.
+              The only in-funnel guidance is the natural search→evaluation→brokering path.
+            */}
+            {!trainingSelected && !turnoutSelected && !clippingSelected && experience && (
               <div className="mb-6 bg-white border border-green-800/10 p-6">
-                <p className="text-xs font-sans font-medium tracking-wide uppercase text-gold-700 mb-3">
-                  Riding Lessons — A Natural Next Step
+                <p className="text-xs font-sans font-medium tracking-wide uppercase text-gold-ink mb-3">
+                  What happens after you reach out
                 </p>
-                <p className="text-sm font-sans text-green-800/70 mb-4">
-                  {wantsLessons === 'yes'
-                    ? "You mentioned you're interested in lessons — wonderful. Our private riding lesson programs are designed to grow with you and your new horse."
-                    : "You expressed possible interest in lessons. We would love to tell you more about our programs when we speak — no commitment needed at this stage."}
+                <p className="text-sm font-sans text-secondary">
+                  Once we have spoken and understood what you are looking for, we guide the
+                  search, the evaluation, and the brokering as one continuous process. If
+                  lessons, training, or care become relevant after your horse is home, we will
+                  raise them then — there is no need to decide any of that now.
                 </p>
-                <a href="/book/rider" className="inline-flex items-center gap-2 text-xs font-sans tracking-wide uppercase text-green-800 border-b border-green-800/20 pb-0.5 hover:border-green-800 transition-all duration-200">
-                  View Rider Services
-                  <ArrowRight size={12} />
-                </a>
               </div>
             )}
 
+            {/* Lessons interest is captured for the conversation, surfaced as a note (not a pricing card). */}
+            {(wantsLessons === 'yes' || wantsLessons === 'maybe') && (
+              <div className="mb-6 bg-gold-50 border border-gold-200 p-5">
+                <p className="text-xs font-sans font-medium tracking-wide uppercase text-gold-ink mb-1">
+                  Noted for our conversation
+                </p>
+                <p className="text-sm font-sans text-secondary">
+                  {wantsLessons === 'yes'
+                    ? "You mentioned you're interested in lessons — wonderful. We'll tell you all about our riding programs when we speak."
+                    : "You expressed possible interest in lessons. We'd be glad to tell you more when we talk — no commitment needed."}
+                </p>
+                <Link to="/services" className="link-underline mt-4">
+                  Explore the ways to ride with us
+                  <ArrowRight size={12} />
+                </Link>
+              </div>
+            )}
           </div>
         )}
 
         {/* Navigation */}
         <div className="flex items-center justify-between mt-12 pt-8 border-t border-green-800/10">
           <button
+            type="button"
             onClick={handleBack}
-            className="inline-flex items-center gap-2 text-sm font-sans text-green-800/60 hover:text-green-800 transition-colors"
+            className="inline-flex items-center gap-2 text-sm font-sans text-secondary hover:text-green-800 transition-colors focus-ring"
           >
             <ArrowLeft size={16} />
             {step === 0 ? 'Back to Services' : 'Previous'}
           </button>
 
           <button
+            type="button"
             onClick={handleNext}
             disabled={step === 0 ? !canProceedStep0 : step === 1 ? !canProceedStep1 : false}
-            className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed"
+            className="btn-primary"
           >
             {step === STEPS.length - 1 ? 'Continue to Checkout' : 'Continue'}
             <ArrowRight size={16} />
@@ -389,7 +249,7 @@ export default function BookSupport() {
         </div>
 
         {step === 0 && !canProceedStep0 && (
-          <p className="text-xs font-sans text-center text-green-800/40 mt-3">
+          <p className="text-xs font-sans text-center text-muted mt-3">
             Select at least one service to continue.
           </p>
         )}

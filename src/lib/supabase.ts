@@ -6,6 +6,7 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export type FunnelType = 'rider' | 'horse' | 'support';
+export type ContactMethod = 'text' | 'call' | 'email';
 
 export interface BookingPayload {
   first_name: string;
@@ -17,6 +18,8 @@ export interface BookingPayload {
   qualifier_answers: Record<string, string>;
   subtotal: number;
   notes?: string;
+  contact_method?: ContactMethod;
+  preferred_times?: string;
 }
 
 export interface SelectedService {

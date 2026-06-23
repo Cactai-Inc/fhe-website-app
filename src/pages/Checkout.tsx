@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, X, ShieldCheck } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { submitBooking } from '../lib/supabase';
+import type { ContactMethod } from '../lib/supabase';
 import { formatPrice } from '../lib/services';
+import { useDocumentTitle } from '../lib/hooks';
 
 interface FormState {
   first_name: string;
@@ -11,6 +13,7 @@ interface FormState {
   email: string;
   phone: string;
   notes: string;
+  preferred_times: string;
 }
 
 const FUNNEL_LABELS: Record<string, string> = {
@@ -19,8 +22,18 @@ const FUNNEL_LABELS: Record<string, string> = {
   support: 'Rider Support',
 };
 
+const CONTACT_OPTIONS: { value: ContactMethod; label: string }[] = [
+  { value: 'text', label: 'Text' },
+  { value: 'call', label: 'Call' },
+  { value: 'email', label: 'Email' },
+];
+
+const usd = (n: number) =>
+  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(n);
+
 export default function Checkout() {
-  const { state, removeItem, subtotal, toSelectedServices, clearCart } = useCart();
+  useDocumentTitle('Your Inquiry');
+  const { state, removeItem, subtotal, toSelectedServices, clearCart, inquirySummary } = useCart();
   const navigate = useNavigate();
   const [form, setForm] = useState<FormState>({
     first_name: '',
@@ -28,10 +41,17 @@ export default function Checkout() {
     email: '',
     phone: '',
     notes: '',
+    preferred_times: '',
   });
+  const [contactMethod, setContactMethod] = useState<ContactMethod>('text');
   const [errors, setErrors] = useState<Partial<FormState>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const firstNameRef = useRef<HTMLInputElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const phoneRef = useRef<HTMLInputElement>(null);
+  const errorBannerRef = useRef<HTMLDivElement>(null);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     const { name, value } = e.target;
@@ -41,7 +61,7 @@ export default function Checkout() {
     }
   }
 
-  function validate(): boolean {
+  function validate(): Partial<FormState> {
     const newErrors: Partial<FormState> = {};
     if (!form.first_name.trim()) newErrors.first_name = 'First name is required';
     if (!form.email.trim()) {
@@ -50,13 +70,20 @@ export default function Checkout() {
       newErrors.email = 'Please enter a valid email';
     }
     if (!form.phone.trim()) newErrors.phone = 'Phone number is required';
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return newErrors;
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!validate()) return;
+    const newErrors = validate();
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) {
+      // Move focus to the first errored field so keyboard/SR users are oriented.
+      if (newErrors.first_name) firstNameRef.current?.focus();
+      else if (newErrors.email) emailRef.current?.focus();
+      else if (newErrors.phone) phoneRef.current?.focus();
+      return;
+    }
     if (state.items.length === 0) return;
 
     setSubmitting(true);
@@ -73,12 +100,20 @@ export default function Checkout() {
         qualifier_answers: state.qualifierAnswers,
         subtotal,
         notes: form.notes.trim() || undefined,
+        contact_method: contactMethod,
+        preferred_times: form.preferred_times.trim() || undefined,
       });
+      // Remember the chosen contact method for the confirmation copy.
+      try {
+        window.sessionStorage.setItem('fhe-contact-method', contactMethod);
+      } catch { /* ignore */ }
       clearCart();
       navigate('/confirmation');
     } catch (err) {
       console.error(err);
-      setSubmitError('Something went wrong submitting your request. Please try again or contact us directly.');
+      setSubmitError('Something went wrong sending your inquiry. Please try again or reach us directly.');
+      // Announce + focus the banner.
+      requestAnimationFrame(() => errorBannerRef.current?.focus());
     } finally {
       setSubmitting(false);
     }
@@ -89,10 +124,10 @@ export default function Checkout() {
     return (
       <div className="min-h-screen bg-cream flex items-center justify-center pt-24 pb-20">
         <div className="text-center max-w-sm">
-          <p className="eyebrow mb-4">Your Cart Is Empty</p>
-          <h2 className="heading-card text-green-800 mb-4">Nothing selected yet</h2>
+          <p className="eyebrow mb-4">Nothing selected yet</p>
+          <h2 className="heading-card text-green-800 mb-4">Your inquiry is empty</h2>
           <p className="body-text text-sm mb-8">Choose a service path to get started.</p>
-          <Link to="/services" className="btn-primary">
+          <Link to="/services" className="btn-primary focus-ring">
             View Services
             <ArrowRight size={16} />
           </Link>
@@ -100,6 +135,8 @@ export default function Checkout() {
       </div>
     );
   }
+
+  const hasErrors = Object.keys(errors).length > 0;
 
   return (
     <div className="min-h-screen bg-cream pt-24 pb-20">
@@ -109,13 +146,13 @@ export default function Checkout() {
         <div className="mb-10">
           <Link
             to={`/book/${state.funnel || 'rider'}`}
-            className="inline-flex items-center gap-2 text-sm font-sans text-green-800/60 hover:text-green-800 transition-colors mb-6"
+            className="inline-flex items-center gap-2 text-sm font-sans text-secondary hover:text-green-800 transition-colors mb-6 focus-ring"
           >
             <ArrowLeft size={16} />
             Back to Selection
           </Link>
-          <p className="eyebrow mb-2">Checkout</p>
-          <h1 className="heading-section text-green-800">Complete Your Booking Request</h1>
+          <p className="eyebrow mb-2">Say hello</p>
+          <h1 className="heading-section text-green-800">Send Us Your Inquiry</h1>
           {state.funnel && (
             <p className="body-text text-sm mt-2">
               Path: <span className="font-medium text-green-800">{FUNNEL_LABELS[state.funnel]}</span>
@@ -128,6 +165,7 @@ export default function Checkout() {
           {/* ── Left: Contact form ── */}
           <div className="lg:col-span-3">
             <form onSubmit={handleSubmit} noValidate>
+              <p className="text-xs font-sans text-muted mb-4">Fields marked * are required.</p>
               <div className="bg-white border border-green-800/10 p-8 mb-6">
                 <h2 className="font-serif font-medium text-green-800 text-xl mb-6">Your Information</h2>
 
@@ -136,17 +174,21 @@ export default function Checkout() {
                   <div>
                     <label className="form-label" htmlFor="first_name">First Name *</label>
                     <input
+                      ref={firstNameRef}
                       id="first_name"
                       name="first_name"
                       type="text"
+                      required
                       value={form.first_name}
                       onChange={handleChange}
-                      className={`form-input ${errors.first_name ? 'border-red-400' : ''}`}
+                      aria-invalid={!!errors.first_name}
+                      aria-describedby={errors.first_name ? 'first_name-error' : undefined}
+                      className={`form-input ${errors.first_name ? 'form-input-error' : ''}`}
                       placeholder="First name"
                       autoComplete="given-name"
                     />
                     {errors.first_name && (
-                      <p className="text-xs text-red-500 mt-1">{errors.first_name}</p>
+                      <p id="first_name-error" className="form-error">{errors.first_name}</p>
                     )}
                   </div>
 
@@ -169,17 +211,21 @@ export default function Checkout() {
                   <div>
                     <label className="form-label" htmlFor="email">Email Address *</label>
                     <input
+                      ref={emailRef}
                       id="email"
                       name="email"
                       type="email"
+                      required
                       value={form.email}
                       onChange={handleChange}
-                      className={`form-input ${errors.email ? 'border-red-400' : ''}`}
+                      aria-invalid={!!errors.email}
+                      aria-describedby={errors.email ? 'email-error' : undefined}
+                      className={`form-input ${errors.email ? 'form-input-error' : ''}`}
                       placeholder="your@email.com"
                       autoComplete="email"
                     />
                     {errors.email && (
-                      <p className="text-xs text-red-500 mt-1">{errors.email}</p>
+                      <p id="email-error" className="form-error">{errors.email}</p>
                     )}
                   </div>
 
@@ -187,25 +233,71 @@ export default function Checkout() {
                   <div>
                     <label className="form-label" htmlFor="phone">Phone Number *</label>
                     <input
+                      ref={phoneRef}
                       id="phone"
                       name="phone"
                       type="tel"
+                      required
                       value={form.phone}
                       onChange={handleChange}
-                      className={`form-input ${errors.phone ? 'border-red-400' : ''}`}
-                      placeholder="(619) 555-0000"
+                      aria-invalid={!!errors.phone}
+                      aria-describedby={errors.phone ? 'phone-error' : undefined}
+                      className={`form-input ${errors.phone ? 'form-input-error' : ''}`}
+                      placeholder="858-555-0000"
                       autoComplete="tel"
                     />
                     {errors.phone && (
-                      <p className="text-xs text-red-500 mt-1">{errors.phone}</p>
+                      <p id="phone-error" className="form-error">{errors.phone}</p>
                     )}
                   </div>
+                </div>
+
+                {/* Preferred contact method */}
+                <fieldset className="mt-6">
+                  <legend className="form-label mb-2">How should we reach you?</legend>
+                  <div role="radiogroup" aria-label="Preferred contact method" className="grid grid-cols-3 gap-3">
+                    {CONTACT_OPTIONS.map((opt) => {
+                      const selected = contactMethod === opt.value;
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          role="radio"
+                          aria-checked={selected}
+                          onClick={() => setContactMethod(opt.value)}
+                          className={`py-3 px-4 border text-sm font-sans text-center transition-all duration-200 focus-ring ${
+                            selected
+                              ? 'border-green-800 bg-green-800/5 text-green-900 font-medium'
+                              : 'border-green-800/15 bg-white text-secondary hover:border-green-800/40'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+
+                {/* Preferred times */}
+                <div className="mt-6">
+                  <label className="form-label" htmlFor="preferred_times">
+                    When are you usually free?
+                  </label>
+                  <input
+                    id="preferred_times"
+                    name="preferred_times"
+                    type="text"
+                    value={form.preferred_times}
+                    onChange={handleChange}
+                    className="form-input"
+                    placeholder="A few days and times that tend to work for you"
+                  />
                 </div>
 
                 {/* Notes */}
                 <div className="mt-5">
                   <label className="form-label" htmlFor="notes">
-                    Anything else you would like us to know?
+                    Anything you would like us to know?
                   </label>
                   <textarea
                     id="notes"
@@ -214,21 +306,37 @@ export default function Checkout() {
                     onChange={handleChange}
                     rows={4}
                     className="form-input resize-none"
-                    placeholder="Your horse's name, experience level, scheduling preferences, questions…"
+                    placeholder="Where you are in your riding, what you are hoping for, any questions at all…"
                   />
                 </div>
               </div>
 
               {/* Trust note */}
               <div className="flex items-start gap-3 mb-6 px-1">
-                <ShieldCheck size={18} className="text-gold-600 flex-shrink-0 mt-0.5" />
-                <p className="text-xs font-sans text-green-800/60 leading-relaxed">
-                  This is a booking request, not a payment. A member of our team will reach out within one business day to confirm your schedule and discuss next steps. French Heritage Equestrian is a fully licensed and insured equestrian business.
+                <ShieldCheck size={18} className="text-gold-ink flex-shrink-0 mt-0.5" aria-hidden="true" />
+                <p className="text-xs font-sans text-secondary leading-relaxed">
+                  This is just hello, not a booking. We read every note ourselves and will get back
+                  to you the same day, usually within the hour, however you would like us to reach you.
+                  French Heritage Equestrian is a fully licensed and insured equestrian business.
                 </p>
               </div>
 
+              {/* Validation summary (announced) */}
+              <div aria-live="assertive" role={hasErrors ? 'alert' : undefined}>
+                {hasErrors && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 text-sm font-sans px-5 py-3 mb-6">
+                    Please correct the highlighted fields above.
+                  </div>
+                )}
+              </div>
+
               {submitError && (
-                <div className="bg-red-50 border border-red-200 text-red-700 text-sm font-sans px-5 py-4 mb-6">
+                <div
+                  ref={errorBannerRef}
+                  tabIndex={-1}
+                  role="alert"
+                  className="bg-red-50 border border-red-200 text-red-700 text-sm font-sans px-5 py-4 mb-6 focus:outline-none"
+                >
                   {submitError}
                 </div>
               )}
@@ -236,72 +344,85 @@ export default function Checkout() {
               <button
                 type="submit"
                 disabled={submitting || state.items.length === 0}
-                className="btn-primary w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn-primary w-full justify-center"
               >
-                {submitting ? 'Submitting…' : 'Submit Booking Request'}
+                {submitting ? 'Sending…' : 'Send It Our Way'}
                 {!submitting && <ArrowRight size={16} />}
               </button>
             </form>
           </div>
 
-          {/* ── Right: Order summary ── */}
+          {/* ── Right: Inquiry summary ── */}
           <div className="lg:col-span-2">
             <div className="bg-white border border-green-800/10 p-7 sticky top-28">
-              <h2 className="font-serif font-medium text-green-800 text-xl mb-6">Your Selection</h2>
+              <h2 className="font-serif font-medium text-green-800 text-xl mb-6">Your Inquiry</h2>
 
               {state.items.length === 0 ? (
-                <p className="text-sm font-sans text-green-800/50 italic mb-6">
-                  No services selected.
-                </p>
+                <p className="text-sm font-sans text-muted italic mb-6">No services selected.</p>
               ) : (
-                <div className="flex flex-col gap-1 mb-6">
-                  {state.items.map((item) => (
-                    <div
-                      key={`${item.serviceId}-${item.tierId}`}
-                      className="flex items-start justify-between gap-3 py-3 border-b border-green-800/8 last:border-b-0"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-sans font-medium text-green-900 leading-snug">{item.tierLabel}</p>
-                        <p className="text-xs font-sans text-green-800/50 mt-0.5 truncate">{item.serviceName}</p>
+                <div className="flex flex-col gap-5 mb-6">
+                  {inquirySummary.map((group) => (
+                    <div key={group.unit}>
+                      <p className="text-[10px] font-sans uppercase tracking-wide text-gold-ink mb-2">
+                        {group.label}
+                      </p>
+                      <div className="flex flex-col gap-1">
+                        {group.items.map((item) => (
+                          <div
+                            key={`${item.serviceId}-${item.tierId}`}
+                            className="flex items-start justify-between gap-3 py-2 border-b border-green-800/[0.08] last:border-b-0"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-sans font-medium text-green-900 leading-snug">{item.tierLabel}</p>
+                              <p className="text-xs font-sans text-muted mt-0.5 truncate">{item.serviceName}</p>
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <p className="text-sm font-serif text-green-800">
+                                {formatPrice(item.price, item.unit)}
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() => removeItem(item.serviceId, item.tierId)}
+                                className="p-2.5 -m-1 text-green-800/40 hover:text-red-600 transition-colors focus-ring"
+                                aria-label={`Remove ${item.tierLabel}`}
+                              >
+                                <X size={14} aria-hidden="true" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                      <div className="flex items-center gap-3 flex-shrink-0">
-                        <p className="text-sm font-serif text-green-800" style={{ fontFamily: '"Cormorant Garamond", Georgia, serif' }}>
-                          {formatPrice(item.price, item.unit as any)}
+                      {/* Per-cadence subtotal (not summed across cadences) */}
+                      {!group.isEstimate && group.items.length > 1 && (
+                        <div className="flex justify-between mt-1.5 pt-1.5">
+                          <span className="text-[11px] font-sans text-muted">{group.label} subtotal</span>
+                          <span className="text-sm font-serif text-green-800">{usd(group.total)}</span>
+                        </div>
+                      )}
+                      {group.isEstimate && (
+                        <p className="text-[10px] font-sans text-muted mt-1.5 leading-relaxed">
+                          Brokering is a percentage of the final purchase price (minimum shown).
+                          The figure above is a starting estimate, confirmed after consultation.
                         </p>
-                        <button
-                          onClick={() => removeItem(item.serviceId, item.tierId)}
-                          className="text-green-800/30 hover:text-red-400 transition-colors"
-                          aria-label="Remove item"
-                        >
-                          <X size={14} />
-                        </button>
-                      </div>
+                      )}
                     </div>
                   ))}
                 </div>
               )}
 
-              {/* Subtotal */}
+              {/* Orientation note — deliberately NOT a single blended total */}
               <div className="border-t border-green-800/10 pt-5">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-sans text-green-800/60 uppercase tracking-wide">Estimated Total</span>
-                  <span
-                    className="text-xl font-serif font-medium text-green-800"
-                    style={{ fontFamily: '"Cormorant Garamond", Georgia, serif' }}
-                  >
-                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(subtotal)}
-                  </span>
-                </div>
-                <p className="text-[10px] font-sans text-green-800/40 leading-relaxed">
-                  Prices are estimates. Monthly and pack rates apply as listed. Final pricing confirmed upon booking.
+                <p className="form-hint leading-relaxed">
+                  Pricing is shown for orientation only and is grouped by how each service is billed.
+                  Nothing is charged here — we will confirm everything when we speak.
                 </p>
               </div>
 
               {/* Add more */}
-              <div className="mt-6 pt-6 border-t border-green-800/8">
+              <div className="mt-6 pt-6 border-t border-green-800/[0.08]">
                 <Link
                   to={`/book/${state.funnel || 'rider'}`}
-                  className="text-xs font-sans text-green-800/50 hover:text-green-800 transition-colors flex items-center gap-1"
+                  className="text-xs font-sans text-secondary hover:text-green-800 transition-colors flex items-center gap-1 focus-ring"
                 >
                   + Add or modify services
                 </Link>

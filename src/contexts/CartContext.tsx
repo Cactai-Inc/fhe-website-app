@@ -1,5 +1,50 @@
-import React, { createContext, useContext, useReducer, useCallback } from 'react';
+import React, { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
 import type { FunnelType, SelectedService } from '../lib/supabase';
+import type { PriceUnit } from '../lib/services';
+
+// ─── Inquiry summary (group by billing cadence) ───────────────────────────
+
+export type Cadence = PriceUnit;
+
+export interface CadenceGroup {
+  unit: Cadence;
+  label: string;       // human label for the cadence, e.g. "Per month"
+  items: CartItem[];
+  total: number;       // sum of fixed-price items in this group
+  isEstimate: boolean; // true for percent (brokering) — never a fixed total
+}
+
+const CADENCE_LABEL: Record<Cadence, string> = {
+  session: 'Per session',
+  week: 'Weekly',
+  month: 'Monthly',
+  flat: 'One-time',
+  percent: 'Percentage-based (estimated)',
+};
+
+const CADENCE_ORDER: Cadence[] = ['flat', 'session', 'week', 'month', 'percent'];
+
+/** Group cart items by billing cadence so different cadences are never summed
+ *  into one misleading total. Percentage (brokering) is flagged as an estimate. */
+export function groupByCadence(items: CartItem[]): CadenceGroup[] {
+  const byUnit = new Map<Cadence, CartItem[]>();
+  for (const item of items) {
+    const unit = (item.unit as Cadence) ?? 'flat';
+    if (!byUnit.has(unit)) byUnit.set(unit, []);
+    byUnit.get(unit)!.push(item);
+  }
+  return CADENCE_ORDER.filter((u) => byUnit.has(u)).map((unit) => {
+    const groupItems = byUnit.get(unit)!;
+    const isEstimate = unit === 'percent';
+    return {
+      unit,
+      label: CADENCE_LABEL[unit],
+      items: groupItems,
+      total: isEstimate ? 0 : groupItems.reduce((s, i) => s + i.price, 0),
+      isEstimate,
+    };
+  });
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -9,7 +54,7 @@ export interface CartItem {
   tierId: string;
   tierLabel: string;
   price: number;
-  unit: string;
+  unit: PriceUnit;
 }
 
 interface CartState {
@@ -38,6 +83,7 @@ interface CartContextValue {
   subtotal: number;
   itemCount: number;
   toSelectedServices: () => SelectedService[];
+  inquirySummary: CadenceGroup[];
 }
 
 // ─── Reducer ─────────────────────────────────────────────────────────────
@@ -48,10 +94,33 @@ const initialState: CartState = {
   qualifierAnswers: {},
 };
 
+const STORAGE_KEY = 'fhe-cart-v1';
+
+function loadInitialState(): CartState {
+  if (typeof window === 'undefined') return initialState;
+  try {
+    const raw = window.sessionStorage.getItem(STORAGE_KEY);
+    if (!raw) return initialState;
+    const parsed = JSON.parse(raw);
+    return {
+      items: Array.isArray(parsed.items) ? parsed.items : [],
+      funnel: parsed.funnel ?? null,
+      qualifierAnswers: parsed.qualifierAnswers ?? {},
+    };
+  } catch {
+    return initialState;
+  }
+}
+
 function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
     case 'SET_FUNNEL':
-      return { ...initialState, funnel: action.funnel };
+      // Preserve selected items across funnel switches so cross-sell is real.
+      // Only the active funnel changes; qualifier answers persist too (they are
+      // keyed per-question and harmless to keep). This fixes the "cart wipe" bug
+      // where moving between Rider/Horse/Support silently cleared selections.
+      if (state.funnel === action.funnel) return state;
+      return { ...state, funnel: action.funnel };
 
     case 'ADD_ITEM': {
       const exists = state.items.some(
@@ -105,7 +174,16 @@ function cartReducer(state: CartState, action: CartAction): CartState {
 const CartContext = createContext<CartContextValue | null>(null);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatch] = useReducer(cartReducer, initialState);
+  const [state, dispatch] = useReducer(cartReducer, undefined, loadInitialState);
+
+  // Persist the cart for the session so a refresh mid-flow does not lose it.
+  useEffect(() => {
+    try {
+      window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch {
+      /* storage unavailable (private mode, etc.) — degrade gracefully */
+    }
+  }, [state]);
 
   const setFunnel = useCallback((funnel: FunnelType) => {
     dispatch({ type: 'SET_FUNNEL', funnel });
@@ -139,6 +217,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const subtotal = state.items.reduce((sum, i) => sum + i.price, 0);
   const itemCount = state.items.length;
+  const inquirySummary = groupByCadence(state.items);
 
   const toSelectedServices = useCallback((): SelectedService[] =>
     state.items.map((i) => ({
@@ -165,6 +244,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         subtotal,
         itemCount,
         toSelectedServices,
+        inquirySummary,
       }}
     >
       {children}
