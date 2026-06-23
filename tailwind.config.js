@@ -38,8 +38,11 @@ export default {
         },
       },
       fontFamily: {
-        display: ['"Big Caslon"', '"Cormorant Garamond"', '"Playfair Display"', 'Georgia', 'serif'],
-        serif: ['"Cormorant Garamond"', '"Playfair Display"', 'Georgia', 'serif'],
+        // Display + serif both resolve to the single hosted face (Cormorant Garamond).
+        // Big Caslon is kept first only as a progressive-enhancement on macOS; the hosted
+        // Cormorant is the guaranteed render everywhere. Playfair was never imported — dropped.
+        display: ['"Big Caslon"', '"Cormorant Garamond"', 'Georgia', 'serif'],
+        serif: ['"Cormorant Garamond"', 'Georgia', 'serif'],
         sans: ['"Inter"', 'system-ui', 'sans-serif'],
       },
       letterSpacing: {
