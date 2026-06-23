@@ -1,6 +1,15 @@
 # French Heritage Equestrian
 
-A fully-featured production-grade equestrian business website for French Heritage Equestrian, a family-owned and operated equestrian business located at Carmel Creek Ranch in San Diego, CA.
+A production-grade equestrian platform for French Heritage Equestrian, a family-run
+hunter/jumper barn and community at Carmel Creek Ranch in coastal San Diego.
+
+It is both a warm, community-led marketing site (rider track) with grounded off-ramps
+for horse owners and acquisition clients, **and** a full client platform: accounts,
+invitations, a request flow, an authenticated purchase flow, self-authored booking
+with slot holds, signable documents, and Zelle + Stripe payments.
+
+> **Setup & operations:** see [SETUP.md](./SETUP.md) for the external wiring
+> (Supabase migrations, Stripe, Vercel, Google Workspace) needed to go live.
 
 ---
 
