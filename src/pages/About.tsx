@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { useDocumentTitle } from '../lib/hooks';
+import Seo from '../components/Seo';
+import { seoForPath } from '../lib/seo';
 
 const FACILITY_IMG = 'https://images.pexels.com/photos/1996337/pexels-photo-1996337.jpeg?auto=compress&cs=tinysrgb&w=1920&q=80';
 const PORTRAIT_IMG = '/reference-images/Gemini_Generated_Image_n7l8hpn7l8hpn7l8.png';
@@ -40,9 +41,10 @@ const PRINCIPLES = [
 ];
 
 export default function About() {
-  useDocumentTitle('Our Story');
+  const seo = seoForPath('/about')!;
   return (
     <>
+      <Seo title={seo.title} description={seo.description} path="/about" />
       {/* ── Hero ─────────────────────────────────────────────────────── */}
       <section className="relative h-[70vh] min-h-[480px] overflow-hidden flex items-end">
         <div

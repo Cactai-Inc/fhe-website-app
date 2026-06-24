@@ -9,9 +9,10 @@ import {
   formatPrice,
 } from '../lib/services';
 import { useCart } from '../contexts/CartContext';
-import { useDocumentTitle } from '../lib/hooks';
 import ServiceSelector from '../components/ServiceSelector';
 import QualifierGroup from '../components/QualifierGroup';
+import Seo from '../components/Seo';
+import { seoForPath } from '../lib/seo';
 
 const STEPS = [
   { label: 'Select Services' },
@@ -19,8 +20,9 @@ const STEPS = [
   { label: 'Review & Continue' },
 ];
 
+const SEO = seoForPath('/book/support')!;
+
 export default function BookSupport() {
-  useDocumentTitle('Rider Support — Find, Evaluate & Acquire');
   const [step, setStep] = useState(0);
   const { state, setFunnel, itemCount } = useCart();
   const navigate = useNavigate();
@@ -59,6 +61,8 @@ export default function BookSupport() {
   }
 
   return (
+    <>
+      <Seo title={SEO.title} description={SEO.description} path="/book/support" service={SEO.service} />
     <div className="min-h-screen bg-cream pt-24 pb-20">
       <div className="container-site max-w-3xl">
 
@@ -255,5 +259,6 @@ export default function BookSupport() {
         )}
       </div>
     </div>
+    </>
   );
 }

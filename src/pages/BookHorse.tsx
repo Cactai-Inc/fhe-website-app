@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { Check, ArrowRight, ArrowLeft } from 'lucide-react';
 import { HORSE_SERVICES, formatPrice } from '../lib/services';
 import { useCart } from '../contexts/CartContext';
-import { useDocumentTitle } from '../lib/hooks';
 import ServiceSelector from '../components/ServiceSelector';
 import QualifierGroup from '../components/QualifierGroup';
+import Seo from '../components/Seo';
+import { seoForPath } from '../lib/seo';
 
 const STEPS = [
   { label: 'Select Services' },
@@ -13,8 +14,9 @@ const STEPS = [
   { label: 'Review & Continue' },
 ];
 
+const SEO = seoForPath('/book/horse')!;
+
 export default function BookHorse() {
-  useDocumentTitle('Horse Services — Training, Turnout & Care');
   const [step, setStep] = useState(0);
   const { state, setFunnel, itemCount } = useCart();
   const navigate = useNavigate();
@@ -48,6 +50,8 @@ export default function BookHorse() {
   }
 
   return (
+    <>
+      <Seo title={SEO.title} description={SEO.description} path="/book/horse" service={SEO.service} />
     <div className="min-h-screen bg-cream pt-24 pb-20">
       <div className="container-site max-w-3xl">
 
@@ -205,5 +209,6 @@ export default function BookHorse() {
         )}
       </div>
     </div>
+    </>
   );
 }

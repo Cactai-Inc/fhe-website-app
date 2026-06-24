@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import type { ReactNode } from 'react';
 import { CartProvider } from './contexts/CartContext';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -33,12 +34,11 @@ import Content from './pages/app/Content';
 import ContentPostDetail from './pages/app/ContentPostDetail';
 import Admin from './pages/app/Admin';
 
-export default function App() {
+export function AppRoutes() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <CartProvider>
-          <Routes>
+    <AuthProvider>
+      <CartProvider>
+        <Routes>
             {/* Public marketing + inquiry (marketing chrome) */}
             <Route element={<Layout />}>
               <Route path="/" element={<Landing />} />
@@ -88,9 +88,22 @@ export default function App() {
             <Route element={<Layout />}>
               <Route path="*" element={<NotFound />} />
             </Route>
-          </Routes>
-        </CartProvider>
-      </AuthProvider>
+        </Routes>
+      </CartProvider>
+    </AuthProvider>
+  );
+}
+
+/** Browser entry: client-side router. */
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppRoutes />
     </BrowserRouter>
   );
+}
+
+/** Server entry helper: lets the prerender wrap routes in a StaticRouter. */
+export function AppWithRouter({ router }: { router: (children: ReactNode) => ReactNode }) {
+  return router(<AppRoutes />);
 }

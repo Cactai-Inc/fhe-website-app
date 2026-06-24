@@ -284,6 +284,44 @@ Admins can hide/remove chat messages, threads, and thread posts, and suspend mem
 
 ---
 
+## 8c. Local SEO
+
+The public marketing pages (`/`, `/about`, `/services`, `/book/rider|horse|support`)
+are **prerendered to static HTML at build time** so crawlers, social, and AI previews
+get real content + per-page metadata — not an empty SPA shell. The members app (`/app`)
+and transactional routes stay SPA and are `noindex` (robots.txt + per-page).
+
+### How it works
+- `npm run build` runs: `vite build` → `scripts/prerender.mjs` (renders public routes
+  to `dist/<route>/index.html` with content + head) → `scripts/seo-files.mjs`
+  (writes `dist/sitemap.xml` + `dist/robots.txt`).
+- Per-page `<title>`, description, canonical, OpenGraph/Twitter, and JSON-LD come from
+  `<Seo>` (react-helmet-async) on each page; the route metadata lives in `src/lib/seo.ts`.
+- Site-wide `LocalBusiness` + `Organization` JSON-LD is in `src/components/layout/Layout.tsx`.
+- The client **hydrates** the prerendered HTML (no flash, no re-render).
+
+### Before launch — edit these in `src/lib/seo.ts`
+- [ ] **`SITE_URL`** — confirm `https://www.frenchheritageequestrian.com` (and update
+      `scripts/seo-files.mjs` if it changes).
+- [ ] **Business address** — `streetAddress` / `postalCode` are **placeholders**
+      (`Carmel Creek Ranch` / `92130`). Put the real street address + ZIP, and refine
+      `latitude`/`longitude` to the ranch. This NAP feeds Google's LocalBusiness rich data.
+- [ ] **`sameAs`** — add Instagram/Facebook/Google Business Profile URLs once live.
+
+### After launch
+- Submit `https://www.frenchheritageequestrian.com/sitemap.xml` in Google Search Console.
+- Create a **Google Business Profile** (single biggest local-SEO lever for a local barn);
+  match the NAP exactly to the JSON-LD.
+- Validate structured data at search.google.com/test/rich-results.
+- The OG/Twitter image is the hero reference image; swap for a branded social card if desired.
+
+### Adding a new public page later
+Add an entry to `ROUTE_SEO` in `src/lib/seo.ts`, drop `<Seo …>` in the page, and add
+the path to the `ROUTES` array in `scripts/prerender.mjs` (and the list in
+`scripts/seo-files.mjs`).
+
+---
+
 ## 9. What's built vs. what's configuration
 
 **Built (code, in this repo):** full UI redesign + copy, design system, auth +

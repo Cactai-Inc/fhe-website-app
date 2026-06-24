@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
-import { useDocumentTitle } from '../lib/hooks';
 import type { FunnelType } from '../lib/supabase';
+import Seo from '../components/Seo';
+import { seoForPath } from '../lib/seo';
 
 const RIDER_IMG   = '/reference-images/Gemini_Generated_Image_f3u06df3u06df3u0.png';
 const HORSE_IMG   = 'https://images.pexels.com/photos/635499/pexels-photo-635499.jpeg?auto=compress&cs=tinysrgb&w=900&q=80';
@@ -72,11 +73,12 @@ const PATHS: PathCard[] = [
 ];
 
 export default function Services() {
-  useDocumentTitle('Ways to Ride');
+  const seo = seoForPath('/services')!;
   const { setFunnel } = useCart();
 
   return (
     <>
+      <Seo title={seo.title} description={seo.description} path="/services" />
       {/* ── Page header ─────────────────────────────────────────────── */}
       <section className="pt-32 pb-16 bg-cream">
         <div className="container-site text-center">

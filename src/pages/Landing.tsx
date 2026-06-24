@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, MapPin } from 'lucide-react';
-import { usePrefersReducedMotion, useDocumentTitle } from '../lib/hooks';
+import { usePrefersReducedMotion } from '../lib/hooks';
+import Seo from '../components/Seo';
+import { seoForPath } from '../lib/seo';
 
 /* ─── Imagery ────────────────────────────────────────────────────────────────
  * Hero + community use the on-brand reference shots: adult women riding together
@@ -13,7 +15,7 @@ const SETTING_IMG = 'https://images.pexels.com/photos/1996337/pexels-photo-19963
 const CARE_IMG = 'https://images.pexels.com/photos/635499/pexels-photo-635499.jpeg?auto=compress&cs=tinysrgb&w=900&q=80';
 
 export default function Landing() {
-  useDocumentTitle();
+  const seo = seoForPath('/')!;
   const heroRef = useRef<HTMLDivElement>(null);
   const reducedMotion = usePrefersReducedMotion();
 
@@ -33,6 +35,7 @@ export default function Landing() {
 
   return (
     <>
+      <Seo title={seo.title} description={seo.description} path="/" />
       {/* ── Hero: the rider community, and nothing else ──────────────── */}
       <section className="relative h-screen min-h-[600px] overflow-hidden flex items-end sm:items-center">
         <div
