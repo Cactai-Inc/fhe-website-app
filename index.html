@@ -4,6 +4,9 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Preload the landing hero (LCP image) so it starts downloading before the
+         JS bundle parses, rather than only after React renders the page. -->
+    <link rel="preload" as="image" href="/reference-images/Gemini_Generated_Image_f3u06df3u06df3u0.png" fetchpriority="high" />
     <title>French Heritage Equestrian — Hunter/Jumper Training & Lessons | Coastal San Diego</title>
     <meta name="description" content="A family-run hunter/jumper program rooted in classical European training. Lessons, horse care, and acquisition support, set along the coastal trails of San Diego at Carmel Creek Ranch." />
     <meta property="og:type" content="website" />

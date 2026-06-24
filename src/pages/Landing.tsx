@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, MapPin } from 'lucide-react';
 import { usePrefersReducedMotion, useDocumentTitle } from '../lib/hooks';
@@ -14,8 +14,15 @@ const CARE_IMG = 'https://images.pexels.com/photos/635499/pexels-photo-635499.jp
 
 export default function Landing() {
   useDocumentTitle();
-  const heroRef = useRef<HTMLDivElement>(null);
+  const heroRef = useRef<HTMLImageElement>(null);
   const reducedMotion = usePrefersReducedMotion();
+  const [heroLoaded, setHeroLoaded] = useState(false);
+
+  // If the hero image is already cached, `onLoad` may have fired before React
+  // attached the handler — reveal it so it never sticks at opacity-0.
+  useEffect(() => {
+    if (heroRef.current?.complete) setHeroLoaded(true);
+  }, []);
 
   // Subtle hero parallax — disabled entirely under reduced-motion.
   useEffect(() => {
@@ -34,15 +41,21 @@ export default function Landing() {
   return (
     <>
       {/* ── Hero: the rider community, and nothing else ──────────────── */}
-      <section className="relative h-screen min-h-[600px] overflow-hidden flex items-end sm:items-center">
-        <div
+      <section className="relative h-screen min-h-[600px] overflow-hidden flex items-end sm:items-center bg-green-950">
+        {/* Real <img> (not a CSS background) so it can be preloaded and fetched
+            at high priority as the LCP element — fixes the blank/dark hero on
+            first load. It fades in once decoded to avoid a hard pop-in. */}
+        <img
           ref={heroRef}
-          className="absolute inset-0 scale-110"
-          style={{
-            backgroundImage: `url('${HERO_IMG}')`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center 35%',
-          }}
+          src={HERO_IMG}
+          alt="Women riding together at Carmel Creek Ranch in warm coastal morning light"
+          fetchPriority="high"
+          decoding="async"
+          onLoad={() => setHeroLoaded(true)}
+          className={`absolute inset-0 w-full h-full object-cover scale-110 transition-opacity duration-700 ${
+            heroLoaded ? 'opacity-100' : 'opacity-0'
+          }`}
+          style={{ objectPosition: 'center 35%' }}
         />
         {/* Soft, warm overlay — lighter than before so the light leads */}
         <div className="absolute inset-0 bg-gradient-to-t from-green-950/75 via-green-900/25 to-green-900/10" />
