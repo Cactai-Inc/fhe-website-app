@@ -2,7 +2,7 @@
 
 Welcome to French Heritage Equestrian, a family-run hunter/jumper community at Carmel Creek Ranch in coastal San Diego.
 
-A vibrant, community for horse owners and riders. This project features a full client platform: accounts,invitations, a request flow, an authenticated purchase flow, self-authored booking with slot holds, signable documents, and Zelle + Stripe payments.
+A vibrant, community for horse owners and riders. This project features a full client platform: accounts, invitations, a request flow, an authenticated purchase flow, self-authored booking with slot holds, signable documents, and Zelle + Stripe payments.
 
 > **Setup & operations:** see [SETUP.md](./SETUP.md) for the external wiring
 > (Supabase migrations, Stripe, Vercel, Google Workspace) needed to go live.
