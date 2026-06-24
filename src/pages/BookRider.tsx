@@ -20,7 +20,7 @@ const STEPS = [
   { label: 'Review & Continue' },
 ];
 
-const SEO = seoForPath('/book/rider')!;
+const SEO = seoForPath('/lessons')!;
 
 export default function BookRider() {
   const [step, setStep] = useState(0);
@@ -56,13 +56,13 @@ export default function BookRider() {
       setStep((s) => s - 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
-      navigate('/services');
+      navigate('/ride');
     }
   }
 
   return (
     <>
-      <Seo title={SEO.title} description={SEO.description} path="/book/rider" service={SEO.service} />
+      <Seo title={SEO.title} description={SEO.description} path="/lessons" service={SEO.service} />
     <div className="min-h-screen bg-cream pt-24 pb-20">
       <div className="container-site max-w-3xl">
 

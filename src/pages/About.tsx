@@ -75,7 +75,7 @@ export default function About() {
                 Europe, with a child who loved horses and never stopped — riding, competing, and
                 learning the classical hunter/jumper tradition from the people who do it best. That
                 foundation came with us across an ocean and a few decades, and it is what we bring
-                home to Carmel Creek Ranch every morning.
+                home to Carmel Creek Ranch every day.
               </p>
               <p>
                 We came to San Diego for the same reasons you might love it. The coast. The light.

@@ -7,7 +7,12 @@ import Layout from './components/layout/Layout';
 import AppLayout from './components/app/AppLayout';
 import Landing from './pages/Landing';
 import About from './pages/About';
-import Services from './pages/Services';
+import RiderEntrance from './pages/RiderEntrance';
+import Contact from './pages/Contact';
+import Lessons from './pages/Lessons';
+import MembershipFunnel from './pages/MembershipFunnel';
+import Gift from './pages/Gift';
+import Redeem from './pages/Redeem';
 import BookRider from './pages/BookRider';
 import BookHorse from './pages/BookHorse';
 import BookSupport from './pages/BookSupport';
@@ -43,7 +48,17 @@ export function AppRoutes() {
             <Route element={<Layout />}>
               <Route path="/" element={<Landing />} />
               <Route path="/about" element={<About />} />
-              <Route path="/services" element={<Services />} />
+              <Route path="/contact" element={<Contact />} />
+              {/* Rider entrance — what "Come ride with us" opens into */}
+              <Route path="/ride" element={<RiderEntrance />} />
+              {/* Self-contained funnels, each its own page */}
+              <Route path="/lessons" element={<Lessons />} />
+              <Route path="/membership" element={<MembershipFunnel />} />
+              <Route path="/horse" element={<BookHorse />} />
+              <Route path="/acquisition" element={<BookSupport />} />
+              {/* Gifting (purchase-as-gift keeps marketing chrome) */}
+              <Route path="/gift" element={<Gift />} />
+              {/* Legacy paths still resolve */}
               <Route path="/book/rider" element={<BookRider />} />
               <Route path="/book/horse" element={<BookHorse />} />
               <Route path="/book/support" element={<BookSupport />} />
@@ -56,6 +71,9 @@ export function AppRoutes() {
               <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
               <Route path="/order/:id" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
             </Route>
+
+            {/* Gift reveal — full-screen immersive, no site chrome */}
+            <Route path="/redeem" element={<Redeem />} />
 
             {/* Member community app (its own chrome, member-gated) */}
             <Route

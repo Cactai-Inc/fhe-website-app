@@ -14,7 +14,7 @@ const STEPS = [
   { label: 'Review & Continue' },
 ];
 
-const SEO = seoForPath('/book/horse')!;
+const SEO = seoForPath('/horse')!;
 
 export default function BookHorse() {
   const [step, setStep] = useState(0);
@@ -45,13 +45,13 @@ export default function BookHorse() {
       setStep((s) => s - 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
-      navigate('/services');
+      navigate('/');
     }
   }
 
   return (
     <>
-      <Seo title={SEO.title} description={SEO.description} path="/book/horse" service={SEO.service} />
+      <Seo title={SEO.title} description={SEO.description} path="/horse" service={SEO.service} />
     <div className="min-h-screen bg-cream pt-24 pb-20">
       <div className="container-site max-w-3xl">
 

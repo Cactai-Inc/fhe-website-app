@@ -17,8 +17,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
 const distDir = resolve(root, 'dist');
 
-// Routes to prerender — must match src/lib/seo.ts ROUTE_SEO paths.
-const ROUTES = ['/', '/about', '/services', '/book/rider', '/book/horse', '/book/support'];
+// Routes to prerender — must match the indexable paths in src/lib/seo.ts.
+const ROUTES = ['/', '/about', '/ride', '/membership', '/lessons', '/horse', '/acquisition'];
 
 async function main() {
   // Build the SSR entry to a temporary out dir. Bundle react-helmet-async (CJS)

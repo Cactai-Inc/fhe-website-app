@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, ShoppingBag, UserRound } from 'lucide-react';
+import { Menu, X, ShoppingBag } from 'lucide-react';
 import { useCart } from '../../contexts/CartContext';
-import { useAuth } from '../../contexts/AuthContext';
 
+// Lean public nav. No sign-in here (invite-only — members reach it via the footer).
 const NAV_LINKS = [
   { label: 'Our Story', href: '/about' },
-  { label: 'Ways to Ride', href: '/services' },
+  { label: 'Horse Care', href: '/horse' },
+  { label: 'Acquisition', href: '/acquisition' },
 ];
 
 export default function Header() {
@@ -14,7 +15,6 @@ export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
   const { itemCount } = useCart();
-  const { user } = useAuth();
   const isHome = location.pathname === '/';
   const menuButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -26,7 +26,6 @@ export default function Header() {
 
   useEffect(() => setOpen(false), [location]);
 
-  // Close the mobile menu on Escape and return focus to the toggle.
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -100,23 +99,23 @@ export default function Header() {
         <div className="flex items-center gap-4">
           {cartLink('hidden sm:flex')}
 
+          {/* Secondary contact link */}
           <Link
-            to={user ? '/app' : '/login'}
-            className="hidden sm:inline-flex items-center gap-1.5 text-xs font-sans tracking-widest uppercase text-white/80 hover:text-white transition-colors focus-ring-dark"
-            aria-label={user ? 'Your account' : 'Sign in'}
+            to="/contact"
+            className="hidden md:inline-flex text-xs font-sans tracking-widest uppercase text-white/80 hover:text-white transition-colors focus-ring-dark"
           >
-            <UserRound size={16} aria-hidden="true" />
-            {user ? 'Account' : 'Sign In'}
+            Contact
           </Link>
 
+          {/* Primary CTA — Book a Lesson is the lowest-bar entry point */}
           <Link
-            to="/services"
+            to="/lessons"
             className="hidden sm:inline-flex items-center gap-2 px-5 py-2 border border-gold-600/60 text-white text-xs font-sans tracking-widest uppercase transition-all duration-200 hover:bg-gold-600 hover:border-gold-600 hover:text-green-900 focus-ring-dark"
           >
-            Say Hello
+            Book a Lesson
           </Link>
 
-          {/* Mobile cart affordance (visible below sm) */}
+          {/* Mobile cart affordance */}
           {cartLink('flex sm:hidden')}
 
           {/* Mobile menu button */}
@@ -148,13 +147,13 @@ export default function Header() {
               </Link>
             ))}
             <Link
-              to={user ? '/app' : '/login'}
+              to="/contact"
               className="text-sm font-sans tracking-widest uppercase text-white/80 hover:text-white transition-colors focus-ring-dark"
             >
-              {user ? 'Account' : 'Sign In'}
+              Contact
             </Link>
-            <Link to="/services" className="mt-2 btn-ghost-white text-center justify-center">
-              Say Hello
+            <Link to="/lessons" className="mt-2 btn-ghost-white text-center justify-center">
+              Book a Lesson
             </Link>
           </nav>
         </div>

@@ -63,24 +63,41 @@ export const ROUTE_SEO: RouteSeo[] = [
     priority: 0.7,
   },
   {
-    path: '/services',
-    title: 'Ways to Ride — Lessons, Horse Care & Acquisition | French Heritage Equestrian',
+    path: '/ride',
+    title: 'Come Ride With Us — Lessons & Rider Community | French Heritage Equestrian',
     description:
-      'Riding lessons and hunter/jumper training, mobile horse training and care, and expert horse acquisition support in San Diego. Find the way to ride that fits you.',
+      'A community of women who ride for the love of it, in coastal San Diego. Classical hunter/jumper riding — join the rider community or book individual lessons.',
     indexable: true,
     priority: 0.9,
   },
   {
-    path: '/book/rider',
-    title: 'Riding Lessons & Hunter/Jumper Training | French Heritage Equestrian, San Diego',
+    path: '/contact',
+    title: 'Contact — French Heritage Equestrian | Coastal San Diego',
     description:
-      'Private riding lessons, hunter/jumper training, and horsemanship classes for adult amateurs and returning riders at Carmel Creek Ranch, coastal San Diego.',
-    service: 'Hunter/Jumper Riding Lessons & Training',
+      'Reach French Heritage Equestrian at Carmel Creek Ranch, San Diego. Call, email, or send a note — we respond the same day.',
+    indexable: false,
+    priority: 0.3,
+  },
+  {
+    path: '/membership',
+    title: 'Rider Community Membership | French Heritage Equestrian, San Diego',
+    description:
+      'Join the French Heritage Equestrian rider community — group rides, the people, and a regular riding rhythm. Membership is by invitation; reach out to learn how it works.',
+    service: 'Rider Community Membership',
     indexable: true,
     priority: 0.8,
   },
   {
-    path: '/book/horse',
+    path: '/lessons',
+    title: 'Riding Lessons — Single & Multi-Pack | French Heritage Equestrian, San Diego',
+    description:
+      'Private hunter/jumper riding lessons in coastal San Diego — book a single lesson or a multi-pack. Classical instruction for returning and adult-amateur riders.',
+    service: 'Private Riding Lessons',
+    indexable: true,
+    priority: 0.8,
+  },
+  {
+    path: '/horse',
     title: 'Mobile Horse Training, Turnout & Care | French Heritage Equestrian, San Diego',
     description:
       'Classical, trust-based horse training, riding, turnout, and functional clipping — brought to where your horse lives across San Diego North County.',
@@ -89,7 +106,7 @@ export const ROUTE_SEO: RouteSeo[] = [
     priority: 0.8,
   },
   {
-    path: '/book/support',
+    path: '/acquisition',
     title: 'Horse Search, Evaluation & Brokering | French Heritage Equestrian, San Diego',
     description:
       'Expert hunter/jumper horse acquisition: search, pre-purchase and lease evaluation, and full brokering, drawn from years in the discipline. Serving San Diego.',

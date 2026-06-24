@@ -13,10 +13,11 @@ const distDir = resolve(root, 'dist');
 const SITE_URL = 'https://www.frenchheritageequestrian.com';
 const routes = [
   { path: '/', priority: 1.0 },
-  { path: '/services', priority: 0.9 },
-  { path: '/book/rider', priority: 0.8 },
-  { path: '/book/horse', priority: 0.8 },
-  { path: '/book/support', priority: 0.8 },
+  { path: '/ride', priority: 0.9 },
+  { path: '/membership', priority: 0.8 },
+  { path: '/lessons', priority: 0.8 },
+  { path: '/horse', priority: 0.8 },
+  { path: '/acquisition', priority: 0.8 },
   { path: '/about', priority: 0.7 },
 ];
 

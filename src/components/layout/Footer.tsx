@@ -95,9 +95,16 @@ export default function Footer() {
           <p className="text-xs font-sans text-white/[0.6]">
             &copy; {new Date().getFullYear()} French Heritage Equestrian. All rights reserved.
           </p>
-          <p className="text-xs font-sans text-white/[0.6]">
-            San Diego, California
-          </p>
+          <div className="flex items-center gap-5">
+            <p className="text-xs font-sans text-white/[0.6]">San Diego, California</p>
+            {/* Discreet member entrance — invite-only, intentionally low-key. */}
+            <Link
+              to="/login"
+              className="text-xs font-sans text-white/[0.45] hover:text-white/80 transition-colors focus-ring-dark"
+            >
+              Member sign-in
+            </Link>
+          </div>
         </div>
       </div>
 
