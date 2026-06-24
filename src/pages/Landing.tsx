@@ -11,7 +11,7 @@ import { seoForPath } from '../lib/seo';
  * Video: drop a real clip at /public/hero.mp4 (+ /hero.webm) and a poster at
  * /public/hero-poster.jpg. Until then the poster image carries the hero.
  */
-const HERO_POSTER = '/reference-images/Gemini_Generated_Image_f3u06df3u06df3u0.png';
+const HERO_POSTER = '/reference-images/hero.png';
 const HERO_MP4 = '/hero.mp4';
 const HERO_WEBM = '/hero.webm';
 
@@ -56,9 +56,9 @@ export default function Landing() {
             <div className="max-w-2xl">
               <p className="eyebrow-on-dark mb-6 animate-fade-up [text-shadow:0_1px_12px_rgba(0,0,0,0.5)]">Carmel Creek Ranch · Coastal San Diego</p>
               <h1 className="heading-display text-white mb-10 animate-fade-up delay-100 text-[clamp(2.75rem,7vw,5.25rem)] [text-shadow:0_2px_20px_rgba(0,0,0,0.45)]">
-                California days
+                Join Our Riding Community
                 <br />
-                <em className="text-gold-300 not-italic">were made for this.</em>
+                <em className="text-gold-300 not-italic">California Days Are Made For This</em>
               </h1>
 
               {/* The invitation — an opening of the door, not a button */}

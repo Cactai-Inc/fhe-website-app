@@ -21,3 +21,7 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# Video-editing project bundles & large hero media (host outside git)
+*.fcpbundle/
+public/hero.mp4
