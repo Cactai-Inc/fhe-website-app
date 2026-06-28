@@ -13,8 +13,8 @@ import { seoForPath } from '../lib/seo';
  *
  * Video: drop /public/ride.mp4 (+ /ride.webm) and /public/ride-poster.jpg later.
  */
-const RIDE_POSTER = '/reference-images/Gemini_Generated_Image_f3u06df3u06df3u0.png';
-const COMMUNITY_IMG = '/reference-images/Gemini_Generated_Image_n7l8hpn7l8hpn7l8.png';
+const RIDE_POSTER = '/reference-images/Hero_A.png';
+const COMMUNITY_IMG = '/reference-images/Hero_B.png';
 const SETTING_IMG = 'https://images.pexels.com/photos/1996337/pexels-photo-1996337.jpeg?auto=compress&cs=tinysrgb&w=1920&q=80';
 
 export default function RiderEntrance() {

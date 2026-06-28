@@ -30,7 +30,7 @@ export const BUSINESS = {
   ],
   sameAs: [] as string[], // add social profile URLs when available
   priceRange: '$$$',
-  image: `${SITE_URL}/reference-images/Gemini_Generated_Image_f3u06df3u06df3u0.png`,
+  image: `${SITE_URL}/reference-images/Hero_A.png`,
   logo: `${SITE_URL}/favicon.svg`,
 } as const;
 

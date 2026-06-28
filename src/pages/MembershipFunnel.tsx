@@ -7,7 +7,7 @@ import { MEMBERSHIP_PLANS, MEMBERSHIP_INCLUDED } from '../lib/catalog';
 import Seo from '../components/Seo';
 import { seoForPath } from '../lib/seo';
 
-const MEMBERSHIP_POSTER = '/reference-images/Gemini_Generated_Image_n7l8hpn7l8hpn7l8.png';
+const MEMBERSHIP_POSTER = '/reference-images/Hero_B.png';
 const usd = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(n);
 
 export default function MembershipFunnel() {

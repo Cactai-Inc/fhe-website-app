@@ -11,7 +11,7 @@ import { seoForPath } from '../lib/seo';
  * Video: drop a real clip at /public/hero.mp4 (+ /hero.webm) and a poster at
  * /public/hero-poster.jpg. Until then the poster image carries the hero.
  */
-const HERO_POSTER = '/reference-images/hero.png';
+const HERO_POSTER = '/reference-images/Hero_A.png';
 const HERO_MP4 = '/hero.mp4';
 const HERO_WEBM = '/hero.webm';
 

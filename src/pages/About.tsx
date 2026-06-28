@@ -4,7 +4,7 @@ import Seo from '../components/Seo';
 import { seoForPath } from '../lib/seo';
 
 const FACILITY_IMG = 'https://images.pexels.com/photos/1996337/pexels-photo-1996337.jpeg?auto=compress&cs=tinysrgb&w=1920&q=80';
-const PORTRAIT_IMG = '/reference-images/Gemini_Generated_Image_n7l8hpn7l8hpn7l8.png';
+const PORTRAIT_IMG = '/reference-images/Hero_B.png';
 const HORSE_IMG    = 'https://images.pexels.com/photos/635499/pexels-photo-635499.jpeg?auto=compress&cs=tinysrgb&w=900&q=80';
 
 const PRINCIPLES = [

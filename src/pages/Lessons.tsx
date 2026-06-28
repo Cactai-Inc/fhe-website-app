@@ -7,7 +7,7 @@ import { LESSON_PACKS, LESSON_ADDONS } from '../lib/catalog';
 import Seo from '../components/Seo';
 import { seoForPath } from '../lib/seo';
 
-const LESSON_POSTER = '/reference-images/Gemini_Generated_Image_f3u06df3u06df3u0.png';
+const LESSON_POSTER = '/reference-images/Hero_A.png';
 const usd = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(n);
 
 export default function Lessons() {
