@@ -120,7 +120,7 @@ Restrictions:
 
 LEASE PAYMENT
 
-Lease Fee:
+Lease Fee: {{TXN.LEASE_FEE}}
 
 Payment Schedule: {{TXN.PAYMENT_SCHEDULE}}
 

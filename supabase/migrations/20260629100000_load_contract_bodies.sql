@@ -1482,7 +1482,7 @@ Restrictions:
 
 LEASE PAYMENT
 
-Lease Fee:
+Lease Fee: {{TXN.LEASE_FEE}}
 
 Payment Schedule: {{TXN.PAYMENT_SCHEDULE}}
 
@@ -1725,6 +1725,8 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   SELECT id, 'HORSE', 'CURRENT_LOCATION', '{{HORSE.CURRENT_LOCATION}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
   UNION ALL
   SELECT id, 'TXN', 'LEASE_TERM', '{{TXN.LEASE_TERM}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
+  UNION ALL
+  SELECT id, 'TXN', 'LEASE_FEE', '{{TXN.LEASE_FEE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
   UNION ALL
   SELECT id, 'TXN', 'PAYMENT_SCHEDULE', '{{TXN.PAYMENT_SCHEDULE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
   UNION ALL
