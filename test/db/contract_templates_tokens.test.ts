@@ -48,15 +48,15 @@ describe('contract_templates — the 17 canonical contracts', () => {
     ].sort());
   });
 
-  it('every template names FHE plus at least one counterparty, and bodies await Phase 2', async () => {
+  it('every template names FHE plus at least one counterparty', async () => {
     await h.asSuperuser();
-    const rows = await h.q<{ template_key: string; party_namespaces: string[]; body: string | null }>(
-      `select template_key, party_namespaces, body from contract_templates`);
+    const rows = await h.q<{ template_key: string; party_namespaces: string[] }>(
+      `select template_key, party_namespaces from contract_templates`);
     for (const r of rows) {
       expect(r.party_namespaces, r.template_key).toContain('FHE');
       expect(r.party_namespaces.length, r.template_key).toBeGreaterThanOrEqual(2);
-      expect(r.body, `${r.template_key} body loaded in Phase 2`).toBeNull();
     }
+    // body loading is covered by contract_bodies_loaded.test.ts (Phase 2 / migration 17)
   });
 
   it('service-specific templates reference a real catalog code', async () => {

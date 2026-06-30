@@ -1,0 +1,78 @@
+/**
+ * Phase 2 — contract bodies loaded into the database (migration 17).
+ *
+ * Verifies the generated loader:
+ *  - the 14 source-backed templates have a body; the 3 without a source doc are NULL,
+ *  - per-template template_tokens are derived (concrete tokens linked to template_id),
+ *  - derivation is faithful both ways: every derived token appears in its body, and
+ *    every {{token}} in a body has a derived row.
+ */
+import { beforeAll, afterAll, describe, expect, it } from 'vitest';
+import { createTestDb, type TestDb } from './harness';
+
+const WITH_BODY = [
+  'HORSE_PURCHASE_SALE', 'HORSE_SALE_TRANSFER', 'HORSE_LEASE', 'HORSE_REPRESENTATION',
+  'HORSE_SEARCH_RETAINER', 'HORSE_EVALUATION', 'HORSE_TRAINING', 'HORSE_EXERCISE',
+  'HORSEMANSHIP_TRAINING', 'RIDER_LESSON_JUMPER', 'MINOR_RIDER', 'HORSE_EMERGENCY_VET',
+  'HUMAN_EMERGENCY_MEDICAL', 'FACILITY_RULES',
+];
+const NO_SOURCE = ['INDEPENDENT_CONTRACTOR', 'MEDIA_RELEASE', 'FACILITY_LICENSE'];
+
+let h: TestDb;
+beforeAll(async () => {
+  h = await createTestDb();
+  await h.asSuperuser();
+});
+afterAll(async () => {
+  await h?.close();
+});
+
+describe('bodies loaded', () => {
+  it('the 14 source-backed templates have a body; the 3 without a source are NULL', async () => {
+    const rows = await h.q<{ template_key: string; has_body: boolean }>(
+      `select template_key, (body is not null) as has_body from contract_templates`);
+    const map = Object.fromEntries(rows.map((r) => [r.template_key, r.has_body]));
+    for (const k of WITH_BODY) expect(map[k], `${k} should have a body`).toBe(true);
+    for (const k of NO_SOURCE) expect(map[k], `${k} should be NULL`).toBe(false);
+  });
+
+  it('signature tokens are left in the body unmerged (rendered by signing)', async () => {
+    const body = (await h.q<{ body: string }>(
+      `select body from contract_templates where template_key='HORSE_PURCHASE_SALE'`))[0].body;
+    expect(body).toContain('{{BUYER.FULL_NAME}}');
+    expect(body).toContain('{{SIG.SELLER.NAME}}');
+  });
+});
+
+describe('per-template tokens derived', () => {
+  it('records each contract’s concrete party tokens linked to its template', async () => {
+    const rows = await h.q<{ token: string }>(
+      `select tt.token from template_tokens tt
+       join contract_templates ct on ct.id = tt.template_id
+       where ct.template_key = 'HORSE_PURCHASE_SALE'`);
+    const tokens = new Set(rows.map((r) => r.token));
+    expect(tokens.has('{{BUYER.FULL_NAME}}')).toBe(true);
+    expect(tokens.has('{{SELLER.FULL_NAME}}')).toBe(true);
+    expect(tokens.has('{{HORSE.BREED}}')).toBe(true);
+  });
+
+  it('derived tokens are faithful both ways for every loaded body', async () => {
+    const templates = await h.q<{ id: string; template_key: string; body: string }>(
+      `select id, template_key, body from contract_templates where body is not null`);
+    for (const t of templates) {
+      const inBody = new Set(t.body.match(/\{\{[A-Z0-9_.]+\}\}/g) ?? []);
+      const derived = new Set(
+        (await h.q<{ token: string }>(`select token from template_tokens where template_id=$1`, [t.id]))
+          .map((r) => r.token));
+      // every derived token is actually in the body
+      for (const tok of derived) expect(inBody.has(tok), `${t.template_key}: ${tok} not in body`).toBe(true);
+      // every token in the body was derived
+      for (const tok of inBody) expect(derived.has(tok), `${t.template_key}: ${tok} not derived`).toBe(true);
+    }
+  });
+
+  it('left the global dictionary rows untouched', async () => {
+    const n = (await h.q<{ c: string }>(`select count(*) c from template_tokens where template_id is null`))[0].c;
+    expect(Number(n)).toBeGreaterThanOrEqual(40);
+  });
+});
