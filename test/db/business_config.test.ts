@@ -31,13 +31,14 @@ describe('migration applies additively', () => {
   });
 });
 
-describe('singleton, blank at launch', () => {
-  it('ships exactly one row with the commercial blanks unset', async () => {
+describe('singleton; identity seeded, commercial blanks unset', () => {
+  it('ships exactly one row: identity from the brand (migration 20), pricing still blank', async () => {
     await h.asSuperuser();
     const rows = await h.q<{ legal_entity_name: string | null; commission_min: string | null; protection_period: string | null }>(
       `select legal_entity_name, commission_min, protection_period from business_config`);
     expect(rows).toHaveLength(1);
-    expect(rows[0].legal_entity_name).toBeNull();
+    // identity seeded from src/lib/brand.ts; commercial/pricing stay NULL (Rates Card, not the website)
+    expect(rows[0].legal_entity_name).toBe('French Heritage Equestrian');
     expect(rows[0].commission_min).toBeNull();
     expect(rows[0].protection_period).toBeNull();
   });
