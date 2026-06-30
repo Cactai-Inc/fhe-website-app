@@ -92,8 +92,10 @@ Replace PARTY with the namespace (BUYER, SELLER, CLIENT, etc.).
 | {{TXN.BALANCE_DUE}} | computed |
 | {{TXN.PAYMENT_TERMS}} | transactions.payment_terms |
 | {{TXN.PAYMENT_SCHEDULE}} | transactions.payment_schedule |
-| {{TXN.COMMISSION_RATE}} | pricing config (blank — Master Field list) |
-| {{TXN.COMMISSION_MIN}} | pricing config (blank) |
+| {{TXN.COMMISSION_RATE}} | pricing config (blank — Master Field list); per-deal override in Part B |
+| {{TXN.COMMISSION_MIN}} | pricing config (blank); minimum-commission floor |
+| {{TXN.RETAINER_FEE}} | transactions.retainer_fee (Part B engagement form) |
+| {{TXN.SERVICE_FEE}} | transactions.service_fee — flat placement/success/representation fee; the flat alternative to TXN.COMMISSION_RATE |
 | {{TXN.LEASE_TERM}} | transactions.lease_term |
 | {{TXN.TRIAL_PERIOD}} | transactions.trial_period |
 | {{TXN.DELIVERY_DATE}} | transactions.delivery_date |
