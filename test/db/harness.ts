@@ -67,6 +67,29 @@ const BOOTSTRAP = /* sql */ `
   create or replace function auth.email() returns text language sql stable as $fn$
     select nullif(current_setting('request.jwt.claim.email', true), '')
   $fn$;
+
+  -- The storage schema Supabase owns (minimal emulation so storage RLS policies
+  -- can be created and exercised: buckets + objects, RLS on objects).
+  create schema if not exists storage;
+  grant usage on schema storage to anon, authenticated, service_role;
+
+  create table if not exists storage.buckets (
+    id         text primary key,
+    name       text,
+    public     boolean not null default false,
+    created_at timestamptz not null default now()
+  );
+
+  create table if not exists storage.objects (
+    id         uuid primary key default gen_random_uuid(),
+    bucket_id  text references storage.buckets(id),
+    name       text not null,
+    owner      uuid,
+    created_at timestamptz not null default now()
+  );
+
+  grant all on storage.buckets, storage.objects to anon, authenticated, service_role;
+  alter table storage.objects enable row level security;
 `;
 
 export interface TestDb {
