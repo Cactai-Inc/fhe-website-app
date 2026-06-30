@@ -2,7 +2,7 @@ MINOR RIDER AGREEMENT, PARENTAL CONSENT, ASSUMPTION OF RISK, LIABILITY RELEASE, 
 
 This Minor Rider Agreement, Parental Consent, Assumption of Risk, Liability Release, Medical Authorization, and Indemnity Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
 
-French Heritage Equestrian, a California business operating under a fictitious business name, with a mailing address of 752 Windemere Ct., San Diego, California 92109 (“Instructor” or “FHE”),
+French Heritage Equestrian (“Instructor” or “FHE”),
 
 and
 

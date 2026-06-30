@@ -2,7 +2,7 @@ HORSE LEASE REPRESENTATION AND ACQUISITION SERVICES AGREEMENT
 
 This Horse Lease Representation and Acquisition Services Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
 
-French Heritage Equestrian, a California business operating under a fictitious business name, with a mailing address of 752 Windemere Ct., San Diego, California 92109 (“FHE” or “Representative”),
+French Heritage Equestrian (“FHE” or “Representative”),
 
 and
 

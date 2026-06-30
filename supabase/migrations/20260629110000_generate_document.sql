@@ -17,7 +17,9 @@
       modeled yet → blank.
     - DOC.UUID/ID/GENERATED_DATE → the freshly-created documents row + now().
       DOC.EFFECTIVE_DATE is set at execution, not generation → blank.
-    - TXN.* → transactions table does not exist yet → blank (additive upgrade later).
+    - TXN.COMMISSION_RATE/MIN → business_config (rate chosen by the engagement's
+      service type). Other TXN.* (price/deposit/delivery) → transactions table,
+      not modeled yet → blank (additive upgrade later).
     - {{SIG.*}} (kind='signature') → LEFT IN PLACE; the signing flow fills them.
 
   Tokens are replaced from the per-template template_tokens rows derived in
@@ -46,6 +48,7 @@ DECLARE
   v_doc_code text;
   v_body    text;
   v_val     text;
+  v_rate    numeric;
   r         record;
   -- party lookup scratch
   v_fn text; v_ph text; v_em text; v_ad text; v_ti text; v_re text;
@@ -128,7 +131,21 @@ BEGIN
         ELSE '' END;  -- brand phone/email not modeled yet
 
     ELSIF r.namespace = 'TXN' THEN
-      v_val := '';  -- transactions table not created yet
+      -- commission rate/min are config-sourced (by transaction type); the rest
+      -- (price/deposit/delivery) come from the transactions table, not modeled yet.
+      IF r.field = 'COMMISSION_RATE' THEN
+        v_rate := CASE
+          WHEN v_eng.service_type ILIKE '%SALE%'  THEN v_cfg.commission_sale_rate
+          WHEN v_eng.service_type ILIKE '%LEASE%' THEN v_cfg.commission_lease_rate
+          ELSE v_cfg.commission_purchase_rate END;
+        v_val := CASE WHEN v_rate IS NULL THEN ''
+                      ELSE rtrim(rtrim(to_char(v_rate, 'FM999990.00'), '0'), '.') || '%' END;
+      ELSIF r.field = 'COMMISSION_MIN' THEN
+        v_val := CASE WHEN v_cfg.commission_min IS NULL THEN ''
+                      ELSE '$' || to_char(v_cfg.commission_min, 'FM999999990') END;
+      ELSE
+        v_val := '';
+      END IF;
 
     ELSE
       -- party namespace → engagement_parties.party_role → contacts

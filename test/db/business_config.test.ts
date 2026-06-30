@@ -32,15 +32,14 @@ describe('migration applies additively', () => {
 });
 
 describe('singleton; identity seeded, commercial blanks unset', () => {
-  it('ships exactly one row: identity from the brand (migration 20), pricing still blank', async () => {
+  it('ships exactly one row: name + pricing seeded (migrations 20/21), protection window still blank', async () => {
     await h.asSuperuser();
     const rows = await h.q<{ legal_entity_name: string | null; commission_min: string | null; protection_period: string | null }>(
       `select legal_entity_name, commission_min, protection_period from business_config`);
     expect(rows).toHaveLength(1);
-    // identity seeded from src/lib/brand.ts; commercial/pricing stay NULL (Rates Card, not the website)
     expect(rows[0].legal_entity_name).toBe('French Heritage Equestrian');
-    expect(rows[0].commission_min).toBeNull();
-    expect(rows[0].protection_period).toBeNull();
+    expect(Number(rows[0].commission_min)).toBe(500); // owner-supplied $500 minimum
+    expect(rows[0].protection_period).toBeNull();      // not supplied yet
   });
 
   it('refuses a second row', async () => {
@@ -67,10 +66,10 @@ describe('RLS — admin only, and changes are audited', () => {
     // them out → zero rows affected, no data changed)
     await h.asUser(plainUid);
     expect(await h.q(`select id from business_config`)).toHaveLength(0);
-    await h.q(`update business_config set commission_min=500`); // affects 0 rows
+    await h.q(`update business_config set commission_min=9999`); // affects 0 rows
     await h.asSuperuser();
-    expect((await h.q<{ commission_min: string | null }>(
-      `select commission_min from business_config`))[0].commission_min).toBeNull();
+    expect(Number((await h.q<{ commission_min: string }>(
+      `select commission_min from business_config`))[0].commission_min)).toBe(500); // seed unchanged
 
     // admin: reads and updates
     await h.asUser(adminUid);

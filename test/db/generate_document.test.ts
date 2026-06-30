@@ -53,8 +53,8 @@ beforeEach(async () => {
   await h.q(`insert into engagement_parties (engagement_id, contact_id, party_role, is_signer, signer_order)
              values ($1,$2,'BUYER',true,1),($1,$3,'SELLER',true,2)`, [engId, buyer, seller]);
 
-  await h.q(`insert into business_config (legal_entity_name, signatory_name, signatory_title, business_address)
-             values ('FHE LLC','A. Owner','Managing Member','752 Windemere Ct., San Diego, CA 92109')`);
+  await h.q(`insert into business_config (legal_entity_name, signatory_name, signatory_title)
+             values ('French Heritage Equestrian','A. Owner','Managing Member')`);
 });
 
 describe('generate_document — merge', () => {

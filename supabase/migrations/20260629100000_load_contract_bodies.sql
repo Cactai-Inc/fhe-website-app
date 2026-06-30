@@ -19,7 +19,7 @@ UPDATE contract_templates SET body = $body$FACILITY RULES, SAFETY ACKNOWLEDGMENT
 
 This Facility Rules, Safety Acknowledgment, and Equestrian Conduct Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
 
-French Heritage Equestrian, a California business operating under a fictitious business name, with a mailing address of 752 Windemere Ct., San Diego, California 92109 (“FHE”),
+French Heritage Equestrian (“FHE”),
 
 and
 
@@ -459,7 +459,7 @@ UPDATE contract_templates SET body = $body$EMERGENCY VETERINARY AUTHORIZATION, E
 
 This Emergency Veterinary Authorization, Equine Medical Care Directive, and Owner Authorization Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
 
-French Heritage Equestrian, a California business operating under a fictitious business name, with a mailing address of 752 Windemere Ct., San Diego, California 92109 (“FHE”),
+French Heritage Equestrian (“FHE”),
 
 and
 
@@ -706,7 +706,7 @@ UPDATE contract_templates SET body = $body$PRE-PURCHASE HORSE EVALUATION AND CON
 
 This Pre-Purchase Horse Evaluation and Consulting Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
 
-French Heritage Equestrian, a California business operating under a fictitious business name, with a mailing address of 752 Windemere Ct., San Diego, California 92109 (“FHE” or “Evaluator”),
+French Heritage Equestrian (“FHE” or “Evaluator”),
 
 and
 
@@ -1021,7 +1021,7 @@ UPDATE contract_templates SET body = $body$HORSE EXERCISE SERVICES AGREEMENT
 
 This Horse Exercise Services Agreement ("Agreement") is entered into as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by and between:
 
-French Heritage Equestrian, a California business operating under a fictitious business name, with a mailing address of 752 Windemere Ct., San Diego, California 92109 ("FHE" or "Service Provider"),
+French Heritage Equestrian ("FHE" or "Service Provider"),
 
 and
 
@@ -2130,7 +2130,7 @@ UPDATE contract_templates SET body = $body$HORSE LEASE REPRESENTATION AND ACQUIS
 
 This Horse Lease Representation and Acquisition Services Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
 
-French Heritage Equestrian, a California business operating under a fictitious business name, with a mailing address of 752 Windemere Ct., San Diego, California 92109 (“FHE” or “Representative”),
+French Heritage Equestrian (“FHE” or “Representative”),
 
 and
 
@@ -2784,7 +2784,7 @@ UPDATE contract_templates SET body = $body$HORSE SEARCH AND ACQUISITION SERVICES
 
 This Horse Search and Acquisition Services Retainer Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
 
-French Heritage Equestrian, a California business operating under a fictitious business name, with a mailing address of 752 Windemere Ct., San Diego, California 92109 (“FHE” or “Service Provider”),
+French Heritage Equestrian (“FHE” or “Service Provider”),
 
 and
 
@@ -3101,7 +3101,7 @@ UPDATE contract_templates SET body = $body$HORSE TRAINING SERVICES AGREEMENT
 
 This Horse Training Services Agreement ("Agreement") is entered into as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by and between:
 
-French Heritage Equestrian, a California business operating under a fictitious business name, with a mailing address of 752 Windemere Ct., San Diego, California 92109 ("FHE" or "Service Provider"),
+French Heritage Equestrian ("FHE" or "Service Provider"),
 
 and
 
@@ -3607,7 +3607,7 @@ UPDATE contract_templates SET body = $body$MINOR RIDER AGREEMENT, PARENTAL CONSE
 
 This Minor Rider Agreement, Parental Consent, Assumption of Risk, Liability Release, Medical Authorization, and Indemnity Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
 
-French Heritage Equestrian, a California business operating under a fictitious business name, with a mailing address of 752 Windemere Ct., San Diego, California 92109 (“Instructor” or “FHE”),
+French Heritage Equestrian (“Instructor” or “FHE”),
 
 and
 
@@ -3936,7 +3936,7 @@ UPDATE contract_templates SET body = $body$RIDING LESSON AGREEMENT, LIABILITY RE
 
 This Riding Lesson Agreement, Liability Release, Assumption of Risk, and Hold Harmless Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
 
-French Heritage Equestrian, a California business operating under a fictitious business name, with a mailing address of 752 Windemere Ct., San Diego, California 92109 (“Instructor” or “FHE”),
+French Heritage Equestrian (“Instructor” or “FHE”),
 
 and
 

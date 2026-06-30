@@ -18,15 +18,15 @@ afterAll(async () => {
 });
 
 describe('business identity seed', () => {
-  it('fills the singleton from the brand identity', async () => {
-    const [cfg] = await h.q<{ legal_entity_name: string; business_address: string; signatory_title: string }>(
-      `select legal_entity_name, business_address, signatory_title from business_config`);
+  it('seeds only the business name; deliberately stores no mailing address', async () => {
+    const [cfg] = await h.q<{ legal_entity_name: string; signatory_name: string; business_address: string | null }>(
+      `select legal_entity_name, signatory_name, business_address from business_config`);
     expect(cfg.legal_entity_name).toBe('French Heritage Equestrian');
-    expect(cfg.business_address).toContain('Windemere');
-    expect(cfg.signatory_title).toBe('Authorized Representative');
+    expect(cfg.signatory_name).toBe('French Heritage Equestrian');
+    expect(cfg.business_address).toBeNull(); // private; never seeded
   });
 
-  it('generate_document resolves FHE.SIGNATORY_* from the seed', async () => {
+  it('generate_document resolves FHE.* from the seed', async () => {
     const serviceType = (await h.q<{ code: string }>(`select code from service_types limit 1`))[0].code;
     const c = (await h.q<{ id: string }>(`insert into contacts (full_name) values ('Acme Stables') returning id`))[0].id;
     const cl = (await h.q<{ id: string }>(`insert into clients (contact_id) values ($1) returning id`, [c]))[0].id;
@@ -35,7 +35,8 @@ describe('business identity seed', () => {
 
     const [doc] = await h.q<{ merged_body: string }>(
       `select * from generate_document($1,'HORSE_PURCHASE_SALE')`, [eng]);
-    expect(doc.merged_body).toContain('Authorized Representative');
-    expect(doc.merged_body).not.toMatch(/\{\{FHE\./); // FHE tokens all resolved
+    expect(doc.merged_body).toContain('French Heritage Equestrian'); // signatory name resolved
+    expect(doc.merged_body).not.toMatch(/\{\{FHE\./); // FHE tokens all resolved (title → blank)
+    expect(doc.merged_body).not.toContain('Windemere'); // no mailing address anywhere
   });
 });
