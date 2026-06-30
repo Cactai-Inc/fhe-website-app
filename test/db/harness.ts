@@ -103,7 +103,7 @@ export interface TestDb {
   /** Act as an unauthenticated visitor. */
   asAnon(): Promise<void>;
   /** Insert an auth.users row (+ optional profile). Returns the new uid. */
-  createAuthUser(opts?: { email?: string; profile?: boolean; isAdmin?: boolean }): Promise<string>;
+  createAuthUser(opts?: { email?: string; profile?: boolean; isAdmin?: boolean; role?: string }): Promise<string>;
   /** Convenience query that returns rows. */
   q<T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<T[]>;
   close(): Promise<void>;
@@ -172,9 +172,10 @@ export async function createTestDb(opts?: { upTo?: string }): Promise<TestDb> {
       );
       const uid = res.rows[0].id;
       if (o.profile !== false) {
+        const role = o.role ?? (o.isAdmin ? 'ADMIN' : 'USER');
         await db.query(
-          `insert into profiles (user_id, email, is_admin) values ($1, $2, $3)`,
-          [uid, email, o.isAdmin ?? false],
+          `insert into profiles (user_id, email, role) values ($1, $2, $3)`,
+          [uid, email, role],
         );
       }
       return uid;
