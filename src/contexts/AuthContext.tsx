@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import * as auth from '../lib/auth';
 import type { Profile } from '../lib/types';
 import type { Membership } from '../lib/community-types';
 
@@ -14,6 +15,7 @@ interface AuthContextValue {
   isMember: boolean; // active membership OR admin
   signInWithPassword: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string) => Promise<{ error: string | null }>;
+  signInWithGoogle: (redirectTo?: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -62,18 +64,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [loadProfile]);
 
-  const signInWithPassword = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error?.message ?? null };
-  }, []);
+  // Auth operations delegate to lib/auth (the single source for supabase.auth calls).
+  const signInWithPassword = useCallback(
+    (email: string, password: string) => auth.signInWithPassword(email, password),
+    [],
+  );
 
-  const signUp = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({ email, password });
-    return { error: error?.message ?? null };
-  }, []);
+  const signUp = useCallback(
+    (email: string, password: string) => auth.signUpWithPassword(email, password),
+    [],
+  );
+
+  const signInWithGoogle = useCallback(
+    (redirectTo?: string) => auth.signInWithGoogle(redirectTo),
+    [],
+  );
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
+    await auth.signOut();
     setProfile(null);
     setMembership(null);
   }, []);
@@ -94,6 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isMember: (!profile?.is_suspended) && (!!profile?.is_admin || membership?.status === 'active'),
         signInWithPassword,
         signUp,
+        signInWithGoogle,
         signOut,
         refreshProfile,
       }}

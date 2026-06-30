@@ -21,6 +21,8 @@ import Confirmation from './pages/Confirmation';
 import NotFound from './pages/NotFound';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import Account from './pages/Account';
 import OrderDetail from './pages/OrderDetail';
 // Member app
@@ -66,6 +68,8 @@ export function AppRoutes() {
               <Route path="/confirmation" element={<Confirmation />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
 
               {/* Signed-in but outside the member app */}
               <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />

@@ -4,6 +4,7 @@ import { ArrowRight, LogOut } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { listMyOrders, upsertMyProfile } from '../lib/api';
 import { useDocumentTitle } from '../lib/hooks';
+import { TwoFactorSettings } from '../components/auth/TwoFactorSettings';
 import type { Order } from '../lib/types';
 
 const ORDER_STATUS_LABEL: Record<string, string> = {
@@ -159,6 +160,12 @@ export default function Account() {
                 {saved && <p className="text-xs text-green-700 mt-2 text-center">Saved.</p>}
               </div>
             </form>
+
+            {/* Security */}
+            <div className="mt-6">
+              <h2 className="font-serif font-medium text-green-800 text-xl mb-5">Security</h2>
+              <TwoFactorSettings />
+            </div>
           </div>
         </div>
       </div>

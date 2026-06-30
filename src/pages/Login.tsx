@@ -1,26 +1,58 @@
 import { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useDocumentTitle } from '../lib/hooks';
+import { needsMfaChallenge, submitMfaChallenge } from '../lib/auth';
+import { AuthLayout, AuthCard } from '../components/auth/AuthLayout';
+import { AuthField, AuthError, SubmitButton } from '../components/auth/AuthControls';
+import { GoogleButton } from '../components/auth/GoogleButton';
 
 export default function Login() {
   useDocumentTitle('Sign In');
-  const { signInWithPassword } = useAuth();
+  const { signInWithPassword, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: string })?.from || '/account';
 
+  const [step, setStep] = useState<'credentials' | 'mfa'>('credentials');
+  // Google-first: show the large Google button by default; the email/password
+  // form is revealed only when the user opts into it.
+  const [passwordMode, setPasswordMode] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [code, setCode] = useState('');
+  const [factorId, setFactorId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleCredentials(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
     const { error } = await signInWithPassword(email.trim(), password);
+    if (error) {
+      setSubmitting(false);
+      setError(error);
+      return;
+    }
+    // Password accepted — is a second factor required?
+    const mfa = await needsMfaChallenge();
+    setSubmitting(false);
+    if (mfa.required && mfa.factorId) {
+      setFactorId(mfa.factorId);
+      setStep('mfa');
+      return;
+    }
+    navigate(from, { replace: true });
+  }
+
+  async function handleMfa(e: React.FormEvent) {
+    e.preventDefault();
+    if (!factorId) return;
+    setSubmitting(true);
+    setError(null);
+    const { error } = await submitMfaChallenge(factorId, code.trim());
     setSubmitting(false);
     if (error) {
       setError(error);
@@ -29,61 +61,122 @@ export default function Login() {
     navigate(from, { replace: true });
   }
 
-  return (
-    <div className="min-h-screen bg-cream flex items-center justify-center px-6 pt-24 pb-20">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <p className="eyebrow mb-3">Members</p>
-          <h1 className="heading-section text-green-800">Welcome back</h1>
-        </div>
+  async function handleGoogle() {
+    setGoogleLoading(true);
+    setError(null);
+    const { error } = await signInWithGoogle(from);
+    if (error) {
+      setGoogleLoading(false);
+      setError(error);
+    }
+    // success → full-page redirect to Google
+  }
 
-        <form onSubmit={handleSubmit} noValidate className="bg-white border border-green-800/10 p-8">
-          <div className="mb-5">
-            <label className="form-label" htmlFor="email">Email</label>
-            <input
+  if (step === 'mfa') {
+    return (
+      <AuthLayout
+        eyebrow="Two-Step Verification"
+        title="Enter your code"
+        subtitle="Open your authenticator app and enter the current 6-digit code."
+      >
+        <AuthCard onSubmit={handleMfa}>
+          <AuthError>{error}</AuthError>
+          <AuthField
+            id="totp"
+            label="Verification code"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            pattern="[0-9]*"
+            maxLength={6}
+            required
+            autoFocus
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            placeholder="123456"
+          />
+          <SubmitButton loading={submitting} loadingLabel="Verifying…">Verify</SubmitButton>
+        </AuthCard>
+      </AuthLayout>
+    );
+  }
+
+  return (
+    <AuthLayout
+      eyebrow="Members"
+      title="Welcome back"
+      footer={
+        <>
+          Membership is by invitation only. Please{' '}
+          <Link to="/contact" className="text-green-800 underline underline-offset-2 focus-ring">
+            send us a message
+          </Link>{' '}
+          to learn more.
+        </>
+      }
+    >
+      <AuthCard onSubmit={handleCredentials}>
+        <AuthError>{error}</AuthError>
+
+        {!passwordMode ? (
+          /* Google-first: the primary affordance, with email/password one tap away. */
+          <>
+            <GoogleButton onClick={handleGoogle} loading={googleLoading} size="lg" />
+            <p className="text-center text-sm text-muted mt-5">
+              <button
+                type="button"
+                onClick={() => { setError(null); setPasswordMode(true); }}
+                className="text-green-800 underline underline-offset-2 focus-ring"
+              >
+                Sign in with email and password
+              </button>
+            </p>
+          </>
+        ) : (
+          <>
+            <AuthField
               id="email"
+              label="Email"
               type="email"
               autoComplete="email"
               required
+              autoFocus
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="form-input"
               placeholder="your@email.com"
             />
-          </div>
-          <div className="mb-6">
-            <label className="form-label" htmlFor="password">Password</label>
-            <input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="form-input"
-              placeholder="••••••••"
-            />
-          </div>
-
-          {error && (
-            <div role="alert" className="bg-red-50 border border-red-200 text-red-700 text-sm font-sans px-4 py-3 mb-5">
-              {error}
+            <div className="mb-6">
+              <div className="flex items-center justify-between">
+                <label className="form-label" htmlFor="password">Password</label>
+                <Link to="/forgot-password" className="text-xs text-green-800 underline underline-offset-2 focus-ring">
+                  Forgot password?
+                </Link>
+              </div>
+              <input
+                id="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="form-input"
+                placeholder="••••••••"
+              />
             </div>
-          )}
 
-          <button type="submit" disabled={submitting} className="btn-primary w-full justify-center">
-            {submitting ? 'Signing in…' : 'Sign In'}
-            {!submitting && <ArrowRight size={16} />}
-          </button>
-        </form>
+            <SubmitButton loading={submitting} loadingLabel="Signing in…">Sign In</SubmitButton>
 
-        <p className="text-center text-sm text-muted mt-6">
-          New here?{' '}
-          <Link to="/services" className="text-green-800 underline underline-offset-2 focus-ring">
-            Reach out and we'll set you up.
-          </Link>
-        </p>
-      </div>
-    </div>
+            <p className="text-center text-sm text-muted mt-5">
+              <button
+                type="button"
+                onClick={() => { setError(null); setPasswordMode(false); }}
+                className="text-green-800 underline underline-offset-2 focus-ring"
+              >
+                Use Google instead
+              </button>
+            </p>
+          </>
+        )}
+      </AuthCard>
+    </AuthLayout>
   );
 }
