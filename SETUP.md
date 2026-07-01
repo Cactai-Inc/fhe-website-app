@@ -1,0 +1,334 @@
+# French Heritage Equestrian — Setup & Operations Guide
+
+Everything in the app is built. This document covers the external wiring that must
+be done in your accounts (Supabase, Stripe, Vercel, Google Workspace) to take it
+live, plus the open decisions still owed from the reviews.
+
+The code is organized so that **nothing here requires touching application code** —
+it's all configuration, migrations, and dashboard steps.
+
+---
+
+## 0. Prerequisites
+
+- Node 20+ and npm
+- A Supabase project (one is already referenced in `.env`: `zglovoqvkfptlkdvlkig`)
+- A Vercel account (for hosting + serverless functions)
+- A Stripe account (card fallback)
+- A Google Workspace inbox dedicated to Zelle notifications
+
+Local dev:
+
+```bash
+npm install
+npm run dev          # http://localhost:5173
+npm run typecheck    # app
+npm run typecheck:api # serverless functions
+npm run build
+```
+
+---
+
+## 1. Supabase — database
+
+### 1a. Run the migrations
+
+Migrations live in `supabase/migrations/` and are ordered by timestamp:
+
+1. `…_create_bookings_and_inquiries.sql` — legacy inquiry tables (already applied)
+2. `…_add_contact_method.sql` — adds contact method + preferred times to bookings
+3. `…_platform_data_model.sql` — the full platform schema + RLS + helper functions
+4. `…_seed_offerings.sql` — seeds the offerings/tiers catalog (idempotent)
+5. `…_booking_functions.sql` — slot-hold + booking transition functions
+
+Apply them with the Supabase CLI:
+
+```bash
+supabase link --project-ref zglovoqvkfptlkdvlkig
+supabase db push
+```
+
+…or paste each file's contents into the Supabase SQL editor in order.
+
+### 1b. Make yourself an admin
+
+Admin-only reads (requests, payment notifications, the review queue) are gated by
+`profiles.is_admin`. After you've created your account through the app (or via the
+Supabase Auth dashboard), flip the flag:
+
+```sql
+update profiles set is_admin = true where email = 'admin@cactai.io';
+```
+
+(If no profile row exists yet, sign in once so the app creates it, then run the update.)
+
+### 1c. Environment variables (client)
+
+`.env` already contains:
+
+```
+VITE_SUPABASE_URL=…
+VITE_SUPABASE_ANON_KEY=…
+```
+
+These are safe to expose (anon key + RLS). Keep them in Vercel's env too.
+
+---
+
+## 2. Vercel — hosting + serverless functions
+
+The `/api` directory holds Node serverless functions; `vercel.json` configures the
+SPA rewrite so client routes like `/order/:id` resolve.
+
+### 2a. Server-only environment variables (set in Vercel → Project → Settings → Environment Variables)
+
+| Variable | Used by | Notes |
+|---|---|---|
+| `SUPABASE_URL` | all functions | same as `VITE_SUPABASE_URL` |
+| `SUPABASE_SERVICE_ROLE_KEY` | all functions | **secret** — service role, bypasses RLS. Never expose client-side. |
+| `STRIPE_SECRET_KEY` | stripe functions | from Stripe dashboard |
+| `STRIPE_WEBHOOK_SECRET` | stripe-webhook | from the webhook endpoint you create (step 3) |
+| `ZELLE_INGEST_SECRET` | zelle-reconcile | a long random string you generate; also set in Apps Script (step 4) |
+
+### 2b. Deploy
+
+```bash
+vercel            # preview
+vercel --prod     # production
+```
+
+---
+
+## 3. Stripe — card fallback
+
+1. In Stripe, create a **webhook endpoint** pointing at
+   `https://YOUR_DOMAIN/api/stripe-webhook`, subscribed to
+   `checkout.session.completed` (and optionally `payment_intent.succeeded`).
+2. Copy its **signing secret** into Vercel as `STRIPE_WEBHOOK_SECRET`.
+3. Put your **secret key** into Vercel as `STRIPE_SECRET_KEY`.
+4. The card convenience fee is `3%`, defined in two places that must stay in sync:
+   - `api/stripe-create-session.ts` → `STRIPE_FEE_RATE`
+   - `src/components/order/OrderPayment.tsx` → `STRIPE_FEE_RATE`
+   - **OPEN ITEM:** confirm California card-surcharge rules + Stripe's surcharge
+     requirements before enabling the pass-through fee. If not permitted, set the
+     rate to `0`.
+
+Flow: member chooses Card → `/api/stripe-create-session` (verifies ownership, moves
+order to `awaiting_payment`, opens Stripe Checkout) → on success Stripe calls
+`/api/stripe-webhook` → order marked `paid`+`confirmed`, booking confirmed. Fully
+automated; no email ingestion on this path.
+
+---
+
+## 4. Zelle — primary payment + Google Workspace ingestion
+
+Zelle is the default: instant, no chargebacks, no card entry.
+
+### How matching works (already implemented in `api/_lib/reconcile.ts`)
+
+- Each pending order gets a **unique-cents amount** (e.g. `350.07`) and a short
+  **reference code** (e.g. `FH-7K2Q`). The unique amount is the deterministic key;
+  the reference corroborates.
+- **OPEN ITEM:** confirm whether **Bank of America's** received-payment notification
+  includes the sender's memo line. If it does *not*, the unique-cents amount carries
+  reconciliation on its own (which is why it's the primary key).
+- Under/over/duplicate/no-match/ambiguous payments route to a **review queue**
+  (`payment_notifications.status = 'review'`) rather than auto-confirming.
+
+> NOTE: assigning the unique-cents amount + reference to an order when it moves to
+> `awaiting_payment` is the one server step still to wire to your preference (a tiny
+> function that sets `orders.unique_amount` and `orders.payment_reference`). The
+> reconciliation logic already reads both. Until then the Zelle screen shows the
+> plain total. See `OrderPayment.tsx` and `reconcile.ts`.
+
+### Google Workspace setup (Apps Script polling — recommended start)
+
+The script is at `workspace/zelle-poller.gs`.
+
+1. In Gmail, create a filter matching your bank's Zelle "received money" emails and
+   apply the label **`ZelleIncoming`**. Create a **`ZelleProcessed`** label too.
+2. Go to script.google.com (signed in as the inbox owner) and paste in
+   `workspace/zelle-poller.gs`.
+3. In Project Settings → Script properties, add:
+   - `RECONCILE_URL` = `https://YOUR_DOMAIN/api/zelle-reconcile`
+   - `INGEST_SECRET` = the same value as Vercel's `ZELLE_INGEST_SECRET`
+4. Add a **time-driven trigger** on `pollZelle` to run every minute.
+5. Adjust the regexes in `parseZelle_()` to match your bank's exact email wording.
+
+This polls every minute and POSTs parsed notifications to `/api/zelle-reconcile`,
+which matches them to orders. (Approach B — Gmail API + Pub/Sub push for sub-minute
+latency — is documented in `architecture-flow-spec.md` if you ever want it.)
+
+---
+
+## 5. Availability slots (admin)
+
+The booking step shows open slots from `availability_slots`. Create them in the
+Supabase dashboard (or build a small admin UI later). Minimum columns:
+
+```sql
+insert into availability_slots (start_at, end_at, slot_type, location_mode, status)
+values ('2026-07-01T16:00:00Z', '2026-07-01T17:00:00Z', 'lesson', 'onsite', 'open');
+```
+
+`hold_slot()` / `confirm_booking_for_order()` / `release_expired_holds()` manage the
+lifecycle. Consider a scheduled job (Supabase cron / Vercel Cron) calling
+`release_expired_holds()` periodically to free abandoned holds.
+
+---
+
+## 6. Invitations (the bridge)
+
+The request → invitation → account flow is manual by design:
+
+1. A visitor submits a request (writes to `requests` + `request_selections`).
+2. You contact them, then create an `invitations` row with a unique `token` and an
+   `expires_at`. (Admin UI for this is a future enhancement; for now insert via SQL.)
+3. Email them `https://YOUR_DOMAIN/register?token=THE_TOKEN`.
+4. They register; the app validates the token via the `validate_invitation` RPC,
+   creates the account, and seeds the profile from the request.
+
+```sql
+insert into invitations (request_id, email, token, expires_at)
+values ('<request-uuid>', 'her@email.com', 'tok_' || gen_random_uuid(), now() + interval '7 days');
+```
+
+---
+
+## 7. Email sending (confirmation emails)
+
+The confirmation **page** and the `.ics` / add-to-calendar links are built in-app.
+Sending the confirmation **email** with copies + the `.ics` attachment is the one
+piece that needs an email provider (Resend, Postmark, SendGrid, etc.). Add a small
+function under `/api` that fires after `confirm_booking_for_order`, using
+`src/lib/calendar.ts`'s `buildIcs()` for the attachment.
+
+---
+
+## 8. Open decisions still owed (from the reviews)
+
+- [ ] Confirm Bank of America's Zelle notification includes the sender memo (§4).
+- [ ] Confirm CA card-surcharge compliance before enabling the Stripe fee (§3).
+- [ ] Photography: the hero/community use the two AI reference images. For final
+      launch, source or shoot the warm morning rider set per `photography-brief.md`.
+
+---
+
+## 8b. Members community app
+
+The logged-in community app lives under `/app` (its own layout + nav) and is gated to
+**active members** (`is_active_member()` = admin, or a `memberships` row with
+`status = 'active'`). Admins additionally see `/app/admin`.
+
+### Make someone a member
+Members are created by you (after the invitation → registration flow). Grant membership:
+
+```sql
+insert into memberships (user_id, tier, status)
+values ('<user-uuid>', 'community', 'active')
+on conflict (user_id) do update set status = 'active';
+```
+
+…or use the **Admin → Members** tab (set the membership dropdown to `active`).
+
+### Seed chat channels (so the chat board has rooms)
+```sql
+insert into channels (name, slug, sort_order) values
+  ('General', 'general', 1),
+  ('Rides', 'rides', 2),
+  ('Off-topic', 'off-topic', 3)
+on conflict (slug) do nothing;
+```
+
+### Realtime
+The migration adds `channel_messages`, `direct_messages`, `thread_posts`, and
+`announcements` to the `supabase_realtime` publication. Confirm Realtime is enabled
+for the project (Database → Replication). No extra code needed — the client
+subscribes via `supabase.channel(...)`.
+
+### Storage bucket for the resource library (file-kind resources)
+Create a **private** bucket named `members`:
+
+```sql
+insert into storage.buckets (id, name, public) values ('members', 'members', false)
+on conflict (id) do nothing;
+```
+
+Add a read policy so active members can download (signed URLs are used in-app):
+
+```sql
+create policy "members read files" on storage.objects
+  for select to authenticated
+  using (bucket_id = 'members' and is_active_member());
+```
+
+Upload files via the Supabase dashboard, then add a resource in **Admin → Resources**
+with kind `file` and the storage path (e.g. `guides/seat-basics.pdf`).
+
+### Invitation emails (Admin → Invite)
+`/api/admin-send-invitation` creates the token and emails the register link. It uses
+**Resend** if configured; otherwise it still creates the invite and returns the link
+for you to copy. Set in Vercel:
+
+| Variable | Notes |
+|---|---|
+| `RESEND_API_KEY` | from resend.com (or swap the `sendEmail` impl for your provider) |
+| `INVITE_FROM_EMAIL` | defaults to `Hello@FHEquestrian.com` (must be a verified sender) |
+
+The same function path is the manual, admin-sent invitation you asked for: an admin
+types an email in the Invite tab → token created → registration email sent.
+
+### Moderation
+Admins can hide/remove chat messages, threads, and thread posts, and suspend members
+(Admin → Members). Every action is logged to `moderation_actions`.
+
+---
+
+## 8c. Local SEO
+
+The public marketing pages (`/`, `/about`, `/services`, `/book/rider|horse|support`)
+are **prerendered to static HTML at build time** so crawlers, social, and AI previews
+get real content + per-page metadata — not an empty SPA shell. The members app (`/app`)
+and transactional routes stay SPA and are `noindex` (robots.txt + per-page).
+
+### How it works
+- `npm run build` runs: `vite build` → `scripts/prerender.mjs` (renders public routes
+  to `dist/<route>/index.html` with content + head) → `scripts/seo-files.mjs`
+  (writes `dist/sitemap.xml` + `dist/robots.txt`).
+- Per-page `<title>`, description, canonical, OpenGraph/Twitter, and JSON-LD come from
+  `<Seo>` (react-helmet-async) on each page; the route metadata lives in `src/lib/seo.ts`.
+- Site-wide `LocalBusiness` + `Organization` JSON-LD is in `src/components/layout/Layout.tsx`.
+- The client **hydrates** the prerendered HTML (no flash, no re-render).
+
+### Before launch — edit these in `src/lib/seo.ts`
+- [ ] **`SITE_URL`** — confirm `https://www.frenchheritageequestrian.com` (and update
+      `scripts/seo-files.mjs` if it changes).
+- [ ] **Business address** — `streetAddress` / `postalCode` are **placeholders**
+      (`Carmel Creek Ranch` / `92130`). Put the real street address + ZIP, and refine
+      `latitude`/`longitude` to the ranch. This NAP feeds Google's LocalBusiness rich data.
+- [ ] **`sameAs`** — add Instagram/Facebook/Google Business Profile URLs once live.
+
+### After launch
+- Submit `https://www.frenchheritageequestrian.com/sitemap.xml` in Google Search Console.
+- Create a **Google Business Profile** (single biggest local-SEO lever for a local barn);
+  match the NAP exactly to the JSON-LD.
+- Validate structured data at search.google.com/test/rich-results.
+- The OG/Twitter image is the hero reference image; swap for a branded social card if desired.
+
+### Adding a new public page later
+Add an entry to `ROUTE_SEO` in `src/lib/seo.ts`, drop `<Seo …>` in the page, and add
+the path to the `ROUTES` array in `scripts/prerender.mjs` (and the list in
+`scripts/seo-files.mjs`).
+
+---
+
+## 9. What's built vs. what's configuration
+
+**Built (code, in this repo):** full UI redesign + copy, design system, auth +
+member area, request flow, purchase flow, booking with holds, document signing,
+Zelle reconciliation logic + review-queue rules, Stripe session + webhook, calendar,
+Apps Script poller, full Supabase schema + RLS + functions.
+
+**Configuration (this guide):** running migrations, setting env vars/secrets,
+creating the Stripe webhook, the Workspace filter + trigger, seeding availability
+slots, issuing invitations, and (optionally) wiring an email provider.
