@@ -103,7 +103,7 @@ export interface TestDb {
   /** Act as an unauthenticated visitor. */
   asAnon(): Promise<void>;
   /** Insert an auth.users row (+ optional profile). Returns the new uid. */
-  createAuthUser(opts?: { email?: string; profile?: boolean; isAdmin?: boolean; role?: string }): Promise<string>;
+  createAuthUser(opts?: { email?: string; profile?: boolean; isAdmin?: boolean; role?: string; org?: string | null }): Promise<string>;
   /** Convenience query that returns rows. */
   q<T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<T[]>;
   close(): Promise<void>;
@@ -133,6 +133,13 @@ export async function createTestDb(opts?: { upTo?: string }): Promise<TestDb> {
       throw new Error(`Migration failed: ${file}\n${(err as Error).message}`);
     }
   }
+
+  // Seed/service context: default org for superuser inserts (org_id DEFAULT
+  // current_org()). current_org() only reads this GUC when auth.uid() IS NULL.
+  try {
+    const org = await db.query<{ id: string }>(`select id from organizations order by created_at limit 1`);
+    if (org.rows[0]) await db.query(`select set_config('app.current_org', $1, false)`, [org.rows[0].id]);
+  } catch { /* organizations table not created yet (upTo before migration 24) */ }
 
   const setClaim = async (key: string, value: string) => {
     await db.query(`select set_config('request.jwt.claim.${key}', $1, false)`, [value]);
@@ -177,6 +184,15 @@ export async function createTestDb(opts?: { upTo?: string }): Promise<TestDb> {
           `insert into profiles (user_id, email, role) values ($1, $2, $3)`,
           [uid, email, role],
         );
+        // join a tenant: default to the sole/first org; pass org:null to opt out
+        // (an outsider), or org:'<id>' for a specific tenant.
+        if (o.org !== null) {
+          try {
+            const orgId = o.org ?? (await db.query<{ id: string }>(
+              `select id from organizations order by created_at limit 1`)).rows[0]?.id;
+            if (orgId) await db.query(`update profiles set org_id=$1 where user_id=$2`, [orgId, uid]);
+          } catch { /* organizations/profiles.org_id not present yet (early upTo) */ }
+        }
       }
       return uid;
     },

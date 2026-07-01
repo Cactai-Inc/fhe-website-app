@@ -44,7 +44,7 @@ describe('organizations foundation', () => {
     await h.asUser(member);
     expect(await h.q(`select id from organizations`)).toHaveLength(1);
 
-    const outsider = await h.createAuthUser({ email: 'outsider@org.test' }); // org_id NULL
+    const outsider = await h.createAuthUser({ email: 'outsider@org.test', org: null }); // no membership
     await h.asUser(outsider);
     expect(await h.q(`select id from organizations`)).toHaveLength(0);
   });
