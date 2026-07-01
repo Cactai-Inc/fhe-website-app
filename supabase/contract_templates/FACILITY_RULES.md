@@ -30,7 +30,7 @@ ACKNOWLEDGMENT OF FACILITY LOCATION
 
 Client acknowledges that services may be provided at:
 
-Carmel Creek Ranch11500 Clews Ranch RdSan Diego, CA 92130
+Carmel Creek Ranch 11500 Clews Ranch RdSan Diego, CA 92130
 
 and/or other locations designated by FHE.
 
