@@ -43,11 +43,17 @@ async function makeClientWithAssets(email: string) {
 describe('buckets', () => {
   it('creates the eight private buckets', async () => {
     await h.asSuperuser();
-    const rows = await h.q<{ id: string; public: boolean }>(`select id, public from storage.buckets order by id`);
-    expect(rows.map((r) => r.id).sort()).toEqual([
+    // Scoped to migration 15's eight launch buckets: later additive migrations
+    // (e.g. U13's inventory-docs/horse-health/brand-assets) add more private
+    // buckets to the same global table, so assert these eight exist and are
+    // private rather than exact-equality on the whole storage.buckets set.
+    const eight = [
       'contracts', 'facility-files', 'generated-documents', 'horse-documents',
       'horse-photos', 'profile-images', 'reports', 'temporary-uploads',
-    ]);
+    ];
+    const rows = await h.q<{ id: string; public: boolean }>(
+      `select id, public from storage.buckets where id = any($1) order by id`, [eight]);
+    expect(rows.map((r) => r.id).sort()).toEqual(eight);
     expect(rows.every((r) => r.public === false)).toBe(true);
   });
 });

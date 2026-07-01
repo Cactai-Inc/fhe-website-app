@@ -88,8 +88,10 @@ describe('template_tokens — the dictionary in the database', () => {
       expect(['field', 'system', 'signature']).toContain(r.kind);
     }
     // the documented namespaces are all represented
+    // ORG.* was added by 20260630000000_generate_document_org_fix (§6 de-specification:
+    // {{ORG.*}} is the canonical tenant namespace; {{FHE.*}} kept as a back-compat alias).
     const namespaces = new Set(rows.map((r) => r.namespace));
-    expect([...namespaces].sort()).toEqual(['DOC', 'ENG', 'FHE', 'HORSE', 'PARTY', 'TXN']);
+    expect([...namespaces].sort()).toEqual(['DOC', 'ENG', 'FHE', 'HORSE', 'ORG', 'PARTY', 'TXN']);
   });
 
   it('contains the canonical tokens from each namespace (matches the .md)', async () => {
