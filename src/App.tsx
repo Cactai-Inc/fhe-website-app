@@ -41,6 +41,17 @@ import Messages from './pages/app/Messages';
 import Content from './pages/app/Content';
 import ContentPostDetail from './pages/app/ContentPostDetail';
 import Admin from './pages/app/Admin';
+// Ops / CRM (staff/admin)
+import OpsDashboard from './pages/app/ops/OpsDashboard';
+import ContactsPage from './pages/app/ops/ContactsPage';
+import HorsesPage from './pages/app/ops/HorsesPage';
+import EngagementsPage from './pages/app/ops/EngagementsPage';
+import CreateEngagementPage from './pages/app/ops/CreateEngagementPage';
+import EngagementDetailPage from './pages/app/ops/EngagementDetailPage';
+import DocumentsQueuePage from './pages/app/ops/DocumentsQueuePage';
+import DocumentViewerPage from './pages/app/ops/DocumentViewerPage';
+import TransactionsPage from './pages/app/ops/TransactionsPage';
+import TransactionDetailPage from './pages/app/ops/TransactionDetailPage';
 
 export function AppRoutes() {
   return (
@@ -106,6 +117,18 @@ export function AppRoutes() {
               <Route path="profile" element={<Profile />} />
               {/* Admin (additionally requires admin) */}
               <Route path="admin" element={<ProtectedRoute requireAdmin><Admin /></ProtectedRoute>} />
+
+              {/* Ops / CRM (staff — gated to admin for launch) */}
+              <Route path="ops" element={<ProtectedRoute requireAdmin><OpsDashboard /></ProtectedRoute>} />
+              <Route path="ops/contacts" element={<ProtectedRoute requireAdmin><ContactsPage /></ProtectedRoute>} />
+              <Route path="ops/horses" element={<ProtectedRoute requireAdmin><HorsesPage /></ProtectedRoute>} />
+              <Route path="ops/engagements" element={<ProtectedRoute requireAdmin><EngagementsPage /></ProtectedRoute>} />
+              <Route path="ops/engagements/new" element={<ProtectedRoute requireAdmin><CreateEngagementPage /></ProtectedRoute>} />
+              <Route path="ops/engagements/:id" element={<ProtectedRoute requireAdmin><EngagementDetailPage /></ProtectedRoute>} />
+              <Route path="ops/documents" element={<ProtectedRoute requireAdmin><DocumentsQueuePage /></ProtectedRoute>} />
+              <Route path="ops/documents/:id" element={<ProtectedRoute requireAdmin><DocumentViewerPage /></ProtectedRoute>} />
+              <Route path="ops/transactions" element={<ProtectedRoute requireAdmin><TransactionsPage /></ProtectedRoute>} />
+              <Route path="ops/transactions/:id" element={<ProtectedRoute requireAdmin><TransactionDetailPage /></ProtectedRoute>} />
             </Route>
 
             {/* Branded 404 */}

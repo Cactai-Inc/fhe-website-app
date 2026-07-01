@@ -90,6 +90,36 @@ export default function AppLayout() {
           Admin
         </NavLink>
       )}
+      {isAdmin && (
+        <>
+          <div className="mt-2 border-t border-green-800/10 pt-3 px-3 pb-1 text-xs uppercase tracking-wide text-secondary/60">
+            Operations
+          </div>
+          {[
+            { to: '/app/ops', label: 'Ops Dashboard', icon: LayoutDashboard, end: true },
+            { to: '/app/ops/contacts', label: 'Contacts', icon: Contact },
+            { to: '/app/ops/horses', label: 'Horses', icon: Boxes },
+            { to: '/app/ops/engagements', label: 'Engagements', icon: Handshake },
+            { to: '/app/ops/documents', label: 'Documents', icon: FileText },
+            { to: '/app/ops/transactions', label: 'Transactions', icon: ReceiptText },
+          ].map(({ to, label, icon: Icon, end }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={end}
+              onClick={() => setOpen(false)}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2.5 text-sm font-sans rounded-md transition-colors focus-ring ${
+                  isActive ? 'bg-green-800 text-white' : 'text-secondary hover:bg-green-800/[0.06]'
+                }`
+              }
+            >
+              <Icon size={17} aria-hidden="true" />
+              {label}
+            </NavLink>
+          ))}
+        </>
+      )}
     </nav>
   );
 
