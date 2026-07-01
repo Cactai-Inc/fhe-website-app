@@ -16,7 +16,8 @@ interface AuthContextValue {
   loading: boolean;
   isAdmin: boolean;
   isMember: boolean; // active membership OR admin
-  // Entitlement / role bridge (U15) — the seam nav/route gating reads. profile.role
+  isSuperAdmin: boolean; // platform operator (SUPER_ADMIN) — a separate path, never OR'd into has_module
+  // Entitlement / role bridge (INT-AUTH) — the seam nav/route gating reads. profile.role
   // is authoritative for role; my_modules() resolves the tenant's module set.
   role: AppRole | null;
   orgId: string | null;
@@ -117,6 +118,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // tenant/platform operator (ADMIN or SUPER_ADMIN), matching is_admin() server-side.
   const role: AppRole | null = profile?.role ?? null;
   const isAdmin = role === 'ADMIN' || role === 'SUPER_ADMIN';
+  // SUPER_ADMIN is the platform-operator path (§4.2): surfaced separately so
+  // superadmin-only nav/routes gate on it without being folded into has_module().
+  const isSuperAdmin = role === 'SUPER_ADMIN';
   const hasModule = useCallback((key: string) => modules.includes(key), [modules]);
 
   return (
@@ -129,6 +133,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loading,
         isAdmin,
         isMember: (!profile?.is_suspended) && (isAdmin || membership?.status === 'active'),
+        isSuperAdmin,
         role,
         orgId: profile?.org_id ?? null,
         modules,
