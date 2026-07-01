@@ -3,6 +3,8 @@
 
 Read this first, then the three companion docs: MERGE_TOKEN_DICTIONARY.md, RECONCILIATION_SPEC.md, DATABASE_SECURITY_AND_PERMISSION_MODEL.md. Work against the existing repo (github.com/Cactai-Inc/fhe-website-app); do not start a new project.
 
+> **2026-06-30 owner correction — read CONTRACT_MODULE_ARCHITECTURE.md.** The contract templates must be decomposed into three modular layers (search retainer / transaction representation / evaluation), tokenized by party + deal side. This SUPERSEDES the "Lease/Purchase Representation Agreement is the representation doc" line under *Decisions already made* below. Not yet implemented.
+
 ## What you're building
 
 A contract/transaction operational layer ON TOP OF the existing, working FHE platform. The app already has: request→invitation→order→booking→payment flows, an offerings/tiers catalog, profiles, Zelle+Stripe payment plumbing, RLS via is_admin()/owns_order(), and SECURITY DEFINER RPCs. Seven migrations are deployed in supabase/migrations/. DO NOT rewrite them. Everything you add is additive migrations 8+ and new flows.
