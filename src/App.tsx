@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { CartProvider } from './contexts/CartContext';
 import { AuthProvider } from './contexts/AuthContext';
+import { BrandProvider } from './contexts/BrandProvider';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/layout/Layout';
 import AppLayout from './components/app/AppLayout';
@@ -44,8 +45,9 @@ import Admin from './pages/app/Admin';
 export function AppRoutes() {
   return (
     <AuthProvider>
-      <CartProvider>
-        <Routes>
+      <BrandProvider>
+        <CartProvider>
+          <Routes>
             {/* Public marketing + inquiry (marketing chrome) */}
             <Route element={<Layout />}>
               <Route path="/" element={<Landing />} />
@@ -110,8 +112,9 @@ export function AppRoutes() {
             <Route element={<Layout />}>
               <Route path="*" element={<NotFound />} />
             </Route>
-        </Routes>
-      </CartProvider>
+          </Routes>
+        </CartProvider>
+      </BrandProvider>
     </AuthProvider>
   );
 }

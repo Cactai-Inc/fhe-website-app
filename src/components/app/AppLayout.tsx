@@ -3,6 +3,7 @@ import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, CalendarDays, MessagesSquare, Hash, Users, BookOpen,
   FileText, UserRound, BadgeCheck, ReceiptText, Shield, LogOut, Menu, X, Mail,
+  GraduationCap, Handshake, Home, Boxes, Contact,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -11,11 +12,22 @@ interface NavItem {
   label: string;
   icon: typeof LayoutDashboard;
   end?: boolean;
+  /** Show only when the tenant has this module enabled (my_modules()). */
+  module?: string;
 }
 
+// Core community items are always on; the module-tagged items appear only when the
+// tenant's my_modules() set (surfaced through AuthContext.hasModule) includes the
+// key. FHE (tier.lesson_brokerage) → lessons + brokerage show; boarding / barnops /
+// employees hide (PLATFORM_ARCHITECTURE §4.3 Layer C; the U15 acceptance criterion).
 const NAV: NavItem[] = [
   { to: '/app', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/app/schedule', label: 'Schedule', icon: CalendarDays },
+  { to: '/app/lessons', label: 'Lessons', icon: GraduationCap, module: 'mod.lessons' },
+  { to: '/app/brokerage', label: 'Brokerage', icon: Handshake, module: 'mod.brokerage' },
+  { to: '/app/boarding', label: 'Boarding', icon: Home, module: 'mod.boarding' },
+  { to: '/app/barnops', label: 'Barn Ops', icon: Boxes, module: 'mod.barnops' },
+  { to: '/app/employees', label: 'Employees', icon: Contact, module: 'mod.employees' },
   { to: '/app/chat', label: 'Chat board', icon: Hash },
   { to: '/app/threads', label: 'Threads', icon: MessagesSquare },
   { to: '/app/messages', label: 'Messages', icon: Mail },
@@ -27,11 +39,18 @@ const NAV: NavItem[] = [
   { to: '/app/profile', label: 'Profile', icon: UserRound },
 ];
 
+/** The nav the member actually sees: core items plus the module-gated items whose
+ *  module their tenant has. Pure of side effects so it is unit-testable. */
+export function visibleNav(hasModule: (key: string) => boolean): NavItem[] {
+  return NAV.filter((item) => !item.module || hasModule(item.module));
+}
+
 export default function AppLayout() {
-  const { profile, isAdmin, signOut } = useAuth();
+  const { profile, isAdmin, hasModule, signOut } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
+  const items = visibleNav(hasModule);
   const name = profile?.display_name || profile?.first_name || 'Member';
 
   async function handleSignOut() {
@@ -41,7 +60,7 @@ export default function AppLayout() {
 
   const navLinks = (
     <nav className="flex flex-col gap-1" aria-label="Member area">
-      {NAV.map(({ to, label, icon: Icon, end }) => (
+      {items.map(({ to, label, icon: Icon, end }) => (
         <NavLink
           key={to}
           to={to}

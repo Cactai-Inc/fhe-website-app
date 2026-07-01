@@ -294,3 +294,76 @@ export async function getOrderPayment(orderId: string): Promise<Payment | null> 
   if (error) throw error;
   return data as Payment | null;
 }
+
+// ─── Platform: entitlements, registry, public config, provisioning ───────────
+// Thin wrappers over the U2/U3/U6 SECURITY-DEFINER RPCs. UI nav/route gating and
+// the BrandProvider read through these; the server (RLS + require_module) is the
+// authoritative fence — these are convenience seams (PLATFORM_ARCHITECTURE §4.3 C).
+
+/** The current caller's own tenant's enabled+unexpired module keys (e.g.
+ *  'mod.lessons'). Works for a plain USER member — my_modules() reads org_modules
+ *  PAST its staff-only RLS, current_org()-scoped, so it never crosses tenants.
+ *  Drives nav/route gating in AuthContext. */
+export async function myModules(): Promise<string[]> {
+  const { data, error } = await supabase.rpc('my_modules');
+  if (error) throw error;
+  const rows = (data ?? []) as Array<{ module_key: string } | string>;
+  return rows.map((r) => (typeof r === 'string' ? r : r.module_key));
+}
+
+export interface OrgPublicConfig {
+  org_id: string;
+  slug: string;
+  brand: Record<string, string>;
+  modules: string[];
+  pricing: Array<{ product_key: string; name: string; amount: number }>;
+}
+
+/** ANON public-exposure seam: resolves a tenant slug to its brand + active public
+ *  module list + public pricing. Returns null for an unknown/inactive tenant.
+ *  NEVER exposes commission/retention/e-sign/tax internals (enforced server-side). */
+export async function orgPublicConfig(slug: string): Promise<OrgPublicConfig | null> {
+  const { data, error } = await supabase.rpc('org_public_config', { p_slug: slug });
+  if (error) throw error;
+  return (data as OrgPublicConfig | null) ?? null;
+}
+
+/** Resolve a single registry value for the CURRENT tenant (typed business_config
+ *  column when the (ns,key) maps to one, else the config_values EAV row). Returns
+ *  null when unset. */
+export async function configValue(ns: string, key: string): Promise<string | null> {
+  const { data, error } = await supabase.rpc('config_value', { p_ns: ns, p_key: key });
+  if (error) throw error;
+  return (data as string | null) ?? null;
+}
+
+export interface ProvisionTenantInput {
+  name: string;
+  slug: string;
+  tierKey: string;
+  adminEmail: string;
+  adminUserId?: string | null;
+  brand?: Record<string, unknown>;
+  legal?: Record<string, unknown>;
+  rates?: Record<string, unknown>;
+  modules?: string[];
+}
+
+/** SUPER_ADMIN-only push-button provisioning (the single blessed path). The RPC is
+ *  SUPER_ADMIN-gated inside the function and rolls back atomically on any failure;
+ *  returns the new org id. */
+export async function provisionTenant(input: ProvisionTenantInput): Promise<string> {
+  const { data, error } = await supabase.rpc('provision_tenant', {
+    p_name: input.name,
+    p_slug: input.slug,
+    p_tier_key: input.tierKey,
+    p_admin_email: input.adminEmail,
+    p_admin_user_id: input.adminUserId ?? null,
+    p_brand: input.brand ?? {},
+    p_legal: input.legal ?? {},
+    p_rates: input.rates ?? {},
+    p_modules: input.modules ?? null,
+  });
+  if (error) throw error;
+  return data as string;
+}
