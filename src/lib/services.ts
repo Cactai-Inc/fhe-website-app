@@ -196,14 +196,14 @@ export const HORSE_EXERCISE: Service = {
   id: 'horse-exercise',
   name: 'Horse Exercise',
   category: 'horse',
-  tagline: 'Consistent work between your rides',
+  tagline: 'Lunging sessions between your rides',
   description:
-    'We keep your horse fit and supple with structured exercise sessions — under saddle or on the ground — ideal when you are travelling, recovering, or need extra support.',
+    'We keep your horse fit and supple with lunging sessions — ideal when you are travelling, recovering, or need extra support. Turnout, the lighter exercise option, is priced separately below.',
   tiers: [
     {
       id: 'single',
       label: 'Exercise Session',
-      description: 'Single exercise session',
+      description: 'Single lunging session',
       price: 55,
       unit: 'session',
     },
@@ -229,9 +229,9 @@ export const RIDING_TURNOUT: Service = {
   id: 'riding-turnout',
   name: 'Turnout Service',
   category: 'horse',
-  tagline: 'Fresh air and movement, on your schedule',
+  tagline: 'The lighter exercise option',
   description:
-    'We turn out your horse on your behalf so they stay moving and content — ideal when your week gets away from you.',
+    'We turn out your horse on your behalf so they stay moving and content — the lighter-touch form of exercise, priced for what it takes.',
   tiers: [
     {
       id: 'single',
