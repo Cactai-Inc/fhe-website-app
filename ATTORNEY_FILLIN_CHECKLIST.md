@@ -148,29 +148,70 @@ The four owner release documents are loaded as standalone templates
 `RELEASE_HORSE_CARE`; sources in `build_instructions_phase_2/Documents/Liability
 Release/`). Tokenization changes counsel should confirm:
 
-- **Company countersignature blocks ADDED.** The source releases are unilateral
-  ("in favor of French Heritage Equestrian") with no company signature line; the
-  loaded versions add the standard COMPANY block (`{{SIG.COMPANY.*}}` +
-  signatory tokens) for engine consistency. Counsel may strike if a unilateral
-  release must not be countersigned.
+- **Company countersignature blocks REMOVED (owner decision 2026-07-02).** The
+  releases are UNILATERAL again, matching the sources: an earlier pass had added
+  the standard COMPANY block for engine consistency; the owner struck it. The
+  company remains identified in the party block only, and a release EXECUTES on
+  the single signer signature (adult, or parent/guardian for a minor). The
+  effective date auto-merges to the signing day.
+- **Releases identify the DBA trade name ONLY (owner decision 2026-07-02).**
+  The party block uses `{{ORG.LEGAL_NAME}}` ("French Heritage Equestrian") —
+  NOT `{{ORG.LEGAL_IDENTITY}}` — and no `{{ORG.SIGNATORY_NAME}}` /
+  `{{ORG.SIGNATORY_TITLE}}` token appears anywhere in a release body, so no
+  personal name is printed on a release. **Counsel question:** is a trade-name-
+  only identification sufficient for a sole proprietorship's release, or must
+  the d/b/a disclosure appear?
 - **"Visitor" signs under the PARTICIPANT role.** `VISITOR` is not a
   `party_role` CHECK value, so `RELEASE_GENERAL` keeps "Visitor" as its defined
   term in prose but merges/signs via `{{PARTICIPANT.*}}` / `{{SIG.PARTICIPANT.*}}`
   (guardian via `{{GUARDIAN.*}}`). Confirm acceptable, or the role vocabulary
   must gain VISITOR.
+- **Normalized signer sections + minor/guardian flow (counsel review).** All
+  four releases now end with the same two marker sections: `ADULT SIGNER`
+  (printed name / signature / date / phone / email; the horse releases keep the
+  capacity checkboxes + horse name here) and `MINOR SIGNER (PARENT/GUARDIAN)`
+  (minor name + date of birth, a guardian-authority certification paragraph,
+  guardian name / relationship / signature / date / phone / email). At the
+  public kiosk, the minor flow captures these fields and the GUARDIAN signs;
+  the executed document carries ONLY the applicable section (adult xor minor).
+  The horse releases' signer block moved from the OWNER token namespace to the
+  shared PARTICIPANT/GUARDIAN namespaces; "Owner" stays the defined term in
+  prose.
 - **Effective date wording.** Sources say only "Effective for One (1) Year from
   Date of Signature"; the loaded versions ALSO insert the standard
   "entered into as of {{DOC.EFFECTIVE_DATE}} ('Effective Date')" intro. Confirm
-  the one-year-from-signature term vs. the merged effective date is coherent.
+  the until-superseded term vs. the merged effective date is coherent.
 - **"Circle one" → checkboxes.** The Owner/Lessee/Lessor "circle one" elections
   in the horse releases are normalized to `□ Owner □ Lessee □ Lessor`.
 - **Grammar fix in the care release**, §3: source read "if the owner cannot be
   reach out"; loaded as "or emergency medications if the Owner cannot be
   reached". Confirm intent (administering emergency medication when unreachable).
-- **Initials lines** ("Owner Initials:", "Visitor Initials:") remain handwritten
-  blanks (same deferred-storage posture as §10/§11 above). Counsel: confirm
-  per-section initials are acceptable for e-sign.
-- **Minor date of birth** stays a handwritten blank (no DOB token/storage yet).
+- **Free-floating initials lines REMOVED (owner decision 2026-07-02).** Every
+  general-acknowledgment initials line ("Visitor Initials:", "Owner Initials:",
+  "Participant Initials Acknowledging Receipt and Agreement:", …) was removed
+  from the four releases; the signer's single signature acknowledges the whole
+  document. (Initials tied to a specific opt-in/opt-out election would stay,
+  but the releases carry none.)
+- **'COVENANT NOT TO SUE' sections REMOVED (owner decision 2026-07-02)** from
+  all four releases; remaining sections renumbered. Counsel review.
+- **California Civil Code §1542 waiver sections REMOVED (owner decision
+  2026-07-02)** from all four releases; remaining sections renumbered. Counsel
+  review — the releases now cover known/unknown claims only via the general
+  release wording.
+- **Media consent converted to a DEFAULT GRANT + written email opt-out (owner
+  decision 2026-07-02).** No initials-to-decline mechanic and no checkbox
+  election: each release gains one numbered MEDIA CONSENT section granting
+  COMPANY a perpetual, royalty-free license to media captured during
+  visits/activities (name, image, likeness; instructional, promotional, and
+  other lawful business purposes; no compensation), revocable at any time by
+  written notice via email to `{{ORG.EMAIL}}`, effective prospectively for
+  media captured after receipt. Counsel review the grant + revocation wording.
+- **Minor date of birth is now captured and merged.** The kiosk minor flow
+  records the minor's DOB and merges it into the "Date of Birth:" line of the
+  executed document (no longer a handwritten blank).
+- **Facility Rules acknowledgment recorded on the executed release.** The
+  kiosk requires reading/accepting the Facility Rules before signing; the
+  executed release body carries a dated "FACILITY RULES ACKNOWLEDGMENT" line.
 
 ## 16. Liability-release pass — release language STRIPPED from service agreements
 

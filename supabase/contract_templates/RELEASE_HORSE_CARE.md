@@ -6,7 +6,7 @@ Effective from the Date of Signature until superseded by a later executed versio
 
 This Horse Handling, Routine Care, Temporary Emergency Stabilization, Liability Release, Hold Harmless & Indemnification Agreement ("Agreement") is entered into as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned Horse Owner, Lessee, or Lessor ("Owner") in favor of:
 
-{{ORG.LEGAL_IDENTITY}} ("COMPANY").
+{{ORG.LEGAL_NAME}} ("COMPANY").
 
 For purposes of this Agreement, "Released Parties" means COMPANY, its owner, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, representatives, affiliates, property owners, facility owners, licensors, lessors, lessees, hosts, landowners, successors, assigns, heirs, and any person acting on behalf of COMPANY at any location where it is authorized to conduct business.
 
@@ -60,8 +60,6 @@ Stretching
 
 Owner further authorizes COMPANY to make reasonable decisions concerning the horse's comfort, cleanliness, safety, and ordinary care while acting within the scope of this Agreement and any written instructions provided by the Owner.
 
-Owner Initials:
-
 3. AUTHORIZATION FOR TEMPORARY EMERGENCY STABILIZATION
 
 If the horse appears to become ill, injured, distressed, or exhibits signs of a potentially emergent condition before veterinary care is available, Owner authorizes COMPANY to take reasonable interim measures intended to preserve the horse's immediate health, comfort, or safety.
@@ -98,15 +96,11 @@ This authorization supplements, and does not replace, any separate Emergency Vet
 
 The exercise of reasonable judgment by COMPANY in determining whether to provide interim care, monitor the horse, contact the Owner, or seek veterinary assistance shall not, by itself, create liability to the fullest extent permitted by California law.
 
-Owner Initials:
-
 4. ASSUMPTION OF RISK
 
 Owner understands and voluntarily assumes all inherent and ordinary risks associated with horse handling, routine care, grooming, movement, restraint, and related husbandry activities.
 
 Owner acknowledges that even with reasonable care, horses may become injured, ill, escape, damage property, injure themselves, or injure other animals or persons due to their inherently unpredictable nature.
-
-Owner Initials:
 
 5. RELEASE OF LIABILITY
 
@@ -126,15 +120,7 @@ Injury, illness, death, escape, or property damage involving the horse,
 
 including claims arising from the ordinary negligence of the Released Parties, except to the extent such claims cannot legally be released under California law.
 
-Owner Initials:
-
-6. COVENANT NOT TO SUE
-
-Owner agrees not to commence or maintain any lawsuit, arbitration, administrative proceeding, or other claim against any Released Party for matters released by this Agreement.
-
-Owner Initials:
-
-7. HOLD HARMLESS & INDEMNIFICATION
+6. HOLD HARMLESS & INDEMNIFICATION
 
 Owner agrees to defend, indemnify, and hold harmless the Released Parties from and against any claims, liabilities, damages, judgments, costs, expenses, and reasonable attorney's fees arising out of or relating to:
 
@@ -148,7 +134,7 @@ Owner's failure to disclose material health, behavioral, or handling information
 
 Claims brought by third parties arising from the horse or Owner's conduct.
 
-8. OWNER REPRESENTATIONS
+7. OWNER REPRESENTATIONS
 
 Owner represents and warrants that:
 
@@ -160,29 +146,29 @@ Owner has disclosed all known medical conditions, dangerous behaviors, allergies
 
 Owner will promptly notify COMPANY of any material change affecting the horse's health, condition, or behavior.
 
-Owner Initials:
+8. MEDIA CONSENT
 
-9. CALIFORNIA CIVIL CODE §1542 WAIVER
+Owner acknowledges that photographs, video recordings, and other media may be captured during visits to, or activities at, any location where COMPANY conducts business.
 
-Owner expressly waives the protections of California Civil Code §1542 and agrees that this Agreement applies to all known and unknown claims to the fullest extent permitted by law.
+Owner grants COMPANY a perpetual, royalty-free license to use such media, including Owner's (or, where applicable, the minor's) name, image, and likeness, for instructional, promotional, and other lawful business purposes, without compensation.
 
-Owner Initials:
+Owner may revoke this consent at any time by written notice via email to {{ORG.EMAIL}}; revocation is effective prospectively as to media captured after receipt of the notice.
 
-10. GOVERNING LAW AND VENUE
+9. GOVERNING LAW AND VENUE
 
 This Agreement shall be governed by the laws of the State of California.
 
 Any action arising from this Agreement shall be brought exclusively in the state or federal courts located in San Diego County, California.
 
-11. SEVERABILITY
+10. SEVERABILITY
 
 If any provision of this Agreement is determined to be invalid or unenforceable, the remaining provisions shall remain in full force and effect.
 
-12. ENTIRE AGREEMENT
+11. ENTIRE AGREEMENT
 
 This Agreement constitutes the complete agreement between the parties concerning the subject matter addressed herein and supersedes all prior oral or written understandings regarding horse handling and routine care.
 
-13. ACKNOWLEDGMENT
+12. ACKNOWLEDGMENT
 
 Owner acknowledges that:
 
@@ -196,28 +182,38 @@ Owner signs voluntarily and without coercion.
 
 Owner intends this Agreement to be legally binding upon Owner and Owner's heirs, successors, assigns, estate, and personal representatives.
 
-OWNER / LESSEE / LESSOR
+ADULT SIGNER
 
-Name: {{OWNER.FULL_NAME}}
+Printed Name: {{PARTICIPANT.PRINTED_NAME}}
 
 Capacity: □ Owner □ Lessee □ Lessor
 
-Signature: {{SIG.OWNER.NAME}}
+Signature: {{SIG.PARTICIPANT.NAME}}
 
-Date: {{SIG.OWNER.DATE}}
+Date: {{SIG.PARTICIPANT.DATE}}
 
-Phone: {{OWNER.PHONE}}
+Phone: {{PARTICIPANT.PHONE}}
 
-Email: {{OWNER.EMAIL}}
+Email: {{PARTICIPANT.EMAIL}}
 
 Horse Name: {{HORSE.REGISTERED_NAME}}
 
-COMPANY: {{ORG.LEGAL_NAME}}
+MINOR SIGNER (PARENT/GUARDIAN)
 
-By (signature): {{SIG.COMPANY.NAME}}
+Minor's Name: {{PARTICIPANT.FULL_NAME}}
 
-Printed: {{ORG.SIGNATORY_NAME}}
+Date of Birth:
 
-Title: {{ORG.SIGNATORY_TITLE}}
+I certify that I am the parent or legal guardian of the above-named minor and have authority to sign this Agreement on the minor's behalf as to the horse described above. I have read and understand this Agreement, agree to all of its terms on the minor's behalf, and agree to defend, indemnify, and hold harmless the Released Parties from claims arising from the minor's horse or the activities authorized under this Agreement to the extent permitted by California law.
 
-Date: {{SIG.COMPANY.DATE}}
+Parent/Guardian Name: {{GUARDIAN.FULL_NAME}}
+
+Relationship to Minor: {{GUARDIAN.RELATIONSHIP}}
+
+Signature: {{SIG.GUARDIAN.NAME}}
+
+Date: {{SIG.GUARDIAN.DATE}}
+
+Phone: {{GUARDIAN.PHONE}}
+
+Email: {{GUARDIAN.EMAIL}}

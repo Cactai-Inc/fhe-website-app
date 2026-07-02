@@ -60,13 +60,21 @@ describe('contract_templates — the 22 canonical contracts', () => {
     }
   });
 
-  it('every template names COMPANY plus at least one counterparty', async () => {
+  it('every template names COMPANY plus at least one counterparty (releases: unilateral, no COMPANY)', async () => {
     // Contracts Legal Pass: the business side is the COMPANY party (role renamed
     // from FHE); no template may still declare the old FHE party namespace.
+    // EXCEPTION (owner 2026-07-02): the four RELEASE_* documents are unilateral —
+    // only the signer's side is a party; COMPANY appears as prose, not a party.
     await h.asSuperuser();
     const rows = await h.q<{ template_key: string; party_namespaces: string[] }>(
       `select template_key, party_namespaces from contract_templates`);
     for (const r of rows) {
+      if (r.template_key.startsWith('RELEASE_')) {
+        expect(r.party_namespaces, r.template_key).not.toContain('COMPANY');
+        expect(r.party_namespaces.length, r.template_key).toBeGreaterThanOrEqual(1);
+        expect(r.party_namespaces, r.template_key).not.toContain('FHE');
+        continue;
+      }
       expect(r.party_namespaces, r.template_key).toContain('COMPANY');
       expect(r.party_namespaces, r.template_key).not.toContain('FHE');
       expect(r.party_namespaces.length, r.template_key).toBeGreaterThanOrEqual(2);

@@ -4,7 +4,7 @@ Effective from the Date of Signature until superseded by a later executed versio
 
 This General Visitor Liability Release, Assumption of Risk, Hold Harmless & Indemnification Agreement ("Agreement") is entered into as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned individual ("Visitor"), or if Visitor is under eighteen (18) years of age, the Visitor's parent or legal guardian, in favor of:
 
-{{ORG.LEGAL_IDENTITY}} ("COMPANY").
+{{ORG.LEGAL_NAME}} ("COMPANY").
 
 For purposes of this Agreement, the term "Released Parties" means COMPANY, its owner, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, representatives, affiliates, property owners, facility owners, licensors, lessors, lessees, hosts, landowners, successors, assigns, heirs, and any person acting on behalf of COMPANY at any location where it is authorized to conduct business.
 
@@ -36,15 +36,11 @@ Emergency medical assistance may not be immediately available.
 
 Visitor understands these risks are inherent to equestrian facilities and voluntarily accepts them.
 
-Visitor Initials:
-
 3. ASSUMPTION OF RISK
 
 Visitor knowingly and voluntarily assumes all risks, whether known or unknown, foreseeable or unforeseeable, inherent or otherwise, arising from entering, remaining upon, or departing from any property where COMPANY conducts business.
 
 Visitor accepts full personal responsibility for any injury, illness, death, property damage, or other loss that may occur.
-
-Visitor Initials:
 
 4. HEALTH, MENTAL CAPACITY, AND FITNESS
 
@@ -62,8 +58,6 @@ Visitor voluntarily assumes responsibility for determining whether participation
 
 If Visitor is signing on behalf of a minor, Parent or Guardian represents these statements are true to the best of his or her knowledge.
 
-Visitor Initials:
-
 5. RULES, SAFETY POLICIES & CODE OF CONDUCT
 
 Visitor acknowledges receipt of the separate Rules, Regulations, Safety Policies, and Code of Conduct for COMPANY.
@@ -72,23 +66,13 @@ Visitor agrees to read, understand, and comply with those rules at all times.
 
 Visitor understands that failure to comply may result in immediate removal from the property without refund or compensation.
 
-Visitor Initials Acknowledging Receipt and Agreement:
-
 6. RELEASE OF LIABILITY
 
 To the fullest extent permitted under California law, Visitor, on behalf of himself or herself and his or her heirs, representatives, successors, assigns, and personal representatives, voluntarily releases, waives, and forever discharges the Released Parties from any and all claims, demands, causes of action, damages, losses, liabilities, costs, expenses, or judgments arising out of or related to Visitor's presence on the property, including claims arising from the ordinary negligence of the Released Parties.
 
 This release applies to bodily injury, personal injury, illness, property damage, wrongful death, emotional distress, and all other losses, whether known or unknown, except to the extent such claims cannot legally be released under California law.
 
-Visitor Initials:
-
-7. COVENANT NOT TO SUE
-
-Visitor agrees not to file or maintain any lawsuit, arbitration, administrative proceeding, or other claim against any Released Party for matters released by this Agreement.
-
-Visitor Initials:
-
-8. HOLD HARMLESS AND INDEMNIFICATION
+7. HOLD HARMLESS AND INDEMNIFICATION
 
 Visitor agrees to defend, indemnify, and hold harmless the Released Parties from and against any claims, liabilities, damages, judgments, costs, expenses, or attorney's fees arising from:
 
@@ -100,35 +84,33 @@ Claims brought by or on behalf of persons accompanying Visitor, to the extent ca
 
 Damage to property caused by Visitor.
 
-9. PROPERTY DAMAGE
+8. PROPERTY DAMAGE
 
 Visitor accepts responsibility for any damage caused by Visitor to horses, equipment, facilities, vehicles, buildings, or other property and agrees to reimburse the responsible party for repair or replacement costs.
 
-10. CALIFORNIA CIVIL CODE §1542 WAIVER
+9. MEDIA CONSENT
 
-Visitor understands that California Civil Code §1542 provides:
+Visitor acknowledges that photographs, video recordings, and other media may be captured during visits to, or activities at, any location where COMPANY conducts business.
 
-"A general release does not extend to claims that the creditor or releasing party does not know or suspect to exist in his or her favor at the time of executing the release and that, if known by him or her, would have materially affected his or her settlement with the debtor or released party."
+Visitor grants COMPANY a perpetual, royalty-free license to use such media, including Visitor's (or, where applicable, the minor's) name, image, and likeness, for instructional, promotional, and other lawful business purposes, without compensation.
 
-Visitor expressly waives the protections of California Civil Code §1542 and agrees this Agreement applies to both known and unknown claims to the fullest extent permitted by law.
+Visitor may revoke this consent at any time by written notice via email to {{ORG.EMAIL}}; revocation is effective prospectively as to media captured after receipt of the notice.
 
-Visitor Initials:
-
-11. GOVERNING LAW
+10. GOVERNING LAW
 
 This Agreement shall be governed by the laws of the State of California.
 
 Any legal proceeding arising from this Agreement shall be brought exclusively in the state or federal courts located in San Diego County, California, and the parties consent to the jurisdiction of those courts.
 
-12. SEVERABILITY
+11. SEVERABILITY
 
 If any provision of this Agreement is held unenforceable, the remaining provisions shall remain in full force and effect.
 
-13. ENTIRE AGREEMENT
+12. ENTIRE AGREEMENT
 
 This Agreement constitutes the entire understanding between the parties concerning the subject matter herein and supersedes any prior oral or written representations regarding this subject.
 
-14. ACKNOWLEDGMENT
+13. ACKNOWLEDGMENT
 
 Visitor acknowledges that:
 
@@ -142,7 +124,7 @@ Visitor has had the opportunity to ask questions before signing.
 
 Visitor signs voluntarily and without coercion.
 
-ADULT VISITOR
+ADULT SIGNER
 
 Printed Name: {{PARTICIPANT.PRINTED_NAME}}
 
@@ -154,13 +136,11 @@ Phone: {{PARTICIPANT.PHONE}}
 
 Email: {{PARTICIPANT.EMAIL}}
 
-MINOR VISITOR
+MINOR SIGNER (PARENT/GUARDIAN)
 
 Minor's Name: {{PARTICIPANT.FULL_NAME}}
 
 Date of Birth:
-
-PARENT OR LEGAL GUARDIAN
 
 I certify that I am the parent or legal guardian of the above-named minor and have authority to sign this Agreement on the minor's behalf. I have read and understand this Agreement, consent to the minor's presence on the property, agree to all of its terms, and agree to indemnify and hold harmless the Released Parties from claims arising from the minor's presence or activities to the extent permitted by California law.
 
@@ -172,12 +152,6 @@ Signature: {{SIG.GUARDIAN.NAME}}
 
 Date: {{SIG.GUARDIAN.DATE}}
 
-COMPANY: {{ORG.LEGAL_NAME}}
+Phone: {{GUARDIAN.PHONE}}
 
-By (signature): {{SIG.COMPANY.NAME}}
-
-Printed: {{ORG.SIGNATORY_NAME}}
-
-Title: {{ORG.SIGNATORY_TITLE}}
-
-Date: {{SIG.COMPANY.DATE}}
+Email: {{GUARDIAN.EMAIL}}

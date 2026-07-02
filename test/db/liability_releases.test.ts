@@ -57,7 +57,7 @@ afterAll(async () => {
 });
 
 describe('the four releases are loaded', () => {
-  it('seeds all four RELEASE_* templates active, with tokenized bodies and COMPANY parties', async () => {
+  it('seeds all four RELEASE_* templates active, tokenized, unilateral (owner 2026-07-02)', async () => {
     await h.asSuperuser();
     const rows = await h.q<{ template_key: string; body: string | null; active: boolean; service_type: string | null; party_namespaces: string[] }>(
       `select template_key, body, active, service_type, party_namespaces
@@ -67,8 +67,13 @@ describe('the four releases are loaded', () => {
       expect(r.active, r.template_key).toBe(true);
       expect(r.service_type, `${r.template_key} is a non-service doc`).toBeNull();
       expect(r.body, `${r.template_key} body loaded`).toBeTruthy();
-      expect(r.body).toContain('{{ORG.LEGAL_IDENTITY}}');
-      expect(r.party_namespaces).toContain('COMPANY');
+      // Releases identify the DBA trade name ONLY — no personal identity clause
+      // and no COMPANY signing party (unilateral; owner decisions 2026-07-02).
+      expect(r.body).toContain('{{ORG.LEGAL_NAME}}');
+      expect(r.body).not.toContain('{{ORG.LEGAL_IDENTITY}}');
+      expect(r.body).not.toContain('{{ORG.SIGNATORY_NAME}}');
+      expect(r.party_namespaces).not.toContain('COMPANY');
+      expect(r.party_namespaces).toContain('PARTICIPANT');
       expect(r.party_namespaces).not.toContain('FHE');
     }
   });
@@ -81,9 +86,11 @@ describe('generate_document — RELEASE_PARTICIPANT for a riding lesson', () => 
       `select * from generate_document($1,'RELEASE_PARTICIPANT')`, [engId]);
     const body = row.merged_body;
 
-    // COMPANY identity: the seeded {{ORG.LEGAL_IDENTITY}} clause and signatory.
-    expect(body).toContain('doing business as French Heritage Equestrian');
-    expect(body).toContain('Charles Zigmund');
+    // COMPANY identity: trade name ONLY on releases (owner 2026-07-02) — no
+    // personal name, no sole-prop identity clause.
+    expect(body).toContain('French Heritage Equestrian');
+    expect(body).not.toContain('doing business as');
+    expect(body).not.toContain('Charles Zigmund');
     // participant party tokens resolve from engagement_parties → contacts
     expect(body).toContain('Paula Participant');
     expect(body).toContain('paula@example.com');
@@ -97,7 +104,8 @@ describe('generate_document — RELEASE_PARTICIPANT for a riding lesson', () => 
       expect(t, `unexpected unmerged token ${t}`).toMatch(/^\{\{SIG\./);
     }
     expect(body).toContain('{{SIG.PARTICIPANT.NAME}}');
-    expect(body).toContain('{{SIG.COMPANY.NAME}}');
+    // unilateral: no company countersignature block on any release
+    expect(body).not.toContain('{{SIG.COMPANY.NAME}}');
   });
 });
 

@@ -103,20 +103,15 @@ describe('visitor flow end-to-end (tenant #1, anon caller)', () => {
     ).rejects.toThrow(/sealed/);
   });
 
-  it('stays AWAITING_SIGNATURE (FHE designates a COMPANY signatory) and EXECUTES on countersign', async () => {
-    expect(res.status).toBe('AWAITING_SIGNATURE');
+  it('EXECUTES immediately on the single visitor signature (unilateral, owner 2026-07-02)', async () => {
+    // Releases carry no COMPANY party and need no countersign — the visitor's
+    // signature alone executes the document.
+    expect(res.status).toBe('EXECUTED');
     await h.asSuperuser();
     const [party] = await h.q<{ n: number }>(
       `select count(*)::int as n from engagement_parties
-       where engagement_id=$1 and party_role='COMPANY' and is_signer`, [res.engagement_id]);
-    expect(party.n).toBe(1);
-
-    // the EXISTING countersign seam
-    await h.asUser(aAdmin);
-    const [row] = await h.q<{ record_signature: string }>(
-      `select record_signature($1,'COMPANY','Charles Zigmund')`, [res.document_id]);
-    expect(row.record_signature).toBe('EXECUTED');
-    await h.asSuperuser();
+       where engagement_id=$1 and party_role='COMPANY'`, [res.engagement_id]);
+    expect(party.n).toBe(0);
     const [doc] = await h.q<{ status: string; effective_date: string | null }>(
       `select status, effective_date from documents where id=$1`, [res.document_id]);
     expect(doc.status).toBe('EXECUTED');

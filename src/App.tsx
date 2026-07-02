@@ -134,6 +134,7 @@ export function AppRoutes() {
             <Route path="/redeem" element={<Redeem />} />
             <Route path="/inquire" element={<Inquire />} />
             <Route path="/release" element={<Release />} />
+            <Route path="/release/:releaseKey" element={<Release />} />
 
             {/* Member community app (its own chrome, member-gated) */}
             <Route

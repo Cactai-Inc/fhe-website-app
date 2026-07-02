@@ -10,10 +10,11 @@
  *              org stamped by the addressed-org/sole-org default). Staff review
  *              at /app/ops/intake — nothing else is readable from here.
  *
- *  /release  — the visitor general-release kiosk: anon reads the RELEASE_GENERAL
- *              template body (contract_templates_read_active) to display it,
- *              then signs through the sign_general_release RPC
- *              (20260702020000) — the ONLY anon-executable mutation RPC.
+ *  /release  — the release kiosk: anon previews any of the four RELEASE_*
+ *              documents (release_preview RPC — merged org identity + dates,
+ *              truncated BEFORE the signature area) plus the FACILITY_RULES
+ *              gate document, then signs through the sign_release RPC
+ *              (20260702050000) — the ONLY anon-executable mutation RPC.
  */
 import { supabase } from '../supabase';
 
@@ -82,61 +83,88 @@ export async function submitIntakeSubmission(input: IntakeSubmissionInput): Prom
 }
 
 // ---------------------------------------------------------------------------
-// /release — visitor general-release kiosk
+// /release — the release kiosk (all four releases + the rules gate)
 // ---------------------------------------------------------------------------
 
-export interface GeneralReleaseTemplate {
+/** The four kiosk-signable releases (sign_release validates the same set). */
+export type ReleaseTemplateKey =
+  | 'RELEASE_GENERAL'
+  | 'RELEASE_PARTICIPANT'
+  | 'RELEASE_HORSE_EXERCISE'
+  | 'RELEASE_HORSE_CARE';
+
+export interface ReleasePreview {
   title: string;
-  /** Merged preview body: org identity + dates resolved server-side; person
-   *  and signature tokens render as fill-in lines (the visitor's details land
-   *  on the SIGNED document via sign_general_release). */
+  /** Merged preview body: org identity + dates resolved server-side and the
+   *  body TRUNCATED before the signature area — nothing signature-ish is shown
+   *  pre-signing; the signer's details land on the SIGNED document. */
   body: string;
 }
 
-/** The RELEASE_GENERAL preview for display before signing — the anon-executable
- *  general_release_preview RPC, so visitors see the real company identity and
- *  today's date, never raw {{TOKENS}}. */
-export async function fetchGeneralRelease(orgId?: string): Promise<GeneralReleaseTemplate> {
-  const { data, error } = await supabase.rpc('general_release_preview', {
+/** A release preview (or 'FACILITY_RULES' for the rules gate) for display
+ *  before signing — the anon-executable release_preview RPC, so visitors see
+ *  the real company identity and today's date, never raw {{TOKENS}}. */
+export async function fetchReleasePreview(
+  templateKey: ReleaseTemplateKey | 'FACILITY_RULES',
+  orgId?: string,
+): Promise<ReleasePreview> {
+  const { data, error } = await supabase.rpc('release_preview', {
+    p_template_key: templateKey,
     p_org: orgId ?? null,
   });
   if (error) throw error;
   const row = Array.isArray(data) ? data[0] : data;
-  if (!row) throw new Error('general release template unavailable');
-  return row as GeneralReleaseTemplate;
+  if (!row) throw new Error('release template unavailable');
+  return row as ReleasePreview;
 }
 
-export interface SignGeneralReleaseInput {
+export interface SignReleaseInput {
+  template_key: ReleaseTemplateKey;
+  /** The SIGNER: the adult, or the parent/guardian when is_minor. */
   full_name: string;
   email: string | null;
   phone: string | null;
   typed_name: string;
+  /** Minor flow: the guardian signs; minor fields required. */
+  is_minor: boolean;
+  minor_name?: string | null;
+  /** ISO date (YYYY-MM-DD). */
+  minor_dob?: string | null;
+  guardian_relationship?: string | null;
+  /** The rules gate — the RPC rejects unless true. */
+  rules_acknowledged: boolean;
   /** Optional explicit tenant (multi-tenant kiosks); defaults server-side. */
   org_id?: string;
 }
 
-export interface SignGeneralReleaseResult {
+export interface SignReleaseResult {
   document_id: string;
   document_code: string;
   engagement_id: string;
   contact_id: string;
-  /** 'EXECUTED', or 'AWAITING_SIGNATURE' when the company countersigns later. */
+  /** 'EXECUTED' — releases are unilateral (single signature executes). */
   status: string;
+  /** The executed document: applicable signer section only, completed
+   *  signature, DOB merged (minor flow), dated rules acknowledgment. */
   merged_body: string;
 }
 
 /** The kiosk sign call — the real engagement + document + sealed signature. */
-export async function signGeneralRelease(
-  input: SignGeneralReleaseInput,
-): Promise<SignGeneralReleaseResult> {
+export async function signRelease(input: SignReleaseInput): Promise<SignReleaseResult> {
   const params: Record<string, unknown> = {
+    p_template_key: input.template_key,
     p_full_name: input.full_name,
     p_email: input.email,
     p_phone: input.phone,
     p_typed_name: input.typed_name,
+    p_is_minor: input.is_minor,
+    p_minor_name: input.minor_name ?? null,
+    p_minor_dob: input.minor_dob ?? null,
+    p_guardian_relationship: input.guardian_relationship ?? null,
+    p_rules_acknowledged: input.rules_acknowledged,
   };
   if (input.org_id) params.p_org = input.org_id;
-  const { data, error } = await supabase.rpc('sign_general_release', params);
+  const { data, error } = await supabase.rpc('sign_release', params);
   if (error) throw error;
-  return data as SignGeneralReleaseResult;
+  return data as SignReleaseResult;
 }

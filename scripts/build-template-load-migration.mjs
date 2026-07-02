@@ -35,11 +35,16 @@ function kindOf(ns) {
  * INSERT is idempotent and 20260701070000 re-asserts the same rows (and owns
  * the contract_requirements matrix).
  */
+// Owner decision 2026-07-02: releases are UNILATERAL (COMPANY countersignature
+// removed — COMPANY stays a defined term in prose, not a signing party) and all
+// four share the ADULT SIGNER / MINOR SIGNER (PARENT/GUARDIAN) marker sections,
+// so the signer namespaces are PARTICIPANT + GUARDIAN across the board (the
+// horse releases' signer block moved OWNER → PARTICIPANT for the shared kiosk).
 const POST_SEED_TEMPLATES = {
-  RELEASE_GENERAL:        { title: 'General Visitor Liability Release',                 parties: ['PARTICIPANT', 'GUARDIAN', 'COMPANY'] },
-  RELEASE_PARTICIPANT:    { title: 'Participant Liability Release',                     parties: ['PARTICIPANT', 'GUARDIAN', 'COMPANY'] },
-  RELEASE_HORSE_EXERCISE: { title: 'Horse Exercise Liability Release',                  parties: ['OWNER', 'COMPANY'] },
-  RELEASE_HORSE_CARE:     { title: 'Horse Handling and Routine Care Liability Release', parties: ['OWNER', 'COMPANY'] },
+  RELEASE_GENERAL:        { title: 'General Visitor Liability Release',                 parties: ['PARTICIPANT', 'GUARDIAN'] },
+  RELEASE_PARTICIPANT:    { title: 'Participant Liability Release',                     parties: ['PARTICIPANT', 'GUARDIAN'] },
+  RELEASE_HORSE_EXERCISE: { title: 'Horse Exercise Liability Release',                  parties: ['PARTICIPANT', 'GUARDIAN'] },
+  RELEASE_HORSE_CARE:     { title: 'Horse Handling and Routine Care Liability Release', parties: ['PARTICIPANT', 'GUARDIAN'] },
   // Contract-module decomposition (20260701080000): the side-scoped Layer 2
   // transaction-representation module. service_type stays NULL (one tokenized
   // template serves purchase/sale/lease-in/lease-out representation).
