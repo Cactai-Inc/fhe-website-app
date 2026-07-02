@@ -60,6 +60,26 @@ export async function signInWithOAuth(provider: OAuthProvider, redirectTo = '/ac
 }
 
 export const signInWithGoogle = (redirectTo = '/account') => signInWithOAuth('google', redirectTo);
+
+/** Identities already linked to the signed-in user (e.g. ['email','google']). */
+export async function listLinkedProviders(): Promise<string[]> {
+  const { data } = await supabase.auth.getUserIdentities();
+  return (data?.identities ?? []).map((i) => i.provider);
+}
+
+/**
+ * Attach an OAuth identity to the CURRENT signed-in account (explicit linking —
+ * works regardless of email-confirmation state, unlike sign-in auto-linking).
+ * Redirects to the provider and back; requires manual linking to be enabled in
+ * Supabase Auth settings.
+ */
+export async function linkOAuthIdentity(provider: OAuthProvider, redirectTo = '/app/profile'): Promise<Result> {
+  const { error } = await supabase.auth.linkIdentity({
+    provider,
+    options: { redirectTo: appUrl(redirectTo) },
+  });
+  return { error: error?.message ?? null };
+}
 export const signInWithApple = (redirectTo = '/account') => signInWithOAuth('apple', redirectTo);
 
 // ── Password reset ───────────────────────────────────────────────────────────

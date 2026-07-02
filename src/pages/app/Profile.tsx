@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { upsertMyProfile } from '../../lib/api';
+import { listLinkedProviders, linkOAuthIdentity } from '../../lib/auth';
+import { ENABLED_OAUTH_PROVIDERS, OAUTH_LABELS } from '../../lib/authConfig';
 import { useDocumentTitle } from '../../lib/hooks';
 
 const RIDING_LEVELS = [
@@ -22,6 +24,18 @@ export default function Profile() {
   const [ridingLevel, setRidingLevel] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [linked, setLinked] = useState<string[] | null>(null);
+  const [linkError, setLinkError] = useState<string | null>(null);
+
+  useEffect(() => {
+    listLinkedProviders().then(setLinked).catch(() => setLinked([]));
+  }, [user?.id]);
+
+  async function connect(provider: 'google' | 'apple') {
+    setLinkError(null);
+    const { error } = await linkOAuthIdentity(provider);
+    if (error) setLinkError(error); // success = full-page redirect, no state to set
+  }
 
   useEffect(() => {
     setDisplayName(profile?.display_name ?? '');
@@ -74,6 +88,32 @@ export default function Profile() {
           <p className="font-serif text-green-800 text-lg">{displayName || firstName || 'Member'}</p>
           <p className="text-xs text-muted">{user?.email}</p>
         </div>
+      </div>
+
+      <div className="bg-white border border-green-800/10 p-6 mb-6">
+        <h2 className="font-serif text-green-800 text-lg mb-1">Sign-in methods</h2>
+        <p className="text-xs text-muted mb-4">
+          Connect Google so you can sign in with one tap — your account and history stay the same.
+        </p>
+        {linkError && <p role="alert" className="form-error mb-3">{linkError}</p>}
+        <ul className="space-y-2 text-sm font-sans">
+          {linked?.includes('email') && (
+            <li className="text-green-900">Email &amp; password <span className="text-muted">— connected</span></li>
+          )}
+          {ENABLED_OAUTH_PROVIDERS.map((p) =>
+            linked === null ? null : linked.includes(p) ? (
+              <li key={p} className="text-green-900">
+                {p.charAt(0).toUpperCase() + p.slice(1)} <span className="text-muted">— connected</span>
+              </li>
+            ) : (
+              <li key={p}>
+                <button type="button" onClick={() => connect(p)} className="btn-outline-gold text-sm">
+                  Connect {OAUTH_LABELS[p].replace('Continue with ', '')}
+                </button>
+              </li>
+            ),
+          )}
+        </ul>
       </div>
 
       <form onSubmit={save} className="bg-white border border-green-800/10 p-8">
