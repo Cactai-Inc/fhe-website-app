@@ -60,6 +60,7 @@ export const OPS_NAV: NavItem[] = [
   { to: '/app/ops/boarding', label: 'Boarding', icon: Home, module: 'mod.boarding' },
   { to: '/app/ops/barnops', label: 'Barn Ops', icon: Boxes, module: 'mod.barnops' },
   { to: '/app/ops/records', label: 'Records', icon: FileText, module: 'mod.horserecords' },
+  { to: '/app/ops/employees', label: 'Employees', icon: Contact, module: 'mod.employees' },
 ];
 
 /** The ops nav a staff session actually sees (pure, unit-testable). */

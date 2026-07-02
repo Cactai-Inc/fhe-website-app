@@ -80,7 +80,7 @@ export const MODULE_HUB_ROUTES: Record<string, string> = {
   'mod.boarding': '/app/ops/boarding',
   'mod.barnops': '/app/ops/barnops',
   'mod.horserecords': '/app/ops/records',
-  // 'mod.employees' hub lands with the remaining Wave-7 lanes
+  'mod.employees': '/app/ops/employees',
 };
 
 /** The module launcher catalog: key + label. Every tile is entitlement-gated;

@@ -428,7 +428,7 @@ export async function getEmployeesKpis(): Promise<EmployeesKpis> {
 
 /** "First Last" (falling back to email / a short id) for a joined profile. */
 export function staffDisplayName(
-  profile?: Pick<ProfileOption, 'first_name' | 'last_name' | 'email'> | null,
+  profile?: (Pick<ProfileOption, 'first_name' | 'last_name'> & { email?: string | null }) | null,
   fallback = 'Unknown staff',
 ): string {
   if (!profile) return fallback;

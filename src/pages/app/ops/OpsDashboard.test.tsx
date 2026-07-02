@@ -75,15 +75,15 @@ describe('OPS-DASH — ops home dashboard', () => {
   it('(a) Wave-7 hub map lists live hubs; an enabled module WITHOUT a hub stays a status tile', async () => {
     renderWithRouter(<OpsDashboard counts={makeCounts()} />, { route: '/app/ops' });
 
-    // Five hubs shipped in Wave-7; employees has no hub yet.
+    // All six module hubs shipped in Wave-7.
     expect(MODULE_HUB_ROUTES).toMatchObject({
       'mod.brokerage': '/app/ops/brokerage',
       'mod.lessons': '/app/ops/lessons',
       'mod.boarding': '/app/ops/boarding',
       'mod.barnops': '/app/ops/barnops',
       'mod.horserecords': '/app/ops/records',
+      'mod.employees': '/app/ops/employees',
     });
-    expect(MODULE_HUB_ROUTES['mod.employees']).toBeUndefined();
 
     // brokerage is enabled AND has a hub — it renders as a real link tile now.
     const brokerage = await screen.findByTestId('module-mod.brokerage-tile');

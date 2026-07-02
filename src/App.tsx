@@ -70,6 +70,9 @@ import LessonCreditsPage from './pages/app/ops/lessons/LessonCreditsPage';
 import RecordsHubPage from './pages/app/ops/hubs/RecordsHubPage';
 import HorsePartiesPage from './pages/app/ops/records/HorsePartiesPage';
 import HorseHealthPage from './pages/app/ops/records/HorseHealthPage';
+import EmployeesHubPage from './pages/app/ops/hubs/EmployeesHubPage';
+import StaffPage from './pages/app/ops/employees/StaffPage';
+import SchedulePage from './pages/app/ops/employees/SchedulePage';
 
 export function AppRoutes() {
   return (
@@ -166,6 +169,9 @@ export function AppRoutes() {
               <Route path="ops/records" element={<ProtectedRoute requireAdmin><RecordsHubPage /></ProtectedRoute>} />
               <Route path="ops/records/horses/:horseId/parties" element={<ProtectedRoute requireAdmin><HorsePartiesPage /></ProtectedRoute>} />
               <Route path="ops/records/horses/:horseId/health" element={<ProtectedRoute requireAdmin><HorseHealthPage /></ProtectedRoute>} />
+              <Route path="ops/employees" element={<ProtectedRoute requireAdmin><EmployeesHubPage /></ProtectedRoute>} />
+              <Route path="ops/employees/staff" element={<ProtectedRoute requireAdmin><StaffPage /></ProtectedRoute>} />
+              <Route path="ops/employees/schedule" element={<ProtectedRoute requireAdmin><SchedulePage /></ProtectedRoute>} />
             </Route>
 
             {/* Branded 404 */}
