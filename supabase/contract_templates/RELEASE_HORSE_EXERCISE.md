@@ -2,7 +2,7 @@ EQUINE ACTIVITIES LIABILITY RELEASE, ASSUMPTION OF RISK, AUTHORIZATION, HOLD HAR
 
 (Horse Owner / Lessee / Lessor)
 
-Effective for One (1) Year from Date of Signature
+Effective from the Date of Signature until superseded by a later executed version of this Release
 
 This Equine Activities Liability Release, Assumption of Risk, Authorization, Hold Harmless & Indemnification Agreement ("Agreement") is entered into as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned Horse Owner, Lessee, or Lessor ("Owner") in favor of:
 

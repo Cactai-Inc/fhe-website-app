@@ -87,19 +87,23 @@ export async function submitIntakeSubmission(input: IntakeSubmissionInput): Prom
 
 export interface GeneralReleaseTemplate {
   title: string;
-  /** The verbatim template body ({{TOKENS}} still live — display only). */
+  /** Merged preview body: org identity + dates resolved server-side; person
+   *  and signature tokens render as fill-in lines (the visitor's details land
+   *  on the SIGNED document via sign_general_release). */
   body: string;
 }
 
-/** The RELEASE_GENERAL template for display before signing (anon-readable). */
-export async function fetchGeneralRelease(): Promise<GeneralReleaseTemplate> {
-  const { data, error } = await supabase
-    .from('contract_templates')
-    .select('title, body')
-    .eq('template_key', 'RELEASE_GENERAL')
-    .single();
+/** The RELEASE_GENERAL preview for display before signing — the anon-executable
+ *  general_release_preview RPC, so visitors see the real company identity and
+ *  today's date, never raw {{TOKENS}}. */
+export async function fetchGeneralRelease(orgId?: string): Promise<GeneralReleaseTemplate> {
+  const { data, error } = await supabase.rpc('general_release_preview', {
+    p_org: orgId ?? null,
+  });
   if (error) throw error;
-  return data as GeneralReleaseTemplate;
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) throw new Error('general release template unavailable');
+  return row as GeneralReleaseTemplate;
 }
 
 export interface SignGeneralReleaseInput {

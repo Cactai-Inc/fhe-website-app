@@ -3928,7 +3928,7 @@ INSERT INTO contract_templates (template_key, title, service_type, party_namespa
   ON CONFLICT (template_key) DO NOTHING;
 UPDATE contract_templates SET body = $body$GENERAL VISITOR LIABILITY RELEASE, ASSUMPTION OF RISK, HOLD HARMLESS & INDEMNIFICATION AGREEMENT
 
-Effective for One (1) Year from Date of Signature
+Effective from the Date of Signature until superseded by a later executed version of this Release
 
 This General Visitor Liability Release, Assumption of Risk, Hold Harmless & Indemnification Agreement ("Agreement") is entered into as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned individual ("Visitor"), or if Visitor is under eighteen (18) years of age, the Visitor's parent or legal guardian, in favor of:
 
@@ -4154,7 +4154,7 @@ UPDATE contract_templates SET body = $body$HORSE HANDLING, ROUTINE CARE, TEMPORA
 
 (Horse Owner / Lessee / Lessor)
 
-Effective for One (1) Year from Date of Signature
+Effective from the Date of Signature until superseded by a later executed version of this Release
 
 This Horse Handling, Routine Care, Temporary Emergency Stabilization, Liability Release, Hold Harmless & Indemnification Agreement ("Agreement") is entered into as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned Horse Owner, Lessee, or Lessor ("Owner") in favor of:
 
@@ -4418,7 +4418,7 @@ UPDATE contract_templates SET body = $body$EQUINE ACTIVITIES LIABILITY RELEASE, 
 
 (Horse Owner / Lessee / Lessor)
 
-Effective for One (1) Year from Date of Signature
+Effective from the Date of Signature until superseded by a later executed version of this Release
 
 This Equine Activities Liability Release, Assumption of Risk, Authorization, Hold Harmless & Indemnification Agreement ("Agreement") is entered into as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned Horse Owner, Lessee, or Lessor ("Owner") in favor of:
 
@@ -4716,7 +4716,7 @@ INSERT INTO contract_templates (template_key, title, service_type, party_namespa
   ON CONFLICT (template_key) DO NOTHING;
 UPDATE contract_templates SET body = $body$PARTICIPANT LIABILITY RELEASE, ASSUMPTION OF RISK, HOLD HARMLESS & INDEMNIFICATION AGREEMENT
 
-Effective for One (1) Year from Date of Signature
+Effective from the Date of Signature until superseded by a later executed version of this Release
 
 This Participant Liability Release, Assumption of Risk, Hold Harmless & Indemnification Agreement ("Agreement") is entered into as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned participant ("Participant"), or if Participant is under eighteen (18) years of age, by the Participant's parent or legal guardian, in favor of:
 

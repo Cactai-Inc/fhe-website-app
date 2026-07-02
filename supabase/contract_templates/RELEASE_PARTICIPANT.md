@@ -1,6 +1,6 @@
 PARTICIPANT LIABILITY RELEASE, ASSUMPTION OF RISK, HOLD HARMLESS & INDEMNIFICATION AGREEMENT
 
-Effective for One (1) Year from Date of Signature
+Effective from the Date of Signature until superseded by a later executed version of this Release
 
 This Participant Liability Release, Assumption of Risk, Hold Harmless & Indemnification Agreement ("Agreement") is entered into as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned participant ("Participant"), or if Participant is under eighteen (18) years of age, by the Participant's parent or legal guardian, in favor of:
 

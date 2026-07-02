@@ -2,7 +2,7 @@ HORSE HANDLING, ROUTINE CARE, TEMPORARY EMERGENCY STABILIZATION, LIABILITY RELEA
 
 (Horse Owner / Lessee / Lessor)
 
-Effective for One (1) Year from Date of Signature
+Effective from the Date of Signature until superseded by a later executed version of this Release
 
 This Horse Handling, Routine Care, Temporary Emergency Stabilization, Liability Release, Hold Harmless & Indemnification Agreement ("Agreement") is entered into as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned Horse Owner, Lessee, or Lessor ("Owner") in favor of:
 
