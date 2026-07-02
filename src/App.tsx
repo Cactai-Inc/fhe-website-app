@@ -4,6 +4,7 @@ import { CartProvider } from './contexts/CartContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { BrandProvider } from './contexts/BrandProvider';
 import ProtectedRoute from './components/ProtectedRoute';
+import ScrollToTop from './components/ScrollToTop';
 import Layout from './components/layout/Layout';
 import AppLayout from './components/app/AppLayout';
 import Landing from './pages/Landing';
@@ -223,6 +224,7 @@ export function AppRoutes() {
 export default function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <AppRoutes />
     </BrowserRouter>
   );
