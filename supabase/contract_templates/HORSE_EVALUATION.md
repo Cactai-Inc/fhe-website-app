@@ -1,6 +1,6 @@
-PRE-PURCHASE HORSE EVALUATION AND CONSULTING AGREEMENT
+HORSE EVALUATION AGREEMENT
 
-This Pre-Purchase Horse Evaluation and Consulting Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
+This Horse Evaluation Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
 
 {{ORG.LEGAL_IDENTITY}} (“COMPANY”),
 
@@ -18,6 +18,8 @@ Email: {{CLIENT.EMAIL}}
 
 HORSE INFORMATION
 
+This Agreement covers ONLY the single horse identified below (the “Horse”). Evaluation of any additional horse requires a separately executed evaluation agreement and a separate per-horse fee.
+
 Horse Name: {{HORSE.REGISTERED_NAME}}
 
 Owner/Seller:
@@ -32,13 +34,21 @@ Discipline: {{ENG.DISCIPLINE}}
 
 Registration Information: {{HORSE.REGISTRATION_NUMBER}}
 
+TRANSACTION CONTEXT (IF APPLICABLE)
+
+Prospective transaction: {{DIR.DIRECTION_TERM}}
+
+Client’s role: {{DIR.ROLE_TERM}}
+
 RECITALS
 
-A. Client desires assistance evaluating a horse that Client may purchase, lease, or otherwise acquire.
+A. Client desires an evaluation of the Horse. The Horse may be one Client is considering purchasing or leasing, or one Client owns and is offering for sale or lease; the evaluation is transaction-agnostic and this Agreement applies regardless of the direction of any prospective transaction.
 
 B. COMPANY provides equestrian consulting and practical horse evaluation services based on experience and knowledge of riding, training, and horse handling.
 
-C. Client understands that evaluation services are advisory only and do not replace veterinary, legal, insurance, or professional services.
+C. Evaluation is a standalone, separately executed, per-horse service. It may occur during or after a search conducted under a separate search retainer, before a transaction handled under a separate transaction representation agreement, or entirely on its own. No other agreement is required before or after this one.
+
+D. Client understands that evaluation services are advisory only and do not replace veterinary, legal, insurance, or professional services.
 
 AGREEMENT
 
@@ -60,7 +70,7 @@ Discussion of suitability for Client’s goals;
 
 General training and temperament observations;
 
-Communication with sellers, trainers, and related parties.
+Communication with owners, sellers, trainers, and related parties.
 
 SCOPE OF EVALUATION
 
@@ -88,11 +98,11 @@ Behavior and soundness cannot be guaranteed;
 
 A visual or ridden evaluation cannot identify all medical conditions;
 
-No evaluation replaces a veterinary pre-purchase examination.
+No evaluation replaces a veterinary examination.
 
 VETERINARY EXAMINATION RECOMMENDATION
 
-COMPANY strongly recommends that Client obtain an independent veterinary pre-purchase examination before purchase or lease.
+COMPANY strongly recommends that Client obtain an independent veterinary examination before completing any purchase, sale, or lease of the Horse.
 
 Client understands that:
 
@@ -124,17 +134,17 @@ CLIENT FINAL DECISION
 
 Client acknowledges that Client alone decides whether to:
 
-Purchase the horse;
-
-Lease the horse;
+Purchase, sell, or lease the Horse;
 
 Continue negotiations;
 
-Accept risks associated with acquisition.
+Accept risks associated with any transaction.
 
-SELLER INFORMATION
+THIRD-PARTY INFORMATION
 
 Client understands COMPANY may rely on information provided by:
+
+Owner;
 
 Seller;
 
@@ -142,21 +152,21 @@ Trainer;
 
 Broker;
 
-Owner;
-
 Other third parties.
 
 COMPANY does not guarantee the accuracy or completeness of third-party statements.
 
 CONFLICTS AND DISCLOSURES
 
-COMPANY shall disclose known relationships or interests relating to the horse.
+COMPANY shall disclose known relationships or interests relating to the Horse.
 
 Disclosures:
 
 FEES
 
-Evaluation Fee: {{TXN.SERVICE_FEE}}
+Evaluation Fee (per horse): {{TXN.EVALUATION_FEE}}
+
+The Evaluation Fee is charged for each horse evaluated, under a separately executed evaluation agreement per horse, whether the horse was identified through a COMPANY search or otherwise. It is separate from, and in addition to, any search retainer, success / acquisition fee, or transaction representation fee owed under separately executed agreements.
 
 Travel Fee:
 
@@ -182,53 +192,13 @@ COMMUNICATIONS
 
 Client authorizes COMPANY to communicate with relevant parties regarding evaluation services.
 
-RELEASE OF LIABILITY
+LIABILITY RELEASE — INCORPORATED BY REFERENCE
 
-Client releases COMPANY and its owners, employees, agents, contractors, and representatives from claims arising from:
-
-Client’s purchase decision;
-
-Horse condition;
-
-Horse behavior;
-
-Third-party representations;
-
-Future performance.
-
-This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
-
-LIMITATION OF LIABILITY
-
-To the fullest extent permitted by law, COMPANY shall not be liable for:
-
-Purchase price losses;
-
-Training expenses;
-
-Veterinary expenses;
-
-Loss of use;
-
-Reduced horse value;
-
-Consequential damages.
-
-INDEMNIFICATION
-
-Client agrees to indemnify COMPANY from claims arising from:
-
-Client’s acquisition;
-
-Ownership disputes;
-
-Third-party claims;
-
-Horse-related losses.
+The risk acknowledgments, releases, and indemnity obligations applicable to the activities under this Agreement are set forth exclusively in the separately executed Liability Release and Assumption of Risk agreement, which is incorporated herein by reference.
 
 TERMINATION
 
-Either party may terminate this Agreement.
+Either party may terminate this Agreement. Termination does not affect any separately executed search retainer or transaction representation agreement.
 
 Fees for completed services remain due.
 
@@ -252,7 +222,7 @@ California law governs this Agreement.
 
 ENTIRE AGREEMENT
 
-This Agreement represents the complete understanding regarding evaluation services.
+This Agreement represents the complete understanding regarding evaluation of the Horse identified above.
 
 CLIENT
 

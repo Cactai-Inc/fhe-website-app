@@ -748,9 +748,9 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   SELECT id, 'SIG', 'COMPANY.DATE', '{{SIG.COMPANY.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET';
 
 -- ── HORSE_EVALUATION ─────────────────────────────────────────────
-UPDATE contract_templates SET body = $body$PRE-PURCHASE HORSE EVALUATION AND CONSULTING AGREEMENT
+UPDATE contract_templates SET body = $body$HORSE EVALUATION AGREEMENT
 
-This Pre-Purchase Horse Evaluation and Consulting Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
+This Horse Evaluation Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
 
 {{ORG.LEGAL_IDENTITY}} (“COMPANY”),
 
@@ -768,6 +768,8 @@ Email: {{CLIENT.EMAIL}}
 
 HORSE INFORMATION
 
+This Agreement covers ONLY the single horse identified below (the “Horse”). Evaluation of any additional horse requires a separately executed evaluation agreement and a separate per-horse fee.
+
 Horse Name: {{HORSE.REGISTERED_NAME}}
 
 Owner/Seller:
@@ -782,13 +784,21 @@ Discipline: {{ENG.DISCIPLINE}}
 
 Registration Information: {{HORSE.REGISTRATION_NUMBER}}
 
+TRANSACTION CONTEXT (IF APPLICABLE)
+
+Prospective transaction: {{DIR.DIRECTION_TERM}}
+
+Client’s role: {{DIR.ROLE_TERM}}
+
 RECITALS
 
-A. Client desires assistance evaluating a horse that Client may purchase, lease, or otherwise acquire.
+A. Client desires an evaluation of the Horse. The Horse may be one Client is considering purchasing or leasing, or one Client owns and is offering for sale or lease; the evaluation is transaction-agnostic and this Agreement applies regardless of the direction of any prospective transaction.
 
 B. COMPANY provides equestrian consulting and practical horse evaluation services based on experience and knowledge of riding, training, and horse handling.
 
-C. Client understands that evaluation services are advisory only and do not replace veterinary, legal, insurance, or professional services.
+C. Evaluation is a standalone, separately executed, per-horse service. It may occur during or after a search conducted under a separate search retainer, before a transaction handled under a separate transaction representation agreement, or entirely on its own. No other agreement is required before or after this one.
+
+D. Client understands that evaluation services are advisory only and do not replace veterinary, legal, insurance, or professional services.
 
 AGREEMENT
 
@@ -810,7 +820,7 @@ Discussion of suitability for Client’s goals;
 
 General training and temperament observations;
 
-Communication with sellers, trainers, and related parties.
+Communication with owners, sellers, trainers, and related parties.
 
 SCOPE OF EVALUATION
 
@@ -838,11 +848,11 @@ Behavior and soundness cannot be guaranteed;
 
 A visual or ridden evaluation cannot identify all medical conditions;
 
-No evaluation replaces a veterinary pre-purchase examination.
+No evaluation replaces a veterinary examination.
 
 VETERINARY EXAMINATION RECOMMENDATION
 
-COMPANY strongly recommends that Client obtain an independent veterinary pre-purchase examination before purchase or lease.
+COMPANY strongly recommends that Client obtain an independent veterinary examination before completing any purchase, sale, or lease of the Horse.
 
 Client understands that:
 
@@ -874,17 +884,17 @@ CLIENT FINAL DECISION
 
 Client acknowledges that Client alone decides whether to:
 
-Purchase the horse;
-
-Lease the horse;
+Purchase, sell, or lease the Horse;
 
 Continue negotiations;
 
-Accept risks associated with acquisition.
+Accept risks associated with any transaction.
 
-SELLER INFORMATION
+THIRD-PARTY INFORMATION
 
 Client understands COMPANY may rely on information provided by:
+
+Owner;
 
 Seller;
 
@@ -892,21 +902,21 @@ Trainer;
 
 Broker;
 
-Owner;
-
 Other third parties.
 
 COMPANY does not guarantee the accuracy or completeness of third-party statements.
 
 CONFLICTS AND DISCLOSURES
 
-COMPANY shall disclose known relationships or interests relating to the horse.
+COMPANY shall disclose known relationships or interests relating to the Horse.
 
 Disclosures:
 
 FEES
 
-Evaluation Fee: {{TXN.SERVICE_FEE}}
+Evaluation Fee (per horse): {{TXN.EVALUATION_FEE}}
+
+The Evaluation Fee is charged for each horse evaluated, under a separately executed evaluation agreement per horse, whether the horse was identified through a COMPANY search or otherwise. It is separate from, and in addition to, any search retainer, success / acquisition fee, or transaction representation fee owed under separately executed agreements.
 
 Travel Fee:
 
@@ -932,53 +942,13 @@ COMMUNICATIONS
 
 Client authorizes COMPANY to communicate with relevant parties regarding evaluation services.
 
-RELEASE OF LIABILITY
+LIABILITY RELEASE — INCORPORATED BY REFERENCE
 
-Client releases COMPANY and its owners, employees, agents, contractors, and representatives from claims arising from:
-
-Client’s purchase decision;
-
-Horse condition;
-
-Horse behavior;
-
-Third-party representations;
-
-Future performance.
-
-This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
-
-LIMITATION OF LIABILITY
-
-To the fullest extent permitted by law, COMPANY shall not be liable for:
-
-Purchase price losses;
-
-Training expenses;
-
-Veterinary expenses;
-
-Loss of use;
-
-Reduced horse value;
-
-Consequential damages.
-
-INDEMNIFICATION
-
-Client agrees to indemnify COMPANY from claims arising from:
-
-Client’s acquisition;
-
-Ownership disputes;
-
-Third-party claims;
-
-Horse-related losses.
+The risk acknowledgments, releases, and indemnity obligations applicable to the activities under this Agreement are set forth exclusively in the separately executed Liability Release and Assumption of Risk agreement, which is incorporated herein by reference.
 
 TERMINATION
 
-Either party may terminate this Agreement.
+Either party may terminate this Agreement. Termination does not affect any separately executed search retainer or transaction representation agreement.
 
 Fees for completed services remain due.
 
@@ -1002,7 +972,7 @@ California law governs this Agreement.
 
 ENTIRE AGREEMENT
 
-This Agreement represents the complete understanding regarding evaluation services.
+This Agreement represents the complete understanding regarding evaluation of the Horse identified above.
 
 CLIENT
 
@@ -1048,9 +1018,13 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   UNION ALL
   SELECT id, 'HORSE', 'REGISTRATION_NUMBER', '{{HORSE.REGISTRATION_NUMBER}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EVALUATION'
   UNION ALL
+  SELECT id, 'DIR', 'DIRECTION_TERM', '{{DIR.DIRECTION_TERM}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EVALUATION'
+  UNION ALL
+  SELECT id, 'DIR', 'ROLE_TERM', '{{DIR.ROLE_TERM}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EVALUATION'
+  UNION ALL
   SELECT id, 'ENG', 'INTENDED_USE', '{{ENG.INTENDED_USE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EVALUATION'
   UNION ALL
-  SELECT id, 'TXN', 'SERVICE_FEE', '{{TXN.SERVICE_FEE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EVALUATION'
+  SELECT id, 'TXN', 'EVALUATION_FEE', '{{TXN.EVALUATION_FEE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EVALUATION'
   UNION ALL
   SELECT id, 'TXN', 'PAYMENT_TERMS', '{{TXN.PAYMENT_TERMS}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EVALUATION'
   UNION ALL
@@ -2177,283 +2151,6 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   UNION ALL
   SELECT id, 'SIG', 'COMPANY.DATE', '{{SIG.COMPANY.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_PURCHASE_SALE';
 
--- ── HORSE_REPRESENTATION ─────────────────────────────────────────────
-UPDATE contract_templates SET body = $body$HORSE LEASE REPRESENTATION AND ACQUISITION SERVICES AGREEMENT
-
-This Horse Lease Representation and Acquisition Services Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
-
-{{ORG.LEGAL_IDENTITY}} (“COMPANY”),
-
-and
-
-Client Name: {{CLIENT.FULL_NAME}}
-
-Address: {{CLIENT.ADDRESS}}
-
-Phone: {{CLIENT.PHONE}}
-
-Email: {{CLIENT.EMAIL}}
-
-(“Client”)
-
-RECITALS
-
-A. Client desires assistance locating, evaluating, negotiating, and entering into a horse lease arrangement.
-
-B. COMPANY provides equestrian consulting, lease search assistance, communication support, and transaction assistance.
-
-C. Client desires to retain COMPANY for lease-related services under the terms of this Agreement.
-
-AGREEMENT
-
-APPOINTMENT OF COMPANY
-
-Client retains COMPANY to assist with horse lease opportunities, which may include:
-
-Identifying potential lease horses;
-
-Communicating with owners, trainers, and facilities;
-
-Coordinating meetings and trials;
-
-Assisting with lease discussions;
-
-Reviewing general lease considerations;
-
-Facilitating communications between parties.
-
-CLIENT LEASE OBJECTIVES
-
-Discipline: {{ENG.DISCIPLINE}}
-
-Horse Type:
-
-Budget: {{ENG.BUDGET}}
-
-Lease Duration Desired: {{TXN.LEASE_TERM}}
-
-Intended Use: {{ENG.INTENDED_USE}}
-
-Other Requirements:
-
-SCOPE OF SERVICES
-
-COMPANY may provide opinions and recommendations based on equestrian experience.
-
-Client understands COMPANY does not guarantee:
-
-Lease availability;
-
-Horse suitability;
-
-Owner acceptance;
-
-Successful lease completion.
-
-CLIENT RESPONSIBILITY
-
-Client remains responsible for decisions regarding:
-
-Horse selection;
-
-Lease acceptance;
-
-Riding suitability;
-
-Financial obligations;
-
-Lease commitments.
-
-HORSE CONDITION AND SUITABILITY
-
-Client acknowledges:
-
-Horses are living animals;
-
-Behavior and performance may change;
-
-A lease decision involves risk;
-
-Veterinary examination may be appropriate.
-
-PROFESSIONAL LIMITATIONS
-
-COMPANY is not acting as:
-
-Attorney;
-
-Veterinarian;
-
-Insurance provider;
-
-Financial advisor;
-
-Licensed appraiser.
-
-LEASE DOCUMENTATION
-
-Client understands that the actual lease agreement is a separate contract between:
-
-Horse Owner:
-
-and
-
-Lessee:
-
-COMPANY is not the owner of the Horse unless separately stated in writing.
-
-FEES AND COMPENSATION
-
-Client agrees to pay COMPANY:
-
-Lease Search Retainer: {{TXN.RETAINER_FEE}}
-
-Lease Placement Fee: {{TXN.SERVICE_FEE}}
-
-or
-
-{{TXN.COMMISSION_RATE}} of lease value
-
-Additional Fees:
-
-Payment Due: {{TXN.PAYMENT_TERMS}}
-
-INTRODUCED HORSES AND OPPORTUNITIES
-
-If COMPANY introduces Client to a horse, owner, trainer, facility, or lease opportunity, Client agrees compensation remains due if Client completes a lease transaction involving that opportunity.
-
-Protection Period: {{ENG.PROTECTION_PERIOD}} months.
-
-COMMUNICATION AUTHORIZATION
-
-Client authorizes COMPANY to communicate with:
-
-Horse owners;
-
-Trainers;
-
-Facilities;
-
-Brokers;
-
-Other equine professionals.
-
-OWNER DISCLOSURES
-
-COMPANY may rely on information provided by horse owners and other third parties.
-
-COMPANY does not guarantee accuracy of third-party statements.
-
-CONFIDENTIALITY
-
-Confidential information may include:
-
-Budget;
-
-Lease terms;
-
-Negotiation strategy;
-
-Horse information.
-
-LIABILITY RELEASE — INCORPORATED BY REFERENCE
-
-The risk acknowledgments, releases, and indemnity obligations applicable to the activities under this Agreement are set forth exclusively in the separately executed Liability Release and Assumption of Risk agreement, which is incorporated herein by reference.
-
-TERMINATION
-
-Either party may terminate by written notice.
-
-Completed services and earned fees remain payable.
-
-DISPUTE RESOLUTION
-
-Disputes shall be resolved by:
-
-□ Arbitration
-
-□ Litigation
-
-Venue shall be San Diego County, California.
-
-ATTORNEY’S FEES
-
-The prevailing party shall be entitled to reasonable attorney’s fees and costs where permitted by law.
-
-GOVERNING LAW
-
-California law governs this Agreement.
-
-ENTIRE AGREEMENT
-
-This Agreement represents the entire agreement regarding lease representation services.
-
-CLIENT
-
-Signature: {{SIG.CLIENT.NAME}}
-
-Printed Name: {{CLIENT.PRINTED_NAME}}
-
-Date: {{SIG.CLIENT.DATE}}
-
-COMPANY: {{ORG.LEGAL_NAME}}
-
-By (signature): {{SIG.COMPANY.NAME}}
-
-Printed: {{ORG.SIGNATORY_NAME}}
-
-Title: {{ORG.SIGNATORY_TITLE}}
-
-Date: {{SIG.COMPANY.DATE}}
-$body$, updated_at = now()
-  WHERE template_key = 'HORSE_REPRESENTATION';
-INSERT INTO template_tokens (template_id, namespace, field, token, kind, required, party_scoped)
-  SELECT id, 'DOC', 'EFFECTIVE_DATE', '{{DOC.EFFECTIVE_DATE}}', 'system', false, false FROM contract_templates WHERE template_key = 'HORSE_REPRESENTATION'
-  UNION ALL
-  SELECT id, 'ORG', 'LEGAL_IDENTITY', '{{ORG.LEGAL_IDENTITY}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_REPRESENTATION'
-  UNION ALL
-  SELECT id, 'CLIENT', 'FULL_NAME', '{{CLIENT.FULL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_REPRESENTATION'
-  UNION ALL
-  SELECT id, 'CLIENT', 'ADDRESS', '{{CLIENT.ADDRESS}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_REPRESENTATION'
-  UNION ALL
-  SELECT id, 'CLIENT', 'PHONE', '{{CLIENT.PHONE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_REPRESENTATION'
-  UNION ALL
-  SELECT id, 'CLIENT', 'EMAIL', '{{CLIENT.EMAIL}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_REPRESENTATION'
-  UNION ALL
-  SELECT id, 'ENG', 'DISCIPLINE', '{{ENG.DISCIPLINE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_REPRESENTATION'
-  UNION ALL
-  SELECT id, 'ENG', 'BUDGET', '{{ENG.BUDGET}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_REPRESENTATION'
-  UNION ALL
-  SELECT id, 'TXN', 'LEASE_TERM', '{{TXN.LEASE_TERM}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_REPRESENTATION'
-  UNION ALL
-  SELECT id, 'ENG', 'INTENDED_USE', '{{ENG.INTENDED_USE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_REPRESENTATION'
-  UNION ALL
-  SELECT id, 'TXN', 'RETAINER_FEE', '{{TXN.RETAINER_FEE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_REPRESENTATION'
-  UNION ALL
-  SELECT id, 'TXN', 'SERVICE_FEE', '{{TXN.SERVICE_FEE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_REPRESENTATION'
-  UNION ALL
-  SELECT id, 'TXN', 'COMMISSION_RATE', '{{TXN.COMMISSION_RATE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_REPRESENTATION'
-  UNION ALL
-  SELECT id, 'TXN', 'PAYMENT_TERMS', '{{TXN.PAYMENT_TERMS}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_REPRESENTATION'
-  UNION ALL
-  SELECT id, 'ENG', 'PROTECTION_PERIOD', '{{ENG.PROTECTION_PERIOD}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_REPRESENTATION'
-  UNION ALL
-  SELECT id, 'SIG', 'CLIENT.NAME', '{{SIG.CLIENT.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_REPRESENTATION'
-  UNION ALL
-  SELECT id, 'CLIENT', 'PRINTED_NAME', '{{CLIENT.PRINTED_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_REPRESENTATION'
-  UNION ALL
-  SELECT id, 'SIG', 'CLIENT.DATE', '{{SIG.CLIENT.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_REPRESENTATION'
-  UNION ALL
-  SELECT id, 'ORG', 'LEGAL_NAME', '{{ORG.LEGAL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_REPRESENTATION'
-  UNION ALL
-  SELECT id, 'SIG', 'COMPANY.NAME', '{{SIG.COMPANY.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_REPRESENTATION'
-  UNION ALL
-  SELECT id, 'ORG', 'SIGNATORY_NAME', '{{ORG.SIGNATORY_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_REPRESENTATION'
-  UNION ALL
-  SELECT id, 'ORG', 'SIGNATORY_TITLE', '{{ORG.SIGNATORY_TITLE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_REPRESENTATION'
-  UNION ALL
-  SELECT id, 'SIG', 'COMPANY.DATE', '{{SIG.COMPANY.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_REPRESENTATION';
-
 -- ── HORSE_SALE_TRANSFER ─────────────────────────────────────────────
 UPDATE contract_templates SET body = $body$HORSE SALE AND TRANSFER AGREEMENT
 
@@ -2826,9 +2523,9 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   SELECT id, 'SIG', 'COMPANY.DATE', '{{SIG.COMPANY.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_SALE_TRANSFER';
 
 -- ── HORSE_SEARCH_RETAINER ─────────────────────────────────────────────
-UPDATE contract_templates SET body = $body$HORSE SEARCH AND ACQUISITION SERVICES RETAINER AGREEMENT
+UPDATE contract_templates SET body = $body$HORSE FINDER SEARCH AND SOURCING RETAINER AGREEMENT
 
-This Horse Search and Acquisition Services Retainer Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
+This Horse Finder Search and Sourcing Retainer Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
 
 {{ORG.LEGAL_IDENTITY}} (“COMPANY”),
 
@@ -2846,37 +2543,37 @@ Email: {{CLIENT.EMAIL}}
 
 RECITALS
 
-A. Client desires assistance locating, identifying, and evaluating potential horses for purchase, lease, or other acquisition.
+A. Client, in Client’s capacity as {{DIR.ROLE_TERM}}, desires to retain COMPANY to search for and identify {{DIR.TARGET_TERM}} in connection with a prospective {{DIR.DIRECTION_TERM}}.
 
-B. COMPANY provides equestrian consulting, horse search assistance, industry knowledge, communication assistance, and related services.
+B. COMPANY provides equestrian consulting, search and sourcing assistance, industry knowledge, communication assistance, and related services on either side of a transaction: locating a horse for a prospective buyer or lessee, or locating a buyer or lessee for a horse Client owns.
 
-C. Client desires to retain COMPANY to assist with the search process under the terms of this Agreement.
+C. A search is a standalone engagement. A search carries no guarantee of any result, and even a successful result carries no guarantee that any party consummates a transaction. This Agreement is entered into, and terminates, on its own terms, separately from any evaluation agreement or transaction representation agreement.
+
+D. Client desires to retain COMPANY to conduct the search under the terms of this Agreement.
 
 AGREEMENT
 
 RETENTION OF SERVICES
 
-Client retains COMPANY to provide horse search and acquisition assistance, which may include:
+Client retains COMPANY to provide search and sourcing assistance directed at locating {{DIR.TARGET_TERM}}, which may include:
 
 Understanding Client’s goals and requirements;
 
-Identifying potential horses;
+Identifying and shortlisting prospective matches;
 
-Reviewing available horse information;
+Reviewing available information;
 
-Communicating with owners, trainers, brokers, and sellers;
+Communicating with owners, trainers, brokers, sellers, prospective buyers, and prospective lessees;
 
-Coordinating appointments and viewings;
+Coordinating appointments, viewings, and introductions;
 
 Assisting with search strategy;
 
-Providing general observations and opinions based on experience;
-
-Assisting Client through the acquisition process.
+Providing general observations and opinions based on experience.
 
 SEARCH PARAMETERS
 
-Client’s desired horse profile:
+Search objective ({{DIR.DIRECTION_TERM}}):
 
 Discipline: {{ENG.DISCIPLINE}}
 
@@ -2894,15 +2591,31 @@ Intended Use: {{ENG.INTENDED_USE}}
 
 Additional Requirements:
 
-NO GUARANTEE OF RESULTS
+NO GUARANTEE OF RESULTS; NO GUARANTEE OF CONSUMMATION
 
 Client acknowledges:
 
-COMPANY does not guarantee that a suitable horse will be located;
+COMPANY does not guarantee that the search will locate {{DIR.TARGET_TERM}} or any suitable match;
 
-COMPANY does not guarantee purchase availability;
+COMPANY does not guarantee that any match located will remain available;
+
+COMPANY does not guarantee that any located match will result in a consummated purchase, sale, or lease — a search may end with no result, and a successful result may still end with no transaction;
+
+Fees earned under this Agreement (other than a fee expressly contingent on consummation) remain earned whether or not any transaction ever closes;
 
 COMPANY does not guarantee performance, temperament, health, soundness, value, or suitability of any horse.
+
+STANDALONE MODULE; SEPARATELY EXECUTED AGREEMENTS
+
+This Agreement covers the search only. Client understands:
+
+Per-horse evaluation services are a separate service, provided only under a separately executed Horse Evaluation Agreement carrying its own per-horse fee;
+
+Representation of Client through an actual purchase, sale, or lease is a separate service, provided only under a separately executed Horse Transaction Representation Agreement carrying its own fee;
+
+Any purchase, sale, or lease transaction itself requires separate written agreements between the transacting parties;
+
+Client may enter any, all, or none of those separate agreements; no agreement in the sequence requires a prior one.
 
 CLIENT DECISION MAKING
 
@@ -2912,29 +2625,29 @@ Whether to view a horse;
 
 Whether to ride or trial a horse;
 
-Whether to purchase or lease;
+Whether to pursue any prospective match;
 
 Whether to obtain veterinary evaluation;
 
 Whether to enter into a transaction.
 
-COMPANY does not make final acquisition decisions on Client’s behalf.
+COMPANY does not make final transaction decisions on Client’s behalf.
 
 FEES
 
 Client agrees to pay COMPANY:
 
-Search Retainer: {{TXN.RETAINER_FEE}}
+Search Retainer (flat fee): {{TXN.RETAINER_FEE}}
 
 Due: {{TXN.PAYMENT_TERMS}}
 
-Additional Search Fees:
-
-Success Fee / Acquisition Fee: {{TXN.SERVICE_FEE}}
+Success Fee / Acquisition Fee (contingent): {{TXN.SUCCESS_FEE}}
 
 or
 
 {{TXN.COMMISSION_RATE}} of purchase price / transaction value
+
+The Success Fee / Acquisition Fee is payable only if the search yields {{DIR.TARGET_TERM}} and Client consummates a {{DIR.DIRECTION_TERM}} transaction involving that introduction, whether or not COMPANY is separately retained to represent Client in that transaction. The Success Fee / Acquisition Fee is separate from, and in addition to, any per-horse evaluation fee or transaction representation fee owed under the separately executed agreements described above.
 
 Payment due:
 
@@ -2961,6 +2674,10 @@ CLIENT AUTHORIZATION TO COMMUNICATE
 Client authorizes COMPANY to communicate with:
 
 Sellers;
+
+Prospective buyers;
+
+Prospective lessees;
 
 Trainers;
 
@@ -2992,9 +2709,9 @@ Client acknowledges that COMPANY may communicate with third parties who may have
 
 COMPANY does not guarantee the accuracy of information provided by third parties.
 
-PRE-PURCHASE EVALUATION
+EVALUATION SERVICES
 
-Client understands that horse evaluation, veterinary review, and inspection services are separate services and may require separate agreements.
+Client understands that horse evaluation, veterinary review, and inspection services are separate services provided only under a separately executed evaluation agreement, charged per horse evaluated.
 
 VETERINARY AND PROFESSIONAL ADVICE
 
@@ -3018,13 +2735,13 @@ COMPANY shall disclose known conflicts or relationships that may materially affe
 
 Known disclosures:
 
-CLIENT RESPONSIBILITY FOR PURCHASE TRANSACTIONS
+CLIENT RESPONSIBILITY FOR TRANSACTIONS
 
 Client understands that any purchase, lease, or sale transaction requires separate written agreements.
 
-NON-CIRCUMVENTION / INTRODUCED HORSES
+NON-CIRCUMVENTION / INTRODUCED OPPORTUNITIES
 
-If COMPANY introduces Client to a horse, owner, seller, trainer, or opportunity, Client agrees not to bypass COMPANY in order to avoid agreed fees.
+If COMPANY introduces Client to a horse, owner, seller, buyer, lessee, trainer, or opportunity, Client agrees not to bypass COMPANY in order to avoid agreed fees.
 
 This provision applies for:
 
@@ -3032,7 +2749,7 @@ This provision applies for:
 
 TERMINATION
 
-Either party may terminate this Agreement by written notice.
+Either party may terminate this Agreement by written notice. Termination of this Agreement does not terminate any separately executed evaluation or transaction representation agreement, each of which terminates on its own terms.
 
 Outstanding fees and expenses remain due.
 
@@ -3060,7 +2777,7 @@ California law governs this Agreement.
 
 ENTIRE AGREEMENT
 
-This Agreement contains the entire agreement concerning horse search and acquisition services.
+This Agreement contains the entire agreement concerning horse search and sourcing services.
 
 CLIENT
 
@@ -3094,6 +2811,12 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   UNION ALL
   SELECT id, 'CLIENT', 'EMAIL', '{{CLIENT.EMAIL}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_SEARCH_RETAINER'
   UNION ALL
+  SELECT id, 'DIR', 'ROLE_TERM', '{{DIR.ROLE_TERM}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_SEARCH_RETAINER'
+  UNION ALL
+  SELECT id, 'DIR', 'TARGET_TERM', '{{DIR.TARGET_TERM}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_SEARCH_RETAINER'
+  UNION ALL
+  SELECT id, 'DIR', 'DIRECTION_TERM', '{{DIR.DIRECTION_TERM}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_SEARCH_RETAINER'
+  UNION ALL
   SELECT id, 'ENG', 'DISCIPLINE', '{{ENG.DISCIPLINE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_SEARCH_RETAINER'
   UNION ALL
   SELECT id, 'ENG', 'BUDGET', '{{ENG.BUDGET}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_SEARCH_RETAINER'
@@ -3104,7 +2827,7 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   UNION ALL
   SELECT id, 'TXN', 'PAYMENT_TERMS', '{{TXN.PAYMENT_TERMS}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_SEARCH_RETAINER'
   UNION ALL
-  SELECT id, 'TXN', 'SERVICE_FEE', '{{TXN.SERVICE_FEE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_SEARCH_RETAINER'
+  SELECT id, 'TXN', 'SUCCESS_FEE', '{{TXN.SUCCESS_FEE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_SEARCH_RETAINER'
   UNION ALL
   SELECT id, 'TXN', 'COMMISSION_RATE', '{{TXN.COMMISSION_RATE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_SEARCH_RETAINER'
   UNION ALL
@@ -3466,6 +3189,260 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   SELECT id, 'ORG', 'SIGNATORY_TITLE', '{{ORG.SIGNATORY_TITLE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRAINING'
   UNION ALL
   SELECT id, 'SIG', 'COMPANY.DATE', '{{SIG.COMPANY.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_TRAINING';
+
+-- ── HORSE_TRANSACTION_REP ─────────────────────────────────────────────
+INSERT INTO contract_templates (template_key, title, service_type, party_namespaces)
+  VALUES ('HORSE_TRANSACTION_REP', 'Horse Transaction Representation Agreement', NULL, ARRAY['CLIENT','COMPANY'])
+  ON CONFLICT (template_key) DO NOTHING;
+UPDATE contract_templates SET body = $body$HORSE TRANSACTION REPRESENTATION AGREEMENT
+
+This Horse Transaction Representation Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
+
+{{ORG.LEGAL_IDENTITY}} (“COMPANY”),
+
+and
+
+Client Name: {{CLIENT.FULL_NAME}}
+
+Address: {{CLIENT.ADDRESS}}
+
+Phone: {{CLIENT.PHONE}}
+
+Email: {{CLIENT.EMAIL}}
+
+(“Client”)
+
+RECITALS
+
+A. Client is the {{DIR.ROLE_TERM}} in a prospective {{DIR.DIRECTION_TERM}} of a horse and desires to retain COMPANY to represent Client’s side of that transaction.
+
+B. COMPANY represents Client only. The {{DIR.COUNTERPARTY_TERM}} is not represented by COMPANY under this Agreement; where COMPANY relates to both sides of one transaction, each side is engaged under its own separately executed representation agreement, with disclosure to both sides.
+
+C. This Agreement is a standalone module. It may follow a search conducted under a separate search retainer or an evaluation under a separate evaluation agreement, or it may be entered fresh where Client has already identified the horse or the {{DIR.COUNTERPARTY_TERM}}. No prior search, evaluation, or other agreement is required.
+
+HORSE INFORMATION (IF IDENTIFIED)
+
+Registered Name: {{HORSE.REGISTERED_NAME}}
+
+Barn Name: {{HORSE.BARN_NAME}}
+
+Breed: {{HORSE.BREED}}
+
+Current Location: {{HORSE.CURRENT_LOCATION}}
+
+AGREEMENT
+
+SCOPE OF REPRESENTATION
+
+Client retains COMPANY to assist Client, as {{DIR.ROLE_TERM}}, through the prospective {{DIR.DIRECTION_TERM}}, which may include:
+
+Communicating and negotiating with the {{DIR.COUNTERPARTY_TERM}} and the {{DIR.COUNTERPARTY_TERM}}’s representatives;
+
+Coordinating trials, appointments, and veterinary examinations;
+
+Reviewing general transaction considerations;
+
+Coordinating transaction logistics and documentation;
+
+Facilitating communications between the parties.
+
+NO GUARANTEE OF CONSUMMATION
+
+COMPANY does not guarantee that the prospective {{DIR.DIRECTION_TERM}} will be agreed, completed, or consummated, and does not guarantee price, terms, availability, or the conduct of the {{DIR.COUNTERPARTY_TERM}}.
+
+CLIENT DECISION MAKING
+
+Client remains solely responsible for decisions regarding:
+
+Whether to enter into the transaction;
+
+Price and terms Client will accept;
+
+Whether to obtain veterinary evaluation;
+
+Whether to complete or abandon the transaction.
+
+COMPANY does not make final transaction decisions on Client’s behalf.
+
+TRANSACTION DOCUMENTS ARE SEPARATE
+
+The actual purchase, sale, or lease is documented by separate written agreements between the transacting parties (for example, a purchase and sale agreement, a sale and transfer agreement, or a lease agreement).
+
+COMPANY is not the owner of the Horse and is not a party to those transfer documents unless separately stated in writing.
+
+PROFESSIONAL LIMITATIONS
+
+COMPANY is not acting as:
+
+An attorney;
+
+A veterinarian;
+
+An insurance provider;
+
+A financial advisor;
+
+A licensed appraiser.
+
+Client is responsible for obtaining appropriate professional advice.
+
+FEES AND COMPENSATION
+
+Client agrees to pay COMPANY:
+
+Representation Fee: {{TXN.REPRESENTATION_FEE}}
+
+or
+
+{{TXN.COMMISSION_RATE}} of purchase price / transaction value (minimum {{TXN.COMMISSION_MIN}})
+
+Payment Due: {{TXN.PAYMENT_TERMS}}
+
+The Representation Fee is separate from, and in addition to, any search retainer, success / acquisition fee, or per-horse evaluation fee owed under separately executed agreements.
+
+INTRODUCED OPPORTUNITIES
+
+If COMPANY introduces Client to a horse, owner, buyer, lessee, trainer, facility, or opportunity, Client agrees compensation remains due if Client completes a transaction involving that opportunity.
+
+Protection Period: {{ENG.PROTECTION_PERIOD}} months.
+
+COMMUNICATION AUTHORIZATION
+
+Client authorizes COMPANY to communicate with:
+
+The {{DIR.COUNTERPARTY_TERM}};
+
+Owners;
+
+Trainers;
+
+Facilities;
+
+Brokers;
+
+Other equine professionals.
+
+THIRD-PARTY INFORMATION
+
+COMPANY may rely on information provided by the {{DIR.COUNTERPARTY_TERM}} and other third parties.
+
+COMPANY does not guarantee accuracy of third-party statements.
+
+CONFIDENTIALITY
+
+Confidential information may include:
+
+Budget;
+
+Transaction terms;
+
+Negotiation strategy;
+
+Horse information.
+
+LIABILITY RELEASE — INCORPORATED BY REFERENCE
+
+The risk acknowledgments, releases, and indemnity obligations applicable to the activities under this Agreement are set forth exclusively in the separately executed Liability Release and Assumption of Risk agreement, which is incorporated herein by reference.
+
+TERMINATION
+
+Either party may terminate by written notice. Termination does not affect any separately executed search retainer or evaluation agreement.
+
+Completed services and earned fees remain payable.
+
+DISPUTE RESOLUTION
+
+Disputes shall be resolved by:
+
+□ Arbitration
+
+□ Litigation
+
+Venue shall be San Diego County, California.
+
+ATTORNEY’S FEES
+
+The prevailing party shall be entitled to reasonable attorney’s fees and costs where permitted by law.
+
+GOVERNING LAW
+
+California law governs this Agreement.
+
+ENTIRE AGREEMENT
+
+This Agreement represents the entire agreement regarding transaction representation services.
+
+CLIENT
+
+Signature: {{SIG.CLIENT.NAME}}
+
+Printed Name: {{CLIENT.PRINTED_NAME}}
+
+Date: {{SIG.CLIENT.DATE}}
+
+COMPANY: {{ORG.LEGAL_NAME}}
+
+By (signature): {{SIG.COMPANY.NAME}}
+
+Printed: {{ORG.SIGNATORY_NAME}}
+
+Title: {{ORG.SIGNATORY_TITLE}}
+
+Date: {{SIG.COMPANY.DATE}}
+$body$, updated_at = now()
+  WHERE template_key = 'HORSE_TRANSACTION_REP';
+INSERT INTO template_tokens (template_id, namespace, field, token, kind, required, party_scoped)
+  SELECT id, 'DOC', 'EFFECTIVE_DATE', '{{DOC.EFFECTIVE_DATE}}', 'system', false, false FROM contract_templates WHERE template_key = 'HORSE_TRANSACTION_REP'
+  UNION ALL
+  SELECT id, 'ORG', 'LEGAL_IDENTITY', '{{ORG.LEGAL_IDENTITY}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRANSACTION_REP'
+  UNION ALL
+  SELECT id, 'CLIENT', 'FULL_NAME', '{{CLIENT.FULL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRANSACTION_REP'
+  UNION ALL
+  SELECT id, 'CLIENT', 'ADDRESS', '{{CLIENT.ADDRESS}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRANSACTION_REP'
+  UNION ALL
+  SELECT id, 'CLIENT', 'PHONE', '{{CLIENT.PHONE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRANSACTION_REP'
+  UNION ALL
+  SELECT id, 'CLIENT', 'EMAIL', '{{CLIENT.EMAIL}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRANSACTION_REP'
+  UNION ALL
+  SELECT id, 'DIR', 'ROLE_TERM', '{{DIR.ROLE_TERM}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRANSACTION_REP'
+  UNION ALL
+  SELECT id, 'DIR', 'DIRECTION_TERM', '{{DIR.DIRECTION_TERM}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRANSACTION_REP'
+  UNION ALL
+  SELECT id, 'DIR', 'COUNTERPARTY_TERM', '{{DIR.COUNTERPARTY_TERM}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRANSACTION_REP'
+  UNION ALL
+  SELECT id, 'HORSE', 'REGISTERED_NAME', '{{HORSE.REGISTERED_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRANSACTION_REP'
+  UNION ALL
+  SELECT id, 'HORSE', 'BARN_NAME', '{{HORSE.BARN_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRANSACTION_REP'
+  UNION ALL
+  SELECT id, 'HORSE', 'BREED', '{{HORSE.BREED}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRANSACTION_REP'
+  UNION ALL
+  SELECT id, 'HORSE', 'CURRENT_LOCATION', '{{HORSE.CURRENT_LOCATION}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRANSACTION_REP'
+  UNION ALL
+  SELECT id, 'TXN', 'REPRESENTATION_FEE', '{{TXN.REPRESENTATION_FEE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRANSACTION_REP'
+  UNION ALL
+  SELECT id, 'TXN', 'COMMISSION_RATE', '{{TXN.COMMISSION_RATE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRANSACTION_REP'
+  UNION ALL
+  SELECT id, 'TXN', 'COMMISSION_MIN', '{{TXN.COMMISSION_MIN}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRANSACTION_REP'
+  UNION ALL
+  SELECT id, 'TXN', 'PAYMENT_TERMS', '{{TXN.PAYMENT_TERMS}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRANSACTION_REP'
+  UNION ALL
+  SELECT id, 'ENG', 'PROTECTION_PERIOD', '{{ENG.PROTECTION_PERIOD}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRANSACTION_REP'
+  UNION ALL
+  SELECT id, 'SIG', 'CLIENT.NAME', '{{SIG.CLIENT.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_TRANSACTION_REP'
+  UNION ALL
+  SELECT id, 'CLIENT', 'PRINTED_NAME', '{{CLIENT.PRINTED_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRANSACTION_REP'
+  UNION ALL
+  SELECT id, 'SIG', 'CLIENT.DATE', '{{SIG.CLIENT.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_TRANSACTION_REP'
+  UNION ALL
+  SELECT id, 'ORG', 'LEGAL_NAME', '{{ORG.LEGAL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRANSACTION_REP'
+  UNION ALL
+  SELECT id, 'SIG', 'COMPANY.NAME', '{{SIG.COMPANY.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_TRANSACTION_REP'
+  UNION ALL
+  SELECT id, 'ORG', 'SIGNATORY_NAME', '{{ORG.SIGNATORY_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRANSACTION_REP'
+  UNION ALL
+  SELECT id, 'ORG', 'SIGNATORY_TITLE', '{{ORG.SIGNATORY_TITLE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRANSACTION_REP'
+  UNION ALL
+  SELECT id, 'SIG', 'COMPANY.DATE', '{{SIG.COMPANY.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_TRANSACTION_REP';
 
 -- ── HUMAN_EMERGENCY_MEDICAL ─────────────────────────────────────────────
 UPDATE contract_templates SET body = $body${{ORG.LEGAL_NAME}}

@@ -40,6 +40,10 @@ const POST_SEED_TEMPLATES = {
   RELEASE_PARTICIPANT:    { title: 'Participant Liability Release',                     parties: ['PARTICIPANT', 'GUARDIAN', 'COMPANY'] },
   RELEASE_HORSE_EXERCISE: { title: 'Horse Exercise Liability Release',                  parties: ['OWNER', 'COMPANY'] },
   RELEASE_HORSE_CARE:     { title: 'Horse Handling and Routine Care Liability Release', parties: ['OWNER', 'COMPANY'] },
+  // Contract-module decomposition (20260701080000): the side-scoped Layer 2
+  // transaction-representation module. service_type stays NULL (one tokenized
+  // template serves purchase/sale/lease-in/lease-out representation).
+  HORSE_TRANSACTION_REP:  { title: 'Horse Transaction Representation Agreement',        parties: ['CLIENT', 'COMPANY'] },
 };
 
 const files = readdirSync(BODIES).filter((f) => f.endsWith('.md')).sort();

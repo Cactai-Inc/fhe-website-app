@@ -224,3 +224,67 @@ though the horse may not yet be in COMPANY custody; (b) horse-segment services
 treated as staff-performed (no `HUMAN_EMERGENCY_MEDICAL` for the client);
 (c) no boarding/care service codes exist yet — when they do, pool them to
 `RELEASE_HORSE_CARE`.
+
+## 18. Contract-module decomposition (CONTRACT_MODULE_ARCHITECTURE) — counsel review
+
+The search / evaluation / transaction-representation agreements were decomposed
+into separately executed modules (`20260701080000_contract_module_decomposition.sql`
++ reworked bodies in `supabase/contract_templates/`). All new wording is OURS
+(placeholder-grade, engine-tokenized) — counsel must review and may swap freely;
+the legal text lives in the `.md` bodies and merges through data, not code.
+
+- **One directional finder template.** `HORSE_SEARCH_RETAINER` (retitled "Horse
+  Finder Search and Sourcing Retainer Agreement") now serves all four directions
+  — find a horse to buy / find a horse to lease / find a buyer / find a lessee —
+  via `{{DIR.ROLE_TERM}}` / `{{DIR.TARGET_TERM}}` / `{{DIR.DIRECTION_TERM}}`
+  tokens resolved from the engagement's current stage (`engagement_stages.retained_by`
+  + `deal_side`) through the `template_variants` catalog. **Counsel: confirm the
+  per-direction terminology** (`purchase` / `sale` / `lease (lessee)` /
+  `lease (lessor)`, seeded in `template_variants.token_overrides`) reads
+  correctly in every clause it lands in — the variant WORDS are data and can be
+  changed without touching the template.
+- **No-result / no-consummation recitals (NEW wording).** Recital C and the
+  "NO GUARANTEE OF RESULTS; NO GUARANTEE OF CONSUMMATION" section state that a
+  search guarantees neither a result nor a consummated deal, and that
+  non-contingent fees remain earned either way. Counsel must confirm this
+  earned-fee posture.
+- **Success / Acquisition fee kept in the retainer, made expressly contingent.**
+  The retainer keeps the flat `{{TXN.RETAINER_FEE}}` AND the contingent
+  `{{TXN.SUCCESS_FEE}}` (or `{{TXN.COMMISSION_RATE}}`); the new clause makes the
+  success fee payable "whether or not COMPANY is separately retained to
+  represent Client in that transaction". Counsel: confirm enforceability of the
+  contingent fee absent a transaction-representation engagement.
+- **`HORSE_REPRESENTATION` retired.** The lease-flavored search+placement bundle
+  was folded into the finder's lease directions; the template row is kept
+  inactive (existing signed documents keep their reference) and can no longer be
+  generated. Its "Lease Placement Fee" concept is now the finder's success fee
+  or the transaction-rep module's representation fee — counsel: confirm no
+  placement-specific term was lost that must be restored.
+- **NEW `HORSE_TRANSACTION_REP` (entirely our draft).** A side-scoped
+  representation module (CLIENT + COMPANY only): COMPANY represents one side;
+  the counterparty is named via `{{DIR.COUNTERPARTY_TERM}}` and expressly not
+  represented; dual-party deals are TWO representation agreements (one per
+  side), with disclosure. Its `{{TXN.REPRESENTATION_FEE}}` (or commission) is
+  its own charge. The buyer↔seller transfer instruments
+  (`HORSE_PURCHASE_SALE`, `HORSE_SALE_TRANSFER`, `HORSE_LEASE`) are unchanged
+  and remain the deal documents between the transacting parties. **Counsel must
+  review this agreement end to end** (agency/disclosure duties for equine
+  brokers, dual-agency disclosure wording, CA requirements).
+- **`HORSE_EVALUATION` repositioned + STRIPPED.** Retitled transaction-agnostic
+  ("Horse Evaluation Agreement", was "Pre-Purchase…"), scoped to ONE horse per
+  executed agreement with a per-horse `{{TXN.EVALUATION_FEE}}`, and its embedded
+  RELEASE OF LIABILITY / LIMITATION OF LIABILITY / INDEMNIFICATION sections were
+  REMOVED in favor of the same incorporation-by-reference clause as §16 (the
+  new `HORSE_TRANSACTION_REP` carries the clause too, and both are enforced by
+  the §16 CI gate). Counsel: the stripped evaluation limitation-of-liability
+  (purchase-price losses, consequential damages, etc.) is NOT reproduced in the
+  standalone releases — confirm the releases' scope suffices or restore a
+  non-release limitation-of-liability section.
+- **Staged revenue chain data homes.** One fee column per module on
+  `transactions`: `retainer_fee` + `success_fee` (search), `evaluation_fee`
+  (per horse), `representation_fee` (transaction rep); `service_fee` remains for
+  the generic service agreements. Amounts are unseeded — owner supplies per deal.
+- **Directional vocabulary is open.** `engagement_stages.retained_by` is free
+  text; variants are seeded for `buyer`/`seller`/`owner`/`lessee`/`lessor`. A
+  stage recorded with any other word merges blank DIR terms (visible in review,
+  never wrong terminology).

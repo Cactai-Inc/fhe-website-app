@@ -33,7 +33,9 @@ describe('pricing seed', () => {
 });
 
 describe('commission token resolution', () => {
-  it('renders {{TXN.COMMISSION_RATE}} as 15% in the representation contract', async () => {
+  it('renders {{TXN.COMMISSION_RATE}} as 15% in the finder retainer contract', async () => {
+    // (was HORSE_REPRESENTATION — retired by the contract-module decomposition;
+    // the finder retainer carries the same config-sourced commission alternative)
     const c = (await h.q<{ id: string }>(`insert into contacts (full_name) values ('Rep Client') returning id`))[0].id;
     const cl = (await h.q<{ id: string }>(`insert into clients (contact_id) values ($1) returning id`, [c]))[0].id;
     // HORSE_FINDER is purchase-side representation → uses the purchase commission rate
@@ -42,7 +44,7 @@ describe('commission token resolution', () => {
     await h.q(`insert into engagement_parties (engagement_id, contact_id, party_role) values ($1,$2,'CLIENT')`, [eng, c]);
 
     const [doc] = await h.q<{ merged_body: string }>(
-      `select * from generate_document($1,'HORSE_REPRESENTATION')`, [eng]);
+      `select * from generate_document($1,'HORSE_SEARCH_RETAINER')`, [eng]);
     expect(doc.merged_body).toContain('15%');
     expect(doc.merged_body).not.toMatch(/\{\{TXN\.COMMISSION_RATE\}\}/);
   });

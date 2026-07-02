@@ -11,14 +11,18 @@ import { beforeAll, afterAll, describe, expect, it } from 'vitest';
 import { createTestDb, type TestDb } from './harness';
 
 const WITH_BODY = [
-  'HORSE_PURCHASE_SALE', 'HORSE_SALE_TRANSFER', 'HORSE_LEASE', 'HORSE_REPRESENTATION',
+  'HORSE_PURCHASE_SALE', 'HORSE_SALE_TRANSFER', 'HORSE_LEASE',
   'HORSE_SEARCH_RETAINER', 'HORSE_EVALUATION', 'HORSE_TRAINING', 'HORSE_EXERCISE',
   'HORSEMANSHIP_TRAINING', 'RIDER_LESSON_JUMPER', 'MINOR_RIDER', 'HORSE_EMERGENCY_VET',
   'HUMAN_EMERGENCY_MEDICAL', 'FACILITY_RULES',
   // the four standalone liability releases (liability-release pass)
   'RELEASE_GENERAL', 'RELEASE_PARTICIPANT', 'RELEASE_HORSE_EXERCISE', 'RELEASE_HORSE_CARE',
+  // contract-module decomposition: the side-scoped transaction-rep module
+  'HORSE_TRANSACTION_REP',
 ];
-const NO_SOURCE = ['INDEPENDENT_CONTRACTOR', 'MEDIA_RELEASE', 'FACILITY_LICENSE'];
+// HORSE_REPRESENTATION: retired by the decomposition (folded into the finder's
+// lease directions) — row kept inactive, source .md deleted, body cleared.
+const NO_SOURCE = ['INDEPENDENT_CONTRACTOR', 'MEDIA_RELEASE', 'FACILITY_LICENSE', 'HORSE_REPRESENTATION'];
 
 let h: TestDb;
 beforeAll(async () => {
@@ -30,7 +34,7 @@ afterAll(async () => {
 });
 
 describe('bodies loaded', () => {
-  it('the 18 source-backed templates have a body; the 3 without a source are NULL', async () => {
+  it('the 18 source-backed templates have a body; the 4 without a source are NULL', async () => {
     const rows = await h.q<{ template_key: string; has_body: boolean }>(
       `select template_key, (body is not null) as has_body from contract_templates`);
     const map = Object.fromEntries(rows.map((r) => [r.template_key, r.has_body]));

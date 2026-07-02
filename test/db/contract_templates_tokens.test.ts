@@ -33,23 +33,31 @@ describe('migration applies additively', () => {
   });
 });
 
-describe('contract_templates — the 21 canonical contracts', () => {
+describe('contract_templates — the 22 canonical contracts', () => {
   // 17 → 21: the liability-release pass (20260701070000 + the regenerated
   // loader) adds the four standalone RELEASE_* documents. Deliberate count bump.
-  it('seeds exactly the 21 survivors, all active', async () => {
+  // 21 → 22: the contract-module decomposition (20260701080000) registers the
+  // side-scoped HORSE_TRANSACTION_REP module and RETIRES HORSE_REPRESENTATION
+  // (folded into the tokenized finder's lease directions — row kept for
+  // documents.template_id integrity, but deactivated).
+  it('seeds exactly the 22 canonical rows; all active except the retired HORSE_REPRESENTATION', async () => {
     await h.asSuperuser();
-    const rows = await h.q<{ template_key: string }>(
-      `select template_key from contract_templates order by template_key`);
-    expect(rows).toHaveLength(21);
+    const rows = await h.q<{ template_key: string; active: boolean }>(
+      `select template_key, active from contract_templates order by template_key`);
+    expect(rows).toHaveLength(22);
     // sort both sides with the same comparator (avoid JS vs PG collation quirks)
     expect(rows.map((r) => r.template_key).sort()).toEqual([
       'FACILITY_LICENSE', 'FACILITY_RULES', 'HORSE_EMERGENCY_VET', 'HORSE_EVALUATION',
       'HORSE_EXERCISE', 'HORSE_LEASE', 'HORSE_PURCHASE_SALE', 'HORSE_REPRESENTATION',
-      'HORSE_SALE_TRANSFER', 'HORSE_SEARCH_RETAINER', 'HORSE_TRAINING', 'HORSEMANSHIP_TRAINING',
-      'HUMAN_EMERGENCY_MEDICAL', 'INDEPENDENT_CONTRACTOR', 'MEDIA_RELEASE', 'MINOR_RIDER',
+      'HORSE_SALE_TRANSFER', 'HORSE_SEARCH_RETAINER', 'HORSE_TRAINING', 'HORSE_TRANSACTION_REP',
+      'HORSEMANSHIP_TRAINING', 'HUMAN_EMERGENCY_MEDICAL', 'INDEPENDENT_CONTRACTOR',
+      'MEDIA_RELEASE', 'MINOR_RIDER',
       'RELEASE_GENERAL', 'RELEASE_HORSE_CARE', 'RELEASE_HORSE_EXERCISE', 'RELEASE_PARTICIPANT',
       'RIDER_LESSON_JUMPER',
     ].sort());
+    for (const r of rows) {
+      expect(r.active, r.template_key).toBe(r.template_key !== 'HORSE_REPRESENTATION');
+    }
   });
 
   it('every template names COMPANY plus at least one counterparty', async () => {
@@ -80,7 +88,11 @@ describe('contract_templates — the 21 canonical contracts', () => {
         .map((r) => [r.template_key, r.service_type]));
     expect(map['HORSE_PURCHASE_SALE']).toBe('HORSE_PURCHASE_ASSISTANCE');
     expect(map['HORSE_SALE_TRANSFER']).toBe('HORSE_SALE_ASSISTANCE');
+    // the ONE tokenized Layer-1 finder template (key kept for referential integrity)
     expect(map['HORSE_SEARCH_RETAINER']).toBe('HORSE_FINDER');
+    // HORSE_TRANSACTION_REP is deliberately service-NULL: one side-scoped
+    // template serves purchase/sale/lease-in/lease-out representation via DIR tokens
+    expect(map['HORSE_TRANSACTION_REP']).toBeUndefined();
   });
 });
 
@@ -97,8 +109,10 @@ describe('template_tokens — the dictionary in the database', () => {
     // the documented namespaces are all represented
     // ORG.* was added by 20260630000000_generate_document_org_fix (§6 de-specification:
     // {{ORG.*}} is the canonical tenant namespace; {{FHE.*}} kept as a back-compat alias).
+    // DIR.* was added by 20260701080000_contract_module_decomposition: directional
+    // terminology resolved from the engagement's current stage via template_variants.
     const namespaces = new Set(rows.map((r) => r.namespace));
-    expect([...namespaces].sort()).toEqual(['DOC', 'ENG', 'FHE', 'HORSE', 'ORG', 'PARTY', 'TXN']);
+    expect([...namespaces].sort()).toEqual(['DIR', 'DOC', 'ENG', 'FHE', 'HORSE', 'ORG', 'PARTY', 'TXN']);
   });
 
   it('contains the canonical tokens from each namespace (matches the .md)', async () => {
@@ -111,6 +125,9 @@ describe('template_tokens — the dictionary in the database', () => {
       '{{FHE.LEGAL_NAME}}', '{{FHE.EMAIL}}',
       '{{HORSE.REGISTERED_NAME}}', '{{HORSE.BREED}}', '{{HORSE.MICROCHIP}}',
       '{{TXN.PURCHASE_PRICE}}', '{{TXN.COMMISSION_RATE}}', '{{TXN.BALANCE_DUE}}',
+      // staged revenue chain (contract-module decomposition): one fee per module
+      '{{TXN.RETAINER_FEE}}', '{{TXN.SUCCESS_FEE}}', '{{TXN.EVALUATION_FEE}}', '{{TXN.REPRESENTATION_FEE}}',
+      '{{DIR.ROLE_TERM}}', '{{DIR.TARGET_TERM}}', '{{DIR.DIRECTION_TERM}}', '{{DIR.COUNTERPARTY_TERM}}',
       '{{ENG.ID}}', '{{ENG.SERVICE_TYPE}}',
       '{{DOC.UUID}}', '{{DOC.GENERATED_DATE}}',
       '{{SIG.PARTY.NAME}}', '{{SIG.PARTY.DATE}}', '{{SIG.PARTY.IP}}',
@@ -147,11 +164,13 @@ describe('RLS — templates read-active, admin-write', () => {
     // hide one template
     await h.q(`update contract_templates set active=false where template_key='MINOR_RIDER'`);
 
-    // anon sees the 20 active ones, not the hidden one (21 total incl. RELEASE_*)
+    // anon sees the 20 active ones (22 total; HORSE_REPRESENTATION already
+    // retired-inactive by the decomposition, MINOR_RIDER hidden above)
     await h.asAnon();
     const anon = await h.q<{ template_key: string }>(`select template_key from contract_templates`);
     expect(anon).toHaveLength(20);
     expect(anon.map((r) => r.template_key)).not.toContain('MINOR_RIDER');
+    expect(anon.map((r) => r.template_key)).not.toContain('HORSE_REPRESENTATION');
 
     // a plain authenticated user cannot insert
     await h.asUser(userUid);
@@ -160,9 +179,9 @@ describe('RLS — templates read-active, admin-write', () => {
            values ('HACK','Hack', ARRAY['CLIENT','FHE'])`),
     ).rejects.toThrow();
 
-    // admin sees all 21 (incl. inactive) and can write
+    // admin sees all 22 (incl. inactive) and can write
     await h.asUser(adminUid);
-    expect(await h.q(`select id from contract_templates`)).toHaveLength(21);
+    expect(await h.q(`select id from contract_templates`)).toHaveLength(22);
     await h.q(`update contract_templates set version=2 where template_key='HORSE_PURCHASE_SALE'`);
     const v = (await h.q<{ version: number }>(
       `select version from contract_templates where template_key='HORSE_PURCHASE_SALE'`))[0].version;

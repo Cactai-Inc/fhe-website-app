@@ -42,7 +42,11 @@ const SANCTIONED =
 // standalone RELEASE_* documents, incorporated by this exact clause.
 const STRIPPED_AGREEMENTS = new Set([
   'RIDER_LESSON_JUMPER', 'MINOR_RIDER', 'HORSE_EXERCISE', 'HORSE_TRAINING',
-  'HORSEMANSHIP_TRAINING', 'HORSE_SEARCH_RETAINER', 'HORSE_REPRESENTATION',
+  'HORSEMANSHIP_TRAINING', 'HORSE_SEARCH_RETAINER',
+  // contract-module decomposition: HORSE_REPRESENTATION retired (folded into the
+  // finder's lease directions); the reworked evaluation module and the new
+  // transaction-representation module are service agreements → stripped too.
+  'HORSE_EVALUATION', 'HORSE_TRANSACTION_REP',
 ]);
 // The canonical incorporation clause (heading + sentence) — the ONLY sanctioned
 // release-adjacent wording in a stripped agreement.
@@ -125,8 +129,10 @@ describe('tokenized contract bodies', () => {
         // that any party-shaped namespace is a real one. (Per-contract party sets
         // can drift from the seed metadata, so we don't assert subset-of-seed.)
         // FHE is deliberately NOT recognized: bodies must use the tenant-neutral
-        // ORG.* / COMPANY tokens as of the Contracts Legal Pass.
-        const known = new Set([...PARTY_NS, 'ORG', 'HORSE', 'TXN', 'ENG', 'DOC', 'SIG']);
+        // ORG.* / COMPANY tokens as of the Contracts Legal Pass. DIR is the
+        // directional-terminology namespace (contract-module decomposition):
+        // resolved from the engagement's current stage via template_variants.
+        const known = new Set([...PARTY_NS, 'ORG', 'HORSE', 'TXN', 'ENG', 'DOC', 'SIG', 'DIR']);
         const unknown = new Set<string>();
         for (const t of tokens) {
           const ns = t.slice(2, -2).split('.')[0];
