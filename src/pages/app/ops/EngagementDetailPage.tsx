@@ -3,7 +3,10 @@
  *
  * Reads /app/ops/engagements/:id → `getEngagement(id)` (INT-API-CORE rollup:
  * engagement + stages + documents + transactions, RLS org-scoped). Renders the
- * parties/horse/transaction/stages summary plus a Documents section:
+ * parties/horse/transaction/stages summary, the OPS-ENG-STAGES panel, and a
+ * Documents section:
+ *   - the StagesPanel (brokerage-gated via ModuleGate) lists the engagement's
+ *     stages from listEngagementStages and adds one via createEngagementStage,
  *   - "Generate document" opens the OPS-DOC-GEN modal inline; on success we
  *     navigate to the new document's viewer (OPS-DOC-VIEW),
  *   - each document row → OPS-DOC-VIEW (/app/ops/documents/:docId)
@@ -15,6 +18,7 @@ import { getEngagement } from '../../../lib/api';
 import { useDocumentTitle } from '../../../lib/hooks';
 import { StatusBadge, EmptyState } from '../../../lib/ops';
 import { EngagementSummary } from '../../../components/ops/engagements/EngagementSummary';
+import { StagesPanel } from '../../../components/ops/engagements/StagesPanel';
 import { GenerateDocumentModal } from '../../../components/ops/documents/GenerateDocumentModal';
 import type { EngagementDetail } from '../../../lib/ops/types';
 
@@ -69,6 +73,12 @@ export default function EngagementDetailPage() {
         ) : (
           <>
             <EngagementSummary engagement={engagement} />
+
+            {/* OPS-ENG-STAGES — stage management (list + add), brokerage-gated
+                inside the panel via ModuleGate('mod.brokerage'). */}
+            <div className="mt-8">
+              <StagesPanel engagementId={engagement.id} />
+            </div>
 
             {/* Documents section */}
             <section aria-labelledby="documents-heading" className="mt-8">

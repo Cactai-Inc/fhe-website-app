@@ -74,7 +74,14 @@ const DEFAULT_COUNTS = {
  * page ships, add its route to App.tsx AND one entry here, e.g.
  *   'mod.brokerage': '/app/ops/brokerage',
  */
-export const MODULE_HUB_ROUTES: Record<string, string> = {};
+export const MODULE_HUB_ROUTES: Record<string, string> = {
+  'mod.brokerage': '/app/ops/brokerage',
+  'mod.lessons': '/app/ops/lessons',
+  'mod.boarding': '/app/ops/boarding',
+  'mod.barnops': '/app/ops/barnops',
+  'mod.horserecords': '/app/ops/records',
+  // 'mod.employees' hub lands with the remaining Wave-7 lanes
+};
 
 /** The module launcher catalog: key + label. Every tile is entitlement-gated;
  *  navigation comes solely from MODULE_HUB_ROUTES. */
@@ -144,8 +151,7 @@ export default function OpsDashboard({
 
   const kpis: KpiSpec[] = [
     { key: 'engagements', label: 'Open engagements', to: '/app/ops/engagements', load: counts.openEngagements },
-    // No intake-review screen exists yet — no `to` until that route ships.
-    { key: 'intake', label: 'Intake to review', load: counts.pendingIntake },
+    { key: 'intake', label: 'Intake to review', to: '/app/ops/intake', load: counts.pendingIntake },
     { key: 'documents', label: 'Documents awaiting signature', to: '/app/ops/documents', load: counts.draftDocuments },
     // Open charges surface (and settle) on the transactions reconcile screen.
     { key: 'billing', label: 'Open charges', to: '/app/ops/transactions', load: counts.openBillableLines },

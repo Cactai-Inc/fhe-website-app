@@ -23,11 +23,10 @@ interface NavItem {
 const NAV: NavItem[] = [
   { to: '/app', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/app/schedule', label: 'Schedule', icon: CalendarDays },
-  { to: '/app/lessons', label: 'Lessons', icon: GraduationCap, module: 'mod.lessons' },
-  { to: '/app/brokerage', label: 'Brokerage', icon: Handshake, module: 'mod.brokerage' },
-  { to: '/app/boarding', label: 'Boarding', icon: Home, module: 'mod.boarding' },
-  { to: '/app/barnops', label: 'Barn Ops', icon: Boxes, module: 'mod.barnops' },
-  { to: '/app/employees', label: 'Employees', icon: Contact, module: 'mod.employees' },
+  // Member-portal module pages (CP-* units) are not built yet — no routes exist
+  // for /app/{lessons,brokerage,boarding,barnops,employees}, so their nav items
+  // stay out until the portal wave registers them (dead links are forbidden).
+  // Restore each as: { to: '/app/lessons', label: 'Lessons', icon: GraduationCap, module: 'mod.lessons' }
   { to: '/app/chat', label: 'Chat board', icon: Hash },
   { to: '/app/threads', label: 'Threads', icon: MessagesSquare },
   { to: '/app/messages', label: 'Messages', icon: Mail },
@@ -43,6 +42,29 @@ const NAV: NavItem[] = [
  *  module their tenant has. Pure of side effects so it is unit-testable. */
 export function visibleNav(hasModule: (key: string) => boolean): NavItem[] {
   return NAV.filter((item) => !item.module || hasModule(item.module));
+}
+
+/** Staff/admin operations nav (Wave-7). Module hubs are entitlement-gated
+ *  (Layer C) exactly like member items; every target is a registered route. */
+export const OPS_NAV: NavItem[] = [
+  { to: '/app/ops', label: 'Ops Dashboard', icon: LayoutDashboard, end: true },
+  { to: '/app/ops/intake', label: 'Intake', icon: Mail },
+  { to: '/app/ops/contacts', label: 'Contacts', icon: Contact },
+  { to: '/app/ops/horses', label: 'Horses', icon: Boxes },
+  { to: '/app/ops/engagements', label: 'Engagements', icon: Handshake },
+  { to: '/app/ops/documents', label: 'Documents', icon: FileText },
+  { to: '/app/ops/transactions', label: 'Transactions', icon: ReceiptText },
+  { to: '/app/ops/payments/review', label: 'Payment review', icon: ReceiptText },
+  { to: '/app/ops/brokerage', label: 'Brokerage', icon: Handshake, module: 'mod.brokerage' },
+  { to: '/app/ops/lessons', label: 'Lessons', icon: GraduationCap, module: 'mod.lessons' },
+  { to: '/app/ops/boarding', label: 'Boarding', icon: Home, module: 'mod.boarding' },
+  { to: '/app/ops/barnops', label: 'Barn Ops', icon: Boxes, module: 'mod.barnops' },
+  { to: '/app/ops/records', label: 'Records', icon: FileText, module: 'mod.horserecords' },
+];
+
+/** The ops nav a staff session actually sees (pure, unit-testable). */
+export function visibleOpsNav(hasModule: (key: string) => boolean): NavItem[] {
+  return OPS_NAV.filter((item) => !item.module || hasModule(item.module));
 }
 
 export default function AppLayout() {
@@ -95,14 +117,7 @@ export default function AppLayout() {
           <div className="mt-2 border-t border-green-800/10 pt-3 px-3 pb-1 text-xs uppercase tracking-wide text-secondary/60">
             Operations
           </div>
-          {[
-            { to: '/app/ops', label: 'Ops Dashboard', icon: LayoutDashboard, end: true },
-            { to: '/app/ops/contacts', label: 'Contacts', icon: Contact },
-            { to: '/app/ops/horses', label: 'Horses', icon: Boxes },
-            { to: '/app/ops/engagements', label: 'Engagements', icon: Handshake },
-            { to: '/app/ops/documents', label: 'Documents', icon: FileText },
-            { to: '/app/ops/transactions', label: 'Transactions', icon: ReceiptText },
-          ].map(({ to, label, icon: Icon, end }) => (
+          {visibleOpsNav(hasModule).map(({ to, label, icon: Icon, end }) => (
             <NavLink
               key={to}
               to={to}

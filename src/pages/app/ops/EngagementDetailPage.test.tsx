@@ -15,20 +15,35 @@
  *     does NOT navigate,
  *   - each document links to the OPS-DOC-VIEW route,
  *   - the error branch renders when getEngagement rejects (not swallowed),
- *   - a null result renders the not-found state.
+ *   - a null result renders the not-found state,
+ *   - OPS-ENG-STAGES: the mounted StagesPanel loads stages for the URL id,
+ *     adds a stage through createEngagementStage with EXACT args, and locks
+ *     behind ModuleGate when mod.brokerage is off.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter, Routes, Route, useParams } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
-import { render, renderWithRouter, screen, userEvent } from '../../../test/render';
+import { render, renderWithRouter, screen, userEvent, waitFor } from '../../../test/render';
 
 const getEngagement = vi.fn();
 const listContractTemplates = vi.fn();
 const generateDocument = vi.fn();
+const listEngagementStages = vi.fn();
+const createEngagementStage = vi.fn();
 vi.mock('../../../lib/api', () => ({
   getEngagement: (...args: unknown[]) => getEngagement(...args),
   listContractTemplates: (...args: unknown[]) => listContractTemplates(...args),
   generateDocument: (...args: unknown[]) => generateDocument(...args),
+  listEngagementStages: (...args: unknown[]) => listEngagementStages(...args),
+  createEngagementStage: (...args: unknown[]) => createEngagementStage(...args),
+}));
+
+// The mounted StagesPanel resolves its default module map through useModules()
+// (AuthContext-backed). Mock it with a mutable ref so the gate can be flipped
+// off in the ModuleGate test without a provider.
+const moduleMap = vi.hoisted(() => ({ current: { 'mod.brokerage': true } as Record<string, boolean> }));
+vi.mock('../../../lib/ops/useModules', () => ({
+  useModules: () => moduleMap.current,
 }));
 
 import EngagementDetailPage from './EngagementDetailPage';
@@ -134,7 +149,11 @@ describe('EngagementDetailPage', () => {
     getEngagement.mockReset();
     listContractTemplates.mockReset();
     generateDocument.mockReset();
+    listEngagementStages.mockReset();
+    createEngagementStage.mockReset();
     listContractTemplates.mockResolvedValue(TEMPLATES);
+    listEngagementStages.mockResolvedValue([]);
+    moduleMap.current = { 'mod.brokerage': true };
   });
 
   it('calls getEngagement with the URL id and renders parties/horse/txn/stages', async () => {
@@ -226,5 +245,78 @@ describe('EngagementDetailPage', () => {
     renderDetail();
 
     expect(await screen.findByRole('alert')).toHaveTextContent('rls denied');
+  });
+
+  // ─── OPS-ENG-STAGES — the mounted StagesPanel ─────────────────────────────
+
+  it('mounts the StagesPanel: listEngagementStages is called with the URL id and its rows render', async () => {
+    getEngagement.mockResolvedValue(DETAIL);
+    listEngagementStages.mockResolvedValue([
+      {
+        id: 'stg-a',
+        engagement_id: 'eng-42',
+        stage: 'SEARCH',
+        retained_by: 'buyer',
+        deal_side: 'BUY',
+        status: 'EXECUTED',
+        fee_value_key: 'FEE.search',
+        effective_from: '2026-06-01T00:00:00Z',
+        created_at: '2026-06-01T00:00:00Z',
+        updated_at: '2026-06-01T00:00:00Z',
+      },
+    ]);
+    renderDetail();
+
+    await screen.findByText('ENG-0042');
+    await waitFor(() => expect(listEngagementStages).toHaveBeenCalledWith('eng-42'));
+    // The panel's own fetch renders (fee key column is panel-only, not in the rollup summary).
+    expect(await screen.findByText('FEE.search')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add stage' })).toBeInTheDocument();
+  });
+
+  it('adds a stage from the detail page: createEngagementStage fires with EXACT args and the row appears', async () => {
+    const user = userEvent.setup();
+    getEngagement.mockResolvedValue(DETAIL);
+    createEngagementStage.mockResolvedValue({
+      id: 'stg-new',
+      engagement_id: 'eng-42',
+      stage: 'EVALUATION',
+      retained_by: 'seller',
+      deal_side: 'SELL',
+      status: 'OPEN',
+      fee_value_key: null,
+      effective_from: '2026-07-01T00:00:00Z',
+      created_at: '2026-07-01T00:00:00Z',
+      updated_at: '2026-07-01T00:00:00Z',
+    });
+    renderDetail();
+    await screen.findByText('No stages yet');
+
+    await user.selectOptions(screen.getByLabelText('Stage'), 'EVALUATION');
+    await user.selectOptions(screen.getByLabelText('Retained by'), 'seller');
+    await user.selectOptions(screen.getByLabelText('Deal side'), 'SELL');
+    await user.click(screen.getByRole('button', { name: 'Add stage' }));
+
+    expect(createEngagementStage).toHaveBeenCalledTimes(1);
+    expect(createEngagementStage).toHaveBeenCalledWith({
+      engagement_id: 'eng-42',
+      stage: 'EVALUATION',
+      retained_by: 'seller',
+      deal_side: 'SELL',
+    });
+    // Success: the created stage appears in the panel table.
+    expect(await screen.findByText('EVALUATION')).toBeInTheDocument();
+  });
+
+  it('mod.brokerage OFF: the stages panel is locked (ModuleGate) and the add form is gone', async () => {
+    moduleMap.current = { 'mod.brokerage': false };
+    getEngagement.mockResolvedValue(DETAIL);
+    renderDetail();
+
+    await screen.findByText('ENG-0042');
+    expect(await screen.findByTestId('module-locked')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add stage' })).toBeNull();
+    // The rest of the detail page still renders (documents section untouched).
+    expect(screen.getByRole('button', { name: 'Generate document' })).toBeInTheDocument();
   });
 });

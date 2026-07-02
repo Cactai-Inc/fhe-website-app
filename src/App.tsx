@@ -52,6 +52,24 @@ import DocumentsQueuePage from './pages/app/ops/DocumentsQueuePage';
 import DocumentViewerPage from './pages/app/ops/DocumentViewerPage';
 import TransactionsPage from './pages/app/ops/TransactionsPage';
 import TransactionDetailPage from './pages/app/ops/TransactionDetailPage';
+// Ops / CRM — Wave-7 (intake, payments review, module hubs + module pages)
+import IntakePage from './pages/app/ops/IntakePage';
+import PaymentReviewPage from './pages/app/ops/PaymentReviewPage';
+import BrokerageHubPage from './pages/app/ops/hubs/BrokerageHubPage';
+import BoardingHubPage from './pages/app/ops/hubs/BoardingHubPage';
+import FacilitiesPage from './pages/app/ops/boarding/FacilitiesPage';
+import BoardAgreementsPage from './pages/app/ops/boarding/BoardAgreementsPage';
+import BoardChargesPage from './pages/app/ops/boarding/BoardChargesPage';
+import BarnopsHubPage from './pages/app/ops/hubs/BarnopsHubPage';
+import ResourcesPage from './pages/app/ops/barnops/ResourcesPage';
+import ConsumptionLogPage from './pages/app/ops/barnops/ConsumptionLogPage';
+import AllocationRulesPage from './pages/app/ops/barnops/AllocationRulesPage';
+import LessonsHubPage from './pages/app/ops/hubs/LessonsHubPage';
+import LessonPackagesPage from './pages/app/ops/lessons/LessonPackagesPage';
+import LessonCreditsPage from './pages/app/ops/lessons/LessonCreditsPage';
+import RecordsHubPage from './pages/app/ops/hubs/RecordsHubPage';
+import HorsePartiesPage from './pages/app/ops/records/HorsePartiesPage';
+import HorseHealthPage from './pages/app/ops/records/HorseHealthPage';
 
 export function AppRoutes() {
   return (
@@ -129,6 +147,25 @@ export function AppRoutes() {
               <Route path="ops/documents/:id" element={<ProtectedRoute requireAdmin><DocumentViewerPage /></ProtectedRoute>} />
               <Route path="ops/transactions" element={<ProtectedRoute requireAdmin><TransactionsPage /></ProtectedRoute>} />
               <Route path="ops/transactions/:id" element={<ProtectedRoute requireAdmin><TransactionDetailPage /></ProtectedRoute>} />
+              {/* Wave-7: intake + payments review (core) */}
+              <Route path="ops/intake" element={<ProtectedRoute requireAdmin><IntakePage /></ProtectedRoute>} />
+              <Route path="ops/payments/review" element={<ProtectedRoute requireAdmin><PaymentReviewPage /></ProtectedRoute>} />
+              {/* Wave-7: module hubs + module pages (module-gated inside via ModuleGate) */}
+              <Route path="ops/brokerage" element={<ProtectedRoute requireAdmin><BrokerageHubPage /></ProtectedRoute>} />
+              <Route path="ops/boarding" element={<ProtectedRoute requireAdmin><BoardingHubPage /></ProtectedRoute>} />
+              <Route path="ops/boarding/facilities" element={<ProtectedRoute requireAdmin><FacilitiesPage /></ProtectedRoute>} />
+              <Route path="ops/boarding/agreements" element={<ProtectedRoute requireAdmin><BoardAgreementsPage /></ProtectedRoute>} />
+              <Route path="ops/boarding/charges" element={<ProtectedRoute requireAdmin><BoardChargesPage /></ProtectedRoute>} />
+              <Route path="ops/barnops" element={<ProtectedRoute requireAdmin><BarnopsHubPage /></ProtectedRoute>} />
+              <Route path="ops/barnops/resources" element={<ProtectedRoute requireAdmin><ResourcesPage /></ProtectedRoute>} />
+              <Route path="ops/barnops/consumption" element={<ProtectedRoute requireAdmin><ConsumptionLogPage /></ProtectedRoute>} />
+              <Route path="ops/barnops/allocation-rules" element={<ProtectedRoute requireAdmin><AllocationRulesPage /></ProtectedRoute>} />
+              <Route path="ops/lessons" element={<ProtectedRoute requireAdmin><LessonsHubPage /></ProtectedRoute>} />
+              <Route path="ops/lessons/packages" element={<ProtectedRoute requireAdmin><LessonPackagesPage /></ProtectedRoute>} />
+              <Route path="ops/lessons/credits" element={<ProtectedRoute requireAdmin><LessonCreditsPage /></ProtectedRoute>} />
+              <Route path="ops/records" element={<ProtectedRoute requireAdmin><RecordsHubPage /></ProtectedRoute>} />
+              <Route path="ops/records/horses/:horseId/parties" element={<ProtectedRoute requireAdmin><HorsePartiesPage /></ProtectedRoute>} />
+              <Route path="ops/records/horses/:horseId/health" element={<ProtectedRoute requireAdmin><HorseHealthPage /></ProtectedRoute>} />
             </Route>
 
             {/* Branded 404 */}
