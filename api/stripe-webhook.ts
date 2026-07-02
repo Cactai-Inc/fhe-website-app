@@ -8,6 +8,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Stripe from 'stripe';
 import { getSupabaseAdmin } from './_lib/supabaseAdmin';
+import { sendOrderReceipt } from './_lib/receipt';
 
 export const config = { api: { bodyParser: false } };
 
@@ -43,6 +44,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const obj = event.data.object as Stripe.Checkout.Session | Stripe.PaymentIntent;
       const orderId = (obj.metadata?.order_id as string) || undefined;
       if (orderId) {
+        // Idempotency guard: Stripe retries events (and both event types can fire
+        // for one checkout) — an already-confirmed order must not be re-confirmed,
+        // and confirm_booking_for_order must not run twice.
+        const { data: order } = await db.from('orders').select('id, status').eq('id', orderId).single();
+        if (!order) return res.status(200).json({ received: true, unknownOrder: true });
+        if (order.status === 'confirmed') {
+          return res.status(200).json({ received: true, duplicate: true });
+        }
+
         const nowIso = new Date().toISOString();
         await db.from('orders')
           .update({ status: 'confirmed', paid_at: nowIso, confirmed_at: nowIso })
@@ -52,6 +62,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .eq('order_id', orderId)
           .eq('method', 'stripe');
         await db.rpc('confirm_booking_for_order', { p_order_id: orderId });
+        await sendOrderReceipt(db, orderId); // best-effort; never fails the webhook
       }
     }
 

@@ -32,11 +32,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const { data: order } = await db
       .from('orders')
-      .select('id, user_id, total, status')
+      .select('id, user_id, total, status, org_id')
       .eq('id', orderId)
       .single();
     if (!order || order.user_id !== userData.user.id) {
       return res.status(403).json({ error: 'forbidden' });
+    }
+    if (order.status === 'confirmed') {
+      return res.status(409).json({ error: 'order already paid' });
+    }
+
+    // Tenant brand from the registry — the line item must carry the ORDER's
+    // org's name, never a hardcoded one (global-value rule).
+    const { data: brand } = await db
+      .from('config_values')
+      .select('value_text')
+      .eq('org_id', order.org_id)
+      .eq('namespace', 'BRAND')
+      .eq('key', 'NAME')
+      .maybeSingle();
+    let brandName = brand?.value_text as string | undefined;
+    if (!brandName) {
+      const { data: cfg } = await db
+        .from('business_config')
+        .select('legal_entity_name')
+        .eq('org_id', order.org_id)
+        .maybeSingle();
+      brandName = (cfg?.legal_entity_name as string | undefined) || 'Order';
     }
 
     const cardTotalCents = Math.round(Number(order.total) * (1 + STRIPE_FEE_RATE) * 100);
@@ -48,7 +70,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         {
           price_data: {
             currency: 'usd',
-            product_data: { name: 'French Heritage Equestrian — Order' },
+            product_data: { name: `${brandName} — Order` },
             unit_amount: cardTotalCents,
           },
           quantity: 1,
@@ -59,11 +81,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       cancel_url: `${origin}/order/${order.id}`,
     });
 
-    // Move order to awaiting_payment via Stripe; create a pending payment row.
+    // Move order to awaiting_payment via Stripe; create-or-refresh the single
+    // pending payment row (a retry must not stack duplicate pending rows).
     await db.from('orders').update({ status: 'awaiting_payment', payment_method: 'stripe' }).eq('id', order.id);
-    await db.from('payments').insert({
-      order_id: order.id, method: 'stripe', amount: cardTotalCents / 100, status: 'pending',
-    });
+    const { data: pending } = await db
+      .from('payments')
+      .select('id')
+      .eq('order_id', order.id)
+      .eq('method', 'stripe')
+      .eq('status', 'pending')
+      .maybeSingle();
+    if (pending) {
+      await db.from('payments').update({ amount: cardTotalCents / 100 }).eq('id', pending.id);
+    } else {
+      await db.from('payments').insert({
+        order_id: order.id, method: 'stripe', amount: cardTotalCents / 100, status: 'pending',
+      });
+    }
 
     return res.status(200).json({ url: session.url });
   } catch (err) {

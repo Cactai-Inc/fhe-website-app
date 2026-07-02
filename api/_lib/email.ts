@@ -108,14 +108,58 @@ export interface SendProviderResult {
 }
 
 /**
- * Dispatch an email via the provider (Resend), mirroring admin-send-invitation.
+ * Dispatch an email via the configured transport. Priority (owner decision,
+ * 2026-07-01 — see GOOGLE_SMTP_SETUP.md):
+ *   1. Google Workspace SMTP (GMAIL_SMTP_USER + GMAIL_SMTP_PASS) — the launch
+ *      transport; the domain's SPF/DKIM already live on Google.
+ *   2. Resend (RESEND_API_KEY) — dormant; revisit when multi-tenant email
+ *      (other barns' own from-domains) arrives.
  * Returns { ok, messageId } — never throws on a provider failure, so callers can
  * map a failed send to a 5xx without an uncaught error crashing the function.
  */
 export async function sendViaProvider(input: SendProviderInput): Promise<SendProviderResult> {
-  const key = process.env.RESEND_API_KEY;
-  if (!key) return { ok: false, messageId: null, error: 'email provider not configured' };
+  const smtpUser = process.env.GMAIL_SMTP_USER;
+  const smtpPass = process.env.GMAIL_SMTP_PASS;
+  const resendKey = process.env.RESEND_API_KEY;
+  if (!smtpUser && !resendKey) {
+    return { ok: false, messageId: null, error: 'email provider not configured' };
+  }
   if (!input.fromEmail) return { ok: false, messageId: null, error: 'no from address resolved' };
+  if (smtpUser && smtpPass) return sendViaGoogleSmtp(input, smtpUser, smtpPass);
+  return sendViaResend(input, resendKey as string);
+}
+
+/** Google Workspace SMTP transport (nodemailer). NOTE: Gmail rewrites the From
+ * header to the authenticated account unless fromEmail is that account or one of
+ * its configured aliases — see GOOGLE_SMTP_SETUP.md. */
+async function sendViaGoogleSmtp(
+  input: SendProviderInput,
+  user: string,
+  pass: string,
+): Promise<SendProviderResult> {
+  try {
+    const { default: nodemailer } = await import('nodemailer');
+    const port = Number(process.env.GMAIL_SMTP_PORT || 465);
+    const transporter = nodemailer.createTransport({
+      host: process.env.GMAIL_SMTP_HOST || 'smtp.gmail.com',
+      port,
+      secure: port === 465,
+      auth: { user, pass },
+    });
+    const info = await transporter.sendMail({
+      from: `${input.fromName} <${input.fromEmail}>`,
+      to: input.to,
+      subject: input.subject,
+      html: input.html,
+    });
+    return { ok: true, messageId: info.messageId ?? null };
+  } catch (err) {
+    return { ok: false, messageId: null, error: err instanceof Error ? err.message : 'smtp send failed' };
+  }
+}
+
+/** Resend HTTP transport (dormant at launch; kept for multi-tenant from-domains). */
+async function sendViaResend(input: SendProviderInput, key: string): Promise<SendProviderResult> {
   try {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
