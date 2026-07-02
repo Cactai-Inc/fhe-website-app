@@ -2,7 +2,7 @@
  * Phase 2 — contract bodies loaded into the database (migration 17).
  *
  * Verifies the generated loader:
- *  - the 14 source-backed templates have a body; the 3 without a source doc are NULL,
+ *  - the 18 source-backed templates have a body; the 3 without a source doc are NULL,
  *  - per-template template_tokens are derived (concrete tokens linked to template_id),
  *  - derivation is faithful both ways: every derived token appears in its body, and
  *    every {{token}} in a body has a derived row.
@@ -15,6 +15,8 @@ const WITH_BODY = [
   'HORSE_SEARCH_RETAINER', 'HORSE_EVALUATION', 'HORSE_TRAINING', 'HORSE_EXERCISE',
   'HORSEMANSHIP_TRAINING', 'RIDER_LESSON_JUMPER', 'MINOR_RIDER', 'HORSE_EMERGENCY_VET',
   'HUMAN_EMERGENCY_MEDICAL', 'FACILITY_RULES',
+  // the four standalone liability releases (liability-release pass)
+  'RELEASE_GENERAL', 'RELEASE_PARTICIPANT', 'RELEASE_HORSE_EXERCISE', 'RELEASE_HORSE_CARE',
 ];
 const NO_SOURCE = ['INDEPENDENT_CONTRACTOR', 'MEDIA_RELEASE', 'FACILITY_LICENSE'];
 
@@ -28,7 +30,7 @@ afterAll(async () => {
 });
 
 describe('bodies loaded', () => {
-  it('the 14 source-backed templates have a body; the 3 without a source are NULL', async () => {
+  it('the 18 source-backed templates have a body; the 3 without a source are NULL', async () => {
     const rows = await h.q<{ template_key: string; has_body: boolean }>(
       `select template_key, (body is not null) as has_body from contract_templates`);
     const map = Object.fromEntries(rows.map((r) => [r.template_key, r.has_body]));

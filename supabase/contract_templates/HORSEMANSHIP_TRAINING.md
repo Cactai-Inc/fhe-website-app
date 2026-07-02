@@ -68,17 +68,9 @@ Conduct themselves safely around horses
 
 Report unsafe conditions immediately
 
-ASSUMPTION OF RISK
+LIABILITY RELEASE — INCORPORATED BY REFERENCE
 
-Participant understands that horses are inherently unpredictable animals and that equine activities involve risks including serious injury, permanent disability, death, and property damage.
-
-Participant voluntarily assumes all risks associated with participation.
-
-LIABILITY RELEASE
-
-To the fullest extent permitted by California law, Participant releases and discharges COMPANY and its owners, instructors, trainers, contractors, agents, representatives, facility operators, and affiliated parties from claims arising from ordinary negligence associated with participation in equine activities.
-
-This release does not apply to gross negligence or willful misconduct.
+The risk acknowledgments, releases, and indemnity obligations applicable to the activities under this Agreement are set forth exclusively in the separately executed Liability Release and Assumption of Risk agreement, which is incorporated herein by reference.
 
 EMERGENCY AUTHORIZATION
 

@@ -96,19 +96,9 @@ Known Conditions:
 
 Failure to disclose material information constitutes a material breach.
 
-4. ASSUMPTION OF RISK
+4. LIABILITY RELEASE — INCORPORATED BY REFERENCE
 
-Client acknowledges:
-
-Horses are inherently unpredictable;
-
-Exercise activities involve inherent risk;
-
-Horses may injure themselves despite reasonable care;
-
-Injury, illness, lameness, or death may occur despite appropriate handling.
-
-Client voluntarily assumes all risks associated with equine activities and exercise services.
+The risk acknowledgments, releases, and indemnity obligations applicable to the activities under this Agreement are set forth exclusively in the separately executed Liability Release and Assumption of Risk agreement, which is incorporated herein by reference.
 
 5. AUTHORIZATION TO HANDLE HORSE
 
@@ -184,21 +174,7 @@ Client shall provide properly fitted and safe equipment. COMPANY may refuse to u
 
 Normal wear and tear is expected. COMPANY is not responsible for ordinary deterioration of equipment resulting from intended use.
 
-14. RELEASE OF LIABILITY
-
-Client releases and discharges:
-
-COMPANY;
-
-Its owners, instructors, trainers, employees, contractors, agents, volunteers, and representatives;
-
-Facility owners and operators;
-
-from claims arising out of exercise services provided under this Agreement, including claims arising from ordinary negligence.
-
-This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
-
-15. LIMITATION OF LIABILITY
+14. LIMITATION OF LIABILITY
 
 To the fullest extent permitted by law, COMPANY shall not be liable for:
 
@@ -214,19 +190,7 @@ Business losses.
 
 Any liability shall not exceed amounts paid under this Agreement during the preceding twelve (12) months.
 
-16. INDEMNIFICATION
-
-Client shall indemnify, defend, and hold harmless COMPANY from claims arising from:
-
-The Horse’s actions;
-
-Undisclosed conditions;
-
-Injuries caused by the Horse;
-
-Ownership disputes concerning the Horse.
-
-17. TERMINATION
+15. TERMINATION
 
 Either party may terminate upon {{ORG.TERMINATION_NOTICE_DAYS}} days written notice.
 
@@ -240,7 +204,7 @@ Nonpayment;
 
 Abuse directed toward personnel.
 
-18. DISPUTE RESOLUTION
+16. DISPUTE RESOLUTION
 
 Disputes shall be resolved by:
 
@@ -250,23 +214,23 @@ Disputes shall be resolved by:
 
 Venue shall be San Diego County, California.
 
-19. ATTORNEY’S FEES
+17. ATTORNEY’S FEES
 
 The prevailing party shall recover reasonable attorney’s fees and costs.
 
-20. GOVERNING LAW
+18. GOVERNING LAW
 
 California law governs this Agreement.
 
-21. ENTIRE AGREEMENT
+19. ENTIRE AGREEMENT
 
 This Agreement constitutes the entire agreement of the parties concerning the exercise services described herein.
 
-22. SEVERABILITY
+20. SEVERABILITY
 
 If any provision is unenforceable, the remainder shall remain in effect.
 
-23. ACKNOWLEDGMENT
+21. ACKNOWLEDGMENT
 
 Client acknowledges:
 

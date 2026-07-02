@@ -176,33 +176,9 @@ Negotiation strategy;
 
 Horse information.
 
-RELEASE OF LIABILITY
+LIABILITY RELEASE — INCORPORATED BY REFERENCE
 
-Client releases COMPANY from claims arising from:
-
-Lease decisions;
-
-Horse behavior;
-
-Horse condition;
-
-Owner disputes;
-
-Lease performance.
-
-This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
-
-INDEMNIFICATION
-
-Client agrees to indemnify and hold harmless COMPANY from claims arising from:
-
-Lease transactions;
-
-Client decisions;
-
-Horse-related matters;
-
-Third-party disputes.
+The risk acknowledgments, releases, and indemnity obligations applicable to the activities under this Agreement are set forth exclusively in the separately executed Liability Release and Assumption of Risk agreement, which is incorporated herein by reference.
 
 TERMINATION
 

@@ -208,33 +208,9 @@ Either party may terminate this Agreement by written notice.
 
 Outstanding fees and expenses remain due.
 
-RELEASE OF LIABILITY
+LIABILITY RELEASE — INCORPORATED BY REFERENCE
 
-Client releases COMPANY from claims arising from:
-
-Failure to locate a horse;
-
-Client purchase decisions;
-
-Horse performance;
-
-Horse health or condition;
-
-Third-party representations.
-
-This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
-
-INDEMNIFICATION
-
-Client agrees to indemnify and hold harmless COMPANY from claims arising from:
-
-Client transactions;
-
-Client decisions;
-
-Third-party disputes;
-
-Horse ownership matters.
+The risk acknowledgments, releases, and indemnity obligations applicable to the activities under this Agreement are set forth exclusively in the separately executed Liability Release and Assumption of Risk agreement, which is incorporated herein by reference.
 
 DISPUTE RESOLUTION
 

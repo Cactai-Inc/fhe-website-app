@@ -1,6 +1,6 @@
-MINOR RIDER AGREEMENT, PARENTAL CONSENT, ASSUMPTION OF RISK, LIABILITY RELEASE, MEDICAL AUTHORIZATION, AND INDEMNITY AGREEMENT
+MINOR RIDER AGREEMENT, PARENTAL CONSENT, AND MEDICAL AUTHORIZATION AGREEMENT
 
-This Minor Rider Agreement, Parental Consent, Assumption of Risk, Liability Release, Medical Authorization, and Indemnity Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
+This Minor Rider Agreement, Parental Consent, and Medical Authorization Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
 
 {{ORG.LEGAL_IDENTITY}} ("COMPANY"),
 
@@ -74,67 +74,9 @@ At client-owned facilities;
 
 At any other location where services are provided.
 
-ACKNOWLEDGMENT OF RISKS
+LIABILITY RELEASE — INCORPORATED BY REFERENCE
 
-Parent understands that equine activities involve serious and unavoidable risks including:
-
-Falls from horses;
-
-Horse bites, kicks, strikes, crushing injuries, and stepping injuries;
-
-Horse behaviors including bucking, bolting, rearing, spinning, stumbling, and spooking;
-
-Tack failure;
-
-Equipment failure;
-
-Arena and footing hazards;
-
-Weather conditions;
-
-Vehicle and trailer accidents;
-
-Actions of other riders, participants, or spectators;
-
-Serious bodily injury, paralysis, permanent disability, or death.
-
-Parent acknowledges these risks cannot be completely eliminated.
-
-ASSUMPTION OF RISK
-
-Parent knowingly and voluntarily assumes all risks on behalf of Minor Participant, whether known or unknown, foreseeable or unforeseeable, inherent or otherwise.
-
-Participation is entirely voluntary.
-
-RELEASE OF LIABILITY
-
-To the fullest extent permitted by California law, Parent, individually and on behalf of Minor Participant, releases and forever discharges:
-
-COMPANY;
-
-Its owners, instructors, trainers, assistants, employees, volunteers, agents, representatives, contractors, affiliates, and successors;
-
-Facility owners and operators;
-
-Horse owners;
-
-Event organizers;
-
-from all claims, demands, causes of action, liabilities, damages, losses, costs, and expenses arising from Minor Participant’s involvement in equine activities, including claims arising from ordinary negligence.
-
-This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
-
-PARENTAL INDEMNIFICATION
-
-Parent agrees to indemnify, defend, and hold harmless the Released Parties against claims, damages, expenses, attorney’s fees, or liabilities arising from:
-
-Minor Participant’s conduct;
-
-Property damage caused by Minor Participant;
-
-Injuries caused by Minor Participant to others;
-
-Claims brought by or on behalf of Minor Participant to the extent permitted by law.
+The risk acknowledgments, releases, and indemnity obligations applicable to the activities under this Agreement are set forth exclusively in the separately executed Liability Release and Assumption of Risk agreement, which is incorporated herein by reference.
 
 RULES AND INSTRUCTIONS
 

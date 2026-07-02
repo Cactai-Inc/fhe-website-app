@@ -394,17 +394,9 @@ Conduct themselves safely around horses
 
 Report unsafe conditions immediately
 
-ASSUMPTION OF RISK
+LIABILITY RELEASE — INCORPORATED BY REFERENCE
 
-Participant understands that horses are inherently unpredictable animals and that equine activities involve risks including serious injury, permanent disability, death, and property damage.
-
-Participant voluntarily assumes all risks associated with participation.
-
-LIABILITY RELEASE
-
-To the fullest extent permitted by California law, Participant releases and discharges COMPANY and its owners, instructors, trainers, contractors, agents, representatives, facility operators, and affiliated parties from claims arising from ordinary negligence associated with participation in equine activities.
-
-This release does not apply to gross negligence or willful misconduct.
+The risk acknowledgments, releases, and indemnity obligations applicable to the activities under this Agreement are set forth exclusively in the separately executed Liability Release and Assumption of Risk agreement, which is incorporated herein by reference.
 
 EMERGENCY AUTHORIZATION
 
@@ -1177,19 +1169,9 @@ Known Conditions:
 
 Failure to disclose material information constitutes a material breach.
 
-4. ASSUMPTION OF RISK
+4. LIABILITY RELEASE — INCORPORATED BY REFERENCE
 
-Client acknowledges:
-
-Horses are inherently unpredictable;
-
-Exercise activities involve inherent risk;
-
-Horses may injure themselves despite reasonable care;
-
-Injury, illness, lameness, or death may occur despite appropriate handling.
-
-Client voluntarily assumes all risks associated with equine activities and exercise services.
+The risk acknowledgments, releases, and indemnity obligations applicable to the activities under this Agreement are set forth exclusively in the separately executed Liability Release and Assumption of Risk agreement, which is incorporated herein by reference.
 
 5. AUTHORIZATION TO HANDLE HORSE
 
@@ -1265,21 +1247,7 @@ Client shall provide properly fitted and safe equipment. COMPANY may refuse to u
 
 Normal wear and tear is expected. COMPANY is not responsible for ordinary deterioration of equipment resulting from intended use.
 
-14. RELEASE OF LIABILITY
-
-Client releases and discharges:
-
-COMPANY;
-
-Its owners, instructors, trainers, employees, contractors, agents, volunteers, and representatives;
-
-Facility owners and operators;
-
-from claims arising out of exercise services provided under this Agreement, including claims arising from ordinary negligence.
-
-This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
-
-15. LIMITATION OF LIABILITY
+14. LIMITATION OF LIABILITY
 
 To the fullest extent permitted by law, COMPANY shall not be liable for:
 
@@ -1295,19 +1263,7 @@ Business losses.
 
 Any liability shall not exceed amounts paid under this Agreement during the preceding twelve (12) months.
 
-16. INDEMNIFICATION
-
-Client shall indemnify, defend, and hold harmless COMPANY from claims arising from:
-
-The Horse’s actions;
-
-Undisclosed conditions;
-
-Injuries caused by the Horse;
-
-Ownership disputes concerning the Horse.
-
-17. TERMINATION
+15. TERMINATION
 
 Either party may terminate upon {{ORG.TERMINATION_NOTICE_DAYS}} days written notice.
 
@@ -1321,7 +1277,7 @@ Nonpayment;
 
 Abuse directed toward personnel.
 
-18. DISPUTE RESOLUTION
+16. DISPUTE RESOLUTION
 
 Disputes shall be resolved by:
 
@@ -1331,23 +1287,23 @@ Disputes shall be resolved by:
 
 Venue shall be San Diego County, California.
 
-19. ATTORNEY’S FEES
+17. ATTORNEY’S FEES
 
 The prevailing party shall recover reasonable attorney’s fees and costs.
 
-20. GOVERNING LAW
+18. GOVERNING LAW
 
 California law governs this Agreement.
 
-21. ENTIRE AGREEMENT
+19. ENTIRE AGREEMENT
 
 This Agreement constitutes the entire agreement of the parties concerning the exercise services described herein.
 
-22. SEVERABILITY
+20. SEVERABILITY
 
 If any provision is unenforceable, the remainder shall remain in effect.
 
-23. ACKNOWLEDGMENT
+21. ACKNOWLEDGMENT
 
 Client acknowledges:
 
@@ -2400,33 +2356,9 @@ Negotiation strategy;
 
 Horse information.
 
-RELEASE OF LIABILITY
+LIABILITY RELEASE — INCORPORATED BY REFERENCE
 
-Client releases COMPANY from claims arising from:
-
-Lease decisions;
-
-Horse behavior;
-
-Horse condition;
-
-Owner disputes;
-
-Lease performance.
-
-This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
-
-INDEMNIFICATION
-
-Client agrees to indemnify and hold harmless COMPANY from claims arising from:
-
-Lease transactions;
-
-Client decisions;
-
-Horse-related matters;
-
-Third-party disputes.
+The risk acknowledgments, releases, and indemnity obligations applicable to the activities under this Agreement are set forth exclusively in the separately executed Liability Release and Assumption of Risk agreement, which is incorporated herein by reference.
 
 TERMINATION
 
@@ -3104,33 +3036,9 @@ Either party may terminate this Agreement by written notice.
 
 Outstanding fees and expenses remain due.
 
-RELEASE OF LIABILITY
+LIABILITY RELEASE — INCORPORATED BY REFERENCE
 
-Client releases COMPANY from claims arising from:
-
-Failure to locate a horse;
-
-Client purchase decisions;
-
-Horse performance;
-
-Horse health or condition;
-
-Third-party representations.
-
-This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
-
-INDEMNIFICATION
-
-Client agrees to indemnify and hold harmless COMPANY from claims arising from:
-
-Client transactions;
-
-Client decisions;
-
-Third-party disputes;
-
-Horse ownership matters.
+The risk acknowledgments, releases, and indemnity obligations applicable to the activities under this Agreement are set forth exclusively in the separately executed Liability Release and Assumption of Risk agreement, which is incorporated herein by reference.
 
 DISPUTE RESOLUTION
 
@@ -3331,19 +3239,9 @@ Known Conditions:
 
 Failure to disclose material information constitutes a material breach.
 
-4. ASSUMPTION OF RISK
+4. LIABILITY RELEASE — INCORPORATED BY REFERENCE
 
-Client acknowledges:
-
-Horses are inherently unpredictable;
-
-Training activities involve inherent risk;
-
-Horses may injure themselves despite reasonable care;
-
-Injury, illness, lameness, or death may occur despite appropriate handling.
-
-Client voluntarily assumes all risks associated with equine activities and training services.
+The risk acknowledgments, releases, and indemnity obligations applicable to the activities under this Agreement are set forth exclusively in the separately executed Liability Release and Assumption of Risk agreement, which is incorporated herein by reference.
 
 5. AUTHORIZATION TO HANDLE HORSE
 
@@ -3419,21 +3317,7 @@ Client shall provide properly fitted and safe equipment. COMPANY may refuse to u
 
 Normal wear and tear is expected. COMPANY is not responsible for ordinary deterioration of equipment resulting from intended use.
 
-14. RELEASE OF LIABILITY
-
-Client releases and discharges:
-
-COMPANY;
-
-Its owners, instructors, trainers, employees, contractors, agents, volunteers, and representatives;
-
-Facility owners and operators;
-
-from claims arising out of training services provided under this Agreement, including claims arising from ordinary negligence.
-
-This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
-
-15. LIMITATION OF LIABILITY
+14. LIMITATION OF LIABILITY
 
 To the fullest extent permitted by law, COMPANY shall not be liable for:
 
@@ -3451,19 +3335,7 @@ Business losses.
 
 Any liability shall not exceed amounts paid under this Agreement during the preceding twelve (12) months.
 
-16. INDEMNIFICATION
-
-Client shall indemnify, defend, and hold harmless COMPANY from claims arising from:
-
-The Horse’s actions;
-
-Undisclosed conditions;
-
-Injuries caused by the Horse;
-
-Ownership disputes concerning the Horse.
-
-17. TERMINATION
+15. TERMINATION
 
 Either party may terminate upon {{ORG.TERMINATION_NOTICE_DAYS}} days written notice.
 
@@ -3477,7 +3349,7 @@ Nonpayment;
 
 Abuse directed toward personnel.
 
-18. DISPUTE RESOLUTION
+16. DISPUTE RESOLUTION
 
 Disputes shall be resolved by:
 
@@ -3487,23 +3359,23 @@ Disputes shall be resolved by:
 
 Venue shall be San Diego County, California.
 
-19. ATTORNEY’S FEES
+17. ATTORNEY’S FEES
 
 The prevailing party shall recover reasonable attorney’s fees and costs.
 
-20. GOVERNING LAW
+18. GOVERNING LAW
 
 California law governs this Agreement.
 
-21. ENTIRE AGREEMENT
+19. ENTIRE AGREEMENT
 
 This Agreement constitutes the entire agreement of the parties concerning the training services described herein.
 
-22. SEVERABILITY
+20. SEVERABILITY
 
 If any provision is unenforceable, the remainder shall remain in effect.
 
-23. ACKNOWLEDGMENT
+21. ACKNOWLEDGMENT
 
 Client acknowledges:
 
@@ -3777,9 +3649,9 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   SELECT id, 'DOC', 'GENERATED_DATE', '{{DOC.GENERATED_DATE}}', 'system', false, false FROM contract_templates WHERE template_key = 'HUMAN_EMERGENCY_MEDICAL';
 
 -- ── MINOR_RIDER ─────────────────────────────────────────────
-UPDATE contract_templates SET body = $body$MINOR RIDER AGREEMENT, PARENTAL CONSENT, ASSUMPTION OF RISK, LIABILITY RELEASE, MEDICAL AUTHORIZATION, AND INDEMNITY AGREEMENT
+UPDATE contract_templates SET body = $body$MINOR RIDER AGREEMENT, PARENTAL CONSENT, AND MEDICAL AUTHORIZATION AGREEMENT
 
-This Minor Rider Agreement, Parental Consent, Assumption of Risk, Liability Release, Medical Authorization, and Indemnity Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
+This Minor Rider Agreement, Parental Consent, and Medical Authorization Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
 
 {{ORG.LEGAL_IDENTITY}} ("COMPANY"),
 
@@ -3853,67 +3725,9 @@ At client-owned facilities;
 
 At any other location where services are provided.
 
-ACKNOWLEDGMENT OF RISKS
+LIABILITY RELEASE — INCORPORATED BY REFERENCE
 
-Parent understands that equine activities involve serious and unavoidable risks including:
-
-Falls from horses;
-
-Horse bites, kicks, strikes, crushing injuries, and stepping injuries;
-
-Horse behaviors including bucking, bolting, rearing, spinning, stumbling, and spooking;
-
-Tack failure;
-
-Equipment failure;
-
-Arena and footing hazards;
-
-Weather conditions;
-
-Vehicle and trailer accidents;
-
-Actions of other riders, participants, or spectators;
-
-Serious bodily injury, paralysis, permanent disability, or death.
-
-Parent acknowledges these risks cannot be completely eliminated.
-
-ASSUMPTION OF RISK
-
-Parent knowingly and voluntarily assumes all risks on behalf of Minor Participant, whether known or unknown, foreseeable or unforeseeable, inherent or otherwise.
-
-Participation is entirely voluntary.
-
-RELEASE OF LIABILITY
-
-To the fullest extent permitted by California law, Parent, individually and on behalf of Minor Participant, releases and forever discharges:
-
-COMPANY;
-
-Its owners, instructors, trainers, assistants, employees, volunteers, agents, representatives, contractors, affiliates, and successors;
-
-Facility owners and operators;
-
-Horse owners;
-
-Event organizers;
-
-from all claims, demands, causes of action, liabilities, damages, losses, costs, and expenses arising from Minor Participant’s involvement in equine activities, including claims arising from ordinary negligence.
-
-This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
-
-PARENTAL INDEMNIFICATION
-
-Parent agrees to indemnify, defend, and hold harmless the Released Parties against claims, damages, expenses, attorney’s fees, or liabilities arising from:
-
-Minor Participant’s conduct;
-
-Property damage caused by Minor Participant;
-
-Injuries caused by Minor Participant to others;
-
-Claims brought by or on behalf of Minor Participant to the extent permitted by law.
+The risk acknowledgments, releases, and indemnity obligations applicable to the activities under this Agreement are set forth exclusively in the separately executed Liability Release and Assumption of Risk agreement, which is incorporated herein by reference.
 
 RULES AND INSTRUCTIONS
 
@@ -4131,10 +3945,1070 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   UNION ALL
   SELECT id, 'SIG', 'COMPANY.DATE', '{{SIG.COMPANY.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'MINOR_RIDER';
 
--- ── RIDER_LESSON_JUMPER ─────────────────────────────────────────────
-UPDATE contract_templates SET body = $body$RIDING LESSON AGREEMENT, LIABILITY RELEASE, ASSUMPTION OF RISK, AND HOLD HARMLESS AGREEMENT
+-- ── RELEASE_GENERAL ─────────────────────────────────────────────
+INSERT INTO contract_templates (template_key, title, service_type, party_namespaces)
+  VALUES ('RELEASE_GENERAL', 'General Visitor Liability Release', NULL, ARRAY['PARTICIPANT','GUARDIAN','COMPANY'])
+  ON CONFLICT (template_key) DO NOTHING;
+UPDATE contract_templates SET body = $body$GENERAL VISITOR LIABILITY RELEASE, ASSUMPTION OF RISK, HOLD HARMLESS & INDEMNIFICATION AGREEMENT
 
-This Riding Lesson Agreement, Liability Release, Assumption of Risk, and Hold Harmless Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
+Effective for One (1) Year from Date of Signature
+
+This General Visitor Liability Release, Assumption of Risk, Hold Harmless & Indemnification Agreement ("Agreement") is entered into as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned individual ("Visitor"), or if Visitor is under eighteen (18) years of age, the Visitor's parent or legal guardian, in favor of:
+
+{{ORG.LEGAL_IDENTITY}} ("COMPANY").
+
+For purposes of this Agreement, the term "Released Parties" means COMPANY, its owner, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, representatives, affiliates, property owners, facility owners, licensors, lessors, lessees, hosts, landowners, successors, assigns, heirs, and any person acting on behalf of COMPANY at any location where it is authorized to conduct business.
+
+This Agreement applies to any ranch, barn, arena, trail, pasture, tack room, stable, private property, leased premises, event venue, competition grounds, or other location where COMPANY conducts authorized business activities.
+
+1. PURPOSE OF VISIT
+
+Visitor acknowledges that he or she is voluntarily entering property where horses, livestock, equipment, vehicles, machinery, uneven terrain, and other potentially hazardous conditions may exist.
+
+Visitor understands that merely being present at an equestrian facility involves inherent risks that cannot be completely eliminated.
+
+2. ACKNOWLEDGMENT OF INHERENT RISKS
+
+Visitor understands and acknowledges that risks include, but are not limited to:
+
+Horses may kick, bite, buck, rear, bolt, stumble, fall, step sideways, spook, or otherwise behave unpredictably.
+
+Horses may react suddenly to people, animals, sounds, vehicles, weather, or other stimuli.
+
+Visitors may be stepped on, struck, pinned, knocked down, or injured by horses or equipment.
+
+Gates, fences, trailers, tack, tools, machinery, and agricultural equipment may present hazards.
+
+Ground conditions may include mud, rocks, holes, uneven footing, irrigation, slippery surfaces, dust, and other natural hazards.
+
+Risks may arise from the actions or omissions of other visitors, participants, horse owners, or third parties.
+
+Emergency medical assistance may not be immediately available.
+
+Visitor understands these risks are inherent to equestrian facilities and voluntarily accepts them.
+
+Visitor Initials:
+
+3. ASSUMPTION OF RISK
+
+Visitor knowingly and voluntarily assumes all risks, whether known or unknown, foreseeable or unforeseeable, inherent or otherwise, arising from entering, remaining upon, or departing from any property where COMPANY conducts business.
+
+Visitor accepts full personal responsibility for any injury, illness, death, property damage, or other loss that may occur.
+
+Visitor Initials:
+
+4. HEALTH, MENTAL CAPACITY, AND FITNESS
+
+Visitor represents and warrants that:
+
+Visitor is in good physical health.
+
+Visitor is of sound mind.
+
+Visitor is not under the influence of alcohol, illegal drugs, or any medication that would impair judgment or physical ability.
+
+Visitor has no known medical condition, disability, impairment, restriction, or limitation that would prevent Visitor from safely protecting himself or herself or avoiding injury to others while present on the property.
+
+Visitor voluntarily assumes responsibility for determining whether participation or presence is appropriate.
+
+If Visitor is signing on behalf of a minor, Parent or Guardian represents these statements are true to the best of his or her knowledge.
+
+Visitor Initials:
+
+5. RULES, SAFETY POLICIES & CODE OF CONDUCT
+
+Visitor acknowledges receipt of the separate Rules, Regulations, Safety Policies, and Code of Conduct for COMPANY.
+
+Visitor agrees to read, understand, and comply with those rules at all times.
+
+Visitor understands that failure to comply may result in immediate removal from the property without refund or compensation.
+
+Visitor Initials Acknowledging Receipt and Agreement:
+
+6. RELEASE OF LIABILITY
+
+To the fullest extent permitted under California law, Visitor, on behalf of himself or herself and his or her heirs, representatives, successors, assigns, and personal representatives, voluntarily releases, waives, and forever discharges the Released Parties from any and all claims, demands, causes of action, damages, losses, liabilities, costs, expenses, or judgments arising out of or related to Visitor's presence on the property, including claims arising from the ordinary negligence of the Released Parties.
+
+This release applies to bodily injury, personal injury, illness, property damage, wrongful death, emotional distress, and all other losses, whether known or unknown, except to the extent such claims cannot legally be released under California law.
+
+Visitor Initials:
+
+7. COVENANT NOT TO SUE
+
+Visitor agrees not to file or maintain any lawsuit, arbitration, administrative proceeding, or other claim against any Released Party for matters released by this Agreement.
+
+Visitor Initials:
+
+8. HOLD HARMLESS AND INDEMNIFICATION
+
+Visitor agrees to defend, indemnify, and hold harmless the Released Parties from and against any claims, liabilities, damages, judgments, costs, expenses, or attorney's fees arising from:
+
+Visitor's acts or omissions;
+
+Visitor's violation of this Agreement or property rules;
+
+Claims brought by or on behalf of persons accompanying Visitor, to the extent caused by Visitor's conduct; or
+
+Damage to property caused by Visitor.
+
+9. PROPERTY DAMAGE
+
+Visitor accepts responsibility for any damage caused by Visitor to horses, equipment, facilities, vehicles, buildings, or other property and agrees to reimburse the responsible party for repair or replacement costs.
+
+10. CALIFORNIA CIVIL CODE §1542 WAIVER
+
+Visitor understands that California Civil Code §1542 provides:
+
+"A general release does not extend to claims that the creditor or releasing party does not know or suspect to exist in his or her favor at the time of executing the release and that, if known by him or her, would have materially affected his or her settlement with the debtor or released party."
+
+Visitor expressly waives the protections of California Civil Code §1542 and agrees this Agreement applies to both known and unknown claims to the fullest extent permitted by law.
+
+Visitor Initials:
+
+11. GOVERNING LAW
+
+This Agreement shall be governed by the laws of the State of California.
+
+Any legal proceeding arising from this Agreement shall be brought exclusively in the state or federal courts located in San Diego County, California, and the parties consent to the jurisdiction of those courts.
+
+12. SEVERABILITY
+
+If any provision of this Agreement is held unenforceable, the remaining provisions shall remain in full force and effect.
+
+13. ENTIRE AGREEMENT
+
+This Agreement constitutes the entire understanding between the parties concerning the subject matter herein and supersedes any prior oral or written representations regarding this subject.
+
+14. ACKNOWLEDGMENT
+
+Visitor acknowledges that:
+
+This Agreement is legally binding.
+
+Visitor has carefully read the entire Agreement.
+
+Visitor understands its contents.
+
+Visitor has had the opportunity to ask questions before signing.
+
+Visitor signs voluntarily and without coercion.
+
+ADULT VISITOR
+
+Printed Name: {{PARTICIPANT.PRINTED_NAME}}
+
+Signature: {{SIG.PARTICIPANT.NAME}}
+
+Date: {{SIG.PARTICIPANT.DATE}}
+
+Phone: {{PARTICIPANT.PHONE}}
+
+Email: {{PARTICIPANT.EMAIL}}
+
+MINOR VISITOR
+
+Minor's Name: {{PARTICIPANT.FULL_NAME}}
+
+Date of Birth:
+
+PARENT OR LEGAL GUARDIAN
+
+I certify that I am the parent or legal guardian of the above-named minor and have authority to sign this Agreement on the minor's behalf. I have read and understand this Agreement, consent to the minor's presence on the property, agree to all of its terms, and agree to indemnify and hold harmless the Released Parties from claims arising from the minor's presence or activities to the extent permitted by California law.
+
+Parent/Guardian Name: {{GUARDIAN.FULL_NAME}}
+
+Relationship to Minor: {{GUARDIAN.RELATIONSHIP}}
+
+Signature: {{SIG.GUARDIAN.NAME}}
+
+Date: {{SIG.GUARDIAN.DATE}}
+
+COMPANY: {{ORG.LEGAL_NAME}}
+
+By (signature): {{SIG.COMPANY.NAME}}
+
+Printed: {{ORG.SIGNATORY_NAME}}
+
+Title: {{ORG.SIGNATORY_TITLE}}
+
+Date: {{SIG.COMPANY.DATE}}
+$body$, updated_at = now()
+  WHERE template_key = 'RELEASE_GENERAL';
+INSERT INTO template_tokens (template_id, namespace, field, token, kind, required, party_scoped)
+  SELECT id, 'DOC', 'EFFECTIVE_DATE', '{{DOC.EFFECTIVE_DATE}}', 'system', false, false FROM contract_templates WHERE template_key = 'RELEASE_GENERAL'
+  UNION ALL
+  SELECT id, 'ORG', 'LEGAL_IDENTITY', '{{ORG.LEGAL_IDENTITY}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_GENERAL'
+  UNION ALL
+  SELECT id, 'PARTICIPANT', 'PRINTED_NAME', '{{PARTICIPANT.PRINTED_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_GENERAL'
+  UNION ALL
+  SELECT id, 'SIG', 'PARTICIPANT.NAME', '{{SIG.PARTICIPANT.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'RELEASE_GENERAL'
+  UNION ALL
+  SELECT id, 'SIG', 'PARTICIPANT.DATE', '{{SIG.PARTICIPANT.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'RELEASE_GENERAL'
+  UNION ALL
+  SELECT id, 'PARTICIPANT', 'PHONE', '{{PARTICIPANT.PHONE}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_GENERAL'
+  UNION ALL
+  SELECT id, 'PARTICIPANT', 'EMAIL', '{{PARTICIPANT.EMAIL}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_GENERAL'
+  UNION ALL
+  SELECT id, 'PARTICIPANT', 'FULL_NAME', '{{PARTICIPANT.FULL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_GENERAL'
+  UNION ALL
+  SELECT id, 'GUARDIAN', 'FULL_NAME', '{{GUARDIAN.FULL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_GENERAL'
+  UNION ALL
+  SELECT id, 'GUARDIAN', 'RELATIONSHIP', '{{GUARDIAN.RELATIONSHIP}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_GENERAL'
+  UNION ALL
+  SELECT id, 'SIG', 'GUARDIAN.NAME', '{{SIG.GUARDIAN.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'RELEASE_GENERAL'
+  UNION ALL
+  SELECT id, 'SIG', 'GUARDIAN.DATE', '{{SIG.GUARDIAN.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'RELEASE_GENERAL'
+  UNION ALL
+  SELECT id, 'ORG', 'LEGAL_NAME', '{{ORG.LEGAL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_GENERAL'
+  UNION ALL
+  SELECT id, 'SIG', 'COMPANY.NAME', '{{SIG.COMPANY.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'RELEASE_GENERAL'
+  UNION ALL
+  SELECT id, 'ORG', 'SIGNATORY_NAME', '{{ORG.SIGNATORY_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_GENERAL'
+  UNION ALL
+  SELECT id, 'ORG', 'SIGNATORY_TITLE', '{{ORG.SIGNATORY_TITLE}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_GENERAL'
+  UNION ALL
+  SELECT id, 'SIG', 'COMPANY.DATE', '{{SIG.COMPANY.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'RELEASE_GENERAL';
+
+-- ── RELEASE_HORSE_CARE ─────────────────────────────────────────────
+INSERT INTO contract_templates (template_key, title, service_type, party_namespaces)
+  VALUES ('RELEASE_HORSE_CARE', 'Horse Handling and Routine Care Liability Release', NULL, ARRAY['OWNER','COMPANY'])
+  ON CONFLICT (template_key) DO NOTHING;
+UPDATE contract_templates SET body = $body$HORSE HANDLING, ROUTINE CARE, TEMPORARY EMERGENCY STABILIZATION, LIABILITY RELEASE, HOLD HARMLESS & INDEMNIFICATION AGREEMENT
+
+(Horse Owner / Lessee / Lessor)
+
+Effective for One (1) Year from Date of Signature
+
+This Horse Handling, Routine Care, Temporary Emergency Stabilization, Liability Release, Hold Harmless & Indemnification Agreement ("Agreement") is entered into as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned Horse Owner, Lessee, or Lessor ("Owner") in favor of:
+
+{{ORG.LEGAL_IDENTITY}} ("COMPANY").
+
+For purposes of this Agreement, "Released Parties" means COMPANY, its owner, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, representatives, affiliates, property owners, facility owners, licensors, lessors, lessees, hosts, landowners, successors, assigns, heirs, and any person acting on behalf of COMPANY at any location where it is authorized to conduct business.
+
+This Agreement applies at any ranch, barn, arena, stable, tack room, trail, leased premises, private property, competition venue, or other location where COMPANY conducts authorized business.
+
+1. HORSE INFORMATION
+
+Horse Name: {{HORSE.REGISTERED_NAME}}
+
+Breed: {{HORSE.BREED}}
+
+Color: {{HORSE.COLOR}}
+
+Age: {{HORSE.AGE_DOB}}
+
+Sex: {{HORSE.SEX}}
+
+Signer capacity: □ Owner □ Lessee □ Lessor
+
+2. AUTHORIZATION FOR ROUTINE HORSE HANDLING AND CARE
+
+Owner authorizes COMPANY and the Released Parties to provide routine handling, husbandry, and day-to-day care reasonably necessary while the horse is in their custody or under their supervision.
+
+Authorized activities include, but are not limited to:
+
+Feeding
+
+Watering
+
+Blanketing
+
+Fly protection
+
+Grooming
+
+Bathing
+
+Hoof picking
+
+Mane and tail care
+
+Clipping
+
+Wrapping
+
+Ice boots
+
+Poultice
+
+Stretching
+
+Owner further authorizes COMPANY to make reasonable decisions concerning the horse's comfort, cleanliness, safety, and ordinary care while acting within the scope of this Agreement and any written instructions provided by the Owner.
+
+Owner Initials:
+
+3. AUTHORIZATION FOR TEMPORARY EMERGENCY STABILIZATION
+
+If the horse appears to become ill, injured, distressed, or exhibits signs of a potentially emergent condition before veterinary care is available, Owner authorizes COMPANY to take reasonable interim measures intended to preserve the horse's immediate health, comfort, or safety.
+
+Such measures may include:
+
+Bandaging
+
+Administering owner-approved medications, or emergency medications if the Owner cannot be reached
+
+Oral supplements
+
+Wound cleaning
+
+Basic first aid
+
+Monitoring for colic
+
+Monitoring lameness
+
+Monitoring swelling
+
+Heat management
+
+Emergency stabilization before veterinarian arrival
+
+Owner acknowledges and agrees that:
+
+These measures are temporary in nature and are intended solely to stabilize or comfort the horse until veterinary care can be obtained.
+
+COMPANY is not acting as a licensed veterinarian, diagnosing disease, prescribing treatment, or providing veterinary medical services.
+
+This authorization supplements, and does not replace, any separate Emergency Veterinary Authorization or Medical Authorization executed by the Owner.
+
+The exercise of reasonable judgment by COMPANY in determining whether to provide interim care, monitor the horse, contact the Owner, or seek veterinary assistance shall not, by itself, create liability to the fullest extent permitted by California law.
+
+Owner Initials:
+
+4. ASSUMPTION OF RISK
+
+Owner understands and voluntarily assumes all inherent and ordinary risks associated with horse handling, routine care, grooming, movement, restraint, and related husbandry activities.
+
+Owner acknowledges that even with reasonable care, horses may become injured, ill, escape, damage property, injure themselves, or injure other animals or persons due to their inherently unpredictable nature.
+
+Owner Initials:
+
+5. RELEASE OF LIABILITY
+
+To the fullest extent permitted by California law, Owner releases, waives, and forever discharges the Released Parties from any and all claims, demands, causes of action, liabilities, damages, losses, expenses, costs, or judgments arising from or related to:
+
+Routine horse handling;
+
+Grooming and husbandry activities;
+
+Authorized care described in this Agreement;
+
+Temporary emergency stabilization;
+
+Decisions made in good faith regarding the horse's care within the scope of this authorization; and
+
+Injury, illness, death, escape, or property damage involving the horse,
+
+including claims arising from the ordinary negligence of the Released Parties, except to the extent such claims cannot legally be released under California law.
+
+Owner Initials:
+
+6. COVENANT NOT TO SUE
+
+Owner agrees not to commence or maintain any lawsuit, arbitration, administrative proceeding, or other claim against any Released Party for matters released by this Agreement.
+
+Owner Initials:
+
+7. HOLD HARMLESS & INDEMNIFICATION
+
+Owner agrees to defend, indemnify, and hold harmless the Released Parties from and against any claims, liabilities, damages, judgments, costs, expenses, and reasonable attorney's fees arising out of or relating to:
+
+Ownership, custody, or control of the horse;
+
+Injury or damage caused by the horse;
+
+The horse's behavior or temperament;
+
+Owner's failure to disclose material health, behavioral, or handling information;
+
+Claims brought by third parties arising from the horse or Owner's conduct.
+
+8. OWNER REPRESENTATIONS
+
+Owner represents and warrants that:
+
+Owner has the legal authority to execute this Agreement.
+
+The horse has been appropriately vaccinated and maintained in a manner suitable for participation in authorized activities.
+
+Owner has disclosed all known medical conditions, dangerous behaviors, allergies, medication requirements, handling precautions, and special instructions.
+
+Owner will promptly notify COMPANY of any material change affecting the horse's health, condition, or behavior.
+
+Owner Initials:
+
+9. CALIFORNIA CIVIL CODE §1542 WAIVER
+
+Owner expressly waives the protections of California Civil Code §1542 and agrees that this Agreement applies to all known and unknown claims to the fullest extent permitted by law.
+
+Owner Initials:
+
+10. GOVERNING LAW AND VENUE
+
+This Agreement shall be governed by the laws of the State of California.
+
+Any action arising from this Agreement shall be brought exclusively in the state or federal courts located in San Diego County, California.
+
+11. SEVERABILITY
+
+If any provision of this Agreement is determined to be invalid or unenforceable, the remaining provisions shall remain in full force and effect.
+
+12. ENTIRE AGREEMENT
+
+This Agreement constitutes the complete agreement between the parties concerning the subject matter addressed herein and supersedes all prior oral or written understandings regarding horse handling and routine care.
+
+13. ACKNOWLEDGMENT
+
+Owner acknowledges that:
+
+Owner has carefully read this Agreement in its entirety.
+
+Owner understands its legal effect.
+
+Owner has had sufficient opportunity to ask questions before signing.
+
+Owner signs voluntarily and without coercion.
+
+Owner intends this Agreement to be legally binding upon Owner and Owner's heirs, successors, assigns, estate, and personal representatives.
+
+OWNER / LESSEE / LESSOR
+
+Name: {{OWNER.FULL_NAME}}
+
+Capacity: □ Owner □ Lessee □ Lessor
+
+Signature: {{SIG.OWNER.NAME}}
+
+Date: {{SIG.OWNER.DATE}}
+
+Phone: {{OWNER.PHONE}}
+
+Email: {{OWNER.EMAIL}}
+
+Horse Name: {{HORSE.REGISTERED_NAME}}
+
+COMPANY: {{ORG.LEGAL_NAME}}
+
+By (signature): {{SIG.COMPANY.NAME}}
+
+Printed: {{ORG.SIGNATORY_NAME}}
+
+Title: {{ORG.SIGNATORY_TITLE}}
+
+Date: {{SIG.COMPANY.DATE}}
+$body$, updated_at = now()
+  WHERE template_key = 'RELEASE_HORSE_CARE';
+INSERT INTO template_tokens (template_id, namespace, field, token, kind, required, party_scoped)
+  SELECT id, 'DOC', 'EFFECTIVE_DATE', '{{DOC.EFFECTIVE_DATE}}', 'system', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_CARE'
+  UNION ALL
+  SELECT id, 'ORG', 'LEGAL_IDENTITY', '{{ORG.LEGAL_IDENTITY}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_CARE'
+  UNION ALL
+  SELECT id, 'HORSE', 'REGISTERED_NAME', '{{HORSE.REGISTERED_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_CARE'
+  UNION ALL
+  SELECT id, 'HORSE', 'BREED', '{{HORSE.BREED}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_CARE'
+  UNION ALL
+  SELECT id, 'HORSE', 'COLOR', '{{HORSE.COLOR}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_CARE'
+  UNION ALL
+  SELECT id, 'HORSE', 'AGE_DOB', '{{HORSE.AGE_DOB}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_CARE'
+  UNION ALL
+  SELECT id, 'HORSE', 'SEX', '{{HORSE.SEX}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_CARE'
+  UNION ALL
+  SELECT id, 'OWNER', 'FULL_NAME', '{{OWNER.FULL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_CARE'
+  UNION ALL
+  SELECT id, 'SIG', 'OWNER.NAME', '{{SIG.OWNER.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_CARE'
+  UNION ALL
+  SELECT id, 'SIG', 'OWNER.DATE', '{{SIG.OWNER.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_CARE'
+  UNION ALL
+  SELECT id, 'OWNER', 'PHONE', '{{OWNER.PHONE}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_CARE'
+  UNION ALL
+  SELECT id, 'OWNER', 'EMAIL', '{{OWNER.EMAIL}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_CARE'
+  UNION ALL
+  SELECT id, 'ORG', 'LEGAL_NAME', '{{ORG.LEGAL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_CARE'
+  UNION ALL
+  SELECT id, 'SIG', 'COMPANY.NAME', '{{SIG.COMPANY.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_CARE'
+  UNION ALL
+  SELECT id, 'ORG', 'SIGNATORY_NAME', '{{ORG.SIGNATORY_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_CARE'
+  UNION ALL
+  SELECT id, 'ORG', 'SIGNATORY_TITLE', '{{ORG.SIGNATORY_TITLE}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_CARE'
+  UNION ALL
+  SELECT id, 'SIG', 'COMPANY.DATE', '{{SIG.COMPANY.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_CARE';
+
+-- ── RELEASE_HORSE_EXERCISE ─────────────────────────────────────────────
+INSERT INTO contract_templates (template_key, title, service_type, party_namespaces)
+  VALUES ('RELEASE_HORSE_EXERCISE', 'Horse Exercise Liability Release', NULL, ARRAY['OWNER','COMPANY'])
+  ON CONFLICT (template_key) DO NOTHING;
+UPDATE contract_templates SET body = $body$EQUINE ACTIVITIES LIABILITY RELEASE, ASSUMPTION OF RISK, AUTHORIZATION, HOLD HARMLESS & INDEMNIFICATION AGREEMENT
+
+(Horse Owner / Lessee / Lessor)
+
+Effective for One (1) Year from Date of Signature
+
+This Equine Activities Liability Release, Assumption of Risk, Authorization, Hold Harmless & Indemnification Agreement ("Agreement") is entered into as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned Horse Owner, Lessee, or Lessor ("Owner") in favor of:
+
+{{ORG.LEGAL_IDENTITY}} ("COMPANY").
+
+For purposes of this Agreement, "Released Parties" means COMPANY, its owner, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, representatives, affiliates, property owners, facility owners, licensors, lessors, lessees, hosts, landowners, successors, assigns, heirs, and any person acting on behalf of COMPANY at any location where it is authorized to conduct business.
+
+This Agreement applies at any ranch, barn, arena, stable, trail, tack room, leased premises, private property, competition venue, or other location where COMPANY conducts authorized business.
+
+1. HORSE INFORMATION
+
+Horse Name: {{HORSE.REGISTERED_NAME}}
+
+Breed: {{HORSE.BREED}}
+
+Color: {{HORSE.COLOR}}
+
+Age: {{HORSE.AGE_DOB}}
+
+Sex: {{HORSE.SEX}}
+
+Signer capacity: □ Owner □ Lessee □ Lessor
+
+2. AUTHORIZATION FOR EQUINE ACTIVITIES
+
+Owner authorizes COMPANY and the Released Parties to catch, handle, exercise, school, train, ride, lead, load, unload, and otherwise work with the above-described horse as reasonably necessary in connection with instruction, exercise, conditioning, training, transportation, demonstrations, or other authorized equestrian activities.
+
+Authorized activities include, but are not limited to:
+
+Haltering
+
+Leading
+
+Cross tying
+
+Stall handling
+
+Turnout
+
+Hand walking
+
+Tacking
+
+Untacking
+
+Riding
+
+Walking
+
+Trotting
+
+Cantering
+
+Lunging
+
+Round pen work
+
+Arena exercise
+
+Trail riding
+
+Cavaletti
+
+Jumping
+
+Training
+
+Loading
+
+Unloading
+
+Emergency handling
+
+Other similar equine activities reasonably related to instruction, training, exercise, transportation, handling, or care.
+
+3. ACKNOWLEDGMENT OF INHERENT RISKS
+
+Owner understands and acknowledges that horses are inherently unpredictable animals and that equine activities involve risks that cannot be eliminated, including but not limited to:
+
+Injury or death to riders, handlers, spectators, or horses.
+
+Falls.
+
+Tack or equipment failure.
+
+Unpredictable equine behavior.
+
+Environmental hazards.
+
+Interaction with other horses or people.
+
+Illness, injury, or death resulting despite reasonable care.
+
+Owner voluntarily accepts these risks on behalf of himself or herself and with respect to the horse.
+
+Owner Initials:
+
+4. ASSUMPTION OF RISK
+
+Owner knowingly and voluntarily assumes all risks associated with allowing COMPANY to work with, handle, exercise, ride, or train the horse.
+
+Owner understands that injury, illness, escape, property damage, permanent disability, or death may occur despite reasonable care.
+
+Owner Initials:
+
+5. AUTHORIZATION FOR ROUTINE CARE AND TEMPORARY EMERGENCY STABILIZATION
+
+Owner authorizes COMPANY, in its reasonable discretion, to provide routine care and temporary first-response measures before veterinary care is available or while awaiting veterinary assistance.
+
+Such care may include:
+
+Bandaging
+
+Administering owner-approved medications
+
+Oral supplements
+
+Wound cleaning
+
+Basic first aid
+
+Monitoring for colic
+
+Monitoring lameness
+
+Monitoring swelling
+
+Heat management
+
+Emergency stabilization before veterinarian arrival
+
+Owner acknowledges:
+
+These measures are intended solely to protect the horse's immediate health, comfort, or safety until veterinary care can be obtained.
+
+COMPANY is not acting as a licensed veterinarian or providing veterinary medical services.
+
+This authorization supplements, and does not replace, any separate Emergency Veterinary Authorization or Medical Authorization previously executed by Owner.
+
+Owner Initials:
+
+6. RELEASE OF LIABILITY
+
+To the fullest extent permitted by California law, Owner releases, waives, and forever discharges the Released Parties from any and all claims, demands, causes of action, liabilities, damages, expenses, losses, costs, or judgments arising out of or relating to:
+
+Handling the horse;
+
+Riding or exercising the horse;
+
+Training or schooling the horse;
+
+Providing instruction involving the horse;
+
+Providing authorized routine care or temporary emergency stabilization;
+
+Any injury, illness, death, escape, or property damage involving the horse or persons interacting with the horse,
+
+including claims arising from the ordinary negligence of the Released Parties, except to the extent such claims cannot legally be released under California law.
+
+Owner Initials:
+
+7. COVENANT NOT TO SUE
+
+Owner agrees not to commence or maintain any lawsuit, arbitration, or other proceeding against the Released Parties regarding claims released by this Agreement.
+
+Owner Initials:
+
+8. HOLD HARMLESS AND INDEMNIFICATION
+
+Owner agrees to defend, indemnify, and hold harmless the Released Parties from and against any claims, liabilities, damages, judgments, costs, expenses, and reasonable attorney's fees arising out of or related to:
+
+Ownership, custody, or control of the horse;
+
+The horse's actions or behavior;
+
+Injury or damage caused by the horse;
+
+Owner's breach of this Agreement;
+
+Claims asserted by third parties arising from the horse or Owner's conduct.
+
+9. OWNER REPRESENTATIONS
+
+Owner represents that:
+
+Owner has legal authority to sign this Agreement.
+
+The horse is suitable for the activities authorized.
+
+Owner has disclosed all known dangerous behaviors, medical conditions, training limitations, or other material information concerning the horse.
+
+Owner will promptly notify COMPANY of any significant change affecting the horse's health or behavior.
+
+Owner Initials:
+
+10. CALIFORNIA CIVIL CODE §1542 WAIVER
+
+Owner expressly waives the protections of California Civil Code §1542 and agrees that this Agreement extends to all known and unknown claims to the fullest extent permitted by law.
+
+Owner Initials:
+
+11. GOVERNING LAW AND VENUE
+
+This Agreement shall be governed by the laws of the State of California.
+
+Any legal action arising from this Agreement shall be brought exclusively in the state or federal courts located in San Diego County, California.
+
+12. SEVERABILITY
+
+If any provision of this Agreement is held unenforceable, the remaining provisions shall remain in full force and effect.
+
+13. ENTIRE AGREEMENT
+
+This Agreement constitutes the complete understanding between the parties concerning the subject matter herein and supersedes all prior oral or written understandings regarding equine activities covered by this Agreement.
+
+14. ACKNOWLEDGMENT
+
+Owner acknowledges that:
+
+Owner has carefully read this Agreement.
+
+Owner understands its legal effect.
+
+Owner has had the opportunity to ask questions before signing.
+
+Owner signs voluntarily and without coercion.
+
+Owner intends this Agreement to be binding upon Owner and Owner's heirs, successors, assigns, personal representatives, and estate.
+
+OWNER / LESSEE / LESSOR
+
+Name: {{OWNER.FULL_NAME}}
+
+Capacity: □ Owner □ Lessee □ Lessor
+
+Signature: {{SIG.OWNER.NAME}}
+
+Date: {{SIG.OWNER.DATE}}
+
+Phone: {{OWNER.PHONE}}
+
+Email: {{OWNER.EMAIL}}
+
+Horse Name: {{HORSE.REGISTERED_NAME}}
+
+COMPANY: {{ORG.LEGAL_NAME}}
+
+By (signature): {{SIG.COMPANY.NAME}}
+
+Printed: {{ORG.SIGNATORY_NAME}}
+
+Title: {{ORG.SIGNATORY_TITLE}}
+
+Date: {{SIG.COMPANY.DATE}}
+$body$, updated_at = now()
+  WHERE template_key = 'RELEASE_HORSE_EXERCISE';
+INSERT INTO template_tokens (template_id, namespace, field, token, kind, required, party_scoped)
+  SELECT id, 'DOC', 'EFFECTIVE_DATE', '{{DOC.EFFECTIVE_DATE}}', 'system', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_EXERCISE'
+  UNION ALL
+  SELECT id, 'ORG', 'LEGAL_IDENTITY', '{{ORG.LEGAL_IDENTITY}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_EXERCISE'
+  UNION ALL
+  SELECT id, 'HORSE', 'REGISTERED_NAME', '{{HORSE.REGISTERED_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_EXERCISE'
+  UNION ALL
+  SELECT id, 'HORSE', 'BREED', '{{HORSE.BREED}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_EXERCISE'
+  UNION ALL
+  SELECT id, 'HORSE', 'COLOR', '{{HORSE.COLOR}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_EXERCISE'
+  UNION ALL
+  SELECT id, 'HORSE', 'AGE_DOB', '{{HORSE.AGE_DOB}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_EXERCISE'
+  UNION ALL
+  SELECT id, 'HORSE', 'SEX', '{{HORSE.SEX}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_EXERCISE'
+  UNION ALL
+  SELECT id, 'OWNER', 'FULL_NAME', '{{OWNER.FULL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_EXERCISE'
+  UNION ALL
+  SELECT id, 'SIG', 'OWNER.NAME', '{{SIG.OWNER.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_EXERCISE'
+  UNION ALL
+  SELECT id, 'SIG', 'OWNER.DATE', '{{SIG.OWNER.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_EXERCISE'
+  UNION ALL
+  SELECT id, 'OWNER', 'PHONE', '{{OWNER.PHONE}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_EXERCISE'
+  UNION ALL
+  SELECT id, 'OWNER', 'EMAIL', '{{OWNER.EMAIL}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_EXERCISE'
+  UNION ALL
+  SELECT id, 'ORG', 'LEGAL_NAME', '{{ORG.LEGAL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_EXERCISE'
+  UNION ALL
+  SELECT id, 'SIG', 'COMPANY.NAME', '{{SIG.COMPANY.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_EXERCISE'
+  UNION ALL
+  SELECT id, 'ORG', 'SIGNATORY_NAME', '{{ORG.SIGNATORY_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_EXERCISE'
+  UNION ALL
+  SELECT id, 'ORG', 'SIGNATORY_TITLE', '{{ORG.SIGNATORY_TITLE}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_EXERCISE'
+  UNION ALL
+  SELECT id, 'SIG', 'COMPANY.DATE', '{{SIG.COMPANY.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_EXERCISE';
+
+-- ── RELEASE_PARTICIPANT ─────────────────────────────────────────────
+INSERT INTO contract_templates (template_key, title, service_type, party_namespaces)
+  VALUES ('RELEASE_PARTICIPANT', 'Participant Liability Release', NULL, ARRAY['PARTICIPANT','GUARDIAN','COMPANY'])
+  ON CONFLICT (template_key) DO NOTHING;
+UPDATE contract_templates SET body = $body$PARTICIPANT LIABILITY RELEASE, ASSUMPTION OF RISK, HOLD HARMLESS & INDEMNIFICATION AGREEMENT
+
+Effective for One (1) Year from Date of Signature
+
+This Participant Liability Release, Assumption of Risk, Hold Harmless & Indemnification Agreement ("Agreement") is entered into as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned participant ("Participant"), or if Participant is under eighteen (18) years of age, by the Participant's parent or legal guardian, in favor of:
+
+{{ORG.LEGAL_IDENTITY}} ("COMPANY").
+
+For purposes of this Agreement, "Released Parties" means COMPANY, its owner, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, representatives, affiliates, property owners, facility owners, licensors, lessors, lessees, hosts, landowners, successors, assigns, heirs, and any person acting on behalf of COMPANY at any location where it is authorized to conduct business.
+
+This Agreement applies at any ranch, barn, arena, stable, tack room, trail, private property, leased premises, event venue, show grounds, or other location where COMPANY conducts authorized business.
+
+1. PARTICIPATION
+
+Participant voluntarily elects to engage in equestrian and related activities offered, supervised, or conducted by COMPANY, including but not limited to:
+
+Riding lessons
+
+Mounted instruction
+
+Unmounted instruction
+
+Horse handling
+
+Grooming
+
+Tacking and untacking
+
+Leading horses
+
+Groundwork
+
+Lunging
+
+Round pen work
+
+Arena work
+
+Trail riding
+
+Clinics
+
+Camps
+
+Horse exercise
+
+Assisting instructors
+
+Educational demonstrations
+
+Walking, trotting, cantering, galloping, jumping, cavaletti, conditioning, and training
+
+Any other equestrian activity authorized by COMPANY.
+
+2. ACKNOWLEDGMENT OF INHERENT RISKS
+
+Participant understands that equestrian activities are inherently dangerous and involve risks that cannot be eliminated, including but not limited to:
+
+Falls from horses.
+
+Horses kicking, biting, bucking, bolting, rearing, stumbling, spooking, striking, stepping on, or crushing persons.
+
+Tack or equipment failure.
+
+Collisions with horses, people, fences, gates, jumps, vehicles, or other objects.
+
+Uneven terrain, dust, mud, rocks, holes, water crossings, weather conditions, and natural hazards.
+
+Mistakes in judgment by riders or participants.
+
+Actions or omissions of other participants or third parties.
+
+Serious bodily injury, paralysis, permanent disability, or death.
+
+Participant acknowledges that no amount of training, supervision, instruction, or protective equipment can eliminate every risk associated with equestrian activities.
+
+Participant Initials:
+
+3. ASSUMPTION OF RISK
+
+Participant knowingly and voluntarily assumes all inherent and ordinary risks associated with horses, equestrian activities, transportation to and from activities, use of equipment, and participation at any facility where COMPANY conducts business.
+
+Participant accepts full responsibility for any injury, illness, emotional distress, disability, death, property damage, or other loss arising from participation.
+
+Participant Initials:
+
+4. HEALTH, FITNESS, AND CAPACITY
+
+Participant represents and warrants that:
+
+Participant is in good physical and mental health.
+
+Participant is capable of safely participating in equestrian activities.
+
+Participant is not impaired by alcohol, illegal drugs, or medication affecting judgment or coordination.
+
+Participant has no medical condition, injury, disability, or restriction that would create an unreasonable risk of harm to themselves or others.
+
+Participant has disclosed any relevant medical conditions that could reasonably affect safe participation.
+
+Participant accepts full responsibility for monitoring their own physical condition and will immediately stop participating if they believe continued participation would be unsafe.
+
+If this Agreement is signed for a minor, the parent or legal guardian makes these representations to the best of their knowledge.
+
+Participant Initials:
+
+5. SAFETY EQUIPMENT AND INSTRUCTION
+
+Participant agrees to:
+
+Follow all instructions given by COMPANY personnel.
+
+Use required safety equipment when directed.
+
+Immediately report unsafe conditions, damaged equipment, or injuries.
+
+Exercise reasonable care while around horses and other participants.
+
+Participant understands that wearing a riding helmet or other protective equipment reduces, but does not eliminate, the risk of injury.
+
+Participant Initials:
+
+6. RULES, SAFETY POLICIES & CODE OF CONDUCT
+
+Participant acknowledges receipt of the separate Rules, Regulations, Safety Policies, and Code of Conduct applicable to COMPANY.
+
+Participant agrees to read, understand, comply with, and ensure any accompanying minor complies with those rules at all times.
+
+Participant understands that failure to comply may result in suspension or termination of participation without refund.
+
+Participant Initials Acknowledging Receipt and Agreement:
+
+7. RELEASE OF LIABILITY
+
+To the fullest extent permitted by California law, Participant releases, waives, and forever discharges the Released Parties from any and all claims, demands, causes of action, liabilities, damages, losses, costs, expenses, or judgments arising out of or relating to Participant's involvement in equestrian activities, including claims arising from the ordinary negligence of the Released Parties.
+
+This release applies to claims involving bodily injury, illness, emotional distress, disability, death, property damage, loss of income, and any other damages, whether known or unknown, except to the extent prohibited by California law.
+
+Participant Initials:
+
+8. COVENANT NOT TO SUE
+
+Participant agrees not to commence or maintain any lawsuit, arbitration, administrative proceeding, or other claim against any Released Party for matters released by this Agreement.
+
+Participant Initials:
+
+9. HOLD HARMLESS & INDEMNIFICATION
+
+Participant agrees to defend, indemnify, and hold harmless the Released Parties from and against any claims, liabilities, damages, judgments, costs, expenses, and reasonable attorney's fees arising from:
+
+Participant's acts or omissions;
+
+Participant's failure to follow instructions or facility rules;
+
+Damage caused by Participant to horses, equipment, facilities, or property; or
+
+Claims brought by third parties resulting from Participant's conduct.
+
+10. CALIFORNIA CIVIL CODE §1542 WAIVER
+
+Participant expressly waives the protections of California Civil Code §1542 and agrees this Agreement extends to all known and unknown claims to the fullest extent permitted by law.
+
+Participant Initials:
+
+11. GOVERNING LAW AND VENUE
+
+This Agreement shall be governed by the laws of the State of California.
+
+Any legal action arising from this Agreement shall be brought exclusively in the state or federal courts located in San Diego County, California, and the parties consent to the jurisdiction of those courts.
+
+12. SEVERABILITY
+
+If any provision of this Agreement is determined to be unenforceable, the remaining provisions shall remain in full force and effect.
+
+13. ENTIRE AGREEMENT
+
+This Agreement constitutes the complete agreement between the parties concerning Participant's involvement in activities conducted by COMPANY and supersedes all prior discussions or understandings regarding its subject matter.
+
+14. ACKNOWLEDGMENT
+
+Participant acknowledges that:
+
+This Agreement contains important legal rights.
+
+Participant has carefully read and understands the entire Agreement.
+
+Participant understands they are assuming substantial risks associated with equestrian activities.
+
+Participant signs voluntarily and without coercion.
+
+Participant intends this Agreement to be binding upon themselves and, where applicable, their heirs, successors, assigns, and personal representatives.
+
+ADULT PARTICIPANT
+
+Printed Name: {{PARTICIPANT.PRINTED_NAME}}
+
+Signature: {{SIG.PARTICIPANT.NAME}}
+
+Date: {{SIG.PARTICIPANT.DATE}}
+
+Phone: {{PARTICIPANT.PHONE}}
+
+Email: {{PARTICIPANT.EMAIL}}
+
+MINOR PARTICIPANT
+
+Minor's Name: {{PARTICIPANT.FULL_NAME}}
+
+Date of Birth:
+
+PARENT OR LEGAL GUARDIAN
+
+I certify that I am the parent or legal guardian of the above-named minor and have authority to execute this Agreement on the minor's behalf. I have read and understand this Agreement, consent to the minor's participation in equestrian activities, agree to all of its terms, and agree to defend, indemnify, and hold harmless the Released Parties from claims arising from the minor's participation to the fullest extent permitted by California law.
+
+Parent/Guardian Name: {{GUARDIAN.FULL_NAME}}
+
+Relationship to Minor: {{GUARDIAN.RELATIONSHIP}}
+
+Signature: {{SIG.GUARDIAN.NAME}}
+
+Date: {{SIG.GUARDIAN.DATE}}
+
+COMPANY: {{ORG.LEGAL_NAME}}
+
+By (signature): {{SIG.COMPANY.NAME}}
+
+Printed: {{ORG.SIGNATORY_NAME}}
+
+Title: {{ORG.SIGNATORY_TITLE}}
+
+Date: {{SIG.COMPANY.DATE}}
+$body$, updated_at = now()
+  WHERE template_key = 'RELEASE_PARTICIPANT';
+INSERT INTO template_tokens (template_id, namespace, field, token, kind, required, party_scoped)
+  SELECT id, 'DOC', 'EFFECTIVE_DATE', '{{DOC.EFFECTIVE_DATE}}', 'system', false, false FROM contract_templates WHERE template_key = 'RELEASE_PARTICIPANT'
+  UNION ALL
+  SELECT id, 'ORG', 'LEGAL_IDENTITY', '{{ORG.LEGAL_IDENTITY}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_PARTICIPANT'
+  UNION ALL
+  SELECT id, 'PARTICIPANT', 'PRINTED_NAME', '{{PARTICIPANT.PRINTED_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_PARTICIPANT'
+  UNION ALL
+  SELECT id, 'SIG', 'PARTICIPANT.NAME', '{{SIG.PARTICIPANT.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'RELEASE_PARTICIPANT'
+  UNION ALL
+  SELECT id, 'SIG', 'PARTICIPANT.DATE', '{{SIG.PARTICIPANT.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'RELEASE_PARTICIPANT'
+  UNION ALL
+  SELECT id, 'PARTICIPANT', 'PHONE', '{{PARTICIPANT.PHONE}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_PARTICIPANT'
+  UNION ALL
+  SELECT id, 'PARTICIPANT', 'EMAIL', '{{PARTICIPANT.EMAIL}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_PARTICIPANT'
+  UNION ALL
+  SELECT id, 'PARTICIPANT', 'FULL_NAME', '{{PARTICIPANT.FULL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_PARTICIPANT'
+  UNION ALL
+  SELECT id, 'GUARDIAN', 'FULL_NAME', '{{GUARDIAN.FULL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_PARTICIPANT'
+  UNION ALL
+  SELECT id, 'GUARDIAN', 'RELATIONSHIP', '{{GUARDIAN.RELATIONSHIP}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_PARTICIPANT'
+  UNION ALL
+  SELECT id, 'SIG', 'GUARDIAN.NAME', '{{SIG.GUARDIAN.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'RELEASE_PARTICIPANT'
+  UNION ALL
+  SELECT id, 'SIG', 'GUARDIAN.DATE', '{{SIG.GUARDIAN.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'RELEASE_PARTICIPANT'
+  UNION ALL
+  SELECT id, 'ORG', 'LEGAL_NAME', '{{ORG.LEGAL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_PARTICIPANT'
+  UNION ALL
+  SELECT id, 'SIG', 'COMPANY.NAME', '{{SIG.COMPANY.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'RELEASE_PARTICIPANT'
+  UNION ALL
+  SELECT id, 'ORG', 'SIGNATORY_NAME', '{{ORG.SIGNATORY_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_PARTICIPANT'
+  UNION ALL
+  SELECT id, 'ORG', 'SIGNATORY_TITLE', '{{ORG.SIGNATORY_TITLE}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_PARTICIPANT'
+  UNION ALL
+  SELECT id, 'SIG', 'COMPANY.DATE', '{{SIG.COMPANY.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'RELEASE_PARTICIPANT';
+
+-- ── RIDER_LESSON_JUMPER ─────────────────────────────────────────────
+UPDATE contract_templates SET body = $body$RIDING LESSON AGREEMENT
+
+This Riding Lesson Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
 
 {{ORG.LEGAL_IDENTITY}} ("COMPANY"),
 
@@ -4204,33 +5078,9 @@ At other locations selected by COMPANY.
 
 This Agreement applies regardless of location.
 
-ACKNOWLEDGMENT OF INHERENT RISKS
+LIABILITY RELEASE — INCORPORATED BY REFERENCE
 
-Participant understands and acknowledges that equine activities are inherently dangerous.
-
-Risks include but are not limited to:
-
-Falling from a horse;
-
-Being kicked, bitten, stepped on, crushed, pinned, or struck by a horse;
-
-Horse spooking, bucking, bolting, rearing, stumbling, or acting unpredictably;
-
-Tack failure;
-
-Equipment failure;
-
-Uneven terrain;
-
-Weather conditions;
-
-Actions of other riders, spectators, or participants;
-
-Transportation-related incidents;
-
-Exposure to livestock, wildlife, insects, and environmental hazards.
-
-Participant voluntarily assumes all risks associated with participation.
+The risk acknowledgments, releases, and indemnity obligations applicable to the activities under this Agreement are set forth exclusively in the separately executed Liability Release and Assumption of Risk agreement, which is incorporated herein by reference.
 
 REPRESENTATIONS OF PARTICIPANT
 
@@ -4251,34 +5101,6 @@ HELMETS
 ASTM/SEI-certified riding helmets are required at all times.
 
 Participant understands that helmet use may reduce but cannot eliminate risk of serious injury or death.
-
-RELEASE OF LIABILITY
-
-To the fullest extent permitted by law, Participant releases and forever discharges:
-
-COMPANY;
-
-Its owners, agents, instructors, trainers, assistants, volunteers, representatives, contractors, and affiliates;
-
-The owners and operators of facilities where services occur;
-
-Horse owners whose horses are used during lessons;
-
-from any and all claims, demands, causes of action, damages, losses, liabilities, costs, and expenses arising from participation in equine activities, including claims arising from ordinary negligence.
-
-This release does not apply to gross negligence, willful misconduct, or conduct that cannot legally be released under California law.
-
-HOLD HARMLESS AND INDEMNIFICATION
-
-Participant shall indemnify, defend, and hold harmless the Released Parties from any claims arising from:
-
-Participant’s conduct;
-
-Participant’s violation of facility rules;
-
-Damage caused by Participant;
-
-Claims brought by third parties resulting from Participant’s actions.
 
 PROPERTY DAMAGE
 

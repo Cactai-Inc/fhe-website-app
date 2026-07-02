@@ -3,8 +3,9 @@
  *
  * Proves the template-assembly substrate is real and matches the canon:
  *  - migration 11 applies after the engagements/horses backbone,
- *  - the 17 canonical contracts are seeded, all active, every one carrying FHE
- *    plus at least one counterparty namespace,
+ *  - the 21 canonical contracts are seeded (17 survivors + the 4 liability
+ *    releases), all active, every one carrying COMPANY plus at least one
+ *    counterparty namespace,
  *  - template_tokens mirrors MERGE_TOKEN_DICTIONARY.md (every documented token
  *    present, well-formed, correctly classed; no orphans),
  *  - party-scoped tokens (person set + {{SIG.*}}) live under the PARTY placeholder,
@@ -32,18 +33,21 @@ describe('migration applies additively', () => {
   });
 });
 
-describe('contract_templates — the 17 canonical contracts', () => {
-  it('seeds exactly the 17 survivors, all active', async () => {
+describe('contract_templates — the 21 canonical contracts', () => {
+  // 17 → 21: the liability-release pass (20260701070000 + the regenerated
+  // loader) adds the four standalone RELEASE_* documents. Deliberate count bump.
+  it('seeds exactly the 21 survivors, all active', async () => {
     await h.asSuperuser();
     const rows = await h.q<{ template_key: string }>(
       `select template_key from contract_templates order by template_key`);
-    expect(rows).toHaveLength(17);
+    expect(rows).toHaveLength(21);
     // sort both sides with the same comparator (avoid JS vs PG collation quirks)
     expect(rows.map((r) => r.template_key).sort()).toEqual([
       'FACILITY_LICENSE', 'FACILITY_RULES', 'HORSE_EMERGENCY_VET', 'HORSE_EVALUATION',
       'HORSE_EXERCISE', 'HORSE_LEASE', 'HORSE_PURCHASE_SALE', 'HORSE_REPRESENTATION',
       'HORSE_SALE_TRANSFER', 'HORSE_SEARCH_RETAINER', 'HORSE_TRAINING', 'HORSEMANSHIP_TRAINING',
       'HUMAN_EMERGENCY_MEDICAL', 'INDEPENDENT_CONTRACTOR', 'MEDIA_RELEASE', 'MINOR_RIDER',
+      'RELEASE_GENERAL', 'RELEASE_HORSE_CARE', 'RELEASE_HORSE_EXERCISE', 'RELEASE_PARTICIPANT',
       'RIDER_LESSON_JUMPER',
     ].sort());
   });
@@ -143,10 +147,10 @@ describe('RLS — templates read-active, admin-write', () => {
     // hide one template
     await h.q(`update contract_templates set active=false where template_key='MINOR_RIDER'`);
 
-    // anon sees the 16 active ones, not the hidden one
+    // anon sees the 20 active ones, not the hidden one (21 total incl. RELEASE_*)
     await h.asAnon();
     const anon = await h.q<{ template_key: string }>(`select template_key from contract_templates`);
-    expect(anon).toHaveLength(16);
+    expect(anon).toHaveLength(20);
     expect(anon.map((r) => r.template_key)).not.toContain('MINOR_RIDER');
 
     // a plain authenticated user cannot insert
@@ -156,9 +160,9 @@ describe('RLS — templates read-active, admin-write', () => {
            values ('HACK','Hack', ARRAY['CLIENT','FHE'])`),
     ).rejects.toThrow();
 
-    // admin sees all 17 (incl. inactive) and can write
+    // admin sees all 21 (incl. inactive) and can write
     await h.asUser(adminUid);
-    expect(await h.q(`select id from contract_templates`)).toHaveLength(17);
+    expect(await h.q(`select id from contract_templates`)).toHaveLength(21);
     await h.q(`update contract_templates set version=2 where template_key='HORSE_PURCHASE_SALE'`);
     const v = (await h.q<{ version: number }>(
       `select version from contract_templates where template_key='HORSE_PURCHASE_SALE'`))[0].version;

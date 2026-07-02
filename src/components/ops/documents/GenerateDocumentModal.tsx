@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Modal } from '../../../lib/ops';
 import { useAsync } from '../../../lib/ops';
 import { listContractTemplates, generateDocument } from '../../../lib/api';
+import { listRequiredDocuments } from '../../../lib/ops/api-releases';
 import type { ContractTemplate, GeneratedDocument } from '../../../lib/ops/types';
 import { TemplatePicker } from './TemplatePicker';
 
@@ -16,6 +17,12 @@ import { TemplatePicker } from './TemplatePicker';
  * so the caller can route to the viewer (OPS-DOC-VIEW). On rejection the error
  * renders inline and the modal STAYS OPEN so the staff user can retry.
  *
+ * When the caller passes the engagement's `serviceType`, the picker leads with
+ * the "Required signing set for this engagement" section — the
+ * contract_requirements matrix rows for that service (releases + facility
+ * rules + medical/vet authorizations), each marked On file / Needed against
+ * the engagement's existing documents (`existingTemplateIds`).
+ *
  * No default template_key is ever sent: the confirm control is disabled until a
  * template is explicitly chosen, so `generate_document` never fires blind.
  */
@@ -23,6 +30,10 @@ export interface GenerateDocumentModalProps {
   open: boolean;
   onClose: () => void;
   engagementId: string;
+  /** The engagement's service_type — enables the required-signing-set section. */
+  serviceType?: string;
+  /** template_ids of documents already generated on the engagement. */
+  existingTemplateIds?: string[];
   /** Called with the new document_id after a successful generate (→ viewer). */
   onGenerated?: (documentId: string) => void;
 }
@@ -31,9 +42,12 @@ export function GenerateDocumentModal({
   open,
   onClose,
   engagementId,
+  serviceType,
+  existingTemplateIds,
   onGenerated,
 }: GenerateDocumentModalProps) {
   const [templates, setTemplates] = useState<ContractTemplate[]>([]);
+  const [requiredKeys, setRequiredKeys] = useState<string[]>([]);
   const [selectedKey, setSelectedKey] = useState('');
   const [loadError, setLoadError] = useState<Error | null>(null);
   const generate = useAsync<GeneratedDocument, [string, string]>(generateDocument);
@@ -56,6 +70,26 @@ export function GenerateDocumentModal({
       cancelled = true;
     };
   }, [open]);
+
+  // Load the required signing set for the engagement's service (org-scoped by
+  // RLS). Non-fatal: on failure the section simply does not render.
+  useEffect(() => {
+    if (!open || !serviceType) {
+      setRequiredKeys([]);
+      return;
+    }
+    let cancelled = false;
+    listRequiredDocuments(serviceType)
+      .then((keys) => {
+        if (!cancelled) setRequiredKeys(keys);
+      })
+      .catch(() => {
+        if (!cancelled) setRequiredKeys([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, serviceType]);
 
   // Reset transient state whenever the modal closes.
   useEffect(() => {
@@ -144,6 +178,8 @@ export function GenerateDocumentModal({
               templates={templates}
               value={selectedKey}
               onSelect={setSelectedKey}
+              requiredKeys={requiredKeys}
+              existingTemplateIds={existingTemplateIds}
             />
           )}
           {generate.isError && generate.error && (

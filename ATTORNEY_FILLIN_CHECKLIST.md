@@ -140,3 +140,87 @@ contact from `p_legal->>'SIGNATORY_NAME'` and seed both values.
   `business_config.signatory_contact_id`
 - Documents flip `EXECUTED` only after **every** `is_signer` party — now including
   COMPANY — has signed (`record_signature`, unchanged and generic).
+
+## 15. Liability-release pass — the four standalone releases (NEW, counsel review)
+
+The four owner release documents are loaded as standalone templates
+(`RELEASE_GENERAL`, `RELEASE_PARTICIPANT`, `RELEASE_HORSE_EXERCISE`,
+`RELEASE_HORSE_CARE`; sources in `build_instructions_phase_2/Documents/Liability
+Release/`). Tokenization changes counsel should confirm:
+
+- **Company countersignature blocks ADDED.** The source releases are unilateral
+  ("in favor of French Heritage Equestrian") with no company signature line; the
+  loaded versions add the standard COMPANY block (`{{SIG.COMPANY.*}}` +
+  signatory tokens) for engine consistency. Counsel may strike if a unilateral
+  release must not be countersigned.
+- **"Visitor" signs under the PARTICIPANT role.** `VISITOR` is not a
+  `party_role` CHECK value, so `RELEASE_GENERAL` keeps "Visitor" as its defined
+  term in prose but merges/signs via `{{PARTICIPANT.*}}` / `{{SIG.PARTICIPANT.*}}`
+  (guardian via `{{GUARDIAN.*}}`). Confirm acceptable, or the role vocabulary
+  must gain VISITOR.
+- **Effective date wording.** Sources say only "Effective for One (1) Year from
+  Date of Signature"; the loaded versions ALSO insert the standard
+  "entered into as of {{DOC.EFFECTIVE_DATE}} ('Effective Date')" intro. Confirm
+  the one-year-from-signature term vs. the merged effective date is coherent.
+- **"Circle one" → checkboxes.** The Owner/Lessee/Lessor "circle one" elections
+  in the horse releases are normalized to `□ Owner □ Lessee □ Lessor`.
+- **Grammar fix in the care release**, §3: source read "if the owner cannot be
+  reach out"; loaded as "or emergency medications if the Owner cannot be
+  reached". Confirm intent (administering emergency medication when unreachable).
+- **Initials lines** ("Owner Initials:", "Visitor Initials:") remain handwritten
+  blanks (same deferred-storage posture as §10/§11 above). Counsel: confirm
+  per-section initials are acceptable for e-sign.
+- **Minor date of birth** stays a handwritten blank (no DOB token/storage yet).
+
+## 16. Liability-release pass — release language STRIPPED from service agreements
+
+Owner directive: release / assumption-of-risk / hold-harmless protections now
+live EXCLUSIVELY in the standalone RELEASE_* documents. The embedded sections
+were REMOVED from `RIDER_LESSON_JUMPER`, `MINOR_RIDER`, `HORSE_EXERCISE`,
+`HORSE_TRAINING`, `HORSEMANSHIP_TRAINING`, `HORSE_SEARCH_RETAINER`, and
+`HORSE_REPRESENTATION`, each replaced with this exact incorporation clause
+(**attorney must confirm the wording**):
+
+> **LIABILITY RELEASE — INCORPORATED BY REFERENCE**
+> The risk acknowledgments, releases, and indemnity obligations applicable to
+> the activities under this Agreement are set forth exclusively in the
+> separately executed Liability Release and Assumption of Risk agreement, which
+> is incorporated herein by reference.
+
+Consequences counsel should note:
+
+- Titles shortened accordingly: `RIDER_LESSON_JUMPER` → "Riding Lesson
+  Agreement"; `MINOR_RIDER` → "Minor Rider Agreement, Parental Consent, and
+  Medical Authorization Agreement" (it KEEPS parental consent, rules, helmet,
+  medical-information, and emergency-medical-authorization sections).
+- The stripped indemnities included service-specific carve-outs (e.g. the
+  retainer's "failure to locate a horse", the representation agreement's "lease
+  decisions", the exercise/training agreements' "undisclosed conditions /
+  ownership disputes"). The standalone releases cover the general equine-risk
+  scope; counsel should confirm those service-specific protections are
+  adequately captured (the releases' hold-harmless clauses are broad) or
+  restore narrow, non-release business terms.
+- NOT stripped by design: `FACILITY_RULES` (property-rules acknowledgment keeps
+  its own risk/release language), `HORSE_EMERGENCY_VET` (its release/indemnity
+  is scoped to good-faith emergency-care decisions — its narrow authorization
+  subject, no general release found), `HUMAN_EMERGENCY_MEDICAL` (not a service
+  agreement), and the RELEASE_* documents themselves.
+- A CI gate (`test/db/contract_bodies.test.ts`) now fails if release phrasing
+  reappears in a stripped agreement outside the canonical clause above.
+
+## 17. Signing-requirements matrix (`contract_requirements`) — owner rules encoded
+
+`supabase/migrations/20260701070000_liability_releases.sql` seeds, per service:
+rider segment (`RIDING_LESSON`, `JUMPER_TRAINING`, `HORSEMANSHIP_TRAINING`) →
+`RELEASE_PARTICIPANT` + `FACILITY_RULES` + `HUMAN_EMERGENCY_MEDICAL`; horse
+segment (`HORSE_TRAINING`, `HORSE_EXERCISE` → `RELEASE_HORSE_EXERCISE`;
+`HORSE_CLIPPING` → `RELEASE_HORSE_CARE`) + `FACILITY_RULES` +
+`HORSE_EMERGENCY_VET`; requires-horse brokerage/support (`HORSE_EVALUATION`,
+purchase/sale/lease-in/lease-out assistance) → `HORSE_EMERGENCY_VET` only;
+`HORSE_FINDER` and `INDEPENDENT_CONTRACTOR` → none; `RELEASE_GENERAL` is the
+standalone visitor document (no matrix rows). Judgment calls for owner/counsel
+to confirm: (a) brokerage/support lines requiring the vet authorization even
+though the horse may not yet be in COMPANY custody; (b) horse-segment services
+treated as staff-performed (no `HUMAN_EMERGENCY_MEDICAL` for the client);
+(c) no boarding/care service codes exist yet — when they do, pool them to
+`RELEASE_HORSE_CARE`.

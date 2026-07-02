@@ -1,6 +1,6 @@
-RIDING LESSON AGREEMENT, LIABILITY RELEASE, ASSUMPTION OF RISK, AND HOLD HARMLESS AGREEMENT
+RIDING LESSON AGREEMENT
 
-This Riding Lesson Agreement, Liability Release, Assumption of Risk, and Hold Harmless Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
+This Riding Lesson Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
 
 {{ORG.LEGAL_IDENTITY}} ("COMPANY"),
 
@@ -70,33 +70,9 @@ At other locations selected by COMPANY.
 
 This Agreement applies regardless of location.
 
-ACKNOWLEDGMENT OF INHERENT RISKS
+LIABILITY RELEASE — INCORPORATED BY REFERENCE
 
-Participant understands and acknowledges that equine activities are inherently dangerous.
-
-Risks include but are not limited to:
-
-Falling from a horse;
-
-Being kicked, bitten, stepped on, crushed, pinned, or struck by a horse;
-
-Horse spooking, bucking, bolting, rearing, stumbling, or acting unpredictably;
-
-Tack failure;
-
-Equipment failure;
-
-Uneven terrain;
-
-Weather conditions;
-
-Actions of other riders, spectators, or participants;
-
-Transportation-related incidents;
-
-Exposure to livestock, wildlife, insects, and environmental hazards.
-
-Participant voluntarily assumes all risks associated with participation.
+The risk acknowledgments, releases, and indemnity obligations applicable to the activities under this Agreement are set forth exclusively in the separately executed Liability Release and Assumption of Risk agreement, which is incorporated herein by reference.
 
 REPRESENTATIONS OF PARTICIPANT
 
@@ -117,34 +93,6 @@ HELMETS
 ASTM/SEI-certified riding helmets are required at all times.
 
 Participant understands that helmet use may reduce but cannot eliminate risk of serious injury or death.
-
-RELEASE OF LIABILITY
-
-To the fullest extent permitted by law, Participant releases and forever discharges:
-
-COMPANY;
-
-Its owners, agents, instructors, trainers, assistants, volunteers, representatives, contractors, and affiliates;
-
-The owners and operators of facilities where services occur;
-
-Horse owners whose horses are used during lessons;
-
-from any and all claims, demands, causes of action, damages, losses, liabilities, costs, and expenses arising from participation in equine activities, including claims arising from ordinary negligence.
-
-This release does not apply to gross negligence, willful misconduct, or conduct that cannot legally be released under California law.
-
-HOLD HARMLESS AND INDEMNIFICATION
-
-Participant shall indemnify, defend, and hold harmless the Released Parties from any claims arising from:
-
-Participant’s conduct;
-
-Participant’s violation of facility rules;
-
-Damage caused by Participant;
-
-Claims brought by third parties resulting from Participant’s actions.
 
 PROPERTY DAMAGE
 
