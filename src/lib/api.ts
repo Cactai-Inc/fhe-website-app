@@ -238,13 +238,14 @@ export async function listMyOrders(): Promise<Order[]> {
 }
 
 /** Move a draft order to awaiting_payment with the chosen method. The server
- *  finalizes pricing (fee, unique_amount, reference) via an edge function in
- *  production; here we set the client-permitted fields only. */
+ *  RPC finalizes pricing: tier-linked item prices are enforced server-side,
+ *  totals recomputed, and the Zelle matching keys (unique_amount +
+ *  brand-prefixed payment_reference) assigned exactly once. */
 export async function markAwaitingPayment(orderId: string, method: PaymentMethod): Promise<void> {
-  const { error } = await supabase
-    .from('orders')
-    .update({ status: 'awaiting_payment', payment_method: method })
-    .eq('id', orderId);
+  const { error } = await supabase.rpc('finalize_order_payment', {
+    p_order_id: orderId,
+    p_method: method,
+  });
   if (error) throw error;
 }
 
