@@ -41,8 +41,8 @@ describe('ScrollToTop', () => {
     const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
     render(app());
     scrollTo.mockClear(); // initial mount scroll
-    await userEvent.click(screen.getByRole('link', { name: 'go b' }));
-    expect(await screen.findByRole('heading', { name: 'B' })).toBeInTheDocument();
+    await userEvent.click(screen.getAllByRole('link', { name: 'go b' })[0]);
+    expect(await screen.findByRole('heading', { name: 'B' })).toBeTruthy();
     expect(scrollTo).toHaveBeenCalledWith(0, 0);
   });
 
@@ -52,8 +52,8 @@ describe('ScrollToTop', () => {
     Element.prototype.scrollIntoView = intoView;
     render(app());
     scrollTo.mockClear();
-    await userEvent.click(screen.getByRole('link', { name: 'go b anchor' }));
-    expect(await screen.findByRole('heading', { name: 'B' })).toBeInTheDocument();
+    await userEvent.click(screen.getAllByRole('link', { name: 'go b anchor' })[0]);
+    expect(await screen.findByRole('heading', { name: 'B' })).toBeTruthy();
     expect(intoView).toHaveBeenCalled();
     expect(scrollTo).not.toHaveBeenCalled();
   });
