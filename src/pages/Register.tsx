@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { validateInvitation, upsertMyProfile } from '../lib/api';
+import { signInWithGoogle } from '../lib/auth';
+import { OAUTH_PROVIDERS } from '../lib/authConfig';
 import { supabase } from '../lib/supabase';
 import { useDocumentTitle } from '../lib/hooks';
 import type { Invitation } from '../lib/types';
@@ -44,6 +46,23 @@ export default function Register() {
       active = false;
     };
   }, [token]);
+
+  async function continueWithGoogle() {
+    if (!invitation) return;
+    setError(null);
+    // Stash the invitation so /register/complete can redeem it after the
+    // OAuth round-trip (the redirect loses component state).
+    window.localStorage.setItem('fhe-invite', JSON.stringify({
+      token,
+      email: invitation.email,
+      request_id: invitation.request_id ?? null,
+    }));
+    const { error: oauthError } = await signInWithGoogle('/register/complete');
+    if (oauthError) {
+      window.localStorage.removeItem('fhe-invite');
+      setError(oauthError);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -118,6 +137,21 @@ export default function Register() {
             Setting up for <span className="font-medium text-green-800">{invitation?.email}</span>
           </p>
         </div>
+
+        {OAUTH_PROVIDERS.google && (
+          <div className="mb-5">
+            <button
+              type="button"
+              onClick={continueWithGoogle}
+              className="btn-outline-gold w-full justify-center"
+            >
+              Continue with Google
+            </button>
+            <p className="text-center text-xs font-sans text-muted mt-3">
+              or set a password below
+            </p>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} noValidate className="bg-white border border-green-800/10 p-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">

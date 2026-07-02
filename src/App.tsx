@@ -25,6 +25,7 @@ import Confirmation from './pages/Confirmation';
 import NotFound from './pages/NotFound';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import RegisterComplete from './pages/RegisterComplete';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Account from './pages/Account';
@@ -120,6 +121,7 @@ export function AppRoutes() {
               <Route path="/confirmation" element={<Confirmation />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/register/complete" element={<RegisterComplete />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
 

@@ -8,6 +8,7 @@
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getSupabaseAdmin } from './_lib/supabaseAdmin';
+import { resolveTenantEmailIdentity, sendViaProvider } from './_lib/email';
 
 function makeToken(): string {
   // URL-safe random token. Node 18+ (the Vercel runtime) exposes Web Crypto globally.
@@ -16,30 +17,31 @@ function makeToken(): string {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-async function sendEmail(to: string, registerUrl: string): Promise<boolean> {
-  const key = process.env.RESEND_API_KEY;
-  const from = process.env.INVITE_FROM_EMAIL || 'Hello@FHEquestrian.com';
-  if (!key) return false;
-  try {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        from: `French Heritage Equestrian <${from}>`,
-        to,
-        subject: 'Your invitation to French Heritage Equestrian',
-        html: `
-          <p>Welcome — we're so glad to have you.</p>
-          <p>Create your account here to join the community:</p>
-          <p><a href="${registerUrl}">${registerUrl}</a></p>
-          <p>This link expires soon. If it does, just reach out and we'll send a fresh one.</p>
-          <p>— French Heritage Equestrian</p>`,
-      }),
-    });
-    return res.ok;
-  } catch {
-    return false;
-  }
+/** Invitation email via the shared transport (Google SMTP first, Resend dormant),
+ *  branded from the INVITING org's registry — never a hardcoded tenant name. */
+async function sendEmail(
+  db: ReturnType<typeof getSupabaseAdmin>,
+  orgId: string | null,
+  to: string,
+  registerUrl: string,
+): Promise<boolean> {
+  if (!orgId) return false;
+  const identity = await resolveTenantEmailIdentity(db, orgId);
+  const fromEmail = process.env.INVITE_FROM_EMAIL || identity.fromEmail;
+  const out = await sendViaProvider({
+    to,
+    fromName: identity.fromName,
+    fromEmail,
+    subject: `Your invitation to ${identity.fromName}`,
+    html: `
+      <p>Welcome — we're so glad to have you.</p>
+      <p>Create your account here to join the community. You can sign up with Google
+      or set a password — your choice on the next page:</p>
+      <p><a href="${registerUrl}">${registerUrl}</a></p>
+      <p>This link expires soon. If it does, just reach out and we'll send a fresh one.</p>
+      <hr/><pre style="font-family:inherit">${identity.footer}</pre>`,
+  });
+  return out.ok;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -59,7 +61,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { data: userData, error: userErr } = await db.auth.getUser(token);
     if (userErr || !userData.user) return res.status(401).json({ error: 'unauthorized' });
     const { data: profile } = await db
-      .from('profiles').select('is_admin').eq('user_id', userData.user.id).maybeSingle();
+      .from('profiles').select('is_admin, org_id').eq('user_id', userData.user.id).maybeSingle();
     if (!profile?.is_admin) return res.status(403).json({ error: 'forbidden' });
 
     const days = Number(body.expiresInDays) > 0 ? Number(body.expiresInDays) : 7;
@@ -78,7 +80,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const origin = req.headers.origin || `https://${req.headers.host}`;
     const registerUrl = `${origin}/register?token=${inviteToken}`;
 
-    const emailed = await sendEmail(email, registerUrl);
+    const emailed = await sendEmail(db, profile.org_id ?? null, email, registerUrl);
     return res.status(200).json({ registerUrl, emailed });
   } catch (err) {
     console.error('invite error', err);
