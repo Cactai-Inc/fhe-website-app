@@ -25,10 +25,12 @@ interface NavItem {
 const NAV: NavItem[] = [
   { to: '/app', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/app/schedule', label: 'Schedule', icon: CalendarDays },
-  // Member-portal module pages (CP-* units) are not built yet — no routes exist
-  // for /app/{lessons,brokerage,boarding,barnops,employees}, so their nav items
-  // stay out until the portal wave registers them (dead links are forbidden).
-  // Restore each as: { to: '/app/lessons', label: 'Lessons', icon: GraduationCap, module: 'mod.lessons' }
+  { to: '/app/engagements', label: 'My Engagements', icon: Handshake },
+  { to: '/app/balance', label: 'Balance', icon: ReceiptText },
+  // Member module pages (CP-* wave) — entitlement-gated (Layer C)
+  { to: '/app/lessons', label: 'Lessons', icon: GraduationCap, module: 'mod.lessons' },
+  { to: '/app/brokerage', label: 'Brokerage', icon: Handshake, module: 'mod.brokerage' },
+  { to: '/app/boarding', label: 'Boarding', icon: Home, module: 'mod.boarding' },
   { to: '/app/chat', label: 'Chat board', icon: Hash },
   { to: '/app/threads', label: 'Threads', icon: MessagesSquare },
   { to: '/app/messages', label: 'Messages', icon: Mail },

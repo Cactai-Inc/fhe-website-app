@@ -123,7 +123,7 @@ export default function EngagementDetailPage() {
               open={generateOpen}
               onClose={() => setGenerateOpen(false)}
               engagementId={engagement.id}
-              serviceType={engagement.service_type}
+              serviceType={engagement.service_type ?? undefined}
               existingTemplateIds={engagement.documents
                 .map((d) => d.template_id)
                 .filter((t): t is string => t !== null)}

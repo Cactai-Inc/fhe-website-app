@@ -105,7 +105,9 @@ export interface Engagement {
   display_code: string | null;
   client_id: string;
   assigned_staff_id: string | null;
-  service_type: string;
+  /** Canonical service code; NULL for non-service engagements (e.g. the
+   *  visitor general-release kiosk, 20260702020000_sign_general_release). */
+  service_type: string | null;
   status: string;
   primary_horse_id: string | null;
   start_date: string | null;

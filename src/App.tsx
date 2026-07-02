@@ -14,6 +14,8 @@ import Lessons from './pages/Lessons';
 import MembershipFunnel from './pages/MembershipFunnel';
 import Gift from './pages/Gift';
 import Redeem from './pages/Redeem';
+import Inquire from './pages/Inquire';
+import Release from './pages/Release';
 import BookRider from './pages/BookRider';
 import BookHorse from './pages/BookHorse';
 import BookSupport from './pages/BookSupport';
@@ -33,6 +35,13 @@ import Schedule from './pages/app/Schedule';
 import Membership from './pages/app/Membership';
 import Orders from './pages/app/Orders';
 import Documents from './pages/app/Documents';
+// Client portal (CP-* wave)
+import MyEngagements from './pages/app/MyEngagements';
+import MyEngagementDetail from './pages/app/MyEngagementDetail';
+import MyBalance from './pages/app/MyBalance';
+import MyLessons from './pages/app/MyLessons';
+import MyBrokerage from './pages/app/MyBrokerage';
+import MyBoarding from './pages/app/MyBoarding';
 import Members from './pages/app/Members';
 import Chat from './pages/app/Chat';
 import Threads from './pages/app/Threads';
@@ -119,6 +128,8 @@ export function AppRoutes() {
 
             {/* Gift reveal — full-screen immersive, no site chrome */}
             <Route path="/redeem" element={<Redeem />} />
+            <Route path="/inquire" element={<Inquire />} />
+            <Route path="/release" element={<Release />} />
 
             {/* Member community app (its own chrome, member-gated) */}
             <Route
@@ -141,6 +152,13 @@ export function AppRoutes() {
               <Route path="content/:slug" element={<ContentPostDetail />} />
               <Route path="documents" element={<Documents />} />
               <Route path="orders" element={<Orders />} />
+              {/* Client portal (CP-*) */}
+              <Route path="engagements" element={<MyEngagements />} />
+              <Route path="engagements/:id" element={<MyEngagementDetail />} />
+              <Route path="balance" element={<MyBalance />} />
+              <Route path="lessons" element={<MyLessons />} />
+              <Route path="brokerage" element={<MyBrokerage />} />
+              <Route path="boarding" element={<MyBoarding />} />
               <Route path="membership" element={<Membership />} />
               <Route path="profile" element={<Profile />} />
               {/* Admin (additionally requires admin) */}

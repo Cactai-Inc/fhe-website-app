@@ -42,14 +42,14 @@ beforeEach(() => {
 });
 
 describe('visibleNav() — the pure gating predicate (member nav)', () => {
-  it('keeps core items; member module pages are deferred to the portal wave (no dead links)', () => {
+  it('keeps core items always and module items only when entitled (CP-* wave restored them)', () => {
     const has = (k: string) => k === 'mod.lessons';
     const labels = visibleNav(has).map((i) => i.label);
-    expect(labels).toContain('Dashboard'); // core, always
-    // Member-portal module pages (CP-*) are not built — their nav items must be
-    // absent EVEN WHEN entitled, until the portal registers real routes.
-    expect(labels).not.toContain('Lessons');
-    expect(labels).not.toContain('Brokerage');
+    expect(labels).toContain('Dashboard');      // core, always
+    expect(labels).toContain('My Engagements'); // portal core
+    expect(labels).toContain('Balance');
+    expect(labels).toContain('Lessons');        // entitled module page
+    expect(labels).not.toContain('Brokerage');  // not entitled
     expect(labels).not.toContain('Boarding');
   });
 });
@@ -69,28 +69,36 @@ describe('visibleOpsNav() — the pure gating predicate (ops nav, Layer C)', () 
   });
 });
 
-describe('AppLayout ops nav — module gate (FHE acceptance)', () => {
-  it('an FHE admin sees Lessons + Brokerage hubs and no Boarding/Barn Ops/Records', () => {
+describe('AppLayout nav — module gate (FHE acceptance)', () => {
+  /** hrefs of every link inside the member-area nav. Member module pages and
+   *  ops hubs share labels (Lessons/Boarding/…), so assertions key on href. */
+  function navHrefs(): string[] {
+    const nav = screen.getAllByRole('navigation', { name: 'Member area' })[0];
+    return within(nav).getAllByRole('link').map((a) => a.getAttribute('href') ?? '');
+  }
+
+  it('an FHE admin sees Lessons + Brokerage (member pages AND ops hubs), no Boarding/Barn Ops/Records', () => {
     setAuth(['mod.lessons', 'mod.brokerage'], true);
     renderWithRouter(<AppLayout />, { route: '/app' });
-    const nav = screen.getAllByRole('navigation', { name: 'Member area' })[0];
-    const q = within(nav);
-    expect(q.getByRole('link', { name: /Lessons/ })).toBeInTheDocument();
-    expect(q.getByRole('link', { name: /Brokerage/ })).toBeInTheDocument();
-    expect(q.queryByRole('link', { name: /Boarding/ })).not.toBeInTheDocument();
-    expect(q.queryByRole('link', { name: /Barn Ops/ })).not.toBeInTheDocument();
-    expect(q.queryByRole('link', { name: /Records/ })).not.toBeInTheDocument();
+    const hrefs = navHrefs();
+    for (const present of ['/app/lessons', '/app/brokerage', '/app/ops/lessons', '/app/ops/brokerage']) {
+      expect(hrefs, present).toContain(present);
+    }
+    for (const absent of ['/app/boarding', '/app/ops/boarding', '/app/ops/barnops', '/app/ops/records']) {
+      expect(hrefs, absent).not.toContain(absent);
+    }
   });
 
-  it('a boarding-tenant admin sees Boarding + Barn Ops hubs and no Lessons', () => {
+  it('a boarding-tenant admin sees Boarding + Barn Ops, no Lessons/Brokerage', () => {
     setAuth(['mod.boarding', 'mod.barnops'], true);
     renderWithRouter(<AppLayout />, { route: '/app' });
-    const nav = screen.getAllByRole('navigation', { name: 'Member area' })[0];
-    const q = within(nav);
-    expect(q.getByRole('link', { name: /Boarding/ })).toBeInTheDocument();
-    expect(q.getByRole('link', { name: /Barn Ops/ })).toBeInTheDocument();
-    expect(q.queryByRole('link', { name: /Lessons/ })).not.toBeInTheDocument();
-    expect(q.queryByRole('link', { name: /Brokerage/ })).not.toBeInTheDocument();
+    const hrefs = navHrefs();
+    for (const present of ['/app/boarding', '/app/ops/boarding', '/app/ops/barnops']) {
+      expect(hrefs, present).toContain(present);
+    }
+    for (const absent of ['/app/lessons', '/app/brokerage', '/app/ops/lessons', '/app/ops/brokerage']) {
+      expect(hrefs, absent).not.toContain(absent);
+    }
   });
 
   it('a non-admin member sees no ops nav at all', () => {
