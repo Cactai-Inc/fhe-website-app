@@ -163,8 +163,13 @@ latency — is documented in `architecture-flow-spec.md` if you ever want it.)
 
 ## 5. Availability slots (admin)
 
-The booking step shows open slots from `availability_slots`. Create them in the
-Supabase dashboard (or build a small admin UI later). Minimum columns:
+The booking step shows open slots from `availability_slots`. Manage them in the
+app: sign in as an admin and open **`/app/ops/availability`** (Ops → Availability).
+The page has a Monday-anchored week view, a New-slot modal, a Recurring-slots
+modal (e.g. Tue+Thu 4–5pm for 8 weeks), block/reopen, and delete (refused while
+a booking references the slot).
+
+Fallback (dashboard SQL, if you ever need it):
 
 ```sql
 insert into availability_slots (start_at, end_at, slot_type, location_mode, status)
@@ -331,4 +336,5 @@ Apps Script poller, full Supabase schema + RLS + functions.
 
 **Configuration (this guide):** running migrations, setting env vars/secrets,
 creating the Stripe webhook, the Workspace filter + trigger, seeding availability
-slots, issuing invitations, and (optionally) wiring an email provider.
+slots (via `/app/ops/availability`), issuing invitations, and (optionally) wiring
+an email provider.

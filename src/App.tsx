@@ -63,6 +63,7 @@ import TransactionsPage from './pages/app/ops/TransactionsPage';
 import TransactionDetailPage from './pages/app/ops/TransactionDetailPage';
 // Ops / CRM — Wave-7 (intake, payments review, module hubs + module pages)
 import IntakePage from './pages/app/ops/IntakePage';
+import AvailabilityPage from './pages/app/ops/AvailabilityPage';
 import PaymentReviewPage from './pages/app/ops/PaymentReviewPage';
 import BrokerageHubPage from './pages/app/ops/hubs/BrokerageHubPage';
 import BoardingHubPage from './pages/app/ops/hubs/BoardingHubPage';
@@ -177,6 +178,7 @@ export function AppRoutes() {
               <Route path="ops/transactions/:id" element={<ProtectedRoute requireAdmin><TransactionDetailPage /></ProtectedRoute>} />
               {/* Wave-7: intake + payments review (core) */}
               <Route path="ops/intake" element={<ProtectedRoute requireAdmin><IntakePage /></ProtectedRoute>} />
+              <Route path="ops/availability" element={<ProtectedRoute requireAdmin><AvailabilityPage /></ProtectedRoute>} />
               <Route path="ops/payments/review" element={<ProtectedRoute requireAdmin><PaymentReviewPage /></ProtectedRoute>} />
               {/* Wave-7: module hubs + module pages (module-gated inside via ModuleGate) */}
               <Route path="ops/brokerage" element={<ProtectedRoute requireAdmin><BrokerageHubPage /></ProtectedRoute>} />

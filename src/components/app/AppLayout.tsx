@@ -53,6 +53,7 @@ export function visibleNav(hasModule: (key: string) => boolean): NavItem[] {
 export const OPS_NAV: NavItem[] = [
   { to: '/app/ops', label: 'Ops Dashboard', icon: LayoutDashboard, end: true },
   { to: '/app/ops/intake', label: 'Intake', icon: Mail },
+  { to: '/app/ops/availability', label: 'Availability', icon: CalendarDays },
   { to: '/app/ops/contacts', label: 'Contacts', icon: Contact },
   { to: '/app/ops/horses', label: 'Horses', icon: Boxes },
   { to: '/app/ops/engagements', label: 'Engagements', icon: Handshake },
