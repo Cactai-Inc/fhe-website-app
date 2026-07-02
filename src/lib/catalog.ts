@@ -20,16 +20,18 @@ export interface LessonAddOn {
   price: number;
 }
 
-/** One-off lessons — single or multipack (price/quantity mindset). */
+/** One-off lessons — single or punch card (price/quantity mindset).
+ *  Owner pricing 2026-07-01; the DB twin lives in migration
+ *  20260701060000_owner_pricing_2026_07.sql (drift-guard test pins the two). */
 export const LESSON_PACKS: LessonPack[] = [
-  { id: 'single', label: 'Single Lesson', description: '60-minute private lesson', price: 125, unit: 'session' },
-  { id: 'pack5', label: '5-Lesson Pack', description: 'Five 60-minute private lessons', price: 575, unit: 'flat', perLesson: '$115 / lesson — save $50', popular: true },
-  { id: 'pack10', label: '10-Lesson Pack', description: 'Ten 60-minute private lessons', price: 1100, unit: 'flat', perLesson: '$110 / lesson — save $150' },
+  { id: 'single', label: 'Single Lesson', description: '60-minute private lesson on our horses', price: 150, unit: 'session' },
+  { id: 'punch4', label: '4-Lesson Punch Card', description: 'Four private lessons — good for 90 days', price: 500, unit: 'flat', perLesson: 'Save $100', popular: true },
+  { id: 'punch8', label: '8-Lesson Punch Card', description: 'Eight private lessons — good for 90 days', price: 950, unit: 'flat', perLesson: 'Save $150' },
 ];
 
 export const LESSON_ADDONS: LessonAddOn[] = [
-  { id: 'evaluation', label: 'Evaluation Lesson + Plan', description: 'A focused first session where we assess your riding and map a plan for where you want to go.', price: 95 },
-  { id: 'horsemanship', label: 'Horsemanship Training', description: 'Ground-based sessions — handling, body language, and the partnership beneath the riding.', price: 80 },
+  { id: 'evaluation', label: 'Evaluation Lesson', description: 'Required before the first lesson for every new client — we assess your riding and map the plan.', price: 150 },
+  { id: 'own-horse-single', label: 'Own Horse — Single Lesson', description: 'For horse owners and lessees: a private lesson on your own horse.', price: 120 },
 ];
 
 export interface MembershipPlan {
@@ -43,11 +45,12 @@ export interface MembershipPlan {
   highlight?: string;          // small ribbon, e.g. "Most chosen"
 }
 
-/** Membership subscriptions — per-week and per-month cadences (features mindset). */
+/** Membership subscriptions — billed the 1st of each month; 30 days notice to
+ *  cancel (owner pricing 2026-07-01). */
 export const MEMBERSHIP_PLANS: MembershipPlan[] = [
-  { id: 'weekly1', name: 'One Ride a Week', cadenceLabel: 'per week', price: 450, unit: 'month', lessonsLabel: '1 lesson every week' },
-  { id: 'weekly2', name: 'Twice a Week', cadenceLabel: 'per week', price: 820, unit: 'month', lessonsLabel: '2 lessons every week', popular: true, highlight: 'Most chosen' },
-  { id: 'monthly4', name: 'Monthly Four', cadenceLabel: 'per month', price: 420, unit: 'month', lessonsLabel: '4 lessons a month, your schedule' },
+  { id: 'weekly1', name: 'One Ride a Week', cadenceLabel: 'per week', price: 460, unit: 'month', lessonsLabel: '1 lesson every week' },
+  { id: 'weekly2', name: 'Twice a Week', cadenceLabel: 'per week', price: 880, unit: 'month', lessonsLabel: '2 lessons every week', popular: true, highlight: 'Most chosen' },
+  { id: 'weekly3', name: 'Three Times a Week', cadenceLabel: 'per week', price: 1260, unit: 'month', lessonsLabel: '3 lessons every week' },
 ];
 
 /** What every membership includes (benefits mindset). */
