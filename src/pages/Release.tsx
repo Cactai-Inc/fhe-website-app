@@ -146,7 +146,7 @@ export default function Release() {
   return (
     <>
       <Seo
-        title="Liability Release — French Heritage Equestrian"
+        title="Stable Rules and Liability Release — French Heritage Equestrian"
         description="Sign the applicable liability release before your visit or activity."
         path="/release"
         noindex
@@ -154,7 +154,7 @@ export default function Release() {
       <section className="min-h-screen bg-cream pt-32 pb-20">
         <div className="container-site max-w-3xl">
           <p className="eyebrow mb-2">Before you visit</p>
-          <h1 className="heading-section text-green-800 mb-4">Liability release.</h1>
+          <h1 className="heading-section text-green-800 mb-4">Stable rules and liability release.</h1>
 
           {result ? (
             <div>
@@ -185,20 +185,8 @@ export default function Release() {
           ) : step === 'choose' ? (
             <div>
               <p className="body-text text-secondary mb-8 max-w-2xl">
-                Choose the release that matches your visit or activity. If it covers someone
-                under 18, check the box first — a parent or legal guardian signs on their behalf.
+                Choose the release that matches your visit or activity.
               </p>
-              <label className="flex items-start gap-3 mb-6 cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="mt-1"
-                  checked={isMinor}
-                  onChange={(e) => setIsMinor(e.target.checked)}
-                />
-                <span className="body-text text-sm">
-                  This release covers a minor (under 18) — a parent or legal guardian will sign.
-                </span>
-              </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {RELEASE_OPTIONS.map((o) => (
                   <button

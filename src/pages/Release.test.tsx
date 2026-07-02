@@ -161,8 +161,9 @@ describe('Release', () => {
   it('MINOR path: signs with the exact minor + guardian payload', async () => {
     vi.mocked(signRelease).mockResolvedValue(RESULT as never);
     renderWithRouter(<Release />);
-    await userEvent.click(screen.getByLabelText(/covers a minor/i));
     await userEvent.click(chooserButton(/participant/i));
+    // the minor toggle lives on the info step (removed from the chooser per owner)
+    await userEvent.click(screen.getByLabelText(/covers a minor/i));
 
     await userEvent.type(screen.getByLabelText(/minor's full legal name/i), 'Mina Minor');
     await userEvent.type(screen.getByLabelText(/minor's date of birth/i), '2015-03-04');
