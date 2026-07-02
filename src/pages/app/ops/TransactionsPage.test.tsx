@@ -10,7 +10,12 @@
  *     WITH THE URL id (real route param),
  *   - an INVOICE detail renders the composing billable_lines, its payer, and a
  *     total that SUMS to the invoice amount,
- *   - a deal (PURCHASE) txn renders a REAL link to its engagement + balance,
+ *   - "Settle open charges" on an INVOICE opens the shared OPS-SETTLE modal for
+ *     THAT payer; Create invoice calls settleBillableLines EXACTLY and
+ *     navigates to the freshly-minted invoice (getTransaction re-fires =
+ *     refreshed data); a rejected settle renders inline and does NOT navigate,
+ *   - a deal (PURCHASE) txn renders a REAL link to its engagement + balance
+ *     and NO settle control (no payer context),
  *   - the list error branch renders when listTransactions rejects (not swallowed),
  *   - the detail error branch renders when getTransaction rejects.
  */
@@ -21,9 +26,13 @@ import { render, renderWithRouter, screen, userEvent } from '../../../test/rende
 
 const listTransactions = vi.fn();
 const getTransaction = vi.fn();
+const listOpenBillableLines = vi.fn();
+const settleBillableLines = vi.fn();
 vi.mock('../../../lib/api', () => ({
   listTransactions: (...args: unknown[]) => listTransactions(...args),
   getTransaction: (...args: unknown[]) => getTransaction(...args),
+  listOpenBillableLines: (...args: unknown[]) => listOpenBillableLines(...args),
+  settleBillableLines: (...args: unknown[]) => settleBillableLines(...args),
 }));
 
 import TransactionsPage from './TransactionsPage';
@@ -94,6 +103,41 @@ const INVOICE_DETAIL = {
   ],
 };
 
+/** A still-OPEN line for the invoice's payer — what OPS-SETTLE will roll up. */
+const OPEN_LINE = {
+  id: 'bl-open-1',
+  org_id: 'org-1',
+  payer_contact_id: 'contact-1',
+  source_kind: 'feed',
+  source_id: null,
+  horse_id: null,
+  qty: 1,
+  unit_amount: 75,
+  amount: 75,
+  status: 'OPEN',
+  period: null,
+  transaction_id: null,
+  created_at: '2026-03-01',
+  updated_at: '2026-03-01',
+};
+
+/** The invoice minted by settle_billable_lines — where onSettled navigates. */
+const NEW_INVOICE_DETAIL = {
+  id: 'txn-777',
+  display_code: 'INV-0008',
+  engagement_id: null,
+  txn_type: 'INVOICE',
+  amount: 75,
+  deposit_amount: null,
+  status: 'POSTED',
+  payer_contact_id: 'contact-1',
+  period: null,
+  payer: { id: 'contact-1', display_code: 'CT-1', full_name: 'Jane Boarder' },
+  billable_lines: [{ ...OPEN_LINE, status: 'SETTLED', transaction_id: 'txn-777' }],
+  created_at: '2026-03-02',
+  updated_at: '2026-03-02',
+};
+
 /** Mount both routes so a list-row click really navigates + mounts the detail. */
 function renderApp(route = '/app/ops/transactions') {
   return render(
@@ -112,6 +156,8 @@ describe('TransactionsPage (OPS-TXN list)', () => {
   beforeEach(() => {
     listTransactions.mockReset();
     getTransaction.mockReset();
+    listOpenBillableLines.mockReset();
+    settleBillableLines.mockReset();
   });
 
   it('calls listTransactions and renders deal + INVOICE rows with Money + status', async () => {
@@ -161,6 +207,8 @@ describe('TransactionDetailPage (OPS-TXN detail)', () => {
   beforeEach(() => {
     listTransactions.mockReset();
     getTransaction.mockReset();
+    listOpenBillableLines.mockReset();
+    settleBillableLines.mockReset();
   });
 
   function renderDetail(id: string) {
@@ -190,7 +238,7 @@ describe('TransactionDetailPage (OPS-TXN detail)', () => {
     expect(screen.getByTestId('lines-total')).toHaveTextContent('$450.00');
   });
 
-  it('renders a deal txn with a real engagement link + balance', async () => {
+  it('renders a deal txn with a real engagement link + balance (and no settle control)', async () => {
     getTransaction.mockResolvedValue(PURCHASE);
     renderDetail('txn-deal');
 
@@ -203,6 +251,63 @@ describe('TransactionDetailPage (OPS-TXN detail)', () => {
 
     // Balance = amount - deposit (25000 - 5000 = 20000).
     expect(screen.getByTestId('deal-balance')).toHaveTextContent('$20,000.00');
+
+    // Settlement is payer-scoped — a deal txn exposes no settle action.
+    expect(screen.queryByRole('button', { name: /settle/i })).toBeNull();
+  });
+
+  it('Settle open charges → OPS-SETTLE modal settles THIS payer and navigates to the fresh invoice', async () => {
+    const user = userEvent.setup();
+    getTransaction.mockImplementation(async (id: unknown) =>
+      id === 'txn-777' ? NEW_INVOICE_DETAIL : INVOICE_DETAIL,
+    );
+    listOpenBillableLines.mockResolvedValue([OPEN_LINE]);
+    settleBillableLines.mockResolvedValue([
+      { transaction_id: 'txn-777', amount: 75, lines_settled: 1 },
+    ]);
+    renderApp('/app/ops/transactions/txn-inv');
+
+    // The settle action is visible on the invoice reconcile view.
+    await user.click(await screen.findByRole('button', { name: 'Settle open charges' }));
+
+    // The modal loads the payer's OPEN lines through the real seam.
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    expect(listOpenBillableLines).toHaveBeenCalledWith('contact-1');
+    expect(await screen.findByText('feed')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Create invoice' }));
+
+    // The REAL rpc wrapper fired with the payer + all-OPEN period, exactly.
+    expect(settleBillableLines).toHaveBeenCalledTimes(1);
+    expect(settleBillableLines).toHaveBeenCalledWith('contact-1', null);
+
+    // onSettled → navigate to the new invoice detail: getTransaction re-fires
+    // with the fresh id and the new reconcile view renders (data refreshed).
+    expect(await screen.findByText('INV-0008')).toBeInTheDocument();
+    expect(getTransaction).toHaveBeenCalledWith('txn-777');
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('rejected settle: inline error renders, modal stays open, NO navigation/refresh', async () => {
+    const user = userEvent.setup();
+    getTransaction.mockResolvedValue(INVOICE_DETAIL);
+    listOpenBillableLines.mockResolvedValue([OPEN_LINE]);
+    settleBillableLines.mockRejectedValue(new Error('require_module: billing'));
+    renderApp('/app/ops/transactions/txn-inv');
+
+    await user.click(await screen.findByRole('button', { name: 'Settle open charges' }));
+    await screen.findByText('feed');
+
+    await user.click(screen.getByRole('button', { name: 'Create invoice' }));
+
+    expect(settleBillableLines).toHaveBeenCalledWith('contact-1', null);
+
+    // Error surfaced, not swallowed — the modal stays open for retry...
+    expect(await screen.findByRole('alert')).toHaveTextContent('require_module: billing');
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    // ...and we never navigated away (only the initial detail load happened).
+    expect(getTransaction).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('INV-0007')).toBeInTheDocument();
   });
 
   it('renders the not-found state when getTransaction returns null', async () => {

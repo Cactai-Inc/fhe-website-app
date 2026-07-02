@@ -2,12 +2,15 @@
 /**
  * OPS-DASH UI-interaction test (§15.2). Renders the REAL OpsDashboard over the
  * router harness, mocks `useModules()` + injects the four count fns, and proves:
- *  (a) enabled-module tiles render as <Link>s to the correct routes,
+ *  (a) tiles with a live screen render as <Link>s to REGISTERED routes only;
+ *      tiles whose screen has not shipped render non-navigating (no dead links),
  *  (b) a disabled-module tile renders LOCKED and is NOT a link,
  *  (c) all four count fns are called ON MOUNT and their resolved numbers render,
- *  (d) a rejecting count fn renders an INLINE error, not a blank tile.
- * Static dead-end audit: every KPI + module tile is a real <Link> (has href) or
- * a gated locked node — no dead tiles, no swallowed-then-lost count error.
+ *  (d) a rejecting count fn renders an INLINE error, not a blank tile,
+ *  (e) the Wave-7 seam: registering a hub in the MODULE_HUB_ROUTES map turns an
+ *      enabled module's status tile into a real navigating <Link>.
+ * Static dead-end audit: every tile is a real <Link> to an existing route, a
+ * non-navigating status tile, or a gated locked node — no dead links anywhere.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderWithRouter, screen } from '../../../test/render';
@@ -24,7 +27,7 @@ vi.mock('../../../lib/ops/useModules', () => ({
   }),
 }));
 
-import OpsDashboard from './OpsDashboard';
+import OpsDashboard, { MODULE_HUB_ROUTES } from './OpsDashboard';
 
 type CountFn = () => Promise<number>;
 
@@ -58,23 +61,54 @@ describe('OPS-DASH — ops home dashboard', () => {
     expect(screen.getByTestId('kpi-billing-value')).toHaveTextContent('2');
   });
 
-  it('(a) KPI tiles are real links to their screens', async () => {
+  it('(a) KPI tiles link ONLY to screens that exist; the intake tile does not navigate yet', async () => {
     renderWithRouter(<OpsDashboard counts={makeCounts()} />, { route: '/app/ops' });
     await screen.findByTestId('kpi-engagements-value');
 
     expect(screen.getByTestId('kpi-engagements')).toHaveAttribute('href', '/app/ops/engagements');
-    expect(screen.getByTestId('kpi-intake')).toHaveAttribute('href', '/app/ops/intake');
     expect(screen.getByTestId('kpi-documents')).toHaveAttribute('href', '/app/ops/documents');
-    expect(screen.getByTestId('kpi-billing')).toHaveAttribute('href', '/app/ops/billing');
+    // Open charges surface (and settle) on the transactions reconcile screen.
+    expect(screen.getByTestId('kpi-billing')).toHaveAttribute('href', '/app/ops/transactions');
+
+    // No intake-review screen is registered — the tile still shows its count
+    // but is NOT a link (no dead /app/ops/intake click).
+    const intake = screen.getByTestId('kpi-intake');
+    expect(intake.tagName).not.toBe('A');
+    expect(intake).not.toHaveAttribute('href');
+    expect(intake.querySelector('a')).toBeNull();
   });
 
-  it('(a) an enabled-module tile renders as a Link to the right route', async () => {
+  it('(a) an enabled module WITHOUT a live hub renders a non-navigating Enabled tile', async () => {
     renderWithRouter(<OpsDashboard counts={makeCounts()} />, { route: '/app/ops' });
+
+    // No module hub routes ship yet — the default map is EMPTY.
+    expect(Object.keys(MODULE_HUB_ROUTES)).toHaveLength(0);
+
+    const brokerage = await screen.findByTestId('module-mod.brokerage-enabled');
+    expect(brokerage).toHaveTextContent('Brokerage');
+    expect(brokerage).toHaveTextContent('Enabled');
+    // Not a link, and nothing navigable inside — no dead /app/ops/brokerage click.
+    expect(brokerage.tagName).not.toBe('A');
+    expect(brokerage.querySelector('a')).toBeNull();
+    expect(screen.queryByTestId('module-mod.brokerage-tile')).toBeNull();
+  });
+
+  it('(e) Wave-7 seam: a hub registered in the route map turns the tile into a real Link', async () => {
+    // Simulates Wave 7 registering the hub route in App.tsx AND adding its
+    // MODULE_HUB_ROUTES entry — the tile then navigates.
+    renderWithRouter(
+      <OpsDashboard
+        counts={makeCounts()}
+        hubRoutes={{ 'mod.brokerage': '/app/ops/brokerage' }}
+      />,
+      { route: '/app/ops' },
+    );
 
     const brokerage = await screen.findByTestId('module-mod.brokerage-tile');
     expect(brokerage.tagName).toBe('A');
     expect(brokerage).toHaveAttribute('href', '/app/ops/brokerage');
     expect(brokerage).toHaveTextContent('Brokerage');
+    expect(screen.queryByTestId('module-mod.brokerage-enabled')).toBeNull();
   });
 
   it('(b) a disabled-module tile renders LOCKED and does NOT link', async () => {
@@ -102,23 +136,32 @@ describe('OPS-DASH — ops home dashboard', () => {
     expect(err).toHaveTextContent(/couldn/i);
     expect(err).toHaveAttribute('role', 'alert');
     // …the tile is still a link (not blank/removed), and the OTHER tiles resolve.
-    expect(screen.getByTestId('kpi-billing')).toHaveAttribute('href', '/app/ops/billing');
+    expect(screen.getByTestId('kpi-billing')).toHaveAttribute('href', '/app/ops/transactions');
     expect(screen.queryByTestId('kpi-billing-value')).toBeNull();
     expect(await screen.findByTestId('kpi-engagements-value')).toHaveTextContent('7');
   });
 
-  it('static audit: every rendered tile is either a link (href) or a gated locked node', async () => {
+  it('static audit: every rendered tile is a link to a registered route, a status tile, or a locked node', async () => {
     renderWithRouter(<OpsDashboard counts={makeCounts()} />, { route: '/app/ops' });
     await screen.findByTestId('kpi-engagements-value');
 
-    // KPI tiles: all four are anchors with hrefs.
-    for (const key of ['engagements', 'intake', 'documents', 'billing']) {
+    // Routes registered in App.tsx — the ONLY legal link targets on this page.
+    const registered = new Set([
+      '/app/ops/engagements',
+      '/app/ops/documents',
+      '/app/ops/transactions',
+    ]);
+    // KPI tiles: linked tiles target registered routes; intake is non-navigating.
+    for (const key of ['engagements', 'documents', 'billing']) {
       const tile = screen.getByTestId(`kpi-${key}`);
       expect(tile.tagName).toBe('A');
-      expect(tile.getAttribute('href')).toBeTruthy();
+      expect(registered.has(tile.getAttribute('href') ?? '')).toBe(true);
     }
-    // Module tiles: brokerage links; every other (disabled) module is a locked node.
-    expect(screen.getByTestId('module-mod.brokerage-tile').tagName).toBe('A');
+    expect(screen.getByTestId('kpi-intake').tagName).not.toBe('A');
+
+    // Module tiles: enabled brokerage is a status tile (default map is empty);
+    // every disabled module is a locked node. NO anchors in the module grid.
+    expect(screen.getByTestId('module-mod.brokerage-enabled').tagName).not.toBe('A');
     for (const key of ['mod.lessons', 'mod.boarding', 'mod.barnops', 'mod.horserecords', 'mod.employees']) {
       expect(screen.getByTestId(`module-${key}-locked`)).toBeInTheDocument();
       expect(screen.queryByTestId(`module-${key}-tile`)).toBeNull();

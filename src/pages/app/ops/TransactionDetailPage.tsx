@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { getTransaction } from '../../../lib/api';
 import { useDocumentTitle } from '../../../lib/hooks';
 import { Money, StatusBadge, EmptyState } from '../../../lib/ops';
 import { formatMoney } from '../../../lib/ops';
+import { SettleModal } from '../../../components/ops/billing/SettleModal';
 import type { Transaction, BillableLine, Contact } from '../../../lib/ops/types';
 
 /**
@@ -12,9 +13,12 @@ import type { Transaction, BillableLine, Contact } from '../../../lib/ops/types'
  * Reads /app/ops/transactions/:id → `getTransaction(id)` (INT-API-CORE; RLS
  * org-scoped; INVOICE rows arrive with their composing `billable_lines` and the
  * `payer` contact joined, deal txns arrive with their engagement link). This is
- * a READ-ONLY reconcile surface:
+ * the reconcile surface:
  *   - INVOICE  → the rolled-up billable_lines that composed the invoice, each
- *                with its Money amount, summing to the invoice amount.
+ *                with its Money amount, summing to the invoice amount, plus a
+ *                "Settle open charges" action that opens the shared OPS-SETTLE
+ *                modal for this payer (any still-OPEN lines → a fresh INVOICE;
+ *                on success we navigate to the new invoice's detail).
  *   - deal txn → the engagement link + deposit / balance breakdown.
  * Loading, not-found, error and success branches all render.
  */
@@ -36,9 +40,11 @@ export interface TransactionDetail extends Omit<Transaction, 'txn_type'> {
 export default function TransactionDetailPage() {
   const { id = '' } = useParams<{ id: string }>();
   useDocumentTitle('Transaction');
+  const navigate = useNavigate();
   const [txn, setTxn] = useState<TransactionDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [settleOpen, setSettleOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -112,11 +118,22 @@ export default function TransactionDetailPage() {
                   <h2 id="lines-heading" className="font-serif text-lg text-green-900">
                     Composing charges
                   </h2>
-                  {txn.payer && (
-                    <span className="text-sm text-green-800/70" data-testid="invoice-payer">
-                      Payer: {txn.payer.full_name}
-                    </span>
-                  )}
+                  <div className="flex items-center gap-4">
+                    {txn.payer && (
+                      <span className="text-sm text-green-800/70" data-testid="invoice-payer">
+                        Payer: {txn.payer.full_name}
+                      </span>
+                    )}
+                    {txn.payer_contact_id && (
+                      <button
+                        type="button"
+                        className="btn-primary text-sm"
+                        onClick={() => setSettleOpen(true)}
+                      >
+                        Settle open charges
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {lines.length === 0 ? (
@@ -168,6 +185,22 @@ export default function TransactionDetailPage() {
                       </tr>
                     </tfoot>
                   </table>
+                )}
+
+                {/* OPS-SETTLE: roll this payer's still-OPEN lines into a fresh
+                    INVOICE; on success, jump to the new invoice's detail (the
+                    id change re-runs getTransaction — data refreshed). */}
+                {txn.payer_contact_id && (
+                  <SettleModal
+                    open={settleOpen}
+                    onClose={() => setSettleOpen(false)}
+                    payerContactId={txn.payer_contact_id}
+                    payerLabel={txn.payer?.full_name ?? undefined}
+                    onSettled={(result) => {
+                      setSettleOpen(false);
+                      navigate(`/app/ops/transactions/${result.transaction_id}`);
+                    }}
+                  />
                 )}
               </section>
             ) : (

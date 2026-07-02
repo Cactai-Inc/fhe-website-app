@@ -4,24 +4,28 @@
  * Reads /app/ops/engagements/:id → `getEngagement(id)` (INT-API-CORE rollup:
  * engagement + stages + documents + transactions, RLS org-scoped). Renders the
  * parties/horse/transaction/stages summary plus a Documents section:
- *   - "Generate document" → OPS-DOC-GEN (/app/ops/engagements/:id/generate)
+ *   - "Generate document" opens the OPS-DOC-GEN modal inline; on success we
+ *     navigate to the new document's viewer (OPS-DOC-VIEW),
  *   - each document row → OPS-DOC-VIEW (/app/ops/documents/:docId)
  * Loading, not-found, error and success branches all render.
  */
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { getEngagement } from '../../../lib/api';
 import { useDocumentTitle } from '../../../lib/hooks';
 import { StatusBadge, EmptyState } from '../../../lib/ops';
 import { EngagementSummary } from '../../../components/ops/engagements/EngagementSummary';
+import { GenerateDocumentModal } from '../../../components/ops/documents/GenerateDocumentModal';
 import type { EngagementDetail } from '../../../lib/ops/types';
 
 export default function EngagementDetailPage() {
   const { id = '' } = useParams<{ id: string }>();
   useDocumentTitle('Engagement');
+  const navigate = useNavigate();
   const [engagement, setEngagement] = useState<EngagementDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [generateOpen, setGenerateOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -72,12 +76,13 @@ export default function EngagementDetailPage() {
                 <h2 id="documents-heading" className="font-serif text-lg text-green-900">
                   Documents
                 </h2>
-                <Link
-                  to={`/app/ops/engagements/${engagement.id}/generate`}
+                <button
+                  type="button"
                   className="btn-primary text-sm"
+                  onClick={() => setGenerateOpen(true)}
                 >
                   Generate document
-                </Link>
+                </button>
               </div>
 
               {engagement.documents.length === 0 ? (
@@ -102,6 +107,17 @@ export default function EngagementDetailPage() {
                 </ul>
               )}
             </section>
+
+            {/* OPS-DOC-GEN inline: on success, hand off to the viewer. */}
+            <GenerateDocumentModal
+              open={generateOpen}
+              onClose={() => setGenerateOpen(false)}
+              engagementId={engagement.id}
+              onGenerated={(documentId) => {
+                setGenerateOpen(false);
+                navigate(`/app/ops/documents/${documentId}`);
+              }}
+            />
           </>
         )}
       </div>

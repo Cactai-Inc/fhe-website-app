@@ -71,14 +71,17 @@ export function SettleModal({
     return load();
   }, [open, load]);
 
-  // Reset transient state when the modal closes.
+  // Reset transient state when the modal closes. Depends on the STABLE
+  // `settle.reset` callback (not the per-render `settle` object) so a host
+  // page can keep the modal mounted while closed without an update loop.
+  const resetSettle = settle.reset;
   useEffect(() => {
     if (open) return;
     setLines([]);
     setLoadError(null);
     setNothingToSettle(false);
-    settle.reset();
-  }, [open, settle]);
+    resetSettle();
+  }, [open, resetSettle]);
 
   const handleSettle = async () => {
     setNothingToSettle(false);
