@@ -14,6 +14,8 @@ interface NavItem {
   end?: boolean;
   /** Show only when the tenant has this module enabled (my_modules()). */
   module?: string;
+  /** Show only for SUPER_ADMIN sessions. */
+  superAdmin?: boolean;
 }
 
 // Core community items are always on; the module-tagged items appear only when the
@@ -61,15 +63,25 @@ export const OPS_NAV: NavItem[] = [
   { to: '/app/ops/barnops', label: 'Barn Ops', icon: Boxes, module: 'mod.barnops' },
   { to: '/app/ops/records', label: 'Records', icon: FileText, module: 'mod.horserecords' },
   { to: '/app/ops/employees', label: 'Employees', icon: Contact, module: 'mod.employees' },
+  // Ops admin (Wave-7 tail)
+  { to: '/app/ops/admin/modules', label: 'Modules', icon: Shield },
+  { to: '/app/ops/admin/registry', label: 'Registry', icon: Shield },
+  { to: '/app/ops/admin/branding', label: 'Branding', icon: Shield },
+  { to: '/app/ops/admin/products', label: 'Products', icon: Shield },
+  // Superadmin (self-hides in-page too; nav gated by isSuperAdmin)
+  { to: '/app/ops/superadmin/organizations', label: 'Organizations', icon: Shield, superAdmin: true },
+  { to: '/app/ops/superadmin/provision', label: 'Provision tenant', icon: Shield, superAdmin: true },
 ];
 
 /** The ops nav a staff session actually sees (pure, unit-testable). */
-export function visibleOpsNav(hasModule: (key: string) => boolean): NavItem[] {
-  return OPS_NAV.filter((item) => !item.module || hasModule(item.module));
+export function visibleOpsNav(hasModule: (key: string) => boolean, isSuperAdmin = false): NavItem[] {
+  return OPS_NAV.filter(
+    (item) => (!item.module || hasModule(item.module)) && (!item.superAdmin || isSuperAdmin),
+  );
 }
 
 export default function AppLayout() {
-  const { profile, isAdmin, hasModule, signOut } = useAuth();
+  const { profile, isAdmin, isSuperAdmin, hasModule, signOut } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
@@ -118,7 +130,7 @@ export default function AppLayout() {
           <div className="mt-2 border-t border-green-800/10 pt-3 px-3 pb-1 text-xs uppercase tracking-wide text-secondary/60">
             Operations
           </div>
-          {visibleOpsNav(hasModule).map(({ to, label, icon: Icon, end }) => (
+          {visibleOpsNav(hasModule, isSuperAdmin).map(({ to, label, icon: Icon, end }) => (
             <NavLink
               key={to}
               to={to}

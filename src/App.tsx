@@ -73,6 +73,13 @@ import HorseHealthPage from './pages/app/ops/records/HorseHealthPage';
 import EmployeesHubPage from './pages/app/ops/hubs/EmployeesHubPage';
 import StaffPage from './pages/app/ops/employees/StaffPage';
 import SchedulePage from './pages/app/ops/employees/SchedulePage';
+// Ops admin + superadmin (Wave-7 tail)
+import AdminModulesPage from './pages/app/ops/admin/AdminModulesPage';
+import AdminRegistryPage from './pages/app/ops/admin/AdminRegistryPage';
+import AdminBrandingPage from './pages/app/ops/admin/AdminBrandingPage';
+import AdminProductsPage from './pages/app/ops/admin/AdminProductsPage';
+import ProvisionTenantPage from './pages/app/ops/superadmin/ProvisionTenantPage';
+import OrganizationsPage from './pages/app/ops/superadmin/OrganizationsPage';
 
 export function AppRoutes() {
   return (
@@ -172,6 +179,13 @@ export function AppRoutes() {
               <Route path="ops/employees" element={<ProtectedRoute requireAdmin><EmployeesHubPage /></ProtectedRoute>} />
               <Route path="ops/employees/staff" element={<ProtectedRoute requireAdmin><StaffPage /></ProtectedRoute>} />
               <Route path="ops/employees/schedule" element={<ProtectedRoute requireAdmin><SchedulePage /></ProtectedRoute>} />
+              {/* Ops admin + superadmin (superadmin pages self-hide behind isSuperAdmin) */}
+              <Route path="ops/admin/modules" element={<ProtectedRoute requireAdmin><AdminModulesPage /></ProtectedRoute>} />
+              <Route path="ops/admin/registry" element={<ProtectedRoute requireAdmin><AdminRegistryPage /></ProtectedRoute>} />
+              <Route path="ops/admin/branding" element={<ProtectedRoute requireAdmin><AdminBrandingPage /></ProtectedRoute>} />
+              <Route path="ops/admin/products" element={<ProtectedRoute requireAdmin><AdminProductsPage /></ProtectedRoute>} />
+              <Route path="ops/superadmin/provision" element={<ProtectedRoute requireAdmin><ProvisionTenantPage /></ProtectedRoute>} />
+              <Route path="ops/superadmin/organizations" element={<ProtectedRoute requireAdmin><OrganizationsPage /></ProtectedRoute>} />
             </Route>
 
             {/* Branded 404 */}
