@@ -1,8 +1,8 @@
-RIDING LESSON AGREEMENT, LIABILITY RELEASE, ASSUMPTION OF RISK, AND HOLD HARMLESS AGREEMENT
+RIDING LESSON AGREEMENT
 
-This Riding Lesson Agreement, Liability Release, Assumption of Risk, and Hold Harmless Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
+This Riding Lesson Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
 
-French Heritage Equestrian (“Instructor” or “FHE”),
+{{ORG.LEGAL_IDENTITY}} ("COMPANY"),
 
 and
 
@@ -14,15 +14,15 @@ Phone: {{PARTICIPANT.PHONE}}
 
 Email: {{PARTICIPANT.EMAIL}}
 
-Emergency Contact:
+Emergency Contact: {{EMERGENCY_CONTACT.FULL_NAME}}
 
-Relationship:
+Relationship: {{EMERGENCY_CONTACT.RELATIONSHIP}}
 
-Phone:
+Phone: {{EMERGENCY_CONTACT.PHONE}}
 
 RECITALS
 
-A. Instructor provides horseback riding instruction, horsemanship education, equine training activities, horse handling instruction, mounted and unmounted equestrian activities, and related services.
+A. COMPANY provides horseback riding instruction, horsemanship education, equine training activities, horse handling instruction, mounted and unmounted equestrian activities, and related services.
 
 B. Participant desires to engage in such activities.
 
@@ -32,7 +32,7 @@ NOW, THEREFORE, the parties agree as follows:
 
 SERVICES
 
-Instructor may provide one or more of the following services:
+COMPANY may provide one or more of the following services:
 
 □ Riding lessons
 
@@ -58,7 +58,7 @@ FACILITY AND OFF-SITE ACTIVITIES
 
 Participant understands lessons and activities may occur:
 
-At facilities utilized by Instructor;
+At facilities utilized by COMPANY;
 
 At third-party boarding or training facilities;
 
@@ -66,37 +66,13 @@ At horse shows, clinics, events, or competitions;
 
 At Participant-owned or leased properties;
 
-At other locations selected by Instructor.
+At other locations selected by COMPANY.
 
 This Agreement applies regardless of location.
 
-ACKNOWLEDGMENT OF INHERENT RISKS
+LIABILITY RELEASE — INCORPORATED BY REFERENCE
 
-Participant understands and acknowledges that equine activities are inherently dangerous.
-
-Risks include but are not limited to:
-
-Falling from a horse;
-
-Being kicked, bitten, stepped on, crushed, pinned, or struck by a horse;
-
-Horse spooking, bucking, bolting, rearing, stumbling, or acting unpredictably;
-
-Tack failure;
-
-Equipment failure;
-
-Uneven terrain;
-
-Weather conditions;
-
-Actions of other riders, spectators, or participants;
-
-Transportation-related incidents;
-
-Exposure to livestock, wildlife, insects, and environmental hazards.
-
-Participant voluntarily assumes all risks associated with participation.
+The risk acknowledgments, releases, and indemnity obligations applicable to the activities under this Agreement are set forth exclusively in the separately executed Liability Release and Assumption of Risk agreement, which is incorporated herein by reference.
 
 REPRESENTATIONS OF PARTICIPANT
 
@@ -110,41 +86,13 @@ Participant will follow all safety instructions;
 
 Participant will wear appropriate riding attire;
 
-Participant will immediately notify Instructor of any injury or unsafe condition.
+Participant will immediately notify COMPANY of any injury or unsafe condition.
 
 HELMETS
 
 ASTM/SEI-certified riding helmets are required at all times.
 
 Participant understands that helmet use may reduce but cannot eliminate risk of serious injury or death.
-
-RELEASE OF LIABILITY
-
-To the fullest extent permitted by law, Participant releases and forever discharges:
-
-French Heritage Equestrian;
-
-Its owners, agents, instructors, trainers, assistants, volunteers, representatives, contractors, and affiliates;
-
-The owners and operators of facilities where services occur;
-
-Horse owners whose horses are used during lessons;
-
-from any and all claims, demands, causes of action, damages, losses, liabilities, costs, and expenses arising from participation in equine activities, including claims arising from ordinary negligence.
-
-This release does not apply to gross negligence, willful misconduct, or conduct that cannot legally be released under California law.
-
-HOLD HARMLESS AND INDEMNIFICATION
-
-Participant shall indemnify, defend, and hold harmless the Released Parties from any claims arising from:
-
-Participant’s conduct;
-
-Participant’s violation of facility rules;
-
-Damage caused by Participant;
-
-Claims brought by third parties resulting from Participant’s actions.
 
 PROPERTY DAMAGE
 
@@ -164,7 +112,7 @@ Third-party property.
 
 MEDICAL TREATMENT AUTHORIZATION
 
-In the event of an emergency, Instructor may seek medical treatment for Participant.
+In the event of an emergency, COMPANY may seek medical treatment for Participant.
 
 Participant remains solely responsible for all medical costs and expenses.
 
@@ -174,17 +122,17 @@ Participant grants permission for photographs and video recordings to be used fo
 
 PAYMENT TERMS
 
-Lesson Fees: $
+Lesson Fees: {{TXN.SERVICE_FEE}}
 
 Payment Due: {{TXN.PAYMENT_TERMS}}
 
-Cancellation Policy:
+Cancellation Policy: Cancellation of a scheduled session requires at least {{ORG.CANCELLATION_NOTICE_HOURS}} hours advance notice. Sessions cancelled with less than the required notice may be charged a late-cancellation fee of {{ORG.CANCELLATION_FEE}}. Failure to appear for a scheduled session without notice may be charged a no-show fee of {{ORG.NO_SHOW_FEE}}.
 
-No refunds are required except as expressly stated by Instructor.
+No refunds are required except as expressly stated by COMPANY.
 
 TERMINATION
 
-Instructor may terminate lessons immediately if Participant:
+COMPANY may terminate lessons immediately if Participant:
 
 Engages in unsafe conduct;
 
@@ -200,7 +148,7 @@ Any dispute arising under this Agreement shall be resolved by:
 
 □ Arbitration
 
-□ State or Federal Court
+□ Litigation
 
 Venue shall be San Diego County, California.
 
@@ -240,10 +188,12 @@ Printed Name: {{PARTICIPANT.PRINTED_NAME}}
 
 Date: {{SIG.PARTICIPANT.DATE}}
 
-FRENCH HERITAGE EQUESTRIAN
+COMPANY: {{ORG.LEGAL_NAME}}
 
-By: {{FHE.SIGNATORY_NAME}}
+By (signature): {{SIG.COMPANY.NAME}}
 
-Title: {{FHE.SIGNATORY_TITLE}}
+Printed: {{ORG.SIGNATORY_NAME}}
 
-Date: {{SIG.FHE.DATE}}
+Title: {{ORG.SIGNATORY_TITLE}}
+
+Date: {{SIG.COMPANY.DATE}}

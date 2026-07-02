@@ -27,6 +27,25 @@ function kindOf(ns) {
   return 'field';
 }
 
+/**
+ * Templates whose contract_templates rows POSTDATE the migration-11 seed (the
+ * liability releases, seeded by 20260701070000_liability_releases.sql). This
+ * generated loader (20260629100000) runs BEFORE that migration on a fresh
+ * database, so it must ensure the row exists before loading its body; the
+ * INSERT is idempotent and 20260701070000 re-asserts the same rows (and owns
+ * the contract_requirements matrix).
+ */
+const POST_SEED_TEMPLATES = {
+  RELEASE_GENERAL:        { title: 'General Visitor Liability Release',                 parties: ['PARTICIPANT', 'GUARDIAN', 'COMPANY'] },
+  RELEASE_PARTICIPANT:    { title: 'Participant Liability Release',                     parties: ['PARTICIPANT', 'GUARDIAN', 'COMPANY'] },
+  RELEASE_HORSE_EXERCISE: { title: 'Horse Exercise Liability Release',                  parties: ['OWNER', 'COMPANY'] },
+  RELEASE_HORSE_CARE:     { title: 'Horse Handling and Routine Care Liability Release', parties: ['OWNER', 'COMPANY'] },
+  // Contract-module decomposition (20260701080000): the side-scoped Layer 2
+  // transaction-representation module. service_type stays NULL (one tokenized
+  // template serves purchase/sale/lease-in/lease-out representation).
+  HORSE_TRANSACTION_REP:  { title: 'Horse Transaction Representation Agreement',        parties: ['CLIENT', 'COMPANY'] },
+};
+
 const files = readdirSync(BODIES).filter((f) => f.endsWith('.md')).sort();
 
 let sql = `/*
@@ -54,6 +73,13 @@ for (const file of files) {
   const tokens = [...new Set((body.match(/\{\{[A-Z0-9_.]+\}\}/g) ?? []))];
 
   sql += `\n-- ── ${key} ─────────────────────────────────────────────\n`;
+  const meta = POST_SEED_TEMPLATES[key];
+  if (meta) {
+    // Row postdates migration 11's seed — ensure it exists (see POST_SEED_TEMPLATES).
+    sql += `INSERT INTO contract_templates (template_key, title, service_type, party_namespaces)\n`
+      + `  VALUES ('${key}', '${meta.title.replace(/'/g, "''")}', NULL, ARRAY[${meta.parties.map((p) => `'${p}'`).join(',')}])\n`
+      + `  ON CONFLICT (template_key) DO NOTHING;\n`;
+  }
   sql += `UPDATE contract_templates SET body = $body$${body}$body$, updated_at = now()\n  WHERE template_key = '${key}';\n`;
 
   if (tokens.length) {

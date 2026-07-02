@@ -1,10 +1,12 @@
-FRENCH HERITAGE EQUESTRIAN
+{{ORG.LEGAL_NAME}}
 
 EMERGENCY MEDICAL AUTHORIZATION
 
 PARTICIPANT EMERGENCY INFORMATION AND TREATMENT AUTHORIZATION
 
-This form may be used for riders, horsemanship participants, jumper training participants, visitors, contractors, volunteers, event attendees, and other individuals participating in or present for activities associated with French Heritage Equestrian.
+This authorization is provided to {{ORG.LEGAL_IDENTITY}} ("COMPANY").
+
+This form may be used for riders, horsemanship participants, jumper training participants, visitors, contractors, volunteers, event attendees, and other individuals participating in or present for activities associated with COMPANY.
 
 PARTICIPANT INFORMATION
 
@@ -32,11 +34,11 @@ Email: {{GUARDIAN.EMAIL}}
 
 EMERGENCY CONTACT #1
 
-Name:
+Name: {{EMERGENCY_CONTACT.FULL_NAME}}
 
-Relationship:
+Relationship: {{EMERGENCY_CONTACT.RELATIONSHIP}}
 
-Phone:
+Phone: {{EMERGENCY_CONTACT.PHONE}}
 
 Alternate Phone:
 
@@ -70,9 +72,9 @@ Group Number:
 
 EMERGENCY AUTHORIZATION
 
-I authorize French Heritage Equestrian, its instructors, trainers, contractors, representatives, agents, facility operators, and emergency personnel to obtain emergency medical treatment for the Participant when reasonable efforts to contact the Participant, parent, guardian, or emergency contact are unsuccessful or when immediate treatment is reasonably necessary.
+I authorize COMPANY, its instructors, trainers, contractors, representatives, agents, facility operators, and emergency personnel to obtain emergency medical treatment for the Participant when reasonable efforts to contact the Participant, parent, guardian, or emergency contact are unsuccessful or when immediate treatment is reasonably necessary.
 
-I understand that French Heritage Equestrian is not providing medical services and is not responsible for the quality, availability, cost, or outcome of any medical treatment obtained.
+I understand that COMPANY is not providing medical services and is not responsible for the quality, availability, cost, or outcome of any medical treatment obtained.
 
 I agree to be financially responsible for any medical expenses incurred on behalf of the Participant.
 
@@ -80,15 +82,15 @@ PHOTOGRAPH OF INSURANCE CARD
 
 Front Attached:
 
-☐ Yes
+□ Yes
 
-☐ No
+□ No
 
 Back Attached:
 
-☐ Yes
+□ Yes
 
-☐ No
+□ No
 
 AUTHORIZATION
 
@@ -107,6 +109,18 @@ Parent/Guardian Name: {{GUARDIAN.FULL_NAME}}
 Signature: {{SIG.GUARDIAN.NAME}}
 
 Date: {{SIG.GUARDIAN.DATE}}
+
+COMPANY ACKNOWLEDGMENT
+
+COMPANY: {{ORG.LEGAL_NAME}}
+
+By (signature): {{SIG.COMPANY.NAME}}
+
+Printed: {{ORG.SIGNATORY_NAME}}
+
+Title: {{ORG.SIGNATORY_TITLE}}
+
+Date: {{SIG.COMPANY.DATE}}
 
 RECORD INFORMATION
 

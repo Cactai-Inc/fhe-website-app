@@ -8,6 +8,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getSupabaseAdmin } from './_lib/supabaseAdmin';
 import { reconcileNotification, type ParsedNotification } from './_lib/reconcile';
+import { sendOrderReceipt } from './_lib/receipt';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -37,6 +38,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const db = getSupabaseAdmin();
     const outcome = await reconcileNotification(db, notification);
+    if (outcome.result === 'confirmed') {
+      await sendOrderReceipt(db, outcome.orderId); // best-effort; never fails reconciliation
+    }
     return res.status(200).json(outcome);
   } catch (err) {
     console.error('reconcile error', err);

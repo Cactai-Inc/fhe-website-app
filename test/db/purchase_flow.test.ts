@@ -4,7 +4,8 @@
  * create_purchase_engagement → generate_document → record_signature, end to end:
  * the engagement + transaction are created, the generated purchase agreement
  * surfaces the actual money inputs (price/deposit/balance), and the document
- * reaches EXECUTED once both signer parties have signed.
+ * reaches EXECUTED once all signer parties — buyer, seller, and the COMPANY
+ * signatory (Contracts Legal Pass) — have signed.
  */
 import { beforeAll, afterAll, describe, expect, it } from 'vitest';
 import { createTestDb, type TestDb } from './harness';
@@ -39,7 +40,9 @@ describe('create_purchase_engagement', () => {
     await h.asSuperuser();
     const parties = await h.q<{ party_role: string }>(
       `select party_role from engagement_parties where engagement_id=$1 order by signer_order`, [eng]);
-    expect(parties.map((p) => p.party_role)).toEqual(['BUYER', 'SELLER']);
+    // Contracts Legal Pass: COMPANY (the seeded signatory, signer_order 99) is now
+    // a first-class signing party on every engagement.
+    expect(parties.map((p) => p.party_role)).toEqual(['BUYER', 'SELLER', 'COMPANY']);
     const [txn] = await h.q<{ txn_type: string; amount: string }>(
       `select txn_type, amount from transactions where engagement_id=$1`, [eng]);
     expect(txn.txn_type).toBe('PURCHASE');
@@ -64,19 +67,24 @@ describe('generate → sign', () => {
     expect(doc.merged_body).toContain('$3,000.00');            // deposit
     expect(doc.merged_body).toContain('$12,000.00');           // computed balance
 
-    // first signature — not yet executed (seller still pending)
+    // first signature — not yet executed (seller + company still pending)
     const s1 = (await h.q<{ record_signature: string }>(
       `select record_signature($1,'BUYER',$2)`, [doc.document_id, 'Jane Buyer']))[0].record_signature;
     expect(s1).toBe('DRAFT');
 
-    // second signature — now executed
+    // second signature — still not executed (company countersignature pending)
     const s2 = (await h.q<{ record_signature: string }>(
       `select record_signature($1,'SELLER',$2)`, [doc.document_id, 'John Seller']))[0].record_signature;
-    expect(s2).toBe('EXECUTED');
+    expect(s2).toBe('DRAFT');
+
+    // company countersignature — Charles signs for the DBA; now executed
+    const s3 = (await h.q<{ record_signature: string }>(
+      `select record_signature($1,'COMPANY',$2)`, [doc.document_id, 'Charles Zigmund']))[0].record_signature;
+    expect(s3).toBe('EXECUTED');
 
     await h.asSuperuser();
     const sigs = await h.q(`select id from signatures where document_id=$1 and signed_at is not null`, [doc.document_id]);
-    expect(sigs).toHaveLength(2);
+    expect(sigs).toHaveLength(3);
     const [d] = await h.q<{ status: string; effective_date: string }>(
       `select status, effective_date from documents where id=$1`, [doc.document_id]);
     expect(d.status).toBe('EXECUTED');

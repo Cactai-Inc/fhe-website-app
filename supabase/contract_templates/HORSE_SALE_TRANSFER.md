@@ -160,7 +160,7 @@ Buyer:
 
 □ Declined veterinary examination.
 
-Veterinarian:
+Veterinarian: {{HORSE.VET_NAME}}
 
 Date:
 
@@ -208,11 +208,11 @@ Performance;
 
 Future value.
 
-FHE / REPRESENTATIVE DISCLOSURE
+COMPANY / THIRD-PARTY DISCLOSURE
 
-If French Heritage Equestrian assisted with this transaction:
+If {{ORG.LEGAL_IDENTITY}} (“COMPANY”) assisted with this transaction:
 
-The parties acknowledge FHE is not the owner of the Horse and is not responsible for:
+The parties acknowledge COMPANY is not the owner of the Horse and is not responsible for:
 
 Horse condition;
 
@@ -278,10 +278,12 @@ Printed Name: {{BUYER.PRINTED_NAME}}
 
 Date: {{SIG.BUYER.DATE}}
 
-FRENCH HERITAGE EQUESTRIAN (IF APPLICABLE)
+COMPANY (IF APPLICABLE): {{ORG.LEGAL_NAME}}
 
-By: {{FHE.SIGNATORY_NAME}}
+By (signature): {{SIG.COMPANY.NAME}}
 
-Title: {{FHE.SIGNATORY_TITLE}}
+Printed: {{ORG.SIGNATORY_NAME}}
 
-Date: {{SIG.FHE.DATE}}
+Title: {{ORG.SIGNATORY_TITLE}}
+
+Date: {{SIG.COMPANY.DATE}}

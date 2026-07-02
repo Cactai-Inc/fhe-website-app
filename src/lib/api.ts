@@ -8,6 +8,13 @@ import type {
   Invitation, AvailabilitySlot, Order, OrderItem, OrderDocument, Payment,
   PaymentMethod, Profile,
 } from './types';
+import type {
+  Contact, ContactInput, Client, Horse, HorseInput, LookupCode,
+  Engagement, EngagementDetail, EngagementStage, ContractTemplate,
+  DocumentRow, GeneratedDocument, Signature, PartyRole,
+  DocumentDelivery, DeliveryInput, Transaction, BillableLine,
+  SettlementResult, IntakeRequest,
+} from './ops/types';
 
 // ─── Offerings catalog ──────────────────────────────────────────────────────
 
@@ -231,13 +238,14 @@ export async function listMyOrders(): Promise<Order[]> {
 }
 
 /** Move a draft order to awaiting_payment with the chosen method. The server
- *  finalizes pricing (fee, unique_amount, reference) via an edge function in
- *  production; here we set the client-permitted fields only. */
+ *  RPC finalizes pricing: tier-linked item prices are enforced server-side,
+ *  totals recomputed, and the Zelle matching keys (unique_amount +
+ *  brand-prefixed payment_reference) assigned exactly once. */
 export async function markAwaitingPayment(orderId: string, method: PaymentMethod): Promise<void> {
-  const { error } = await supabase
-    .from('orders')
-    .update({ status: 'awaiting_payment', payment_method: method })
-    .eq('id', orderId);
+  const { error } = await supabase.rpc('finalize_order_payment', {
+    p_order_id: orderId,
+    p_method: method,
+  });
   if (error) throw error;
 }
 
@@ -293,4 +301,1428 @@ export async function getOrderPayment(orderId: string): Promise<Payment | null> 
     .maybeSingle();
   if (error) throw error;
   return data as Payment | null;
+}
+
+// ─── Platform: entitlements, registry, public config, provisioning ───────────
+// Thin wrappers over the U2/U3/U6 SECURITY-DEFINER RPCs. UI nav/route gating and
+// the BrandProvider read through these; the server (RLS + require_module) is the
+// authoritative fence — these are convenience seams (PLATFORM_ARCHITECTURE §4.3 C).
+
+/** The current caller's own tenant's enabled+unexpired module keys (e.g.
+ *  'mod.lessons'). Works for a plain USER member — my_modules() reads org_modules
+ *  PAST its staff-only RLS, current_org()-scoped, so it never crosses tenants.
+ *  Drives nav/route gating in AuthContext. */
+export async function myModules(): Promise<string[]> {
+  const { data, error } = await supabase.rpc('my_modules');
+  if (error) throw error;
+  const rows = (data ?? []) as Array<{ module_key: string } | string>;
+  return rows.map((r) => (typeof r === 'string' ? r : r.module_key));
+}
+
+export interface OrgPublicConfig {
+  org_id: string;
+  slug: string;
+  brand: Record<string, string>;
+  modules: string[];
+  pricing: Array<{ product_key: string; name: string; amount: number }>;
+}
+
+/** ANON public-exposure seam: resolves a tenant slug to its brand + active public
+ *  module list + public pricing. Returns null for an unknown/inactive tenant.
+ *  NEVER exposes commission/retention/e-sign/tax internals (enforced server-side). */
+export async function orgPublicConfig(slug: string): Promise<OrgPublicConfig | null> {
+  const { data, error } = await supabase.rpc('org_public_config', { p_slug: slug });
+  if (error) throw error;
+  return (data as OrgPublicConfig | null) ?? null;
+}
+
+/** Resolve a single registry value for the CURRENT tenant (typed business_config
+ *  column when the (ns,key) maps to one, else the config_values EAV row). Returns
+ *  null when unset. */
+export async function configValue(ns: string, key: string): Promise<string | null> {
+  const { data, error } = await supabase.rpc('config_value', { p_ns: ns, p_key: key });
+  if (error) throw error;
+  return (data as string | null) ?? null;
+}
+
+export interface ProvisionTenantInput {
+  name: string;
+  slug: string;
+  tierKey: string;
+  adminEmail: string;
+  adminUserId?: string | null;
+  brand?: Record<string, unknown>;
+  legal?: Record<string, unknown>;
+  rates?: Record<string, unknown>;
+  modules?: string[];
+}
+
+/** SUPER_ADMIN-only push-button provisioning (the single blessed path). The RPC is
+ *  SUPER_ADMIN-gated inside the function and rolls back atomically on any failure;
+ *  returns the new org id. */
+export async function provisionTenant(input: ProvisionTenantInput): Promise<string> {
+  const { data, error } = await supabase.rpc('provision_tenant', {
+    p_name: input.name,
+    p_slug: input.slug,
+    p_tier_key: input.tierKey,
+    p_admin_email: input.adminEmail,
+    p_admin_user_id: input.adminUserId ?? null,
+    p_brand: input.brand ?? {},
+    p_legal: input.legal ?? {},
+    p_rates: input.rates ?? {},
+    p_modules: input.modules ?? null,
+  });
+  if (error) throw error;
+  return data as string;
+}
+
+// ─── Core ops wrappers: CRM / contracts / billing (INT-API-CORE) ─────────────
+// The single core wiring layer. Every core ops/portal slice imports a REAL,
+// exported, RLS-enforced function from here; the server (RLS + require_module +
+// SECURITY-DEFINER RPCs) is the authoritative fence. These are thin, typed seams
+// over supabase.from(table)/.rpc(name) matching the tested backbone signatures.
+
+// ─── CRM: contacts ────────────────────────────────────────────────────────
+
+/** All in-tenant contacts (RLS scopes to current_org()), soft-deleted excluded. */
+export async function listContacts(): Promise<Contact[]> {
+  const { data, error } = await supabase
+    .from('contacts')
+    .select('*')
+    .is('deleted_at', null)
+    .order('full_name');
+  if (error) throw error;
+  return (data ?? []) as Contact[];
+}
+
+export async function createContact(input: ContactInput): Promise<Contact> {
+  const { data, error } = await supabase
+    .from('contacts')
+    .insert(input)
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data as Contact;
+}
+
+export async function updateContact(id: string, patch: Partial<ContactInput>): Promise<Contact> {
+  const { data, error } = await supabase
+    .from('contacts')
+    .update(patch)
+    .eq('id', id)
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data as Contact;
+}
+
+// ─── CRM: clients ─────────────────────────────────────────────────────────
+
+/** All in-tenant clients (the CRM subset promoted to engagement-eligible). */
+export async function listClients(): Promise<Client[]> {
+  const { data, error } = await supabase
+    .from('clients')
+    .select('*')
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as Client[];
+}
+
+// ─── Horses + lookups ─────────────────────────────────────────────────────
+
+export async function listHorses(): Promise<Horse[]> {
+  const { data, error } = await supabase
+    .from('horses')
+    .select('*')
+    .is('deleted_at', null)
+    .order('barn_name', { nullsFirst: false });
+  if (error) throw error;
+  return (data ?? []) as Horse[];
+}
+
+export async function createHorse(input: HorseInput): Promise<Horse> {
+  const { data, error } = await supabase
+    .from('horses')
+    .insert(input)
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data as Horse;
+}
+
+export async function updateHorse(id: string, patch: HorseInput): Promise<Horse> {
+  const { data, error } = await supabase
+    .from('horses')
+    .update(patch)
+    .eq('id', id)
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data as Horse;
+}
+
+export async function listHorseBreeds(): Promise<LookupCode[]> {
+  const { data, error } = await supabase
+    .from('horse_breeds')
+    .select('*')
+    .eq('active', true)
+    .order('sort_order');
+  if (error) throw error;
+  return (data ?? []) as LookupCode[];
+}
+
+export async function listHorseColors(): Promise<LookupCode[]> {
+  const { data, error } = await supabase
+    .from('horse_colors')
+    .select('*')
+    .eq('active', true)
+    .order('sort_order');
+  if (error) throw error;
+  return (data ?? []) as LookupCode[];
+}
+
+// ─── Engagements ──────────────────────────────────────────────────────────
+
+export async function listEngagements(): Promise<Engagement[]> {
+  const { data, error } = await supabase
+    .from('engagements')
+    .select('*')
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as Engagement[];
+}
+
+/** One engagement plus its stages/documents/transactions rollup (staff detail). */
+export async function getEngagement(id: string): Promise<EngagementDetail | null> {
+  const { data: eng, error } = await supabase
+    .from('engagements')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw error;
+  if (!eng) return null;
+
+  const { data: stages, error: stErr } = await supabase
+    .from('engagement_stages')
+    .select('*')
+    .eq('engagement_id', id)
+    .order('effective_from');
+  if (stErr) throw stErr;
+
+  const { data: docs, error: docErr } = await supabase
+    .from('documents')
+    .select('*')
+    .eq('engagement_id', id)
+    .order('generated_at', { ascending: false });
+  if (docErr) throw docErr;
+
+  const { data: txns, error: txnErr } = await supabase
+    .from('transactions')
+    .select('*')
+    .eq('engagement_id', id)
+    .order('created_at', { ascending: false });
+  if (txnErr) throw txnErr;
+
+  return {
+    ...(eng as Engagement),
+    stages: (stages ?? []) as EngagementStage[],
+    documents: (docs ?? []) as DocumentRow[],
+    transactions: (txns ?? []) as Transaction[],
+  };
+}
+
+// ─── Contracts: templates & documents ────────────────────────────────────
+
+export async function listContractTemplates(): Promise<ContractTemplate[]> {
+  const { data, error } = await supabase
+    .from('contract_templates')
+    .select('*')
+    .eq('active', true)
+    .is('deleted_at', null)
+    .order('title');
+  if (error) throw error;
+  return (data ?? []) as ContractTemplate[];
+}
+
+/** Merge a template for an engagement via the SECURITY-DEFINER RPC. Returns the
+ *  new document id + merged body. RLS/require_module + engagement ownership are
+ *  enforced inside generate_document (scopes to the engagement's own org_id). */
+export async function generateDocument(
+  engagementId: string,
+  templateKey: string,
+): Promise<GeneratedDocument> {
+  const { data, error } = await supabase.rpc('generate_document', {
+    p_engagement_id: engagementId,
+    p_template_key: templateKey,
+  });
+  if (error) throw error;
+  const row = Array.isArray(data) ? data[0] : data;
+  return row as GeneratedDocument;
+}
+
+export async function getDocument(id: string): Promise<DocumentRow | null> {
+  const { data, error } = await supabase
+    .from('documents')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as DocumentRow | null) ?? null;
+}
+
+export async function listDocuments(engagementId?: string): Promise<DocumentRow[]> {
+  let query = supabase
+    .from('documents')
+    .select('*')
+    .is('deleted_at', null);
+  if (engagementId) query = query.eq('engagement_id', engagementId);
+  const { data, error } = await query.order('generated_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as DocumentRow[];
+}
+
+// ─── Signatures ───────────────────────────────────────────────────────────
+
+/** Seal-on-sign via the SECURITY-DEFINER RPC. Sets typed_name/signed_at/ip for the
+ *  (document, party_role) signer and advances document status server-side. */
+export async function recordSignature(
+  documentId: string,
+  partyRole: PartyRole,
+  typedName: string,
+  ip?: string | null,
+): Promise<void> {
+  const { error } = await supabase.rpc('record_signature', {
+    p_document_id: documentId,
+    p_party_role: partyRole,
+    p_typed_name: typedName,
+    p_ip: ip ?? null,
+  });
+  if (error) throw error;
+}
+
+export async function listSignatures(documentId: string): Promise<Signature[]> {
+  const { data, error } = await supabase
+    .from('signatures')
+    .select('*')
+    .eq('document_id', documentId)
+    .is('deleted_at', null)
+    .order('created_at');
+  if (error) throw error;
+  return (data ?? []) as Signature[];
+}
+
+// ─── Deliveries ───────────────────────────────────────────────────────────
+
+export async function listDeliveries(documentId: string): Promise<DocumentDelivery[]> {
+  const { data, error } = await supabase
+    .from('document_deliveries')
+    .select('*')
+    .eq('document_id', documentId)
+    .is('deleted_at', null)
+    .order('delivered_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as DocumentDelivery[];
+}
+
+export async function recordDelivery(input: DeliveryInput): Promise<DocumentDelivery> {
+  const { data, error } = await supabase
+    .from('document_deliveries')
+    .insert({
+      document_id: input.document_id,
+      recipient_contact_id: input.recipient_contact_id,
+      channel: input.channel ?? 'PORTAL',
+      copy_url: input.copy_url ?? null,
+    })
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data as DocumentDelivery;
+}
+
+// ─── Transactions ─────────────────────────────────────────────────────────
+
+export async function listTransactions(): Promise<Transaction[]> {
+  const { data, error } = await supabase
+    .from('transactions')
+    .select('*')
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as Transaction[];
+}
+
+export async function getTransaction(id: string): Promise<Transaction | null> {
+  const { data, error } = await supabase
+    .from('transactions')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as Transaction | null) ?? null;
+}
+
+// ─── Billing: billable_lines + settlement ────────────────────────────────
+
+/** OPEN billable lines for a payer (or all OPEN lines when no payer given). */
+export async function listOpenBillableLines(payerContactId?: string): Promise<BillableLine[]> {
+  let query = supabase
+    .from('billable_lines')
+    .select('*')
+    .eq('status', 'OPEN')
+    .is('deleted_at', null);
+  if (payerContactId) query = query.eq('payer_contact_id', payerContactId);
+  const { data, error } = await query.order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as BillableLine[];
+}
+
+/** Roll a payer's OPEN billable lines into an INVOICE transaction via the
+ *  SECURITY-DEFINER RPC. p_period is a tstzrange string (or null for all OPEN). */
+export async function settleBillableLines(
+  payerContactId: string,
+  period?: string | null,
+): Promise<SettlementResult[]> {
+  const { data, error } = await supabase.rpc('settle_billable_lines', {
+    p_payer_contact_id: payerContactId,
+    p_period: period ?? null,
+  });
+  if (error) throw error;
+  return (data ?? []) as SettlementResult[];
+}
+
+// ─── Public intake (requests) ─────────────────────────────────────────────
+
+/** The staff intake-review inbox: public request submissions, newest first. */
+export async function listIntake(): Promise<IntakeRequest[]> {
+  const { data, error } = await supabase
+    .from('requests')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as IntakeRequest[];
+}
+
+// ─── Count helpers (dashboard KPI tiles) ──────────────────────────────────
+// head:true + count:'exact' returns the count without transferring rows; RLS
+// still scopes the count to the caller's tenant/ownership.
+
+export async function countContacts(): Promise<number> {
+  const { count, error } = await supabase
+    .from('contacts')
+    .select('*', { count: 'exact', head: true })
+    .is('deleted_at', null);
+  if (error) throw error;
+  return count ?? 0;
+}
+
+export async function countHorses(): Promise<number> {
+  const { count, error } = await supabase
+    .from('horses')
+    .select('*', { count: 'exact', head: true })
+    .is('deleted_at', null);
+  if (error) throw error;
+  return count ?? 0;
+}
+
+export async function countEngagements(): Promise<number> {
+  const { count, error } = await supabase
+    .from('engagements')
+    .select('*', { count: 'exact', head: true })
+    .is('deleted_at', null);
+  if (error) throw error;
+  return count ?? 0;
+}
+
+export async function countOpenDocuments(): Promise<number> {
+  const { count, error } = await supabase
+    .from('documents')
+    .select('*', { count: 'exact', head: true })
+    .is('deleted_at', null)
+    .neq('status', 'EXECUTED');
+  if (error) throw error;
+  return count ?? 0;
+}
+
+export async function countOpenBillableLines(): Promise<number> {
+  const { count, error } = await supabase
+    .from('billable_lines')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'OPEN')
+    .is('deleted_at', null);
+  if (error) throw error;
+  return count ?? 0;
+}
+
+// ─── INT-API-MODULES domain types ───────────────────────────────────────────
+// Kept inline (this unit edits only api.ts + its test): the module/admin table
+// row + input shapes mirror the backbone schema (§7 module migrations, §4
+// entitlements/registry/products). Every field is what RLS returns to a staff
+// ADMIN caller.
+
+// Boarding (mod.boarding)
+export interface Facility {
+  id: string; org_id: string; name: string; address_value_key: string | null;
+  created_at: string; updated_at: string;
+}
+export interface FacilityInput { name: string; address_value_key?: string | null; }
+
+export interface Stall {
+  id: string; org_id: string; facility_id: string; code: string;
+  stall_type: string | null; active: boolean; created_at: string; updated_at: string;
+}
+export interface StallInput { facility_id: string; code: string; stall_type?: string | null; }
+
+export interface BoardAgreement {
+  id: string; org_id: string; horse_id: string; stall_id: string | null;
+  boarder_contact_id: string; board_rate: number | null; board_type: string | null;
+  start_date: string | null; end_date: string | null; status: string;
+  created_at: string; updated_at: string;
+}
+export interface BoardAgreementInput {
+  horse_id: string; boarder_contact_id: string; stall_id?: string | null;
+  board_rate?: number | null; board_type?: string | null;
+  start_date?: string | null; end_date?: string | null;
+}
+
+export interface BoardCharge {
+  id: string; org_id: string; board_agreement_id: string;
+  period_start: string; period_end: string; amount: number;
+  billable_line_id: string | null; created_at: string; updated_at: string;
+}
+export interface BoardChargeInput {
+  board_agreement_id: string; period_start: string; period_end: string; amount: number;
+}
+
+// Barn ops / inventory (mod.barnops)
+export type ResourceCategory = 'feed' | 'med' | 'bedding' | 'supply' | 'equipment';
+export interface Resource {
+  id: string; org_id: string; resource_key: string; name: string;
+  category: ResourceCategory; unit_of_measure: string; is_consumable: boolean;
+  created_at: string; updated_at: string;
+}
+export interface ResourceInput {
+  resource_key: string; name: string; category: ResourceCategory;
+  unit_of_measure?: string; is_consumable?: boolean;
+}
+
+export interface ResourceLot {
+  id: string; org_id: string; resource_id: string; vendor_contact_id: string | null;
+  qty_purchased: number; unit_cost: number; on_hand: number; purchased_at: string;
+  created_at: string; updated_at: string;
+}
+export interface ResourceLotInput {
+  resource_id: string; vendor_contact_id?: string | null;
+  qty_purchased: number; unit_cost: number; on_hand?: number;
+}
+
+export interface ConsumptionEvent {
+  id: string; org_id: string; resource_id: string; resource_lot_id: string | null;
+  horse_id: string | null; qty: number; administered_by: string | null;
+  occurred_at: string; notes: string | null; created_at: string;
+}
+export interface ConsumptionEventInput {
+  resource_id: string; resource_lot_id?: string | null; horse_id?: string | null;
+  qty: number; occurred_at?: string; notes?: string | null;
+}
+
+export type AllocationScope = 'horse' | 'lease' | 'board' | 'default';
+export interface CostAllocationRule {
+  id: string; org_id: string; scope: AllocationScope; scope_id: string | null;
+  payer_contact_id: string; share_pct: number;
+  effective_from: string | null; effective_to: string | null;
+  created_at: string; updated_at: string;
+}
+export interface CostAllocationRuleInput {
+  scope: AllocationScope; scope_id?: string | null; payer_contact_id: string;
+  share_pct?: number; effective_from?: string | null; effective_to?: string | null;
+}
+
+// Lessons (mod.lessons)
+export interface LessonPackage {
+  id: string; org_id: string; package_key: string; name: string;
+  price_value_key: string | null; credits: number; active: boolean;
+  created_at: string; updated_at: string;
+}
+export interface LessonPackageInput {
+  package_key: string; name: string; price_value_key?: string | null; credits?: number;
+}
+
+export interface LessonCredit {
+  id: string; org_id: string; client_id: string; package_key: string | null;
+  credits_total: number; credits_remaining: number; purchased_at: string;
+  created_at: string; updated_at: string;
+}
+export interface LessonCreditInput {
+  client_id: string; package_key?: string | null;
+  credits_total: number; credits_remaining?: number;
+}
+
+// Records (mod.horserecords)
+export type HorsePartyRole = 'owner' | 'lessee' | 'trainer' | 'caretaker' | 'boarder';
+export interface HorseParty {
+  id: string; org_id: string; horse_id: string; contact_id: string;
+  role: HorsePartyRole; share_pct: number | null;
+  effective_from: string | null; effective_to: string | null; notes: string | null;
+  created_at: string; updated_at: string;
+}
+export interface HorsePartyInput {
+  horse_id: string; contact_id: string; role: HorsePartyRole; share_pct?: number | null;
+  effective_from?: string | null; effective_to?: string | null; notes?: string | null;
+}
+
+export interface HealthEvent {
+  id: string; org_id: string; horse_id: string; event_type: string; occurred_at: string;
+  provider_contact_id: string | null; next_due: string | null; notes: string | null;
+  document_id: string | null; created_at: string; updated_at: string;
+}
+export interface HealthEventInput {
+  horse_id: string; event_type: string; occurred_at?: string;
+  provider_contact_id?: string | null; next_due?: string | null;
+  notes?: string | null; document_id?: string | null;
+}
+
+// Employees (mod.employees)
+export interface StaffProfile {
+  id: string; org_id: string; profile_user_id: string; contact_id: string | null;
+  title: string | null; pay_type: string | null; active: boolean;
+  created_at: string; updated_at: string;
+}
+export interface StaffProfileInput {
+  profile_user_id: string; contact_id?: string | null;
+  title?: string | null; pay_type?: string | null;
+}
+
+export interface Shift {
+  id: string; org_id: string; staff_profile_id: string; starts_at: string;
+  ends_at: string | null; role: string | null; created_at: string; updated_at: string;
+}
+export interface ShiftInput {
+  staff_profile_id: string; starts_at: string; ends_at?: string | null; role?: string | null;
+}
+
+export interface TimeEntry {
+  id: string; org_id: string; staff_profile_id: string; clock_in: string;
+  clock_out: string | null; minutes: number | null;
+  source_kind: string | null; source_id: string | null;
+  created_at: string; updated_at: string;
+}
+export interface TimeEntryInput {
+  staff_profile_id: string; clock_in: string; clock_out?: string | null;
+  minutes?: number | null; source_kind?: string | null; source_id?: string | null;
+}
+
+export interface ServiceAssignment {
+  id: string; org_id: string; engagement_id: string | null; staff_profile_id: string;
+  service_type: string | null; scheduled_at: string | null; status: string;
+  created_at: string; updated_at: string;
+}
+export interface ServiceAssignmentInput {
+  staff_profile_id: string; engagement_id?: string | null;
+  service_type?: string | null; scheduled_at?: string | null;
+}
+
+// Admin: entitlements, registry, branding, products
+export interface ModuleCatalogRow {
+  module_key: string; name: string; description: string | null;
+  is_core: boolean; active: boolean; created_at: string;
+}
+export interface TierRow {
+  tier_key: string; name: string; monthly_price: number | null;
+  sort_order: number; active: boolean; created_at: string;
+}
+export interface BusinessConfig {
+  id: string;
+  legal_entity_name: string | null; entity_formation: string | null;
+  registered_agent: string | null; signatory_name: string | null;
+  signatory_title: string | null; business_address: string | null;
+  commission_purchase_rate: number | null; commission_sale_rate: number | null;
+  commission_lease_rate: number | null; commission_min: number | null;
+  travel_fee_method: 'FLAT' | 'MILEAGE' | 'TIME' | null; travel_fee_amount: number | null;
+  cancellation_fee: number | null; late_fee: number | null; no_show_fee: number | null;
+  protection_period: string | null; sales_tax_rate: number | null;
+  document_retention: string | null; esignature_provider: string | null;
+  updated_at: string;
+}
+export interface ConfigValueRow {
+  id: string; org_id: string; namespace: string; key: string;
+  value_text: string | null; value_num: number | null; value_json: unknown | null;
+  category: string | null; effective_from: string; updated_by: string | null;
+  created_at: string; updated_at: string;
+}
+export interface ConfigValueInput {
+  namespace: string; key: string; value_text?: string | null;
+  value_num?: number | null; value_json?: unknown | null; category?: string | null;
+}
+export interface Product {
+  id: string; org_id: string; product_key: string; name: string;
+  service_type: string | null; module_key: string | null;
+  price_value_key: string | null; active: boolean;
+  created_at: string; updated_at: string;
+}
+export interface ProductInput {
+  product_key: string; name: string; service_type?: string | null;
+  module_key?: string | null; price_value_key?: string | null;
+}
+export interface ProductPrice {
+  id: string; org_id: string; product_id: string; amount: number;
+  effective_from: string; effective_to: string | null;
+  created_at: string; updated_at: string;
+}
+export interface ProductPriceInput {
+  product_id: string; amount: number; effective_from?: string; effective_to?: string | null;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  INT-API-MODULES — module + admin wrappers
+// ═══════════════════════════════════════════════════════════════════════════
+// APPENDS to the core wiring layer (INT-API-CORE) after it, honoring the serial
+// api.ts chain (§12: dependsOn is the only shared-file collision guard). Every
+// module/admin UI slice imports a REAL, exported, RLS-enforced function from
+// here; the server (RLS + require_module + SECURITY-DEFINER RPCs) is the
+// authoritative fence. Thin, typed seams over supabase.rpc(name)/.from(table)
+// matching the tested backbone signatures (PLATFORM_ARCHITECTURE §7, §15).
+
+// ─── Brokerage: engagement creation (mod.brokerage) ─────────────────────────
+
+export interface CreatePurchaseEngagementInput {
+  buyerContactId: string;
+  horseId?: string | null;
+  sellerContactId?: string | null;
+  amount?: number | null;
+  deposit?: number | null;
+}
+
+/** Open a purchase engagement (buyer client + optional seller + PURCHASE txn) via
+ *  the SECURITY-DEFINER RPC. require_module('mod.brokerage') is enforced inside.
+ *  Returns the new engagement id. */
+export async function createPurchaseEngagement(
+  input: CreatePurchaseEngagementInput,
+): Promise<string> {
+  const { data, error } = await supabase.rpc('create_purchase_engagement', {
+    p_buyer_contact_id: input.buyerContactId,
+    p_horse_id: input.horseId ?? null,
+    p_seller_contact_id: input.sellerContactId ?? null,
+    p_amount: input.amount ?? null,
+    p_deposit: input.deposit ?? null,
+  });
+  if (error) throw error;
+  return data as string;
+}
+
+export interface CreateSearchEngagementInput {
+  clientContactId: string;
+  retainedBy?: string;
+  dealSide?: 'BUY' | 'SELL' | 'LEASE_IN' | 'LEASE_OUT';
+  horseId?: string | null;
+}
+
+/** Open a search-stage (HORSE_FINDER) engagement via the SECURITY-DEFINER RPC.
+ *  deal_side is token-driven, never hard-coded per document. Returns the new
+ *  engagement id. */
+export async function createSearchEngagement(
+  input: CreateSearchEngagementInput,
+): Promise<string> {
+  const { data, error } = await supabase.rpc('create_search_engagement', {
+    p_client_contact_id: input.clientContactId,
+    p_retained_by: input.retainedBy ?? 'buyer',
+    p_deal_side: input.dealSide ?? 'BUY',
+    p_horse_id: input.horseId ?? null,
+  });
+  if (error) throw error;
+  return data as string;
+}
+
+export interface CreateLeaseEngagementInput {
+  clientContactId: string;
+  dealSide?: 'LEASE_IN' | 'LEASE_OUT';
+  horseId?: string | null;
+  counterpartyContactId?: string | null;
+}
+
+/** Open a lease engagement (LEASE_IN/LEASE_OUT) via the SECURITY-DEFINER RPC.
+ *  Returns the new engagement id. */
+export async function createLeaseEngagement(
+  input: CreateLeaseEngagementInput,
+): Promise<string> {
+  const { data, error } = await supabase.rpc('create_lease_engagement', {
+    p_client_contact_id: input.clientContactId,
+    p_deal_side: input.dealSide ?? 'LEASE_IN',
+    p_horse_id: input.horseId ?? null,
+    p_counterparty_contact_id: input.counterpartyContactId ?? null,
+  });
+  if (error) throw error;
+  return data as string;
+}
+
+// ─── Brokerage: engagement stages ───────────────────────────────────────────
+
+export interface EngagementStageInput {
+  engagement_id: string;
+  stage: 'SEARCH' | 'EVALUATION' | 'TRANSACTION_REP';
+  retained_by?: string | null;
+  deal_side?: 'BUY' | 'SELL' | 'LEASE_IN' | 'LEASE_OUT' | null;
+  fee_value_key?: string | null;
+}
+
+/** The stages of one engagement (chain of separately-executed, independently-billed
+ *  stages — no required predecessor, §7.1). Soft-deleted excluded. */
+export async function listEngagementStages(engagementId: string): Promise<EngagementStage[]> {
+  const { data, error } = await supabase
+    .from('engagement_stages')
+    .select('*')
+    .eq('engagement_id', engagementId)
+    .is('deleted_at', null)
+    .order('effective_from');
+  if (error) throw error;
+  return (data ?? []) as EngagementStage[];
+}
+
+export async function createEngagementStage(input: EngagementStageInput): Promise<EngagementStage> {
+  const { data, error } = await supabase
+    .from('engagement_stages')
+    .insert({
+      engagement_id: input.engagement_id,
+      stage: input.stage,
+      retained_by: input.retained_by ?? null,
+      deal_side: input.deal_side ?? null,
+      fee_value_key: input.fee_value_key ?? null,
+    })
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data as EngagementStage;
+}
+
+// ─── Boarding (mod.boarding) ────────────────────────────────────────────────
+
+export async function listFacilities(): Promise<Facility[]> {
+  const { data, error } = await supabase
+    .from('facilities')
+    .select('*')
+    .is('deleted_at', null)
+    .order('name');
+  if (error) throw error;
+  return (data ?? []) as Facility[];
+}
+
+export async function createFacility(input: FacilityInput): Promise<Facility> {
+  const { data, error } = await supabase
+    .from('facilities')
+    .insert({ name: input.name, address_value_key: input.address_value_key ?? null })
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data as Facility;
+}
+
+export async function listStalls(facilityId?: string): Promise<Stall[]> {
+  let query = supabase
+    .from('stalls')
+    .select('*')
+    .is('deleted_at', null);
+  if (facilityId) query = query.eq('facility_id', facilityId);
+  const { data, error } = await query.order('code');
+  if (error) throw error;
+  return (data ?? []) as Stall[];
+}
+
+export async function createStall(input: StallInput): Promise<Stall> {
+  const { data, error } = await supabase
+    .from('stalls')
+    .insert({
+      facility_id: input.facility_id,
+      code: input.code,
+      stall_type: input.stall_type ?? null,
+    })
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data as Stall;
+}
+
+export async function listBoardAgreements(): Promise<BoardAgreement[]> {
+  const { data, error } = await supabase
+    .from('board_agreements')
+    .select('*')
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as BoardAgreement[];
+}
+
+export async function createBoardAgreement(input: BoardAgreementInput): Promise<BoardAgreement> {
+  const { data, error } = await supabase
+    .from('board_agreements')
+    .insert({
+      horse_id: input.horse_id,
+      boarder_contact_id: input.boarder_contact_id,
+      stall_id: input.stall_id ?? null,
+      board_rate: input.board_rate ?? null,
+      board_type: input.board_type ?? null,
+      start_date: input.start_date ?? null,
+      end_date: input.end_date ?? null,
+    })
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data as BoardAgreement;
+}
+
+export async function listBoardCharges(boardAgreementId?: string): Promise<BoardCharge[]> {
+  let query = supabase
+    .from('board_charges')
+    .select('*')
+    .is('deleted_at', null);
+  if (boardAgreementId) query = query.eq('board_agreement_id', boardAgreementId);
+  const { data, error } = await query.order('period_start', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as BoardCharge[];
+}
+
+export async function createBoardCharge(input: BoardChargeInput): Promise<BoardCharge> {
+  const { data, error } = await supabase
+    .from('board_charges')
+    .insert({
+      board_agreement_id: input.board_agreement_id,
+      period_start: input.period_start,
+      period_end: input.period_end,
+      amount: input.amount,
+    })
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data as BoardCharge;
+}
+
+// ─── Barn ops / inventory (mod.barnops) ─────────────────────────────────────
+
+export async function listResources(): Promise<Resource[]> {
+  const { data, error } = await supabase
+    .from('resources')
+    .select('*')
+    .is('deleted_at', null)
+    .order('name');
+  if (error) throw error;
+  return (data ?? []) as Resource[];
+}
+
+export async function createResource(input: ResourceInput): Promise<Resource> {
+  const { data, error } = await supabase
+    .from('resources')
+    .insert({
+      resource_key: input.resource_key,
+      name: input.name,
+      category: input.category,
+      unit_of_measure: input.unit_of_measure ?? 'unit',
+      is_consumable: input.is_consumable ?? true,
+    })
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data as Resource;
+}
+
+export async function listResourceLots(resourceId?: string): Promise<ResourceLot[]> {
+  let query = supabase
+    .from('resource_lots')
+    .select('*')
+    .is('deleted_at', null);
+  if (resourceId) query = query.eq('resource_id', resourceId);
+  const { data, error } = await query.order('purchased_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as ResourceLot[];
+}
+
+export async function createResourceLot(input: ResourceLotInput): Promise<ResourceLot> {
+  const { data, error } = await supabase
+    .from('resource_lots')
+    .insert({
+      resource_id: input.resource_id,
+      vendor_contact_id: input.vendor_contact_id ?? null,
+      qty_purchased: input.qty_purchased,
+      unit_cost: input.unit_cost,
+      on_hand: input.on_hand ?? input.qty_purchased,
+    })
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data as ResourceLot;
+}
+
+export async function listConsumptionEvents(): Promise<ConsumptionEvent[]> {
+  const { data, error } = await supabase
+    .from('consumption_events')
+    .select('*')
+    .is('deleted_at', null)
+    .order('occurred_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as ConsumptionEvent[];
+}
+
+/** Append an immutable consumption event (append-only ledger, §barnops). */
+export async function createConsumptionEvent(input: ConsumptionEventInput): Promise<ConsumptionEvent> {
+  const { data, error } = await supabase
+    .from('consumption_events')
+    .insert({
+      resource_id: input.resource_id,
+      resource_lot_id: input.resource_lot_id ?? null,
+      horse_id: input.horse_id ?? null,
+      qty: input.qty,
+      occurred_at: input.occurred_at ?? new Date().toISOString(),
+      notes: input.notes ?? null,
+    })
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data as ConsumptionEvent;
+}
+
+export async function listCostAllocationRules(): Promise<CostAllocationRule[]> {
+  const { data, error } = await supabase
+    .from('cost_allocation_rules')
+    .select('*')
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as CostAllocationRule[];
+}
+
+export async function createCostAllocationRule(input: CostAllocationRuleInput): Promise<CostAllocationRule> {
+  const { data, error } = await supabase
+    .from('cost_allocation_rules')
+    .insert({
+      scope: input.scope,
+      scope_id: input.scope_id ?? null,
+      payer_contact_id: input.payer_contact_id,
+      share_pct: input.share_pct ?? 100,
+      effective_from: input.effective_from ?? null,
+      effective_to: input.effective_to ?? null,
+    })
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data as CostAllocationRule;
+}
+
+/** Resolve consumption events in a period into billable_lines via the
+ *  SECURITY-DEFINER RPC. p_period is a tstzrange string; returns the count of
+ *  lines created. */
+export async function resolveConsumptionBilling(period: string): Promise<number> {
+  const { data, error } = await supabase.rpc('resolve_consumption_billing', { p_period: period });
+  if (error) throw error;
+  return (data as number | null) ?? 0;
+}
+
+// ─── Lessons (mod.lessons) ──────────────────────────────────────────────────
+
+export async function listLessonPackages(): Promise<LessonPackage[]> {
+  const { data, error } = await supabase
+    .from('lesson_packages')
+    .select('*')
+    .is('deleted_at', null)
+    .order('name');
+  if (error) throw error;
+  return (data ?? []) as LessonPackage[];
+}
+
+export async function createLessonPackage(input: LessonPackageInput): Promise<LessonPackage> {
+  const { data, error } = await supabase
+    .from('lesson_packages')
+    .insert({
+      package_key: input.package_key,
+      name: input.name,
+      price_value_key: input.price_value_key ?? null,
+      credits: input.credits ?? 0,
+    })
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data as LessonPackage;
+}
+
+export async function listLessonCredits(clientId?: string): Promise<LessonCredit[]> {
+  let query = supabase
+    .from('lesson_credits')
+    .select('*')
+    .is('deleted_at', null);
+  if (clientId) query = query.eq('client_id', clientId);
+  const { data, error } = await query.order('purchased_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as LessonCredit[];
+}
+
+export async function createLessonCredit(input: LessonCreditInput): Promise<LessonCredit> {
+  const { data, error } = await supabase
+    .from('lesson_credits')
+    .insert({
+      client_id: input.client_id,
+      package_key: input.package_key ?? null,
+      credits_total: input.credits_total,
+      credits_remaining: input.credits_remaining ?? input.credits_total,
+    })
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data as LessonCredit;
+}
+
+// ─── Records (mod.horserecords) ─────────────────────────────────────────────
+
+export async function listHorseParties(horseId?: string): Promise<HorseParty[]> {
+  let query = supabase
+    .from('horse_parties')
+    .select('*')
+    .is('deleted_at', null);
+  if (horseId) query = query.eq('horse_id', horseId);
+  const { data, error } = await query.order('effective_from', { ascending: false, nullsFirst: false });
+  if (error) throw error;
+  return (data ?? []) as HorseParty[];
+}
+
+export async function createHorseParty(input: HorsePartyInput): Promise<HorseParty> {
+  const { data, error } = await supabase
+    .from('horse_parties')
+    .insert({
+      horse_id: input.horse_id,
+      contact_id: input.contact_id,
+      role: input.role,
+      share_pct: input.share_pct ?? null,
+      effective_from: input.effective_from ?? null,
+      effective_to: input.effective_to ?? null,
+      notes: input.notes ?? null,
+    })
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data as HorseParty;
+}
+
+export async function listHealthEvents(horseId?: string): Promise<HealthEvent[]> {
+  let query = supabase
+    .from('horse_health_events')
+    .select('*')
+    .is('deleted_at', null);
+  if (horseId) query = query.eq('horse_id', horseId);
+  const { data, error } = await query.order('occurred_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as HealthEvent[];
+}
+
+export async function createHealthEvent(input: HealthEventInput): Promise<HealthEvent> {
+  const { data, error } = await supabase
+    .from('horse_health_events')
+    .insert({
+      horse_id: input.horse_id,
+      event_type: input.event_type,
+      occurred_at: input.occurred_at ?? new Date().toISOString(),
+      provider_contact_id: input.provider_contact_id ?? null,
+      next_due: input.next_due ?? null,
+      notes: input.notes ?? null,
+      document_id: input.document_id ?? null,
+    })
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data as HealthEvent;
+}
+
+// ─── Employees (mod.employees) ──────────────────────────────────────────────
+
+export async function listStaff(): Promise<StaffProfile[]> {
+  const { data, error } = await supabase
+    .from('staff_profiles')
+    .select('*')
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as StaffProfile[];
+}
+
+export async function createStaff(input: StaffProfileInput): Promise<StaffProfile> {
+  const { data, error } = await supabase
+    .from('staff_profiles')
+    .insert({
+      profile_user_id: input.profile_user_id,
+      contact_id: input.contact_id ?? null,
+      title: input.title ?? null,
+      pay_type: input.pay_type ?? null,
+    })
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data as StaffProfile;
+}
+
+export async function listShifts(staffProfileId?: string): Promise<Shift[]> {
+  let query = supabase
+    .from('shifts')
+    .select('*')
+    .is('deleted_at', null);
+  if (staffProfileId) query = query.eq('staff_profile_id', staffProfileId);
+  const { data, error } = await query.order('starts_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as Shift[];
+}
+
+export async function createShift(input: ShiftInput): Promise<Shift> {
+  const { data, error } = await supabase
+    .from('shifts')
+    .insert({
+      staff_profile_id: input.staff_profile_id,
+      starts_at: input.starts_at,
+      ends_at: input.ends_at ?? null,
+      role: input.role ?? null,
+    })
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data as Shift;
+}
+
+export async function listTimeEntries(staffProfileId?: string): Promise<TimeEntry[]> {
+  let query = supabase
+    .from('time_entries')
+    .select('*')
+    .is('deleted_at', null);
+  if (staffProfileId) query = query.eq('staff_profile_id', staffProfileId);
+  const { data, error } = await query.order('clock_in', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as TimeEntry[];
+}
+
+export async function createTimeEntry(input: TimeEntryInput): Promise<TimeEntry> {
+  const { data, error } = await supabase
+    .from('time_entries')
+    .insert({
+      staff_profile_id: input.staff_profile_id,
+      clock_in: input.clock_in,
+      clock_out: input.clock_out ?? null,
+      minutes: input.minutes ?? null,
+      source_kind: input.source_kind ?? null,
+      source_id: input.source_id ?? null,
+    })
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data as TimeEntry;
+}
+
+export async function listServiceAssignments(staffProfileId?: string): Promise<ServiceAssignment[]> {
+  let query = supabase
+    .from('service_assignments')
+    .select('*')
+    .is('deleted_at', null);
+  if (staffProfileId) query = query.eq('staff_profile_id', staffProfileId);
+  const { data, error } = await query.order('scheduled_at', { ascending: false, nullsFirst: false });
+  if (error) throw error;
+  return (data ?? []) as ServiceAssignment[];
+}
+
+export async function createServiceAssignment(input: ServiceAssignmentInput): Promise<ServiceAssignment> {
+  const { data, error } = await supabase
+    .from('service_assignments')
+    .insert({
+      staff_profile_id: input.staff_profile_id,
+      engagement_id: input.engagement_id ?? null,
+      service_type: input.service_type ?? null,
+      scheduled_at: input.scheduled_at ?? null,
+    })
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data as ServiceAssignment;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Tenant admin + super-admin wrappers
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ─── Module & entitlement toggles (ADMIN-MODULES) ───────────────────────────
+
+/** The full module catalog (entitlement toggle source). */
+export async function listModuleCatalog(): Promise<ModuleCatalogRow[]> {
+  const { data, error } = await supabase
+    .from('modules')
+    .select('*')
+    .eq('active', true)
+    .order('module_key');
+  if (error) throw error;
+  return (data ?? []) as ModuleCatalogRow[];
+}
+
+/** The subscription tiers (name + monthly price), for the provision wizard. */
+export async function listTiers(): Promise<TierRow[]> {
+  const { data, error } = await supabase
+    .from('tiers')
+    .select('*')
+    .eq('active', true)
+    .order('sort_order');
+  if (error) throw error;
+  return (data ?? []) as TierRow[];
+}
+
+/** Upsert a single org_modules entitlement (add-on / subscription seam) via the
+ *  SUPER_ADMIN/billing SECURITY-DEFINER RPC (§4.1). */
+export async function setOrgModule(
+  orgId: string,
+  moduleKey: string,
+  enabled = true,
+  source = 'ADDON',
+): Promise<void> {
+  const { error } = await supabase.rpc('set_org_module', {
+    p_org: orgId,
+    p_key: moduleKey,
+    p_enabled: enabled,
+    p_source: source,
+  });
+  if (error) throw error;
+}
+
+// ─── Value registry (ADMIN-REGISTRY) ────────────────────────────────────────
+
+/** The singleton typed business_config row (owner-supplied legal/commission/tax
+ *  blanks). Null before the first save. */
+export async function getBusinessConfig(): Promise<BusinessConfig | null> {
+  const { data, error } = await supabase
+    .from('business_config')
+    .select('*')
+    .maybeSingle();
+  if (error) throw error;
+  return (data as BusinessConfig | null) ?? null;
+}
+
+export async function updateBusinessConfig(patch: Partial<BusinessConfig>): Promise<BusinessConfig> {
+  const { data, error } = await supabase
+    .from('business_config')
+    .update(patch)
+    .eq('id', patch.id as string)
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data as BusinessConfig;
+}
+
+/** The EAV config_values rows for the current tenant (registry editor). */
+export async function listConfigValues(): Promise<ConfigValueRow[]> {
+  const { data, error } = await supabase
+    .from('config_values')
+    .select('*')
+    .order('namespace')
+    .order('key');
+  if (error) throw error;
+  return (data ?? []) as ConfigValueRow[];
+}
+
+export async function upsertConfigValue(input: ConfigValueInput): Promise<ConfigValueRow> {
+  const { data, error } = await supabase
+    .from('config_values')
+    .upsert(
+      {
+        namespace: input.namespace,
+        key: input.key,
+        value_text: input.value_text ?? null,
+        value_num: input.value_num ?? null,
+        value_json: input.value_json ?? null,
+        category: input.category ?? null,
+      },
+      { onConflict: 'org_id,namespace,key' },
+    )
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data as ConfigValueRow;
+}
+
+/** Required (namespace,key) registry entries still unset for the org — completeness
+ *  gate via the SECURITY-DEFINER RPC. */
+export async function configRequiredMissing(orgId: string): Promise<Array<{ namespace: string; key: string }>> {
+  const { data, error } = await supabase.rpc('config_required_missing', { p_org: orgId });
+  if (error) throw error;
+  return (data ?? []) as Array<{ namespace: string; key: string }>;
+}
+
+// ─── Branding (ADMIN-BRANDING) ──────────────────────────────────────────────
+
+/** Read the BRAND.* / CONTACT.* branding registry values (config_values namespaces). */
+export async function listBrandingValues(): Promise<ConfigValueRow[]> {
+  const { data, error } = await supabase
+    .from('config_values')
+    .select('*')
+    .in('namespace', ['BRAND', 'CONTACT'])
+    .order('namespace')
+    .order('key');
+  if (error) throw error;
+  return (data ?? []) as ConfigValueRow[];
+}
+
+/** Upload a branding asset (e.g. a logo) to the admin-write brand-assets bucket
+ *  under the tenant's org prefix. Returns the stored object path. */
+export async function uploadBrandingAsset(
+  orgId: string,
+  file: File,
+  filename?: string,
+): Promise<string> {
+  const path = `${orgId}/${filename ?? file.name}`;
+  const { error } = await supabase.storage
+    .from('brand-assets')
+    .upload(path, file, { upsert: true });
+  if (error) throw error;
+  return path;
+}
+
+// ─── Products & pricing (ADMIN-PRODUCTS) ────────────────────────────────────
+
+export async function listProducts(): Promise<Product[]> {
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .is('deleted_at', null)
+    .order('name');
+  if (error) throw error;
+  return (data ?? []) as Product[];
+}
+
+export async function createProduct(input: ProductInput): Promise<Product> {
+  const { data, error } = await supabase
+    .from('products')
+    .insert({
+      product_key: input.product_key,
+      name: input.name,
+      service_type: input.service_type ?? null,
+      module_key: input.module_key ?? null,
+      price_value_key: input.price_value_key ?? null,
+    })
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data as Product;
+}
+
+export async function listProductPrices(productId: string): Promise<ProductPrice[]> {
+  const { data, error } = await supabase
+    .from('product_prices')
+    .select('*')
+    .eq('product_id', productId)
+    .is('deleted_at', null)
+    .order('effective_from', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as ProductPrice[];
+}
+
+/** Add an effective-dated price for a product (new row; history preserved). */
+export async function createProductPrice(input: ProductPriceInput): Promise<ProductPrice> {
+  const { data, error } = await supabase
+    .from('product_prices')
+    .insert({
+      product_id: input.product_id,
+      amount: input.amount,
+      effective_from: input.effective_from ?? new Date().toISOString(),
+      effective_to: input.effective_to ?? null,
+    })
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data as ProductPrice;
 }

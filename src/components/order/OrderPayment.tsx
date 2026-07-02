@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Landmark, CreditCard } from 'lucide-react';
+import { Landmark, CreditCard, Copy, Check } from 'lucide-react';
 import { markAwaitingPayment } from '../../lib/api';
 import { startStripeCheckout } from '../../lib/payments';
 import { BRAND } from '../../lib/brand';
@@ -7,6 +7,36 @@ import type { Order, OrderItem, Payment, PaymentMethod } from '../../lib/types';
 
 const usd = (n: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
+
+/** One Zelle instruction line with a tap-to-copy affordance (bank-app friendly). */
+function CopyRow({ label, display, copyValue }: { label: string; display: string; copyValue: string }) {
+  const [copied, setCopied] = useState(false);
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(copyValue);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* clipboard unavailable — the value is still displayed */
+    }
+  }
+  return (
+    <div className="flex justify-between items-center gap-4">
+      <dt className="text-muted">{label}</dt>
+      <dd className="text-green-900 font-medium text-right flex items-center gap-2">
+        <span className={label === 'Memo / reference' ? 'font-mono' : undefined}>{display}</span>
+        <button
+          type="button"
+          onClick={copy}
+          aria-label={copied ? `${label} copied` : `Copy ${label.toLowerCase()}`}
+          className="p-1 text-green-800/60 hover:text-green-800 focus-ring"
+        >
+          {copied ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}
+        </button>
+      </dd>
+    </div>
+  );
+}
 
 // Stripe card convenience fee (disclosed). Confirm CA surcharge compliance before enabling — see SETUP.md.
 const STRIPE_FEE_RATE = 0.03;
@@ -102,18 +132,9 @@ export default function OrderPayment({
                 Open your bank app, send a Zelle payment, and include the reference code in the memo:
               </p>
               <dl className="space-y-3 text-sm font-sans">
-                <div className="flex justify-between gap-4">
-                  <dt className="text-muted">Send to</dt>
-                  <dd className="text-green-900 font-medium text-right">{BRAND.email}</dd>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-muted">Amount</dt>
-                  <dd className="text-green-900 font-medium">{usd(zelleAmount)}</dd>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-muted">Memo / reference</dt>
-                  <dd className="text-green-900 font-medium font-mono">{reference}</dd>
-                </div>
+                <CopyRow label="Send to" display={BRAND.email} copyValue={BRAND.email} />
+                <CopyRow label="Amount" display={usd(zelleAmount)} copyValue={zelleAmount.toFixed(2)} />
+                <CopyRow label="Memo / reference" display={reference} copyValue={order.payment_reference ?? ''} />
               </dl>
               <p className="text-xs font-sans text-muted mt-4 leading-relaxed">
                 Please send the exact amount shown — the cents help us match your payment

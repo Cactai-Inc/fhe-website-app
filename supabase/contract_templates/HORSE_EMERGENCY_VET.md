@@ -2,7 +2,7 @@ EMERGENCY VETERINARY AUTHORIZATION, EQUINE MEDICAL CARE DIRECTIVE, AND OWNER AUT
 
 This Emergency Veterinary Authorization, Equine Medical Care Directive, and Owner Authorization Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
 
-French Heritage Equestrian (“FHE”),
+{{ORG.LEGAL_IDENTITY}} (“COMPANY”),
 
 and
 
@@ -36,27 +36,27 @@ Current Location: {{HORSE.CURRENT_LOCATION}}
 
 Primary Boarding Facility:
 
-Veterinarian:
+Veterinarian: {{HORSE.VET_NAME}}
 
-Veterinarian Phone:
+Veterinarian Phone: {{HORSE.VET_PHONE}}
 
-Farrier:
+Farrier: {{HORSE.FARRIER_NAME}}
 
-Farrier Phone:
+Farrier Phone: {{HORSE.FARRIER_PHONE}}
 
 RECITALS
 
 A. Owner owns, leases, manages, or has authority over the above-described horse (“Horse”).
 
-B. Owner has engaged or may engage FHE to provide riding instruction, training, exercise, clipping, handling, transportation, care, medication, or other equine-related services.
+B. Owner has engaged or may engage COMPANY to provide riding instruction, training, exercise, clipping, handling, transportation, care, medication, or other equine-related services.
 
-C. Owner desires to authorize FHE to take reasonable action if the Horse experiences an emergency and Owner cannot immediately be reached.
+C. Owner desires to authorize COMPANY to take reasonable action if the Horse experiences an emergency and Owner cannot immediately be reached.
 
 AGREEMENT
 
 AUTHORIZATION TO SEEK EMERGENCY CARE
 
-Owner authorizes FHE and its representatives to contact a veterinarian and arrange emergency veterinary evaluation and treatment when FHE reasonably believes:
+Owner authorizes COMPANY and its representatives to contact a veterinarian and arrange emergency veterinary evaluation and treatment when COMPANY reasonably believes:
 
 The Horse may require immediate medical attention;
 
@@ -66,7 +66,7 @@ Owner cannot be reached in a timely manner.
 
 EMERGENCY DECISION-MAKING AUTHORITY
 
-In an emergency, FHE may authorize reasonable veterinary actions including:
+In an emergency, COMPANY may authorize reasonable veterinary actions including:
 
 Veterinary examination;
 
@@ -80,37 +80,37 @@ Transportation to a veterinary facility;
 
 Other care reasonably recommended by a licensed veterinarian.
 
-This authorization does not make FHE the owner of the Horse and does not transfer ownership rights.
+This authorization does not make COMPANY the owner of the Horse and does not transfer ownership rights.
 
 OWNER CONTACT INFORMATION
 
-Primary Owner Contact:
+Primary Owner Contact: {{OWNER.FULL_NAME}}
 
-Phone:
+Phone: {{OWNER.PHONE}}
 
-Secondary Emergency Contact:
+Secondary Emergency Contact: {{EMERGENCY_CONTACT.FULL_NAME}} ({{EMERGENCY_CONTACT.RELATIONSHIP}})
 
-Phone:
+Phone: {{EMERGENCY_CONTACT.PHONE}}
 
 OWNER RESPONSIBILITY FOR COSTS
 
 Owner acknowledges that all veterinary, transportation, medication, diagnostic, surgical, hospitalization, and related expenses remain the sole responsibility of Owner.
 
-FHE is not responsible for payment of veterinary expenses unless separately agreed in writing.
+COMPANY is not responsible for payment of veterinary expenses unless separately agreed in writing.
 
 NON-EMERGENCY CARE
 
-FHE shall not authorize non-emergency veterinary procedures without Owner approval unless delay creates a reasonable concern for the Horse’s welfare.
+COMPANY shall not authorize non-emergency veterinary procedures without Owner approval unless delay creates a reasonable concern for the Horse’s welfare.
 
 EUTHANASIA AUTHORIZATION
 
-FHE may not authorize euthanasia without Owner approval.
+COMPANY may not authorize euthanasia without Owner approval.
 
 Owner Initials:
 
 MEDICATION AUTHORIZATION
 
-Owner authorizes FHE to administer medications only as follows:
+Owner authorizes COMPANY to administer medications only as follows:
 
 Medication:
 
@@ -140,13 +140,13 @@ Known Conditions:
 
 RELEASE OF LIABILITY
 
-Owner releases FHE and their owners, employees, contractors, agents, representatives, and volunteers from claims arising from good-faith actions taken under this Agreement.
+Owner releases COMPANY and their owners, employees, contractors, agents, representatives, and volunteers from claims arising from good-faith actions taken under this Agreement.
 
 This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
 
 INDEMNIFICATION
 
-Owner agrees to indemnify and hold harmless FHE from claims, expenses, losses, or liabilities arising from:
+Owner agrees to indemnify and hold harmless COMPANY from claims, expenses, losses, or liabilities arising from:
 
 Veterinary expenses;
 
@@ -196,10 +196,12 @@ Printed Name: {{OWNER.PRINTED_NAME}}
 
 Date: {{SIG.OWNER.DATE}}
 
-FRENCH HERITAGE EQUESTRIAN
+COMPANY: {{ORG.LEGAL_NAME}}
 
-By: {{FHE.SIGNATORY_NAME}}
+By (signature): {{SIG.COMPANY.NAME}}
 
-Title: {{FHE.SIGNATORY_TITLE}}
+Printed: {{ORG.SIGNATORY_NAME}}
 
-Date: {{SIG.FHE.DATE}}
+Title: {{ORG.SIGNATORY_TITLE}}
+
+Date: {{SIG.COMPANY.DATE}}

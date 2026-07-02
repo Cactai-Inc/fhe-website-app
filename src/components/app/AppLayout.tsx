@@ -3,6 +3,7 @@ import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, CalendarDays, MessagesSquare, Hash, Users, BookOpen,
   FileText, UserRound, BadgeCheck, ReceiptText, Shield, LogOut, Menu, X, Mail,
+  GraduationCap, Handshake, Home, Boxes, Contact,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -11,11 +12,25 @@ interface NavItem {
   label: string;
   icon: typeof LayoutDashboard;
   end?: boolean;
+  /** Show only when the tenant has this module enabled (my_modules()). */
+  module?: string;
+  /** Show only for SUPER_ADMIN sessions. */
+  superAdmin?: boolean;
 }
 
+// Core community items are always on; the module-tagged items appear only when the
+// tenant's my_modules() set (surfaced through AuthContext.hasModule) includes the
+// key. FHE (tier.lesson_brokerage) → lessons + brokerage show; boarding / barnops /
+// employees hide (PLATFORM_ARCHITECTURE §4.3 Layer C; the U15 acceptance criterion).
 const NAV: NavItem[] = [
   { to: '/app', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/app/schedule', label: 'Schedule', icon: CalendarDays },
+  { to: '/app/engagements', label: 'My Engagements', icon: Handshake },
+  { to: '/app/balance', label: 'Balance', icon: ReceiptText },
+  // Member module pages (CP-* wave) — entitlement-gated (Layer C)
+  { to: '/app/lessons', label: 'Lessons', icon: GraduationCap, module: 'mod.lessons' },
+  { to: '/app/brokerage', label: 'Brokerage', icon: Handshake, module: 'mod.brokerage' },
+  { to: '/app/boarding', label: 'Boarding', icon: Home, module: 'mod.boarding' },
   { to: '/app/chat', label: 'Chat board', icon: Hash },
   { to: '/app/threads', label: 'Threads', icon: MessagesSquare },
   { to: '/app/messages', label: 'Messages', icon: Mail },
@@ -27,11 +42,52 @@ const NAV: NavItem[] = [
   { to: '/app/profile', label: 'Profile', icon: UserRound },
 ];
 
+/** The nav the member actually sees: core items plus the module-gated items whose
+ *  module their tenant has. Pure of side effects so it is unit-testable. */
+export function visibleNav(hasModule: (key: string) => boolean): NavItem[] {
+  return NAV.filter((item) => !item.module || hasModule(item.module));
+}
+
+/** Staff/admin operations nav (Wave-7). Module hubs are entitlement-gated
+ *  (Layer C) exactly like member items; every target is a registered route. */
+export const OPS_NAV: NavItem[] = [
+  { to: '/app/ops', label: 'Ops Dashboard', icon: LayoutDashboard, end: true },
+  { to: '/app/ops/intake', label: 'Intake', icon: Mail },
+  { to: '/app/ops/contacts', label: 'Contacts', icon: Contact },
+  { to: '/app/ops/horses', label: 'Horses', icon: Boxes },
+  { to: '/app/ops/engagements', label: 'Engagements', icon: Handshake },
+  { to: '/app/ops/documents', label: 'Documents', icon: FileText },
+  { to: '/app/ops/transactions', label: 'Transactions', icon: ReceiptText },
+  { to: '/app/ops/payments/review', label: 'Payment review', icon: ReceiptText },
+  { to: '/app/ops/brokerage', label: 'Brokerage', icon: Handshake, module: 'mod.brokerage' },
+  { to: '/app/ops/lessons', label: 'Lessons', icon: GraduationCap, module: 'mod.lessons' },
+  { to: '/app/ops/boarding', label: 'Boarding', icon: Home, module: 'mod.boarding' },
+  { to: '/app/ops/barnops', label: 'Barn Ops', icon: Boxes, module: 'mod.barnops' },
+  { to: '/app/ops/records', label: 'Records', icon: FileText, module: 'mod.horserecords' },
+  { to: '/app/ops/employees', label: 'Employees', icon: Contact, module: 'mod.employees' },
+  // Ops admin (Wave-7 tail)
+  { to: '/app/ops/admin/modules', label: 'Modules', icon: Shield },
+  { to: '/app/ops/admin/registry', label: 'Registry', icon: Shield },
+  { to: '/app/ops/admin/branding', label: 'Branding', icon: Shield },
+  { to: '/app/ops/admin/products', label: 'Products', icon: Shield },
+  // Superadmin (self-hides in-page too; nav gated by isSuperAdmin)
+  { to: '/app/ops/superadmin/organizations', label: 'Organizations', icon: Shield, superAdmin: true },
+  { to: '/app/ops/superadmin/provision', label: 'Provision tenant', icon: Shield, superAdmin: true },
+];
+
+/** The ops nav a staff session actually sees (pure, unit-testable). */
+export function visibleOpsNav(hasModule: (key: string) => boolean, isSuperAdmin = false): NavItem[] {
+  return OPS_NAV.filter(
+    (item) => (!item.module || hasModule(item.module)) && (!item.superAdmin || isSuperAdmin),
+  );
+}
+
 export default function AppLayout() {
-  const { profile, isAdmin, signOut } = useAuth();
+  const { profile, isAdmin, isSuperAdmin, hasModule, signOut } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
+  const items = visibleNav(hasModule);
   const name = profile?.display_name || profile?.first_name || 'Member';
 
   async function handleSignOut() {
@@ -41,7 +97,7 @@ export default function AppLayout() {
 
   const navLinks = (
     <nav className="flex flex-col gap-1" aria-label="Member area">
-      {NAV.map(({ to, label, icon: Icon, end }) => (
+      {items.map(({ to, label, icon: Icon, end }) => (
         <NavLink
           key={to}
           to={to}
@@ -70,6 +126,29 @@ export default function AppLayout() {
           <Shield size={17} aria-hidden="true" />
           Admin
         </NavLink>
+      )}
+      {isAdmin && (
+        <>
+          <div className="mt-2 border-t border-green-800/10 pt-3 px-3 pb-1 text-xs uppercase tracking-wide text-secondary/60">
+            Operations
+          </div>
+          {visibleOpsNav(hasModule, isSuperAdmin).map(({ to, label, icon: Icon, end }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={end}
+              onClick={() => setOpen(false)}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2.5 text-sm font-sans rounded-md transition-colors focus-ring ${
+                  isActive ? 'bg-green-800 text-white' : 'text-secondary hover:bg-green-800/[0.06]'
+                }`
+              }
+            >
+              <Icon size={17} aria-hidden="true" />
+              {label}
+            </NavLink>
+          ))}
+        </>
       )}
     </nav>
   );

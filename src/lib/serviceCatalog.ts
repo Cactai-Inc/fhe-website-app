@@ -61,7 +61,8 @@ export const OFFERING_SLUG_TO_SERVICE_TYPE: Record<string, string> = {
   'hunter-jumper': 'JUMPER_TRAINING',
   'horsemanship': 'HORSEMANSHIP_TRAINING',
   'horse-training': 'HORSE_TRAINING',
-  'riding-turnout': 'HORSE_EXERCISE',
+  'horse-exercise': 'HORSE_EXERCISE',
+  'riding-turnout': 'HORSE_EXERCISE', // turnout is exercise-family in the 13-service canon
   'hair-clipping': 'HORSE_CLIPPING',
   'horse-locator': 'HORSE_FINDER',
   'evaluation': 'HORSE_EVALUATION',
