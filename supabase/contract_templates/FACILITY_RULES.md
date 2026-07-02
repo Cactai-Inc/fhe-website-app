@@ -2,7 +2,7 @@ FACILITY RULES, SAFETY ACKNOWLEDGMENT, AND EQUESTRIAN CONDUCT AGREEMENT
 
 This Facility Rules, Safety Acknowledgment, and Equestrian Conduct Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
 
-French Heritage Equestrian (“FHE”),
+{{ORG.LEGAL_IDENTITY}} (“COMPANY”),
 
 and
 
@@ -16,9 +16,9 @@ Email: {{CLIENT.EMAIL}}
 
 RECITALS
 
-A. FHE provides riding instruction, training, and related equestrian activities.
+A. COMPANY provides riding instruction, training, and related equestrian activities.
 
-B. FHE provides services at locations including third-party boarding and training facilities.
+B. COMPANY provides services at locations including third-party boarding and training facilities.
 
 C. Client understands that equestrian facilities involve shared use areas, animals, equipment, and other participants.
 
@@ -32,21 +32,21 @@ Client acknowledges that services may be provided at:
 
 Carmel Creek Ranch 11500 Clews Ranch RdSan Diego, CA 92130
 
-and/or other locations designated by FHE.
+and/or other locations designated by COMPANY.
 
-Client understands FHE may operate from leased, licensed, or permitted spaces within third-party facilities.
+Client understands COMPANY may operate from leased, licensed, or permitted spaces within third-party facilities.
 
 COMPLIANCE WITH FACILITY RULES
 
 Client agrees to comply with:
 
-FHE safety rules;
+COMPANY safety rules;
 
 Host facility rules;
 
 Posted signage;
 
-Instructions from FHE personnel;
+Instructions from COMPANY personnel;
 
 Reasonable instructions from facility management.
 
@@ -94,7 +94,7 @@ Gloves are recommended
 
 HELMET POLICY
 
-FHE required ASTM/SEI-certified riding helmets for all mounted activities. Riders must provide their own properly fitted helmet.
+COMPANY requires ASTM/SEI-certified riding helmets for all mounted activities. Riders must provide their own properly fitted helmet.
 
 Client acknowledges helmets reduce but do not eliminate injury risk.
 
@@ -120,7 +120,7 @@ Report damaged equipment;
 
 Not modify or alter equipment without permission.
 
-FHE may remove unsafe equipment from use.
+COMPANY may remove unsafe equipment from use.
 
 ALCOHOL, DRUGS, AND IMPAIRMENT
 
@@ -154,7 +154,7 @@ Dogs and others pet are not permitted on the property without prior approval fro
 
 Client agrees to treat all horses humanely.
 
-FHE may immediately stop any activity involving unsafe or inappropriate treatment of horses.
+COMPANY may immediately stop any activity involving unsafe or inappropriate treatment of horses.
 
 PROPERTY USE
 
@@ -166,7 +166,7 @@ Clean up after themselves;
 
 Avoid damaging facility property.
 
-Jumping is prohibited unless to be under the supervision of FHE trainer
+Jumping is prohibited unless under the supervision of a COMPANY trainer
 
 Client may be responsible for damage caused by intentional or negligent conduct.
 
@@ -186,7 +186,7 @@ Restricted areas.
 
 EMERGENCIES
 
-Client agrees to follow emergency instructions from FHE personnel and facility management.
+Client agrees to follow emergency instructions from COMPANY personnel and facility management.
 
 ASSUMPTION OF RISK
 
@@ -208,13 +208,13 @@ Client voluntarily assumes these risks.
 
 RELEASE OF LIABILITY
 
-Client releases FHE, its owners, agents, instructors, contractors, employees, and representatives from claims arising from participation in equestrian activities, including claims arising from ordinary negligence.
+Client releases COMPANY, its owners, agents, instructors, contractors, employees, and representatives from claims arising from participation in equestrian activities, including claims arising from ordinary negligence.
 
 This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
 
 INDEMNIFICATION
 
-Client agrees to indemnify FHE for claims arising from:
+Client agrees to indemnify COMPANY for claims arising from:
 
 Client’s actions;
 
@@ -226,7 +226,7 @@ Violation of rules.
 
 TERMINATION OF ACCESS
 
-FHE may restrict or terminate Client’s access to activities or facilities for:
+COMPANY may restrict or terminate Client’s access to activities or facilities for:
 
 Safety concerns;
 
@@ -266,10 +266,12 @@ Printed Name: {{CLIENT.PRINTED_NAME}}
 
 Date: {{SIG.CLIENT.DATE}}
 
-FRENCH HERITAGE EQUESTRIAN
+COMPANY: {{ORG.LEGAL_NAME}}
 
-By: {{FHE.SIGNATORY_NAME}}
+By (signature): {{SIG.COMPANY.NAME}}
 
-Title: {{FHE.SIGNATORY_TITLE}}
+Printed: {{ORG.SIGNATORY_NAME}}
 
-Date: {{SIG.FHE.DATE}}
+Title: {{ORG.SIGNATORY_TITLE}}
+
+Date: {{SIG.COMPANY.DATE}}

@@ -171,7 +171,7 @@ export interface GeneratedDocument {
 export type PartyRole =
   | 'CLIENT' | 'BUYER' | 'SELLER' | 'LESSOR' | 'LESSEE' | 'OWNER' | 'RIDER'
   | 'PARTICIPANT' | 'PARENT' | 'GUARDIAN' | 'EMERGENCY_CONTACT'
-  | 'CONTRACTOR' | 'FACILITY_CONTACT' | 'FHE';
+  | 'CONTRACTOR' | 'FACILITY_CONTACT' | 'COMPANY';
 
 export interface Signature {
   id: string;

@@ -2,7 +2,7 @@ MINOR RIDER AGREEMENT, PARENTAL CONSENT, ASSUMPTION OF RISK, LIABILITY RELEASE, 
 
 This Minor Rider Agreement, Parental Consent, Assumption of Risk, Liability Release, Medical Authorization, and Indemnity Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
 
-French Heritage Equestrian (“Instructor” or “FHE”),
+{{ORG.LEGAL_IDENTITY}} ("COMPANY"),
 
 and
 
@@ -20,13 +20,15 @@ Minor Participant: {{PARTICIPANT.FULL_NAME}}
 
 Date of Birth:
 
-Emergency Contact (if different):
+Emergency Contact (if different): {{EMERGENCY_CONTACT.FULL_NAME}}
 
-Phone:
+Relationship: {{EMERGENCY_CONTACT.RELATIONSHIP}}
+
+Phone: {{EMERGENCY_CONTACT.PHONE}}
 
 RECITALS
 
-A. Parent or Legal Guardian desires to allow the Minor Participant to engage in horseback riding lessons, equine training, horsemanship instruction, horse handling activities, and related equestrian services provided by FHE.
+A. Parent or Legal Guardian desires to allow the Minor Participant to engage in horseback riding lessons, equine training, horsemanship instruction, horse handling activities, and related equestrian services provided by COMPANY.
 
 B. Parent acknowledges the inherent risks associated with equine activities.
 
@@ -62,7 +64,7 @@ LOCATIONS COVERED
 
 This Agreement applies to all activities conducted:
 
-At facilities utilized by FHE;
+At facilities utilized by COMPANY;
 
 At third-party boarding or training facilities;
 
@@ -108,7 +110,7 @@ RELEASE OF LIABILITY
 
 To the fullest extent permitted by California law, Parent, individually and on behalf of Minor Participant, releases and forever discharges:
 
-French Heritage Equestrian;
+COMPANY;
 
 Its owners, instructors, trainers, assistants, employees, volunteers, agents, representatives, contractors, affiliates, and successors;
 
@@ -152,7 +154,7 @@ Failure to comply may result in immediate removal from activities without refund
 
 HELMET REQUIREMENT
 
-Minor Participant shall wear a properly fitted ASTM/SEI-certified riding helmet whenever mounted unless specifically authorized otherwise in writing by Parent and Instructor.
+Minor Participant shall wear a properly fitted ASTM/SEI-certified riding helmet whenever mounted unless specifically authorized otherwise in writing by Parent and COMPANY.
 
 Parent acknowledges that helmets reduce but do not eliminate risk.
 
@@ -174,7 +176,7 @@ Policy Number:
 
 EMERGENCY MEDICAL AUTHORIZATION
 
-Parent authorizes FHE and its representatives to obtain emergency medical treatment for Minor Participant when Parent cannot be immediately reached.
+Parent authorizes COMPANY and its representatives to obtain emergency medical treatment for Minor Participant when Parent cannot be immediately reached.
 
 This authorization includes:
 
@@ -212,15 +214,17 @@ PAYMENT RESPONSIBILITY
 
 Parent remains responsible for payment of all fees associated with services provided to Minor Participant.
 
-Lesson Fees: $
+Lesson Fees: {{TXN.SERVICE_FEE}}
 
 Payment Schedule: {{TXN.PAYMENT_SCHEDULE}}
 
 CANCELLATION POLICY
 
+Cancellation of a scheduled session requires at least {{ORG.CANCELLATION_NOTICE_HOURS}} hours advance notice. Sessions cancelled with less than the required notice may be charged a late-cancellation fee of {{ORG.CANCELLATION_FEE}}. Failure to appear for a scheduled session without notice may be charged a no-show fee of {{ORG.NO_SHOW_FEE}}.
+
 TERMINATION
 
-FHE may suspend or terminate participation for:
+COMPANY may suspend or terminate participation for:
 
 Unsafe conduct;
 
@@ -284,10 +288,12 @@ Printed Name: {{PARTICIPANT.PRINTED_NAME}}
 
 Date: {{SIG.PARTICIPANT.DATE}}
 
-FRENCH HERITAGE EQUESTRIAN
+COMPANY: {{ORG.LEGAL_NAME}}
 
-By: {{FHE.SIGNATORY_NAME}}
+By (signature): {{SIG.COMPANY.NAME}}
 
-Title: {{FHE.SIGNATORY_TITLE}}
+Printed: {{ORG.SIGNATORY_NAME}}
 
-Date: {{SIG.FHE.DATE}}
+Title: {{ORG.SIGNATORY_TITLE}}
+
+Date: {{SIG.COMPANY.DATE}}

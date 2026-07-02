@@ -144,11 +144,11 @@ Buyer:
 
 □ Declined a veterinary pre-purchase examination.
 
-Veterinarian:
+Veterinarian: {{HORSE.VET_NAME}}
 
 Date:
 
-Buyer acknowledges that FHE, Seller, and other third parties cannot guarantee the results of any examination.
+Buyer acknowledges that {{ORG.LEGAL_IDENTITY}} (“COMPANY”), Seller, and other third parties cannot guarantee the results of any examination.
 
 TRIAL PERIOD
 
@@ -204,13 +204,13 @@ INSURANCE
 
 Buyer acknowledges responsibility for obtaining appropriate insurance after transfer.
 
-FHE / THIRD-PARTY INVOLVEMENT
+COMPANY / THIRD-PARTY INVOLVEMENT
 
-If French Heritage Equestrian assisted with this transaction, the parties acknowledge:
+If COMPANY assisted with this transaction, the parties acknowledge:
 
-FHE is not the owner of the Horse and is not a party to this purchase unless separately stated in writing.
+COMPANY is not the owner of the Horse and is not a party to this purchase unless separately stated in writing.
 
-FHE does not guarantee:
+COMPANY does not guarantee:
 
 Horse condition;
 
@@ -222,7 +222,7 @@ Future performance.
 
 RELEASE OF THIRD PARTIES
 
-Buyer releases FHE and third parties assisting with the transaction from claims arising from:
+Buyer releases COMPANY and third parties assisting with the transaction from claims arising from:
 
 Horse ownership;
 
@@ -290,10 +290,12 @@ Printed Name: {{BUYER.PRINTED_NAME}}
 
 Date: {{SIG.BUYER.DATE}}
 
-FRENCH HERITAGE EQUESTRIAN (IF APPLICABLE)
+COMPANY (IF APPLICABLE): {{ORG.LEGAL_NAME}}
 
-By: {{FHE.SIGNATORY_NAME}}
+By (signature): {{SIG.COMPANY.NAME}}
 
-Title: {{FHE.SIGNATORY_TITLE}}
+Printed: {{ORG.SIGNATORY_NAME}}
 
-Date: {{SIG.FHE.DATE}}
+Title: {{ORG.SIGNATORY_TITLE}}
+
+Date: {{SIG.COMPANY.DATE}}

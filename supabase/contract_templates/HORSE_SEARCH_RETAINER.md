@@ -2,7 +2,7 @@ HORSE SEARCH AND ACQUISITION SERVICES RETAINER AGREEMENT
 
 This Horse Search and Acquisition Services Retainer Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
 
-French Heritage Equestrian (“FHE” or “Service Provider”),
+{{ORG.LEGAL_IDENTITY}} (“COMPANY”),
 
 and
 
@@ -20,15 +20,15 @@ RECITALS
 
 A. Client desires assistance locating, identifying, and evaluating potential horses for purchase, lease, or other acquisition.
 
-B. FHE provides equestrian consulting, horse search assistance, industry knowledge, communication assistance, and related services.
+B. COMPANY provides equestrian consulting, horse search assistance, industry knowledge, communication assistance, and related services.
 
-C. Client desires to retain FHE to assist with the search process under the terms of this Agreement.
+C. Client desires to retain COMPANY to assist with the search process under the terms of this Agreement.
 
 AGREEMENT
 
 RETENTION OF SERVICES
 
-Client retains FHE to provide horse search and acquisition assistance, which may include:
+Client retains COMPANY to provide horse search and acquisition assistance, which may include:
 
 Understanding Client’s goals and requirements;
 
@@ -70,11 +70,11 @@ NO GUARANTEE OF RESULTS
 
 Client acknowledges:
 
-FHE does not guarantee that a suitable horse will be located;
+COMPANY does not guarantee that a suitable horse will be located;
 
-FHE does not guarantee purchase availability;
+COMPANY does not guarantee purchase availability;
 
-FHE does not guarantee performance, temperament, health, soundness, value, or suitability of any horse.
+COMPANY does not guarantee performance, temperament, health, soundness, value, or suitability of any horse.
 
 CLIENT DECISION MAKING
 
@@ -90,11 +90,11 @@ Whether to obtain veterinary evaluation;
 
 Whether to enter into a transaction.
 
-FHE does not make final acquisition decisions on Client’s behalf.
+COMPANY does not make final acquisition decisions on Client’s behalf.
 
 FEES
 
-Client agrees to pay FHE:
+Client agrees to pay COMPANY:
 
 Search Retainer: {{TXN.RETAINER_FEE}}
 
@@ -112,7 +112,7 @@ Payment due:
 
 EXPENSE REIMBURSEMENT
 
-Client shall reimburse FHE for approved expenses including:
+Client shall reimburse COMPANY for approved expenses including:
 
 Travel;
 
@@ -130,7 +130,7 @@ Expense terms:
 
 CLIENT AUTHORIZATION TO COMMUNICATE
 
-Client authorizes FHE to communicate with:
+Client authorizes COMPANY to communicate with:
 
 Sellers;
 
@@ -148,7 +148,7 @@ for purposes related to the search.
 
 CONFIDENTIALITY
 
-FHE and Client agree to maintain confidential information regarding:
+COMPANY and Client agree to maintain confidential information regarding:
 
 Budget;
 
@@ -160,9 +160,9 @@ Private horse information.
 
 THIRD-PARTY RELATIONSHIPS
 
-Client acknowledges that FHE may communicate with third parties who may have their own interests.
+Client acknowledges that COMPANY may communicate with third parties who may have their own interests.
 
-FHE does not guarantee the accuracy of information provided by third parties.
+COMPANY does not guarantee the accuracy of information provided by third parties.
 
 PRE-PURCHASE EVALUATION
 
@@ -170,7 +170,7 @@ Client understands that horse evaluation, veterinary review, and inspection serv
 
 VETERINARY AND PROFESSIONAL ADVICE
 
-FHE is not acting as:
+COMPANY is not acting as:
 
 A veterinarian;
 
@@ -186,7 +186,7 @@ Client is responsible for obtaining appropriate professional advice.
 
 CONFLICTS AND DISCLOSURES
 
-FHE shall disclose known conflicts or relationships that may materially affect the search.
+COMPANY shall disclose known conflicts or relationships that may materially affect the search.
 
 Known disclosures:
 
@@ -196,7 +196,7 @@ Client understands that any purchase, lease, or sale transaction requires separa
 
 NON-CIRCUMVENTION / INTRODUCED HORSES
 
-If FHE introduces Client to a horse, owner, seller, trainer, or opportunity, Client agrees not to bypass FHE in order to avoid agreed fees.
+If COMPANY introduces Client to a horse, owner, seller, trainer, or opportunity, Client agrees not to bypass COMPANY in order to avoid agreed fees.
 
 This provision applies for:
 
@@ -210,7 +210,7 @@ Outstanding fees and expenses remain due.
 
 RELEASE OF LIABILITY
 
-Client releases FHE from claims arising from:
+Client releases COMPANY from claims arising from:
 
 Failure to locate a horse;
 
@@ -226,7 +226,7 @@ This release does not apply to gross negligence, reckless conduct, or intentiona
 
 INDEMNIFICATION
 
-Client agrees to indemnify and hold harmless FHE from claims arising from:
+Client agrees to indemnify and hold harmless COMPANY from claims arising from:
 
 Client transactions;
 
@@ -266,10 +266,12 @@ Printed Name: {{CLIENT.PRINTED_NAME}}
 
 Date: {{SIG.CLIENT.DATE}}
 
-FRENCH HERITAGE EQUESTRIAN
+COMPANY: {{ORG.LEGAL_NAME}}
 
-By: {{FHE.SIGNATORY_NAME}}
+By (signature): {{SIG.COMPANY.NAME}}
 
-Title: {{FHE.SIGNATORY_TITLE}}
+Printed: {{ORG.SIGNATORY_NAME}}
 
-Date: {{SIG.FHE.DATE}}
+Title: {{ORG.SIGNATORY_TITLE}}
+
+Date: {{SIG.COMPANY.DATE}}

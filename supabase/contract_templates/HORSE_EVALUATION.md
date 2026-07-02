@@ -2,7 +2,7 @@ PRE-PURCHASE HORSE EVALUATION AND CONSULTING AGREEMENT
 
 This Pre-Purchase Horse Evaluation and Consulting Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
 
-French Heritage Equestrian (“FHE” or “Evaluator”),
+{{ORG.LEGAL_IDENTITY}} (“COMPANY”),
 
 and
 
@@ -36,7 +36,7 @@ RECITALS
 
 A. Client desires assistance evaluating a horse that Client may purchase, lease, or otherwise acquire.
 
-B. FHE provides equestrian consulting and practical horse evaluation services based on experience and knowledge of riding, training, and horse handling.
+B. COMPANY provides equestrian consulting and practical horse evaluation services based on experience and knowledge of riding, training, and horse handling.
 
 C. Client understands that evaluation services are advisory only and do not replace veterinary, legal, insurance, or professional services.
 
@@ -44,7 +44,7 @@ AGREEMENT
 
 SERVICES PROVIDED
 
-FHE may provide:
+COMPANY may provide:
 
 Review of available horse information;
 
@@ -92,19 +92,19 @@ No evaluation replaces a veterinary pre-purchase examination.
 
 VETERINARY EXAMINATION RECOMMENDATION
 
-FHE strongly recommends that Client obtain an independent veterinary pre-purchase examination before purchase or lease.
+COMPANY strongly recommends that Client obtain an independent veterinary pre-purchase examination before purchase or lease.
 
 Client understands that:
 
-FHE is not a veterinarian;
+COMPANY is not a veterinarian;
 
-FHE cannot diagnose medical conditions;
+COMPANY cannot diagnose medical conditions;
 
-FHE cannot certify soundness.
+COMPANY cannot certify soundness.
 
 NO GUARANTEE OF HORSE PERFORMANCE
 
-FHE does not guarantee:
+COMPANY does not guarantee:
 
 Competition results;
 
@@ -134,7 +134,7 @@ Accept risks associated with acquisition.
 
 SELLER INFORMATION
 
-Client understands FHE may rely on information provided by:
+Client understands COMPANY may rely on information provided by:
 
 Seller;
 
@@ -146,11 +146,11 @@ Owner;
 
 Other third parties.
 
-FHE does not guarantee the accuracy or completeness of third-party statements.
+COMPANY does not guarantee the accuracy or completeness of third-party statements.
 
 CONFLICTS AND DISCLOSURES
 
-FHE shall disclose known relationships or interests relating to the horse.
+COMPANY shall disclose known relationships or interests relating to the horse.
 
 Disclosures:
 
@@ -180,11 +180,11 @@ Other agreed expenses.
 
 COMMUNICATIONS
 
-Client authorizes FHE to communicate with relevant parties regarding evaluation services.
+Client authorizes COMPANY to communicate with relevant parties regarding evaluation services.
 
 RELEASE OF LIABILITY
 
-Client releases FHE and its owners, employees, agents, contractors, and representatives from claims arising from:
+Client releases COMPANY and its owners, employees, agents, contractors, and representatives from claims arising from:
 
 Client’s purchase decision;
 
@@ -200,7 +200,7 @@ This release does not apply to gross negligence, reckless conduct, or intentiona
 
 LIMITATION OF LIABILITY
 
-To the fullest extent permitted by law, FHE shall not be liable for:
+To the fullest extent permitted by law, COMPANY shall not be liable for:
 
 Purchase price losses;
 
@@ -216,7 +216,7 @@ Consequential damages.
 
 INDEMNIFICATION
 
-Client agrees to indemnify FHE from claims arising from:
+Client agrees to indemnify COMPANY from claims arising from:
 
 Client’s acquisition;
 
@@ -262,10 +262,12 @@ Printed Name: {{CLIENT.PRINTED_NAME}}
 
 Date: {{SIG.CLIENT.DATE}}
 
-FRENCH HERITAGE EQUESTRIAN
+COMPANY: {{ORG.LEGAL_NAME}}
 
-By: {{FHE.SIGNATORY_NAME}}
+By (signature): {{SIG.COMPANY.NAME}}
 
-Title: {{FHE.SIGNATORY_TITLE}}
+Printed: {{ORG.SIGNATORY_NAME}}
 
-Date: {{SIG.FHE.DATE}}
+Title: {{ORG.SIGNATORY_TITLE}}
+
+Date: {{SIG.COMPANY.DATE}}

@@ -48,12 +48,15 @@ describe('contract_templates — the 17 canonical contracts', () => {
     ].sort());
   });
 
-  it('every template names FHE plus at least one counterparty', async () => {
+  it('every template names COMPANY plus at least one counterparty', async () => {
+    // Contracts Legal Pass: the business side is the COMPANY party (role renamed
+    // from FHE); no template may still declare the old FHE party namespace.
     await h.asSuperuser();
     const rows = await h.q<{ template_key: string; party_namespaces: string[] }>(
       `select template_key, party_namespaces from contract_templates`);
     for (const r of rows) {
-      expect(r.party_namespaces, r.template_key).toContain('FHE');
+      expect(r.party_namespaces, r.template_key).toContain('COMPANY');
+      expect(r.party_namespaces, r.template_key).not.toContain('FHE');
       expect(r.party_namespaces.length, r.template_key).toBeGreaterThanOrEqual(2);
     }
     // body loading is covered by contract_bodies_loaded.test.ts (Phase 2 / migration 17)

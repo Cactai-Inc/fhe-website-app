@@ -1,8 +1,8 @@
-FRENCH HERITAGE EQUESTRIAN
+{{ORG.LEGAL_NAME}}
 
 HORSEMANSHIP TRAINING AGREEMENT
 
-This Horsemanship Training Agreement (“Agreement”) is entered into between French Heritage Equestrian (“FHE”) and the undersigned Client or Participant.
+This Horsemanship Training Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) between {{ORG.LEGAL_IDENTITY}} (“COMPANY”) and the undersigned Client or Participant.
 
 PARTIES
 
@@ -20,7 +20,7 @@ Email: {{CLIENT.EMAIL}}
 
 PROGRAM DESCRIPTION
 
-FHE shall provide horsemanship instruction and education.
+COMPANY shall provide horsemanship instruction and education.
 
 Activities may include:
 
@@ -29,8 +29,6 @@ Catching horses
 Leading horses
 
 Safe horse handling
-
-Grooming education
 
 Tacking and untacking
 
@@ -52,7 +50,7 @@ Specific Program Scope:
 
 FEES
 
-Program Fee:
+Program Fee: {{TXN.SERVICE_FEE}}
 
 Payment Terms: {{TXN.PAYMENT_TERMS}}
 
@@ -78,7 +76,7 @@ Participant voluntarily assumes all risks associated with participation.
 
 LIABILITY RELEASE
 
-To the fullest extent permitted by California law, Participant releases and discharges French Heritage Equestrian and its owners, instructors, trainers, contractors, agents, representatives, facility operators, and affiliated parties from claims arising from ordinary negligence associated with participation in equine activities.
+To the fullest extent permitted by California law, Participant releases and discharges COMPANY and its owners, instructors, trainers, contractors, agents, representatives, facility operators, and affiliated parties from claims arising from ordinary negligence associated with participation in equine activities.
 
 This release does not apply to gross negligence or willful misconduct.
 
@@ -88,9 +86,9 @@ Participant acknowledges completion of a separate Emergency Medical Authorizatio
 
 PHOTOGRAPHS AND VIDEO
 
-☐ Participant consents to media use.
+□ Participant consents to media use.
 
-☐ Participant declines media use.
+□ Participant declines media use.
 
 ENTIRE AGREEMENT
 
@@ -107,3 +105,13 @@ Date: {{SIG.PARTICIPANT.DATE}}
 Parent/Guardian Signature (if applicable): {{SIG.GUARDIAN.NAME}}
 
 Date: {{SIG.GUARDIAN.DATE}}
+
+COMPANY: {{ORG.LEGAL_NAME}}
+
+By (signature): {{SIG.COMPANY.NAME}}
+
+Printed: {{ORG.SIGNATORY_NAME}}
+
+Title: {{ORG.SIGNATORY_TITLE}}
+
+Date: {{SIG.COMPANY.DATE}}

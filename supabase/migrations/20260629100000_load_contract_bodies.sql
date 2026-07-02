@@ -19,7 +19,7 @@ UPDATE contract_templates SET body = $body$FACILITY RULES, SAFETY ACKNOWLEDGMENT
 
 This Facility Rules, Safety Acknowledgment, and Equestrian Conduct Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
 
-French Heritage Equestrian (“FHE”),
+{{ORG.LEGAL_IDENTITY}} (“COMPANY”),
 
 and
 
@@ -33,9 +33,9 @@ Email: {{CLIENT.EMAIL}}
 
 RECITALS
 
-A. FHE provides riding instruction, training, and related equestrian activities.
+A. COMPANY provides riding instruction, training, and related equestrian activities.
 
-B. FHE provides services at locations including third-party boarding and training facilities.
+B. COMPANY provides services at locations including third-party boarding and training facilities.
 
 C. Client understands that equestrian facilities involve shared use areas, animals, equipment, and other participants.
 
@@ -47,23 +47,23 @@ ACKNOWLEDGMENT OF FACILITY LOCATION
 
 Client acknowledges that services may be provided at:
 
-Carmel Creek Ranch11500 Clews Ranch RdSan Diego, CA 92130
+Carmel Creek Ranch 11500 Clews Ranch RdSan Diego, CA 92130
 
-and/or other locations designated by FHE.
+and/or other locations designated by COMPANY.
 
-Client understands FHE may operate from leased, licensed, or permitted spaces within third-party facilities.
+Client understands COMPANY may operate from leased, licensed, or permitted spaces within third-party facilities.
 
 COMPLIANCE WITH FACILITY RULES
 
 Client agrees to comply with:
 
-FHE safety rules;
+COMPANY safety rules;
 
 Host facility rules;
 
 Posted signage;
 
-Instructions from FHE personnel;
+Instructions from COMPANY personnel;
 
 Reasonable instructions from facility management.
 
@@ -111,7 +111,7 @@ Gloves are recommended
 
 HELMET POLICY
 
-FHE required ASTM/SEI-certified riding helmets for all mounted activities. Riders must provide their own properly fitted helmet.
+COMPANY requires ASTM/SEI-certified riding helmets for all mounted activities. Riders must provide their own properly fitted helmet.
 
 Client acknowledges helmets reduce but do not eliminate injury risk.
 
@@ -137,7 +137,7 @@ Report damaged equipment;
 
 Not modify or alter equipment without permission.
 
-FHE may remove unsafe equipment from use.
+COMPANY may remove unsafe equipment from use.
 
 ALCOHOL, DRUGS, AND IMPAIRMENT
 
@@ -171,7 +171,7 @@ Dogs and others pet are not permitted on the property without prior approval fro
 
 Client agrees to treat all horses humanely.
 
-FHE may immediately stop any activity involving unsafe or inappropriate treatment of horses.
+COMPANY may immediately stop any activity involving unsafe or inappropriate treatment of horses.
 
 PROPERTY USE
 
@@ -183,7 +183,7 @@ Clean up after themselves;
 
 Avoid damaging facility property.
 
-Jumping is prohibited unless to be under the supervision of FHE trainer
+Jumping is prohibited unless under the supervision of a COMPANY trainer
 
 Client may be responsible for damage caused by intentional or negligent conduct.
 
@@ -203,7 +203,7 @@ Restricted areas.
 
 EMERGENCIES
 
-Client agrees to follow emergency instructions from FHE personnel and facility management.
+Client agrees to follow emergency instructions from COMPANY personnel and facility management.
 
 ASSUMPTION OF RISK
 
@@ -225,13 +225,13 @@ Client voluntarily assumes these risks.
 
 RELEASE OF LIABILITY
 
-Client releases FHE, its owners, agents, instructors, contractors, employees, and representatives from claims arising from participation in equestrian activities, including claims arising from ordinary negligence.
+Client releases COMPANY, its owners, agents, instructors, contractors, employees, and representatives from claims arising from participation in equestrian activities, including claims arising from ordinary negligence.
 
 This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
 
 INDEMNIFICATION
 
-Client agrees to indemnify FHE for claims arising from:
+Client agrees to indemnify COMPANY for claims arising from:
 
 Client’s actions;
 
@@ -243,7 +243,7 @@ Violation of rules.
 
 TERMINATION OF ACCESS
 
-FHE may restrict or terminate Client’s access to activities or facilities for:
+COMPANY may restrict or terminate Client’s access to activities or facilities for:
 
 Safety concerns;
 
@@ -283,17 +283,21 @@ Printed Name: {{CLIENT.PRINTED_NAME}}
 
 Date: {{SIG.CLIENT.DATE}}
 
-FRENCH HERITAGE EQUESTRIAN
+COMPANY: {{ORG.LEGAL_NAME}}
 
-By: {{FHE.SIGNATORY_NAME}}
+By (signature): {{SIG.COMPANY.NAME}}
 
-Title: {{FHE.SIGNATORY_TITLE}}
+Printed: {{ORG.SIGNATORY_NAME}}
 
-Date: {{SIG.FHE.DATE}}
+Title: {{ORG.SIGNATORY_TITLE}}
+
+Date: {{SIG.COMPANY.DATE}}
 $body$, updated_at = now()
   WHERE template_key = 'FACILITY_RULES';
 INSERT INTO template_tokens (template_id, namespace, field, token, kind, required, party_scoped)
   SELECT id, 'DOC', 'EFFECTIVE_DATE', '{{DOC.EFFECTIVE_DATE}}', 'system', false, false FROM contract_templates WHERE template_key = 'FACILITY_RULES'
+  UNION ALL
+  SELECT id, 'ORG', 'LEGAL_IDENTITY', '{{ORG.LEGAL_IDENTITY}}', 'field', false, false FROM contract_templates WHERE template_key = 'FACILITY_RULES'
   UNION ALL
   SELECT id, 'CLIENT', 'FULL_NAME', '{{CLIENT.FULL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'FACILITY_RULES'
   UNION ALL
@@ -309,18 +313,22 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   UNION ALL
   SELECT id, 'SIG', 'CLIENT.DATE', '{{SIG.CLIENT.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'FACILITY_RULES'
   UNION ALL
-  SELECT id, 'FHE', 'SIGNATORY_NAME', '{{FHE.SIGNATORY_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'FACILITY_RULES'
+  SELECT id, 'ORG', 'LEGAL_NAME', '{{ORG.LEGAL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'FACILITY_RULES'
   UNION ALL
-  SELECT id, 'FHE', 'SIGNATORY_TITLE', '{{FHE.SIGNATORY_TITLE}}', 'field', false, false FROM contract_templates WHERE template_key = 'FACILITY_RULES'
+  SELECT id, 'SIG', 'COMPANY.NAME', '{{SIG.COMPANY.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'FACILITY_RULES'
   UNION ALL
-  SELECT id, 'SIG', 'FHE.DATE', '{{SIG.FHE.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'FACILITY_RULES';
+  SELECT id, 'ORG', 'SIGNATORY_NAME', '{{ORG.SIGNATORY_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'FACILITY_RULES'
+  UNION ALL
+  SELECT id, 'ORG', 'SIGNATORY_TITLE', '{{ORG.SIGNATORY_TITLE}}', 'field', false, false FROM contract_templates WHERE template_key = 'FACILITY_RULES'
+  UNION ALL
+  SELECT id, 'SIG', 'COMPANY.DATE', '{{SIG.COMPANY.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'FACILITY_RULES';
 
 -- ── HORSEMANSHIP_TRAINING ─────────────────────────────────────────────
-UPDATE contract_templates SET body = $body$FRENCH HERITAGE EQUESTRIAN
+UPDATE contract_templates SET body = $body${{ORG.LEGAL_NAME}}
 
 HORSEMANSHIP TRAINING AGREEMENT
 
-This Horsemanship Training Agreement (“Agreement”) is entered into between French Heritage Equestrian (“FHE”) and the undersigned Client or Participant.
+This Horsemanship Training Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) between {{ORG.LEGAL_IDENTITY}} (“COMPANY”) and the undersigned Client or Participant.
 
 PARTIES
 
@@ -338,7 +346,7 @@ Email: {{CLIENT.EMAIL}}
 
 PROGRAM DESCRIPTION
 
-FHE shall provide horsemanship instruction and education.
+COMPANY shall provide horsemanship instruction and education.
 
 Activities may include:
 
@@ -347,8 +355,6 @@ Catching horses
 Leading horses
 
 Safe horse handling
-
-Grooming education
 
 Tacking and untacking
 
@@ -370,7 +376,7 @@ Specific Program Scope:
 
 FEES
 
-Program Fee:
+Program Fee: {{TXN.SERVICE_FEE}}
 
 Payment Terms: {{TXN.PAYMENT_TERMS}}
 
@@ -396,7 +402,7 @@ Participant voluntarily assumes all risks associated with participation.
 
 LIABILITY RELEASE
 
-To the fullest extent permitted by California law, Participant releases and discharges French Heritage Equestrian and its owners, instructors, trainers, contractors, agents, representatives, facility operators, and affiliated parties from claims arising from ordinary negligence associated with participation in equine activities.
+To the fullest extent permitted by California law, Participant releases and discharges COMPANY and its owners, instructors, trainers, contractors, agents, representatives, facility operators, and affiliated parties from claims arising from ordinary negligence associated with participation in equine activities.
 
 This release does not apply to gross negligence or willful misconduct.
 
@@ -406,9 +412,9 @@ Participant acknowledges completion of a separate Emergency Medical Authorizatio
 
 PHOTOGRAPHS AND VIDEO
 
-☐ Participant consents to media use.
+□ Participant consents to media use.
 
-☐ Participant declines media use.
+□ Participant declines media use.
 
 ENTIRE AGREEMENT
 
@@ -425,9 +431,25 @@ Date: {{SIG.PARTICIPANT.DATE}}
 Parent/Guardian Signature (if applicable): {{SIG.GUARDIAN.NAME}}
 
 Date: {{SIG.GUARDIAN.DATE}}
+
+COMPANY: {{ORG.LEGAL_NAME}}
+
+By (signature): {{SIG.COMPANY.NAME}}
+
+Printed: {{ORG.SIGNATORY_NAME}}
+
+Title: {{ORG.SIGNATORY_TITLE}}
+
+Date: {{SIG.COMPANY.DATE}}
 $body$, updated_at = now()
   WHERE template_key = 'HORSEMANSHIP_TRAINING';
 INSERT INTO template_tokens (template_id, namespace, field, token, kind, required, party_scoped)
+  SELECT id, 'ORG', 'LEGAL_NAME', '{{ORG.LEGAL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSEMANSHIP_TRAINING'
+  UNION ALL
+  SELECT id, 'DOC', 'EFFECTIVE_DATE', '{{DOC.EFFECTIVE_DATE}}', 'system', false, false FROM contract_templates WHERE template_key = 'HORSEMANSHIP_TRAINING'
+  UNION ALL
+  SELECT id, 'ORG', 'LEGAL_IDENTITY', '{{ORG.LEGAL_IDENTITY}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSEMANSHIP_TRAINING'
+  UNION ALL
   SELECT id, 'CLIENT', 'FULL_NAME', '{{CLIENT.FULL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSEMANSHIP_TRAINING'
   UNION ALL
   SELECT id, 'PARTICIPANT', 'FULL_NAME', '{{PARTICIPANT.FULL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSEMANSHIP_TRAINING'
@@ -439,6 +461,8 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   SELECT id, 'CLIENT', 'PHONE', '{{CLIENT.PHONE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSEMANSHIP_TRAINING'
   UNION ALL
   SELECT id, 'CLIENT', 'EMAIL', '{{CLIENT.EMAIL}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSEMANSHIP_TRAINING'
+  UNION ALL
+  SELECT id, 'TXN', 'SERVICE_FEE', '{{TXN.SERVICE_FEE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSEMANSHIP_TRAINING'
   UNION ALL
   SELECT id, 'TXN', 'PAYMENT_TERMS', '{{TXN.PAYMENT_TERMS}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSEMANSHIP_TRAINING'
   UNION ALL
@@ -452,14 +476,22 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   UNION ALL
   SELECT id, 'SIG', 'GUARDIAN.NAME', '{{SIG.GUARDIAN.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSEMANSHIP_TRAINING'
   UNION ALL
-  SELECT id, 'SIG', 'GUARDIAN.DATE', '{{SIG.GUARDIAN.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSEMANSHIP_TRAINING';
+  SELECT id, 'SIG', 'GUARDIAN.DATE', '{{SIG.GUARDIAN.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSEMANSHIP_TRAINING'
+  UNION ALL
+  SELECT id, 'SIG', 'COMPANY.NAME', '{{SIG.COMPANY.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSEMANSHIP_TRAINING'
+  UNION ALL
+  SELECT id, 'ORG', 'SIGNATORY_NAME', '{{ORG.SIGNATORY_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSEMANSHIP_TRAINING'
+  UNION ALL
+  SELECT id, 'ORG', 'SIGNATORY_TITLE', '{{ORG.SIGNATORY_TITLE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSEMANSHIP_TRAINING'
+  UNION ALL
+  SELECT id, 'SIG', 'COMPANY.DATE', '{{SIG.COMPANY.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSEMANSHIP_TRAINING';
 
 -- ── HORSE_EMERGENCY_VET ─────────────────────────────────────────────
 UPDATE contract_templates SET body = $body$EMERGENCY VETERINARY AUTHORIZATION, EQUINE MEDICAL CARE DIRECTIVE, AND OWNER AUTHORIZATION AGREEMENT
 
 This Emergency Veterinary Authorization, Equine Medical Care Directive, and Owner Authorization Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
 
-French Heritage Equestrian (“FHE”),
+{{ORG.LEGAL_IDENTITY}} (“COMPANY”),
 
 and
 
@@ -493,27 +525,27 @@ Current Location: {{HORSE.CURRENT_LOCATION}}
 
 Primary Boarding Facility:
 
-Veterinarian:
+Veterinarian: {{HORSE.VET_NAME}}
 
-Veterinarian Phone:
+Veterinarian Phone: {{HORSE.VET_PHONE}}
 
-Farrier:
+Farrier: {{HORSE.FARRIER_NAME}}
 
-Farrier Phone:
+Farrier Phone: {{HORSE.FARRIER_PHONE}}
 
 RECITALS
 
 A. Owner owns, leases, manages, or has authority over the above-described horse (“Horse”).
 
-B. Owner has engaged or may engage FHE to provide riding instruction, training, exercise, clipping, handling, transportation, care, medication, or other equine-related services.
+B. Owner has engaged or may engage COMPANY to provide riding instruction, training, exercise, clipping, handling, transportation, care, medication, or other equine-related services.
 
-C. Owner desires to authorize FHE to take reasonable action if the Horse experiences an emergency and Owner cannot immediately be reached.
+C. Owner desires to authorize COMPANY to take reasonable action if the Horse experiences an emergency and Owner cannot immediately be reached.
 
 AGREEMENT
 
 AUTHORIZATION TO SEEK EMERGENCY CARE
 
-Owner authorizes FHE and its representatives to contact a veterinarian and arrange emergency veterinary evaluation and treatment when FHE reasonably believes:
+Owner authorizes COMPANY and its representatives to contact a veterinarian and arrange emergency veterinary evaluation and treatment when COMPANY reasonably believes:
 
 The Horse may require immediate medical attention;
 
@@ -523,7 +555,7 @@ Owner cannot be reached in a timely manner.
 
 EMERGENCY DECISION-MAKING AUTHORITY
 
-In an emergency, FHE may authorize reasonable veterinary actions including:
+In an emergency, COMPANY may authorize reasonable veterinary actions including:
 
 Veterinary examination;
 
@@ -537,37 +569,37 @@ Transportation to a veterinary facility;
 
 Other care reasonably recommended by a licensed veterinarian.
 
-This authorization does not make FHE the owner of the Horse and does not transfer ownership rights.
+This authorization does not make COMPANY the owner of the Horse and does not transfer ownership rights.
 
 OWNER CONTACT INFORMATION
 
-Primary Owner Contact:
+Primary Owner Contact: {{OWNER.FULL_NAME}}
 
-Phone:
+Phone: {{OWNER.PHONE}}
 
-Secondary Emergency Contact:
+Secondary Emergency Contact: {{EMERGENCY_CONTACT.FULL_NAME}} ({{EMERGENCY_CONTACT.RELATIONSHIP}})
 
-Phone:
+Phone: {{EMERGENCY_CONTACT.PHONE}}
 
 OWNER RESPONSIBILITY FOR COSTS
 
 Owner acknowledges that all veterinary, transportation, medication, diagnostic, surgical, hospitalization, and related expenses remain the sole responsibility of Owner.
 
-FHE is not responsible for payment of veterinary expenses unless separately agreed in writing.
+COMPANY is not responsible for payment of veterinary expenses unless separately agreed in writing.
 
 NON-EMERGENCY CARE
 
-FHE shall not authorize non-emergency veterinary procedures without Owner approval unless delay creates a reasonable concern for the Horse’s welfare.
+COMPANY shall not authorize non-emergency veterinary procedures without Owner approval unless delay creates a reasonable concern for the Horse’s welfare.
 
 EUTHANASIA AUTHORIZATION
 
-FHE may not authorize euthanasia without Owner approval.
+COMPANY may not authorize euthanasia without Owner approval.
 
 Owner Initials:
 
 MEDICATION AUTHORIZATION
 
-Owner authorizes FHE to administer medications only as follows:
+Owner authorizes COMPANY to administer medications only as follows:
 
 Medication:
 
@@ -597,13 +629,13 @@ Known Conditions:
 
 RELEASE OF LIABILITY
 
-Owner releases FHE and their owners, employees, contractors, agents, representatives, and volunteers from claims arising from good-faith actions taken under this Agreement.
+Owner releases COMPANY and their owners, employees, contractors, agents, representatives, and volunteers from claims arising from good-faith actions taken under this Agreement.
 
 This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
 
 INDEMNIFICATION
 
-Owner agrees to indemnify and hold harmless FHE from claims, expenses, losses, or liabilities arising from:
+Owner agrees to indemnify and hold harmless COMPANY from claims, expenses, losses, or liabilities arising from:
 
 Veterinary expenses;
 
@@ -653,17 +685,21 @@ Printed Name: {{OWNER.PRINTED_NAME}}
 
 Date: {{SIG.OWNER.DATE}}
 
-FRENCH HERITAGE EQUESTRIAN
+COMPANY: {{ORG.LEGAL_NAME}}
 
-By: {{FHE.SIGNATORY_NAME}}
+By (signature): {{SIG.COMPANY.NAME}}
 
-Title: {{FHE.SIGNATORY_TITLE}}
+Printed: {{ORG.SIGNATORY_NAME}}
 
-Date: {{SIG.FHE.DATE}}
+Title: {{ORG.SIGNATORY_TITLE}}
+
+Date: {{SIG.COMPANY.DATE}}
 $body$, updated_at = now()
   WHERE template_key = 'HORSE_EMERGENCY_VET';
 INSERT INTO template_tokens (template_id, namespace, field, token, kind, required, party_scoped)
   SELECT id, 'DOC', 'EFFECTIVE_DATE', '{{DOC.EFFECTIVE_DATE}}', 'system', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
+  UNION ALL
+  SELECT id, 'ORG', 'LEGAL_IDENTITY', '{{ORG.LEGAL_IDENTITY}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
   UNION ALL
   SELECT id, 'OWNER', 'FULL_NAME', '{{OWNER.FULL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
   UNION ALL
@@ -689,24 +725,42 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   UNION ALL
   SELECT id, 'HORSE', 'CURRENT_LOCATION', '{{HORSE.CURRENT_LOCATION}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
   UNION ALL
+  SELECT id, 'HORSE', 'VET_NAME', '{{HORSE.VET_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
+  UNION ALL
+  SELECT id, 'HORSE', 'VET_PHONE', '{{HORSE.VET_PHONE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
+  UNION ALL
+  SELECT id, 'HORSE', 'FARRIER_NAME', '{{HORSE.FARRIER_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
+  UNION ALL
+  SELECT id, 'HORSE', 'FARRIER_PHONE', '{{HORSE.FARRIER_PHONE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
+  UNION ALL
+  SELECT id, 'EMERGENCY_CONTACT', 'FULL_NAME', '{{EMERGENCY_CONTACT.FULL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
+  UNION ALL
+  SELECT id, 'EMERGENCY_CONTACT', 'RELATIONSHIP', '{{EMERGENCY_CONTACT.RELATIONSHIP}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
+  UNION ALL
+  SELECT id, 'EMERGENCY_CONTACT', 'PHONE', '{{EMERGENCY_CONTACT.PHONE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
+  UNION ALL
   SELECT id, 'SIG', 'OWNER.NAME', '{{SIG.OWNER.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
   UNION ALL
   SELECT id, 'OWNER', 'PRINTED_NAME', '{{OWNER.PRINTED_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
   UNION ALL
   SELECT id, 'SIG', 'OWNER.DATE', '{{SIG.OWNER.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
   UNION ALL
-  SELECT id, 'FHE', 'SIGNATORY_NAME', '{{FHE.SIGNATORY_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
+  SELECT id, 'ORG', 'LEGAL_NAME', '{{ORG.LEGAL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
   UNION ALL
-  SELECT id, 'FHE', 'SIGNATORY_TITLE', '{{FHE.SIGNATORY_TITLE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
+  SELECT id, 'SIG', 'COMPANY.NAME', '{{SIG.COMPANY.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
   UNION ALL
-  SELECT id, 'SIG', 'FHE.DATE', '{{SIG.FHE.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET';
+  SELECT id, 'ORG', 'SIGNATORY_NAME', '{{ORG.SIGNATORY_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
+  UNION ALL
+  SELECT id, 'ORG', 'SIGNATORY_TITLE', '{{ORG.SIGNATORY_TITLE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
+  UNION ALL
+  SELECT id, 'SIG', 'COMPANY.DATE', '{{SIG.COMPANY.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET';
 
 -- ── HORSE_EVALUATION ─────────────────────────────────────────────
 UPDATE contract_templates SET body = $body$PRE-PURCHASE HORSE EVALUATION AND CONSULTING AGREEMENT
 
 This Pre-Purchase Horse Evaluation and Consulting Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
 
-French Heritage Equestrian (“FHE” or “Evaluator”),
+{{ORG.LEGAL_IDENTITY}} (“COMPANY”),
 
 and
 
@@ -740,7 +794,7 @@ RECITALS
 
 A. Client desires assistance evaluating a horse that Client may purchase, lease, or otherwise acquire.
 
-B. FHE provides equestrian consulting and practical horse evaluation services based on experience and knowledge of riding, training, and horse handling.
+B. COMPANY provides equestrian consulting and practical horse evaluation services based on experience and knowledge of riding, training, and horse handling.
 
 C. Client understands that evaluation services are advisory only and do not replace veterinary, legal, insurance, or professional services.
 
@@ -748,7 +802,7 @@ AGREEMENT
 
 SERVICES PROVIDED
 
-FHE may provide:
+COMPANY may provide:
 
 Review of available horse information;
 
@@ -796,19 +850,19 @@ No evaluation replaces a veterinary pre-purchase examination.
 
 VETERINARY EXAMINATION RECOMMENDATION
 
-FHE strongly recommends that Client obtain an independent veterinary pre-purchase examination before purchase or lease.
+COMPANY strongly recommends that Client obtain an independent veterinary pre-purchase examination before purchase or lease.
 
 Client understands that:
 
-FHE is not a veterinarian;
+COMPANY is not a veterinarian;
 
-FHE cannot diagnose medical conditions;
+COMPANY cannot diagnose medical conditions;
 
-FHE cannot certify soundness.
+COMPANY cannot certify soundness.
 
 NO GUARANTEE OF HORSE PERFORMANCE
 
-FHE does not guarantee:
+COMPANY does not guarantee:
 
 Competition results;
 
@@ -838,7 +892,7 @@ Accept risks associated with acquisition.
 
 SELLER INFORMATION
 
-Client understands FHE may rely on information provided by:
+Client understands COMPANY may rely on information provided by:
 
 Seller;
 
@@ -850,11 +904,11 @@ Owner;
 
 Other third parties.
 
-FHE does not guarantee the accuracy or completeness of third-party statements.
+COMPANY does not guarantee the accuracy or completeness of third-party statements.
 
 CONFLICTS AND DISCLOSURES
 
-FHE shall disclose known relationships or interests relating to the horse.
+COMPANY shall disclose known relationships or interests relating to the horse.
 
 Disclosures:
 
@@ -884,11 +938,11 @@ Other agreed expenses.
 
 COMMUNICATIONS
 
-Client authorizes FHE to communicate with relevant parties regarding evaluation services.
+Client authorizes COMPANY to communicate with relevant parties regarding evaluation services.
 
 RELEASE OF LIABILITY
 
-Client releases FHE and its owners, employees, agents, contractors, and representatives from claims arising from:
+Client releases COMPANY and its owners, employees, agents, contractors, and representatives from claims arising from:
 
 Client’s purchase decision;
 
@@ -904,7 +958,7 @@ This release does not apply to gross negligence, reckless conduct, or intentiona
 
 LIMITATION OF LIABILITY
 
-To the fullest extent permitted by law, FHE shall not be liable for:
+To the fullest extent permitted by law, COMPANY shall not be liable for:
 
 Purchase price losses;
 
@@ -920,7 +974,7 @@ Consequential damages.
 
 INDEMNIFICATION
 
-Client agrees to indemnify FHE from claims arising from:
+Client agrees to indemnify COMPANY from claims arising from:
 
 Client’s acquisition;
 
@@ -966,17 +1020,21 @@ Printed Name: {{CLIENT.PRINTED_NAME}}
 
 Date: {{SIG.CLIENT.DATE}}
 
-FRENCH HERITAGE EQUESTRIAN
+COMPANY: {{ORG.LEGAL_NAME}}
 
-By: {{FHE.SIGNATORY_NAME}}
+By (signature): {{SIG.COMPANY.NAME}}
 
-Title: {{FHE.SIGNATORY_TITLE}}
+Printed: {{ORG.SIGNATORY_NAME}}
 
-Date: {{SIG.FHE.DATE}}
+Title: {{ORG.SIGNATORY_TITLE}}
+
+Date: {{SIG.COMPANY.DATE}}
 $body$, updated_at = now()
   WHERE template_key = 'HORSE_EVALUATION';
 INSERT INTO template_tokens (template_id, namespace, field, token, kind, required, party_scoped)
   SELECT id, 'DOC', 'EFFECTIVE_DATE', '{{DOC.EFFECTIVE_DATE}}', 'system', false, false FROM contract_templates WHERE template_key = 'HORSE_EVALUATION'
+  UNION ALL
+  SELECT id, 'ORG', 'LEGAL_IDENTITY', '{{ORG.LEGAL_IDENTITY}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EVALUATION'
   UNION ALL
   SELECT id, 'CLIENT', 'FULL_NAME', '{{CLIENT.FULL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EVALUATION'
   UNION ALL
@@ -1010,18 +1068,22 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   UNION ALL
   SELECT id, 'SIG', 'CLIENT.DATE', '{{SIG.CLIENT.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_EVALUATION'
   UNION ALL
-  SELECT id, 'FHE', 'SIGNATORY_NAME', '{{FHE.SIGNATORY_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EVALUATION'
+  SELECT id, 'ORG', 'LEGAL_NAME', '{{ORG.LEGAL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EVALUATION'
   UNION ALL
-  SELECT id, 'FHE', 'SIGNATORY_TITLE', '{{FHE.SIGNATORY_TITLE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EVALUATION'
+  SELECT id, 'SIG', 'COMPANY.NAME', '{{SIG.COMPANY.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_EVALUATION'
   UNION ALL
-  SELECT id, 'SIG', 'FHE.DATE', '{{SIG.FHE.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_EVALUATION';
+  SELECT id, 'ORG', 'SIGNATORY_NAME', '{{ORG.SIGNATORY_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EVALUATION'
+  UNION ALL
+  SELECT id, 'ORG', 'SIGNATORY_TITLE', '{{ORG.SIGNATORY_TITLE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EVALUATION'
+  UNION ALL
+  SELECT id, 'SIG', 'COMPANY.DATE', '{{SIG.COMPANY.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_EVALUATION';
 
 -- ── HORSE_EXERCISE ─────────────────────────────────────────────
 UPDATE contract_templates SET body = $body$HORSE EXERCISE SERVICES AGREEMENT
 
 This Horse Exercise Services Agreement ("Agreement") is entered into as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by and between:
 
-French Heritage Equestrian ("FHE" or "Service Provider"),
+{{ORG.LEGAL_IDENTITY}} ("COMPANY"),
 
 and
 
@@ -1051,21 +1113,21 @@ Microchip/Tattoo/Registration No.: {{HORSE.MICROCHIP}}
 
 Boarding Facility: {{HORSE.CURRENT_LOCATION}}
 
-Emergency Contact:
+Emergency Contact: {{EMERGENCY_CONTACT.FULL_NAME}} ({{EMERGENCY_CONTACT.RELATIONSHIP}})
 
-Phone:
+Phone: {{EMERGENCY_CONTACT.PHONE}}
 
 RECITALS
 
 A. Client owns, leases, manages, or otherwise has authority regarding the Horse identified above.
 
-B. Client desires to engage FHE to provide horse exercise, handling, and related equine services.
+B. Client desires to engage COMPANY to provide horse exercise, handling, and related equine services.
 
-C. FHE agrees to provide such services under the terms contained herein.
+C. COMPANY agrees to provide such services under the terms contained herein.
 
 1. SERVICES
 
-FHE may provide any combination of the following exercise services:
+COMPANY may provide any combination of the following exercise services:
 
 □ Exercise Rides
 
@@ -1081,7 +1143,7 @@ Services may be modified by mutual agreement.
 
 2. NO GUARANTEE OF RESULTS
 
-FHE does not guarantee:
+COMPANY does not guarantee:
 
 Performance outcomes;
 
@@ -1091,7 +1153,7 @@ Soundness outcomes;
 
 Fitness or conditioning outcomes.
 
-Equine exercise involves variables outside the control of FHE.
+Equine exercise involves variables outside the control of COMPANY.
 
 3. OWNER DISCLOSURES
 
@@ -1131,7 +1193,7 @@ Client voluntarily assumes all risks associated with equine activities and exerc
 
 5. AUTHORIZATION TO HANDLE HORSE
 
-Client authorizes FHE and its personnel to:
+Client authorizes COMPANY and its personnel to:
 
 Catch, lead, handle, and transport the Horse within the facility;
 
@@ -1157,13 +1219,13 @@ Client represents that the Horse:
 
 □ Has received veterinary clearance for exercise activities.
 
-Veterinarian:
+Veterinarian: {{HORSE.VET_NAME}}
 
-Phone:
+Phone: {{HORSE.VET_PHONE}}
 
 7. EMERGENCY VETERINARY CARE AUTHORIZATION
 
-If FHE reasonably believes emergency veterinary care is necessary and Client cannot be reached, Client authorizes FHE to obtain emergency veterinary treatment.
+If COMPANY reasonably believes emergency veterinary care is necessary and Client cannot be reached, Client authorizes COMPANY to obtain emergency veterinary treatment.
 
 Client shall be responsible for all veterinary costs.
 
@@ -1181,9 +1243,7 @@ Other Fees:
 
 10. PAYMENT TERMS
 
-Invoices are due within
-
-days of the invoice date.
+Invoices are due within {{ORG.INVOICE_DUE_DAYS}} days of the invoice date.
 
 Late payments may incur:
 
@@ -1195,23 +1255,21 @@ Attorney’s fees where permitted.
 
 11. CANCELLATION POLICY
 
-Cancellation notice of
-
-hours is required. Sessions cancelled without adequate notice may be charged at the full session rate.
+Cancellation notice of {{ORG.CANCELLATION_NOTICE_HOURS}} hours is required. Sessions cancelled without adequate notice may be charged at the full session rate.
 
 12. OWNER EQUIPMENT
 
-Client shall provide properly fitted and safe equipment. FHE may refuse to use equipment deemed unsafe.
+Client shall provide properly fitted and safe equipment. COMPANY may refuse to use equipment deemed unsafe.
 
 13. EQUIPMENT DAMAGE
 
-Normal wear and tear is expected. FHE is not responsible for ordinary deterioration of equipment resulting from intended use.
+Normal wear and tear is expected. COMPANY is not responsible for ordinary deterioration of equipment resulting from intended use.
 
 14. RELEASE OF LIABILITY
 
 Client releases and discharges:
 
-French Heritage Equestrian;
+COMPANY;
 
 Its owners, instructors, trainers, employees, contractors, agents, volunteers, and representatives;
 
@@ -1223,7 +1281,7 @@ This release does not apply to gross negligence, reckless conduct, or intentiona
 
 15. LIMITATION OF LIABILITY
 
-To the fullest extent permitted by law, FHE shall not be liable for:
+To the fullest extent permitted by law, COMPANY shall not be liable for:
 
 Loss of use of Horse;
 
@@ -1239,7 +1297,7 @@ Any liability shall not exceed amounts paid under this Agreement during the prec
 
 16. INDEMNIFICATION
 
-Client shall indemnify, defend, and hold harmless FHE from claims arising from:
+Client shall indemnify, defend, and hold harmless COMPANY from claims arising from:
 
 The Horse’s actions;
 
@@ -1251,11 +1309,9 @@ Ownership disputes concerning the Horse.
 
 17. TERMINATION
 
-Either party may terminate upon
+Either party may terminate upon {{ORG.TERMINATION_NOTICE_DAYS}} days written notice.
 
-days written notice.
-
-FHE may terminate immediately for:
+COMPANY may terminate immediately for:
 
 Dangerous horse behavior;
 
@@ -1309,19 +1365,23 @@ Printed Name: {{CLIENT.PRINTED_NAME}}
 
 Date: {{SIG.CLIENT.DATE}}
 
-FRENCH HERITAGE EQUESTRIAN
+COMPANY: {{ORG.LEGAL_NAME}}
 
-By: {{FHE.SIGNATORY_NAME}}
+By (signature): {{SIG.COMPANY.NAME}}
 
-Title: {{FHE.SIGNATORY_TITLE}}
+Printed: {{ORG.SIGNATORY_NAME}}
 
-Date: {{SIG.FHE.DATE}}
+Title: {{ORG.SIGNATORY_TITLE}}
 
-Document: Horse Exercise Services Agreement | French Heritage Equestrian | Version 1.0
+Date: {{SIG.COMPANY.DATE}}
+
+Document: Horse Exercise Services Agreement | {{ORG.LEGAL_NAME}} | Version 1.0
 $body$, updated_at = now()
   WHERE template_key = 'HORSE_EXERCISE';
 INSERT INTO template_tokens (template_id, namespace, field, token, kind, required, party_scoped)
   SELECT id, 'DOC', 'EFFECTIVE_DATE', '{{DOC.EFFECTIVE_DATE}}', 'system', false, false FROM contract_templates WHERE template_key = 'HORSE_EXERCISE'
+  UNION ALL
+  SELECT id, 'ORG', 'LEGAL_IDENTITY', '{{ORG.LEGAL_IDENTITY}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EXERCISE'
   UNION ALL
   SELECT id, 'CLIENT', 'FULL_NAME', '{{CLIENT.FULL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EXERCISE'
   UNION ALL
@@ -1347,17 +1407,37 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   UNION ALL
   SELECT id, 'HORSE', 'CURRENT_LOCATION', '{{HORSE.CURRENT_LOCATION}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EXERCISE'
   UNION ALL
+  SELECT id, 'EMERGENCY_CONTACT', 'FULL_NAME', '{{EMERGENCY_CONTACT.FULL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EXERCISE'
+  UNION ALL
+  SELECT id, 'EMERGENCY_CONTACT', 'RELATIONSHIP', '{{EMERGENCY_CONTACT.RELATIONSHIP}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EXERCISE'
+  UNION ALL
+  SELECT id, 'EMERGENCY_CONTACT', 'PHONE', '{{EMERGENCY_CONTACT.PHONE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EXERCISE'
+  UNION ALL
+  SELECT id, 'HORSE', 'VET_NAME', '{{HORSE.VET_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EXERCISE'
+  UNION ALL
+  SELECT id, 'HORSE', 'VET_PHONE', '{{HORSE.VET_PHONE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EXERCISE'
+  UNION ALL
+  SELECT id, 'ORG', 'INVOICE_DUE_DAYS', '{{ORG.INVOICE_DUE_DAYS}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EXERCISE'
+  UNION ALL
+  SELECT id, 'ORG', 'CANCELLATION_NOTICE_HOURS', '{{ORG.CANCELLATION_NOTICE_HOURS}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EXERCISE'
+  UNION ALL
+  SELECT id, 'ORG', 'TERMINATION_NOTICE_DAYS', '{{ORG.TERMINATION_NOTICE_DAYS}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EXERCISE'
+  UNION ALL
   SELECT id, 'SIG', 'CLIENT.NAME', '{{SIG.CLIENT.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_EXERCISE'
   UNION ALL
   SELECT id, 'CLIENT', 'PRINTED_NAME', '{{CLIENT.PRINTED_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EXERCISE'
   UNION ALL
   SELECT id, 'SIG', 'CLIENT.DATE', '{{SIG.CLIENT.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_EXERCISE'
   UNION ALL
-  SELECT id, 'FHE', 'SIGNATORY_NAME', '{{FHE.SIGNATORY_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EXERCISE'
+  SELECT id, 'ORG', 'LEGAL_NAME', '{{ORG.LEGAL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EXERCISE'
   UNION ALL
-  SELECT id, 'FHE', 'SIGNATORY_TITLE', '{{FHE.SIGNATORY_TITLE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EXERCISE'
+  SELECT id, 'SIG', 'COMPANY.NAME', '{{SIG.COMPANY.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_EXERCISE'
   UNION ALL
-  SELECT id, 'SIG', 'FHE.DATE', '{{SIG.FHE.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_EXERCISE';
+  SELECT id, 'ORG', 'SIGNATORY_NAME', '{{ORG.SIGNATORY_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EXERCISE'
+  UNION ALL
+  SELECT id, 'ORG', 'SIGNATORY_TITLE', '{{ORG.SIGNATORY_TITLE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EXERCISE'
+  UNION ALL
+  SELECT id, 'SIG', 'COMPANY.DATE', '{{SIG.COMPANY.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_EXERCISE';
 
 -- ── HORSE_LEASE ─────────────────────────────────────────────
 UPDATE contract_templates SET body = $body$HORSE LEASE AGREEMENT
@@ -1634,11 +1714,11 @@ Lessee’s negligence;
 
 Breach of Agreement.
 
-FRENCH HERITAGE EQUESTRIAN / THIRD-PARTY SERVICES
+{{ORG.LEGAL_NAME}} / THIRD-PARTY SERVICES
 
-If FHE provides training, instruction, or services involving the Horse:
+If {{ORG.LEGAL_IDENTITY}} (“COMPANY”) provides training, instruction, or services involving the Horse:
 
-The parties acknowledge FHE is a separate service provider unless added as a party in writing.
+The parties acknowledge COMPANY is a separate service provider unless added as a party in writing.
 
 DISPUTE RESOLUTION
 
@@ -1646,7 +1726,7 @@ Disputes shall be resolved by:
 
 □ Arbitration
 
-Venue: San Diego, California
+Venue: San Diego County, California
 
 ATTORNEY’S FEES
 
@@ -1676,15 +1756,15 @@ Printed Name: {{LESSEE.PRINTED_NAME}}
 
 Date: {{SIG.LESSEE.DATE}}
 
-FRENCH HERITAGE EQUESTRIAN
+COMPANY (IF APPLICABLE): {{ORG.LEGAL_NAME}}
 
-Signature: {{SIG.FHE.NAME}}
+By (signature): {{SIG.COMPANY.NAME}}
 
-Name: {{FHE.SIGNATORY_NAME}}
+Printed: {{ORG.SIGNATORY_NAME}}
 
-Title: {{FHE.SIGNATORY_TITLE}}
+Title: {{ORG.SIGNATORY_TITLE}}
 
-Date: {{SIG.FHE.DATE}}
+Date: {{SIG.COMPANY.DATE}}
 $body$, updated_at = now()
   WHERE template_key = 'HORSE_LEASE';
 INSERT INTO template_tokens (template_id, namespace, field, token, kind, required, party_scoped)
@@ -1732,6 +1812,10 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   UNION ALL
   SELECT id, 'TXN', 'PAYMENT_TERMS', '{{TXN.PAYMENT_TERMS}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
   UNION ALL
+  SELECT id, 'ORG', 'LEGAL_NAME', '{{ORG.LEGAL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
+  UNION ALL
+  SELECT id, 'ORG', 'LEGAL_IDENTITY', '{{ORG.LEGAL_IDENTITY}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
+  UNION ALL
   SELECT id, 'SIG', 'LESSOR.NAME', '{{SIG.LESSOR.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
   UNION ALL
   SELECT id, 'LESSOR', 'PRINTED_NAME', '{{LESSOR.PRINTED_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
@@ -1744,13 +1828,13 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   UNION ALL
   SELECT id, 'SIG', 'LESSEE.DATE', '{{SIG.LESSEE.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
   UNION ALL
-  SELECT id, 'SIG', 'FHE.NAME', '{{SIG.FHE.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
+  SELECT id, 'SIG', 'COMPANY.NAME', '{{SIG.COMPANY.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
   UNION ALL
-  SELECT id, 'FHE', 'SIGNATORY_NAME', '{{FHE.SIGNATORY_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
+  SELECT id, 'ORG', 'SIGNATORY_NAME', '{{ORG.SIGNATORY_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
   UNION ALL
-  SELECT id, 'FHE', 'SIGNATORY_TITLE', '{{FHE.SIGNATORY_TITLE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
+  SELECT id, 'ORG', 'SIGNATORY_TITLE', '{{ORG.SIGNATORY_TITLE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
   UNION ALL
-  SELECT id, 'SIG', 'FHE.DATE', '{{SIG.FHE.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE';
+  SELECT id, 'SIG', 'COMPANY.DATE', '{{SIG.COMPANY.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE';
 
 -- ── HORSE_PURCHASE_SALE ─────────────────────────────────────────────
 UPDATE contract_templates SET body = $body$HORSE PURCHASE AND SALE AGREEMENT
@@ -1899,11 +1983,11 @@ Buyer:
 
 □ Declined a veterinary pre-purchase examination.
 
-Veterinarian:
+Veterinarian: {{HORSE.VET_NAME}}
 
 Date:
 
-Buyer acknowledges that FHE, Seller, and other third parties cannot guarantee the results of any examination.
+Buyer acknowledges that {{ORG.LEGAL_IDENTITY}} (“COMPANY”), Seller, and other third parties cannot guarantee the results of any examination.
 
 TRIAL PERIOD
 
@@ -1959,13 +2043,13 @@ INSURANCE
 
 Buyer acknowledges responsibility for obtaining appropriate insurance after transfer.
 
-FHE / THIRD-PARTY INVOLVEMENT
+COMPANY / THIRD-PARTY INVOLVEMENT
 
-If French Heritage Equestrian assisted with this transaction, the parties acknowledge:
+If COMPANY assisted with this transaction, the parties acknowledge:
 
-FHE is not the owner of the Horse and is not a party to this purchase unless separately stated in writing.
+COMPANY is not the owner of the Horse and is not a party to this purchase unless separately stated in writing.
 
-FHE does not guarantee:
+COMPANY does not guarantee:
 
 Horse condition;
 
@@ -1977,7 +2061,7 @@ Future performance.
 
 RELEASE OF THIRD PARTIES
 
-Buyer releases FHE and third parties assisting with the transaction from claims arising from:
+Buyer releases COMPANY and third parties assisting with the transaction from claims arising from:
 
 Horse ownership;
 
@@ -2045,13 +2129,15 @@ Printed Name: {{BUYER.PRINTED_NAME}}
 
 Date: {{SIG.BUYER.DATE}}
 
-FRENCH HERITAGE EQUESTRIAN (IF APPLICABLE)
+COMPANY (IF APPLICABLE): {{ORG.LEGAL_NAME}}
 
-By: {{FHE.SIGNATORY_NAME}}
+By (signature): {{SIG.COMPANY.NAME}}
 
-Title: {{FHE.SIGNATORY_TITLE}}
+Printed: {{ORG.SIGNATORY_NAME}}
 
-Date: {{SIG.FHE.DATE}}
+Title: {{ORG.SIGNATORY_TITLE}}
+
+Date: {{SIG.COMPANY.DATE}}
 $body$, updated_at = now()
   WHERE template_key = 'HORSE_PURCHASE_SALE';
 INSERT INTO template_tokens (template_id, namespace, field, token, kind, required, party_scoped)
@@ -2107,6 +2193,10 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   UNION ALL
   SELECT id, 'TXN', 'DELIVERY_LOCATION', '{{TXN.DELIVERY_LOCATION}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_PURCHASE_SALE'
   UNION ALL
+  SELECT id, 'HORSE', 'VET_NAME', '{{HORSE.VET_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_PURCHASE_SALE'
+  UNION ALL
+  SELECT id, 'ORG', 'LEGAL_IDENTITY', '{{ORG.LEGAL_IDENTITY}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_PURCHASE_SALE'
+  UNION ALL
   SELECT id, 'TXN', 'TRIAL_PERIOD', '{{TXN.TRIAL_PERIOD}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_PURCHASE_SALE'
   UNION ALL
   SELECT id, 'SIG', 'SELLER.NAME', '{{SIG.SELLER.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_PURCHASE_SALE'
@@ -2121,18 +2211,22 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   UNION ALL
   SELECT id, 'SIG', 'BUYER.DATE', '{{SIG.BUYER.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_PURCHASE_SALE'
   UNION ALL
-  SELECT id, 'FHE', 'SIGNATORY_NAME', '{{FHE.SIGNATORY_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_PURCHASE_SALE'
+  SELECT id, 'ORG', 'LEGAL_NAME', '{{ORG.LEGAL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_PURCHASE_SALE'
   UNION ALL
-  SELECT id, 'FHE', 'SIGNATORY_TITLE', '{{FHE.SIGNATORY_TITLE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_PURCHASE_SALE'
+  SELECT id, 'SIG', 'COMPANY.NAME', '{{SIG.COMPANY.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_PURCHASE_SALE'
   UNION ALL
-  SELECT id, 'SIG', 'FHE.DATE', '{{SIG.FHE.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_PURCHASE_SALE';
+  SELECT id, 'ORG', 'SIGNATORY_NAME', '{{ORG.SIGNATORY_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_PURCHASE_SALE'
+  UNION ALL
+  SELECT id, 'ORG', 'SIGNATORY_TITLE', '{{ORG.SIGNATORY_TITLE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_PURCHASE_SALE'
+  UNION ALL
+  SELECT id, 'SIG', 'COMPANY.DATE', '{{SIG.COMPANY.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_PURCHASE_SALE';
 
 -- ── HORSE_REPRESENTATION ─────────────────────────────────────────────
 UPDATE contract_templates SET body = $body$HORSE LEASE REPRESENTATION AND ACQUISITION SERVICES AGREEMENT
 
 This Horse Lease Representation and Acquisition Services Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
 
-French Heritage Equestrian (“FHE” or “Representative”),
+{{ORG.LEGAL_IDENTITY}} (“COMPANY”),
 
 and
 
@@ -2150,15 +2244,15 @@ RECITALS
 
 A. Client desires assistance locating, evaluating, negotiating, and entering into a horse lease arrangement.
 
-B. FHE provides equestrian consulting, lease search assistance, communication support, and transaction assistance.
+B. COMPANY provides equestrian consulting, lease search assistance, communication support, and transaction assistance.
 
-C. Client desires to retain FHE for lease-related services under the terms of this Agreement.
+C. Client desires to retain COMPANY for lease-related services under the terms of this Agreement.
 
 AGREEMENT
 
-APPOINTMENT OF FHE
+APPOINTMENT OF COMPANY
 
-Client retains FHE to assist with horse lease opportunities, which may include:
+Client retains COMPANY to assist with horse lease opportunities, which may include:
 
 Identifying potential lease horses;
 
@@ -2188,9 +2282,9 @@ Other Requirements:
 
 SCOPE OF SERVICES
 
-FHE may provide opinions and recommendations based on equestrian experience.
+COMPANY may provide opinions and recommendations based on equestrian experience.
 
-Client understands FHE does not guarantee:
+Client understands COMPANY does not guarantee:
 
 Lease availability;
 
@@ -2228,7 +2322,7 @@ Veterinary examination may be appropriate.
 
 PROFESSIONAL LIMITATIONS
 
-FHE is not acting as:
+COMPANY is not acting as:
 
 Attorney;
 
@@ -2250,11 +2344,11 @@ and
 
 Lessee:
 
-FHE is not the owner of the Horse unless separately stated in writing.
+COMPANY is not the owner of the Horse unless separately stated in writing.
 
 FEES AND COMPENSATION
 
-Client agrees to pay FHE:
+Client agrees to pay COMPANY:
 
 Lease Search Retainer: {{TXN.RETAINER_FEE}}
 
@@ -2270,13 +2364,13 @@ Payment Due: {{TXN.PAYMENT_TERMS}}
 
 INTRODUCED HORSES AND OPPORTUNITIES
 
-If FHE introduces Client to a horse, owner, trainer, facility, or lease opportunity, Client agrees compensation remains due if Client completes a lease transaction involving that opportunity.
+If COMPANY introduces Client to a horse, owner, trainer, facility, or lease opportunity, Client agrees compensation remains due if Client completes a lease transaction involving that opportunity.
 
 Protection Period: {{ENG.PROTECTION_PERIOD}} months.
 
 COMMUNICATION AUTHORIZATION
 
-Client authorizes FHE to communicate with:
+Client authorizes COMPANY to communicate with:
 
 Horse owners;
 
@@ -2290,9 +2384,9 @@ Other equine professionals.
 
 OWNER DISCLOSURES
 
-FHE may rely on information provided by horse owners and other third parties.
+COMPANY may rely on information provided by horse owners and other third parties.
 
-FHE does not guarantee accuracy of third-party statements.
+COMPANY does not guarantee accuracy of third-party statements.
 
 CONFIDENTIALITY
 
@@ -2308,7 +2402,7 @@ Horse information.
 
 RELEASE OF LIABILITY
 
-Client releases FHE from claims arising from:
+Client releases COMPANY from claims arising from:
 
 Lease decisions;
 
@@ -2324,7 +2418,7 @@ This release does not apply to gross negligence, reckless conduct, or intentiona
 
 INDEMNIFICATION
 
-Client agrees to indemnify and hold harmless FHE from claims arising from:
+Client agrees to indemnify and hold harmless COMPANY from claims arising from:
 
 Lease transactions;
 
@@ -2370,17 +2464,21 @@ Printed Name: {{CLIENT.PRINTED_NAME}}
 
 Date: {{SIG.CLIENT.DATE}}
 
-FRENCH HERITAGE EQUESTRIAN
+COMPANY: {{ORG.LEGAL_NAME}}
 
-By: {{FHE.SIGNATORY_NAME}}
+By (signature): {{SIG.COMPANY.NAME}}
 
-Title: {{FHE.SIGNATORY_TITLE}}
+Printed: {{ORG.SIGNATORY_NAME}}
 
-Date: {{SIG.FHE.DATE}}
+Title: {{ORG.SIGNATORY_TITLE}}
+
+Date: {{SIG.COMPANY.DATE}}
 $body$, updated_at = now()
   WHERE template_key = 'HORSE_REPRESENTATION';
 INSERT INTO template_tokens (template_id, namespace, field, token, kind, required, party_scoped)
   SELECT id, 'DOC', 'EFFECTIVE_DATE', '{{DOC.EFFECTIVE_DATE}}', 'system', false, false FROM contract_templates WHERE template_key = 'HORSE_REPRESENTATION'
+  UNION ALL
+  SELECT id, 'ORG', 'LEGAL_IDENTITY', '{{ORG.LEGAL_IDENTITY}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_REPRESENTATION'
   UNION ALL
   SELECT id, 'CLIENT', 'FULL_NAME', '{{CLIENT.FULL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_REPRESENTATION'
   UNION ALL
@@ -2414,11 +2512,15 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   UNION ALL
   SELECT id, 'SIG', 'CLIENT.DATE', '{{SIG.CLIENT.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_REPRESENTATION'
   UNION ALL
-  SELECT id, 'FHE', 'SIGNATORY_NAME', '{{FHE.SIGNATORY_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_REPRESENTATION'
+  SELECT id, 'ORG', 'LEGAL_NAME', '{{ORG.LEGAL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_REPRESENTATION'
   UNION ALL
-  SELECT id, 'FHE', 'SIGNATORY_TITLE', '{{FHE.SIGNATORY_TITLE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_REPRESENTATION'
+  SELECT id, 'SIG', 'COMPANY.NAME', '{{SIG.COMPANY.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_REPRESENTATION'
   UNION ALL
-  SELECT id, 'SIG', 'FHE.DATE', '{{SIG.FHE.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_REPRESENTATION';
+  SELECT id, 'ORG', 'SIGNATORY_NAME', '{{ORG.SIGNATORY_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_REPRESENTATION'
+  UNION ALL
+  SELECT id, 'ORG', 'SIGNATORY_TITLE', '{{ORG.SIGNATORY_TITLE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_REPRESENTATION'
+  UNION ALL
+  SELECT id, 'SIG', 'COMPANY.DATE', '{{SIG.COMPANY.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_REPRESENTATION';
 
 -- ── HORSE_SALE_TRANSFER ─────────────────────────────────────────────
 UPDATE contract_templates SET body = $body$HORSE SALE AND TRANSFER AGREEMENT
@@ -2583,7 +2685,7 @@ Buyer:
 
 □ Declined veterinary examination.
 
-Veterinarian:
+Veterinarian: {{HORSE.VET_NAME}}
 
 Date:
 
@@ -2631,11 +2733,11 @@ Performance;
 
 Future value.
 
-FHE / REPRESENTATIVE DISCLOSURE
+COMPANY / THIRD-PARTY DISCLOSURE
 
-If French Heritage Equestrian assisted with this transaction:
+If {{ORG.LEGAL_IDENTITY}} (“COMPANY”) assisted with this transaction:
 
-The parties acknowledge FHE is not the owner of the Horse and is not responsible for:
+The parties acknowledge COMPANY is not the owner of the Horse and is not responsible for:
 
 Horse condition;
 
@@ -2701,13 +2803,15 @@ Printed Name: {{BUYER.PRINTED_NAME}}
 
 Date: {{SIG.BUYER.DATE}}
 
-FRENCH HERITAGE EQUESTRIAN (IF APPLICABLE)
+COMPANY (IF APPLICABLE): {{ORG.LEGAL_NAME}}
 
-By: {{FHE.SIGNATORY_NAME}}
+By (signature): {{SIG.COMPANY.NAME}}
 
-Title: {{FHE.SIGNATORY_TITLE}}
+Printed: {{ORG.SIGNATORY_NAME}}
 
-Date: {{SIG.FHE.DATE}}
+Title: {{ORG.SIGNATORY_TITLE}}
+
+Date: {{SIG.COMPANY.DATE}}
 $body$, updated_at = now()
   WHERE template_key = 'HORSE_SALE_TRANSFER';
 INSERT INTO template_tokens (template_id, namespace, field, token, kind, required, party_scoped)
@@ -2761,7 +2865,11 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   UNION ALL
   SELECT id, 'TXN', 'DELIVERY_DATE', '{{TXN.DELIVERY_DATE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_SALE_TRANSFER'
   UNION ALL
+  SELECT id, 'HORSE', 'VET_NAME', '{{HORSE.VET_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_SALE_TRANSFER'
+  UNION ALL
   SELECT id, 'TXN', 'TRIAL_PERIOD', '{{TXN.TRIAL_PERIOD}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_SALE_TRANSFER'
+  UNION ALL
+  SELECT id, 'ORG', 'LEGAL_IDENTITY', '{{ORG.LEGAL_IDENTITY}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_SALE_TRANSFER'
   UNION ALL
   SELECT id, 'SIG', 'SELLER.NAME', '{{SIG.SELLER.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_SALE_TRANSFER'
   UNION ALL
@@ -2775,18 +2883,22 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   UNION ALL
   SELECT id, 'SIG', 'BUYER.DATE', '{{SIG.BUYER.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_SALE_TRANSFER'
   UNION ALL
-  SELECT id, 'FHE', 'SIGNATORY_NAME', '{{FHE.SIGNATORY_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_SALE_TRANSFER'
+  SELECT id, 'ORG', 'LEGAL_NAME', '{{ORG.LEGAL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_SALE_TRANSFER'
   UNION ALL
-  SELECT id, 'FHE', 'SIGNATORY_TITLE', '{{FHE.SIGNATORY_TITLE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_SALE_TRANSFER'
+  SELECT id, 'SIG', 'COMPANY.NAME', '{{SIG.COMPANY.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_SALE_TRANSFER'
   UNION ALL
-  SELECT id, 'SIG', 'FHE.DATE', '{{SIG.FHE.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_SALE_TRANSFER';
+  SELECT id, 'ORG', 'SIGNATORY_NAME', '{{ORG.SIGNATORY_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_SALE_TRANSFER'
+  UNION ALL
+  SELECT id, 'ORG', 'SIGNATORY_TITLE', '{{ORG.SIGNATORY_TITLE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_SALE_TRANSFER'
+  UNION ALL
+  SELECT id, 'SIG', 'COMPANY.DATE', '{{SIG.COMPANY.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_SALE_TRANSFER';
 
 -- ── HORSE_SEARCH_RETAINER ─────────────────────────────────────────────
 UPDATE contract_templates SET body = $body$HORSE SEARCH AND ACQUISITION SERVICES RETAINER AGREEMENT
 
 This Horse Search and Acquisition Services Retainer Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
 
-French Heritage Equestrian (“FHE” or “Service Provider”),
+{{ORG.LEGAL_IDENTITY}} (“COMPANY”),
 
 and
 
@@ -2804,15 +2916,15 @@ RECITALS
 
 A. Client desires assistance locating, identifying, and evaluating potential horses for purchase, lease, or other acquisition.
 
-B. FHE provides equestrian consulting, horse search assistance, industry knowledge, communication assistance, and related services.
+B. COMPANY provides equestrian consulting, horse search assistance, industry knowledge, communication assistance, and related services.
 
-C. Client desires to retain FHE to assist with the search process under the terms of this Agreement.
+C. Client desires to retain COMPANY to assist with the search process under the terms of this Agreement.
 
 AGREEMENT
 
 RETENTION OF SERVICES
 
-Client retains FHE to provide horse search and acquisition assistance, which may include:
+Client retains COMPANY to provide horse search and acquisition assistance, which may include:
 
 Understanding Client’s goals and requirements;
 
@@ -2854,11 +2966,11 @@ NO GUARANTEE OF RESULTS
 
 Client acknowledges:
 
-FHE does not guarantee that a suitable horse will be located;
+COMPANY does not guarantee that a suitable horse will be located;
 
-FHE does not guarantee purchase availability;
+COMPANY does not guarantee purchase availability;
 
-FHE does not guarantee performance, temperament, health, soundness, value, or suitability of any horse.
+COMPANY does not guarantee performance, temperament, health, soundness, value, or suitability of any horse.
 
 CLIENT DECISION MAKING
 
@@ -2874,11 +2986,11 @@ Whether to obtain veterinary evaluation;
 
 Whether to enter into a transaction.
 
-FHE does not make final acquisition decisions on Client’s behalf.
+COMPANY does not make final acquisition decisions on Client’s behalf.
 
 FEES
 
-Client agrees to pay FHE:
+Client agrees to pay COMPANY:
 
 Search Retainer: {{TXN.RETAINER_FEE}}
 
@@ -2896,7 +3008,7 @@ Payment due:
 
 EXPENSE REIMBURSEMENT
 
-Client shall reimburse FHE for approved expenses including:
+Client shall reimburse COMPANY for approved expenses including:
 
 Travel;
 
@@ -2914,7 +3026,7 @@ Expense terms:
 
 CLIENT AUTHORIZATION TO COMMUNICATE
 
-Client authorizes FHE to communicate with:
+Client authorizes COMPANY to communicate with:
 
 Sellers;
 
@@ -2932,7 +3044,7 @@ for purposes related to the search.
 
 CONFIDENTIALITY
 
-FHE and Client agree to maintain confidential information regarding:
+COMPANY and Client agree to maintain confidential information regarding:
 
 Budget;
 
@@ -2944,9 +3056,9 @@ Private horse information.
 
 THIRD-PARTY RELATIONSHIPS
 
-Client acknowledges that FHE may communicate with third parties who may have their own interests.
+Client acknowledges that COMPANY may communicate with third parties who may have their own interests.
 
-FHE does not guarantee the accuracy of information provided by third parties.
+COMPANY does not guarantee the accuracy of information provided by third parties.
 
 PRE-PURCHASE EVALUATION
 
@@ -2954,7 +3066,7 @@ Client understands that horse evaluation, veterinary review, and inspection serv
 
 VETERINARY AND PROFESSIONAL ADVICE
 
-FHE is not acting as:
+COMPANY is not acting as:
 
 A veterinarian;
 
@@ -2970,7 +3082,7 @@ Client is responsible for obtaining appropriate professional advice.
 
 CONFLICTS AND DISCLOSURES
 
-FHE shall disclose known conflicts or relationships that may materially affect the search.
+COMPANY shall disclose known conflicts or relationships that may materially affect the search.
 
 Known disclosures:
 
@@ -2980,7 +3092,7 @@ Client understands that any purchase, lease, or sale transaction requires separa
 
 NON-CIRCUMVENTION / INTRODUCED HORSES
 
-If FHE introduces Client to a horse, owner, seller, trainer, or opportunity, Client agrees not to bypass FHE in order to avoid agreed fees.
+If COMPANY introduces Client to a horse, owner, seller, trainer, or opportunity, Client agrees not to bypass COMPANY in order to avoid agreed fees.
 
 This provision applies for:
 
@@ -2994,7 +3106,7 @@ Outstanding fees and expenses remain due.
 
 RELEASE OF LIABILITY
 
-Client releases FHE from claims arising from:
+Client releases COMPANY from claims arising from:
 
 Failure to locate a horse;
 
@@ -3010,7 +3122,7 @@ This release does not apply to gross negligence, reckless conduct, or intentiona
 
 INDEMNIFICATION
 
-Client agrees to indemnify and hold harmless FHE from claims arising from:
+Client agrees to indemnify and hold harmless COMPANY from claims arising from:
 
 Client transactions;
 
@@ -3050,17 +3162,21 @@ Printed Name: {{CLIENT.PRINTED_NAME}}
 
 Date: {{SIG.CLIENT.DATE}}
 
-FRENCH HERITAGE EQUESTRIAN
+COMPANY: {{ORG.LEGAL_NAME}}
 
-By: {{FHE.SIGNATORY_NAME}}
+By (signature): {{SIG.COMPANY.NAME}}
 
-Title: {{FHE.SIGNATORY_TITLE}}
+Printed: {{ORG.SIGNATORY_NAME}}
 
-Date: {{SIG.FHE.DATE}}
+Title: {{ORG.SIGNATORY_TITLE}}
+
+Date: {{SIG.COMPANY.DATE}}
 $body$, updated_at = now()
   WHERE template_key = 'HORSE_SEARCH_RETAINER';
 INSERT INTO template_tokens (template_id, namespace, field, token, kind, required, party_scoped)
   SELECT id, 'DOC', 'EFFECTIVE_DATE', '{{DOC.EFFECTIVE_DATE}}', 'system', false, false FROM contract_templates WHERE template_key = 'HORSE_SEARCH_RETAINER'
+  UNION ALL
+  SELECT id, 'ORG', 'LEGAL_IDENTITY', '{{ORG.LEGAL_IDENTITY}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_SEARCH_RETAINER'
   UNION ALL
   SELECT id, 'CLIENT', 'FULL_NAME', '{{CLIENT.FULL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_SEARCH_RETAINER'
   UNION ALL
@@ -3092,18 +3208,22 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   UNION ALL
   SELECT id, 'SIG', 'CLIENT.DATE', '{{SIG.CLIENT.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_SEARCH_RETAINER'
   UNION ALL
-  SELECT id, 'FHE', 'SIGNATORY_NAME', '{{FHE.SIGNATORY_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_SEARCH_RETAINER'
+  SELECT id, 'ORG', 'LEGAL_NAME', '{{ORG.LEGAL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_SEARCH_RETAINER'
   UNION ALL
-  SELECT id, 'FHE', 'SIGNATORY_TITLE', '{{FHE.SIGNATORY_TITLE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_SEARCH_RETAINER'
+  SELECT id, 'SIG', 'COMPANY.NAME', '{{SIG.COMPANY.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_SEARCH_RETAINER'
   UNION ALL
-  SELECT id, 'SIG', 'FHE.DATE', '{{SIG.FHE.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_SEARCH_RETAINER';
+  SELECT id, 'ORG', 'SIGNATORY_NAME', '{{ORG.SIGNATORY_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_SEARCH_RETAINER'
+  UNION ALL
+  SELECT id, 'ORG', 'SIGNATORY_TITLE', '{{ORG.SIGNATORY_TITLE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_SEARCH_RETAINER'
+  UNION ALL
+  SELECT id, 'SIG', 'COMPANY.DATE', '{{SIG.COMPANY.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_SEARCH_RETAINER';
 
 -- ── HORSE_TRAINING ─────────────────────────────────────────────
 UPDATE contract_templates SET body = $body$HORSE TRAINING SERVICES AGREEMENT
 
 This Horse Training Services Agreement ("Agreement") is entered into as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by and between:
 
-French Heritage Equestrian ("FHE" or "Service Provider"),
+{{ORG.LEGAL_IDENTITY}} ("COMPANY"),
 
 and
 
@@ -3133,21 +3253,23 @@ Microchip/Tattoo/Registration No.: {{HORSE.MICROCHIP}}
 
 Boarding Facility: {{HORSE.CURRENT_LOCATION}}
 
-Emergency Contact:
+Emergency Contact: {{EMERGENCY_CONTACT.FULL_NAME}}
 
-Phone:
+Relationship: {{EMERGENCY_CONTACT.RELATIONSHIP}}
+
+Phone: {{EMERGENCY_CONTACT.PHONE}}
 
 RECITALS
 
 A. Client owns, leases, manages, or otherwise has authority regarding the Horse identified above.
 
-B. Client desires to engage FHE to provide horse training, handling, conditioning, and related equine training services.
+B. Client desires to engage COMPANY to provide horse training, handling, conditioning, and related equine training services.
 
-C. FHE agrees to provide such services under the terms contained herein.
+C. COMPANY agrees to provide such services under the terms contained herein.
 
 1. SERVICES
 
-FHE may provide any combination of the following training services:
+COMPANY may provide any combination of the following training services:
 
 □ Schooling Rides
 
@@ -3171,7 +3293,7 @@ Services may be modified by mutual agreement.
 
 2. NO GUARANTEE OF RESULTS
 
-FHE does not guarantee:
+COMPANY does not guarantee:
 
 Competition results;
 
@@ -3185,7 +3307,7 @@ Performance outcomes;
 
 Market value increases.
 
-Horse training involves variables outside the control of FHE.
+Horse training involves variables outside the control of COMPANY.
 
 3. OWNER DISCLOSURES
 
@@ -3225,7 +3347,7 @@ Client voluntarily assumes all risks associated with equine activities and train
 
 5. AUTHORIZATION TO HANDLE HORSE
 
-Client authorizes FHE and their personnel to:
+Client authorizes COMPANY and its personnel to:
 
 Catch, lead, handle, and transport the Horse within the facility;
 
@@ -3251,13 +3373,13 @@ Client represents that the Horse:
 
 □ Has received veterinary clearance for training activities.
 
-Veterinarian:
+Veterinarian: {{HORSE.VET_NAME}}
 
-Phone:
+Phone: {{HORSE.VET_PHONE}}
 
 7. EMERGENCY VETERINARY CARE AUTHORIZATION
 
-If FHE reasonably believes emergency veterinary care is necessary and Client cannot be reached, Client authorizes FHE to obtain emergency veterinary treatment.
+If COMPANY reasonably believes emergency veterinary care is necessary and Client cannot be reached, Client authorizes COMPANY to obtain emergency veterinary treatment.
 
 Client shall be responsible for all veterinary costs.
 
@@ -3275,9 +3397,7 @@ Other Fees:
 
 10. PAYMENT TERMS
 
-Invoices are due within
-
-days of the invoice date.
+Invoices are due within {{ORG.INVOICE_DUE_DAYS}} days of the invoice date.
 
 Late payments may incur:
 
@@ -3289,23 +3409,21 @@ Attorney’s fees where permitted.
 
 11. CANCELLATION POLICY
 
-Cancellation notice of
-
-hours is required. Sessions cancelled without adequate notice may be charged at the full session rate.
+Cancellation notice of {{ORG.CANCELLATION_NOTICE_HOURS}} hours is required. Sessions cancelled without adequate notice may be charged at the full session rate.
 
 12. OWNER EQUIPMENT
 
-Client shall provide properly fitted and safe equipment. FHE may refuse to use equipment deemed unsafe.
+Client shall provide properly fitted and safe equipment. COMPANY may refuse to use equipment deemed unsafe.
 
 13. EQUIPMENT DAMAGE
 
-Normal wear and tear is expected. FHE is not responsible for ordinary deterioration of equipment resulting from intended use.
+Normal wear and tear is expected. COMPANY is not responsible for ordinary deterioration of equipment resulting from intended use.
 
 14. RELEASE OF LIABILITY
 
 Client releases and discharges:
 
-French Heritage Equestrian;
+COMPANY;
 
 Its owners, instructors, trainers, employees, contractors, agents, volunteers, and representatives;
 
@@ -3317,7 +3435,7 @@ This release does not apply to gross negligence, reckless conduct, or intentiona
 
 15. LIMITATION OF LIABILITY
 
-To the fullest extent permitted by law, FHE shall not be liable for:
+To the fullest extent permitted by law, COMPANY shall not be liable for:
 
 Loss of use of Horse;
 
@@ -3335,7 +3453,7 @@ Any liability shall not exceed amounts paid under this Agreement during the prec
 
 16. INDEMNIFICATION
 
-Client shall indemnify, defend, and hold harmless FHE from claims arising from:
+Client shall indemnify, defend, and hold harmless COMPANY from claims arising from:
 
 The Horse’s actions;
 
@@ -3347,11 +3465,9 @@ Ownership disputes concerning the Horse.
 
 17. TERMINATION
 
-Either party may terminate upon
+Either party may terminate upon {{ORG.TERMINATION_NOTICE_DAYS}} days written notice.
 
-days written notice.
-
-FHE may terminate immediately for:
+COMPANY may terminate immediately for:
 
 Dangerous horse behavior;
 
@@ -3405,19 +3521,23 @@ Printed Name: {{CLIENT.PRINTED_NAME}}
 
 Date: {{SIG.CLIENT.DATE}}
 
-FRENCH HERITAGE EQUESTRIAN
+COMPANY: {{ORG.LEGAL_NAME}}
 
-By: {{FHE.SIGNATORY_NAME}}
+By (signature): {{SIG.COMPANY.NAME}}
 
-Title: {{FHE.SIGNATORY_TITLE}}
+Printed: {{ORG.SIGNATORY_NAME}}
 
-Date: {{SIG.FHE.DATE}}
+Title: {{ORG.SIGNATORY_TITLE}}
 
-Document: Horse Training Services Agreement | French Heritage Equestrian | Version 1.0
+Date: {{SIG.COMPANY.DATE}}
+
+Document: Horse Training Services Agreement | {{ORG.LEGAL_NAME}} | Version 1.0
 $body$, updated_at = now()
   WHERE template_key = 'HORSE_TRAINING';
 INSERT INTO template_tokens (template_id, namespace, field, token, kind, required, party_scoped)
   SELECT id, 'DOC', 'EFFECTIVE_DATE', '{{DOC.EFFECTIVE_DATE}}', 'system', false, false FROM contract_templates WHERE template_key = 'HORSE_TRAINING'
+  UNION ALL
+  SELECT id, 'ORG', 'LEGAL_IDENTITY', '{{ORG.LEGAL_IDENTITY}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRAINING'
   UNION ALL
   SELECT id, 'CLIENT', 'FULL_NAME', '{{CLIENT.FULL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRAINING'
   UNION ALL
@@ -3443,26 +3563,48 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   UNION ALL
   SELECT id, 'HORSE', 'CURRENT_LOCATION', '{{HORSE.CURRENT_LOCATION}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRAINING'
   UNION ALL
+  SELECT id, 'EMERGENCY_CONTACT', 'FULL_NAME', '{{EMERGENCY_CONTACT.FULL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRAINING'
+  UNION ALL
+  SELECT id, 'EMERGENCY_CONTACT', 'RELATIONSHIP', '{{EMERGENCY_CONTACT.RELATIONSHIP}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRAINING'
+  UNION ALL
+  SELECT id, 'EMERGENCY_CONTACT', 'PHONE', '{{EMERGENCY_CONTACT.PHONE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRAINING'
+  UNION ALL
+  SELECT id, 'HORSE', 'VET_NAME', '{{HORSE.VET_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRAINING'
+  UNION ALL
+  SELECT id, 'HORSE', 'VET_PHONE', '{{HORSE.VET_PHONE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRAINING'
+  UNION ALL
+  SELECT id, 'ORG', 'INVOICE_DUE_DAYS', '{{ORG.INVOICE_DUE_DAYS}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRAINING'
+  UNION ALL
+  SELECT id, 'ORG', 'CANCELLATION_NOTICE_HOURS', '{{ORG.CANCELLATION_NOTICE_HOURS}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRAINING'
+  UNION ALL
+  SELECT id, 'ORG', 'TERMINATION_NOTICE_DAYS', '{{ORG.TERMINATION_NOTICE_DAYS}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRAINING'
+  UNION ALL
   SELECT id, 'SIG', 'CLIENT.NAME', '{{SIG.CLIENT.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_TRAINING'
   UNION ALL
   SELECT id, 'CLIENT', 'PRINTED_NAME', '{{CLIENT.PRINTED_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRAINING'
   UNION ALL
   SELECT id, 'SIG', 'CLIENT.DATE', '{{SIG.CLIENT.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_TRAINING'
   UNION ALL
-  SELECT id, 'FHE', 'SIGNATORY_NAME', '{{FHE.SIGNATORY_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRAINING'
+  SELECT id, 'ORG', 'LEGAL_NAME', '{{ORG.LEGAL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRAINING'
   UNION ALL
-  SELECT id, 'FHE', 'SIGNATORY_TITLE', '{{FHE.SIGNATORY_TITLE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRAINING'
+  SELECT id, 'SIG', 'COMPANY.NAME', '{{SIG.COMPANY.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_TRAINING'
   UNION ALL
-  SELECT id, 'SIG', 'FHE.DATE', '{{SIG.FHE.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_TRAINING';
+  SELECT id, 'ORG', 'SIGNATORY_NAME', '{{ORG.SIGNATORY_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRAINING'
+  UNION ALL
+  SELECT id, 'ORG', 'SIGNATORY_TITLE', '{{ORG.SIGNATORY_TITLE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRAINING'
+  UNION ALL
+  SELECT id, 'SIG', 'COMPANY.DATE', '{{SIG.COMPANY.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_TRAINING';
 
 -- ── HUMAN_EMERGENCY_MEDICAL ─────────────────────────────────────────────
-UPDATE contract_templates SET body = $body$FRENCH HERITAGE EQUESTRIAN
+UPDATE contract_templates SET body = $body${{ORG.LEGAL_NAME}}
 
 EMERGENCY MEDICAL AUTHORIZATION
 
 PARTICIPANT EMERGENCY INFORMATION AND TREATMENT AUTHORIZATION
 
-This form may be used for riders, horsemanship participants, jumper training participants, visitors, contractors, volunteers, event attendees, and other individuals participating in or present for activities associated with French Heritage Equestrian.
+This authorization is provided to {{ORG.LEGAL_IDENTITY}} ("COMPANY").
+
+This form may be used for riders, horsemanship participants, jumper training participants, visitors, contractors, volunteers, event attendees, and other individuals participating in or present for activities associated with COMPANY.
 
 PARTICIPANT INFORMATION
 
@@ -3490,11 +3632,11 @@ Email: {{GUARDIAN.EMAIL}}
 
 EMERGENCY CONTACT #1
 
-Name:
+Name: {{EMERGENCY_CONTACT.FULL_NAME}}
 
-Relationship:
+Relationship: {{EMERGENCY_CONTACT.RELATIONSHIP}}
 
-Phone:
+Phone: {{EMERGENCY_CONTACT.PHONE}}
 
 Alternate Phone:
 
@@ -3528,9 +3670,9 @@ Group Number:
 
 EMERGENCY AUTHORIZATION
 
-I authorize French Heritage Equestrian, its instructors, trainers, contractors, representatives, agents, facility operators, and emergency personnel to obtain emergency medical treatment for the Participant when reasonable efforts to contact the Participant, parent, guardian, or emergency contact are unsuccessful or when immediate treatment is reasonably necessary.
+I authorize COMPANY, its instructors, trainers, contractors, representatives, agents, facility operators, and emergency personnel to obtain emergency medical treatment for the Participant when reasonable efforts to contact the Participant, parent, guardian, or emergency contact are unsuccessful or when immediate treatment is reasonably necessary.
 
-I understand that French Heritage Equestrian is not providing medical services and is not responsible for the quality, availability, cost, or outcome of any medical treatment obtained.
+I understand that COMPANY is not providing medical services and is not responsible for the quality, availability, cost, or outcome of any medical treatment obtained.
 
 I agree to be financially responsible for any medical expenses incurred on behalf of the Participant.
 
@@ -3538,15 +3680,15 @@ PHOTOGRAPH OF INSURANCE CARD
 
 Front Attached:
 
-☐ Yes
+□ Yes
 
-☐ No
+□ No
 
 Back Attached:
 
-☐ Yes
+□ Yes
 
-☐ No
+□ No
 
 AUTHORIZATION
 
@@ -3566,6 +3708,18 @@ Signature: {{SIG.GUARDIAN.NAME}}
 
 Date: {{SIG.GUARDIAN.DATE}}
 
+COMPANY ACKNOWLEDGMENT
+
+COMPANY: {{ORG.LEGAL_NAME}}
+
+By (signature): {{SIG.COMPANY.NAME}}
+
+Printed: {{ORG.SIGNATORY_NAME}}
+
+Title: {{ORG.SIGNATORY_TITLE}}
+
+Date: {{SIG.COMPANY.DATE}}
+
 RECORD INFORMATION
 
 Document UUID: {{DOC.UUID}}
@@ -3578,6 +3732,10 @@ Date Entered: {{DOC.GENERATED_DATE}}
 $body$, updated_at = now()
   WHERE template_key = 'HUMAN_EMERGENCY_MEDICAL';
 INSERT INTO template_tokens (template_id, namespace, field, token, kind, required, party_scoped)
+  SELECT id, 'ORG', 'LEGAL_NAME', '{{ORG.LEGAL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HUMAN_EMERGENCY_MEDICAL'
+  UNION ALL
+  SELECT id, 'ORG', 'LEGAL_IDENTITY', '{{ORG.LEGAL_IDENTITY}}', 'field', false, false FROM contract_templates WHERE template_key = 'HUMAN_EMERGENCY_MEDICAL'
+  UNION ALL
   SELECT id, 'PARTICIPANT', 'FULL_NAME', '{{PARTICIPANT.FULL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HUMAN_EMERGENCY_MEDICAL'
   UNION ALL
   SELECT id, 'PARTICIPANT', 'ADDRESS', '{{PARTICIPANT.ADDRESS}}', 'field', false, false FROM contract_templates WHERE template_key = 'HUMAN_EMERGENCY_MEDICAL'
@@ -3592,6 +3750,12 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   UNION ALL
   SELECT id, 'GUARDIAN', 'EMAIL', '{{GUARDIAN.EMAIL}}', 'field', false, false FROM contract_templates WHERE template_key = 'HUMAN_EMERGENCY_MEDICAL'
   UNION ALL
+  SELECT id, 'EMERGENCY_CONTACT', 'FULL_NAME', '{{EMERGENCY_CONTACT.FULL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HUMAN_EMERGENCY_MEDICAL'
+  UNION ALL
+  SELECT id, 'EMERGENCY_CONTACT', 'RELATIONSHIP', '{{EMERGENCY_CONTACT.RELATIONSHIP}}', 'field', false, false FROM contract_templates WHERE template_key = 'HUMAN_EMERGENCY_MEDICAL'
+  UNION ALL
+  SELECT id, 'EMERGENCY_CONTACT', 'PHONE', '{{EMERGENCY_CONTACT.PHONE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HUMAN_EMERGENCY_MEDICAL'
+  UNION ALL
   SELECT id, 'SIG', 'PARTICIPANT.NAME', '{{SIG.PARTICIPANT.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HUMAN_EMERGENCY_MEDICAL'
   UNION ALL
   SELECT id, 'SIG', 'PARTICIPANT.DATE', '{{SIG.PARTICIPANT.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HUMAN_EMERGENCY_MEDICAL'
@@ -3599,6 +3763,14 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   SELECT id, 'SIG', 'GUARDIAN.NAME', '{{SIG.GUARDIAN.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HUMAN_EMERGENCY_MEDICAL'
   UNION ALL
   SELECT id, 'SIG', 'GUARDIAN.DATE', '{{SIG.GUARDIAN.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HUMAN_EMERGENCY_MEDICAL'
+  UNION ALL
+  SELECT id, 'SIG', 'COMPANY.NAME', '{{SIG.COMPANY.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HUMAN_EMERGENCY_MEDICAL'
+  UNION ALL
+  SELECT id, 'ORG', 'SIGNATORY_NAME', '{{ORG.SIGNATORY_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HUMAN_EMERGENCY_MEDICAL'
+  UNION ALL
+  SELECT id, 'ORG', 'SIGNATORY_TITLE', '{{ORG.SIGNATORY_TITLE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HUMAN_EMERGENCY_MEDICAL'
+  UNION ALL
+  SELECT id, 'SIG', 'COMPANY.DATE', '{{SIG.COMPANY.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HUMAN_EMERGENCY_MEDICAL'
   UNION ALL
   SELECT id, 'DOC', 'UUID', '{{DOC.UUID}}', 'system', false, false FROM contract_templates WHERE template_key = 'HUMAN_EMERGENCY_MEDICAL'
   UNION ALL
@@ -3609,7 +3781,7 @@ UPDATE contract_templates SET body = $body$MINOR RIDER AGREEMENT, PARENTAL CONSE
 
 This Minor Rider Agreement, Parental Consent, Assumption of Risk, Liability Release, Medical Authorization, and Indemnity Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
 
-French Heritage Equestrian (“Instructor” or “FHE”),
+{{ORG.LEGAL_IDENTITY}} ("COMPANY"),
 
 and
 
@@ -3627,13 +3799,15 @@ Minor Participant: {{PARTICIPANT.FULL_NAME}}
 
 Date of Birth:
 
-Emergency Contact (if different):
+Emergency Contact (if different): {{EMERGENCY_CONTACT.FULL_NAME}}
 
-Phone:
+Relationship: {{EMERGENCY_CONTACT.RELATIONSHIP}}
+
+Phone: {{EMERGENCY_CONTACT.PHONE}}
 
 RECITALS
 
-A. Parent or Legal Guardian desires to allow the Minor Participant to engage in horseback riding lessons, equine training, horsemanship instruction, horse handling activities, and related equestrian services provided by FHE.
+A. Parent or Legal Guardian desires to allow the Minor Participant to engage in horseback riding lessons, equine training, horsemanship instruction, horse handling activities, and related equestrian services provided by COMPANY.
 
 B. Parent acknowledges the inherent risks associated with equine activities.
 
@@ -3669,7 +3843,7 @@ LOCATIONS COVERED
 
 This Agreement applies to all activities conducted:
 
-At facilities utilized by FHE;
+At facilities utilized by COMPANY;
 
 At third-party boarding or training facilities;
 
@@ -3715,7 +3889,7 @@ RELEASE OF LIABILITY
 
 To the fullest extent permitted by California law, Parent, individually and on behalf of Minor Participant, releases and forever discharges:
 
-French Heritage Equestrian;
+COMPANY;
 
 Its owners, instructors, trainers, assistants, employees, volunteers, agents, representatives, contractors, affiliates, and successors;
 
@@ -3759,7 +3933,7 @@ Failure to comply may result in immediate removal from activities without refund
 
 HELMET REQUIREMENT
 
-Minor Participant shall wear a properly fitted ASTM/SEI-certified riding helmet whenever mounted unless specifically authorized otherwise in writing by Parent and Instructor.
+Minor Participant shall wear a properly fitted ASTM/SEI-certified riding helmet whenever mounted unless specifically authorized otherwise in writing by Parent and COMPANY.
 
 Parent acknowledges that helmets reduce but do not eliminate risk.
 
@@ -3781,7 +3955,7 @@ Policy Number:
 
 EMERGENCY MEDICAL AUTHORIZATION
 
-Parent authorizes FHE and its representatives to obtain emergency medical treatment for Minor Participant when Parent cannot be immediately reached.
+Parent authorizes COMPANY and its representatives to obtain emergency medical treatment for Minor Participant when Parent cannot be immediately reached.
 
 This authorization includes:
 
@@ -3819,15 +3993,17 @@ PAYMENT RESPONSIBILITY
 
 Parent remains responsible for payment of all fees associated with services provided to Minor Participant.
 
-Lesson Fees: $
+Lesson Fees: {{TXN.SERVICE_FEE}}
 
 Payment Schedule: {{TXN.PAYMENT_SCHEDULE}}
 
 CANCELLATION POLICY
 
+Cancellation of a scheduled session requires at least {{ORG.CANCELLATION_NOTICE_HOURS}} hours advance notice. Sessions cancelled with less than the required notice may be charged a late-cancellation fee of {{ORG.CANCELLATION_FEE}}. Failure to appear for a scheduled session without notice may be charged a no-show fee of {{ORG.NO_SHOW_FEE}}.
+
 TERMINATION
 
-FHE may suspend or terminate participation for:
+COMPANY may suspend or terminate participation for:
 
 Unsafe conduct;
 
@@ -3891,17 +4067,21 @@ Printed Name: {{PARTICIPANT.PRINTED_NAME}}
 
 Date: {{SIG.PARTICIPANT.DATE}}
 
-FRENCH HERITAGE EQUESTRIAN
+COMPANY: {{ORG.LEGAL_NAME}}
 
-By: {{FHE.SIGNATORY_NAME}}
+By (signature): {{SIG.COMPANY.NAME}}
 
-Title: {{FHE.SIGNATORY_TITLE}}
+Printed: {{ORG.SIGNATORY_NAME}}
 
-Date: {{SIG.FHE.DATE}}
+Title: {{ORG.SIGNATORY_TITLE}}
+
+Date: {{SIG.COMPANY.DATE}}
 $body$, updated_at = now()
   WHERE template_key = 'MINOR_RIDER';
 INSERT INTO template_tokens (template_id, namespace, field, token, kind, required, party_scoped)
   SELECT id, 'DOC', 'EFFECTIVE_DATE', '{{DOC.EFFECTIVE_DATE}}', 'system', false, false FROM contract_templates WHERE template_key = 'MINOR_RIDER'
+  UNION ALL
+  SELECT id, 'ORG', 'LEGAL_IDENTITY', '{{ORG.LEGAL_IDENTITY}}', 'field', false, false FROM contract_templates WHERE template_key = 'MINOR_RIDER'
   UNION ALL
   SELECT id, 'GUARDIAN', 'FULL_NAME', '{{GUARDIAN.FULL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'MINOR_RIDER'
   UNION ALL
@@ -3913,7 +4093,21 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   UNION ALL
   SELECT id, 'PARTICIPANT', 'FULL_NAME', '{{PARTICIPANT.FULL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'MINOR_RIDER'
   UNION ALL
+  SELECT id, 'EMERGENCY_CONTACT', 'FULL_NAME', '{{EMERGENCY_CONTACT.FULL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'MINOR_RIDER'
+  UNION ALL
+  SELECT id, 'EMERGENCY_CONTACT', 'RELATIONSHIP', '{{EMERGENCY_CONTACT.RELATIONSHIP}}', 'field', false, false FROM contract_templates WHERE template_key = 'MINOR_RIDER'
+  UNION ALL
+  SELECT id, 'EMERGENCY_CONTACT', 'PHONE', '{{EMERGENCY_CONTACT.PHONE}}', 'field', false, false FROM contract_templates WHERE template_key = 'MINOR_RIDER'
+  UNION ALL
+  SELECT id, 'TXN', 'SERVICE_FEE', '{{TXN.SERVICE_FEE}}', 'field', false, false FROM contract_templates WHERE template_key = 'MINOR_RIDER'
+  UNION ALL
   SELECT id, 'TXN', 'PAYMENT_SCHEDULE', '{{TXN.PAYMENT_SCHEDULE}}', 'field', false, false FROM contract_templates WHERE template_key = 'MINOR_RIDER'
+  UNION ALL
+  SELECT id, 'ORG', 'CANCELLATION_NOTICE_HOURS', '{{ORG.CANCELLATION_NOTICE_HOURS}}', 'field', false, false FROM contract_templates WHERE template_key = 'MINOR_RIDER'
+  UNION ALL
+  SELECT id, 'ORG', 'CANCELLATION_FEE', '{{ORG.CANCELLATION_FEE}}', 'field', false, false FROM contract_templates WHERE template_key = 'MINOR_RIDER'
+  UNION ALL
+  SELECT id, 'ORG', 'NO_SHOW_FEE', '{{ORG.NO_SHOW_FEE}}', 'field', false, false FROM contract_templates WHERE template_key = 'MINOR_RIDER'
   UNION ALL
   SELECT id, 'SIG', 'GUARDIAN.NAME', '{{SIG.GUARDIAN.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'MINOR_RIDER'
   UNION ALL
@@ -3927,18 +4121,22 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   UNION ALL
   SELECT id, 'SIG', 'PARTICIPANT.DATE', '{{SIG.PARTICIPANT.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'MINOR_RIDER'
   UNION ALL
-  SELECT id, 'FHE', 'SIGNATORY_NAME', '{{FHE.SIGNATORY_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'MINOR_RIDER'
+  SELECT id, 'ORG', 'LEGAL_NAME', '{{ORG.LEGAL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'MINOR_RIDER'
   UNION ALL
-  SELECT id, 'FHE', 'SIGNATORY_TITLE', '{{FHE.SIGNATORY_TITLE}}', 'field', false, false FROM contract_templates WHERE template_key = 'MINOR_RIDER'
+  SELECT id, 'SIG', 'COMPANY.NAME', '{{SIG.COMPANY.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'MINOR_RIDER'
   UNION ALL
-  SELECT id, 'SIG', 'FHE.DATE', '{{SIG.FHE.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'MINOR_RIDER';
+  SELECT id, 'ORG', 'SIGNATORY_NAME', '{{ORG.SIGNATORY_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'MINOR_RIDER'
+  UNION ALL
+  SELECT id, 'ORG', 'SIGNATORY_TITLE', '{{ORG.SIGNATORY_TITLE}}', 'field', false, false FROM contract_templates WHERE template_key = 'MINOR_RIDER'
+  UNION ALL
+  SELECT id, 'SIG', 'COMPANY.DATE', '{{SIG.COMPANY.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'MINOR_RIDER';
 
 -- ── RIDER_LESSON_JUMPER ─────────────────────────────────────────────
 UPDATE contract_templates SET body = $body$RIDING LESSON AGREEMENT, LIABILITY RELEASE, ASSUMPTION OF RISK, AND HOLD HARMLESS AGREEMENT
 
 This Riding Lesson Agreement, Liability Release, Assumption of Risk, and Hold Harmless Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
 
-French Heritage Equestrian (“Instructor” or “FHE”),
+{{ORG.LEGAL_IDENTITY}} ("COMPANY"),
 
 and
 
@@ -3950,15 +4148,15 @@ Phone: {{PARTICIPANT.PHONE}}
 
 Email: {{PARTICIPANT.EMAIL}}
 
-Emergency Contact:
+Emergency Contact: {{EMERGENCY_CONTACT.FULL_NAME}}
 
-Relationship:
+Relationship: {{EMERGENCY_CONTACT.RELATIONSHIP}}
 
-Phone:
+Phone: {{EMERGENCY_CONTACT.PHONE}}
 
 RECITALS
 
-A. Instructor provides horseback riding instruction, horsemanship education, equine training activities, horse handling instruction, mounted and unmounted equestrian activities, and related services.
+A. COMPANY provides horseback riding instruction, horsemanship education, equine training activities, horse handling instruction, mounted and unmounted equestrian activities, and related services.
 
 B. Participant desires to engage in such activities.
 
@@ -3968,7 +4166,7 @@ NOW, THEREFORE, the parties agree as follows:
 
 SERVICES
 
-Instructor may provide one or more of the following services:
+COMPANY may provide one or more of the following services:
 
 □ Riding lessons
 
@@ -3994,7 +4192,7 @@ FACILITY AND OFF-SITE ACTIVITIES
 
 Participant understands lessons and activities may occur:
 
-At facilities utilized by Instructor;
+At facilities utilized by COMPANY;
 
 At third-party boarding or training facilities;
 
@@ -4002,7 +4200,7 @@ At horse shows, clinics, events, or competitions;
 
 At Participant-owned or leased properties;
 
-At other locations selected by Instructor.
+At other locations selected by COMPANY.
 
 This Agreement applies regardless of location.
 
@@ -4046,7 +4244,7 @@ Participant will follow all safety instructions;
 
 Participant will wear appropriate riding attire;
 
-Participant will immediately notify Instructor of any injury or unsafe condition.
+Participant will immediately notify COMPANY of any injury or unsafe condition.
 
 HELMETS
 
@@ -4058,7 +4256,7 @@ RELEASE OF LIABILITY
 
 To the fullest extent permitted by law, Participant releases and forever discharges:
 
-French Heritage Equestrian;
+COMPANY;
 
 Its owners, agents, instructors, trainers, assistants, volunteers, representatives, contractors, and affiliates;
 
@@ -4100,7 +4298,7 @@ Third-party property.
 
 MEDICAL TREATMENT AUTHORIZATION
 
-In the event of an emergency, Instructor may seek medical treatment for Participant.
+In the event of an emergency, COMPANY may seek medical treatment for Participant.
 
 Participant remains solely responsible for all medical costs and expenses.
 
@@ -4110,17 +4308,17 @@ Participant grants permission for photographs and video recordings to be used fo
 
 PAYMENT TERMS
 
-Lesson Fees: $
+Lesson Fees: {{TXN.SERVICE_FEE}}
 
 Payment Due: {{TXN.PAYMENT_TERMS}}
 
-Cancellation Policy:
+Cancellation Policy: Cancellation of a scheduled session requires at least {{ORG.CANCELLATION_NOTICE_HOURS}} hours advance notice. Sessions cancelled with less than the required notice may be charged a late-cancellation fee of {{ORG.CANCELLATION_FEE}}. Failure to appear for a scheduled session without notice may be charged a no-show fee of {{ORG.NO_SHOW_FEE}}.
 
-No refunds are required except as expressly stated by Instructor.
+No refunds are required except as expressly stated by COMPANY.
 
 TERMINATION
 
-Instructor may terminate lessons immediately if Participant:
+COMPANY may terminate lessons immediately if Participant:
 
 Engages in unsafe conduct;
 
@@ -4136,7 +4334,7 @@ Any dispute arising under this Agreement shall be resolved by:
 
 □ Arbitration
 
-□ State or Federal Court
+□ Litigation
 
 Venue shall be San Diego County, California.
 
@@ -4176,17 +4374,21 @@ Printed Name: {{PARTICIPANT.PRINTED_NAME}}
 
 Date: {{SIG.PARTICIPANT.DATE}}
 
-FRENCH HERITAGE EQUESTRIAN
+COMPANY: {{ORG.LEGAL_NAME}}
 
-By: {{FHE.SIGNATORY_NAME}}
+By (signature): {{SIG.COMPANY.NAME}}
 
-Title: {{FHE.SIGNATORY_TITLE}}
+Printed: {{ORG.SIGNATORY_NAME}}
 
-Date: {{SIG.FHE.DATE}}
+Title: {{ORG.SIGNATORY_TITLE}}
+
+Date: {{SIG.COMPANY.DATE}}
 $body$, updated_at = now()
   WHERE template_key = 'RIDER_LESSON_JUMPER';
 INSERT INTO template_tokens (template_id, namespace, field, token, kind, required, party_scoped)
   SELECT id, 'DOC', 'EFFECTIVE_DATE', '{{DOC.EFFECTIVE_DATE}}', 'system', false, false FROM contract_templates WHERE template_key = 'RIDER_LESSON_JUMPER'
+  UNION ALL
+  SELECT id, 'ORG', 'LEGAL_IDENTITY', '{{ORG.LEGAL_IDENTITY}}', 'field', false, false FROM contract_templates WHERE template_key = 'RIDER_LESSON_JUMPER'
   UNION ALL
   SELECT id, 'PARTICIPANT', 'FULL_NAME', '{{PARTICIPANT.FULL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'RIDER_LESSON_JUMPER'
   UNION ALL
@@ -4196,7 +4398,21 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   UNION ALL
   SELECT id, 'PARTICIPANT', 'EMAIL', '{{PARTICIPANT.EMAIL}}', 'field', false, false FROM contract_templates WHERE template_key = 'RIDER_LESSON_JUMPER'
   UNION ALL
+  SELECT id, 'EMERGENCY_CONTACT', 'FULL_NAME', '{{EMERGENCY_CONTACT.FULL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'RIDER_LESSON_JUMPER'
+  UNION ALL
+  SELECT id, 'EMERGENCY_CONTACT', 'RELATIONSHIP', '{{EMERGENCY_CONTACT.RELATIONSHIP}}', 'field', false, false FROM contract_templates WHERE template_key = 'RIDER_LESSON_JUMPER'
+  UNION ALL
+  SELECT id, 'EMERGENCY_CONTACT', 'PHONE', '{{EMERGENCY_CONTACT.PHONE}}', 'field', false, false FROM contract_templates WHERE template_key = 'RIDER_LESSON_JUMPER'
+  UNION ALL
+  SELECT id, 'TXN', 'SERVICE_FEE', '{{TXN.SERVICE_FEE}}', 'field', false, false FROM contract_templates WHERE template_key = 'RIDER_LESSON_JUMPER'
+  UNION ALL
   SELECT id, 'TXN', 'PAYMENT_TERMS', '{{TXN.PAYMENT_TERMS}}', 'field', false, false FROM contract_templates WHERE template_key = 'RIDER_LESSON_JUMPER'
+  UNION ALL
+  SELECT id, 'ORG', 'CANCELLATION_NOTICE_HOURS', '{{ORG.CANCELLATION_NOTICE_HOURS}}', 'field', false, false FROM contract_templates WHERE template_key = 'RIDER_LESSON_JUMPER'
+  UNION ALL
+  SELECT id, 'ORG', 'CANCELLATION_FEE', '{{ORG.CANCELLATION_FEE}}', 'field', false, false FROM contract_templates WHERE template_key = 'RIDER_LESSON_JUMPER'
+  UNION ALL
+  SELECT id, 'ORG', 'NO_SHOW_FEE', '{{ORG.NO_SHOW_FEE}}', 'field', false, false FROM contract_templates WHERE template_key = 'RIDER_LESSON_JUMPER'
   UNION ALL
   SELECT id, 'SIG', 'PARTICIPANT.NAME', '{{SIG.PARTICIPANT.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'RIDER_LESSON_JUMPER'
   UNION ALL
@@ -4204,8 +4420,12 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   UNION ALL
   SELECT id, 'SIG', 'PARTICIPANT.DATE', '{{SIG.PARTICIPANT.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'RIDER_LESSON_JUMPER'
   UNION ALL
-  SELECT id, 'FHE', 'SIGNATORY_NAME', '{{FHE.SIGNATORY_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'RIDER_LESSON_JUMPER'
+  SELECT id, 'ORG', 'LEGAL_NAME', '{{ORG.LEGAL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'RIDER_LESSON_JUMPER'
   UNION ALL
-  SELECT id, 'FHE', 'SIGNATORY_TITLE', '{{FHE.SIGNATORY_TITLE}}', 'field', false, false FROM contract_templates WHERE template_key = 'RIDER_LESSON_JUMPER'
+  SELECT id, 'SIG', 'COMPANY.NAME', '{{SIG.COMPANY.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'RIDER_LESSON_JUMPER'
   UNION ALL
-  SELECT id, 'SIG', 'FHE.DATE', '{{SIG.FHE.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'RIDER_LESSON_JUMPER';
+  SELECT id, 'ORG', 'SIGNATORY_NAME', '{{ORG.SIGNATORY_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'RIDER_LESSON_JUMPER'
+  UNION ALL
+  SELECT id, 'ORG', 'SIGNATORY_TITLE', '{{ORG.SIGNATORY_TITLE}}', 'field', false, false FROM contract_templates WHERE template_key = 'RIDER_LESSON_JUMPER'
+  UNION ALL
+  SELECT id, 'SIG', 'COMPANY.DATE', '{{SIG.COMPANY.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'RIDER_LESSON_JUMPER';

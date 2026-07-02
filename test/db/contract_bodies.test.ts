@@ -21,6 +21,7 @@ const BODIES_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '../../supab
 const PARTY_NS = new Set([
   'BUYER', 'SELLER', 'LESSOR', 'LESSEE', 'CLIENT', 'OWNER',
   'PARTICIPANT', 'CONTRACTOR', 'PARENT', 'GUARDIAN', 'RIDER',
+  'COMPANY', 'EMERGENCY_CONTACT',
 ]);
 const KILLED = /grooming|horse care|bathing|mane[- ]pull|turnout[- ]assist|show[- ]prep|tack[- ]clean/i;
 // Catalog-sanctioned education topics within HORSEMANSHIP_TRAINING (migration 8
@@ -94,7 +95,9 @@ describe('tokenized contract bodies', () => {
         // The orphan-token check already proves every token resolves; this guards
         // that any party-shaped namespace is a real one. (Per-contract party sets
         // can drift from the seed metadata, so we don't assert subset-of-seed.)
-        const known = new Set([...PARTY_NS, 'FHE', 'HORSE', 'TXN', 'ENG', 'DOC', 'SIG']);
+        // FHE is deliberately NOT recognized: bodies must use the tenant-neutral
+        // ORG.* / COMPANY tokens as of the Contracts Legal Pass.
+        const known = new Set([...PARTY_NS, 'ORG', 'HORSE', 'TXN', 'ENG', 'DOC', 'SIG']);
         const unknown = new Set<string>();
         for (const t of tokens) {
           const ns = t.slice(2, -2).split('.')[0];

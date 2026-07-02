@@ -272,11 +272,11 @@ Lessee’s negligence;
 
 Breach of Agreement.
 
-FRENCH HERITAGE EQUESTRIAN / THIRD-PARTY SERVICES
+{{ORG.LEGAL_NAME}} / THIRD-PARTY SERVICES
 
-If FHE provides training, instruction, or services involving the Horse:
+If {{ORG.LEGAL_IDENTITY}} (“COMPANY”) provides training, instruction, or services involving the Horse:
 
-The parties acknowledge FHE is a separate service provider unless added as a party in writing.
+The parties acknowledge COMPANY is a separate service provider unless added as a party in writing.
 
 DISPUTE RESOLUTION
 
@@ -284,7 +284,7 @@ Disputes shall be resolved by:
 
 □ Arbitration
 
-Venue: San Diego, California
+Venue: San Diego County, California
 
 ATTORNEY’S FEES
 
@@ -314,12 +314,12 @@ Printed Name: {{LESSEE.PRINTED_NAME}}
 
 Date: {{SIG.LESSEE.DATE}}
 
-FRENCH HERITAGE EQUESTRIAN
+COMPANY (IF APPLICABLE): {{ORG.LEGAL_NAME}}
 
-Signature: {{SIG.FHE.NAME}}
+By (signature): {{SIG.COMPANY.NAME}}
 
-Name: {{FHE.SIGNATORY_NAME}}
+Printed: {{ORG.SIGNATORY_NAME}}
 
-Title: {{FHE.SIGNATORY_TITLE}}
+Title: {{ORG.SIGNATORY_TITLE}}
 
-Date: {{SIG.FHE.DATE}}
+Date: {{SIG.COMPANY.DATE}}

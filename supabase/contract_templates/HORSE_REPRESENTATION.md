@@ -2,7 +2,7 @@ HORSE LEASE REPRESENTATION AND ACQUISITION SERVICES AGREEMENT
 
 This Horse Lease Representation and Acquisition Services Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
 
-French Heritage Equestrian (“FHE” or “Representative”),
+{{ORG.LEGAL_IDENTITY}} (“COMPANY”),
 
 and
 
@@ -20,15 +20,15 @@ RECITALS
 
 A. Client desires assistance locating, evaluating, negotiating, and entering into a horse lease arrangement.
 
-B. FHE provides equestrian consulting, lease search assistance, communication support, and transaction assistance.
+B. COMPANY provides equestrian consulting, lease search assistance, communication support, and transaction assistance.
 
-C. Client desires to retain FHE for lease-related services under the terms of this Agreement.
+C. Client desires to retain COMPANY for lease-related services under the terms of this Agreement.
 
 AGREEMENT
 
-APPOINTMENT OF FHE
+APPOINTMENT OF COMPANY
 
-Client retains FHE to assist with horse lease opportunities, which may include:
+Client retains COMPANY to assist with horse lease opportunities, which may include:
 
 Identifying potential lease horses;
 
@@ -58,9 +58,9 @@ Other Requirements:
 
 SCOPE OF SERVICES
 
-FHE may provide opinions and recommendations based on equestrian experience.
+COMPANY may provide opinions and recommendations based on equestrian experience.
 
-Client understands FHE does not guarantee:
+Client understands COMPANY does not guarantee:
 
 Lease availability;
 
@@ -98,7 +98,7 @@ Veterinary examination may be appropriate.
 
 PROFESSIONAL LIMITATIONS
 
-FHE is not acting as:
+COMPANY is not acting as:
 
 Attorney;
 
@@ -120,11 +120,11 @@ and
 
 Lessee:
 
-FHE is not the owner of the Horse unless separately stated in writing.
+COMPANY is not the owner of the Horse unless separately stated in writing.
 
 FEES AND COMPENSATION
 
-Client agrees to pay FHE:
+Client agrees to pay COMPANY:
 
 Lease Search Retainer: {{TXN.RETAINER_FEE}}
 
@@ -140,13 +140,13 @@ Payment Due: {{TXN.PAYMENT_TERMS}}
 
 INTRODUCED HORSES AND OPPORTUNITIES
 
-If FHE introduces Client to a horse, owner, trainer, facility, or lease opportunity, Client agrees compensation remains due if Client completes a lease transaction involving that opportunity.
+If COMPANY introduces Client to a horse, owner, trainer, facility, or lease opportunity, Client agrees compensation remains due if Client completes a lease transaction involving that opportunity.
 
 Protection Period: {{ENG.PROTECTION_PERIOD}} months.
 
 COMMUNICATION AUTHORIZATION
 
-Client authorizes FHE to communicate with:
+Client authorizes COMPANY to communicate with:
 
 Horse owners;
 
@@ -160,9 +160,9 @@ Other equine professionals.
 
 OWNER DISCLOSURES
 
-FHE may rely on information provided by horse owners and other third parties.
+COMPANY may rely on information provided by horse owners and other third parties.
 
-FHE does not guarantee accuracy of third-party statements.
+COMPANY does not guarantee accuracy of third-party statements.
 
 CONFIDENTIALITY
 
@@ -178,7 +178,7 @@ Horse information.
 
 RELEASE OF LIABILITY
 
-Client releases FHE from claims arising from:
+Client releases COMPANY from claims arising from:
 
 Lease decisions;
 
@@ -194,7 +194,7 @@ This release does not apply to gross negligence, reckless conduct, or intentiona
 
 INDEMNIFICATION
 
-Client agrees to indemnify and hold harmless FHE from claims arising from:
+Client agrees to indemnify and hold harmless COMPANY from claims arising from:
 
 Lease transactions;
 
@@ -240,10 +240,12 @@ Printed Name: {{CLIENT.PRINTED_NAME}}
 
 Date: {{SIG.CLIENT.DATE}}
 
-FRENCH HERITAGE EQUESTRIAN
+COMPANY: {{ORG.LEGAL_NAME}}
 
-By: {{FHE.SIGNATORY_NAME}}
+By (signature): {{SIG.COMPANY.NAME}}
 
-Title: {{FHE.SIGNATORY_TITLE}}
+Printed: {{ORG.SIGNATORY_NAME}}
 
-Date: {{SIG.FHE.DATE}}
+Title: {{ORG.SIGNATORY_TITLE}}
+
+Date: {{SIG.COMPANY.DATE}}
