@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Check, PenLine } from 'lucide-react';
 import Seo from '../components/Seo';
+import { BodyWithSignatures } from '../components/ops/documents/MergedBodyView';
 import { fetchReleasePreview, signRelease } from '../lib/ops/api-public';
 import type { ReleasePreview, ReleaseTemplateKey, SignReleaseResult } from '../lib/ops/api-public';
 
@@ -195,7 +196,7 @@ export default function Release() {
                   className="px-8 pb-6 max-h-96 overflow-y-auto whitespace-pre-wrap text-sm text-secondary leading-relaxed"
                   aria-label="Signed release document"
                 >
-                  {result.merged_body}
+                  <BodyWithSignatures text={result.merged_body} />
                 </div>
               </div>
             </div>

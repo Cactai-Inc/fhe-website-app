@@ -100,15 +100,16 @@ export async function getMyProfile(): Promise<Profile | null> {
 }
 
 /** Upload the signed-in member's avatar to profile-images/{user_id}/… and
- *  return its public URL (bucket is public-read; writes are owner-scoped). */
-export async function uploadMyAvatar(file: File): Promise<string> {
+ *  return its public URL (bucket is public-read; writes are owner-scoped).
+ *  Accepts a Blob — the crop modal emits a resized JPEG blob, so the stored
+ *  path always uses a .jpg extension regardless of the original filename. */
+export async function uploadMyAvatar(file: Blob, _filename = 'avatar.jpg'): Promise<string> {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) throw new Error('Not authenticated');
-  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
-  const path = `${auth.user.id}/avatar-${crypto.randomUUID()}.${ext}`;
+  const path = `${auth.user.id}/avatar-${crypto.randomUUID()}.jpg`;
   const { error } = await supabase.storage
     .from('profile-images')
-    .upload(path, file, { upsert: true, contentType: file.type || undefined });
+    .upload(path, file, { upsert: true, contentType: file.type || 'image/jpeg' });
   if (error) throw error;
   const { data } = supabase.storage.from('profile-images').getPublicUrl(path);
   return data.publicUrl;

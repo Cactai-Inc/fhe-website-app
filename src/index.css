@@ -266,6 +266,18 @@
   }
 }
 
+/* ─── Signature script: display-time styling of typed signature values ──────
+ * Applied by MergedBodyView/BodyWithSignatures to the value after a
+ * "Signature:" / "By (signature):" label. Self-contained system cursive stack
+ * (no network font) — works on screen AND in print (visibility rules in the
+ * print block keep it visible inside .print-document). */
+.signature-script {
+  font-family: 'Snell Roundhand', 'Segoe Script', 'Brush Script MT', cursive;
+  font-size: 1.5em;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
 /* ─── Print: document-only output (OPS-DOC-VIEW "Print / Save as PDF") ──────
  * The document viewer adds `printing` to <body> before window.print() and
  * removes it after, so ordinary Cmd/Ctrl-P elsewhere is untouched. While

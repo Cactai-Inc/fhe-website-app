@@ -10,7 +10,11 @@
  *    (no premature delivery),
  *  - a re-invocation is idempotent: no duplicate deliveries, no duplicate mail,
  *  - a missing documentId -> 400,
- *  - a provider failure writes NO orphan delivery row.
+ *  - a provider failure writes NO orphan delivery row,
+ *  - the PARTY email is the document text only (no 'Document DOC-…' code line,
+ *    no trailing FACILITY RULES ACKNOWLEDGMENT block) with signature values
+ *    wrapped in an inline-styled script span, while the COMPANY notice keeps
+ *    the full stored body (acknowledgment included).
  *
  * Static audit (asserted below): the source guards on status==='EXECUTED' before
  * any delivery, and never inserts a delivery without first attempting the email.
@@ -26,6 +30,8 @@ interface DocState {
   org_id: string;
   status: string;
   title: string;
+  display_code?: string;
+  merged_body?: string;
 }
 interface PartyState {
   contact_id: string;
@@ -186,6 +192,49 @@ describe('POST /api/deliver-document', () => {
     // (mock doc has no merged_body, so just the notice + footer).
     expect(first.html).not.toContain('/portal/');
     expect(first.html).toContain('French Heritage Equestrian LLC'); // footer from the doc's org
+  });
+
+  it('party email = document text only (script signature, no code line, no rules block); company copy keeps the full body', async () => {
+    seedExecuted('org-fhe');
+    state.document!.display_code = 'DOC-2026-0042';
+    state.document!.merged_body =
+      'RELEASE OF LIABILITY\n\nI agree to the terms above.\n\n'
+      + 'Signature: Bo Buyer\nDate: 2026-07-02\nBy (signature): Sy Seller\n\n'
+      + 'FACILITY RULES ACKNOWLEDGMENT\n\n'
+      + 'Signer acknowledged the Facility Rules and Safety Acknowledgment on 2026-07-02.\n';
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response(JSON.stringify({ id: 'msg_b' }), { status: 200 }) as unknown as Response);
+
+    const res = makeRes();
+    await handler(makeReq({ documentId: 'doc-1' }), res);
+    expect(res.statusCode).toBe(200);
+
+    const calls = fetchMock.mock.calls.map((c) => JSON.parse((c[1] as RequestInit).body as string));
+    const party = calls.find((c) => c.to === 'buyer@example.com');
+    const company = calls.find((c) => c.to === 'hello@fhe.test');
+    expect(party).toBeDefined();
+    expect(company).toBeDefined();
+
+    // PARTY copy: document text only — no metadata code line, no rules block.
+    expect(party.html).toContain('I agree to the terms above.');
+    expect(party.html).not.toContain('Document DOC-2026-0042');
+    expect(party.html).not.toContain('FACILITY RULES ACKNOWLEDGMENT');
+    // Both signature label forms are wrapped in the inline script span.
+    expect(party.html).toContain(
+      "Signature: <span style=\"font-family:'Snell Roundhand','Segoe Script','Brush Script MT',cursive;font-size:1.4em\">Bo Buyer</span>",
+    );
+    expect(party.html).toContain(
+      "By (signature): <span style=\"font-family:'Snell Roundhand','Segoe Script','Brush Script MT',cursive;font-size:1.4em\">Sy Seller</span>",
+    );
+    // Non-signature lines stay untouched (no span around the date).
+    expect(party.html).toContain('Date: 2026-07-02\n');
+
+    // COMPANY notice: full stored body (acknowledgment retained), code in the
+    // subject, signature values styled the same way.
+    expect(company.subject).toContain('DOC-2026-0042');
+    expect(company.html).toContain('FACILITY RULES ACKNOWLEDGMENT');
+    expect(company.html).toContain('>Bo Buyer</span>');
   });
 
   it('resolves brand from the DOCUMENT org (isolation) — a different tenant', async () => {

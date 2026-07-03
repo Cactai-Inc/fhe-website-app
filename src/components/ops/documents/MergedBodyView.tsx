@@ -14,6 +14,43 @@ export interface MergedBodyViewProps {
   className?: string;
 }
 
+/**
+ * A signature line in the merged plain text, e.g.
+ *   "Signature: Jane Doe"  or  "By (signature): Jane Doe"
+ * The stored text is NEVER altered — this is display-time styling only.
+ */
+const SIGNATURE_LINE = /^(Signature|By \(signature\)):\s*(.+)$/;
+
+/**
+ * Render the merged plain-text body with signature values styled in a script
+ * face. Non-signature lines pass through untouched (whitespace preserved by
+ * the surrounding pre-wrap container). Exported for reuse by the kiosk signed
+ * confirmation (Release.tsx), which has its own container styling.
+ */
+export function BodyWithSignatures({ text }: { text: string }) {
+  const lines = text.split('\n');
+  return (
+    <>
+      {lines.map((line, i) => {
+        const m = SIGNATURE_LINE.exec(line);
+        const rendered = m ? (
+          <>
+            {m[1]}: <span className="signature-script">{m[2]}</span>
+          </>
+        ) : (
+          line
+        );
+        return (
+          <span key={i}>
+            {rendered}
+            {i < lines.length - 1 ? '\n' : null}
+          </span>
+        );
+      })}
+    </>
+  );
+}
+
 export function MergedBodyView({ body, className }: MergedBodyViewProps) {
   const text = (body ?? '').trim();
 
@@ -34,9 +71,10 @@ export function MergedBodyView({ body, className }: MergedBodyViewProps) {
       aria-label="Merged contract body"
       data-testid="merged-body"
     >
-      {/* Read-only: whitespace-preserved plain text, no inputs, no editing. */}
+      {/* Read-only: whitespace-preserved plain text, no inputs, no editing.
+          Signature values are styled (display-only) in a script face. */}
       <pre className="whitespace-pre-wrap break-words font-serif text-sm leading-relaxed text-green-900">
-        {text}
+        <BodyWithSignatures text={text} />
       </pre>
     </article>
   );

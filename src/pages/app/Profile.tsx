@@ -5,6 +5,10 @@ import { upsertMyProfile, uploadMyAvatar } from '../../lib/api';
 import { listLinkedProviders, linkOAuthIdentity } from '../../lib/auth';
 import { ENABLED_OAUTH_PROVIDERS, OAUTH_LABELS } from '../../lib/authConfig';
 import { useDocumentTitle } from '../../lib/hooks';
+import AvatarCropModal from '../../components/AvatarCropModal';
+
+/** Hard cap on the PICKED file (pre-crop). The uploaded blob is far smaller. */
+const MAX_AVATAR_INPUT_BYTES = 10 * 1024 * 1024;
 
 const RIDING_LEVELS = [
   { value: 'newcomer', label: 'New to riding' },
@@ -27,6 +31,7 @@ export default function Profile() {
   const [saved, setSaved] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [cropFile, setCropFile] = useState<File | null>(null);
   const [linked, setLinked] = useState<string[] | null>(null);
   const [linkError, setLinkError] = useState<string | null>(null);
 
@@ -34,19 +39,30 @@ export default function Profile() {
     listLinkedProviders().then(setLinked).catch(() => setLinked([]));
   }, [user?.id]);
 
-  async function onAvatarFile(e: React.ChangeEvent<HTMLInputElement>) {
+  // Crop-first: picking a file opens the crop modal; the upload happens only
+  // after Confirm, with the already-resized JPEG blob (never the raw file).
+  function onAvatarFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    e.target.value = ''; // re-picking the same file re-fires change
     if (!file) return;
     setUploadError(null);
+    if (file.size > MAX_AVATAR_INPUT_BYTES) {
+      setUploadError('That image is larger than 10MB. Please choose a smaller photo.');
+      return;
+    }
+    setCropFile(file);
+  }
+
+  async function onCropConfirm(blob: Blob) {
+    setCropFile(null);
     setUploading(true);
     try {
-      const url = await uploadMyAvatar(file);
+      const url = await uploadMyAvatar(blob, 'avatar.jpg');
       setAvatarUrl(url); // saved with the form; preview updates immediately
     } catch (err) {
       setUploadError(toErrorMessage(err, 'Upload failed.'));
     } finally {
       setUploading(false);
-      e.target.value = '';
     }
   }
 
@@ -177,10 +193,9 @@ export default function Profile() {
             />
             {uploading && <p className="form-hint mt-1">Uploading…</p>}
             {uploadError && <p role="alert" className="form-error mt-1">{uploadError}</p>}
-            <label className="form-label mt-4" htmlFor="avatar_url">…or paste an image URL</label>
-            <input id="avatar_url" className="form-input" value={avatarUrl}
-              onChange={(e) => setAvatarUrl(e.target.value)} placeholder="https://…" />
-            <p className="form-hint mt-1">Save the form to keep your new photo.</p>
+            <p className="form-hint mt-1">
+              You will crop your photo before it uploads. Save the form to keep your new photo.
+            </p>
           </div>
           <div className="sm:col-span-2">
             <label className="form-label" htmlFor="bio">About you</label>
@@ -197,6 +212,14 @@ export default function Profile() {
           {saved && <p className="text-xs text-green-700 mt-2 text-center">Saved.</p>}
         </div>
       </form>
+
+      {cropFile && (
+        <AvatarCropModal
+          file={cropFile}
+          onConfirm={onCropConfirm}
+          onCancel={() => setCropFile(null)}
+        />
+      )}
     </div>
   );
 }

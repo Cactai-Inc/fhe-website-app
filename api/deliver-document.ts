@@ -27,6 +27,31 @@ import { resolveTenantEmailIdentity, sendViaProvider, renderTemplate } from './_
 const CHANNEL = 'EMAIL';
 const TEMPLATE = 'contract_executed';
 
+/* Display-time signature styling for emails: wrap the value after a
+ * "Signature:" / "By (signature):" label in an email-safe inline-styled span
+ * (system cursive stack, no network font). The STORED merged_body is never
+ * altered — this only decorates the outgoing HTML. Multiline via the `gm`
+ * flags: each signature line is matched at its own line start/end. */
+const SIGNATURE_LINE_RE = /^((?:Signature|By \(signature\)):\s*)(.+)$/gm;
+const SIGNATURE_SPAN_STYLE =
+  "font-family:'Snell Roundhand','Segoe Script','Brush Script MT',cursive;font-size:1.4em";
+function withSignatureScript(body: string): string {
+  return body.replace(
+    SIGNATURE_LINE_RE,
+    (_m, label: string, name: string) =>
+      `${label}<span style="${SIGNATURE_SPAN_STYLE}">${name}</span>`,
+  );
+}
+
+/* Party copies carry the DOCUMENT TEXT ONLY: strip the trailing
+ * FACILITY RULES ACKNOWLEDGMENT block (appended by the kiosk sign RPC at the
+ * very end of merged_body) from the signer's email. The acknowledgment stays
+ * in the stored document, the company notification, and the admin/print view. */
+const FACILITY_RULES_TAIL_RE = /\n+FACILITY RULES ACKNOWLEDGMENT\n[\s\S]*$/;
+function stripFacilityRulesTail(body: string): string {
+  return body.replace(FACILITY_RULES_TAIL_RE, '\n');
+}
+
 interface PartyRow {
   contact_id: string;
   contacts: { email: string | null; first_name: string | null; last_name: string | null } | null;
@@ -101,8 +126,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const footerHtml = identity.footer
         ? `<hr/><p style="color:#666;font-size:12px;white-space:pre-line">${identity.footer}</p>`
         : '';
+      // PARTY copy = the document text ONLY: no 'Document DOC-…' metadata line
+      // and no trailing facility-rules acknowledgment block. (Both remain in the
+      // stored document, the company notice below, and the admin print view.)
       const docHtml = doc.merged_body
-        ? `<hr/><p style="color:#666;font-size:12px">Document ${doc.display_code ?? ''}</p><pre style="font-family:inherit;white-space:pre-wrap">${doc.merged_body}</pre>`
+        ? `<hr/><pre style="font-family:inherit;white-space:pre-wrap">${withSignatureScript(stripFacilityRulesTail(doc.merged_body))}</pre>`
         : '';
       const html = `${inner}${docHtml}${footerHtml}`;
 
@@ -144,7 +172,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         fromEmail: identity.fromEmail,
         subject: `Signed: ${doc.title} (${doc.display_code ?? documentId.slice(0, 8)})`,
         html: `<p>${signers || 'A signer'} executed <strong>${doc.title}</strong>.</p>`
-          + (doc.merged_body ? `<pre style="font-family:inherit;white-space:pre-wrap">${doc.merged_body}</pre>` : ''),
+          // Company copy keeps the FULL stored body (code line context is in the
+          // subject; acknowledgment block included) — only signatures are styled.
+          + (doc.merged_body ? `<pre style="font-family:inherit;white-space:pre-wrap">${withSignatureScript(doc.merged_body)}</pre>` : ''),
       });
       companyNotified = notice.ok;
     }
