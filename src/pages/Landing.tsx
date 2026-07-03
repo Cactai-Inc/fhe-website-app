@@ -61,9 +61,10 @@ export default function Landing() {
                 <em className="text-gold-300 not-italic">California Days Are Made For This</em>
               </h1>
 
-              {/* The invitation — an opening of the door, not a button */}
+              {/* The invitation — straight into the lessons funnel (linear path:
+                  Landing → Lessons → Booking Request → Confirmation) */}
               <Link
-                to="/ride"
+                to="/lessons"
                 className="group inline-flex items-center gap-3 animate-fade-up delay-200 focus-ring-dark"
               >
                 <span className="font-serif italic text-2xl sm:text-3xl text-white border-b border-gold-300/60 pb-1 group-hover:border-gold-300 transition-colors [text-shadow:0_2px_16px_rgba(0,0,0,0.5)]">

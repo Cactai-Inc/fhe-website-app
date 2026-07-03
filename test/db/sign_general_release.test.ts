@@ -13,8 +13,9 @@
  *    sealed CLIENT signature recorded; EXECUTES immediately — releases are
  *    unilateral (no COMPANY countersign party).
  *  - repeat visitor (same email) reuses the same contact.
- *  - validation fence: typed-name mismatch, missing contact channel, bad
- *    email, bad phone, unknown org are all rejected.
+ *  - validation fence: typed-name mismatch, missing email (REQUIRED at the
+ *    kiosk since 20260703060000 — attribution), bad email, bad phone,
+ *    unknown org are all rejected.
  *  - second-org isolation: a release signed for org B (explicit p_org) lands
  *    entirely in org B; org A staff see none of it and org B staff see all
  *    of it.
@@ -138,16 +139,20 @@ describe('validation fence (the anon rate-limit surface)', () => {
       .rejects.toThrow(/typed signature must match/);
   });
 
-  it('rejects a visitor with neither email nor phone', async () => {
+  it('rejects a visitor without an email (REQUIRED for kiosk attribution), even with a phone', async () => {
     await h.asAnon();
     await expect(sign('No Contact', null, null, 'No Contact'))
-      .rejects.toThrow(/email address or phone number/);
+      .rejects.toThrow(/email is required/);
+    await expect(sign('Phone Only', null, '619-555-0100', 'Phone Only'))
+      .rejects.toThrow(/email is required/);
+    await expect(sign('Blank Email', '   ', '619-555-0100', 'Blank Email'))
+      .rejects.toThrow(/email is required/);
   });
 
   it('rejects malformed email, malformed phone, blank name, unknown org', async () => {
     await h.asAnon();
     await expect(sign('Bad Email', 'not-an-email', null, 'Bad Email')).rejects.toThrow(/invalid email/);
-    await expect(sign('Bad Phone', null, 'call me maybe', 'Bad Phone')).rejects.toThrow(/invalid phone/);
+    await expect(sign('Bad Phone', 'bad.phone@y.test', 'call me maybe', 'Bad Phone')).rejects.toThrow(/invalid phone/);
     await expect(sign('', 'x@y.test', null, '')).rejects.toThrow(/first name/);
     await expect(sign('Ghost Org', 'g@y.test', null, 'Ghost Org', '00000000-0000-0000-0000-000000000001'))
       .rejects.toThrow(/unknown organization/);

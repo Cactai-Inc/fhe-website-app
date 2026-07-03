@@ -71,6 +71,14 @@ export const ROUTE_SEO: RouteSeo[] = [
     priority: 0.9,
   },
   {
+    path: '/services',
+    title: 'Ways to Ride — Lessons, Horse Care & Acquisition | French Heritage Equestrian',
+    description:
+      'Every way into French Heritage Equestrian: riding lessons and training for you, care and training for your horse, and expert acquisition support when you are ready for a horse of your own.',
+    indexable: true,
+    priority: 0.7,
+  },
+  {
     path: '/contact',
     title: 'Contact — French Heritage Equestrian | Coastal San Diego',
     description:

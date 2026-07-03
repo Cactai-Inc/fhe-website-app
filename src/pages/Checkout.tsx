@@ -1,12 +1,23 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, X, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { submitBooking } from '../lib/supabase';
 import type { ContactMethod } from '../lib/supabase';
 import { submitRequest, createDraftOrder } from '../lib/api';
 import { formatPrice } from '../lib/services';
+import {
+  DAY_SHORT,
+  EXPERIENCE_OPTIONS,
+  availabilityEntries,
+  availabilityText,
+  weekOptions,
+  type AvailabilitySelection,
+  type ExperienceValue,
+  type TimePreferences,
+  type WeekOption,
+} from '../lib/availability';
 import { useDocumentTitle } from '../lib/hooks';
 
 interface FormState {
@@ -15,7 +26,6 @@ interface FormState {
   email: string;
   phone: string;
   notes: string;
-  preferred_times: string;
 }
 
 const FUNNEL_LABELS: Record<string, string> = {
@@ -24,17 +34,29 @@ const FUNNEL_LABELS: Record<string, string> = {
   support: 'Rider Support',
 };
 
+/** Where "back / add more" points for each funnel (the canonical picker pages). */
+const FUNNEL_BACK: Record<string, string> = {
+  rider: '/lessons',
+  horse: '/horse',
+  support: '/acquisition',
+};
+
 const CONTACT_OPTIONS: { value: ContactMethod; label: string }[] = [
   { value: 'text', label: 'Text' },
   { value: 'call', label: 'Call' },
   { value: 'email', label: 'Email' },
 ];
 
+/** Weeks shown per page of the availability picker (compact enough for phones). */
+const WEEKS_PER_PAGE = 4;
+
+const DAY_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
 const usd = (n: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(n);
 
 export default function Checkout() {
-  useDocumentTitle('Your Inquiry');
+  useDocumentTitle('Submit a Booking Request');
   const { state, removeItem, subtotal, toSelectedServices, clearCart, inquirySummary } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -44,12 +66,50 @@ export default function Checkout() {
     email: '',
     phone: '',
     notes: '',
-    preferred_times: '',
   });
   const [contactMethod, setContactMethod] = useState<ContactMethod>('text');
+  const [experience, setExperience] = useState<ExperienceValue | null>(null);
+  // Availability — one global set of prefs + a pageable Sun–Sat week list.
+  const [timePrefs, setTimePrefs] = useState<TimePreferences>({
+    weekdayAm: false, weekdayPm: false, weekendAm: false, weekendPm: false,
+  });
+  const [weekPage, setWeekPage] = useState(0);
+  const [selectedWeeks, setSelectedWeeks] = useState<Record<string, WeekOption>>({});
+  const [anyDay, setAnyDay] = useState(false);
+  const [days, setDays] = useState<number[]>([]);
   const [errors, setErrors] = useState<Partial<FormState>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // "Today" is fixed for the visit so the list never shifts mid-fill.
+  const today = useMemo(() => new Date(), []);
+  const visibleWeeks = useMemo(
+    () => weekOptions(today, weekPage, WEEKS_PER_PAGE),
+    [today, weekPage],
+  );
+
+  function toggleWeek(week: WeekOption) {
+    setSelectedWeeks((prev) => {
+      const next = { ...prev };
+      if (next[week.startISO]) delete next[week.startISO];
+      else next[week.startISO] = week;
+      return next;
+    });
+  }
+
+  function toggleDay(day: number) {
+    setDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
+  }
+
+  function buildAvailability(): AvailabilitySelection {
+    return {
+      weeks: Object.values(selectedWeeks).sort((a, b) => a.startISO.localeCompare(b.startISO)),
+      prefs: timePrefs,
+      anyDay,
+      days: [...days].sort((a, b) => a - b),
+      ridingExperience: experience,
+    };
+  }
 
   const firstNameRef = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
@@ -89,7 +149,8 @@ export default function Checkout() {
           offering_slug: i.serviceId,
           label: `${i.serviceName} — ${i.tierLabel}`,
           price_amount: i.price,
-          price_unit: i.unit,
+          // 'lesson' is a UI-only unit; the order_items check constraint knows 'session'.
+          price_unit: i.unit === 'lesson' ? 'session' : i.unit,
         })),
         qualifiers: state.qualifierAnswers,
         subtotal,
@@ -128,6 +189,14 @@ export default function Checkout() {
 
     try {
       const fullName = [form.first_name.trim(), form.last_name.trim()].filter(Boolean).join(' ');
+      // Structured availability travels twice: as JSON in the proposed_times
+      // jsonb column AND as a clean human-readable block appended to the notes.
+      const availability = buildAvailability();
+      const availabilityBlock = availabilityText(availability);
+      const combinedNotes = [
+        form.notes.trim(),
+        availabilityBlock ? `— Availability & experience —\n${availabilityBlock}` : '',
+      ].filter(Boolean).join('\n\n');
       // Primary: write a structured request + selections (architecture-flow-spec).
       await submitRequest(
         {
@@ -135,10 +204,8 @@ export default function Checkout() {
           contact_email: form.email.trim(),
           contact_phone: form.phone.trim(),
           contact_method: contactMethod,
-          proposed_times: form.preferred_times.trim()
-            ? [{ date: '', time: form.preferred_times.trim() }]
-            : [],
-          notes: form.notes.trim() || undefined,
+          proposed_times: availabilityEntries(availability),
+          notes: combinedNotes || undefined,
         },
         state.items.map((i) => ({
           offering_slug: i.serviceId,
@@ -154,11 +221,13 @@ export default function Checkout() {
         phone: form.phone.trim(),
         funnel_type: state.funnel || 'rider',
         selected_services: toSelectedServices(),
-        qualifier_answers: state.qualifierAnswers,
+        qualifier_answers: experience
+          ? { ...state.qualifierAnswers, riding_experience_years: experience }
+          : state.qualifierAnswers,
         subtotal,
         notes: form.notes.trim() || undefined,
         contact_method: contactMethod,
-        preferred_times: form.preferred_times.trim() || undefined,
+        preferred_times: availabilityBlock ? availabilityBlock.replace(/\n/g, ' | ') : undefined,
       }).catch((e) => console.warn('legacy booking write failed', e));
 
       // Remember the chosen contact method for the confirmation copy.
@@ -169,7 +238,7 @@ export default function Checkout() {
       navigate('/confirmation');
     } catch (err) {
       console.error(err);
-      setSubmitError('Something went wrong sending your inquiry. Please try again or reach us directly.');
+      setSubmitError('Something went wrong sending your booking request. Please try again or reach us directly.');
       // Announce + focus the banner.
       requestAnimationFrame(() => errorBannerRef.current?.focus());
     } finally {
@@ -183,12 +252,18 @@ export default function Checkout() {
       <div className="min-h-screen bg-cream flex items-center justify-center pt-24 pb-20">
         <div className="text-center max-w-sm">
           <p className="eyebrow mb-4">Nothing selected yet</p>
-          <h2 className="heading-card text-green-800 mb-4">Your inquiry is empty</h2>
-          <p className="body-text text-sm mb-8">Choose a service path to get started.</p>
-          <Link to="/services" className="btn-primary focus-ring">
-            View Services
+          <h2 className="heading-card text-green-800 mb-4">Your request is empty</h2>
+          <p className="body-text text-sm mb-8">Pick a lesson option to get started.</p>
+          <Link to="/lessons" className="btn-primary focus-ring">
+            Book a Lesson
             <ArrowRight size={16} />
           </Link>
+          <p className="mt-5">
+            <Link to="/services" className="link-underline">
+              See every way to ride
+              <ArrowRight size={12} aria-hidden="true" />
+            </Link>
+          </p>
         </div>
       </div>
     );
@@ -203,16 +278,21 @@ export default function Checkout() {
         {/* Header */}
         <div className="mb-10">
           <Link
-            to={`/book/${state.funnel || 'rider'}`}
+            to={FUNNEL_BACK[state.funnel || 'rider'] ?? '/lessons'}
             className="inline-flex items-center gap-2 text-sm font-sans text-secondary hover:text-green-800 transition-colors mb-6 focus-ring"
           >
             <ArrowLeft size={16} />
             Back to Selection
           </Link>
-          <p className="eyebrow mb-2">{user ? 'Your order' : 'Say hello'}</p>
+          <p className="eyebrow mb-2">{user ? 'Your order' : 'Almost there'}</p>
           <h1 className="heading-section text-green-800">
-            {user ? 'Review & Continue' : 'Send Us Your Inquiry'}
+            {user ? 'Review & Continue' : 'Submit a Booking Request'}
           </h1>
+          {!user && (
+            <p className="body-text text-sm mt-3">
+              Send us this form and we will contact you to schedule your request.
+            </p>
+          )}
           {state.funnel && (
             <p className="body-text text-sm mt-2">
               Path: <span className="font-medium text-green-800">{FUNNEL_LABELS[state.funnel]}</span>
@@ -366,21 +446,190 @@ export default function Checkout() {
                   </div>
                 </fieldset>
 
-                {/* Preferred times */}
-                <div className="mt-6">
-                  <label className="form-label" htmlFor="preferred_times">
-                    When are you usually free?
-                  </label>
-                  <input
-                    id="preferred_times"
-                    name="preferred_times"
-                    type="text"
-                    value={form.preferred_times}
-                    onChange={handleChange}
-                    className="form-input"
-                    placeholder="A few days and times that tend to work for you"
-                  />
-                </div>
+                {/* Riding experience — single-select, in years */}
+                <fieldset className="mt-6">
+                  <legend className="form-label mb-2">Riding experience (years)</legend>
+                  <div role="radiogroup" aria-label="Riding experience in years" className="grid grid-cols-5 gap-2 sm:gap-3">
+                    {EXPERIENCE_OPTIONS.map((opt) => {
+                      const selected = experience === opt.value;
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          role="radio"
+                          aria-checked={selected}
+                          onClick={() => setExperience(opt.value)}
+                          className={`py-3 px-2 border text-sm font-sans text-center transition-all duration-200 focus-ring ${
+                            selected
+                              ? 'border-green-800 bg-green-800/5 text-green-900 font-medium'
+                              : 'border-green-800/15 bg-white text-secondary hover:border-green-800/40'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+
+                {/* Availability — global time prefs, week list, days of week */}
+                <fieldset className="mt-8">
+                  <legend className="form-label mb-1">When could you come out?</legend>
+                  <p className="form-hint mb-4">
+                    Check everything that works — we will find the exact time together.
+                  </p>
+
+                  {/* Global time-of-day preferences */}
+                  <div className="grid grid-cols-2 gap-3 mb-5">
+                    <fieldset className="border border-green-800/15 bg-white px-4 pb-3 pt-1">
+                      <legend className="text-[10px] font-sans uppercase tracking-wide text-gold-ink px-1">
+                        Weekdays
+                      </legend>
+                      <div className="flex items-center gap-5">
+                        <label className="inline-flex items-center gap-2 text-sm font-sans text-secondary cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="accent-green-800 focus-ring"
+                            checked={timePrefs.weekdayAm}
+                            onChange={() => setTimePrefs((p) => ({ ...p, weekdayAm: !p.weekdayAm }))}
+                          />
+                          AM
+                        </label>
+                        <label className="inline-flex items-center gap-2 text-sm font-sans text-secondary cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="accent-green-800 focus-ring"
+                            checked={timePrefs.weekdayPm}
+                            onChange={() => setTimePrefs((p) => ({ ...p, weekdayPm: !p.weekdayPm }))}
+                          />
+                          PM
+                        </label>
+                      </div>
+                    </fieldset>
+                    <fieldset className="border border-green-800/15 bg-white px-4 pb-3 pt-1">
+                      <legend className="text-[10px] font-sans uppercase tracking-wide text-gold-ink px-1">
+                        Weekends
+                      </legend>
+                      <div className="flex items-center gap-5">
+                        <label className="inline-flex items-center gap-2 text-sm font-sans text-secondary cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="accent-green-800 focus-ring"
+                            checked={timePrefs.weekendAm}
+                            onChange={() => setTimePrefs((p) => ({ ...p, weekendAm: !p.weekendAm }))}
+                          />
+                          AM
+                        </label>
+                        <label className="inline-flex items-center gap-2 text-sm font-sans text-secondary cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="accent-green-800 focus-ring"
+                            checked={timePrefs.weekendPm}
+                            onChange={() => setTimePrefs((p) => ({ ...p, weekendPm: !p.weekendPm }))}
+                          />
+                          PM
+                        </label>
+                      </div>
+                    </fieldset>
+                  </div>
+
+                  {/* Week list — Sunday-start weeks, paged forward from this week */}
+                  <fieldset className="mb-5">
+                    <legend className="form-label mb-0">
+                      Which weeks work? <span className="normal-case tracking-normal text-green-800/60">(Sun–Sat)</span>
+                    </legend>
+                    <div className="flex items-center justify-between mt-2 mb-2">
+                      <p className="form-hint">
+                        {Object.keys(selectedWeeks).length > 0
+                          ? `${Object.keys(selectedWeeks).length} week${Object.keys(selectedWeeks).length === 1 ? '' : 's'} selected`
+                          : 'Check as many as you like.'}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setWeekPage((p) => Math.max(0, p - 1))}
+                          disabled={weekPage === 0}
+                          aria-label="Earlier weeks"
+                          className="p-2 border border-green-800/15 bg-white text-green-800 transition-colors hover:border-green-800/40 disabled:opacity-30 disabled:cursor-not-allowed focus-ring"
+                        >
+                          <ChevronLeft size={14} aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setWeekPage((p) => p + 1)}
+                          aria-label="Later weeks"
+                          className="p-2 border border-green-800/15 bg-white text-green-800 transition-colors hover:border-green-800/40 focus-ring"
+                        >
+                          <ChevronRight size={14} aria-hidden="true" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 gap-2">
+                      {visibleWeeks.map((week) => {
+                        const checked = !!selectedWeeks[week.startISO];
+                        return (
+                          <label
+                            key={week.startISO}
+                            className={`flex items-center gap-3 border px-4 py-3 text-sm font-sans cursor-pointer transition-all duration-200 ${
+                              checked
+                                ? 'border-green-800 bg-green-800/5 text-green-900 font-medium'
+                                : 'border-green-800/15 bg-white text-secondary hover:border-green-800/40'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              className="accent-green-800 focus-ring"
+                              checked={checked}
+                              onChange={() => toggleWeek(week)}
+                            />
+                            {week.label}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </fieldset>
+
+                  {/* Days of the week — specific days OR open to any */}
+                  <fieldset>
+                    <legend className="form-label mb-2">Which days of the week?</legend>
+                    <label className="inline-flex items-center gap-2 text-sm font-sans text-secondary cursor-pointer mb-3">
+                      <input
+                        type="checkbox"
+                        className="accent-green-800 focus-ring"
+                        checked={anyDay}
+                        onChange={() => setAnyDay((v) => !v)}
+                      />
+                      I&rsquo;m open to any day of the week
+                    </label>
+                    <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+                      {DAY_SHORT.map((label, i) => {
+                        const checked = !anyDay && days.includes(i);
+                        return (
+                          <label
+                            key={label}
+                            className={`flex items-center justify-center gap-1.5 border py-2.5 px-1 text-xs font-sans uppercase tracking-wide transition-all duration-200 ${
+                              anyDay
+                                ? 'border-green-800/10 bg-white text-muted opacity-50 cursor-not-allowed'
+                                : checked
+                                  ? 'border-green-800 bg-green-800/5 text-green-900 font-medium cursor-pointer'
+                                  : 'border-green-800/15 bg-white text-secondary hover:border-green-800/40 cursor-pointer'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              className="accent-green-800 focus-ring"
+                              aria-label={DAY_FULL[i]}
+                              disabled={anyDay}
+                              checked={checked}
+                              onChange={() => toggleDay(i)}
+                            />
+                            {label}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </fieldset>
+                </fieldset>
 
                 {/* Notes */}
                 <div className="mt-5">
@@ -397,16 +646,6 @@ export default function Checkout() {
                     placeholder="Where you are in your riding, what you are hoping for, any questions at all…"
                   />
                 </div>
-              </div>
-
-              {/* Trust note */}
-              <div className="flex items-start gap-3 mb-6 px-1">
-                <ShieldCheck size={18} className="text-gold-ink flex-shrink-0 mt-0.5" aria-hidden="true" />
-                <p className="text-xs font-sans text-secondary leading-relaxed">
-                  This is just hello, not a booking. We read every note ourselves and will get back
-                  to you the same day, usually within the hour, however you would like us to reach you.
-                  French Heritage Equestrian is a fully licensed and insured equestrian business.
-                </p>
               </div>
 
               {/* Validation summary (announced) */}
@@ -434,17 +673,17 @@ export default function Checkout() {
                 disabled={submitting || state.items.length === 0}
                 className="btn-primary w-full justify-center"
               >
-                {submitting ? 'Sending…' : 'Send It Our Way'}
+                {submitting ? 'Submitting…' : 'Submit Booking Request'}
                 {!submitting && <ArrowRight size={16} />}
               </button>
             </form>
             )}
           </div>
 
-          {/* ── Right: Inquiry summary ── */}
+          {/* ── Right: Request summary ── */}
           <div className="lg:col-span-2">
             <div className="bg-white border border-green-800/10 p-7 sticky top-28">
-              <h2 className="font-serif font-medium text-green-800 text-xl mb-6">Your Inquiry</h2>
+              <h2 className="font-serif font-medium text-green-800 text-xl mb-6">Your Request</h2>
 
               {state.items.length === 0 ? (
                 <p className="text-sm font-sans text-muted italic mb-6">No services selected.</p>
@@ -499,18 +738,10 @@ export default function Checkout() {
                 </div>
               )}
 
-              {/* Orientation note — deliberately NOT a single blended total */}
-              <div className="border-t border-green-800/10 pt-5">
-                <p className="form-hint leading-relaxed">
-                  Pricing is shown for orientation only and is grouped by how each service is billed.
-                  Nothing is charged here — we will confirm everything when we speak.
-                </p>
-              </div>
-
               {/* Add more */}
-              <div className="mt-6 pt-6 border-t border-green-800/[0.08]">
+              <div className="pt-6 border-t border-green-800/[0.08]">
                 <Link
-                  to={`/book/${state.funnel || 'rider'}`}
+                  to={FUNNEL_BACK[state.funnel || 'rider'] ?? '/lessons'}
                   className="text-xs font-sans text-secondary hover:text-green-800 transition-colors flex items-center gap-1 focus-ring"
                 >
                   + Add or modify services

@@ -2,17 +2,24 @@
 /**
  * LANE-PUBLIC /release kiosk UI-interaction test (Wiring & Verification §15).
  *
- * Renders the REAL Release page with the REAL api-public fns mocked and proves:
- *  - the chooser renders all FOUR release buttons; choosing one loads the
- *    preview for THAT key (plus the FACILITY_RULES gate document),
- *  - a /release/:releaseKey deep link skips the chooser and previews the right
- *    release,
+ * Owner directive 2026-07-03: the kiosk serves ONLY the general visitor
+ * release; the other releases are signed in the client account. Renders the
+ * REAL Release page with the REAL api-public fns mocked and proves:
+ *  - the kiosk opens straight on the info step and loads the GENERAL release
+ *    preview (plus the FACILITY_RULES gate document) — no chooser,
+ *  - /release/general deep-links to the same form; a deep link to a retired
+ *    kiosk slug (participant, horse-care, …) renders the "signed in your
+ *    client account" notice with a /login link INSTEAD of the form, and loads
+ *    no previews,
+ *  - EMAIL IS REQUIRED on the info step (label + validation), matching the
+ *    sign_general_release RPC contract,
  *  - the minor checkbox swaps the info form between adult fields and
- *    minor + guardian fields,
+ *    minor + guardian fields (visitors bring kids),
  *  - the RULES GATE: continue stays disabled until the facility-rules checkbox
  *    is checked,
- *  - signing calls signRelease with the EXACT payload (adult AND minor paths)
- *    and renders the executed confirmation with the signed document body,
+ *  - signing calls signRelease with the EXACT payload (adult AND minor paths,
+ *    always RELEASE_GENERAL) and renders the executed confirmation with the
+ *    signed document body,
  *  - a rejected RPC renders the inline error branch (form stays up),
  *  - a failed preview load renders the load-error branch.
  */
@@ -33,9 +40,6 @@ import Release from './Release';
 
 const PREVIEWS: Record<string, { title: string; body: string }> = {
   RELEASE_GENERAL: { title: 'General Visitor Liability Release', body: 'GENERAL RELEASE BODY — assumes all risks…' },
-  RELEASE_PARTICIPANT: { title: 'Participant Liability Release', body: 'PARTICIPANT RELEASE BODY — assumes all risks…' },
-  RELEASE_HORSE_EXERCISE: { title: 'Horse Exercise Liability Release', body: 'HORSE EXERCISE RELEASE BODY — assumes all risks…' },
-  RELEASE_HORSE_CARE: { title: 'Horse Handling and Routine Care Liability Release', body: 'HORSE CARE RELEASE BODY — assumes all risks…' },
   FACILITY_RULES: { title: 'Facility Rules and Safety Acknowledgment', body: 'FACILITY RULES BODY — helmets required…' },
 };
 const RESULT = {
@@ -52,16 +56,14 @@ beforeEach(() => {
   vi.mocked(fetchReleasePreview).mockImplementation(async (key: string) => PREVIEWS[key] as never);
 });
 
-const chooserButton = (label: RegExp) => screen.getByRole('button', { name: label });
 const signButton = () => screen.getByRole('button', { name: /sign the release/i });
 const continueRules = () => screen.getByRole('button', { name: /continue to the facility rules/i });
 const continueRelease = () => screen.getByRole('button', { name: /continue to the release/i });
 
-/** chooser → info form filled for an adult → rules step. */
+/** info form filled for an adult (email REQUIRED) → rules step. */
 async function adultToRules() {
   renderWithRouter(<Release />);
-  await userEvent.click(chooserButton(/general visitor/i));
-  await userEvent.type(screen.getByLabelText(/^first name/i), 'Vera');
+  await userEvent.type(await screen.findByLabelText(/^first name/i), 'Vera');
   await userEvent.type(screen.getByLabelText(/^last name/i), 'Visitor');
   await userEvent.type(screen.getByLabelText(/email/i), 'vera@visitor.test');
   await userEvent.click(continueRules());
@@ -77,31 +79,55 @@ async function adultToSign() {
 }
 
 describe('Release', () => {
-  it('renders the four-release chooser and loads the preview for the chosen key', async () => {
+  it('opens straight on the general-release info form and loads that preview + the rules gate', async () => {
     renderWithRouter(<Release />);
-    expect(chooserButton(/general visitor/i)).toBeInTheDocument();
-    expect(chooserButton(/participant/i)).toBeInTheDocument();
-    expect(chooserButton(/horse exercise/i)).toBeInTheDocument();
-    expect(chooserButton(/horse care/i)).toBeInTheDocument();
-    expect(fetchReleasePreview).not.toHaveBeenCalled();
-
-    await userEvent.click(chooserButton(/horse exercise/i));
-    await waitFor(() => expect(fetchReleasePreview).toHaveBeenCalledWith('RELEASE_HORSE_EXERCISE'));
+    expect(await screen.findByLabelText(/^first name/i)).toBeInTheDocument();
+    // single-document kiosk: no chooser buttons anywhere
+    expect(screen.queryByRole('button', { name: /participant/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /horse/i })).not.toBeInTheDocument();
+    await waitFor(() => expect(fetchReleasePreview).toHaveBeenCalledWith('RELEASE_GENERAL'));
     expect(fetchReleasePreview).toHaveBeenCalledWith('FACILITY_RULES');
   });
 
-  it('a deep link (/release/horse-care) skips the chooser and previews that release', async () => {
-    renderWithRouter(<Release />, { route: '/release/horse-care', path: '/release/:releaseKey' });
-    expect(screen.queryByRole('button', { name: /general visitor/i })).not.toBeInTheDocument();
+  it('a /release/general deep link lands on the same general-release form', async () => {
+    renderWithRouter(<Release />, { route: '/release/general', path: '/release/:releaseKey' });
     expect(await screen.findByLabelText(/^first name/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/^last name/i)).toBeInTheDocument();
-    await waitFor(() => expect(fetchReleasePreview).toHaveBeenCalledWith('RELEASE_HORSE_CARE'));
+    await waitFor(() => expect(fetchReleasePreview).toHaveBeenCalledWith('RELEASE_GENERAL'));
+  });
+
+  it.each(['participant', 'horse-exercise', 'horse-care'])(
+    'a retired kiosk deep link (/release/%s) renders the sign-in notice, not a form',
+    async (slug) => {
+      renderWithRouter(<Release />, { route: `/release/${slug}`, path: '/release/:releaseKey' });
+      expect(
+        await screen.findByText(/signed in your client account/i),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /sign in/i })).toHaveAttribute('href', '/login');
+      expect(screen.getByText(/invitation link/i)).toBeInTheDocument();
+      // no form, no preview loads for in-account documents
+      expect(screen.queryByLabelText(/^first name/i)).not.toBeInTheDocument();
+      expect(fetchReleasePreview).not.toHaveBeenCalled();
+      expect(signRelease).not.toHaveBeenCalled();
+    },
+  );
+
+  it('EMAIL REQUIRED: continue stays disabled until an email is entered', async () => {
+    renderWithRouter(<Release />);
+    await userEvent.type(await screen.findByLabelText(/^first name/i), 'Vera');
+    await userEvent.type(screen.getByLabelText(/^last name/i), 'Visitor');
+    // a phone alone no longer satisfies the kiosk (attribution requires email)
+    await userEvent.type(screen.getByLabelText(/phone/i), '619-555-0100');
+    expect(screen.getByLabelText(/email/i)).toBeRequired();
+    expect(screen.getByText(/please provide an email address/i)).toBeInTheDocument();
+    expect(continueRules()).toBeDisabled();
+
+    await userEvent.type(screen.getByLabelText(/email/i), 'vera@visitor.test');
+    expect(continueRules()).toBeEnabled();
   });
 
   it('the minor checkbox swaps the info form to minor + guardian fields', async () => {
     renderWithRouter(<Release />);
-    await userEvent.click(chooserButton(/general visitor/i));
-    expect(screen.getByLabelText(/^first name/i)).toBeInTheDocument();
+    expect(await screen.findByLabelText(/^first name/i)).toBeInTheDocument();
     expect(screen.queryByLabelText(/minor's first name/i)).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByLabelText(/covers a minor/i));
@@ -164,12 +190,11 @@ describe('Release', () => {
     expect(screen.getByText(/EXECUTED BODY WITH COMPLETED SIGNATURE SECTION/)).toBeInTheDocument();
   });
 
-  it('MINOR path: signs with the exact minor + guardian payload', async () => {
+  it('MINOR path: signs the general release with the exact minor + guardian payload', async () => {
     vi.mocked(signRelease).mockResolvedValue(RESULT as never);
     renderWithRouter(<Release />);
-    await userEvent.click(chooserButton(/participant/i));
-    // the minor toggle lives on the info step (removed from the chooser per owner)
-    await userEvent.click(screen.getByLabelText(/covers a minor/i));
+    // visitors bring kids: the minor toggle stays on the single-document kiosk
+    await userEvent.click(await screen.findByLabelText(/covers a minor/i));
 
     await userEvent.type(screen.getByLabelText(/minor's first name/i), 'Mina');
     await userEvent.type(screen.getByLabelText(/minor's last name/i), 'Minor');
@@ -177,6 +202,7 @@ describe('Release', () => {
     await userEvent.type(screen.getByLabelText(/parent\/guardian first name/i), 'Gwen');
     await userEvent.type(screen.getByLabelText(/parent\/guardian last name/i), 'Guardian');
     await userEvent.type(screen.getByLabelText(/relationship to minor/i), 'Mother');
+    await userEvent.type(screen.getByLabelText(/email/i), 'gwen@guardian.test');
     await userEvent.type(screen.getByLabelText(/phone/i), '619-555-0100');
     await userEvent.click(continueRules());
 
@@ -190,10 +216,10 @@ describe('Release', () => {
     await userEvent.click(signButton());
 
     await waitFor(() => expect(signRelease).toHaveBeenCalledWith({
-      template_key: 'RELEASE_PARTICIPANT',
+      template_key: 'RELEASE_GENERAL',
       first_name: 'Gwen',
       last_name: 'Guardian',
-      email: null,
+      email: 'gwen@guardian.test',
       phone: '619-555-0100',
       typed_name: 'Gwen Guardian',
       is_minor: true,
@@ -220,7 +246,6 @@ describe('Release', () => {
   it('a failed preview load renders the load-error branch', async () => {
     vi.mocked(fetchReleasePreview).mockRejectedValue(new Error('network'));
     renderWithRouter(<Release />);
-    await userEvent.click(chooserButton(/general visitor/i));
     expect(await screen.findByRole('alert')).toHaveTextContent(/could not load the release/i);
   });
 });

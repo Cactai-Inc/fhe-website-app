@@ -24,6 +24,7 @@ export interface CadenceGroup {
 }
 
 const CADENCE_LABEL: Record<Cadence, string> = {
+  lesson: 'Per lesson',
   session: 'Per session',
   week: 'Weekly',
   month: 'Monthly',
@@ -31,7 +32,7 @@ const CADENCE_LABEL: Record<Cadence, string> = {
   percent: 'Percentage-based (estimated)',
 };
 
-const CADENCE_ORDER: Cadence[] = ['flat', 'session', 'week', 'month', 'percent'];
+const CADENCE_ORDER: Cadence[] = ['flat', 'lesson', 'session', 'week', 'month', 'percent'];
 
 /** Group cart items by billing cadence so different cadences are never summed
  *  into one misleading total. Percentage (brokering) is flagged as an estimate. */

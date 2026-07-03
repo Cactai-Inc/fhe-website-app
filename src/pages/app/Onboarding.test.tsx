@@ -14,7 +14,12 @@
  *  - step 3 shows the purchase summary (tier label, $ amount, lessons, PAID +
  *    method) and the documents link,
  *  - a member with nothing pending and no purchase gets the friendly
- *    "nothing to do" screen.
+ *    "nothing to do" screen,
+ *  - the MINOR RIDER toggle (owner 2026-07-03): off by default and ABSENT from
+ *    the save payload when untouched; on → required minor fields ride along as
+ *    has_minor:true + minor_*; a server-attached minor prefills the toggle and
+ *    switching it off sends an explicit has_minor:false; the confirmation
+ *    purchase card names the minor rider.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderWithRouter, screen, fireEvent, userEvent, waitFor } from '../../test/render';
@@ -57,8 +62,10 @@ const DOC_1 = { document_id: 'doc-1', template_key: 'liability_waiver', title: '
 const DOC_2 = { document_id: 'doc-2', template_key: 'lesson_policy', title: 'Lesson & Cancellation Policy', status: 'DRAFT' };
 
 const state = (over: Partial<OnboardingState>): OnboardingState => ({
-  needed: true, profile_complete: false, documents: [], purchase: PURCHASE, ...over,
+  needed: true, profile_complete: false, documents: [], purchase: PURCHASE, minor: null, ...over,
 });
+
+const MINOR = { first_name: 'Mia', last_name: 'Client', dob: '2018-05-06' };
 
 const docRow = (id: string, body: string) => ({
   id, display_code: null, engagement_id: 'eng-1', template_id: 'tpl-1', title: 'x',
@@ -133,6 +140,8 @@ describe('Onboarding — 3-step rider flow', () => {
       emergency_contact_1_phone: '555-0101',
       riding_experience_years: '3',
     }));
+    // the minor toggle was never touched → NO minor keys in the payload
+    expect(vi.mocked(updateMyOnboardingProfile).mock.calls[0][0]).not.toHaveProperty('has_minor');
     await waitFor(() => expect(generateMyOnboardingDocuments).toHaveBeenCalledTimes(1));
 
     // ── Step 2: document 1 of 2 — merged body + type-to-sign ───────────────
@@ -196,5 +205,80 @@ describe('Onboarding — 3-step rider flow', () => {
     expect(screen.getByRole('link', { name: /back to your dashboard/i })).toHaveAttribute('href', '/app');
     expect(updateMyOnboardingProfile).not.toHaveBeenCalled();
     expect(signMyDocument).not.toHaveBeenCalled();
+  });
+});
+
+describe('Onboarding — minor rider toggle', () => {
+  /** Fill the always-required details so the form submits. */
+  async function fillRequiredDetails() {
+    expect(await screen.findByText('Your details')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Date of birth'), { target: { value: '1990-04-01' } });
+    await userEvent.type(screen.getByLabelText('Contact 1 name'), 'Bob Client');
+    await userEvent.type(screen.getByLabelText('Contact 1 relationship'), 'Spouse');
+    await userEvent.type(screen.getByLabelText('Contact 1 phone'), '555-0101');
+  }
+
+  it('toggle ON reveals the required minor fields and sends has_minor + minor_* in the payload', async () => {
+    vi.mocked(myOnboardingState)
+      .mockResolvedValueOnce(state({ profile_complete: false, documents: [] }))
+      .mockResolvedValueOnce(state({ profile_complete: true, documents: [DOC_1, DOC_2], minor: MINOR }));
+    renderWithRouter(<Onboarding />);
+    await fillRequiredDetails();
+
+    // off by default, fields hidden
+    expect(screen.getByLabelText(/minor rider/i)).not.toBeChecked();
+    expect(screen.queryByLabelText('Minor first name')).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByLabelText(/minor rider/i));
+    expect(screen.getByLabelText('Minor first name')).toBeRequired();
+    expect(screen.getByLabelText('Minor last name')).toBeRequired();
+    expect(screen.getByLabelText('Minor date of birth')).toBeRequired();
+
+    await userEvent.type(screen.getByLabelText('Minor first name'), 'Mia');
+    await userEvent.type(screen.getByLabelText('Minor last name'), 'Client');
+    fireEvent.change(screen.getByLabelText('Minor date of birth'), { target: { value: '2018-05-06' } });
+
+    await userEvent.click(screen.getByRole('button', { name: /save & continue/i }));
+    await waitFor(() => expect(updateMyOnboardingProfile).toHaveBeenCalledWith(expect.objectContaining({
+      has_minor: true,
+      minor_first_name: 'Mia',
+      minor_last_name: 'Client',
+      minor_dob: '2018-05-06',
+    })));
+  });
+
+  it('a server-attached minor prefills the toggle; switching it off sends an explicit has_minor:false', async () => {
+    vi.mocked(myOnboardingState)
+      .mockResolvedValueOnce(state({ profile_complete: false, documents: [], minor: MINOR }))
+      .mockResolvedValueOnce(state({ profile_complete: true, documents: [DOC_1, DOC_2] }));
+    renderWithRouter(<Onboarding />);
+    await fillRequiredDetails();
+
+    // prefilled from my_onboarding_state().minor
+    expect(screen.getByLabelText(/minor rider/i)).toBeChecked();
+    expect(screen.getByLabelText('Minor first name')).toHaveValue('Mia');
+    expect(screen.getByLabelText('Minor last name')).toHaveValue('Client');
+    expect(screen.getByLabelText('Minor date of birth')).toHaveValue('2018-05-06');
+
+    // explicit toggle-off → the minor detaches server-side
+    await userEvent.click(screen.getByLabelText(/minor rider/i));
+    expect(screen.queryByLabelText('Minor first name')).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: /save & continue/i }));
+    await waitFor(() => expect(updateMyOnboardingProfile).toHaveBeenCalledWith(
+      expect.objectContaining({ has_minor: false })));
+    expect(vi.mocked(updateMyOnboardingProfile).mock.calls[0][0]).not.toHaveProperty('minor_first_name');
+  });
+
+  it('the confirmation purchase card names the minor rider', async () => {
+    vi.mocked(myOnboardingState).mockResolvedValue(state({
+      needed: false,
+      profile_complete: true,
+      documents: [{ ...DOC_1, status: 'EXECUTED' }, { ...DOC_2, status: 'EXECUTED' }],
+      minor: MINOR,
+    }));
+    renderWithRouter(<Onboarding />);
+    expect(await screen.findByRole('heading', { name: /you're all set/i })).toBeInTheDocument();
+    expect(screen.getByTestId('purchase-card')).toHaveTextContent('Rider: Mia Client');
   });
 });

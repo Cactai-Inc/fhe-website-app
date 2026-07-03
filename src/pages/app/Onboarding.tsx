@@ -23,17 +23,32 @@ import type { Profile } from '../../lib/types';
  * my_onboarding_state():
  *   1. "Your details"  — update_my_onboarding_profile, then regenerate the
  *      unsigned docs with the fresh profile data (names/addresses merge in).
+ *      Minor riders join HERE (owner directive 2026-07-03): the parent/legal
+ *      guardian toggles "This is for a minor rider" and enters the minor's
+ *      name + DOB; the RPC attaches the minor as the engagement's non-signing
+ *      PARTICIPANT party, so the regenerated documents keep the MINOR_*
+ *      sections with the minor's identity merged in. Toggling OFF (after it
+ *      was on) sends has_minor:false, which detaches the minor from unsigned
+ *      engagements; leaving it untouched sends no minor keys at all.
  *   2. "Review & sign" — each non-EXECUTED doc in signing order: full merged
  *      body, then type-to-sign. record_signature enforces the typed name
  *      EXACTLY matches the printed name, so the sign button stays disabled
- *      until the typed name matches. Each successful sign fires the
- *      best-effort /api/deliver-document email (Release.tsx pattern).
- *   3. "You're all set" — purchase summary + where the signed copies live.
+ *      until the typed name matches. The GUARDIAN is the CLIENT signer either
+ *      way — a minor never signs. Each successful sign fires the best-effort
+ *      /api/deliver-document email (Release.tsx pattern).
+ *   3. "You're all set" — purchase summary (+ the minor rider's name when one
+ *      is attached) + where the signed copies live.
  */
 
 type Step = 'details' | 'sign' | 'done';
 
-const EMPTY_FORM: Required<OnboardingProfileInput> = {
+/** The plain profile fields (the minor toggle + fields are tracked apart). */
+type ProfileFormFields = Omit<
+  OnboardingProfileInput,
+  'has_minor' | 'minor_first_name' | 'minor_last_name' | 'minor_dob'
+>;
+
+const EMPTY_FORM: Required<ProfileFormFields> = {
   phone: '',
   date_of_birth: '',
   address_street: '',
@@ -68,8 +83,9 @@ function planQuantity(p: OnboardingPurchase): string | null {
   return null;
 }
 
-/** Purchase summary card (step 3 + revisits after completion). */
-function PurchaseCard({ purchase }: { purchase: OnboardingPurchase }) {
+/** Purchase summary card (step 3 + revisits after completion). Shows the
+ *  minor rider's name when the plan is for a minor (the guardian signed). */
+function PurchaseCard({ purchase, riderName }: { purchase: OnboardingPurchase; riderName?: string | null }) {
   const quantity = planQuantity(purchase);
   return (
     <div className="bg-white border border-green-800/10 p-6 mb-6" data-testid="purchase-card">
@@ -78,6 +94,7 @@ function PurchaseCard({ purchase }: { purchase: OnboardingPurchase }) {
         <div>
           <p className="font-serif text-xl text-green-800">{purchase.tier_label}</p>
           {quantity && <p className="text-sm text-secondary mt-1">{quantity}</p>}
+          {riderName && <p className="text-sm text-secondary mt-1">Rider: {riderName}</p>}
         </div>
         <p className="font-serif text-2xl text-green-800 whitespace-nowrap">{formatAmount(purchase.amount)}</p>
       </div>
@@ -123,9 +140,18 @@ export default function Onboarding() {
   const [loadError, setLoadError] = useState<string | null>(null);
 
   // Step 1 — details form
-  const [form, setForm] = useState<Required<OnboardingProfileInput>>(EMPTY_FORM);
+  const [form, setForm] = useState<Required<ProfileFormFields>>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Step 1 — minor rider toggle. `hadMinor` tracks the SERVER's state (from
+  // my_onboarding_state().minor) so an explicit toggle-off sends
+  // has_minor:false, while never-touched sends no minor keys at all.
+  const [hasMinor, setHasMinor] = useState(false);
+  const [hadMinor, setHadMinor] = useState(false);
+  const [minorFirst, setMinorFirst] = useState('');
+  const [minorLast, setMinorLast] = useState('');
+  const [minorDob, setMinorDob] = useState('');
 
   // Step 2 — review & sign
   const [body, setBody] = useState<string | null>(null);
@@ -141,6 +167,14 @@ export default function Onboarding() {
         if (!active) return;
         setState(s);
         setProfile(p);
+        // Prefill the minor toggle from the attached PARTICIPANT (if any).
+        if (s.minor) {
+          setHasMinor(true);
+          setHadMinor(true);
+          setMinorFirst(s.minor.first_name ?? '');
+          setMinorLast(s.minor.last_name ?? '');
+          setMinorDob(s.minor.dob ?? '');
+        }
         // Prefill the details form from what we already know about them.
         if (p) {
           setForm((prev) => ({
@@ -178,7 +212,7 @@ export default function Onboarding() {
     return () => { active = false; };
   }, [step, currentDoc?.document_id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const upd = (key: keyof OnboardingProfileInput) =>
+  const upd = (key: keyof ProfileFormFields) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       setForm((prev) => ({ ...prev, [key]: e.target.value }));
 
@@ -187,10 +221,25 @@ export default function Onboarding() {
     setSaving(true);
     setSaveError(null);
     try {
-      await updateMyOnboardingProfile(form);
+      // Minor keys ride along ONLY when the toggle is on (attach/update) or
+      // was explicitly turned off after having been on (has_minor:false →
+      // detach). Untouched, no minor key is sent and the server leaves the
+      // minor state alone.
+      const payload: OnboardingProfileInput = { ...form };
+      if (hasMinor) {
+        payload.has_minor = true;
+        payload.minor_first_name = minorFirst;
+        payload.minor_last_name = minorLast;
+        payload.minor_dob = minorDob;
+      } else if (hadMinor) {
+        payload.has_minor = false;
+      }
+      await updateMyOnboardingProfile(payload);
       // Regenerate the unsigned docs so the fresh details merge into the text.
       await generateMyOnboardingDocuments();
-      setState(await myOnboardingState());
+      const next = await myOnboardingState();
+      setState(next);
+      setHadMinor(Boolean(next.minor));
       setStep('sign');
     } catch (err) {
       setSaveError(toErrorMessage(err, 'Could not save your details.'));
@@ -275,6 +324,38 @@ export default function Onboarding() {
           <p className="text-sm text-muted mb-6">
             These fill in your lesson paperwork — you'll review and sign it next.
           </p>
+
+          <h3 className="form-label mb-3">Rider</h3>
+          <label className="flex items-start gap-3 mb-4 cursor-pointer">
+            <input
+              type="checkbox"
+              className="mt-1"
+              checked={hasMinor}
+              onChange={(e) => setHasMinor(e.target.checked)}
+            />
+            <span className="body-text text-sm">
+              This is for a minor rider (I am the parent/legal guardian).
+            </span>
+          </label>
+          {hasMinor && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+              <div>
+                <label className="form-label" htmlFor="ob-minor-first">Minor first name</label>
+                <input id="ob-minor-first" required className="form-input" value={minorFirst}
+                  onChange={(e) => setMinorFirst(e.target.value)} autoComplete="off" />
+              </div>
+              <div>
+                <label className="form-label" htmlFor="ob-minor-last">Minor last name</label>
+                <input id="ob-minor-last" required className="form-input" value={minorLast}
+                  onChange={(e) => setMinorLast(e.target.value)} autoComplete="off" />
+              </div>
+              <div>
+                <label className="form-label" htmlFor="ob-minor-dob">Minor date of birth</label>
+                <input id="ob-minor-dob" type="date" required className="form-input" value={minorDob}
+                  onChange={(e) => setMinorDob(e.target.value)} />
+              </div>
+            </div>
+          )}
 
           <h3 className="form-label mb-3">Contact</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-2">
@@ -451,7 +532,14 @@ export default function Onboarding() {
             </p>
           </div>
 
-          {state?.purchase && <PurchaseCard purchase={state.purchase} />}
+          {state?.purchase && (
+            <PurchaseCard
+              purchase={state.purchase}
+              riderName={state.minor
+                ? [state.minor.first_name, state.minor.last_name].filter(Boolean).join(' ')
+                : null}
+            />
+          )}
 
           <div className="flex flex-wrap gap-4">
             <Link to="/app" className="btn-primary">

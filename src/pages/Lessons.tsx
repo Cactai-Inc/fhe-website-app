@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Check, Gift } from 'lucide-react';
 import { usePrefersReducedMotion } from '../lib/hooks';
 import { useCart } from '../contexts/CartContext';
-import { LESSON_PACKS, LESSON_ADDONS } from '../lib/catalog';
+import { LESSON_PACKS } from '../lib/catalog';
 import Seo from '../components/Seo';
 import { seoForPath } from '../lib/seo';
 
@@ -13,28 +13,19 @@ const usd = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', c
 export default function Lessons() {
   const seo = seoForPath('/lessons');
   const reducedMotion = usePrefersReducedMotion();
-  const { toggleItem, isSelected, addItem, itemCount } = useCart();
+  const { toggleItem, isSelected, itemCount, setFunnel } = useCart();
   const navigate = useNavigate();
-  const [addons, setAddons] = useState<Record<string, boolean>>({});
+
+  // This is the rider path — keeps the booking-request page's back link honest.
+  useEffect(() => {
+    setFunnel('rider');
+  }, [setFunnel]);
 
   function selectPack(p: typeof LESSON_PACKS[number]) {
     toggleItem({
       serviceId: 'riding-lesson', serviceName: 'Riding Lessons',
       tierId: p.id, tierLabel: p.label, price: p.price, unit: p.unit,
     });
-  }
-
-  function continueToCheckout() {
-    // Add any chosen add-ons before heading to checkout.
-    for (const a of LESSON_ADDONS) {
-      if (addons[a.id]) {
-        addItem({
-          serviceId: `addon-${a.id}`, serviceName: 'Lesson Add-on',
-          tierId: a.id, tierLabel: a.label, price: a.price, unit: 'flat',
-        });
-      }
-    }
-    navigate('/checkout');
   }
 
   return (
@@ -110,40 +101,10 @@ export default function Lessons() {
             })}
           </div>
 
-          {/* Add-ons */}
-          <div className="mt-12">
-            <p className="eyebrow mb-4 text-center">Make it count — optional add-ons</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl mx-auto">
-              {LESSON_ADDONS.map((a) => {
-                const on = !!addons[a.id];
-                return (
-                  <button
-                    key={a.id}
-                    type="button"
-                    onClick={() => setAddons((s) => ({ ...s, [a.id]: !s[a.id] }))}
-                    aria-pressed={on}
-                    className={`text-left p-5 border transition-all duration-200 focus-ring bg-white ${
-                      on ? 'border-green-800 ring-1 ring-green-800/20' : 'border-green-800/15 hover:border-green-800/40'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <h4 className="font-sans font-medium text-green-900 text-sm">{a.label}</h4>
-                      <span className="font-serif text-green-800">{usd(a.price)}</span>
-                    </div>
-                    <p className="text-xs text-muted mt-1.5">{a.description}</p>
-                    <span className={`inline-flex items-center gap-1.5 mt-3 text-[11px] font-sans uppercase tracking-wide ${on ? 'text-green-800 font-medium' : 'text-muted'}`}>
-                      {on ? <><Check size={12} /> Added</> : '+ Add'}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Actions */}
+          {/* Actions — the single primary step forward */}
           <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <button type="button" onClick={continueToCheckout} disabled={itemCount === 0} className="btn-primary">
-              Continue
+            <button type="button" onClick={() => navigate('/checkout')} disabled={itemCount === 0} className="btn-primary">
+              Continue to Booking Request
               <ArrowRight size={16} />
             </button>
             <Link to="/gift?item=lessons" className="inline-flex items-center gap-2 text-sm font-sans text-secondary hover:text-green-800 transition-colors focus-ring">

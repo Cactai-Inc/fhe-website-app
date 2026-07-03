@@ -1,7 +1,10 @@
 /* Service catalog for French Heritage Equestrian */
 
 export type ServiceCategory = 'rider' | 'horse' | 'support';
-export type PriceUnit = 'session' | 'month' | 'week' | 'flat' | 'percent';
+/* 'lesson' is a UI-only unit (riding lessons price "per lesson", not "per
+ * session"). The DB check constraint doesn't know it — map it to 'session'
+ * before any order_items/offering_tiers write (see Checkout.handleStartPurchase). */
+export type PriceUnit = 'lesson' | 'session' | 'month' | 'week' | 'flat' | 'percent';
 
 export interface ServiceTier {
   id: string;
@@ -38,14 +41,14 @@ export const RIDING_LESSON: Service = {
       label: 'Evaluation Lesson',
       description: 'Required before the first lesson for every new client',
       price: 150,
-      unit: 'session',
+      unit: 'lesson',
     },
     {
       id: 'single',
       label: 'Single Lesson',
       description: '60-minute private lesson on our horses',
       price: 150,
-      unit: 'session',
+      unit: 'lesson',
     },
     {
       id: 'punch4',
@@ -92,7 +95,7 @@ export const RIDING_LESSON: Service = {
       label: 'Own Horse — Single Lesson',
       description: 'For horse owners and lessees: a lesson on your own horse',
       price: 120,
-      unit: 'session',
+      unit: 'lesson',
     },
     {
       id: 'own-weekly1',
@@ -388,6 +391,7 @@ export function formatPrice(price: number, unit: PriceUnit): string {
   switch (unit) {
     case 'month':   return `${formatted} / mo`;
     case 'week':    return `${formatted} / wk`;
+    case 'lesson':  return `${formatted} / lesson`;
     case 'session': return `${formatted} / session`;
     case 'percent': return `${price}% of sale price`;
     default:        return formatted;

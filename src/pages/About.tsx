@@ -196,12 +196,18 @@ export default function About() {
         <div className="container-site flex flex-col sm:flex-row items-center justify-between gap-8">
           <div>
             <h2 className="heading-card text-green-800">Ready to ride with us?</h2>
-            <p className="body-text text-sm mt-1">Tell us what you're drawn to, and we'll take it from there.</p>
+            <p className="body-text text-sm mt-1">Book a lesson and we'll take it from there.</p>
           </div>
-          <Link to="/services" className="btn-primary flex-shrink-0">
-            Ways to Ride
-            <ArrowRight size={16} />
-          </Link>
+          <div className="flex flex-col items-center sm:items-end gap-4 flex-shrink-0">
+            <Link to="/lessons" className="btn-primary">
+              Book a Lesson
+              <ArrowRight size={16} />
+            </Link>
+            <Link to="/services" className="link-underline">
+              See every way to ride
+              <ArrowRight size={12} aria-hidden="true" />
+            </Link>
+          </div>
         </div>
       </section>
     </>

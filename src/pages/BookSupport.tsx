@@ -247,7 +247,7 @@ export default function BookSupport() {
             disabled={step === 0 ? !canProceedStep0 : step === 1 ? !canProceedStep1 : false}
             className="btn-primary"
           >
-            {step === STEPS.length - 1 ? 'Continue to Checkout' : 'Continue'}
+            {step === STEPS.length - 1 ? 'Continue to Booking Request' : 'Continue'}
             <ArrowRight size={16} />
           </button>
         </div>

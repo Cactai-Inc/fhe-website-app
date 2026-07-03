@@ -56,7 +56,7 @@ export default function BookRider() {
       setStep((s) => s - 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
-      navigate('/ride');
+      navigate('/lessons');
     }
   }
 
@@ -260,7 +260,7 @@ export default function BookRider() {
             disabled={step === 0 ? !canProceedStep0 : step === 1 ? !canProceedStep1 : false}
             className="btn-primary"
           >
-            {step === STEPS.length - 1 ? 'Continue to Checkout' : 'Continue'}
+            {step === STEPS.length - 1 ? 'Continue to Booking Request' : 'Continue'}
             <ArrowRight size={16} />
           </button>
         </div>

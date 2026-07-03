@@ -68,8 +68,13 @@ export interface OfferingTier {
 }
 
 export interface ProposedTime {
-  date: string;   // ISO date
-  time: string;   // free text e.g. "morning" or "10am"
+  date: string;   // ISO date ('' when no specific week was chosen)
+  time: string;   // free text e.g. "morning" or "Weekdays AM & PM"
+  /* Structured-availability extras (booking request week picker). Optional so
+   * legacy {date, time} entries remain valid rows in the same jsonb column. */
+  end?: string;   // ISO date — Saturday closing the Sun–Sat window
+  label?: string; // human-readable window, e.g. 'Jul 5 – Jul 11, 2026'
+  days?: string;  // day-of-week preference, e.g. 'Open to any day of the week' or 'Mon, Wed'
 }
 
 export interface RequestInput {

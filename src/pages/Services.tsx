@@ -34,8 +34,8 @@ const PATHS: PathCard[] = [
       'Hunter/jumper training',
       'Horsemanship classes',
     ],
-    cta: 'See the ways to ride',
-    href: '/book/rider',
+    cta: 'Book a lesson',
+    href: '/lessons',
     img: RIDER_IMG,
   },
   {
@@ -51,7 +51,7 @@ const PATHS: PathCard[] = [
       'Functional clipping',
     ],
     cta: 'Care for your horse',
-    href: '/book/horse',
+    href: '/horse',
     img: HORSE_IMG,
   },
   {
@@ -67,7 +67,7 @@ const PATHS: PathCard[] = [
       'Purchase & lease brokering',
     ],
     cta: 'We will handle it',
-    href: '/book/support',
+    href: '/acquisition',
     img: SUPPORT_IMG,
   },
 ];

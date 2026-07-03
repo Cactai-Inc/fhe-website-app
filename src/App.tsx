@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { CartProvider } from './contexts/CartContext';
 import { AuthProvider } from './contexts/AuthContext';
@@ -9,7 +9,7 @@ import Layout from './components/layout/Layout';
 import AppLayout from './components/app/AppLayout';
 import Landing from './pages/Landing';
 import About from './pages/About';
-import RiderEntrance from './pages/RiderEntrance';
+import Services from './pages/Services';
 import Contact from './pages/Contact';
 import Lessons from './pages/Lessons';
 import MembershipFunnel from './pages/MembershipFunnel';
@@ -104,9 +104,11 @@ export function AppRoutes() {
             <Route element={<Layout />}>
               <Route path="/" element={<Landing />} />
               <Route path="/about" element={<About />} />
+              <Route path="/services" element={<Services />} />
               <Route path="/contact" element={<Contact />} />
-              {/* Rider entrance — what "Come ride with us" opens into */}
-              <Route path="/ride" element={<RiderEntrance />} />
+              {/* Old rider-entrance interstitial — folded into the linear
+                  funnel; legacy links land straight on the lessons page. */}
+              <Route path="/ride" element={<Navigate to="/lessons" replace />} />
               {/* Self-contained funnels, each its own page */}
               <Route path="/lessons" element={<Lessons />} />
               <Route path="/membership" element={<MembershipFunnel />} />

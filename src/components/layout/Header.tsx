@@ -48,7 +48,7 @@ export default function Header() {
       <Link
         to="/checkout"
         className={`items-center gap-2 text-xs font-sans tracking-wide text-white/80 hover:text-white transition-colors focus-ring-dark ${extraClass}`}
-        aria-label={`${itemCount} ${itemCount === 1 ? 'item' : 'items'} in your inquiry`}
+        aria-label={`${itemCount} ${itemCount === 1 ? 'item' : 'items'} in your booking request`}
       >
         <span className="relative">
           <ShoppingBag size={18} aria-hidden="true" />

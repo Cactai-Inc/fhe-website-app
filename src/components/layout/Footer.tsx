@@ -35,9 +35,9 @@ export default function Footer() {
               { label: 'Home', href: '/' },
               { label: 'Our Story', href: '/about' },
               { label: 'Ways to Ride', href: '/services' },
-              { label: 'Rider Services', href: '/book/rider' },
-              { label: 'Horse Services', href: '/book/horse' },
-              { label: 'Rider Support', href: '/book/support' },
+              { label: 'Book a Lesson', href: '/lessons' },
+              { label: 'Horse Care', href: '/horse' },
+              { label: 'Acquisition Support', href: '/acquisition' },
             ].map((link) => (
               <Link
                 key={link.label}

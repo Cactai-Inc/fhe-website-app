@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { Check, PenLine } from 'lucide-react';
 import Seo from '../components/Seo';
 import { BodyWithSignatures } from '../components/ops/documents/MergedBodyView';
@@ -7,16 +7,21 @@ import { fetchReleasePreview, signRelease } from '../lib/ops/api-public';
 import type { ReleasePreview, ReleaseTemplateKey, SignReleaseResult } from '../lib/ops/api-public';
 
 /**
- * /release — the public release kiosk (all four releases).
+ * /release — the public release kiosk.
  *
- * Flow (owner-directed):
- *   chooser — four buttons, one per release (skipped by a /release/:releaseKey
- *             deep link), with a "minor involved" checkbox;
+ * Owner directive 2026-07-03: the kiosk serves ONLY the general visitor
+ * release (RELEASE_GENERAL — the non-transactional walk-in document). Every
+ * other release is signed in the client's account (or via their invitation
+ * link); a deep link to a retired kiosk slug renders a sign-in notice instead
+ * of a form. Email is REQUIRED (kiosk attribution), matching the
+ * sign_general_release RPC contract.
+ *
+ * Flow:
  *   info    — capture the signer's details (adult fields, or minor + guardian
- *             fields when the minor box is checked);
+ *             fields when the minor box is checked — visitors bring kids);
  *   rules   — the FACILITY_RULES gate: the merged rules document plus a
  *             required "I have read and agree" checkbox;
- *   sign    — the chosen release (merged preview, truncated BEFORE the
+ *   sign    — the general release (merged preview, truncated BEFORE the
  *             signature area) with the captured details shown filled in; the
  *             signer types their name to sign;
  *   done    — the EXECUTED document (completed signature section, DOB for a
@@ -24,7 +29,7 @@ import type { ReleasePreview, ReleaseTemplateKey, SignReleaseResult } from '../l
  *
  * Signing calls the sign_release RPC (20260702050000): the server creates the
  * real contact/engagement, merges the document through generate_document,
- * strips the inapplicable signer section, and records the sealed typed
+ * strips the inapplicable minor section, and records the sealed typed
  * signature. The RPC re-validates everything — the client-side checks only
  * mirror it.
  */
@@ -41,34 +46,20 @@ export const RELEASE_OPTIONS: {
     label: 'General Visitor',
     description: 'For anyone visiting the property.',
   },
-  {
-    key: 'RELEASE_PARTICIPANT',
-    slug: 'participant',
-    label: 'Participant',
-    description: 'For riders and participants in lessons, training, and other equestrian activities.',
-  },
-  {
-    key: 'RELEASE_HORSE_EXERCISE',
-    slug: 'horse-exercise',
-    label: 'Horse Exercise',
-    description: 'For horse owners, lessees, or lessors placing a horse in exercise, schooling, or training.',
-  },
-  {
-    key: 'RELEASE_HORSE_CARE',
-    slug: 'horse-care',
-    label: 'Horse Care',
-    description: 'For horse owners, lessees, or lessors receiving handling, routine care, or emergency stabilization.',
-  },
 ];
 
-type Step = 'choose' | 'info' | 'rules' | 'sign';
+type Step = 'info' | 'rules' | 'sign';
 
 export default function Release() {
   const { releaseKey } = useParams();
-  const deepLinked = RELEASE_OPTIONS.find((o) => o.slug === releaseKey) ?? null;
+  // The kiosk signs ONLY the general visitor release. Any other deep-linked
+  // slug (participant, horse-exercise, horse-care, …) is an in-account
+  // document now — show the sign-in notice instead of a form.
+  const blocked = releaseKey !== undefined
+    && !RELEASE_OPTIONS.some((o) => o.slug === releaseKey);
+  const selected: ReleaseTemplateKey | null = blocked ? null : 'RELEASE_GENERAL';
 
-  const [selected, setSelected] = useState<ReleaseTemplateKey | null>(deepLinked?.key ?? null);
-  const [step, setStep] = useState<Step>(deepLinked ? 'info' : 'choose');
+  const [step, setStep] = useState<Step>('info');
   const [isMinor, setIsMinor] = useState(false);
 
   // signer details (the adult, or the parent/guardian when isMinor).
@@ -93,7 +84,7 @@ export default function Release() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<SignReleaseResult | null>(null);
 
-  // Load the chosen release + the rules document as soon as a release is chosen.
+  // Load the general release + the rules document up front (single-document kiosk).
   useEffect(() => {
     if (!selected) return;
     let active = true;
@@ -113,19 +104,15 @@ export default function Release() {
   const minorFullName = [minorFirstName.trim(), minorLastName.trim()].filter(Boolean).join(' ');
 
   const nameOk = firstName.trim() !== '' && fullName.length >= 2;
-  const contactOk = email.trim() !== '' || phone.trim() !== '';
+  // Email is REQUIRED at the kiosk (owner 2026-07-03: attribution).
+  const emailOk = email.trim() !== '';
   const minorOk = !isMinor
     || (minorFirstName.trim() !== '' && minorFullName.length >= 2
         && minorDob !== '' && relationship.trim().length >= 2);
-  const infoOk = nameOk && contactOk && minorOk;
+  const infoOk = nameOk && emailOk && minorOk;
   const typedMatches = typedName.trim() !== ''
     && typedName.trim().toLowerCase() === fullName.toLowerCase();
   const canSign = infoOk && typedMatches && rulesOk && !signing;
-
-  function choose(key: ReleaseTemplateKey) {
-    setSelected(key);
-    setStep('info');
-  }
 
   async function sign(e: React.FormEvent) {
     e.preventDefault();
@@ -137,7 +124,7 @@ export default function Release() {
         template_key: selected,
         first_name: firstName.trim(),
         last_name: lastName.trim(),
-        email: email.trim() || null,
+        email: email.trim(),
         phone: phone.trim() || null,
         typed_name: typedName.trim(),
         is_minor: isMinor,
@@ -166,7 +153,7 @@ export default function Release() {
     <>
       <Seo
         title="Stable Rules and Liability Release — French Heritage Equestrian"
-        description="Sign the applicable liability release before your visit or activity."
+        description="Sign the visitor liability release before your visit."
         path="/release"
         noindex
       />
@@ -175,7 +162,20 @@ export default function Release() {
           <p className="eyebrow mb-2">Before you visit</p>
           <h1 className="heading-section text-green-800 mb-4">Stable rules and liability release.</h1>
 
-          {result ? (
+          {blocked ? (
+            <div className="bg-white border border-green-800/10 p-8">
+              <p className="body-text text-secondary mb-6 max-w-2xl">
+                This document is signed in your client account — sign in or use
+                your invitation link.
+              </p>
+              <div className="flex flex-wrap gap-4">
+                <Link to="/login" className="btn-primary">Sign in</Link>
+                <Link to="/release" className="btn-outline-gold">
+                  Sign the general visitor release instead
+                </Link>
+              </div>
+            </div>
+          ) : result ? (
             <div>
               <div className="bg-green-50 border border-green-200 p-8 mb-6">
                 <h2 className="font-serif font-medium text-green-800 text-xl mb-2 inline-flex items-center gap-2">
@@ -202,25 +202,6 @@ export default function Release() {
             </div>
           ) : loadError ? (
             <p className="form-error" role="alert">{loadError}</p>
-          ) : step === 'choose' ? (
-            <div>
-              <p className="body-text text-secondary mb-8 max-w-2xl">
-                Choose the release that matches your visit or activity.
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {RELEASE_OPTIONS.map((o) => (
-                  <button
-                    key={o.key}
-                    type="button"
-                    onClick={() => choose(o.key)}
-                    className="bg-white border border-green-800/10 p-6 text-left hover:border-green-800/40 transition-colors"
-                  >
-                    <span className="font-serif font-medium text-green-800 text-lg block mb-1">{o.label}</span>
-                    <span className="body-text text-sm text-secondary block">{o.description}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
           ) : step === 'info' ? (
             <form onSubmit={(e) => { e.preventDefault(); if (infoOk) setStep('rules'); }}>
               <p className="body-text text-secondary mb-8 max-w-2xl">
@@ -281,8 +262,8 @@ export default function Release() {
                     </div>
                   )}
                   <div>
-                    <label className="form-label" htmlFor="r-email">Email</label>
-                    <input id="r-email" type="email" className="form-input" value={email}
+                    <label className="form-label" htmlFor="r-email">Email *</label>
+                    <input id="r-email" type="email" className="form-input" required value={email}
                       onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
                   </div>
                   <div>
@@ -291,8 +272,8 @@ export default function Release() {
                       onChange={(e) => setPhone(e.target.value)} autoComplete="tel" />
                   </div>
                 </div>
-                {!contactOk && (
-                  <p className="form-hint mt-3">Please provide an email address or a phone number.</p>
+                {!emailOk && (
+                  <p className="form-hint mt-3">Please provide an email address — your signed copy is sent there.</p>
                 )}
               </div>
               <button type="submit" disabled={!infoOk} className="btn-primary w-full justify-center">

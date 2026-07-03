@@ -84,6 +84,16 @@ export async function redeemInvitation(token: string): Promise<void> {
   if (error) throw error;
 }
 
+/** Self-heal for provisioned clients whose invitation token was lost/consumed:
+ *  grants the community membership redeem_invitation would have granted when
+ *  the signed-in account's contact is a provisioned client. Returns whether an
+ *  active membership now exists. */
+export async function ensureMyMembership(): Promise<boolean> {
+  const { data, error } = await supabase.rpc('ensure_my_membership');
+  if (error) throw error;
+  return Boolean(data);
+}
+
 /** Validate a signup token via the SECURITY DEFINER RPC. Returns null if invalid/expired. */
 export async function validateInvitation(token: string): Promise<Invitation | null> {
   const { data, error } = await supabase.rpc('validate_invitation', { p_token: token });
@@ -115,12 +125,23 @@ export interface OnboardingPurchase {
   payment_method: string | null;
 }
 
+/** The minor rider (the engagement's non-signing PARTICIPANT party). The
+ *  guardian is the account holder and the CLIENT signer. */
+export interface OnboardingMinor {
+  first_name: string;
+  last_name: string | null;
+  /** YYYY-MM-DD */
+  dob: string | null;
+}
+
 /** my_onboarding_state(): `needed` flips false once every doc is EXECUTED. */
 export interface OnboardingState {
   needed: boolean;
   profile_complete: boolean;
   documents: OnboardingDocument[];
   purchase: OnboardingPurchase | null;
+  /** Minor rider on the active onboarding engagement, or null. */
+  minor: OnboardingMinor | null;
 }
 
 /** The signed-in member's onboarding snapshot (profile gate, signing checklist,
@@ -149,14 +170,24 @@ export interface OnboardingProfileInput {
   riding_experience_years?: string;
   jump_experience?: string;
   riding_background?: string;
+  /** Minor rider toggle. OMIT to leave the minor state untouched; true (with
+   *  the minor fields) attaches/updates the PARTICIPANT party on the pending
+   *  engagements; false removes it (drafts only — executed docs are kept). */
+  has_minor?: boolean;
+  minor_first_name?: string;
+  minor_last_name?: string;
+  /** YYYY-MM-DD */
+  minor_dob?: string;
 }
 
 /** Save the member's onboarding details. Only FILLED keys are sent (the RPC
- *  contract: trimmed non-empty strings; blanks are simply omitted). */
+ *  contract: trimmed non-empty strings; blanks are simply omitted). Booleans
+ *  (has_minor) pass through as-is — their PRESENCE is the signal. */
 export async function updateMyOnboardingProfile(input: OnboardingProfileInput): Promise<void> {
-  const p: Record<string, string> = {};
+  const p: Record<string, string | boolean> = {};
   for (const [key, value] of Object.entries(input)) {
     if (typeof value === 'string' && value.trim() !== '') p[key] = value.trim();
+    else if (typeof value === 'boolean') p[key] = value;
   }
   const { error } = await supabase.rpc('update_my_onboarding_profile', { p });
   if (error) throw error;

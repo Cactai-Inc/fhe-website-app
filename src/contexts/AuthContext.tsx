@@ -50,10 +50,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setModules([]);
       return;
     }
-    const [{ data: prof }, { data: mem }] = await Promise.all([
+    let [{ data: prof }, { data: mem }] = await Promise.all([
       supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle(),
       supabase.from('memberships').select('*').eq('user_id', userId).maybeSingle(),
     ]);
+    // Membership self-heal: a provisioned client whose invitation token was
+    // lost/consumed signs in with no membership and would dead-end at the
+    // member gate. ensure_my_membership grants what redeem_invitation would
+    // have; a failure (e.g. RPC not yet deployed) must NOT block sign-in.
+    if (prof && (mem as Membership | null)?.status !== 'active') {
+      try {
+        const { data: healed } = await supabase.rpc('ensure_my_membership');
+        if (healed) {
+          ({ data: mem } = await supabase
+            .from('memberships').select('*').eq('user_id', userId).maybeSingle());
+        }
+      } catch {
+        // gate stays closed on error — same posture as myModules below
+      }
+    }
     setProfile((prof as ProfileRow) ?? null);
     setMembership((mem as Membership) ?? null);
     // Resolve the tenant module set for nav/route gating. A failure (e.g. the RPC
