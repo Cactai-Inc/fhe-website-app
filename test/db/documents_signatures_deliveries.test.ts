@@ -63,7 +63,8 @@ describe('documents', () => {
     const doc = (await h.q<{ display_code: string; status: string }>(
       `insert into documents (engagement_id, template_id, title) values ($1,$2,'Purchase and Sale')
        returning display_code, status`, [eng, tpl]))[0];
-    expect(doc.display_code).toMatch(/^DOC-\d{6}$/);
+    // Random non-enumerable codes (20260702070000): unambiguous alphabet, 10 chars.
+    expect(doc.display_code).toMatch(/^DOC-[A-HJ-KM-NP-Z2-9]{10}$/);
     expect(doc.status).toBe('DRAFT');
   });
 

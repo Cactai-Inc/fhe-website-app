@@ -75,6 +75,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const inviteToken = makeToken();
 
     const { error: insErr } = await db.from('invitations').insert({
+      org_id: profile.org_id ?? null, // service-role insert has no current_org(); stamp the admin's org
       request_id: body.requestId ?? null,
       email,
       token: inviteToken,
