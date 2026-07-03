@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { validateInvitation, upsertMyProfile } from '../lib/api';
+import { validateInvitation, upsertMyProfile, redeemInvitation } from '../lib/api';
 import { signInWithGoogle } from '../lib/auth';
 import { OAUTH_PROVIDERS } from '../lib/authConfig';
 import { supabase } from '../lib/supabase';
@@ -32,14 +32,28 @@ export default function Register() {
       return;
     }
     validateInvitation(token)
-      .then((inv) => {
+      .then(async (inv) => {
         if (!active) return;
         if (!inv) {
           setState('invalid');
-        } else {
-          setInvitation(inv);
-          setState('ready');
+          return;
         }
+        // Already signed in as the invited person (e.g. registered earlier but
+        // membership was never granted)? Redeem straight into the app.
+        const { data: sessionData } = await supabase.auth.getSession();
+        const sessionEmail = sessionData.session?.user?.email?.toLowerCase();
+        if (sessionEmail && sessionEmail === inv.email.trim().toLowerCase()) {
+          try {
+            await redeemInvitation(token);
+            navigate('/app', { replace: true });
+            return;
+          } catch {
+            /* fall through to the normal form */
+          }
+        }
+        if (!active) return;
+        setInvitation(inv);
+        setState('ready');
       })
       .catch(() => active && setState('invalid'));
     return () => {
@@ -97,7 +111,15 @@ export default function Register() {
       // Profile seeding is best-effort; the account exists either way.
     }
 
-    navigate('/account', { replace: true });
+    try {
+      await redeemInvitation(token); // membership grant — the whole point of the invite
+    } catch {
+      // token consumed by a parallel attempt or expired mid-flow; the account
+      // exists — staff can re-invite, and /account explains membership status.
+      navigate('/account', { replace: true });
+      return;
+    }
+    navigate('/app', { replace: true });
   }
 
   if (state === 'checking') {

@@ -77,6 +77,13 @@ export async function submitRequest(
 
 // ─── Invitations ────────────────────────────────────────────────────────────
 
+/** Redeem the invitation for the SIGNED-IN user: grants the community
+ *  membership and consumes the token (email must match — server-enforced). */
+export async function redeemInvitation(token: string): Promise<void> {
+  const { error } = await supabase.rpc('redeem_invitation', { p_token: token });
+  if (error) throw error;
+}
+
 /** Validate a signup token via the SECURITY DEFINER RPC. Returns null if invalid/expired. */
 export async function validateInvitation(token: string): Promise<Invitation | null> {
   const { data, error } = await supabase.rpc('validate_invitation', { p_token: token });

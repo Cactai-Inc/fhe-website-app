@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { validateInvitation, upsertMyProfile } from '../lib/api';
+import { validateInvitation, upsertMyProfile, redeemInvitation } from '../lib/api';
 import { useDocumentTitle } from '../lib/hooks';
 
 type State = 'working' | 'done' | 'mismatch' | 'invalid';
@@ -76,10 +76,18 @@ export default function RegisterComplete() {
       } catch {
         // best-effort, same as the password path
       }
+      try {
+        await redeemInvitation(stash.token);
+      } catch {
+        // consumed/expired mid-flow — account exists; land on /account instead
+        window.localStorage.removeItem('fhe-invite');
+        if (active) { setState('done'); navigate('/account', { replace: true }); }
+        return;
+      }
       window.localStorage.removeItem('fhe-invite');
       if (active) {
         setState('done');
-        navigate('/account', { replace: true });
+        navigate('/app', { replace: true });
       }
     })();
     return () => {
