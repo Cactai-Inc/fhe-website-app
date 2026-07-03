@@ -3968,21 +3968,27 @@ Visitor grants COMPANY a perpetual, royalty-free license to use such media, incl
 
 Visitor may revoke this consent at any time by written notice via email to {{ORG.EMAIL}}; revocation is effective prospectively as to media captured after receipt of the notice.
 
-10. GOVERNING LAW
+10. DISPUTE RESOLUTION
 
-This Agreement shall be governed by the laws of the State of California.
+Disputes shall be resolved by arbitration. The venue shall be San Diego County, California.
 
-Any legal proceeding arising from this Agreement shall be brought exclusively in the state or federal courts located in San Diego County, California, and the parties consent to the jurisdiction of those courts.
+11. ATTORNEY’S FEES
 
-11. SEVERABILITY
+Each party shall be required to cover their own attorney’s fees and costs.
+
+12. GOVERNING LAW
+
+California law governs this Agreement.
+
+13. SEVERABILITY
 
 If any provision of this Agreement is held unenforceable, the remaining provisions shall remain in full force and effect.
 
-12. ENTIRE AGREEMENT
+14. ENTIRE AGREEMENT
 
 This Agreement constitutes the entire understanding between the parties concerning the subject matter herein and supersedes any prior oral or written representations regarding this subject.
 
-13. ACKNOWLEDGMENT
+15. ACKNOWLEDGMENT
 
 Visitor acknowledges that:
 
@@ -4220,21 +4226,27 @@ Owner grants COMPANY a perpetual, royalty-free license to use such media, includ
 
 Owner may revoke this consent at any time by written notice via email to {{ORG.EMAIL}}; revocation is effective prospectively as to media captured after receipt of the notice.
 
-9. GOVERNING LAW AND VENUE
+9. DISPUTE RESOLUTION
 
-This Agreement shall be governed by the laws of the State of California.
+Disputes shall be resolved by arbitration. The venue shall be San Diego County, California.
 
-Any action arising from this Agreement shall be brought exclusively in the state or federal courts located in San Diego County, California.
+10. ATTORNEY’S FEES
 
-10. SEVERABILITY
+Each party shall be required to cover their own attorney’s fees and costs.
+
+11. GOVERNING LAW
+
+California law governs this Agreement.
+
+12. SEVERABILITY
 
 If any provision of this Agreement is determined to be invalid or unenforceable, the remaining provisions shall remain in full force and effect.
 
-11. ENTIRE AGREEMENT
+13. ENTIRE AGREEMENT
 
 This Agreement constitutes the complete agreement between the parties concerning the subject matter addressed herein and supersedes all prior oral or written understandings regarding horse handling and routine care.
 
-12. ACKNOWLEDGMENT
+14. ACKNOWLEDGMENT
 
 Owner acknowledges that:
 
@@ -4522,21 +4534,27 @@ Owner grants COMPANY a perpetual, royalty-free license to use such media, includ
 
 Owner may revoke this consent at any time by written notice via email to {{ORG.EMAIL}}; revocation is effective prospectively as to media captured after receipt of the notice.
 
-10. GOVERNING LAW AND VENUE
+10. DISPUTE RESOLUTION
 
-This Agreement shall be governed by the laws of the State of California.
+Disputes shall be resolved by arbitration. The venue shall be San Diego County, California.
 
-Any legal action arising from this Agreement shall be brought exclusively in the state or federal courts located in San Diego County, California.
+11. ATTORNEY’S FEES
 
-11. SEVERABILITY
+Each party shall be required to cover their own attorney’s fees and costs.
+
+12. GOVERNING LAW
+
+California law governs this Agreement.
+
+13. SEVERABILITY
 
 If any provision of this Agreement is held unenforceable, the remaining provisions shall remain in full force and effect.
 
-12. ENTIRE AGREEMENT
+14. ENTIRE AGREEMENT
 
 This Agreement constitutes the complete understanding between the parties concerning the subject matter herein and supersedes all prior oral or written understandings regarding equine activities covered by this Agreement.
 
-13. ACKNOWLEDGMENT
+15. ACKNOWLEDGMENT
 
 Owner acknowledges that:
 
@@ -4780,21 +4798,27 @@ Participant grants COMPANY a perpetual, royalty-free license to use such media, 
 
 Participant may revoke this consent at any time by written notice via email to {{ORG.EMAIL}}; revocation is effective prospectively as to media captured after receipt of the notice.
 
-10. GOVERNING LAW AND VENUE
+10. DISPUTE RESOLUTION
 
-This Agreement shall be governed by the laws of the State of California.
+Disputes shall be resolved by arbitration. The venue shall be San Diego County, California.
 
-Any legal action arising from this Agreement shall be brought exclusively in the state or federal courts located in San Diego County, California, and the parties consent to the jurisdiction of those courts.
+11. ATTORNEY’S FEES
 
-11. SEVERABILITY
+Each party shall be required to cover their own attorney’s fees and costs.
+
+12. GOVERNING LAW
+
+California law governs this Agreement.
+
+13. SEVERABILITY
 
 If any provision of this Agreement is determined to be unenforceable, the remaining provisions shall remain in full force and effect.
 
-12. ENTIRE AGREEMENT
+14. ENTIRE AGREEMENT
 
 This Agreement constitutes the complete agreement between the parties concerning Participant's involvement in activities conducted by COMPANY and supersedes all prior discussions or understandings regarding its subject matter.
 
-13. ACKNOWLEDGMENT
+15. ACKNOWLEDGMENT
 
 Participant acknowledges that:
 

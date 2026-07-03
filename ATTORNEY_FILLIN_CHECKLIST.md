@@ -330,3 +330,4 @@ the legal text lives in the `.md` bodies and merges through data, not code.
   stage recorded with any other word merges blank DIR terms (visible in review,
   never wrong terminology).
 - FACILITY_RULES: dispute-resolution, attorney's fees, and governing-law sections removed per owner 2026-07-02 (rules doc is an acknowledgment; legal machinery lives in the releases/agreements). Counsel to confirm.
+- Releases: dispute resolution = mandatory arbitration (San Diego County), each party bears own attorney's fees, CA governing law — replacing the court-venue clause (conflicted with arbitration). Owner wording verbatim, 2026-07-02.

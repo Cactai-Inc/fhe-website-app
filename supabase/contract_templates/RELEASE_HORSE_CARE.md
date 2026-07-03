@@ -154,21 +154,27 @@ Owner grants COMPANY a perpetual, royalty-free license to use such media, includ
 
 Owner may revoke this consent at any time by written notice via email to {{ORG.EMAIL}}; revocation is effective prospectively as to media captured after receipt of the notice.
 
-9. GOVERNING LAW AND VENUE
+9. DISPUTE RESOLUTION
 
-This Agreement shall be governed by the laws of the State of California.
+Disputes shall be resolved by arbitration. The venue shall be San Diego County, California.
 
-Any action arising from this Agreement shall be brought exclusively in the state or federal courts located in San Diego County, California.
+10. ATTORNEY’S FEES
 
-10. SEVERABILITY
+Each party shall be required to cover their own attorney’s fees and costs.
+
+11. GOVERNING LAW
+
+California law governs this Agreement.
+
+12. SEVERABILITY
 
 If any provision of this Agreement is determined to be invalid or unenforceable, the remaining provisions shall remain in full force and effect.
 
-11. ENTIRE AGREEMENT
+13. ENTIRE AGREEMENT
 
 This Agreement constitutes the complete agreement between the parties concerning the subject matter addressed herein and supersedes all prior oral or written understandings regarding horse handling and routine care.
 
-12. ACKNOWLEDGMENT
+14. ACKNOWLEDGMENT
 
 Owner acknowledges that:
 
