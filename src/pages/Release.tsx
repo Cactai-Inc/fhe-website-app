@@ -275,7 +275,7 @@ export default function Release() {
               {!rules ? (
                 <p className="body-text text-muted">Loading the facility rules…</p>
               ) : (
-                <div className="bg-white border border-green-800/10 mb-6">
+                <div className="bg-white border border-green-800/10 mb-2">
                   <h2 className="eyebrow px-8 pt-6 pb-2">{rules.title}</h2>
                   <div
                     className="px-8 pb-6 max-h-96 overflow-y-auto whitespace-pre-wrap text-sm text-secondary leading-relaxed"
@@ -283,6 +283,9 @@ export default function Release() {
                   >
                     {rules.body}
                   </div>
+                  <p className="px-8 pb-4 text-xs font-sans text-muted">
+                    ↕ The rules above scroll — read them in full before continuing.
+                  </p>
                 </div>
               )}
               <label className="flex items-start gap-3 mb-6 cursor-pointer">
@@ -320,8 +323,13 @@ export default function Release() {
                   >
                     {preview.body}
                   </div>
-                  <div className="px-8 pb-6 text-sm text-secondary leading-relaxed border-t border-green-800/10 pt-5">
-                    <p className="eyebrow mb-3">{isMinor ? 'Minor signer (parent/guardian)' : 'Adult signer'}</p>
+                  <p className="px-8 pb-4 text-xs font-sans text-muted">
+                    ↕ The document above scrolls — read it in full before signing.
+                  </p>
+                  {/* Signer details: a visibly darker panel so it reads as YOUR
+                      section, distinct from the scrollable document above. */}
+                  <div className="px-8 pb-6 text-sm text-green-900 leading-relaxed border-t border-green-800/15 pt-5 bg-green-800/[0.06]">
+                    <p className="eyebrow mb-3 pt-1">{isMinor ? 'Minor signer (parent/guardian)' : 'Adult signer'}</p>
                     {isMinor ? (
                       <>
                         <p>Minor's Name: {minorName.trim()}</p>
@@ -338,7 +346,7 @@ export default function Release() {
                   </div>
                 </div>
               )}
-              <div className="bg-white border border-green-800/10 p-8">
+              <div className="bg-green-800/[0.06] border border-green-800/15 p-8">
                 <label className="form-label" htmlFor="r-signature">
                   <span className="inline-flex items-center gap-2">
                     <PenLine size={14} aria-hidden="true" />

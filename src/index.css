@@ -187,6 +187,13 @@
   .form-input-error {
     @apply border-red-600 focus:border-red-600 focus:ring-red-600/40;
   }
+  /* Mobile: inputs under 16px make iOS Safari auto-zoom on focus — disorienting
+     on the kiosk flows. 16px on touch-size screens keeps the viewport still. */
+  @media (max-width: 640px) {
+    .form-input {
+      font-size: 1rem;
+    }
+  }
 
   /* Form label — green-800/85 passes AA */
   .form-label {
