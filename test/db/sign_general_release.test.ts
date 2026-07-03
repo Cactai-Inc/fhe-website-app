@@ -1,5 +1,6 @@
 /**
- * Visitor general-release kiosk (migration 20260702020000_sign_general_release).
+ * Visitor general-release kiosk (20260702020000_sign_general_release, wrapper
+ * over sign_release since 20260702050000; CLIENT canon 20260703050000).
  *
  * Real-path data tests: the ACTUAL RPC the /release page calls, as anon, end to
  * end through the REAL merge engine (generate_document → RELEASE_GENERAL) and
@@ -8,15 +9,15 @@
  * Proves:
  *  - anon end-to-end on tenant #1 (FHE): contact + client + NON-SERVICE
  *    engagement created, RELEASE_GENERAL merged with the tenant identity and
- *    the visitor's tokens, sealed PARTICIPANT signature recorded; document
- *    stays AWAITING_SIGNATURE because FHE designates a COMPANY signatory —
- *    and EXECUTES through the existing record_signature countersign.
+ *    the visitor's tokens (single CLIENT signer block, owner 2026-07-03),
+ *    sealed CLIENT signature recorded; EXECUTES immediately — releases are
+ *    unilateral (no COMPANY countersign party).
  *  - repeat visitor (same email) reuses the same contact.
  *  - validation fence: typed-name mismatch, missing contact channel, bad
  *    email, bad phone, unknown org are all rejected.
  *  - second-org isolation: a release signed for org B (explicit p_org) lands
- *    entirely in org B (no COMPANY signatory → EXECUTED immediately); org A
- *    staff see none of it and org B staff see all of it.
+ *    entirely in org B; org A staff see none of it and org B staff see all
+ *    of it.
  */
 import { beforeAll, afterAll, describe, expect, it } from 'vitest';
 import { createTestDb, type TestDb } from './harness';
@@ -64,14 +65,18 @@ describe('visitor flow end-to-end (tenant #1, anon caller)', () => {
     expect(res.document_code).toMatch(/^DOC-/);
 
     // merged through the REAL engine: tenant identity + visitor tokens resolve
-    expect(res.merged_body).toContain('Vera Visitor');
+    // into the single CLIENT signer block (owner 2026-07-03 canon)
+    expect(res.merged_body).toContain('Printed Name: Vera Visitor');
+    expect(res.merged_body).toContain('Signature: Vera Visitor');
     expect(res.merged_body).toContain('vera@visitor.test');
     expect(res.merged_body).toContain('French Heritage Equestrian');
-    expect(res.merged_body).not.toMatch(/\{\{ORG\./);
-    expect(res.merged_body).not.toMatch(/\{\{PARTICIPANT\./);
-    for (const t of res.merged_body.match(/\{\{[A-Z0-9_.]+\}\}/g) ?? []) {
-      expect(t, `unexpected unmerged token ${t}`).toMatch(/^\{\{SIG\./);
-    }
+    // nothing tokenish left after signing ({{SIG.CLIENT.*}} substituted) and
+    // no CUT-marker comments (adult path strips the MINOR section whole)
+    expect(res.merged_body).not.toMatch(/\{\{[A-Z0-9_.]+\}\}/);
+    expect(res.merged_body).not.toContain('<!-- CUT');
+    expect(res.merged_body).not.toContain("Minor's Name:");
+    // the legacy wrapper forwards the rules acknowledgment (dated tail present)
+    expect(res.merged_body).toMatch(/acknowledged the Facility Rules/i);
 
     // rows land in tenant #1 with the honest shapes
     await h.asSuperuser();
@@ -88,11 +93,11 @@ describe('visitor flow end-to-end (tenant #1, anon caller)', () => {
     expect(client.source).toBe('VISITOR_RELEASE');
   });
 
-  it('records a SEALED participant signature (typed_name immutable once signed)', async () => {
+  it('records a SEALED CLIENT signature (typed_name immutable once signed)', async () => {
     await h.asSuperuser();
     const [sig] = await h.q<{ id: string; party_role: string; typed_name: string; signed_at: string; method: string; org_id: string }>(
       `select id, party_role, typed_name, signed_at, method, org_id
-       from signatures where document_id=$1 and party_role='PARTICIPANT'`, [res.document_id]);
+       from signatures where document_id=$1 and party_role='CLIENT'`, [res.document_id]);
     expect(sig.typed_name).toBe('Vera Visitor');
     expect(sig.signed_at).not.toBeNull();
     expect(sig.method).toBe('KIOSK_TYPED');
@@ -155,7 +160,7 @@ describe('second-org isolation', () => {
   it('a release for org B (explicit p_org) lands entirely in org B and EXECUTES (no signatory)', async () => {
     await h.asAnon();
     bRes = await sign('Bram Rival', 'bram@rival.test', '760-555-0101', 'Bram Rival', orgB);
-    expect(bRes.status).toBe('EXECUTED'); // org B has no COMPANY signatory → sole signer
+    expect(bRes.status).toBe('EXECUTED'); // unilateral — the sole CLIENT signer executes
 
     await h.asSuperuser();
     const rows = await h.q<{ tbl: string; org_id: string }>(

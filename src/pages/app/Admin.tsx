@@ -6,6 +6,8 @@ import {
   adminCreateAnnouncement, adminCreateEvent, adminCreateContentPost, adminCreateResource,
   adminSendInvitation, type AdminMemberRow,
 } from '../../lib/admin';
+import { fetchOfferings } from '../../lib/api';
+import type { OfferingTier } from '../../lib/types';
 
 type Tab = 'members' | 'invite' | 'announce' | 'events' | 'content' | 'resources';
 
@@ -93,20 +95,61 @@ function MembersTab() {
 }
 
 // ── Invite tab ────────────────────────────────────────────────────────────────
+const PAYMENT_METHODS = ['Zelle', 'Cash', 'Card', 'Other'];
+
+/** "$500" / "$587.50" for the tier select labels. */
+function formatTierPrice(amount: number): string {
+  return `$${Number(amount).toLocaleString('en-US', {
+    minimumFractionDigits: Number.isInteger(Number(amount)) ? 0 : 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
 function InviteTab() {
   const [email, setEmail] = useState('');
   const [days, setDays] = useState('7');
-  const [result, setResult] = useState<{ url: string; emailed: boolean } | null>(null);
+  // Provisioning (what they bought): tierId '' = plain invite, no purchase.
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [tiers, setTiers] = useState<OfferingTier[]>([]);
+  const [tierId, setTierId] = useState('');
+  const [markPaid, setMarkPaid] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('Zelle');
+  const [notes, setNotes] = useState('');
+  const [result, setResult] = useState<{ url: string; emailed: boolean; tierLabel?: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [working, setWorking] = useState(false);
+
+  // Riding-lesson tiers (label + price) for the "what did they buy?" select.
+  useEffect(() => {
+    fetchOfferings()
+      .then((offerings) => setTiers(offerings.find((o) => o.slug === 'riding-lesson')?.tiers ?? []))
+      .catch(() => setTiers([]));
+  }, []);
+
+  const provisioning = tierId !== '';
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setWorking(true); setError(null); setResult(null);
     try {
-      const r = await adminSendInvitation({ email: email.trim(), expiresInDays: Number(days) || 7 });
-      setResult({ url: r.registerUrl, emailed: r.emailed });
-      setEmail('');
+      const r = await adminSendInvitation({
+        email: email.trim(),
+        expiresInDays: Number(days) || 7,
+        ...(provisioning
+          ? {
+              firstName: firstName.trim(),
+              lastName: lastName.trim(),
+              tierId,
+              markPaid,
+              ...(markPaid ? { paymentMethod } : {}),
+              ...(notes.trim() ? { notes: notes.trim() } : {}),
+            }
+          : {}),
+      });
+      setResult({ url: r.registerUrl, emailed: r.emailed, tierLabel: r.tierLabel });
+      setEmail(''); setFirstName(''); setLastName('');
+      setTierId(''); setMarkPaid(false); setNotes('');
     } catch (err) {
       setError(toErrorMessage(err, 'Could not send invitation.'));
     } finally {
@@ -117,16 +160,57 @@ function InviteTab() {
   return (
     <form onSubmit={submit} className="max-w-md">
       <p className="body-text text-sm mb-5">
-        Create a registration invitation and email it to the person. After you've spoken with them,
-        send the link so they can create their account.
+        Create a registration invitation and email it to the person. If they've already paid for
+        lessons, choose what they bought — their account will open straight into onboarding with
+        the paperwork ready to sign.
       </p>
       <Field label="Email">
         <input type="email" required className="form-input" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="her@email.com" />
       </Field>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label={provisioning ? 'First name' : 'First name (optional)'}>
+          <input className="form-input" required={provisioning} value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" />
+        </Field>
+        <Field label={provisioning ? 'Last name' : 'Last name (optional)'}>
+          <input className="form-input" required={provisioning} value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last name" />
+        </Field>
+      </div>
+      <Field label="What did they buy?">
+        <select className="form-input" value={tierId} onChange={(e) => setTierId(e.target.value)}>
+          <option value="">No purchase (plain invite)</option>
+          {tiers.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.label} — {formatTierPrice(t.price_amount)}
+            </option>
+          ))}
+        </select>
+      </Field>
+      {provisioning && (
+        <>
+          <label className="flex items-center gap-2 mb-4 text-sm text-secondary">
+            <input type="checkbox" checked={markPaid} onChange={(e) => setMarkPaid(e.target.checked)} className="accent-green-800" />
+            Already paid
+          </label>
+          {markPaid && (
+            <Field label="Payment method">
+              <select className="form-input" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
+                {PAYMENT_METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </Field>
+          )}
+          <Field label="Notes (optional)">
+            <textarea rows={2} className="form-input resize-none" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. paid via Zelle 7/1, starts next week" />
+          </Field>
+        </>
+      )}
       <Field label="Expires in (days)">
         <input type="number" min={1} className="form-input" value={days} onChange={(e) => setDays(e.target.value)} />
       </Field>
-      <button type="submit" disabled={working || !email.trim()} className="btn-primary">
+      <button
+        type="submit"
+        disabled={working || !email.trim() || (provisioning && (!firstName.trim() || !lastName.trim()))}
+        className="btn-primary"
+      >
         {working ? 'Sending…' : 'Create & send invitation'}
       </button>
 
@@ -134,7 +218,8 @@ function InviteTab() {
       {result && (
         <div className="bg-green-50 border border-green-200 p-4 mt-5 text-sm">
           <p className="text-green-800 mb-2">
-            Invitation created{result.emailed ? ' and emailed.' : '. (Email provider not configured — copy the link below.)'}
+            {result.tierLabel ? `${result.tierLabel} provisioned — invitation created` : 'Invitation created'}
+            {result.emailed ? ' and emailed.' : '. (Email provider not configured — copy the link below.)'}
           </p>
           <code className="block break-all text-xs text-green-900 bg-white border border-green-200 p-2">{result.url}</code>
         </div>

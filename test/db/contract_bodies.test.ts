@@ -1,14 +1,16 @@
 /**
- * Phase 2 — tokenized contract bodies vs. the dictionary (RECONCILIATION_SPEC
- * verification). For every tokenized body in supabase/contract_templates/:
- *  - every {{TOKEN}} resolves to a dictionary entry (template_tokens, global),
- *    after normalizing party namespaces (BUYER/SELLER/… → PARTY; SIG.*→SIG.PARTY),
- *  - the party namespaces it actually uses are declared on its contract_templates
- *    row,
- *  - it contains zero killed-service references.
+ * Phase 2 — tokenized contract bodies vs. the dictionary (owner template
+ * revision 2026-07-03; docs/TOKEN_DICTIONARY.md is the canon). For every
+ * tokenized body in supabase/contract_templates/:
+ *  - every {{TOKEN}} resolves to a dictionary entry (template_tokens, global) —
+ *    either literally (e.g. the CLIENT-specific profile fields) or after
+ *    normalizing party namespaces (BUYER/SELLER/… → PARTY; SIG.* → SIG.PARTY),
+ *  - it only uses recognized namespaces (party namespaces + the non-party input
+ *    namespaces ORD/REQ and the ORG/HORSE/TXN/ENG/DOC/SIG/DIR sets),
+ *  - it never resurrects a retired STANDALONE service offering.
  *
- * This is the "no orphan tokens / zero grooming" gate; it runs per file, so each
- * contract is guarded the moment its body lands.
+ * This is the "no orphan tokens" gate; it runs per file, so each contract is
+ * guarded the moment its body lands.
  */
 import { beforeAll, afterAll, describe, expect, it } from 'vitest';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -24,34 +26,42 @@ const PARTY_NS = new Set([
   'COMPANY', 'EMERGENCY_CONTACT',
 ]);
 const KILLED = /grooming|horse care|bathing|mane[- ]pull|turnout[- ]assist|show[- ]prep|tack[- ]clean/i;
-// Catalog-sanctioned education topics within HORSEMANSHIP_TRAINING (migration 8
-// retains "grooming, tacking, stable practice" as participant education); these
-// are not the killed standalone services, so exempt them from the killed scan.
-// The liability releases (RELEASE_PARTICIPANT / RELEASE_HORSE_CARE) legitimately
-// COVER grooming/bathing as authorized participant activities and routine
-// husbandry the owner releases us for — the release's own subject matter, not a
-// sold service — so their authorized-activity list items ("Grooming"/"Bathing"
-// standalone lines) and the care release's assumption-of-risk / release phrasing
-// ("grooming, movement", "Grooming and husbandry") are exempt too.
-const SANCTIONED =
-  /grooming education|tacking and untacking|^grooming$|^bathing$|grooming, movement|grooming and husbandry/gim;
+// What the killed-service scan actually guards: no retired STANDALONE service
+// offering may resurface as its own agreement / order form. The owner's
+// 2026-07-03 revision legitimately says these words in exactly two sanctioned
+// places, both exempt from the scan:
+//  - order forms list them as ACTIVITY NAMES inside a live offering (the
+//    "Available services:" line of HORSE_EXERCISE names Turnout / Clipping /
+//    Bathing / Grooming as activities within the exercise offering),
+//  - the RELEASE_* documents authorize and release routine care, grooming, and
+//    husbandry — that is the release's own subject matter, not a sold service —
+//    so releases are scanned by their title line only.
+const ACTIVITY_LINE = /^(?:Available services|Instruction may include).*$/gim;
 
 // ── Stripped service agreements (liability-release pass) ─────────────────────
 // The embedded release / assumption-of-risk / hold-harmless sections were
 // removed from these agreements; the protections live exclusively in the
 // standalone RELEASE_* documents, incorporated by this exact clause.
+// RIDER_LESSON_JUMPER is deliberately NOT in this set: the owner's 2026-07-03
+// revision makes the jumper addendum a release ADDENDUM — it extends the
+// Participant Release to jumping risks and carries release language BY DESIGN.
+// MINOR_RIDER is retired (no source file).
 const STRIPPED_AGREEMENTS = new Set([
-  'RIDER_LESSON_JUMPER', 'MINOR_RIDER', 'HORSE_EXERCISE', 'HORSE_TRAINING',
+  'HORSE_EXERCISE', 'HORSE_TRAINING',
   'HORSEMANSHIP_TRAINING', 'HORSE_SEARCH_RETAINER',
   // contract-module decomposition: HORSE_REPRESENTATION retired (folded into the
   // finder's lease directions); the reworked evaluation module and the new
   // transaction-representation module are service agreements → stripped too.
   'HORSE_EVALUATION', 'HORSE_TRANSACTION_REP',
+  // owner revision 2026-07-03: the lesson order form and the Company Policies
+  // are CLIENT-signer commercial documents — no embedded release language.
+  'RIDER_LESSON', 'COMPANY_POLICIES',
 ]);
 // The canonical incorporation clause (heading + sentence) — the ONLY sanctioned
-// release-adjacent wording in a stripped agreement.
+// release-adjacent wording in a stripped agreement (owner revision 2026-07-03:
+// the "INCORPORATED DOCUMENTS" section of the retainer/representation modules).
 const INCORPORATION_CLAUSE =
-  /LIABILITY RELEASE — INCORPORATED BY REFERENCE\n\nThe risk acknowledgments, releases, and indemnity obligations applicable to the activities under this Agreement are set forth exclusively in the separately executed Liability Release and Assumption of Risk agreement, which is incorporated herein by reference\./g;
+  /INCORPORATED DOCUMENTS\n\nThe risk acknowledgments, releases, and indemnity obligations applicable to activities under this Agreement are set forth exclusively in the separately executed liability release and assumption of risk agreements, incorporated herein by reference\./g;
 // The release phrase families that must NOT survive in a stripped agreement:
 // the discharge operative words, ASSUMPTION OF RISK as a section heading, and
 // hold-harmless obligations.
@@ -120,7 +130,10 @@ describe('tokenized contract bodies', () => {
       });
 
       it('uses only tokens that exist in the dictionary', () => {
-        const orphans = [...new Set(tokens)].filter((t) => !dict.has(normalize(t)));
+        // A token resolves if the dictionary carries it LITERALLY (the
+        // CLIENT-specific profile/attestation fields, ORD/REQ inputs, …) or via
+        // the PARTY placeholder (the shared person field set + signatures).
+        const orphans = [...new Set(tokens)].filter((t) => !dict.has(t) && !dict.has(normalize(t)));
         expect(orphans, `orphan tokens in ${file}`).toEqual([]);
       });
 
@@ -132,7 +145,9 @@ describe('tokenized contract bodies', () => {
         // ORG.* / COMPANY tokens as of the Contracts Legal Pass. DIR is the
         // directional-terminology namespace (contract-module decomposition):
         // resolved from the engagement's current stage via template_variants.
-        const known = new Set([...PARTY_NS, 'ORG', 'HORSE', 'TXN', 'ENG', 'DOC', 'SIG', 'DIR']);
+        // ORD (order instance) and REQ (request inputs submitted with an order)
+        // are NON-party input namespaces of the owner's 2026-07-03 order forms.
+        const known = new Set([...PARTY_NS, 'ORG', 'HORSE', 'TXN', 'ENG', 'DOC', 'SIG', 'DIR', 'ORD', 'REQ']);
         const unknown = new Set<string>();
         for (const t of tokens) {
           const ns = t.slice(2, -2).split('.')[0];
@@ -141,8 +156,13 @@ describe('tokenized contract bodies', () => {
         expect([...unknown], `${key} has unrecognized namespaces`).toEqual([]);
       });
 
-      it('contains no killed-service references', () => {
-        const hit = body.replace(SANCTIONED, '').match(KILLED);
+      it('contains no killed-service references (no retired standalone offering)', () => {
+        // Releases COVER these activities as their subject matter → title-only
+        // scan; everywhere else, activity-name list lines are exempt.
+        const scanned = key.startsWith('RELEASE_')
+          ? body.slice(0, body.indexOf('\n'))
+          : body.replace(ACTIVITY_LINE, '');
+        const hit = scanned.match(KILLED);
         expect(hit, `killed-service term in ${file}: ${hit?.[0]}`).toBeNull();
       });
 
@@ -150,10 +170,12 @@ describe('tokenized contract bodies', () => {
       // hold-harmless protections live EXCLUSIVELY in the standalone RELEASE_*
       // documents. The stripped service agreements may only carry the canonical
       // incorporation-by-reference clause. Allowlisted by design: the RELEASE_*
-      // files themselves, FACILITY_RULES (the property-rules acknowledgment keeps
-      // its own risk language), HORSE_EMERGENCY_VET (its release/indemnity is
-      // scoped to good-faith emergency-care decisions — its narrow authorization
-      // subject), and HUMAN_EMERGENCY_MEDICAL (not a service agreement).
+      // files themselves, RIDER_LESSON_JUMPER (a release ADDENDUM extending the
+      // Participant Release to jumping — owner decision 2026-07-03),
+      // FACILITY_RULES (the property-rules acknowledgment keeps its own risk
+      // language), HORSE_EMERGENCY_VET (its release/indemnity is scoped to
+      // good-faith emergency-care decisions — its narrow authorization subject),
+      // and HUMAN_EMERGENCY_MEDICAL (not a service agreement).
       if (STRIPPED_AGREEMENTS.has(key)) {
         it('carries no embedded release language (stripped to the incorporation clause)', () => {
           const stripped = body.replace(INCORPORATION_CLAUSE, '');

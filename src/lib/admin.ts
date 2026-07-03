@@ -174,15 +174,25 @@ export async function adminListResources(): Promise<ContentResource[]> {
 export interface AdminInviteResult {
   registerUrl: string;
   emailed: boolean;
+  /** Present when the invite provisioned a purchase (tierId was sent). */
+  tierLabel?: string;
 }
 
 /**
  * Create an invitation and send the registration email via the serverless
  * function (which holds the email-provider key). Returns the register URL so the
  * admin can copy it as a fallback if email delivery is not yet configured.
+ *
+ * When `tierId` is present the server provisions the offline purchase
+ * (provision_lesson_invitation: contact + client + engagement + paid
+ * transaction + invitation) — firstName/lastName are required on that path.
  */
 export async function adminSendInvitation(
-  input: { email: string; requestId?: string; expiresInDays?: number },
+  input: {
+    email: string; requestId?: string; expiresInDays?: number;
+    firstName?: string; lastName?: string; tierId?: string;
+    markPaid?: boolean; paymentMethod?: string; notes?: string;
+  },
 ): Promise<AdminInviteResult> {
   const { data: sessionData } = await supabase.auth.getSession();
   const accessToken = sessionData.session?.access_token;

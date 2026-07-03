@@ -1,16 +1,26 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowRight, Pin } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowRight, FileText, GraduationCap, Pin } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useDocumentTitle } from '../../lib/hooks';
 import { fetchAnnouncements, fetchEvents } from '../../lib/community';
+import { myOnboardingState, type OnboardingState } from '../../lib/api';
 import type { Announcement, CommunityEvent } from '../../lib/community-types';
+
+/** "4 lessons" (punch cards) or the cadence line (subscriptions). */
+function planQuantity(p: NonNullable<OnboardingState['purchase']>): string | null {
+  if (p.lessons_included) return `${p.lessons_included} lessons`;
+  if (p.cadence) return /^\d+$/.test(String(p.cadence).trim()) ? `${p.cadence} lessons/week` : String(p.cadence);
+  return null;
+}
 
 export default function Dashboard() {
   useDocumentTitle('Members');
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [events, setEvents] = useState<CommunityEvent[]>([]);
+  const [onboarding, setOnboarding] = useState<OnboardingState | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -22,17 +32,67 @@ export default function Dashboard() {
         setEvents(e.slice(0, 4));
       })
       .finally(() => active && setLoading(false));
+    myOnboardingState()
+      .then((s) => active && setOnboarding(s))
+      .catch(() => { /* no onboarding surface — dashboard renders as usual */ });
     return () => {
       active = false;
     };
   }, []);
 
+  // Post-registration landing: a member with pending onboarding is walked
+  // straight into the flow (once per session — afterwards the card below is
+  // the nudge, so they can still browse the rest of the app).
+  useEffect(() => {
+    if (!onboarding?.needed) return;
+    if (window.sessionStorage.getItem('fhe-onboarding-redirected')) return;
+    window.sessionStorage.setItem('fhe-onboarding-redirected', '1');
+    navigate('/app/onboarding');
+  }, [onboarding, navigate]);
+
   const name = profile?.display_name || profile?.first_name || 'there';
+  const purchase = onboarding?.purchase ?? null;
 
   return (
     <div className="max-w-4xl">
+      {/* Onboarding pending — the first thing on the page. */}
+      {onboarding?.needed && (
+        <Link
+          to="/app/onboarding"
+          data-testid="onboarding-nudge"
+          className="block bg-green-800 text-white p-6 mb-8 hover:shadow-md transition-shadow focus-ring"
+        >
+          <p className="eyebrow-on-dark mb-1 inline-flex items-center gap-2">
+            <FileText size={13} aria-hidden="true" /> One more step
+          </p>
+          <p className="font-serif text-lg">
+            Finish setting up your account — review and sign your documents{' '}
+            <ArrowRight size={14} className="inline" aria-hidden="true" />
+          </p>
+        </Link>
+      )}
+
       <p className="eyebrow mb-2">Welcome back</p>
       <h1 className="heading-section text-green-800 mb-10">Good to see you, {name}.</h1>
+
+      {/* Plan card — what they bought (provisioned invite purchase). */}
+      {purchase && (
+        <div
+          className="bg-white border border-green-800/10 p-5 mb-8 flex items-center justify-between gap-4"
+          data-testid="plan-card"
+        >
+          <div className="flex items-center gap-3">
+            <GraduationCap size={20} className="text-gold-ink flex-shrink-0" aria-hidden="true" />
+            <div>
+              <p className="text-sm font-sans font-medium text-green-900">{purchase.tier_label}</p>
+              {planQuantity(purchase) && <p className="text-xs text-muted mt-0.5">{planQuantity(purchase)}</p>}
+            </div>
+          </div>
+          {purchase.paid && (
+            <span className="bg-green-800 text-white text-xs font-sans px-2 py-0.5 tracking-wide whitespace-nowrap">PAID</span>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Announcements */}

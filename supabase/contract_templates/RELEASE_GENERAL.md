@@ -1,74 +1,63 @@
-
-GENERAL VISITOR LIABILITY RELEASE, ASSUMPTION OF RISK, HOLD HARMLESS & INDEMNIFICATION AGREEMENT
+GENERAL LIABILITY RELEASE, ASSUMPTION OF RISK, HOLD HARMLESS & INDEMNIFICATION AGREEMENT
 
 Effective from the Date of Signature until superseded by a later executed version of this Release
 
-This General Visitor Liability Release, Assumption of Risk, Hold Harmless & Indemnification Agreement ("Agreement") is entered into as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned individual ("Visitor"), or if Visitor is under eighteen (18) years of age, the Visitor's parent or legal guardian, in favor of:
+This General Liability Release, Assumption of Risk, Hold Harmless & Indemnification Agreement ("Agreement") is made effective as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned client ("CLIENT"), on CLIENT's own behalf and, where a minor is identified, on behalf of that minor ("PARTICIPANT"), in favor of {{ORG.LEGAL_NAME}} ("COMPANY"). By signing below, CLIENT acknowledges and agrees to the terms of this Agreement. Where no minor is identified, references to PARTICIPANT mean CLIENT.
 
-{{ORG.LEGAL_NAME}} ("COMPANY").
+For purposes of this Agreement, the term "Released Parties" means COMPANY, its owners, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, representatives, affiliates, property owners, facility owners, licensors, lessors, lessees, hosts, landowners, successors, assigns, heirs, and any person acting on behalf of COMPANY at any location where it is authorized to conduct business. This Agreement applies to any ranch, barn, arena, trail, pasture, tack room, stable, private property, leased premises, event venue, competition grounds, or other location where COMPANY conducts authorized business activities.
 
-For purposes of this Agreement, the term "Released Parties" means COMPANY, its owner, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, representatives, affiliates, property owners, facility owners, licensors, lessors, lessees, hosts, landowners, successors, assigns, heirs, and any person acting on behalf of COMPANY at any location where it is authorized to conduct business.
+1. VISITOR ACKNOWLEDGEMENT
 
-This Agreement applies to any ranch, barn, arena, trail, pasture, tack room, stable, private property, leased premises, event venue, competition grounds, or other location where COMPANY conducts authorized business activities.
-
-1. PURPOSE OF VISIT
-
-Visitor acknowledges that he or she is voluntarily entering property where horses, livestock, equipment, vehicles, machinery, uneven terrain, and other potentially hazardous conditions may exist.
-
-Visitor understands that merely being present at an equestrian facility involves inherent risks that cannot be completely eliminated.
+CLIENT acknowledges that CLIENT, and any accompanying minor, is voluntarily entering property where horses, livestock, equipment, vehicles, machinery, uneven terrain, and other potentially hazardous conditions may exist. CLIENT understands that merely being present at the property involves inherent risks that cannot be completely eliminated.
 
 2. ACKNOWLEDGMENT OF INHERENT RISKS
 
-Visitor understands and acknowledges that risks include, but are not limited to:
-Horses may kick, bite, buck, rear, bolt, stumble, fall, step sideways, spook, or otherwise behave unpredictably.
-Horses may react suddenly to people, animals, sounds, vehicles, weather, or other stimuli.
-Visitors may be stepped on, struck, pinned, knocked down, or injured by horses or equipment.
-Gates, fences, trailers, tack, tools, machinery, and agricultural equipment may present hazards.
-Ground conditions may include mud, rocks, holes, uneven footing, irrigation, slippery surfaces, dust, and other natural hazards.
+CLIENT understands and acknowledges that risks include, but are not limited to:
+Horses & Equipment:
+Horses may kick, bite, buck, rear, bolt, stumble, fall, step sideways, spook, or otherwise behave unpredictably. Horses may react suddenly to people, animals, sounds, vehicles, weather, or other stimuli.
+Persons present may be stepped on, struck, pinned, knocked down, or injured by horses or their equipment.
+Property, Machinery & Other Equipment:
+Gates, fences, trailers, tack, tools, machinery, and agricultural equipment may present hazards. Ground conditions may include mud, rocks, holes, uneven footing, irrigation, slippery surfaces, dust, and other natural hazards which may present natural or unforeseeable risks.
+Additional Risks:
 Risks may arise from the actions or omissions of other visitors, participants, horse owners, or third parties.
+Medical Assistance:
 Emergency medical assistance may not be immediately available.
-Visitor understands these risks are inherent to equestrian facilities and voluntarily accepts them.
 
 3. ASSUMPTION OF RISK
 
-Visitor knowingly and voluntarily assumes all risks, whether known or unknown, foreseeable or unforeseeable, inherent or otherwise, arising from entering, remaining upon, or departing from any property where COMPANY conducts business. Visitor accepts full personal responsibility for any injury, illness, death, property damage, or other loss that may occur.
+CLIENT knowingly and voluntarily assumes, on CLIENT's own behalf and on behalf of any accompanying minor, all risks, whether known or unknown, foreseeable or unforeseeable, inherent or otherwise, arising from entering, remaining upon, or departing from any property where COMPANY conducts business. CLIENT accepts full personal responsibility for any injury, illness, death, property damage, or other loss that may occur.
 
-4. HEALTH, MENTAL CAPACITY, AND FITNESS
+4. PERSONAL RESPONSIBILITY AND CONDITION
 
-Visitor represents and warrants that:
-Visitor is in good physical health. Visitor is of sound mind. Visitor is not under the influence of alcohol, illegal drugs, or any medication that would impair judgment or physical ability. Visitor has no medical condition, disability, impairment, restriction, or limitation that would prevent Visitor from safely protecting themself or avoiding injury to others while present on the property. Visitor voluntarily assumes responsibility for determining whether participation or presence is appropriate.
+CLIENT represents that: CLIENT, and any accompanying minor, is capable of safely being present on the property, or CLIENT has notified COMPANY of any condition, limitation, or circumstance requiring assistance or accommodation while on the property. CLIENT is not under the influence of alcohol, illegal drugs, or any medication that impairs judgment or physical ability, and will not remain on the property while so impaired. CLIENT is solely responsible for determining whether presence on the property is appropriate, for exercising care consistent with CLIENT's own condition and abilities, for remaining in designated visitor areas, and for supervising any accompanying minor at all times.
 
-If Visitor is signing on behalf of a minor, Parent or Guardian represents these statements are true to the best of his or her knowledge.
+5. RULES AND CONDUCT AGREEMENT
 
-5. RULES, SAFETY POLICIES & CODE OF CONDUCT
-
-Visitor acknowledges receipt of the separate Rules, Regulations, Safety Policies, and Code of Conduct for COMPANY. Visitor agrees to read, understand, and comply with those rules at all times. Visitor understands that failure to comply may result in immediate removal from the property without refund or compensation.
+CLIENT acknowledges receipt of the separately executed Property Rules, Safety Acknowledgment, and Equestrian Conduct Agreement. CLIENT agrees to read, understand, and comply with those rules at all times and to ensure any accompanying minor complies. CLIENT understands that failure to comply may result in immediate removal from the property without refund or compensation.
 
 6. RELEASE OF LIABILITY
 
-To the fullest extent permitted under California law, Visitor, on behalf of himself or herself and his or her heirs, representatives, successors, assigns, and personal representatives, voluntarily releases, waives, and forever discharges the Released Parties from any and all claims, demands, causes of action, damages, losses, liabilities, costs, expenses, or judgments arising out of or related to Visitor's presence on the property, including claims arising from the ordinary negligence of the Released Parties.
-
-This release applies to bodily injury, personal injury, illness, property damage, wrongful death, emotional distress, and all other losses, whether known or unknown, except to the extent such claims cannot legally be released under California law.
+CLIENT, on behalf of CLIENT, any accompanying minor, and their heirs, representatives, successors, assigns, and personal representatives, voluntarily releases, waives, and forever discharges the Released Parties from any and all claims, demands, causes of action, damages, losses, liabilities, costs, expenses, or judgments arising out of or related to presence on the property, including claims arising from the ordinary negligence of the Released Parties. This release applies to bodily injury, personal injury, illness, property damage, wrongful death, emotional distress, and all other losses, whether known or unknown, including claims not known or suspected to exist at the time of signing. This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
 
 7. HOLD HARMLESS AND INDEMNIFICATION
 
-Visitor agrees to defend, indemnify, and hold harmless the Released Parties from and against any claims, liabilities, damages, judgments, costs, expenses, or attorney's fees arising from: Visitor's acts or omissions; Visitor's violation of this Agreement or property rules; Claims brought by or on behalf of persons accompanying Visitor, to the extent caused by Visitor's conduct; or Damage to property caused by Visitor.
+CLIENT agrees to defend, indemnify, and hold harmless the Released Parties from and against any claims, liabilities, damages, judgments, costs, expenses, or attorney's fees arising from: CLIENT's or an accompanying minor's acts or omissions; violation of this Agreement or property rules; Claims brought by or on behalf of persons accompanying CLIENT, to the extent caused by CLIENT's conduct; or Damage to property caused by CLIENT or an accompanying minor.
 
 8. PROPERTY DAMAGE
 
-Visitor accepts responsibility for any damage caused by Visitor to horses, equipment, facilities, vehicles, buildings, or other property and agrees to reimburse the responsible party for repair or replacement costs.
+CLIENT accepts responsibility for any damage caused by CLIENT or an accompanying minor to horses, equipment, facilities, vehicles, buildings, or other property and agrees to reimburse the responsible party for repair or replacement costs.
 
 9. MEDIA CONSENT
 
-Visitor acknowledges that photographs, video recordings, and other media may be captured during visits to, or activities at, any location where COMPANY conducts business. Visitor grants COMPANY a perpetual, royalty-free license to use such media, including Visitor's (or, where applicable, the minor's) name, image, and likeness, for instructional, promotional, and other lawful business purposes, without compensation. Visitor may revoke this consent at any time by written notice via email to {{ORG.EMAIL}}; revocation is effective prospectively as to media captured after receipt of the notice.
+CLIENT acknowledges that photographs, video recordings, and other media may be captured during visits to, or activities at, any location where COMPANY conducts business. CLIENT grants COMPANY a perpetual, royalty-free license to use such media, including CLIENT's or an accompanying minor's name, image, and likeness, for instructional, promotional, and other lawful business purposes, without compensation. CLIENT may revoke this consent at any time by written notice via email to {{ORG.EMAIL}}; revocation is effective prospectively as to media captured after receipt of the notice.
 
 10. DISPUTE RESOLUTION
 
-Disputes shall be resolved by arbitration. The venue shall be San Diego County, California.
+Any dispute arising out of or relating to this Agreement or presence at any location where COMPANY conducts business shall be resolved by binding arbitration administered by JAMS under its Streamlined Arbitration Rules and Procedures, or by the American Arbitration Association under its Consumer Arbitration Rules if JAMS is unavailable, before a single neutral arbitrator. The arbitration shall take place in San Diego County, California. COMPANY shall pay all arbitration fees and administrative costs that exceed the filing fee CLIENT would have incurred to file the claim in San Diego County Superior Court. Either party may instead bring an individual claim in small claims court if the claim qualifies for that forum. Judgment on the arbitration award may be entered in any court of competent jurisdiction.
 
-11. ATTORNEY’S FEES
+11. ATTORNEY'S FEES
 
-Each party shall be required to cover their own attorney’s fees and costs.
+Each party shall be required to cover their own attorney's fees and costs.
 
 12. GOVERNING LAW
 
@@ -84,28 +73,21 @@ This Agreement constitutes the entire understanding between the parties concerni
 
 15. ACKNOWLEDGMENT
 
-Visitor acknowledges that:
+CLIENT acknowledges that: This Agreement is legally binding. CLIENT has carefully read the entire Agreement. CLIENT understands its contents. CLIENT has had the opportunity to ask questions before signing. CLIENT signs voluntarily and without coercion.
 
-This Agreement is legally binding. Visitor has carefully read the entire Agreement. Visitor understands its contents. Visitor has had the opportunity to ask questions before signing. Visitor signs voluntarily and without coercion.
+CLIENT
 
-ADULT SIGNER
+Date: {{SIG.CLIENT.DATE}}
+Printed Name: {{CLIENT.PRINTED_NAME}}
+Signature: {{SIG.CLIENT.NAME}}
+Phone: {{CLIENT.PHONE}}
+Email: {{CLIENT.EMAIL}}
 
-Date: {{SIG.PARTICIPANT.DATE}}
-Printed Name: {{PARTICIPANT.PRINTED_NAME}}
-Signature: {{SIG.PARTICIPANT.NAME}}
-Phone: {{PARTICIPANT.PHONE}}
-Email: {{PARTICIPANT.EMAIL}}
-
-MINOR SIGNER (PARENT/GUARDIAN)
+<!-- CUT-START: MINOR_PARTICIPANT | condition: append only if a minor accompanies CLIENT -->
+MINOR (IF APPLICABLE)
 
 Minor's Name: {{PARTICIPANT.FULL_NAME}}
-Date of Birth:
+Date of Birth: {{PARTICIPANT.DOB}}
 
-I certify that I am the parent or legal guardian of the above-named minor and have authority to sign this Agreement on the minor's behalf. I have read and understand this Agreement, consent to the minor's presence on the property, agree to all of its terms, and agree to indemnify and hold harmless the Released Parties from claims arising from the minor's presence or activities to the extent permitted by California law.
-
-Date: {{SIG.GUARDIAN.DATE}}
-Parent/Guardian Name: {{GUARDIAN.FULL_NAME}}
-Signature: {{SIG.GUARDIAN.NAME}}
-Relationship to Minor: {{GUARDIAN.RELATIONSHIP}}
-Phone: {{GUARDIAN.PHONE}}
-Email: {{GUARDIAN.EMAIL}}
+Where a minor is identified above, CLIENT certifies that CLIENT is the parent or legal guardian of the minor and has authority to sign this Agreement on the minor's behalf, consents to the minor's presence on the property, and agrees to the release of liability, assumption of risk, hold harmless, and indemnification provisions both on CLIENT's own behalf, including as to any claims CLIENT may hold individually arising from the minor's presence or activities, and on behalf of the minor.
+<!-- CUT-END: MINOR_PARTICIPANT -->

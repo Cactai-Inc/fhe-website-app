@@ -1,207 +1,120 @@
-EMERGENCY VETERINARY AUTHORIZATION, EQUINE MEDICAL CARE DIRECTIVE, AND OWNER AUTHORIZATION AGREEMENT
+EMERGENCY VETERINARY AUTHORIZATION AND EQUINE MEDICAL CARE DIRECTIVE
 
-This Emergency Veterinary Authorization, Equine Medical Care Directive, and Owner Authorization Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
+This Emergency Veterinary Authorization and Equine Medical Care Directive ("Agreement") is made effective as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned client ("CLIENT") in favor of {{ORG.LEGAL_NAME}} ("COMPANY"), authorizing COMPANY to act as described below with respect to the horse identified. By signing below, CLIENT acknowledges and agrees to the terms of this Agreement.
 
-{{ORG.LEGAL_IDENTITY}} (“COMPANY”),
+CLIENT INFORMATION
 
-and
-
-Horse Owner / Authorized Representative: {{OWNER.FULL_NAME}}
-
-Address: {{OWNER.ADDRESS}}
-
-Phone: {{OWNER.PHONE}}
-
-Email: {{OWNER.EMAIL}}
-
-(“Owner”)
+Name: {{CLIENT.FULL_NAME}}
+Address: {{CLIENT.ADDRESS}}
+Phone: {{CLIENT.PHONE}}
+Email: {{CLIENT.EMAIL}}
+CLIENT capacity as to Horse: {{CLIENT.HORSE_CAPACITY}}
 
 HORSE INFORMATION
 
 Horse Name: {{HORSE.REGISTERED_NAME}}
-
 Barn Name: {{HORSE.BARN_NAME}}
-
 Breed: {{HORSE.BREED}}
-
 Color: {{HORSE.COLOR}}
-
 Sex: {{HORSE.SEX}}
-
 Age: {{HORSE.AGE_DOB}}
-
 Registration / Identification Number: {{HORSE.REGISTRATION_NUMBER}}
-
 Current Location: {{HORSE.CURRENT_LOCATION}}
-
-Primary Boarding Facility:
-
 Veterinarian: {{HORSE.VET_NAME}}
-
 Veterinarian Phone: {{HORSE.VET_PHONE}}
-
 Farrier: {{HORSE.FARRIER_NAME}}
-
 Farrier Phone: {{HORSE.FARRIER_PHONE}}
 
-RECITALS
+1. AUTHORITY AND CAPACITY
 
-A. Owner owns, leases, manages, or has authority over the above-described horse (“Horse”).
+CLIENT represents and warrants that CLIENT owns, leases, manages, or otherwise has authority over the above-described horse ("Horse") and has full legal authority to execute this Agreement and to authorize the actions described.
 
-B. Owner has engaged or may engage COMPANY to provide riding instruction, training, exercise, clipping, handling, transportation, care, medication, or other equine-related services.
+2. AUTHORIZATION TO SEEK EMERGENCY CARE
 
-C. Owner desires to authorize COMPANY to take reasonable action if the Horse experiences an emergency and Owner cannot immediately be reached.
+CLIENT authorizes COMPANY and its representatives to contact a veterinarian and arrange emergency veterinary evaluation and treatment when COMPANY reasonably believes: The Horse may require immediate medical attention; Delay could reasonably worsen the Horse's condition; or CLIENT cannot be reached in a timely manner.
 
-AGREEMENT
+3. EMERGENCY DECISION-MAKING AUTHORITY
 
-AUTHORIZATION TO SEEK EMERGENCY CARE
+In an emergency, COMPANY may authorize reasonable veterinary actions including: Veterinary examination; Diagnostic evaluation; Emergency stabilization; Pain management; Transportation to a veterinary facility; and other care reasonably recommended by a licensed veterinarian. This authorization does not make COMPANY the owner of the Horse and does not transfer ownership rights.
 
-Owner authorizes COMPANY and its representatives to contact a veterinarian and arrange emergency veterinary evaluation and treatment when COMPANY reasonably believes:
+4. CONTACT INFORMATION
 
-The Horse may require immediate medical attention;
+Primary Contact: {{CLIENT.FULL_NAME}}
+Phone: {{CLIENT.PHONE}}
+Secondary Emergency Contact: {{CLIENT.EMERGENCY_CONTACT_1_NAME}} ({{CLIENT.EMERGENCY_CONTACT_1_RELATIONSHIP}})
+Phone: {{CLIENT.EMERGENCY_CONTACT_1_PHONE}}
 
-Delay could reasonably worsen the Horse’s condition;
+5. RESPONSIBILITY FOR COSTS
 
-Owner cannot be reached in a timely manner.
+CLIENT acknowledges that all veterinary, transportation, medication, diagnostic, surgical, hospitalization, and related expenses remain the sole responsibility of CLIENT. COMPANY is not responsible for payment of veterinary expenses unless separately agreed in writing.
 
-EMERGENCY DECISION-MAKING AUTHORITY
+6. NON-EMERGENCY CARE
 
-In an emergency, COMPANY may authorize reasonable veterinary actions including:
+COMPANY shall not authorize non-emergency veterinary procedures without CLIENT approval unless delay creates a reasonable concern for the Horse's welfare.
 
-Veterinary examination;
+7. EUTHANASIA
 
-Diagnostic evaluation;
+COMPANY may not authorize euthanasia without CLIENT approval.
 
-Emergency stabilization;
+CLIENT Initials: {{CLIENT.EUTHANASIA_INITIALS}}
 
-Pain management;
+8. MEDICATION AUTHORIZATION
 
-Transportation to a veterinary facility;
+CLIENT authorizes COMPANY to administer medications only as follows:
 
-Other care reasonably recommended by a licensed veterinarian.
+Medication: {{HORSE.MEDICATION_NAME}}
+Dosage: {{HORSE.MEDICATION_DOSAGE}}
+Instructions: {{HORSE.MEDICATION_INSTRUCTIONS}}
+Additional instructions: {{HORSE.MEDICATION_ADDITIONAL}}
 
-This authorization does not make COMPANY the owner of the Horse and does not transfer ownership rights.
+9. VETERINARY HISTORY DISCLOSURE
 
-OWNER CONTACT INFORMATION
+CLIENT agrees to disclose all known information regarding: Medical conditions; Injuries; Allergies; Medications; Behavioral issues; and Prior veterinary concerns.
 
-Primary Owner Contact: {{OWNER.FULL_NAME}}
+Known Conditions: {{HORSE.KNOWN_CONDITIONS}}
 
-Phone: {{OWNER.PHONE}}
+10. RELEASE OF LIABILITY
 
-Secondary Emergency Contact: {{EMERGENCY_CONTACT.FULL_NAME}} ({{EMERGENCY_CONTACT.RELATIONSHIP}})
+CLIENT releases COMPANY and its owners, employees, contractors, agents, representatives, and volunteers from claims arising from good-faith actions taken under this Agreement. This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
 
-Phone: {{EMERGENCY_CONTACT.PHONE}}
+11. INDEMNIFICATION
 
-OWNER RESPONSIBILITY FOR COSTS
+CLIENT agrees to indemnify and hold harmless COMPANY from claims, expenses, losses, or liabilities arising from: Veterinary expenses; Medical decisions; Horse conditions; and Information omitted by CLIENT.
 
-Owner acknowledges that all veterinary, transportation, medication, diagnostic, surgical, hospitalization, and related expenses remain the sole responsibility of Owner.
+12. NO GUARANTEE OF OUTCOME
 
-COMPANY is not responsible for payment of veterinary expenses unless separately agreed in writing.
+CLIENT acknowledges that emergency veterinary care cannot guarantee survival, recovery, performance ability, or future usability of the Horse.
 
-NON-EMERGENCY CARE
+13. TERMINATION AND REVOCATION
 
-COMPANY shall not authorize non-emergency veterinary procedures without Owner approval unless delay creates a reasonable concern for the Horse’s welfare.
+CLIENT may revoke this authorization by written notice. Revocation shall not affect actions already taken before receipt of written notice.
 
-EUTHANASIA AUTHORIZATION
+14. DISPUTE RESOLUTION
 
-COMPANY may not authorize euthanasia without Owner approval.
+Any dispute arising out of or relating to this Agreement shall be resolved by binding arbitration administered by JAMS under its Streamlined Arbitration Rules and Procedures, or by the American Arbitration Association under its Consumer Arbitration Rules if JAMS is unavailable, before a single neutral arbitrator. The arbitration shall take place in San Diego County, California. COMPANY shall pay all arbitration fees and administrative costs that exceed the filing fee CLIENT would have incurred to file the claim in San Diego County Superior Court. Either party may instead bring an individual claim in small claims court if the claim qualifies for that forum. Judgment on the arbitration award may be entered in any court of competent jurisdiction.
 
-Owner Initials:
+15. ATTORNEY'S FEES
 
-MEDICATION AUTHORIZATION
+Each party shall be required to cover their own attorney's fees and costs.
 
-Owner authorizes COMPANY to administer medications only as follows:
+16. GOVERNING LAW
 
-Medication:
+California law governs this Agreement.
 
-Dosage:
+17. SEVERABILITY
 
-Instructions:
+If any provision of this Agreement is determined to be invalid or unenforceable, the remaining provisions shall remain in full force and effect.
 
-Additional instructions:
+18. ENTIRE AGREEMENT
 
-VETERINARY HISTORY DISCLOSURE
+This Agreement contains the entire agreement concerning emergency veterinary authorization and supplements, and does not supersede, any separate Equine Services Release or services contract between CLIENT and COMPANY.
 
-Owner agrees to disclose all known information regarding:
+CLIENT
 
-Medical conditions;
-
-Injuries;
-
-Allergies;
-
-Medications;
-
-Behavioral issues;
-
-Prior veterinary concerns.
-
-Known Conditions:
-
-RELEASE OF LIABILITY
-
-Owner releases COMPANY and their owners, employees, contractors, agents, representatives, and volunteers from claims arising from good-faith actions taken under this Agreement.
-
-This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
-
-INDEMNIFICATION
-
-Owner agrees to indemnify and hold harmless COMPANY from claims, expenses, losses, or liabilities arising from:
-
-Veterinary expenses;
-
-Medical decisions;
-
-Horse conditions;
-
-Information omitted by Owner.
-
-NO GUARANTEE OF OUTCOME
-
-Owner acknowledges that emergency veterinary care cannot guarantee survival, recovery, performance ability, or future usability of the Horse.
-
-TERMINATION AND REVOCATION
-
-Owner may revoke this authorization by written notice.
-
-Revocation shall not affect actions already taken before receipt of written notice.
-
-GOVERNING LAW
-
-This Agreement shall be governed by the laws of the State of California.
-
-DISPUTE RESOLUTION
-
-Disputes shall be resolved by:
-
-□ Arbitration
-
-□ Litigation
-
-Venue shall be San Diego County, California.
-
-ATTORNEY’S FEES
-
-The prevailing party in any dispute shall be entitled to reasonable attorney’s fees and costs where permitted by law.
-
-ENTIRE AGREEMENT
-
-This Agreement contains the entire agreement concerning emergency veterinary authorization.
-
-OWNER
-
-Signature: {{SIG.OWNER.NAME}}
-
-Printed Name: {{OWNER.PRINTED_NAME}}
-
-Date: {{SIG.OWNER.DATE}}
-
-COMPANY: {{ORG.LEGAL_NAME}}
-
-By (signature): {{SIG.COMPANY.NAME}}
-
-Printed: {{ORG.SIGNATORY_NAME}}
-
-Title: {{ORG.SIGNATORY_TITLE}}
-
-Date: {{SIG.COMPANY.DATE}}
+Signature: {{SIG.CLIENT.NAME}}
+Printed Name: {{CLIENT.PRINTED_NAME}}
+Capacity as to Horse: {{CLIENT.HORSE_CAPACITY}}
+Date: {{SIG.CLIENT.DATE}}
+Phone: {{CLIENT.PHONE}}
+Email: {{CLIENT.EMAIL}}
+Horse Name: {{HORSE.REGISTERED_NAME}}

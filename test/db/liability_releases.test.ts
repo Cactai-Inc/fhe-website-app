@@ -1,17 +1,19 @@
 /**
  * Liability-release pass — standalone releases + signing-requirements matrix
  * (20260701070000_liability_releases.sql + the regenerated
- * 20260629100000_load_contract_bodies.sql).
+ * 20260629100000_load_contract_bodies.sql, owner template revision 2026-07-03).
  *
  * Proves:
- *  - the four RELEASE_* templates are seeded with tokenized bodies (COMPANY
- *    party namespaces, never FHE),
+ *  - the four RELEASE_* templates are seeded with tokenized bodies (unilateral
+ *    CLIENT-signer documents — COMPANY is prose, never a party; never FHE),
  *  - generate_document merges RELEASE_PARTICIPANT for a riding-lesson
- *    engagement: the tenant's {{ORG.LEGAL_IDENTITY}} clause + signatory and the
- *    participant party tokens resolve; no orphan {{ORG.*}}/{{FHE.*}} survives
- *    (only {{SIG.*}} stays live for signing),
+ *    engagement: the tenant's trade name and the CLIENT party tokens resolve;
+ *    the MINOR_PARTICIPANT CUT section is stripped for an adult signer; no
+ *    orphan {{ORG.*}}/{{FHE.*}}/{{CLIENT.*}} survives (only {{SIG.*}} stays
+ *    live for signing),
  *  - required_documents_for(service) returns the owner's matrix per service
- *    type (releases + facility rules + medical/vet authorizations),
+ *    type (COMPANY_POLICIES joins every required set per 20260703030000 +
+ *    releases + facility rules + medical/vet authorizations),
  *  - contract_requirements is org-isolated (RESTRICTIVE org_boundary): a
  *    second tenant sees nothing of tenant #1's matrix and cannot write into it.
  */
@@ -38,7 +40,9 @@ beforeAll(async () => {
     `insert into organizations (name, slug) values ('Release Rival','release-rival') returning id`))[0].id;
   bAdmin = await h.createAuthUser({ role: 'ADMIN', org: orgB });
 
-  // A riding-lesson engagement on tenant #1 with an adult participant.
+  // A riding-lesson engagement on tenant #1 with an adult client signing for
+  // themself (owner 2026-07-03: CLIENT is the single signer on all releases;
+  // where no minor is identified, CLIENT is the participant).
   const participant = (await h.q<{ id: string }>(
     `insert into contacts (org_id, first_name, last_name, phone, email) values ($1, 'Paula', 'Participant', '619-555-0110', 'paula@example.com') returning id`, [org1]))[0].id;
   const clientId = (await h.q<{ id: string }>(
@@ -48,7 +52,7 @@ beforeAll(async () => {
      values ($1,$2,'RIDING_LESSON','2026-07-01') returning id`, [org1, clientId]))[0].id;
   await h.q(
     `insert into engagement_parties (org_id, engagement_id, contact_id, party_role, is_signer, signer_order)
-     values ($1,$2,$3,'PARTICIPANT',true,1)`, [org1, engId, participant]);
+     values ($1,$2,$3,'CLIENT',true,1)`, [org1, engId, participant]);
 });
 
 afterAll(async () => {
@@ -56,7 +60,7 @@ afterAll(async () => {
 });
 
 describe('the four releases are loaded', () => {
-  it('seeds all four RELEASE_* templates active, tokenized, unilateral (owner 2026-07-02)', async () => {
+  it('seeds all four RELEASE_* templates active, tokenized, unilateral CLIENT-signer docs', async () => {
     await h.asSuperuser();
     const rows = await h.q<{ template_key: string; body: string | null; active: boolean; service_type: string | null; party_namespaces: string[] }>(
       `select template_key, body, active, service_type, party_namespaces
@@ -71,15 +75,20 @@ describe('the four releases are loaded', () => {
       expect(r.body).toContain('{{ORG.LEGAL_NAME}}');
       expect(r.body).not.toContain('{{ORG.LEGAL_IDENTITY}}');
       expect(r.body).not.toContain('{{ORG.SIGNATORY_NAME}}');
+      // Owner 2026-07-03 (kiosk CLIENT canon): CLIENT signs; the minor rides as
+      // the optional non-signing PARTICIPANT party via the CUT-marker section.
+      expect(r.body).toContain('{{SIG.CLIENT.NAME}}');
       expect(r.party_namespaces).not.toContain('COMPANY');
+      expect(r.party_namespaces).toContain('CLIENT');
       expect(r.party_namespaces).toContain('PARTICIPANT');
       expect(r.party_namespaces).not.toContain('FHE');
+      expect(r.party_namespaces).not.toContain('GUARDIAN');
     }
   });
 });
 
 describe('generate_document — RELEASE_PARTICIPANT for a riding lesson', () => {
-  it('merges the tenant identity + participant tokens; only {{SIG.*}} stays live', async () => {
+  it('merges the tenant identity + client tokens; adult path strips the minor section; only {{SIG.*}} stays live', async () => {
     await h.asSuperuser();
     const [row] = await h.q<{ document_id: string; merged_body: string }>(
       `select * from generate_document($1,'RELEASE_PARTICIPANT')`, [engId]);
@@ -90,19 +99,24 @@ describe('generate_document — RELEASE_PARTICIPANT for a riding lesson', () => 
     expect(body).toContain('French Heritage Equestrian');
     expect(body).not.toContain('doing business as');
     expect(body).not.toContain('Charles Zigmund');
-    // participant party tokens resolve from engagement_parties → contacts
+    // CLIENT party tokens resolve from engagement_parties → contacts
     expect(body).toContain('Paula Participant');
     expect(body).toContain('paula@example.com');
     // the defined term survives as prose, never as a leftover token
     expect(body).toContain('("COMPANY")');
     expect(body).not.toMatch(/\{\{ORG\./);
     expect(body).not.toMatch(/\{\{FHE\./);
+    expect(body).not.toMatch(/\{\{CLIENT\./);
+    // adult signer, no PARTICIPANT party → generate_document v9 strips the
+    // MINOR_PARTICIPANT CUT section whole (markers and tokens included)
+    expect(body).not.toContain('MINOR PARTICIPANT (IF APPLICABLE)');
+    expect(body).not.toContain('CUT-START');
     expect(body).not.toMatch(/\{\{PARTICIPANT\./);
     // every remaining token is a live signature token
     for (const t of body.match(/\{\{[A-Z0-9_.]+\}\}/g) ?? []) {
       expect(t, `unexpected unmerged token ${t}`).toMatch(/^\{\{SIG\./);
     }
-    expect(body).toContain('{{SIG.PARTICIPANT.NAME}}');
+    expect(body).toContain('{{SIG.CLIENT.NAME}}');
     // unilateral: no company countersignature block on any release
     expect(body).not.toContain('{{SIG.COMPANY.NAME}}');
   });
@@ -117,23 +131,25 @@ describe('required_documents_for — the signing-requirements matrix', () => {
 
   it('returns the owner rules per service type (tenant #1 seed)', async () => {
     await h.asSuperuser();
-    // R1+R2 — rider segment: release + facility rules + human emergency medical
+    // 20260703030000 §3: COMPANY_POLICIES joins the required set of EVERY
+    // service that requires anything (services with an empty set stay empty).
+    // R1+R2 — rider segment: policies + release + facility rules + human emergency medical
     await expectDocs('RIDING_LESSON',
-      ['FACILITY_RULES', 'HUMAN_EMERGENCY_MEDICAL', 'RELEASE_PARTICIPANT']);
+      ['COMPANY_POLICIES', 'FACILITY_RULES', 'HUMAN_EMERGENCY_MEDICAL', 'RELEASE_PARTICIPANT']);
     await expectDocs('JUMPER_TRAINING',
-      ['FACILITY_RULES', 'HUMAN_EMERGENCY_MEDICAL', 'RELEASE_PARTICIPANT']);
+      ['COMPANY_POLICIES', 'FACILITY_RULES', 'HUMAN_EMERGENCY_MEDICAL', 'RELEASE_PARTICIPANT']);
     await expectDocs('HORSEMANSHIP_TRAINING',
-      ['FACILITY_RULES', 'HUMAN_EMERGENCY_MEDICAL', 'RELEASE_PARTICIPANT']);
-    // R1+R3 — horse segment: release variant + facility rules + horse emergency vet
+      ['COMPANY_POLICIES', 'FACILITY_RULES', 'HUMAN_EMERGENCY_MEDICAL', 'RELEASE_PARTICIPANT']);
+    // R1+R3 — horse segment: policies + release variant + facility rules + horse emergency vet
     await expectDocs('HORSE_EXERCISE',
-      ['FACILITY_RULES', 'HORSE_EMERGENCY_VET', 'RELEASE_HORSE_EXERCISE']);
+      ['COMPANY_POLICIES', 'FACILITY_RULES', 'HORSE_EMERGENCY_VET', 'RELEASE_HORSE_EXERCISE']);
     await expectDocs('HORSE_TRAINING',
-      ['FACILITY_RULES', 'HORSE_EMERGENCY_VET', 'RELEASE_HORSE_EXERCISE']);
+      ['COMPANY_POLICIES', 'FACILITY_RULES', 'HORSE_EMERGENCY_VET', 'RELEASE_HORSE_EXERCISE']);
     await expectDocs('HORSE_CLIPPING',
-      ['FACILITY_RULES', 'HORSE_EMERGENCY_VET', 'RELEASE_HORSE_CARE']);
-    // R3 — requires_horse brokerage/support: vet authorization only
-    await expectDocs('HORSE_EVALUATION', ['HORSE_EMERGENCY_VET']);
-    await expectDocs('HORSE_SALE_ASSISTANCE', ['HORSE_EMERGENCY_VET']);
+      ['COMPANY_POLICIES', 'FACILITY_RULES', 'HORSE_EMERGENCY_VET', 'RELEASE_HORSE_CARE']);
+    // R3 — requires_horse brokerage/support: policies + vet authorization
+    await expectDocs('HORSE_EVALUATION', ['COMPANY_POLICIES', 'HORSE_EMERGENCY_VET']);
+    await expectDocs('HORSE_SALE_ASSISTANCE', ['COMPANY_POLICIES', 'HORSE_EMERGENCY_VET']);
     // no signing set: consulting (no horse yet) and internal
     await expectDocs('HORSE_FINDER', []);
     await expectDocs('INDEPENDENT_CONTRACTOR', []);

@@ -2,8 +2,8 @@
  * Phase 3 — business identity seed (migration 20).
  *
  * Confirms the business_config singleton is seeded from the website brand and
- * that generate_document resolves the FHE signature tokens from it (no per-test
- * override), so generated contracts carry the FHE signature block.
+ * that generate_document resolves the {{ORG.*}} identity tokens from it (no
+ * per-test override), so generated contracts carry the tenant's trade name.
  */
 import { beforeAll, afterAll, describe, expect, it } from 'vitest';
 import { createTestDb, type TestDb } from './harness';
@@ -50,8 +50,12 @@ describe('business identity seed', () => {
 
     const [doc] = await h.q<{ merged_body: string }>(
       `select * from generate_document($1,'HORSE_PURCHASE_SALE')`, [eng]);
-    expect(doc.merged_body).toContain('Charles Zigmund'); // signatory + legal identity resolved
-    expect(doc.merged_body).toContain('doing business as French Heritage Equestrian');
+    // Owner revision 2026-07-03: the purchase/sale instrument is between BUYER
+    // and SELLER — COMPANY "is not a party", so the tenant identity on the
+    // document is the trade name only ({{ORG.LEGAL_NAME}}); no LEGAL_IDENTITY
+    // clause, no signatory block.
+    expect(doc.merged_body).toContain('French Heritage Equestrian'); // ORG.LEGAL_NAME resolved
+    expect(doc.merged_body).toContain('is not a party to this Agreement');
     expect(doc.merged_body).not.toMatch(/\{\{(FHE|ORG)\./); // all company tokens resolved
     expect(doc.merged_body).not.toContain('Windemere'); // no mailing address anywhere
   });

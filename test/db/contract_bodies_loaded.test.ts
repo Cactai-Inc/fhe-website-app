@@ -1,8 +1,12 @@
 /**
- * Phase 2 — contract bodies loaded into the database (migration 17).
+ * Phase 2 — contract bodies loaded into the database (migration 17, regenerated
+ * for the owner's 2026-07-03 template revision).
  *
  * Verifies the generated loader:
- *  - the 18 source-backed templates have a body; the 3 without a source doc are NULL,
+ *  - the 19 source-backed templates have a body (19 .md files → 19 keys; the
+ *    equine-services release body is duplicated into both RELEASE_HORSE_CARE.md
+ *    and RELEASE_HORSE_EXERCISE.md so both matrix/kiosk keys stay live); the 5
+ *    templates without a source doc are NULL,
  *  - per-template template_tokens are derived (concrete tokens linked to template_id),
  *  - derivation is faithful both ways: every derived token appears in its body, and
  *    every {{token}} in a body has a derived row.
@@ -13,16 +17,21 @@ import { createTestDb, type TestDb } from './harness';
 const WITH_BODY = [
   'HORSE_PURCHASE_SALE', 'HORSE_SALE_TRANSFER', 'HORSE_LEASE',
   'HORSE_SEARCH_RETAINER', 'HORSE_EVALUATION', 'HORSE_TRAINING', 'HORSE_EXERCISE',
-  'HORSEMANSHIP_TRAINING', 'RIDER_LESSON_JUMPER', 'MINOR_RIDER', 'HORSE_EMERGENCY_VET',
+  'HORSEMANSHIP_TRAINING', 'RIDER_LESSON_JUMPER', 'HORSE_EMERGENCY_VET',
   'HUMAN_EMERGENCY_MEDICAL', 'FACILITY_RULES',
   // the four standalone liability releases (liability-release pass)
   'RELEASE_GENERAL', 'RELEASE_PARTICIPANT', 'RELEASE_HORSE_EXERCISE', 'RELEASE_HORSE_CARE',
   // contract-module decomposition: the side-scoped transaction-rep module
   'HORSE_TRANSACTION_REP',
+  // owner revision 2026-07-03: Company Policies + the lesson order form
+  'COMPANY_POLICIES', 'RIDER_LESSON',
 ];
 // HORSE_REPRESENTATION: retired by the decomposition (folded into the finder's
 // lease directions) — row kept inactive, source .md deleted, body cleared.
-const NO_SOURCE = ['INDEPENDENT_CONTRACTOR', 'MEDIA_RELEASE', 'FACILITY_LICENSE', 'HORSE_REPRESENTATION'];
+// MINOR_RIDER: retired by the 2026-07-03 revision (minors ride in CUT-marker
+// sections of the CLIENT-signer docs) — no source .md, so the regenerated
+// loader never loads its body (the migration-11 seed row stays body-NULL).
+const NO_SOURCE = ['INDEPENDENT_CONTRACTOR', 'MEDIA_RELEASE', 'FACILITY_LICENSE', 'HORSE_REPRESENTATION', 'MINOR_RIDER'];
 
 let h: TestDb;
 beforeAll(async () => {
@@ -34,7 +43,7 @@ afterAll(async () => {
 });
 
 describe('bodies loaded', () => {
-  it('the 18 source-backed templates have a body; the 4 without a source are NULL', async () => {
+  it('the 19 source-backed templates have a body; the 5 without a source are NULL', async () => {
     const rows = await h.q<{ template_key: string; has_body: boolean }>(
       `select template_key, (body is not null) as has_body from contract_templates`);
     const map = Object.fromEntries(rows.map((r) => [r.template_key, r.has_body]));

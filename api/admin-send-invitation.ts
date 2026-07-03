@@ -1,9 +1,20 @@
 /* POST /api/admin-send-invitation
  * Admin-only. Creates an invitation token and emails the registration link.
- * Body: { email, requestId?, expiresInDays? }
+ * Body: { email, requestId?, expiresInDays?,
+ *         firstName?, lastName?, tierId?, markPaid?, paymentMethod?, notes? }
  * Header: Authorization: Bearer <supabase access token of an admin>
  *
- * Email delivery uses RESEND_API_KEY if configured; otherwise the function still
+ * Two paths:
+ *  - PLAIN INVITE (no tierId): the legacy behavior, unchanged — insert an
+ *    invitations row and email the register link.
+ *  - PROVISIONED INVITE (tierId present): the client already paid offline for a
+ *    riding-lesson tier. The provision_lesson_invitation RPC (service-role)
+ *    creates contact + client + engagement + paid transaction + invitation in
+ *    one transaction and returns the token we email; NO legacy insert happens.
+ *    firstName/lastName are required on this path (they seed the contact and
+ *    the printed name on the onboarding contracts).
+ *
+ * Email delivery uses the shared transport; otherwise the function still
  * creates the invitation and returns the register URL so the admin can copy it.
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
@@ -17,17 +28,32 @@ function makeToken(): string {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+/** provision_lesson_invitation() jsonb result. */
+interface ProvisionResult {
+  invitation_id: string;
+  token: string;
+  engagement_id: string;
+  tier_label: string;
+  amount: number;
+}
+
 /** Invitation email via the shared transport (Google SMTP first, Resend dormant),
- *  branded from the INVITING org's registry — never a hardcoded tenant name. */
+ *  branded from the INVITING org's registry — never a hardcoded tenant name.
+ *  When the invite carries a provisioned purchase, `tierLabel` adds the
+ *  "your purchase is ready" line above the register link. */
 async function sendEmail(
   db: ReturnType<typeof getSupabaseAdmin>,
   orgId: string | null,
   to: string,
   registerUrl: string,
+  tierLabel?: string | null,
 ): Promise<boolean> {
   if (!orgId) return false;
   const identity = await resolveTenantEmailIdentity(db, orgId);
   const fromEmail = process.env.INVITE_FROM_EMAIL || identity.fromEmail;
+  const purchaseLine = tierLabel
+    ? `<p>Your ${tierLabel} is ready — create your account to sign your documents and get started.</p>`
+    : '';
   const out = await sendViaProvider({
     to,
     fromName: identity.fromName,
@@ -35,6 +61,7 @@ async function sendEmail(
     subject: `Your invitation to ${identity.fromName}`,
     html: `
       <p>Welcome — we're so glad to have you.</p>
+      ${purchaseLine}
       <p>Create your account here to join the community. You can sign up with Google
       or set a password — your choice on the next page:</p>
       <p><a href="${registerUrl}">${registerUrl}</a></p>
@@ -59,6 +86,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const email = ((body.email as string) || '').trim();
   if (!email) return res.status(400).json({ error: 'email required' });
 
+  // Provisioned invite (client already paid offline for a lesson tier).
+  const tierId = typeof body.tierId === 'string' ? body.tierId.trim() : '';
+  const firstName = ((body.firstName as string) || '').trim();
+  const lastName = ((body.lastName as string) || '').trim();
+  if (tierId && (!firstName || !lastName)) {
+    return res.status(400).json({ error: 'firstName and lastName required when provisioning a purchase' });
+  }
+
   try {
     const db = getSupabaseAdmin();
 
@@ -70,6 +105,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const isAdmin = profile?.is_admin || profile?.role === 'ADMIN' || profile?.role === 'SUPER_ADMIN';
     if (!isAdmin) return res.status(403).json({ error: 'forbidden' });
 
+    const origin = req.headers.origin || `https://${req.headers.host}`;
+
+    if (tierId) {
+      // One transaction server-side: contact + client + engagement + paid
+      // transaction + invitation. The RPC returns the token we email — the
+      // legacy invitations insert below must NOT also run.
+      const { data, error: rpcErr } = await db.rpc('provision_lesson_invitation', {
+        p_email: email,
+        p_first_name: firstName,
+        p_last_name: lastName,
+        p_tier_id: tierId,
+        p_mark_paid: body.markPaid === true,
+        p_payment_method: ((body.paymentMethod as string) || '').trim() || null,
+        p_notes: ((body.notes as string) || '').trim() || null,
+      });
+      if (rpcErr) throw rpcErr;
+      const out = (Array.isArray(data) ? data[0] : data) as ProvisionResult;
+
+      const registerUrl = `${origin}/register?token=${out.token}`;
+      const emailed = await sendEmail(db, profile.org_id ?? null, email, registerUrl, out.tier_label);
+      return res.status(200).json({ registerUrl, emailed, tierLabel: out.tier_label });
+    }
+
+    // Plain invite (legacy path, unchanged).
     const days = Number(body.expiresInDays) > 0 ? Number(body.expiresInDays) : 7;
     const expiresAt = new Date(Date.now() + days * 86400000).toISOString();
     const inviteToken = makeToken();
@@ -84,7 +143,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
     if (insErr) throw insErr;
 
-    const origin = req.headers.origin || `https://${req.headers.host}`;
     const registerUrl = `${origin}/register?token=${inviteToken}`;
 
     const emailed = await sendEmail(db, profile.org_id ?? null, email, registerUrl);

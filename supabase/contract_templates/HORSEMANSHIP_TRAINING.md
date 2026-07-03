@@ -1,109 +1,31 @@
-{{ORG.LEGAL_NAME}}
+HORSEMANSHIP TRAINING ORDER
 
-HORSEMANSHIP TRAINING AGREEMENT
+Order ID: {{ORD.UUID}}
+Date: {{DOC.EFFECTIVE_DATE}}
 
-This Horsemanship Training Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) between {{ORG.LEGAL_IDENTITY}} (“COMPANY”) and the undersigned Client or Participant.
+ENGAGEMENT SUMMARY
 
-PARTIES
+This order is a request for horsemanship instruction and education from {{ORG.LEGAL_NAME}} ("COMPANY"). Submission is a request, not a purchase. COMPANY reviews the request and, if approved, issues an approval for payment; the contract is formed upon completion of payment and is summarized in the purchase receipt. This engagement is governed by the Company Policies and the signed documents on file, including the Participant Liability Release, Emergency Medical Authorization, and Property Rules, Safety Acknowledgment, and Equestrian Conduct Agreement. No proficiency, certification, or outcome is guaranteed.
 
-Client: {{CLIENT.FULL_NAME}}
+OFFERING
 
-Participant: {{PARTICIPANT.FULL_NAME}}
+Instruction may include catching and leading horses, safe horse handling, tacking and untacking, stable management education, horse behavior education, feeding and care education, ownership preparation, general equine safety instruction, round pen training, and lunging.
 
-Parent/Guardian (if applicable): {{GUARDIAN.FULL_NAME}}
-
-Address: {{CLIENT.ADDRESS}}
-
-Phone: {{CLIENT.PHONE}}
-
-Email: {{CLIENT.EMAIL}}
-
-PROGRAM DESCRIPTION
-
-COMPANY shall provide horsemanship instruction and education.
-
-Activities may include:
-
-Catching horses
-
-Leading horses
-
-Safe horse handling
-
-Tacking and untacking
-
-Stable management education
-
-Horse behavior education
-
-Feeding and care education
-
-Ownership preparation
-
-General equine safety instruction
-
-Round pen training
-
-Lunging
-
-Specific Program Scope:
-
-FEES
-
+Program scope: {{ENG.PROGRAM_SCOPE}}
 Program Fee: {{TXN.SERVICE_FEE}}
 
-Payment Terms: {{TXN.PAYMENT_TERMS}}
+<!-- CUT-START: MINOR_PARTICIPANT_INFO | condition: include only if PARTICIPANT is a minor -->
+PARTICIPANT
 
-PARTICIPANT RESPONSIBILITIES
+This order is for the following minor participant on file:
+Name: {{PARTICIPANT.FULL_NAME}}
+Date of Birth: {{PARTICIPANT.DOB}}
+<!-- CUT-END: MINOR_PARTICIPANT_INFO -->
 
-Participant agrees to:
+SCHEDULING REQUEST
 
-Follow instructor directions
+Preferred dates and times: {{REQ.PREFERRED_SCHEDULE}}
+Location preference (if applicable): {{REQ.LOCATION_PREFERENCE}}
+Notes: {{REQ.NOTES}}
 
-Follow facility safety rules
-
-Use equipment appropriately
-
-Conduct themselves safely around horses
-
-Report unsafe conditions immediately
-
-LIABILITY RELEASE — INCORPORATED BY REFERENCE
-
-The risk acknowledgments, releases, and indemnity obligations applicable to the activities under this Agreement are set forth exclusively in the separately executed Liability Release and Assumption of Risk agreement, which is incorporated herein by reference.
-
-EMERGENCY AUTHORIZATION
-
-Participant acknowledges completion of a separate Emergency Medical Authorization or inclusion of emergency authorization information in Participant records.
-
-PHOTOGRAPHS AND VIDEO
-
-□ Participant consents to media use.
-
-□ Participant declines media use.
-
-ENTIRE AGREEMENT
-
-This Agreement constitutes the entire agreement regarding the services described herein.
-
-Client Signature: {{SIG.CLIENT.NAME}}
-
-Date: {{SIG.CLIENT.DATE}}
-
-Participant Signature: {{SIG.PARTICIPANT.NAME}}
-
-Date: {{SIG.PARTICIPANT.DATE}}
-
-Parent/Guardian Signature (if applicable): {{SIG.GUARDIAN.NAME}}
-
-Date: {{SIG.GUARDIAN.DATE}}
-
-COMPANY: {{ORG.LEGAL_NAME}}
-
-By (signature): {{SIG.COMPANY.NAME}}
-
-Printed: {{ORG.SIGNATORY_NAME}}
-
-Title: {{ORG.SIGNATORY_TITLE}}
-
-Date: {{SIG.COMPANY.DATE}}
+Sessions are confirmed as bookings upon approval and payment. Rescheduling, late arrival, weather, and fee terms are set out in the Company Policies.

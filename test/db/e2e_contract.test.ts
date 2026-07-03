@@ -85,7 +85,8 @@ describe('chain 2 — intake lands, then converts through the real brokerage RPC
     await h.asUser(aAdmin);
     const rows = await h.q<{ required_documents_for: string }>(
       `select required_documents_for('HORSE_PURCHASE_ASSISTANCE')`);
-    expect(rows.map((r) => r.required_documents_for)).toEqual(['HORSE_EMERGENCY_VET']);
+    // 20260703030000 §3: COMPANY_POLICIES joins every service's required set
+    expect(rows.map((r) => r.required_documents_for)).toEqual(['COMPANY_POLICIES', 'HORSE_EMERGENCY_VET']);
   });
 });
 

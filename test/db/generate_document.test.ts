@@ -69,13 +69,16 @@ describe('generate_document — merge', () => {
     // horse tokens; breed rendered as its label, not the raw code
     expect(body).toContain('Thunderbolt');
     expect(body).toContain(breedLabel);
-    // FHE signatory pulled from business_config
-    expect(body).toContain('A. Owner');
+    // tenant identity (ORG.LEGAL_NAME) pulled from business_config — the owner's
+    // 2026-07-03 body names COMPANY as a non-party assistant, trade name only
+    expect(body).toContain('French Heritage Equestrian');
+    expect(body).toContain('is not a party to this Agreement');
 
     // data tokens are gone…
     expect(body).not.toMatch(/\{\{BUYER\./);
     expect(body).not.toMatch(/\{\{HORSE\./);
     expect(body).not.toMatch(/\{\{FHE\./);
+    expect(body).not.toMatch(/\{\{ORG\./);
     // …but signature tokens remain for the signing flow
     expect(body).toContain('{{SIG.BUYER.NAME}}');
     expect(body).toContain('{{SIG.SELLER.NAME}}');

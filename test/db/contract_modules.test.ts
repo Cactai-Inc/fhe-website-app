@@ -130,24 +130,26 @@ describe('HORSE_SEARCH_RETAINER — directional merges from the current stage', 
       });
       bodies.push(await merge(eng, 'HORSE_SEARCH_RETAINER'));
     }
-    // strip the per-engagement client names before comparing direction wording
-    // (the AGREEMENT heading is searched AFTER the recitals — the title also
-    // contains the word AGREEMENT)
-    const recital = (b: string) =>
-      b.slice(b.indexOf('RECITALS'), b.indexOf('\nAGREEMENT', b.indexOf('RECITALS')));
-    const recitals = bodies.map(recital);
-    expect(new Set(recitals).size).toBe(4);
+    // compare the ENGAGEMENT section only (owner body 2026-07-03: §1 carries the
+    // merged DIR role/target/direction wording but no per-engagement client name)
+    const engagementSection = (b: string) =>
+      b.slice(b.indexOf('1. ENGAGEMENT'), b.indexOf('2. SEARCH PARAMETERS'));
+    const sections = bodies.map(engagementSection);
+    expect(new Set(sections).size).toBe(4);
   });
 
-  it('explicit no-result AND no-consummation recitals are present', async () => {
+  it('explicit no-result AND no-consummation terms are present (owner body §3)', async () => {
+    // Owner revision 2026-07-03: the recital block became section
+    // "3. NO GUARANTEE OF RESULTS OR CONSUMMATION" — same two guarantees
+    // disclaimed (no result; no consummation), new phrasing.
     const eng = await mkEngagement({
       service: 'HORSE_FINDER', name: 'Recital Check',
       stage: { stage: 'SEARCH', retained_by: 'buyer', deal_side: 'BUY' },
     });
     const body = await merge(eng, 'HORSE_SEARCH_RETAINER');
-    expect(body).toContain('no guarantee of any result');
-    expect(body).toContain('no guarantee that any party consummates a transaction');
-    expect(body).toContain('NO GUARANTEE OF RESULTS; NO GUARANTEE OF CONSUMMATION');
+    expect(body).toContain('NO GUARANTEE OF RESULTS OR CONSUMMATION');
+    expect(body).toContain('does not guarantee that the search will locate a horse or any suitable match');
+    expect(body).toContain('A search may end with no result, and a successful result may still end with no transaction');
   });
 });
 
@@ -175,7 +177,8 @@ describe('module separability', () => {
       stage: { stage: 'EVALUATION', retained_by: 'buyer', deal_side: 'BUY' },
     });
     const body = await merge(eng, 'HORSE_EVALUATION');
-    expect(body).toContain('Horse Evaluation Agreement');
+    // owner body 2026-07-03: the evaluation module is an order form
+    expect(body).toContain('HORSE EVALUATION REQUEST');
     expect(body).toContain('Module Star'); // the per-horse scope binds to THE horse
     expect(body).toContain('ONLY the single horse identified below');
     expectOnlySigTokens(body);
@@ -226,7 +229,7 @@ describe('staged revenue chain — fee tokens live in their own modules', () => 
     const body = await merge(eng, 'HORSE_EVALUATION');
     expect(body).toContain('Evaluation Fee (per horse): $350.00');
     // transaction context is directional (owner selling → sale)
-    expect(body).toContain('Prospective transaction: sale');
+    expect(body).toContain('Prospective transaction (if applicable): sale');
     expectOnlySigTokens(body);
   });
 
@@ -241,7 +244,8 @@ describe('staged revenue chain — fee tokens live in their own modules', () => 
     const body = await merge(eng, 'HORSE_TRANSACTION_REP');
     expect(body).toContain('Representation Fee: $900.00');
     // our client's side and the unrepresented counterparty, token-driven
-    expect(body).toContain('Client is the lessee');
+    // (owner body 2026-07-03 §1: "CLIENT, as <role> in a prospective <direction>")
+    expect(body).toContain('CLIENT, as lessee');
     expect(body).toContain('prospective lease (as lessee)');
     expect(body).toContain('The lessor is not represented by COMPANY');
     expect(body).not.toMatch(/\{\{DIR\./);
@@ -269,7 +273,7 @@ describe('create_purchase_engagement — records the buyer/BUY TRANSACTION_REP s
     expect(stages).toEqual([{ stage: 'TRANSACTION_REP', retained_by: 'buyer', deal_side: 'BUY' }]);
 
     const body = await merge(eng, 'HORSE_TRANSACTION_REP');
-    expect(body).toContain('Client is the buyer');
+    expect(body).toContain('CLIENT, as buyer');
     expect(body).toContain('prospective purchase');
     expect(body).toContain('The seller is not represented by COMPANY');
     expect(body).not.toMatch(/\{\{DIR\./);

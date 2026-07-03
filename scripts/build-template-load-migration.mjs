@@ -49,6 +49,11 @@ const POST_SEED_TEMPLATES = {
   // transaction-representation module. service_type stays NULL (one tokenized
   // template serves purchase/sale/lease-in/lease-out representation).
   HORSE_TRANSACTION_REP:  { title: 'Horse Transaction Representation Agreement',        parties: ['CLIENT', 'COMPANY'] },
+  // Owner template revision 2026-07-03: unified CLIENT-signer doc set. COMPANY_POLICIES
+  // joins the required signing matrix for every service; RIDER_LESSON is the (unsigned)
+  // lesson order form. Both are new keys postdating the migration-11 seed.
+  COMPANY_POLICIES:       { title: 'Company Policies',                                  parties: ['CLIENT'] },
+  RIDER_LESSON:           { title: 'Riding Lesson Order Form',                          parties: ['CLIENT'] },
 };
 
 const files = readdirSync(BODIES).filter((f) => f.endsWith('.md')).sort();

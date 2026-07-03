@@ -1,325 +1,127 @@
 HORSE LEASE AGREEMENT
 
-This Horse Lease Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
+This Horse Lease Agreement ("Agreement") is made effective as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") between the Lessor and Lessee identified below. {{ORG.LEGAL_NAME}} ("COMPANY") is not a party to this Agreement.
 
-HORSE OWNER / LESSOR
+LESSOR (HORSE OWNER)
 
 Name: {{LESSOR.FULL_NAME}}
-
 Address: {{LESSOR.ADDRESS}}
-
 Phone: {{LESSOR.PHONE}}
-
 Email: {{LESSOR.EMAIL}}
-
-(“Lessor”)
-
-And
 
 LESSEE
 
 Name: {{LESSEE.FULL_NAME}}
-
 Address: {{LESSEE.ADDRESS}}
-
 Phone: {{LESSEE.PHONE}}
-
 Email: {{LESSEE.EMAIL}}
-
-(“Lessee”)
 
 HORSE INFORMATION
 
 Registered Name: {{HORSE.REGISTERED_NAME}}
-
 Barn Name: {{HORSE.BARN_NAME}}
-
 Breed: {{HORSE.BREED}}
-
 Color: {{HORSE.COLOR}}
-
 Sex: {{HORSE.SEX}}
-
 Age: {{HORSE.AGE_DOB}}
-
 Registration Number: {{HORSE.REGISTRATION_NUMBER}}
-
 Microchip / Identification: {{HORSE.MICROCHIP}}
-
 Current Location: {{HORSE.CURRENT_LOCATION}}
 
-RECITALS
+1. LEASE GRANT AND TERM
 
-A. Lessor owns or has authority to lease the Horse identified above.
+Lessor owns or has authority to lease the Horse and grants Lessee the right to use and ride the Horse during the Lease Term under the conditions of this Agreement.
 
-B. Lessee desires to lease the Horse for riding, training, competition, lessons, or other equestrian activities.
-
-C. The parties desire to define their respective rights and responsibilities.
-
-AGREEMENT
-
-LEASE GRANT
-
-Lessor grants Lessee the right to use and ride the Horse during the Lease Term under the conditions of this Agreement.
-
-Lease Type:
-
-□ Full Lease
-
-□ Partial Lease / Notes:
-
-LEASE TERM
-
+Lease Type: {{TXN.LEASE_TYPE}}
 Lease Term: {{TXN.LEASE_TERM}}
+Commencement Date: {{TXN.LEASE_START}}
+Expiration Date: {{TXN.LEASE_END}}
+Renewal Terms: {{TXN.RENEWAL_TERMS}}
 
-Commencement Date:
+2. PERMITTED USE
 
-Expiration Date:
+Activities permitted by Lessor: {{TXN.PERMITTED_ACTIVITIES}}
+Restrictions: {{TXN.USE_RESTRICTIONS}}
+Days reserved for Lessee use: {{TXN.RESERVED_DAYS}}
+Horse may be used by: {{TXN.AUTHORIZED_USERS}}
+Use by any other person is unauthorized.
 
-Renewal Terms:
-
-PERMITTED USE
-
-Activities Permitted by Lessor:
-
-□ Lessons
-
-□ Training
-
-□ Exercise
-
-□ Competition
-
-□ Trail Riding
-
-□ Jumping
-
-Other Activities:
-
-Listed Restrictions:
-
-Days Reserved for Lessee Use:
-
-□ Sunday
-
-□ Monday
-
-□ Tuesday
-
-□ Wednesday
-
-□ Thursday
-
-□ Friday
-
-□ Saturday
-
-Notes:
-
-Restrictions:
-
-LEASE PAYMENT
+3. LEASE PAYMENT
 
 Lease Fee: {{TXN.LEASE_FEE}}
-
 Payment Schedule: {{TXN.PAYMENT_SCHEDULE}}
-
 Late Payment Terms: {{TXN.PAYMENT_TERMS}}
 
-BOARDING AND LOCATION
+4. BOARDING AND LOCATION
 
-Current Facility:
+Current Facility: {{HORSE.CURRENT_LOCATION}}
+Boarding Responsibility: {{TXN.BOARDING_RESPONSIBILITY}}
+Lessee may not move the Horse without Lessor's written approval.
 
-Boarding Responsibility:
+5. CARE, VETERINARY, AND FARRIER RESPONSIBILITIES
 
-Lessee may not move the Horse without:
+Routine care responsibility (feeding, routine care, exercise, scheduling appointments, following facility rules): {{TXN.CARE_RESPONSIBILITY}}
+Routine veterinary care responsibility: {{TXN.ROUTINE_VET_RESPONSIBILITY}}
+Emergency veterinary care responsibility: {{TXN.EMERGENCY_VET_RESPONSIBILITY}}
+Lessor authorization contact: {{TXN.VET_AUTH_CONTACT}}
+Farrier responsibility and schedule: {{TXN.FARRIER_RESPONSIBILITY}}
 
-□ Lessor approval
+6. TRAINING, INSURANCE, AND EQUIPMENT
 
-□ Written notice
+Training provider and restrictions: {{TXN.TRAINING_TERMS}}
+Insurance requirements: {{TXN.INSURANCE_REQUIREMENTS}}
+Equipment provided by Lessor: {{TXN.LESSOR_EQUIPMENT}}
+Equipment provided by Lessee: {{TXN.LESSEE_EQUIPMENT}}
 
-CARE RESPONSIBILITIES
+7. COMPETITION
 
-Responsible party:
+Participation allowed: {{TXN.COMPETITION_TERMS}}
+Competition expenses: {{TXN.COMPETITION_EXPENSES}}
 
-Responsibilities include:
+8. HORSE CONDITION AND NOTIFICATION
 
-Feeding;
+Lessee acknowledges that horses are living animals, behavior may change, injury risks exist, and no performance outcome is guaranteed. Lessee shall immediately notify Lessor of any injury, illness, lameness, behavioral concern, or significant change in the Horse.
 
-Routine care;
+9. RISK OF LOSS
 
-Exercise;
+Risk of injury, illness, death, or loss of use is allocated as follows: {{TXN.RISK_ALLOCATION}}
 
-Scheduling appointments;
+10. TERMINATION AND RETURN
 
-Following facility rules.
+Either party may terminate upon: {{TXN.TERMINATION_TERMS}}. Immediate termination may occur for abuse, unsafe use, nonpayment, or breach of this Agreement. Upon termination, Lessee shall return the Horse in substantially the same condition, with agreed equipment, subject to normal wear and tear.
 
-VETERINARY CARE
+11. RELEASE AND INDEMNIFICATION
 
-Routine veterinary care responsibility:
+Lessee acknowledges equine activities involve inherent risks and releases Lessor and related parties from claims arising from the ordinary risks of equine activities. This release does not apply to gross negligence, reckless conduct, or intentional misconduct. Lessee agrees to indemnify Lessor for claims arising from Lessee's use, unauthorized activities, Lessee's negligence, and breach of this Agreement.
 
-Emergency veterinary care responsibility:
+12. THIRD-PARTY SERVICES
 
-Owner authorization contact:
+If COMPANY provides training, instruction, or services involving the Horse, the parties acknowledge COMPANY is a separate service provider under its own agreements and is not a party to this Agreement unless added in writing.
 
-FARRIER RESPONSIBILITY
+13. DISPUTE RESOLUTION
 
-Farrier responsibility:
+Any dispute arising out of or relating to this Agreement shall be resolved by binding arbitration administered by JAMS under its Streamlined Arbitration Rules and Procedures, or by the American Arbitration Association under its Consumer Arbitration Rules if JAMS is unavailable, before a single neutral arbitrator in San Diego County, California. Either party may instead bring an individual claim in small claims court if the claim qualifies. Judgment on the award may be entered in any court of competent jurisdiction.
 
-Schedule:
+14. ATTORNEY'S FEES
 
-TRAINING AND INSTRUCTION
+Each party shall cover their own attorney's fees and costs.
 
-Training Provider:
+15. GOVERNING LAW AND SEVERABILITY
 
-Lessee may use:
+California law governs this Agreement. If any provision is unenforceable, the remainder remains in effect.
 
-Training restrictions:
-
-INSURANCE
-
-Insurance requirements:
-
-EQUIPMENT
-
-Equipment provided by Lessor:
-
-Equipment provided by Lessee:
-
-HORSE CONDITION
-
-Lessee acknowledges:
-
-Horses are living animals;
-
-Behavior may change;
-
-Injury risks exist;
-
-No performance outcome is guaranteed.
-
-DAMAGE OR INJURY TO HORSE
-
-Lessee shall immediately notify Lessor of:
-
-Injury;
-
-Illness;
-
-Lameness;
-
-Behavioral concerns;
-
-Significant changes.
-
-USE OF HORSE BY OTHERS
-
-Horse may be used by:
-
-Unauthorized use:
-
-COMPETITION AND EVENTS
-
-Participation allowed:
-
-Competition expenses:
-
-RISK OF LOSS
-
-Risk of injury, illness, death, or loss of use shall be allocated as follows:
-
-TERMINATION
-
-Either party may terminate upon:
-
-Immediate termination may occur for:
-
-Abuse;
-
-Unsafe use;
-
-Nonpayment;
-
-Breach of Agreement.
-
-RETURN OF HORSE
-
-Upon termination, Lessee shall return the Horse:
-
-In substantially the same condition;
-
-With agreed equipment;
-
-Subject to normal wear and tear.
-
-RELEASE OF LIABILITY
-
-Lessee acknowledges equine activities involve inherent risks.
-
-Lessee releases Lessor and related parties from claims arising from ordinary risks of equine activities.
-
-This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
-
-INDEMNIFICATION
-
-Lessee agrees to indemnify Lessor for claims arising from:
-
-Lessee’s use;
-
-Unauthorized activities;
-
-Lessee’s negligence;
-
-Breach of Agreement.
-
-{{ORG.LEGAL_NAME}} / THIRD-PARTY SERVICES
-
-If {{ORG.LEGAL_IDENTITY}} (“COMPANY”) provides training, instruction, or services involving the Horse:
-
-The parties acknowledge COMPANY is a separate service provider unless added as a party in writing.
-
-DISPUTE RESOLUTION
-
-Disputes shall be resolved by:
-
-□ Arbitration
-
-Venue: San Diego County, California
-
-ATTORNEY’S FEES
-
-Both parties shall cover their own attorney’s fees and costs.
-
-GOVERNING LAW
-
-California law governs this Agreement.
-
-ENTIRE AGREEMENT
+16. ENTIRE AGREEMENT
 
 This Agreement represents the complete agreement regarding the Horse lease.
 
 LESSOR
 
 Signature: {{SIG.LESSOR.NAME}}
-
 Printed Name: {{LESSOR.PRINTED_NAME}}
-
 Date: {{SIG.LESSOR.DATE}}
 
 LESSEE
 
 Signature: {{SIG.LESSEE.NAME}}
-
 Printed Name: {{LESSEE.PRINTED_NAME}}
-
 Date: {{SIG.LESSEE.DATE}}
-
-COMPANY (IF APPLICABLE): {{ORG.LEGAL_NAME}}
-
-By (signature): {{SIG.COMPANY.NAME}}
-
-Printed: {{ORG.SIGNATORY_NAME}}
-
-Title: {{ORG.SIGNATORY_TITLE}}
-
-Date: {{SIG.COMPANY.DATE}}

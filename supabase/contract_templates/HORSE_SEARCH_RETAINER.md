@@ -1,273 +1,82 @@
 HORSE FINDER SEARCH AND SOURCING RETAINER AGREEMENT
 
-This Horse Finder Search and Sourcing Retainer Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
+This Horse Finder Search and Sourcing Retainer Agreement ("Agreement") is made effective as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned client ("CLIENT") with {{ORG.LEGAL_NAME}} ("COMPANY"). By signing below, CLIENT retains COMPANY to conduct the search described below and agrees to the terms of this Agreement. COMPANY's willingness to be bound is expressed by its issuance of an approval for payment, and the retainer is formed upon CLIENT's completion of payment.
 
-{{ORG.LEGAL_IDENTITY}} (“COMPANY”),
+CLIENT INFORMATION
 
-and
-
-Client Name: {{CLIENT.FULL_NAME}}
-
+Name: {{CLIENT.FULL_NAME}}
 Address: {{CLIENT.ADDRESS}}
-
 Phone: {{CLIENT.PHONE}}
-
 Email: {{CLIENT.EMAIL}}
 
-(“Client”)
+1. ENGAGEMENT
 
-RECITALS
+CLIENT, in CLIENT's capacity as {{DIR.ROLE_TERM}}, retains COMPANY to search for and identify {{DIR.TARGET_TERM}} in connection with a prospective {{DIR.DIRECTION_TERM}}. COMPANY provides search and sourcing assistance on either side of a transaction: locating a horse for a prospective buyer or lessee, or locating a buyer or lessee for a horse CLIENT owns. Services may include understanding CLIENT's goals and requirements; identifying and shortlisting prospective matches; reviewing available information; communicating with owners, trainers, brokers, sellers, prospective buyers, and prospective lessees; coordinating appointments, viewings, and introductions; assisting with search strategy; and providing general observations and opinions based on experience.
 
-A. Client, in Client’s capacity as {{DIR.ROLE_TERM}}, desires to retain COMPANY to search for and identify {{DIR.TARGET_TERM}} in connection with a prospective {{DIR.DIRECTION_TERM}}.
+2. SEARCH PARAMETERS
 
-B. COMPANY provides equestrian consulting, search and sourcing assistance, industry knowledge, communication assistance, and related services on either side of a transaction: locating a horse for a prospective buyer or lessee, or locating a buyer or lessee for a horse Client owns.
-
-C. A search is a standalone engagement. A search carries no guarantee of any result, and even a successful result carries no guarantee that any party consummates a transaction. This Agreement is entered into, and terminates, on its own terms, separately from any evaluation agreement or transaction representation agreement.
-
-D. Client desires to retain COMPANY to conduct the search under the terms of this Agreement.
-
-AGREEMENT
-
-RETENTION OF SERVICES
-
-Client retains COMPANY to provide search and sourcing assistance directed at locating {{DIR.TARGET_TERM}}, which may include:
-
-Understanding Client’s goals and requirements;
-
-Identifying and shortlisting prospective matches;
-
-Reviewing available information;
-
-Communicating with owners, trainers, brokers, sellers, prospective buyers, and prospective lessees;
-
-Coordinating appointments, viewings, and introductions;
-
-Assisting with search strategy;
-
-Providing general observations and opinions based on experience.
-
-SEARCH PARAMETERS
-
-Search objective ({{DIR.DIRECTION_TERM}}):
-
+Search objective ({{DIR.DIRECTION_TERM}}): {{ENG.SEARCH_OBJECTIVE}}
 Discipline: {{ENG.DISCIPLINE}}
-
-Breed:
-
-Age:
-
-Height:
-
-Experience Level:
-
+Breed: {{ENG.BREED_PREFERENCE}}
+Age: {{ENG.AGE_RANGE}}
+Height: {{ENG.HEIGHT_RANGE}}
+Experience Level: {{ENG.EXPERIENCE_LEVEL}}
 Budget: {{ENG.BUDGET}}
-
 Intended Use: {{ENG.INTENDED_USE}}
+Additional Requirements: {{ENG.ADDITIONAL_REQUIREMENTS}}
 
-Additional Requirements:
+3. NO GUARANTEE OF RESULTS OR CONSUMMATION
 
-NO GUARANTEE OF RESULTS; NO GUARANTEE OF CONSUMMATION
+COMPANY does not guarantee that the search will locate {{DIR.TARGET_TERM}} or any suitable match, that any match will remain available, or that any located match will result in a consummated purchase, sale, or lease. A search may end with no result, and a successful result may still end with no transaction. Fees earned under this Agreement, other than a fee expressly contingent on consummation, remain earned whether or not any transaction closes. COMPANY does not guarantee performance, temperament, health, soundness, value, or suitability of any horse, and does not guarantee the accuracy of information provided by third parties, who may have their own interests.
 
-Client acknowledges:
+4. STANDALONE MODULE
 
-COMPANY does not guarantee that the search will locate {{DIR.TARGET_TERM}} or any suitable match;
+This Agreement covers the search only. Per-horse evaluation is a separate service under a separately executed Horse Evaluation Agreement with its own per-horse fee. Representation through an actual purchase, sale, or lease is a separate service under a separately executed Horse Transaction Representation Agreement with its own fee. Any transaction itself requires separate written agreements between the transacting parties. CLIENT may enter any, all, or none of those agreements; none requires a prior one. CLIENT remains solely responsible for all transaction decisions, including whether to view, ride, or trial a horse, obtain veterinary evaluation, or enter into any transaction. COMPANY is not acting as a veterinarian, licensed appraiser, attorney, insurance provider, or financial advisor.
 
-COMPANY does not guarantee that any match located will remain available;
-
-COMPANY does not guarantee that any located match will result in a consummated purchase, sale, or lease — a search may end with no result, and a successful result may still end with no transaction;
-
-Fees earned under this Agreement (other than a fee expressly contingent on consummation) remain earned whether or not any transaction ever closes;
-
-COMPANY does not guarantee performance, temperament, health, soundness, value, or suitability of any horse.
-
-STANDALONE MODULE; SEPARATELY EXECUTED AGREEMENTS
-
-This Agreement covers the search only. Client understands:
-
-Per-horse evaluation services are a separate service, provided only under a separately executed Horse Evaluation Agreement carrying its own per-horse fee;
-
-Representation of Client through an actual purchase, sale, or lease is a separate service, provided only under a separately executed Horse Transaction Representation Agreement carrying its own fee;
-
-Any purchase, sale, or lease transaction itself requires separate written agreements between the transacting parties;
-
-Client may enter any, all, or none of those separate agreements; no agreement in the sequence requires a prior one.
-
-CLIENT DECISION MAKING
-
-Client remains solely responsible for decisions regarding:
-
-Whether to view a horse;
-
-Whether to ride or trial a horse;
-
-Whether to pursue any prospective match;
-
-Whether to obtain veterinary evaluation;
-
-Whether to enter into a transaction.
-
-COMPANY does not make final transaction decisions on Client’s behalf.
-
-FEES
-
-Client agrees to pay COMPANY:
+5. FEES
 
 Search Retainer (flat fee): {{TXN.RETAINER_FEE}}
-
 Due: {{TXN.PAYMENT_TERMS}}
+Success Fee / Acquisition Fee (contingent): {{TXN.SUCCESS_FEE}} or {{TXN.COMMISSION_RATE}} of purchase price / transaction value.
 
-Success Fee / Acquisition Fee (contingent): {{TXN.SUCCESS_FEE}}
+The Success Fee / Acquisition Fee is payable only if the search yields {{DIR.TARGET_TERM}} and CLIENT consummates a {{DIR.DIRECTION_TERM}} transaction involving that introduction, whether or not COMPANY is separately retained to represent CLIENT in that transaction. It is separate from, and in addition to, any per-horse evaluation fee or transaction representation fee under separately executed agreements. CLIENT shall reimburse COMPANY for approved expenses including travel, mileage, entry fees, show attendance, testing fees, and other agreed expenses. Payment methods and travel terms are governed by the separately executed Company Policies.
 
-or
+6. NON-CIRCUMVENTION
 
-{{TXN.COMMISSION_RATE}} of purchase price / transaction value
+If COMPANY introduces CLIENT to a horse, owner, seller, buyer, lessee, trainer, or opportunity, CLIENT agrees not to bypass COMPANY to avoid agreed fees. This provision applies for {{ENG.PROTECTION_PERIOD}} months after introduction.
 
-The Success Fee / Acquisition Fee is payable only if the search yields {{DIR.TARGET_TERM}} and Client consummates a {{DIR.DIRECTION_TERM}} transaction involving that introduction, whether or not COMPANY is separately retained to represent Client in that transaction. The Success Fee / Acquisition Fee is separate from, and in addition to, any per-horse evaluation fee or transaction representation fee owed under the separately executed agreements described above.
+7. COMMUNICATIONS AND CONFIDENTIALITY
 
-Payment due:
+CLIENT authorizes COMPANY to communicate with sellers, prospective buyers, prospective lessees, trainers, owners, brokers, facilities, and other equine professionals for purposes related to the search. COMPANY and CLIENT agree to maintain confidentiality regarding budget, search criteria, negotiation strategy, and private horse information. COMPANY shall disclose known conflicts or relationships that may materially affect the search.
 
-EXPENSE REIMBURSEMENT
+Known disclosures: {{ENG.DISCLOSURES}}
 
-Client shall reimburse COMPANY for approved expenses including:
+8. INCORPORATED DOCUMENTS
 
-Travel;
+The risk acknowledgments, releases, and indemnity obligations applicable to activities under this Agreement are set forth exclusively in the separately executed liability release and assumption of risk agreements, incorporated herein by reference.
 
-Mileage;
+9. TERMINATION
 
-Entry fees;
+Either party may terminate this Agreement by written notice. Termination does not terminate any separately executed evaluation or transaction representation agreement, each of which terminates on its own terms. Outstanding fees and expenses remain due.
 
-Show attendance;
+10. DISPUTE RESOLUTION
 
-Testing fees;
+Any dispute arising out of or relating to this Agreement shall be resolved by binding arbitration administered by JAMS under its Streamlined Arbitration Rules and Procedures, or by the American Arbitration Association under its Consumer Arbitration Rules if JAMS is unavailable, before a single neutral arbitrator in San Diego County, California. COMPANY shall pay all arbitration fees and administrative costs that exceed the filing fee CLIENT would have incurred to file the claim in San Diego County Superior Court. Either party may instead bring an individual claim in small claims court if the claim qualifies. Judgment on the award may be entered in any court of competent jurisdiction.
 
-Other agreed expenses.
+11. ATTORNEY'S FEES
 
-Expense terms:
+Each party shall cover their own attorney's fees and costs.
 
-CLIENT AUTHORIZATION TO COMMUNICATE
+12. GOVERNING LAW AND SEVERABILITY
 
-Client authorizes COMPANY to communicate with:
+California law governs this Agreement. If any provision is unenforceable, the remainder remains in effect.
 
-Sellers;
-
-Prospective buyers;
-
-Prospective lessees;
-
-Trainers;
-
-Owners;
-
-Brokers;
-
-Facilities;
-
-Other equine professionals;
-
-for purposes related to the search.
-
-CONFIDENTIALITY
-
-COMPANY and Client agree to maintain confidential information regarding:
-
-Budget;
-
-Search criteria;
-
-Negotiation strategy;
-
-Private horse information.
-
-THIRD-PARTY RELATIONSHIPS
-
-Client acknowledges that COMPANY may communicate with third parties who may have their own interests.
-
-COMPANY does not guarantee the accuracy of information provided by third parties.
-
-EVALUATION SERVICES
-
-Client understands that horse evaluation, veterinary review, and inspection services are separate services provided only under a separately executed evaluation agreement, charged per horse evaluated.
-
-VETERINARY AND PROFESSIONAL ADVICE
-
-COMPANY is not acting as:
-
-A veterinarian;
-
-A licensed appraiser;
-
-An attorney;
-
-An insurance provider;
-
-A financial advisor.
-
-Client is responsible for obtaining appropriate professional advice.
-
-CONFLICTS AND DISCLOSURES
-
-COMPANY shall disclose known conflicts or relationships that may materially affect the search.
-
-Known disclosures:
-
-CLIENT RESPONSIBILITY FOR TRANSACTIONS
-
-Client understands that any purchase, lease, or sale transaction requires separate written agreements.
-
-NON-CIRCUMVENTION / INTRODUCED OPPORTUNITIES
-
-If COMPANY introduces Client to a horse, owner, seller, buyer, lessee, trainer, or opportunity, Client agrees not to bypass COMPANY in order to avoid agreed fees.
-
-This provision applies for:
-
-{{ENG.PROTECTION_PERIOD}} months after introduction.
-
-TERMINATION
-
-Either party may terminate this Agreement by written notice. Termination of this Agreement does not terminate any separately executed evaluation or transaction representation agreement, each of which terminates on its own terms.
-
-Outstanding fees and expenses remain due.
-
-LIABILITY RELEASE — INCORPORATED BY REFERENCE
-
-The risk acknowledgments, releases, and indemnity obligations applicable to the activities under this Agreement are set forth exclusively in the separately executed Liability Release and Assumption of Risk agreement, which is incorporated herein by reference.
-
-DISPUTE RESOLUTION
-
-Disputes shall be resolved by:
-
-□ Arbitration
-
-□ Litigation
-
-Venue shall be San Diego County, California.
-
-ATTORNEY’S FEES
-
-The prevailing party shall be entitled to reasonable attorney’s fees and costs where permitted by law.
-
-GOVERNING LAW
-
-California law governs this Agreement.
-
-ENTIRE AGREEMENT
+13. ENTIRE AGREEMENT
 
 This Agreement contains the entire agreement concerning horse search and sourcing services.
 
 CLIENT
 
 Signature: {{SIG.CLIENT.NAME}}
-
 Printed Name: {{CLIENT.PRINTED_NAME}}
-
 Date: {{SIG.CLIENT.DATE}}
-
-COMPANY: {{ORG.LEGAL_NAME}}
-
-By (signature): {{SIG.COMPANY.NAME}}
-
-Printed: {{ORG.SIGNATORY_NAME}}
-
-Title: {{ORG.SIGNATORY_TITLE}}
-
-Date: {{SIG.COMPANY.DATE}}

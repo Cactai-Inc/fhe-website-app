@@ -1,261 +1,30 @@
-HORSE EXERCISE SERVICES AGREEMENT
+HORSE EXERCISE SERVICE REQUEST
 
-This Horse Exercise Services Agreement ("Agreement") is entered into as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by and between:
+Order ID: {{ORD.UUID}}
+Date: {{DOC.EFFECTIVE_DATE}}
 
-{{ORG.LEGAL_IDENTITY}} ("COMPANY"),
+ENGAGEMENT SUMMARY
 
-and
+This order is a request for horse exercise services from {{ORG.LEGAL_NAME}} ("COMPANY") for the horse identified below. Submission is a request, not a purchase. COMPANY reviews the request and, if approved, issues an approval for payment; the contract is formed upon completion of payment and is summarized in the purchase receipt. This engagement is governed by the Company Policies and the signed documents on file for this horse, including the Equine Services Release and Emergency Veterinary Authorization. Requested services are scheduled subject to COMPANY's availability and capacity. No fitness, conditioning, behavioral, or soundness outcome is guaranteed.
 
-Owner/Client Name: {{CLIENT.FULL_NAME}}
+HORSE
 
-Address: {{CLIENT.ADDRESS}}
+Horse: {{HORSE.REGISTERED_NAME}} ({{HORSE.BARN_NAME}})
+Location: {{HORSE.CURRENT_LOCATION}}
+Known conditions or changes since last engagement: {{REQ.CONDITION_UPDATES}}
 
-Phone: {{CLIENT.PHONE}}
+OFFERING
 
-Email: {{CLIENT.EMAIL}}
+Services selected: {{ORD.SERVICE_SELECTION}}
+Available services: Exercise Rides, Lunging, Groundwork, Horse Handling, Turnout, Hand Walking, Clipping, Bathing, Grooming.
+Session Fee: {{TXN.SESSION_FEE}}
+Monthly Program Fee: {{TXN.MONTHLY_FEE}}
+Other Fees: {{TXN.OTHER_FEES}}
 
-HORSE INFORMATION
+SCHEDULING REQUEST
 
-Horse Name: {{HORSE.REGISTERED_NAME}}
+Preferred dates and times: {{REQ.PREFERRED_SCHEDULE}}
+Service location: {{REQ.LOCATION_PREFERENCE}}
+Notes: {{REQ.NOTES}}
 
-Barn Name: {{HORSE.BARN_NAME}}
-
-Breed: {{HORSE.BREED}}
-
-Color: {{HORSE.COLOR}}
-
-Sex: {{HORSE.SEX}}
-
-Age: {{HORSE.AGE_DOB}}
-
-Microchip/Tattoo/Registration No.: {{HORSE.MICROCHIP}}
-
-Boarding Facility: {{HORSE.CURRENT_LOCATION}}
-
-Emergency Contact: {{EMERGENCY_CONTACT.FULL_NAME}} ({{EMERGENCY_CONTACT.RELATIONSHIP}})
-
-Phone: {{EMERGENCY_CONTACT.PHONE}}
-
-RECITALS
-
-A. Client owns, leases, manages, or otherwise has authority regarding the Horse identified above.
-
-B. Client desires to engage COMPANY to provide horse exercise, handling, and related equine services.
-
-C. COMPANY agrees to provide such services under the terms contained herein.
-
-1. SERVICES
-
-COMPANY may provide any combination of the following exercise services:
-
-□ Exercise Rides
-
-□ Lunging
-
-□ Groundwork
-
-□ Horse Handling
-
-□ Other:
-
-Services may be modified by mutual agreement.
-
-2. NO GUARANTEE OF RESULTS
-
-COMPANY does not guarantee:
-
-Performance outcomes;
-
-Behavioral improvements;
-
-Soundness outcomes;
-
-Fitness or conditioning outcomes.
-
-Equine exercise involves variables outside the control of COMPANY.
-
-3. OWNER DISCLOSURES
-
-Client represents that all information regarding the Horse is accurate and complete.
-
-Client shall disclose:
-
-Dangerous behaviors;
-
-Aggression toward people or horses;
-
-Prior injuries;
-
-Current health conditions;
-
-Medication usage;
-
-History of bolting, bucking, rearing, kicking, biting, striking, or similar conduct.
-
-Known Conditions:
-
-Failure to disclose material information constitutes a material breach.
-
-4. LIABILITY RELEASE — INCORPORATED BY REFERENCE
-
-The risk acknowledgments, releases, and indemnity obligations applicable to the activities under this Agreement are set forth exclusively in the separately executed Liability Release and Assumption of Risk agreement, which is incorporated herein by reference.
-
-5. AUTHORIZATION TO HANDLE HORSE
-
-Client authorizes COMPANY and its personnel to:
-
-Catch, lead, handle, and transport the Horse within the facility;
-
-Ride the Horse;
-
-Exercise the Horse;
-
-Use customary handling and exercise equipment;
-
-Place the Horse in turnout areas;
-
-Move the Horse between stalls, paddocks, arenas, and wash racks.
-
-6. HEALTH CONDITION OF HORSE
-
-Client represents that the Horse:
-
-□ Is current on vaccinations.
-
-□ Is current on deworming.
-
-□ Is free of known contagious disease.
-
-□ Has received veterinary clearance for exercise activities.
-
-Veterinarian: {{HORSE.VET_NAME}}
-
-Phone: {{HORSE.VET_PHONE}}
-
-7. EMERGENCY VETERINARY CARE AUTHORIZATION
-
-If COMPANY reasonably believes emergency veterinary care is necessary and Client cannot be reached, Client authorizes COMPANY to obtain emergency veterinary treatment.
-
-Client shall be responsible for all veterinary costs.
-
-8. FARRIER SERVICES
-
-Client remains responsible for arranging and paying for farrier services unless otherwise agreed in writing.
-
-9. FEES
-
-Exercise Ride Fee: $
-
-Monthly Program Fee: $
-
-Other Fees:
-
-10. PAYMENT TERMS
-
-Invoices are due within {{ORG.INVOICE_DUE_DAYS}} days of the invoice date.
-
-Late payments may incur:
-
-Late fees;
-
-Collection costs;
-
-Attorney’s fees where permitted.
-
-11. CANCELLATION POLICY
-
-Cancellation notice of {{ORG.CANCELLATION_NOTICE_HOURS}} hours is required. Sessions cancelled without adequate notice may be charged at the full session rate.
-
-12. OWNER EQUIPMENT
-
-Client shall provide properly fitted and safe equipment. COMPANY may refuse to use equipment deemed unsafe.
-
-13. EQUIPMENT DAMAGE
-
-Normal wear and tear is expected. COMPANY is not responsible for ordinary deterioration of equipment resulting from intended use.
-
-14. LIMITATION OF LIABILITY
-
-To the fullest extent permitted by law, COMPANY shall not be liable for:
-
-Loss of use of Horse;
-
-Lost profits;
-
-Diminution in value;
-
-Consequential damages;
-
-Business losses.
-
-Any liability shall not exceed amounts paid under this Agreement during the preceding twelve (12) months.
-
-15. TERMINATION
-
-Either party may terminate upon {{ORG.TERMINATION_NOTICE_DAYS}} days written notice.
-
-COMPANY may terminate immediately for:
-
-Dangerous horse behavior;
-
-Unsafe conditions;
-
-Nonpayment;
-
-Abuse directed toward personnel.
-
-16. DISPUTE RESOLUTION
-
-Disputes shall be resolved by:
-
-□ Arbitration
-
-□ Litigation
-
-Venue shall be San Diego County, California.
-
-17. ATTORNEY’S FEES
-
-The prevailing party shall recover reasonable attorney’s fees and costs.
-
-18. GOVERNING LAW
-
-California law governs this Agreement.
-
-19. ENTIRE AGREEMENT
-
-This Agreement constitutes the entire agreement of the parties concerning the exercise services described herein.
-
-20. SEVERABILITY
-
-If any provision is unenforceable, the remainder shall remain in effect.
-
-21. ACKNOWLEDGMENT
-
-Client acknowledges:
-
-This Agreement has been read in full;
-
-Questions have been answered satisfactorily;
-
-Client voluntarily enters into this Agreement.
-
-CLIENT
-
-Signature: {{SIG.CLIENT.NAME}}
-
-Printed Name: {{CLIENT.PRINTED_NAME}}
-
-Date: {{SIG.CLIENT.DATE}}
-
-COMPANY: {{ORG.LEGAL_NAME}}
-
-By (signature): {{SIG.COMPANY.NAME}}
-
-Printed: {{ORG.SIGNATORY_NAME}}
-
-Title: {{ORG.SIGNATORY_TITLE}}
-
-Date: {{SIG.COMPANY.DATE}}
-
-Document: Horse Exercise Services Agreement | {{ORG.LEGAL_NAME}} | Version 1.0
+Travel to locations other than COMPANY's home property is charged per the travel terms in the Company Policies and included in the approved order. Rescheduling and fee terms are set out in the Company Policies.

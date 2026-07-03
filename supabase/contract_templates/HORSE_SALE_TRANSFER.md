@@ -1,289 +1,130 @@
 HORSE SALE AND TRANSFER AGREEMENT
 
-This Horse Sale and Transfer Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
+This Horse Sale and Transfer Agreement ("Agreement") is made effective as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") between the Seller and Buyer identified below. {{ORG.LEGAL_NAME}} ("COMPANY") is not a party to this Agreement.
 
 SELLER
 
 Name: {{SELLER.FULL_NAME}}
-
 Address: {{SELLER.ADDRESS}}
-
 Phone: {{SELLER.PHONE}}
-
 Email: {{SELLER.EMAIL}}
-
-(“Seller”)
-
-and
 
 BUYER
 
 Name: {{BUYER.FULL_NAME}}
-
 Address: {{BUYER.ADDRESS}}
-
 Phone: {{BUYER.PHONE}}
-
 Email: {{BUYER.EMAIL}}
-
-(“Buyer”)
 
 HORSE INFORMATION
 
 Registered Name: {{HORSE.REGISTERED_NAME}}
-
 Barn Name: {{HORSE.BARN_NAME}}
-
 Breed: {{HORSE.BREED}}
-
 Color: {{HORSE.COLOR}}
-
 Sex: {{HORSE.SEX}}
-
 Age / Date of Birth: {{HORSE.AGE_DOB}}
-
 Height: {{HORSE.HEIGHT}}
-
 Registration Number: {{HORSE.REGISTRATION_NUMBER}}
-
 Microchip / Identification: {{HORSE.MICROCHIP}}
-
 Current Location: {{HORSE.CURRENT_LOCATION}}
 
-RECITALS
+1. SALE OF HORSE
 
-A. Seller owns or has legal authority to sell the Horse identified above.
+Seller owns or has legal authority to sell the Horse and agrees to sell and transfer it to Buyer. Buyer agrees to accept ownership subject to this Agreement.
 
-B. Buyer desires to purchase the Horse.
-
-C. The parties desire to document the sale and transfer terms.
-
-AGREEMENT
-
-SALE OF HORSE
-
-Seller agrees to sell and transfer the Horse to Buyer.
-
-Buyer agrees to accept ownership subject to this Agreement.
-
-SALE PRICE
+2. PRICE AND PAYMENT
 
 Total Sale Price: {{TXN.PURCHASE_PRICE}}
-
 Deposit: {{TXN.DEPOSIT_AMOUNT}}
-
 Remaining Balance: {{TXN.BALANCE_DUE}}
-
 Payment Schedule: {{TXN.PAYMENT_SCHEDULE}}
+Payment Method: {{TXN.PAYMENT_METHOD}}
 
-PAYMENT METHOD
+3. TRANSFER OF OWNERSHIP
 
-Payment shall be made by:
+Ownership transfers upon: {{TXN.TRANSFER_CONDITION}}
+Transfer Date: {{TXN.TRANSFER_DATE}}
 
-□ Cash
-
-□ Check
-
-□ Wire Transfer
-
-□ Other:
-
-TRANSFER OF OWNERSHIP
-
-Ownership transfers upon:
-
-□ Full payment received
-
-□ Delivery of Horse
-
-□ Other:
-
-Transfer Date:
-
-DELIVERY AND POSSESSION
+4. DELIVERY AND POSSESSION
 
 Delivery Location: {{TXN.DELIVERY_LOCATION}}
-
 Delivery Date: {{TXN.DELIVERY_DATE}}
+Transportation Responsibility: {{TXN.TRANSPORT_RESPONSIBILITY}}
+Risk of loss transfers: {{TXN.RISK_TRANSFER}}
 
-Transportation Responsibility:
+5. SELLER DISCLOSURES AND REPRESENTATIONS
 
-Risk of loss transfers:
+Seller represents that Seller has authority to sell the Horse, has disclosed known ownership issues and known liens or claims, and has provided truthful information to the best of Seller's knowledge regarding health history, injury history, training history, behavioral issues, medication history, and competition history.
 
-SELLER DISCLOSURES
+Additional disclosures: {{TXN.ADDITIONAL_DISCLOSURES}}
 
-Seller agrees to disclose known information regarding:
+6. BUYER ACKNOWLEDGMENT
 
-Health history;
+Buyer acknowledges that horses are living animals, performance may change, future soundness cannot be guaranteed, and behavior may vary after transfer.
 
-Injury history;
+7. PRE-PURCHASE EXAMINATION
 
-Training history;
-
-Behavioral issues;
-
-Medication history;
-
-Competition history.
-
-Additional disclosures:
-
-SELLER REPRESENTATIONS
-
-Seller represents:
-
-Seller has authority to sell the Horse;
-
-Seller has disclosed known ownership issues;
-
-Seller has disclosed known liens or claims;
-
-Seller has provided truthful information to the best of Seller’s knowledge.
-
-BUYER ACKNOWLEDGMENT
-
-Buyer acknowledges:
-
-Horses are living animals;
-
-Performance may change;
-
-Future soundness cannot be guaranteed;
-
-Horse behavior may vary after transfer.
-
-PRE-PURCHASE EXAMINATION
-
-Buyer:
-
-□ Completed veterinary examination.
-
-□ Declined veterinary examination.
-
+Buyer has completed or declined a veterinary examination as follows: {{TXN.PPE_STATUS}}
 Veterinarian: {{HORSE.VET_NAME}}
+Examination Date: {{TXN.PPE_DATE}}
 
-Date:
-
-TRIAL PERIOD
+8. TRIAL PERIOD
 
 Trial Period: {{TXN.TRIAL_PERIOD}}
+Terms: {{TXN.TRIAL_TERMS}}
+Responsibility during trial: {{TXN.TRIAL_CARE_PARTY}}
 
-□ None
+9. DOCUMENTS AND EQUIPMENT
 
-□ Yes
+Seller agrees to provide: {{TXN.DOCUMENTS_TRANSFERRED}}
+Included equipment: {{TXN.EQUIPMENT_INCLUDED}}
+Excluded equipment: {{TXN.EQUIPMENT_EXCLUDED}}
 
-Terms:
+10. NO CONTINUING OBLIGATION
 
-Responsibility during trial:
+Unless separately agreed in writing, Seller has no continuing responsibility for training, veterinary care, boarding, performance, or future value.
 
-EQUIPMENT INCLUDED
+11. THIRD-PARTY DISCLOSURE
 
-Included equipment:
+If COMPANY assisted with this transaction, the parties acknowledge COMPANY is not the owner of the Horse and is not responsible for horse condition, buyer satisfaction, seller representations, or future performance.
 
-Excluded equipment:
-
-REGISTRATION AND RECORDS
-
-Seller agrees to provide:
-
-□ Registration documents
-
-□ Health records
-
-□ Competition records
-
-□ Other:
-
-NO CONTINUING OBLIGATION
-
-Unless separately agreed in writing, Seller has no continuing responsibility for:
-
-Training;
-
-Veterinary care;
-
-Boarding;
-
-Performance;
-
-Future value.
-
-COMPANY / THIRD-PARTY DISCLOSURE
-
-If {{ORG.LEGAL_IDENTITY}} (“COMPANY”) assisted with this transaction:
-
-The parties acknowledge COMPANY is not the owner of the Horse and is not responsible for:
-
-Horse condition;
-
-Buyer satisfaction;
-
-Seller representations;
-
-Future performance.
-
-RELEASE OF LIABILITY
+12. RELEASE
 
 Buyer releases Seller and any assisting parties from claims arising after transfer except claims based on fraud, intentional misrepresentation, or obligations expressly stated in this Agreement.
 
-INDEMNIFICATION
+13. INDEMNIFICATION
 
-Each party agrees to indemnify the other for claims arising from:
+Each party agrees to indemnify the other for claims arising from their own conduct, their breach of this Agreement, and their misrepresentations.
 
-Their own conduct;
+14. DEFAULT
 
-Their breach of this Agreement;
+Default terms: {{TXN.DEFAULT_TERMS}}
 
-Their misrepresentations.
+15. DISPUTE RESOLUTION
 
-DEFAULT
+Any dispute arising out of or relating to this Agreement shall be resolved by binding arbitration administered by JAMS under its Streamlined Arbitration Rules and Procedures, or by the American Arbitration Association under its Consumer Arbitration Rules if JAMS is unavailable, before a single neutral arbitrator in San Diego County, California. Either party may instead bring an individual claim in small claims court if the claim qualifies. Judgment on the award may be entered in any court of competent jurisdiction.
 
-Default terms:
+16. ATTORNEY'S FEES
 
-DISPUTE RESOLUTION
+Each party shall cover their own attorney's fees and costs.
 
-Disputes shall be resolved by:
+17. GOVERNING LAW AND SEVERABILITY
 
-□ Arbitration
+California law governs this Agreement. If any provision is unenforceable, the remainder remains in effect.
 
-□ Litigation
-
-Venue: San Diego County, California.
-
-ATTORNEY’S FEES
-
-The prevailing party shall be entitled to reasonable attorney’s fees and costs where permitted by law.
-
-GOVERNING LAW
-
-This Agreement shall be governed by the laws of the State of California.
-
-ENTIRE AGREEMENT
+18. ENTIRE AGREEMENT
 
 This Agreement represents the complete agreement between Buyer and Seller.
 
 SELLER
 
 Signature: {{SIG.SELLER.NAME}}
-
 Printed Name: {{SELLER.PRINTED_NAME}}
-
 Date: {{SIG.SELLER.DATE}}
 
 BUYER
 
 Signature: {{SIG.BUYER.NAME}}
-
 Printed Name: {{BUYER.PRINTED_NAME}}
-
 Date: {{SIG.BUYER.DATE}}
-
-COMPANY (IF APPLICABLE): {{ORG.LEGAL_NAME}}
-
-By (signature): {{SIG.COMPANY.NAME}}
-
-Printed: {{ORG.SIGNATORY_NAME}}
-
-Title: {{ORG.SIGNATORY_TITLE}}
-
-Date: {{SIG.COMPANY.DATE}}

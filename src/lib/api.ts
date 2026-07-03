@@ -92,6 +92,84 @@ export async function validateInvitation(token: string): Promise<Invitation | nu
   return row ?? null;
 }
 
+// ─── Rider onboarding (invite → details → sign → confirmation) ──────────────
+
+/** One onboarding document, in signing order (SECURITY-DEFINER RPC shape). */
+export interface OnboardingDocument {
+  document_id: string;
+  template_key: string;
+  title: string;
+  status: string;
+}
+
+/** What the client bought offline (provisioned by staff with the invite).
+ *  Stays populated after onboarding completes — the dashboard plan card. */
+export interface OnboardingPurchase {
+  tier_label: string;
+  amount: number;
+  /** Punch cards / packs: the number of lessons bought. */
+  lessons_included: number | null;
+  /** Subscriptions: the weekly cadence (display text, e.g. "2 lessons/week"). */
+  cadence: string | null;
+  paid: boolean;
+  payment_method: string | null;
+}
+
+/** my_onboarding_state(): `needed` flips false once every doc is EXECUTED. */
+export interface OnboardingState {
+  needed: boolean;
+  profile_complete: boolean;
+  documents: OnboardingDocument[];
+  purchase: OnboardingPurchase | null;
+}
+
+/** The signed-in member's onboarding snapshot (profile gate, signing checklist,
+ *  purchase summary). Drives /app/onboarding and the dashboard plan card. */
+export async function myOnboardingState(): Promise<OnboardingState> {
+  const { data, error } = await supabase.rpc('my_onboarding_state');
+  if (error) throw error;
+  return data as OnboardingState;
+}
+
+/** update_my_onboarding_profile payload — all strings, all optional. */
+export interface OnboardingProfileInput {
+  phone?: string;
+  /** YYYY-MM-DD */
+  date_of_birth?: string;
+  address_street?: string;
+  address_city?: string;
+  address_state?: string;
+  address_zip?: string;
+  emergency_contact_1_name?: string;
+  emergency_contact_1_relationship?: string;
+  emergency_contact_1_phone?: string;
+  emergency_contact_2_name?: string;
+  emergency_contact_2_relationship?: string;
+  emergency_contact_2_phone?: string;
+  riding_experience_years?: string;
+  jump_experience?: string;
+  riding_background?: string;
+}
+
+/** Save the member's onboarding details. Only FILLED keys are sent (the RPC
+ *  contract: trimmed non-empty strings; blanks are simply omitted). */
+export async function updateMyOnboardingProfile(input: OnboardingProfileInput): Promise<void> {
+  const p: Record<string, string> = {};
+  for (const [key, value] of Object.entries(input)) {
+    if (typeof value === 'string' && value.trim() !== '') p[key] = value.trim();
+  }
+  const { error } = await supabase.rpc('update_my_onboarding_profile', { p });
+  if (error) throw error;
+}
+
+/** Regenerate my unsigned onboarding docs with fresh profile data. Returns the
+ *  documents in signing order. */
+export async function generateMyOnboardingDocuments(): Promise<OnboardingDocument[]> {
+  const { data, error } = await supabase.rpc('generate_my_onboarding_documents');
+  if (error) throw error;
+  return (data ?? []) as OnboardingDocument[];
+}
+
 // ─── Profiles ───────────────────────────────────────────────────────────────
 
 export async function getMyProfile(): Promise<Profile | null> {

@@ -1,17 +1,21 @@
 /**
- * Release kiosk (migration 20260702050000) — the owner's 2026-07-02 directives,
- * proven end-to-end through the real anon-executable RPCs:
+ * Release kiosk (20260702050000, re-issued 20260703050000 for the owner's
+ * 2026-07-03 template revision) — proven end-to-end through the real
+ * anon-executable RPCs against the single-CLIENT-signer bodies:
  *  - release_preview: all four releases + FACILITY_RULES merge the org identity
  *    (TRADE NAME ONLY — no personal name) and today's date, and TRUNCATE before
- *    the signature area (no SIG tokens, no signer-section markers in previews);
+ *    the CLIENT signer block (no SIG tokens, no signature lines, no CUT-marker
+ *    comments in previews);
  *  - stripped content: covenant-not-to-sue, CC §1542 waiver, free-floating
  *    initials lines, and the company countersign are gone; media consent is a
  *    default grant with a written email opt-out; term = until superseded;
  *  - sign_release rules gate: rejects unless p_rules_acknowledged, and the
  *    executed body records the dated acknowledgment;
- *  - adult path: PARTICIPANT signs, EXECUTED immediately, minor section absent;
- *  - minor path: guardian signs (GUARDIAN role), minor is a non-signing
- *    PARTICIPANT party, DOB + relationship merged, adult section absent;
+ *  - adult path: the CLIENT signs, EXECUTED immediately, the MINOR_* CUT
+ *    section is stripped whole (content AND markers absent);
+ *  - minor path: the guardian signs as CLIENT, the minor is a non-signing
+ *    PARTICIPANT party, the MINOR_* CUT section is KEPT with the minor's
+ *    name + DOB resolved, relationship recorded on the signer party row;
  *  - bad template keys rejected; cross-tenant isolation holds.
  */
 import { beforeAll, afterAll, describe, expect, it } from 'vitest';
@@ -76,10 +80,15 @@ describe('release_preview — all four releases + the rules gate document', () =
       expect(body, key).toContain('French Heritage Equestrian');
       expect(body, key).not.toContain('Charles Zigmund');
       expect(body, key).not.toContain('doing business as');
-      // dates merged; nothing tokenish or signature-ish remains
+      // dates merged; nothing tokenish or signature-ish remains — the body is
+      // truncated before the CLIENT signer block (owner 2026-07-03 canon)
       expect(body, key).not.toMatch(/\{\{[A-Z0-9_.]+\}\}/);
-      expect(body, key).not.toContain('ADULT SIGNER');
-      expect(body, key).not.toContain('MINOR SIGNER');
+      expect(body, key).not.toContain('Printed Name:');
+      expect(body, key).not.toContain('Signature:');
+      // CUT-marker comments never reach a rendered preview; the minor section
+      // sits below the signer block and is truncated with it
+      expect(body, key).not.toContain('<!-- CUT');
+      expect(body, key).not.toContain("Minor's Name:");
       // owner strikes
       expect(body.toUpperCase(), key).not.toContain('COVENANT NOT TO SUE');
       expect(body, key).not.toContain('1542');
@@ -91,10 +100,12 @@ describe('release_preview — all four releases + the rules gate document', () =
     const gen = await preview('RELEASE_GENERAL');
     expect(gen.body).toMatch(/royalty-free/i);
     expect(gen.body).toMatch(/revoke .* written notice/is);
-    // the rules-gate document previews too
+    // the rules-gate document previews too, truncated at its own CLIENT block
     const rules = await preview('FACILITY_RULES');
     expect(rules.body).toContain('French Heritage Equestrian');
     expect(rules.body).not.toMatch(/\{\{[A-Z0-9_.]+\}\}/);
+    expect(rules.body).not.toContain('Printed Name:');
+    expect(rules.body).not.toContain('<!-- CUT');
   });
 
   it('rejects a non-kiosk template key', async () => {
@@ -114,23 +125,29 @@ describe('sign_release — rules gate', () => {
 });
 
 describe('sign_release — adult path', () => {
-  it('executes on the single PARTICIPANT signature; minor section absent', async () => {
+  it('executes on the single CLIENT signature; minor CUT section stripped whole', async () => {
     await h.asAnon();
     const res = await sign({ first_name: 'Alan', last_name: 'Adult', email: 'alan@kiosk.test', typed_name: 'Alan Adult' });
     expect(res.status).toBe('EXECUTED');
-    expect(res.merged_body).toContain('Alan Adult');
-    expect(res.merged_body).not.toContain('MINOR SIGNER');
-    expect(res.merged_body).not.toContain('Parent/Guardian');
+    // the typed signature completes the CLIENT block
+    expect(res.merged_body).toContain('Printed Name: Alan Adult');
+    expect(res.merged_body).toContain('Signature: Alan Adult');
+    // nothing tokenish survives signing (SIG.CLIENT.* substituted)
+    expect(res.merged_body).not.toMatch(/\{\{[A-Z0-9_.]+\}\}/);
+    // adult-only: the MINOR_* CUT section is removed whole — content AND markers
+    expect(res.merged_body).not.toContain('<!-- CUT');
+    expect(res.merged_body).not.toContain("Minor's Name:");
+    expect(res.merged_body).not.toContain('MINOR (IF APPLICABLE)');
     await h.asSuperuser();
     const sigs = await h.q<{ party_role: string; typed_name: string }>(
       `select party_role, typed_name from signatures where document_id=$1`, [res.document_id]);
     expect(sigs).toHaveLength(1);
-    expect(sigs[0].party_role).toBe('PARTICIPANT');
+    expect(sigs[0].party_role).toBe('CLIENT');
   });
 });
 
 describe('sign_release — minor path', () => {
-  it('guardian signs; minor is a non-signing party; DOB + relationship merged; adult section absent', async () => {
+  it('guardian signs as CLIENT; minor is a non-signing PARTICIPANT; MINOR section kept with name + DOB', async () => {
     await h.asAnon();
     const res = await sign({
       template_key: 'RELEASE_PARTICIPANT',
@@ -139,23 +156,35 @@ describe('sign_release — minor path', () => {
       guardian_relationship: 'Mother',
     });
     expect(res.status).toBe('EXECUTED');
-    expect(res.merged_body).toContain('Milo Minor');
-    expect(res.merged_body).toContain('Gail Guardian');
-    expect(res.merged_body).toContain('Mother');
-    expect(res.merged_body).toMatch(/2015/);
-    expect(res.merged_body).not.toContain('ADULT SIGNER');
+    // the MINOR_PARTICIPANT CUT section is KEPT (markers stripped) with the
+    // minor's identity resolved from the PARTICIPANT contact
+    expect(res.merged_body).toContain('MINOR PARTICIPANT (IF APPLICABLE)');
+    expect(res.merged_body).toContain("Minor's Name: Milo Minor");
+    expect(res.merged_body).toContain('Date of Birth: April 9, 2015');
+    expect(res.merged_body).toMatch(/parent or legal guardian/i);
+    expect(res.merged_body).not.toContain('<!-- CUT');
+    // the guardian signs the single CLIENT block
+    expect(res.merged_body).toContain('Printed Name: Gail Guardian');
+    expect(res.merged_body).toContain('Signature: Gail Guardian');
+    expect(res.merged_body).not.toMatch(/\{\{[A-Z0-9_.]+\}\}/);
 
     await h.asSuperuser();
     const sigs = await h.q<{ party_role: string }>(
       `select party_role from signatures where document_id=$1`, [res.document_id]);
-    expect(sigs.map((s) => s.party_role)).toEqual(['GUARDIAN']);
-    const parties = await h.q<{ party_role: string; is_signer: boolean }>(
-      `select party_role, is_signer from engagement_parties
+    expect(sigs.map((s) => s.party_role)).toEqual(['CLIENT']);
+    const parties = await h.q<{ party_role: string; is_signer: boolean; relationship: string | null }>(
+      `select party_role, is_signer, relationship from engagement_parties
        where engagement_id=$1 order by party_role`, [res.engagement_id]);
     expect(parties).toEqual([
-      { party_role: 'GUARDIAN', is_signer: true },
-      { party_role: 'PARTICIPANT', is_signer: false },
+      { party_role: 'CLIENT', is_signer: true, relationship: 'Mother' },
+      { party_role: 'PARTICIPANT', is_signer: false, relationship: null },
     ]);
+    // the submitted DOB lands on the minor's contact (the token's source)
+    const [minor] = await h.q<{ date_of_birth: string }>(
+      `select c.date_of_birth::text from engagement_parties ep
+       join contacts c on c.id = ep.contact_id
+       where ep.engagement_id=$1 and ep.party_role='PARTICIPANT'`, [res.engagement_id]);
+    expect(minor.date_of_birth).toBe('2015-04-09');
   });
 
   it('rejects a minor signing without guardian details', async () => {

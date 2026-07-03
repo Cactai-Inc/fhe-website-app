@@ -1,199 +1,60 @@
-RIDING LESSON AGREEMENT
+JUMPER TRAINING ADDENDUM TO PARTICIPANT LIABILITY RELEASE
 
-This Riding Lesson Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
+This Jumper Training Addendum ("Addendum") is made effective as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned client ("CLIENT"), on CLIENT's own behalf and, where a minor participant is identified, on behalf of that minor ("PARTICIPANT"), in favor of {{ORG.LEGAL_NAME}} ("COMPANY"). This Addendum supplements the separately executed Participant Liability Release, Assumption of Risk, Hold Harmless & Indemnification Agreement ("Participant Release") and applies specifically to jumper training. By signing below, CLIENT acknowledges and agrees to the terms of this Addendum. Where no minor is identified, references to PARTICIPANT mean CLIENT.
 
-{{ORG.LEGAL_IDENTITY}} ("COMPANY"),
+1. RELATIONSHIP TO PARTICIPANT RELEASE
 
-and
+This Addendum is in addition to, and does not replace, the Participant Release. All defined terms, release of liability, assumption of risk, hold harmless, indemnification, dispute resolution, attorney's fees, governing law, and media consent provisions of the Participant Release apply to jumper training and are incorporated by reference. In the event of a conflict regarding jumping activities, this Addendum controls.
 
-Participant Name: {{PARTICIPANT.FULL_NAME}}
+2. NATURE OF JUMPER TRAINING
 
-Address: {{PARTICIPANT.ADDRESS}}
+CLIENT understands that jumper training is a distinct, higher-risk offering separate from standard riding lessons. Jumper training involves schooling and riding a horse over fences, cavaletti, gymnastics, and courses at increasing heights and speeds as PARTICIPANT's ability progresses. It is offered at a separate rate and is available only to participants COMPANY has assessed and authorized.
 
-Phone: {{PARTICIPANT.PHONE}}
+3. ACKNOWLEDGMENT OF JUMPING-SPECIFIC RISKS
 
-Email: {{PARTICIPANT.EMAIL}}
+CLIENT understands and acknowledges that jumping activities carry risks beyond those of flatwork, which cannot be eliminated, including but not limited to: a horse refusing, stopping suddenly at, running out from, or ducking away from a jump; falls at speed; rotational falls in which the horse falls with or onto the rider; the horse striking, catching, or displacing rails, standards, or other jump components; loss of balance or unseating on approach, takeoff, flight, or landing; the horse landing awkwardly, stumbling, or falling after a fence; collision with jumps, standards, other horses, or arena structures; and injury of greater frequency and severity than that associated with flatwork, up to and including serious bodily injury, paralysis, permanent disability, and death.
 
-Emergency Contact: {{EMERGENCY_CONTACT.FULL_NAME}}
+4. ASSUMPTION OF JUMPING RISKS
 
-Relationship: {{EMERGENCY_CONTACT.RELATIONSHIP}}
+PARTICIPANT knowingly and voluntarily assumes all inherent and ordinary risks of jumper training, including the jumping-specific risks described above. CLIENT accepts full responsibility, on CLIENT's own behalf and on behalf of any minor PARTICIPANT, for any injury, illness, disability, death, property damage, or other loss arising from jumper training.
 
-Phone: {{EMERGENCY_CONTACT.PHONE}}
+5. ABILITY ATTESTATION
 
-RECITALS
+PARTICIPANT attests that the following information provided to COMPANY is true and complete: Years of riding experience: {{CLIENT.RIDING_EXPERIENCE_YEARS}}. Prior jumping experience and maximum height schooled: {{CLIENT.JUMP_EXPERIENCE}}. Prior instruction, showing, or competition experience: {{CLIENT.RIDING_BACKGROUND}}. Any relevant injuries, physical limitations, or gaps in riding: {{CLIENT.JUMP_LIMITATIONS}}. CLIENT understands that COMPANY relies on this information to determine eligibility and appropriate jump heights, that misrepresentation materially increases risk to PARTICIPANT and others, and that PARTICIPANT assumes all risks arising from any inaccuracy in the information provided.
 
-A. COMPANY provides horseback riding instruction, horsemanship education, equine training activities, horse handling instruction, mounted and unmounted equestrian activities, and related services.
+6. COMPANY ASSESSMENT AND AUTHORIZATION
 
-B. Participant desires to engage in such activities.
+PARTICIPANT acknowledges and agrees that: Participation in jumper training is available only after COMPANY assesses PARTICIPANT's ability and authorizes participation. During any lesson, instruction, or session supervised by COMPANY, PARTICIPANT may not jump, school over fences, or attempt any jumping activity without COMPANY's prior authorization and approval. COMPANY may, in its sole discretion, decline, limit, modify, downgrade to flatwork, or discontinue any jumping activity at any time based on its assessment of PARTICIPANT's ability, the horse, footing, weather, or other conditions. COMPANY sets and may adjust the maximum jump height and difficulty appropriate for PARTICIPANT and may withhold advancement.
 
-C. Participant acknowledges that equine activities involve inherent risks that cannot be eliminated regardless of the care taken by horses, instructors, facility operators, or participants.
+7. HELMET AND SAFETY EQUIPMENT
 
-NOW, THEREFORE, the parties agree as follows:
+An ASTM/SEI-certified riding helmet, correctly fitted and fastened, is required at all times during jumper training without exception. PARTICIPANT must provide their own helmet and replace it after any fall or impact. COMPANY does not supply helmets. A rider without a compliant helmet may not participate.
 
-SERVICES
+8. SCOPE LIMITATION
 
-COMPANY may provide one or more of the following services:
+This Addendum and its authorization requirement apply to jumping conducted under COMPANY's instruction or supervision. They do not govern a person's independent use of a horse that person owns or leases when that person is not participating in a COMPANY lesson, instruction, or session, and COMPANY assumes no liability for such independent jumping solely by reason of providing jumper training or other services to that person.
 
-□ Riding lessons
+9. RELEASE AND INDEMNIFICATION FOR JUMPING ACTIVITIES
 
-□ Horsemanship instruction
+CLIENT, on CLIENT's own behalf and on behalf of any minor PARTICIPANT, releases, waives, and forever discharges the Released Parties (as defined in the Participant Release) from any and all claims arising out of or relating to jumper training, including claims arising from the ordinary negligence of the Released Parties, and agrees to defend, indemnify, and hold harmless the Released Parties on the same terms stated in the Participant Release. This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
 
-□ Groundwork instruction
+10. ACKNOWLEDGMENT
 
-□ Horse handling instruction
+CLIENT acknowledges that: CLIENT has carefully read this Addendum and the Participant Release. CLIENT understands jumper training carries greater risk than flatwork. CLIENT has had the opportunity to ask questions before signing. CLIENT signs voluntarily and without coercion, on CLIENT's own behalf and, where applicable, on behalf of a minor PARTICIPANT.
 
-□ Mounted training exercises
+CLIENT
 
-□ Unmounted training exercises
+Date: {{SIG.CLIENT.DATE}}
+Printed Name: {{CLIENT.PRINTED_NAME}}
+Signature: {{SIG.CLIENT.NAME}}
+Phone: {{CLIENT.PHONE}}
+Email: {{CLIENT.EMAIL}}
 
-□ Horse evaluation instruction
+<!-- CUT-START: MINOR_PARTICIPANT | condition: append only if PARTICIPANT is a minor -->
+MINOR PARTICIPANT (IF APPLICABLE)
 
-□ Equine educational activities
+Minor's Name: {{PARTICIPANT.FULL_NAME}}
+Date of Birth: {{PARTICIPANT.DOB}}
 
-□ Other:
-
-No specific result, competition outcome, riding level, certification, or performance improvement is guaranteed.
-
-FACILITY AND OFF-SITE ACTIVITIES
-
-Participant understands lessons and activities may occur:
-
-At facilities utilized by COMPANY;
-
-At third-party boarding or training facilities;
-
-At horse shows, clinics, events, or competitions;
-
-At Participant-owned or leased properties;
-
-At other locations selected by COMPANY.
-
-This Agreement applies regardless of location.
-
-LIABILITY RELEASE — INCORPORATED BY REFERENCE
-
-The risk acknowledgments, releases, and indemnity obligations applicable to the activities under this Agreement are set forth exclusively in the separately executed Liability Release and Assumption of Risk agreement, which is incorporated herein by reference.
-
-REPRESENTATIONS OF PARTICIPANT
-
-Participant represents that:
-
-Participant is physically capable of participating;
-
-Participant has disclosed any medical conditions affecting participation;
-
-Participant will follow all safety instructions;
-
-Participant will wear appropriate riding attire;
-
-Participant will immediately notify COMPANY of any injury or unsafe condition.
-
-HELMETS
-
-ASTM/SEI-certified riding helmets are required at all times.
-
-Participant understands that helmet use may reduce but cannot eliminate risk of serious injury or death.
-
-PROPERTY DAMAGE
-
-Participant is responsible for damage caused by Participant to:
-
-Horses;
-
-Tack;
-
-Equipment;
-
-Arenas;
-
-Barn facilities;
-
-Third-party property.
-
-MEDICAL TREATMENT AUTHORIZATION
-
-In the event of an emergency, COMPANY may seek medical treatment for Participant.
-
-Participant remains solely responsible for all medical costs and expenses.
-
-PHOTOGRAPHY AND VIDEO
-
-Participant grants permission for photographs and video recordings to be used for instructional, educational, and promotional purposes unless Participant initials here declining consent:
-
-PAYMENT TERMS
-
-Lesson Fees: {{TXN.SERVICE_FEE}}
-
-Payment Due: {{TXN.PAYMENT_TERMS}}
-
-Cancellation Policy: Cancellation of a scheduled session requires at least {{ORG.CANCELLATION_NOTICE_HOURS}} hours advance notice. Sessions cancelled with less than the required notice may be charged a late-cancellation fee of {{ORG.CANCELLATION_FEE}}. Failure to appear for a scheduled session without notice may be charged a no-show fee of {{ORG.NO_SHOW_FEE}}.
-
-No refunds are required except as expressly stated by COMPANY.
-
-TERMINATION
-
-COMPANY may terminate lessons immediately if Participant:
-
-Engages in unsafe conduct;
-
-Fails to follow instructions;
-
-Creates a risk to persons, horses, or property;
-
-Fails to pay required fees.
-
-DISPUTE RESOLUTION
-
-Any dispute arising under this Agreement shall be resolved by:
-
-□ Arbitration
-
-□ Litigation
-
-Venue shall be San Diego County, California.
-
-ATTORNEY’S FEES
-
-The prevailing party in any action arising from this Agreement shall be entitled to recover reasonable attorney’s fees and costs.
-
-GOVERNING LAW
-
-This Agreement shall be governed by California law.
-
-ENTIRE AGREEMENT
-
-This Agreement constitutes the entire agreement between the parties and supersedes all prior discussions, representations, and agreements relating to the subject matter.
-
-SEVERABILITY
-
-If any provision is found unenforceable, the remaining provisions shall remain in full force and effect.
-
-VOLUNTARY EXECUTION
-
-Participant acknowledges:
-
-Participant has read this Agreement;
-
-Participant understands its contents;
-
-Participant understands that legal rights are being waived;
-
-Participant signs voluntarily.
-
-PARTICIPANT
-
-Signature: {{SIG.PARTICIPANT.NAME}}
-
-Printed Name: {{PARTICIPANT.PRINTED_NAME}}
-
-Date: {{SIG.PARTICIPANT.DATE}}
-
-COMPANY: {{ORG.LEGAL_NAME}}
-
-By (signature): {{SIG.COMPANY.NAME}}
-
-Printed: {{ORG.SIGNATORY_NAME}}
-
-Title: {{ORG.SIGNATORY_TITLE}}
-
-Date: {{SIG.COMPANY.DATE}}
+Where a minor PARTICIPANT is identified above, CLIENT certifies that CLIENT is the parent or legal guardian of the minor and has authority to execute this Addendum on the minor's behalf, consents to the minor's participation in jumper training, and agrees to the release, assumption of risk, hold harmless, and indemnification provisions both on CLIENT's own behalf, including as to any claims CLIENT may hold individually arising from the minor's participation, and on behalf of the minor.
+<!-- CUT-END: MINOR_PARTICIPANT -->

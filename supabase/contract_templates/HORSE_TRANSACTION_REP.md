@@ -1,195 +1,74 @@
 HORSE TRANSACTION REPRESENTATION AGREEMENT
 
-This Horse Transaction Representation Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
+This Horse Transaction Representation Agreement ("Agreement") is made effective as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned client ("CLIENT") with {{ORG.LEGAL_NAME}} ("COMPANY"). By signing below, CLIENT retains COMPANY to represent CLIENT's side of the prospective transaction described below and agrees to the terms of this Agreement. COMPANY's willingness to be bound is expressed by its issuance of an approval for payment, and the retainer is formed upon CLIENT's completion of payment.
 
-{{ORG.LEGAL_IDENTITY}} (“COMPANY”),
+CLIENT INFORMATION
 
-and
-
-Client Name: {{CLIENT.FULL_NAME}}
-
+Name: {{CLIENT.FULL_NAME}}
 Address: {{CLIENT.ADDRESS}}
-
 Phone: {{CLIENT.PHONE}}
-
 Email: {{CLIENT.EMAIL}}
-
-(“Client”)
-
-RECITALS
-
-A. Client is the {{DIR.ROLE_TERM}} in a prospective {{DIR.DIRECTION_TERM}} of a horse and desires to retain COMPANY to represent Client’s side of that transaction.
-
-B. COMPANY represents Client only. The {{DIR.COUNTERPARTY_TERM}} is not represented by COMPANY under this Agreement; where COMPANY relates to both sides of one transaction, each side is engaged under its own separately executed representation agreement, with disclosure to both sides.
-
-C. This Agreement is a standalone module. It may follow a search conducted under a separate search retainer or an evaluation under a separate evaluation agreement, or it may be entered fresh where Client has already identified the horse or the {{DIR.COUNTERPARTY_TERM}}. No prior search, evaluation, or other agreement is required.
 
 HORSE INFORMATION (IF IDENTIFIED)
 
 Registered Name: {{HORSE.REGISTERED_NAME}}
-
 Barn Name: {{HORSE.BARN_NAME}}
-
 Breed: {{HORSE.BREED}}
-
 Current Location: {{HORSE.CURRENT_LOCATION}}
 
-AGREEMENT
+1. SCOPE OF REPRESENTATION
 
-SCOPE OF REPRESENTATION
+CLIENT, as {{DIR.ROLE_TERM}} in a prospective {{DIR.DIRECTION_TERM}}, retains COMPANY to assist CLIENT through the transaction, which may include communicating and negotiating with the {{DIR.COUNTERPARTY_TERM}} and the {{DIR.COUNTERPARTY_TERM}}'s representatives; coordinating trials, appointments, and veterinary examinations; reviewing general transaction considerations; coordinating transaction logistics and documentation; and facilitating communications between the parties. COMPANY represents CLIENT only. The {{DIR.COUNTERPARTY_TERM}} is not represented by COMPANY under this Agreement; where COMPANY relates to both sides of one transaction, each side is engaged under its own separately executed representation agreement, with disclosure to both sides.
 
-Client retains COMPANY to assist Client, as {{DIR.ROLE_TERM}}, through the prospective {{DIR.DIRECTION_TERM}}, which may include:
+2. STANDALONE MODULE
 
-Communicating and negotiating with the {{DIR.COUNTERPARTY_TERM}} and the {{DIR.COUNTERPARTY_TERM}}’s representatives;
+This Agreement may follow a search under a separate search retainer or an evaluation under a separate evaluation agreement, or may be entered fresh where CLIENT has already identified the horse or the {{DIR.COUNTERPARTY_TERM}}. No prior agreement is required. The actual purchase, sale, or lease is documented by separate written agreements between the transacting parties; COMPANY is not the owner of the Horse and is not a party to those transfer documents unless separately stated in writing.
 
-Coordinating trials, appointments, and veterinary examinations;
+3. NO GUARANTEE; CLIENT DECISIONS
 
-Reviewing general transaction considerations;
+COMPANY does not guarantee that the prospective {{DIR.DIRECTION_TERM}} will be agreed, completed, or consummated, and does not guarantee price, terms, availability, or the conduct of the {{DIR.COUNTERPARTY_TERM}}. COMPANY may rely on information provided by the {{DIR.COUNTERPARTY_TERM}} and other third parties and does not guarantee its accuracy. CLIENT remains solely responsible for all transaction decisions, including whether to enter, complete, or abandon the transaction, the price and terms CLIENT will accept, and whether to obtain veterinary evaluation. COMPANY is not acting as an attorney, veterinarian, insurance provider, financial advisor, or licensed appraiser.
 
-Coordinating transaction logistics and documentation;
+4. FEES
 
-Facilitating communications between the parties.
-
-NO GUARANTEE OF CONSUMMATION
-
-COMPANY does not guarantee that the prospective {{DIR.DIRECTION_TERM}} will be agreed, completed, or consummated, and does not guarantee price, terms, availability, or the conduct of the {{DIR.COUNTERPARTY_TERM}}.
-
-CLIENT DECISION MAKING
-
-Client remains solely responsible for decisions regarding:
-
-Whether to enter into the transaction;
-
-Price and terms Client will accept;
-
-Whether to obtain veterinary evaluation;
-
-Whether to complete or abandon the transaction.
-
-COMPANY does not make final transaction decisions on Client’s behalf.
-
-TRANSACTION DOCUMENTS ARE SEPARATE
-
-The actual purchase, sale, or lease is documented by separate written agreements between the transacting parties (for example, a purchase and sale agreement, a sale and transfer agreement, or a lease agreement).
-
-COMPANY is not the owner of the Horse and is not a party to those transfer documents unless separately stated in writing.
-
-PROFESSIONAL LIMITATIONS
-
-COMPANY is not acting as:
-
-An attorney;
-
-A veterinarian;
-
-An insurance provider;
-
-A financial advisor;
-
-A licensed appraiser.
-
-Client is responsible for obtaining appropriate professional advice.
-
-FEES AND COMPENSATION
-
-Client agrees to pay COMPANY:
-
-Representation Fee: {{TXN.REPRESENTATION_FEE}}
-
-or
-
-{{TXN.COMMISSION_RATE}} of purchase price / transaction value (minimum {{TXN.COMMISSION_MIN}})
-
+Representation Fee: {{TXN.REPRESENTATION_FEE}} or {{TXN.COMMISSION_RATE}} of purchase price / transaction value (minimum {{TXN.COMMISSION_MIN}}).
 Payment Due: {{TXN.PAYMENT_TERMS}}
 
-The Representation Fee is separate from, and in addition to, any search retainer, success / acquisition fee, or per-horse evaluation fee owed under separately executed agreements.
+The Representation Fee is separate from, and in addition to, any search retainer, success/acquisition fee, or per-horse evaluation fee under separately executed agreements. Payment methods and travel terms are governed by the separately executed Company Policies.
 
-INTRODUCED OPPORTUNITIES
+5. INTRODUCED OPPORTUNITIES
 
-If COMPANY introduces Client to a horse, owner, buyer, lessee, trainer, facility, or opportunity, Client agrees compensation remains due if Client completes a transaction involving that opportunity.
+If COMPANY introduces CLIENT to a horse, owner, buyer, lessee, trainer, facility, or opportunity, compensation remains due if CLIENT completes a transaction involving that opportunity. Protection Period: {{ENG.PROTECTION_PERIOD}} months.
 
-Protection Period: {{ENG.PROTECTION_PERIOD}} months.
+6. COMMUNICATIONS AND CONFIDENTIALITY
 
-COMMUNICATION AUTHORIZATION
+CLIENT authorizes COMPANY to communicate with the {{DIR.COUNTERPARTY_TERM}}, owners, trainers, facilities, brokers, and other equine professionals. The parties shall maintain confidentiality regarding budget, transaction terms, negotiation strategy, and horse information.
 
-Client authorizes COMPANY to communicate with:
+7. INCORPORATED DOCUMENTS
 
-The {{DIR.COUNTERPARTY_TERM}};
+The risk acknowledgments, releases, and indemnity obligations applicable to activities under this Agreement are set forth exclusively in the separately executed liability release and assumption of risk agreements, incorporated herein by reference.
 
-Owners;
+8. TERMINATION
 
-Trainers;
+Either party may terminate by written notice. Termination does not affect any separately executed search retainer or evaluation agreement. Completed services and earned fees remain payable.
 
-Facilities;
+9. DISPUTE RESOLUTION
 
-Brokers;
+Any dispute arising out of or relating to this Agreement shall be resolved by binding arbitration administered by JAMS under its Streamlined Arbitration Rules and Procedures, or by the American Arbitration Association under its Consumer Arbitration Rules if JAMS is unavailable, before a single neutral arbitrator in San Diego County, California. COMPANY shall pay all arbitration fees and administrative costs that exceed the filing fee CLIENT would have incurred to file the claim in San Diego County Superior Court. Either party may instead bring an individual claim in small claims court if the claim qualifies. Judgment on the award may be entered in any court of competent jurisdiction.
 
-Other equine professionals.
+10. ATTORNEY'S FEES
 
-THIRD-PARTY INFORMATION
+Each party shall cover their own attorney's fees and costs.
 
-COMPANY may rely on information provided by the {{DIR.COUNTERPARTY_TERM}} and other third parties.
+11. GOVERNING LAW AND SEVERABILITY
 
-COMPANY does not guarantee accuracy of third-party statements.
+California law governs this Agreement. If any provision is unenforceable, the remainder remains in effect.
 
-CONFIDENTIALITY
-
-Confidential information may include:
-
-Budget;
-
-Transaction terms;
-
-Negotiation strategy;
-
-Horse information.
-
-LIABILITY RELEASE — INCORPORATED BY REFERENCE
-
-The risk acknowledgments, releases, and indemnity obligations applicable to the activities under this Agreement are set forth exclusively in the separately executed Liability Release and Assumption of Risk agreement, which is incorporated herein by reference.
-
-TERMINATION
-
-Either party may terminate by written notice. Termination does not affect any separately executed search retainer or evaluation agreement.
-
-Completed services and earned fees remain payable.
-
-DISPUTE RESOLUTION
-
-Disputes shall be resolved by:
-
-□ Arbitration
-
-□ Litigation
-
-Venue shall be San Diego County, California.
-
-ATTORNEY’S FEES
-
-The prevailing party shall be entitled to reasonable attorney’s fees and costs where permitted by law.
-
-GOVERNING LAW
-
-California law governs this Agreement.
-
-ENTIRE AGREEMENT
+12. ENTIRE AGREEMENT
 
 This Agreement represents the entire agreement regarding transaction representation services.
 
 CLIENT
 
 Signature: {{SIG.CLIENT.NAME}}
-
 Printed Name: {{CLIENT.PRINTED_NAME}}
-
 Date: {{SIG.CLIENT.DATE}}
-
-COMPANY: {{ORG.LEGAL_NAME}}
-
-By (signature): {{SIG.COMPANY.NAME}}
-
-Printed: {{ORG.SIGNATORY_NAME}}
-
-Title: {{ORG.SIGNATORY_TITLE}}
-
-Date: {{SIG.COMPANY.DATE}}
