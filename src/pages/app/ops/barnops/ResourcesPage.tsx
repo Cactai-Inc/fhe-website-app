@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { toErrorMessage } from '../../../../lib/ops/errors';
 import type { FormEvent } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { DataTable, FormField, Modal, ModuleGate, Money, useToast } from '../../../../lib/ops';
@@ -290,7 +291,7 @@ export default function ResourcesPage() {
       setLots(l);
       setVendors(v);
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : 'Could not load resources.');
+      setLoadError(toErrorMessage(err, 'Could not load resources.'));
     } finally {
       setLoading(false);
     }
@@ -331,7 +332,7 @@ export default function ResourcesPage() {
       toast.success(editing ? 'Resource updated.' : 'Resource created.');
       setModal({ mode: 'closed' });
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Could not save resource.');
+      setFormError(toErrorMessage(err, 'Could not save resource.'));
     } finally {
       setSaving(false);
     }
@@ -356,7 +357,7 @@ export default function ResourcesPage() {
       toast.success('Lot recorded.');
       setModal({ mode: 'closed' });
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Could not record lot.');
+      setFormError(toErrorMessage(err, 'Could not record lot.'));
     } finally {
       setSaving(false);
     }

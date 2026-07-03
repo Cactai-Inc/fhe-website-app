@@ -7,6 +7,7 @@
  * org-scoped). Loading, empty, error and success branches all render.
  */
 import { useEffect, useState } from 'react';
+import { toErrorMessage } from '../../../lib/ops/errors';
 import { useNavigate } from 'react-router-dom';
 import { listEngagements } from '../../../lib/api';
 import { useDocumentTitle } from '../../../lib/hooks';
@@ -29,7 +30,7 @@ export default function EngagementsPage() {
         if (active) setEngagements(rows as EngagementRow[]);
       })
       .catch((err: unknown) => {
-        if (active) setError(err instanceof Error ? err.message : 'Could not load engagements.');
+        if (active) setError(toErrorMessage(err, 'Could not load engagements.'));
       })
       .finally(() => {
         if (active) setLoading(false);

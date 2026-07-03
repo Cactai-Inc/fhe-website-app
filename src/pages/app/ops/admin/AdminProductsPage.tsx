@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { toErrorMessage } from '../../../../lib/ops/errors';
 import { DataTable, Modal, FormField, AsyncButton, StatusBadge, Money, useAsync, useToast } from '../../../../lib/ops';
 import {
   listProducts, createProduct, listProductPrices, createProductPrice,
@@ -65,7 +66,7 @@ export function AdminProductsPage() {
       setCreateOpen(false);
       await products.run();
     } catch (err) {
-      setProductError(err instanceof Error ? err.message : 'Could not create the product.');
+      setProductError(toErrorMessage(err, 'Could not create the product.'));
       throw err;
     }
   }
@@ -90,7 +91,7 @@ export function AdminProductsPage() {
       setPriceForm({ amount: '', effective_from: '' });
       await prices.run(selected.id);
     } catch (err) {
-      setPriceError(err instanceof Error ? err.message : 'Could not add the price.');
+      setPriceError(toErrorMessage(err, 'Could not add the price.'));
       throw err;
     }
   }

@@ -34,3 +34,5 @@ export type { UseAsyncResult, AsyncState, AsyncStatus } from './useAsync';
 
 export { useToast } from './useToast';
 export type { UseToastResult, Toast, ToastTone } from './useToast';
+
+export { toErrorMessage } from './errors';

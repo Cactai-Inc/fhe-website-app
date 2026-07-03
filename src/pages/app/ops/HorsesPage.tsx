@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { toErrorMessage } from '../../../lib/ops/errors';
 import { Helmet } from 'react-helmet-async';
 import { Modal } from '../../../lib/ops';
 import {
@@ -49,7 +50,7 @@ export default function HorsesPage() {
       setColors(c);
       setOwners(o);
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : 'Could not load horses.');
+      setLoadError(toErrorMessage(err, 'Could not load horses.'));
     } finally {
       setLoading(false);
     }

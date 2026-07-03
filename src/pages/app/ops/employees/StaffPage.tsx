@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { toErrorMessage } from '../../../../lib/ops/errors';
 import { ModuleGate, DataTable, Modal, FormField, AsyncButton, StatusBadge, useAsync, useToast } from '../../../../lib/ops';
 import { useModules } from '../../../../lib/ops/useModules';
 import { contactName } from '../../../../lib/ops/types';
@@ -83,7 +84,7 @@ export function StaffPage() {
       setModal(null);
       await staff.run();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Could not save the staff profile.');
+      setFormError(toErrorMessage(err, 'Could not save the staff profile.'));
       throw err;
     }
   }
@@ -106,7 +107,7 @@ export function StaffPage() {
       setAssignForm({ staff_profile_id: '', engagement_id: '', service_type: '', scheduled_at: '' });
       await assignments.run();
     } catch (err) {
-      setAssignError(err instanceof Error ? err.message : 'Could not create the assignment.');
+      setAssignError(toErrorMessage(err, 'Could not create the assignment.'));
       throw err;
     }
   }

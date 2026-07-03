@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toErrorMessage } from '../../../lib/ops/errors';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
 /**
@@ -37,7 +38,7 @@ export function AsyncButton({
     try {
       await onClick();
     } catch (err) {
-      const normalized = err instanceof Error ? err : new Error(String(err));
+      const normalized = err instanceof Error ? err : new Error(toErrorMessage(err));
       if (onError) {
         onError(normalized);
       } else {

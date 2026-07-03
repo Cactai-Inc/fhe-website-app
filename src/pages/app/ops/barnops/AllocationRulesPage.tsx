@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { toErrorMessage } from '../../../../lib/ops/errors';
 import type { FormEvent } from 'react';
 import { Helmet } from 'react-helmet-async';
 import {
@@ -271,7 +272,7 @@ export default function AllocationRulesPage() {
       setContacts(c);
       setHorses(h);
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : 'Could not load allocation rules.');
+      setLoadError(toErrorMessage(err, 'Could not load allocation rules.'));
     } finally {
       setLoading(false);
     }
@@ -314,7 +315,7 @@ export default function AllocationRulesPage() {
       toast.success(editing ? 'Rule updated.' : 'Rule created.');
       setModal({ mode: 'closed' });
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Could not save the rule.');
+      setFormError(toErrorMessage(err, 'Could not save the rule.'));
     } finally {
       setSaving(false);
     }
@@ -326,7 +327,7 @@ export default function AllocationRulesPage() {
       setRules((prev) => prev.filter((r) => r.id !== rule.id));
       toast.success('Rule removed.');
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not remove the rule.');
+      toast.error(toErrorMessage(err, 'Could not remove the rule.'));
     }
   };
 

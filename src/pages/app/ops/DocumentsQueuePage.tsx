@@ -13,6 +13,7 @@
  * branches all render — errors are surfaced, never swallowed.
  */
 import { useCallback, useEffect, useState } from 'react';
+import { toErrorMessage } from '../../../lib/ops/errors';
 import { Helmet } from 'react-helmet-async';
 import { listDocuments } from '../../../lib/api';
 import type { DocumentRow } from '../../../lib/ops/types';
@@ -45,7 +46,7 @@ export default function DocumentsQueuePage() {
         if (active) setDocuments(filterByStatus(rows, status));
       })
       .catch((err: unknown) => {
-        if (active) setError(err instanceof Error ? err.message : 'Could not load documents.');
+        if (active) setError(toErrorMessage(err, 'Could not load documents.'));
       })
       .finally(() => {
         if (active) setLoading(false);

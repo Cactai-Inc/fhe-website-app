@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { toErrorMessage } from '../../lib/ops/errors';
 import { useDocumentTitle } from '../../lib/hooks';
 import {
   adminListMembers, adminSetSuspended, adminSetAdmin, adminUpsertMembership,
@@ -107,7 +108,7 @@ function InviteTab() {
       setResult({ url: r.registerUrl, emailed: r.emailed });
       setEmail('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not send invitation.');
+      setError(toErrorMessage(err, 'Could not send invitation.'));
     } finally {
       setWorking(false);
     }

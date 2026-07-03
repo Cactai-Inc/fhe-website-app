@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { toErrorMessage } from '../../../lib/ops/errors';
 import { Modal, useAsync, useToast } from '../../../lib/ops';
 import { listContacts, createContact, updateContact } from '../../../lib/api';
 import { contactName } from '../../../lib/ops/types';
@@ -82,7 +83,7 @@ export function ContactsPage() {
       setDrawer({ mode: 'closed' });
     } catch (err) {
       // Error branch: keep the modal open, surface the message.
-      setFormError(err instanceof Error ? err.message : 'Could not save contact.');
+      setFormError(toErrorMessage(err, 'Could not save contact.'));
     }
   };
 

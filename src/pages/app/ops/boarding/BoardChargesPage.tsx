@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { toErrorMessage } from '../../../../lib/ops/errors';
 import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -207,7 +208,7 @@ export function BoardChargesPage() {
       setCharges(ch);
       setAgreements(ag);
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : 'Could not load board charges.');
+      setLoadError(toErrorMessage(err, 'Could not load board charges.'));
     } finally {
       setLoading(false);
     }
@@ -229,7 +230,7 @@ export function BoardChargesPage() {
       toast.success('Charge generated and emitted to billing.');
       setGenerateOpen(false);
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Could not generate the charge.');
+      setFormError(toErrorMessage(err, 'Could not generate the charge.'));
     }
   };
 
@@ -245,7 +246,7 @@ export function BoardChargesPage() {
       setCharges((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
       toast.success('Charge emitted to billing.');
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not emit the charge.');
+      toast.error(toErrorMessage(err, 'Could not emit the charge.'));
     }
   };
 

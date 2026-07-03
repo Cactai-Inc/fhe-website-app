@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { toErrorMessage } from '../../lib/ops/errors';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Receipt } from 'lucide-react';
 import { Money, StatusBadge, EmptyState } from '../../lib/ops';
@@ -84,7 +85,7 @@ export default function MyBalance() {
         setLines(l); setEngagements(e); setTransactions(t); setPayments(p);
       })
       .catch((err: unknown) => {
-        if (active) setError(err instanceof Error ? err.message : 'Could not load your balance.');
+        if (active) setError(toErrorMessage(err, 'Could not load your balance.'));
       })
       .finally(() => active && setLoading(false));
     return () => { active = false; };

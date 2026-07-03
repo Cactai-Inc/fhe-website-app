@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { toErrorMessage } from '../../../../lib/ops/errors';
 import { Link, useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import {
@@ -292,7 +293,7 @@ export function HorsePartiesPage() {
       setModal({ mode: 'closed' });
     } catch (err) {
       // Error branch: keep the modal open, surface the message.
-      setFormError(err instanceof Error ? err.message : 'Could not save party.');
+      setFormError(toErrorMessage(err, 'Could not save party.'));
     }
   };
 
@@ -302,7 +303,7 @@ export function HorsePartiesPage() {
       await refreshParties();
       toast.success('Party archived.');
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not archive party.');
+      toast.error(toErrorMessage(err, 'Could not archive party.'));
     }
   };
 

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { toErrorMessage } from '../../../lib/ops/errors';
 import { Link } from 'react-router-dom';
 import { AsyncButton, DataTable, Money, StatusBadge, useAsync, useToast } from '../../../lib/ops';
 import type { Column } from '../../../lib/ops';
@@ -86,7 +87,7 @@ export function PaymentReviewPage() {
       setCandidates([]);
       await refresh(bucket);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not dismiss the notification.');
+      toast.error(toErrorMessage(err, 'Could not dismiss the notification.'));
     }
   };
 

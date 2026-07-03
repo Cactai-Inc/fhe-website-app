@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { toErrorMessage } from '../../../lib/ops/errors';
 import { DataTable, Modal, FormField, AsyncButton, StatusBadge, useAsync, useToast } from '../../../lib/ops';
 import { useDocumentTitle } from '../../../lib/hooks';
 import { weekRange } from '../../../lib/ops/api-employees';
@@ -83,7 +84,7 @@ export function AvailabilityPage() {
       setSlotForm({ start_at: '', end_at: '', slot_type: 'consultation', location_mode: 'onsite', capacity: '1' });
       await slots.run();
     } catch (err) {
-      setSlotError(err instanceof Error ? err.message : 'Could not create the slot.');
+      setSlotError(toErrorMessage(err, 'Could not create the slot.'));
       throw err;
     }
   }
@@ -114,7 +115,7 @@ export function AvailabilityPage() {
       });
       await slots.run();
     } catch (err) {
-      setRecurError(err instanceof Error ? err.message : 'Could not create the slots.');
+      setRecurError(toErrorMessage(err, 'Could not create the slots.'));
       throw err;
     }
   }
@@ -129,7 +130,7 @@ export function AvailabilityPage() {
       toast.success(slot.status === 'open' ? 'Slot blocked' : 'Slot reopened');
       await slots.run();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not update the slot.');
+      toast.error(toErrorMessage(err, 'Could not update the slot.'));
     }
   }
 
@@ -139,7 +140,7 @@ export function AvailabilityPage() {
       toast.success('Slot deleted');
       await slots.run();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not delete the slot.');
+      toast.error(toErrorMessage(err, 'Could not delete the slot.'));
     }
   }
 

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { toErrorMessage } from '../../../../lib/ops/errors';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { ModuleGate } from '../../../../lib/ops';
@@ -65,7 +66,7 @@ export default function BarnopsHubPage() {
       ]);
       setCounts({ resources: resources.length, events: events.length, rules: rules.length });
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : 'Could not load barn ops counts.');
+      setLoadError(toErrorMessage(err, 'Could not load barn ops counts.'));
     }
   }, []);
 

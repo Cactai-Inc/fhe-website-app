@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toErrorMessage } from '../../../lib/ops/errors';
 import type { FormEvent } from 'react';
 import { FormField } from '../../../lib/ops';
 import { contactName } from '../../../lib/ops/types';
@@ -64,7 +65,7 @@ export function HorseForm({ breeds, colors, owners, horse, onSubmit, onCancel }:
     try {
       await onSubmit(input);
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'Could not save horse.');
+      setSubmitError(toErrorMessage(err, 'Could not save horse.'));
     } finally {
       setSaving(false);
     }

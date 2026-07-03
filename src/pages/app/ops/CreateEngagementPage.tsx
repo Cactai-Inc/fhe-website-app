@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { toErrorMessage } from '../../../lib/ops/errors';
 import { useNavigate } from 'react-router-dom';
 import { ModuleGate, useAsync } from '../../../lib/ops';
 import { useModules } from '../../../lib/ops/useModules';
@@ -93,7 +94,7 @@ export function CreateEngagementPage() {
         navigate(`/app/ops/engagements/${id}`);
       } catch (err) {
         setFormError(
-          err instanceof Error ? err.message : 'Could not create the engagement.',
+          toErrorMessage(err, 'Could not create the engagement.'),
         );
       }
     },

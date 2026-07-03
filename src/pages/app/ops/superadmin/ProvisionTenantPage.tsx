@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { toErrorMessage } from '../../../../lib/ops/errors';
 import { FormField, AsyncButton, useAsync, useToast } from '../../../../lib/ops';
 import { useAuth } from '../../../../contexts/AuthContext';
 import {
@@ -160,7 +161,7 @@ export function ProvisionTenantPage() {
       setResult({ orgId: org_id, missing });
       toast.success('Tenant provisioned');
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'Could not provision the tenant.');
+      setSubmitError(toErrorMessage(err, 'Could not provision the tenant.'));
       throw err;
     }
   }

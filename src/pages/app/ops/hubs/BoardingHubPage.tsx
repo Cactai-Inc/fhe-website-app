@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { toErrorMessage } from '../../../../lib/ops/errors';
 import { Link } from 'react-router-dom';
 import { ModuleGate, Money } from '../../../../lib/ops';
 import { useModules } from '../../../../lib/ops/useModules';
@@ -54,7 +55,7 @@ export function BoardingHubPage() {
         if (active) setKpis(k);
       })
       .catch((err: unknown) => {
-        if (active) setError(err instanceof Error ? err.message : 'Could not load boarding KPIs.');
+        if (active) setError(toErrorMessage(err, 'Could not load boarding KPIs.'));
       })
       .finally(() => {
         if (active) setLoading(false);

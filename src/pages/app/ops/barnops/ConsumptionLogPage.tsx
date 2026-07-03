@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { toErrorMessage } from '../../../../lib/ops/errors';
 import type { FormEvent } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { DataTable, FormField, ModuleGate, useToast } from '../../../../lib/ops';
@@ -70,7 +71,7 @@ export default function ConsumptionLogPage() {
       setLots(lo);
       setHorses(ho);
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : 'Could not load the consumption log.');
+      setLoadError(toErrorMessage(err, 'Could not load the consumption log.'));
     } finally {
       setLoading(false);
     }
@@ -120,7 +121,7 @@ export default function ConsumptionLogPage() {
       setOccurredAt('');
       setNotes('');
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Could not log consumption.');
+      setFormError(toErrorMessage(err, 'Could not log consumption.'));
     } finally {
       setSubmitting(false);
     }

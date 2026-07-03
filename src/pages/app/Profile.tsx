@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { toErrorMessage } from '../../lib/ops/errors';
 import { useAuth } from '../../contexts/AuthContext';
 import { upsertMyProfile, uploadMyAvatar } from '../../lib/api';
 import { listLinkedProviders, linkOAuthIdentity } from '../../lib/auth';
@@ -42,7 +43,7 @@ export default function Profile() {
       const url = await uploadMyAvatar(file);
       setAvatarUrl(url); // saved with the form; preview updates immediately
     } catch (err) {
-      setUploadError(err instanceof Error ? err.message : 'Upload failed.');
+      setUploadError(toErrorMessage(err, 'Upload failed.'));
     } finally {
       setUploading(false);
       e.target.value = '';

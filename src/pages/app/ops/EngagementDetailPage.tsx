@@ -13,6 +13,7 @@
  * Loading, not-found, error and success branches all render.
  */
 import { useEffect, useState } from 'react';
+import { toErrorMessage } from '../../../lib/ops/errors';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { getEngagement } from '../../../lib/api';
 import { useDocumentTitle } from '../../../lib/hooks';
@@ -40,7 +41,7 @@ export default function EngagementDetailPage() {
         if (active) setEngagement(row);
       })
       .catch((err: unknown) => {
-        if (active) setError(err instanceof Error ? err.message : 'Could not load engagement.');
+        if (active) setError(toErrorMessage(err, 'Could not load engagement.'));
       })
       .finally(() => {
         if (active) setLoading(false);

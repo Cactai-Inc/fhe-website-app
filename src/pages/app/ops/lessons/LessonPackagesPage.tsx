@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { toErrorMessage } from '../../../../lib/ops/errors';
 import type { FormEvent } from 'react';
 import { DataTable, FormField, Modal, ModuleGate, StatusBadge, useAsync, useToast } from '../../../../lib/ops';
 import type { Column } from '../../../../lib/ops';
@@ -241,7 +242,7 @@ export function LessonPackagesPage() {
       setDrawer({ mode: 'closed' });
     } catch (err) {
       // Error branch: keep the modal open, surface the message.
-      setFormError(err instanceof Error ? err.message : 'Could not save the package.');
+      setFormError(toErrorMessage(err, 'Could not save the package.'));
     }
   };
 

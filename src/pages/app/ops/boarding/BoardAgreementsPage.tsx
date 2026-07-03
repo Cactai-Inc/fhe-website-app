@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { toErrorMessage } from '../../../../lib/ops/errors';
 import type { FormEvent } from 'react';
 import {
   DataTable,
@@ -262,7 +263,7 @@ export function BoardAgreementsPage() {
       setContacts(c);
       setStalls(s);
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : 'Could not load board agreements.');
+      setLoadError(toErrorMessage(err, 'Could not load board agreements.'));
     } finally {
       setLoading(false);
     }
@@ -284,7 +285,7 @@ export function BoardAgreementsPage() {
       toast.success('Board agreement created.');
       setCreateOpen(false);
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Could not create the agreement.');
+      setFormError(toErrorMessage(err, 'Could not create the agreement.'));
     }
   };
 
@@ -294,7 +295,7 @@ export function BoardAgreementsPage() {
       setAgreements((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
       toast.success(`Agreement ${next.toLowerCase()}.`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not update the agreement.');
+      toast.error(toErrorMessage(err, 'Could not update the agreement.'));
     }
   };
 

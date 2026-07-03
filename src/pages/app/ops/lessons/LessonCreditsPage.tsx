@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { toErrorMessage } from '../../../../lib/ops/errors';
 import type { FormEvent } from 'react';
 import { DataTable, FormField, Modal, ModuleGate, useAsync, useToast } from '../../../../lib/ops';
 import type { Column, RowAction } from '../../../../lib/ops';
@@ -186,7 +187,7 @@ export function LessonCreditsPage() {
       setClients(clientRows);
       setPackages(packageRows);
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : 'Could not load lesson credits.');
+      setLoadError(toErrorMessage(err, 'Could not load lesson credits.'));
     } finally {
       setLoading(false);
     }
@@ -205,7 +206,7 @@ export function LessonCreditsPage() {
     try {
       setRows(await listLessonCredits(clientId || undefined));
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : 'Could not load lesson credits.');
+      setLoadError(toErrorMessage(err, 'Could not load lesson credits.'));
     } finally {
       setLoading(false);
     }
@@ -239,7 +240,7 @@ export function LessonCreditsPage() {
       setDrawer({ mode: 'closed' });
     } catch (err) {
       // Error branch: keep the modal open, surface the message.
-      setFormError(err instanceof Error ? err.message : 'Could not grant credits.');
+      setFormError(toErrorMessage(err, 'Could not grant credits.'));
     }
   };
 
@@ -249,7 +250,7 @@ export function LessonCreditsPage() {
       setRows((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
       toast.success(`1 credit used — ${updated.credits_remaining} remaining.`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not use a credit.');
+      toast.error(toErrorMessage(err, 'Could not use a credit.'));
     }
   };
 

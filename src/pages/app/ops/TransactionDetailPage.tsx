@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { toErrorMessage } from '../../../lib/ops/errors';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { getTransaction } from '../../../lib/api';
 import { useDocumentTitle } from '../../../lib/hooks';
@@ -56,7 +57,7 @@ export default function TransactionDetailPage() {
         if (active) setTxn((row as unknown as TransactionDetail | null) ?? null);
       })
       .catch((err: unknown) => {
-        if (active) setError(err instanceof Error ? err.message : 'Could not load transaction.');
+        if (active) setError(toErrorMessage(err, 'Could not load transaction.'));
       })
       .finally(() => {
         if (active) setLoading(false);

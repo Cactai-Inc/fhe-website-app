@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { toErrorMessage } from '../../../../lib/ops/errors';
 import { ModuleGate, DataTable, Modal, FormField, AsyncButton, useAsync, useToast } from '../../../../lib/ops';
 import { useModules } from '../../../../lib/ops/useModules';
 import {
@@ -50,7 +51,7 @@ export function SchedulePage() {
     try {
       setEntries(await listTimeEntriesForShift(shift.id));
     } catch (err) {
-      setEntryError(err instanceof Error ? err.message : 'Could not load time entries.');
+      setEntryError(toErrorMessage(err, 'Could not load time entries.'));
     }
   }
 
@@ -72,7 +73,7 @@ export function SchedulePage() {
       setShiftForm({ staff_profile_id: '', starts_at: '', ends_at: '', role: '' });
       await shifts.run();
     } catch (err) {
-      setShiftError(err instanceof Error ? err.message : 'Could not create the shift.');
+      setShiftError(toErrorMessage(err, 'Could not create the shift.'));
       throw err;
     }
   }
@@ -95,7 +96,7 @@ export function SchedulePage() {
       setEntryForm({ clock_in: '', clock_out: '' });
       setEntries(await listTimeEntriesForShift(entriesFor.id));
     } catch (err) {
-      setEntryError(err instanceof Error ? err.message : 'Could not record the entry.');
+      setEntryError(toErrorMessage(err, 'Could not record the entry.'));
       throw err;
     }
   }

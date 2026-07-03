@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { toErrorMessage } from '../../../../lib/ops/errors';
 import { Link, useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import {
@@ -342,7 +343,7 @@ export function HorseHealthPage() {
       toast.success('Care team updated.');
       setModal({ mode: 'closed' });
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Could not save the care team.');
+      setFormError(toErrorMessage(err, 'Could not save the care team.'));
     }
   };
 
@@ -354,7 +355,7 @@ export function HorseHealthPage() {
       toast.success('Health event logged.');
       setModal({ mode: 'closed' });
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Could not log the event.');
+      setFormError(toErrorMessage(err, 'Could not log the event.'));
     }
   };
 

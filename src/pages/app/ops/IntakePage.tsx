@@ -14,6 +14,7 @@
  * a gate rejection surfaces on the drawer's error branch — nothing is faked.
  */
 import { useCallback, useEffect, useState } from 'react';
+import { toErrorMessage } from '../../../lib/ops/errors';
 import { Link } from 'react-router-dom';
 import { DataTable, Modal, StatusBadge, useAsync, useToast } from '../../../lib/ops';
 import type { Column } from '../../../lib/ops';
@@ -134,7 +135,7 @@ export function IntakePage() {
       await refresh(statusFilter);
     } catch (err) {
       // Error branch: keep the drawer open, surface the message.
-      setActionError(err instanceof Error ? err.message : 'Could not update submission.');
+      setActionError(toErrorMessage(err, 'Could not update submission.'));
     }
   };
 
@@ -146,7 +147,7 @@ export function IntakePage() {
       setSelected(null);
       await refresh(statusFilter);
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Could not convert submission.');
+      setActionError(toErrorMessage(err, 'Could not convert submission.'));
     }
   };
 

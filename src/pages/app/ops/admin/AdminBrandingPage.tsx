@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { toErrorMessage } from '../../../../lib/ops/errors';
 import { FormField, AsyncButton, useAsync, useToast } from '../../../../lib/ops';
 import {
   listBrandingValues, upsertConfigValue, uploadBrandingAsset,
@@ -69,7 +70,7 @@ export function AdminBrandingPage() {
       const rows = await branding.run();
       setForm(brandMap(rows));
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'Could not save branding.');
+      setSaveError(toErrorMessage(err, 'Could not save branding.'));
       throw err;
     }
   }
@@ -93,7 +94,7 @@ export function AdminBrandingPage() {
       const rows = await branding.run();
       setForm(brandMap(rows));
     } catch (err) {
-      setLogoError(err instanceof Error ? err.message : 'Could not upload the logo.');
+      setLogoError(toErrorMessage(err, 'Could not upload the logo.'));
       throw err;
     }
   }

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { toErrorMessage } from '../../../../lib/ops/errors';
 import type { FormEvent } from 'react';
 import {
   DataTable,
@@ -246,7 +247,7 @@ export function FacilitiesPage() {
       setFacilities(f);
       setStalls(s);
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : 'Could not load facilities.');
+      setLoadError(toErrorMessage(err, 'Could not load facilities.'));
     } finally {
       setLoading(false);
     }
@@ -280,7 +281,7 @@ export function FacilitiesPage() {
       toast.success(editing ? 'Facility updated.' : 'Facility created.');
       setModal({ mode: 'closed' });
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Could not save facility.');
+      setFormError(toErrorMessage(err, 'Could not save facility.'));
     }
   };
 
@@ -295,7 +296,7 @@ export function FacilitiesPage() {
       toast.success(editing ? 'Stall updated.' : 'Stall created.');
       setModal({ mode: 'closed' });
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Could not save stall.');
+      setFormError(toErrorMessage(err, 'Could not save stall.'));
     }
   };
 
