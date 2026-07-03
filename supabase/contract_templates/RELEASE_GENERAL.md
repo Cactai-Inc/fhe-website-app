@@ -1,3 +1,4 @@
+
 GENERAL VISITOR LIABILITY RELEASE, ASSUMPTION OF RISK, HOLD HARMLESS & INDEMNIFICATION AGREEMENT
 
 Effective from the Date of Signature until superseded by a later executed version of this Release
@@ -19,52 +20,29 @@ Visitor understands that merely being present at an equestrian facility involves
 2. ACKNOWLEDGMENT OF INHERENT RISKS
 
 Visitor understands and acknowledges that risks include, but are not limited to:
-
 Horses may kick, bite, buck, rear, bolt, stumble, fall, step sideways, spook, or otherwise behave unpredictably.
-
 Horses may react suddenly to people, animals, sounds, vehicles, weather, or other stimuli.
-
 Visitors may be stepped on, struck, pinned, knocked down, or injured by horses or equipment.
-
 Gates, fences, trailers, tack, tools, machinery, and agricultural equipment may present hazards.
-
 Ground conditions may include mud, rocks, holes, uneven footing, irrigation, slippery surfaces, dust, and other natural hazards.
-
 Risks may arise from the actions or omissions of other visitors, participants, horse owners, or third parties.
-
 Emergency medical assistance may not be immediately available.
-
 Visitor understands these risks are inherent to equestrian facilities and voluntarily accepts them.
 
 3. ASSUMPTION OF RISK
 
-Visitor knowingly and voluntarily assumes all risks, whether known or unknown, foreseeable or unforeseeable, inherent or otherwise, arising from entering, remaining upon, or departing from any property where COMPANY conducts business.
-
-Visitor accepts full personal responsibility for any injury, illness, death, property damage, or other loss that may occur.
+Visitor knowingly and voluntarily assumes all risks, whether known or unknown, foreseeable or unforeseeable, inherent or otherwise, arising from entering, remaining upon, or departing from any property where COMPANY conducts business. Visitor accepts full personal responsibility for any injury, illness, death, property damage, or other loss that may occur.
 
 4. HEALTH, MENTAL CAPACITY, AND FITNESS
 
 Visitor represents and warrants that:
-
-Visitor is in good physical health.
-
-Visitor is of sound mind.
-
-Visitor is not under the influence of alcohol, illegal drugs, or any medication that would impair judgment or physical ability.
-
-Visitor has no known medical condition, disability, impairment, restriction, or limitation that would prevent Visitor from safely protecting himself or herself or avoiding injury to others while present on the property.
-
-Visitor voluntarily assumes responsibility for determining whether participation or presence is appropriate.
+Visitor is in good physical health. Visitor is of sound mind. Visitor is not under the influence of alcohol, illegal drugs, or any medication that would impair judgment or physical ability. Visitor has no medical condition, disability, impairment, restriction, or limitation that would prevent Visitor from safely protecting themself or avoiding injury to others while present on the property. Visitor voluntarily assumes responsibility for determining whether participation or presence is appropriate.
 
 If Visitor is signing on behalf of a minor, Parent or Guardian represents these statements are true to the best of his or her knowledge.
 
 5. RULES, SAFETY POLICIES & CODE OF CONDUCT
 
-Visitor acknowledges receipt of the separate Rules, Regulations, Safety Policies, and Code of Conduct for COMPANY.
-
-Visitor agrees to read, understand, and comply with those rules at all times.
-
-Visitor understands that failure to comply may result in immediate removal from the property without refund or compensation.
+Visitor acknowledges receipt of the separate Rules, Regulations, Safety Policies, and Code of Conduct for COMPANY. Visitor agrees to read, understand, and comply with those rules at all times. Visitor understands that failure to comply may result in immediate removal from the property without refund or compensation.
 
 6. RELEASE OF LIABILITY
 
@@ -74,15 +52,7 @@ This release applies to bodily injury, personal injury, illness, property damage
 
 7. HOLD HARMLESS AND INDEMNIFICATION
 
-Visitor agrees to defend, indemnify, and hold harmless the Released Parties from and against any claims, liabilities, damages, judgments, costs, expenses, or attorney's fees arising from:
-
-Visitor's acts or omissions;
-
-Visitor's violation of this Agreement or property rules;
-
-Claims brought by or on behalf of persons accompanying Visitor, to the extent caused by Visitor's conduct; or
-
-Damage to property caused by Visitor.
+Visitor agrees to defend, indemnify, and hold harmless the Released Parties from and against any claims, liabilities, damages, judgments, costs, expenses, or attorney's fees arising from: Visitor's acts or omissions; Visitor's violation of this Agreement or property rules; Claims brought by or on behalf of persons accompanying Visitor, to the extent caused by Visitor's conduct; or Damage to property caused by Visitor.
 
 8. PROPERTY DAMAGE
 
@@ -90,11 +60,7 @@ Visitor accepts responsibility for any damage caused by Visitor to horses, equip
 
 9. MEDIA CONSENT
 
-Visitor acknowledges that photographs, video recordings, and other media may be captured during visits to, or activities at, any location where COMPANY conducts business.
-
-Visitor grants COMPANY a perpetual, royalty-free license to use such media, including Visitor's (or, where applicable, the minor's) name, image, and likeness, for instructional, promotional, and other lawful business purposes, without compensation.
-
-Visitor may revoke this consent at any time by written notice via email to {{ORG.EMAIL}}; revocation is effective prospectively as to media captured after receipt of the notice.
+Visitor acknowledges that photographs, video recordings, and other media may be captured during visits to, or activities at, any location where COMPANY conducts business. Visitor grants COMPANY a perpetual, royalty-free license to use such media, including Visitor's (or, where applicable, the minor's) name, image, and likeness, for instructional, promotional, and other lawful business purposes, without compensation. Visitor may revoke this consent at any time by written notice via email to {{ORG.EMAIL}}; revocation is effective prospectively as to media captured after receipt of the notice.
 
 10. DISPUTE RESOLUTION
 
@@ -120,44 +86,26 @@ This Agreement constitutes the entire understanding between the parties concerni
 
 Visitor acknowledges that:
 
-This Agreement is legally binding.
-
-Visitor has carefully read the entire Agreement.
-
-Visitor understands its contents.
-
-Visitor has had the opportunity to ask questions before signing.
-
-Visitor signs voluntarily and without coercion.
+This Agreement is legally binding. Visitor has carefully read the entire Agreement. Visitor understands its contents. Visitor has had the opportunity to ask questions before signing. Visitor signs voluntarily and without coercion.
 
 ADULT SIGNER
 
-Printed Name: {{PARTICIPANT.PRINTED_NAME}}
-
-Signature: {{SIG.PARTICIPANT.NAME}}
-
 Date: {{SIG.PARTICIPANT.DATE}}
-
+Printed Name: {{PARTICIPANT.PRINTED_NAME}}
+Signature: {{SIG.PARTICIPANT.NAME}}
 Phone: {{PARTICIPANT.PHONE}}
-
 Email: {{PARTICIPANT.EMAIL}}
 
 MINOR SIGNER (PARENT/GUARDIAN)
 
 Minor's Name: {{PARTICIPANT.FULL_NAME}}
-
 Date of Birth:
 
 I certify that I am the parent or legal guardian of the above-named minor and have authority to sign this Agreement on the minor's behalf. I have read and understand this Agreement, consent to the minor's presence on the property, agree to all of its terms, and agree to indemnify and hold harmless the Released Parties from claims arising from the minor's presence or activities to the extent permitted by California law.
 
-Parent/Guardian Name: {{GUARDIAN.FULL_NAME}}
-
-Relationship to Minor: {{GUARDIAN.RELATIONSHIP}}
-
-Signature: {{SIG.GUARDIAN.NAME}}
-
 Date: {{SIG.GUARDIAN.DATE}}
-
+Parent/Guardian Name: {{GUARDIAN.FULL_NAME}}
+Signature: {{SIG.GUARDIAN.NAME}}
+Relationship to Minor: {{GUARDIAN.RELATIONSHIP}}
 Phone: {{GUARDIAN.PHONE}}
-
 Email: {{GUARDIAN.EMAIL}}
