@@ -147,6 +147,13 @@ export default function Release() {
         rules_acknowledged: rulesOk,
       });
       setResult(r);
+      // Best-effort delivery: email the executed copy to the signer and the
+      // company inbox. Never blocks the signed confirmation.
+      fetch('/api/deliver-document', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ documentId: r.document_id }),
+      }).catch(() => { /* the document is safely stored either way */ });
     } catch {
       setError('We could not record your signature. Please try again or see a staff member.');
     } finally {
@@ -176,6 +183,7 @@ export default function Release() {
                 </h2>
                 <p className="body-text text-sm mb-2">
                   Signed by {fullName} · Document {result.document_code}
+                  {email.trim() !== '' && ' · A copy is on its way to your email'}
                 </p>
                 <p className="body-text text-sm text-secondary">
                   Your release is fully executed. Enjoy your visit.

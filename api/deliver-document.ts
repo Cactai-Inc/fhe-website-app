@@ -50,7 +50,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // 1. Load the document (status + org + title). No delivery unless EXECUTED.
     const { data: doc, error: docErr } = await db
       .from('documents')
-      .select('id, engagement_id, org_id, status, title')
+      .select('id, engagement_id, org_id, status, title, display_code, merged_body')
       .eq('id', documentId)
       .maybeSingle();
     if (docErr) throw docErr;
@@ -101,7 +101,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const footerHtml = identity.footer
         ? `<hr/><p style="color:#666;font-size:12px;white-space:pre-line">${identity.footer}</p>`
         : '';
-      const html = `${inner}<p><a href="${copyUrl}">View your executed copy</a></p>${footerHtml}`;
+      const docHtml = doc.merged_body
+        ? `<hr/><p style="color:#666;font-size:12px">Document ${doc.display_code ?? ''}</p><pre style="font-family:inherit;white-space:pre-wrap">${doc.merged_body}</pre>`
+        : '';
+      const html = `${inner}${docHtml}${footerHtml}`;
 
       const sent = await sendViaProvider({
         to: email,
@@ -126,7 +129,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       delivered.push({ recipientContactId: party.contact_id, channel: CHANNEL, emailed: true });
     }
 
-    return res.status(200).json({ delivered, status: doc.status });
+    // 6. Company copy: notify the org's public inbox once per document (skip if
+    //    the inbox already received a party copy; best-effort, never fails the call).
+    let companyNotified = false;
+    const partyEmails = new Set(parties.map((p) => p.contacts?.email?.toLowerCase()).filter(Boolean));
+    if (identity.contactEmail && !partyEmails.has(identity.contactEmail.toLowerCase()) && delivered.length > 0) {
+      const signers = parties
+        .map((p) => [p.contacts?.first_name, p.contacts?.last_name].filter(Boolean).join(' '))
+        .filter(Boolean)
+        .join(', ');
+      const notice = await sendViaProvider({
+        to: identity.contactEmail,
+        fromName: identity.fromName,
+        fromEmail: identity.fromEmail,
+        subject: `Signed: ${doc.title} (${doc.display_code ?? documentId.slice(0, 8)})`,
+        html: `<p>${signers || 'A signer'} executed <strong>${doc.title}</strong>.</p>`
+          + (doc.merged_body ? `<pre style="font-family:inherit;white-space:pre-wrap">${doc.merged_body}</pre>` : ''),
+      });
+      companyNotified = notice.ok;
+    }
+
+    return res.status(200).json({ delivered, companyNotified, status: doc.status });
   } catch (err) {
     console.error('deliver-document error', err);
     return res.status(500).json({ error: 'could not deliver document' });

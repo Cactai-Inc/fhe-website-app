@@ -175,14 +175,16 @@ describe('POST /api/deliver-document', () => {
       expect(d.org_id).toBe('org-fhe');
     }
 
-    // One provider call per party, tenant-correct brand + executed-contract template.
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    // One provider call per party + ONE company notification copy, tenant-correct brand + executed-contract template.
+    expect(fetchMock).toHaveBeenCalledTimes(3); // 2 parties + 1 company notice
     const recipients = fetchMock.mock.calls.map((c) => JSON.parse((c[1] as RequestInit).body as string).to).sort();
-    expect(recipients).toEqual(['buyer@example.com', 'seller@example.com']);
+    expect(recipients).toEqual(['buyer@example.com', 'hello@fhe.test', 'seller@example.com']);
     const first = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
     expect(first.from).toBe('French Heritage Equestrian <notifications@platform.test>');
     expect(first.subject.toLowerCase()).toContain('executed');
-    expect(first.html).toContain('/portal/documents/doc-1');
+    // Dead /portal link removed: the executed text ships inline when present
+    // (mock doc has no merged_body, so just the notice + footer).
+    expect(first.html).not.toContain('/portal/');
     expect(first.html).toContain('French Heritage Equestrian LLC'); // footer from the doc's org
   });
 
@@ -223,7 +225,7 @@ describe('POST /api/deliver-document', () => {
     const first = makeRes();
     await handler(makeReq({ documentId: 'doc-1' }), first);
     expect(insertedDeliveries).toHaveLength(2);
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenCalledTimes(3); // 2 parties + 1 company notice
 
     // Second run: deliveries already exist -> nothing new.
     const second = makeRes();
@@ -231,7 +233,7 @@ describe('POST /api/deliver-document', () => {
     expect(second.statusCode).toBe(200);
     expect(second.body.delivered).toHaveLength(0);
     expect(insertedDeliveries).toHaveLength(2); // still 2 total
-    expect(fetchMock).toHaveBeenCalledTimes(2); // no extra mail
+    expect(fetchMock).toHaveBeenCalledTimes(3); // no extra mail (company notice fired once, on the first call)
     expect(state.deliveries).toHaveLength(2);
   });
 
