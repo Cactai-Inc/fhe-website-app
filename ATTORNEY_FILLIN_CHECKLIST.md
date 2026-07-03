@@ -329,3 +329,4 @@ the legal text lives in the `.md` bodies and merges through data, not code.
   text; variants are seeded for `buyer`/`seller`/`owner`/`lessee`/`lessor`. A
   stage recorded with any other word merges blank DIR terms (visible in review,
   never wrong terminology).
+- FACILITY_RULES: dispute-resolution, attorney's fees, and governing-law sections removed per owner 2026-07-02 (rules doc is an acknowledgment; legal machinery lives in the releases/agreements). Counsel to confirm.

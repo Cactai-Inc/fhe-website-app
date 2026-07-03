@@ -192,24 +192,6 @@ Failure to follow instructions;
 
 Conduct harmful to horses, people, or property.
 
-DISPUTE RESOLUTION
-
-Disputes shall be resolved by:
-
-□ Arbitration
-
-□ Litigation
-
-Venue shall be San Diego County, California.
-
-ATTORNEY’S FEES
-
-The prevailing party shall be entitled to reasonable attorney’s fees and costs where permitted by law.
-
-GOVERNING LAW
-
-California law governs this Agreement.
-
 ENTIRE AGREEMENT
 
 This Agreement represents the entire understanding regarding facility rules and safety obligations.
