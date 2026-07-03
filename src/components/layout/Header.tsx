@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, ShoppingBag } from 'lucide-react';
 import { useCart } from '../../contexts/CartContext';
@@ -11,6 +12,7 @@ const NAV_LINKS = [
 ];
 
 export default function Header() {
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
@@ -98,6 +100,16 @@ export default function Header() {
         {/* Right side */}
         <div className="flex items-center gap-4">
           {cartLink('hidden sm:flex')}
+
+          {/* Member entrance — appears only for signed-in members/staff */}
+          {user && (
+            <Link
+              to="/app"
+              className="hidden md:inline-flex text-xs font-sans tracking-widest uppercase text-gold-400 hover:text-gold-200 transition-colors focus-ring-dark"
+            >
+              Member Area
+            </Link>
+          )}
 
           {/* Secondary contact link */}
           <Link

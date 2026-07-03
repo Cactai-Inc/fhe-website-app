@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import { MapPin, Phone, Mail } from 'lucide-react';
 import { BRAND } from '../../lib/brand';
 
 export default function Footer() {
+  const { user } = useAuth();
   return (
     <footer className="bg-green-900 text-white">
 
@@ -97,12 +99,13 @@ export default function Footer() {
           </p>
           <div className="flex items-center gap-5">
             <p className="text-xs font-sans text-white/[0.6]">San Diego, California</p>
-            {/* Discreet member entrance — invite-only, intentionally low-key. */}
+            {/* Discreet member entrance — invite-only, intentionally low-key.
+                Signed-in members get the door straight into the app. */}
             <Link
-              to="/login"
+              to={user ? '/app' : '/login'}
               className="text-xs font-sans text-white/[0.45] hover:text-white/80 transition-colors focus-ring-dark"
             >
-              Member sign-in
+              {user ? 'Member area' : 'Member sign-in'}
             </Link>
           </div>
         </div>
