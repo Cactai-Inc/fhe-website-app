@@ -63,14 +63,14 @@ export function DataTable<T>({
           {columns.map((col) => (
             <th
               key={col.key}
-              className={`py-2.5 px-3 form-label mb-0 ${col.className ?? ''}`}
+              className={`py-2.5 px-3 text-xs font-sans font-medium tracking-wide uppercase text-green-800/[0.85] ${col.className ?? ''}`}
               scope="col"
             >
               {col.header}
             </th>
           ))}
           {rowActions && rowActions.length > 0 && (
-            <th className="py-2.5 px-3 text-right form-label mb-0" scope="col">
+            <th className="py-2.5 px-3 text-right text-xs font-sans font-medium tracking-wide uppercase text-green-800/[0.85]" scope="col">
               <span className="sr-only">Actions</span>
             </th>
           )}

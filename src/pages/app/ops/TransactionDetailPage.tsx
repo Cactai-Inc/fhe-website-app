@@ -147,16 +147,16 @@ export default function TransactionDetailPage() {
                   <table className="w-full text-left text-sm border-collapse">
                     <thead>
                       <tr className="border-b border-green-800/15">
-                        <th scope="col" className="py-2.5 px-3 form-label mb-0">
+                        <th scope="col" className="py-2.5 px-3 text-xs font-sans font-medium tracking-wide uppercase text-green-800/[0.85]">
                           Source
                         </th>
-                        <th scope="col" className="py-2.5 px-3 form-label mb-0 text-right">
+                        <th scope="col" className="py-2.5 px-3 text-xs font-sans font-medium tracking-wide uppercase text-green-800/[0.85] text-right">
                           Qty
                         </th>
-                        <th scope="col" className="py-2.5 px-3 form-label mb-0 text-right">
+                        <th scope="col" className="py-2.5 px-3 text-xs font-sans font-medium tracking-wide uppercase text-green-800/[0.85] text-right">
                           Amount
                         </th>
-                        <th scope="col" className="py-2.5 px-3 form-label mb-0">
+                        <th scope="col" className="py-2.5 px-3 text-xs font-sans font-medium tracking-wide uppercase text-green-800/[0.85]">
                           Status
                         </th>
                       </tr>
