@@ -41,7 +41,7 @@ async function makeClientWithAssets(email: string) {
 }
 
 describe('buckets', () => {
-  it('creates the eight private buckets', async () => {
+  it('creates the eight launch buckets (profile-images public-read as of 20260702080000)', async () => {
     await h.asSuperuser();
     // Scoped to migration 15's eight launch buckets: later additive migrations
     // (e.g. U13's inventory-docs/horse-health/brand-assets) add more private
@@ -54,7 +54,11 @@ describe('buckets', () => {
     const rows = await h.q<{ id: string; public: boolean }>(
       `select id, public from storage.buckets where id = any($1) order by id`, [eight]);
     expect(rows.map((r) => r.id).sort()).toEqual(eight);
-    expect(rows.every((r) => r.public === false)).toBe(true);
+    // profile-images flipped to public-READ for avatar rendering (writes remain
+    // owner-path-scoped); every other launch bucket stays private.
+    for (const r of rows) {
+      expect(r.public, r.id).toBe(r.id === 'profile-images');
+    }
   });
 });
 
