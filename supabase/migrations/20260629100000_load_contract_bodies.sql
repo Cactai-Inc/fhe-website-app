@@ -17,19 +17,7 @@ DELETE FROM template_tokens WHERE template_id IS NOT NULL;
 -- ── FACILITY_RULES ─────────────────────────────────────────────
 UPDATE contract_templates SET body = $body$FACILITY RULES, SAFETY ACKNOWLEDGMENT, AND EQUESTRIAN CONDUCT AGREEMENT
 
-This Facility Rules, Safety Acknowledgment, and Equestrian Conduct Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by and between:
-
-{{ORG.LEGAL_IDENTITY}} (“COMPANY”),
-
-and
-
-Client / Participant Name: {{CLIENT.FULL_NAME}}
-
-Address: {{CLIENT.ADDRESS}}
-
-Phone: {{CLIENT.PHONE}}
-
-Email: {{CLIENT.EMAIL}}
+This Facility Rules, Safety Acknowledgment, and Equestrian Conduct Agreement (“Agreement”) is entered into as of {{DOC.EFFECTIVE_DATE}} (“Effective Date”) by {{ORG.LEGAL_NAME}} (“COMPANY”) and the undersigned Client / Participant.
 
 RECITALS
 
@@ -205,41 +193,9 @@ EMERGENCIES
 
 Client agrees to follow emergency instructions from COMPANY personnel and facility management.
 
-ASSUMPTION OF RISK
+LIABILITY RELEASE — INCORPORATED BY REFERENCE
 
-Client acknowledges that equestrian facilities contain inherent risks including:
-
-Horses moving unexpectedly;
-
-Falls or death;
-
-Equipment failure;
-
-Animal behavior;
-
-Actions of other riders;
-
-Environmental hazards.
-
-Client voluntarily assumes these risks.
-
-RELEASE OF LIABILITY
-
-Client releases COMPANY, its owners, agents, instructors, contractors, employees, and representatives from claims arising from participation in equestrian activities, including claims arising from ordinary negligence.
-
-This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
-
-INDEMNIFICATION
-
-Client agrees to indemnify COMPANY for claims arising from:
-
-Client’s actions;
-
-Client’s guests;
-
-Client’s misuse of property;
-
-Violation of rules.
+The risk acknowledgments, releases, and indemnity obligations applicable to the activities under this Agreement are set forth exclusively in the separately executed Liability Release and Assumption of Risk agreement, which is incorporated herein by reference.
 
 TERMINATION OF ACCESS
 
@@ -277,6 +233,14 @@ This Agreement represents the entire understanding regarding facility rules and 
 
 CLIENT
 
+Client / Participant Name: {{CLIENT.FULL_NAME}}
+
+Address: {{CLIENT.ADDRESS}}
+
+Phone: {{CLIENT.PHONE}}
+
+Email: {{CLIENT.EMAIL}}
+
 Signature: {{SIG.CLIENT.NAME}}
 
 Printed Name: {{CLIENT.PRINTED_NAME}}
@@ -297,7 +261,7 @@ $body$, updated_at = now()
 INSERT INTO template_tokens (template_id, namespace, field, token, kind, required, party_scoped)
   SELECT id, 'DOC', 'EFFECTIVE_DATE', '{{DOC.EFFECTIVE_DATE}}', 'system', false, false FROM contract_templates WHERE template_key = 'FACILITY_RULES'
   UNION ALL
-  SELECT id, 'ORG', 'LEGAL_IDENTITY', '{{ORG.LEGAL_IDENTITY}}', 'field', false, false FROM contract_templates WHERE template_key = 'FACILITY_RULES'
+  SELECT id, 'ORG', 'LEGAL_NAME', '{{ORG.LEGAL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'FACILITY_RULES'
   UNION ALL
   SELECT id, 'CLIENT', 'FULL_NAME', '{{CLIENT.FULL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'FACILITY_RULES'
   UNION ALL
@@ -312,8 +276,6 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   SELECT id, 'CLIENT', 'PRINTED_NAME', '{{CLIENT.PRINTED_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'FACILITY_RULES'
   UNION ALL
   SELECT id, 'SIG', 'CLIENT.DATE', '{{SIG.CLIENT.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'FACILITY_RULES'
-  UNION ALL
-  SELECT id, 'ORG', 'LEGAL_NAME', '{{ORG.LEGAL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'FACILITY_RULES'
   UNION ALL
   SELECT id, 'SIG', 'COMPANY.NAME', '{{SIG.COMPANY.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'FACILITY_RULES'
   UNION ALL

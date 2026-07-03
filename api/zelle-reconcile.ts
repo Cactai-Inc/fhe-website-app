@@ -20,19 +20,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(401).json({ error: 'unauthorized' });
   }
 
-  const body = (typeof req.body === 'string' ? JSON.parse(req.body) : req.body) ?? {};
+  let body: Record<string, unknown>;
+  try {
+    body = (typeof req.body === 'string' ? JSON.parse(req.body) : req.body) ?? {};
+  } catch {
+    return res.status(400).json({ error: 'invalid JSON body' });
+  }
   const amount = Number(body.amount);
   if (!amount || Number.isNaN(amount)) {
     return res.status(400).json({ error: 'amount required' });
   }
 
   const notification: ParsedNotification = {
-    sender: body.sender ?? null,
+    sender: (body.sender as string | undefined) ?? null,
     amount,
-    reference: body.reference ?? null,
-    rawSubject: body.rawSubject,
-    rawBody: body.rawBody,
-    sourceInbox: body.sourceInbox,
+    reference: (body.reference as string | undefined) ?? null,
+    rawSubject: body.rawSubject as string | undefined,
+    rawBody: body.rawBody as string | undefined,
+    sourceInbox: body.sourceInbox as string | undefined,
   };
 
   try {

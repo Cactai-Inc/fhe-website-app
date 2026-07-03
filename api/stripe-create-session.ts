@@ -19,7 +19,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
   if (!token) return res.status(401).json({ error: 'unauthorized' });
 
-  const body = (typeof req.body === 'string' ? JSON.parse(req.body) : req.body) ?? {};
+  let body: Record<string, unknown>;
+  try {
+    body = (typeof req.body === 'string' ? JSON.parse(req.body) : req.body) ?? {};
+  } catch {
+    return res.status(400).json({ error: 'invalid JSON body' });
+  }
   const orderId = body.orderId as string;
   if (!orderId) return res.status(400).json({ error: 'orderId required' });
 

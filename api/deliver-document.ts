@@ -35,7 +35,12 @@ interface PartyRow {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'method not allowed' });
 
-  const body = (typeof req.body === 'string' ? JSON.parse(req.body) : req.body) ?? {};
+  let body: Record<string, unknown>;
+  try {
+    body = (typeof req.body === 'string' ? JSON.parse(req.body) : req.body) ?? {};
+  } catch {
+    return res.status(400).json({ error: 'invalid JSON body' });
+  }
   const documentId = (typeof body.documentId === 'string' ? body.documentId : '').trim();
   if (!documentId) return res.status(400).json({ error: 'documentId required' });
 

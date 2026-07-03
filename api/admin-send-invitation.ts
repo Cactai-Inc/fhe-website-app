@@ -50,8 +50,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
   if (!token) return res.status(401).json({ error: 'unauthorized' });
 
-  const body = (typeof req.body === 'string' ? JSON.parse(req.body) : req.body) ?? {};
-  const email = (body.email as string || '').trim();
+  let body: Record<string, unknown>;
+  try {
+    body = (typeof req.body === 'string' ? JSON.parse(req.body) : req.body) ?? {};
+  } catch {
+    return res.status(400).json({ error: 'invalid JSON body' });
+  }
+  const email = ((body.email as string) || '').trim();
   if (!email) return res.status(400).json({ error: 'email required' });
 
   try {
@@ -61,8 +66,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { data: userData, error: userErr } = await db.auth.getUser(token);
     if (userErr || !userData.user) return res.status(401).json({ error: 'unauthorized' });
     const { data: profile } = await db
-      .from('profiles').select('is_admin, org_id').eq('user_id', userData.user.id).maybeSingle();
-    if (!profile?.is_admin) return res.status(403).json({ error: 'forbidden' });
+      .from('profiles').select('is_admin, role, org_id').eq('user_id', userData.user.id).maybeSingle();
+    const isAdmin = profile?.is_admin || profile?.role === 'ADMIN' || profile?.role === 'SUPER_ADMIN';
+    if (!isAdmin) return res.status(403).json({ error: 'forbidden' });
 
     const days = Number(body.expiresInDays) > 0 ? Number(body.expiresInDays) : 7;
     const expiresAt = new Date(Date.now() + days * 86400000).toISOString();
