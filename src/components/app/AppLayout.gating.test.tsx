@@ -7,10 +7,26 @@
  *    employees) shows Lessons + Brokerage nav and HIDES Boarding/Barn Ops/Employees —
  *    the manual acceptance criterion, driven by the real hasModule() the layout reads.
  *  - ROLE GATE: the Admin link appears only for isAdmin.
+ *  - COMMUNITY SOFT-HIDE (progressive disclosure, BOOKING_FLOWS_PLAN §1):
+ *    Chat/Threads/Members are hidden from non-admin members at launch; admins
+ *    still see them and the routes stay registered.
  *  - No dead ends: the Sign out button fires the real signOut fn and then navigates.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderWithRouter, screen, userEvent, within } from '../../test/render';
+
+// The layout's notifications bell polls the api on mount — keep it quiet here
+// (the bell has its own wiring test in AppLayout.notifications.test.tsx).
+vi.mock('../../lib/api', async (importOriginal) => {
+  const real = await importOriginal<typeof import('../../lib/api')>();
+  return {
+    ...real,
+    myUnreadCount: vi.fn().mockResolvedValue(0),
+    myNotifications: vi.fn().mockResolvedValue([]),
+    markNotificationRead: vi.fn().mockResolvedValue(undefined),
+  };
+});
+
 import AppLayout, { visibleNav, visibleOpsNav } from './AppLayout';
 
 const signOut = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
@@ -51,6 +67,20 @@ describe('visibleNav() — the pure gating predicate (member nav)', () => {
     expect(labels).toContain('Lessons');        // entitled module page
     expect(labels).not.toContain('Brokerage');  // not entitled
     expect(labels).not.toContain('Boarding');
+  });
+
+  it('soft-hides the community surfaces (Chat/Threads/Members) from non-admins, keeps them for admins', () => {
+    const has = () => true;
+    const memberLabels = visibleNav(has, false).map((i) => i.label);
+    expect(memberLabels).not.toContain('Chat board');
+    expect(memberLabels).not.toContain('Threads');
+    expect(memberLabels).not.toContain('Members');
+    expect(memberLabels).toContain('Messages'); // NOT part of the launch soft-hide
+
+    const adminLabels = visibleNav(has, true).map((i) => i.label);
+    expect(adminLabels).toContain('Chat board');
+    expect(adminLabels).toContain('Threads');
+    expect(adminLabels).toContain('Members');
   });
 });
 
@@ -106,6 +136,25 @@ describe('AppLayout nav — module gate (FHE acceptance)', () => {
     renderWithRouter(<AppLayout />, { route: '/app' });
     const nav = screen.getAllByRole('navigation', { name: 'Member area' })[0];
     expect(within(nav).queryByRole('link', { name: /Ops Dashboard/ })).not.toBeInTheDocument();
+  });
+
+  it('community soft-hide: a non-admin member gets no Chat/Threads/Members links; an admin does', () => {
+    setAuth(['mod.lessons', 'mod.brokerage'], false);
+    renderWithRouter(<AppLayout />, { route: '/app' });
+    const hrefs = navHrefs();
+    for (const absent of ['/app/chat', '/app/threads', '/app/members']) {
+      expect(hrefs, absent).not.toContain(absent);
+    }
+    expect(hrefs).toContain('/app/messages');
+  });
+
+  it('community soft-hide: an admin still sees Chat/Threads/Members', () => {
+    setAuth(['mod.lessons', 'mod.brokerage'], true);
+    renderWithRouter(<AppLayout />, { route: '/app' });
+    const hrefs = navHrefs();
+    for (const present of ['/app/chat', '/app/threads', '/app/members']) {
+      expect(hrefs, present).toContain(present);
+    }
   });
 });
 

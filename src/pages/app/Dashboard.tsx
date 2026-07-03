@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, FileText, GraduationCap, Pin } from 'lucide-react';
+import { ArrowRight, FileText, GraduationCap, Pin, Sparkles, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useDocumentTitle } from '../../lib/hooks';
 import { fetchAnnouncements, fetchEvents } from '../../lib/community';
@@ -14,14 +14,31 @@ function planQuantity(p: NonNullable<OnboardingState['purchase']>): string | nul
   return null;
 }
 
+/** Dashboard state machine (BOOKING_FLOWS_PLAN §6): once every onboarding doc
+ *  is EXECUTED and the purchase is paid, the "what to expect at your first
+ *  visit" card shows — until the member dismisses it. */
+const FIRST_VISIT_DISMISS_KEY = 'fhe-first-visit-card-dismissed';
+
+function isAllSet(s: OnboardingState | null): boolean {
+  return Boolean(
+    s && !s.needed
+    && s.documents.length > 0
+    && s.documents.every((d) => d.status === 'EXECUTED')
+    && s.purchase?.paid,
+  );
+}
+
 export default function Dashboard() {
   useDocumentTitle('Members');
-  const { profile } = useAuth();
+  const { profile, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [events, setEvents] = useState<CommunityEvent[]>([]);
   const [onboarding, setOnboarding] = useState<OnboardingState | null>(null);
   const [loading, setLoading] = useState(true);
+  const [firstVisitDismissed, setFirstVisitDismissed] = useState(
+    () => Boolean(window.localStorage.getItem(FIRST_VISIT_DISMISS_KEY)),
+  );
 
   useEffect(() => {
     let active = true;
@@ -94,6 +111,46 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* All set (docs executed + paid) — first-visit expectations, until dismissed. */}
+      {isAllSet(onboarding) && !firstVisitDismissed && (
+        <div className="bg-white border border-green-800/10 p-6 mb-8" data-testid="first-visit-card">
+          <div className="flex items-start justify-between gap-4">
+            <p className="eyebrow mb-2 inline-flex items-center gap-2">
+              <Sparkles size={13} aria-hidden="true" /> You're all set
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                window.localStorage.setItem(FIRST_VISIT_DISMISS_KEY, '1');
+                setFirstVisitDismissed(true);
+              }}
+              className="p-1 -mt-1 -mr-1 text-muted hover:text-green-800 focus-ring rounded-md"
+              aria-label="Dismiss"
+            >
+              <X size={16} aria-hidden="true" />
+            </button>
+          </div>
+          <p className="font-serif text-lg text-green-800 mb-3">
+            Here's what to expect at your first visit.
+          </p>
+          <ul className="body-text text-sm flex flex-col gap-2 list-disc pl-5">
+            <li>
+              Directions arrive with your booking confirmation — plan to arrive
+              about 15 minutes early to check in.
+            </li>
+            <li>
+              Wear long pants and closed-toe boots with a heel; shorts, tank
+              tops, and loose accessories aren't permitted.
+            </li>
+            <li>
+              An ASTM/SEI-certified riding helmet is required for all mounted
+              activities — bring your own, properly fitted.
+            </li>
+            <li>Long hair should be tied back; gloves are recommended.</li>
+          </ul>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Announcements */}
         <section className="lg:col-span-2">
@@ -149,14 +206,18 @@ export default function Dashboard() {
             </Link>
           </div>
 
-          <div className="bg-green-800 text-white p-6">
-            <p className="eyebrow-on-dark mb-2">The rail</p>
-            <p className="text-sm text-white/[0.85] mb-4">Say hello to the group or start a thread.</p>
-            <div className="flex flex-col gap-2">
-              <Link to="/app/chat" className="link-underline text-gold-accent border-gold-400/40">Open the chat board <ArrowRight size={12} /></Link>
-              <Link to="/app/members" className="link-underline text-gold-accent border-gold-400/40">See who's here <ArrowRight size={12} /></Link>
+          {/* Community surfaces are soft-hidden from non-admin members at launch
+              (progressive disclosure) — same rule as the Chat/Threads/Members nav. */}
+          {isAdmin && (
+            <div className="bg-green-800 text-white p-6">
+              <p className="eyebrow-on-dark mb-2">The rail</p>
+              <p className="text-sm text-white/[0.85] mb-4">Say hello to the group or start a thread.</p>
+              <div className="flex flex-col gap-2">
+                <Link to="/app/chat" className="link-underline text-gold-accent border-gold-400/40">Open the chat board <ArrowRight size={12} /></Link>
+                <Link to="/app/members" className="link-underline text-gold-accent border-gold-400/40">See who's here <ArrowRight size={12} /></Link>
+              </div>
             </div>
-          </div>
+          )}
         </aside>
       </div>
     </div>

@@ -2,43 +2,112 @@
 /**
  * OPS-INTAKE UI-interaction test (PLATFORM_ARCHITECTURE.md §15.2).
  *
- * Renders the REAL IntakePage over the mocked lane api (api-intake) + the
- * mocked brokerage RPC wrappers (lib/api) and proves the wiring:
- *   - listIntakeSubmissions('NEW') drives the initial queue (exact default arg),
- *   - the status filter re-fetches with the chosen status (and ALL → undefined),
- *   - a row click opens the drawer rendering the submission's payload fields,
- *   - Mark reviewed → markSubmissionStatus(id,'REVIEWED') + toast + refresh,
- *   - CONVERT (INTAKE_HORSE_FINDER) → findOrCreateContactByEmail(name,email) →
- *     createSearchEngagement({clientContactId,retainedBy:'buyer',dealSide:'BUY'})
- *     → markSubmissionConverted(id, engagementId), EXACT args at every seam,
- *   - CONVERT (INTAKE_HORSE_PURCHASE) → createPurchaseEngagement({buyerContactId}),
- *   - the error branch renders and the drawer STAYS OPEN on rejection.
+ * Renders the REAL IntakePage over the mocked lane api (api-intake), the
+ * mocked brokerage RPC wrappers (lib/api) and the mocked invitation seam
+ * (lib/admin) and proves the wiring of BOTH views:
+ *
+ * REQUEST INBOX (default view — BOOKING_FLOWS_PLAN §2 Flow A step 2):
+ *   - listBookingRequests('new') drives the initial inbox (exact default arg),
+ *   - the status tabs re-fetch with the chosen status (All → undefined),
+ *   - a row click opens the drawer rendering the structured availability
+ *     (week window, AM/PM prefs, day prefs, riding experience) + visitor notes,
+ *   - Add note → appendRequestNote(id, text) and the returned timeline renders,
+ *   - Mark contacted → markRequestContacted(id) + toast + refresh,
+ *   - the LESSON FIT CHECKLIST persists each toggle via setRequestChecklist and
+ *     gates "Send confirmation & invite" (disabled + explanatory title until
+ *     every item is checked),
+ *   - the provisioning form opens prefilled from the request (first/last split,
+ *     email, notes) and submits adminSendInvitation with the EXACT payload
+ *     including requestId → the sent state renders and the drawer's status
+ *     flips to invited.
+ *
+ * FORM SUBMISSIONS (the pre-existing intake_submissions queue, unchanged):
+ *   same assertions as before, reached through the "Form submissions" tab.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderWithRouter, screen, userEvent, waitFor } from '../../../test/render';
-import type { IntakeSubmission } from '../../../lib/ops/api-intake';
+import { renderWithRouter, screen, userEvent, waitFor, within } from '../../../test/render';
+import type { IntakeSubmission, BookingRequest } from '../../../lib/ops/api-intake';
 
 const listIntakeSubmissions = vi.hoisted(() => vi.fn());
 const markSubmissionStatus = vi.hoisted(() => vi.fn());
 const markSubmissionConverted = vi.hoisted(() => vi.fn());
 const findOrCreateContactByEmail = vi.hoisted(() => vi.fn());
+const listBookingRequests = vi.hoisted(() => vi.fn());
+const markRequestContacted = vi.hoisted(() => vi.fn());
+const appendRequestNote = vi.hoisted(() => vi.fn());
+const setRequestChecklist = vi.hoisted(() => vi.fn());
 vi.mock('../../../lib/ops/api-intake', () => ({
   listIntakeSubmissions,
   markSubmissionStatus,
   markSubmissionConverted,
   findOrCreateContactByEmail,
+  listBookingRequests,
+  markRequestContacted,
+  appendRequestNote,
+  setRequestChecklist,
 }));
 
 const createPurchaseEngagement = vi.hoisted(() => vi.fn());
 const createSearchEngagement = vi.hoisted(() => vi.fn());
 const createLeaseEngagement = vi.hoisted(() => vi.fn());
+const fetchOfferings = vi.hoisted(() => vi.fn());
 vi.mock('../../../lib/api', () => ({
   createPurchaseEngagement,
   createSearchEngagement,
   createLeaseEngagement,
+  fetchOfferings,
 }));
 
-import { IntakePage } from './IntakePage';
+const adminSendInvitation = vi.hoisted(() => vi.fn());
+vi.mock('../../../lib/admin', () => ({
+  adminSendInvitation,
+}));
+
+import { IntakePage, LESSON_FIT_CHECKLIST } from './IntakePage';
+
+const REQUEST_NOTES = [
+  'Excited to start!',
+  '',
+  '— Availability & experience —',
+  'Riding experience: 1–2 years',
+  'Preferred times: Weekdays AM & PM · Weekends AM',
+  'Days: Mon, Wed, Sat',
+  'Weeks: Jul 5 – Jul 11, 2026',
+].join('\n');
+
+function request(over: Partial<BookingRequest>): BookingRequest {
+  return {
+    id: 'req-1',
+    created_at: '2026-07-01T12:00:00Z',
+    status: 'new',
+    contact_name: 'Cara Novice',
+    contact_email: 'cara@rider.test',
+    contact_phone: '555-0107',
+    contact_method: 'text',
+    proposed_times: [
+      {
+        date: '2026-07-05',
+        end: '2026-07-11',
+        label: 'Jul 5 – Jul 11, 2026',
+        time: 'Weekdays AM & PM · Weekends AM',
+        days: 'Mon, Wed, Sat',
+      },
+    ],
+    notes: REQUEST_NOTES,
+    staff_notes: [],
+    checklist: null,
+    request_selections: [
+      {
+        id: 'sel-1',
+        offering_id: null,
+        offering_slug: 'riding-lesson',
+        tier_id: null,
+        label: 'Riding Lessons — 4-Lesson Punch Card',
+      },
+    ],
+    ...over,
+  };
+}
 
 function submission(over: Partial<IntakeSubmission>): IntakeSubmission {
   return {
@@ -56,13 +125,242 @@ function submission(over: Partial<IntakeSubmission>): IntakeSubmission {
   };
 }
 
+/** The submissions queue lives behind its tab now — switch to it first. */
+async function openSubmissionsView(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await screen.findByRole('button', { name: 'Form submissions' }));
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   listIntakeSubmissions.mockResolvedValue([]);
+  listBookingRequests.mockResolvedValue([]);
+  setRequestChecklist.mockResolvedValue(undefined);
+  fetchOfferings.mockResolvedValue([
+    {
+      id: 'off-1',
+      slug: 'riding-lesson',
+      tiers: [{ id: 'tier-1', offering_id: 'off-1', label: '4-Lesson Punch Card', price_amount: 500 }],
+    },
+  ]);
 });
 
-describe('OPS-INTAKE — IntakePage', () => {
-  it('loads the NEW queue by default and renders the rows', async () => {
+describe('OPS-INTAKE — Request Inbox (default view)', () => {
+  it("loads the 'new' inbox by default and renders the request rows", async () => {
+    listBookingRequests.mockResolvedValue([request({})]);
+    renderWithRouter(<IntakePage />);
+
+    expect(await screen.findByText('Cara Novice')).toBeInTheDocument();
+    expect(listBookingRequests).toHaveBeenCalledTimes(1);
+    expect(listBookingRequests).toHaveBeenCalledWith('new');
+    // contact + preferred-method badge + requested summary
+    expect(screen.getByText(/cara@rider\.test/)).toBeInTheDocument();
+    expect(screen.getByText('Text')).toBeInTheDocument();
+    expect(screen.getByText('Riding Lessons — 4-Lesson Punch Card')).toBeInTheDocument();
+  });
+
+  it('re-fetches when the status tabs change (contacted, invited, then All → undefined)', async () => {
+    const user = userEvent.setup();
+    renderWithRouter(<IntakePage />);
+    await screen.findByText('No requests');
+
+    await user.click(screen.getByRole('button', { name: 'Contacted' }));
+    await waitFor(() => expect(listBookingRequests).toHaveBeenCalledWith('contacted'));
+
+    await user.click(screen.getByRole('button', { name: 'Invited' }));
+    await waitFor(() => expect(listBookingRequests).toHaveBeenCalledWith('invited'));
+
+    await user.click(screen.getByRole('button', { name: 'All' }));
+    await waitFor(() => expect(listBookingRequests).toHaveBeenCalledWith(undefined));
+  });
+
+  it('renders the error branch when the inbox rejects', async () => {
+    listBookingRequests.mockRejectedValue(new Error('rls denied'));
+    renderWithRouter(<IntakePage />);
+    expect(await screen.findByRole('alert')).toHaveTextContent('rls denied');
+  });
+
+  it('row click opens the drawer with the structured availability rendered readably', async () => {
+    const user = userEvent.setup();
+    listBookingRequests.mockResolvedValue([request({})]);
+    renderWithRouter(<IntakePage />);
+
+    await user.click(await screen.findByText('Cara Novice'));
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+
+    // week window, AM/PM prefs, day prefs, riding experience — all readable
+    expect(screen.getByText('Jul 5 – Jul 11, 2026')).toBeInTheDocument();
+    expect(screen.getByText('Weekdays AM & PM · Weekends AM')).toBeInTheDocument();
+    expect(screen.getByText('Mon, Wed, Sat')).toBeInTheDocument();
+    expect(screen.getByText('1–2 years')).toBeInTheDocument();
+    // the visitor's own words, WITHOUT the appended availability block
+    expect(screen.getByText('Excited to start!')).toBeInTheDocument();
+    expect(screen.queryByText(/— Availability & experience —/)).toBeNull();
+    // empty timeline state
+    expect(screen.getByText('No notes yet.')).toBeInTheDocument();
+  });
+
+  it('legacy {date,time} proposed_times entries still render', async () => {
+    const user = userEvent.setup();
+    listBookingRequests.mockResolvedValue([
+      request({ proposed_times: [{ date: '2026-07-09', time: 'morning' }], notes: null }),
+    ]);
+    renderWithRouter(<IntakePage />);
+
+    await user.click(await screen.findByText('Cara Novice'));
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText('2026-07-09 (morning)')).toBeInTheDocument();
+    expect(screen.getByText('Not provided')).toBeInTheDocument(); // no experience in notes
+  });
+
+  it('Add note → appendRequestNote(id, text) and the returned timeline renders', async () => {
+    const user = userEvent.setup();
+    listBookingRequests.mockResolvedValue([request({})]);
+    appendRequestNote.mockResolvedValue([
+      { at: '2026-07-03T10:00:00Z', by_name: 'Odile', note: 'Called — Saturday works.' },
+    ]);
+    renderWithRouter(<IntakePage />);
+
+    await user.click(await screen.findByText('Cara Novice'));
+    await user.type(await screen.findByLabelText('Add a note'), 'Called — Saturday works.');
+    await user.click(screen.getByRole('button', { name: 'Add note' }));
+
+    expect(appendRequestNote).toHaveBeenCalledTimes(1);
+    expect(appendRequestNote).toHaveBeenCalledWith('req-1', 'Called — Saturday works.');
+    expect(await screen.findByText('Called — Saturday works.')).toBeInTheDocument();
+    expect(screen.getByText(/Odile/)).toBeInTheDocument();
+    // the compose box cleared
+    expect(screen.getByLabelText('Add a note')).toHaveValue('');
+  });
+
+  it('Mark contacted → markRequestContacted(id), toast + refresh, drawer stays open on the request', async () => {
+    const user = userEvent.setup();
+    listBookingRequests
+      .mockResolvedValueOnce([request({})])
+      .mockResolvedValueOnce([]);
+    markRequestContacted.mockResolvedValue(request({ status: 'contacted' }));
+    renderWithRouter(<IntakePage />);
+
+    await user.click(await screen.findByText('Cara Novice'));
+    await user.click(await screen.findByRole('button', { name: 'Mark contacted' }));
+
+    expect(markRequestContacted).toHaveBeenCalledTimes(1);
+    expect(markRequestContacted).toHaveBeenCalledWith('req-1');
+    expect(await screen.findByRole('status')).toHaveTextContent('Request marked contacted.');
+    expect(listBookingRequests).toHaveBeenCalledTimes(2);
+    // the drawer stays open (staff keep working the request) with the new status
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText('contacted')).toBeInTheDocument();
+  });
+
+  it('checklist gates the send button: disabled + title until every item is checked, each toggle persisted', async () => {
+    const user = userEvent.setup();
+    listBookingRequests.mockResolvedValue([request({})]);
+    renderWithRouter(<IntakePage />);
+
+    await user.click(await screen.findByText('Cara Novice'));
+    const sendBtn = await screen.findByRole('button', { name: 'Send confirmation & invite' });
+    expect(sendBtn).toBeDisabled();
+    expect(sendBtn).toHaveAttribute('title', 'Complete the lesson fit checklist to enable sending');
+
+    for (const item of LESSON_FIT_CHECKLIST) {
+      await user.click(screen.getByLabelText(item.label));
+    }
+
+    // every toggle persisted the WHOLE object; the last call carries all-true
+    expect(setRequestChecklist).toHaveBeenCalledTimes(LESSON_FIT_CHECKLIST.length);
+    expect(setRequestChecklist).toHaveBeenLastCalledWith(
+      'req-1',
+      Object.fromEntries(LESSON_FIT_CHECKLIST.map((i) => [i.key, true])),
+    );
+    expect(sendBtn).toBeEnabled();
+  });
+
+  it('send flow: prefilled provisioning form → adminSendInvitation EXACT payload with requestId → sent state + invited', async () => {
+    const user = userEvent.setup();
+    const complete = Object.fromEntries(LESSON_FIT_CHECKLIST.map((i) => [i.key, true]));
+    listBookingRequests
+      .mockResolvedValueOnce([request({ checklist: complete })])
+      .mockResolvedValueOnce([]);
+    adminSendInvitation.mockResolvedValue({
+      registerUrl: 'https://app.fhe.test/register?token=tok-9',
+      emailed: true,
+      tierLabel: '4-Lesson Punch Card',
+    });
+    renderWithRouter(<IntakePage />);
+
+    await user.click(await screen.findByText('Cara Novice'));
+    const sendBtn = await screen.findByRole('button', { name: 'Send confirmation & invite' });
+    expect(sendBtn).toBeEnabled();
+    await user.click(sendBtn);
+
+    // prefilled from the request: first/last split from contact_name, email, notes
+    expect(await screen.findByLabelText(/First name/)).toHaveValue('Cara');
+    expect(screen.getByLabelText(/Last name/)).toHaveValue('Novice');
+    expect(screen.getByLabelText(/Email/)).toHaveValue('cara@rider.test');
+    expect(screen.getByLabelText(/Notes \(optional\)/)).toHaveValue(REQUEST_NOTES);
+
+    // the submit stays gated until a tier is chosen
+    expect(screen.getByRole('button', { name: 'Send invitation' })).toBeDisabled();
+    await user.selectOptions(screen.getByLabelText(/What did they buy/), 'tier-1');
+    await user.click(screen.getByLabelText('Already paid'));
+    await user.click(screen.getByRole('button', { name: 'Send invitation' }));
+
+    expect(adminSendInvitation).toHaveBeenCalledTimes(1);
+    expect(adminSendInvitation).toHaveBeenCalledWith({
+      email: 'cara@rider.test',
+      requestId: 'req-1',
+      firstName: 'Cara',
+      lastName: 'Novice',
+      tierId: 'tier-1',
+      markPaid: true,
+      paymentMethod: 'Zelle',
+      notes: REQUEST_NOTES,
+    });
+
+    // sent state + the drawer's request flips to invited; the inbox refreshed
+    expect(
+      await screen.findByText(/4-Lesson Punch Card provisioned — invitation created/),
+    ).toBeInTheDocument();
+    expect(screen.getByText('https://app.fhe.test/register?token=tok-9')).toBeInTheDocument();
+    expect(screen.getByText('invited')).toBeInTheDocument();
+    expect(listBookingRequests).toHaveBeenCalledTimes(2);
+    // the action row is replaced by the sent state
+    expect(screen.queryByRole('button', { name: 'Send confirmation & invite' })).toBeNull();
+  });
+
+  it('a rejected send surfaces in the drawer and nothing flips', async () => {
+    const user = userEvent.setup();
+    const complete = Object.fromEntries(LESSON_FIT_CHECKLIST.map((i) => [i.key, true]));
+    listBookingRequests.mockResolvedValue([request({ checklist: complete })]);
+    adminSendInvitation.mockRejectedValue(new Error('could not create invitation'));
+    renderWithRouter(<IntakePage />);
+
+    await user.click(await screen.findByText('Cara Novice'));
+    await user.click(await screen.findByRole('button', { name: 'Send confirmation & invite' }));
+    await user.selectOptions(screen.getByLabelText(/What did they buy/), 'tier-1');
+    await user.click(screen.getByRole('button', { name: 'Send invitation' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('could not create invitation');
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByText('new')).toBeInTheDocument(); // status untouched
+    expect(listBookingRequests).toHaveBeenCalledTimes(1); // no refresh on failure
+  });
+
+  it('an invited request offers no send button (already through the gate)', async () => {
+    const user = userEvent.setup();
+    listBookingRequests.mockResolvedValue([request({ status: 'invited' })]);
+    renderWithRouter(<IntakePage />);
+
+    await user.click(await screen.findByText('Cara Novice'));
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Send confirmation & invite' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Mark contacted' })).toBeNull();
+  });
+});
+
+describe('OPS-INTAKE — form submissions view (unchanged behavior)', () => {
+  it('loads the NEW queue on tab switch and renders the rows', async () => {
+    const user = userEvent.setup();
     listIntakeSubmissions.mockResolvedValue([
       submission({ id: 'sub-1', contact_name: 'Ada Rider' }),
       submission({
@@ -74,6 +372,7 @@ describe('OPS-INTAKE — IntakePage', () => {
     ]);
 
     renderWithRouter(<IntakePage />);
+    await openSubmissionsView(user);
 
     expect(await screen.findByText('Ada Rider')).toBeInTheDocument();
     expect(screen.getByText('Ben Buyer')).toBeInTheDocument();
@@ -85,6 +384,7 @@ describe('OPS-INTAKE — IntakePage', () => {
   it('re-fetches when the status filter changes (DISMISSED, then ALL → undefined)', async () => {
     const user = userEvent.setup();
     renderWithRouter(<IntakePage />);
+    await openSubmissionsView(user);
     await screen.findByText('No submissions');
 
     await user.selectOptions(screen.getByLabelText('Filter by status'), 'DISMISSED');
@@ -95,8 +395,10 @@ describe('OPS-INTAKE — IntakePage', () => {
   });
 
   it('renders the error branch when the list rejects', async () => {
+    const user = userEvent.setup();
     listIntakeSubmissions.mockRejectedValue(new Error('rls denied'));
     renderWithRouter(<IntakePage />);
+    await openSubmissionsView(user);
     expect(await screen.findByRole('alert')).toHaveTextContent('rls denied');
   });
 
@@ -104,6 +406,7 @@ describe('OPS-INTAKE — IntakePage', () => {
     const user = userEvent.setup();
     listIntakeSubmissions.mockResolvedValue([submission({})]);
     renderWithRouter(<IntakePage />);
+    await openSubmissionsView(user);
 
     await user.click(await screen.findByText('ada@barn.test'));
 
@@ -123,6 +426,7 @@ describe('OPS-INTAKE — IntakePage', () => {
     markSubmissionStatus.mockResolvedValue(submission({ id: 'sub-9', status: 'REVIEWED' }));
 
     renderWithRouter(<IntakePage />);
+    await openSubmissionsView(user);
     await user.click(await screen.findByText('ada@barn.test'));
     await user.click(await screen.findByRole('button', { name: 'Mark reviewed' }));
 
@@ -141,6 +445,7 @@ describe('OPS-INTAKE — IntakePage', () => {
     markSubmissionStatus.mockResolvedValue(submission({ id: 'sub-3', status: 'DISMISSED' }));
 
     renderWithRouter(<IntakePage />);
+    await openSubmissionsView(user);
     await user.click(await screen.findByText('ada@barn.test'));
     await user.click(await screen.findByRole('button', { name: 'Dismiss' }));
 
@@ -160,6 +465,7 @@ describe('OPS-INTAKE — IntakePage', () => {
     );
 
     renderWithRouter(<IntakePage />);
+    await openSubmissionsView(user);
     await user.click(await screen.findByText('ada@barn.test'));
     await user.click(await screen.findByRole('button', { name: 'Convert to engagement' }));
 
@@ -201,6 +507,7 @@ describe('OPS-INTAKE — IntakePage', () => {
     );
 
     renderWithRouter(<IntakePage />);
+    await openSubmissionsView(user);
     await user.click(await screen.findByText('ben@barn.test'));
     await user.click(await screen.findByRole('button', { name: 'Convert to engagement' }));
 
@@ -215,6 +522,7 @@ describe('OPS-INTAKE — IntakePage', () => {
       submission({ id: 'sub-5', form_key: 'INTAKE_HORSE_CLIPPING' }),
     ]);
     renderWithRouter(<IntakePage />);
+    await openSubmissionsView(user);
 
     await user.click(await screen.findByText('ada@barn.test'));
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
@@ -230,6 +538,7 @@ describe('OPS-INTAKE — IntakePage', () => {
     createSearchEngagement.mockRejectedValue(new Error('require_module: mod.brokerage'));
 
     renderWithRouter(<IntakePage />);
+    await openSubmissionsView(user);
     await user.click(await screen.findByText('ada@barn.test'));
     await user.click(await screen.findByRole('button', { name: 'Convert to engagement' }));
 

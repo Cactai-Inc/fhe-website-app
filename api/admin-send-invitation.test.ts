@@ -177,6 +177,39 @@ describe('POST /api/admin-send-invitation', () => {
     expect(String(emailCalls[0].html)).toContain('https://app.fhe.test/register?token=tok-provisioned');
   });
 
+  it('provisioned invite with requestId (Request Inbox) passes p_request_id through to the RPC', async () => {
+    const res = makeRes();
+    await handler(makeReq({ ...PROVISION_BODY, requestId: 'req-42' }), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(rpc).toHaveBeenCalledTimes(1);
+    expect(rpc).toHaveBeenCalledWith('provision_lesson_invitation', {
+      p_email: 'alice@example.com',
+      p_first_name: 'Alice',
+      p_last_name: 'Client',
+      p_tier_id: 'tier-4pc',
+      p_mark_paid: true,
+      p_payment_method: 'Zelle',
+      p_notes: 'paid via Zelle 7/1',
+      p_request_id: 'req-42',
+    });
+    // Still no legacy insert on the provisioned path.
+    expect(state.insertedInvitations).toHaveLength(0);
+  });
+
+  it('plain invite with requestId stamps request_id on the legacy insert', async () => {
+    const res = makeRes();
+    await handler(makeReq({ email: 'plain@example.com', requestId: 'req-7' }), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(rpc).not.toHaveBeenCalled();
+    expect(state.insertedInvitations).toHaveLength(1);
+    expect(state.insertedInvitations[0]).toMatchObject({
+      email: 'plain@example.com',
+      request_id: 'req-7',
+    });
+  });
+
   it('unpaid provisioning sends p_mark_paid=false and null payment method/notes', async () => {
     const res = makeRes();
     await handler(makeReq({ email: 'alice@example.com', firstName: 'Alice', lastName: 'Client', tierId: 'tier-4pc' }), res);

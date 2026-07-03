@@ -201,6 +201,40 @@ export async function generateMyOnboardingDocuments(): Promise<OnboardingDocumen
   return (data ?? []) as OnboardingDocument[];
 }
 
+// ─── Notifications (the messaging spine — BOOKING_FLOWS_PLAN §1) ────────────
+
+/** One row from my_notifications(): a per-user in-app notification. */
+export interface AppNotification {
+  id: string;
+  kind: string;
+  title: string;
+  body: string | null;
+  /** In-app destination (e.g. '/app/documents'), or null. */
+  link: string | null;
+  read_at: string | null;
+  created_at: string;
+}
+
+/** The signed-in user's notifications, newest first. */
+export async function myNotifications(limit = 20): Promise<AppNotification[]> {
+  const { data, error } = await supabase.rpc('my_notifications', { p_limit: limit });
+  if (error) throw error;
+  return (data ?? []) as AppNotification[];
+}
+
+/** Mark one of MY notifications read (someone else's id is a server-side no-op). */
+export async function markNotificationRead(id: string): Promise<void> {
+  const { error } = await supabase.rpc('mark_notification_read', { p_id: id });
+  if (error) throw error;
+}
+
+/** Unread-notification count for the bell badge. */
+export async function myUnreadCount(): Promise<number> {
+  const { data, error } = await supabase.rpc('my_unread_count');
+  if (error) throw error;
+  return Number(data ?? 0);
+}
+
 // ─── Profiles ───────────────────────────────────────────────────────────────
 
 export async function getMyProfile(): Promise<Profile | null> {

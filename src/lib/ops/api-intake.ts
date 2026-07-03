@@ -2,7 +2,9 @@
  * OPS-INTAKE data seams (lane-owned; src/lib/api.ts is integrator-owned).
  *
  * Thin, typed wrappers over supabase.from('intake_submissions') — the staff
- * intake queue created by migration 20260701020000_intake_submissions.sql.
+ * intake queue created by migration 20260701020000_intake_submissions.sql —
+ * and over supabase.from('requests') — the public booking-request inbox
+ * (BOOKING_FLOWS_PLAN §2 Flow A step 2; migration 20260703080000).
  * RLS (org_boundary + has_staff_access) is the authoritative fence; these
  * seams only shape the calls. Engagement creation on CONVERT goes through the
  * existing brokerage RPC wrappers in src/lib/api.ts (createPurchaseEngagement /
@@ -10,6 +12,7 @@
  * re-wrapped here.
  */
 import { supabase } from '../supabase';
+import type { ProposedTime } from '../types';
 
 export type IntakeSubmissionStatus = 'NEW' | 'REVIEWED' | 'CONVERTED' | 'DISMISSED';
 
@@ -81,6 +84,96 @@ export async function markSubmissionConverted(
     .single();
   if (error) throw error;
   return data as IntakeSubmission;
+}
+
+// ─── Booking requests (the Request Inbox) ────────────────────────────────────
+
+export type BookingRequestStatus = 'new' | 'contacted' | 'invited' | 'expired' | 'converted';
+
+/** One append_request_note timeline entry (requests.staff_notes element). */
+export interface RequestStaffNote {
+  at: string; // timestamptz serialized by jsonb_build_object(now())
+  by_name: string;
+  note: string;
+}
+
+/** request_selections row embedded on the request (what the visitor asked for). */
+export interface BookingRequestSelection {
+  id: string;
+  offering_id: string | null;
+  offering_slug: string | null;
+  tier_id: string | null;
+  label: string | null;
+}
+
+export interface BookingRequest {
+  id: string;
+  created_at: string;
+  status: BookingRequestStatus;
+  contact_name: string;
+  contact_email: string;
+  contact_phone: string | null;
+  contact_method: 'text' | 'call' | 'email' | null;
+  /** Structured availability (src/lib/availability.ts) — legacy {date,time} entries may coexist. */
+  proposed_times: ProposedTime[];
+  notes: string | null;
+  staff_notes: RequestStaffNote[];
+  /** Flat object of checklist-item key → boolean; null until staff start it. */
+  checklist: Record<string, boolean> | null;
+  request_selections: BookingRequestSelection[];
+}
+
+/** The Request Inbox, newest first, selections embedded; optionally one status. */
+export async function listBookingRequests(
+  status?: BookingRequestStatus,
+): Promise<BookingRequest[]> {
+  let query = supabase
+    .from('requests')
+    .select('*, request_selections(*)')
+    .order('created_at', { ascending: false });
+  if (status) {
+    query = query.eq('status', status);
+  }
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data ?? []) as BookingRequest[];
+}
+
+/** Flip a request to 'contacted' (staff UPDATE policy is the fence). */
+export async function markRequestContacted(id: string): Promise<BookingRequest> {
+  const { data, error } = await supabase
+    .from('requests')
+    .update({ status: 'contacted' })
+    .eq('id', id)
+    .select('*, request_selections(*)')
+    .single();
+  if (error) throw error;
+  return data as BookingRequest;
+}
+
+/** Append a staff call note via the staff-gated RPC; returns the updated timeline. */
+export async function appendRequestNote(
+  id: string,
+  note: string,
+): Promise<RequestStaffNote[]> {
+  const { data, error } = await supabase.rpc('append_request_note', {
+    p_request_id: id,
+    p_note: note,
+  });
+  if (error) throw error;
+  return (data ?? []) as RequestStaffNote[];
+}
+
+/** Persist the lesson-fit checklist state (flat key → boolean object). */
+export async function setRequestChecklist(
+  id: string,
+  checklist: Record<string, boolean>,
+): Promise<void> {
+  const { error } = await supabase.rpc('set_request_checklist', {
+    p_request_id: id,
+    p_checklist: checklist,
+  });
+  if (error) throw error;
 }
 
 /**

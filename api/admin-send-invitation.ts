@@ -12,7 +12,9 @@
  *    creates contact + client + engagement + paid transaction + invitation in
  *    one transaction and returns the token we email; NO legacy insert happens.
  *    firstName/lastName are required on this path (they seed the contact and
- *    the printed name on the onboarding contracts).
+ *    the printed name on the onboarding contracts). When `requestId` is
+ *    provided (the staff Request Inbox), it is passed through as p_request_id —
+ *    the RPC stamps invitations.request_id and flips the request to 'invited'.
  *
  * Email delivery uses the shared transport; otherwise the function still
  * creates the invitation and returns the register URL so the admin can copy it.
@@ -93,6 +95,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (tierId && (!firstName || !lastName)) {
     return res.status(400).json({ error: 'firstName and lastName required when provisioning a purchase' });
   }
+  // Optional booking-request linkage (staff Request Inbox).
+  const requestId =
+    typeof body.requestId === 'string' && body.requestId.trim() ? body.requestId.trim() : null;
 
   try {
     const db = getSupabaseAdmin();
@@ -119,6 +124,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         p_mark_paid: body.markPaid === true,
         p_payment_method: ((body.paymentMethod as string) || '').trim() || null,
         p_notes: ((body.notes as string) || '').trim() || null,
+        // Only sent when present so callers without a request keep the exact
+        // legacy payload (the defaulted 8th param covers the omission).
+        ...(requestId ? { p_request_id: requestId } : {}),
       });
       if (rpcErr) throw rpcErr;
       const out = (Array.isArray(data) ? data[0] : data) as ProvisionResult;
@@ -135,7 +143,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const { error: insErr } = await db.from('invitations').insert({
       org_id: profile.org_id ?? null, // service-role insert has no current_org(); stamp the admin's org
-      request_id: body.requestId ?? null,
+      request_id: requestId,
       email,
       token: inviteToken,
       expires_at: expiresAt,

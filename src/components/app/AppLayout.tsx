@@ -6,6 +6,7 @@ import {
   GraduationCap, Handshake, Home, Boxes, Contact,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import NotificationsBell, { useNotificationsBell } from './NotificationsBell';
 
 interface NavItem {
   to: string;
@@ -16,6 +17,10 @@ interface NavItem {
   module?: string;
   /** Show only for SUPER_ADMIN sessions. */
   superAdmin?: boolean;
+  /** Community surface — soft-hidden from non-admin members at launch
+   *  (progressive disclosure, BOOKING_FLOWS_PLAN §1). Routes stay reachable
+   *  by URL; admins still see the items. */
+  community?: boolean;
 }
 
 // Core community items are always on; the module-tagged items appear only when the
@@ -31,10 +36,10 @@ const NAV: NavItem[] = [
   { to: '/app/lessons', label: 'Lessons', icon: GraduationCap, module: 'mod.lessons' },
   { to: '/app/brokerage', label: 'Brokerage', icon: Handshake, module: 'mod.brokerage' },
   { to: '/app/boarding', label: 'Boarding', icon: Home, module: 'mod.boarding' },
-  { to: '/app/chat', label: 'Chat board', icon: Hash },
-  { to: '/app/threads', label: 'Threads', icon: MessagesSquare },
+  { to: '/app/chat', label: 'Chat board', icon: Hash, community: true },
+  { to: '/app/threads', label: 'Threads', icon: MessagesSquare, community: true },
   { to: '/app/messages', label: 'Messages', icon: Mail },
-  { to: '/app/members', label: 'Members', icon: Users },
+  { to: '/app/members', label: 'Members', icon: Users, community: true },
   { to: '/app/content', label: 'Content', icon: BookOpen },
   { to: '/app/documents', label: 'Documents', icon: FileText },
   { to: '/app/orders', label: 'Orders', icon: ReceiptText },
@@ -43,9 +48,13 @@ const NAV: NavItem[] = [
 ];
 
 /** The nav the member actually sees: core items plus the module-gated items whose
- *  module their tenant has. Pure of side effects so it is unit-testable. */
-export function visibleNav(hasModule: (key: string) => boolean): NavItem[] {
-  return NAV.filter((item) => !item.module || hasModule(item.module));
+ *  module their tenant has. Community surfaces (Chat/Threads/Members) are
+ *  soft-hidden from non-admin members at launch — code and routes stay live.
+ *  Pure of side effects so it is unit-testable. */
+export function visibleNav(hasModule: (key: string) => boolean, isAdmin = false): NavItem[] {
+  return NAV.filter(
+    (item) => (!item.module || hasModule(item.module)) && (!item.community || isAdmin),
+  );
 }
 
 /** Staff/admin operations nav (Wave-7). Module hubs are entitlement-gated
@@ -87,8 +96,10 @@ export default function AppLayout() {
   const { profile, isAdmin, isSuperAdmin, hasModule, signOut } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  // one shared bell state — rendered in both breakpoint-exclusive header spots
+  const bell = useNotificationsBell();
 
-  const items = visibleNav(hasModule);
+  const items = visibleNav(hasModule, isAdmin);
   const name = profile?.display_name || profile?.first_name || 'Member';
 
   async function handleSignOut() {
@@ -159,24 +170,30 @@ export default function AppLayout() {
       {/* Mobile top bar */}
       <div className="lg:hidden sticky top-0 z-40 bg-white border-b border-green-800/10 flex items-center justify-between px-4 h-14">
         <Link to="/app" className="font-display text-green-800 text-lg uppercase tracking-wide">FHE</Link>
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          className="p-2.5 -mr-2 text-green-800 focus-ring"
-          aria-label={open ? 'Close menu' : 'Open menu'}
-          aria-expanded={open}
-        >
-          {open ? <X size={20} /> : <Menu size={20} />}
-        </button>
+        <div className="flex items-center gap-1">
+          <NotificationsBell bell={bell} />
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            className="p-2.5 -mr-2 text-green-800 focus-ring"
+            aria-label={open ? 'Close menu' : 'Open menu'}
+            aria-expanded={open}
+          >
+            {open ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </div>
       </div>
 
       <div className="flex">
         {/* Sidebar (desktop) */}
         <aside className="hidden lg:flex flex-col w-64 shrink-0 min-h-screen border-r border-green-800/10 bg-white px-4 py-6 sticky top-0">
-          <Link to="/app" className="px-3 mb-8 block">
-            <span className="font-display text-green-800 text-xl uppercase tracking-wide">French Heritage</span>
-            <span className="block text-gold-ink text-[10px] tracking-widest uppercase">Members</span>
-          </Link>
+          <div className="flex items-start justify-between px-3 mb-8">
+            <Link to="/app" className="block">
+              <span className="font-display text-green-800 text-xl uppercase tracking-wide">French Heritage</span>
+              <span className="block text-gold-ink text-[10px] tracking-widest uppercase">Members</span>
+            </Link>
+            <NotificationsBell bell={bell} />
+          </div>
           {navLinks}
           <div className="mt-auto pt-6 border-t border-green-800/10">
             <p className="px-3 text-xs text-muted mb-2 truncate">{name}</p>
