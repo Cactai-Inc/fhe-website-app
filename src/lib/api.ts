@@ -99,6 +99,21 @@ export async function getMyProfile(): Promise<Profile | null> {
   return data as Profile | null;
 }
 
+/** Upload the signed-in member's avatar to profile-images/{user_id}/… and
+ *  return its public URL (bucket is public-read; writes are owner-scoped). */
+export async function uploadMyAvatar(file: File): Promise<string> {
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) throw new Error('Not authenticated');
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+  const path = `${auth.user.id}/avatar-${crypto.randomUUID()}.${ext}`;
+  const { error } = await supabase.storage
+    .from('profile-images')
+    .upload(path, file, { upsert: true, contentType: file.type || undefined });
+  if (error) throw error;
+  const { data } = supabase.storage.from('profile-images').getPublicUrl(path);
+  return data.publicUrl;
+}
+
 export async function upsertMyProfile(patch: Partial<Profile>): Promise<void> {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) throw new Error('Not authenticated');

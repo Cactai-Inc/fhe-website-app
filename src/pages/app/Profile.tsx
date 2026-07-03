@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { upsertMyProfile } from '../../lib/api';
+import { upsertMyProfile, uploadMyAvatar } from '../../lib/api';
 import { listLinkedProviders, linkOAuthIdentity } from '../../lib/auth';
 import { ENABLED_OAUTH_PROVIDERS, OAUTH_LABELS } from '../../lib/authConfig';
 import { useDocumentTitle } from '../../lib/hooks';
@@ -24,12 +24,30 @@ export default function Profile() {
   const [ridingLevel, setRidingLevel] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [linked, setLinked] = useState<string[] | null>(null);
   const [linkError, setLinkError] = useState<string | null>(null);
 
   useEffect(() => {
     listLinkedProviders().then(setLinked).catch(() => setLinked([]));
   }, [user?.id]);
+
+  async function onAvatarFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadError(null);
+    setUploading(true);
+    try {
+      const url = await uploadMyAvatar(file);
+      setAvatarUrl(url); // saved with the form; preview updates immediately
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Upload failed.');
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  }
 
   async function connect(provider: 'google' | 'apple') {
     setLinkError(null);
@@ -147,10 +165,21 @@ export default function Profile() {
             </select>
           </div>
           <div className="sm:col-span-2">
-            <label className="form-label" htmlFor="avatar_url">Avatar image URL</label>
+            <label className="form-label" htmlFor="avatar_file">Profile photo</label>
+            <input
+              id="avatar_file"
+              type="file"
+              accept="image/*"
+              className="form-input"
+              onChange={onAvatarFile}
+              disabled={uploading}
+            />
+            {uploading && <p className="form-hint mt-1">Uploading…</p>}
+            {uploadError && <p role="alert" className="form-error mt-1">{uploadError}</p>}
+            <label className="form-label mt-4" htmlFor="avatar_url">…or paste an image URL</label>
             <input id="avatar_url" className="form-input" value={avatarUrl}
               onChange={(e) => setAvatarUrl(e.target.value)} placeholder="https://…" />
-            <p className="form-hint mt-1">Paste a link to a photo. (Uploads coming with the resource library.)</p>
+            <p className="form-hint mt-1">Save the form to keep your new photo.</p>
           </div>
           <div className="sm:col-span-2">
             <label className="form-label" htmlFor="bio">About you</label>
