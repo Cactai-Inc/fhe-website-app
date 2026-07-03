@@ -26,12 +26,16 @@ const listSignatures = vi.hoisted(() => vi.fn());
 const recordSignature = vi.hoisted(() => vi.fn());
 const listDeliveries = vi.hoisted(() => vi.fn());
 const recordDelivery = vi.hoisted(() => vi.fn());
+const listEngagementPartyContacts = vi.hoisted(() => vi.fn());
 vi.mock('../../../lib/api', () => ({
   getDocument,
   listSignatures,
   recordSignature,
   listDeliveries,
   recordDelivery,
+}));
+vi.mock('../../../lib/ops/api-documents', () => ({
+  listEngagementPartyContacts,
 }));
 
 const DOC_ID = 'doc-42';
@@ -93,7 +97,12 @@ describe('DocumentViewerPage (OPS-DOC-VIEW)', () => {
     recordSignature.mockReset();
     listDeliveries.mockReset();
     recordDelivery.mockReset();
+    listEngagementPartyContacts.mockReset();
     listDeliveries.mockResolvedValue([]);
+    // DeliveryPanel's recipient dropdown source (engagement_parties → contacts).
+    listEngagementPartyContacts.mockResolvedValue([
+      { contact_id: 'contact-7', party_role: 'BUYER', name: 'Ann Buyer', email: 'ann@fhe.test' },
+    ]);
   });
 
   it('fetches by the URL id and renders body, status, and the embedded signing roster', async () => {
@@ -102,8 +111,9 @@ describe('DocumentViewerPage (OPS-DOC-VIEW)', () => {
 
     renderAt();
 
-    // Real data path invoked with the URL param id.
-    expect(await screen.findByText('Bill of Sale')).toBeInTheDocument();
+    // Real data path invoked with the URL param id. (The title renders in the
+    // screen header AND in the print-only header block.)
+    expect((await screen.findAllByText('Bill of Sale')).length).toBeGreaterThan(0);
     expect(getDocument).toHaveBeenCalledTimes(1);
     expect(getDocument).toHaveBeenCalledWith(DOC_ID);
     expect(listSignatures).toHaveBeenCalledWith(DOC_ID);
@@ -125,6 +135,9 @@ describe('DocumentViewerPage (OPS-DOC-VIEW)', () => {
     expect(screen.getByText('Signed')).toBeInTheDocument();
     expect(screen.getByText('Awaiting signature')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Sign as SELLER' })).toBeInTheDocument();
+
+    // The printable-copy affordance is present on the viewer.
+    expect(screen.getByRole('button', { name: 'Print / Save as PDF' })).toBeInTheDocument();
   });
 
   it('has NO dead /sign link and NO delivery form while the document is unsigned', async () => {
@@ -180,8 +193,13 @@ describe('DocumentViewerPage (OPS-DOC-VIEW)', () => {
     // ...the roster is now read-only (no Sign controls)...
     expect(screen.queryByRole('button', { name: /^Sign as/ })).toBeNull();
 
-    // ...and the OPS-DOC-DELIVER form is reachable and really sends.
-    await user.type(await screen.findByLabelText(/Recipient/), 'contact-7');
+    // ...and the OPS-DOC-DELIVER form is reachable and really sends. The
+    // recipient dropdown is fed by the document's engagement_id (passed down
+    // from the viewer) through the real parties seam.
+    const recipientSelect = await screen.findByLabelText(/Recipient/);
+    expect(listEngagementPartyContacts).toHaveBeenCalledWith('eng-1');
+    await screen.findByRole('option', { name: 'Ann Buyer — BUYER (ann@fhe.test)' });
+    await user.selectOptions(recipientSelect, 'contact-7');
     await user.click(screen.getByRole('button', { name: 'Send delivery' }));
     expect(recordDelivery).toHaveBeenCalledTimes(1);
     expect(recordDelivery).toHaveBeenCalledWith({
@@ -222,10 +240,11 @@ describe('DocumentViewerPage (OPS-DOC-VIEW)', () => {
 
     renderAt();
 
-    expect(await screen.findByText('Bill of Sale')).toBeInTheDocument();
+    expect((await screen.findAllByText('Bill of Sale')).length).toBeGreaterThan(0);
 
-    // Read-only roster (DataTable), no signing controls at all.
-    expect(screen.getByText('Signatures')).toBeInTheDocument();
+    // Read-only roster (DataTable), no signing controls at all. ('Signatures'
+    // heads both the screen roster and the print-only summary.)
+    expect(screen.getAllByText('Signatures').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Signed')).toHaveLength(2);
     expect(screen.queryByTestId('signing-panel')).toBeNull();
     expect(screen.queryByRole('button', { name: /^Sign as/ })).toBeNull();

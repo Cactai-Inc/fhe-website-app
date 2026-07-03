@@ -265,3 +265,111 @@
     to   { opacity: 1; }
   }
 }
+
+/* ─── Print: document-only output (OPS-DOC-VIEW "Print / Save as PDF") ──────
+ * The document viewer adds `printing` to <body> before window.print() and
+ * removes it after, so ordinary Cmd/Ctrl-P elsewhere is untouched. While
+ * body.printing is set:
+ *   - ONLY the .print-document subtree prints (title/reference header,
+ *     merged contract body, executed-signature summary);
+ *   - .print-only blocks (invisible on screen) become visible;
+ *   - .print-hidden collapses screen-only chrome (nav, panels, headers) so
+ *     it neither prints nor leaves blank pages;
+ *   - everything else is visibility-hidden and the print subtree is lifted
+ *     to the top of page 1.
+ * Long documents paginate: nothing in the print subtree is height-capped or
+ * overflow-clipped.
+ */
+.print-only { display: none; }
+
+@media print {
+  @page { margin: 2cm; }
+
+  body.printing { background: #fff; }
+  body.printing .print-hidden { display: none !important; }
+  body.printing .print-only { display: block; }
+
+  /* Show ONLY the document: hide everything, reveal the print subtree, and
+     lift it out of the app layout so it starts at the top of page 1. */
+  body.printing * { visibility: hidden; }
+  body.printing .print-document,
+  body.printing .print-document * { visibility: visible; }
+  body.printing .print-document {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 0;
+    font-family: 'Cormorant Garamond', 'Big Caslon', Georgia, 'Times New Roman', serif;
+    color: #000;
+  }
+
+  /* Pagination safety: never cap or clip the merged body in print. */
+  body.printing .print-document,
+  body.printing .print-document * {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  /* Clean serif contract body: strip the on-screen card chrome. */
+  body.printing .print-document article {
+    border: none;
+    background: none;
+    box-shadow: none;
+    border-radius: 0;
+    padding: 0;
+  }
+  body.printing .print-document pre {
+    font-family: inherit;
+    font-size: 12pt;
+    line-height: 1.6;
+    color: #000;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  /* Print header: document title + reference. */
+  body.printing .print-doc-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1pt solid #000;
+  }
+  body.printing .print-doc-header h1 {
+    font-family: inherit;
+    font-size: 20pt;
+    font-weight: 600;
+    color: #000;
+    margin: 0 0 0.25rem;
+  }
+  body.printing .print-doc-header p {
+    font-size: 10pt;
+    letter-spacing: 0.05em;
+    color: #000;
+    margin: 0;
+  }
+
+  /* Executed-signature summary: signer names / roles / dates. */
+  body.printing .print-doc-signatures {
+    margin-top: 2rem;
+    padding-top: 0.75rem;
+    border-top: 1pt solid #000;
+    break-inside: avoid;
+  }
+  body.printing .print-doc-signatures h2 {
+    font-family: inherit;
+    font-size: 14pt;
+    font-weight: 600;
+    color: #000;
+    margin: 0 0 0.5rem;
+  }
+  body.printing .print-doc-signatures ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  body.printing .print-doc-signatures li {
+    font-size: 11pt;
+    line-height: 1.8;
+    color: #000;
+  }
+}

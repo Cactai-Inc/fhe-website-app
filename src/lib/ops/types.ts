@@ -221,6 +221,16 @@ export interface DeliveryInput {
   copy_url?: string | null;
 }
 
+/** An engagement party flattened for recipient pickers: contact id + role +
+ *  the OFFICIAL name canon (contactName: first+last) + email (null when the
+ *  contact has none on file — such a recipient cannot be emailed). */
+export interface EngagementPartyContact {
+  contact_id: string;
+  party_role: PartyRole;
+  name: string;
+  email: string | null;
+}
+
 // ─── Transactions & billing ──────────────────────────────────────────────────
 
 export interface Transaction {

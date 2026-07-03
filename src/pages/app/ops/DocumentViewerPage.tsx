@@ -72,7 +72,25 @@ const EXECUTED_STATUS = 'EXECUTED';
  *
  * The merged body itself stays read-only — mutations happen only through the
  * embedded panels' real RPC seams (record_signature / document_deliveries).
+ *
+ * PRINT / SAVE AS PDF: the header button adds `printing` to <body> and calls
+ * window.print(). The print stylesheet (src/index.css @media print) then
+ * shows ONLY the `.print-document` subtree — a `.print-only` serif header
+ * (title + reference), the merged body, and (when EXECUTED) a `.print-only`
+ * signature summary — while `.print-hidden` collapses the app chrome, the
+ * on-screen header/roster, and the lifecycle panels. No new deps, no popups.
  */
+function printDocument() {
+  const body = window.document.body;
+  const cleanup = () => body.classList.remove('printing');
+  body.classList.add('printing');
+  // `afterprint` covers browsers where print() returns before the dialog
+  // closes; the synchronous cleanup covers those where it blocks.
+  window.addEventListener('afterprint', cleanup, { once: true });
+  window.print();
+  cleanup();
+}
+
 export default function DocumentViewerPage() {
   const { id } = useParams<{ id: string }>();
   const { data, error, isPending, isError, run } = useAsync(loadDocumentView);
@@ -126,12 +144,17 @@ export default function DocumentViewerPage() {
         <title>{document.title ?? 'Document'} — Viewer</title>
       </Helmet>
 
-      <header className="space-y-3">
+      <header className="space-y-3 print-hidden">
         <div className="flex items-center justify-between gap-4">
           <h1 className="font-serif text-2xl text-green-900">
             {document.title ?? 'Untitled document'}
           </h1>
-          <StatusBadge status={document.status} />
+          <div className="flex items-center gap-3">
+            <button type="button" className="btn-secondary" onClick={printDocument}>
+              Print / Save as PDF
+            </button>
+            <StatusBadge status={document.status} />
+          </div>
         </div>
         <dl className="flex flex-wrap gap-x-8 gap-y-1 text-sm text-green-800/80">
           <div className="flex gap-2">
@@ -147,16 +170,41 @@ export default function DocumentViewerPage() {
         </dl>
       </header>
 
-      <section aria-labelledby="body-heading" className="space-y-3">
-        <h2 id="body-heading" className="font-serif text-lg text-green-900">
-          Contract
-        </h2>
-        <MergedBodyView body={document.merged_body} />
-      </section>
+      {/* Printable subtree: the ONLY content body.printing shows. The
+          .print-only blocks are invisible on screen; the merged body is
+          shared between screen and print. */}
+      <div className="print-document space-y-8">
+        <header className="print-only print-doc-header">
+          <h1>{document.title ?? 'Untitled document'}</h1>
+          {document.display_code && <p>Reference: {document.display_code}</p>}
+        </header>
+
+        <section aria-labelledby="body-heading" className="space-y-3">
+          <h2 id="body-heading" className="font-serif text-lg text-green-900 print-hidden">
+            Contract
+          </h2>
+          <MergedBodyView body={document.merged_body} />
+        </section>
+
+        {/* Executed-signature summary — signer names/roles/dates, print only. */}
+        {isExecuted && signatures.length > 0 && (
+          <section className="print-only print-doc-signatures">
+            <h2>Signatures</h2>
+            <ul>
+              {signatures.map((s) => (
+                <li key={s.id}>
+                  {s.typed_name ?? 'Unsigned'} — {s.party_role} — signed{' '}
+                  {formatDate(s.signed_at)}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+      </div>
 
       {isExecuted ? (
         /* Executed: the roster is sealed — render it read-only. */
-        <section aria-labelledby="roster-heading" className="space-y-3">
+        <section aria-labelledby="roster-heading" className="space-y-3 print-hidden">
           <h2 id="roster-heading" className="font-serif text-lg text-green-900">
             Signatures
           </h2>
@@ -176,11 +224,21 @@ export default function DocumentViewerPage() {
       ) : (
         /* Unsigned / partially signed: embedded OPS-DOC-SIGN. When the last
            party signs, reload the document so the EXECUTED status renders. */
-        <SigningPanel documentId={document.id} onExecuted={load} />
+        <div className="print-hidden">
+          <SigningPanel documentId={document.id} onExecuted={load} />
+        </div>
       )}
 
       {/* OPS-DOC-DELIVER tail: only reachable once the document is EXECUTED. */}
-      {isExecuted && <DeliveryPanel documentId={document.id} status={document.status} />}
+      {isExecuted && (
+        <div className="print-hidden">
+          <DeliveryPanel
+            documentId={document.id}
+            engagementId={document.engagement_id}
+            status={document.status}
+          />
+        </div>
+      )}
     </div>
   );
 }
