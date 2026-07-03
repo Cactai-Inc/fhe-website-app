@@ -1,5 +1,6 @@
 import { DataTable } from '../../../lib/ops';
 import type { Column } from '../../../lib/ops';
+import { contactName } from '../../../lib/ops/types';
 import type { Horse, LookupCode, Contact } from '../../../lib/ops/types';
 
 /**
@@ -40,7 +41,8 @@ export function HorseTable({ horses, breeds, colors, owners, loading, onRowClick
       header: 'Primary owner',
       render: (h) => {
         if (!h.current_owner_contact_id) return '—';
-        return owners.find((o) => o.id === h.current_owner_contact_id)?.full_name ?? '—';
+        const owner = owners.find((o) => o.id === h.current_owner_contact_id);
+        return owner ? contactName(owner) || '—' : '—';
       },
     },
   ];

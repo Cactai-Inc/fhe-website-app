@@ -33,12 +33,11 @@ beforeEach(async () => {
   breedLabel = breed.display_name;
 
   const buyer = (await h.q<{ id: string }>(
-    `insert into contacts (full_name, phone, email, address_line1, city, state, postal_code)
-     values ('Jane Buyer','619-555-0001','jane@example.com','1 Main St','San Diego','CA','92101') returning id`))[0].id;
+    `insert into contacts (first_name, last_name, phone, email, address_line1, city, state, postal_code) values ('Jane', 'Buyer', '619-555-0001', 'jane@example.com', '1 Main St', 'San Diego', 'CA', '92101') returning id`))[0].id;
   const seller = (await h.q<{ id: string }>(
-    `insert into contacts (full_name, phone, email) values ('John Seller','619-555-0002','john@example.com') returning id`))[0].id;
+    `insert into contacts (first_name, last_name, phone, email) values ('John', 'Seller', '619-555-0002', 'john@example.com') returning id`))[0].id;
   const clientContact = (await h.q<{ id: string }>(
-    `insert into contacts (full_name) values ('Acme Stables') returning id`))[0].id;
+    `insert into contacts (first_name, last_name) values ('Acme', 'Stables') returning id`))[0].id;
   const clientId = (await h.q<{ id: string }>(
     `insert into clients (contact_id) values ($1) returning id`, [clientContact]))[0].id;
 

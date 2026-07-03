@@ -28,7 +28,7 @@ async function makeOwnedEngagement(email: string) {
   await h.asSuperuser();
   const uid = await h.createAuthUser({ email });
   const contact = (await h.q<{ id: string }>(
-    `insert into contacts (full_name, email) values ($1,$2) returning id`,
+    `insert into contacts (first_name, email) values ($1,$2) returning id`,
     [email, email]))[0].id;
   await h.q(`update profiles set contact_id=$1 where user_id=$2`, [contact, uid]);
   const client = (await h.q<{ id: string }>(

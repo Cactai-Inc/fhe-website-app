@@ -70,9 +70,8 @@ function contact(over: Partial<Contact>): Contact {
   return {
     id: 'c-1',
     display_code: 'CON-0001',
-    full_name: 'Dr. Vetta',
-    first_name: null,
-    last_name: null,
+    first_name: 'Dr.',
+    last_name: 'Vetta',
     email: null,
     phone: null,
     address_line1: null,
@@ -121,7 +120,7 @@ beforeEach(() => {
   useModulesMock.mockReturnValue(RECORDS_ON);
   getRecordHorse.mockResolvedValue(horse());
   listHealthEvents.mockResolvedValue([]);
-  listRecordContacts.mockResolvedValue([contact({ id: 'c-1', full_name: 'Dr. Vetta' })]);
+  listRecordContacts.mockResolvedValue([contact({ id: 'c-1', first_name: 'Dr.', last_name: 'Vetta' })]);
 });
 
 describe('OPS-REC-HEALTH — HorseHealthPage', () => {

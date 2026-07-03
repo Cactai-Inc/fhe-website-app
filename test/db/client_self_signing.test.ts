@@ -29,9 +29,9 @@ beforeAll(async () => {
   await h.asSuperuser();
 
   contactA = (await h.q<{ id: string }>(
-    `insert into contacts (full_name, email) values ('Alice Client','alice@ex.com') returning id`))[0].id;
+    `insert into contacts (first_name, last_name, email) values ('Alice', 'Client', 'alice@ex.com') returning id`))[0].id;
   contactB = (await h.q<{ id: string }>(
-    `insert into contacts (full_name, email) values ('Sam Stranger','sam@ex.com') returning id`))[0].id;
+    `insert into contacts (first_name, last_name, email) values ('Sam', 'Stranger', 'sam@ex.com') returning id`))[0].id;
 
   admin = await h.createAuthUser({ email: 'staff@fhe.test', role: 'ADMIN' });
   memberUid = await h.createAuthUser({ email: 'alice@fhe.test', role: 'USER' });

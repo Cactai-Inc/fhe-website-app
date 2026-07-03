@@ -18,7 +18,6 @@
 export interface Contact {
   id: string;
   display_code: string | null;
-  full_name: string;
   first_name: string | null;
   last_name: string | null;
   email: string | null;
@@ -41,11 +40,27 @@ export interface Contact {
 export type ContactInput = Partial<
   Pick<
     Contact,
-    | 'full_name' | 'first_name' | 'last_name' | 'email' | 'phone'
+    | 'first_name' | 'last_name' | 'email' | 'phone'
     | 'address_line1' | 'address_line2' | 'city' | 'state' | 'postal_code'
     | 'country' | 'date_of_birth' | 'tags' | 'notes'
   >
-> & { full_name: string };
+> & { first_name: string };
+
+/**
+ * OFFICIAL identification: `first_name + ' ' + last_name`, trimmed to a single
+ * space when one part is missing (owner directive 2026-07-02 — contacts carry
+ * first/last only; `full_name` no longer exists). Use for ops tables, option
+ * dropdowns, signature/party surfaces. Casual surfaces (greetings) use
+ * `first_name` directly.
+ */
+export function contactName(
+  c?: { first_name?: string | null; last_name?: string | null } | null,
+): string {
+  return [c?.first_name, c?.last_name]
+    .map((part) => (part ?? '').trim())
+    .filter(Boolean)
+    .join(' ');
+}
 
 export type ClientStatus = 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
 

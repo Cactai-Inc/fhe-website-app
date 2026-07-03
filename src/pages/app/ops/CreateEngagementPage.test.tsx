@@ -48,7 +48,6 @@ function contact(over: Partial<Contact>): Contact {
   return {
     id: 'c-1',
     display_code: 'CON-0001',
-    full_name: 'Ada Rider',
     first_name: 'Ada',
     last_name: 'Rider',
     email: null,
@@ -92,10 +91,10 @@ function horse(over: Partial<Horse>): Horse {
 }
 
 const CONTACTS = [
-  contact({ id: 'buyer-1', full_name: 'Ada Buyer' }),
-  contact({ id: 'seller-1', full_name: 'Ben Seller' }),
-  contact({ id: 'client-1', full_name: 'Cara Client' }),
-  contact({ id: 'cpty-1', full_name: 'Dana Counterparty' }),
+  contact({ id: 'buyer-1', first_name: 'Ada', last_name: 'Buyer' }),
+  contact({ id: 'seller-1', first_name: 'Ben', last_name: 'Seller' }),
+  contact({ id: 'client-1', first_name: 'Cara', last_name: 'Client' }),
+  contact({ id: 'cpty-1', first_name: 'Dana', last_name: 'Counterparty' }),
 ];
 const HORSES = [horse({ id: 'horse-1', barn_name: 'Comet' })];
 

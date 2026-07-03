@@ -265,7 +265,7 @@ describe('generate_document — {{ORG.*}} / {{FHE.*}} CONTACT wiring (U3 half)',
     // Build a minimal engagement in org A (superuser context; org_id defaults to
     // the seed GUC = org A / tenant #1).
     const svc = (await h.q<{ code: string }>(`select code from service_types order by code limit 1`))[0].code;
-    const cc = (await h.q<{ id: string }>(`insert into contacts (full_name) values ('Probe Client') returning id`))[0].id;
+    const cc = (await h.q<{ id: string }>(`insert into contacts (first_name, last_name) values ('Probe', 'Client') returning id`))[0].id;
     const cl = (await h.q<{ id: string }>(`insert into clients (contact_id) values ($1) returning id`, [cc]))[0].id;
     const eng = (await h.q<{ id: string }>(
       `insert into engagements (client_id, service_type, start_date) values ($1,$2,'2026-07-01') returning id`,

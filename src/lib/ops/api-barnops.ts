@@ -124,7 +124,8 @@ export interface CostAllocationRuleInput {
 export interface ContactOption {
   id: string;
   display_code: string | null;
-  full_name: string;
+  first_name: string | null;
+  last_name: string | null;
 }
 
 /** Slim horse option for horse selects (horses is a core table). */
@@ -340,9 +341,10 @@ export async function listConsumptionBillableLines(period: string): Promise<Bill
 export async function listContactOptions(): Promise<ContactOption[]> {
   const { data, error } = await supabase
     .from('contacts')
-    .select('id, display_code, full_name')
+    .select('id, display_code, first_name, last_name')
     .is('deleted_at', null)
-    .order('full_name');
+    .order('first_name')
+    .order('last_name');
   if (error) throw error;
   return (data ?? []) as ContactOption[];
 }

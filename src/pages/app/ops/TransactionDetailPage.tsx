@@ -5,6 +5,7 @@ import { useDocumentTitle } from '../../../lib/hooks';
 import { Money, StatusBadge, EmptyState } from '../../../lib/ops';
 import { formatMoney } from '../../../lib/ops';
 import { SettleModal } from '../../../components/ops/billing/SettleModal';
+import { contactName } from '../../../lib/ops/types';
 import type { Transaction, BillableLine, Contact } from '../../../lib/ops/types';
 
 /**
@@ -34,7 +35,7 @@ export interface TransactionDetail extends Omit<Transaction, 'txn_type'> {
   /** Composing lines for an INVOICE (empty/absent for a deal txn). */
   billable_lines?: BillableLine[];
   /** The payer contact an INVOICE settled for. */
-  payer?: Pick<Contact, 'id' | 'display_code' | 'full_name'> | null;
+  payer?: Pick<Contact, 'id' | 'display_code' | 'first_name' | 'last_name'> | null;
 }
 
 export default function TransactionDetailPage() {
@@ -121,7 +122,7 @@ export default function TransactionDetailPage() {
                   <div className="flex items-center gap-4">
                     {txn.payer && (
                       <span className="text-sm text-green-800/70" data-testid="invoice-payer">
-                        Payer: {txn.payer.full_name}
+                        Payer: {contactName(txn.payer)}
                       </span>
                     )}
                     {txn.payer_contact_id && (
@@ -195,7 +196,7 @@ export default function TransactionDetailPage() {
                     open={settleOpen}
                     onClose={() => setSettleOpen(false)}
                     payerContactId={txn.payer_contact_id}
-                    payerLabel={txn.payer?.full_name ?? undefined}
+                    payerLabel={txn.payer ? contactName(txn.payer) : undefined}
                     onSettled={(result) => {
                       setSettleOpen(false);
                       navigate(`/app/ops/transactions/${result.transaction_id}`);

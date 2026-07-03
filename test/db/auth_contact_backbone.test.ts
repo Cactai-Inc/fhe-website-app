@@ -41,10 +41,11 @@ describe('contact-at-signup', () => {
     );
     expect(prof[0].contact_id).toBeTruthy();
 
-    const contact = await h.q<{ full_name: string; email: string; display_code: string }>(
-      `select full_name, email, display_code from contacts where id=$1`, [prof[0].contact_id],
+    const contact = await h.q<{ first_name: string; last_name: string; email: string; display_code: string }>(
+      `select first_name, last_name, email, display_code from contacts where id=$1`, [prof[0].contact_id],
     );
-    expect(contact[0].full_name).toBe('Jane Rider');
+    expect(contact[0].first_name).toBe('Jane');
+    expect(contact[0].last_name).toBe('Rider');
     expect(contact[0].email).toBe('jane@signup.fhe');
     expect(contact[0].display_code).toMatch(/^CON-\d{6}$/);
   });
@@ -67,7 +68,7 @@ describe('contact-at-signup', () => {
     await h.asSuperuser();
     // A staff-entered lead contact exists first (e.g. from a phone call).
     const existing = await h.q<{ id: string }>(
-      `insert into contacts (full_name, email) values ('Phoned Lead','lead@signup.fhe') returning id`,
+      `insert into contacts (first_name, last_name, email) values ('Phoned', 'Lead', 'lead@signup.fhe') returning id`,
     );
     // Then that person signs up.
     await h.q(`insert into auth.users (id, email) values ('22222222-2222-2222-2222-222222222222','lead@signup.fhe')`);
@@ -84,11 +85,11 @@ describe('contact-at-signup', () => {
     await h.asSuperuser();
     await h.q(`insert into auth.users (id, email) values ('33333333-3333-3333-3333-333333333333','noname@signup.fhe')`);
     await h.q(`insert into profiles (user_id, email) values ('33333333-3333-3333-3333-333333333333','noname@signup.fhe')`);
-    const c = await h.q<{ full_name: string }>(
-      `select c.full_name from contacts c
+    const c = await h.q<{ first_name: string }>(
+      `select c.first_name from contacts c
        join profiles p on p.contact_id = c.id
        where p.user_id='33333333-3333-3333-3333-333333333333'`,
     );
-    expect(c[0].full_name).toBe('noname@signup.fhe');
+    expect(c[0].first_name).toBe('noname@signup.fhe');
   });
 });

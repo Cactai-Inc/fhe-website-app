@@ -36,15 +36,17 @@ interface SignRow {
 }
 async function sign(input: Partial<Record<string, unknown>>) {
   const [raw] = await h.q<{ sign_release: SignRow | string }>(
-    `select sign_release($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+    `select sign_release($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::date,$11,$12)`,
     [
       input.template_key ?? 'RELEASE_GENERAL',
-      input.full_name ?? 'Vera Visitor',
+      input.first_name ?? 'Vera',
+      input.last_name ?? 'Visitor',
       input.email ?? 'vera@kiosk.test',
       input.phone ?? null,
       input.typed_name ?? 'Vera Visitor',
       input.is_minor ?? false,
-      input.minor_name ?? null,
+      input.minor_first_name ?? null,
+      input.minor_last_name ?? null,
       input.minor_dob ?? null,
       input.guardian_relationship ?? null,
       input.rules_acknowledged ?? true,
@@ -114,7 +116,7 @@ describe('sign_release — rules gate', () => {
 describe('sign_release — adult path', () => {
   it('executes on the single PARTICIPANT signature; minor section absent', async () => {
     await h.asAnon();
-    const res = await sign({ full_name: 'Alan Adult', email: 'alan@kiosk.test', typed_name: 'Alan Adult' });
+    const res = await sign({ first_name: 'Alan', last_name: 'Adult', email: 'alan@kiosk.test', typed_name: 'Alan Adult' });
     expect(res.status).toBe('EXECUTED');
     expect(res.merged_body).toContain('Alan Adult');
     expect(res.merged_body).not.toContain('MINOR SIGNER');
@@ -132,8 +134,8 @@ describe('sign_release — minor path', () => {
     await h.asAnon();
     const res = await sign({
       template_key: 'RELEASE_PARTICIPANT',
-      full_name: 'Gail Guardian', email: 'gail@kiosk.test', typed_name: 'Gail Guardian',
-      is_minor: true, minor_name: 'Milo Minor', minor_dob: '2015-04-09',
+      first_name: 'Gail', last_name: 'Guardian', email: 'gail@kiosk.test', typed_name: 'Gail Guardian',
+      is_minor: true, minor_first_name: 'Milo', minor_last_name: 'Minor', minor_dob: '2015-04-09',
       guardian_relationship: 'Mother',
     });
     expect(res.status).toBe('EXECUTED');
@@ -158,7 +160,7 @@ describe('sign_release — minor path', () => {
 
   it('rejects a minor signing without guardian details', async () => {
     await h.asAnon();
-    await expect(sign({ is_minor: true, minor_name: null })).rejects.toThrow();
+    await expect(sign({ is_minor: true, minor_first_name: null })).rejects.toThrow();
   });
 });
 
@@ -177,7 +179,7 @@ describe('cross-tenant isolation', () => {
     expect(prev.body).not.toContain('French Heritage Equestrian');
 
     const [rawB] = await h.q<{ sign_release: SignRow | string }>(
-      `select sign_release('RELEASE_GENERAL','Betty B','betty@b.test',null,'Betty B',false,null,null,null,true,$1)`,
+      `select sign_release('RELEASE_GENERAL','Betty','B','betty@b.test',null,'Betty B',false,null,null,null,null,true,$1)`,
       [orgB]);
     const row = (typeof rawB.sign_release === 'string' ? JSON.parse(rawB.sign_release) : rawB.sign_release) as SignRow;
     await h.asSuperuser();

@@ -54,8 +54,8 @@ vi.mock('../../../../lib/ops/useModules', () => ({ useModules: useModulesMock })
 import AllocationRulesPage from './AllocationRulesPage';
 
 const CONTACTS: ContactOption[] = [
-  { id: 'contact-1', display_code: 'C-1', full_name: 'Jane Owner' },
-  { id: 'contact-2', display_code: 'C-2', full_name: 'Barn LLC' },
+  { id: 'contact-1', display_code: 'C-1', first_name: 'Jane', last_name: 'Owner' },
+  { id: 'contact-2', display_code: 'C-2', first_name: 'Barn', last_name: 'LLC' },
 ];
 const HORSES: HorseOption[] = [
   { id: 'horse-1', display_code: 'H-1', barn_name: 'Comet', registered_name: null },

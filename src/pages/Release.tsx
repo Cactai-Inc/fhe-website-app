@@ -70,11 +70,15 @@ export default function Release() {
   const [step, setStep] = useState<Step>(deepLinked ? 'info' : 'choose');
   const [isMinor, setIsMinor] = useState(false);
 
-  // signer details (the adult, or the parent/guardian when isMinor)
-  const [fullName, setFullName] = useState('');
+  // signer details (the adult, or the parent/guardian when isMinor).
+  // First + last name replace the single full-name field (owner 2026-07-02);
+  // the official/printed name is the trimmed "first last" concatenation.
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [minorName, setMinorName] = useState('');
+  const [minorFirstName, setMinorFirstName] = useState('');
+  const [minorLastName, setMinorLastName] = useState('');
   const [minorDob, setMinorDob] = useState('');
   const [relationship, setRelationship] = useState('');
 
@@ -103,13 +107,18 @@ export default function Release() {
 
   const option = RELEASE_OPTIONS.find((o) => o.key === selected) ?? null;
 
-  const nameOk = fullName.trim().length >= 2;
+  // The OFFICIAL name the server merges + the typed signature must match.
+  const fullName = [firstName.trim(), lastName.trim()].filter(Boolean).join(' ');
+  const minorFullName = [minorFirstName.trim(), minorLastName.trim()].filter(Boolean).join(' ');
+
+  const nameOk = firstName.trim() !== '' && fullName.length >= 2;
   const contactOk = email.trim() !== '' || phone.trim() !== '';
   const minorOk = !isMinor
-    || (minorName.trim().length >= 2 && minorDob !== '' && relationship.trim().length >= 2);
+    || (minorFirstName.trim() !== '' && minorFullName.length >= 2
+        && minorDob !== '' && relationship.trim().length >= 2);
   const infoOk = nameOk && contactOk && minorOk;
   const typedMatches = typedName.trim() !== ''
-    && typedName.trim().toLowerCase() === fullName.trim().toLowerCase();
+    && typedName.trim().toLowerCase() === fullName.toLowerCase();
   const canSign = infoOk && typedMatches && rulesOk && !signing;
 
   function choose(key: ReleaseTemplateKey) {
@@ -125,12 +134,14 @@ export default function Release() {
     try {
       const r = await signRelease({
         template_key: selected,
-        full_name: fullName.trim(),
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
         email: email.trim() || null,
         phone: phone.trim() || null,
         typed_name: typedName.trim(),
         is_minor: isMinor,
-        minor_name: isMinor ? minorName.trim() : null,
+        minor_first_name: isMinor ? minorFirstName.trim() : null,
+        minor_last_name: isMinor ? minorLastName.trim() : null,
         minor_dob: isMinor ? minorDob : null,
         guardian_relationship: isMinor ? relationship.trim() : null,
         rules_acknowledged: rulesOk,
@@ -164,7 +175,7 @@ export default function Release() {
                   Thank you — your release is on file.
                 </h2>
                 <p className="body-text text-sm mb-2">
-                  Signed by {fullName.trim()} · Document {result.document_code}
+                  Signed by {fullName} · Document {result.document_code}
                 </p>
                 <p className="body-text text-sm text-secondary">
                   Your release is fully executed. Enjoy your visit.
@@ -223,9 +234,14 @@ export default function Release() {
                   {isMinor && (
                     <>
                       <div>
-                        <label className="form-label" htmlFor="r-minor-name">Minor's full legal name *</label>
-                        <input id="r-minor-name" className="form-input" required value={minorName}
-                          onChange={(e) => setMinorName(e.target.value)} autoComplete="off" />
+                        <label className="form-label" htmlFor="r-minor-first-name">Minor's first name *</label>
+                        <input id="r-minor-first-name" className="form-input" required value={minorFirstName}
+                          onChange={(e) => setMinorFirstName(e.target.value)} autoComplete="off" />
+                      </div>
+                      <div>
+                        <label className="form-label" htmlFor="r-minor-last-name">Minor's last name *</label>
+                        <input id="r-minor-last-name" className="form-input" required value={minorLastName}
+                          onChange={(e) => setMinorLastName(e.target.value)} autoComplete="off" />
                       </div>
                       <div>
                         <label className="form-label" htmlFor="r-minor-dob">Minor's date of birth *</label>
@@ -234,12 +250,19 @@ export default function Release() {
                       </div>
                     </>
                   )}
-                  <div className="sm:col-span-2">
-                    <label className="form-label" htmlFor="r-name">
-                      {isMinor ? 'Parent/guardian full legal name *' : 'Full legal name *'}
+                  <div>
+                    <label className="form-label" htmlFor="r-first-name">
+                      {isMinor ? 'Parent/guardian first name *' : 'First name *'}
                     </label>
-                    <input id="r-name" className="form-input" required value={fullName}
-                      onChange={(e) => setFullName(e.target.value)} autoComplete="name" />
+                    <input id="r-first-name" className="form-input" required value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)} autoComplete="given-name" />
+                  </div>
+                  <div>
+                    <label className="form-label" htmlFor="r-last-name">
+                      {isMinor ? 'Parent/guardian last name *' : 'Last name *'}
+                    </label>
+                    <input id="r-last-name" className="form-input" required value={lastName}
+                      onChange={(e) => setLastName(e.target.value)} autoComplete="family-name" />
                   </div>
                   {isMinor && (
                     <div className="sm:col-span-2">
@@ -332,13 +355,13 @@ export default function Release() {
                     <p className="eyebrow mb-3 pt-1">{isMinor ? 'Minor signer (parent/guardian)' : 'Adult signer'}</p>
                     {isMinor ? (
                       <>
-                        <p>Minor's Name: {minorName.trim()}</p>
+                        <p>Minor's Name: {minorFullName}</p>
                         <p>Date of Birth: {minorDob}</p>
-                        <p>Parent/Guardian Name: {fullName.trim()}</p>
+                        <p>Parent/Guardian Name: {fullName}</p>
                         <p>Relationship to Minor: {relationship.trim()}</p>
                       </>
                     ) : (
-                      <p>Printed Name: {fullName.trim()}</p>
+                      <p>Printed Name: {fullName}</p>
                     )}
                     {email.trim() !== '' && <p>Email: {email.trim()}</p>}
                     {phone.trim() !== '' && <p>Phone: {phone.trim()}</p>}

@@ -40,8 +40,7 @@ beforeAll(async () => {
 
   // A riding-lesson engagement on tenant #1 with an adult participant.
   const participant = (await h.q<{ id: string }>(
-    `insert into contacts (org_id, full_name, phone, email)
-     values ($1,'Paula Participant','619-555-0110','paula@example.com') returning id`, [org1]))[0].id;
+    `insert into contacts (org_id, first_name, last_name, phone, email) values ($1, 'Paula', 'Participant', '619-555-0110', 'paula@example.com') returning id`, [org1]))[0].id;
   const clientId = (await h.q<{ id: string }>(
     `insert into clients (org_id, contact_id) values ($1,$2) returning id`, [org1, participant]))[0].id;
   engId = (await h.q<{ id: string }>(

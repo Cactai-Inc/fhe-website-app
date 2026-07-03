@@ -120,14 +120,18 @@ export async function fetchReleasePreview(
 
 export interface SignReleaseInput {
   template_key: ReleaseTemplateKey;
-  /** The SIGNER: the adult, or the parent/guardian when is_minor. */
-  full_name: string;
+  /** The SIGNER: the adult, or the parent/guardian when is_minor. The server
+   *  concatenates first + last for the official/printed name; the typed
+   *  signature must match that concatenation. */
+  first_name: string;
+  last_name: string;
   email: string | null;
   phone: string | null;
   typed_name: string;
   /** Minor flow: the guardian signs; minor fields required. */
   is_minor: boolean;
-  minor_name?: string | null;
+  minor_first_name?: string | null;
+  minor_last_name?: string | null;
   /** ISO date (YYYY-MM-DD). */
   minor_dob?: string | null;
   guardian_relationship?: string | null;
@@ -153,12 +157,14 @@ export interface SignReleaseResult {
 export async function signRelease(input: SignReleaseInput): Promise<SignReleaseResult> {
   const params: Record<string, unknown> = {
     p_template_key: input.template_key,
-    p_full_name: input.full_name,
+    p_first_name: input.first_name,
+    p_last_name: input.last_name,
     p_email: input.email,
     p_phone: input.phone,
     p_typed_name: input.typed_name,
     p_is_minor: input.is_minor,
-    p_minor_name: input.minor_name ?? null,
+    p_minor_first_name: input.minor_first_name ?? null,
+    p_minor_last_name: input.minor_last_name ?? null,
     p_minor_dob: input.minor_dob ?? null,
     p_guardian_relationship: input.guardian_relationship ?? null,
     p_rules_acknowledged: input.rules_acknowledged,

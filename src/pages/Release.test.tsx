@@ -61,7 +61,8 @@ const continueRelease = () => screen.getByRole('button', { name: /continue to th
 async function adultToRules() {
   renderWithRouter(<Release />);
   await userEvent.click(chooserButton(/general visitor/i));
-  await userEvent.type(screen.getByLabelText(/^full legal name/i), 'Vera Visitor');
+  await userEvent.type(screen.getByLabelText(/^first name/i), 'Vera');
+  await userEvent.type(screen.getByLabelText(/^last name/i), 'Visitor');
   await userEvent.type(screen.getByLabelText(/email/i), 'vera@visitor.test');
   await userEvent.click(continueRules());
   await screen.findByText(/helmets required/i);
@@ -92,25 +93,28 @@ describe('Release', () => {
   it('a deep link (/release/horse-care) skips the chooser and previews that release', async () => {
     renderWithRouter(<Release />, { route: '/release/horse-care', path: '/release/:releaseKey' });
     expect(screen.queryByRole('button', { name: /general visitor/i })).not.toBeInTheDocument();
-    expect(await screen.findByLabelText(/^full legal name/i)).toBeInTheDocument();
+    expect(await screen.findByLabelText(/^first name/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^last name/i)).toBeInTheDocument();
     await waitFor(() => expect(fetchReleasePreview).toHaveBeenCalledWith('RELEASE_HORSE_CARE'));
   });
 
   it('the minor checkbox swaps the info form to minor + guardian fields', async () => {
     renderWithRouter(<Release />);
     await userEvent.click(chooserButton(/general visitor/i));
-    expect(screen.getByLabelText(/^full legal name/i)).toBeInTheDocument();
-    expect(screen.queryByLabelText(/minor's full legal name/i)).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/^first name/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/minor's first name/i)).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByLabelText(/covers a minor/i));
-    expect(screen.getByLabelText(/minor's full legal name/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/minor's first name/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/minor's last name/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/minor's date of birth/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/parent\/guardian full legal name/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/parent\/guardian first name/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/parent\/guardian last name/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/relationship to minor/i)).toBeInTheDocument();
 
     await userEvent.click(screen.getByLabelText(/covers a minor/i));
-    expect(screen.queryByLabelText(/minor's full legal name/i)).not.toBeInTheDocument();
-    expect(screen.getByLabelText(/^full legal name/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/minor's first name/i)).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/^first name/i)).toBeInTheDocument();
   });
 
   it('RULES GATE: continue stays disabled until the rules checkbox is checked', async () => {
@@ -142,12 +146,14 @@ describe('Release', () => {
 
     await waitFor(() => expect(signRelease).toHaveBeenCalledWith({
       template_key: 'RELEASE_GENERAL',
-      full_name: 'Vera Visitor',
+      first_name: 'Vera',
+      last_name: 'Visitor',
       email: 'vera@visitor.test',
       phone: null,
       typed_name: 'Vera Visitor',
       is_minor: false,
-      minor_name: null,
+      minor_first_name: null,
+      minor_last_name: null,
       minor_dob: null,
       guardian_relationship: null,
       rules_acknowledged: true,
@@ -165,9 +171,11 @@ describe('Release', () => {
     // the minor toggle lives on the info step (removed from the chooser per owner)
     await userEvent.click(screen.getByLabelText(/covers a minor/i));
 
-    await userEvent.type(screen.getByLabelText(/minor's full legal name/i), 'Mina Minor');
+    await userEvent.type(screen.getByLabelText(/minor's first name/i), 'Mina');
+    await userEvent.type(screen.getByLabelText(/minor's last name/i), 'Minor');
     await userEvent.type(screen.getByLabelText(/minor's date of birth/i), '2015-03-04');
-    await userEvent.type(screen.getByLabelText(/parent\/guardian full legal name/i), 'Gwen Guardian');
+    await userEvent.type(screen.getByLabelText(/parent\/guardian first name/i), 'Gwen');
+    await userEvent.type(screen.getByLabelText(/parent\/guardian last name/i), 'Guardian');
     await userEvent.type(screen.getByLabelText(/relationship to minor/i), 'Mother');
     await userEvent.type(screen.getByLabelText(/phone/i), '619-555-0100');
     await userEvent.click(continueRules());
@@ -183,12 +191,14 @@ describe('Release', () => {
 
     await waitFor(() => expect(signRelease).toHaveBeenCalledWith({
       template_key: 'RELEASE_PARTICIPANT',
-      full_name: 'Gwen Guardian',
+      first_name: 'Gwen',
+      last_name: 'Guardian',
       email: null,
       phone: '619-555-0100',
       typed_name: 'Gwen Guardian',
       is_minor: true,
-      minor_name: 'Mina Minor',
+      minor_first_name: 'Mina',
+      minor_last_name: 'Minor',
       minor_dob: '2015-03-04',
       guardian_relationship: 'Mother',
       rules_acknowledged: true,

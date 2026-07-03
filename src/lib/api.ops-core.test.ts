@@ -83,14 +83,17 @@ beforeEach(() => {
 // ─── CRM: contacts ──────────────────────────────────────────────────────────
 
 describe('listContacts()', () => {
-  it('selects from contacts, excludes soft-deleted, ordered by full_name', async () => {
-    const b = stubFrom({ data: [{ id: 'c1', full_name: 'Ada' }], error: null });
+  it('selects from contacts, excludes soft-deleted, ordered by first_name then last_name', async () => {
+    const b = stubFrom({ data: [{ id: 'c1', first_name: 'Ada', last_name: null }], error: null });
     const out = await listContacts();
     expect(from).toHaveBeenCalledWith('contacts');
     expect(called(b, 'select')!.args[0]).toBe('*');
     expect(called(b, 'is')!.args).toEqual(['deleted_at', null]);
-    expect(called(b, 'order')!.args[0]).toBe('full_name');
-    expect(out).toEqual([{ id: 'c1', full_name: 'Ada' }]);
+    expect(callsOf(b).filter((c) => c.method === 'order').map((c) => c.args[0])).toEqual([
+      'first_name',
+      'last_name',
+    ]);
+    expect(out).toEqual([{ id: 'c1', first_name: 'Ada', last_name: null }]);
   });
 
   it('throws on error', async () => {
@@ -101,16 +104,16 @@ describe('listContacts()', () => {
 
 describe('createContact()', () => {
   it('inserts the contact input and returns the created row', async () => {
-    const b = stubFrom({ data: { id: 'c1', full_name: 'Ada' }, error: null });
-    const out = await createContact({ full_name: 'Ada', email: 'a@x.io' });
+    const b = stubFrom({ data: { id: 'c1', first_name: 'Ada' }, error: null });
+    const out = await createContact({ first_name: 'Ada', email: 'a@x.io' });
     expect(from).toHaveBeenCalledWith('contacts');
-    expect(called(b, 'insert')!.args[0]).toEqual({ full_name: 'Ada', email: 'a@x.io' });
-    expect(out).toEqual({ id: 'c1', full_name: 'Ada' });
+    expect(called(b, 'insert')!.args[0]).toEqual({ first_name: 'Ada', email: 'a@x.io' });
+    expect(out).toEqual({ id: 'c1', first_name: 'Ada' });
   });
 
   it('throws on error', async () => {
     stubFrom({ data: null, error: { message: 'x' } });
-    await expect(createContact({ full_name: 'Ada' })).rejects.toBeTruthy();
+    await expect(createContact({ first_name: 'Ada' })).rejects.toBeTruthy();
   });
 });
 

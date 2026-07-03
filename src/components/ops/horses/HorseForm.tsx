@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { FormField } from '../../../lib/ops';
+import { contactName } from '../../../lib/ops/types';
 import type { Horse, HorseInput, HorseSex, LookupCode, Contact } from '../../../lib/ops/types';
 
 /**
@@ -159,7 +160,7 @@ export function HorseForm({ breeds, colors, owners, horse, onSubmit, onCancel }:
             <option value="">— No owner —</option>
             {owners.map((o) => (
               <option key={o.id} value={o.id}>
-                {o.full_name}
+                {contactName(o)}
               </option>
             ))}
           </select>

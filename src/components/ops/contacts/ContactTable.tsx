@@ -1,5 +1,6 @@
 import { DataTable } from '../../../lib/ops';
 import type { Column } from '../../../lib/ops';
+import { contactName } from '../../../lib/ops/types';
 import type { Contact } from '../../../lib/ops/types';
 
 /**
@@ -15,7 +16,20 @@ export interface ContactTableProps {
 }
 
 const columns: Column<Contact>[] = [
-  { key: 'full_name', header: 'Name', render: (c) => c.full_name },
+  {
+    key: 'name',
+    header: 'Name',
+    render: (c) => (
+      <span>
+        {contactName(c)}
+        {c.tags?.includes('owner') && (
+          <span className="ml-2 inline-block rounded bg-green-100 px-1.5 py-0.5 text-xs font-medium text-green-800">
+            Owner
+          </span>
+        )}
+      </span>
+    ),
+  },
   { key: 'email', header: 'Email', render: (c) => c.email ?? '—' },
   { key: 'phone', header: 'Phone', render: (c) => c.phone ?? '—' },
 ];

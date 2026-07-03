@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { FormField } from '../../../lib/ops';
+import { contactName } from '../../../lib/ops/types';
 import type { Contact, Horse } from '../../../lib/ops/types';
 import type { CreateLeaseEngagementInput } from '../../../lib/api';
 
@@ -72,7 +73,7 @@ export function LeaseEngagementForm({
             <option value="">Select client…</option>
             {contacts.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.full_name}
+                {contactName(c)}
               </option>
             ))}
           </select>
@@ -115,7 +116,7 @@ export function LeaseEngagementForm({
             <option value="">No counterparty</option>
             {contacts.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.full_name}
+                {contactName(c)}
               </option>
             ))}
           </select>

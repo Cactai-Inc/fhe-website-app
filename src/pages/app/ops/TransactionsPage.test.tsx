@@ -66,7 +66,7 @@ const INVOICE = {
 
 const INVOICE_DETAIL = {
   ...INVOICE,
-  payer: { id: 'contact-1', display_code: 'CT-1', full_name: 'Jane Boarder' },
+  payer: { id: 'contact-1', display_code: 'CT-1', first_name: 'Jane', last_name: 'Boarder' },
   billable_lines: [
     {
       id: 'bl-1',
@@ -132,7 +132,7 @@ const NEW_INVOICE_DETAIL = {
   status: 'POSTED',
   payer_contact_id: 'contact-1',
   period: null,
-  payer: { id: 'contact-1', display_code: 'CT-1', full_name: 'Jane Boarder' },
+  payer: { id: 'contact-1', display_code: 'CT-1', first_name: 'Jane', last_name: 'Boarder' },
   billable_lines: [{ ...OPEN_LINE, status: 'SETTLED', transaction_id: 'txn-777' }],
   created_at: '2026-03-02',
   updated_at: '2026-03-02',

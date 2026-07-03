@@ -405,7 +405,8 @@ export async function listContacts(): Promise<Contact[]> {
     .from('contacts')
     .select('*')
     .is('deleted_at', null)
-    .order('full_name');
+    .order('first_name')
+    .order('last_name');
   if (error) throw error;
   return (data ?? []) as Contact[];
 }

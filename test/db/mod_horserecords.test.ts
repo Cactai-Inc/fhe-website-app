@@ -95,7 +95,7 @@ beforeAll(async () => {
   await h.asSuperuser();
   await h.q(`select set_config('app.current_org',$1,false)`, [orgB]);
   const [bC] = await h.q<{ id: string }>(
-    `insert into contacts (full_name, email) values ('B Owner','b-owner@rival.test') returning id`);
+    `insert into contacts (first_name, last_name, email) values ('B', 'Owner', 'b-owner@rival.test') returning id`);
   bContact = bC.id;
   await h.q(`select set_config('app.current_org',$1,false)`, [orgA]);
   bHorse = await seedHorse(orgB, 'RivalHorse', bContact);

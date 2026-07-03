@@ -35,15 +35,14 @@ async function seedOrg(org: string, opts: { legal: string; signatory: string; ti
   const serviceType = (await h.q<{ code: string }>(`select code from service_types order by code limit 1`))[0].code;
 
   const buyer = (await h.q<{ id: string }>(
-    `insert into contacts (org_id, full_name, phone, email, address_line1, city, state, postal_code)
-     values ($1,'Party Buyer','619-555-0001','buyer@example.com','1 Main St','San Diego','CA','92101') returning id`,
+    `insert into contacts (org_id, full_name, first_name, last_name, phone, email, address_line1, city, state, postal_code) values ($1, 'Party Buyer', 'Party', 'Buyer', '619-555-0001', 'buyer@example.com', '1 Main St', 'San Diego', 'CA', '92101') returning id`,
     [org],
   ))[0].id;
   const seller = (await h.q<{ id: string }>(
-    `insert into contacts (org_id, full_name) values ($1,'Party Seller') returning id`, [org],
+    `insert into contacts (org_id, full_name, first_name, last_name) values ($1, 'Party Seller', 'Party', 'Seller') returning id`, [org],
   ))[0].id;
   const clientContact = (await h.q<{ id: string }>(
-    `insert into contacts (org_id, full_name) values ($1,'Client Co') returning id`, [org],
+    `insert into contacts (org_id, full_name, first_name, last_name) values ($1, 'Client Co', 'Client', 'Co') returning id`, [org],
   ))[0].id;
   const clientId = (await h.q<{ id: string }>(
     `insert into clients (org_id, contact_id) values ($1,$2) returning id`, [org, clientContact],

@@ -37,10 +37,12 @@ async function mkEngagement(opts: {
   horse?: boolean;
 }): Promise<string> {
   await h.asSuperuser();
+  const [cFirst, ...cRest] = opts.name.split(' ');
   const contact = (await h.q<{ id: string }>(
-    `insert into contacts (org_id, full_name, phone, email)
-     values ($1,$2,'619-555-0142',$3) returning id`,
-    [org1, opts.name, `${opts.name.toLowerCase().replace(/[^a-z]/g, '')}@example.com`]))[0].id;
+    `insert into contacts (org_id, first_name, last_name, phone, email)
+     values ($1,$2,$3,'619-555-0142',$4) returning id`,
+    [org1, cFirst, cRest.join(' ') || null,
+     `${opts.name.toLowerCase().replace(/[^a-z]/g, '')}@example.com`]))[0].id;
   const clientId = (await h.q<{ id: string }>(
     `insert into clients (org_id, contact_id) values ($1,$2) returning id`, [org1, contact]))[0].id;
   let horseId: string | null = null;
@@ -255,8 +257,7 @@ describe('create_purchase_engagement — records the buyer/BUY TRANSACTION_REP s
     await h.asSuperuser();
     const admin = await h.createAuthUser({ role: 'ADMIN', org: org1 });
     const buyer = (await h.q<{ id: string }>(
-      `insert into contacts (org_id, full_name, email)
-       values ($1,'Bart Buyer','bart@example.com') returning id`, [org1]))[0].id;
+      `insert into contacts (org_id, first_name, last_name, email) values ($1, 'Bart', 'Buyer', 'bart@example.com') returning id`, [org1]))[0].id;
 
     await h.asUser(admin);
     const eng = (await h.q<{ create_purchase_engagement: string }>(

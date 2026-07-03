@@ -14,6 +14,7 @@ import type { Column } from '../../../../lib/ops';
 import { useModules } from '../../../../lib/ops/useModules';
 import { useDocumentTitle } from '../../../../lib/hooks';
 import { listContacts, listHorses } from '../../../../lib/api';
+import { contactName } from '../../../../lib/ops/types';
 import type { Contact, Horse } from '../../../../lib/ops/types';
 import {
   listBoardAgreements,
@@ -137,7 +138,7 @@ function AgreementForm({
             <option value="">Select a contact…</option>
             {contacts.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.full_name}
+                {contactName(c)}
               </option>
             ))}
           </select>
@@ -299,7 +300,7 @@ export function BoardAgreementsPage() {
 
   const columns: Column<BoardAgreement>[] = [
     { key: 'horse', header: 'Horse', render: (a) => horseLabel(a.horse) },
-    { key: 'boarder', header: 'Boarder', render: (a) => a.boarder?.full_name ?? '—' },
+    { key: 'boarder', header: 'Boarder', render: (a) => contactName(a.boarder) || '—' },
     { key: 'stall', header: 'Stall', render: (a) => a.stall?.code ?? '—' },
     {
       key: 'rate',

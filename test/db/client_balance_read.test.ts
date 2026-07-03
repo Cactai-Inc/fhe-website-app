@@ -50,11 +50,11 @@ beforeAll(async () => {
   // CRM identity: each member is a contact; profiles.contact_id bridges them
   // (current_contact_id()), and a clients row makes them an engagement owner.
   contactClient = (await h.q<{ id: string }>(
-    `insert into contacts (org_id, full_name) values ($1,'Balance Client') returning id`, [orgA]))[0].id;
+    `insert into contacts (org_id, first_name, last_name) values ($1, 'Balance', 'Client') returning id`, [orgA]))[0].id;
   contactOther = (await h.q<{ id: string }>(
-    `insert into contacts (org_id, full_name) values ($1,'Other Member') returning id`, [orgA]))[0].id;
+    `insert into contacts (org_id, first_name, last_name) values ($1, 'Other', 'Member') returning id`, [orgA]))[0].id;
   contactB = (await h.q<{ id: string }>(
-    `insert into contacts (org_id, full_name) values ($1,'Rival Payer') returning id`, [orgB]))[0].id;
+    `insert into contacts (org_id, first_name, last_name) values ($1, 'Rival', 'Payer') returning id`, [orgB]))[0].id;
   await h.q(`update profiles set contact_id=$1 where user_id=$2`, [contactClient, clientUid]);
   await h.q(`update profiles set contact_id=$1 where user_id=$2`, [contactOther, otherUid]);
 

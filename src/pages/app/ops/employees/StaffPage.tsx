@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ModuleGate, DataTable, Modal, FormField, AsyncButton, StatusBadge, useAsync, useToast } from '../../../../lib/ops';
 import { useModules } from '../../../../lib/ops/useModules';
+import { contactName } from '../../../../lib/ops/types';
 import {
   listStaffProfiles, createStaffProfile, updateStaffProfile,
   listProfileOptions, listContactOptions,
@@ -135,7 +136,7 @@ export function StaffPage() {
         </div>
         <DataTable<StaffProfile>
           columns={[
-            { key: 'name', header: 'Name', render: (r) => staffDisplayName(r.profile, r.contact?.full_name ?? 'Unknown staff') },
+            { key: 'name', header: 'Name', render: (r) => staffDisplayName(r.profile, contactName(r.contact) || 'Unknown staff') },
             { key: 'title', header: 'Title', render: (r) => r.title ?? '—' },
             { key: 'pay', header: 'Pay type', render: (r) => r.pay_type ?? '—' },
             { key: 'active', header: 'Status', render: (r) => <StatusBadge status={r.active ? 'ACTIVE' : 'INACTIVE'} /> },
@@ -223,7 +224,7 @@ export function StaffPage() {
               >
                 <option value="">None</option>
                 {(contactOpts.data ?? []).map((c) => (
-                  <option key={c.id} value={c.id}>{c.full_name}</option>
+                  <option key={c.id} value={c.id}>{contactName(c)}</option>
                 ))}
               </select>
             )}
@@ -283,7 +284,7 @@ export function StaffPage() {
               >
                 <option value="">Select…</option>
                 {(staff.data ?? []).map((s) => (
-                  <option key={s.id} value={s.id}>{staffDisplayName(s.profile, s.contact?.full_name ?? 'Unknown staff')}</option>
+                  <option key={s.id} value={s.id}>{staffDisplayName(s.profile, contactName(s.contact) || 'Unknown staff')}</option>
                 ))}
               </select>
             )}

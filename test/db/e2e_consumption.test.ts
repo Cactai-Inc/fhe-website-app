@@ -52,11 +52,11 @@ beforeAll(async () => {
   aAdmin = await h.createAuthUser({ role: 'ADMIN', org: orgA });
 
   ownerContact = (await asSuperInOrg<{ id: string }>(orgON,
-    `insert into contacts (full_name, email) values ('Olive Owner','olive@e2e.test') returning id`))[0].id;
+    `insert into contacts (first_name, last_name, email) values ('Olive', 'Owner', 'olive@e2e.test') returning id`))[0].id;
   lesseeContact = (await asSuperInOrg<{ id: string }>(orgON,
-    `insert into contacts (full_name, email) values ('Lee Lessee','lee@e2e.test') returning id`))[0].id;
+    `insert into contacts (first_name, last_name, email) values ('Lee', 'Lessee', 'lee@e2e.test') returning id`))[0].id;
   barnContact = (await asSuperInOrg<{ id: string }>(orgON,
-    `insert into contacts (full_name, email) values ('The Barn','barn@e2e.test') returning id`))[0].id;
+    `insert into contacts (first_name, last_name, email) values ('The', 'Barn', 'barn@e2e.test') returning id`))[0].id;
 
   splitHorse = (await asSuperInOrg<{ id: string }>(orgON,
     `insert into horses (barn_name) values ('SplitE2E') returning id`))[0].id;

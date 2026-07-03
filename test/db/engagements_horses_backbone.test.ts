@@ -60,7 +60,7 @@ describe('human identifiers', () => {
   it('assigns ENG-YYYY-NNNNNN codes (year-stamped) per the merge dictionary', async () => {
     await h.asSuperuser();
     const contact = (await h.q<{ id: string }>(
-      `insert into contacts (full_name) values ('Eng Owner') returning id`))[0].id;
+      `insert into contacts (first_name, last_name) values ('Eng', 'Owner') returning id`))[0].id;
     const client = (await h.q<{ id: string }>(
       `insert into clients (contact_id) values ($1) returning id`, [contact]))[0].id;
     const eng = (await h.q<{ display_code: string }>(
@@ -97,7 +97,7 @@ describe('RLS — client sees own engagements and their horses only', () => {
     const adminUid = await h.createAuthUser({ email: 'ops@eng.fhe', isAdmin: true });
 
     const aliceContact = (await h.q<{ id: string }>(
-      `insert into contacts (full_name, email) values ('Alice Eng','alice@eng.fhe') returning id`))[0].id;
+      `insert into contacts (first_name, last_name, email) values ('Alice', 'Eng', 'alice@eng.fhe') returning id`))[0].id;
     await h.q(`update profiles set contact_id=$1 where user_id=$2`, [aliceContact, aliceUid]);
     const aliceClient = (await h.q<{ id: string }>(
       `insert into clients (contact_id) values ($1) returning id`, [aliceContact]))[0].id;
@@ -140,7 +140,7 @@ describe('horses are never hard-deletable (append-only / archival)', () => {
     const adminUid = await h.createAuthUser({ email: 'ops2@eng.fhe', isAdmin: true });
     const ownerUid = await h.createAuthUser({ email: 'owner@eng.fhe' });
     const ownerContact = (await h.q<{ id: string }>(
-      `insert into contacts (full_name, email) values ('Owner O','owner@eng.fhe') returning id`))[0].id;
+      `insert into contacts (first_name, last_name, email) values ('Owner', 'O', 'owner@eng.fhe') returning id`))[0].id;
     await h.q(`update profiles set contact_id=$1 where user_id=$2`, [ownerContact, ownerUid]);
     await h.q(`insert into clients (contact_id) values ($1)`, [ownerContact]);
     const horse = (await h.q<{ id: string }>(

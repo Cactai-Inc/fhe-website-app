@@ -95,11 +95,10 @@ describe('human identifiers + composed address', () => {
   it('assigns CON-/CLI- codes sequentially and composes the address', async () => {
     await h.asSuperuser();
     const c1 = await h.q<{ display_code: string; address_composed: string }>(
-      `insert into contacts (full_name, address_line1, city, state, postal_code)
-       values ('Jane Rider','123 Mesa Rd','San Diego','CA','92130') returning display_code, address_composed`,
+      `insert into contacts (first_name, last_name, address_line1, city, state, postal_code) values ('Jane', 'Rider', '123 Mesa Rd', 'San Diego', 'CA', '92130') returning display_code, address_composed`,
     );
     const c2 = await h.q<{ display_code: string }>(
-      `insert into contacts (full_name) values ('Second Person') returning display_code`,
+      `insert into contacts (first_name, last_name) values ('Second', 'Person') returning display_code`,
     );
     expect(c1[0].display_code).toMatch(/^CON-\d{6}$/);
     expect(c2[0].display_code).toMatch(/^CON-\d{6}$/);
@@ -110,7 +109,7 @@ describe('human identifiers + composed address', () => {
     // composed single-line address for {{PARTY.ADDRESS}}
     expect(c1[0].address_composed).toBe('123 Mesa Rd, San Diego, CA 92130');
 
-    const contactId = (await h.q<{ id: string }>(`select id from contacts where full_name='Jane Rider'`))[0].id;
+    const contactId = (await h.q<{ id: string }>(`select id from contacts where first_name='Jane' and last_name='Rider'`))[0].id;
     const cli = await h.q<{ display_code: string }>(
       `insert into clients (contact_id) values ($1) returning display_code`, [contactId],
     );
@@ -127,18 +126,19 @@ describe('RLS — contact is the backbone, scoped to its owner', () => {
     const adminUid = await h.createAuthUser({ email: 'ops@fhe', isAdmin: true });
 
     const aliceContact = (await h.q<{ id: string }>(
-      `insert into contacts (full_name, email) values ('Alice A','alice@portal.fhe') returning id`))[0].id;
+      `insert into contacts (first_name, last_name, email) values ('Alice', 'A', 'alice@portal.fhe') returning id`))[0].id;
     const bobContact = (await h.q<{ id: string }>(
-      `insert into contacts (full_name, email) values ('Bob B','bob@portal.fhe') returning id`))[0].id;
+      `insert into contacts (first_name, last_name, email) values ('Bob', 'B', 'bob@portal.fhe') returning id`))[0].id;
     await h.q(`update profiles set contact_id=$1 where user_id=$2`, [aliceContact, aliceUid]);
     await h.q(`update profiles set contact_id=$1 where user_id=$2`, [bobContact, bobUid]);
     await h.q(`insert into clients (contact_id) values ($1)`, [aliceContact]);
 
     // Alice sees only her own contact + her own client row.
     await h.asUser(aliceUid);
-    const aliceContacts = await h.q<{ full_name: string }>(`select full_name from contacts`);
+    const aliceContacts = await h.q<{ name: string }>(
+      `select trim(coalesce(first_name,'') || ' ' || coalesce(last_name,'')) as name from contacts`);
     expect(aliceContacts).toHaveLength(1);
-    expect(aliceContacts[0].full_name).toBe('Alice A');
+    expect(aliceContacts[0].name).toBe('Alice A');
     const myClient = await h.q(`select id from clients`);
     expect(myClient).toHaveLength(1);
     // current_contact_id() resolves the bridge
@@ -147,8 +147,9 @@ describe('RLS — contact is the backbone, scoped to its owner', () => {
 
     // Bob never sees Alice.
     await h.asUser(bobUid);
-    const bobContacts = await h.q<{ full_name: string }>(`select full_name from contacts`);
-    expect(bobContacts.map((c) => c.full_name)).toEqual(['Bob B']);
+    const bobContacts = await h.q<{ name: string }>(
+      `select trim(coalesce(first_name,'') || ' ' || coalesce(last_name,'')) as name from contacts`);
+    expect(bobContacts.map((c) => c.name)).toEqual(['Bob B']);
 
     // Admin sees all (≥ the 2 portal contacts + the 2 from the identifier test).
     await h.asUser(adminUid);
@@ -165,7 +166,7 @@ describe('RLS — contact is the backbone, scoped to its owner', () => {
     await h.asSuperuser();
     const uid = await h.createAuthUser({ email: 'carol@portal.fhe' });
     const cid = (await h.q<{ id: string }>(
-      `insert into contacts (full_name, email) values ('Carol C','carol@portal.fhe') returning id`))[0].id;
+      `insert into contacts (first_name, last_name, email) values ('Carol', 'C', 'carol@portal.fhe') returning id`))[0].id;
     await h.q(`update profiles set contact_id=$1 where user_id=$2`, [cid, uid]);
 
     // Update own contact succeeds.

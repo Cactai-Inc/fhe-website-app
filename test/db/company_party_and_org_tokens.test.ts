@@ -45,12 +45,13 @@ async function seedOrg(org: string, opts: {
   const breed = (await h.q<{ code: string }>(`select code from horse_breeds order by code limit 1`))[0].code;
 
   const clientContact = (await h.q<{ id: string }>(
-    `insert into contacts (org_id, full_name) values ($1,'Client Co') returning id`, [org]))[0].id;
+    `insert into contacts (org_id, first_name, last_name) values ($1, 'Client', 'Co') returning id`, [org]))[0].id;
   const clientId = (await h.q<{ id: string }>(
     `insert into clients (org_id, contact_id) values ($1,$2) returning id`, [org, clientContact]))[0].id;
+  const [emFirst, ...emRest] = opts.emergencyName.split(' ');
   const emergency = (await h.q<{ id: string }>(
-    `insert into contacts (org_id, full_name, phone) values ($1,$2,'619-555-0199') returning id`,
-    [org, opts.emergencyName]))[0].id;
+    `insert into contacts (org_id, first_name, last_name, phone) values ($1,$2,$3,'619-555-0199') returning id`,
+    [org, emFirst, emRest.join(' ') || null]))[0].id;
   const horse = (await h.q<{ id: string }>(
     `insert into horses (org_id, registered_name, breed, sex, vet_name, vet_phone, farrier_name, farrier_phone)
      values ($1,'Probe Pony',$2,'MARE',$3,'858-555-0142','Iron Mike','858-555-0143') returning id`,
@@ -172,7 +173,7 @@ describe('COMPANY party creation is signatory-gated', () => {
     const uid = await h.createAuthUser({ email: 'gate-ops@fhe.test', isAdmin: true });
     const breed = (await h.q<{ code: string }>(`select code from horse_breeds order by code limit 1`))[0].code;
     const buyer = (await h.q<{ id: string }>(
-      `insert into contacts (full_name) values ('Gate Buyer') returning id`))[0].id;
+      `insert into contacts (first_name, last_name) values ('Gate', 'Buyer') returning id`))[0].id;
     const horse = (await h.q<{ id: string }>(
       `insert into horses (registered_name, breed, sex) values ('Gate Horse',$1,'GELDING') returning id`, [breed]))[0].id;
 

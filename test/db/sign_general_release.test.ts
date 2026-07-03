@@ -79,9 +79,9 @@ describe('visitor flow end-to-end (tenant #1, anon caller)', () => {
       `select org_id, service_type, status, client_id from engagements where id=$1`, [res.engagement_id]);
     expect(eng.org_id).toBe(orgA);
     expect(eng.service_type).toBeNull(); // NON-SERVICE engagement (documented choice)
-    const [contact] = await h.q<{ org_id: string; full_name: string; email: string }>(
-      `select org_id, full_name, email from contacts where id=$1`, [res.contact_id]);
-    expect(contact).toEqual({ org_id: orgA, full_name: 'Vera Visitor', email: 'vera@visitor.test' });
+    const [contact] = await h.q<{ org_id: string; first_name: string; last_name: string; email: string }>(
+      `select org_id, first_name, last_name, email from contacts where id=$1`, [res.contact_id]);
+    expect(contact).toEqual({ org_id: orgA, first_name: 'Vera', last_name: 'Visitor', email: 'vera@visitor.test' });
     const [client] = await h.q<{ contact_id: string; source: string }>(
       `select contact_id, source from clients where id=$1`, [eng.client_id]);
     expect(client.contact_id).toBe(res.contact_id);
@@ -143,7 +143,7 @@ describe('validation fence (the anon rate-limit surface)', () => {
     await h.asAnon();
     await expect(sign('Bad Email', 'not-an-email', null, 'Bad Email')).rejects.toThrow(/invalid email/);
     await expect(sign('Bad Phone', null, 'call me maybe', 'Bad Phone')).rejects.toThrow(/invalid phone/);
-    await expect(sign('', 'x@y.test', null, '')).rejects.toThrow(/full name/);
+    await expect(sign('', 'x@y.test', null, '')).rejects.toThrow(/first name/);
     await expect(sign('Ghost Org', 'g@y.test', null, 'Ghost Org', '00000000-0000-0000-0000-000000000001'))
       .rejects.toThrow(/unknown organization/);
   });

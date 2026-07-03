@@ -14,6 +14,7 @@
  * decrement of credits_remaining (optimistic-concurrency-guarded below).
  */
 import { supabase } from '../supabase';
+import { contactName } from './types';
 
 // ─── Types (real columns of the mod.lessons tables) ─────────────────────────
 
@@ -62,7 +63,7 @@ export interface LessonCreditInput {
 export interface LessonClientOption {
   id: string;
   display_code: string | null;
-  full_name: string;
+  name: string;
   email: string | null;
 }
 
@@ -186,19 +187,19 @@ export async function consumeLessonCredit(id: string, count = 1): Promise<Lesson
 export async function listLessonClients(): Promise<LessonClientOption[]> {
   const { data, error } = await supabase
     .from('clients')
-    .select('id, display_code, contact:contacts(full_name, email)')
+    .select('id, display_code, contact:contacts(first_name, last_name, email)')
     .is('deleted_at', null)
     .order('created_at', { ascending: false });
   if (error) throw error;
   type Row = {
     id: string;
     display_code: string | null;
-    contact: { full_name: string; email: string | null } | null;
+    contact: { first_name: string | null; last_name: string | null; email: string | null } | null;
   };
   return ((data ?? []) as unknown as Row[]).map((r) => ({
     id: r.id,
     display_code: r.display_code,
-    full_name: r.contact?.full_name ?? r.display_code ?? r.id.slice(0, 8),
+    name: contactName(r.contact) || (r.display_code ?? r.id.slice(0, 8)),
     email: r.contact?.email ?? null,
   }));
 }

@@ -33,8 +33,11 @@ async function makeClient(name: string, email: string, org: string): Promise<{ u
   await h.asSuperuser();
   await h.q(`select set_config('app.current_org',$1,false)`, [org]);
   const uid = await h.createAuthUser({ role: 'USER', org });
+  const [first, ...rest] = name.split(' ');
   const contact = (await h.q<{ id: string }>(
-    `insert into contacts (org_id, full_name, email) values ($1,$2,$3) returning id`, [org, name, email]))[0].id;
+    // pinned pre-20260702090000 schema: full_name still exists (NOT NULL)
+    `insert into contacts (org_id, full_name, first_name, last_name, email) values ($1,$2,$3,$4,$5) returning id`,
+    [org, name, first, rest.join(' ') || null, email]))[0].id;
   await h.q(`update profiles set contact_id=$1 where user_id=$2`, [contact, uid]);
   const clientId = (await h.q<{ id: string }>(
     `insert into clients (org_id, contact_id) values ($1,$2) returning id`, [org, contact]))[0].id;
@@ -136,7 +139,7 @@ describe('module_gate(\'mod.lessons\') — a lessons-OFF org sees/writes nothing
     await h.asSuperuser();
     await h.q(`select set_config('app.current_org',$1,false)`, [orgC]);
     const cContact = (await h.q<{ id: string }>(
-      `insert into contacts (org_id, full_name) values ($1,'C Rider') returning id`, [orgC]))[0].id;
+      `insert into contacts (org_id, full_name, first_name, last_name) values ($1, 'C Rider', 'C', 'Rider') returning id`, [orgC]))[0].id;
     const cClient = (await h.q<{ id: string }>(
       `insert into clients (org_id, contact_id) values ($1,$2) returning id`, [orgC, cContact]))[0].id;
     await h.q(`select set_config('app.current_org',$1,false)`, [orgA]);

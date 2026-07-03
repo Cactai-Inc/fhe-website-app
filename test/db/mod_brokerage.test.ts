@@ -59,9 +59,9 @@ beforeAll(async () => {
 
   // Seed a client contact + horse per org (org_id defaults to the pinned GUC).
   clientContactA = (await asOrg(orgA,
-    `insert into contacts (full_name, email) values ('Alice Client','alice@a.test') returning id`))[0].id as string;
+    `insert into contacts (first_name, last_name, email) values ('Alice', 'Client', 'alice@a.test') returning id`))[0].id as string;
   clientContactB = (await asOrg(orgB,
-    `insert into contacts (full_name, email) values ('Bob Client','bob@b.test') returning id`))[0].id as string;
+    `insert into contacts (first_name, last_name, email) values ('Bob', 'Client', 'bob@b.test') returning id`))[0].id as string;
   const breed = (await h.q<{ code: string }>(`select code from horse_breeds order by code limit 1`))[0].code;
   await h.asSuperuser();
   await h.q(`select set_config('app.current_org',$1,false)`, [orgA]);

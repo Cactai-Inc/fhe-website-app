@@ -18,9 +18,9 @@ beforeAll(async () => {
   await h.asSuperuser();
   const breed = (await h.q<{ code: string }>(`select code from horse_breeds order by code limit 1`))[0].code;
   buyer = (await h.q<{ id: string }>(
-    `insert into contacts (full_name, email) values ('Jane Buyer','jane@ex.com') returning id`))[0].id;
+    `insert into contacts (first_name, last_name, email) values ('Jane', 'Buyer', 'jane@ex.com') returning id`))[0].id;
   seller = (await h.q<{ id: string }>(
-    `insert into contacts (full_name) values ('John Seller') returning id`))[0].id;
+    `insert into contacts (first_name, last_name) values ('John', 'Seller') returning id`))[0].id;
   horse = (await h.q<{ id: string }>(
     `insert into horses (registered_name, breed, sex) values ('Thunderbolt',$1,'GELDING') returning id`, [breed]))[0].id;
   uid = await h.createAuthUser({ email: 'ops@fhe.test', isAdmin: true });

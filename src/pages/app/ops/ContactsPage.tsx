@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Modal, useAsync, useToast } from '../../../lib/ops';
 import { listContacts, createContact, updateContact } from '../../../lib/api';
+import { contactName } from '../../../lib/ops/types';
 import type { Contact, ContactInput } from '../../../lib/ops/types';
 import { ContactTable } from '../../../components/ops/contacts/ContactTable';
 import { ContactForm } from '../../../components/ops/contacts/ContactForm';
@@ -50,7 +51,7 @@ export function ContactsPage() {
     if (!q) return rows;
     return rows.filter(
       (c) =>
-        c.full_name.toLowerCase().includes(q) ||
+        contactName(c).toLowerCase().includes(q) ||
         (c.email ?? '').toLowerCase().includes(q) ||
         (c.phone ?? '').toLowerCase().includes(q),
     );

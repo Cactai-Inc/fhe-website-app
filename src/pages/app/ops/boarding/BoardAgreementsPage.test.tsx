@@ -63,9 +63,8 @@ function contact(over: Partial<Contact>): Contact {
   return {
     id: 'c-1',
     display_code: 'CON-0001',
-    full_name: 'Ada Boarder',
-    first_name: null,
-    last_name: null,
+    first_name: 'Ada',
+    last_name: 'Boarder',
     email: null,
     phone: null,
     address_line1: null,
@@ -114,7 +113,7 @@ function agreement(over: Partial<BoardAgreement>): BoardAgreement {
     created_at: '2026-07-01T00:00:00Z',
     updated_at: '2026-07-01T00:00:00Z',
     horse: { id: 'h-1', barn_name: 'Comet', registered_name: null },
-    boarder: { id: 'c-1', full_name: 'Ada Boarder' },
+    boarder: { id: 'c-1', first_name: 'Ada', last_name: 'Boarder' },
     stall: { id: 's-1', code: 'A1' },
     ...over,
   };
@@ -128,7 +127,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   listBoardAgreements.mockResolvedValue([]);
   listHorses.mockResolvedValue([horse({ id: 'h-1', barn_name: 'Comet' })]);
-  listContacts.mockResolvedValue([contact({ id: 'c-1', full_name: 'Ada Boarder' })]);
+  listContacts.mockResolvedValue([contact({ id: 'c-1', first_name: 'Ada', last_name: 'Boarder' })]);
   listStalls.mockResolvedValue([stall({ id: 's-1', code: 'A1' })]);
 });
 
@@ -142,7 +141,7 @@ describe('OPS-BOARD-AGREEMENTS — BoardAgreementsPage', () => {
         status: 'SUSPENDED',
         board_rate: 725,
         horse: { id: 'h-2', barn_name: 'Blaze', registered_name: null },
-        boarder: { id: 'c-2', full_name: 'Ben Payer' },
+        boarder: { id: 'c-2', first_name: 'Ben', last_name: 'Payer' },
       }),
     ]);
 

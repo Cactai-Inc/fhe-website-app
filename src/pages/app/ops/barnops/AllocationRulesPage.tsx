@@ -12,6 +12,7 @@ import {
   useToast,
 } from '../../../../lib/ops';
 import { useModules } from '../../../../lib/ops/useModules';
+import { contactName } from '../../../../lib/ops/types';
 import type { BillableLine } from '../../../../lib/ops/types';
 import {
   listCostAllocationRules,
@@ -169,7 +170,7 @@ function RuleForm({
             <option value="">— Pick a payer —</option>
             {contacts.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.full_name}
+                {contactName(c)}
               </option>
             ))}
           </select>
@@ -387,7 +388,7 @@ export default function AllocationRulesPage() {
               {
                 key: 'payer',
                 header: 'Payer',
-                render: (r) => contactById.get(r.payer_contact_id)?.full_name ?? '—',
+                render: (r) => contactName(contactById.get(r.payer_contact_id)) || '—',
               },
               {
                 key: 'share',
@@ -467,7 +468,7 @@ export default function AllocationRulesPage() {
                   {
                     key: 'payer',
                     header: 'Payer',
-                    render: (l) => contactById.get(l.payer_contact_id)?.full_name ?? l.payer_contact_id,
+                    render: (l) => contactName(contactById.get(l.payer_contact_id)) || l.payer_contact_id,
                   },
                   {
                     key: 'horse',

@@ -112,7 +112,7 @@ describe('intake_submissions — status flow (REVIEWED / CONVERTED / DISMISSED)'
   it('CONVERTED links a REAL engagement created via create_purchase_engagement', async () => {
     await h.asUser(aAdmin);
     const [contact] = await h.q<{ id: string }>(
-      `insert into contacts (full_name, email) values ('Buyer From Intake','buyer@intake.test') returning id`);
+      `insert into contacts (full_name, first_name, last_name, email) values ('Buyer From Intake', 'Buyer', 'From Intake', 'buyer@intake.test') returning id`);
     const [sub] = await h.q<{ id: string }>(
       `insert into intake_submissions (form_key, payload, contact_email)
          values ('INTAKE_HORSE_PURCHASE','{}'::jsonb,'buyer@intake.test') returning id`);

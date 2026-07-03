@@ -104,7 +104,7 @@ beforeAll(async () => {
 
   // org B contact (the cross-org leakage probe).
   bContact = ((await asOrg(orgB,
-    `insert into contacts (full_name, email) values ('B Owner','b-owner@rival.test') returning id`)) as { id: string }[])[0].id;
+    `insert into contacts (first_name, last_name, email) values ('B', 'Owner', 'b-owner@rival.test') returning id`)) as { id: string }[])[0].id;
 
   // Seed facility + stall in org A via the REAL RLS path (not superuser), so
   // boundary + gate are exercised on WRITE.

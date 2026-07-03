@@ -74,9 +74,8 @@ function contact(over: Partial<Contact>): Contact {
   return {
     id: 'c-1',
     display_code: 'CON-0001',
-    full_name: 'Ada Rider',
-    first_name: null,
-    last_name: null,
+    first_name: 'Ada',
+    last_name: 'Rider',
     email: null,
     phone: null,
     address_line1: null,
@@ -125,8 +124,8 @@ beforeEach(() => {
   useModulesMock.mockReturnValue(RECORDS_ON);
   getRecordHorse.mockResolvedValue(horse());
   listRecordContacts.mockResolvedValue([
-    contact({ id: 'c-1', full_name: 'Ada Rider' }),
-    contact({ id: 'c-2', full_name: 'Ben Trainer' }),
+    contact({ id: 'c-1', first_name: 'Ada', last_name: 'Rider' }),
+    contact({ id: 'c-2', first_name: 'Ben', last_name: 'Trainer' }),
   ]);
 });
 

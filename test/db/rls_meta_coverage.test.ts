@@ -304,7 +304,7 @@ describe('second-tenant isolation + module gate end-to-end (tier.boarding)', () 
     await h.asSuperuser();
     await h.q(`select set_config('app.current_org', $1, false)`, [newOrg]);
     boardingContact = (await h.q<{ id: string }>(
-      `insert into contacts (org_id, full_name, email) values ($1,'Client One','c1@green-meadows.test') returning id`,
+      `insert into contacts (org_id, first_name, last_name, email) values ($1, 'Client', 'One', 'c1@green-meadows.test') returning id`,
       [newOrg]))[0].id;
   });
 
@@ -334,7 +334,7 @@ describe('second-tenant isolation + module gate end-to-end (tier.boarding)', () 
     await h.q(`select set_config('app.current_org', $1, false)`, [newOrg]);
     // an engagement to hang the stage off (engagements is core, not gated)
     const engClientContact = (await h.q<{ id: string }>(
-      `insert into contacts (org_id, full_name) values ($1,'Brokerage Ghost') returning id`, [newOrg]))[0].id;
+      `insert into contacts (org_id, first_name, last_name) values ($1, 'Brokerage', 'Ghost') returning id`, [newOrg]))[0].id;
     const clientId = (await h.q<{ id: string }>(
       `insert into clients (org_id, contact_id) values ($1,$2) returning id`, [newOrg, engClientContact]))[0].id;
     const stype = (await h.q<{ code: string }>(`select code from service_types order by code limit 1`))[0].code;

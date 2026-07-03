@@ -49,7 +49,7 @@ function agreement(over: Partial<BoardAgreement>): BoardAgreement {
     created_at: '2026-07-01T00:00:00Z',
     updated_at: '2026-07-01T00:00:00Z',
     horse: { id: 'h-1', barn_name: 'Comet', registered_name: null },
-    boarder: { id: 'c-1', full_name: 'Ada Boarder' },
+    boarder: { id: 'c-1', first_name: 'Ada', last_name: 'Boarder' },
     stall: { id: 's-1', code: 'A1' },
     ...over,
   };
@@ -71,7 +71,7 @@ function charge(over: Partial<BoardCharge>): BoardCharge {
       boarder_contact_id: 'c-1',
       horse_id: 'h-1',
       horse: { id: 'h-1', barn_name: 'Comet', registered_name: null },
-      boarder: { id: 'c-1', full_name: 'Ada Boarder' },
+      boarder: { id: 'c-1', first_name: 'Ada', last_name: 'Boarder' },
     },
     billable_line: { id: 'bl-1', status: 'OPEN', transaction_id: null },
     ...over,

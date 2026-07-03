@@ -146,7 +146,7 @@ describe('horse-health owner read', () => {
     await h.asSuperuser();
     const uid = await h.createAuthUser({ email: 'owner-u13@fhe', org: orgA });
     const contact = (await h.q<{ id: string }>(
-      `insert into contacts (full_name, email, org_id) values ('Owner U13','owner-u13@fhe',$1) returning id`,
+      `insert into contacts (first_name, last_name, email, org_id) values ('Owner', 'U13', 'owner-u13@fhe', $1) returning id`,
       [orgA]))[0].id;
     await h.q(`update profiles set contact_id=$1 where user_id=$2`, [contact, uid]);
     const horse = (await h.q<{ id: string }>(
@@ -158,7 +158,7 @@ describe('horse-health owner read', () => {
       [`${orgA}/${horse}/coggins.pdf`]);
     // And a health object for a horse the client does NOT own (owner = some other contact).
     const otherContact = (await h.q<{ id: string }>(
-      `insert into contacts (full_name, org_id) values ('Other',$1) returning id`, [orgA]))[0].id;
+      `insert into contacts (first_name, org_id) values ('Other', $1) returning id`, [orgA]))[0].id;
     const otherHorse = (await h.q<{ id: string }>(
       `insert into horses (barn_name, current_owner_contact_id, org_id) values ('NotYours',$1,$2) returning id`,
       [otherContact, orgA]))[0].id;

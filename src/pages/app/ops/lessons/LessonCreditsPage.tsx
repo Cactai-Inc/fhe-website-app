@@ -92,7 +92,7 @@ function GrantForm({
             <option value="">Select a client…</option>
             {clients.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.full_name}
+                {c.name}
               </option>
             ))}
           </select>
@@ -212,7 +212,7 @@ export function LessonCreditsPage() {
   };
 
   const clientName = useCallback(
-    (clientId: string) => clients.find((c) => c.id === clientId)?.full_name ?? clientId.slice(0, 8),
+    (clientId: string) => clients.find((c) => c.id === clientId)?.name ?? clientId.slice(0, 8),
     [clients],
   );
 
@@ -318,7 +318,7 @@ export function LessonCreditsPage() {
               <option value="">All clients</option>
               {clients.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.full_name}
+                  {c.name}
                 </option>
               ))}
             </select>

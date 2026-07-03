@@ -29,7 +29,7 @@ const TEMPLATE = 'contract_executed';
 
 interface PartyRow {
   contact_id: string;
-  contacts: { email: string | null; full_name: string | null } | null;
+  contacts: { email: string | null; first_name: string | null; last_name: string | null } | null;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -64,7 +64,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // 2. Recipients = the engagement's parties (+ their contact email).
     const { data: partiesRaw, error: partyErr } = await db
       .from('engagement_parties')
-      .select('contact_id, contacts:contact_id (email, full_name)')
+      .select('contact_id, contacts:contact_id (email, first_name, last_name)')
       .eq('engagement_id', doc.engagement_id);
     if (partyErr) throw partyErr;
     const parties = (partiesRaw ?? []) as unknown as PartyRow[];
@@ -94,7 +94,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const { subject, body: inner } = renderTemplate(
         TEMPLATE,
-        { documentTitle: doc.title, recipientName: party.contacts?.full_name },
+        // email greeting = casual surface → first_name (owner name-canon rule)
+        { documentTitle: doc.title, recipientName: party.contacts?.first_name },
         identity.fromName,
       );
       const footerHtml = identity.footer

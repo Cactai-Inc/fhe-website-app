@@ -103,9 +103,15 @@ export async function findOrCreateContactByEmail(
     if (error) throw error;
     if (data) return (data as { id: string }).id;
   }
+  // contacts carry first/last only (full_name removed 20260702090000): split the
+  // freeform intake name on the FIRST space; a single-token name is first-only.
+  const trimmed = fullName.trim();
+  const spaceAt = trimmed.indexOf(' ');
+  const firstName = spaceAt > 0 ? trimmed.slice(0, spaceAt) : trimmed;
+  const lastName = spaceAt > 0 ? trimmed.slice(spaceAt + 1).trim() || null : null;
   const { data, error } = await supabase
     .from('contacts')
-    .insert({ full_name: fullName, email })
+    .insert({ first_name: firstName, last_name: lastName, email })
     .select('id')
     .single();
   if (error) throw error;

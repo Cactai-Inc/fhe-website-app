@@ -45,7 +45,7 @@ const COLORS: LookupCode[] = [
 ];
 const OWNERS: Contact[] = [
   {
-    id: 'contact-1', display_code: 'C-1', full_name: 'Jane Rider', first_name: 'Jane',
+    id: 'contact-1', display_code: 'C-1', first_name: 'Jane',
     last_name: 'Rider', email: null, phone: null, address_line1: null, address_line2: null,
     city: null, state: null, postal_code: null, country: null, address_composed: null,
     date_of_birth: null, tags: [], notes: null, created_at: '', updated_at: '',

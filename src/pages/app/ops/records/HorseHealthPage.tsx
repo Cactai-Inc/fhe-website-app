@@ -23,6 +23,7 @@ import {
   type HorseHealthEvent,
   type HorseRecord,
 } from '../../../../lib/ops/api-records';
+import { contactName } from '../../../../lib/ops/types';
 import type { Contact } from '../../../../lib/ops/types';
 
 /**
@@ -240,7 +241,7 @@ function HealthEventForm({
             <option value="">No provider contact</option>
             {contacts.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.full_name}
+                {contactName(c)}
               </option>
             ))}
           </select>
@@ -359,7 +360,7 @@ export function HorseHealthPage() {
 
   const providerName = useCallback(
     (id: string | null) =>
-      id === null ? '—' : contacts.find((c) => c.id === id)?.full_name ?? id.slice(0, 8),
+      id === null ? '—' : contactName(contacts.find((c) => c.id === id)) || id.slice(0, 8),
     [contacts],
   );
 

@@ -24,6 +24,7 @@ import {
   type HorsePartyRole,
   type HorseRecord,
 } from '../../../../lib/ops/api-records';
+import { contactName as formatContactName } from '../../../../lib/ops/types';
 import type { Contact } from '../../../../lib/ops/types';
 
 /**
@@ -137,7 +138,7 @@ function PartyForm({
             <option value="">Select a contact…</option>
             {contacts.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.full_name}
+                {formatContactName(c)}
               </option>
             ))}
           </select>
@@ -306,7 +307,7 @@ export function HorsePartiesPage() {
   };
 
   const contactName = useCallback(
-    (id: string) => contacts.find((c) => c.id === id)?.full_name ?? id.slice(0, 8),
+    (id: string) => formatContactName(contacts.find((c) => c.id === id)) || id.slice(0, 8),
     [contacts],
   );
 

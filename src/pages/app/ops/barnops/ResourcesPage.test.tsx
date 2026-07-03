@@ -81,7 +81,7 @@ const LOTS: ResourceLot[] = [
 ];
 
 const VENDORS: ContactOption[] = [
-  { id: 'vendor-1', display_code: 'C-1', full_name: 'Feed Co' },
+  { id: 'vendor-1', display_code: 'C-1', first_name: 'Feed', last_name: 'Co' },
 ];
 
 function barnopsOn() {

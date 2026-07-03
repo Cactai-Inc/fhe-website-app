@@ -26,7 +26,8 @@ export interface ProfileOption {
 
 export interface ContactOption {
   id: string;
-  full_name: string;
+  first_name: string | null;
+  last_name: string | null;
 }
 
 export interface EngagementOption {
@@ -149,7 +150,7 @@ export interface EmployeesKpis {
 }
 
 const STAFF_SELECT =
-  '*, profile:profiles(user_id, first_name, last_name, email), contact:contacts(id, full_name)';
+  '*, profile:profiles(user_id, first_name, last_name, email), contact:contacts(id, first_name, last_name)';
 
 const SHIFT_SELECT =
   '*, staff:staff_profiles(id, title, profile:profiles(user_id, first_name, last_name))';
@@ -188,9 +189,10 @@ export async function listProfileOptions(): Promise<ProfileOption[]> {
 export async function listContactOptions(): Promise<ContactOption[]> {
   const { data, error } = await supabase
     .from('contacts')
-    .select('id, full_name')
+    .select('id, first_name, last_name')
     .is('deleted_at', null)
-    .order('full_name');
+    .order('first_name')
+    .order('last_name');
   if (error) throw error;
   return (data ?? []) as ContactOption[];
 }

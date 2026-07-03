@@ -14,6 +14,7 @@ import {
 import type { Column } from '../../../../lib/ops';
 import { useModules } from '../../../../lib/ops/useModules';
 import { useDocumentTitle } from '../../../../lib/hooks';
+import { contactName } from '../../../../lib/ops/types';
 import {
   listBoardCharges,
   createBoardCharge,
@@ -54,7 +55,7 @@ function lastOfMonth(): string {
 
 function agreementLabel(a: BoardAgreement): string {
   const horse = a.horse?.barn_name ?? a.horse?.registered_name ?? 'Horse';
-  const boarder = a.boarder?.full_name ?? 'boarder';
+  const boarder = contactName(a.boarder) || 'boarder';
   return `${horse} — ${boarder}`;
 }
 
@@ -255,7 +256,7 @@ export function BoardChargesPage() {
       render: (c) =>
         c.agreement
           ? `${c.agreement.horse?.barn_name ?? c.agreement.horse?.registered_name ?? '—'} — ${
-              c.agreement.boarder?.full_name ?? '—'
+              contactName(c.agreement.boarder) || '—'
             }`
           : '—',
     },

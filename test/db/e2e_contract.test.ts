@@ -30,9 +30,9 @@ beforeAll(async () => {
   await h.asSuperuser();
   const breed = (await h.q<{ code: string }>(`select code from horse_breeds order by code limit 1`))[0].code;
   buyer = (await h.q<{ id: string }>(
-    `insert into contacts (full_name, email) values ('Iris Intake','iris@e2e.test') returning id`))[0].id;
+    `insert into contacts (first_name, last_name, email) values ('Iris', 'Intake', 'iris@e2e.test') returning id`))[0].id;
   seller = (await h.q<{ id: string }>(
-    `insert into contacts (full_name, email) values ('Sam Seller','sam@e2e.test') returning id`))[0].id;
+    `insert into contacts (first_name, last_name, email) values ('Sam', 'Seller', 'sam@e2e.test') returning id`))[0].id;
   horse = (await h.q<{ id: string }>(
     `insert into horses (registered_name, breed, sex) values ('Cadence',$1,'MARE') returning id`, [breed]))[0].id;
 });
@@ -71,14 +71,14 @@ describe('chain 2 — intake lands, then converts through the real brokerage RPC
     expect(sub.status).toBe('CONVERTED');
     expect(sub.converted_engagement_id).toBe(engId);
 
-    const parties = await h.q<{ party_role: string; full_name: string; is_signer: boolean }>(
-      `select ep.party_role, c.full_name, ep.is_signer
+    const parties = await h.q<{ party_role: string; name: string; is_signer: boolean }>(
+      `select ep.party_role, trim(coalesce(c.first_name,'') || ' ' || coalesce(c.last_name,'')) as name, ep.is_signer
          from engagement_parties ep join contacts c on c.id = ep.contact_id
         where ep.engagement_id=$1 order by ep.signer_order`, [engId]);
     expect(parties.map((p) => p.party_role)).toEqual(['BUYER', 'SELLER', 'COMPANY']);
     expect(parties.every((p) => p.is_signer)).toBe(true);
     // the COMPANY signer is the seeded tenant signatory — Charles Zigmund
-    expect(parties[2].full_name).toBe('Charles Zigmund');
+    expect(parties[2].name).toBe('Charles Zigmund');
   });
 
   it('required_documents_for(HORSE_PURCHASE_ASSISTANCE) returns the tenant signing set', async () => {

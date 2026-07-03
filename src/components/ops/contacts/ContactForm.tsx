@@ -10,8 +10,8 @@ import type { Contact, ContactInput } from '../../../lib/ops/types';
  * this component stays presentational — but it OWNS the real `<form onSubmit>`
  * and validation, never a no-op handler.
  *
- * `full_name` is required (mirrors `ContactInput`'s required field); a submit
- * with an empty name is blocked inline and never reaches the data fn.
+ * `first_name` is required (mirrors `ContactInput`'s required field); a submit
+ * with an empty first name is blocked inline and never reaches the data fn.
  */
 export interface ContactFormProps {
   /** Existing contact when editing; undefined when creating. */
@@ -32,21 +32,24 @@ export function ContactForm({
   submitting,
   error,
 }: ContactFormProps) {
-  const [fullName, setFullName] = useState(contact?.full_name ?? '');
+  const [firstName, setFirstName] = useState(contact?.first_name ?? '');
+  const [lastName, setLastName] = useState(contact?.last_name ?? '');
   const [email, setEmail] = useState(contact?.email ?? '');
   const [phone, setPhone] = useState(contact?.phone ?? '');
   const [nameError, setNameError] = useState<string | null>(null);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const trimmed = fullName.trim();
-    if (!trimmed) {
-      setNameError('Name is required.');
+    const trimmedFirst = firstName.trim();
+    if (!trimmedFirst) {
+      setNameError('First name is required.');
       return;
     }
     setNameError(null);
+    const trimmedLast = lastName.trim();
     const input: ContactInput = {
-      full_name: trimmed,
+      first_name: trimmedFirst,
+      last_name: trimmedLast || null,
       email: email.trim() || null,
       phone: phone.trim() || null,
     };
@@ -55,15 +58,37 @@ export function ContactForm({
 
   return (
     <form onSubmit={handleSubmit} noValidate>
-      <FormField label="Name" required error={nameError}>
+      {contact?.tags?.includes('owner') && (
+        <p className="mb-4">
+          <span className="inline-block rounded bg-green-100 px-1.5 py-0.5 text-xs font-medium text-green-800">
+            Owner
+          </span>
+        </p>
+      )}
+
+      <FormField label="First name" required error={nameError}>
         {({ id, describedBy, errorClass }) => (
           <input
             id={id}
-            name="full_name"
+            name="first_name"
             className={`form-input ${errorClass}`}
             aria-describedby={describedBy}
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            disabled={submitting}
+          />
+        )}
+      </FormField>
+
+      <FormField label="Last name">
+        {({ id, describedBy, errorClass }) => (
+          <input
+            id={id}
+            name="last_name"
+            className={`form-input ${errorClass}`}
+            aria-describedby={describedBy}
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
             disabled={submitting}
           />
         )}

@@ -44,7 +44,7 @@ describe('the trigger captures row changes', () => {
     await h.q(`select set_config('request.jwt.claim.sub',$1,false)`, [userUid]);
 
     const contact = (await h.q<{ id: string }>(
-      `insert into contacts (full_name, email) values ('Audit Target','t@audit.fhe') returning id`))[0].id;
+      `insert into contacts (first_name, last_name, email) values ('Audit', 'Target', 't@audit.fhe') returning id`))[0].id;
     await h.q(`update contacts set phone='555-0001' where id=$1`, [contact]);
 
     const rows = await h.q<{
@@ -59,7 +59,9 @@ describe('the trigger captures row changes', () => {
     expect(rows[0].actor_user_id).toBe(userUid);
     // INSERT: no old, has new
     expect(rows[0].old_value).toBeNull();
-    expect((rows[0].new_value as { full_name: string }).full_name).toBe('Audit Target');
+    const nv = rows[0].new_value as { first_name: string; last_name: string };
+    expect(nv.first_name).toBe('Audit');
+    expect(nv.last_name).toBe('Target');
     // UPDATE: captures the new phone
     expect((rows[1].new_value as { phone: string }).phone).toBe('555-0001');
   });
@@ -67,7 +69,7 @@ describe('the trigger captures row changes', () => {
   it('captures a DELETE on a deletable business table', async () => {
     await h.asSuperuser();
     const contact = (await h.q<{ id: string }>(
-      `insert into contacts (full_name) values ('Doomed') returning id`))[0].id;
+      `insert into contacts (first_name) values ('Doomed') returning id`))[0].id;
     const client = (await h.q<{ id: string }>(
       `insert into clients (contact_id) values ($1) returning id`, [contact]))[0].id;
     const eng = (await h.q<{ id: string }>(

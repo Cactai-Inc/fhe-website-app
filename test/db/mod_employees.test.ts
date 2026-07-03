@@ -68,7 +68,7 @@ beforeAll(async () => {
 
   // An engagement in org B to link a service_assignment to. Build the client chain.
   const contactB = (await asSuperInOrg<{ id: string }>(orgB,
-    `insert into contacts (full_name, email) values ('Owner B','owner@b.test') returning id`))[0].id;
+    `insert into contacts (first_name, last_name, email) values ('Owner', 'B', 'owner@b.test') returning id`))[0].id;
   const clientB = (await asSuperInOrg<{ id: string }>(orgB,
     `insert into clients (contact_id) values ($1) returning id`, [contactB]))[0].id;
   engB = (await asSuperInOrg<{ id: string }>(orgB,

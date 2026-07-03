@@ -51,11 +51,11 @@ beforeAll(async () => {
   // payer contacts (a contact is the billable_lines.payer_contact_id). Seed as
   // superuser so we control org membership explicitly.
   payerA = (await h.q<{ id: string }>(
-    `insert into contacts (org_id, full_name) values ($1,'Payer A') returning id`, [orgA]))[0].id;
+    `insert into contacts (org_id, first_name, last_name) values ($1, 'Payer', 'A') returning id`, [orgA]))[0].id;
   payerA2 = (await h.q<{ id: string }>(
-    `insert into contacts (org_id, full_name) values ($1,'Payer A2') returning id`, [orgA]))[0].id;
+    `insert into contacts (org_id, first_name, last_name) values ($1, 'Payer', 'A2') returning id`, [orgA]))[0].id;
   payerB = (await h.q<{ id: string }>(
-    `insert into contacts (org_id, full_name) values ($1,'Payer B') returning id`, [orgB]))[0].id;
+    `insert into contacts (org_id, first_name, last_name) values ($1, 'Payer', 'B') returning id`, [orgB]))[0].id;
 
   // an org-A horse tied to an engagement whose client is payerA — so the settle's
   // engagement-derivation (line.horse_id -> engagement.primary_horse_id) has a
@@ -215,7 +215,7 @@ describe('settle_billable_lines: period scoping', () => {
   it('only rolls lines whose period is contained in the settle window', async () => {
     await h.asSuperuser();
     const janPayer = (await h.q<{ id: string }>(
-      `insert into contacts (org_id, full_name) values ($1,'Period Payer') returning id`, [orgA]))[0].id;
+      `insert into contacts (org_id, first_name, last_name) values ($1, 'Period', 'Payer') returning id`, [orgA]))[0].id;
     await h.asUser(aAdmin);
     // one line in January, one in February
     await seedLineA(janPayer, 100.0, { source_kind: 'board', period: '[2026-01-01,2026-02-01)' });
@@ -301,7 +301,7 @@ describe('settle_billable_lines: rolled lines are sealed (append-only)', () => {
   it('a line settled by the RPC cannot be un-settled or re-amounted', async () => {
     await h.asSuperuser();
     const payerSeal = (await h.q<{ id: string }>(
-      `insert into contacts (org_id, full_name) values ($1,'Seal Payer') returning id`, [orgA]))[0].id;
+      `insert into contacts (org_id, first_name, last_name) values ($1, 'Seal', 'Payer') returning id`, [orgA]))[0].id;
     await h.asUser(aAdmin);
     const blId = await seedLineA(payerSeal, 33.0, { source_kind: 'lesson' });
     await h.q(`select * from settle_billable_lines($1, NULL)`, [payerSeal]);

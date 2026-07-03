@@ -43,7 +43,7 @@ describe('business identity seed', () => {
 
   it('generate_document resolves the ORG.* identity from the seed', async () => {
     const serviceType = (await h.q<{ code: string }>(`select code from service_types limit 1`))[0].code;
-    const c = (await h.q<{ id: string }>(`insert into contacts (full_name) values ('Acme Stables') returning id`))[0].id;
+    const c = (await h.q<{ id: string }>(`insert into contacts (first_name, last_name) values ('Acme', 'Stables') returning id`))[0].id;
     const cl = (await h.q<{ id: string }>(`insert into clients (contact_id) values ($1) returning id`, [c]))[0].id;
     const eng = (await h.q<{ id: string }>(
       `insert into engagements (client_id, service_type) values ($1,$2) returning id`, [cl, serviceType]))[0].id;

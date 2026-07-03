@@ -76,13 +76,13 @@ beforeAll(async () => {
 
   // ---- orgON contacts (payers) ----
   ownerContact = (await asSuperInOrg<{ id: string }>(orgON,
-    `insert into contacts (full_name, email) values ('Owner O','owner@on.test') returning id`))[0].id;
+    `insert into contacts (first_name, last_name, email) values ('Owner', 'O', 'owner@on.test') returning id`))[0].id;
   lesseeContact = (await asSuperInOrg<{ id: string }>(orgON,
-    `insert into contacts (full_name, email) values ('Lessee L','lessee@on.test') returning id`))[0].id;
+    `insert into contacts (first_name, last_name, email) values ('Lessee', 'L', 'lessee@on.test') returning id`))[0].id;
   trainerContact = (await asSuperInOrg<{ id: string }>(orgON,
-    `insert into contacts (full_name, email) values ('Trainer T','trainer@on.test') returning id`))[0].id;
+    `insert into contacts (first_name, last_name, email) values ('Trainer', 'T', 'trainer@on.test') returning id`))[0].id;
   barnContact = (await asSuperInOrg<{ id: string }>(orgON,
-    `insert into contacts (full_name, email) values ('The Barn','barn@on.test') returning id`))[0].id;
+    `insert into contacts (first_name, last_name, email) values ('The', 'Barn', 'barn@on.test') returning id`))[0].id;
 
   // ---- orgON horses ----
   splitHorse = (await asSuperInOrg<{ id: string }>(orgON,

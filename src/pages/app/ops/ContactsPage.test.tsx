@@ -6,7 +6,8 @@
  *   - listContacts() drives the table rows (real fetch → real render),
  *   - 'New contact' opens the real Modal ContactForm,
  *   - typing name+email + submitting calls createContact WITH EXACT ARGS
- *     ({ full_name, email, phone }) — no no-op form, no wrong-shape payload,
+ *     ({ first_name, last_name, email, phone }) — no no-op form, no wrong-shape
+ *     payload,
  *   - the success branch refreshes (the new row appears) + shows a toast,
  *   - the error branch (createContact rejects) renders the message AND keeps
  *     the modal open (error not swallowed).
@@ -29,7 +30,6 @@ function contact(over: Partial<Contact>): Contact {
   return {
     id: 'c-1',
     display_code: 'CON-0001',
-    full_name: 'Ada Rider',
     first_name: 'Ada',
     last_name: 'Rider',
     email: 'ada@barn.test',
@@ -57,8 +57,8 @@ beforeEach(() => {
 describe('OPS-CONTACTS — ContactsPage', () => {
   it('renders the contacts returned by listContacts()', async () => {
     listContacts.mockResolvedValue([
-      contact({ id: 'c-1', full_name: 'Ada Rider', email: 'ada@barn.test' }),
-      contact({ id: 'c-2', full_name: 'Ben Trainer', email: 'ben@barn.test' }),
+      contact({ id: 'c-1', first_name: 'Ada', last_name: 'Rider', email: 'ada@barn.test' }),
+      contact({ id: 'c-2', first_name: 'Ben', last_name: 'Trainer', email: 'ben@barn.test' }),
     ]);
 
     renderWithRouter(<ContactsPage />);
@@ -74,9 +74,9 @@ describe('OPS-CONTACTS — ContactsPage', () => {
     listContacts
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([
-        contact({ id: 'c-9', full_name: 'Cara Groom', email: 'cara@barn.test' }),
+        contact({ id: 'c-9', first_name: 'Cara', last_name: 'Groom', email: 'cara@barn.test' }),
       ]);
-    createContact.mockResolvedValue(contact({ id: 'c-9', full_name: 'Cara Groom' }));
+    createContact.mockResolvedValue(contact({ id: 'c-9', first_name: 'Cara', last_name: 'Groom' }));
 
     renderWithRouter(<ContactsPage />);
 
@@ -87,7 +87,8 @@ describe('OPS-CONTACTS — ContactsPage', () => {
 
     // The real modal + form mounted.
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
-    await user.type(screen.getByLabelText(/Name/), 'Cara Groom');
+    await user.type(screen.getByLabelText(/First name/), 'Cara');
+    await user.type(screen.getByLabelText(/Last name/), 'Groom');
     await user.type(screen.getByLabelText('Email'), 'cara@barn.test');
 
     await user.click(screen.getByRole('button', { name: 'Create contact' }));
@@ -95,7 +96,8 @@ describe('OPS-CONTACTS — ContactsPage', () => {
     // EXACT payload shape lands at the real data fn.
     expect(createContact).toHaveBeenCalledTimes(1);
     expect(createContact).toHaveBeenCalledWith({
-      full_name: 'Cara Groom',
+      first_name: 'Cara',
+      last_name: 'Groom',
       email: 'cara@barn.test',
       phone: null,
     });
@@ -117,12 +119,26 @@ describe('OPS-CONTACTS — ContactsPage', () => {
     await screen.findByText('No contacts yet');
 
     await user.click(screen.getByRole('button', { name: 'New contact' }));
-    await user.type(screen.getByLabelText(/Name/), 'Cara Groom');
+    await user.type(screen.getByLabelText(/First name/), 'Cara');
     await user.click(screen.getByRole('button', { name: 'Create contact' }));
 
     // Error surfaced (not swallowed) AND the modal is still open.
     expect(await screen.findByRole('alert')).toHaveTextContent('duplicate contact');
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(createContact).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders the Owner badge next to a contact tagged owner (and not otherwise)', async () => {
+    listContacts.mockResolvedValue([
+      contact({ id: 'c-1', first_name: 'Ada', last_name: 'Rider', tags: ['owner'] }),
+      contact({ id: 'c-2', first_name: 'Ben', last_name: 'Trainer', email: 'ben@barn.test', tags: [] }),
+    ]);
+
+    renderWithRouter(<ContactsPage />);
+
+    expect(await screen.findByText('Ada Rider')).toBeInTheDocument();
+    expect(screen.getByText('Ben Trainer')).toBeInTheDocument();
+    // Exactly one Owner badge — on the owner-tagged row only.
+    expect(screen.getAllByText('Owner')).toHaveLength(1);
   });
 });

@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { DataTable, FormField, Modal, ModuleGate, Money, useToast } from '../../../../lib/ops';
 import { useModules } from '../../../../lib/ops/useModules';
+import { contactName } from '../../../../lib/ops/types';
 import {
   listResources,
   createResource,
@@ -209,7 +210,7 @@ function LotForm({
             <option value="">— No vendor —</option>
             {vendors.map((v) => (
               <option key={v.id} value={v.id}>
-                {v.full_name}
+                {contactName(v)}
               </option>
             ))}
           </select>
@@ -458,7 +459,7 @@ export default function ResourcesPage() {
                     header: 'Vendor',
                     render: (l) =>
                       l.vendor_contact_id
-                        ? vendorById.get(l.vendor_contact_id)?.full_name ?? '—'
+                        ? contactName(vendorById.get(l.vendor_contact_id)) || '—'
                         : '—',
                   },
                   {

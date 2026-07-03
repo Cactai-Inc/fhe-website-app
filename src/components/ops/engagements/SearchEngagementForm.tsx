@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { FormField } from '../../../lib/ops';
+import { contactName } from '../../../lib/ops/types';
 import type { Contact, Horse } from '../../../lib/ops/types';
 import type { CreateSearchEngagementInput } from '../../../lib/api';
 
@@ -71,7 +72,7 @@ export function SearchEngagementForm({
             <option value="">Select client…</option>
             {contacts.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.full_name}
+                {contactName(c)}
               </option>
             ))}
           </select>

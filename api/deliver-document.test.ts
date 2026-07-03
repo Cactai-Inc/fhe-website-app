@@ -29,7 +29,7 @@ interface DocState {
 }
 interface PartyState {
   contact_id: string;
-  contacts: { email: string | null; full_name: string | null };
+  contacts: { email: string | null; first_name: string | null; last_name: string | null };
 }
 interface DeliveryRow {
   document_id: string;
@@ -131,8 +131,8 @@ function makeReq(body: unknown, method = 'POST') {
 function seedExecuted(org = 'org-fhe') {
   state.document = { id: 'doc-1', engagement_id: 'eng-1', org_id: org, status: 'EXECUTED', title: 'Purchase Agreement' };
   state.parties = [
-    { contact_id: 'con-buyer', contacts: { email: 'buyer@example.com', full_name: 'Bo Buyer' } },
-    { contact_id: 'con-seller', contacts: { email: 'seller@example.com', full_name: 'Sy Seller' } },
+    { contact_id: 'con-buyer', contacts: { email: 'buyer@example.com', first_name: 'Bo', last_name: 'Buyer' } },
+    { contact_id: 'con-seller', contacts: { email: 'seller@example.com', first_name: 'Sy', last_name: 'Seller' } },
   ];
   state.deliveries = [];
 }

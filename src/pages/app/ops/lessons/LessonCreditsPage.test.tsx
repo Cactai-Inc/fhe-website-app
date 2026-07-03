@@ -54,8 +54,8 @@ function credit(over: Partial<LessonCredit>): LessonCredit {
 }
 
 const CLIENTS: LessonClientOption[] = [
-  { id: 'cl-1', display_code: 'CLI-0001', full_name: 'Ada Rider', email: 'ada@barn.test' },
-  { id: 'cl-2', display_code: 'CLI-0002', full_name: 'Ben Jumper', email: null },
+  { id: 'cl-1', display_code: 'CLI-0001', name: 'Ada Rider', email: 'ada@barn.test' },
+  { id: 'cl-2', display_code: 'CLI-0002', name: 'Ben Jumper', email: null },
 ];
 
 const PACKAGES: LessonPackage[] = [
