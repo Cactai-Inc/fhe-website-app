@@ -7,7 +7,7 @@
  * never a hardcoded brand).
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { resolveTenantEmailIdentity, renderTemplate, sendViaProvider } from './email';
+import { resolveTenantEmailIdentity, renderTemplate, sendViaProvider } from './email.js';
 
 export interface ReceiptResult {
   sent: boolean;

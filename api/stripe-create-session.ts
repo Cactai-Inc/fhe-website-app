@@ -5,7 +5,7 @@
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Stripe from 'stripe';
-import { getSupabaseAdmin } from './_lib/supabaseAdmin';
+import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
 
 const STRIPE_FEE_RATE = 0.03; // disclosed card convenience fee; confirm CA compliance (SETUP.md)
 

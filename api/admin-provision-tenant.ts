@@ -14,7 +14,7 @@
  * (§9). Returns { org_id }.
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getSupabaseAdmin } from './_lib/supabaseAdmin';
+import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
 
 /** Idempotently resolve the ADMIN auth user id for an email. Attempts to create
  *  the user first; if they already exist, looks them up instead. Never creates a

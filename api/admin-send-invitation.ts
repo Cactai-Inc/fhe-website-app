@@ -7,8 +7,8 @@
  * creates the invitation and returns the register URL so the admin can copy it.
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getSupabaseAdmin } from './_lib/supabaseAdmin';
-import { resolveTenantEmailIdentity, sendViaProvider } from './_lib/email';
+import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
+import { resolveTenantEmailIdentity, sendViaProvider } from './_lib/email.js';
 
 function makeToken(): string {
   // URL-safe random token. Node 18+ (the Vercel runtime) exposes Web Crypto globally.

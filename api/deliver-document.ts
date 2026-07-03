@@ -21,8 +21,8 @@
  * orphan delivery without an email attempt.
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getSupabaseAdmin } from './_lib/supabaseAdmin';
-import { resolveTenantEmailIdentity, sendViaProvider, renderTemplate } from './_lib/email';
+import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
+import { resolveTenantEmailIdentity, sendViaProvider, renderTemplate } from './_lib/email.js';
 
 const CHANNEL = 'EMAIL';
 const TEMPLATE = 'contract_executed';

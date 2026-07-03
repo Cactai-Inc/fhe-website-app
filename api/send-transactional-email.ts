@@ -13,8 +13,8 @@
  * registry (BRAND.NAME) and the address from an env/registry value (§15 isolation).
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getSupabaseAdmin } from './_lib/supabaseAdmin';
-import { resolveTenantEmailIdentity, sendViaProvider, renderTemplate } from './_lib/email';
+import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
+import { resolveTenantEmailIdentity, sendViaProvider, renderTemplate } from './_lib/email.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'method not allowed' });
