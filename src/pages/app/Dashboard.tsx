@@ -1,10 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, FileText, GraduationCap, Pin, Sparkles, X } from 'lucide-react';
+import { ArrowRight, CalendarClock, FileText, GraduationCap, MapPin, Pin, Sparkles, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useDocumentTitle } from '../../lib/hooks';
 import { fetchAnnouncements, fetchEvents } from '../../lib/community';
 import { myOnboardingState, type OnboardingState } from '../../lib/api';
+import {
+  myLessonSessions,
+  myLessonsOverview,
+  type MemberLessonSession,
+  type MyLessonsOverview,
+} from '../../lib/ops/api-member';
 import type { Announcement, CommunityEvent } from '../../lib/community-types';
 
 /** "4 lessons" (punch cards) or the cadence line (subscriptions). */
@@ -12,6 +18,14 @@ function planQuantity(p: NonNullable<OnboardingState['purchase']>): string | nul
   if (p.lessons_included) return `${p.lessons_included} lessons`;
   if (p.cadence) return /^\d+$/.test(String(p.cadence).trim()) ? `${p.cadence} lessons/week` : String(p.cadence);
   return null;
+}
+
+/** The soonest upcoming SCHEDULED session (my_lesson_sessions is upcoming-first). */
+function nextLesson(sessions: MemberLessonSession[]): MemberLessonSession | null {
+  const now = Date.now();
+  return (
+    sessions.find((s) => s.status === 'SCHEDULED' && new Date(s.starts_at).getTime() >= now) ?? null
+  );
 }
 
 /** Dashboard state machine (BOOKING_FLOWS_PLAN §6): once every onboarding doc
@@ -35,6 +49,8 @@ export default function Dashboard() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [events, setEvents] = useState<CommunityEvent[]>([]);
   const [onboarding, setOnboarding] = useState<OnboardingState | null>(null);
+  const [sessions, setSessions] = useState<MemberLessonSession[]>([]);
+  const [lessons, setLessons] = useState<MyLessonsOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [firstVisitDismissed, setFirstVisitDismissed] = useState(
     () => Boolean(window.localStorage.getItem(FIRST_VISIT_DISMISS_KEY)),
@@ -52,6 +68,13 @@ export default function Dashboard() {
     myOnboardingState()
       .then((s) => active && setOnboarding(s))
       .catch(() => { /* no onboarding surface — dashboard renders as usual */ });
+    // lesson-session spine: the next confirmed lesson + the LIVE credits ledger
+    myLessonSessions()
+      .then((s) => active && setSessions(s))
+      .catch(() => { /* no sessions card — dashboard renders as usual */ });
+    myLessonsOverview()
+      .then((o) => active && setLessons(o))
+      .catch(() => { /* fall back to the static purchase snapshot */ });
     return () => {
       active = false;
     };
@@ -69,6 +92,9 @@ export default function Dashboard() {
 
   const name = profile?.display_name || profile?.first_name || 'there';
   const purchase = onboarding?.purchase ?? null;
+  const upcoming = nextLesson(sessions);
+  // The LIVE punch-card ledger beats the static lessons_included snapshot.
+  const liveCredits = lessons && lessons.credits.length > 0 ? lessons.creditsRemaining : null;
 
   return (
     <div className="max-w-4xl">
@@ -92,6 +118,34 @@ export default function Dashboard() {
       <p className="eyebrow mb-2">Welcome back</p>
       <h1 className="heading-section text-green-800 mb-10">Good to see you, {name}.</h1>
 
+      {/* Next lesson — the soonest upcoming confirmed session, above the plan. */}
+      {upcoming && (
+        <div
+          className="bg-white border border-green-800/10 p-5 mb-8 flex items-center justify-between gap-4"
+          data-testid="next-lesson-card"
+        >
+          <div className="flex items-center gap-3">
+            <CalendarClock size={20} className="text-gold-ink flex-shrink-0" aria-hidden="true" />
+            <div>
+              <p className="eyebrow mb-0.5">Next lesson</p>
+              <p className="text-sm font-sans font-medium text-green-900">
+                {new Date(upcoming.starts_at).toLocaleString(undefined, {
+                  weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit',
+                })}
+              </p>
+              {upcoming.location && (
+                <p className="text-xs text-muted mt-0.5 inline-flex items-center gap-1.5">
+                  <MapPin size={12} aria-hidden="true" /> {upcoming.location}
+                </p>
+              )}
+            </div>
+          </div>
+          <Link to="/app/schedule" className="link-underline whitespace-nowrap">
+            See schedule <ArrowRight size={12} />
+          </Link>
+        </div>
+      )}
+
       {/* Plan card — what they bought (provisioned invite purchase). */}
       {purchase && (
         <div
@@ -102,7 +156,13 @@ export default function Dashboard() {
             <GraduationCap size={20} className="text-gold-ink flex-shrink-0" aria-hidden="true" />
             <div>
               <p className="text-sm font-sans font-medium text-green-900">{purchase.tier_label}</p>
-              {planQuantity(purchase) && <p className="text-xs text-muted mt-0.5">{planQuantity(purchase)}</p>}
+              {liveCredits !== null ? (
+                <p className="text-xs text-muted mt-0.5" data-testid="lessons-remaining">
+                  {liveCredits} lesson{liveCredits === 1 ? '' : 's'} remaining
+                </p>
+              ) : (
+                planQuantity(purchase) && <p className="text-xs text-muted mt-0.5">{planQuantity(purchase)}</p>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-3 flex-shrink-0">

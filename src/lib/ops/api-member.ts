@@ -77,6 +77,28 @@ export async function myLessonsOverview(): Promise<MyLessonsOverview> {
   };
 }
 
+// ─── My lesson sessions (mod.lessons — 20260703120000) ──────────────────────
+
+export type MemberLessonSessionStatus = 'SCHEDULED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
+
+/** One of the member's own confirmed lesson sessions (my_lesson_sessions RPC). */
+export interface MemberLessonSession {
+  id: string;
+  starts_at: string;
+  ends_at: string;
+  status: MemberLessonSessionStatus;
+  location: string | null;
+  notes: string | null;
+}
+
+/** The member's own sessions: upcoming soonest-first, then recent past (~50).
+ *  SECURITY DEFINER RPC scoped to current_client_id() — empty for non-clients. */
+export async function myLessonSessions(): Promise<MemberLessonSession[]> {
+  const { data, error } = await supabase.rpc('my_lesson_sessions');
+  if (error) throw error;
+  return (data ?? []) as MemberLessonSession[];
+}
+
 // ─── MyBrokerage (mod.brokerage) ─────────────────────────────────────────────
 
 /** The member's own engagement, flattened with its service + status lookups. */

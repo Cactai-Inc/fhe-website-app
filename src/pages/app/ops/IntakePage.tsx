@@ -37,11 +37,19 @@ import {
   markSubmissionStatus,
   markSubmissionConverted,
   findOrCreateContactByEmail,
+  findClientForRequest,
   listBookingRequests,
   markRequestContacted,
   appendRequestNote,
   setRequestChecklist,
 } from '../../../lib/ops/api-intake';
+import {
+  scheduleLessonSession,
+  listLessonSessionsForRequest,
+} from '../../../lib/ops/api-lessons';
+import type { LessonSession } from '../../../lib/ops/api-lessons';
+import { ScheduleSessionForm } from './lessons/ScheduleSessionForm';
+import type { ScheduleSessionFormValues } from './lessons/ScheduleSessionForm';
 import type {
   IntakeSubmission,
   IntakeSubmissionStatus,
@@ -67,6 +75,7 @@ const REQUEST_FILTERS: { id: RequestFilter; label: string }[] = [
   { id: 'new', label: 'New' },
   { id: 'contacted', label: 'Contacted' },
   { id: 'invited', label: 'Invited' },
+  { id: 'converted', label: 'Converted' },
   { id: 'ALL', label: 'All' },
 ];
 
@@ -228,6 +237,11 @@ function RequestInbox() {
     url: string; emailed: boolean; tierLabel?: string;
   } | null>(null);
   const [tiers, setTiers] = useState<OfferingTier[]>([]);
+  // Schedule-lesson section (invited/converted requests): the provisioned
+  // client resolved via request → invitation → email → contact → client, plus
+  // the sessions already booked from this request.
+  const [requestClientId, setRequestClientId] = useState<string | null>(null);
+  const [requestSessions, setRequestSessions] = useState<LessonSession[]>([]);
 
   const load = useAsync(listBookingRequests);
   const toast = useToast();
@@ -262,6 +276,16 @@ function RequestInbox() {
     setInvite(inviteFormFor(row));
     setInviteResult(null);
     setActionError(null);
+    setRequestClientId(null);
+    setRequestSessions([]);
+    if (row.status === 'invited' || row.status === 'converted') {
+      findClientForRequest(row.id)
+        .then(setRequestClientId)
+        .catch(() => setRequestClientId(null));
+      listLessonSessionsForRequest(row.id)
+        .then(setRequestSessions)
+        .catch(() => setRequestSessions([]));
+    }
   };
 
   const closeDrawer = () => {
@@ -333,6 +357,22 @@ function RequestInbox() {
       await refresh(statusFilter);
     } catch (err) {
       setActionError(toErrorMessage(err, 'Could not send the invitation.'));
+    }
+  };
+
+  const scheduleSession = useAsync(scheduleLessonSession);
+  const handleScheduleLesson = async (values: ScheduleSessionFormValues) => {
+    if (!selected) return;
+    setActionError(null);
+    try {
+      await scheduleSession.run({ ...values, request_id: selected.id });
+      toast.success('Lesson scheduled — the request is converted.');
+      // The RPC flipped the request server-side; mirror it locally + refresh.
+      setSelected((prev) => (prev ? { ...prev, status: 'converted' } : prev));
+      setRequestSessions(await listLessonSessionsForRequest(selected.id).catch(() => []));
+      await refresh(statusFilter);
+    } catch (err) {
+      setActionError(toErrorMessage(err, 'Could not schedule the lesson.'));
     }
   };
 
@@ -494,6 +534,46 @@ function RequestInbox() {
                 ))}
               </ul>
             </section>
+
+            {/* Schedule lesson — the invited/converted request gets its real
+                date/time booked here (schedule_lesson_session RPC: overlap
+                rejection, request → converted, member notified). */}
+            {(selected.status === 'invited' || selected.status === 'converted') && (
+              <section aria-label="Schedule lesson" className="border-t border-green-800/10 pt-4">
+                <h3 className="form-label mb-2">Schedule lesson</h3>
+                {requestSessions.length > 0 && (
+                  <ul className="flex flex-col gap-1.5 mb-4" data-testid="request-sessions">
+                    {requestSessions.map((s) => (
+                      <li
+                        key={s.id}
+                        className="flex items-center justify-between gap-3 text-sm text-green-900"
+                      >
+                        <span>
+                          {new Date(s.starts_at).toLocaleString(undefined, {
+                            weekday: 'short', month: 'short', day: 'numeric',
+                            hour: 'numeric', minute: '2-digit',
+                          })}
+                          {s.location ? ` · ${s.location}` : ''}
+                        </span>
+                        <StatusBadge status={s.status} />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {requestClientId ? (
+                  <ScheduleSessionForm
+                    fixedClientId={requestClientId}
+                    onSubmit={handleScheduleLesson}
+                    submitting={scheduleSession.isPending}
+                  />
+                ) : (
+                  <p className="text-sm text-green-800/70">
+                    No provisioned client found for this request yet — the booking
+                    form appears once the invitation has provisioned one.
+                  </p>
+                )}
+              </section>
+            )}
 
             {actionError && (
               <p role="alert" className="form-error">

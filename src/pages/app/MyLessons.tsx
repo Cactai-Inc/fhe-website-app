@@ -1,18 +1,19 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, GraduationCap } from 'lucide-react';
+import { ArrowRight, CalendarClock, GraduationCap, MapPin } from 'lucide-react';
 import { ModuleGate, useAsync } from '../../lib/ops';
 import { useModules } from '../../lib/ops/useModules';
-import { myLessonsOverview } from '../../lib/ops/api-member';
+import { myLessonsOverview, myLessonSessions, type MemberLessonSession } from '../../lib/ops/api-member';
 import { useDocumentTitle } from '../../lib/hooks';
 
 /**
  * CP-LESSONS — the member's Lessons page (module mod.lessons), the /app/lessons
  * nav target. Gated by ModuleGate('mod.lessons'): a lessons-OFF tenant sees the
  * lock and myLessonsOverview() never fires. Inside the gate: the member's
- * remaining-credit balance (their own lesson_credits rows via the client-scoped
- * RLS policy), the purchase ledger, and the tenant's active packages linking to
- * the public /lessons funnel to buy more.
+ * upcoming confirmed sessions (my_lesson_sessions RPC), the remaining-credit
+ * balance (their own lesson_credits rows via the client-scoped RLS policy),
+ * the purchase ledger, and the tenant's active packages linking to the public
+ * /lessons funnel to buy more.
  */
 export default function MyLessons() {
   useDocumentTitle('My Lessons');
@@ -20,16 +21,26 @@ export default function MyLessons() {
   const lessonsOn = modules['mod.lessons'] === true;
 
   const load = useAsync(myLessonsOverview);
+  const [sessions, setSessions] = useState<MemberLessonSession[]>([]);
 
   useEffect(() => {
     if (!lessonsOn) return;
     load.run().catch(() => {
       /* surfaced via load.isError */
     });
+    myLessonSessions()
+      .then(setSessions)
+      .catch(() => {
+        /* the credits ledger still renders */
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lessonsOn]);
 
   const overview = load.data;
+  const now = Date.now();
+  const upcoming = sessions.filter(
+    (s) => s.status === 'SCHEDULED' && new Date(s.ends_at).getTime() >= now,
+  );
 
   return (
     <div className="max-w-3xl">
@@ -44,6 +55,40 @@ export default function MyLessons() {
         )}
 
         {load.isPending && !overview && <p className="body-text text-muted">Loading…</p>}
+
+        {/* Upcoming sessions — above the credits ledger. */}
+        {upcoming.length > 0 && (
+          <section aria-label="Upcoming lessons" className="mb-8" data-testid="upcoming-sessions">
+            <h2 className="font-serif font-medium text-green-800 text-xl mb-4">Upcoming lessons</h2>
+            <div className="flex flex-col gap-3">
+              {upcoming.map((s) => (
+                <div
+                  key={s.id}
+                  className="bg-white border border-green-800/10 p-5 flex items-center justify-between gap-4"
+                >
+                  <div className="flex items-center gap-3">
+                    <CalendarClock size={18} className="text-gold-ink flex-shrink-0" aria-hidden="true" />
+                    <div>
+                      <p className="text-sm font-sans font-medium text-green-900">
+                        {new Date(s.starts_at).toLocaleString(undefined, {
+                          weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit',
+                        })}
+                      </p>
+                      {s.location && (
+                        <p className="text-xs text-muted mt-0.5 inline-flex items-center gap-1.5">
+                          <MapPin size={12} aria-hidden="true" /> {s.location}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <span className="bg-green-800 text-white text-xs font-sans px-2 py-0.5 tracking-wide whitespace-nowrap">
+                    SCHEDULED
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {overview && (
           <>

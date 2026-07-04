@@ -14,11 +14,11 @@ import { renderWithRouter, screen } from '../../test/render';
 vi.mock('../../lib/ops/useModules', () => ({ useModules: vi.fn() }));
 vi.mock('../../lib/ops/api-member', async (importOriginal) => {
   const real = await importOriginal<typeof import('../../lib/ops/api-member')>();
-  return { ...real, myLessonsOverview: vi.fn() };
+  return { ...real, myLessonsOverview: vi.fn(), myLessonSessions: vi.fn() };
 });
 
 import { useModules } from '../../lib/ops/useModules';
-import { myLessonsOverview } from '../../lib/ops/api-member';
+import { myLessonsOverview, myLessonSessions } from '../../lib/ops/api-member';
 import MyLessons from './MyLessons';
 
 const OVERVIEW = {
@@ -43,6 +43,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   modulesOn(true);
   vi.mocked(myLessonsOverview).mockResolvedValue(OVERVIEW as never);
+  vi.mocked(myLessonSessions).mockResolvedValue([]);
 });
 
 describe('MyLessons', () => {
@@ -73,5 +74,43 @@ describe('MyLessons', () => {
     renderWithRouter(<MyLessons />);
     expect(await screen.findByRole('alert')).toHaveTextContent('rls denied');
     expect(screen.queryByTestId('credits-balance')).not.toBeInTheDocument();
+  });
+
+  it('upcoming SCHEDULED sessions render above the credits ledger', async () => {
+    const starts = Date.now() + 86_400_000;
+    vi.mocked(myLessonSessions).mockResolvedValue([
+      {
+        id: 'ls-1',
+        starts_at: new Date(starts).toISOString(),
+        ends_at: new Date(starts + 3_600_000).toISOString(),
+        status: 'SCHEDULED',
+        location: 'Main arena',
+        notes: null,
+      },
+      {
+        id: 'ls-2',
+        starts_at: new Date(starts - 5 * 86_400_000).toISOString(),
+        ends_at: new Date(starts - 5 * 86_400_000 + 3_600_000).toISOString(),
+        status: 'COMPLETED',
+        location: null,
+        notes: null,
+      },
+    ]);
+    renderWithRouter(<MyLessons />);
+
+    const section = await screen.findByTestId('upcoming-sessions');
+    expect(section).toHaveTextContent('Main arena');
+    expect(section).toHaveTextContent('SCHEDULED');
+    // only the upcoming SCHEDULED session shows — one card, not two
+    expect(section.querySelectorAll('.bg-white')).toHaveLength(1);
+    // and it sits above the balance card
+    const balance = await screen.findByTestId('credits-balance');
+    expect(section.compareDocumentPosition(balance) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('no upcoming sessions → no section (the ledger stands alone)', async () => {
+    renderWithRouter(<MyLessons />);
+    await screen.findByTestId('credits-balance');
+    expect(screen.queryByTestId('upcoming-sessions')).not.toBeInTheDocument();
   });
 });

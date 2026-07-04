@@ -53,6 +53,19 @@ export function LessonsHubPage() {
         {summary && (
           <div className="grid gap-4 sm:grid-cols-3">
             <div
+              className="rounded border border-green-800/15 p-5 sm:col-span-3"
+              data-testid="card-sessions"
+            >
+              <p className="form-label mb-1">Sessions</p>
+              <p className="text-sm text-green-800/70 mb-2">
+                Confirmed lesson bookings — schedule, complete, cancel.
+              </p>
+              <Link to="/app/ops/lessons/sessions" className="link-underline text-sm inline-block">
+                Open the sessions board
+              </Link>
+            </div>
+
+            <div
               className="rounded border border-green-800/15 bg-green-800/5 p-5"
               data-testid="kpi-credits-outstanding"
             >

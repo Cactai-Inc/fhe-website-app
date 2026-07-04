@@ -74,6 +74,58 @@ export interface LessonsSummary {
   clientsWithCredits: number;
 }
 
+// ─── lesson_sessions (20260703120000) ────────────────────────────────────────
+
+export type LessonSessionStatus = 'SCHEDULED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
+
+export interface LessonSession {
+  id: string;
+  org_id: string;
+  client_id: string;
+  engagement_id: string | null;
+  request_id: string | null;
+  starts_at: string;
+  ends_at: string;
+  status: LessonSessionStatus;
+  location: string | null;
+  notes: string | null;
+  credit_id: string | null;
+  created_at: string;
+}
+
+export interface ScheduleSessionInput {
+  client_id: string;
+  /** ISO timestamps. */
+  starts_at: string;
+  ends_at: string;
+  engagement_id?: string | null;
+  request_id?: string | null;
+  location?: string | null;
+  notes?: string | null;
+}
+
+/** schedule_lesson_session RPC result (the freshly booked session). */
+export interface ScheduledSessionResult {
+  session_id: string;
+  client_id: string;
+  starts_at: string;
+  ends_at: string;
+  status: LessonSessionStatus;
+  location: string | null;
+  engagement_id: string | null;
+  request_id: string | null;
+}
+
+/** complete_lesson_session RPC result — the debit outcome the UI reports. */
+export interface CompleteSessionResult {
+  session_id: string;
+  status: 'COMPLETED';
+  debited: boolean;
+  credit_id: string | null;
+  /** Live sum across the client's ledger after the debit; null when no debit was attempted. */
+  credits_remaining: number | null;
+}
+
 // ─── lesson_packages ─────────────────────────────────────────────────────────
 
 /** All in-tenant lesson packages (RLS: org + module gate), soft-deleted excluded. */
@@ -178,6 +230,86 @@ export async function consumeLessonCredit(id: string, count = 1): Promise<Lesson
     .single();
   if (error) throw error;
   return data as LessonCredit;
+}
+
+// ─── lesson_sessions — the confirmed-booking spine ───────────────────────────
+
+/** The sessions board (staff RLS), soonest first, soft-deleted excluded. */
+export async function listLessonSessions(): Promise<LessonSession[]> {
+  const { data, error } = await supabase
+    .from('lesson_sessions')
+    .select('*')
+    .is('deleted_at', null)
+    .order('starts_at', { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as LessonSession[];
+}
+
+/** Sessions booked from one booking request (the IntakePage drawer inline list). */
+export async function listLessonSessionsForRequest(requestId: string): Promise<LessonSession[]> {
+  const { data, error } = await supabase
+    .from('lesson_sessions')
+    .select('*')
+    .eq('request_id', requestId)
+    .is('deleted_at', null)
+    .order('starts_at', { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as LessonSession[];
+}
+
+/** Book a confirmed lesson (staff-gated RPC; overlaps rejected server-side). */
+export async function scheduleLessonSession(
+  input: ScheduleSessionInput,
+): Promise<ScheduledSessionResult> {
+  const { data, error } = await supabase.rpc('schedule_lesson_session', {
+    p_client_id: input.client_id,
+    p_starts_at: input.starts_at,
+    p_ends_at: input.ends_at,
+    p_engagement_id: input.engagement_id ?? null,
+    p_request_id: input.request_id ?? null,
+    p_location: input.location ?? null,
+    p_notes: input.notes ?? null,
+  });
+  if (error) throw error;
+  return data as ScheduledSessionResult;
+}
+
+/** Mark a lesson taught; by default debits the oldest credit row with balance. */
+export async function completeLessonSession(
+  sessionId: string,
+  debitCredit = true,
+): Promise<CompleteSessionResult> {
+  const { data, error } = await supabase.rpc('complete_lesson_session', {
+    p_session_id: sessionId,
+    p_debit_credit: debitCredit,
+  });
+  if (error) throw error;
+  return data as CompleteSessionResult;
+}
+
+/** Compose the RPC's timestamptz window from the scheduling form's local
+ *  date ('2026-07-10') + start time ('14:00') + duration (minutes). */
+export function sessionWindow(
+  date: string,
+  startTime: string,
+  durationMinutes: number,
+): { starts_at: string; ends_at: string } {
+  const start = new Date(`${date}T${startTime}`);
+  const end = new Date(start.getTime() + durationMinutes * 60_000);
+  return { starts_at: start.toISOString(), ends_at: end.toISOString() };
+}
+
+/** Cancel a SCHEDULED lesson (member notified) or record a no-show. */
+export async function cancelLessonSession(
+  sessionId: string,
+  noShow = false,
+): Promise<{ session_id: string; status: LessonSessionStatus }> {
+  const { data, error } = await supabase.rpc('cancel_lesson_session', {
+    p_session_id: sessionId,
+    p_no_show: noShow,
+  });
+  if (error) throw error;
+  return data as { session_id: string; status: LessonSessionStatus };
 }
 
 // ─── Clients (for the grant form / ledger names) ─────────────────────────────

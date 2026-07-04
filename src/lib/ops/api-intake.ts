@@ -177,6 +177,47 @@ export async function setRequestChecklist(
 }
 
 /**
+ * Resolve the CLIENT provisioned from a booking request, walking the Flow A
+ * chain: request → invitations.request_id → email → contacts → clients. Staff
+ * RLS (invitations admin read, contacts/clients staff read) is the fence.
+ * Returns null when the request has no invitation yet or the provisioned
+ * contact/client rows are missing — the drawer renders the explanatory branch.
+ */
+export async function findClientForRequest(requestId: string): Promise<string | null> {
+  const { data: inv, error: invError } = await supabase
+    .from('invitations')
+    .select('email')
+    .eq('request_id', requestId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (invError) throw invError;
+  const email = (inv as { email: string } | null)?.email;
+  if (!email) return null;
+
+  const { data: contact, error: contactError } = await supabase
+    .from('contacts')
+    .select('id')
+    .ilike('email', email)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (contactError) throw contactError;
+  if (!contact) return null;
+
+  const { data: client, error: clientError } = await supabase
+    .from('clients')
+    .select('id')
+    .eq('contact_id', (contact as { id: string }).id)
+    .is('deleted_at', null)
+    .limit(1)
+    .maybeSingle();
+  if (clientError) throw clientError;
+  return (client as { id: string } | null)?.id ?? null;
+}
+
+/**
  * Resolve the submission's contact to a CRM contact id: match on email when
  * present (soft-deleted excluded), otherwise create the contact. The brokerage
  * engagement RPCs take a contact id, so CONVERT needs this seam first.

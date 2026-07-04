@@ -32,6 +32,7 @@ const listIntakeSubmissions = vi.hoisted(() => vi.fn());
 const markSubmissionStatus = vi.hoisted(() => vi.fn());
 const markSubmissionConverted = vi.hoisted(() => vi.fn());
 const findOrCreateContactByEmail = vi.hoisted(() => vi.fn());
+const findClientForRequest = vi.hoisted(() => vi.fn());
 const listBookingRequests = vi.hoisted(() => vi.fn());
 const markRequestContacted = vi.hoisted(() => vi.fn());
 const appendRequestNote = vi.hoisted(() => vi.fn());
@@ -41,11 +42,23 @@ vi.mock('../../../lib/ops/api-intake', () => ({
   markSubmissionStatus,
   markSubmissionConverted,
   findOrCreateContactByEmail,
+  findClientForRequest,
   listBookingRequests,
   markRequestContacted,
   appendRequestNote,
   setRequestChecklist,
 }));
+
+const scheduleLessonSession = vi.hoisted(() => vi.fn());
+const listLessonSessionsForRequest = vi.hoisted(() => vi.fn());
+vi.mock('../../../lib/ops/api-lessons', async (importOriginal) => {
+  const real = await importOriginal<typeof import('../../../lib/ops/api-lessons')>();
+  return {
+    ...real, // keeps sessionWindow (the pure compose helper) real
+    scheduleLessonSession,
+    listLessonSessionsForRequest,
+  };
+});
 
 const createPurchaseEngagement = vi.hoisted(() => vi.fn());
 const createSearchEngagement = vi.hoisted(() => vi.fn());
@@ -64,6 +77,7 @@ vi.mock('../../../lib/admin', () => ({
 }));
 
 import { IntakePage, LESSON_FIT_CHECKLIST } from './IntakePage';
+import { sessionWindow } from '../../../lib/ops/api-lessons';
 
 const REQUEST_NOTES = [
   'Excited to start!',
@@ -135,6 +149,8 @@ beforeEach(() => {
   listIntakeSubmissions.mockResolvedValue([]);
   listBookingRequests.mockResolvedValue([]);
   setRequestChecklist.mockResolvedValue(undefined);
+  findClientForRequest.mockResolvedValue(null);
+  listLessonSessionsForRequest.mockResolvedValue([]);
   fetchOfferings.mockResolvedValue([
     {
       id: 'off-1',
@@ -355,6 +371,112 @@ describe('OPS-INTAKE — Request Inbox (default view)', () => {
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Send confirmation & invite' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Mark contacted' })).toBeNull();
+  });
+});
+
+describe('OPS-INTAKE — Schedule lesson section (invited/converted requests)', () => {
+  it('a NEW request has no schedule section and resolves no client', async () => {
+    const user = userEvent.setup();
+    listBookingRequests.mockResolvedValue([request({})]);
+    renderWithRouter(<IntakePage />);
+
+    await user.click(await screen.findByText('Cara Novice'));
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    expect(screen.queryByText('Schedule lesson')).toBeNull();
+    expect(findClientForRequest).not.toHaveBeenCalled();
+    expect(listLessonSessionsForRequest).not.toHaveBeenCalled();
+  });
+
+  it('an invited request books via scheduleLessonSession with the EXACT payload (requestId included)', async () => {
+    const user = userEvent.setup();
+    listBookingRequests
+      .mockResolvedValueOnce([request({ status: 'invited' })])
+      .mockResolvedValueOnce([]);
+    findClientForRequest.mockResolvedValue('client-9');
+    scheduleLessonSession.mockResolvedValue({ session_id: 'ls-1', status: 'SCHEDULED' });
+    renderWithRouter(<IntakePage />);
+
+    await user.click(await screen.findByText('Cara Novice'));
+    expect(findClientForRequest).toHaveBeenCalledWith('req-1');
+
+    // the client is known, so the booking form renders (no client picker)
+    const form = await screen.findByRole('form', { name: 'Schedule a lesson' });
+    expect(within(form).queryByLabelText(/Client/)).toBeNull();
+    await user.type(within(form).getByLabelText(/Date/), '2026-07-11');
+    await user.type(within(form).getByLabelText(/Start time/), '10:00');
+    await user.selectOptions(within(form).getByLabelText(/Duration/), '45');
+    await user.type(within(form).getByLabelText(/Lesson note/), 'Evaluation first');
+    await user.click(within(form).getByRole('button', { name: 'Schedule lesson' }));
+
+    const window = sessionWindow('2026-07-11', '10:00', 45);
+    expect(scheduleLessonSession).toHaveBeenCalledTimes(1);
+    expect(scheduleLessonSession).toHaveBeenCalledWith({
+      client_id: 'client-9',
+      starts_at: window.starts_at,
+      ends_at: window.ends_at,
+      location: null,
+      notes: 'Evaluation first',
+      request_id: 'req-1',
+    });
+
+    // toast + the drawer's status flips (the RPC converted it server-side) + refetches
+    expect(await screen.findByRole('status')).toHaveTextContent('Lesson scheduled');
+    expect(screen.getByText('converted')).toBeInTheDocument();
+    expect(listLessonSessionsForRequest).toHaveBeenCalledTimes(2);
+    expect(listBookingRequests).toHaveBeenCalledTimes(2);
+  });
+
+  it('sessions already booked from the request render inline with their status', async () => {
+    const user = userEvent.setup();
+    listBookingRequests.mockResolvedValue([request({ status: 'converted' })]);
+    findClientForRequest.mockResolvedValue('client-9');
+    listLessonSessionsForRequest.mockResolvedValue([
+      {
+        id: 'ls-1', org_id: 'org-1', client_id: 'client-9', engagement_id: null,
+        request_id: 'req-1', starts_at: '2026-07-11T17:00:00Z', ends_at: '2026-07-11T18:00:00Z',
+        status: 'SCHEDULED', location: 'Main arena', notes: null, credit_id: null,
+        created_at: '2026-07-03T12:00:00Z',
+      },
+    ]);
+    renderWithRouter(<IntakePage />);
+
+    await user.click(await screen.findByText('Cara Novice'));
+    const list = await screen.findByTestId('request-sessions');
+    expect(listLessonSessionsForRequest).toHaveBeenCalledWith('req-1');
+    expect(within(list).getByText(/Main arena/)).toBeInTheDocument();
+    expect(within(list).getByText('SCHEDULED')).toBeInTheDocument();
+  });
+
+  it('an invited request with no provisioned client explains itself instead of a form', async () => {
+    const user = userEvent.setup();
+    listBookingRequests.mockResolvedValue([request({ status: 'invited' })]);
+    findClientForRequest.mockResolvedValue(null);
+    renderWithRouter(<IntakePage />);
+
+    await user.click(await screen.findByText('Cara Novice'));
+    expect(await screen.findByText(/No provisioned client found/)).toBeInTheDocument();
+    expect(screen.queryByRole('form', { name: 'Schedule a lesson' })).toBeNull();
+  });
+
+  it('a rejected schedule (overlap) surfaces in the drawer, nothing flips', async () => {
+    const user = userEvent.setup();
+    listBookingRequests.mockResolvedValue([request({ status: 'invited' })]);
+    findClientForRequest.mockResolvedValue('client-9');
+    scheduleLessonSession.mockRejectedValue(
+      new Error('this client already has a lesson scheduled that overlaps'),
+    );
+    renderWithRouter(<IntakePage />);
+
+    await user.click(await screen.findByText('Cara Novice'));
+    const form = await screen.findByRole('form', { name: 'Schedule a lesson' });
+    await user.type(within(form).getByLabelText(/Date/), '2026-07-11');
+    await user.type(within(form).getByLabelText(/Start time/), '10:00');
+    await user.click(within(form).getByRole('button', { name: 'Schedule lesson' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/already has a lesson scheduled/);
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByText('invited')).toBeInTheDocument(); // status untouched
+    expect(listBookingRequests).toHaveBeenCalledTimes(1); // no refresh on failure
   });
 });
 

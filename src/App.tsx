@@ -81,6 +81,7 @@ import AllocationRulesPage from './pages/app/ops/barnops/AllocationRulesPage';
 import LessonsHubPage from './pages/app/ops/hubs/LessonsHubPage';
 import LessonPackagesPage from './pages/app/ops/lessons/LessonPackagesPage';
 import LessonCreditsPage from './pages/app/ops/lessons/LessonCreditsPage';
+import SessionsPage from './pages/app/ops/lessons/SessionsPage';
 import RecordsHubPage from './pages/app/ops/hubs/RecordsHubPage';
 import HorsePartiesPage from './pages/app/ops/records/HorsePartiesPage';
 import HorseHealthPage from './pages/app/ops/records/HorseHealthPage';
@@ -205,6 +206,7 @@ export function AppRoutes() {
               <Route path="ops/lessons" element={<ProtectedRoute requireAdmin><LessonsHubPage /></ProtectedRoute>} />
               <Route path="ops/lessons/packages" element={<ProtectedRoute requireAdmin><LessonPackagesPage /></ProtectedRoute>} />
               <Route path="ops/lessons/credits" element={<ProtectedRoute requireAdmin><LessonCreditsPage /></ProtectedRoute>} />
+              <Route path="ops/lessons/sessions" element={<ProtectedRoute requireAdmin><SessionsPage /></ProtectedRoute>} />
               <Route path="ops/records" element={<ProtectedRoute requireAdmin><RecordsHubPage /></ProtectedRoute>} />
               <Route path="ops/records/horses/:horseId/parties" element={<ProtectedRoute requireAdmin><HorsePartiesPage /></ProtectedRoute>} />
               <Route path="ops/records/horses/:horseId/health" element={<ProtectedRoute requireAdmin><HorseHealthPage /></ProtectedRoute>} />

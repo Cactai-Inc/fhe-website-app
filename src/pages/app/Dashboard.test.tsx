@@ -35,7 +35,14 @@ vi.mock('../../lib/api', async (importOriginal) => {
   return { ...real, myOnboardingState: vi.fn() };
 });
 
+vi.mock('../../lib/ops/api-member', async (importOriginal) => {
+  const real = await importOriginal<typeof import('../../lib/ops/api-member')>();
+  return { ...real, myLessonSessions: vi.fn(), myLessonsOverview: vi.fn() };
+});
+
 import { myOnboardingState } from '../../lib/api';
+import { myLessonSessions, myLessonsOverview } from '../../lib/ops/api-member';
+import type { MemberLessonSession, MyLessonsOverview } from '../../lib/ops/api-member';
 import Dashboard from './Dashboard';
 
 const EXECUTED_DOCS = [
@@ -57,12 +64,31 @@ function state(overrides: Partial<OnboardingState> = {}): OnboardingState {
   };
 }
 
+/** An upcoming SCHEDULED session `days` out (my_lesson_sessions row shape). */
+function lesson(over: Partial<MemberLessonSession> & { days?: number } = {}): MemberLessonSession {
+  const { days = 2, ...rest } = over;
+  const starts = Date.now() + days * 86_400_000;
+  return {
+    id: `ls-${days}`,
+    starts_at: new Date(starts).toISOString(),
+    ends_at: new Date(starts + 3_600_000).toISOString(),
+    status: 'SCHEDULED',
+    location: null,
+    notes: null,
+    ...rest,
+  };
+}
+
+const EMPTY_OVERVIEW: MyLessonsOverview = { credits: [], packages: [], creditsRemaining: 0 };
+
 beforeEach(() => {
   vi.clearAllMocks();
   window.localStorage.clear();
   // keep the once-per-session onboarding redirect out of these renders
   window.sessionStorage.setItem('fhe-onboarding-redirected', '1');
   vi.mocked(myOnboardingState).mockResolvedValue(state());
+  vi.mocked(myLessonSessions).mockResolvedValue([]);
+  vi.mocked(myLessonsOverview).mockResolvedValue(EMPTY_OVERVIEW);
 });
 
 describe('Dashboard — the all-set first-visit card', () => {
@@ -143,6 +169,59 @@ describe('Dashboard — Flow D entry on the plan card', () => {
     renderWithRouter(<Dashboard />);
     const card = await screen.findByTestId('plan-card');
     expect(within(card).getByTestId('book-more-link')).toHaveTextContent('Add to your plan');
+  });
+});
+
+describe('Dashboard — the next-lesson card (lesson-session spine)', () => {
+  it('shows the SOONEST upcoming SCHEDULED session above the plan card', async () => {
+    vi.mocked(myLessonSessions).mockResolvedValue([
+      lesson({ id: 'ls-soon', days: 1, location: 'Main arena' }),
+      lesson({ id: 'ls-later', days: 5 }),
+    ]);
+    renderWithRouter(<Dashboard />);
+
+    const card = await screen.findByTestId('next-lesson-card');
+    expect(card).toHaveTextContent('Next lesson');
+    expect(card).toHaveTextContent('Main arena');
+    expect(within(card).getByRole('link', { name: /See schedule/ })).toHaveAttribute(
+      'href',
+      '/app/schedule',
+    );
+    // rendered above the plan card
+    const plan = screen.getByTestId('plan-card');
+    expect(card.compareDocumentPosition(plan) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('skips cancelled/past sessions — no card without a real upcoming lesson', async () => {
+    vi.mocked(myLessonSessions).mockResolvedValue([
+      lesson({ id: 'ls-cancelled', days: 2, status: 'CANCELLED' }),
+      lesson({ id: 'ls-past', days: -2, status: 'COMPLETED' }),
+    ]);
+    renderWithRouter(<Dashboard />);
+    await screen.findByTestId('plan-card');
+    expect(screen.queryByTestId('next-lesson-card')).not.toBeInTheDocument();
+  });
+
+  it('prefers the LIVE credits ledger over the static snapshot on the plan card', async () => {
+    vi.mocked(myLessonsOverview).mockResolvedValue({
+      credits: [
+        { id: 'lc-1', package_key: '4-Lesson Punch Card', credits_total: 4, credits_remaining: 3, purchased_at: '2026-07-01T00:00:00Z' },
+      ],
+      packages: [],
+      creditsRemaining: 3,
+    });
+    renderWithRouter(<Dashboard />);
+    const card = await screen.findByTestId('plan-card');
+    expect(within(card).getByTestId('lessons-remaining')).toHaveTextContent('3 lessons remaining');
+    // the static "4 lessons" snapshot line is replaced by the live ledger
+    expect(card).not.toHaveTextContent('4 lessons');
+  });
+
+  it('falls back to the purchase snapshot when the member has no ledger rows', async () => {
+    renderWithRouter(<Dashboard />);
+    const card = await screen.findByTestId('plan-card');
+    expect(card).toHaveTextContent('4 lessons');
+    expect(within(card).queryByTestId('lessons-remaining')).not.toBeInTheDocument();
   });
 });
 
