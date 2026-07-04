@@ -23,10 +23,11 @@ import type { Service, ServiceTier } from '../lib/services';
  *
  * A by-appointment, white-glove catalog. Service FAMILIES are vertical,
  * multiple-open accordion panels. Each panel reveals its tiers as priced cards
- * with the LOWEST-priced option shown LARGEST (the entry price is the hero
- * number), the rest stepping down. "View details" opens a tier modal that reads
- * (never buys); the two actions there are Add to cart (stay + keep browsing)
- * and Request this now (add + go to /checkout). NO auto-add on open.
+ * listed in standard ascending rank order (entry/smallest option first, then
+ * up), every price rendered at one consistent emphasized size. "View details"
+ * opens a tier modal that reads (never buys); the two actions there are Add to
+ * cart (stay + keep browsing) and Request this now (add + go to /checkout). NO
+ * auto-add on open.
  *
  * Prices are never hardcoded here — every tier comes from src/lib/services.ts,
  * the same source Lessons.tsx uses.
@@ -112,7 +113,10 @@ const FAMILIES: ShopFamily[] = [
 ];
 
 // ─── Price helpers ──────────────────────────────────────────────────────────
-// Lowest price first (the hero number), the rest stepping down.
+// Standard ascending rank order: entry/smallest option first, then up. For the
+// families here this ascending-by-price order already reads as the natural
+// sequence (e.g. single → pack → membership). services.ts defines no explicit
+// sort_order, so ascending price is the ordering.
 
 function sortedByPrice(tiers: ServiceTier[]): ServiceTier[] {
   return [...tiers].sort((a, b) => a.price - b.price);
@@ -282,7 +286,9 @@ function ShopModal({
 }
 
 // ─── Tier price row (used inside the panel and the modal) ────────────────────
-// The lowest price (index 0) renders largest; the rest step down.
+// Tiers list in standard ascending rank order (entry option first, then up).
+// Every price renders at ONE consistent emphasized size — clearly larger than
+// body (Cormorant, gold-accented unit), uniform across all rows in the family.
 
 function TierPriceList({
   tiers,
@@ -295,15 +301,8 @@ function TierPriceList({
 }) {
   return (
     <ul className="flex flex-col divide-y divide-green-800/10 border-y border-green-800/10">
-      {tiers.map((tier, i) => {
+      {tiers.map((tier) => {
         const { amount, unit } = splitPrice(tier);
-        const isHero = i === 0; // lowest-priced → largest
-        // Step the amount size down for lower rows.
-        const amountSize = isHero
-          ? 'text-4xl sm:text-5xl'
-          : i === 1
-            ? 'text-2xl sm:text-3xl'
-            : 'text-xl sm:text-2xl';
         return (
           <li
             key={tier.id}
@@ -325,7 +324,8 @@ function TierPriceList({
             </div>
 
             <div className="flex items-baseline gap-3 shrink-0">
-              <p className={`font-serif text-green-800 leading-none ${amountSize}`}>
+              {/* Uniform emphasized price size for every tier row. */}
+              <p className="font-serif text-green-800 leading-none text-2xl sm:text-3xl">
                 {amount}
                 {unit && (
                   <span className="ml-1.5 font-sans text-[0.5em] tracking-wide uppercase text-gold-800 align-baseline">

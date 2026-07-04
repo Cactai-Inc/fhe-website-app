@@ -72,19 +72,31 @@ beforeEach(() => {
 });
 
 describe('Checkout (booking request)', () => {
-  it('reads as a booking request and drops the inquiry copy', () => {
+  it('reads as a warm inquiry (no cart/booking-request wording) and drops the old copy', () => {
     renderWithRouter(<Checkout />);
-    expect(screen.getByRole('heading', { name: /submit a booking request/i })).toBeInTheDocument();
+    // Boutique "inquiry" register — never "cart" / "submit booking request".
+    expect(screen.getByRole('heading', { name: /send us your inquiry/i })).toBeInTheDocument();
     expect(
-      screen.getByText(/send us this form and we will contact you to schedule your request\./i),
+      screen.getByText(/tell us a little about you and we will call to talk through the right fit/i),
     ).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /your request/i })).toBeInTheDocument();
+    // The request-summary panel title (exact match — distinct from the h1).
+    expect(screen.getByRole('heading', { name: 'Your inquiry' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /submit a booking request/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Your Request' })).not.toBeInTheDocument();
     // Deleted blocks stay deleted.
     expect(screen.queryByText(/this is just hello, not a booking/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/pricing is shown for orientation only/i)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/when are you usually free/i)).not.toBeInTheDocument();
     // Riding lessons price per lesson, never per session.
     expect(screen.getByText('$150 / lesson')).toBeInTheDocument();
+  });
+
+  it('personalizes the submit button to the category of the chosen items (lessons-only cart)', () => {
+    renderWithRouter(<Checkout />);
+    // The mock cart holds a single Riding Lessons item → singular lessons label.
+    expect(screen.getByRole('button', { name: /inquire about this lesson/i })).toBeInTheDocument();
+    // Old generic wording is gone.
+    expect(screen.queryByRole('button', { name: /submit booking request/i })).not.toBeInTheDocument();
   });
 
   it('week list starts at the current Sunday-start week and cannot page backwards past it', async () => {
@@ -137,7 +149,8 @@ describe('Checkout (booking request)', () => {
     await userEvent.click(screen.getByRole('checkbox', { name: PAGE0[0].label }));
     await userEvent.click(screen.getByRole('checkbox', { name: 'Monday' }));
 
-    await userEvent.click(screen.getByRole('button', { name: /submit booking request/i }));
+    // Lessons-only cart → the personalized inquiry label.
+    await userEvent.click(screen.getByRole('button', { name: /inquire about this lesson/i }));
 
     await waitFor(() => expect(submitRequest).toHaveBeenCalledTimes(1));
     const [request, selections] = vi.mocked(submitRequest).mock.calls[0];

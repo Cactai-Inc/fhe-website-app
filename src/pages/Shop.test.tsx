@@ -6,7 +6,9 @@
  * families + real tiers from src/lib/services.ts (never hardcoded prices). This
  * proves:
  *  - the service families render as accordion panels;
- *  - expanding a family reveals its tiers as priced cards, LOWEST price LARGEST;
+ *  - expanding a family reveals its tiers as priced cards in ascending rank
+ *    order (entry/lowest option first) with UNIFORM price sizing (no stepped
+ *    font scale);
  *  - opening a tier detail does NOT add to cart (reading, never buying);
  *  - Add to cart calls addItem and stays open (no navigation);
  *  - Request this now adds to cart AND navigates to /checkout;
@@ -14,7 +16,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderWithRouter, screen, within, userEvent } from '../test/render';
-import { RIDING_LESSON, HUNTER_JUMPER, formatPrice } from '../lib/services';
+import { RIDING_LESSON, HUNTER_JUMPER } from '../lib/services';
 
 const navigateMock = vi.hoisted(() => vi.fn());
 const cartFns = vi.hoisted(() => ({
@@ -35,9 +37,9 @@ vi.mock('../contexts/CartContext', () => ({
 
 import Shop from './Shop';
 
-// The lowest-priced riding-lesson tier is the hero number. Compute it from the
-// real data so the assertion tracks any future repricing.
-const cheapestLesson = [...RIDING_LESSON.tiers].sort((a, b) => a.price - b.price)[0];
+// Riding-lesson tiers in the ascending rank order the panel renders them.
+// Computed from real data so the assertion tracks any future repricing.
+const lessonsAscending = [...RIDING_LESSON.tiers].sort((a, b) => a.price - b.price);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -58,7 +60,7 @@ describe('Shop', () => {
     expect(screen.getByRole('button', { name: /purchase & lease support/i })).toBeInTheDocument();
   });
 
-  it('expands a family to reveal priced tiers, lowest price shown first (largest)', async () => {
+  it('expands a family to reveal priced tiers in ascending order with uniform price sizing', async () => {
     renderWithRouter(<Shop />);
 
     // Jumper training starts collapsed; expand it.
@@ -66,19 +68,34 @@ describe('Shop', () => {
     expect(jumper).toHaveAttribute('aria-expanded', 'false');
     await userEvent.click(jumper);
     expect(jumper).toHaveAttribute('aria-expanded', 'true');
+    // Its single configured tier renders (from real data).
+    expect(screen.getByText(HUNTER_JUMPER.tiers[0].label)).toBeInTheDocument();
 
-    // Its single configured tier + price render (from real data).
-    const jumperTier = HUNTER_JUMPER.tiers[0];
-    expect(screen.getByText(jumperTier.label)).toBeInTheDocument();
+    // Riding Lessons is open by default. Its panel lists tiers in ascending
+    // rank order (entry/lowest option first).
+    const panel = document.getElementById('family-panel-riding-lessons') as HTMLElement;
+    expect(panel).toBeTruthy();
+    const region = within(panel);
 
-    // Riding Lessons is open by default; the cheapest tier is the hero row and
-    // carries the largest price amount ($X, gold unit rendered separately).
-    const heroAmount = new Intl.NumberFormat('en-US', {
-      style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0,
-    }).format(cheapestLesson.price);
-    // The full formatted price exists in the data path (sanity that formatPrice is the source).
-    expect(formatPrice(cheapestLesson.price, cheapestLesson.unit)).toContain(heroAmount);
-    expect(screen.getAllByText(cheapestLesson.label).length).toBeGreaterThan(0);
+    // The first tier label in DOM order is the lowest-priced tier.
+    const labelNodes = lessonsAscending.map((t) => region.getByText(t.label));
+    const domIndex = (el: Element) =>
+      Array.prototype.indexOf.call(panel.querySelectorAll('li'), el.closest('li'));
+    for (let i = 1; i < labelNodes.length; i++) {
+      expect(domIndex(labelNodes[i - 1])).toBeLessThan(domIndex(labelNodes[i]));
+    }
+
+    // Uniform price sizing: every price amount carries the SAME size class, and
+    // none of the old stepped sizes (text-4xl/5xl → text-2xl → text-xl) survive.
+    const priceEls = Array.from(panel.querySelectorAll('li p.font-serif'));
+    expect(priceEls.length).toBe(lessonsAscending.length);
+    priceEls.forEach((p) => {
+      expect(p.className).toContain('text-2xl');
+      expect(p.className).toContain('sm:text-3xl');
+      expect(p.className).not.toContain('text-4xl');
+      expect(p.className).not.toContain('text-5xl');
+      expect(p.className).not.toContain('text-xl'); // no stepped-down rows
+    });
   });
 
   it('does NOT add to cart when a tier detail is opened (reading, not buying)', async () => {
