@@ -266,6 +266,79 @@
   }
 }
 
+/* ─── Quiet Stable: landing + story showcase utilities ───────────────────────
+ * Additive, namespaced classes for the new cinematic landing and brand-story
+ * page. All motion is reduced-motion-guarded and degrades to a static, fully
+ * visible state. No looping background motion (the hero image is a still).
+ */
+@layer utilities {
+
+  /* Scroll-lock scoped to the landing route only. Applied to <html> via a class
+     the Landing component toggles on mount and removes on unmount, so the rest
+     of the site scrolls normally. Kept in @layer utilities so it out-specifies
+     nothing it shouldn't; the class is only ever present on the landing. */
+  .qs-no-scroll,
+  .qs-no-scroll body {
+    overflow: hidden;
+    /* Belt-and-suspenders against iOS rubber-banding on the fixed hero. */
+    overscroll-behavior: none;
+  }
+
+  /* Filmic grain: a single inline-SVG turbulence tile, tiled and held at very
+     low opacity over the hero for texture. Pure CSS, no network request, no
+     motion. Sits above the image + scrim, below the content (z-index handled
+     in markup). */
+  .qs-grain {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    opacity: 0.06;
+    mix-blend-mode: overlay;
+  }
+
+  /* Hero entrance: ONE gentle rise+fade on load (no loop). Elements start
+     hidden and settle in. Staggered via qs-delay-* utilities below. */
+  .qs-rise {
+    opacity: 0;
+    animation: qsRise 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  @keyframes qsRise {
+    from { opacity: 0; transform: translateY(22px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .qs-delay-1 { animation-delay: 0.10s; }
+  .qs-delay-2 { animation-delay: 0.24s; }
+  .qs-delay-3 { animation-delay: 0.40s; }
+  .qs-delay-4 { animation-delay: 0.56s; }
+
+  /* Scroll reveal (story page). JS (IntersectionObserver) adds .qs-in when the
+     element enters the viewport; until then it is offset + faded. */
+  .qs-reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.8s ease-out, transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: opacity, transform;
+  }
+  .qs-reveal.qs-in {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Reduced motion: no entrance, no reveal transition — everything is present
+     and static from first paint. Overrides the offsets above so nothing is ever
+     left invisible when the animation/transition is neutralized. */
+  @media (prefers-reduced-motion: reduce) {
+    .qs-rise,
+    .qs-reveal,
+    .qs-reveal.qs-in {
+      opacity: 1 !important;
+      transform: none !important;
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+}
+
 /* ─── Signature script: display-time styling of typed signature values ──────
  * Applied by MergedBodyView/BodyWithSignatures to the value after a
  * "Signature:" / "By (signature):" label. Self-contained system cursive stack

@@ -9,6 +9,8 @@ import Layout from './components/layout/Layout';
 import AppLayout from './components/app/AppLayout';
 import Landing from './pages/Landing';
 import About from './pages/About';
+import Story from './pages/Story';
+import Faq from './pages/Faq';
 import Services from './pages/Services';
 import Contact from './pages/Contact';
 import Lessons from './pages/Lessons';
@@ -102,10 +104,15 @@ export function AppRoutes() {
       <BrandProvider>
         <CartProvider>
           <Routes>
+            {/* Landing — its own naked nav + no footer, so it renders bare
+                (outside the shared Layout header/footer chrome). */}
+            <Route path="/" element={<Landing />} />
+
             {/* Public marketing + inquiry (marketing chrome) */}
             <Route element={<Layout />}>
-              <Route path="/" element={<Landing />} />
               <Route path="/about" element={<About />} />
+              <Route path="/story" element={<Story />} />
+              <Route path="/faq" element={<Faq />} />
               <Route path="/services" element={<Services />} />
               <Route path="/contact" element={<Contact />} />
               {/* Old rider-entrance interstitial — folded into the linear

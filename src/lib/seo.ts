@@ -63,6 +63,14 @@ export const ROUTE_SEO: RouteSeo[] = [
     priority: 0.7,
   },
   {
+    path: '/story',
+    title: 'Come Ride With Us — A Riding Community in Coastal San Diego | French Heritage Equestrian',
+    description:
+      'A place to ride and a place to belong. The approach, the ranch, the ways to ride, and the community behind French Heritage Equestrian at Carmel Creek Ranch, San Diego.',
+    indexable: true,
+    priority: 0.9,
+  },
+  {
     path: '/ride',
     title: 'Come Ride With Us — Lessons & Rider Community | French Heritage Equestrian',
     description:
