@@ -47,32 +47,28 @@ export async function submitRequest(
   input: RequestInput,
   selections: RequestSelectionInput[],
 ): Promise<{ requestId: string }> {
-  const { data: request, error } = await supabase
-    .from('requests')
-    .insert({
-      contact_name: input.contact_name,
-      contact_email: input.contact_email,
-      contact_phone: input.contact_phone ?? null,
-      contact_method: input.contact_method ?? null,
-      proposed_times: input.proposed_times ?? [],
-      notes: input.notes ?? null,
-    })
-    .select('id')
-    .single();
-  if (error) throw error;
-
-  if (selections.length > 0) {
-    const rows = selections.map((s) => ({
-      request_id: request.id,
+  // Routed through the SECURITY DEFINER submit_public_request RPC: a raw anon
+  // insert into requests/request_selections fails the RESTRICTIVE org_boundary
+  // RLS (org_id resolves NULL for an anon browser), and a function-based column
+  // default can't stamp sole_org() in that context. The RPC runs as definer,
+  // resolves the tenant, stamps org_id, and inserts request + selections
+  // atomically (2026-07-04 production fix).
+  const { data, error } = await supabase.rpc('submit_public_request', {
+    p_contact_name: input.contact_name,
+    p_contact_email: input.contact_email,
+    p_contact_phone: input.contact_phone ?? null,
+    p_contact_method: input.contact_method ?? null,
+    p_proposed_times: input.proposed_times ?? [],
+    p_notes: input.notes ?? null,
+    p_selections: selections.map((s) => ({
       offering_id: s.offering_id ?? null,
       offering_slug: s.offering_slug ?? null,
       tier_id: s.tier_id ?? null,
       label: s.label ?? null,
-    }));
-    const { error: selErr } = await supabase.from('request_selections').insert(rows);
-    if (selErr) throw selErr;
-  }
-  return { requestId: request.id };
+    })),
+  });
+  if (error) throw error;
+  return { requestId: (data as { request_id: string }).request_id };
 }
 
 // ─── Invitations ────────────────────────────────────────────────────────────
