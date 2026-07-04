@@ -17,9 +17,13 @@
  *    minor + guardian fields (visitors bring kids),
  *  - the RULES GATE: continue stays disabled until the facility-rules checkbox
  *    is checked,
+ *  - the E-SIGN CONSENT gate (release-signing audit): the sign button stays
+ *    disabled until the required electronic-signing checkbox is checked, and
+ *    the consent flag rides in the signRelease payload,
  *  - signing calls signRelease with the EXACT payload (adult AND minor paths,
  *    always RELEASE_GENERAL) and renders the executed confirmation with the
- *    signed document body,
+ *    signed document body plus the "Print or save this page" affordance
+ *    (window.print via the shared print stylesheet pattern),
  *  - a rejected RPC renders the inline error branch (form stays up),
  *  - a failed preview load renders the load-error branch.
  */
@@ -59,6 +63,7 @@ beforeEach(() => {
 const signButton = () => screen.getByRole('button', { name: /sign the release/i });
 const continueRules = () => screen.getByRole('button', { name: /continue to the facility rules/i });
 const continueRelease = () => screen.getByRole('button', { name: /continue to the release/i });
+const esignConsentBox = () => screen.getByLabelText(/sign this document electronically/i);
 
 /** info form filled for an adult (email REQUIRED) → rules step. */
 async function adultToRules() {
@@ -152,6 +157,7 @@ describe('Release', () => {
 
   it('keeps signing disabled until the typed signature matches the signer name exactly', async () => {
     await adultToSign();
+    await userEvent.click(esignConsentBox()); // consent gate exercised below
     expect(signButton()).toBeDisabled();
 
     await userEvent.type(screen.getByLabelText(/type your full name to sign/i), 'V. Visitor');
@@ -164,10 +170,27 @@ describe('Release', () => {
     expect(signButton()).toBeEnabled();
   });
 
+  it('E-SIGN CONSENT: sign stays disabled until the required consent checkbox is checked', async () => {
+    await adultToSign();
+    await userEvent.type(screen.getByLabelText(/type your full name to sign/i), 'Vera Visitor');
+    // typed name matches, but consent is not yet given
+    expect(esignConsentBox()).not.toBeChecked();
+    expect(signButton()).toBeDisabled();
+    expect(signRelease).not.toHaveBeenCalled();
+
+    await userEvent.click(esignConsentBox());
+    expect(signButton()).toBeEnabled();
+
+    // unchecking re-disables (the flag always reflects the checkbox)
+    await userEvent.click(esignConsentBox());
+    expect(signButton()).toBeDisabled();
+  });
+
   it('ADULT path: signs with the exact payload and shows the executed document', async () => {
     vi.mocked(signRelease).mockResolvedValue(RESULT as never);
     await adultToSign();
     await userEvent.type(screen.getByLabelText(/type your full name to sign/i), 'Vera Visitor');
+    await userEvent.click(esignConsentBox());
     await userEvent.click(signButton());
 
     await waitFor(() => expect(signRelease).toHaveBeenCalledWith({
@@ -183,11 +206,30 @@ describe('Release', () => {
       minor_dob: null,
       guardian_relationship: null,
       rules_acknowledged: true,
+      esign_consent: true,
     }));
     expect(await screen.findByText(/your release is on file/i)).toBeInTheDocument();
-    expect(screen.getByText(/DOC-000042/)).toBeInTheDocument();
+    // the code renders on the confirmation line AND the print-only header
+    expect(screen.getAllByText(/DOC-000042/).length).toBeGreaterThan(0);
     expect(screen.getByText(/fully executed/i)).toBeInTheDocument();
     expect(screen.getByText(/EXECUTED BODY WITH COMPLETED SIGNATURE SECTION/)).toBeInTheDocument();
+  });
+
+  it('the confirmation offers "Print or save this page" (kiosk paper copy, window.print)', async () => {
+    vi.mocked(signRelease).mockResolvedValue(RESULT as never);
+    const printSpy = vi.spyOn(window, 'print').mockImplementation(() => {});
+    await adultToSign();
+    await userEvent.type(screen.getByLabelText(/type your full name to sign/i), 'Vera Visitor');
+    await userEvent.click(esignConsentBox());
+    await userEvent.click(signButton());
+    expect(await screen.findByText(/your release is on file/i)).toBeInTheDocument();
+
+    const printButton = screen.getByRole('button', { name: /print or save this page/i });
+    await userEvent.click(printButton);
+    expect(printSpy).toHaveBeenCalledTimes(1);
+    // the print stylesheet class was cleaned up after the dialog
+    expect(document.body.classList.contains('printing')).toBe(false);
+    printSpy.mockRestore();
   });
 
   it('MINOR path: signs the general release with the exact minor + guardian payload', async () => {
@@ -213,6 +255,7 @@ describe('Release', () => {
     await screen.findByText(/assumes all risks/i);
     await userEvent.type(
       screen.getByLabelText(/parent\/guardian: type your full name to sign/i), 'Gwen Guardian');
+    await userEvent.click(esignConsentBox());
     await userEvent.click(signButton());
 
     await waitFor(() => expect(signRelease).toHaveBeenCalledWith({
@@ -228,6 +271,7 @@ describe('Release', () => {
       minor_dob: '2015-03-04',
       guardian_relationship: 'Mother',
       rules_acknowledged: true,
+      esign_consent: true,
     }));
     expect(await screen.findByText(/your release is on file/i)).toBeInTheDocument();
   });
@@ -236,6 +280,7 @@ describe('Release', () => {
     vi.mocked(signRelease).mockRejectedValue(new Error('validation failed'));
     await adultToSign();
     await userEvent.type(screen.getByLabelText(/type your full name to sign/i), 'Vera Visitor');
+    await userEvent.click(esignConsentBox());
     await userEvent.click(signButton());
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/could not record your signature/i);

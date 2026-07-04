@@ -753,19 +753,25 @@ export async function listDocuments(engagementId?: string): Promise<DocumentRow[
 // ─── Signatures ───────────────────────────────────────────────────────────
 
 /** Seal-on-sign via the SECURITY-DEFINER RPC. Sets typed_name/signed_at/ip for the
- *  (document, party_role) signer and advances document status server-side. */
+ *  (document, party_role) signer and advances document status server-side.
+ *  `esignConsent` (20260703110000): pass true when the signer affirmed the
+ *  electronic-signing checkbox — the server logs a separate esign_consents row.
+ *  Omitted → the staff-facilitated pre-checkbox payload is unchanged. */
 export async function recordSignature(
   documentId: string,
   partyRole: PartyRole,
   typedName: string,
   ip?: string | null,
+  esignConsent?: boolean,
 ): Promise<void> {
-  const { error } = await supabase.rpc('record_signature', {
+  const params: Record<string, unknown> = {
     p_document_id: documentId,
     p_party_role: partyRole,
     p_typed_name: typedName,
     p_ip: ip ?? null,
-  });
+  };
+  if (esignConsent !== undefined) params.p_esign_consent = esignConsent;
+  const { error } = await supabase.rpc('record_signature', params);
   if (error) throw error;
 }
 

@@ -1,6 +1,6 @@
-import { useMemo, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, X } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { submitBooking } from '../lib/supabase';
@@ -8,16 +8,13 @@ import type { ContactMethod } from '../lib/supabase';
 import { submitRequest, createDraftOrder } from '../lib/api';
 import { formatPrice } from '../lib/services';
 import {
-  DAY_SHORT,
   EXPERIENCE_OPTIONS,
   availabilityEntries,
   availabilityText,
-  weekOptions,
   type AvailabilitySelection,
   type ExperienceValue,
-  type TimePreferences,
-  type WeekOption,
 } from '../lib/availability';
+import AvailabilityPicker, { useAvailabilityPicker } from '../components/AvailabilityPicker';
 import { useDocumentTitle } from '../lib/hooks';
 
 interface FormState {
@@ -47,11 +44,6 @@ const CONTACT_OPTIONS: { value: ContactMethod; label: string }[] = [
   { value: 'email', label: 'Email' },
 ];
 
-/** Weeks shown per page of the availability picker (compact enough for phones). */
-const WEEKS_PER_PAGE = 4;
-
-const DAY_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
 const usd = (n: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(n);
 
@@ -69,46 +61,15 @@ export default function Checkout() {
   });
   const [contactMethod, setContactMethod] = useState<ContactMethod>('text');
   const [experience, setExperience] = useState<ExperienceValue | null>(null);
-  // Availability — one global set of prefs + a pageable Sun–Sat week list.
-  const [timePrefs, setTimePrefs] = useState<TimePreferences>({
-    weekdayAm: false, weekdayPm: false, weekendAm: false, weekendPm: false,
-  });
-  const [weekPage, setWeekPage] = useState(0);
-  const [selectedWeeks, setSelectedWeeks] = useState<Record<string, WeekOption>>({});
-  const [anyDay, setAnyDay] = useState(false);
-  const [days, setDays] = useState<number[]>([]);
+  // Availability — shared picker state (weeks / days / AM-PM), extracted so
+  // the member "book more" page (Flow D) collects the identical structure.
+  const picker = useAvailabilityPicker();
   const [errors, setErrors] = useState<Partial<FormState>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // "Today" is fixed for the visit so the list never shifts mid-fill.
-  const today = useMemo(() => new Date(), []);
-  const visibleWeeks = useMemo(
-    () => weekOptions(today, weekPage, WEEKS_PER_PAGE),
-    [today, weekPage],
-  );
-
-  function toggleWeek(week: WeekOption) {
-    setSelectedWeeks((prev) => {
-      const next = { ...prev };
-      if (next[week.startISO]) delete next[week.startISO];
-      else next[week.startISO] = week;
-      return next;
-    });
-  }
-
-  function toggleDay(day: number) {
-    setDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
-  }
-
   function buildAvailability(): AvailabilitySelection {
-    return {
-      weeks: Object.values(selectedWeeks).sort((a, b) => a.startISO.localeCompare(b.startISO)),
-      prefs: timePrefs,
-      anyDay,
-      days: [...days].sort((a, b) => a - b),
-      ridingExperience: experience,
-    };
+    return { ...picker.buildSelection(), ridingExperience: experience };
   }
 
   const firstNameRef = useRef<HTMLInputElement>(null);
@@ -472,164 +433,8 @@ export default function Checkout() {
                   </div>
                 </fieldset>
 
-                {/* Availability — global time prefs, week list, days of week */}
-                <fieldset className="mt-8">
-                  <legend className="form-label mb-1">When could you come out?</legend>
-                  <p className="form-hint mb-4">
-                    Check everything that works — we will find the exact time together.
-                  </p>
-
-                  {/* Global time-of-day preferences */}
-                  <div className="grid grid-cols-2 gap-3 mb-5">
-                    <fieldset className="border border-green-800/15 bg-white px-4 pb-3 pt-1">
-                      <legend className="text-[10px] font-sans uppercase tracking-wide text-gold-ink px-1">
-                        Weekdays
-                      </legend>
-                      <div className="flex items-center gap-5">
-                        <label className="inline-flex items-center gap-2 text-sm font-sans text-secondary cursor-pointer">
-                          <input
-                            type="checkbox"
-                            className="accent-green-800 focus-ring"
-                            checked={timePrefs.weekdayAm}
-                            onChange={() => setTimePrefs((p) => ({ ...p, weekdayAm: !p.weekdayAm }))}
-                          />
-                          AM
-                        </label>
-                        <label className="inline-flex items-center gap-2 text-sm font-sans text-secondary cursor-pointer">
-                          <input
-                            type="checkbox"
-                            className="accent-green-800 focus-ring"
-                            checked={timePrefs.weekdayPm}
-                            onChange={() => setTimePrefs((p) => ({ ...p, weekdayPm: !p.weekdayPm }))}
-                          />
-                          PM
-                        </label>
-                      </div>
-                    </fieldset>
-                    <fieldset className="border border-green-800/15 bg-white px-4 pb-3 pt-1">
-                      <legend className="text-[10px] font-sans uppercase tracking-wide text-gold-ink px-1">
-                        Weekends
-                      </legend>
-                      <div className="flex items-center gap-5">
-                        <label className="inline-flex items-center gap-2 text-sm font-sans text-secondary cursor-pointer">
-                          <input
-                            type="checkbox"
-                            className="accent-green-800 focus-ring"
-                            checked={timePrefs.weekendAm}
-                            onChange={() => setTimePrefs((p) => ({ ...p, weekendAm: !p.weekendAm }))}
-                          />
-                          AM
-                        </label>
-                        <label className="inline-flex items-center gap-2 text-sm font-sans text-secondary cursor-pointer">
-                          <input
-                            type="checkbox"
-                            className="accent-green-800 focus-ring"
-                            checked={timePrefs.weekendPm}
-                            onChange={() => setTimePrefs((p) => ({ ...p, weekendPm: !p.weekendPm }))}
-                          />
-                          PM
-                        </label>
-                      </div>
-                    </fieldset>
-                  </div>
-
-                  {/* Week list — Sunday-start weeks, paged forward from this week */}
-                  <fieldset className="mb-5">
-                    <legend className="form-label mb-0">
-                      Which weeks work? <span className="normal-case tracking-normal text-green-800/60">(Sun–Sat)</span>
-                    </legend>
-                    <div className="flex items-center justify-between mt-2 mb-2">
-                      <p className="form-hint">
-                        {Object.keys(selectedWeeks).length > 0
-                          ? `${Object.keys(selectedWeeks).length} week${Object.keys(selectedWeeks).length === 1 ? '' : 's'} selected`
-                          : 'Check as many as you like.'}
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setWeekPage((p) => Math.max(0, p - 1))}
-                          disabled={weekPage === 0}
-                          aria-label="Earlier weeks"
-                          className="p-2 border border-green-800/15 bg-white text-green-800 transition-colors hover:border-green-800/40 disabled:opacity-30 disabled:cursor-not-allowed focus-ring"
-                        >
-                          <ChevronLeft size={14} aria-hidden="true" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setWeekPage((p) => p + 1)}
-                          aria-label="Later weeks"
-                          className="p-2 border border-green-800/15 bg-white text-green-800 transition-colors hover:border-green-800/40 focus-ring"
-                        >
-                          <ChevronRight size={14} aria-hidden="true" />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-1 gap-2">
-                      {visibleWeeks.map((week) => {
-                        const checked = !!selectedWeeks[week.startISO];
-                        return (
-                          <label
-                            key={week.startISO}
-                            className={`flex items-center gap-3 border px-4 py-3 text-sm font-sans cursor-pointer transition-all duration-200 ${
-                              checked
-                                ? 'border-green-800 bg-green-800/5 text-green-900 font-medium'
-                                : 'border-green-800/15 bg-white text-secondary hover:border-green-800/40'
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              className="accent-green-800 focus-ring"
-                              checked={checked}
-                              onChange={() => toggleWeek(week)}
-                            />
-                            {week.label}
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </fieldset>
-
-                  {/* Days of the week — specific days OR open to any */}
-                  <fieldset>
-                    <legend className="form-label mb-2">Which days of the week?</legend>
-                    <label className="inline-flex items-center gap-2 text-sm font-sans text-secondary cursor-pointer mb-3">
-                      <input
-                        type="checkbox"
-                        className="accent-green-800 focus-ring"
-                        checked={anyDay}
-                        onChange={() => setAnyDay((v) => !v)}
-                      />
-                      I&rsquo;m open to any day of the week
-                    </label>
-                    <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
-                      {DAY_SHORT.map((label, i) => {
-                        const checked = !anyDay && days.includes(i);
-                        return (
-                          <label
-                            key={label}
-                            className={`flex items-center justify-center gap-1.5 border py-2.5 px-1 text-xs font-sans uppercase tracking-wide transition-all duration-200 ${
-                              anyDay
-                                ? 'border-green-800/10 bg-white text-muted opacity-50 cursor-not-allowed'
-                                : checked
-                                  ? 'border-green-800 bg-green-800/5 text-green-900 font-medium cursor-pointer'
-                                  : 'border-green-800/15 bg-white text-secondary hover:border-green-800/40 cursor-pointer'
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              className="accent-green-800 focus-ring"
-                              aria-label={DAY_FULL[i]}
-                              disabled={anyDay}
-                              checked={checked}
-                              onChange={() => toggleDay(i)}
-                            />
-                            {label}
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </fieldset>
-                </fieldset>
+                {/* Availability — shared picker (weeks / days / AM-PM) */}
+                <AvailabilityPicker picker={picker} />
 
                 {/* Notes */}
                 <div className="mt-5">

@@ -36,9 +36,12 @@ type SignResult = {
 async function sign(
   name: string, email: string | null, phone: string | null, typed: string, org?: string,
 ): Promise<SignResult> {
+  // e-sign hardening (20260703110000): the wrapper's trailing p_esign_consent
+  // must be true (the kiosk UI's required checkbox); rejection without it is
+  // covered by esign_hardening.test.ts.
   const [row] = await h.q<{ r: SignResult }>(
-    `select sign_general_release($1,$2,$3,$4${org ? ',$5' : ''}) as r`,
-    org ? [name, email, phone, typed, org] : [name, email, phone, typed]);
+    `select sign_general_release($1,$2,$3,$4,$5,true) as r`,
+    [name, email, phone, typed, org ?? null]);
   return row.r;
 }
 

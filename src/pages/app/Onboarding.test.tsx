@@ -8,9 +8,11 @@
  *    generate_my_onboarding_documents then refreshes my_onboarding_state,
  *  - step 2 walks each non-EXECUTED document in order: merged body rendered,
  *    the Sign button stays DISABLED until the typed name EXACTLY matches the
- *    printed name (server-enforced contract), a successful sign calls
- *    record_signature via signMyDocument(doc, 'CLIENT', name), fires the
- *    best-effort /api/deliver-document POST, and advances "Document 2 of 2",
+ *    printed name (server-enforced contract) AND the required e-sign consent
+ *    checkbox is checked (release-signing audit), a successful sign calls
+ *    record_signature via signMyDocument(doc, 'CLIENT', name, true) — the
+ *    consent flag rides along — fires the best-effort /api/deliver-document
+ *    POST, and advances "Document 2 of 2",
  *  - step 3 shows the purchase summary (tier label, $ amount, lessons, PAID +
  *    method) and the documents link,
  *  - a member with nothing pending and no purchase gets the friendly
@@ -148,16 +150,23 @@ describe('Onboarding — 3-step rider flow', () => {
     expect(await screen.findByText('Document 1 of 2')).toBeInTheDocument();
     expect(await screen.findByText(/I assume all risks/)).toBeInTheDocument();
 
-    // Sign stays disabled until the typed name EXACTLY matches the printed name.
+    // Sign stays disabled until the typed name EXACTLY matches the printed
+    // name AND the required e-sign consent checkbox is checked.
     const signButton = () => screen.getByRole('button', { name: /^sign$/i });
+    const consentBox = () => screen.getByLabelText(/sign this document electronically/i);
+    expect(consentBox()).not.toBeChecked();
     expect(signButton()).toBeDisabled();
     await userEvent.type(screen.getByLabelText(/type your name exactly as printed/i), 'Alice');
     expect(signButton()).toBeDisabled();
     await userEvent.type(screen.getByLabelText(/type your name exactly as printed/i), ' Client');
+    // name matches, but consent is still missing — button stays disabled
+    expect(signButton()).toBeDisabled();
+    await userEvent.click(consentBox());
     expect(signButton()).toBeEnabled();
 
     await userEvent.click(signButton());
-    await waitFor(() => expect(signMyDocument).toHaveBeenCalledWith('doc-1', 'CLIENT', 'Alice Client'));
+    // the consent flag rides along with the signature
+    await waitFor(() => expect(signMyDocument).toHaveBeenCalledWith('doc-1', 'CLIENT', 'Alice Client', true));
     // Best-effort delivery fired for the signed document.
     expect(fetchMock).toHaveBeenCalledWith('/api/deliver-document', expect.objectContaining({
       method: 'POST',
@@ -167,9 +176,11 @@ describe('Onboarding — 3-step rider flow', () => {
     // ── Document 2 of 2 ─────────────────────────────────────────────────────
     expect(await screen.findByText('Document 2 of 2')).toBeInTheDocument();
     expect(await screen.findByText(/24-hour cancellation notice/)).toBeInTheDocument();
+    // consent persists for the signing session (already affirmed above)
+    expect(consentBox()).toBeChecked();
     await userEvent.type(screen.getByLabelText(/type your name exactly as printed/i), 'Alice Client');
     await userEvent.click(signButton());
-    await waitFor(() => expect(signMyDocument).toHaveBeenCalledWith('doc-2', 'CLIENT', 'Alice Client'));
+    await waitFor(() => expect(signMyDocument).toHaveBeenCalledWith('doc-2', 'CLIENT', 'Alice Client', true));
     expect(fetchMock).toHaveBeenCalledWith('/api/deliver-document', expect.objectContaining({
       body: JSON.stringify({ documentId: 'doc-2' }),
     }));

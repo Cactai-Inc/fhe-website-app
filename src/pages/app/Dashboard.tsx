@@ -105,9 +105,19 @@ export default function Dashboard() {
               {planQuantity(purchase) && <p className="text-xs text-muted mt-0.5">{planQuantity(purchase)}</p>}
             </div>
           </div>
-          {purchase.paid && (
-            <span className="bg-green-800 text-white text-xs font-sans px-2 py-0.5 tracking-wide whitespace-nowrap">PAID</span>
-          )}
+          <div className="flex items-center gap-3 flex-shrink-0">
+            {purchase.paid && (
+              <span className="bg-green-800 text-white text-xs font-sans px-2 py-0.5 tracking-wide whitespace-nowrap">PAID</span>
+            )}
+            {/* Flow D entry (BOOKING_FLOWS_PLAN §2 Flow D): rebook with near-zero friction. */}
+            <Link
+              to="/app/book"
+              data-testid="book-more-link"
+              className="btn-primary px-4 py-2 whitespace-nowrap"
+            >
+              {purchase.lessons_included ? 'Book another lesson' : 'Add to your plan'}
+            </Link>
+          </div>
         </div>
       )}
 

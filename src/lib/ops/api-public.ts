@@ -137,6 +137,9 @@ export interface SignReleaseInput {
   guardian_relationship?: string | null;
   /** The rules gate — the RPC rejects unless true. */
   rules_acknowledged: boolean;
+  /** E-sign consent (20260703110000): the kiosk's required "sign
+   *  electronically" checkbox — the RPC rejects unless true. */
+  esign_consent?: boolean;
   /** Optional explicit tenant (multi-tenant kiosks); defaults server-side. */
   org_id?: string;
 }
@@ -168,6 +171,7 @@ export async function signRelease(input: SignReleaseInput): Promise<SignReleaseR
     p_minor_dob: input.minor_dob ?? null,
     p_guardian_relationship: input.guardian_relationship ?? null,
     p_rules_acknowledged: input.rules_acknowledged,
+    p_esign_consent: input.esign_consent ?? false,
   };
   if (input.org_id) params.p_org = input.org_id;
   const { data, error } = await supabase.rpc('sign_release', params);

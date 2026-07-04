@@ -14,7 +14,11 @@
  *  - the PARTY email is the document text only (no 'Document DOC-…' code line,
  *    no trailing FACILITY RULES ACKNOWLEDGMENT block) with signature values
  *    wrapped in an inline-styled script span, while the COMPANY notice keeps
- *    the full stored body (acknowledgment included).
+ *    the full stored body (acknowledgment included),
+ *  - tamper evidence (20260703110000): when the document carries an
+ *    execution_hash, the COMPANY copy footer shows the full
+ *    'Integrity hash (SHA-256): …' and the PARTY copy a short
+ *    'integrity code' (first 16 chars); no hash → neither line.
  *
  * Static audit (asserted below): the source guards on status==='EXECUTED' before
  * any delivery, and never inserts a delivery without first attempting the email.
@@ -32,6 +36,7 @@ interface DocState {
   title: string;
   display_code?: string;
   merged_body?: string;
+  execution_hash?: string;
 }
 interface PartyState {
   contact_id: string;
@@ -192,6 +197,14 @@ describe('POST /api/deliver-document', () => {
     // (mock doc has no merged_body, so just the notice + footer).
     expect(first.html).not.toContain('/portal/');
     expect(first.html).toContain('French Heritage Equestrian LLC'); // footer from the doc's org
+
+    // No execution_hash on this document (pre-hardening execution) → neither
+    // integrity line renders, in any copy.
+    for (const c of fetchMock.mock.calls) {
+      const sent = JSON.parse((c[1] as RequestInit).body as string);
+      expect(sent.html).not.toContain('Integrity hash');
+      expect(sent.html).not.toContain('integrity code');
+    }
   });
 
   it('party email = document text only (script signature, no code line, no rules block); company copy keeps the full body', async () => {
@@ -235,6 +248,32 @@ describe('POST /api/deliver-document', () => {
     expect(company.subject).toContain('DOC-2026-0042');
     expect(company.html).toContain('FACILITY RULES ACKNOWLEDGMENT');
     expect(company.html).toContain('>Bo Buyer</span>');
+  });
+
+  it('renders the integrity-hash lines when the document carries an execution_hash', async () => {
+    const HASH = '9f2c1a4e5b6d7081aabbccddeeff00112233445566778899aabbccddeeff0011';
+    seedExecuted('org-fhe');
+    state.document!.merged_body = 'RELEASE OF LIABILITY\n\nSignature: Bo Buyer\n';
+    state.document!.execution_hash = HASH;
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response(JSON.stringify({ id: 'msg_h' }), { status: 200 }) as unknown as Response);
+
+    const res = makeRes();
+    await handler(makeReq({ documentId: 'doc-1' }), res);
+    expect(res.statusCode).toBe(200);
+
+    const calls = fetchMock.mock.calls.map((c) => JSON.parse((c[1] as RequestInit).body as string));
+    const party = calls.find((c) => c.to === 'buyer@example.com');
+    const company = calls.find((c) => c.to === 'hello@fhe.test');
+
+    // PARTY copy: the short integrity code (first 16 chars + ellipsis), never
+    // the full hash dump.
+    expect(party.html).toContain(`This document's integrity code: ${HASH.slice(0, 16)}…`);
+    expect(party.html).not.toContain(`integrity code: ${HASH}`);
+
+    // COMPANY copy footer: the full SHA-256 hash.
+    expect(company.html).toContain(`Integrity hash (SHA-256): ${HASH}`);
   });
 
   it('resolves brand from the DOCUMENT org (isolation) — a different tenant', async () => {

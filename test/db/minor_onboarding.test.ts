@@ -259,8 +259,9 @@ describe('sign_general_release — kiosk attribution (email REQUIRED)', () => {
 
   it('signs normally with an email (wrapper behavior otherwise unchanged)', async () => {
     await h.asAnon();
+    // trailing p_esign_consent required since 20260703110000 (kiosk checkbox)
     const [row] = await h.q<{ r: { status: string; merged_body: string } }>(
-      `select sign_general_release('Walk In','walkin@visitor.test',null,'Walk In') as r`);
+      `select sign_general_release('Walk In','walkin@visitor.test',null,'Walk In',null,true) as r`);
     expect(row.r.status).toBe('EXECUTED'); // unilateral: the single signature executes
     expect(row.r.merged_body).toContain('walkin@visitor.test');
   });

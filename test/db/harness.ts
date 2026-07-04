@@ -16,6 +16,7 @@
  * correctly.
  */
 import { PGlite } from '@electric-sql/pglite';
+import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -121,7 +122,9 @@ export function migrationFiles(): string[] {
  * migration in order. Throws with the offending filename if one fails.
  */
 export async function createTestDb(opts?: { upTo?: string }): Promise<TestDb> {
-  const db = await PGlite.create();
+  // pgcrypto is loadable in PGlite but must be registered at create time for
+  // `CREATE EXTENSION pgcrypto` (20260703110000 — execution hashes) to work.
+  const db = await PGlite.create({ extensions: { pgcrypto } });
   await db.exec(BOOTSTRAP);
 
   for (const file of migrationFiles()) {

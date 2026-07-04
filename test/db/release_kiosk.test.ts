@@ -40,7 +40,7 @@ interface SignRow {
 }
 async function sign(input: Partial<Record<string, unknown>>) {
   const [raw] = await h.q<{ sign_release: SignRow | string }>(
-    `select sign_release($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::date,$11,$12)`,
+    `select sign_release($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::date,$11,$12,$13,$14)`,
     [
       input.template_key ?? 'RELEASE_GENERAL',
       input.first_name ?? 'Vera',
@@ -54,6 +54,9 @@ async function sign(input: Partial<Record<string, unknown>>) {
       input.minor_dob ?? null,
       input.guardian_relationship ?? null,
       input.rules_acknowledged ?? true,
+      input.org ?? null,
+      // e-sign hardening (20260703110000): kiosk signings require consent
+      input.esign_consent ?? true,
     ],
   );
   const v = raw.sign_release;
@@ -208,7 +211,7 @@ describe('cross-tenant isolation', () => {
     expect(prev.body).not.toContain('French Heritage Equestrian');
 
     const [rawB] = await h.q<{ sign_release: SignRow | string }>(
-      `select sign_release('RELEASE_GENERAL','Betty','B','betty@b.test',null,'Betty B',false,null,null,null,null,true,$1)`,
+      `select sign_release('RELEASE_GENERAL','Betty','B','betty@b.test',null,'Betty B',false,null,null,null,null,true,$1,true)`,
       [orgB]);
     const row = (typeof rawB.sign_release === 'string' ? JSON.parse(rawB.sign_release) : rawB.sign_release) as SignRow;
     await h.asSuperuser();

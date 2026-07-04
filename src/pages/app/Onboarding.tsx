@@ -157,6 +157,10 @@ export default function Onboarding() {
   const [body, setBody] = useState<string | null>(null);
   const [bodyLoading, setBodyLoading] = useState(false);
   const [typedName, setTypedName] = useState('');
+  // E-sign consent (release-signing audit): a REQUIRED checkbox above the
+  // sign button; the flag rides to record_signature, which logs a separate
+  // esign_consents row. Checked once, it covers the whole signing session.
+  const [esignConsent, setEsignConsent] = useState(false);
   const [signing, setSigning] = useState(false);
   const [signError, setSignError] = useState<string | null>(null);
 
@@ -255,11 +259,11 @@ export default function Onboarding() {
 
   async function signCurrent(e: React.FormEvent) {
     e.preventDefault();
-    if (!currentDoc || !nameMatches || signing) return;
+    if (!currentDoc || !nameMatches || !esignConsent || signing) return;
     setSigning(true);
     setSignError(null);
     try {
-      await signMyDocument(currentDoc.document_id, 'CLIENT', typedName.trim());
+      await signMyDocument(currentDoc.document_id, 'CLIENT', typedName.trim(), true);
       // Best-effort delivery: email the executed copy. Never blocks the flow —
       // the document is safely stored either way (Release.tsx pattern).
       fetch('/api/deliver-document', {
@@ -489,6 +493,21 @@ export default function Onboarding() {
                 </div>
               )}
 
+              {/* E-sign consent (release-signing audit): REQUIRED before the
+                  sign button enables; the flag is logged server-side. */}
+              <label className="flex items-start gap-3 mb-4 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={esignConsent}
+                  onChange={(e) => setEsignConsent(e.target.checked)}
+                />
+                <span className="body-text text-sm">
+                  I agree to sign this document electronically and understand
+                  my electronic signature is legally binding. *
+                </span>
+              </label>
+
               {/* Type-to-sign: must match the printed name EXACTLY (server-enforced). */}
               <form onSubmit={signCurrent} className="flex flex-wrap items-end gap-3">
                 <div>
@@ -503,7 +522,7 @@ export default function Onboarding() {
                     onChange={(e) => setTypedName(e.target.value)}
                   />
                 </div>
-                <button type="submit" className="btn-outline-gold" disabled={!nameMatches || signing}>
+                <button type="submit" className="btn-outline-gold" disabled={!nameMatches || !esignConsent || signing}>
                   {signing ? 'Signing…' : 'Sign'}
                 </button>
               </form>

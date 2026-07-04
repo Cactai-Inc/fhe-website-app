@@ -75,7 +75,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // 1. Load the document (status + org + title). No delivery unless EXECUTED.
     const { data: doc, error: docErr } = await db
       .from('documents')
-      .select('id, engagement_id, org_id, status, title, display_code, merged_body')
+      .select('id, engagement_id, org_id, status, title, display_code, merged_body, execution_hash')
       .eq('id', documentId)
       .maybeSingle();
     if (docErr) throw docErr;
@@ -109,6 +109,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const identity = await resolveTenantEmailIdentity(db, doc.org_id);
     const copyUrl = `/portal/documents/${documentId}`;
 
+    // Tamper evidence (20260703110000): documents executed since the e-sign
+    // hardening carry a SHA-256 execution hash. The party copy gets a short
+    // integrity code; the company copy gets the full hash in its footer.
+    // Older executions (no hash) render neither line.
+    const executionHash = typeof doc.execution_hash === 'string' && doc.execution_hash.trim() !== ''
+      ? doc.execution_hash.trim()
+      : null;
+    const partyHashHtml = executionHash
+      ? `<p style="color:#666;font-size:12px">This document's integrity code: ${executionHash.slice(0, 16)}…</p>`
+      : '';
+    const companyHashHtml = executionHash
+      ? `<hr/><p style="color:#666;font-size:12px">Integrity hash (SHA-256): ${executionHash}</p>`
+      : '';
+
     const delivered: Array<{ recipientContactId: string; channel: string; emailed: boolean }> = [];
 
     // 5. Per party: dedupe, email, then (only on a successful send) record delivery.
@@ -132,7 +146,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const docHtml = doc.merged_body
         ? `<hr/><pre style="font-family:inherit;white-space:pre-wrap">${withSignatureScript(stripFacilityRulesTail(doc.merged_body))}</pre>`
         : '';
-      const html = `${inner}${docHtml}${footerHtml}`;
+      const html = `${inner}${docHtml}${partyHashHtml}${footerHtml}`;
 
       const sent = await sendViaProvider({
         to: email,
@@ -174,7 +188,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         html: `<p>${signers || 'A signer'} executed <strong>${doc.title}</strong>.</p>`
           // Company copy keeps the FULL stored body (code line context is in the
           // subject; acknowledgment block included) — only signatures are styled.
-          + (doc.merged_body ? `<pre style="font-family:inherit;white-space:pre-wrap">${withSignatureScript(doc.merged_body)}</pre>` : ''),
+          + (doc.merged_body ? `<pre style="font-family:inherit;white-space:pre-wrap">${withSignatureScript(doc.merged_body)}</pre>` : '')
+          // Full integrity hash in the company-copy footer (tamper evidence).
+          + companyHashHtml,
       });
       companyNotified = notice.ok;
     }

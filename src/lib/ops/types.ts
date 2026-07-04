@@ -175,6 +175,9 @@ export interface DocumentRow {
   status: string;
   generated_at: string;
   effective_date: string | null;
+  /** Tamper-evidence hash (hex sha256), stamped at the EXECUTED flip
+   *  (20260703110000). NULL on drafts and pre-hardening executions. */
+  execution_hash?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -198,6 +201,8 @@ export interface Signature {
   typed_name: string | null;
   signed_at: string | null;
   ip_address: string | null;
+  /** Signer's browser user-agent (20260703110000 session attribution). */
+  user_agent?: string | null;
   method: string | null;
   created_at: string;
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Check, PenLine } from 'lucide-react';
+import { Check, PenLine, Printer } from 'lucide-react';
 import Seo from '../components/Seo';
 import { BodyWithSignatures } from '../components/ops/documents/MergedBodyView';
 import { fetchReleasePreview, signRelease } from '../lib/ops/api-public';
@@ -23,9 +23,12 @@ import type { ReleasePreview, ReleaseTemplateKey, SignReleaseResult } from '../l
  *             required "I have read and agree" checkbox;
  *   sign    — the general release (merged preview, truncated BEFORE the
  *             signature area) with the captured details shown filled in; the
- *             signer types their name to sign;
+ *             signer types their name to sign AND checks the REQUIRED
+ *             electronic-signing consent (release-signing audit — the RPC
+ *             rejects without it);
  *   done    — the EXECUTED document (completed signature section, DOB for a
- *             minor, dated rules acknowledgment) rendered back.
+ *             minor, dated rules acknowledgment) rendered back, with a
+ *             "Print or save this page" affordance (kiosk paper copy).
  *
  * Signing calls the sign_release RPC (20260702050000): the server creates the
  * real contact/engagement, merges the document through generate_document,
@@ -49,6 +52,20 @@ export const RELEASE_OPTIONS: {
 ];
 
 type Step = 'info' | 'rules' | 'sign';
+
+/** Print / save the signed confirmation (DocumentViewerPage pattern): body
+ *  gets `printing`, the print stylesheet (src/index.css @media print) shows
+ *  ONLY the `.print-document` subtree, and window.print() opens the dialog. */
+function printSignedRelease() {
+  const body = window.document.body;
+  const cleanup = () => body.classList.remove('printing');
+  body.classList.add('printing');
+  // `afterprint` covers browsers where print() returns before the dialog
+  // closes; the synchronous cleanup covers those where it blocks.
+  window.addEventListener('afterprint', cleanup, { once: true });
+  window.print();
+  cleanup();
+}
 
 export default function Release() {
   const { releaseKey } = useParams();
@@ -80,6 +97,9 @@ export default function Release() {
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const [typedName, setTypedName] = useState('');
+  // E-sign consent (release-signing audit): a REQUIRED checkbox — the server
+  // rejects a kiosk signing without it.
+  const [esignOk, setEsignOk] = useState(false);
   const [signing, setSigning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<SignReleaseResult | null>(null);
@@ -112,7 +132,7 @@ export default function Release() {
   const infoOk = nameOk && emailOk && minorOk;
   const typedMatches = typedName.trim() !== ''
     && typedName.trim().toLowerCase() === fullName.toLowerCase();
-  const canSign = infoOk && typedMatches && rulesOk && !signing;
+  const canSign = infoOk && typedMatches && rulesOk && esignOk && !signing;
 
   async function sign(e: React.FormEvent) {
     e.preventDefault();
@@ -133,6 +153,7 @@ export default function Release() {
         minor_dob: isMinor ? minorDob : null,
         guardian_relationship: isMinor ? relationship.trim() : null,
         rules_acknowledged: rulesOk,
+        esign_consent: esignOk,
       });
       setResult(r);
       // Best-effort delivery: email the executed copy to the signer and the
@@ -186,12 +207,25 @@ export default function Release() {
                   Signed by {fullName} · Document {result.document_code}
                   {email.trim() !== '' && ' · A copy is on its way to your email'}
                 </p>
-                <p className="body-text text-sm text-secondary">
+                <p className="body-text text-sm text-secondary mb-4">
                   Your release is fully executed. Enjoy your visit.
                 </p>
+                {/* Kiosk record affordance (release-signing audit): the signer
+                    can always take a paper/PDF copy home, on top of the email. */}
+                <button type="button" onClick={printSignedRelease} className="btn-outline-gold">
+                  <Printer size={16} aria-hidden="true" />
+                  Print or save this page
+                </button>
               </div>
-              <div className="bg-white border border-green-800/10">
-                <h2 className="eyebrow px-8 pt-6 pb-2">Your signed document</h2>
+              {/* Printable subtree (DocumentViewerPage pattern): body.printing
+                  shows ONLY this block — the print-only header + the executed
+                  document text. */}
+              <div className="bg-white border border-green-800/10 print-document">
+                <header className="print-only print-doc-header">
+                  <h1>Signed release</h1>
+                  <p>Reference: {result.document_code} · Signed by {fullName}</p>
+                </header>
+                <h2 className="eyebrow px-8 pt-6 pb-2 print-hidden">Your signed document</h2>
                 <div
                   className="px-8 pb-6 max-h-96 overflow-y-auto whitespace-pre-wrap text-sm text-secondary leading-relaxed"
                   aria-label="Signed release document"
@@ -373,6 +407,20 @@ export default function Release() {
                 {typedName.trim() !== '' && !typedMatches && (
                   <p className="form-hint mt-2">Your typed signature must match your full legal name exactly.</p>
                 )}
+                {/* E-sign consent (release-signing audit): REQUIRED — the
+                    sign_release RPC rejects a kiosk signing without it. */}
+                <label className="flex items-start gap-3 mt-5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="mt-1"
+                    checked={esignOk}
+                    onChange={(e) => setEsignOk(e.target.checked)}
+                  />
+                  <span className="body-text text-sm">
+                    I agree to sign this document electronically and understand
+                    my electronic signature is legally binding. *
+                  </span>
+                </label>
                 {error && <p className="form-error mt-4" role="alert">{error}</p>}
                 <button type="submit" disabled={!canSign || !preview} className="btn-primary mt-6 w-full justify-center">
                   {signing ? 'Recording your signature…' : 'Sign the release'}

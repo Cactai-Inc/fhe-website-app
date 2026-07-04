@@ -10,7 +10,7 @@
  *    disclosure) and stays for admins.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderWithRouter, screen, userEvent } from '../../test/render';
+import { renderWithRouter, screen, userEvent, within } from '../../test/render';
 import type { OnboardingState } from '../../lib/api';
 
 const auth = vi.hoisted(() => ({
@@ -118,6 +118,31 @@ describe('Dashboard — the all-set first-visit card', () => {
     renderWithRouter(<Dashboard />);
     await screen.findByTestId('plan-card');
     expect(screen.queryByTestId('first-visit-card')).not.toBeInTheDocument();
+  });
+});
+
+describe('Dashboard — Flow D entry on the plan card', () => {
+  it('offers "Book another lesson" → /app/book for lesson-pack plans', async () => {
+    renderWithRouter(<Dashboard />);
+    const card = await screen.findByTestId('plan-card');
+    const link = within(card).getByTestId('book-more-link');
+    expect(link).toHaveTextContent('Book another lesson');
+    expect(link).toHaveAttribute('href', '/app/book');
+    // the rest of the card is untouched
+    expect(card).toHaveTextContent('4-Lesson Punch Card');
+    expect(card).toHaveTextContent('PAID');
+  });
+
+  it('adapts the label to "Add to your plan" when the purchase has no lesson count', async () => {
+    vi.mocked(myOnboardingState).mockResolvedValue(state({
+      purchase: {
+        tier_label: '2x / Week Monthly', amount: 875, lessons_included: null,
+        cadence: '2 lessons/week', paid: true, payment_method: 'Zelle',
+      },
+    }));
+    renderWithRouter(<Dashboard />);
+    const card = await screen.findByTestId('plan-card');
+    expect(within(card).getByTestId('book-more-link')).toHaveTextContent('Add to your plan');
   });
 });
 

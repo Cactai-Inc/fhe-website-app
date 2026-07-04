@@ -38,6 +38,7 @@ import Membership from './pages/app/Membership';
 import Orders from './pages/app/Orders';
 import Documents from './pages/app/Documents';
 import Onboarding from './pages/app/Onboarding';
+import BookMore from './pages/app/BookMore';
 // Client portal (CP-* wave)
 import MyEngagements from './pages/app/MyEngagements';
 import MyEngagementDetail from './pages/app/MyEngagementDetail';
@@ -161,6 +162,8 @@ export function AppRoutes() {
               <Route path="documents" element={<Documents />} />
               {/* Rider onboarding (provisioned invite → details → sign → confirmation) */}
               <Route path="onboarding" element={<Onboarding />} />
+              {/* Flow D — returning member books more (BOOKING_FLOWS_PLAN §2 Flow D) */}
+              <Route path="book" element={<BookMore />} />
               <Route path="orders" element={<Orders />} />
               {/* Client portal (CP-*) */}
               <Route path="engagements" element={<MyEngagements />} />

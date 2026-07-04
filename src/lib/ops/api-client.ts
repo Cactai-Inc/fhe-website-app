@@ -191,17 +191,24 @@ export async function listMySignableDocuments(): Promise<SignableDocument[]> {
  * Member self-sign: seal MY typed signature on a document where I am the
  * party. Server-side `record_signature` (20260702000000) verifies the caller's
  * contact matches the party row — a member can never sign for someone else.
+ *
+ * `esignConsent` (20260703110000): the UI's "sign electronically" checkbox —
+ * when true the server logs a separate esign_consents row alongside the
+ * signature. Defaults false so pre-checkbox callers keep their behavior.
+ * ip/user-agent are captured server-side from the request headers.
  */
 export async function signMyDocument(
   documentId: string,
   partyRole: PartyRole,
   typedName: string,
+  esignConsent = false,
 ): Promise<void> {
   const { error } = await supabase.rpc('record_signature', {
     p_document_id: documentId,
     p_party_role: partyRole,
     p_typed_name: typedName,
     p_ip: null,
+    p_esign_consent: esignConsent,
   });
   if (error) throw error;
 }
