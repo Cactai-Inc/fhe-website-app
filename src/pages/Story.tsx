@@ -6,17 +6,25 @@ import Seo from '../components/Seo';
 import { seoForPath } from '../lib/seo';
 
 /* The brand-story page — "come learn about us". Uses the normal Layout (header
- * + footer) and scrolls. Mostly cream, with two deep-green full-bleed panels
- * for rhythm (opening image band + closing CTA). Gentle fade-up on scroll via
- * IntersectionObserver; reduced-motion users get everything static and present
- * (handled in the .qs-reveal CSS guard).
+ * + footer) and scrolls. Four sections carrying a deliberate cinematic arc
+ * through ONE place, in order:
+ *   1 · The place            — coastal setting establishing shot (the world she belongs to)
+ *   2 · The stables          — people + horses, golden hour (her own horse, well-kept)
+ *   3 · The arena / community — women riding together (the people she belongs with)
+ *   4 · Closing CTA band      — the same place looking toward the hills
  *
- * Images: the hero is reused where no dedicated photo exists yet, and the
- * "place" slot is a styled green panel — each is a single-src swap when a real
- * photograph arrives.
+ * IMAGE ARC (bookended by ONE continuous location):
+ *   Landing = Hero A  →  S1 = new-place placeholder  →  S2 = stables placeholder
+ *   →  S3 = Hero A world revisited (the arena)  →  S4 = Hero B (toward the hills).
+ * Hero A and Hero B are two angles of the same place; they open and close the
+ * journey. Sections 1 and 2 are deep-green textural placeholders until the owner
+ * provides the real establishing + stables media (marked with SWAP comments).
+ *
+ * Gentle fade-up on scroll via IntersectionObserver; reduced-motion users get
+ * everything static and present (CSS .qs-reveal guard).
  */
-const HERO_IMG = '/reference-images/Hero_A.png';
-const PLACE_IMG = '/reference-images/Hero_B.png';
+const HERO_A = '/reference-images/Hero_A.png';  // the arena — landing hero's world (S3)
+const HERO_B = '/reference-images/Hero_B.png';  // the place, toward the hills (S4 bookend)
 
 /* Lightweight scroll-reveal wrapper. Adds `qs-in` when the element first
  * enters the viewport. SSR-safe: if IntersectionObserver is unavailable (or
@@ -69,32 +77,49 @@ function Reveal({
   );
 }
 
-const OFFERINGS = [
+/* The refined preview of the ways in — informational-with-a-path, not a catalog. */
+const WAYS_IN = [
   {
     name: 'Riding Lessons',
-    line: 'Private, classical instruction — steady progress at the pace the horse sets.',
-    href: '/lessons',
-    img: HERO_IMG,
+    line: 'Come as you are — steady, patient teaching at the pace the horse sets.',
+    href: '/shop',
   },
   {
-    name: 'Horsemanship',
-    line: 'Beyond the saddle: groundwork, patience, and the language of the horse.',
-    href: '/lessons',
-    img: PLACE_IMG,
-  },
-  {
-    name: 'Finding a Horse',
-    line: 'When you are ready for one of your own, we search, evaluate, and advise.',
-    href: '/acquisition',
-    img: HERO_IMG,
+    name: 'Membership',
+    line: 'A standing place in the community, and a regular rhythm to your week.',
+    href: '/shop',
   },
   {
     name: 'Horse Care',
-    line: 'Training, turnout, and care brought to where your horse already lives.',
-    href: '/horse',
-    img: PLACE_IMG,
+    line: 'Training, exercise, and clipping when a horse of your own arrives.',
+    href: '/shop',
+  },
+  {
+    name: 'Finding a Horse',
+    line: 'When you are ready for one to call yours, we search, evaluate, and advise.',
+    href: '/acquisition',
   },
 ];
+
+/* A deep-green textural placeholder band — stands in for real media at a swap
+ * slot until the owner provides it. NOT stock, NOT Hero A/B. */
+function GreenPlaceholder({ label, className = '' }: { label: string; className?: string }) {
+  return (
+    <div className={`relative overflow-hidden ${className}`}>
+      <div
+        className="absolute inset-0 bg-gradient-to-br from-green-800 via-green-900 to-green-950"
+        aria-hidden="true"
+      />
+      <div className="qs-grain absolute inset-0 opacity-[0.06]" aria-hidden="true" />
+      <div className="pointer-events-none absolute inset-0 border border-gold-600/25" aria-hidden="true" />
+      <div className="absolute inset-0 flex items-center justify-center px-6 text-center">
+        <p className="text-on-dark-soft text-[11px] font-sans tracking-widest uppercase max-w-xs leading-relaxed">
+          {label}
+        </p>
+      </div>
+    </div>
+  );
+}
 
 export default function Story() {
   const seo = seoForPath('/story')!;
@@ -103,156 +128,176 @@ export default function Story() {
     <>
       <Seo title={seo.title} description={seo.description} path="/story" />
 
-      {/* ── 1 · Hero band (scrolls; not full-viewport) ─────────────────── */}
+      {/* ══ SECTION 1 · The place — "Coastal air, and trails without end." ══
+          Establish the coastal world she belongs to. IMAGE: new establishing
+          shot (placeholder green band for now). */}
       <section className="bg-cream">
-        <div className="container-site pt-32 pb-20 sm:pt-40 sm:pb-24 max-w-4xl">
-          <Reveal>
-            <p className="eyebrow mb-6">Our Story</p>
-            <h1 className="heading-display text-green-900 max-w-3xl text-[clamp(2.75rem,7vw,5rem)]">
-              A place to ride,
-              <br />
-              and a place to belong.
-            </h1>
-            <p className="body-text mt-8 max-w-xl text-lg">
-              We are a riding community on the coast of San Diego — built around
-              good horses, honest teaching, and the quiet reward of doing one
-              thing well. Come see how it feels to make horsemanship part of
-              your life.
-            </p>
-            <div className="mt-10">
-              <Link to="/lessons" className="btn-primary">
-                See lessons &amp; pricing
-                <ArrowRight size={16} aria-hidden="true" />
-              </Link>
-            </div>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* ── 2 · The Approach ───────────────────────────────────────────── */}
-      <section className="bg-cream">
-        <div className="container-site py-20 sm:py-28">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
-            <Reveal className="lg:col-span-5">
-              <p className="eyebrow mb-5">The Approach</p>
-              <h2 className="heading-section text-green-900">
-                We ride the way the horse learns best — slowly, and with care.
-              </h2>
+        <div className="container-site pt-32 pb-16 sm:pt-40 sm:pb-24">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+            <Reveal className="lg:col-span-6">
+              <p className="eyebrow mb-6">Our Story</p>
+              <h1 className="heading-display text-green-900 text-[clamp(2.5rem,6.5vw,4.75rem)]">
+                Coastal air,
+                <br />
+                and trails without end.
+              </h1>
+              <div className="mt-8 space-y-6 max-w-xl">
+                <p className="body-text text-lg">
+                  Carmel Creek Ranch is tucked into the coastal hills near Torrey
+                  Pines, close enough that the ocean breeze finds the arena by
+                  mid-morning. The world here is open: room to breathe, and light
+                  that softens everything it touches.
+                </p>
+                <p className="body-text text-lg">
+                  The arena opens straight onto the trails. Ride out and they
+                  wind toward the water, past fields that roll gold as the day
+                  begins to cool. It is the kind of place that asks you to slow
+                  down the moment you turn in the gate.
+                </p>
+                <p className="body-text text-lg">
+                  We are a community of women who ride here for the plain love of
+                  it — and this is the place we keep coming back to.
+                </p>
+              </div>
             </Reveal>
 
-            <div className="lg:col-span-7 space-y-6">
-              <Reveal delay={80}>
-                <p className="body-text text-lg">
-                  Nothing here is rushed. Progress comes from patience: a clean
-                  transition, a soft halt, a horse that meets you halfway because
-                  you earned it. We teach the fundamentals until they become
-                  second nature, and we let each rider grow at their own honest
-                  pace.
-                </p>
-              </Reveal>
-              <Reveal delay={140}>
-                <p className="body-text text-lg">
-                  Partnership is the whole point. You learn to listen as much as
-                  you ask — to read the horse, to settle your own hands and
-                  breath, to trade force for feel. It is work, and it is
-                  deeply worth it. What you build in the arena tends to follow
-                  you out of it.
-                </p>
-              </Reveal>
-
-              {/* Pull-quote with a gold rule */}
-              <Reveal delay={200}>
-                <figure className="mt-10 border-l-2 border-gold-600 pl-6 sm:pl-8">
-                  <blockquote className="font-serif italic font-light text-2xl sm:text-3xl leading-snug text-green-800">
-                    “The horse gives you back exactly what you bring. That is the
-                    whole lesson, and it takes a lifetime.”
-                  </blockquote>
-                </figure>
-              </Reveal>
-            </div>
+            {/* SWAP: Section 1 hero — the place, coastal setting establishing shot
+                (new image/video, owner to provide). Green textural band for now. */}
+            <Reveal className="lg:col-span-6" delay={120}>
+              <GreenPlaceholder
+                label="Section 1 — the place: coastal establishing shot (image / video coming)"
+                className="aspect-[4/5] sm:aspect-[3/2] lg:aspect-[4/5]"
+              />
+            </Reveal>
           </div>
         </div>
       </section>
 
-      {/* ── 3 · The Place (deep-green full-bleed image band) ───────────── */}
-      <section className="relative bg-green-900">
+      {/* ══ SECTION 2 · The stables — "In good hands." ════════════════════
+          People + horses at the stables, golden hour. Her own horse, well-kept.
+          Classical European foundation appears ONCE here, as reassurance only.
+          Deep-green full-bleed band. IMAGE: stables placeholder for now. */}
+      <section className="relative bg-green-900 overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-2">
-          {/* Image slot — single-src swap when a real photograph arrives. */}
-          <div className="relative min-h-[320px] lg:min-h-[560px] overflow-hidden">
-            <div
-              className="absolute inset-0"
-              style={{
-                backgroundImage: `url('${PLACE_IMG}')`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center 40%',
-              }}
-              role="img"
-              aria-label="Riders and horses at Carmel Creek Ranch, coastal hills at sunset."
+          {/* SWAP: Section 2 — people + horses at the stables, golden hour
+              (owner to provide). Green textural placeholder for now. */}
+          <div className="order-1 lg:order-none">
+            <GreenPlaceholder
+              label="Section 2 — the stables: people + horses, golden hour (image coming)"
+              className="min-h-[340px] lg:min-h-[620px] h-full"
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent to-green-900/50 lg:to-green-900" />
           </div>
 
           {/* Copy */}
           <div className="flex items-center">
             <div className="px-6 sm:px-10 lg:pl-16 lg:pr-20 py-16 sm:py-20 lg:py-28 max-w-xl">
               <Reveal>
-                <p className="eyebrow-on-dark mb-5">The Place</p>
-                <h2 className="heading-section text-white">
-                  Carmel Creek Ranch, San Diego.
+                <p className="eyebrow-on-dark mb-6">The Stables</p>
+                <h2 className="font-display font-semibold text-white text-[clamp(2rem,4.5vw,3.5rem)] leading-[1.08]">
+                  In good hands.
                 </h2>
-                <p className="text-on-dark-soft body-text mt-7 text-lg">
-                  Open arenas, coastal light, and the smell of the ocean two
-                  miles west. The hills roll gold in the evening and the horses
-                  settle as the day cools. It is the kind of place that asks you
-                  to slow down the moment you turn in the gate.
-                </p>
-                <p className="text-on-dark-soft body-text mt-5 text-lg">
-                  This is where the work happens — and where a Tuesday lesson
-                  quietly becomes the best hour of your week.
-                </p>
+                <div className="mt-8 space-y-5">
+                  <p className="text-on-dark-soft body-text text-lg">
+                    Walk the stables at the end of the day and you feel it: horses
+                    settled and content, the low sounds of evening, everything
+                    kept the way it should be. These are calm, well-schooled
+                    horses — the kind you can trust to teach you something.
+                  </p>
+                  <p className="text-on-dark-soft body-text text-lg">
+                    That ease is not an accident. Behind the easy mornings is a
+                    lifetime of proper horsemanship — a classical European
+                    foundation, carried quietly into every lesson. It is why the
+                    horses are patient, and why you are in good hands from the
+                    first day.
+                  </p>
+                  <p className="text-on-dark-soft body-text text-lg">
+                    It is easy, standing in that golden light, to picture a horse
+                    of your own here — well-kept, glad the day has come round to
+                    you again.
+                  </p>
+                </div>
               </Reveal>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── 4 · The Offerings ──────────────────────────────────────────── */}
+      {/* ══ SECTION 3 · The arena / community — "Rarely alone in the arena." ══
+          Women riding together — REVISITS the landing hero's world (Hero A), so
+          the place is becoming familiar and hers. Then the ways in preview. */}
       <section className="bg-cream">
-        <div className="container-site py-20 sm:py-28">
-          <Reveal className="max-w-2xl mb-12 sm:mb-16">
-            <p className="eyebrow mb-5">The Offerings</p>
-            <h2 className="heading-section text-green-900">
-              Every way into the barn.
-            </h2>
-            <p className="body-text mt-6 text-lg">
-              Whether you are stepping back into the saddle or looking for a
-              horse of your own, there is a clear path in. Explore what fits, and
-              we will meet you there.
-            </p>
-          </Reveal>
+        <div className="container-site pt-20 pb-16 sm:pt-28 sm:pb-24">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+            {/* Hero A revisited — the arena / the landing hero's world. */}
+            <Reveal className="lg:col-span-6 order-2 lg:order-none" delay={100}>
+              <div className="relative aspect-[4/5] sm:aspect-[3/2] lg:aspect-[5/6] overflow-hidden">
+                {/* SWAP: Section 3 — women riding together in the arena
+                    (reuses Hero A world — the landing hero revisited). */}
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    backgroundImage: `url('${HERO_A}')`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center 30%',
+                  }}
+                  role="img"
+                  aria-label="Women riding together in the arena at Carmel Creek Ranch, coastal San Diego — the same arena from the front page."
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-green-950/30 to-transparent" aria-hidden="true" />
+                <div className="pointer-events-none absolute inset-0 border border-gold-600/30" aria-hidden="true" />
+              </div>
+            </Reveal>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
-            {OFFERINGS.map((o, i) => (
-              <Reveal as="div" key={o.name} delay={i * 70}>
-                <Link
-                  to={o.href}
-                  className="group block h-full bg-white border border-green-800/10 transition-all duration-300 hover:shadow-xl hover:shadow-green-900/10 hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-800 focus-visible:ring-offset-2"
-                >
-                  <div className="relative aspect-[4/3] overflow-hidden">
-                    <div
-                      className="absolute inset-0 transition-transform duration-700 group-hover:scale-[1.04]"
-                      style={{
-                        backgroundImage: `url('${o.img}')`,
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center 35%',
-                      }}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-green-950/40 to-transparent" />
-                  </div>
-                  <div className="p-6">
-                    <h3 className="heading-card text-green-900">{o.name}</h3>
-                    <p className="body-text mt-2 text-sm">{o.line}</p>
-                    <span className="mt-5 inline-flex items-center gap-2 text-xs font-sans tracking-widest uppercase text-gold-800 border-b border-gold-600/40 pb-0.5 transition-colors group-hover:border-gold-600">
+            <Reveal className="lg:col-span-6">
+              <p className="eyebrow mb-6">The Community</p>
+              <h2 className="heading-display text-green-900 text-[clamp(2.25rem,5.5vw,4rem)]">
+                Rarely alone
+                <br />
+                in the arena.
+              </h2>
+              <div className="mt-8 space-y-6 max-w-xl">
+                <p className="body-text text-lg">
+                  You have seen this arena already — it is the one on the front
+                  page, and by now it is starting to feel like yours. Most of the
+                  riding here happens together: group rides in the morning light,
+                  coffee and easy conversation after.
+                </p>
+                <p className="body-text text-lg">
+                  Those friendships are what turn a hobby into the best part of
+                  the week. Plenty of us came for the horses and stayed for each
+                  other. It is a warm, welcoming circle, and there is always room
+                  in it for one more.
+                </p>
+              </div>
+            </Reveal>
+          </div>
+
+          {/* The ways in — refined preview, informational with a path. */}
+          <div className="mt-20 sm:mt-28">
+            <div className="rule-gold" />
+            <Reveal className="max-w-2xl mt-12 sm:mt-16 mb-10 sm:mb-14">
+              <p className="eyebrow mb-5">The Ways In</p>
+              <h3 className="heading-section text-green-900">
+                Find the way that fits you.
+              </h3>
+              <p className="body-text mt-6 text-lg">
+                However you begin — a first lesson, a standing place in the
+                community, care for a horse of your own — there is a clear path
+                in, arranged personally. Explore what feels right, and we will
+                meet you there.
+              </p>
+            </Reveal>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+              {WAYS_IN.map((w, i) => (
+                <Reveal as="div" key={w.name} delay={i * 70}>
+                  <Link
+                    to={w.href}
+                    className="group block h-full bg-white border border-green-800/10 p-7 transition-all duration-300 hover:shadow-xl hover:shadow-green-900/10 hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-800 focus-visible:ring-offset-2"
+                  >
+                    <h4 className="heading-card text-green-900">{w.name}</h4>
+                    <p className="body-text mt-2 text-sm">{w.line}</p>
+                    <span className="mt-6 inline-flex items-center gap-2 text-xs font-sans tracking-widest uppercase text-gold-800 border-b border-gold-600/40 pb-0.5 transition-colors group-hover:border-gold-600">
                       Explore
                       <ArrowRight
                         size={13}
@@ -260,71 +305,46 @@ export default function Story() {
                         aria-hidden="true"
                       />
                     </span>
-                  </div>
-                </Link>
-              </Reveal>
-            ))}
+                  </Link>
+                </Reveal>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ── 5 · The Community ──────────────────────────────────────────── */}
-      <section className="bg-cream">
-        <div className="container-site pb-20 sm:pb-28">
-          <div className="rule-gold pt-16 sm:pt-20" />
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
-            <Reveal className="lg:col-span-6">
-              <p className="eyebrow mb-5">The Community</p>
-              <h2 className="heading-section text-green-900">
-                You are not just booking a lesson. You are joining a barn.
-              </h2>
-            </Reveal>
-            <Reveal className="lg:col-span-6" delay={100}>
-              <p className="body-text text-lg">
-                The riders here become the people you look forward to seeing —
-                the friend who holds your horse, the ones who cheer the small
-                wins, the group that lingers by the rail long after the last
-                ride. It is a warm, welcoming circle of women who show up for
-                the love of it.
-              </p>
-              <p className="body-text mt-5 text-lg">
-                You will leave a little taller, a little calmer, and part of
-                something that keeps drawing you back. That belonging is the real
-                reason people stay for years.
-              </p>
-            </Reveal>
-          </div>
-        </div>
-      </section>
-
-      {/* ── 6 · Closing CTA (deep-green full-bleed) ────────────────────── */}
+      {/* ══ SECTION 4 · Closing CTA band — the place, toward the hills ═════
+          Hero B is its home: the same location looking toward the hills, the
+          world opening up. Deep-green scrim for contrast. */}
       <section className="relative bg-green-900 overflow-hidden">
-        {/* Subtle image wash behind the green for depth — single-src swap. */}
+        {/* Hero B — the bookend: the place, toward the hills. */}
         <div
-          className="absolute inset-0 opacity-20"
+          className="absolute inset-0"
           style={{
-            backgroundImage: `url('${HERO_IMG}')`,
+            backgroundImage: `url('${HERO_B}')`,
             backgroundSize: 'cover',
-            backgroundPosition: 'center 30%',
+            backgroundPosition: 'center 40%',
           }}
-          aria-hidden="true"
+          role="img"
+          aria-label="The coastal hills beyond Carmel Creek Ranch at golden hour — the place looking toward the hills."
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-green-900/85 via-green-900/80 to-green-950/90" />
+        {/* Deep-green scrim over the image for 4.5:1 text contrast. */}
+        <div className="absolute inset-0 bg-gradient-to-b from-green-950/80 via-green-900/78 to-green-950/88" />
 
         <div className="relative container-site py-24 sm:py-32 text-center">
           <Reveal className="mx-auto max-w-3xl">
             <p className="eyebrow-on-dark mb-6">Come Ride With Us</p>
-            <h2 className="font-display font-semibold text-white text-[clamp(2.25rem,6vw,4rem)] leading-[1.05]">
-              Your best hour of the week
-              <br className="hidden sm:block" /> is waiting at the barn.
+            <h2 className="font-display font-semibold text-white text-[clamp(2.25rem,6vw,4.25rem)] leading-[1.05]">
+              The gate is open.
             </h2>
             <p className="text-on-dark-soft body-text mt-7 text-lg max-w-xl mx-auto">
-              Start with a single lesson. See how the horse, the place, and the
-              people fit — and let the rest unfold from there.
+              There is a spot at the rail with your name on it. Come find the
+              place, the horses, and the people — and let the rest unfold from
+              there.
             </p>
             <div className="mt-10">
               <Link
-                to="/lessons"
+                to="/shop"
                 className="group inline-flex items-center gap-3 px-9 py-4 bg-white text-green-900 font-sans text-sm font-medium tracking-widest uppercase transition-all duration-300 hover:bg-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-green-900"
               >
                 Come ride with us

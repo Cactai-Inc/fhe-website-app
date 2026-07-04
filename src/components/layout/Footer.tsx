@@ -34,8 +34,8 @@ export default function Footer() {
             {[
               { label: 'Home', href: '/' },
               { label: 'Our Story', href: '/story' },
-              { label: 'Ways to Ride', href: '/services' },
-              { label: 'Book a Lesson', href: '/lessons' },
+              { label: 'Ways to Ride', href: '/shop' },
+              { label: 'Book a Lesson', href: '/shop' },
               { label: 'Horse Care', href: '/horse' },
               { label: 'Horse Care Articles', href: '/horse' },
               { label: 'Acquisition Support', href: '/acquisition' },

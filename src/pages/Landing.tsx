@@ -19,12 +19,12 @@ import { seoForPath } from '../lib/seo';
  */
 const HERO_IMG = '/reference-images/Hero_A.png';
 
-// Naked top nav (transparent over the hero). Ride With Us and Our Story both
-// point at /story this pass — intentional.
+// Naked top nav (transparent over the hero). "Ride With Us" opens the ways to
+// ride (the shop); "Our Story" carries the narrative.
 const NAV_LINKS = [
-  { label: 'Ride With Us', href: '/story' },
-  { label: 'Find a Horse', href: '/acquisition' },
+  { label: 'Ride With Us', href: '/shop' },
   { label: 'Our Story', href: '/story' },
+  { label: 'Find a Horse', href: '/acquisition' },
   { label: 'Say Hello', href: '/contact' },
 ];
 
@@ -126,18 +126,18 @@ export default function Landing() {
           <div className="w-full max-w-4xl text-center mx-auto">
 
             <p className="eyebrow-on-dark qs-rise qs-delay-1 mb-5 sm:mb-8 [text-shadow:0_1px_10px_rgba(0,0,0,0.5)]">
-              San Diego · Carmel Valley
+              Carmel Creek Ranch · Coastal San Diego
             </p>
 
             <h1 className="qs-rise qs-delay-2 font-display font-semibold text-white leading-[1.05] sm:leading-[1.02] tracking-[-0.01em] [text-wrap:balance] [overflow-wrap:break-word] text-[clamp(2.05rem,7.4vw,7rem)] [text-shadow:0_2px_28px_rgba(0,0,0,0.55)]">
-              Where horsemanship
+              A morning
               <br className="hidden sm:block" />{' '}
-              becomes a way of life.
+              that could be yours.
             </h1>
 
             <p className="qs-rise qs-delay-3 mx-auto mt-6 sm:mt-9 max-w-md sm:max-w-xl text-sm sm:text-lg font-sans font-light text-on-dark-soft leading-relaxed [text-shadow:0_1px_12px_rgba(0,0,0,0.5)]">
-              A serious riding community on the coast — the horse, the work, and
-              the people who make a ranch feel like home.
+              The ocean air, a horse glad to see you, and a couple of hours that
+              are yours alone — the life waiting a little further up the coast.
             </p>
 
             <div className="qs-rise qs-delay-4 mt-10 sm:mt-12 flex justify-center">

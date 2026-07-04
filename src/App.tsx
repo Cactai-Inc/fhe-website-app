@@ -10,6 +10,7 @@ import AppLayout from './components/app/AppLayout';
 import Landing from './pages/Landing';
 import About from './pages/About';
 import Story from './pages/Story';
+import Shop from './pages/Shop';
 import Faq from './pages/Faq';
 import Services from './pages/Services';
 import Contact from './pages/Contact';
@@ -112,6 +113,7 @@ export function AppRoutes() {
             <Route element={<Layout />}>
               <Route path="/about" element={<About />} />
               <Route path="/story" element={<Story />} />
+              <Route path="/shop" element={<Shop />} />
               <Route path="/faq" element={<Faq />} />
               <Route path="/services" element={<Services />} />
               <Route path="/contact" element={<Contact />} />

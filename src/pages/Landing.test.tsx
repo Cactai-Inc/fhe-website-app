@@ -21,9 +21,9 @@ describe('Landing', () => {
     renderWithRouter(<Landing />);
 
     expect(
-      screen.getByRole('heading', { name: /horsemanship\s+becomes a way of life/i }),
+      screen.getByRole('heading', { name: /a morning\s+that could be yours/i }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/san diego · carmel valley/i)).toBeInTheDocument();
+    expect(screen.getByText(/carmel creek ranch · coastal san diego/i)).toBeInTheDocument();
 
     // Exactly one primary CTA into the story funnel.
     const cta = screen.getByRole('link', { name: /come ride with us/i });
@@ -34,9 +34,9 @@ describe('Landing', () => {
     renderWithRouter(<Landing />);
 
     const primaryNav = screen.getByRole('navigation', { name: /^primary$/i });
-    expect(within(primaryNav).getByRole('link', { name: /ride with us/i })).toHaveAttribute('href', '/story');
-    expect(within(primaryNav).getByRole('link', { name: /find a horse/i })).toHaveAttribute('href', '/acquisition');
+    expect(within(primaryNav).getByRole('link', { name: /ride with us/i })).toHaveAttribute('href', '/shop');
     expect(within(primaryNav).getByRole('link', { name: /our story/i })).toHaveAttribute('href', '/story');
+    expect(within(primaryNav).getByRole('link', { name: /find a horse/i })).toHaveAttribute('href', '/acquisition');
     expect(within(primaryNav).getByRole('link', { name: /say hello/i })).toHaveAttribute('href', '/contact');
 
     expect(screen.getByRole('link', { name: /sign in/i })).toHaveAttribute('href', '/login');
