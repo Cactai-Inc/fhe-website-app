@@ -7,21 +7,25 @@ import { useCart } from '../../contexts/CartContext';
 /* The single site header — used on the landing AND every inner page.
  *
  * Behavior (owner spec):
- *  - NAKED (transparent) at the top of scroll, on the landing and every inner
- *    page. State-aware: nav text + wordmark + logo are LIGHT (white/cream) with a
- *    SUBTLE text-shadow so they read over the dark hero image.
- *  - ON SCROLL: (a) MINIFY — the header height drops ~33% (padding + logo +
- *    wordmark all shrink); (b) a LIQUID-GLASS FROSTED backdrop descends (blur + a
- *    whisper of green tint + hairline gold rule); (c) the nav text + wordmark +
- *    logo flip to DARK GREEN (crisp, NO text-shadow) for legibility on the light
- *    frosted glass. All three transition together on the same scroll trigger
- *    (~400ms). Never dark-green-on-transparent (that would be invisible over the
- *    dark hero) and never light-on-frost.
+ *  - CONTEXT-AWARE nav color (the key behavior): the header is FIXED and content
+ *    scrolls UNDER it, so the nav color keys off WHAT REGION IS BEHIND the header
+ *    RIGHT NOW — not on scroll position. Over a DARK/green region → WHITE nav +
+ *    subtle shadow; over a LIGHT/cream region → DARK GREEN nav + no shadow. This
+ *    flips LIVE as differently-toned sections pass under the header (e.g. on
+ *    /story, scrolling from the light S1 into the green S2 turns the nav white,
+ *    then back to green in the next light section). Dark regions opt in with
+ *    `data-header-tone="dark"`; light is the default. See the detection effect.
+ *  - FROST + MINIFY stay keyed to SCROLL, independently: on scroll a liquid-glass
+ *    frosted backdrop descends (blur + a whisper of green tint + hairline gold
+ *    rule) and the header height drops ~33% (padding + logo + wordmark shrink).
+ *    Because the frost is a translucent green tint, all four combos stay legible
+ *    (naked/frosted × over-dark/over-light).
  *  - The nav is identical everywhere.
  *
- * The landing is 100dvh/no-scroll, so there the header stays naked (never
- * scrolls); the minify+frost+color-flip triggers only on pages that scroll.
- * SSR-safe: the scroll listener only attaches in the browser (useEffect).
+ * The landing is 100dvh/no-scroll, so there the header stays naked; the color is
+ * still driven by the region behind it (the dark hero → white nav).
+ * SSR-safe: listeners attach only in the browser; the initial tone defaults to
+ * the correct value per route (landing = over-dark) so first paint has no flash.
  */
 
 // One nav, consistent everywhere. The rider funnel is reached via the big
@@ -41,6 +45,23 @@ export default function Header() {
   const location = useLocation();
   const { itemCount } = useCart();
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
+
+  // ── Context-aware tone ──────────────────────────────────────────────────────
+  // `overDark` = the header band is currently over a DARK/green region, so the
+  // nav must be WHITE (with a subtle shadow). Otherwise the region is light and
+  // the nav is DARK GREEN. This is INDEPENDENT of scroll (frost/minify below):
+  // it flips live as differently-toned sections scroll under the fixed header.
+  //
+  // Detection: on scroll/resize (rAF-throttled, passive) we sample every
+  // `[data-header-tone="dark"]` element and check whether it overlaps the header
+  // band [0, header bottom]. Re-queries the DOM each pass, so per-route dark
+  // sections are picked up without re-registering anything.
+  //
+  // SSR-safe: no window/document at module or initial-render time. The initial
+  // value defaults to the correct tone per route (landing hero is dark), so the
+  // prerendered/first paint has no flash.
+  const [overDark, setOverDark] = useState<boolean>(() => location.pathname === '/');
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 24);
@@ -48,6 +69,48 @@ export default function Header() {
     window.addEventListener('scroll', handler, { passive: true });
     return () => window.removeEventListener('scroll', handler);
   }, []);
+
+  // Region detection — recomputed on scroll/resize and whenever the route (and
+  // thus the set of dark sections) changes.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    let raf = 0;
+
+    const measure = () => {
+      raf = 0;
+      const header = headerRef.current;
+      // The band we care about: the header's fixed footprint at the top.
+      const bandTop = 0;
+      const bandBottom = header ? header.getBoundingClientRect().bottom : 72;
+      // Sample a probe line just inside the header's bottom edge.
+      const probeY = Math.max(1, bandBottom - 2);
+
+      const darkEls = document.querySelectorAll<HTMLElement>('[data-header-tone="dark"]');
+      let dark = false;
+      darkEls.forEach((el) => {
+        if (dark) return;
+        const r = el.getBoundingClientRect();
+        // Does this dark section overlap the header band vertically?
+        if (r.top <= probeY && r.bottom >= bandTop) dark = true;
+      });
+      setOverDark(dark);
+    };
+
+    const schedule = () => {
+      if (raf) return;
+      raf = window.requestAnimationFrame(measure);
+    };
+
+    // Initial pass after layout settles (route content mounted).
+    schedule();
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule, { passive: true });
+    return () => {
+      if (raf) window.cancelAnimationFrame(raf);
+      window.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
+    };
+  }, [location.pathname]);
 
   useEffect(() => setOpen(false), [location]);
 
@@ -63,16 +126,21 @@ export default function Header() {
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
 
-  // ── State-aware token helpers ──────────────────────────────────────────────
-  // naked (over hero) → light text + subtle shadow; frosted → dark green, no shadow.
-  const heroShadow = scrolled ? '' : '[text-shadow:0_1px_10px_rgba(0,0,0,0.5)]';
-  const navText = scrolled
-    ? 'text-green-800 hover:text-green-950'
-    : 'text-white/90 hover:text-white';
-  const wordmarkText = scrolled ? 'text-green-900' : 'text-white';
-  const subtleText = scrolled ? 'text-green-800/70 hover:text-green-900' : 'text-white/60 hover:text-white/90';
-  // The gold accent underline reads on both surfaces (deeper gold on light frost).
-  const underline = scrolled ? 'bg-gold-700' : 'bg-gold-300';
+  // ── Context-aware token helpers ─────────────────────────────────────────────
+  // Color + shadow key off `overDark` (the region behind the header), NOT scroll.
+  //   over a DARK/green region → WHITE nav + subtle shadow (legible over photos);
+  //   over a LIGHT/cream region → DARK GREEN nav + no shadow (crisp on frost/light).
+  // This holds in all four combos (naked/frosted × over-dark/over-light) because
+  // the frost is a translucent green tint: over-light-frosted is light enough for
+  // dark-green, and over-dark (frosted or not) stays dark enough for white.
+  const heroShadow = overDark ? '[text-shadow:0_1px_10px_rgba(0,0,0,0.5)]' : '';
+  const navText = overDark
+    ? 'text-white/90 hover:text-white'
+    : 'text-green-800 hover:text-green-950';
+  const wordmarkText = overDark ? 'text-white' : 'text-green-900';
+  const subtleText = overDark ? 'text-white/60 hover:text-white/90' : 'text-green-800/70 hover:text-green-900';
+  // The gold accent underline reads on both surfaces (deeper gold on light).
+  const underline = overDark ? 'bg-gold-300' : 'bg-gold-700';
 
   // The saved-selection cart affordance. Always VISIBLE in the header once there
   // is a saved selection — top-right on desktop, CENTERED on mobile (never in the
@@ -95,6 +163,7 @@ export default function Header() {
 
   return (
     <header
+      ref={headerRef}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-[450ms] ease-out ${
         scrolled
           ? // Liquid-glass frost: a whisper of green tint under a blur, backstopped
@@ -122,10 +191,8 @@ export default function Header() {
               here (an <img src="/…"> sized like this box) when it arrives. */}
           <span
             className={`shrink-0 flex items-center justify-center border transition-all duration-[450ms] ${
-              scrolled
-                ? 'w-9 h-9 border-green-800/40 text-green-900'
-                : 'w-11 h-11 border-white/40 text-white'
-            }`}
+              scrolled ? 'w-9 h-9' : 'w-11 h-11'
+            } ${overDark ? 'border-white/40 text-white' : 'border-green-800/40 text-green-900'}`}
             aria-hidden="true"
           >
             <span
@@ -174,7 +241,7 @@ export default function Header() {
                   aria-current={current ? 'page' : undefined}
                   className={`group relative inline-flex items-center min-h-[44px] text-xs font-sans tracking-widest uppercase transition-colors duration-[400ms] focus-ring-dark ${heroShadow} ${
                     current
-                      ? scrolled ? 'text-green-950' : 'text-white'
+                      ? overDark ? 'text-white' : 'text-green-950'
                       : navText
                   }`}
                 >
@@ -198,7 +265,7 @@ export default function Header() {
             <Link
               to="/app"
               className={`hidden md:inline-flex text-[11px] font-sans tracking-widest uppercase transition-colors duration-[400ms] focus-ring-dark ${heroShadow} ${
-                scrolled ? 'text-gold-800 hover:text-gold-900' : 'text-gold-300 hover:text-gold-200'
+                overDark ? 'text-gold-300 hover:text-gold-200' : 'text-gold-800 hover:text-gold-900'
               }`}
             >
               Member Area
@@ -217,7 +284,7 @@ export default function Header() {
             ref={menuButtonRef}
             type="button"
             className={`md:hidden p-2.5 -mr-2 focus-ring-dark transition-colors duration-[400ms] ${
-              scrolled ? 'text-green-900' : 'text-white [filter:drop-shadow(0_1px_6px_rgba(0,0,0,0.5))]'
+              overDark ? 'text-white [filter:drop-shadow(0_1px_6px_rgba(0,0,0,0.5))]' : 'text-green-900'
             }`}
             onClick={() => setOpen((v) => !v)}
             aria-label={open ? 'Close menu' : 'Open menu'}

@@ -176,8 +176,9 @@ export default function Story() {
       {/* ══ SECTION 2 · Transformation — "New friends. New adventures. A new you." ══
           What she GAINS: friendships, the adventure of it, who she becomes.
           Deep-green full-bleed band — ALL text on-dark (light on green).
+          data-header-tone="dark": header over this green band → white nav.
           IMAGE: horse in the stable at golden hour / sunset. */}
-      <section className="relative bg-green-900 overflow-hidden">
+      <section data-header-tone="dark" className="relative bg-green-900 overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-2">
           {/* SWAP: Section 2 — horse in the stable at golden hour / sunset
               (owner to provide). Green textural placeholder for now. */}
@@ -335,8 +336,10 @@ export default function Story() {
       {/* ══ SECTION 4 · Visual closer — image only (owner spec) ═══════════
           The image does all the work: no headline, no copy, no CTA. Hero B is
           the bookend — the place looking toward the hills, above the footer.
-          (The onward path to /shop lives in Section 3's Ways In preview.) */}
+          (The onward path to /shop lives in Section 3's Ways In preview.)
+          data-header-tone="dark": header over this dark image band → white nav. */}
       <section
+        data-header-tone="dark"
         className="relative bg-green-900 overflow-hidden h-[52vh] sm:h-[62vh] lg:h-[70vh]"
         aria-hidden="true"
       >

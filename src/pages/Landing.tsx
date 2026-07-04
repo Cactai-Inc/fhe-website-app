@@ -43,8 +43,12 @@ export default function Landing() {
 
       {/* Full-bleed hero filling exactly one viewport. 100dvh accounts for
           mobile browser chrome; the fixed inset means the page itself never
-          scrolls even before the html-level lock applies. */}
-      <div className="fixed inset-0 h-[100dvh] w-full overflow-x-hidden overflow-y-hidden bg-green-950">
+          scrolls even before the html-level lock applies.
+          data-header-tone="dark": the header sits over this dark hero → white nav. */}
+      <div
+        data-header-tone="dark"
+        className="fixed inset-0 h-[100dvh] w-full overflow-x-hidden overflow-y-hidden bg-green-950"
+      >
 
         {/* Still background image — no animation. Positioned to hold the riders
             and the coastline in frame across aspect ratios. */}
