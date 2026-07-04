@@ -173,47 +173,50 @@ export default function Story() {
         </div>
       </section>
 
-      {/* ══ SECTION 2 · The stables — "In good hands." ════════════════════
-          People + horses at the stables, golden hour. Her own horse, well-kept.
-          Classical European foundation appears ONCE here, as reassurance only.
-          Deep-green full-bleed band. IMAGE: stables placeholder for now. */}
+      {/* ══ SECTION 2 · Transformation — "New friends. New adventures. A new you." ══
+          What she GAINS: friendships, the adventure of it, who she becomes.
+          Deep-green full-bleed band — ALL text on-dark (light on green).
+          IMAGE: horse in the stable at golden hour / sunset. */}
       <section className="relative bg-green-900 overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-2">
-          {/* SWAP: Section 2 — people + horses at the stables, golden hour
+          {/* SWAP: Section 2 — horse in the stable at golden hour / sunset
               (owner to provide). Green textural placeholder for now. */}
           <div className="order-1 lg:order-none">
             <GreenPlaceholder
-              label="Section 2 — the stables: people + horses, golden hour (image coming)"
+              label="Section 2 — horse in the stable at golden hour / sunset (image coming)"
               className="min-h-[340px] lg:min-h-[620px] h-full"
             />
           </div>
 
-          {/* Copy */}
+          {/* Copy — light on green (on-dark tokens throughout). */}
           <div className="flex items-center">
             <div className="px-6 sm:px-10 lg:pl-16 lg:pr-20 py-16 sm:py-20 lg:py-28 max-w-xl">
               <Reveal>
-                <p className="eyebrow-on-dark mb-6">The Stables</p>
-                <h2 className="font-display font-semibold text-white text-[clamp(2rem,4.5vw,3.5rem)] leading-[1.08]">
-                  In good hands.
+                <p className="eyebrow-on-dark mb-6">What You&rsquo;ll Find</p>
+                <h2 className="font-display font-medium text-white text-[clamp(2rem,4.5vw,3.5rem)] leading-[1.1]">
+                  New friends.
+                  <br />
+                  New adventures.
+                  <br />
+                  <span className="text-gold-300">A new you.</span>
                 </h2>
                 <div className="mt-8 space-y-5">
                   <p className="text-on-dark-soft body-text text-lg">
-                    Walk the stables at the end of the day and you feel it: horses
-                    settled and content, the low sounds of evening, everything
-                    kept the way it should be. These are calm, well-schooled
-                    horses — the kind you can trust to teach you something.
+                    You come for the riding. What you keep is everything around it
+                    — the women who become your people, the standing plans, the
+                    text thread that carries on long after you have untacked.
                   </p>
                   <p className="text-on-dark-soft body-text text-lg">
-                    That ease is not an accident. Behind the easy mornings is a
-                    lifetime of proper horsemanship — a classical European
-                    foundation, carried quietly into every lesson. It is why the
-                    horses are patient, and why you are in good hands from the
-                    first day.
+                    And it is an adventure. Trails you had never taken, a canter
+                    that finally clicks, a horse who learns your voice. Small brave
+                    things, one after another, until they add up to something that
+                    feels a lot like courage.
                   </p>
                   <p className="text-on-dark-soft body-text text-lg">
-                    It is easy, standing in that golden light, to picture a horse
-                    of your own here — well-kept, glad the day has come round to
-                    you again.
+                    Somewhere in the middle of all of it, you notice you have
+                    changed. Steadier. Lighter. More yourself than you have been in
+                    a long while. That is the part no one warns you about — and the
+                    part you will be most grateful for.
                   </p>
                 </div>
               </Reveal>
@@ -222,17 +225,29 @@ export default function Story() {
         </div>
       </section>
 
-      {/* ══ SECTION 3 · The arena / community — "Rarely alone in the arena." ══
-          Women riding together — REVISITS the landing hero's world (Hero A), so
-          the place is becoming familiar and hers. Then the ways in preview. */}
+      {/* ══ SECTION 3 · Belonging — the emotional climax ══════════════════
+          The community, rebuilt: women riding together, the friendships, the
+          belonging as the emotional payoff. Editorial craft — big heritage
+          headline, a pulled quote, then a warm image. On cream (light ground),
+          so all text is dark-on-light (correct). Followed by the Ways In. */}
       <section className="bg-cream">
         <div className="container-site pt-20 pb-16 sm:pt-28 sm:pb-24">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
-            {/* Hero A revisited — the arena / the landing hero's world. */}
-            <Reveal className="lg:col-span-6 order-2 lg:order-none" delay={100}>
-              <div className="relative aspect-[4/5] sm:aspect-[3/2] lg:aspect-[5/6] overflow-hidden">
-                {/* SWAP: Section 3 — women riding together in the arena
-                    (reuses Hero A world — the landing hero revisited). */}
+          <Reveal className="max-w-3xl">
+            <p className="eyebrow mb-6">The Community</p>
+            <h2 className="heading-display text-green-900 text-[clamp(2.35rem,5.8vw,4.25rem)]">
+              You will not
+              <br />
+              ride alone.
+            </h2>
+          </Reveal>
+
+          <div className="mt-12 sm:mt-16 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+            {/* Image treatment — women riding together (Hero A world revisited),
+                framed with a gold hairline and a soft edge-scrim. */}
+            <Reveal className="lg:col-span-7 order-2 lg:order-none" delay={100}>
+              <figure className="relative aspect-[4/5] sm:aspect-[16/10] overflow-hidden">
+                {/* SWAP: Section 3 — women riding together, laughing, English
+                    attire, real joy (reuses the Hero A arena world for now). */}
                 <div
                   className="absolute inset-0"
                   style={{
@@ -241,38 +256,42 @@ export default function Story() {
                     backgroundPosition: 'center 30%',
                   }}
                   role="img"
-                  aria-label="Women riding together in the arena at Carmel Creek Ranch, coastal San Diego — the same arena from the front page."
+                  aria-label="Women riding together at Carmel Creek Ranch, coastal San Diego — friends in the arena."
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-green-950/30 to-transparent" aria-hidden="true" />
+                <div className="absolute inset-0 bg-gradient-to-t from-green-950/35 via-transparent to-transparent" aria-hidden="true" />
                 <div className="pointer-events-none absolute inset-0 border border-gold-600/30" aria-hidden="true" />
-              </div>
+              </figure>
             </Reveal>
 
-            <Reveal className="lg:col-span-6">
-              <p className="eyebrow mb-6">The Community</p>
-              <h2 className="heading-display text-green-900 text-[clamp(2.25rem,5.5vw,4rem)]">
-                Rarely alone
-                <br />
-                in the arena.
-              </h2>
-              <div className="mt-8 space-y-6 max-w-xl">
+            <Reveal className="lg:col-span-5">
+              <div className="space-y-6 max-w-xl">
                 <p className="body-text text-lg">
-                  You have seen this arena already — it is the one on the front
-                  page, and by now it is starting to feel like yours. Most of the
-                  riding here happens together: group rides in the morning light,
-                  coffee and easy conversation after.
+                  Almost everything here happens together. You will learn the
+                  names before you learn the diagonals — the woman who holds your
+                  horse while you find your stirrup, the one who talks you through
+                  your first canter, the whole rail that cheers when it finally
+                  clicks.
                 </p>
                 <p className="body-text text-lg">
-                  Those friendships are what turn a hobby into the best part of
-                  the week. Plenty of us came for the horses and stayed for each
-                  other. It is a warm, welcoming circle, and there is always room
-                  in it for one more.
+                  Afterward there is coffee, and the kind of easy talk that turns
+                  strangers into the people you plan your week around. Plenty of us
+                  arrived for the horses and stayed, quietly and completely, for
+                  each other.
                 </p>
               </div>
+
+              {/* Pulled quote — the belonging payoff, with a gold rule. */}
+              <figure className="mt-9 border-l-2 border-gold-600 pl-6 sm:pl-8">
+                <blockquote className="font-serif italic font-medium text-2xl sm:text-3xl leading-snug text-green-800">
+                  &ldquo;I came to learn to ride. I stayed because, for the first
+                  time in years, I belonged somewhere.&rdquo;
+                </blockquote>
+              </figure>
             </Reveal>
           </div>
 
-          {/* The ways in — refined preview, informational with a path. */}
+          {/* The ways in — refined preview, informational with a path (carries
+              the onward link to /shop now that S4 is image-only). */}
           <div className="mt-20 sm:mt-28">
             <div className="rule-gold" />
             <Reveal className="max-w-2xl mt-12 sm:mt-16 mb-10 sm:mb-14">
@@ -313,10 +332,14 @@ export default function Story() {
         </div>
       </section>
 
-      {/* ══ SECTION 4 · Closing CTA band — the place, toward the hills ═════
-          Hero B is its home: the same location looking toward the hills, the
-          world opening up. Deep-green scrim for contrast. */}
-      <section className="relative bg-green-900 overflow-hidden">
+      {/* ══ SECTION 4 · Visual closer — image only (owner spec) ═══════════
+          The image does all the work: no headline, no copy, no CTA. Hero B is
+          the bookend — the place looking toward the hills, above the footer.
+          (The onward path to /shop lives in Section 3's Ways In preview.) */}
+      <section
+        className="relative bg-green-900 overflow-hidden h-[52vh] sm:h-[62vh] lg:h-[70vh]"
+        aria-hidden="true"
+      >
         {/* Hero B — the bookend: the place, toward the hills. */}
         <div
           className="absolute inset-0"
@@ -328,35 +351,10 @@ export default function Story() {
           role="img"
           aria-label="The coastal hills beyond Carmel Creek Ranch at golden hour — the place looking toward the hills."
         />
-        {/* Deep-green scrim over the image for 4.5:1 text contrast. */}
-        <div className="absolute inset-0 bg-gradient-to-b from-green-950/80 via-green-900/78 to-green-950/88" />
-
-        <div className="relative container-site py-24 sm:py-32 text-center">
-          <Reveal className="mx-auto max-w-3xl">
-            <p className="eyebrow-on-dark mb-6">Come Ride With Us</p>
-            <h2 className="font-display font-semibold text-white text-[clamp(2.25rem,6vw,4.25rem)] leading-[1.05]">
-              The gate is open.
-            </h2>
-            <p className="text-on-dark-soft body-text mt-7 text-lg max-w-xl mx-auto">
-              There is a spot at the rail with your name on it. Come find the
-              place, the horses, and the people — and let the rest unfold from
-              there.
-            </p>
-            <div className="mt-10">
-              <Link
-                to="/shop"
-                className="group inline-flex items-center gap-3 px-9 py-4 bg-white text-green-900 font-sans text-sm font-medium tracking-widest uppercase transition-all duration-300 hover:bg-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-green-900"
-              >
-                Come ride with us
-                <ArrowRight
-                  size={18}
-                  className="transition-transform duration-300 group-hover:translate-x-1"
-                  aria-hidden="true"
-                />
-              </Link>
-            </div>
-          </Reveal>
-        </div>
+        {/* Gentle edge scrims only — top for any header-over-image legibility,
+            bottom to settle into the footer. No text sits here. */}
+        <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-green-950/45 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-green-950/55 to-transparent" />
       </section>
     </>
   );

@@ -98,14 +98,16 @@
     @apply text-xs font-sans font-medium tracking-widest uppercase text-gold-400;
   }
 
-  /* Display heading (hero) — uses the font-display utility, no inline stacks */
+  /* Display heading (hero) — uses the font-display utility, no inline stacks.
+     Weight 500 (medium): Cormorant at 300 reads thin/"bubbly"; 500 gives the
+     engraved, editorial, heritage feel the brand wants. */
   .heading-display {
-    @apply font-display font-light text-5xl sm:text-6xl lg:text-7xl leading-tight;
+    @apply font-display font-medium text-5xl sm:text-6xl lg:text-7xl leading-tight;
   }
 
-  /* Section heading */
+  /* Section heading — medium weight for the same substantial heritage feel. */
   .heading-section {
-    @apply font-serif font-light text-3xl sm:text-4xl lg:text-5xl leading-tight;
+    @apply font-serif font-medium text-3xl sm:text-4xl lg:text-5xl leading-tight;
   }
 
   /* Card heading */

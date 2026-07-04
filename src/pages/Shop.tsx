@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
-import type { ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, ChevronDown, ShoppingBag, Check, X } from 'lucide-react';
+import { ArrowRight, ChevronDown, Check } from 'lucide-react';
 import Seo from '../components/Seo';
 import { seoForPath } from '../lib/seo';
 import { useCart } from '../contexts/CartContext';
@@ -19,28 +18,36 @@ import {
 } from '../lib/services';
 import type { Service, ServiceTier } from '../lib/services';
 
-/* ── Ways to ride with us — the hybrid accordion catalog ─────────────────────
+/* ── Ways to ride with us — a boutique CATALOG (lookbook, not an accordion) ───
  *
- * A by-appointment, white-glove catalog. Service FAMILIES are vertical,
- * multiple-open accordion panels. Each panel reveals its tiers as priced cards
- * listed in standard ascending rank order (entry/smallest option first, then
- * up), every price rendered at one consistent emphasized size. "View details"
- * opens a tier modal that reads (never buys); the two actions there are Add to
- * cart (stay + keep browsing) and Request this now (add + go to /checkout). NO
- * auto-add on open.
+ * The surface reads like a refined editorial catalog: each service FAMILY is a
+ * section (heritage-serif heading + one warm line), and beneath it a GRID of
+ * image-forward offering cards. Every card carries a tasteful media slot (a
+ * green textural SWAP placeholder for now, clearly labeled for the owner's real
+ * media), the offering name (serif), a one-line description, a prominent price
+ * (uniform size, gold-accented unit), and one clear "View" action that opens the
+ * tier detail modal. Squared edges, generous whitespace, aligned grid rhythm —
+ * calm, expensive-by-restraint. No expandable text panels anywhere.
  *
- * Prices are never hardcoded here — every tier comes from src/lib/services.ts,
- * the same source Lessons.tsx uses.
+ * The modal reads (never buys): Add to cart (stay + keep browsing) and Request
+ * this now (add + go to /checkout). NO auto-add on open. Merchandising notes
+ * (evaluation-lesson-as-onboarding, horsemanship pairs, acquisition → handling)
+ * ride under the relevant family heading and inside the modal.
  *
- * SSR-safe: the modal renders null when closed; useCart's persistence is guarded
- * for `window`. No window/document access at module or render top-level.
+ * Interaction (owner spec): "View details" EXPANDS the family section IN PLACE
+ * (inline, on the page — NO modal, ever) to reveal that family's offerings with
+ * prices + the two inline actions per offering (Save it / Submit inquiry). No
+ * scrollable modals anywhere — mobile users never fight a scroll-trapped dialog.
+ * Saved selections collect under the always-visible header cart icon.
+ *
+ * Offerings render in standard ascending rank order (entry option first); prices
+ * are never hardcoded — every tier comes from src/lib/services.ts.
+ *
+ * SSR-safe: no window/document access at module or render top-level; useCart's
+ * persistence is guarded for `window`.
  */
 
 const seo = () => seoForPath('/shop')!;
-
-// Deep-green textural placeholder for tier media — {/* SWAP: real library media *​/}
-// A tasteful green panel (NOT stock) until the owner adds real images/video.
-const MEDIA_SWAP_LABEL = 'A photograph or short clip will live here';
 
 // ─── Family model ───────────────────────────────────────────────────────────
 // Maps the owner's Shop families onto real configured services. `note` is warm,
@@ -167,261 +174,186 @@ function toCartItem(family: ShopFamily, tier: ServiceTier): CartItem {
   };
 }
 
-// ─── The by-appointment explanation (shared: reassurance block + modal) ──────
-const APPOINTMENT_EXPLAINER =
-  "Send your request and we'll call to learn about you and talk through the right fit. Then we send your approval to book and pay online. It's quick, personal, and the way we make sure it's right for you.";
+// ─── Price block (uniform emphasized size, gold-accented unit) ───────────────
 
-// ─── Squared-edge accessible modal (brand: no rounded corners) ───────────────
-// Focus trap, Esc-to-close, backdrop close, aria-modal. Renders null when
-// closed (SSR-safe). Full-width at 390px.
-
-const FOCUSABLE =
-  'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
-
-function ShopModal({
-  open,
-  onClose,
-  title,
-  children,
-  footer,
-}: {
-  open: boolean;
-  onClose: () => void;
-  title: string;
-  children: ReactNode;
-  footer: ReactNode;
-}) {
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const restoreRef = useRef<HTMLElement | null>(null);
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation();
-        onClose();
-        return;
-      }
-      if (e.key !== 'Tab') return;
-      const root = dialogRef.current;
-      if (!root) return;
-      const focusable = Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
-        (el) => el.offsetParent !== null || el === document.activeElement,
-      );
-      if (focusable.length === 0) {
-        e.preventDefault();
-        return;
-      }
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      const active = document.activeElement as HTMLElement | null;
-      if (e.shiftKey && active === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && active === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    },
-    [onClose],
-  );
-
-  useEffect(() => {
-    if (!open) return;
-    restoreRef.current = document.activeElement as HTMLElement | null;
-    const root = dialogRef.current;
-    const firstFocusable = root?.querySelector<HTMLElement>(FOCUSABLE);
-    (firstFocusable ?? root)?.focus();
-    // Lock body scroll while the modal is open.
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = prev;
-      restoreRef.current?.focus?.();
-    };
-  }, [open]);
-
-  if (!open) return null;
-
+function PriceTag({ tier, className = '' }: { tier: ServiceTier; className?: string }) {
+  const { amount, unit } = splitPrice(tier);
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-green-950/60 p-0 sm:p-4"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-        tabIndex={-1}
-        className="w-full sm:max-w-2xl max-h-[92dvh] sm:max-h-[88dvh] flex flex-col bg-cream border-t sm:border border-gold-600/30 shadow-2xl focus:outline-none"
-        onKeyDown={handleKeyDown}
-      >
-        {/* Header */}
-        <div className="flex items-start justify-between gap-4 border-b border-green-800/10 px-6 sm:px-8 py-5 flex-shrink-0">
-          <h2 className="font-display font-semibold text-green-900 text-2xl sm:text-3xl leading-tight pr-2">
-            {title}
-          </h2>
+    <p className={`font-serif text-green-800 leading-none text-2xl sm:text-3xl ${className}`}>
+      {amount}
+      {unit && (
+        <span className="ml-1.5 font-sans text-[0.5em] tracking-wide uppercase text-gold-800 align-baseline">
+          / {unit}
+        </span>
+      )}
+    </p>
+  );
+}
+
+// ─── An offering row — one tier inside the expanded family region ────────────
+// Name + description + prominent price + two INLINE actions (no modal): Save it
+// (adds to the saved selection, stays) and Submit inquiry (adds + go to /checkout).
+
+function OfferingRow({
+  tier,
+  saved,
+  onSave,
+  onSubmit,
+}: {
+  tier: ServiceTier;
+  saved: boolean;
+  onSave: () => void;
+  onSubmit: () => void;
+}) {
+  return (
+    <div className="bg-white border border-green-800/12 p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center gap-5">
+      <div className="min-w-0 flex-1">
+        <p className="font-serif font-medium text-green-900 text-lg sm:text-xl leading-snug">
+          {tier.label}
+          {tier.popular && (
+            <span className="ml-2 align-middle text-[9px] font-sans font-medium tracking-widest uppercase text-gold-800 border border-gold-600/40 px-1.5 py-0.5">
+              Most chosen
+            </span>
+          )}
+        </p>
+        <p className="text-sm text-muted mt-1.5 leading-relaxed">{tier.description}</p>
+        {tier.note && <p className="text-xs text-gold-ink mt-1.5">{tier.note}</p>}
+      </div>
+
+      {/* Price + the two inline actions. */}
+      <div className="flex items-center justify-between gap-4 sm:justify-end sm:gap-6 shrink-0">
+        <PriceTag tier={tier} />
+        <div className="flex items-center gap-2.5">
           <button
             type="button"
-            aria-label="Close"
-            onClick={onClose}
-            className="min-w-[44px] min-h-[44px] -mr-2 -mt-1 flex items-center justify-center text-green-800/50 hover:text-green-900 transition-colors focus-ring"
+            onClick={onSave}
+            aria-pressed={saved}
+            className={`inline-flex items-center justify-center gap-1.5 px-4 py-2.5 border font-sans text-xs font-medium tracking-widest uppercase transition-all duration-200 focus-ring min-h-[44px] whitespace-nowrap ${
+              saved
+                ? 'border-green-800 bg-green-800/5 text-green-900'
+                : 'border-green-800/40 text-green-900 hover:border-green-800'
+            }`}
           >
-            <X size={22} aria-hidden="true" />
+            {saved ? (
+              <>
+                <Check size={14} aria-hidden="true" />
+                Saved
+              </>
+            ) : (
+              'Save it'
+            )}
           </button>
-        </div>
-
-        {/* Body (scrolls) */}
-        <div className="overflow-y-auto px-6 sm:px-8 py-6">{children}</div>
-
-        {/* Footer actions */}
-        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 border-t border-green-800/10 px-6 sm:px-8 py-5 flex-shrink-0 bg-cream">
-          {footer}
+          <button
+            type="button"
+            onClick={onSubmit}
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-green-800 text-white font-sans text-xs font-medium tracking-widest uppercase transition-all duration-200 hover:bg-green-700 focus-ring min-h-[44px] whitespace-nowrap"
+          >
+            Inquire
+            <ArrowRight size={14} aria-hidden="true" />
+          </button>
         </div>
       </div>
     </div>
   );
 }
 
-// ─── Tier price row (used inside the panel and the modal) ────────────────────
-// Tiers list in standard ascending rank order (entry option first, then up).
-// Every price renders at ONE consistent emphasized size — clearly larger than
-// body (Cormorant, gold-accented unit), uniform across all rows in the family.
+// ─── A family section — a catalog "hero card" that EXPANDS IN PLACE ──────────
+// Beautiful image-forward family card with a "View details" toggle. Expanding
+// reveals the family's offerings inline (no modal). Squared, generous, calm.
 
-function TierPriceList({
-  tiers,
-  onView,
-  variant,
-}: {
-  tiers: ServiceTier[];
-  onView: (tier: ServiceTier) => void;
-  variant: 'panel' | 'modal';
-}) {
-  return (
-    <ul className="flex flex-col divide-y divide-green-800/10 border-y border-green-800/10">
-      {tiers.map((tier) => {
-        const { amount, unit } = splitPrice(tier);
-        return (
-          <li
-            key={tier.id}
-            className="flex flex-wrap items-baseline justify-between gap-x-5 gap-y-2 py-5"
-          >
-            <div className="min-w-0 flex-1">
-              <p className="font-sans font-medium text-green-900 leading-snug">
-                {tier.label}
-                {tier.popular && (
-                  <span className="ml-2 align-middle text-[9px] font-sans font-medium tracking-wider uppercase text-gold-800 border border-gold-600/40 px-1.5 py-0.5">
-                    Most chosen
-                  </span>
-                )}
-              </p>
-              <p className="text-sm text-muted mt-1 leading-relaxed">{tier.description}</p>
-              {variant === 'modal' && tier.note && (
-                <p className="text-xs text-gold-ink mt-1.5">{tier.note}</p>
-              )}
-            </div>
-
-            <div className="flex items-baseline gap-3 shrink-0">
-              {/* Uniform emphasized price size for every tier row. */}
-              <p className="font-serif text-green-800 leading-none text-2xl sm:text-3xl">
-                {amount}
-                {unit && (
-                  <span className="ml-1.5 font-sans text-[0.5em] tracking-wide uppercase text-gold-800 align-baseline">
-                    / {unit}
-                  </span>
-                )}
-              </p>
-              {variant === 'panel' && (
-                <button
-                  type="button"
-                  onClick={() => onView(tier)}
-                  className="link-underline whitespace-nowrap"
-                >
-                  View details
-                </button>
-              )}
-            </div>
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
-
-// ─── Accordion panel for one family ──────────────────────────────────────────
-
-function FamilyPanel({
+function FamilySection({
   family,
   expanded,
   onToggle,
-  onView,
+  isSaved,
+  onSave,
+  onSubmit,
 }: {
   family: ShopFamily;
   expanded: boolean;
   onToggle: () => void;
-  onView: (family: ShopFamily, tier: ServiceTier) => void;
+  isSaved: (tier: ServiceTier) => boolean;
+  onSave: (family: ShopFamily, tier: ServiceTier) => void;
+  onSubmit: (family: ShopFamily, tier: ServiceTier) => void;
 }) {
   const tiers = sortedByPrice(family.service.tiers);
   const hasTiers = tiers.length > 0;
-  const panelId = `family-panel-${family.key}`;
-  const btnId = `family-button-${family.key}`;
+  const regionId = `family-region-${family.key}`;
+  const btnId = `family-toggle-${family.key}`;
 
   return (
-    <div className="border-b border-green-800/15">
-      <h3>
-        <button
-          id={btnId}
-          type="button"
-          aria-expanded={expanded}
-          aria-controls={panelId}
-          onClick={onToggle}
-          className="group w-full flex items-center justify-between gap-5 text-left py-7 sm:py-8 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-800 focus-visible:ring-offset-2 focus-visible:ring-offset-cream"
-        >
-          <span className="min-w-0">
-            <span className="block font-display font-semibold text-green-900 text-2xl sm:text-4xl leading-tight">
-              {family.name}
-            </span>
-            <span className="block body-text text-sm sm:text-base mt-1.5 sm:mt-2 max-w-xl">
-              {family.line}
-            </span>
-          </span>
-          <span
-            className="shrink-0 flex items-center justify-center w-11 h-11 border border-gold-600/40 text-green-800 transition-transform duration-300 group-hover:border-gold-600"
+    <section className="scroll-mt-28" aria-labelledby={`family-${family.key}`}>
+      {/* Catalog hero card: image slot + family name/text + View details. */}
+      <div className="grid grid-cols-1 lg:grid-cols-2">
+        {/* Media slot — deep-green textural placeholder (NOT stock) until the
+            owner adds real media. See the SWAP marker just inside. */}
+        <div className="relative aspect-[16/10] lg:aspect-auto lg:min-h-[340px] overflow-hidden bg-green-900 order-1 lg:order-none">
+          {/* SWAP: real photograph of this service family */}
+          <div
+            className="absolute inset-0 bg-gradient-to-br from-green-800 via-green-900 to-green-950"
             aria-hidden="true"
-          >
-            <ChevronDown
-              size={20}
-              className={`transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`}
-            />
-          </span>
-        </button>
-      </h3>
-
-      {/* Expanded region */}
-      <div
-        id={panelId}
-        role="region"
-        aria-labelledby={btnId}
-        hidden={!expanded}
-        className="pb-9 sm:pb-12"
-      >
-        {family.note && (
-          <p className="body-text text-sm border-l-2 border-gold-600 pl-4 mb-6 max-w-2xl">
-            {family.note}
-          </p>
-        )}
-
-        {hasTiers ? (
-          <TierPriceList
-            tiers={tiers}
-            onView={(tier) => onView(family, tier)}
-            variant="panel"
           />
+          <div className="qs-grain absolute inset-0 opacity-[0.07]" aria-hidden="true" />
+          <div className="pointer-events-none absolute inset-0 border border-gold-600/20" aria-hidden="true" />
+          <div className="absolute inset-0 flex items-end p-5">
+            <span className="text-on-dark-soft text-[10px] font-sans tracking-widest uppercase">
+              {`SWAP · ${family.name.toLowerCase()} image`}
+            </span>
+          </div>
+        </div>
+
+        {/* Text side */}
+        <div className="flex flex-col justify-center bg-white border border-green-800/12 lg:border-l-0 p-7 sm:p-10">
+          <h3
+            id={`family-${family.key}`}
+            className="font-display font-medium text-green-900 text-3xl sm:text-4xl leading-tight"
+          >
+            {family.name}
+          </h3>
+          <p className="body-text text-base sm:text-lg mt-3 max-w-md">{family.line}</p>
+          {family.note && (
+            <p className="body-text text-sm border-l-2 border-gold-600 pl-4 mt-5 max-w-md">
+              {family.note}
+            </p>
+          )}
+
+          <div className="mt-7">
+            <button
+              id={btnId}
+              type="button"
+              aria-expanded={expanded}
+              aria-controls={regionId}
+              onClick={onToggle}
+              className="group inline-flex items-center gap-2.5 px-6 py-3 border border-green-800 text-green-900 font-sans text-xs font-medium tracking-widest uppercase transition-all duration-200 hover:bg-green-800 hover:text-white focus-ring min-h-[44px]"
+            >
+              {expanded ? 'Hide details' : 'View details'}
+              <ChevronDown
+                size={16}
+                aria-hidden="true"
+                className={`transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`}
+              />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Expanded region — offerings inline (no modal). */}
+      <div id={regionId} role="region" aria-labelledby={btnId} hidden={!expanded} className="mt-6">
+        {hasTiers ? (
+          <div className="flex flex-col gap-4">
+            {tiers.map((tier) => (
+              <OfferingRow
+                key={tier.id}
+                tier={tier}
+                saved={isSaved(tier)}
+                onSave={() => onSave(family, tier)}
+                onSubmit={() => onSubmit(family, tier)}
+              />
+            ))}
+          </div>
         ) : (
           // Quote-based family: no purchasable tiers → explain + "Talk to us".
-          <div className="border border-green-800/10 bg-white p-6 max-w-2xl">
+          <div className="border border-green-800/12 bg-white p-7 max-w-2xl">
             <p className="body-text text-base">
               {family.emptyState?.line ??
                 'This one is arranged personally, priced to what you need. Tell us what you are after and we will map it out with you.'}
@@ -433,7 +365,7 @@ function FamilyPanel({
           </div>
         )}
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -442,14 +374,11 @@ function FamilyPanel({
 export default function Shop() {
   const meta = seo();
   const navigate = useNavigate();
-  const { addItem, isSelected, itemCount, setFunnel } = useCart();
+  const { addItem, isSelected, setFunnel } = useCart();
 
-  // Multiple panels open at once — start with Riding Lessons open as the hero.
+  // Which family sections are expanded in place (multiple allowed). Riding
+  // Lessons opens by default so the page never reads as a wall of closed cards.
   const [openKeys, setOpenKeys] = useState<Set<string>>(() => new Set(['riding-lessons']));
-
-  // Active tier for the detail modal (null = closed). Opening = reading only.
-  const [active, setActive] = useState<{ family: ShopFamily; tier: ServiceTier } | null>(null);
-  const [justAdded, setJustAdded] = useState(false);
 
   // Keep the checkout back-link honest for whatever they add from here.
   useEffect(() => {
@@ -465,33 +394,20 @@ export default function Shop() {
     });
   }
 
-  function openTier(family: ShopFamily, tier: ServiceTier) {
-    setJustAdded(false);
-    setActive({ family, tier });
+  // Save it — adds to the saved selection (cart); stays on the page so they can
+  // keep browsing. The header cart icon reflects the new count.
+  function handleSave(family: ShopFamily, tier: ServiceTier) {
+    addItem(toCartItem(family, tier));
   }
 
-  function closeModal() {
-    setActive(null);
-    setJustAdded(false);
-  }
-
-  // Add to cart — stays open so they can keep browsing; shows confirmation.
-  function handleAdd() {
-    if (!active) return;
-    addItem(toCartItem(active.family, active.tier));
-    setJustAdded(true);
-  }
-
-  // Request this now — add AND go to checkout.
-  function handleRequestNow() {
-    if (!active) return;
-    addItem(toCartItem(active.family, active.tier));
+  // Submit inquiry — adds AND goes to checkout (the category-personalized inquiry).
+  function handleSubmit(family: ShopFamily, tier: ServiceTier) {
+    addItem(toCartItem(family, tier));
     navigate('/checkout');
   }
 
-  const activeSelected =
-    active !== null &&
-    isSelected(toCartItem(active.family, active.tier).serviceId, active.tier.id);
+  const isSaved = (family: ShopFamily, tier: ServiceTier) =>
+    isSelected(toCartItem(family, tier).serviceId, tier.id);
 
   return (
     <>
@@ -499,159 +415,47 @@ export default function Shop() {
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <section className="bg-cream">
-        <div className="container-site pt-32 pb-10 sm:pt-40 sm:pb-14">
-          <div className="flex flex-wrap items-start justify-between gap-6">
-            <div className="max-w-2xl">
-              <p className="eyebrow mb-5">Ways to Ride</p>
-              <h1 className="heading-display text-green-900 text-[clamp(2.5rem,6vw,4.5rem)]">
-                Ways to ride with us.
-              </h1>
-              <p className="body-text mt-7 text-lg max-w-xl">
-                However you would like to begin — a first lesson, a standing place
-                in the community, or care for a horse of your own — here is
-                everything, and what it costs. Open a section to explore.
-              </p>
-            </div>
-
-            {/* Persistent cart affordance → /checkout */}
-            {itemCount > 0 && (
-              <Link
-                to="/checkout"
-                className="inline-flex items-center gap-2.5 px-5 py-3 border border-green-800/20 bg-white text-green-900 font-sans text-sm hover:border-green-800/50 transition-colors focus-ring"
-                aria-label={`${itemCount} in your request — go to checkout`}
-              >
-                <span className="relative">
-                  <ShoppingBag size={18} aria-hidden="true" />
-                  <span className="absolute -top-2 -right-2 w-4 h-4 bg-gold-600 text-green-900 text-[9px] flex items-center justify-center font-medium">
-                    {itemCount}
-                  </span>
-                </span>
-                <span className="tracking-wide">Your request</span>
-              </Link>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* ── By-appointment reassurance (white-glove, not fine print) ─────── */}
-      <section className="bg-cream">
-        <div className="container-site pb-12 sm:pb-16">
-          <div className="border-l-2 border-gold-600 bg-white/60 pl-6 sm:pl-8 pr-6 py-7 sm:py-8 max-w-3xl">
-            <p className="eyebrow mb-3">By Appointment</p>
-            <p className="font-serif text-green-900 text-xl sm:text-2xl leading-snug">
-              Every lesson, program, and service is by appointment, arranged
-              personally.
+        <div className="container-site pt-32 pb-8 sm:pt-40 sm:pb-10">
+          <div className="max-w-2xl">
+            <p className="eyebrow mb-5">The Catalog</p>
+            <h1 className="heading-display text-green-900 text-[clamp(2.5rem,6vw,4.5rem)]">
+              Ways to ride with us.
+            </h1>
+            <p className="body-text mt-6 text-lg max-w-xl">
+              A first lesson, a standing place in the community, or care for a
+              horse of your own — everything we offer, and what it costs.
             </p>
-            <p className="body-text mt-4 text-base max-w-2xl">
-              {APPOINTMENT_EXPLAINER}
+          </div>
+
+          {/* Compact by-appointment reassurance — one elegant line, gold rule. */}
+          <div className="mt-10 sm:mt-12 border-l-2 border-gold-600 pl-5 sm:pl-6 max-w-3xl">
+            <p className="font-serif text-green-900 text-lg sm:text-xl leading-snug">
+              Everything here is by appointment, arranged personally.
+            </p>
+            <p className="body-text text-sm mt-1.5">
+              Save what interests you; we&rsquo;ll call to find the right fit, then send
+              your approval to book and pay online. Quick, personal, and considered.
             </p>
           </div>
         </div>
       </section>
 
-      {/* ── Accordion catalog ───────────────────────────────────────────── */}
+      {/* ── Catalog: family sections that expand in place (no modal) ─────── */}
       <section className="bg-cream">
-        <div className="container-site pb-24 sm:pb-32">
-          <div className="border-t border-green-800/15">
-            {FAMILIES.map((family) => (
-              <FamilyPanel
-                key={family.key}
-                family={family}
-                expanded={openKeys.has(family.key)}
-                onToggle={() => toggle(family.key)}
-                onView={openTier}
-              />
-            ))}
-          </div>
+        <div className="container-site pb-24 sm:pb-32 pt-8 sm:pt-10 space-y-16 sm:space-y-24">
+          {FAMILIES.map((family) => (
+            <FamilySection
+              key={family.key}
+              family={family}
+              expanded={openKeys.has(family.key)}
+              onToggle={() => toggle(family.key)}
+              isSaved={(tier) => isSaved(family, tier)}
+              onSave={handleSave}
+              onSubmit={handleSubmit}
+            />
+          ))}
         </div>
       </section>
-
-      {/* ── Tier detail modal ───────────────────────────────────────────── */}
-      <ShopModal
-        open={active !== null}
-        onClose={closeModal}
-        title={active?.tier.label ?? ''}
-        footer={
-          active && (
-            <>
-              <button
-                type="button"
-                onClick={handleAdd}
-                aria-live="polite"
-                className={`inline-flex items-center justify-center gap-2 px-7 py-3.5 border font-sans text-sm font-medium tracking-wide uppercase transition-all duration-200 focus-ring ${
-                  justAdded || activeSelected
-                    ? 'border-green-800 bg-green-800/5 text-green-900'
-                    : 'border-green-800 text-green-900 hover:bg-green-800/5'
-                }`}
-              >
-                {justAdded || activeSelected ? (
-                  <>
-                    <Check size={16} aria-hidden="true" />
-                    In your request
-                  </>
-                ) : (
-                  'Add to cart'
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={handleRequestNow}
-                className="btn-primary"
-              >
-                Request this now
-                <ArrowRight size={16} aria-hidden="true" />
-              </button>
-            </>
-          )
-        }
-      >
-        {active && (
-          <div>
-            <p className="eyebrow mb-3">{active.family.name}</p>
-
-            {/* Media swap slot — {/* SWAP: real photo/video from the library *​/}
-                A tasteful deep-green textural placeholder (NOT stock) for now. */}
-            <div className="relative aspect-[16/9] overflow-hidden bg-green-900 mb-6">
-              {/* SWAP: real photograph or short clip of this offering */}
-              <div
-                className="absolute inset-0 bg-gradient-to-br from-green-800 via-green-900 to-green-950"
-                aria-hidden="true"
-              />
-              <div className="qs-grain absolute inset-0 opacity-[0.08]" aria-hidden="true" />
-              <div className="pointer-events-none absolute inset-0 border border-gold-600/25" aria-hidden="true" />
-              <div className="absolute inset-0 flex items-center justify-center px-6 text-center">
-                <p className="text-on-dark-soft text-xs font-sans tracking-widest uppercase">
-                  {MEDIA_SWAP_LABEL}
-                </p>
-              </div>
-            </div>
-
-            <p className="body-text text-base">{active.family.service.description}</p>
-
-            {active.family.note && (
-              <p className="body-text text-sm border-l-2 border-gold-600 pl-4 mt-5">
-                {active.family.note}
-              </p>
-            )}
-
-            {/* How it's purchased & fulfilled */}
-            <div className="mt-7 pt-6 border-t border-green-800/10">
-              <p className="eyebrow mb-2">How it works</p>
-              <p className="body-text text-sm">{APPOINTMENT_EXPLAINER}</p>
-            </div>
-
-            {/* Price list — lowest largest — with this tier surfaced first. */}
-            <div className="mt-7 pt-6 border-t border-green-800/10">
-              <p className="eyebrow mb-4">Pricing</p>
-              <TierPriceList
-                tiers={sortedByPrice(active.family.service.tiers)}
-                onView={() => {}}
-                variant="modal"
-              />
-            </div>
-          </div>
-        )}
-      </ShopModal>
     </>
   );
 }
