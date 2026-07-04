@@ -7,17 +7,20 @@ import { useCart } from '../../contexts/CartContext';
 /* The single site header — used on the landing AND every inner page.
  *
  * Behavior (owner spec):
- *  - NAKED (fully transparent, no background) by default, at the top of scroll,
- *    on the landing and on every inner page. Nav text is light with a subtle
- *    shadow so it reads over the full-bleed hero or any page top.
- *  - ON SCROLL: (a) MINIFY — header height drops ~33% (py-5→py-3, smaller logo);
- *    (b) a LIQUID-GLASS FROSTED backdrop descends to backstop the nav for
- *    contrast — backdrop-blur + a VERY slight green tint (a whisper of green in
- *    the glass, not a panel) + a hairline gold rule — animated in over ~400ms.
- *  - The nav is identical everywhere (same links on landing + inner pages).
+ *  - NAKED (transparent) at the top of scroll, on the landing and every inner
+ *    page. State-aware: nav text + wordmark + logo are LIGHT (white/cream) with a
+ *    SUBTLE text-shadow so they read over the dark hero image.
+ *  - ON SCROLL: (a) MINIFY — the header height drops ~33% (padding + logo +
+ *    wordmark all shrink); (b) a LIQUID-GLASS FROSTED backdrop descends (blur + a
+ *    whisper of green tint + hairline gold rule); (c) the nav text + wordmark +
+ *    logo flip to DARK GREEN (crisp, NO text-shadow) for legibility on the light
+ *    frosted glass. All three transition together on the same scroll trigger
+ *    (~400ms). Never dark-green-on-transparent (that would be invisible over the
+ *    dark hero) and never light-on-frost.
+ *  - The nav is identical everywhere.
  *
- * The landing is 100dvh/no-scroll, so there the header simply stays naked (it
- * never scrolls); the minify+frost triggers only on pages that actually scroll.
+ * The landing is 100dvh/no-scroll, so there the header stays naked (never
+ * scrolls); the minify+frost+color-flip triggers only on pages that scroll.
  * SSR-safe: the scroll listener only attaches in the browser (useEffect).
  */
 
@@ -60,14 +63,25 @@ export default function Header() {
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
 
+  // ── State-aware token helpers ──────────────────────────────────────────────
+  // naked (over hero) → light text + subtle shadow; frosted → dark green, no shadow.
+  const heroShadow = scrolled ? '' : '[text-shadow:0_1px_10px_rgba(0,0,0,0.5)]';
+  const navText = scrolled
+    ? 'text-green-800 hover:text-green-950'
+    : 'text-white/90 hover:text-white';
+  const wordmarkText = scrolled ? 'text-green-900' : 'text-white';
+  const subtleText = scrolled ? 'text-green-800/70 hover:text-green-900' : 'text-white/60 hover:text-white/90';
+  // The gold accent underline reads on both surfaces (deeper gold on light frost).
+  const underline = scrolled ? 'bg-gold-700' : 'bg-gold-300';
+
   // The saved-selection cart affordance. Always VISIBLE in the header once there
-  // is a saved selection — top-right on desktop, CENTERED on mobile (never buried
-  // in the hamburger, so the visitor always knows where their selection went).
+  // is a saved selection — top-right on desktop, CENTERED on mobile (never in the
+  // hamburger). State-aware color like the rest of the nav.
   const cart = (extraClass: string) =>
     itemCount > 0 && (
       <Link
         to="/checkout"
-        className={`inline-flex items-center gap-2 text-white/90 hover:text-white transition-colors focus-ring-dark [text-shadow:0_1px_8px_rgba(0,0,0,0.4)] min-h-[44px] ${extraClass}`}
+        className={`inline-flex items-center gap-2 transition-colors duration-[400ms] min-h-[44px] focus-ring-dark ${navText} ${heroShadow} ${extraClass}`}
         aria-label={`${itemCount} saved ${itemCount === 1 ? 'selection' : 'selections'} — open your inquiry`}
       >
         <span className="relative">
@@ -85,30 +99,62 @@ export default function Header() {
         scrolled
           ? // Liquid-glass frost: a whisper of green tint under a blur, backstopped
             // by a hairline gold rule. NOT a solid green panel.
-            'bg-green-900/10 backdrop-blur-md border-b border-gold-600/20 shadow-sm shadow-green-950/10'
+            'bg-green-900/10 backdrop-blur-md border-b border-gold-600/25 shadow-sm shadow-green-950/10'
           : 'bg-transparent border-b border-transparent'
       }`}
     >
       <div
         className={`container-site grid grid-cols-[auto_1fr_auto] items-center gap-2 transition-all duration-[450ms] ease-out ${
-          scrolled ? 'py-3' : 'py-5 sm:py-7'
+          // Minify: a genuine ~33% height cut on scroll (padding shrinks together
+          // with the logo + wordmark below). Naked ≈92px → scrolled ≈60px (~35%).
+          scrolled ? 'py-3' : 'py-6 sm:py-7'
         }`}
       >
-        {/* Wordmark (left) — shrinks slightly on scroll (part of the minify). */}
+        {/* Wordmark (left) — logo mark + unified heritage-serif nameplate. */}
         <Link
           to="/"
-          className="justify-self-start flex flex-col items-start leading-none group focus-ring-dark min-h-[44px] justify-center"
+          className="justify-self-start flex items-center gap-3 group focus-ring-dark min-h-[44px]"
           aria-label="French Heritage Equestrian — Home"
         >
+          {/* LOGO SLOT — no full logo asset exists in the repo (only a rounded
+              favicon), so we render a squared, state-aware "FH" monogram that
+              matches the brand and tints per header state. Drop the real logo
+              here (an <img src="/…"> sized like this box) when it arrives. */}
           <span
-            className={`font-display text-white tracking-wide uppercase [text-shadow:0_1px_10px_rgba(0,0,0,0.5)] transition-all duration-[450ms] ${
-              scrolled ? 'text-sm sm:text-base' : 'text-base sm:text-lg'
+            className={`shrink-0 flex items-center justify-center border transition-all duration-[450ms] ${
+              scrolled
+                ? 'w-9 h-9 border-green-800/40 text-green-900'
+                : 'w-11 h-11 border-white/40 text-white'
             }`}
+            aria-hidden="true"
           >
-            French Heritage
+            <span
+              className={`font-display font-medium leading-none transition-all duration-[450ms] ${
+                scrolled ? 'text-base' : 'text-lg'
+              }`}
+            >
+              FH
+            </span>
           </span>
-          <span className="text-gold-300 text-[10px] tracking-widest uppercase font-sans font-light">
-            Equestrian
+
+          {/* Unified nameplate — both words in the heritage serif (font-display).
+              "Equestrian" is now larger and matched to the "French Heritage"
+              face, so the three words read as one cohesive nameplate. */}
+          <span className={`flex flex-col items-start leading-[0.95] transition-colors duration-[400ms] ${wordmarkText} ${heroShadow}`}>
+            <span
+              className={`font-display font-medium tracking-wide uppercase transition-all duration-[450ms] ${
+                scrolled ? 'text-sm sm:text-base' : 'text-base sm:text-lg'
+              }`}
+            >
+              French Heritage
+            </span>
+            <span
+              className={`font-display font-medium tracking-[0.18em] uppercase transition-all duration-[450ms] ${
+                scrolled ? 'text-[11px] sm:text-xs' : 'text-xs sm:text-sm'
+              }`}
+            >
+              Equestrian
+            </span>
           </span>
         </Link>
 
@@ -126,13 +172,15 @@ export default function Header() {
                   key={link.label}
                   to={link.href}
                   aria-current={current ? 'page' : undefined}
-                  className={`group relative inline-flex items-center min-h-[44px] text-xs font-sans tracking-widest uppercase transition-colors duration-200 focus-ring-dark [text-shadow:0_1px_8px_rgba(0,0,0,0.45)] ${
-                    current ? 'text-gold-300' : 'text-white/85 hover:text-white'
+                  className={`group relative inline-flex items-center min-h-[44px] text-xs font-sans tracking-widest uppercase transition-colors duration-[400ms] focus-ring-dark ${heroShadow} ${
+                    current
+                      ? scrolled ? 'text-green-950' : 'text-white'
+                      : navText
                   }`}
                 >
                   {link.label}
                   <span
-                    className={`absolute left-0 -bottom-0.5 h-px bg-gold-300 transition-all duration-300 ${
+                    className={`absolute left-0 -bottom-0.5 h-px transition-all duration-300 ${underline} ${
                       current ? 'w-full' : 'w-0 group-hover:w-full'
                     }`}
                     aria-hidden="true"
@@ -149,7 +197,9 @@ export default function Header() {
           {user && (
             <Link
               to="/app"
-              className="hidden md:inline-flex text-[11px] font-sans tracking-widest uppercase text-gold-300 hover:text-gold-200 transition-colors focus-ring-dark [text-shadow:0_1px_8px_rgba(0,0,0,0.45)]"
+              className={`hidden md:inline-flex text-[11px] font-sans tracking-widest uppercase transition-colors duration-[400ms] focus-ring-dark ${heroShadow} ${
+                scrolled ? 'text-gold-800 hover:text-gold-900' : 'text-gold-300 hover:text-gold-200'
+              }`}
             >
               Member Area
             </Link>
@@ -157,7 +207,7 @@ export default function Header() {
 
           <Link
             to="/login"
-            className="hidden md:inline-flex items-center min-h-[44px] text-[11px] font-sans tracking-widest uppercase text-white/60 hover:text-white/90 transition-colors duration-200 focus-ring-dark [text-shadow:0_1px_8px_rgba(0,0,0,0.45)]"
+            className={`hidden md:inline-flex items-center min-h-[44px] text-[11px] font-sans tracking-widest uppercase transition-colors duration-[400ms] focus-ring-dark ${subtleText} ${heroShadow}`}
           >
             Sign In
           </Link>
@@ -166,7 +216,9 @@ export default function Header() {
           <button
             ref={menuButtonRef}
             type="button"
-            className="md:hidden text-white p-2.5 -mr-2 focus-ring-dark [filter:drop-shadow(0_1px_6px_rgba(0,0,0,0.5))]"
+            className={`md:hidden p-2.5 -mr-2 focus-ring-dark transition-colors duration-[400ms] ${
+              scrolled ? 'text-green-900' : 'text-white [filter:drop-shadow(0_1px_6px_rgba(0,0,0,0.5))]'
+            }`}
             onClick={() => setOpen((v) => !v)}
             aria-label={open ? 'Close menu' : 'Open menu'}
             aria-expanded={open}

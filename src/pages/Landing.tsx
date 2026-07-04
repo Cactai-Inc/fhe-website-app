@@ -79,27 +79,33 @@ export default function Landing() {
         <div className="relative z-10 h-full w-full flex items-center justify-center px-5 sm:px-8">
           <div className="w-full max-w-4xl text-center mx-auto">
 
-            <p className="eyebrow-on-dark qs-rise qs-delay-1 mb-5 sm:mb-8 [text-shadow:0_1px_10px_rgba(0,0,0,0.5)]">
+            {/* Eyebrow / location — enlarged and brightened so it is clearly
+                readable over the hero (was too faint). */}
+            <p className="qs-rise qs-delay-1 mb-6 sm:mb-8 font-sans font-medium tracking-widest uppercase text-gold-300 text-sm sm:text-base [text-shadow:0_1px_12px_rgba(0,0,0,0.6)]">
               Carmel Creek Ranch · Coastal San Diego
             </p>
 
-            <h1 className="qs-rise qs-delay-2 heading-display text-white leading-[1.05] sm:leading-[1.02] tracking-[-0.01em] [text-wrap:balance] [overflow-wrap:break-word] text-[clamp(2.05rem,7.4vw,6.5rem)] [text-shadow:0_2px_28px_rgba(0,0,0,0.55)]">
+            {/* Headline — reduced from a screen-dominating clamp so it is
+                commanding but balanced, leaving the eyebrow + CTA visible. */}
+            <h1 className="qs-rise qs-delay-2 heading-display text-white leading-[1.08] tracking-[-0.01em] [text-wrap:balance] [overflow-wrap:break-word] text-[clamp(1.9rem,5vw,3.75rem)] [text-shadow:0_2px_24px_rgba(0,0,0,0.55)]">
               Join Our Riding Community
               <br />
               <em className="text-gold-300 not-italic">California Days Are Made For This</em>
             </h1>
 
-            <div className="qs-rise qs-delay-4 mt-10 sm:mt-12 flex justify-center">
+            {/* CTA — the ONLY action on the landing, so it is enlarged and made
+                unmistakable: a larger italic-serif label with a solid gold
+                underline and arrow, strong contrast over the hero. */}
+            <div className="qs-rise qs-delay-4 mt-10 sm:mt-14 flex justify-center">
               <Link
                 to="/story"
-                className="group inline-flex items-center gap-3 focus-ring-dark"
+                className="group inline-flex items-center gap-4 focus-ring-dark"
               >
-                <span className="font-serif italic text-2xl sm:text-3xl text-white border-b border-gold-300/60 pb-1 group-hover:border-gold-300 transition-colors [text-shadow:0_2px_16px_rgba(0,0,0,0.5)]">
+                <span className="font-serif italic text-3xl sm:text-4xl lg:text-[2.75rem] text-white border-b-2 border-gold-300 pb-1.5 group-hover:border-gold-200 transition-colors [text-shadow:0_2px_18px_rgba(0,0,0,0.6)]">
                   Come ride with us
                 </span>
                 <ArrowRight
-                  size={22}
-                  className="text-gold-300 transition-transform duration-300 group-hover:translate-x-1"
+                  className="w-7 h-7 sm:w-8 sm:h-8 text-gold-300 transition-transform duration-300 group-hover:translate-x-1.5 [filter:drop-shadow(0_2px_10px_rgba(0,0,0,0.5))]"
                   aria-hidden="true"
                 />
               </Link>
