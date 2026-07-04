@@ -115,8 +115,9 @@ export default function Register() {
       await redeemInvitation(token); // membership grant — the whole point of the invite
     } catch {
       // token consumed by a parallel attempt or expired mid-flow; the account
-      // exists — staff can re-invite, and /account explains membership status.
-      navigate('/account', { replace: true });
+      // exists, and for provisioned clients membership self-heals at sign-in
+      // (ensure_my_membership) — land in the app, not the legacy /account page.
+      navigate('/app', { replace: true });
       return;
     }
     navigate('/app', { replace: true });
@@ -135,15 +136,20 @@ export default function Register() {
       <div className="min-h-screen bg-cream flex items-center justify-center px-6 pt-24 pb-20">
         <div className="max-w-md text-center">
           <p className="eyebrow mb-3">Invitation</p>
-          <h1 className="heading-section text-green-800 mb-4">This link isn't valid</h1>
+          <h1 className="heading-section text-green-800 mb-4">This link isn't valid anymore</h1>
           <p className="body-text mb-8">
-            Your invitation may have expired, or the link is incomplete. Reach out and we'll send a
-            fresh one — we'd love to have you.
+            This invitation may have expired or been replaced by a newer one — check your inbox for
+            the most recent email. If you've already created your account, just sign in.
           </p>
-          <Link to="/services" className="btn-primary">
-            Say Hello
-            <ArrowRight size={16} />
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link to="/login" className="btn-primary">
+              Sign In
+              <ArrowRight size={16} />
+            </Link>
+            <Link to="/contact" className="btn-outline-gold">
+              Ask for a fresh invite
+            </Link>
+          </div>
         </div>
       </div>
     );

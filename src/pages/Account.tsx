@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { ArrowRight, LogOut } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { listMyOrders, upsertMyProfile } from '../lib/api';
@@ -21,7 +21,7 @@ const usd = (n: number) =>
 
 export default function Account() {
   useDocumentTitle('Your Account');
-  const { profile, user, signOut, refreshProfile } = useAuth();
+  const { profile, user, signOut, refreshProfile, isMember } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
 
@@ -48,6 +48,15 @@ export default function Account() {
       active = false;
     };
   }, []);
+
+  // Members belong in the app — this legacy public-site account page only
+  // serves signed-in users WITHOUT an active membership (owner 2026-07-03:
+  // "it should be /app/account"). ProtectedRoute waits out auth loading, so
+  // isMember is settled by the time we render. After every hook, per the
+  // rules of hooks.
+  if (isMember) {
+    return <Navigate to="/app" replace />;
+  }
 
   async function saveProfile(e: React.FormEvent) {
     e.preventDefault();

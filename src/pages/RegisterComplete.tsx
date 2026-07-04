@@ -79,9 +79,10 @@ export default function RegisterComplete() {
       try {
         await redeemInvitation(stash.token);
       } catch {
-        // consumed/expired mid-flow — account exists; land on /account instead
+        // consumed/expired mid-flow — account exists, membership self-heals for
+        // provisioned clients (ensure_my_membership); land in the app.
         window.localStorage.removeItem('fhe-invite');
-        if (active) { setState('done'); navigate('/account', { replace: true }); }
+        if (active) { setState('done'); navigate('/app', { replace: true }); }
         return;
       }
       window.localStorage.removeItem('fhe-invite');
