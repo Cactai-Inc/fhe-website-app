@@ -5,7 +5,7 @@
  * The landing is a single-viewport cinematic hero that uses the SAME shared
  * <Header> as every inner page (one header everywhere) and renders bare (no
  * footer). This proves the restored hero copy renders, the single CTA points at
- * the story, the shared-header nav is wired (Our Story / Services for Horses /
+ * the story, the shared-header nav is wired (Our Story / Horse Care Services /
  * Find a Horse / Say Hello / Sign In — no "Ride With Us"), and the route-scoped
  * scroll-lock class is applied on mount and cleaned up on unmount.
  *
@@ -43,12 +43,12 @@ describe('Landing', () => {
     expect(cta).toHaveAttribute('href', '/story');
   });
 
-  it('wires the shared-header nav (no "Ride With Us"; includes Services for Horses)', () => {
+  it('wires the shared-header nav (no "Ride With Us"; includes Horse Care Services)', () => {
     renderWithRouter(<Landing />);
 
     const primaryNav = screen.getByRole('navigation', { name: /^primary$/i });
     expect(within(primaryNav).getByRole('link', { name: /our story/i })).toHaveAttribute('href', '/story');
-    expect(within(primaryNav).getByRole('link', { name: /services for horses/i })).toHaveAttribute('href', '/horse');
+    expect(within(primaryNav).getByRole('link', { name: /horse care services/i })).toHaveAttribute('href', '/horse');
     expect(within(primaryNav).getByRole('link', { name: /find a horse/i })).toHaveAttribute('href', '/acquisition');
     expect(within(primaryNav).getByRole('link', { name: /say hello/i })).toHaveAttribute('href', '/contact');
 

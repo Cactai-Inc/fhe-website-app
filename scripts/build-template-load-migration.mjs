@@ -43,7 +43,10 @@ function kindOf(ns) {
 const POST_SEED_TEMPLATES = {
   RELEASE_GENERAL:        { title: 'General Visitor Liability Release',                 parties: ['PARTICIPANT', 'GUARDIAN'] },
   RELEASE_PARTICIPANT:    { title: 'Participant Liability Release',                     parties: ['PARTICIPANT', 'GUARDIAN'] },
-  RELEASE_HORSE_EXERCISE: { title: 'Horse Exercise Liability Release',                  parties: ['PARTICIPANT', 'GUARDIAN'] },
+  // Owner 2026-07-05: horse-care release UNIFIED under RELEASE_HORSE_CARE (one
+  // equine-services release for all horse-care services — clipping/turnout through
+  // lunging/riding/training). RELEASE_HORSE_EXERCISE retired (migration
+  // 20260705000000 repoints the matrix + deactivates the old key).
   RELEASE_HORSE_CARE:     { title: 'Horse Handling and Routine Care Liability Release', parties: ['PARTICIPANT', 'GUARDIAN'] },
   // Contract-module decomposition (20260701080000): the side-scoped Layer 2
   // transaction-representation module. service_type stays NULL (one tokenized

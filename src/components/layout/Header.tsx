@@ -33,7 +33,7 @@ import { useCart } from '../../contexts/CartContext';
 // redundant "Ride With Us"), and adds the previously-missing horse services.
 const NAV_LINKS = [
   { label: 'Our Story', href: '/story' },
-  { label: 'Services for Horses', href: '/horse' },
+  { label: 'Horse Care Services', href: '/horse' },
   { label: 'Find a Horse', href: '/acquisition' },
   { label: 'Say Hello', href: '/contact' },
 ];

@@ -3,7 +3,7 @@
  * LANE-PUBLIC header smoke test.
  *
  * One shared header, used on the landing + every inner page. This proves:
- *  - the nav renders (Our Story / Services for Horses / Find a Horse / Say Hello)
+ *  - the nav renders (Our Story / Horse Care Services / Find a Horse / Say Hello)
  *    with no redundant "Ride With Us", plus Sign In;
  *  - the unified heritage nameplate renders both words + the FH logo monogram;
  *  - CONTEXT-AWARE color: the nav is WHITE (+ subtle shadow) when the header band
@@ -72,7 +72,7 @@ describe('Header', () => {
     renderWithRouter(<Header />);
     const nav = screen.getByRole('navigation', { name: /^primary$/i });
     expect(within(nav).getByRole('link', { name: /our story/i })).toHaveAttribute('href', '/story');
-    expect(within(nav).getByRole('link', { name: /services for horses/i })).toHaveAttribute('href', '/horse');
+    expect(within(nav).getByRole('link', { name: /horse care services/i })).toHaveAttribute('href', '/horse');
     expect(within(nav).getByRole('link', { name: /find a horse/i })).toHaveAttribute('href', '/acquisition');
     expect(within(nav).getByRole('link', { name: /say hello/i })).toHaveAttribute('href', '/contact');
     expect(within(nav).queryByRole('link', { name: /ride with us/i })).not.toBeInTheDocument();

@@ -86,11 +86,11 @@ export async function submitIntakeSubmission(input: IntakeSubmissionInput): Prom
 // /release — the release kiosk (all four releases + the rules gate)
 // ---------------------------------------------------------------------------
 
-/** The four kiosk-signable releases (sign_release validates the same set). */
+/** The kiosk-signable releases (sign_release validates the same set). Horse-care
+ *  unified under RELEASE_HORSE_CARE — RELEASE_HORSE_EXERCISE retired 2026-07-05. */
 export type ReleaseTemplateKey =
   | 'RELEASE_GENERAL'
   | 'RELEASE_PARTICIPANT'
-  | 'RELEASE_HORSE_EXERCISE'
   | 'RELEASE_HORSE_CARE';
 
 export interface ReleasePreview {
