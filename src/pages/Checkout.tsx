@@ -28,7 +28,7 @@ interface FormState {
 
 const FUNNEL_LABELS: Record<string, string> = {
   rider: 'Rider Services',
-  horse: 'Horse Services',
+  horse: 'Horse Care Services',
   support: 'Rider Support',
 };
 
