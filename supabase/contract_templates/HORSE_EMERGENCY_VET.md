@@ -91,7 +91,7 @@ CLIENT may revoke this authorization by written notice. Revocation shall not aff
 
 14. DISPUTE RESOLUTION
 
-Any dispute arising out of or relating to this Agreement shall be resolved by binding arbitration administered by JAMS under its Streamlined Arbitration Rules and Procedures, or by the American Arbitration Association under its Consumer Arbitration Rules if JAMS is unavailable, before a single neutral arbitrator. The arbitration shall take place in San Diego County, California. COMPANY shall pay all arbitration fees and administrative costs that exceed the filing fee CLIENT would have incurred to file the claim in San Diego County Superior Court. Either party may instead bring an individual claim in small claims court if the claim qualifies for that forum. Judgment on the arbitration award may be entered in any court of competent jurisdiction.
+Any dispute arising out of or relating to this Agreement shall be resolved by binding arbitration in San Diego, California.
 
 15. ATTORNEY'S FEES
 
