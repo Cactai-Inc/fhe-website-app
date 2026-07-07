@@ -1,4 +1,27 @@
-PARTICIPANT LIABILITY RELEASE, ASSUMPTION OF RISK, HOLD HARMLESS & INDEMNIFICATION AGREEMENT
+/*
+  # Reload RELEASE_PARTICIPANT body — remove section 6 (jumper eligibility)
+
+  Owner 2026-07-07: section 6 ("Rider Ability Attestation and Jumping
+  Eligibility") is jumper-training addendum material, not general-participant
+  language. In the participant flow its riding-experience tokens merged BLANK
+  (they are collected only in the jumper path), so signers attested to empty
+  experience fields. Section 6 is removed from the base release and its content
+  moved to a standalone Jumper Training Addendum (RELEASE_JUMPER_ADDENDUM.md,
+  used only after COMPANY assesses ability). Sections 7-16 renumbered to 6-15.
+
+  The helmet requirement is preserved elsewhere: FACILITY_RULES section 7
+  (HELMET POLICY, signed first in the participant flow) and this release's own
+  section 5 (Safety Equipment and Instruction).
+
+  generate_document reads contract_templates.body, so this reload is required
+  for the edit to take effect on signed documents. Body below is byte-for-byte
+  the current .md. Token set shrank (the three RIDING_* tokens are gone); the
+  loader-derived per-template token rows are advisory only (generate_document
+  iterates the template's tokens but simply finds no RIDING_* tokens in the body
+  now), so no template_tokens change is required for correct merging. Forward-only.
+*/
+
+UPDATE contract_templates SET body = $body$PARTICIPANT LIABILITY RELEASE, ASSUMPTION OF RISK, HOLD HARMLESS & INDEMNIFICATION AGREEMENT
 
 Effective from the Date of Signature until superseded by a later executed version of this Release
 
@@ -84,3 +107,5 @@ Date of Birth: {{PARTICIPANT.DOB}}
 
 Where a minor PARTICIPANT is identified above, CLIENT certifies that CLIENT is the parent or legal guardian of the minor and has authority to execute this Agreement on the minor's behalf, consents to the minor's participation in equestrian activities, and agrees to the release of liability, assumption of risk, hold harmless, and indemnification provisions both on CLIENT's own behalf, including as to any claims CLIENT may hold individually arising from the minor's participation, and on behalf of the minor.
 <!-- CUT-END: MINOR_PARTICIPANT -->
+$body$, updated_at = now()
+  WHERE template_key = 'RELEASE_PARTICIPANT';
