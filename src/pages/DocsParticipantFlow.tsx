@@ -162,17 +162,16 @@ export default function DocsParticipantFlow() {
         setTypedName('');
         setEsignOk(false);
       } else {
-        // final document signed — deliver emailed copies of ALL signed docs
-        // (best-effort; the documents are safely stored regardless) and finish.
-        for (const doc of nextSigned) {
-          fetch('/api/deliver-document', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ documentId: doc.document_id }),
-          }).catch(() => {
-            /* stored either way */
-          });
-        }
+        // final document signed — deliver ONE email with all signed documents
+        // attached as PDFs (best-effort; the documents are safely stored
+        // regardless) and finish.
+        fetch('/api/deliver-documents', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ documentIds: nextSigned.map((d) => d.document_id) }),
+        }).catch(() => {
+          /* stored either way */
+        });
         setPhase('done');
       }
     } catch {
@@ -403,7 +402,8 @@ export default function DocsParticipantFlow() {
                 All documents signed. Thank you.
               </h2>
               <p className="body-text text-sm mb-4">
-                A copy of each signed document is on its way to {email.trim()}.
+                We've emailed {email.trim()} a copy of your signed documents,
+                attached as PDFs.
               </p>
               <ul className="text-sm text-green-900 space-y-1">
                 {SEQUENCE.map((d, i) => (
