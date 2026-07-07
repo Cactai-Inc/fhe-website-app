@@ -356,7 +356,12 @@ export default function DocsParticipantFlow() {
                 ) : previewBody === null ? (
                   <p className="body-text text-sm text-muted">Loading document…</p>
                 ) : (
-                  <BodyWithSignatures text={previewBody} />
+                  // whitespace-pre-wrap preserves the blank lines between sections
+                  // (the merged body is plain text; without this, HTML collapses
+                  // every newline and the document renders as one block).
+                  <pre className="whitespace-pre-wrap break-words font-serif text-sm leading-relaxed text-green-900">
+                    <BodyWithSignatures text={previewBody} />
+                  </pre>
                 )}
               </div>
 
