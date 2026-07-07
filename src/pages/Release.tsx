@@ -49,14 +49,39 @@ export const RELEASE_OPTIONS: {
     label: 'General Visitor',
     description: 'For anyone visiting the property.',
   },
-  // Temporarily re-enabled for in-person client signing (owner request 2026-07-07).
-  // The participant release otherwise lives in the invitation/onboarding flow;
-  // sign_release already supports this template — only the kiosk UI list was narrowed.
+  // All kiosk-signable documents (owner request 2026-07-07). Each collects the
+  // signer's legal name, contact info, and typed signature. The horse releases
+  // sign today with their horse-specific fields blank (no kiosk horse-entry yet
+  // — deferred); everything else merges fully.
   {
     key: 'RELEASE_PARTICIPANT',
     slug: 'participant',
     label: 'Rider / Participant',
     description: 'For riders and participants in equestrian activities.',
+  },
+  {
+    key: 'RELEASE_HORSE_EXERCISE',
+    slug: 'horse-exercise',
+    label: 'Horse Exercise',
+    description: 'For exercising or riding a horse in our care.',
+  },
+  {
+    key: 'RELEASE_HORSE_CARE',
+    slug: 'horse-care',
+    label: 'Horse Care',
+    description: 'For the care and handling of a horse.',
+  },
+  {
+    key: 'FACILITY_RULES',
+    slug: 'rules',
+    label: 'Property Rules & Safety',
+    description: 'Our property rules, safety, and equestrian conduct agreement.',
+  },
+  {
+    key: 'COMPANY_POLICIES',
+    slug: 'policies',
+    label: 'Business Policies',
+    description: 'Our business policies and terms.',
   },
 ];
 
@@ -131,6 +156,12 @@ export default function Release() {
 
   const option = RELEASE_OPTIONS.find((o) => o.key === selected) ?? null;
 
+  // FACILITY_RULES and COMPANY_POLICIES are standalone-signable documents, not
+  // releases: they skip the facility-rules acknowledgment gate (signing the
+  // rules doc can't be gated on acknowledging the rules; policies is unrelated).
+  // Mirrors sign_release's server-side rule (migration 20260703140000).
+  const isRelease = selected !== null && selected.startsWith('RELEASE_');
+
   // The OFFICIAL name the server merges + the typed signature must match.
   const fullName = [firstName.trim(), lastName.trim()].filter(Boolean).join(' ');
   const minorFullName = [minorFirstName.trim(), minorLastName.trim()].filter(Boolean).join(' ');
@@ -144,7 +175,8 @@ export default function Release() {
   const infoOk = nameOk && emailOk && minorOk;
   const typedMatches = typedName.trim() !== ''
     && typedName.trim().toLowerCase() === fullName.toLowerCase();
-  const canSign = infoOk && typedMatches && rulesOk && esignOk && !signing;
+  // Releases require the facility-rules acknowledgment; rules/policies do not.
+  const canSign = infoOk && typedMatches && (rulesOk || !isRelease) && esignOk && !signing;
 
   async function sign(e: React.FormEvent) {
     e.preventDefault();
@@ -164,7 +196,9 @@ export default function Release() {
         minor_last_name: isMinor ? minorLastName.trim() : null,
         minor_dob: isMinor ? minorDob : null,
         guardian_relationship: isMinor ? relationship.trim() : null,
-        rules_acknowledged: rulesOk,
+        // Releases carry the rules acknowledgment; rules/policies documents are
+        // not gated by it server-side (migration 20260703140000).
+        rules_acknowledged: isRelease ? rulesOk : true,
         esign_consent: esignOk,
       });
       setResult(r);
@@ -249,7 +283,7 @@ export default function Release() {
           ) : loadError ? (
             <p className="form-error" role="alert">{loadError}</p>
           ) : step === 'info' ? (
-            <form onSubmit={(e) => { e.preventDefault(); if (infoOk) setStep('rules'); }}>
+            <form onSubmit={(e) => { e.preventDefault(); if (infoOk) setStep(isRelease ? 'rules' : 'sign'); }}>
               <p className="body-text text-secondary mb-8 max-w-2xl">
                 {option?.label} release. Enter {isMinor ? 'the minor’s details and the parent or guardian’s details' : 'your details'};
                 you will read and sign the document next.

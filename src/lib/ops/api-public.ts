@@ -86,12 +86,17 @@ export async function submitIntakeSubmission(input: IntakeSubmissionInput): Prom
 // /release — the release kiosk (all four releases + the rules gate)
 // ---------------------------------------------------------------------------
 
-/** The four kiosk-signable releases (sign_release validates the same set). */
+/** The kiosk-signable documents (sign_release validates the same set,
+ *  migration 20260703140000). The four releases plus the two standalone
+ *  acknowledgment documents (stable rules + business policies) — all carry a
+ *  CLIENT signature block and are signed the same way. */
 export type ReleaseTemplateKey =
   | 'RELEASE_GENERAL'
   | 'RELEASE_PARTICIPANT'
   | 'RELEASE_HORSE_EXERCISE'
-  | 'RELEASE_HORSE_CARE';
+  | 'RELEASE_HORSE_CARE'
+  | 'FACILITY_RULES'
+  | 'COMPANY_POLICIES';
 
 export interface ReleasePreview {
   title: string;
