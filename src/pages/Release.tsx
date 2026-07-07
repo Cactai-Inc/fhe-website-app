@@ -49,6 +49,15 @@ export const RELEASE_OPTIONS: {
     label: 'General Visitor',
     description: 'For anyone visiting the property.',
   },
+  // Temporarily re-enabled for in-person client signing (owner request 2026-07-07).
+  // The participant release otherwise lives in the invitation/onboarding flow;
+  // sign_release already supports this template — only the kiosk UI list was narrowed.
+  {
+    key: 'RELEASE_PARTICIPANT',
+    slug: 'participant',
+    label: 'Rider / Participant',
+    description: 'For riders and participants in equestrian activities.',
+  },
 ];
 
 type Step = 'info' | 'rules' | 'sign';
@@ -69,12 +78,15 @@ function printSignedRelease() {
 
 export default function Release() {
   const { releaseKey } = useParams();
-  // The kiosk signs ONLY the general visitor release. Any other deep-linked
-  // slug (participant, horse-exercise, horse-care, …) is an in-account
-  // document now — show the sign-in notice instead of a form.
-  const blocked = releaseKey !== undefined
-    && !RELEASE_OPTIONS.some((o) => o.slug === releaseKey);
-  const selected: ReleaseTemplateKey | null = blocked ? null : 'RELEASE_GENERAL';
+  // The kiosk serves the releases listed in RELEASE_OPTIONS (general visitor +,
+  // per owner request 2026-07-07, the rider/participant release). Any slug not
+  // in that list is an in-account document now — show the sign-in notice.
+  // No slug (bare /release) defaults to the general visitor release.
+  const matched = releaseKey === undefined
+    ? RELEASE_OPTIONS.find((o) => o.key === 'RELEASE_GENERAL')
+    : RELEASE_OPTIONS.find((o) => o.slug === releaseKey);
+  const blocked = releaseKey !== undefined && matched === undefined;
+  const selected: ReleaseTemplateKey | null = matched?.key ?? null;
 
   const [step, setStep] = useState<Step>('info');
   const [isMinor, setIsMinor] = useState(false);
