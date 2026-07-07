@@ -17,6 +17,7 @@ import Gift from './pages/Gift';
 import Redeem from './pages/Redeem';
 import Inquire from './pages/Inquire';
 import Release from './pages/Release';
+import DocsParticipantFlow from './pages/DocsParticipantFlow';
 import BookRider from './pages/BookRider';
 import BookHorse from './pages/BookHorse';
 import BookSupport from './pages/BookSupport';
@@ -140,6 +141,8 @@ export function AppRoutes() {
             <Route path="/inquire" element={<Inquire />} />
             <Route path="/release" element={<Release />} />
             <Route path="/release/:releaseKey" element={<Release />} />
+            {/* Guided participant document set — one info form, 4 docs signed in sequence */}
+            <Route path="/docs/release-participant" element={<DocsParticipantFlow />} />
 
             {/* Member community app (its own chrome, member-gated) */}
             <Route

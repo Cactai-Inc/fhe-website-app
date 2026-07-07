@@ -100,7 +100,7 @@ If COMPANY provides training, instruction, or services involving the Horse, the 
 
 13. DISPUTE RESOLUTION
 
-Any dispute arising out of or relating to this Agreement shall be resolved by binding arbitration administered by JAMS under its Streamlined Arbitration Rules and Procedures, or by the American Arbitration Association under its Consumer Arbitration Rules if JAMS is unavailable, before a single neutral arbitrator in San Diego County, California. Either party may instead bring an individual claim in small claims court if the claim qualifies. Judgment on the award may be entered in any court of competent jurisdiction.
+Any dispute arising out of or relating to this Agreement shall be resolved by binding arbitration in San Diego, California.
 
 14. ATTORNEY'S FEES
 

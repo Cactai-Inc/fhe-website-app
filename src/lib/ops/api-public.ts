@@ -96,7 +96,8 @@ export type ReleaseTemplateKey =
   | 'RELEASE_HORSE_EXERCISE'
   | 'RELEASE_HORSE_CARE'
   | 'FACILITY_RULES'
-  | 'COMPANY_POLICIES';
+  | 'COMPANY_POLICIES'
+  | 'HUMAN_EMERGENCY_MEDICAL';
 
 export interface ReleasePreview {
   title: string;
@@ -145,6 +146,21 @@ export interface SignReleaseInput {
   /** E-sign consent (20260703110000): the kiosk's required "sign
    *  electronically" checkbox — the RPC rejects unless true. */
   esign_consent?: boolean;
+  /** Optional medical-auth fields (participant flow, migration 20260707180000).
+   *  All optional — written fill-blank onto the signer contact so the medical
+   *  authorization document merges them. */
+  dob?: string | null;                 // ISO YYYY-MM-DD
+  address_line1?: string | null;
+  address_line2?: string | null;
+  city?: string | null;
+  state?: string | null;
+  postal_code?: string | null;
+  emergency_contact_1_name?: string | null;
+  emergency_contact_1_relationship?: string | null;
+  emergency_contact_1_phone?: string | null;
+  emergency_contact_2_name?: string | null;
+  emergency_contact_2_relationship?: string | null;
+  emergency_contact_2_phone?: string | null;
   /** Optional explicit tenant (multi-tenant kiosks); defaults server-side. */
   org_id?: string;
 }
@@ -177,6 +193,19 @@ export async function signRelease(input: SignReleaseInput): Promise<SignReleaseR
     p_guardian_relationship: input.guardian_relationship ?? null,
     p_rules_acknowledged: input.rules_acknowledged,
     p_esign_consent: input.esign_consent ?? false,
+    // Optional medical-auth fields (participant flow) — written fill-blank server-side.
+    p_dob: input.dob ?? null,
+    p_address_line1: input.address_line1 ?? null,
+    p_address_line2: input.address_line2 ?? null,
+    p_city: input.city ?? null,
+    p_state: input.state ?? null,
+    p_postal_code: input.postal_code ?? null,
+    p_ec1_name: input.emergency_contact_1_name ?? null,
+    p_ec1_relationship: input.emergency_contact_1_relationship ?? null,
+    p_ec1_phone: input.emergency_contact_1_phone ?? null,
+    p_ec2_name: input.emergency_contact_2_name ?? null,
+    p_ec2_relationship: input.emergency_contact_2_relationship ?? null,
+    p_ec2_phone: input.emergency_contact_2_phone ?? null,
   };
   if (input.org_id) params.p_org = input.org_id;
   const { data, error } = await supabase.rpc('sign_release', params);
