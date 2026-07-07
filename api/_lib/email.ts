@@ -93,12 +93,22 @@ export function buildFooter(parts: {
   return lines.join('\n');
 }
 
+export interface EmailAttachment {
+  filename: string;
+  /** Raw file bytes. */
+  content: Uint8Array;
+  /** MIME type, e.g. 'application/pdf'. */
+  contentType: string;
+}
+
 export interface SendProviderInput {
   to: string;
   fromName: string;
   fromEmail: string;
   subject: string;
   html: string;
+  /** Optional file attachments (e.g. signed-document PDFs). */
+  attachments?: EmailAttachment[];
 }
 
 export interface SendProviderResult {
@@ -151,6 +161,11 @@ async function sendViaGoogleSmtp(
       to: input.to,
       subject: input.subject,
       html: input.html,
+      attachments: (input.attachments ?? []).map((a) => ({
+        filename: a.filename,
+        content: Buffer.from(a.content),
+        contentType: a.contentType,
+      })),
     });
     return { ok: true, messageId: info.messageId ?? null };
   } catch (err) {
@@ -169,6 +184,14 @@ async function sendViaResend(input: SendProviderInput, key: string): Promise<Sen
         to: input.to,
         subject: input.subject,
         html: input.html,
+        ...(input.attachments && input.attachments.length > 0
+          ? {
+              attachments: input.attachments.map((a) => ({
+                filename: a.filename,
+                content: Buffer.from(a.content).toString('base64'),
+              })),
+            }
+          : {}),
       }),
     });
     if (!res.ok) {
