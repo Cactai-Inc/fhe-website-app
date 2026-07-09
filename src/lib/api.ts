@@ -129,6 +129,8 @@ export interface OnboardingState {
   purchase: OnboardingPurchase | null;
   /** Minor rider on the active onboarding engagement, or null. */
   minor: OnboardingMinor | null;
+  /** The engagement backing the onboarding docs — drives the payment bridge. */
+  engagement_id?: string | null;
 }
 
 /** The signed-in member's onboarding snapshot (profile gate, signing checklist,
@@ -359,6 +361,16 @@ export async function createDraftOrder(input: DraftOrderInput): Promise<{ orderI
     if (qErr) throw qErr;
   }
   return { orderId: order.id };
+}
+
+/** Path-A bridge: mint (or reuse) a payable order from an onboarding engagement,
+ *  so the Zelle OrderPayment UI can complete the "pay after sign" step. */
+export async function createOrderFromEngagement(engagementId: string): Promise<string> {
+  const { data, error } = await supabase.rpc('create_order_from_engagement', {
+    p_engagement_id: engagementId,
+  });
+  if (error) throw error;
+  return data as string;
 }
 
 export async function getOrder(orderId: string): Promise<(Order & { items: OrderItem[] }) | null> {

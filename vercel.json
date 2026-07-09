@@ -3,7 +3,8 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "crons": [
-    { "path": "/api/notifications-nudge", "schedule": "0 16 * * *" }
+    { "path": "/api/notifications-nudge", "schedule": "0 16 * * *" },
+    { "path": "/api/expire-holds", "schedule": "0 * * * *" }
   ],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
