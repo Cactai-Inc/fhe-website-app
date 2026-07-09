@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ExternalLink, Heart, Share2, MessageCircle, Plus, X, Calendar } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
 import {
-  feedGet, feedMarkSeen, feedSetViewShape, feedShare, feedReportPost,
+  feedGet, feedSeedWelcome, feedMarkSeen, feedSetViewShape, feedShare, feedReportPost,
   type FeedResult, type FeedPost, type FeedAccountItem, type FeedViewShape,
 } from '../../lib/feed';
 import { FeedComposer } from '../../components/feed/FeedComposer';
@@ -131,6 +131,7 @@ export default function Home() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      await feedSeedWelcome().catch(() => {}); // first-run welcome cards (idempotent)
       setFeed(await feedGet());
       setError(null);
     } catch {

@@ -39,6 +39,12 @@ export interface FeedResult {
   account_items: FeedAccountItem[];
 }
 
+/** Idempotently seed the first-run welcome/orientation/purchase cards. */
+export async function feedSeedWelcome(): Promise<void> {
+  const { error } = await supabase.rpc('feed_seed_welcome');
+  if (error) throw error;
+}
+
 /** The assembled feed for the signed-in user. */
 export async function feedGet(limit = 50, before?: string): Promise<FeedResult> {
   const { data, error } = await supabase.rpc('feed_get', { p_limit: limit, p_before: before ?? null });
