@@ -105,6 +105,32 @@ export async function feedModerate(postId: string, action: 'approve' | 'affirm' 
   if (error) throw error;
 }
 
+export interface ModerationPost {
+  id: string;
+  post_type: FeedPostType;
+  media_url: string;
+  media_kind: FeedMediaKind;
+  body: string | null;
+  scan_state: 'clean' | 'blocked' | 'disputed';
+  reported_reason: string | null;
+  pulled_down: boolean;
+  author_id: string | null;
+  created_at: string;
+}
+
+/** Admin moderation lists (RLS lets admins read all in-org). `disputed` filters to
+ *  the disputed subset; otherwise returns everything not-clean (all-flagged). */
+export async function feedModerationList(disputedOnly: boolean): Promise<ModerationPost[]> {
+  let q = supabase
+    .from('feed_posts')
+    .select('id, post_type, media_url, media_kind, body, scan_state, reported_reason, pulled_down, author_id, created_at')
+    .order('created_at', { ascending: false });
+  q = disputedOnly ? q.eq('scan_state', 'disputed') : q.neq('scan_state', 'clean');
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data ?? []) as ModerationPost[];
+}
+
 /** Upload one media file to the feed-media bucket under the user's folder;
  *  returns { url, kind }. Enforces single media (one file) at the call site. */
 export async function uploadFeedMedia(file: File): Promise<{ url: string; kind: FeedMediaKind }> {

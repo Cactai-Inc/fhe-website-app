@@ -65,6 +65,7 @@ import CreateEngagementPage from './pages/app/ops/CreateEngagementPage';
 import EngagementDetailPage from './pages/app/ops/EngagementDetailPage';
 import DocumentsQueuePage from './pages/app/ops/DocumentsQueuePage';
 import DocumentViewerPage from './pages/app/ops/DocumentViewerPage';
+import ModerationPage from './pages/app/ops/ModerationPage';
 import TransactionsPage from './pages/app/ops/TransactionsPage';
 import TransactionDetailPage from './pages/app/ops/TransactionDetailPage';
 // Ops / CRM — Wave-7 (intake, payments review, module hubs + module pages)
@@ -188,6 +189,7 @@ export function AppRoutes() {
 
               {/* Ops / CRM (staff — gated to admin for launch) */}
               <Route path="ops" element={<ProtectedRoute requireAdmin><OpsDashboard /></ProtectedRoute>} />
+              <Route path="ops/moderation" element={<ProtectedRoute requireAdmin><ModerationPage /></ProtectedRoute>} />
               <Route path="ops/contacts" element={<ProtectedRoute requireAdmin><ContactsPage /></ProtectedRoute>} />
               <Route path="ops/horses" element={<ProtectedRoute requireAdmin><HorsesPage /></ProtectedRoute>} />
               <Route path="ops/engagements" element={<ProtectedRoute requireAdmin><EngagementsPage /></ProtectedRoute>} />
