@@ -33,6 +33,7 @@ import Account from './pages/Account';
 import OrderDetail from './pages/OrderDetail';
 // Member app
 import Dashboard from './pages/app/Dashboard';
+import Home from './pages/app/Home';
 import Profile from './pages/app/Profile';
 import Schedule from './pages/app/Schedule';
 import Membership from './pages/app/Membership';
@@ -153,7 +154,11 @@ export function AppRoutes() {
                 </ProtectedRoute>
               }
             >
-              <Route index element={<Dashboard />} />
+              {/* /app index = the Home feed (Slice 3). The old dashboard content
+                  moves to a renamed Dashboard page in Slice 4; kept reachable at
+                  /app/dashboard meanwhile. */}
+              <Route index element={<Home />} />
+              <Route path="dashboard" element={<Dashboard />} />
               <Route path="schedule" element={<Schedule />} />
               <Route path="chat" element={<Chat />} />
               <Route path="threads" element={<Threads />} />
