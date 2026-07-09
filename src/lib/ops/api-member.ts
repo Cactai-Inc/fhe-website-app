@@ -99,6 +99,23 @@ export async function myLessonSessions(): Promise<MemberLessonSession[]> {
   return (data ?? []) as MemberLessonSession[];
 }
 
+/** One progress note the rider's operator left on a lesson (Slice 5). */
+export interface MyLessonProgress {
+  session_id: string;
+  starts_at: string;
+  status: MemberLessonSessionStatus;
+  location: string | null;
+  note: string;
+}
+
+/** The rider's aggregated progress notes — every noted session, newest first.
+ *  The "second view" of per-lesson notes (the first is the lesson-history card). */
+export async function myLessonProgress(): Promise<MyLessonProgress[]> {
+  const { data, error } = await supabase.rpc('my_lesson_progress');
+  if (error) throw error;
+  return (data ?? []) as MyLessonProgress[];
+}
+
 // ─── MyBrokerage (mod.brokerage) ─────────────────────────────────────────────
 
 /** The member's own engagement, flattened with its service + status lookups. */

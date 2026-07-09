@@ -8,6 +8,7 @@ import {
   scheduleLessonSession,
   completeLessonSession,
   cancelLessonSession,
+  setLessonProgressNote,
   type LessonSession,
   type LessonClientOption,
 } from '../../../../lib/ops/api-lessons';
@@ -42,6 +43,57 @@ function timeRange(s: LessonSession): string {
   return `${new Date(s.starts_at).toLocaleTimeString(undefined, opts)} – ${new Date(
     s.ends_at,
   ).toLocaleTimeString(undefined, opts)}`;
+}
+
+/** Per-lesson progress note (Slice 5). Any operator writes/edits the rider-visible
+ *  note on a session; the rider reads it in the lesson-history card + progress view. */
+function NoteEditor({ session, onSaved }: { session: LessonSession; onSaved: (note: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState(session.notes ?? '');
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function save() {
+    setSaving(true); setErr(null);
+    try {
+      await setLessonProgressNote(session.id, value);
+      onSaved(value.trim());
+      setOpen(false);
+    } catch (e) {
+      setErr(toErrorMessage(e, 'Could not save the note.'));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <button type="button" className="text-xs text-green-800 underline underline-offset-2"
+        onClick={() => { setValue(session.notes ?? ''); setOpen(true); }}>
+        {session.notes ? 'Edit note' : 'Add note'}
+      </button>
+    );
+  }
+  return (
+    <div className="w-full mt-2">
+      <textarea
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        rows={2}
+        placeholder="What did they work on? What's next? (the rider sees this)"
+        className="form-input text-sm w-full"
+      />
+      {err && <p className="form-error text-xs mt-1">{err}</p>}
+      <div className="flex gap-2 mt-1">
+        <button type="button" className="btn-primary text-xs" disabled={saving} onClick={() => void save()}>
+          {saving ? 'Saving…' : 'Save note'}
+        </button>
+        <button type="button" className="btn-secondary text-xs" disabled={saving} onClick={() => setOpen(false)}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
 }
 
 export function SessionsPage() {
@@ -242,7 +294,7 @@ export function SessionsPage() {
                       key={s.id}
                       className="bg-white border border-green-800/10 p-4 flex flex-wrap items-center justify-between gap-3"
                     >
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-sm font-sans font-medium text-green-900">
                           {clientName(s.client_id)}
                         </p>
@@ -250,6 +302,17 @@ export function SessionsPage() {
                           {timeRange(s)}
                           {s.location ? ` · ${s.location}` : ''}
                         </p>
+                        {s.notes && (
+                          <p className="text-xs text-green-900/80 mt-1 italic line-clamp-2">“{s.notes}”</p>
+                        )}
+                        <div className="mt-1">
+                          <NoteEditor
+                            session={s}
+                            onSaved={(note) =>
+                              setRows((prev) => prev.map((x) => (x.id === s.id ? { ...x, notes: note || null } : x)))
+                            }
+                          />
+                        </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <StatusBadge status={s.status} />

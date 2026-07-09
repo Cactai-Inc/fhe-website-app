@@ -22,7 +22,9 @@ const TYPE_OPTIONS: { value: FeedPostType; label: string }[] = [
 ];
 
 export function FeedComposer({ onPosted }: { onPosted: () => void }) {
-  const { isAdmin } = useAuth();
+  // Two-operator model: any operator (staff) posts with visibility control; only an
+  // admin may post in the company's voice (as_company), matching the server gate.
+  const { isAdmin, isStaff } = useAuth();
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [kind, setKind] = useState<FeedMediaKind>('image');
@@ -62,7 +64,7 @@ export function FeedComposer({ onPosted }: { onPosted: () => void }) {
         body: body.trim() || null,
         source_link: link.trim() || null,
         as_company: isAdmin ? asCompany : false,
-        visibility: isAdmin ? visibility : 'members',
+        visibility: isStaff ? visibility : 'members',
         publish_at: publishAt ? new Date(publishAt).toISOString() : null,
       });
       onPosted();
@@ -122,12 +124,15 @@ export function FeedComposer({ onPosted }: { onPosted: () => void }) {
           onChange={(e) => setLink(e.target.value)} placeholder="https://…" />
       </div>
 
-      {isAdmin && (
+      {isStaff && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-green-800/10 pt-4">
-          <label className="inline-flex items-center gap-2 text-sm text-secondary">
-            <input type="checkbox" checked={asCompany} onChange={(e) => setAsCompany(e.target.checked)} />
-            Post as the company
-          </label>
+          {/* Company voice is admin-only (matches the server as_company gate). */}
+          {isAdmin && (
+            <label className="inline-flex items-center gap-2 text-sm text-secondary">
+              <input type="checkbox" checked={asCompany} onChange={(e) => setAsCompany(e.target.checked)} />
+              Post as the company
+            </label>
+          )}
           <div>
             <label className="form-label" htmlFor="fc-vis">Visibility</label>
             <select id="fc-vis" className="form-input" value={visibility} onChange={(e) => setVisibility(e.target.value as FeedVisibility)}>

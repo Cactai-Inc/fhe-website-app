@@ -60,6 +60,7 @@ import CareDashboard from './pages/app/CareDashboard';
 import Community from './pages/app/Community';
 import Market from './pages/app/Market';
 import HostEvent from './pages/app/HostEvent';
+import Support from './pages/app/Support';
 import Admin from './pages/app/Admin';
 // Ops / CRM (staff/admin)
 import OpsDashboard from './pages/app/ops/OpsDashboard';
@@ -71,6 +72,10 @@ import EngagementDetailPage from './pages/app/ops/EngagementDetailPage';
 import DocumentsQueuePage from './pages/app/ops/DocumentsQueuePage';
 import DocumentViewerPage from './pages/app/ops/DocumentViewerPage';
 import ModerationPage from './pages/app/ops/ModerationPage';
+import SupportPage from './pages/app/ops/SupportPage';
+import OversightPage from './pages/app/ops/OversightPage';
+import BillingPage from './pages/app/ops/BillingPage';
+import ContentStorePage from './pages/app/ops/ContentStorePage';
 import TransactionsPage from './pages/app/ops/TransactionsPage';
 import TransactionDetailPage from './pages/app/ops/TransactionDetailPage';
 // Ops / CRM — Wave-7 (intake, payments review, module hubs + module pages)
@@ -201,24 +206,31 @@ export function AppRoutes() {
               <Route path="boarding" element={<MyBoarding />} />
               <Route path="membership" element={<Membership />} />
               <Route path="profile" element={<Profile />} />
+              <Route path="support" element={<Support />} />
               {/* Admin (additionally requires admin) */}
               <Route path="admin" element={<ProtectedRoute requireAdmin><Admin /></ProtectedRoute>} />
 
-              {/* Ops / CRM (staff — gated to admin for launch) */}
-              <Route path="ops" element={<ProtectedRoute requireAdmin><OpsDashboard /></ProtectedRoute>} />
+              {/* Ops / CRM — two-operator model (Slice 5). Servicing subset =
+                  requireStaff (trainers + admins); total control = requireAdmin. */}
+              <Route path="ops" element={<ProtectedRoute requireStaff><OpsDashboard /></ProtectedRoute>} />
+              {/* Servicing subset — trainers + admins */}
+              <Route path="ops/contacts" element={<ProtectedRoute requireStaff><ContactsPage /></ProtectedRoute>} />
+              <Route path="ops/horses" element={<ProtectedRoute requireStaff><HorsesPage /></ProtectedRoute>} />
+              <Route path="ops/engagements" element={<ProtectedRoute requireStaff><EngagementsPage /></ProtectedRoute>} />
+              <Route path="ops/engagements/new" element={<ProtectedRoute requireStaff><CreateEngagementPage /></ProtectedRoute>} />
+              <Route path="ops/engagements/:id" element={<ProtectedRoute requireStaff><EngagementDetailPage /></ProtectedRoute>} />
+              <Route path="ops/documents" element={<ProtectedRoute requireStaff><DocumentsQueuePage /></ProtectedRoute>} />
+              <Route path="ops/documents/:id" element={<ProtectedRoute requireStaff><DocumentViewerPage /></ProtectedRoute>} />
+              <Route path="ops/intake" element={<ProtectedRoute requireStaff><IntakePage /></ProtectedRoute>} />
+              <Route path="ops/availability" element={<ProtectedRoute requireStaff><AvailabilityPage /></ProtectedRoute>} />
+              {/* Total control — admins only */}
               <Route path="ops/moderation" element={<ProtectedRoute requireAdmin><ModerationPage /></ProtectedRoute>} />
-              <Route path="ops/contacts" element={<ProtectedRoute requireAdmin><ContactsPage /></ProtectedRoute>} />
-              <Route path="ops/horses" element={<ProtectedRoute requireAdmin><HorsesPage /></ProtectedRoute>} />
-              <Route path="ops/engagements" element={<ProtectedRoute requireAdmin><EngagementsPage /></ProtectedRoute>} />
-              <Route path="ops/engagements/new" element={<ProtectedRoute requireAdmin><CreateEngagementPage /></ProtectedRoute>} />
-              <Route path="ops/engagements/:id" element={<ProtectedRoute requireAdmin><EngagementDetailPage /></ProtectedRoute>} />
-              <Route path="ops/documents" element={<ProtectedRoute requireAdmin><DocumentsQueuePage /></ProtectedRoute>} />
-              <Route path="ops/documents/:id" element={<ProtectedRoute requireAdmin><DocumentViewerPage /></ProtectedRoute>} />
+              <Route path="ops/support" element={<ProtectedRoute requireAdmin><SupportPage /></ProtectedRoute>} />
+              <Route path="ops/oversight" element={<ProtectedRoute requireAdmin><OversightPage /></ProtectedRoute>} />
+              <Route path="ops/billing" element={<ProtectedRoute requireAdmin><BillingPage /></ProtectedRoute>} />
+              <Route path="ops/content" element={<ProtectedRoute requireAdmin><ContentStorePage /></ProtectedRoute>} />
               <Route path="ops/transactions" element={<ProtectedRoute requireAdmin><TransactionsPage /></ProtectedRoute>} />
               <Route path="ops/transactions/:id" element={<ProtectedRoute requireAdmin><TransactionDetailPage /></ProtectedRoute>} />
-              {/* Wave-7: intake + payments review (core) */}
-              <Route path="ops/intake" element={<ProtectedRoute requireAdmin><IntakePage /></ProtectedRoute>} />
-              <Route path="ops/availability" element={<ProtectedRoute requireAdmin><AvailabilityPage /></ProtectedRoute>} />
               <Route path="ops/payments/review" element={<ProtectedRoute requireAdmin><PaymentReviewPage /></ProtectedRoute>} />
               {/* Wave-7: module hubs + module pages (module-gated inside via ModuleGate) */}
               <Route path="ops/brokerage" element={<ProtectedRoute requireAdmin><BrokerageHubPage /></ProtectedRoute>} />
@@ -230,10 +242,11 @@ export function AppRoutes() {
               <Route path="ops/barnops/resources" element={<ProtectedRoute requireAdmin><ResourcesPage /></ProtectedRoute>} />
               <Route path="ops/barnops/consumption" element={<ProtectedRoute requireAdmin><ConsumptionLogPage /></ProtectedRoute>} />
               <Route path="ops/barnops/allocation-rules" element={<ProtectedRoute requireAdmin><AllocationRulesPage /></ProtectedRoute>} />
-              <Route path="ops/lessons" element={<ProtectedRoute requireAdmin><LessonsHubPage /></ProtectedRoute>} />
-              <Route path="ops/lessons/packages" element={<ProtectedRoute requireAdmin><LessonPackagesPage /></ProtectedRoute>} />
-              <Route path="ops/lessons/credits" element={<ProtectedRoute requireAdmin><LessonCreditsPage /></ProtectedRoute>} />
-              <Route path="ops/lessons/sessions" element={<ProtectedRoute requireAdmin><SessionsPage /></ProtectedRoute>} />
+              {/* Lessons = servicing surface (trainers + admins) */}
+              <Route path="ops/lessons" element={<ProtectedRoute requireStaff><LessonsHubPage /></ProtectedRoute>} />
+              <Route path="ops/lessons/packages" element={<ProtectedRoute requireStaff><LessonPackagesPage /></ProtectedRoute>} />
+              <Route path="ops/lessons/credits" element={<ProtectedRoute requireStaff><LessonCreditsPage /></ProtectedRoute>} />
+              <Route path="ops/lessons/sessions" element={<ProtectedRoute requireStaff><SessionsPage /></ProtectedRoute>} />
               <Route path="ops/records" element={<ProtectedRoute requireAdmin><RecordsHubPage /></ProtectedRoute>} />
               <Route path="ops/records/horses/:horseId/parties" element={<ProtectedRoute requireAdmin><HorsePartiesPage /></ProtectedRoute>} />
               <Route path="ops/records/horses/:horseId/health" element={<ProtectedRoute requireAdmin><HorseHealthPage /></ProtectedRoute>} />

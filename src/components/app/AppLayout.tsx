@@ -4,11 +4,13 @@ import {
   CalendarDays, Users, BookOpen, FileText, UserRound,
   ReceiptText, Shield, LogOut, GraduationCap, Handshake, Home as HomeIcon,
   Boxes, Contact, LayoutDashboard, Sparkles, BadgeCheck, Mail, ChevronDown,
+  PenSquare, X, LifeBuoy,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useViewSurfaces, type Surface, type ViewSurfaces } from '../../lib/surfaces';
 import NotificationsBell, { useNotificationsBell } from './NotificationsBell';
 import CalendarModal from './CalendarModal';
+import { FeedComposer } from '../feed/FeedComposer';
 
 /**
  * APP SHELL (Slice 4 rebuild) — a single avatar menu, no persistent side nav.
@@ -29,6 +31,12 @@ interface NavItem {
   surface?: Surface;
   /** Tenant module gate (my_modules()), preserved from the entitlement layer. */
   module?: string;
+  /** Two-operator model (Slice 5): admin-only ops item — hidden from trainers
+   *  (the servicing subset). Trainers see intake/availability/lessons/engagements/
+   *  contacts/horses/documents; billing/deal-terms/config/oversight are admin-only. */
+  adminOnly?: boolean;
+  /** SUPER_ADMIN-only platform item. */
+  superAdmin?: boolean;
 }
 
 // The member menu. Each item declares the surface it needs; items with no surface
@@ -50,6 +58,7 @@ const MEMBER_NAV: NavItem[] = [
   { to: '/app/balance', label: 'Balance', icon: ReceiptText },
   { to: '/app/membership', label: 'Membership', icon: BadgeCheck },
   { to: '/app/profile', label: 'Profile', icon: UserRound },
+  { to: '/app/support', label: 'Support', icon: LifeBuoy },
 ];
 
 /** Items the member actually sees: an item shows when its surface is present (or it
@@ -68,35 +77,49 @@ export function visibleNav(
 /** Staff/admin operations nav (unchanged entitlement gating from the ops layer). */
 export const OPS_NAV: NavItem[] = [
   { to: '/app/ops', label: 'Ops Dashboard', icon: LayoutDashboard, end: true },
+  // Servicing subset — trainers + admins
   { to: '/app/ops/intake', label: 'Intake', icon: Mail },
   { to: '/app/ops/availability', label: 'Availability', icon: CalendarDays },
   { to: '/app/ops/contacts', label: 'Contacts', icon: Contact },
   { to: '/app/ops/horses', label: 'Horses', icon: Boxes },
   { to: '/app/ops/engagements', label: 'Engagements', icon: Handshake },
   { to: '/app/ops/documents', label: 'Documents', icon: FileText },
-  { to: '/app/ops/transactions', label: 'Transactions', icon: ReceiptText },
-  { to: '/app/ops/payments/review', label: 'Payment review', icon: ReceiptText },
-  { to: '/app/ops/moderation', label: 'Moderation', icon: Shield },
-  { to: '/app/ops/brokerage', label: 'Brokerage', icon: Handshake, module: 'mod.brokerage' },
   { to: '/app/ops/lessons', label: 'Lessons', icon: GraduationCap, module: 'mod.lessons' },
-  { to: '/app/ops/boarding', label: 'Boarding', icon: HomeIcon, module: 'mod.boarding' },
-  { to: '/app/ops/barnops', label: 'Barn Ops', icon: Boxes, module: 'mod.barnops' },
-  { to: '/app/ops/records', label: 'Records', icon: FileText, module: 'mod.horserecords' },
-  { to: '/app/ops/employees', label: 'Employees', icon: Contact, module: 'mod.employees' },
-  { to: '/app/ops/admin/modules', label: 'Modules', icon: Shield },
-  { to: '/app/ops/admin/registry', label: 'Registry', icon: Shield },
-  { to: '/app/ops/admin/branding', label: 'Branding', icon: Shield },
-  { to: '/app/ops/admin/products', label: 'Products', icon: Shield },
-  { to: '/app/ops/superadmin/organizations', label: 'Organizations', icon: Shield, superAdmin: true } as NavItem & { superAdmin?: boolean },
-  { to: '/app/ops/superadmin/provision', label: 'Provision tenant', icon: Shield, superAdmin: true } as NavItem & { superAdmin?: boolean },
+  // Total control — admins only
+  { to: '/app/ops/transactions', label: 'Transactions', icon: ReceiptText, adminOnly: true },
+  { to: '/app/ops/payments/review', label: 'Payment review', icon: ReceiptText, adminOnly: true },
+  { to: '/app/ops/billing', label: 'Billing', icon: ReceiptText, adminOnly: true },
+  { to: '/app/ops/moderation', label: 'Moderation', icon: Shield, adminOnly: true },
+  { to: '/app/ops/support', label: 'Support', icon: Mail, adminOnly: true },
+  { to: '/app/ops/oversight', label: 'Oversight', icon: Shield, adminOnly: true },
+  { to: '/app/ops/brokerage', label: 'Brokerage', icon: Handshake, module: 'mod.brokerage', adminOnly: true },
+  { to: '/app/ops/boarding', label: 'Boarding', icon: HomeIcon, module: 'mod.boarding', adminOnly: true },
+  { to: '/app/ops/barnops', label: 'Barn Ops', icon: Boxes, module: 'mod.barnops', adminOnly: true },
+  { to: '/app/ops/records', label: 'Records', icon: FileText, module: 'mod.horserecords', adminOnly: true },
+  { to: '/app/ops/employees', label: 'Employees', icon: Contact, module: 'mod.employees', adminOnly: true },
+  { to: '/app/ops/content', label: 'Content store', icon: BookOpen, adminOnly: true },
+  { to: '/app/ops/admin/modules', label: 'Modules', icon: Shield, adminOnly: true },
+  { to: '/app/ops/admin/registry', label: 'Registry', icon: Shield, adminOnly: true },
+  { to: '/app/ops/admin/branding', label: 'Branding', icon: Shield, adminOnly: true },
+  { to: '/app/ops/admin/products', label: 'Products', icon: Shield, adminOnly: true },
+  { to: '/app/ops/superadmin/organizations', label: 'Organizations', icon: Shield, superAdmin: true },
+  { to: '/app/ops/superadmin/provision', label: 'Provision tenant', icon: Shield, superAdmin: true },
 ];
 
-/** The ops nav a staff session actually sees (pure, unit-testable). */
-export function visibleOpsNav(hasModule: (key: string) => boolean, isSuperAdmin = false): NavItem[] {
-  return OPS_NAV.filter((item) => {
-    const sa = (item as NavItem & { superAdmin?: boolean }).superAdmin;
-    return (!item.module || hasModule(item.module)) && (!sa || isSuperAdmin);
-  });
+/** The ops nav a staff session actually sees (pure, unit-testable). Two-operator
+ *  model: a trainer (isAdmin=false) sees only the servicing subset; admins see all;
+ *  superadmin items gate on isSuperAdmin. */
+export function visibleOpsNav(
+  hasModule: (key: string) => boolean,
+  isSuperAdmin = false,
+  isAdmin = true,
+): NavItem[] {
+  return OPS_NAV.filter(
+    (item) =>
+      (!item.module || hasModule(item.module)) &&
+      (!item.superAdmin || isSuperAdmin) &&
+      (!item.adminOnly || isAdmin),
+  );
 }
 
 function MenuLink({ to, label, icon: Icon, end, onNavigate }: NavItem & { onNavigate: () => void }) {
@@ -118,18 +141,21 @@ function MenuLink({ to, label, icon: Icon, end, onNavigate }: NavItem & { onNavi
 }
 
 export default function AppLayout() {
-  const { profile, isAdmin, isSuperAdmin, hasModule, signOut } = useAuth();
+  const { profile, isAdmin, isStaff, isSuperAdmin, hasModule, signOut } = useAuth();
   const { surfaces } = useViewSurfaces();
   const navigate = useNavigate();
   const bell = useNotificationsBell();
   const [menuOpen, setMenuOpen] = useState(false);
   const [calOpen, setCalOpen] = useState(false);
+  const [composeOpen, setComposeOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
   const name = profile?.display_name || profile?.first_name || 'Member';
   const initial = (name[0] || 'M').toUpperCase();
   const items = visibleNav(surfaces, hasModule);
-  const opsItems = isAdmin ? visibleOpsNav(hasModule, isSuperAdmin) : [];
+  // Two-operator model: any operator sees the ops section; a trainer sees only the
+  // servicing subset (visibleOpsNav trims adminOnly items when isAdmin=false).
+  const opsItems = isStaff ? visibleOpsNav(hasModule, isSuperAdmin, isAdmin) : [];
 
   // close the avatar menu on outside click / Escape
   useEffect(() => {
@@ -160,6 +186,17 @@ export default function AppLayout() {
             French Heritage
           </Link>
           <div className="flex items-center gap-1">
+            {/* Header composer (Slice 5) — operators post to the feed from anywhere. */}
+            {isStaff && (
+              <button
+                type="button"
+                onClick={() => setComposeOpen(true)}
+                className="p-2 text-green-800 focus-ring rounded-md hover:bg-green-800/[0.06]"
+                aria-label="New post"
+              >
+                <PenSquare size={18} />
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setCalOpen(true)}
@@ -195,9 +232,9 @@ export default function AppLayout() {
                   {opsItems.length > 0 && (
                     <>
                       <div className="mt-1 border-t border-green-800/10 pt-2 px-4 pb-1 text-xs uppercase tracking-wide text-secondary/60">
-                        Operations
+                        {isAdmin ? 'Operations' : 'Servicing'}
                       </div>
-                      <MenuLink to="/app/admin" label="Admin" icon={Shield} onNavigate={closeMenu} />
+                      {isAdmin && <MenuLink to="/app/admin" label="Admin" icon={Shield} onNavigate={closeMenu} />}
                       {opsItems.map((it) => <MenuLink key={it.to} {...it} onNavigate={closeMenu} />)}
                     </>
                   )}
@@ -220,6 +257,22 @@ export default function AppLayout() {
       </main>
 
       {calOpen && <CalendarModal onClose={() => setCalOpen(false)} />}
+
+      {composeOpen && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+          onClick={() => setComposeOpen(false)}>
+          <div className="bg-cream w-full sm:max-w-lg sm:rounded-lg max-h-[92vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-green-800/10 sticky top-0 bg-cream">
+              <h2 className="font-serif text-green-800">New post</h2>
+              <button type="button" onClick={() => setComposeOpen(false)} aria-label="Close"><X size={20} /></button>
+            </div>
+            <div className="p-4">
+              <FeedComposer onPosted={() => setComposeOpen(false)} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
