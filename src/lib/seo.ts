@@ -92,8 +92,10 @@ export const ROUTE_SEO: RouteSeo[] = [
     description:
       'Join the French Heritage Equestrian rider community — group rides, the people, and a regular riding rhythm. Membership is by invitation; reach out to learn how it works.',
     service: 'Rider Community Membership',
-    indexable: true,
-    priority: 0.8,
+    // Public /membership join removed (Slice 4): membership is by invitation via the
+    // app; the route redirects to /lessons. Keep the entry but non-indexable.
+    indexable: false,
+    priority: 0.3,
   },
   {
     path: '/lessons',

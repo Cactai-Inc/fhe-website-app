@@ -12,7 +12,6 @@ import About from './pages/About';
 import Services from './pages/Services';
 import Contact from './pages/Contact';
 import Lessons from './pages/Lessons';
-import MembershipFunnel from './pages/MembershipFunnel';
 import Gift from './pages/Gift';
 import Redeem from './pages/Redeem';
 import Inquire from './pages/Inquire';
@@ -55,6 +54,12 @@ import ThreadDetail from './pages/app/ThreadDetail';
 import Messages from './pages/app/Messages';
 import Content from './pages/app/Content';
 import ContentPostDetail from './pages/app/ContentPostDetail';
+// Slice 4 — purpose-built dashboards + community/library surfaces
+import DealDashboard from './pages/app/DealDashboard';
+import CareDashboard from './pages/app/CareDashboard';
+import Community from './pages/app/Community';
+import Market from './pages/app/Market';
+import HostEvent from './pages/app/HostEvent';
 import Admin from './pages/app/Admin';
 // Ops / CRM (staff/admin)
 import OpsDashboard from './pages/app/ops/OpsDashboard';
@@ -116,7 +121,9 @@ export function AppRoutes() {
               <Route path="/ride" element={<Navigate to="/lessons" replace />} />
               {/* Self-contained funnels, each its own page */}
               <Route path="/lessons" element={<Lessons />} />
-              <Route path="/membership" element={<MembershipFunnel />} />
+              {/* Public /membership join removed (Slice 4): membership is by
+                  invitation via the app, not a public funnel. */}
+              <Route path="/membership" element={<Navigate to="/lessons" replace />} />
               <Route path="/horse" element={<BookHorse />} />
               <Route path="/acquisition" element={<BookSupport />} />
               {/* Gifting (purchase-as-gift keeps marketing chrome) */}
@@ -160,13 +167,23 @@ export function AppRoutes() {
                   /app/dashboard meanwhile. */}
               <Route index element={<Home />} />
               <Route path="dashboard" element={<Dashboard />} />
+              {/* Slice 4 — purpose-built dashboards for non-rider purchase categories */}
+              <Route path="deal" element={<DealDashboard />} />
+              <Route path="care" element={<CareDashboard />} />
               <Route path="schedule" element={<Schedule />} />
+              {/* Slice 4 — Community hub (front door) + its surfaces */}
+              <Route path="community" element={<Community />} />
+              <Route path="community/market" element={<Market />} />
+              <Route path="community/host" element={<HostEvent />} />
               <Route path="chat" element={<Chat />} />
               <Route path="threads" element={<Threads />} />
               <Route path="threads/:id" element={<ThreadDetail />} />
               <Route path="messages" element={<Messages />} />
               <Route path="messages/:userId" element={<Messages />} />
               <Route path="members" element={<Members />} />
+              {/* Slice 4 — Library = the conformed Content page (articles + resources
+                  + personal docs link). /app/content kept as an alias. */}
+              <Route path="library" element={<Content />} />
               <Route path="content" element={<Content />} />
               <Route path="content/:slug" element={<ContentPostDetail />} />
               <Route path="documents" element={<Documents />} />

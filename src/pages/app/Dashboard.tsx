@@ -12,6 +12,7 @@ import {
   type MyLessonsOverview,
 } from '../../lib/ops/api-member';
 import type { Announcement, CommunityEvent } from '../../lib/community-types';
+import { useViewSurfaces } from '../../lib/surfaces';
 
 /** "4 lessons" (punch cards) or the cadence line (subscriptions). */
 function planQuantity(p: NonNullable<OnboardingState['purchase']>): string | null {
@@ -43,8 +44,10 @@ function isAllSet(s: OnboardingState | null): boolean {
 }
 
 export default function Dashboard() {
-  useDocumentTitle('Members');
-  const { profile, isAdmin } = useAuth();
+  useDocumentTitle('Dashboard');
+  const { profile } = useAuth();
+  const { surfaces } = useViewSurfaces();
+  const showCommunity = surfaces.has_community;
   const navigate = useNavigate();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [events, setEvents] = useState<CommunityEvent[]>([]);
@@ -276,15 +279,14 @@ export default function Dashboard() {
             </Link>
           </div>
 
-          {/* Community surfaces are soft-hidden from non-admin members at launch
-              (progressive disclosure) — same rule as the Chat/Threads/Members nav. */}
-          {isAdmin && (
+          {/* Community rail — riders/operators (community surface) get it. The
+              purchase-driven view model decides who; this is just a shortcut. */}
+          {showCommunity && (
             <div className="bg-green-800 text-white p-6">
               <p className="eyebrow-on-dark mb-2">The rail</p>
               <p className="text-sm text-white/[0.85] mb-4">Say hello to the group or start a thread.</p>
               <div className="flex flex-col gap-2">
-                <Link to="/app/chat" className="link-underline text-gold-accent border-gold-400/40">Open the chat board <ArrowRight size={12} /></Link>
-                <Link to="/app/members" className="link-underline text-gold-accent border-gold-400/40">See who's here <ArrowRight size={12} /></Link>
+                <Link to="/app/community" className="link-underline text-gold-accent border-gold-400/40">Open the community <ArrowRight size={12} /></Link>
               </div>
             </div>
           )}

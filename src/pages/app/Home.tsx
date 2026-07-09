@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { ExternalLink, Heart, Share2, MessageCircle, Plus, X, Calendar } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
 import {
@@ -6,6 +7,7 @@ import {
   type FeedResult, type FeedPost, type FeedAccountItem, type FeedViewShape,
 } from '../../lib/feed';
 import { FeedComposer } from '../../components/feed/FeedComposer';
+import { useViewSurfaces } from '../../lib/surfaces';
 
 /**
  * HOME — the app's home feed (Slice 3, replaces the old Dashboard as /app index).
@@ -123,12 +125,16 @@ function AccountCard({ item }: { item: FeedAccountItem }) {
 
 export default function Home() {
   useDocumentTitle('Home');
+  const { surfaces, loading: surfacesLoading } = useViewSurfaces();
   const [feed, setFeed] = useState<FeedResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [composing, setComposing] = useState(false);
 
+  const hasFeed = surfaces.has_feed;
+
   const load = useCallback(async () => {
+    if (!hasFeed) { setLoading(false); return; }
     setLoading(true);
     try {
       await feedSeedWelcome().catch(() => {}); // first-run welcome cards (idempotent)
@@ -139,7 +145,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [hasFeed]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -174,6 +180,15 @@ export default function Home() {
     for (const p of posts) { const k = p.post_type; (by.get(k) ?? by.set(k, []).get(k)!).push(p); }
     return by;
   })();
+
+  // Home = the feed for riders/operators. A deal/care-only member has no feed, so
+  // Home resolves to their purpose-built dashboard (spec: no feed for non-riders).
+  // All hooks above run unconditionally; this guard only affects render output.
+  if (!surfacesLoading && !hasFeed) {
+    if (surfaces.surfaces.includes('deal_dashboard')) return <Navigate to="/app/deal" replace />;
+    if (surfaces.surfaces.includes('care_dashboard')) return <Navigate to="/app/care" replace />;
+    return <Navigate to="/app/dashboard" replace />;
+  }
 
   return (
     <div className="max-w-xl mx-auto">

@@ -30,3 +30,4 @@ public/hero.mp4
 out/
 .env.db
 .build-state/
+supabase/.temp/

@@ -148,6 +148,29 @@ export async function myBrokerageOverview(): Promise<MyBrokerageOverview> {
   };
 }
 
+/** The member's own engagements in a given catalog SEGMENT ('support'=deal,
+ *  'horse'=care, 'rider'=riding), newest first. One query; RLS returns only the
+ *  caller's rows. Powers the purpose-built deal/care dashboards (Slice 4). */
+export async function myEngagementsBySegment(segment: string): Promise<MyBrokerageOverview> {
+  const { data, error } = await supabase
+    .from('engagements')
+    .select(
+      'id, display_code, service_type, status, start_date, created_at, ' +
+        'service:service_types(display_name, segment), ' +
+        'status_row:engagement_status(display_name, is_terminal)',
+    )
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  const engagements = ((data ?? []) as unknown as MemberEngagement[]).filter(
+    (e) => e.service?.segment === segment,
+  );
+  return {
+    engagements,
+    openCount: engagements.filter((e) => e.status_row?.is_terminal !== true).length,
+  };
+}
+
 // ─── MyBoarding (mod.boarding) ───────────────────────────────────────────────
 
 /** A period charge on one of the member's board agreements (RLS-scoped). */

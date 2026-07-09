@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FileDown, Video, ExternalLink, BookOpen } from 'lucide-react';
+import { FileDown, Video, ExternalLink, BookOpen, FileText, ArrowRight } from 'lucide-react';
 import { fetchContentPosts, fetchResources, resourceDownloadUrl } from '../../lib/community';
 import { useDocumentTitle } from '../../lib/hooks';
 import type { ContentPost, ContentResource } from '../../lib/community-types';
@@ -32,7 +32,7 @@ function ResourceRow({ r }: { r: ContentResource }) {
 }
 
 export default function Content() {
-  useDocumentTitle('Members Content');
+  useDocumentTitle('Library');
   const [posts, setPosts] = useState<ContentPost[]>([]);
   const [resources, setResources] = useState<ContentResource[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,8 +47,18 @@ export default function Content() {
 
   return (
     <div className="max-w-4xl">
-      <p className="eyebrow mb-2">Members only</p>
-      <h1 className="heading-section text-green-800 mb-8">For the people who keep showing up.</h1>
+      <p className="eyebrow mb-2">Library</p>
+      <h1 className="heading-section text-green-800 mb-6">For the people who keep showing up.</h1>
+
+      {/* Personal docs — the member's own signed/issued documents live in Documents;
+          the Library surfaces the link so "saved list + personal docs + content" are
+          one place (Slice 4). */}
+      <Link to="/app/documents"
+        className="bg-white border border-green-800/10 rounded-lg p-5 mb-8 flex items-center gap-3 hover:border-green-800/30">
+        <FileText size={18} className="text-gold-ink" aria-hidden="true" />
+        <span className="text-sm font-sans font-medium text-green-900">Your documents</span>
+        <ArrowRight size={14} className="ml-auto text-muted" aria-hidden="true" />
+      </Link>
 
       {loading ? (
         <p className="body-text text-muted">Loading…</p>
