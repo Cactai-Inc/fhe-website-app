@@ -8,44 +8,16 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export type FunnelType = 'rider' | 'horse' | 'support';
 export type ContactMethod = 'text' | 'call' | 'email';
 
-export interface BookingPayload {
-  first_name: string;
-  last_name?: string;
-  email: string;
-  phone: string;
-  funnel_type: FunnelType;
-  selected_services: SelectedService[];
-  qualifier_answers: Record<string, string>;
-  subtotal: number;
-  notes?: string;
-  contact_method?: ContactMethod;
-  preferred_times?: string;
-}
-
+/** A cart line as passed to request/order submission (flat catalog). */
 export interface SelectedService {
-  serviceId: string;
-  serviceName: string;
-  tierId: string;
-  tierLabel: string;
+  offeringId: string;
+  offeringName: string;
+  serviceType: string | null;
   price: number;
   unit: string;
 }
 
-export interface InquiryPayload {
-  first_name: string;
-  last_name?: string;
-  email: string;
-  phone?: string;
-  message: string;
-}
-
-export async function submitBooking(payload: BookingPayload) {
-  const { data, error } = await supabase.from('bookings').insert(payload).select('id').maybeSingle();
-  if (error) throw error;
-  return data;
-}
-
-export async function submitInquiry(payload: InquiryPayload) {
-  const { error } = await supabase.from('inquiries').insert(payload);
-  if (error) throw error;
-}
+// Removed 2026-07-08 (launch dead-code cleanup): submitBooking/BookingPayload
+// (legacy `bookings` table best-effort write, superseded by the requests/orders
+// spine) and submitInquiry/InquiryPayload (dead — the `inquiries` table had no
+// live reader and this had no caller). See launch spec "Removed (delete)".

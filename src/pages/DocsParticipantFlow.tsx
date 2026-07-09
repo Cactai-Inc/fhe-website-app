@@ -95,16 +95,58 @@ export default function DocsParticipantFlow() {
 
   const current = SEQUENCE[index];
 
-  // Load the current document's preview when signing this doc.
+  // Fill the preview's labeled "__________" blanks with what the signer just
+  // entered, so the pre-sign preview shows THEIR real data (owner: readers were
+  // confused by an all-blank information section). Label-keyed replace: for each
+  // "Label: __________" line, drop in the matching value. Only fills known
+  // person-info labels; anything else stays blank.
+  function populatePreview(bodyText: string): string {
+    const addr = [address1.trim(), address2.trim(), [city.trim(), stateRegion.trim()].filter(Boolean).join(', '), postal.trim()]
+      .filter(Boolean).join(', ');
+    const fills: Array<[RegExp, string]> = [
+      [/^(Name:\s*)_{3,}/m, fullName],
+      [/^(Date of Birth:\s*)_{3,}/m, dob],
+      [/^(Address:\s*)_{3,}/m, addr],
+      [/^(Phone:\s*)_{3,}/m, phone.trim()],
+      [/^(Email:\s*)_{3,}/m, email.trim()],
+    ];
+    let out = bodyText;
+    for (const [re, val] of fills) {
+      if (val) out = out.replace(re, `$1${val}`);
+    }
+    // Emergency contacts (two blocks): replace the first two of each label in order.
+    const ec = [
+      [ec1Name.trim(), ec1Rel.trim(), ec1Phone.trim()],
+      [ec2Name.trim(), ec2Rel.trim(), ec2Phone.trim()],
+    ];
+    (['Name', 'Relationship', 'Phone'] as const).forEach((label, fi) => {
+      // within EMERGENCY CONTACT sections these labels repeat; fill sequentially
+      let occurrence = 0;
+      out = out.replace(new RegExp(`^(${label}:\\s*)_{3,}`, 'gm'), (m, p1) => {
+        const val = ec[occurrence]?.[fi] ?? '';
+        occurrence += 1;
+        return val ? `${p1}${val}` : m;
+      });
+    });
+    return out;
+  }
+
+  // Load the current document's preview when signing this doc. For the medical
+  // authorization, populate the info blanks with the signer's entered data.
   useEffect(() => {
     if (phase !== 'sign' || !current) return;
     let active = true;
     setPreviewBody(null);
     setPreviewError(null);
     fetchReleasePreview(current.key)
-      .then((p) => { if (active) setPreviewBody(p.body); })
+      .then((p) => {
+        if (!active) return;
+        const populated = current.key === 'HUMAN_EMERGENCY_MEDICAL' ? populatePreview(p.body) : p.body;
+        setPreviewBody(populated);
+      })
       .catch(() => { if (active) setPreviewError('We could not load this document. Please see a staff member.'); });
     return () => { active = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, current]);
 
   const typedMatches =

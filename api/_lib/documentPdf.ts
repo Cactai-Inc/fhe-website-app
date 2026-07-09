@@ -26,6 +26,16 @@ function isHeading(line: string): boolean {
   return false;
 }
 
+/** A signature line: "Signature: Jane Doe" / "By (signature): Jane Doe". The
+ *  VALUE after the label is rendered in a script-style (italic) face so the PDF
+ *  matches the emailed copy's signature styling (owner: signatures must look
+ *  signed, not typed). Returns the [label, value] split, or null. */
+const SIGNATURE_LINE = /^(\s*(?:Signature|By \(signature\)):\s*)(.+)$/;
+function signatureSplit(line: string): [string, string] | null {
+  const m = SIGNATURE_LINE.exec(line);
+  return m ? [m[1], m[2]] : null;
+}
+
 /** Greedy word-wrap `text` to fit `maxWidth` at `size` using `font`. */
 function wrap(text: string, font: import('pdf-lib').PDFFont, size: number, maxWidth: number): string[] {
   if (text === '') return [''];
@@ -64,26 +74,41 @@ export async function renderDocumentPdf(title: string, body: string): Promise<Ui
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.TimesRoman);
   const bold = await pdf.embedFont(StandardFonts.TimesRomanBold);
+  const italic = await pdf.embedFont(StandardFonts.TimesRomanItalic); // signature script
   const maxWidth = PAGE_W - MARGIN * 2;
 
   let page = pdf.addPage([PAGE_W, PAGE_H]);
   let y = PAGE_H - MARGIN;
 
-  const drawLine = (text: string, useBold: boolean, size: number) => {
+  const newlineIfNeeded = () => {
     if (y < MARGIN + LINE_H) {
       page = pdf.addPage([PAGE_W, PAGE_H]);
       y = PAGE_H - MARGIN;
     }
+  };
+
+  const drawLine = (text: string, whichFont: import('pdf-lib').PDFFont, size: number) => {
+    newlineIfNeeded();
     if (text !== '') {
-      page.drawText(text, {
-        x: MARGIN,
-        y,
-        size,
-        font: useBold ? bold : font,
-        color: rgb(0.1, 0.12, 0.1),
-      });
+      page.drawText(text, { x: MARGIN, y, size, font: whichFont, color: rgb(0.1, 0.12, 0.1) });
     }
     y -= size === HEADING_SIZE ? LINE_H + 2 : LINE_H;
+  };
+
+  // Draw a signature line: label in the normal face, the signed name in italic
+  // (script-style), a bit larger — matching the emailed copy's signature look.
+  const drawSignatureLine = (label: string, value: string) => {
+    newlineIfNeeded();
+    const labelW = font.widthOfTextAtSize(label, FONT_SIZE);
+    page.drawText(label, { x: MARGIN, y, size: FONT_SIZE, font, color: rgb(0.1, 0.12, 0.1) });
+    page.drawText(value, {
+      x: MARGIN + labelW,
+      y: y - 1,
+      size: FONT_SIZE + 3,
+      font: italic,
+      color: rgb(0.12, 0.14, 0.28),
+    });
+    y -= LINE_H + 2;
   };
 
   const sourceLines = body.replace(/\r\n/g, '\n').split('\n');
@@ -92,11 +117,16 @@ export async function renderDocumentPdf(title: string, body: string): Promise<Ui
       y -= LINE_H * 0.5; // blank line = half-line of vertical space
       continue;
     }
+    const sig = signatureSplit(raw);
+    if (sig) {
+      drawSignatureLine(sig[0], sig[1]);
+      continue;
+    }
     const heading = isHeading(raw);
     const size = heading ? HEADING_SIZE : FONT_SIZE;
     const useFont = heading ? bold : font;
     for (const wrapped of wrap(raw, useFont, size, maxWidth)) {
-      drawLine(wrapped, heading, size);
+      drawLine(wrapped, useFont, size);
     }
   }
 

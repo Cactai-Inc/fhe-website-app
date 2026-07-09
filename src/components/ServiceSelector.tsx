@@ -15,12 +15,12 @@ interface ServiceSelectorProps {
 }
 
 /**
- * Shared service + tier selector used by every booking funnel.
+ * Shared service + offering selector used by every booking funnel.
  *
- * Tiers within a service behave like a single-select radiogroup: choosing a tier
- * replaces any other tier of the same service (enforced by the cart reducer's
- * TOGGLE_ITEM). Selecting the active tier again deselects it. Semantics are
- * exposed with role="radio"/aria-checked inside a labelled role="radiogroup".
+ * Each offering (a flat purchasable item, rendered here as a row under its
+ * service group) toggles independently in/out of the cart. Selecting an active
+ * offering again deselects it. Semantics are exposed with
+ * role="radio"/aria-checked inside a labelled role="radiogroup".
  */
 export default function ServiceSelector({
   service,
@@ -57,12 +57,12 @@ export default function ServiceSelector({
 
       <div role="radiogroup" aria-labelledby={groupLabelId} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {service.tiers.map((tier: ServiceTier) => {
-          const selected = isSelected(service.id, tier.id);
+          const offeringId = `${service.id}-${tier.id}`;
+          const selected = isSelected(offeringId);
           const item: CartItem = {
-            serviceId: service.id,
-            serviceName: service.name,
-            tierId: tier.id,
-            tierLabel: tier.label,
+            offeringId,
+            offeringName: `${service.name} — ${tier.label}`,
+            serviceType: service.id,
             price: tier.price,
             unit: tier.unit,
           };

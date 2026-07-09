@@ -23,8 +23,10 @@ export default function Lessons() {
 
   function selectPack(p: typeof LESSON_PACKS[number]) {
     toggleItem({
-      serviceId: 'riding-lesson', serviceName: 'Riding Lessons',
-      tierId: p.id, tierLabel: p.label, price: p.price, unit: p.unit,
+      offeringId: `riding-lesson-${p.id}`,
+      offeringName: `Riding Lessons — ${p.label}`,
+      serviceType: 'riding-lesson',
+      price: p.price, unit: p.unit,
     });
   }
 
@@ -73,7 +75,7 @@ export default function Lessons() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {LESSON_PACKS.map((p) => {
-              const selected = isSelected('riding-lesson', p.id);
+              const selected = isSelected(`riding-lesson-${p.id}`);
               return (
                 <button
                   key={p.id}

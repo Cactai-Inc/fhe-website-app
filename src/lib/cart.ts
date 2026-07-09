@@ -2,11 +2,12 @@ import type { PriceUnit } from './services';
 
 // ─── Cart item ──────────────────────────────────────────────────────────────
 
+/** Flat catalog: a cart item IS a flat offering (the tier layer was removed
+ *  2026-07-08). offeringId is the purchasable unit; serviceType groups by kind. */
 export interface CartItem {
-  serviceId: string;
-  serviceName: string;
-  tierId: string;
-  tierLabel: string;
+  offeringId: string;
+  offeringName: string;
+  serviceType: string | null;
   price: number;
   unit: PriceUnit;
 }

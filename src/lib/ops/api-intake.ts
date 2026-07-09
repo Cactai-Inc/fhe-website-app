@@ -102,7 +102,6 @@ export interface BookingRequestSelection {
   id: string;
   offering_id: string | null;
   offering_slug: string | null;
-  tier_id: string | null;
   label: string | null;
 }
 

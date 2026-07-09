@@ -35,8 +35,8 @@ export default function BookRider() {
   const ownsHorse = state.qualifierAnswers['owns_horse'];
   const boarding = state.qualifierAnswers['boarding'];
   const wantsHorse = state.qualifierAnswers['wants_horse'];
-  const lessonSelected = state.items.some((i) => i.serviceId === RIDING_LESSON.id);
-  const hjSelected = state.items.some((i) => i.serviceId === HUNTER_JUMPER.id);
+  const lessonSelected = state.items.some((i) => i.serviceType === RIDING_LESSON.id);
+  const hjSelected = state.items.some((i) => i.serviceType === HUNTER_JUMPER.id);
   const hasAnyRider = lessonSelected || hjSelected;
 
   const canProceedStep0 = itemCount > 0;
@@ -182,10 +182,9 @@ export default function BookRider() {
               ) : (
                 <div className="flex flex-col divide-y divide-green-800/[0.08]">
                   {state.items.map((item) => (
-                    <div key={`${item.serviceId}-${item.tierId}`} className="flex items-center justify-between py-3">
+                    <div key={item.offeringId} className="flex items-center justify-between py-3">
                       <div>
-                        <p className="text-sm font-sans font-medium text-green-900">{item.tierLabel}</p>
-                        <p className="text-xs font-sans text-muted">{item.serviceName}</p>
+                        <p className="text-sm font-sans font-medium text-green-900">{item.offeringName}</p>
                       </div>
                       <p className="text-sm font-serif font-medium text-green-800">
                         {formatPrice(item.price, item.unit)}
@@ -197,7 +196,7 @@ export default function BookRider() {
             </div>
 
             {/* Within-pillar add-on: Horsemanship complements lessons. Always appropriate. */}
-            {!state.items.some((i) => i.serviceId === HORSEMANSHIP.id) && hasAnyRider && (
+            {!state.items.some((i) => i.serviceType === HORSEMANSHIP.id) && hasAnyRider && (
               <div className="mb-6">
                 <div className="bg-gold-50 border border-gold-200 p-5 mb-4">
                   <p className="text-xs font-sans font-medium tracking-wide uppercase text-gold-ink mb-1">Suggested Add-On</p>

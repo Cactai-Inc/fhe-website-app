@@ -153,10 +153,9 @@ export default function BookHorse() {
               ) : (
                 <div className="flex flex-col divide-y divide-green-800/[0.08]">
                   {state.items.map((item) => (
-                    <div key={`${item.serviceId}-${item.tierId}`} className="flex items-center justify-between py-3">
+                    <div key={item.offeringId} className="flex items-center justify-between py-3">
                       <div>
-                        <p className="text-sm font-sans font-medium text-green-900">{item.tierLabel}</p>
-                        <p className="text-xs font-sans text-muted">{item.serviceName}</p>
+                        <p className="text-sm font-sans font-medium text-green-900">{item.offeringName}</p>
                       </div>
                       <p className="text-sm font-serif font-medium text-green-800">
                         {formatPrice(item.price, item.unit)}

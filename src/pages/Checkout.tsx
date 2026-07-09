@@ -3,7 +3,6 @@ import { useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, X } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
-import { submitBooking } from '../lib/supabase';
 import type { ContactMethod } from '../lib/supabase';
 import { submitRequest, createDraftOrder } from '../lib/api';
 import { formatPrice } from '../lib/services';
@@ -49,7 +48,7 @@ const usd = (n: number) =>
 
 export default function Checkout() {
   useDocumentTitle('Submit a Booking Request');
-  const { state, removeItem, subtotal, toSelectedServices, clearCart, inquirySummary } = useCart();
+  const { state, removeItem, subtotal, clearCart, inquirySummary } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState<FormState>({
@@ -107,8 +106,8 @@ export default function Checkout() {
     try {
       const { orderId } = await createDraftOrder({
         items: state.items.map((i) => ({
-          offering_slug: i.serviceId,
-          label: `${i.serviceName} — ${i.tierLabel}`,
+          offering_slug: i.offeringId,
+          label: i.offeringName,
           price_amount: i.price,
           // 'lesson' is a UI-only unit; the order_items check constraint knows 'session'.
           price_unit: i.unit === 'lesson' ? 'session' : i.unit,
@@ -169,27 +168,10 @@ export default function Checkout() {
           notes: combinedNotes || undefined,
         },
         state.items.map((i) => ({
-          offering_slug: i.serviceId,
-          label: `${i.serviceName} — ${i.tierLabel}`,
+          offering_slug: i.offeringId,
+          label: i.offeringName,
         })),
       );
-
-      // Backward-compat: also record in the legacy bookings table (non-blocking).
-      submitBooking({
-        first_name: form.first_name.trim(),
-        last_name: form.last_name.trim() || undefined,
-        email: form.email.trim(),
-        phone: form.phone.trim(),
-        funnel_type: state.funnel || 'rider',
-        selected_services: toSelectedServices(),
-        qualifier_answers: experience
-          ? { ...state.qualifierAnswers, riding_experience_years: experience }
-          : state.qualifierAnswers,
-        subtotal,
-        notes: form.notes.trim() || undefined,
-        contact_method: contactMethod,
-        preferred_times: availabilityBlock ? availabilityBlock.replace(/\n/g, ' | ') : undefined,
-      }).catch((e) => console.warn('legacy booking write failed', e));
 
       // Remember the chosen contact method for the confirmation copy.
       try {
@@ -502,12 +484,11 @@ export default function Checkout() {
                       <div className="flex flex-col gap-1">
                         {group.items.map((item) => (
                           <div
-                            key={`${item.serviceId}-${item.tierId}`}
+                            key={item.offeringId}
                             className="flex items-start justify-between gap-3 py-2 border-b border-green-800/[0.08] last:border-b-0"
                           >
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-sans font-medium text-green-900 leading-snug">{item.tierLabel}</p>
-                              <p className="text-xs font-sans text-muted mt-0.5 truncate">{item.serviceName}</p>
+                              <p className="text-sm font-sans font-medium text-green-900 leading-snug">{item.offeringName}</p>
                             </div>
                             <div className="flex items-center gap-2 flex-shrink-0">
                               <p className="text-sm font-serif text-green-800">
@@ -515,9 +496,9 @@ export default function Checkout() {
                               </p>
                               <button
                                 type="button"
-                                onClick={() => removeItem(item.serviceId, item.tierId)}
+                                onClick={() => removeItem(item.offeringId)}
                                 className="p-2.5 -m-1 text-green-800/40 hover:text-red-600 transition-colors focus-ring"
-                                aria-label={`Remove ${item.tierLabel}`}
+                                aria-label={`Remove ${item.offeringName}`}
                               >
                                 <X size={14} aria-hidden="true" />
                               </button>
