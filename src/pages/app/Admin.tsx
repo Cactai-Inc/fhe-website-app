@@ -395,7 +395,7 @@ function PendingClientView({ row, onChanged }: { row: ClientAccountRow; onChange
           <h3 className="font-serif text-green-800 text-base">Associated items</h3>
           <span className="flex gap-2">
             <button type="button" className="text-xs underline text-secondary hover:text-green-800"
-              onClick={() => navigate('/app/ops/engagements/new')}>+ engagement</button>
+              onClick={() => navigate(`/app/ops/engagements/new?contact=${row.contact_id}`)}>+ engagement</button>
             <button type="button" className="text-xs underline text-secondary hover:text-green-800"
               onClick={() => navigate('/app/ops/contracts/new')}>+ contract</button>
           </span>
