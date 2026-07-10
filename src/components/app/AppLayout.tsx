@@ -71,13 +71,13 @@ const PLATFORM_NAV: NavItem[] = [
 const FRONTDESK_GROUP: NavItem[] = [
   { to: '/app/ops/intake', label: 'Inbound', icon: Mail },
   { to: '/app/ops/leads', label: 'Leads', icon: Contact },
-  { to: '/app/ops/support', label: 'Support', icon: LifeBuoy, adminOnly: true },
+  { to: '/app/ops/support', label: 'Support', icon: LifeBuoy },
 ];
 /* ACCOUNTS — who we know: customers (Clients), internal accounts (Team), and
  * the raw contact book behind both. */
 const ACCOUNTS_GROUP: NavItem[] = [
-  { to: '/app/admin', label: 'Clients', icon: Users, adminOnly: true },
-  { to: '/app/ops/team', label: 'Team', icon: Contact, adminOnly: true },
+  { to: '/app/admin', label: 'Clients', icon: Users },
+  { to: '/app/ops/team', label: 'Team', icon: Contact },
   { to: '/app/ops/contacts', label: 'Directory', icon: Contact },
 ];
 const SERVICING_GROUP: NavItem[] = [
@@ -88,21 +88,21 @@ const SERVICING_GROUP: NavItem[] = [
   { to: '/app/ops/documents', label: 'Documents', icon: FileText },
 ];
 const BUSINESS_GROUP: NavItem[] = [
-  { to: '/app/ops/transactions', label: 'Transactions', icon: ReceiptText, adminOnly: true },
-  { to: '/app/ops/payments/review', label: 'Payment review', icon: ReceiptText, adminOnly: true },
-  { to: '/app/ops/billing', label: 'Billing', icon: ReceiptText, adminOnly: true },
+  { to: '/app/ops/transactions', label: 'Transactions', icon: ReceiptText },
+  { to: '/app/ops/payments/review', label: 'Payment review', icon: ReceiptText },
+  { to: '/app/ops/billing', label: 'Billing', icon: ReceiptText },
 ];
 const COMMUNITY_GROUP: NavItem[] = [
-  { to: '/app/ops/moderation', label: 'Moderation', icon: Shield, adminOnly: true },
-  { to: '/app/ops/content', label: 'Content store', icon: BookOpen, adminOnly: true },
-  { to: '/app/ops/oversight', label: 'Oversight', icon: Shield, adminOnly: true },
+  { to: '/app/ops/moderation', label: 'Moderation', icon: Shield },
+  { to: '/app/ops/content', label: 'Content store', icon: BookOpen },
+  { to: '/app/ops/oversight', label: 'Oversight', icon: Shield },
 ];
 const MODULES_GROUP: NavItem[] = [
-  { to: '/app/ops/brokerage', label: 'Brokerage', icon: Handshake, module: 'mod.brokerage', adminOnly: true },
-  { to: '/app/ops/boarding', label: 'Boarding', icon: HomeIcon, module: 'mod.boarding', adminOnly: true },
-  { to: '/app/ops/barnops', label: 'Barn Ops', icon: Boxes, module: 'mod.barnops', adminOnly: true },
-  { to: '/app/ops/records', label: 'Records', icon: FileText, module: 'mod.horserecords', adminOnly: true },
-  { to: '/app/ops/employees', label: 'Employees', icon: Contact, module: 'mod.employees', adminOnly: true },
+  { to: '/app/ops/brokerage', label: 'Brokerage', icon: Handshake, module: 'mod.brokerage' },
+  { to: '/app/ops/boarding', label: 'Boarding', icon: HomeIcon, module: 'mod.boarding' },
+  { to: '/app/ops/barnops', label: 'Barn Ops', icon: Boxes, module: 'mod.barnops' },
+  { to: '/app/ops/records', label: 'Records', icon: FileText, module: 'mod.horserecords' },
+  { to: '/app/ops/employees', label: 'Employees', icon: Contact, module: 'mod.employees' },
 ];
 const SETTINGS_GROUP: NavItem[] = [
   { to: '/app/ops/admin/branding', label: 'Branding', icon: Shield, adminOnly: true },

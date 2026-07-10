@@ -223,10 +223,10 @@ export function AppRoutes() {
                   intake→review→sign. Notification links target this route. */}
               <Route path="contracts/:id" element={<ContractPage />} />
               {/* Admin (additionally requires admin) */}
-              <Route path="admin" element={<ProtectedRoute grantKey="/app/admin"><Admin /></ProtectedRoute>} />
+              <Route path="admin" element={<ProtectedRoute requireStaff><Admin /></ProtectedRoute>} />
 
               {/* Ops / CRM — two-operator model (Slice 5). Servicing subset =
-                  requireStaff (trainers + admins); total control = requireAdmin. */}
+                  requireStaff (trainers + admins); total control = requireStaff. */}
               <Route path="ops" element={<ProtectedRoute requireStaff><OpsHome /></ProtectedRoute>} />
               {/* Servicing subset — trainers + admins */}
               <Route path="ops/contacts" element={<ProtectedRoute requireStaff><ContactsPage /></ProtectedRoute>} />
@@ -239,41 +239,41 @@ export function AppRoutes() {
               <Route path="ops/documents" element={<ProtectedRoute requireStaff><DocumentsQueuePage /></ProtectedRoute>} />
               <Route path="ops/documents/:id" element={<ProtectedRoute requireStaff><DocumentViewerPage /></ProtectedRoute>} />
               <Route path="ops/intake" element={<ProtectedRoute requireStaff><IntakePage /></ProtectedRoute>} />
-              <Route path="ops/team" element={<ProtectedRoute requireAdmin><TeamPage /></ProtectedRoute>} />
+              <Route path="ops/team" element={<ProtectedRoute requireStaff><TeamPage /></ProtectedRoute>} />
               {/* staff can invite clients; the page hides staff account types for non-admins */}
               <Route path="ops/accounts/new" element={<ProtectedRoute requireStaff><AccountInvitePage /></ProtectedRoute>} />
               <Route path="ops/contracts/new" element={<ProtectedRoute requireStaff><NewContractPage /></ProtectedRoute>} />
               <Route path="ops/availability" element={<ProtectedRoute requireStaff><AvailabilityPage /></ProtectedRoute>} />
               {/* Total control — admins only */}
-              <Route path="ops/moderation" element={<ProtectedRoute grantKey="/app/ops/moderation"><ModerationPage /></ProtectedRoute>} />
-              <Route path="ops/support" element={<ProtectedRoute grantKey="/app/ops/support"><SupportPage /></ProtectedRoute>} />
-              <Route path="ops/oversight" element={<ProtectedRoute grantKey="/app/ops/oversight"><OversightPage /></ProtectedRoute>} />
-              <Route path="ops/billing" element={<ProtectedRoute grantKey="/app/ops/billing"><BillingPage /></ProtectedRoute>} />
-              <Route path="ops/content" element={<ProtectedRoute grantKey="/app/ops/content"><ContentStorePage /></ProtectedRoute>} />
-              <Route path="ops/transactions" element={<ProtectedRoute grantKey="/app/ops/transactions"><TransactionsPage /></ProtectedRoute>} />
-              <Route path="ops/transactions/:id" element={<ProtectedRoute requireAdmin><TransactionDetailPage /></ProtectedRoute>} />
-              <Route path="ops/payments/review" element={<ProtectedRoute grantKey="/app/ops/payments/review"><PaymentReviewPage /></ProtectedRoute>} />
+              <Route path="ops/moderation" element={<ProtectedRoute requireStaff><ModerationPage /></ProtectedRoute>} />
+              <Route path="ops/support" element={<ProtectedRoute requireStaff><SupportPage /></ProtectedRoute>} />
+              <Route path="ops/oversight" element={<ProtectedRoute requireStaff><OversightPage /></ProtectedRoute>} />
+              <Route path="ops/billing" element={<ProtectedRoute requireStaff><BillingPage /></ProtectedRoute>} />
+              <Route path="ops/content" element={<ProtectedRoute requireStaff><ContentStorePage /></ProtectedRoute>} />
+              <Route path="ops/transactions" element={<ProtectedRoute requireStaff><TransactionsPage /></ProtectedRoute>} />
+              <Route path="ops/transactions/:id" element={<ProtectedRoute requireStaff><TransactionDetailPage /></ProtectedRoute>} />
+              <Route path="ops/payments/review" element={<ProtectedRoute requireStaff><PaymentReviewPage /></ProtectedRoute>} />
               {/* Wave-7: module hubs + module pages (module-gated inside via ModuleGate) */}
-              <Route path="ops/brokerage" element={<ProtectedRoute requireAdmin><BrokerageHubPage /></ProtectedRoute>} />
-              <Route path="ops/boarding" element={<ProtectedRoute requireAdmin><BoardingHubPage /></ProtectedRoute>} />
-              <Route path="ops/boarding/facilities" element={<ProtectedRoute requireAdmin><FacilitiesPage /></ProtectedRoute>} />
-              <Route path="ops/boarding/agreements" element={<ProtectedRoute requireAdmin><BoardAgreementsPage /></ProtectedRoute>} />
-              <Route path="ops/boarding/charges" element={<ProtectedRoute requireAdmin><BoardChargesPage /></ProtectedRoute>} />
-              <Route path="ops/barnops" element={<ProtectedRoute requireAdmin><BarnopsHubPage /></ProtectedRoute>} />
-              <Route path="ops/barnops/resources" element={<ProtectedRoute requireAdmin><ResourcesPage /></ProtectedRoute>} />
-              <Route path="ops/barnops/consumption" element={<ProtectedRoute requireAdmin><ConsumptionLogPage /></ProtectedRoute>} />
-              <Route path="ops/barnops/allocation-rules" element={<ProtectedRoute requireAdmin><AllocationRulesPage /></ProtectedRoute>} />
+              <Route path="ops/brokerage" element={<ProtectedRoute requireStaff><BrokerageHubPage /></ProtectedRoute>} />
+              <Route path="ops/boarding" element={<ProtectedRoute requireStaff><BoardingHubPage /></ProtectedRoute>} />
+              <Route path="ops/boarding/facilities" element={<ProtectedRoute requireStaff><FacilitiesPage /></ProtectedRoute>} />
+              <Route path="ops/boarding/agreements" element={<ProtectedRoute requireStaff><BoardAgreementsPage /></ProtectedRoute>} />
+              <Route path="ops/boarding/charges" element={<ProtectedRoute requireStaff><BoardChargesPage /></ProtectedRoute>} />
+              <Route path="ops/barnops" element={<ProtectedRoute requireStaff><BarnopsHubPage /></ProtectedRoute>} />
+              <Route path="ops/barnops/resources" element={<ProtectedRoute requireStaff><ResourcesPage /></ProtectedRoute>} />
+              <Route path="ops/barnops/consumption" element={<ProtectedRoute requireStaff><ConsumptionLogPage /></ProtectedRoute>} />
+              <Route path="ops/barnops/allocation-rules" element={<ProtectedRoute requireStaff><AllocationRulesPage /></ProtectedRoute>} />
               {/* Lessons = servicing surface (trainers + admins) */}
               <Route path="ops/lessons" element={<ProtectedRoute requireStaff><LessonsHubPage /></ProtectedRoute>} />
               <Route path="ops/lessons/packages" element={<ProtectedRoute requireStaff><LessonPackagesPage /></ProtectedRoute>} />
               <Route path="ops/lessons/credits" element={<ProtectedRoute requireStaff><LessonCreditsPage /></ProtectedRoute>} />
               <Route path="ops/lessons/sessions" element={<ProtectedRoute requireStaff><SessionsPage /></ProtectedRoute>} />
-              <Route path="ops/records" element={<ProtectedRoute requireAdmin><RecordsHubPage /></ProtectedRoute>} />
-              <Route path="ops/records/horses/:horseId/parties" element={<ProtectedRoute requireAdmin><HorsePartiesPage /></ProtectedRoute>} />
-              <Route path="ops/records/horses/:horseId/health" element={<ProtectedRoute requireAdmin><HorseHealthPage /></ProtectedRoute>} />
-              <Route path="ops/employees" element={<ProtectedRoute requireAdmin><EmployeesHubPage /></ProtectedRoute>} />
-              <Route path="ops/employees/staff" element={<ProtectedRoute requireAdmin><StaffPage /></ProtectedRoute>} />
-              <Route path="ops/employees/schedule" element={<ProtectedRoute requireAdmin><SchedulePage /></ProtectedRoute>} />
+              <Route path="ops/records" element={<ProtectedRoute requireStaff><RecordsHubPage /></ProtectedRoute>} />
+              <Route path="ops/records/horses/:horseId/parties" element={<ProtectedRoute requireStaff><HorsePartiesPage /></ProtectedRoute>} />
+              <Route path="ops/records/horses/:horseId/health" element={<ProtectedRoute requireStaff><HorseHealthPage /></ProtectedRoute>} />
+              <Route path="ops/employees" element={<ProtectedRoute requireStaff><EmployeesHubPage /></ProtectedRoute>} />
+              <Route path="ops/employees/staff" element={<ProtectedRoute requireStaff><StaffPage /></ProtectedRoute>} />
+              <Route path="ops/employees/schedule" element={<ProtectedRoute requireStaff><SchedulePage /></ProtectedRoute>} />
               {/* Ops admin + superadmin (superadmin pages self-hide behind isSuperAdmin) */}
               <Route path="ops/admin/modules" element={<ProtectedRoute requireSuperAdmin><AdminModulesPage /></ProtectedRoute>} />
               <Route path="ops/admin/registry" element={<ProtectedRoute requireSuperAdmin><AdminRegistryPage /></ProtectedRoute>} />
