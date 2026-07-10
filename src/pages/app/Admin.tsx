@@ -7,7 +7,7 @@ import { useDocumentTitle } from '../../lib/hooks';
 import { supabase } from '../../lib/supabase';
 import {
   adminSetSuspended, adminClientAccounts, adminClientItems, adminSendInvitation,
-  adminExpireInvitation, adminDeleteInvitation, adminDeleteClient,
+  adminExpireInvitation, adminDeleteInvitation, adminAccountAction, adminHardDeleteClient,
   categoryDocumentDefaults, getContactRequiredDocuments, setContactRequiredDocuments,
   type ClientAccountRow, type ClientItems, type CategoryDocDefault,
 } from '../../lib/admin';
@@ -477,7 +477,8 @@ export default function Admin() {
   const [ov, setOv] = useState<Overview | null>(null);
   const [tab, setTab] = useState<TabId>('overview');
   const [tabPage, setTabPage] = useState(0);
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [dangerOpen, setDangerOpen] = useState(false);
+  const [hardConfirm, setHardConfirm] = useState('');
 
   const load = useCallback(() => {
     // login-backed clients + provisioned (no-login-yet) clients in one list
@@ -501,7 +502,7 @@ export default function Admin() {
 
   // isolated-account overview (login-backed accounts only)
   useEffect(() => {
-    setOv(null); setTab('overview'); setTabPage(0); setConfirmDelete(false);
+    setOv(null); setTab('overview'); setTabPage(0); setDangerOpen(false); setHardConfirm('');
     if (!selectedId || !selected?.user_id) return;
     supabase.rpc('admin_client_overview', { p_user_id: selected.user_id })
       .then(({ data, error: e }) => {
@@ -535,18 +536,25 @@ export default function Admin() {
     } catch { setError('Could not update the account.'); }
   }
 
-  async function deleteClient() {
+  async function doRemove(action: 'remove' | 'unremove' | 'soft') {
     if (!selected?.contact_id) return;
-    if (!confirmDelete) { setConfirmDelete(true); return; }
     try {
-      const { had_login } = await adminDeleteClient(selected.contact_id);
-      setConfirmDelete(false);
-      setSelectedId(null);
+      await adminAccountAction(selected.contact_id, action);
+      setDangerOpen(false);
+      if (action === 'soft') { setSelectedId(null); }
       load();
-      if (had_login) {
-        setError('Client removed. Their login was suspended and detached — full auth deletion needs the owner (service role).');
-      }
-    } catch { setError('Could not delete the client.'); }
+    } catch { setError('Could not update the account.'); }
+  }
+
+  async function doHardDelete() {
+    if (!selected?.contact_id || hardConfirm !== 'DELETE') return;
+    try {
+      await adminHardDeleteClient(selected.contact_id);
+      setDangerOpen(false); setHardConfirm(''); setSelectedId(null);
+      load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not delete the account.');
+    }
   }
 
   // ── stable fetchers for query tabs ──
@@ -700,21 +708,58 @@ export default function Admin() {
                     {selected.is_suspended ? 'Reinstate' : 'Suspend'}
                   </button>
                 )}
-                <button type="button" onClick={() => void deleteClient()}
-                  className={`px-3.5 py-2 rounded-lg text-xs font-medium focus-ring ${
-                    confirmDelete
-                      ? 'bg-red-600 text-white hover:bg-red-700'
-                      : 'border border-red-300 text-red-700 hover:bg-red-50'
-                  }`}>
-                  {confirmDelete ? 'Confirm delete' : 'Delete'}
+                <button type="button" onClick={() => setDangerOpen((v) => !v)}
+                  className="px-3.5 py-2 rounded-lg text-xs font-medium border border-red-300 text-red-700 hover:bg-red-50 focus-ring">
+                  Remove / Delete
                 </button>
               </span>
             </div>
-            {confirmDelete && (
-              <p className="text-[12px] text-red-700 mt-2">
-                Removes this client from the app. Signed documents and history are kept.
-                {selected.kind === 'account' ? ' Their login will be suspended and detached.' : ''}
-              </p>
+
+            {dangerOpen && (
+              <div className="mt-4 border border-red-200 rounded-lg p-4 bg-red-50/40 flex flex-col gap-3">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-green-900">Remove — reversible</p>
+                    <p className="text-[12px] text-muted">Deactivates the account. Login is blocked; you can reactivate any time. Nothing is deleted.</p>
+                  </div>
+                  <span className="flex gap-2 shrink-0">
+                    <button type="button" onClick={() => void doRemove('remove')}
+                      className="px-3.5 py-2 rounded-lg text-xs font-medium border border-green-800/20 text-green-800 hover:bg-white focus-ring">
+                      Remove
+                    </button>
+                    <button type="button" onClick={() => void doRemove('unremove')}
+                      className="px-3.5 py-2 rounded-lg text-xs font-medium border border-green-800/20 text-green-800 hover:bg-white focus-ring">
+                      Reactivate
+                    </button>
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-start justify-between gap-3 border-t border-red-200 pt-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-green-900">Soft delete — keep the data</p>
+                    <p className="text-[12px] text-muted">Removes them from the app but preserves all history and signed documents. Recoverable only at the database.</p>
+                  </div>
+                  <button type="button" onClick={() => void doRemove('soft')}
+                    className="px-3.5 py-2 rounded-lg text-xs font-medium border border-red-300 text-red-700 hover:bg-white focus-ring shrink-0">
+                    Soft delete
+                  </button>
+                </div>
+                <div className="border-t border-red-200 pt-3">
+                  <p className="text-sm font-medium text-red-700">Hard delete — nuclear, irreversible</p>
+                  <p className="text-[12px] text-muted mb-2">
+                    Erases all traces: the login and their records. Refused if a signed agreement references them.
+                    Type <span className="font-mono font-semibold">DELETE</span> to enable.
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <input value={hardConfirm} onChange={(e) => setHardConfirm(e.target.value)}
+                      placeholder="DELETE"
+                      className="px-3 py-2 rounded-lg border border-red-300 text-sm focus-ring w-32" />
+                    <button type="button" disabled={hardConfirm !== 'DELETE'} onClick={() => void doHardDelete()}
+                      className="px-3.5 py-2 rounded-lg text-xs font-medium bg-red-600 text-white hover:bg-red-700 focus-ring disabled:opacity-40 disabled:cursor-not-allowed">
+                      Hard delete
+                    </button>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
 
