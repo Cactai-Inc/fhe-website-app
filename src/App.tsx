@@ -80,6 +80,7 @@ import IntakePage from './pages/app/ops/IntakePage';
 import TeamPage from './pages/app/ops/TeamPage';
 import AccountInvitePage from './pages/app/ops/AccountInvitePage';
 import NewContractPage from './pages/app/ops/NewContractPage';
+import AdminFormsPage from './pages/app/ops/admin/AdminFormsPage';
 import AvailabilityPage from './pages/app/ops/AvailabilityPage';
 import PaymentReviewPage from './pages/app/ops/PaymentReviewPage';
 import BrokerageHubPage from './pages/app/ops/hubs/BrokerageHubPage';
@@ -266,6 +267,7 @@ export function AppRoutes() {
               <Route path="ops/admin/registry" element={<ProtectedRoute requireSuperAdmin><AdminRegistryPage /></ProtectedRoute>} />
               <Route path="ops/admin/branding" element={<ProtectedRoute requireAdmin><AdminBrandingPage /></ProtectedRoute>} />
               <Route path="ops/admin/products" element={<ProtectedRoute requireAdmin><AdminProductsPage /></ProtectedRoute>} />
+              <Route path="ops/admin/forms" element={<ProtectedRoute requireAdmin><AdminFormsPage /></ProtectedRoute>} />
               <Route path="ops/superadmin/provision" element={<ProtectedRoute requireSuperAdmin><ProvisionTenantPage /></ProtectedRoute>} />
               <Route path="ops/superadmin/organizations" element={<ProtectedRoute requireSuperAdmin><OrganizationsPage /></ProtectedRoute>} />
               <Route path="ops/superadmin/organizations/:id" element={<ProtectedRoute requireSuperAdmin><TenantDetailPage /></ProtectedRoute>} />

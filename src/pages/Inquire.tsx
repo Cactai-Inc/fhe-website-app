@@ -70,6 +70,18 @@ export default function Inquire() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!form) return;
+    // required checkbox groups: HTML's required attr can't gate a group
+    for (const section of form.schema.sections) {
+      for (const f of section.fields) {
+        if (f.required && f.type === 'checkbox' && f.options?.length) {
+          const v = values[f.key];
+          if (!Array.isArray(v) || v.length === 0) {
+            setError(`Please answer "${f.label}".`);
+            return;
+          }
+        }
+      }
+    }
     // only answered fields travel; empty strings / empty checkbox sets are noise
     const payload: Record<string, string | string[]> = {};
     for (const [k, v] of Object.entries(values)) {
@@ -161,7 +173,7 @@ export default function Inquire() {
                                 : [];
                               return (
                                 <fieldset key={id} className="sm:col-span-2">
-                                  <legend className="form-label">{field.label}</legend>
+                                  <legend className="form-label">{field.label}{field.required && <span className="text-red-700"> *</span>}</legend>
                                   <div className="flex flex-wrap gap-x-6 gap-y-2 mt-1">
                                     {field.options.map((option) => (
                                       <label key={option} className="inline-flex items-center gap-2 text-sm text-secondary">
@@ -179,10 +191,11 @@ export default function Inquire() {
                             }
                             return (
                               <div key={id}>
-                                <label className="form-label" htmlFor={id}>{field.label}</label>
+                                <label className="form-label" htmlFor={id}>{field.label}{field.required && <span className="text-red-700"> *</span>}</label>
                                 <input
                                   id={id}
                                   type={inputTypeFor(field)}
+                                  required={field.required === true}
                                   className="form-input"
                                   value={typeof values[field.key] === 'string' ? (values[field.key] as string) : ''}
                                   onChange={(e) => setValue(field.key, e.target.value)}
