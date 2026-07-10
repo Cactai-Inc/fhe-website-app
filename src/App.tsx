@@ -64,6 +64,7 @@ import Community from './pages/app/Community';
 import Market from './pages/app/Market';
 import HostEvent from './pages/app/HostEvent';
 import Support from './pages/app/Support';
+import ContractPage from './pages/app/ContractPage';
 import AccountHub from './pages/app/AccountHub';
 import VerifyEmailScreen from './components/app/VerifyEmailScreen';
 import { verifyWithPassword, verifyWithGoogle } from './lib/emailChange';
@@ -223,6 +224,9 @@ export function AppRoutes() {
               <Route path="profile" element={<Profile />} />
               <Route path="support" element={<Support />} />
               <Route path="account" element={<AccountHub />} />
+              {/* Negotiated contracts (Update A): owner authoring + counterparty
+                  intake→review→sign. Notification links target this route. */}
+              <Route path="contracts/:id" element={<ContractPage />} />
               {/* Admin (additionally requires admin) */}
               <Route path="admin" element={<ProtectedRoute requireAdmin><Admin /></ProtectedRoute>} />
 

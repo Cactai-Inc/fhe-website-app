@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { validateInvitation, upsertMyProfile, redeemInvitation } from '../lib/api';
+import { redeemContractInvitation } from '../lib/contracts';
 import { signInWithGoogle } from '../lib/auth';
 import { OAUTH_PROVIDERS } from '../lib/authConfig';
 import { supabase } from '../lib/supabase';
@@ -15,8 +16,21 @@ export default function Register() {
   useDocumentTitle('Create Your Account');
   const [params] = useSearchParams();
   const token = params.get('token') || '';
+  // Contract-counterparty invites (Update A, spec G): redemption links the party
+  // contact instead of granting community membership, and lands on the contract.
+  const isContractInvite = params.get('kind') === 'contract';
   const navigate = useNavigate();
   const { signUp } = useAuth();
+
+  /** Redeem per invite kind; returns the post-redemption destination. */
+  async function redeemByKind(): Promise<string> {
+    if (isContractInvite) {
+      const documentId = await redeemContractInvitation(token);
+      return `/app/contracts/${documentId}`;
+    }
+    await redeemInvitation(token);
+    return '/app';
+  }
 
   const [state, setState] = useState<State>('checking');
   const [invitation, setInvitation] = useState<Invitation | null>(null);
@@ -44,8 +58,8 @@ export default function Register() {
         const sessionEmail = sessionData.session?.user?.email?.toLowerCase();
         if (sessionEmail && sessionEmail === inv.email.trim().toLowerCase()) {
           try {
-            await redeemInvitation(token);
-            navigate('/app', { replace: true });
+            const dest = await redeemByKind();
+            navigate(dest, { replace: true });
             return;
           } catch {
             /* fall through to the normal form */
@@ -70,6 +84,7 @@ export default function Register() {
       token,
       email: invitation.email,
       request_id: invitation.request_id ?? null,
+      kind: isContractInvite ? 'contract' : 'community',
     }));
     const { error: oauthError } = await signInWithGoogle('/register/complete');
     if (oauthError) {
@@ -112,7 +127,9 @@ export default function Register() {
     }
 
     try {
-      await redeemInvitation(token); // membership grant — the whole point of the invite
+      const dest = await redeemByKind(); // membership grant, or contract-party link
+      navigate(dest, { replace: true });
+      return;
     } catch {
       // token consumed by a parallel attempt or expired mid-flow; the account
       // exists, and for provisioned clients membership self-heals at sign-in
@@ -120,7 +137,6 @@ export default function Register() {
       navigate('/app', { replace: true });
       return;
     }
-    navigate('/app', { replace: true });
   }
 
   if (state === 'checking') {

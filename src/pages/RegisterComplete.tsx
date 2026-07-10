@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { validateInvitation, upsertMyProfile, redeemInvitation } from '../lib/api';
+import { redeemContractInvitation } from '../lib/contracts';
 import { useDocumentTitle } from '../lib/hooks';
 
 type State = 'working' | 'done' | 'mismatch' | 'invalid';
@@ -33,7 +34,7 @@ export default function RegisterComplete() {
         if (active) setState('invalid');
         return;
       }
-      let stash: { token: string; email: string; request_id: string | null };
+      let stash: { token: string; email: string; request_id: string | null; kind?: string };
       try {
         stash = JSON.parse(raw);
       } catch {
@@ -76,8 +77,16 @@ export default function RegisterComplete() {
       } catch {
         // best-effort, same as the password path
       }
+      let dest = '/app';
       try {
-        await redeemInvitation(stash.token);
+        if (stash.kind === 'contract') {
+          // contract-counterparty invite: link the party contact, no membership,
+          // and land ON the contract (Update A, spec G)
+          const documentId = await redeemContractInvitation(stash.token);
+          dest = `/app/contracts/${documentId}`;
+        } else {
+          await redeemInvitation(stash.token);
+        }
       } catch {
         // consumed/expired mid-flow — account exists, membership self-heals for
         // provisioned clients (ensure_my_membership); land in the app.
@@ -88,7 +97,7 @@ export default function RegisterComplete() {
       window.localStorage.removeItem('fhe-invite');
       if (active) {
         setState('done');
-        navigate('/app', { replace: true });
+        navigate(dest, { replace: true });
       }
     })();
     return () => {
