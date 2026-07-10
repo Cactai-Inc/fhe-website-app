@@ -104,7 +104,7 @@ export default function AccountInvitePage() {
   }
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-5xl">
       <Link to="/app/admin"
         className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-green-800 mb-4">
         <ArrowLeft size={14} /> Clients
@@ -139,7 +139,7 @@ export default function AccountInvitePage() {
         <div className="mb-6">
           <span className="form-label">Client categories</span>
           <p className="text-sm text-muted mb-2.5">What kind of client they are — check everything that applies.</p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
             {CLIENT_CATEGORIES.map((c) => (
               <label key={c}
                 className={`flex items-center gap-2.5 px-4 py-3 rounded-lg border cursor-pointer text-[15px] ${
@@ -162,7 +162,7 @@ export default function AccountInvitePage() {
             account. Category picks prefill this — you decide the final set, and the
             invitation email lists it.
           </p>
-          <div className="grid sm:grid-cols-2 gap-2.5">
+          <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
             {templates.map((t) => (
               <label key={t.key}
                 className={`flex items-start gap-2.5 px-4 py-3 rounded-lg border cursor-pointer ${

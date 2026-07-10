@@ -553,7 +553,7 @@ export default function Admin() {
   }, [selectedId]);
 
   return (
-    <div className="max-w-6xl">
+    <div className="max-w-none">
       <div className="flex items-center justify-between mb-1">
         <h1 className="font-serif text-2xl text-green-900">Clients</h1>
         {!selected && (

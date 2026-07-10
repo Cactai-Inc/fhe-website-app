@@ -455,3 +455,8 @@ VALUES ('ONBOARDING', 'Account Onboarding',
         'Administrative engagement carrying the first-login paperwork assigned to a new client.',
         'support', false, true, 99)
 ON CONFLICT (code) DO NOTHING;
+
+-- Owner 2026-07-10: the media-release language is already a clause inside the
+-- liability releases (verified in RELEASE_PARTICIPANT / RELEASE_GENERAL /
+-- RELEASE_HORSE_CARE bodies) — the standalone template is retired.
+UPDATE contract_templates SET active = false WHERE template_key = 'MEDIA_RELEASE';
