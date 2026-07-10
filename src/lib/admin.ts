@@ -343,13 +343,29 @@ export async function adminDeleteInvitation(id: string): Promise<void> {
   if (error) throw error;
 }
 
-/** Remove a client from the app. Provisioned → gone; login-backed → suspended
- *  + detached (the auth user needs service-role deletion). History preserved.
- *  Returns had_login so the UI can note a residual login. */
-export async function adminDeleteClient(contactId: string): Promise<{ had_login: boolean }> {
-  const { data, error } = await supabase.rpc('admin_delete_client', { p_contact_id: contactId });
+/** Reversible deactivate / reactivate / soft-delete (keep data, remove user). */
+export async function adminAccountAction(
+  contactId: string, action: 'remove' | 'unremove' | 'soft',
+): Promise<{ had_login: boolean }> {
+  const { data, error } = await supabase.rpc('admin_account_action', {
+    p_contact_id: contactId, p_action: action,
+  });
   if (error) throw error;
   return { had_login: (data as { had_login?: boolean })?.had_login === true };
+}
+
+/** NUCLEAR: remove all traces (service-role endpoint). Irreversible. */
+export async function adminHardDeleteClient(contactId: string): Promise<{ deletedUser: boolean }> {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData.session?.access_token;
+  const res = await fetch('/api/hard-delete-client', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: JSON.stringify({ contactId }),
+  });
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(payload.error || 'Could not delete the account.');
+  return { deletedUser: payload.deletedUser === true };
 }
 
 export async function adminClientAccounts(): Promise<ClientAccountRow[]> {
