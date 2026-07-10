@@ -52,6 +52,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(404).json({ error: `no ${partyRole} party on this contract` });
     }
 
+    // Invitation language derives from THIS party's document controls + whether
+    // any of their fields still need filling — never promise an action the
+    // controls don't allow.
+    const { data: ctrl } = await db
+      .from('document_party_controls')
+      .select('can_fill, can_edit_deal, can_suggest')
+      .eq('document_id', documentId).eq('party_role', partyRole.toUpperCase())
+      .maybeSingle();
+    const { data: unfilled } = await db
+      .from('contract_fields')
+      .select('id')
+      .eq('document_id', documentId).eq('owner_role', partyRole.toUpperCase())
+      .or('value.is.null,value.eq.');
+    const canFill = ctrl?.can_fill ?? true;
+    const needsInfo = canFill && (unfilled?.length ?? 0) > 0;
+    const actions: string[] = [];
+    if (needsInfo) actions.push('add your information');
+    if (ctrl?.can_edit_deal) actions.push('review and edit the terms');
+    else if (ctrl?.can_suggest) actions.push('review and suggest changes');
+    else actions.push('review the terms');
+    const actionPhrase = `${actions.join(', ')}, and sign`;
+
     const { data: inv, error: invErr } = await db.rpc('invite_contract_counterparty', {
       p_document_id: documentId, p_contact_id: party.contact_id, p_email: email,
     });
@@ -72,8 +94,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         `<p>Hello,</p>` +
         `<p><strong>${doc.title ?? 'A contract'}</strong> has been prepared for you.</p>` +
         `<p><a href="${link}">Open the contract</a> — sign in with Google if this is a Gmail address, ` +
-        `or set a password with this email. You'll land directly on the contract to complete your ` +
-        `information, review, and sign.</p>` +
+        `or set a password with this email. You'll land directly on the contract to ${actionPhrase}.</p>` +
         `<p style="color:#666;font-size:12px">This link is personal to ${email} and expires in 14 days.<br/>${link}</p>` +
         (identity.footer ? `<hr/><p style="color:#666;font-size:12px;white-space:pre-line">${identity.footer}</p>` : ''),
     });

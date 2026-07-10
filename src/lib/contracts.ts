@@ -31,7 +31,23 @@ export interface ContractSignature {
   signed_at: string | null;
 }
 
+export interface PartyControls {
+  party_role: string;
+  can_fill: boolean;
+  can_edit_deal: boolean;
+  can_suggest: boolean;
+}
+
+export interface ContractMessage {
+  id: string;
+  sender_label: string;
+  sender_user_id: string | null;
+  body: string;
+  created_at: string;
+}
+
 export interface ContractDetail {
+  party_controls?: PartyControls[];
   document: {
     document_id: string;
     title: string;
@@ -180,4 +196,48 @@ export function composeCostPhrase(
   if (responsibility === 'Lessor') return 'Lessor 100%';
   const lp = Math.max(0, Math.min(100, lessorPct ?? 50));
   return `Lessor ${lp}% / Lessee ${100 - lp}%`;
+}
+
+// ─── Per-party document controls + company origination + messages ────────────
+/** Set one party's controls: can they add their information, edit deal terms,
+ *  suggest changes. The invitation language derives from these. */
+export async function setPartyControls(
+  documentId: string, role: string,
+  controls: { can_fill: boolean; can_edit_deal: boolean; can_suggest: boolean },
+): Promise<void> {
+  const { error } = await supabase.rpc('set_party_controls', {
+    p_document_id: documentId, p_role: role,
+    p_can_fill: controls.can_fill,
+    p_can_edit_deal: controls.can_edit_deal,
+    p_can_suggest: controls.can_suggest,
+  });
+  if (error) throw error;
+}
+
+/** The company originates every contract — stamp the staff creator. */
+export async function claimDocumentOrigination(documentId: string): Promise<void> {
+  const { error } = await supabase.rpc('claim_document_origination', { p_document_id: documentId });
+  if (error) throw error;
+}
+
+/** Hand the HORSE.* section to one of the parties to fill in. */
+export async function assignHorseSection(documentId: string, role: string): Promise<number> {
+  const { data, error } = await supabase.rpc('assign_horse_section', {
+    p_document_id: documentId, p_role: role,
+  });
+  if (error) throw error;
+  return data as number;
+}
+
+export async function contractMessagesList(documentId: string): Promise<ContractMessage[]> {
+  const { data, error } = await supabase.rpc('contract_messages_list', { p_document_id: documentId });
+  if (error) throw error;
+  return (data ?? []) as ContractMessage[];
+}
+
+export async function contractMessagePost(documentId: string, body: string): Promise<void> {
+  const { error } = await supabase.rpc('contract_message_post', {
+    p_document_id: documentId, p_body: body,
+  });
+  if (error) throw error;
 }

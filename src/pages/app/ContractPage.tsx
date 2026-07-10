@@ -9,8 +9,9 @@ import { useAuth } from '../../contexts/AuthContext';
 import {
   contractDocumentDetail, setContractField, requestDocumentChange,
   resolveChangeRequest, advanceWorkflow, lockAndSign, confirmHorseSection,
-  reopenHorseSection, setRecipientEditing, inviteCounterparty, composeCostPhrase,
-  type ContractDetail, type ContractField,
+  reopenHorseSection, inviteCounterparty, composeCostPhrase,
+  setPartyControls, contractMessagesList, contractMessagePost,
+  type ContractDetail, type ContractField, type ContractMessage, type PartyControls,
 } from '../../lib/contracts';
 
 /**
@@ -40,7 +41,7 @@ function FieldInput({
     try { await onSave(f.field_key, val); } finally { setSaving(false); }
   }
 
-  const base = 'w-full px-3 py-2 rounded-lg border border-green-800/15 text-sm text-green-900 focus-ring disabled:bg-green-800/[0.04] disabled:text-muted';
+  const base = 'w-full px-3.5 py-2.5 rounded-lg border border-green-800/15 text-[15px] text-green-900 focus-ring disabled:bg-green-800/[0.04] disabled:text-muted';
   if (!f.can_edit) {
     return <p className="text-sm text-green-900 whitespace-pre-line min-h-[1.5rem]">{f.value || <span className="text-muted">—</span>}</p>;
   }
@@ -132,11 +133,14 @@ export default function ContractPage() {
   const [crFieldKey, setCrFieldKey] = useState<string | null>(null);
   const [crText, setCrText] = useState('');
   const [showBody, setShowBody] = useState(false);
+  const [messages, setMessages] = useState<ContractMessage[]>([]);
+  const [msgText, setMsgText] = useState('');
 
   const load = useCallback(async () => {
     if (!id) return;
     try {
       setDetail(await contractDocumentDetail(id));
+      contractMessagesList(id).then(setMessages).catch(() => setMessages([]));
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not load the contract.');
@@ -154,6 +158,9 @@ export default function ContractPage() {
   const iSigned = (detail?.signatures ?? []).some(
     (s) => s.signed_at && myRoles.includes(s.party_role));
   const counterpartySigned = (detail?.signatures ?? []).some((s) => s.signed_at);
+  const partyControls: PartyControls[] = detail?.party_controls ?? [];
+  const mySuggest = partyControls.some((c) => myRoles.includes(c.party_role) && c.can_suggest)
+    || (doc?.recipient_editing ?? false);
   // the seats an outside party can be invited into (not mine, not the company's)
   const invitableRoles = Array.from(new Set((detail?.signatures ?? [])
     .map((s) => s.party_role)
@@ -211,8 +218,8 @@ export default function ContractPage() {
       </div>
       <p className="text-sm text-muted mb-5">
         {isOwnerSide
-          ? 'You are authoring this contract. Fill the terms, confirm the horse information, share, then sign last.'
-          : 'Complete your information below, review the finished document, and sign.'}
+          ? 'The company originates this contract. Fill any side\u2019s fields \u2014 acting on behalf of a party where needed \u2014 set the controls, lock, then invite.'
+          : 'Complete your information below, review the finished document, and sign \u2014 or message the other party.'}
       </p>
 
       {error && <p role="alert" className="form-error mb-3">{error}</p>}
@@ -230,15 +237,45 @@ export default function ContractPage() {
         </div>
       )}
 
-      {/* Owner-side controls */}
+      {/* Owner-side: per-party document controls + invite */}
       {isOwnerSide && editablePhase && (
-        <div className="bg-white border border-green-800/10 rounded-lg p-4 mb-5 flex flex-wrap items-center gap-3">
-          <label className="inline-flex items-center gap-2 text-sm text-secondary">
-            <input type="checkbox" checked={doc.recipient_editing}
-              onChange={(e) => void act(() => setRecipientEditing(id!, e.target.checked))} />
-            Counterparty may suggest changes
-          </label>
-          <div className="flex items-center gap-2 ml-auto flex-wrap">
+        <div className="bg-white border border-green-800/10 rounded-lg p-4 mb-5">
+          <p className="text-[12px] text-muted mb-2.5">
+            Document controls — what each party may do. The invitation wording follows these.
+          </p>
+          <div className="grid sm:grid-cols-2 gap-3 mb-3">
+            {invitableRoles.concat(partyControls.map((c) => c.party_role))
+              .filter((r, i, a) => a.indexOf(r) === i && r !== 'FHE' && r !== 'COMPANY')
+              .map((role) => {
+                const c = partyControls.find((x) => x.party_role === role)
+                  ?? { party_role: role, can_fill: true, can_edit_deal: false, can_suggest: false };
+                const save = (patch: Partial<PartyControls>) => void act(() =>
+                  setPartyControls(id!, role, { ...c, ...patch }));
+                return (
+                  <div key={role} className="border border-green-800/10 rounded-lg px-3.5 py-2.5">
+                    <p className="text-[12.5px] font-medium text-green-900 mb-1.5">{role.charAt(0) + role.slice(1).toLowerCase()}</p>
+                    <div className="flex flex-col gap-1.5 text-[12.5px] text-secondary">
+                      <label className="inline-flex items-center gap-2">
+                        <input type="checkbox" className="accent-green-700" checked={c.can_fill}
+                          onChange={(e) => save({ can_fill: e.target.checked })} />
+                        Can add their information
+                      </label>
+                      <label className="inline-flex items-center gap-2">
+                        <input type="checkbox" className="accent-green-700" checked={c.can_edit_deal}
+                          onChange={(e) => save({ can_edit_deal: e.target.checked })} />
+                        Can edit deal terms
+                      </label>
+                      <label className="inline-flex items-center gap-2">
+                        <input type="checkbox" className="accent-green-700" checked={c.can_suggest}
+                          onChange={(e) => save({ can_suggest: e.target.checked })} />
+                        Can suggest changes
+                      </label>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
             <input type="email" placeholder="counterparty@email.com" value={inviteEmail}
               onChange={(e) => setInviteEmail(e.target.value)}
               className="px-3 py-1.5 rounded-lg border border-green-800/15 text-sm focus-ring w-52" />
@@ -268,7 +305,7 @@ export default function ContractPage() {
         // counterparty intake: show only sections with something for them (or filled)
         if (!isOwnerSide && !anyEditable && !fields.some((f) => f.value)) return null;
         return (
-          <section key={section} className="bg-white border border-green-800/10 rounded-lg p-5 mb-4">
+          <section key={section} className="bg-white border border-green-800/10 rounded-xl p-6 mb-5">
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-serif text-green-800">{section}</h2>
               {isHorse && (
@@ -292,14 +329,14 @@ export default function ContractPage() {
                 )
               )}
             </div>
-            <div className="grid sm:grid-cols-2 gap-x-5 gap-y-3">
+            <div className="flex flex-col gap-5 max-w-xl">
               {fields.map((f) => (
                 <div key={f.field_key} className={f.value_type === 'longtext' ? 'sm:col-span-2' : ''}>
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <span className="text-[11.5px] font-medium text-secondary">{f.label ?? f.field_key}</span>
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <span className="text-[13.5px] font-medium text-green-900">{f.label ?? f.field_key}</span>
                     {f.required && <span className="text-red-700 text-xs">*</span>}
                     {/* counterparty change-request affordance on DEAL fields */}
-                    {!isOwnerSide && doc.recipient_editing && f.owner_role === 'DEAL'
+                    {!isOwnerSide && mySuggest && f.owner_role === 'DEAL'
                       && !f.can_edit && editablePhase && (
                       <button type="button" className="text-muted hover:text-gold-ink" title="Request a change"
                         onClick={() => { setCrFieldKey(f.field_key); setCrText(''); }}>
@@ -456,6 +493,42 @@ export default function ContractPage() {
           )}
         </section>
       )}
+
+      {/* Contract messages — parties talk here; the company sees every message
+          (deal-conversation oversight), whichever side it serves. */}
+      <section className="bg-white border border-green-800/10 rounded-xl p-5 mt-5">
+        <h2 className="font-serif text-green-800 mb-1">Messages</h2>
+        <p className="text-[12px] text-muted mb-3">
+          {isOwnerSide
+            ? 'Everything said on this contract, both sides.'
+            : state === 'locked' && !iSigned
+              ? 'Not ready to sign? Say why here — the other party and the company are notified.'
+              : 'Questions or negotiation notes — the other party and the company see these.'}
+        </p>
+        <div className="flex flex-col gap-2 mb-3 max-h-72 overflow-y-auto">
+          {messages.length === 0 && <p className="text-sm text-muted">No messages yet.</p>}
+          {messages.map((m) => (
+            <div key={m.id} className="border border-green-800/10 rounded-lg px-3.5 py-2.5">
+              <p className="text-[11px] text-muted mb-0.5">
+                {m.sender_label} · {new Date(m.created_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+              </p>
+              <p className="text-sm text-green-900 whitespace-pre-line">{m.body}</p>
+            </div>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <textarea rows={2} value={msgText} onChange={(e) => setMsgText(e.target.value)}
+            placeholder="Write a message about this contract…"
+            className="flex-1 px-3.5 py-2.5 rounded-lg border border-green-800/15 text-sm focus-ring resize-none" />
+          <button type="button" className="btn-primary text-xs self-end" disabled={!msgText.trim()}
+            onClick={() => void act(async () => {
+              await contractMessagePost(id!, msgText.trim());
+              setMsgText('');
+            })}>
+            Send
+          </button>
+        </div>
+      </section>
     </div>
   );
 }

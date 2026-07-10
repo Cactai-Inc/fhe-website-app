@@ -59,6 +59,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const db = getSupabaseAdmin();
 
+    // Contract reminder sweep runs with the daily nudge: locked-but-unsigned
+    // follow-ups, approaching lease starts, approaching lease expirations.
+    // Failures never block the digest.
+    try { await db.rpc('contract_reminder_sweep'); } catch { /* sweep is best-effort */ }
+
     // Lease-expiry producer (Update A, spec H.11): inserts 'lease_expiring'
     // notifications for lessees/owners 30/7/1 days before lease_end. The rows it
     // creates ride the same email nudge below on the next pass. Best-effort.
