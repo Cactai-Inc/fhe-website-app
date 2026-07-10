@@ -266,8 +266,8 @@ export default function NewContractPage() {
       </button>
       <p className="text-[11px] text-muted mt-2">
         Nothing is emailed yet. Fill the fields (acting for a party where needed),
-        lock it, then send the invitation from the contract — its wording follows
-        the controls you set above.
+        lock it, then send ONE invitation from the person's account page — it
+        lists everything assigned to them, worded by the controls you set above.
       </p>
     </div>
   );

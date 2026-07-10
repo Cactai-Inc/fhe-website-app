@@ -15,6 +15,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { toErrorMessage } from '../../../lib/ops/errors';
 import { Helmet } from 'react-helmet-async';
+import { Link } from 'react-router-dom';
 import { listDocuments } from '../../../lib/api';
 import type { DocumentRow } from '../../../lib/ops/types';
 import { EmptyState } from '../../../lib/ops';
@@ -64,7 +65,13 @@ export default function DocumentsQueuePage() {
         <title>Documents — Work queue</title>
       </Helmet>
       <p className="eyebrow mb-2">Ops</p>
-      <h1 className="heading-section text-green-800 mb-8">Documents</h1>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="heading-section text-green-800">Documents</h1>
+        <Link to="/app/ops/contracts/new"
+          className="px-4 py-2 rounded-lg bg-green-800 text-white text-sm font-medium hover:bg-green-700 focus-ring">
+          + New contract
+        </Link>
+      </div>
 
       {error ? (
         <div role="alert" className="py-8">

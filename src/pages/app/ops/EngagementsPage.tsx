@@ -8,7 +8,7 @@
  */
 import { useEffect, useState } from 'react';
 import { toErrorMessage } from '../../../lib/ops/errors';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { listEngagements } from '../../../lib/api';
 import { useDocumentTitle } from '../../../lib/hooks';
 import { EngagementTable } from '../../../components/ops/engagements/EngagementTable';
@@ -43,7 +43,13 @@ export default function EngagementsPage() {
   return (
     <div className="max-w-5xl">
       <p className="eyebrow mb-2">Ops</p>
-      <h1 className="heading-section text-green-800 mb-8">Engagements</h1>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="heading-section text-green-800">Engagements</h1>
+        <Link to="/app/ops/engagements/new"
+          className="px-4 py-2 rounded-lg bg-green-800 text-white text-sm font-medium hover:bg-green-700 focus-ring">
+          + New engagement
+        </Link>
+      </div>
 
       {error ? (
         <p role="alert" className="form-error text-sm">
