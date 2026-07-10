@@ -11,6 +11,7 @@ This Agreement applies at any ranch, barn, arena, stable, tack room, trail, leas
 1. HORSE INFORMATION
 
 Horse Name: {{HORSE.REGISTERED_NAME}}
+Microchip: {{HORSE.MICROCHIP}}
 Barn Name: {{HORSE.BARN_NAME}}
 Breed: {{HORSE.BREED}}
 Color: {{HORSE.COLOR}}
