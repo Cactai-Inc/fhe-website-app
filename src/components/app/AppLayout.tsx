@@ -228,7 +228,7 @@ export default function AppLayout() {
   return (
     <div className="min-h-screen bg-cream">
       <header className="sticky top-0 z-40 bg-white border-b border-green-800/10">
-        <div className="max-w-6xl mx-auto flex items-center justify-between px-4 sm:px-6 h-14">
+        <div className="w-full max-w-[120rem] mx-auto flex items-center justify-between px-4 sm:px-8 h-14">
           {isSuperAdmin ? (
             /* the PLATFORM operator's chrome — never a tenant's brand. Placeholder
                wordmark until the platform product is named/branded. */
@@ -316,9 +316,9 @@ export default function AppLayout() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto flex">
+      <div className="w-full max-w-[120rem] mx-auto flex">
         {showRail && (
-          <aside className="hidden lg:block w-56 shrink-0 border-r border-green-800/10 bg-cream-100/40">
+          <aside className="hidden lg:block w-60 xl:w-64 shrink-0 border-r border-green-800/10 bg-cream-100/40">
             <nav className="p-3 sticky top-14 h-[calc(100dvh-3.5rem)] overflow-y-auto">
               <p className="px-3 pt-1 pb-2 text-[10px] tracking-widest uppercase text-muted font-semibold">
                 {isSuperAdmin ? 'Platform' : isAdmin ? 'Management' : 'Servicing'}
@@ -347,7 +347,7 @@ export default function AppLayout() {
             </nav>
           </aside>
         )}
-        <main className="flex-1 min-w-0 px-4 sm:px-6 py-6 sm:py-9 pb-24">
+        <main className="flex-1 min-w-0 px-4 sm:px-8 xl:px-12 py-6 sm:py-9 pb-24">
           <Outlet />
         </main>
       </div>
