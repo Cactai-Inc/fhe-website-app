@@ -2092,3 +2092,32 @@ export async function contractDocumentDetail(documentId: string): Promise<Contra
   if (error) throw error;
   return data as ContractDocumentDetail;
 }
+
+// ─── Contact directory (staff) ───────────────────────────────────────────────
+/** A directory row: the contact plus the relationship signals its visible
+ *  designations derive from (staff_contact_directory RPC). */
+export interface DirectoryContact {
+  id: string;
+  display_code: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  phone: string | null;
+  tags: string[] | null;
+  notes: string | null;
+  created_at: string;
+  linked_user_id: string | null;
+  linked_role: string | null;
+  is_client: boolean;
+  party_roles: string[];
+  horses_owned: number;
+  horses_leased: number;
+  engagement_count: number;
+  document_count: number;
+}
+
+export async function staffContactDirectory(): Promise<DirectoryContact[]> {
+  const { data, error } = await supabase.rpc('staff_contact_directory');
+  if (error) throw error;
+  return (data ?? []) as DirectoryContact[];
+}

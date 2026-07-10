@@ -70,6 +70,7 @@ const PLATFORM_NAV: NavItem[] = [
  * primary job. */
 const FRONTDESK_GROUP: NavItem[] = [
   { to: '/app/ops/intake', label: 'Inbound', icon: Mail },
+  { to: '/app/ops/leads', label: 'Leads', icon: Contact },
   { to: '/app/ops/support', label: 'Support', icon: LifeBuoy, adminOnly: true },
 ];
 /* ACCOUNTS — who we know: customers (Clients), internal accounts (Team), and
@@ -77,7 +78,7 @@ const FRONTDESK_GROUP: NavItem[] = [
 const ACCOUNTS_GROUP: NavItem[] = [
   { to: '/app/admin', label: 'Clients', icon: Users, adminOnly: true },
   { to: '/app/ops/team', label: 'Team', icon: Contact, adminOnly: true },
-  { to: '/app/ops/contacts', label: 'Contacts', icon: Contact },
+  { to: '/app/ops/contacts', label: 'Directory', icon: Contact },
 ];
 const SERVICING_GROUP: NavItem[] = [
   { to: '/app/ops/lessons', label: 'Lessons', icon: GraduationCap, module: 'mod.lessons' },

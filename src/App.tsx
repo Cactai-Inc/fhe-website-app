@@ -60,7 +60,7 @@ import { verifyWithPassword, verifyWithGoogle } from './lib/emailChange';
 import Admin from './pages/app/Admin';
 // Ops / CRM (staff/admin)
 import OpsHome from './pages/app/OpsHome';
-import ContactsPage from './pages/app/ops/ContactsPage';
+import ContactsPage, { LeadsPage } from './pages/app/ops/ContactsPage';
 import HorsesPage from './pages/app/ops/HorsesPage';
 import HorseRecordsPage from './pages/app/ops/HorseRecordsPage';
 import EngagementsPage from './pages/app/ops/EngagementsPage';
@@ -217,6 +217,7 @@ export function AppRoutes() {
               <Route path="ops" element={<ProtectedRoute requireStaff><OpsHome /></ProtectedRoute>} />
               {/* Servicing subset — trainers + admins */}
               <Route path="ops/contacts" element={<ProtectedRoute requireStaff><ContactsPage /></ProtectedRoute>} />
+              <Route path="ops/leads" element={<ProtectedRoute requireStaff><LeadsPage /></ProtectedRoute>} />
               <Route path="ops/horses" element={<ProtectedRoute requireStaff><HorsesPage /></ProtectedRoute>} />
               <Route path="ops/horse-records" element={<ProtectedRoute requireStaff><HorseRecordsPage /></ProtectedRoute>} />
               <Route path="ops/engagements" element={<ProtectedRoute requireStaff><EngagementsPage /></ProtectedRoute>} />
