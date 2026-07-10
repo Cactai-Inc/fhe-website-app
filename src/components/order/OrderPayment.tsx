@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { Landmark, CreditCard, Copy, Check } from 'lucide-react';
-import { markAwaitingPayment } from '../../lib/api';
+import { useEffect, useState } from 'react';
+import { Landmark, CreditCard, Copy, Check, Smartphone } from 'lucide-react';
+import QRCode from 'qrcode';
+import { markAwaitingPayment, configValue } from '../../lib/api';
 import { startStripeCheckout } from '../../lib/payments';
 import { BRAND } from '../../lib/brand';
 import type { Order, OrderItem, Payment, PaymentMethod } from '../../lib/types';
@@ -54,6 +55,21 @@ export default function OrderPayment({
 }) {
   const [method, setMethod] = useState<PaymentMethod>(order.payment_method ?? 'zelle');
   const [working, setWorking] = useState(false);
+  // Zelle's only sanctioned "one tap": the bank-issued receive QR. Its embedded
+  // link preselects US as recipient — scannable on desktop, tappable on mobile.
+  const [zelleQrUrl, setZelleQrUrl] = useState<string | null>(null);
+  const [qrPng, setQrPng] = useState<string | null>(null);
+  useEffect(() => {
+    configValue('BRAND', 'ZELLE_QR_URL')
+      .then((v) => setZelleQrUrl(v && /^https?:\/\//.test(v) ? v : null))
+      .catch(() => setZelleQrUrl(null));
+  }, []);
+  useEffect(() => {
+    if (!zelleQrUrl) { setQrPng(null); return; }
+    QRCode.toDataURL(zelleQrUrl, { margin: 1, width: 240, color: { dark: '#0d2118' } })
+      .then(setQrPng)
+      .catch(() => setQrPng(null));
+  }, [zelleQrUrl]);
 
   // The unique-cents amount is assigned server-side when the order moves to
   // awaiting_payment. Until then we show the plain total for orientation.
@@ -142,6 +158,25 @@ export default function OrderPayment({
                 <CopyRow label="Amount" display={usd(zelleAmount)} copyValue={zelleAmount.toFixed(2)} />
                 <CopyRow label="Memo / reference" display={reference} copyValue={order.payment_reference ?? ''} />
               </dl>
+              {zelleQrUrl && (
+                <div className="mt-5 pt-5 border-t border-green-800/10 flex flex-col sm:flex-row items-center gap-4">
+                  {qrPng && (
+                    <img src={qrPng} alt="Zelle QR code — scan with your bank app"
+                      className="w-36 h-36 rounded-lg border border-green-800/10 bg-white p-1.5" />
+                  )}
+                  <div className="text-center sm:text-left">
+                    <p className="text-sm font-sans text-green-900 font-medium mb-1">Skip the typing</p>
+                    <p className="text-xs font-sans text-muted leading-relaxed mb-3">
+                      Scan with your bank app's QR scanner — we're preselected as the
+                      recipient. On your phone, just tap:
+                    </p>
+                    <a href={zelleQrUrl} target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-green-800 text-white text-sm font-medium hover:bg-green-700 focus-ring">
+                      <Smartphone size={15} /> Open in your banking app
+                    </a>
+                  </div>
+                </div>
+              )}
               <p className="text-xs font-sans text-muted mt-4 leading-relaxed">
                 Include the reference code in the memo so we can match your payment.
                 We’ll confirm as soon as it lands, usually within the hour.
