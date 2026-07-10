@@ -22,7 +22,7 @@ import { beforeAll, afterAll, describe, expect, it } from 'vitest';
 import { createTestDb, type TestDb } from './harness';
 
 const RELEASES = [
-  'RELEASE_GENERAL', 'RELEASE_PARTICIPANT', 'RELEASE_HORSE_EXERCISE', 'RELEASE_HORSE_CARE',
+  'RELEASE_GENERAL', 'RELEASE_PARTICIPANT', 'RELEASE_HORSE_CARE',
 ] as const;
 
 let h: TestDb;

@@ -59,6 +59,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const db = getSupabaseAdmin();
 
+    // Lease-expiry producer (Update A, spec H.11): inserts 'lease_expiring'
+    // notifications for lessees/owners 30/7/1 days before lease_end. The rows it
+    // creates ride the same email nudge below on the next pass. Best-effort.
+    try { await db.rpc('lease_expiry_nudge'); } catch { /* producer is optional */ }
+
     // App root for the CTA link — same origin source as the invite register URL
     // (admin-send-invitation): the request's origin/host, correct per deployment.
     const origin = req.headers.origin || `https://${req.headers.host}`;

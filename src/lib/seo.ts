@@ -63,6 +63,23 @@ export const ROUTE_SEO: RouteSeo[] = [
     priority: 0.7,
   },
   {
+    path: '/story',
+    title: 'Come Ride With Us — A Women’s Riding Community in Coastal San Diego | French Heritage Equestrian',
+    description:
+      'A warm, welcoming community of women who ride for the love of it — on the coast near Torrey Pines. Learn to ride, grow, and belong at Carmel Creek Ranch, San Diego. Come ride with us.',
+    indexable: true,
+    priority: 0.9,
+  },
+  {
+    path: '/shop',
+    title: 'Ways to Ride With Us — Lessons, Membership & Horse Care | French Heritage Equestrian, San Diego',
+    description:
+      'Every way to ride with us at Carmel Creek Ranch — riding lessons, jumper training, horsemanship, and horse care. Each service is by appointment, arranged personally. Send your request to begin.',
+    service: 'Riding Lessons & Horse Care',
+    indexable: true,
+    priority: 0.85,
+  },
+  {
     path: '/ride',
     title: 'Come Ride With Us — Lessons & Rider Community | French Heritage Equestrian',
     description:

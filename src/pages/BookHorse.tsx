@@ -84,13 +84,13 @@ export default function BookHorse() {
         {step === 0 && (
           <div>
             <p className="eyebrow mb-3">Step 1 of 3</p>
-            <h1 className="heading-section text-green-800 mb-3">Horse Services</h1>
+            <h1 className="heading-section text-green-800 mb-3">Horse Care Services</h1>
             <p className="body-text mb-10">
               Select the services you need for your horse. Each option can be combined — we will tailor further recommendations once we understand your situation.
             </p>
             <div className="flex flex-col gap-8">
               {HORSE_SERVICES.map((svc) => (
-                <ServiceSelector key={svc.id} service={svc} category="Horse Services" />
+                <ServiceSelector key={svc.id} service={svc} category="Horse Care Services" />
               ))}
             </div>
           </div>
@@ -107,7 +107,7 @@ export default function BookHorse() {
 
             <QualifierGroup
               qualifierKey="horse_reason"
-              question="What is bringing you to our horse services?"
+              question="What is bringing you to our horse care services?"
               help="Choose the option that best describes your situation."
               options={[
                 { value: 'traveling', label: 'I will be travelling and need my horse looked after' },

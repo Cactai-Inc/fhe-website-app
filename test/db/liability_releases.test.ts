@@ -20,8 +20,10 @@
 import { beforeAll, afterAll, describe, expect, it } from 'vitest';
 import { createTestDb, type TestDb } from './harness';
 
+// Owner 2026-07-05: horse-care release UNIFIED under RELEASE_HORSE_CARE;
+// RELEASE_HORSE_EXERCISE retired (migration 20260705000000).
 const RELEASES = [
-  'RELEASE_GENERAL', 'RELEASE_PARTICIPANT', 'RELEASE_HORSE_EXERCISE', 'RELEASE_HORSE_CARE',
+  'RELEASE_GENERAL', 'RELEASE_PARTICIPANT', 'RELEASE_HORSE_CARE',
 ];
 
 let h: TestDb;
@@ -59,8 +61,8 @@ afterAll(async () => {
   await h?.close();
 });
 
-describe('the four releases are loaded', () => {
-  it('seeds all four RELEASE_* templates active, tokenized, unilateral CLIENT-signer docs', async () => {
+describe('the three releases are loaded', () => {
+  it('seeds all RELEASE_* templates active, tokenized, unilateral CLIENT-signer docs', async () => {
     await h.asSuperuser();
     const rows = await h.q<{ template_key: string; body: string | null; active: boolean; service_type: string | null; party_namespaces: string[] }>(
       `select template_key, body, active, service_type, party_namespaces
@@ -140,11 +142,13 @@ describe('required_documents_for — the signing-requirements matrix', () => {
       ['COMPANY_POLICIES', 'FACILITY_RULES', 'HUMAN_EMERGENCY_MEDICAL', 'RELEASE_PARTICIPANT']);
     await expectDocs('HORSEMANSHIP_TRAINING',
       ['COMPANY_POLICIES', 'FACILITY_RULES', 'HUMAN_EMERGENCY_MEDICAL', 'RELEASE_PARTICIPANT']);
-    // R1+R3 — horse segment: policies + release variant + facility rules + horse emergency vet
+    // R1+R3 — horse segment: policies + the UNIFIED horse-care release + facility
+    // rules + horse emergency vet. All horse-care services share RELEASE_HORSE_CARE
+    // (owner 2026-07-05; RELEASE_HORSE_EXERCISE retired, migration 20260705000000).
     await expectDocs('HORSE_EXERCISE',
-      ['COMPANY_POLICIES', 'FACILITY_RULES', 'HORSE_EMERGENCY_VET', 'RELEASE_HORSE_EXERCISE']);
+      ['COMPANY_POLICIES', 'FACILITY_RULES', 'HORSE_EMERGENCY_VET', 'RELEASE_HORSE_CARE']);
     await expectDocs('HORSE_TRAINING',
-      ['COMPANY_POLICIES', 'FACILITY_RULES', 'HORSE_EMERGENCY_VET', 'RELEASE_HORSE_EXERCISE']);
+      ['COMPANY_POLICIES', 'FACILITY_RULES', 'HORSE_EMERGENCY_VET', 'RELEASE_HORSE_CARE']);
     await expectDocs('HORSE_CLIPPING',
       ['COMPANY_POLICIES', 'FACILITY_RULES', 'HORSE_EMERGENCY_VET', 'RELEASE_HORSE_CARE']);
     // R3 — requires_horse brokerage/support: policies + vet authorization

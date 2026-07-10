@@ -87,13 +87,14 @@ export async function submitIntakeSubmission(input: IntakeSubmissionInput): Prom
 // ---------------------------------------------------------------------------
 
 /** The kiosk-signable documents (sign_release validates the same set,
- *  migration 20260703140000). The four releases plus the two standalone
- *  acknowledgment documents (stable rules + business policies) — all carry a
- *  CLIENT signature block and are signed the same way. */
+ *  migration 20260703140000). The releases plus the standalone acknowledgment
+ *  documents (stable rules + business policies + medical) — all carry a CLIENT
+ *  signature block and are signed the same way. Horse-care unified under
+ *  RELEASE_HORSE_CARE — RELEASE_HORSE_EXERCISE retired 2026-07-05 (matches the
+ *  live DB, where it is inactive and HORSE_EXERCISE requires RELEASE_HORSE_CARE). */
 export type ReleaseTemplateKey =
   | 'RELEASE_GENERAL'
   | 'RELEASE_PARTICIPANT'
-  | 'RELEASE_HORSE_EXERCISE'
   | 'RELEASE_HORSE_CARE'
   | 'FACILITY_RULES'
   | 'COMPANY_POLICIES'

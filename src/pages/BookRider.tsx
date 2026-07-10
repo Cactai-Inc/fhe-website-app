@@ -234,7 +234,7 @@ export default function BookRider() {
                   We also bring training, riding, turnout, and clipping to where your horse lives. If supplementary care would help, we would love to discuss your horse's program.
                 </p>
                 <Link to="/book/horse" className="link-underline">
-                  View Horse Services
+                  View Horse Care Services
                   <ArrowRight size={12} />
                 </Link>
               </div>

@@ -46,7 +46,7 @@ describe('contract_templates — the 24 canonical contracts', () => {
   // 22 → 24: the owner's 2026-07-03 revision registers COMPANY_POLICIES (joins
   // every service's required set) and RIDER_LESSON (the lesson order form) via
   // the regenerated loader's POST_SEED inserts.
-  it('seeds exactly the 24 canonical rows; all active except the retired HORSE_REPRESENTATION', async () => {
+  it('seeds exactly the 24 canonical rows; all active except the retired HORSE_REPRESENTATION + RELEASE_HORSE_EXERCISE', async () => {
     await h.asSuperuser();
     const rows = await h.q<{ template_key: string; active: boolean }>(
       `select template_key, active from contract_templates order by template_key`);
@@ -62,8 +62,12 @@ describe('contract_templates — the 24 canonical contracts', () => {
       'RELEASE_GENERAL', 'RELEASE_HORSE_CARE', 'RELEASE_HORSE_EXERCISE', 'RELEASE_PARTICIPANT',
       'RIDER_LESSON', 'RIDER_LESSON_JUMPER',
     ].sort());
+    // Retired rows kept for referential history but inactive: HORSE_REPRESENTATION
+    // (decomposition) and RELEASE_HORSE_EXERCISE (horse-care release unified under
+    // RELEASE_HORSE_CARE, owner 2026-07-05).
+    const RETIRED = new Set(['HORSE_REPRESENTATION', 'RELEASE_HORSE_EXERCISE']);
     for (const r of rows) {
-      expect(r.active, r.template_key).toBe(r.template_key !== 'HORSE_REPRESENTATION');
+      expect(r.active, r.template_key).toBe(!RETIRED.has(r.template_key));
     }
   });
 
@@ -206,13 +210,14 @@ describe('RLS — templates read-active, admin-write', () => {
     // hide one template
     await h.q(`update contract_templates set active=false where template_key='MINOR_RIDER'`);
 
-    // anon sees the 22 active ones (24 total; HORSE_REPRESENTATION already
-    // retired-inactive by the decomposition, MINOR_RIDER hidden above)
+    // anon sees the 21 active ones (24 total; HORSE_REPRESENTATION and
+    // RELEASE_HORSE_EXERCISE already retired-inactive, MINOR_RIDER hidden above)
     await h.asAnon();
     const anon = await h.q<{ template_key: string }>(`select template_key from contract_templates`);
-    expect(anon).toHaveLength(22);
+    expect(anon).toHaveLength(21);
     expect(anon.map((r) => r.template_key)).not.toContain('MINOR_RIDER');
     expect(anon.map((r) => r.template_key)).not.toContain('HORSE_REPRESENTATION');
+    expect(anon.map((r) => r.template_key)).not.toContain('RELEASE_HORSE_EXERCISE');
 
     // a plain authenticated user cannot insert
     await h.asUser(userUid);

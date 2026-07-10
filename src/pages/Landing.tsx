@@ -1,105 +1,122 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { usePrefersReducedMotion } from '../lib/hooks';
 import Seo from '../components/Seo';
 import { seoForPath } from '../lib/seo';
+import Header from '../components/layout/Header';
 
-/* The front door. Deliberately bare: a landing video, a hero statement, the
- * "come ride with us" invitation (an opening of the door, not a CTA), and two
- * quiet alternate-service entries. Contact lives top-right in the header.
+/* The front door — a single-viewport, no-scroll, no-footer cinematic hero.
  *
- * Video: drop a real clip at /public/hero.mp4 (+ /hero.webm) and a poster at
- * /public/hero-poster.jpg. Until then the poster image carries the hero.
+ * Treatment (owner-directed): a STILL, full-bleed, high-impact image — crisp
+ * and confident, no Ken Burns / no looping background motion. A rich green
+ * scrim drives figure-ground contrast so a big Cormorant headline lands hard.
+ * The only motion is a single gentle rise-on-load entrance, reduced-motion
+ * guarded.
+ *
+ * Header: the landing uses the SAME shared <Header> as every inner page (one
+ * header everywhere). It stays naked here (the landing never scrolls, so the
+ * minify+frost never triggers). The page renders bare (no Layout footer chrome).
+ *
+ * Scroll-lock is scoped to THIS route: on mount we add `qs-no-scroll` to
+ * <html>; on unmount we remove it. The rest of the site scrolls normally.
+ * SSR/prerender-safe — the effect only touches document in the browser.
  */
-const HERO_POSTER = '/reference-images/Hero_A.png';
-const HERO_MP4 = '/hero.mp4';
-const HERO_WEBM = '/hero.webm';
+const HERO_IMG = '/reference-images/Hero_A.png';
 
 export default function Landing() {
   const seo = seoForPath('/')!;
-  const reducedMotion = usePrefersReducedMotion();
+
+  // Scope the scroll-lock to the landing route only. Guarded for SSR: the
+  // effect never runs during prerender, so no global scroll break ships.
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.add('qs-no-scroll');
+    return () => root.classList.remove('qs-no-scroll');
+  }, []);
 
   return (
     <>
       <Seo title={seo.title} description={seo.description} path="/" />
 
-      <section className="relative h-screen min-h-[600px] overflow-hidden flex flex-col">
-        {/* Landing video (poster shown until/instead of video; no autoplay under reduced-motion) */}
-        {reducedMotion ? (
-          <div
-            className="absolute inset-0"
-            style={{ backgroundImage: `url('${HERO_POSTER}')`, backgroundSize: 'cover', backgroundPosition: 'center 35%' }}
-          />
-        ) : (
-          <video
-            className="absolute inset-0 w-full h-full object-cover"
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="metadata"
-            poster={HERO_POSTER}
-          >
-            <source src={HERO_WEBM} type="video/webm" />
-            <source src={HERO_MP4} type="video/mp4" />
-          </video>
-        )}
+      {/* The one shared header — naked over the hero. */}
+      <Header />
 
-        {/* Overlay: stronger from the left/bottom where the words sit, so the
-            statement and the invitation stay legible over bright footage. */}
-        <div className="absolute inset-0 bg-gradient-to-r from-green-950/85 via-green-950/45 to-green-900/20" />
-        <div className="absolute inset-0 bg-gradient-to-t from-green-950/80 via-transparent to-green-950/30" />
+      {/* Full-bleed hero filling exactly one viewport. 100dvh accounts for
+          mobile browser chrome; the fixed inset means the page itself never
+          scrolls even before the html-level lock applies.
+          data-header-tone="dark": the header sits over this dark hero → white nav. */}
+      <div
+        data-header-tone="dark"
+        className="fixed inset-0 h-[100dvh] w-full overflow-x-hidden overflow-y-hidden bg-green-950"
+      >
 
-        {/* Hero statement + the door */}
-        <div className="relative z-10 flex-1 flex items-center">
-          <div className="container-site w-full">
-            <div className="max-w-2xl">
-              <p className="eyebrow-on-dark mb-6 animate-fade-up [text-shadow:0_1px_12px_rgba(0,0,0,0.5)]">Carmel Creek Ranch · Coastal San Diego</p>
-              <h1 className="heading-display text-white mb-10 animate-fade-up delay-100 text-[clamp(2.75rem,7vw,5.25rem)] [text-shadow:0_2px_20px_rgba(0,0,0,0.45)]">
-                Join Our Riding Community
-                <br />
-                <em className="text-gold-300 not-italic">California Days Are Made For This</em>
-              </h1>
+        {/* Still background image — no animation. Positioned to hold the riders
+            and the coastline in frame across aspect ratios. */}
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `url('${HERO_IMG}')`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center 32%',
+          }}
+          role="img"
+          aria-label="Three riders on horseback at a coastal San Diego ranch, at sunset."
+        />
 
-              {/* The invitation — straight into the lessons funnel (linear path:
-                  Landing → Lessons → Booking Request → Confirmation) */}
+        {/* Rich green scrim — a bold, layered gradient that darkens the frame
+            toward the center-bottom where the type sits, so the headline holds
+            well past 4.5:1 without flattening the image. Two passes: a vertical
+            deep-to-light and a centered radial vignette. */}
+        <div className="absolute inset-0 bg-gradient-to-b from-green-950/80 via-green-950/45 to-green-950/85" />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(120% 90% at 50% 42%, rgba(10,26,15,0) 0%, rgba(10,26,15,0.35) 62%, rgba(10,26,15,0.72) 100%)',
+          }}
+        />
+
+        {/* Filmic grain — tasteful, static, very light. */}
+        <div className="qs-grain absolute inset-0 pointer-events-none" aria-hidden="true" />
+
+        {/* ── Centered hero content ─────────────────────────────────────── */}
+        <div className="relative z-10 h-full w-full flex items-center justify-center px-5 sm:px-8">
+          <div className="w-full max-w-4xl text-center mx-auto">
+
+            {/* Eyebrow / location — enlarged and brightened so it is clearly
+                readable over the hero (was too faint). */}
+            <p className="qs-rise qs-delay-1 mb-6 sm:mb-8 font-sans font-medium tracking-widest uppercase text-gold-300 text-sm sm:text-base [text-shadow:0_1px_12px_rgba(0,0,0,0.6)]">
+              Carmel Creek Ranch · Coastal San Diego
+            </p>
+
+            {/* Headline — reduced from a screen-dominating clamp so it is
+                commanding but balanced, leaving the eyebrow + CTA visible. */}
+            <h1 className="qs-rise qs-delay-2 heading-display text-white leading-[1.08] tracking-[-0.01em] [text-wrap:balance] [overflow-wrap:break-word] text-[clamp(1.9rem,5vw,3.75rem)] [text-shadow:0_2px_24px_rgba(0,0,0,0.55)]">
+              Join Our Riding Community
+              <br />
+              <em className="text-gold-300 not-italic">California Days Are Made For This</em>
+            </h1>
+
+            {/* CTA — the ONLY action on the landing, so it is enlarged and made
+                unmistakable: a larger italic-serif label with a solid gold
+                underline and arrow, strong contrast over the hero. */}
+            <div className="qs-rise qs-delay-4 mt-10 sm:mt-14 flex justify-center">
               <Link
-                to="/lessons"
-                className="group inline-flex items-center gap-3 animate-fade-up delay-200 focus-ring-dark"
+                to="/story"
+                className="group inline-flex items-center gap-4 focus-ring-dark"
               >
-                <span className="font-serif italic text-2xl sm:text-3xl text-white border-b border-gold-300/60 pb-1 group-hover:border-gold-300 transition-colors [text-shadow:0_2px_16px_rgba(0,0,0,0.5)]">
+                <span className="font-serif italic text-3xl sm:text-4xl lg:text-[2.75rem] text-white border-b-2 border-gold-300 pb-1.5 group-hover:border-gold-200 transition-colors [text-shadow:0_2px_18px_rgba(0,0,0,0.6)]">
                   Come ride with us
                 </span>
                 <ArrowRight
-                  size={22}
-                  className="text-gold-300 transition-transform duration-300 group-hover:translate-x-1"
+                  className="w-7 h-7 sm:w-8 sm:h-8 text-gold-300 transition-transform duration-300 group-hover:translate-x-1.5 [filter:drop-shadow(0_2px_10px_rgba(0,0,0,0.5))]"
                   aria-hidden="true"
                 />
               </Link>
             </div>
           </div>
         </div>
-
-        {/* Two quiet alternate-service entries, low in the frame */}
-        <div className="relative z-10 pb-10">
-          <div className="container-site flex flex-col sm:flex-row gap-x-8 gap-y-3 animate-fade-in delay-500">
-            <Link
-              to="/horse"
-              className="inline-flex items-center gap-2 text-xs font-sans tracking-widest uppercase text-white/[0.7] hover:text-white transition-colors focus-ring-dark"
-            >
-              Care for your horse
-              <ArrowRight size={13} aria-hidden="true" />
-            </Link>
-            <Link
-              to="/acquisition"
-              className="inline-flex items-center gap-2 text-xs font-sans tracking-widest uppercase text-white/[0.7] hover:text-white transition-colors focus-ring-dark"
-            >
-              Find a horse of your own
-              <ArrowRight size={13} aria-hidden="true" />
-            </Link>
-          </div>
-        </div>
-      </section>
+      </div>
     </>
   );
 }

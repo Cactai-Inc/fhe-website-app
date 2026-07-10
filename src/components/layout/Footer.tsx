@@ -33,11 +33,13 @@ export default function Footer() {
           <nav className="flex flex-col gap-3" aria-label="Footer">
             {[
               { label: 'Home', href: '/' },
-              { label: 'Our Story', href: '/about' },
-              { label: 'Ways to Ride', href: '/services' },
-              { label: 'Book a Lesson', href: '/lessons' },
+              { label: 'Our Story', href: '/story' },
+              { label: 'Ways to Ride', href: '/shop' },
+              { label: 'Book a Lesson', href: '/shop' },
               { label: 'Horse Care', href: '/horse' },
+              { label: 'Horse Care Articles', href: '/horse' },
               { label: 'Acquisition Support', href: '/acquisition' },
+              { label: 'FAQ', href: '/faq' },
             ].map((link) => (
               <Link
                 key={link.label}

@@ -3,8 +3,9 @@ import { toErrorMessage } from '../../lib/ops/errors';
 import { useDocumentTitle } from '../../lib/hooks';
 import {
   adminListMembers, adminSetSuspended, adminSetAdmin, adminUpsertMembership,
-  adminCreateAnnouncement, adminCreateEvent, adminCreateContentPost, adminCreateResource,
-  adminSendInvitation, type AdminMemberRow,
+  adminSetRole, adminCreateAnnouncement, adminCreateEvent, adminCreateContentPost,
+  adminCreateResource, adminSendInvitation,
+  type AdminMemberRow, type MemberRole,
 } from '../../lib/admin';
 import { fetchOfferings } from '../../lib/api';
 import type { Offering } from '../../lib/types';
@@ -50,6 +51,7 @@ function MembersTab() {
           <tr className="text-left text-muted border-b border-green-800/10">
             <th className="py-2 pr-4 font-medium">Name</th>
             <th className="py-2 pr-4 font-medium">Email</th>
+            <th className="py-2 pr-4 font-medium">Role</th>
             <th className="py-2 pr-4 font-medium">Membership</th>
             <th className="py-2 pr-4 font-medium">Flags</th>
             <th className="py-2 font-medium">Actions</th>
@@ -60,6 +62,19 @@ function MembersTab() {
             <tr key={m.user_id} className="border-b border-green-800/[0.06]">
               <td className="py-2.5 pr-4 text-green-900">{m.display_name || `${m.first_name ?? ''} ${m.last_name ?? ''}`.trim() || '—'}</td>
               <td className="py-2.5 pr-4 text-secondary">{m.email}</td>
+              <td className="py-2.5 pr-4">
+                <select
+                  className="border border-green-800/20 px-2 py-1 text-xs bg-white"
+                  value={(m.role as MemberRole) ?? 'USER'}
+                  onChange={(e) => act(() => adminSetRole(m.user_id, e.target.value as MemberRole))}
+                  aria-label="Role"
+                >
+                  <option value="USER">Rider</option>
+                  <option value="MANAGER">Instructor</option>
+                  <option value="ADMIN">Admin</option>
+                  <option value="SUPER_ADMIN">Super admin</option>
+                </select>
+              </td>
               <td className="py-2.5 pr-4">
                 <select
                   className="border border-green-800/20 px-2 py-1 text-xs bg-white"

@@ -23,6 +23,18 @@ export interface MemberDirectoryEntry {
   avatar_url: string | null;
   bio: string | null;
   riding_level: string | null;
+  /** Shared contact fields (hide-from-community enforced in the view — a hidden
+   *  field arrives as null; allow-flags arrive false when the channel is hidden). */
+  email: string | null;
+  mobile: string | null;
+  whatsapp: string | null;
+  allow_sms: boolean;
+  allow_call: boolean;
+  allow_whatsapp: boolean;
+  social_tiktok: string | null;
+  social_instagram: string | null;
+  social_facebook: string | null;
+  social_linkedin: string | null;
 }
 
 export interface Announcement {

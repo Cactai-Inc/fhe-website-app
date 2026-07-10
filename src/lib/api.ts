@@ -1896,3 +1896,199 @@ export async function createProductPrice(input: ProductPriceInput): Promise<Prod
   if (error) throw error;
   return data as ProductPrice;
 }
+
+// ─── Contract workflow engine (20260705010000) ──────────────────────────────
+// Minimal typed seam over the multi-party contract-workflow RPCs. BACKEND-FIRST:
+// these are thin, typed wrappers a later UI thread binds to — no components ship
+// here. The RPCs (SECURITY DEFINER) enforce ownership/RLS server-side; these just
+// carry the shapes. See supabase/migrations/20260705010000_contract_workflow_engine.sql.
+
+/** A structured, party-owned field on a contract (from contract_document_detail). */
+export interface ContractField {
+  field_key: string;
+  label: string | null;
+  section: string | null;
+  owner_role: string;          // a party_role (LESSOR/LESSEE/…) or 'DEAL'
+  value: string | null;
+  value_type: 'text' | 'number' | 'date' | 'currency' | 'checkbox' | 'select' | 'longtext';
+  required: boolean;
+  sort_order: number;
+  can_edit: boolean;           // may the CALLER write this field right now
+}
+
+/** An open change request on a contract. */
+export interface ContractChangeRequest {
+  id: string;
+  annotation_number: number;
+  target_field_key: string | null;
+  target_section: string | null;
+  current_value: string | null;
+  requested_change: string;
+  status: 'open' | 'accepted' | 'rejected' | 'withdrawn';
+}
+
+/** The list-view read model row (my_contract_documents). */
+export interface ContractDocumentSummary {
+  document_id: string;
+  title: string | null;
+  status: string;              // DRAFT/AWAITING_SIGNATURE/EXECUTED/VOID
+  workflow_state: 'editable' | 'editing' | 'in_review' | 'locked' | 'executed' | 'void';
+  recipient_editing: boolean;
+  execution_hash: string | null;
+  generated_at: string;
+  is_originator: boolean;
+  my_roles: string | null;     // csv of the caller's party_roles
+  open_change_requests: number;
+}
+
+/** The detail read model (contract_document_detail). */
+export interface ContractDocumentDetail {
+  document: {
+    document_id: string;
+    title: string | null;
+    status: string;
+    workflow_state: ContractDocumentSummary['workflow_state'];
+    recipient_editing: boolean;
+    execution_hash: string | null;
+    merged_body: string | null;
+    is_originator: boolean;
+  };
+  my_roles: string[];
+  fields: ContractField[];
+  open_change_requests: ContractChangeRequest[];
+  shares: Array<{ shared_with_contact_id: string; recipient_editing: boolean; notified_at: string | null }>;
+  signatures: Array<{ party_role: string; typed_name: string | null; signed_at: string | null }>;
+}
+
+/** Start a horse lease contract (create engagement + document + seeded owned fields). */
+export async function startLeaseContract(
+  lesseeContactId: string, lessorContactId?: string, horseId?: string,
+): Promise<{ document_id: string; engagement_id: string; fields_seeded: number }> {
+  const { data, error } = await supabase.rpc('start_lease_contract', {
+    p_lessee_contact_id: lesseeContactId,
+    p_lessor_contact_id: lessorContactId ?? null,
+    p_horse_id: horseId ?? null,
+  });
+  if (error) throw error;
+  return data as { document_id: string; engagement_id: string; fields_seeded: number };
+}
+
+/** Start a BUYER/SELLER horse purchase & sale contract (generic engine instance).
+ *  BUYER personal → BUYER; SELLER personal + all HORSE.* + disclosures → SELLER;
+ *  all TXN/deal terms → DEAL; originator = buyer. */
+export async function startPurchaseContract(
+  buyerContactId: string, sellerContactId?: string, horseId?: string,
+  amount?: number, deposit?: number,
+): Promise<{ document_id: string; engagement_id: string; fields_seeded: number }> {
+  const { data, error } = await supabase.rpc('start_purchase_contract', {
+    p_buyer_contact_id: buyerContactId,
+    p_seller_contact_id: sellerContactId ?? null,
+    p_horse_id: horseId ?? null,
+    p_amount: amount ?? null,
+    p_deposit: deposit ?? null,
+  });
+  if (error) throw error;
+  return data as { document_id: string; engagement_id: string; fields_seeded: number };
+}
+
+/** Start a transaction-representation retainer the CLIENT signs with COMPANY
+ *  (generic engine instance). CLIENT personal + optional identified HORSE.* →
+ *  CLIENT; fee/commission/protection terms → DEAL; originator = client.
+ *  dealSide: 'BUY' | 'SELL' (the side we represent). */
+export async function startBrokerContract(
+  clientContactId: string, dealSide: 'BUY' | 'SELL' = 'BUY', horseId?: string,
+): Promise<{ document_id: string; engagement_id: string; fields_seeded: number }> {
+  const { data, error } = await supabase.rpc('start_broker_contract', {
+    p_client_contact_id: clientContactId,
+    p_deal_side: dealSide,
+    p_horse_id: horseId ?? null,
+  });
+  if (error) throw error;
+  return data as { document_id: string; engagement_id: string; fields_seeded: number };
+}
+
+/** Ownership-enforcing field write (raises server-side when unauthorized/locked). */
+export async function setContractField(
+  documentId: string, fieldKey: string, value: string | null,
+): Promise<ContractField> {
+  const { data, error } = await supabase.rpc('set_contract_field', {
+    p_document_id: documentId, p_field_key: fieldKey, p_value: value,
+  });
+  if (error) throw error;
+  return data as ContractField;
+}
+
+/** Share a contract with a party and set their editing permission. */
+export async function shareDocument(
+  documentId: string, withContactId: string, recipientEditing = false,
+): Promise<{ id: string; shared_with_contact_id: string; recipient_editing: boolean }> {
+  const { data, error } = await supabase.rpc('share_document', {
+    p_document_id: documentId, p_with_contact_id: withContactId, p_recipient_editing: recipientEditing,
+  });
+  if (error) throw error;
+  return data as { id: string; shared_with_contact_id: string; recipient_editing: boolean };
+}
+
+/** Originator/staff toggles whether the counterparty may edit DEAL fields/body. */
+export async function setRecipientEditing(documentId: string, on: boolean): Promise<boolean> {
+  const { data, error } = await supabase.rpc('set_recipient_editing', { p_document_id: documentId, p_on: on });
+  if (error) throw error;
+  return data as boolean;
+}
+
+/** Log a numbered change request against a field or a free section. */
+export async function requestDocumentChange(
+  documentId: string, fieldKey: string | null, targetSection: string | null, requestedChange: string,
+): Promise<ContractChangeRequest> {
+  const { data, error } = await supabase.rpc('request_document_change', {
+    p_document_id: documentId, p_field_key: fieldKey, p_target_section: targetSection,
+    p_requested_change: requestedChange,
+  });
+  if (error) throw error;
+  return data as ContractChangeRequest;
+}
+
+/** Originator/staff accepts (optionally applying a value) or rejects a change request. */
+export async function resolveChangeRequest(
+  changeId: string, accept: boolean, newValue?: string | null,
+): Promise<{ id: string; status: ContractChangeRequest['status'] }> {
+  const { data, error } = await supabase.rpc('resolve_change_request', {
+    p_change_id: changeId, p_accept: accept, p_new_value: newValue ?? null,
+  });
+  if (error) throw error;
+  return data as { id: string; status: ContractChangeRequest['status'] };
+}
+
+/** Advance the workflow state machine (editable/editing/in_review/locked/void). */
+export async function advanceDocumentWorkflow(
+  documentId: string, to: ContractDocumentSummary['workflow_state'],
+): Promise<string> {
+  const { data, error } = await supabase.rpc('advance_document_workflow', { p_document_id: documentId, p_to: to });
+  if (error) throw error;
+  return data as string;
+}
+
+/** Lock-and-sign bridge to record_signature (seals/executes once all parties sign). */
+export async function lockAndSignContract(
+  documentId: string, partyRole: string, typedName: string, esignConsent: boolean,
+): Promise<string> {
+  const { data, error } = await supabase.rpc('lock_and_sign_contract', {
+    p_document_id: documentId, p_party_role: partyRole, p_typed_name: typedName, p_esign_consent: esignConsent,
+  });
+  if (error) throw error;
+  return data as string;
+}
+
+/** The caller's contracts (list read model). */
+export async function myContractDocuments(): Promise<ContractDocumentSummary[]> {
+  const { data, error } = await supabase.rpc('my_contract_documents');
+  if (error) throw error;
+  return (data as ContractDocumentSummary[]) ?? [];
+}
+
+/** Full detail read model for one contract the caller is a party to. */
+export async function contractDocumentDetail(documentId: string): Promise<ContractDocumentDetail> {
+  const { data, error } = await supabase.rpc('contract_document_detail', { p_document_id: documentId });
+  if (error) throw error;
+  return data as ContractDocumentDetail;
+}

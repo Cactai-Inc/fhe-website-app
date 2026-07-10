@@ -9,6 +9,9 @@ import Layout from './components/layout/Layout';
 import AppLayout from './components/app/AppLayout';
 import Landing from './pages/Landing';
 import About from './pages/About';
+import Story from './pages/Story';
+import Shop from './pages/Shop';
+import Faq from './pages/Faq';
 import Services from './pages/Services';
 import Contact from './pages/Contact';
 import Lessons from './pages/Lessons';
@@ -61,9 +64,13 @@ import Community from './pages/app/Community';
 import Market from './pages/app/Market';
 import HostEvent from './pages/app/HostEvent';
 import Support from './pages/app/Support';
+import ContractPage from './pages/app/ContractPage';
+import AccountHub from './pages/app/AccountHub';
+import VerifyEmailScreen from './components/app/VerifyEmailScreen';
+import { verifyWithPassword, verifyWithGoogle } from './lib/emailChange';
 import Admin from './pages/app/Admin';
 // Ops / CRM (staff/admin)
-import OpsDashboard from './pages/app/ops/OpsDashboard';
+import OpsHome from './pages/app/OpsHome';
 import ContactsPage from './pages/app/ops/ContactsPage';
 import HorsesPage from './pages/app/ops/HorsesPage';
 import EngagementsPage from './pages/app/ops/EngagementsPage';
@@ -115,10 +122,16 @@ export function AppRoutes() {
       <BrandProvider>
         <CartProvider>
           <Routes>
+            {/* Landing — its own naked nav + no footer, so it renders bare
+                (outside the shared Layout header/footer chrome). */}
+            <Route path="/" element={<Landing />} />
+
             {/* Public marketing + inquiry (marketing chrome) */}
             <Route element={<Layout />}>
-              <Route path="/" element={<Landing />} />
               <Route path="/about" element={<About />} />
+              <Route path="/story" element={<Story />} />
+              <Route path="/shop" element={<Shop />} />
+              <Route path="/faq" element={<Faq />} />
               <Route path="/services" element={<Services />} />
               <Route path="/contact" element={<Contact />} />
               {/* Old rider-entrance interstitial — folded into the linear
@@ -157,6 +170,9 @@ export function AppRoutes() {
             <Route path="/release/:releaseKey" element={<Release />} />
             {/* Guided participant document set — one info form, 4 docs signed in sequence */}
             <Route path="/docs/release-participant" element={<DocsParticipantFlow />} />
+
+            {/* Email-change verification landing — standalone, no chrome */}
+            <Route path="/verify-email" element={<VerifyEmailScreen seams={{ verifyWithPassword, verifyWithGoogle }} />} />
 
             {/* Member community app (its own chrome, member-gated) */}
             <Route
@@ -207,12 +223,16 @@ export function AppRoutes() {
               <Route path="membership" element={<Membership />} />
               <Route path="profile" element={<Profile />} />
               <Route path="support" element={<Support />} />
+              <Route path="account" element={<AccountHub />} />
+              {/* Negotiated contracts (Update A): owner authoring + counterparty
+                  intake→review→sign. Notification links target this route. */}
+              <Route path="contracts/:id" element={<ContractPage />} />
               {/* Admin (additionally requires admin) */}
               <Route path="admin" element={<ProtectedRoute requireAdmin><Admin /></ProtectedRoute>} />
 
               {/* Ops / CRM — two-operator model (Slice 5). Servicing subset =
                   requireStaff (trainers + admins); total control = requireAdmin. */}
-              <Route path="ops" element={<ProtectedRoute requireStaff><OpsDashboard /></ProtectedRoute>} />
+              <Route path="ops" element={<ProtectedRoute requireStaff><OpsHome /></ProtectedRoute>} />
               {/* Servicing subset — trainers + admins */}
               <Route path="ops/contacts" element={<ProtectedRoute requireStaff><ContactsPage /></ProtectedRoute>} />
               <Route path="ops/horses" element={<ProtectedRoute requireStaff><HorsesPage /></ProtectedRoute>} />

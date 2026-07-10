@@ -59,17 +59,13 @@ export const RELEASE_OPTIONS: {
     label: 'Rider / Participant',
     description: 'For riders and participants in equestrian activities.',
   },
-  {
-    key: 'RELEASE_HORSE_EXERCISE',
-    slug: 'horse-exercise',
-    label: 'Horse Exercise',
-    description: 'For exercising or riding a horse in our care.',
-  },
+  // RELEASE_HORSE_EXERCISE retired 2026-07-05 — unified under RELEASE_HORSE_CARE
+  // (inactive in the live DB; the care release covers exercise + handling).
   {
     key: 'RELEASE_HORSE_CARE',
     slug: 'horse-care',
     label: 'Horse Care',
-    description: 'For the care and handling of a horse.',
+    description: 'For the care, handling, exercise, or riding of a horse in our care.',
   },
   {
     key: 'FACILITY_RULES',

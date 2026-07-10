@@ -8,9 +8,15 @@ import type {
 } from './community-types';
 
 // ─── Members ─────────────────────────────────────────────────────────────────
+/** The role values stored on profiles.role (migration 25). USER = rider;
+ *  MANAGER/EMPLOYEE = instructor (servicing subset); ADMIN = tenant admin;
+ *  SUPER_ADMIN = platform. The admin UI promotes/demotes with adminSetRole. */
+export type MemberRole = 'USER' | 'EMPLOYEE' | 'MANAGER' | 'ADMIN' | 'SUPER_ADMIN';
+
 export interface AdminMemberRow extends Profile {
   membership_status?: string | null;
   membership_tier?: string | null;
+  role?: MemberRole | null;
 }
 
 export async function adminListMembers(): Promise<AdminMemberRow[]> {
@@ -22,11 +28,26 @@ export async function adminListMembers(): Promise<AdminMemberRow[]> {
 
   const { data: memberships } = await supabase.from('memberships').select('user_id, status, tier');
   const byUser = new Map((memberships ?? []).map((m) => [m.user_id, m]));
-  return (profiles ?? []).map((p: Profile) => ({
+  return (profiles ?? []).map((p: Profile & { role?: MemberRole | null }) => ({
     ...p,
     membership_status: byUser.get(p.user_id)?.status ?? null,
     membership_tier: byUser.get(p.user_id)?.tier ?? null,
+    role: p.role ?? 'USER',
   }));
+}
+
+/** Promote/demote an activated user by writing profiles.role — the authoritative
+ *  role the app derives nav + surfaces from. Setting MANAGER makes the user an
+ *  instructor (servicing subset); ADMIN makes them a tenant admin; USER returns
+ *  them to a rider. RLS enforces that only an admin may call this. Keeps the legacy
+ *  is_admin boolean in step so older checks stay consistent. */
+export async function adminSetRole(userId: string, role: MemberRole): Promise<void> {
+  const { error } = await supabase
+    .from('profiles')
+    .update({ role, is_admin: role === 'ADMIN' || role === 'SUPER_ADMIN' })
+    .eq('user_id', userId);
+  if (error) throw error;
+  await logModeration('user', userId, `set_role_${role.toLowerCase()}`);
 }
 
 export async function adminSetSuspended(userId: string, suspended: boolean): Promise<void> {

@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import type { ContactMethod } from '../lib/supabase';
 import { submitRequest, createDraftOrder } from '../lib/api';
 import { formatPrice } from '../lib/services';
+import { inquiryLabel } from '../lib/inquiry';
 import {
   EXPERIENCE_OPTIONS,
   availabilityEntries,
@@ -26,7 +27,7 @@ interface FormState {
 
 const FUNNEL_LABELS: Record<string, string> = {
   rider: 'Rider Services',
-  horse: 'Horse Services',
+  horse: 'Horse Care Services',
   support: 'Rider Support',
 };
 
@@ -47,8 +48,11 @@ const usd = (n: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(n);
 
 export default function Checkout() {
-  useDocumentTitle('Submit a Booking Request');
+  useDocumentTitle('Send an Inquiry');
   const { state, removeItem, subtotal, clearCart, inquirySummary } = useCart();
+  // Warm, category-aware label for the submit action + heading, personalized to
+  // what the visitor actually chose (never "cart"/"selection"). See lib/inquiry.
+  const inquiryCta = inquiryLabel(state.items);
   const { user } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState<FormState>({
@@ -229,11 +233,12 @@ export default function Checkout() {
           </Link>
           <p className="eyebrow mb-2">{user ? 'Your order' : 'Almost there'}</p>
           <h1 className="heading-section text-green-800">
-            {user ? 'Review & Continue' : 'Submit a Booking Request'}
+            {user ? 'Review & Continue' : 'Send us your inquiry'}
           </h1>
           {!user && (
             <p className="body-text text-sm mt-3">
-              Send us this form and we will contact you to schedule your request.
+              Tell us a little about you and we will call to talk through the right
+              fit, then send your approval to book.
             </p>
           )}
           {state.funnel && (
@@ -460,7 +465,7 @@ export default function Checkout() {
                 disabled={submitting || state.items.length === 0}
                 className="btn-primary w-full justify-center"
               >
-                {submitting ? 'Submitting…' : 'Submit Booking Request'}
+                {submitting ? 'Sending…' : inquiryCta}
                 {!submitting && <ArrowRight size={16} />}
               </button>
             </form>
@@ -470,7 +475,7 @@ export default function Checkout() {
           {/* ── Right: Request summary ── */}
           <div className="lg:col-span-2">
             <div className="bg-white border border-green-800/10 p-7 sticky top-28">
-              <h2 className="font-serif font-medium text-green-800 text-xl mb-6">Your Request</h2>
+              <h2 className="font-serif font-medium text-green-800 text-xl mb-6">Your inquiry</h2>
 
               {state.items.length === 0 ? (
                 <p className="text-sm font-sans text-muted italic mb-6">No services selected.</p>
