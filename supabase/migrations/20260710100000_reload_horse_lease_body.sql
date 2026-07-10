@@ -1,4 +1,11 @@
-HORSE LEASE AGREEMENT
+-- SPEC A (lease/horse-record update) — re-assert the HORSE_LEASE body + tokens
+-- FORWARD. The generated loader (20260629100000) only runs on a fresh DB;
+-- production is past it. Body below is the generator source verbatim
+-- (supabase/contract_templates/HORSE_LEASE.md — 84 tokens, short arbitration
+-- clause, 7 balanced CUT sections, ORG/COMPANY removed). Keep in sync by
+-- re-running the generator + regenerating this migration if the source changes.
+UPDATE contract_templates
+   SET body = $body$HORSE LEASE AGREEMENT
 
 This Horse Lease Agreement ("Agreement") is made effective as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") between the Lessor and Lessee identified below.
 
@@ -238,4 +245,21 @@ LESSEE
 
 Signature: {{SIG.LESSEE.NAME}}
 Printed Name: {{LESSEE.PRINTED_NAME}}
-Date: {{SIG.LESSEE.DATE}}
+Date: {{SIG.LESSEE.DATE}}$body$,
+       updated_at = now()
+ WHERE template_key = 'HORSE_LEASE';
+
+DELETE FROM template_tokens
+ WHERE template_id = (SELECT id FROM contract_templates WHERE template_key = 'HORSE_LEASE');
+
+INSERT INTO template_tokens (template_id, namespace, field, token, kind, required, party_scoped)
+  SELECT (SELECT id FROM contract_templates WHERE template_key='HORSE_LEASE'),
+         split_part(trim(both '{}' from tok), '.', 1),
+         substr(trim(both '{}' from tok), position('.' in trim(both '{}' from tok)) + 1),
+         tok,
+         CASE split_part(trim(both '{}' from tok), '.', 1)
+           WHEN 'SIG' THEN 'signature' WHEN 'DOC' THEN 'system' ELSE 'field' END,
+         false, false
+    FROM (SELECT DISTINCT unnest(regexp_matches(
+            (SELECT body FROM contract_templates WHERE template_key='HORSE_LEASE'),
+            '\{\{[A-Z0-9_.]+\}\}', 'g')) AS tok) t;
