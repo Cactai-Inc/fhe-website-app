@@ -43,15 +43,15 @@ export default function ThreadDetail() {
     return (
       <div className="max-w-2xl">
         <h1 className="heading-section text-green-800 mb-4">Thread not found</h1>
-        <Link to="/app/threads" className="link-underline">Back to threads</Link>
+        <Link to="/app?filter=discussions" className="link-underline">Back to discussions</Link>
       </div>
     );
   }
 
   return (
     <div className="max-w-2xl">
-      <Link to="/app/threads" className="inline-flex items-center gap-2 text-sm text-secondary hover:text-green-800 mb-6 focus-ring">
-        <ArrowLeft size={16} /> Back to threads
+      <Link to="/app?filter=discussions" className="inline-flex items-center gap-2 text-sm text-secondary hover:text-green-800 mb-6 focus-ring">
+        <ArrowLeft size={16} /> Back to discussions
       </Link>
 
       <h1 className="heading-section text-green-800 mb-2">{thread.title}</h1>

@@ -7,7 +7,7 @@
  * A single flag (SEED_ENABLED) gates all fallbacks so this can be turned off in one
  * place. It is on by default for the preview. */
 
-export const SEED_ENABLED = true;
+export const SEED_ENABLED = false;
 
 /** The single view/filter taxonomy for the community feed. Order is the dropdown
  *  order the product locked: Social, Discussions, For Sale, Events, Articles,

@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { useDocumentTitle } from '../../lib/hooks';
 import { useViewSurfaces } from '../../lib/surfaces';
+import { useAuth } from '../../contexts/AuthContext';
 import { DashboardPanel } from '../../components/app/DashboardPanel';
 import { FeedControls } from '../../components/feed/FeedControls';
 import { CommunityFeed } from '../../components/feed/CommunityFeed';
@@ -15,10 +16,17 @@ import { SORT_OPTIONS, type FeedView } from '../../lib/seed';
  * purpose-built dashboard, preserving the purchase-driven view model.
  */
 export default function Home() {
-  useDocumentTitle('Your Dashboard');
   const { surfaces, loading: surfacesLoading } = useViewSurfaces();
-  const [view, setView] = useState<FeedView>('all');
-  const [sort, setSort] = useState<string>(SORT_OPTIONS.all[0]);
+  const { profile, isStaff } = useAuth();
+  // Riders get no page name — this IS the app. Staff see their Dashboard.
+  useDocumentTitle(isStaff ? 'Dashboard' : 'French Heritage');
+  const firstName = profile?.first_name || profile?.display_name || null;
+  const hour = new Date().getHours();
+  const daypart = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+  const [params] = useSearchParams();
+  const initialFilter = (params.get('filter') as FeedView | null) ?? 'all';
+  const [view, setView] = useState<FeedView>(initialFilter);
+  const [sort, setSort] = useState<string>((SORT_OPTIONS[initialFilter] ?? SORT_OPTIONS.all)[0]);
 
   const hasFeed = surfaces.has_feed;
 
@@ -31,14 +39,16 @@ export default function Home() {
   if (!surfacesLoading && !hasFeed) {
     if (surfaces.surfaces.includes('deal_dashboard')) return <Navigate to="/app/deal" replace />;
     if (surfaces.surfaces.includes('care_dashboard')) return <Navigate to="/app/care" replace />;
-    return <Navigate to="/app/dashboard" replace />;
+    return <Navigate to="/app/account" replace />;
   }
 
   return (
     <div>
       <header className="mb-4">
-        <p className="eyebrow">Good afternoon, Claire</p>
-        <h1 className="font-serif text-green-800 text-3xl font-semibold mt-0.5">Your Dashboard</h1>
+        <p className="eyebrow">Good {daypart}{firstName ? `, ${firstName}` : ''}</p>
+        {isStaff && (
+          <h1 className="font-serif text-green-800 text-3xl font-semibold mt-0.5">Dashboard</h1>
+        )}
       </header>
 
       <DashboardPanel />

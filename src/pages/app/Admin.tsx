@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
 import { toErrorMessage } from '../../lib/ops/errors';
 import { useDocumentTitle } from '../../lib/hooks';
+import { useAuth } from '../../contexts/AuthContext';
+import {
+  GRANTABLE_SURFACES, listAllGrants, addGrant, removeGrant, type SurfaceGrant,
+} from '../../lib/grants';
 import {
   adminListMembers, adminSetSuspended, adminSetAdmin, adminUpsertMembership,
   adminSetRole, adminCreateAnnouncement, adminCreateEvent, adminCreateContentPost,
@@ -10,10 +14,11 @@ import {
 import { fetchOfferings } from '../../lib/api';
 import type { Offering } from '../../lib/types';
 
-type Tab = 'members' | 'invite' | 'announce' | 'events' | 'content' | 'resources';
+type Tab = 'members' | 'invite' | 'announce' | 'events' | 'content' | 'resources' | 'access';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'members', label: 'Members' },
+  { id: 'access', label: 'Instructor access' },
   { id: 'invite', label: 'Invite' },
   { id: 'announce', label: 'Announce' },
   { id: 'events', label: 'Events' },
@@ -32,6 +37,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 // ── Members tab ───────────────────────────────────────────────────────────────
 function MembersTab() {
+  const { isAdmin, isSuperAdmin } = useAuth();
   const [members, setMembers] = useState<AdminMemberRow[]>([]);
   const [loading, setLoading] = useState(true);
   const reload = () => { adminListMembers().then(setMembers).catch(() => setMembers([])).finally(() => setLoading(false)); };
@@ -63,17 +69,24 @@ function MembersTab() {
               <td className="py-2.5 pr-4 text-green-900">{m.display_name || `${m.first_name ?? ''} ${m.last_name ?? ''}`.trim() || '—'}</td>
               <td className="py-2.5 pr-4 text-secondary">{m.email}</td>
               <td className="py-2.5 pr-4">
-                <select
-                  className="border border-green-800/20 px-2 py-1 text-xs bg-white"
-                  value={(m.role as MemberRole) ?? 'USER'}
-                  onChange={(e) => act(() => adminSetRole(m.user_id, e.target.value as MemberRole))}
-                  aria-label="Role"
-                >
-                  <option value="USER">Rider</option>
-                  <option value="MANAGER">Instructor</option>
-                  <option value="ADMIN">Admin</option>
-                  <option value="SUPER_ADMIN">Super admin</option>
-                </select>
+                {isAdmin ? (
+                  <select
+                    className="border border-green-800/20 px-2 py-1 text-xs bg-white"
+                    value={(m.role as MemberRole) ?? 'USER'}
+                    onChange={(e) => act(() => adminSetRole(m.user_id, e.target.value as MemberRole))}
+                    aria-label="Role"
+                  >
+                    <option value="USER">Rider</option>
+                    <option value="MANAGER">Instructor</option>
+                    <option value="ADMIN">Admin</option>
+                    {isSuperAdmin && <option value="SUPER_ADMIN">Super admin</option>}
+                  </select>
+                ) : (
+                  <span className="text-xs text-muted">
+                    {(m.role as MemberRole) === 'MANAGER' || (m.role as MemberRole) === 'EMPLOYEE'
+                      ? 'Instructor' : (m.role as MemberRole) === 'ADMIN' ? 'Admin' : 'Rider'}
+                  </span>
+                )}
               </td>
               <td className="py-2.5 pr-4">
                 <select
@@ -368,7 +381,81 @@ function ResourcesTab() {
   );
 }
 
+/** ROLE ARCHITECTURE — the admin's control over what instructors see. A grant
+ *  adds one management surface to the instructor rail: for EVERY instructor
+ *  (org-wide) or for one account. Sensitive writes stay admin-gated server-side;
+ *  a grant opens the surface. */
+function InstructorAccessTab() {
+  const [grants, setGrants] = useState<SurfaceGrant[]>([]);
+  const [instructors, setInstructors] = useState<AdminMemberRow[]>([]);
+  const [who, setWho] = useState<string>('');        // '' = every instructor
+  const [err, setErr] = useState<string | null>(null);
+
+  const load = () => {
+    listAllGrants().then(setGrants).catch(() => setErr('Could not load grants.'));
+    adminListMembers()
+      .then((rows) => setInstructors(rows.filter((r) =>
+        (r.role as MemberRole) === 'MANAGER' || (r.role as MemberRole) === 'EMPLOYEE')))
+      .catch(() => {});
+  };
+  useEffect(load, []);
+
+  const scopeGrants = grants.filter((g) => (who ? g.user_id === who : g.user_id === null));
+  const has = (key: string) => scopeGrants.some((g) => g.nav_key === key);
+
+  async function toggle(key: string) {
+    setErr(null);
+    try {
+      const existing = scopeGrants.find((g) => g.nav_key === key);
+      if (existing) await removeGrant(existing.id);
+      else await addGrant(key, who || null);
+      load();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Could not update the grant.');
+    }
+  }
+
+  return (
+    <div className="max-w-2xl">
+      <p className="body-text text-sm text-muted mb-4">
+        Instructors always have the servicing set (intake, contacts, lessons,
+        availability, horses, engagements, documents). Add management surfaces
+        here — for every instructor, or for one account.
+      </p>
+      <div className="mb-4">
+        <label className="form-label" htmlFor="grant-scope">Applies to</label>
+        <select id="grant-scope" className="border border-green-800/20 px-3 py-2 text-sm bg-white"
+          value={who} onChange={(e) => setWho(e.target.value)}>
+          <option value="">Every instructor</option>
+          {instructors.map((i) => (
+            <option key={i.user_id} value={i.user_id}>
+              {i.display_name || `${i.first_name ?? ''} ${i.last_name ?? ''}`.trim() || i.email}
+            </option>
+          ))}
+        </select>
+      </div>
+      {err && <p role="alert" className="form-error mb-3">{err}</p>}
+      <div className="flex flex-col gap-2">
+        {GRANTABLE_SURFACES.map((sfc) => (
+          <label key={sfc.key}
+            className="flex items-center justify-between bg-white border border-green-800/10 px-4 py-3">
+            <span className="text-sm text-green-900">{sfc.label}</span>
+            <input type="checkbox" className="accent-green-700 w-4 h-4"
+              checked={has(sfc.key)} onChange={() => void toggle(sfc.key)} />
+          </label>
+        ))}
+      </div>
+      {who && (
+        <p className="text-xs text-muted mt-3">
+          Account-specific grants stack on top of the every-instructor grants.
+        </p>
+      )}
+    </div>
+  );
+}
+
 export default function Admin() {
+  const { isAdmin } = useAuth();
   useDocumentTitle('Admin');
   const [tab, setTab] = useState<Tab>('members');
 
@@ -378,7 +465,7 @@ export default function Admin() {
       <h1 className="heading-section text-green-800 mb-8">Manage the community.</h1>
 
       <div className="flex flex-wrap gap-2 mb-8 border-b border-green-800/10">
-        {TABS.map((t) => (
+        {TABS.filter((t) => isAdmin || t.id === 'members' || t.id === 'invite').map((t) => (
           <button key={t.id} type="button" onClick={() => setTab(t.id)}
             className={`px-4 py-2 text-sm font-sans -mb-px border-b-2 transition-colors focus-ring ${
               tab === t.id ? 'border-green-800 text-green-800 font-medium' : 'border-transparent text-muted hover:text-green-800'
@@ -389,6 +476,7 @@ export default function Admin() {
       </div>
 
       {tab === 'members' && <MembersTab />}
+      {tab === 'access' && <InstructorAccessTab />}
       {tab === 'invite' && <InviteTab />}
       {tab === 'announce' && <AnnounceTab />}
       {tab === 'events' && <EventsTab />}

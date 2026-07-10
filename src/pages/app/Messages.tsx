@@ -88,7 +88,7 @@ export default function Messages() {
           <p className="eyebrow mb-3">Conversations</p>
           {conversations.length === 0 ? (
             <p className="text-xs text-muted">
-              No messages yet. Start one from the <Link to="/app/members" className="underline">members</Link> page.
+              No messages yet. Start one from the <Link to="/app?filter=members" className="underline">members</Link> page.
             </p>
           ) : (
             <div className="flex flex-col gap-1">
