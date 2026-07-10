@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   X, Gift, Send, Clock, ArrowRightLeft, Link as LinkIcon, FileText, BookmarkX,
   Newspaper, Tag, ExternalLink, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import {
-  SEED_GIFTS, SEED_SAVED, SEED_DOCUMENTS,
+  SEED_GIFTS, SEED_SAVED,
   type SeedGift, type SeedSaved, type SeedDocument,
 } from '../../lib/seed';
+import { listMySignableDocuments } from '../../lib/ops/api-client';
 
 /**
  * ACCOUNT PANELS — Gifts, Saved items, and Documents-as-paper. Each is a complete,
@@ -116,10 +117,46 @@ export function SavedPanel() {
 // ── Documents (render as paper) ────────────────────────────────
 export function DocumentsPanel() {
   const [open, setOpen] = useState<SeedDocument | null>(null);
+  const [rows, setRows] = useState<SeedDocument[] | null>(null);
+
+  // REAL documents: the member's engagement documents with their actual merged
+  // text (the placeholders the panel launched with are gone — owner-reported).
+  useEffect(() => {
+    listMySignableDocuments()
+      .then((items) => setRows(items
+        .sort((a, b) => Number(b.signed) - Number(a.signed))
+        .map((it) => {
+          const d = it.document;
+          const when = d.effective_date ?? d.generated_at ?? d.created_at;
+          const body = d.merged_body ?? 'This document is being prepared.';
+          // paginate the real text into readable sheets
+          const paras = body.split(/\n\n+/);
+          const pages: string[] = [];
+          let cur = '';
+          for (const para of paras) {
+            if (cur && (cur.length + para.length) > 2400) { pages.push(cur); cur = para; }
+            else cur = cur ? cur + '\n\n' + para : para;
+          }
+          if (cur) pages.push(cur);
+          return {
+            id: d.id,
+            title: d.title ?? 'Document',
+            kind: d.status === 'EXECUTED' ? 'Signed' : 'Awaiting signature',
+            signedOn: `${it.signed ? 'Signed' : 'Generated'} ${new Date(when).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`,
+            pages: pages.length ? pages : [body],
+          };
+        })))
+      .catch(() => setRows([]));
+  }, []);
+
   return (
     <div className="mt-2.5 mb-1 p-4 bg-cream-100/60 border border-green-800/10 rounded-xl">
+      {rows === null && <p className="text-sm text-muted px-1 py-2">Loading your documents…</p>}
+      {rows !== null && rows.length === 0 && (
+        <p className="text-sm text-muted px-1 py-2">No documents yet — agreements you sign will live here.</p>
+      )}
       <div className="flex flex-col gap-2">
-        {SEED_DOCUMENTS.map((d) => (
+        {(rows ?? []).map((d) => (
           <button key={d.id} type="button" onClick={() => setOpen(d)}
             className="flex items-center gap-3 bg-white border border-green-800/10 rounded-xl px-3.5 py-3 text-left hover:border-green-800/20 focus-ring">
             <span className="w-9 h-9 rounded-lg bg-cream-100 text-green-700 grid place-items-center shrink-0"><FileText size={16} /></span>
