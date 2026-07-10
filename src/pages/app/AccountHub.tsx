@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   UserRound, Grid3x3, Bookmark, FileText, Boxes, CreditCard, BadgeCheck,
-  ShoppingBag, Gift, LifeBuoy, ChevronRight, ExternalLink, Mail, Smartphone,
+  ShoppingBag, Gift, ChevronRight, ExternalLink, Mail, Smartphone,
   MessageSquare, Instagram, Facebook, Linkedin, Music2, Check,
 } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
@@ -391,7 +391,6 @@ export default function AccountHub() {
 
       <SectionLabel>Help</SectionLabel>
       <div className="flex flex-col gap-2.5">
-        <Row icon={LifeBuoy} title="Support" sub="Get help with anything" onClick={() => navigate('/app/support')} />
       </div>
     </div>
   );

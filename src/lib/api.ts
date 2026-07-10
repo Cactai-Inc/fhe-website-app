@@ -2121,3 +2121,14 @@ export async function staffContactDirectory(): Promise<DirectoryContact[]> {
   if (error) throw error;
   return (data ?? []) as DirectoryContact[];
 }
+
+/** Soft-delete a contact (admin RLS). Directory + pickers filter deleted rows;
+ *  history that references the contact keeps working. */
+export async function deleteContact(id: string): Promise<void> {
+  const { data: auth } = await supabase.auth.getUser();
+  const { error } = await supabase
+    .from('contacts')
+    .update({ deleted_at: new Date().toISOString(), deleted_by: auth.user?.id ?? null })
+    .eq('id', id);
+  if (error) throw error;
+}
