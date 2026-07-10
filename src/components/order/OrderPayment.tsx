@@ -38,7 +38,9 @@ function CopyRow({ label, display, copyValue }: { label: string; display: string
   );
 }
 
-// Stripe card convenience fee (disclosed). Confirm CA surcharge compliance before enabling — see SETUP.md.
+// Card payments stay HIDDEN until Stripe is configured (owner directive).
+// Flip to true after the Stripe account + webhook are live — see SETUP.md.
+const STRIPE_ENABLED = false;
 const STRIPE_FEE_RATE = 0.03;
 
 export default function OrderPayment({
@@ -87,7 +89,9 @@ export default function OrderPayment({
     <div className="bg-white border border-green-800/10 p-8 mb-8">
       <h2 className="font-serif font-medium text-green-800 text-xl mb-2">Payment</h2>
       <p className="body-text text-sm mb-6">
-        Zelle is instant and our preferred method. A card option is available with a small disclosed fee.
+        {STRIPE_ENABLED
+          ? 'Zelle is instant and our preferred method. A card option is available with a small disclosed fee.'
+          : 'We accept Zelle — instant, no fees, straight from your bank app.'}
       </p>
 
       {payment?.status === 'review' && (
@@ -96,7 +100,8 @@ export default function OrderPayment({
         </div>
       )}
 
-      {/* Method toggle */}
+      {/* Method toggle (card appears once Stripe is configured) */}
+      {STRIPE_ENABLED && (
       <div role="radiogroup" aria-label="Payment method" className="grid grid-cols-2 gap-3 mb-6">
         {([
           { value: 'zelle' as const, label: 'Zelle', icon: Landmark, sub: 'Instant · preferred' },
@@ -123,6 +128,7 @@ export default function OrderPayment({
           );
         })}
       </div>
+      )}
 
       {method === 'zelle' && (
         <div>
@@ -137,8 +143,8 @@ export default function OrderPayment({
                 <CopyRow label="Memo / reference" display={reference} copyValue={order.payment_reference ?? ''} />
               </dl>
               <p className="text-xs font-sans text-muted mt-4 leading-relaxed">
-                Please send the exact amount shown — the cents help us match your payment
-                automatically. We’ll confirm as soon as it lands, usually within the hour.
+                Include the reference code in the memo so we can match your payment.
+                We’ll confirm as soon as it lands, usually within the hour.
               </p>
             </div>
           ) : (
@@ -149,7 +155,7 @@ export default function OrderPayment({
         </div>
       )}
 
-      {method === 'stripe' && order.status !== 'awaiting_payment' && (
+      {STRIPE_ENABLED && method === 'stripe' && order.status !== 'awaiting_payment' && (
         <div>
           <p className="text-sm font-sans text-muted mb-4">
             Card total with fee: <span className="text-green-900 font-medium">{usd(cardTotal)}</span>

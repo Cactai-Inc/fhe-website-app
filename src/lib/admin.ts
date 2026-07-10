@@ -325,9 +325,22 @@ export interface ClientAccountRow {
   membership_status: string | null;
   created_at: string;
   tags: string[] | null;
+  invite_id: string | null;
   invite_status: string | null;
   invite_expires_at: string | null;
   invite_scheduled_for: string | null;
+}
+
+/** Kill the invite link now (still shows as expired; resendable). */
+export async function adminExpireInvitation(id: string): Promise<void> {
+  const { error } = await supabase.rpc('admin_expire_invitation', { p_id: id });
+  if (error) throw error;
+}
+
+/** Soft-delete the invite. It always PRESENTS as expired — never as deleted. */
+export async function adminDeleteInvitation(id: string): Promise<void> {
+  const { error } = await supabase.rpc('admin_delete_invitation', { p_id: id });
+  if (error) throw error;
 }
 
 export async function adminClientAccounts(): Promise<ClientAccountRow[]> {

@@ -7,6 +7,7 @@ import { useDocumentTitle } from '../../lib/hooks';
 import { supabase } from '../../lib/supabase';
 import {
   adminSetSuspended, adminClientAccounts, adminClientItems, adminSendInvitation,
+  adminExpireInvitation, adminDeleteInvitation,
   categoryDocumentDefaults, getContactRequiredDocuments, setContactRequiredDocuments,
   type ClientAccountRow, type ClientItems, type CategoryDocDefault,
 } from '../../lib/admin';
@@ -297,10 +298,36 @@ function InvitePanel({ row, onSent }: { row: ClientAccountRow; onSent: () => voi
           </p>
         )}
       </div>
-      <button type="button" disabled={busy || !row.email} onClick={() => void send()}
-        className="btn-primary text-xs">
-        {busy ? 'Sending…' : sent ? 'Resend invitation' : 'Send invitation'}
-      </button>
+      <div className="flex flex-wrap items-center gap-2">
+        <button type="button" disabled={busy || !row.email} onClick={() => void send()}
+          className="btn-primary text-xs">
+          {busy ? 'Sending…' : sent ? 'Resend invitation' : 'Send invitation'}
+        </button>
+        {row.invite_id && sent && !expired && (
+          <button type="button" disabled={busy}
+            onClick={() => void (async () => {
+              setBusy(true); setErr(null);
+              try { await adminExpireInvitation(row.invite_id!); onSent(); }
+              catch { setErr('Could not expire the invitation.'); }
+              finally { setBusy(false); }
+            })()}
+            className="px-3.5 py-2 rounded-lg border border-gold-600/50 text-gold-800 text-xs hover:bg-gold-50 focus-ring">
+            Expire now
+          </button>
+        )}
+        {row.invite_id && (
+          <button type="button" disabled={busy}
+            onClick={() => void (async () => {
+              setBusy(true); setErr(null);
+              try { await adminDeleteInvitation(row.invite_id!); onSent(); }
+              catch { setErr('Could not delete the invitation.'); }
+              finally { setBusy(false); }
+            })()}
+            className="px-3.5 py-2 rounded-lg border border-red-300 text-red-700 text-xs hover:bg-red-50 focus-ring">
+            Delete invite
+          </button>
+        )}
+      </div>
       {err && <p role="alert" className="form-error mt-3">{err}</p>}
       {result && (
         <div className="bg-green-50 border border-green-200 p-3 mt-3 text-sm rounded-lg">
