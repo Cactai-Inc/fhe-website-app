@@ -387,3 +387,28 @@ export async function getContactRequiredDocuments(contactId: string): Promise<st
   if (error) throw error;
   return ((data ?? []) as { template_key: string }[]).map((r) => r.template_key);
 }
+
+// ─── Intake form required-field control ──────────────────────────────────────
+export interface AdminFormDefinition {
+  form_key: string;
+  title: string;
+  audience: string;
+  purpose: string | null;
+  schema: { sections: { heading: string; fields: {
+    key: string; label: string; type: string; required?: boolean;
+  }[] }[] };
+}
+
+export async function adminFormDefinitions(): Promise<AdminFormDefinition[]> {
+  const { data, error } = await supabase.rpc('admin_form_definitions');
+  if (error) throw error;
+  return (data ?? []) as AdminFormDefinition[];
+}
+
+/** Bulk-stamp required flags onto a form's fields ({field_key: bool}). */
+export async function setFormRequired(formKey: string, required: Record<string, boolean>): Promise<void> {
+  const { error } = await supabase.rpc('set_form_required', {
+    p_form_key: formKey, p_required: required,
+  });
+  if (error) throw error;
+}

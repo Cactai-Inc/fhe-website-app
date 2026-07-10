@@ -30,6 +30,8 @@ export interface PublicFormField {
   options?: string[];
   note?: string;
   token?: string;
+  /** Owner-controlled (admin Forms page): the renderer enforces it. */
+  required?: boolean;
 }
 
 export interface PublicFormSection {

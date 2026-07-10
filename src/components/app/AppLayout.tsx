@@ -107,6 +107,7 @@ const MODULES_GROUP: NavItem[] = [
 const SETTINGS_GROUP: NavItem[] = [
   { to: '/app/ops/admin/branding', label: 'Branding', icon: Shield, adminOnly: true },
   { to: '/app/ops/admin/products', label: 'Products', icon: Shield, adminOnly: true },
+  { to: '/app/ops/admin/forms', label: 'Forms', icon: Shield, adminOnly: true },
 ];
 
 // kept for compatibility with anything importing MANAGE_NAV
