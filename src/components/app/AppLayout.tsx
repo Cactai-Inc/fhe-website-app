@@ -218,10 +218,19 @@ export default function AppLayout() {
     <div className="min-h-screen bg-cream">
       <header className="sticky top-0 z-40 bg-white border-b border-green-800/10">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-4 sm:px-6 h-14">
-          <Link to="/app" className="flex items-center gap-2.5" aria-label="French Heritage — home">
-            <span className="w-[34px] h-[34px] rounded-lg bg-green-800 text-gold-400 grid place-items-center font-display text-lg font-semibold shrink-0">F</span>
-            <span className="hidden sm:inline font-display text-green-800 text-lg uppercase tracking-wide">French Heritage</span>
-          </Link>
+          {isSuperAdmin ? (
+            /* the PLATFORM operator's chrome — never a tenant's brand. Placeholder
+               wordmark until the platform product is named/branded. */
+            <Link to="/app/ops/superadmin/organizations" className="flex items-center gap-2.5" aria-label="Platform — organizations">
+              <span className="w-[34px] h-[34px] rounded-lg bg-green-950 text-gold-400 grid place-items-center font-display text-lg font-semibold shrink-0">C</span>
+              <span className="hidden sm:inline font-display text-green-900 text-lg uppercase tracking-wide">Cactai Platform</span>
+            </Link>
+          ) : (
+            <Link to="/app" className="flex items-center gap-2.5" aria-label="French Heritage — home">
+              <span className="w-[34px] h-[34px] rounded-lg bg-green-800 text-gold-400 grid place-items-center font-display text-lg font-semibold shrink-0">F</span>
+              <span className="hidden sm:inline font-display text-green-800 text-lg uppercase tracking-wide">French Heritage</span>
+            </Link>
+          )}
           <div className="flex items-center gap-3">
             <button type="button" onClick={() => setCreateOpen(true)}
               className="p-2 text-green-800 rounded-lg hover:bg-cream-100 focus-ring" aria-label="Create">
