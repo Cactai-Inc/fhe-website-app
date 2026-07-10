@@ -39,6 +39,10 @@ export default function Register() {
 
   const [state, setState] = useState<State>('checking');
   const [invitation, setInvitation] = useState<Invitation | null>(null);
+  // Gmail invites lead with Google only — the password form stays one click
+  // away for the rare Gmail user who wants a password anyway.
+  const isGmail = /@(gmail|googlemail)\.com$/i.test(invitation?.email ?? '');
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [password, setPassword] = useState('');
@@ -192,16 +196,27 @@ export default function Register() {
             <button
               type="button"
               onClick={continueWithGoogle}
-              className="btn-outline-gold w-full justify-center"
+              className={`w-full justify-center ${isGmail ? 'btn-primary' : 'btn-outline-gold'}`}
             >
               Continue with Google
             </button>
-            <p className="text-center text-xs font-sans text-muted mt-3">
-              or set a password below
-            </p>
+            {isGmail && !showPasswordForm ? (
+              <p className="text-center text-xs font-sans text-muted mt-3">
+                This is a Gmail address — one click and you're in.{' '}
+                <button type="button" className="underline hover:text-green-800"
+                  onClick={() => setShowPasswordForm(true)}>
+                  Prefer a password instead?
+                </button>
+              </p>
+            ) : (
+              <p className="text-center text-xs font-sans text-muted mt-3">
+                or set a password below
+              </p>
+            )}
           </div>
         )}
 
+        {(!OAUTH_PROVIDERS.google || !isGmail || showPasswordForm) && (
         <form onSubmit={handleSubmit} noValidate className="bg-white border border-green-800/10 p-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
             <div>
@@ -255,6 +270,7 @@ export default function Register() {
             {state !== 'creating' && <ArrowRight size={16} />}
           </button>
         </form>
+        )}
       </div>
     </div>
   );
