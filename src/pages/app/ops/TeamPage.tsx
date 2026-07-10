@@ -251,7 +251,7 @@ export default function TeamPage() {
     (m.role as MemberRole) === 'MANAGER' || (m.role as MemberRole) === 'EMPLOYEE');
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-5xl">
       <h1 className="font-serif text-2xl text-green-900 mb-1">Team</h1>
       <p className="text-sm text-green-800/70 mb-6">
         Internal accounts — admins and instructors — and what instructors can reach.

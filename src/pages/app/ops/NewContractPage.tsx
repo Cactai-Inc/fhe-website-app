@@ -137,7 +137,7 @@ export default function NewContractPage() {
   );
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-4xl">
       <Link to="/app/ops/documents"
         className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-green-800 mb-4">
         <ArrowLeft size={14} /> Documents

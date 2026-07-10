@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { toErrorMessage } from '../../../lib/ops/errors';
 import { useDocumentTitle } from '../../../lib/hooks';
-import { adminCreateClient, CLIENT_CATEGORIES } from '../../../lib/admin';
+import {
+  adminCreateClient, setContactRequiredDocuments, categoryDocumentDefaults,
+  CLIENT_CATEGORIES, type CategoryDocDefault,
+} from '../../../lib/admin';
 
 /**
  * NEW CLIENT (/app/ops/accounts/new) — creates the client RECORD, not a login.
@@ -34,11 +37,49 @@ export default function AccountInvitePage() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [categories, setCategories] = useState<string[]>([]);
+  const [defaults, setDefaults] = useState<CategoryDocDefault[]>([]);
+  const [docChecked, setDocChecked] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
   const [working, setWorking] = useState(false);
 
+  useEffect(() => {
+    categoryDocumentDefaults().then(setDefaults).catch(() => setDefaults([]));
+  }, []);
+
+  // every known template (deduped), with which categories suggest it
+  const templates = useMemo(() => {
+    const m = new Map<string, { title: string; categories: string[] }>();
+    for (const d of defaults) {
+      const t = m.get(d.template_key) ?? { title: d.title, categories: [] };
+      t.categories.push(d.category);
+      m.set(d.template_key, t);
+    }
+    return Array.from(m.entries()).map(([key, v]) => ({ key, ...v }));
+  }, [defaults]);
+
   function toggleCategory(c: string) {
-    setCategories((prev) => prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]);
+    setCategories((prev) => {
+      const on = !prev.includes(c);
+      const next = on ? [...prev, c] : prev.filter((x) => x !== c);
+      // prefill: enabling a category checks its suggested documents;
+      // disabling never unchecks (the admin's explicit picks stand)
+      if (on) {
+        setDocChecked((old) => {
+          const s2 = new Set(old);
+          defaults.filter((d) => d.category === c).forEach((d) => s2.add(d.template_key));
+          return s2;
+        });
+      }
+      return next;
+    });
+  }
+
+  function toggleDoc(key: string) {
+    setDocChecked((old) => {
+      const s2 = new Set(old);
+      if (s2.has(key)) s2.delete(key); else s2.add(key);
+      return s2;
+    });
   }
 
   async function submit(e: React.FormEvent) {
@@ -52,6 +93,8 @@ export default function AccountInvitePage() {
         ...(phone.trim() ? { phone: phone.trim() } : {}),
         categories,
       });
+      // the explicit first-login paperwork assignment (what you checked)
+      await setContactRequiredDocuments(r.contact_id, Array.from(docChecked));
       // straight to their account page — attach items there, invite last
       navigate(`/app/admin?open=${r.contact_id}`);
     } catch (err) {
@@ -61,7 +104,7 @@ export default function AccountInvitePage() {
   }
 
   return (
-    <div className="max-w-xl">
+    <div className="max-w-3xl">
       <Link to="/app/admin"
         className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-green-800 mb-4">
         <ArrowLeft size={14} /> Clients
@@ -95,20 +138,52 @@ export default function AccountInvitePage() {
 
         <div className="mb-6">
           <span className="form-label">Client categories</span>
-          <p className="text-xs text-muted mb-2">What kind of client they are — pick everything that applies.</p>
-          <div className="flex flex-wrap gap-1.5">
+          <p className="text-sm text-muted mb-2.5">What kind of client they are — check everything that applies.</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
             {CLIENT_CATEGORIES.map((c) => (
-              <button key={c} type="button" onClick={() => toggleCategory(c)}
-                aria-pressed={categories.includes(c)}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-sans focus-ring ${
+              <label key={c}
+                className={`flex items-center gap-2.5 px-4 py-3 rounded-lg border cursor-pointer text-[15px] ${
                   categories.includes(c)
-                    ? 'bg-green-800 text-white'
-                    : 'bg-green-800/10 text-green-800 hover:bg-green-800/20'
+                    ? 'border-green-700 bg-green-50 text-green-900 font-medium'
+                    : 'border-green-800/15 text-secondary hover:bg-green-50/50'
                 }`}>
+                <input type="checkbox" className="accent-green-700 w-[18px] h-[18px]"
+                  checked={categories.includes(c)} onChange={() => toggleCategory(c)} />
                 {c}
-              </button>
+              </label>
             ))}
           </div>
+        </div>
+
+        <div className="mb-6">
+          <span className="form-label">First-login paperwork</span>
+          <p className="text-sm text-muted mb-2.5">
+            Exactly what they'll be asked to review and sign when they activate the
+            account. Category picks prefill this — you decide the final set, and the
+            invitation email lists it.
+          </p>
+          <div className="grid sm:grid-cols-2 gap-2.5">
+            {templates.map((t) => (
+              <label key={t.key}
+                className={`flex items-start gap-2.5 px-4 py-3 rounded-lg border cursor-pointer ${
+                  docChecked.has(t.key)
+                    ? 'border-green-700 bg-green-50'
+                    : 'border-green-800/15 hover:bg-green-50/50'
+                }`}>
+                <input type="checkbox" className="accent-green-700 w-[18px] h-[18px] mt-0.5"
+                  checked={docChecked.has(t.key)} onChange={() => toggleDoc(t.key)} />
+                <span className="min-w-0">
+                  <span className={`block text-[14px] leading-snug ${docChecked.has(t.key) ? 'text-green-900 font-medium' : 'text-secondary'}`}>{t.title}</span>
+                  <span className="block text-[11.5px] text-muted mt-0.5">Suggested for {t.categories.join(', ')}</span>
+                </span>
+              </label>
+            ))}
+            {templates.length === 0 && <p className="text-sm text-muted">Loading document catalog…</p>}
+          </div>
+          <p className="text-xs text-muted mt-2">
+            {docChecked.size === 0 ? 'No paperwork assigned — they land straight on their dashboard.'
+              : `${docChecked.size} document${docChecked.size === 1 ? '' : 's'} assigned for first login.`}
+          </p>
         </div>
 
         <button type="submit" disabled={working || !email.trim() || !firstName.trim() || !lastName.trim()}

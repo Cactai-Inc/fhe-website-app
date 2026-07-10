@@ -316,7 +316,7 @@ export default function AppLayout() {
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto flex">
+      <div className="max-w-7xl mx-auto flex">
         {showRail && (
           <aside className="hidden lg:block w-56 shrink-0 border-r border-green-800/10 bg-cream-100/40">
             <nav className="p-3 sticky top-14 h-[calc(100dvh-3.5rem)] overflow-y-auto">

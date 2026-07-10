@@ -309,7 +309,7 @@ export async function adminUpdateOffering(id: string, patch: Partial<OfferingInp
 /** The categories a client can be designated as at creation (multi-select).
  *  Stored as contact tags — visible on the directory and account views. */
 export const CLIENT_CATEGORIES = [
-  'Rider', 'Horse owner', 'Lessee', 'Lessor', 'Buyer', 'Seller', 'Boarder', 'Care',
+  'Rider', 'Horse owner', 'Lessee', 'Lessor', 'Buyer', 'Seller',
 ] as const;
 
 export interface ClientAccountRow {
@@ -361,4 +361,29 @@ export async function adminClientItems(clientId: string): Promise<ClientItems> {
   const { data, error } = await supabase.rpc('admin_client_items', { p_client_id: clientId });
   if (error) throw error;
   return (data ?? { engagements: [], documents: [] }) as ClientItems;
+}
+
+// ─── First-login paperwork (explicit, prefilled by category) ─────────────────
+export interface CategoryDocDefault { category: string; template_key: string; title: string }
+
+/** The prefill defaults: which documents each category suggests. */
+export async function categoryDocumentDefaults(): Promise<CategoryDocDefault[]> {
+  const { data, error } = await supabase.rpc('category_document_defaults');
+  if (error) throw error;
+  return (data ?? []) as CategoryDocDefault[];
+}
+
+/** Replace the client's assigned first-login documents (the checkbox save). */
+export async function setContactRequiredDocuments(contactId: string, templateKeys: string[]): Promise<void> {
+  const { error } = await supabase.rpc('set_contact_required_documents', {
+    p_contact_id: contactId, p_template_keys: templateKeys,
+  });
+  if (error) throw error;
+}
+
+/** What's currently assigned to a contact. */
+export async function getContactRequiredDocuments(contactId: string): Promise<string[]> {
+  const { data, error } = await supabase.rpc('required_templates_for_contact', { p_contact_id: contactId });
+  if (error) throw error;
+  return ((data ?? []) as { template_key: string }[]).map((r) => r.template_key);
 }

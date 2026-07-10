@@ -204,7 +204,7 @@ export default function ContractPage() {
   };
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-5xl">
       <div className="flex items-start justify-between gap-3 mb-1">
         <h1 className="font-serif text-2xl text-green-900 flex items-center gap-2">
           <FileText size={22} className="text-gold-ink" /> {doc.title}
@@ -329,7 +329,7 @@ export default function ContractPage() {
                 )
               )}
             </div>
-            <div className="flex flex-col gap-5 max-w-xl">
+            <div className="flex flex-col gap-5 max-w-2xl">
               {fields.map((f) => (
                 <div key={f.field_key} className={f.value_type === 'longtext' ? 'sm:col-span-2' : ''}>
                   <div className="flex items-center gap-1.5 mb-1.5">

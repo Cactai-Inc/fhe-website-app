@@ -7,7 +7,8 @@ import { useDocumentTitle } from '../../lib/hooks';
 import { supabase } from '../../lib/supabase';
 import {
   adminSetSuspended, adminClientAccounts, adminClientItems, adminSendInvitation,
-  type ClientAccountRow, type ClientItems,
+  categoryDocumentDefaults, getContactRequiredDocuments, setContactRequiredDocuments,
+  type ClientAccountRow, type ClientItems, type CategoryDocDefault,
 } from '../../lib/admin';
 import {
   listBillingSchedules, createBillingSchedule, nextDue,
@@ -313,6 +314,64 @@ function InvitePanel({ row, onSent }: { row: ClientAccountRow; onSent: () => voi
   );
 }
 
+function PaperworkEditor({ contactId }: { contactId: string }) {
+  const [defaults, setDefaults] = useState<CategoryDocDefault[]>([]);
+  const [checked, setChecked] = useState<Set<string>>(new Set());
+  const [saved, setSaved] = useState(true);
+
+  useEffect(() => {
+    categoryDocumentDefaults().then(setDefaults).catch(() => setDefaults([]));
+    getContactRequiredDocuments(contactId).then((keys) => setChecked(new Set(keys))).catch(() => {});
+  }, [contactId]);
+
+  const templates = (() => {
+    const m = new Map<string, { title: string; categories: string[] }>();
+    for (const d of defaults) {
+      const t = m.get(d.template_key) ?? { title: d.title, categories: [] };
+      t.categories.push(d.category);
+      m.set(d.template_key, t);
+    }
+    return Array.from(m.entries()).map(([key, v]) => ({ key, ...v }));
+  })();
+
+  async function toggle(key: string) {
+    const next = new Set(checked);
+    if (next.has(key)) next.delete(key); else next.add(key);
+    setChecked(next); setSaved(false);
+    try {
+      await setContactRequiredDocuments(contactId, Array.from(next));
+      setSaved(true);
+    } catch { /* row stays visibly unsaved */ }
+  }
+
+  return (
+    <section className="bg-white border border-green-800/10 rounded-xl p-5 mt-4">
+      <div className="flex items-center justify-between mb-1">
+        <h3 className="font-serif text-green-800 text-lg">First-login paperwork</h3>
+        <span className={`text-xs ${saved ? 'text-green-700' : 'text-gold-800'}`}>{saved ? 'Saved' : 'Saving…'}</span>
+      </div>
+      <p className="text-sm text-muted mb-3">
+        What they'll be asked to review and sign when they activate. The invitation email lists exactly this.
+      </p>
+      <div className="grid sm:grid-cols-2 gap-2.5">
+        {templates.map((t) => (
+          <label key={t.key}
+            className={`flex items-start gap-2.5 px-4 py-3 rounded-lg border cursor-pointer ${
+              checked.has(t.key) ? 'border-green-700 bg-green-50' : 'border-green-800/15 hover:bg-green-50/50'
+            }`}>
+            <input type="checkbox" className="accent-green-700 w-[18px] h-[18px] mt-0.5"
+              checked={checked.has(t.key)} onChange={() => void toggle(t.key)} />
+            <span className="min-w-0">
+              <span className={`block text-[14px] leading-snug ${checked.has(t.key) ? 'text-green-900 font-medium' : 'text-secondary'}`}>{t.title}</span>
+              <span className="block text-[11.5px] text-muted mt-0.5">Suggested for {t.categories.join(', ')}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function PendingClientView({ row, onChanged }: { row: ClientAccountRow; onChanged: () => void }) {
   const navigate = useNavigate();
   const [items, setItems] = useState<ClientItems | null>(null);
@@ -363,6 +422,8 @@ function PendingClientView({ row, onChanged }: { row: ClientAccountRow; onChange
           </button>
         ))}
       </section>
+
+      {row.contact_id && <PaperworkEditor contactId={row.contact_id} />}
 
       <section className="bg-white border border-green-800/10 rounded-xl p-4 mt-4">
         <h3 className="font-serif text-green-800 text-base mb-2">Billing</h3>
@@ -492,7 +553,7 @@ export default function Admin() {
   }, [selectedId]);
 
   return (
-    <div className="max-w-4xl">
+    <div className="max-w-6xl">
       <div className="flex items-center justify-between mb-1">
         <h1 className="font-serif text-2xl text-green-900">Clients</h1>
         {!selected && (
