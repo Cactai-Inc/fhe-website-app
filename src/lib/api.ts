@@ -2132,3 +2132,32 @@ export async function deleteContact(id: string): Promise<void> {
     .eq('id', id);
   if (error) throw error;
 }
+
+// ─── Service engagements (general, non-brokerage) ────────────────────────────
+export interface ServiceTypeRow {
+  code: string; display_name: string; description: string | null;
+  segment: string; requires_horse: boolean;
+}
+
+export async function listServiceTypes(): Promise<ServiceTypeRow[]> {
+  const { data, error } = await supabase.rpc('list_service_types');
+  if (error) throw error;
+  return (data ?? []) as ServiceTypeRow[];
+}
+
+/** Create a lesson / training / care engagement for a client. Paperwork flows
+ *  via contract_requirements at onboarding/signing. */
+export async function createServiceEngagement(input: {
+  clientContactId: string; serviceType: string;
+  horseId?: string | null; startDate?: string | null; notes?: string | null;
+}): Promise<string> {
+  const { data, error } = await supabase.rpc('create_service_engagement', {
+    p_client_contact_id: input.clientContactId,
+    p_service_type: input.serviceType,
+    p_horse_id: input.horseId ?? null,
+    p_start_date: input.startDate ?? null,
+    p_notes: input.notes ?? null,
+  });
+  if (error) throw error;
+  return data as string;
+}
