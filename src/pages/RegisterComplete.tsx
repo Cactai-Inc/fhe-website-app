@@ -113,7 +113,7 @@ export default function RegisterComplete() {
 
   if (state === 'working' || state === 'done') {
     return (
-      <div className="min-h-screen bg-cream flex items-center justify-center">
+      <div className="min-h-[calc(100dvh-3.5rem)] flex items-center justify-center">
         <p className="body-text text-muted">Finishing your sign-up…</p>
       </div>
     );
@@ -121,7 +121,7 @@ export default function RegisterComplete() {
 
   if (state === 'mismatch') {
     return (
-      <div className="min-h-screen bg-cream flex items-center justify-center px-6 pt-24 pb-20">
+      <div className="min-h-[calc(100dvh-3.5rem)] flex items-center justify-center px-6 pt-12 pb-20">
         <div className="max-w-md text-center">
           <p className="eyebrow mb-3">Invitation</p>
           <h1 className="heading-section text-green-800 mb-4">That's a different Google account</h1>
@@ -140,7 +140,7 @@ export default function RegisterComplete() {
   }
 
   return (
-    <div className="min-h-screen bg-cream flex items-center justify-center px-6 pt-24 pb-20">
+    <div className="min-h-[calc(100dvh-3.5rem)] flex items-center justify-center px-6 pt-12 pb-20">
       <div className="max-w-md text-center">
         <p className="eyebrow mb-3">Invitation</p>
         <h1 className="heading-section text-green-800 mb-4">We couldn't finish sign-up</h1>

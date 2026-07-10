@@ -93,7 +93,7 @@ export default function Register() {
       request_id: invitation.request_id ?? null,
       kind: isContractInvite ? 'contract' : 'community',
     }));
-    const { error: oauthError } = await signInWithGoogle('/register/complete');
+    const { error: oauthError } = await signInWithGoogle('/activate/complete');
     if (oauthError) {
       window.localStorage.removeItem('fhe-invite');
       setError(oauthError);
@@ -163,7 +163,7 @@ export default function Register() {
 
   if (state === 'checking') {
     return (
-      <div className="min-h-screen bg-cream flex items-center justify-center">
+      <div className="min-h-[calc(100dvh-3.5rem)] flex items-center justify-center">
         <p className="body-text text-muted">Checking your invitation…</p>
       </div>
     );
@@ -171,7 +171,7 @@ export default function Register() {
 
   if (state === 'invalid') {
     return (
-      <div className="min-h-screen bg-cream flex items-center justify-center px-6 pt-24 pb-20">
+      <div className="min-h-[calc(100dvh-3.5rem)] flex items-center justify-center px-6 pt-12 pb-20">
         <div className="max-w-md text-center">
           <p className="eyebrow mb-3">Invitation</p>
           <h1 className="heading-section text-green-800 mb-4">This link isn't valid anymore</h1>
@@ -194,7 +194,7 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen bg-cream flex items-center justify-center px-6 pt-24 pb-20">
+    <div className="min-h-[calc(100dvh-3.5rem)] flex items-center justify-center px-6 pt-12 pb-20">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <p className="eyebrow mb-3">Welcome</p>
