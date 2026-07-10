@@ -35,9 +35,9 @@ export default function BookSupport() {
   const experience   = state.qualifierAnswers['experience'];
   const wantsLessons = state.qualifierAnswers['wants_lessons'];
 
-  const trainingSelected = state.items.some((i) => i.serviceId === HORSE_TRAINING.id);
-  const turnoutSelected  = state.items.some((i) => i.serviceId === RIDING_TURNOUT.id);
-  const clippingSelected = state.items.some((i) => i.serviceId === HAIR_CLIPPING.id);
+  const trainingSelected = state.items.some((i) => i.serviceType === HORSE_TRAINING.id);
+  const turnoutSelected  = state.items.some((i) => i.serviceType === RIDING_TURNOUT.id);
+  const clippingSelected = state.items.some((i) => i.serviceType === HAIR_CLIPPING.id);
 
   const canProceedStep0 = itemCount > 0;
   const canProceedStep1 = !!experience;
@@ -175,10 +175,9 @@ export default function BookSupport() {
               ) : (
                 <div className="flex flex-col divide-y divide-green-800/[0.08]">
                   {state.items.map((item) => (
-                    <div key={`${item.serviceId}-${item.tierId}`} className="flex items-center justify-between py-3">
+                    <div key={item.offeringId} className="flex items-center justify-between py-3">
                       <div>
-                        <p className="text-sm font-sans font-medium text-green-900">{item.tierLabel}</p>
-                        <p className="text-xs font-sans text-muted">{item.serviceName}</p>
+                        <p className="text-sm font-sans font-medium text-green-900">{item.offeringName}</p>
                       </div>
                       <p className="text-sm font-serif font-medium text-green-800">
                         {formatPrice(item.price, item.unit)}

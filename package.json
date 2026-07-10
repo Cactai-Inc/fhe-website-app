@@ -10,14 +10,13 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
-    "typecheck:api": "tsc --noEmit -p tsconfig.api.json",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "typecheck:api": "tsc --noEmit -p tsconfig.api.json"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
     "lucide-react": "^0.344.0",
     "nodemailer": "^9.0.3",
+    "pdf-lib": "^1.17.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-easy-crop": "^6.1.0",

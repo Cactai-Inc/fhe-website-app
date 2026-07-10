@@ -15,6 +15,12 @@ interface AuthContextValue {
   membership: Membership | null;
   loading: boolean;
   isAdmin: boolean;
+  // Two-operator model (Slice 5): isStaff = any operator (matches has_staff_access()
+  // server-side: ADMIN/SUPER_ADMIN/MANAGER/EMPLOYEE). isTrainer = an operator who is
+  // NOT an admin (MANAGER/EMPLOYEE) — the servicing subset (lessons, availability,
+  // per-lesson notes, correspondence), no billing/deal-terms/config/oversight.
+  isStaff: boolean;
+  isTrainer: boolean;
   isMember: boolean; // active membership OR admin
   isSuperAdmin: boolean; // platform operator (SUPER_ADMIN) — a separate path, never OR'd into has_module
   // Entitlement / role bridge (INT-AUTH) — the seam nav/route gating reads. profile.role
@@ -133,6 +139,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // tenant/platform operator (ADMIN or SUPER_ADMIN), matching is_admin() server-side.
   const role: AppRole | null = profile?.role ?? null;
   const isAdmin = role === 'ADMIN' || role === 'SUPER_ADMIN';
+  // Two-operator model: any operator (mirrors has_staff_access()); a trainer is an
+  // operator below admin (the servicing subset).
+  const isStaff = role === 'SUPER_ADMIN' || role === 'ADMIN' || role === 'MANAGER' || role === 'EMPLOYEE';
+  const isTrainer = isStaff && !isAdmin;
   // SUPER_ADMIN is the platform-operator path (§4.2): surfaced separately so
   // superadmin-only nav/routes gate on it without being folded into has_module().
   const isSuperAdmin = role === 'SUPER_ADMIN';
@@ -147,6 +157,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         membership,
         loading,
         isAdmin,
+        isStaff,
+        isTrainer,
         isMember: (!profile?.is_suspended) && (isAdmin || membership?.status === 'active'),
         isSuperAdmin,
         role,

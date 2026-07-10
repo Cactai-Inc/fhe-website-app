@@ -1,0 +1,1200 @@
+/*
+  # Reload contract bodies — arbitration clause simplification (owner 2026-07-07)
+
+  The owner replaced the extended JAMS/AAA dispute-resolution language in every
+  contract with a single-sentence "binding arbitration in San Diego, California"
+  form, preserving each document's own party/scope phrasing. Those edits live in
+  the .md files; generate_document reads contract_templates.body (the DB copy),
+  so a .md edit is invisible to signing until the DB body is refreshed. The
+  original loader (20260629100000) is script-generated and overwrites itself in
+  place, so it does not re-run on a live DB — a new migration is the only correct
+  refresh path.
+
+  This reloads the body of all 11 affected templates from their current .md
+  (RELEASE_PARTICIPANT is included: its arbitration edit, commit 5be553e, was
+  also never loaded — this SUPERSEDES the standalone participant-body refresh).
+  Each body below is byte-for-byte its current .md file (dollar-quoted, loads
+  verbatim). Token sets are unchanged by a dispute-clause wording edit, so
+  template_tokens need no re-derivation. Idempotent; forward-only.
+
+  FACILITY_RULES is intentionally NOT reloaded here — it had no arbitration
+  clause to change (its dispute language was removed in an earlier commit).
+*/
+
+UPDATE contract_templates SET body = $body$PARTICIPANT LIABILITY RELEASE, ASSUMPTION OF RISK, HOLD HARMLESS & INDEMNIFICATION AGREEMENT
+
+Effective from the Date of Signature until superseded by a later executed version of this Release
+
+This Participant Liability Release, Assumption of Risk, Hold Harmless & Indemnification Agreement ("Agreement") is made effective as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned client ("CLIENT"), on CLIENT's own behalf and, where a minor participant is identified, on behalf of that minor ("PARTICIPANT"), in favor of {{ORG.LEGAL_NAME}} ("COMPANY"). By signing below, CLIENT acknowledges and agrees to the terms of this Agreement. Where no minor is identified, CLIENT is the participant and references to PARTICIPANT mean CLIENT.
+
+For purposes of this Agreement, "Released Parties" means COMPANY, its owners, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, representatives, affiliates, property owners, facility owners, licensors, lessors, lessees, hosts, landowners, successors, assigns, heirs, and any person acting on behalf of COMPANY at any location where it is authorized to conduct business.
+
+This Agreement applies at any ranch, barn, arena, stable, tack room, trail, private property, leased premises, event venue, show grounds, or other location where COMPANY conducts authorized business.
+
+1. PARTICIPATION
+
+PARTICIPANT voluntarily elects to engage in equestrian and related activities offered, supervised, or conducted by COMPANY, including but not limited to: Riding lessons, Mounted instruction, Unmounted instruction, Horse handling, Grooming, Tacking and untacking, Leading horses, Groundwork, Lunging, Round pen work, Arena work, Trail riding, Clinics, Camps, Horse exercise, Assisting instructors, Educational demonstrations, Walking, trotting, cantering, galloping, jumping, cavaletti, conditioning, and training, and any other equestrian activity authorized by COMPANY.
+
+2. ACKNOWLEDGMENT OF INHERENT RISKS
+
+PARTICIPANT understands that equestrian activities are inherently dangerous and involve risks that cannot be eliminated, including but not limited to: Falls from horses. Horses kicking, biting, bucking, bolting, rearing, stumbling, spooking, striking, stepping on, or crushing persons. Tack or equipment failure. Collisions with horses, people, fences, gates, jumps, vehicles, or other objects. Uneven terrain, dust, mud, rocks, holes, water crossings, weather conditions, and natural hazards. Mistakes in judgment by riders or participants. Actions or omissions of other participants or third parties. Risks specific to jumping activities, including but not limited to: a horse refusing, stopping suddenly at, or running out from a jump; falls at speed; rotational falls in which the horse falls with or onto the rider; striking or displacing rails, standards, or other jump components; loss of balance or unseating on takeoff or landing; and injury severity greater than that associated with flatwork. Serious bodily injury, paralysis, permanent disability, or death. PARTICIPANT acknowledges that no amount of training, supervision, instruction, or protective equipment can eliminate every risk associated with equestrian activities.
+
+3. ASSUMPTION OF RISK
+
+PARTICIPANT knowingly and voluntarily assumes all inherent and ordinary risks associated with horses, equestrian activities, transportation to and from activities not provided by COMPANY, use of equipment, and participation at any facility where COMPANY conducts business. PARTICIPANT accepts full responsibility for any injury, illness, emotional distress, disability, death, property damage, or other loss arising from participation.
+
+4. HEALTH, FITNESS, AND CAPACITY
+
+PARTICIPANT represents and warrants that: PARTICIPANT is in good physical and mental health. PARTICIPANT is capable of safely participating in equestrian activities. PARTICIPANT is not impaired by alcohol, illegal drugs, or medication affecting judgment or coordination, and will not participate in any activity while so impaired. PARTICIPANT has no medical condition, injury, disability, or restriction that would create an unreasonable risk of harm to themselves or others. PARTICIPANT has disclosed any relevant medical conditions that could reasonably affect safe participation. PARTICIPANT accepts full responsibility for monitoring their own physical condition and will immediately stop participating if they believe continued participation would be unsafe. Where this Agreement is signed for a minor PARTICIPANT, CLIENT makes these representations to the best of CLIENT's knowledge.
+
+5. SAFETY EQUIPMENT AND INSTRUCTION
+
+PARTICIPANT agrees to: Follow all instructions given by COMPANY personnel. Use required safety equipment when directed. Immediately report unsafe conditions, damaged equipment, or injuries. Exercise reasonable care while around horses and other participants. PARTICIPANT understands that wearing a riding helmet or other protective equipment reduces, but does not eliminate, the risk of injury.
+
+6. RIDER ABILITY ATTESTATION AND JUMPING ELIGIBILITY
+
+PARTICIPANT attests that the riding experience information provided to COMPANY is true and complete, including: Years of riding experience: {{CLIENT.RIDING_EXPERIENCE_YEARS}}. Prior jumping experience and maximum height schooled: {{CLIENT.JUMP_EXPERIENCE}}. Prior instruction or show experience: {{CLIENT.RIDING_BACKGROUND}}.
+
+PARTICIPANT acknowledges and agrees that: During any lesson, instruction, or session supervised by COMPANY, PARTICIPANT is under COMPANY's supervision and may not jump, school over fences, or attempt any jumping activity without COMPANY's prior authorization and approval, which for jumper training requires completion of the separate Jumper Training Addendum after COMPANY assesses PARTICIPANT's ability. COMPANY may, in its sole discretion, decline, limit, modify, or discontinue any jumping activity, or restrict PARTICIPANT to flatwork, at any time based on COMPANY's assessment of PARTICIPANT's ability, the horse, or conditions. An ASTM/SEI-certified riding helmet is required for all mounted activities without exception. Misrepresentation of riding experience materially increases risk to PARTICIPANT and others, and PARTICIPANT assumes all risks arising from any inaccuracy in the experience information provided.
+
+This jumping authorization requirement applies to activities conducted under COMPANY's instruction or supervision. It does not govern a person's independent use of a horse that person owns or leases when that person is not participating in a COMPANY lesson, instruction, or session, and COMPANY assumes no liability for such independent activity solely by reason of providing lessons or other services to that person.
+
+7. RULES AND CONDUCT AGREEMENT
+
+PARTICIPANT acknowledges receipt of the separately executed Property Rules, Safety Acknowledgment, and Equestrian Conduct Agreement. PARTICIPANT agrees to read, understand, comply with, and ensure any accompanying minor complies with those rules at all times. PARTICIPANT understands that failure to comply may result in suspension or termination of participation without refund.
+
+8. RELEASE OF LIABILITY
+
+CLIENT, on CLIENT's own behalf and on behalf of any minor PARTICIPANT, releases, waives, and forever discharges the Released Parties from any and all claims, demands, causes of action, liabilities, damages, losses, costs, expenses, or judgments arising out of or relating to PARTICIPANT's involvement in equestrian activities, including claims arising from the ordinary negligence of the Released Parties. This release applies to claims involving bodily injury, illness, emotional distress, disability, death, property damage, loss of income, and any other damages, whether known or unknown, including claims CLIENT or PARTICIPANT does not know or suspect to exist at the time of signing. This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
+
+9. HOLD HARMLESS & INDEMNIFICATION
+
+CLIENT agrees to defend, indemnify, and hold harmless the Released Parties from and against any claims, liabilities, damages, judgments, costs, expenses, and reasonable attorney's fees arising from: PARTICIPANT's acts or omissions; PARTICIPANT's failure to follow instructions or facility rules; Damage caused by PARTICIPANT to horses, equipment, facilities, or property; or Claims brought by third parties resulting from PARTICIPANT's conduct.
+
+10. MEDIA CONSENT
+
+CLIENT acknowledges that photographs, video recordings, and other media may be captured during visits to, or activities at, any location where COMPANY conducts business. CLIENT grants COMPANY a perpetual, royalty-free license to use such media, including CLIENT's or the minor PARTICIPANT's name, image, and likeness, for instructional, promotional, and other lawful business purposes, without compensation. CLIENT may revoke this consent at any time by written notice via email to {{ORG.EMAIL}}; revocation is effective prospectively as to media captured after receipt of the notice.
+
+11. DISPUTE RESOLUTION
+
+Any dispute arising out of or relating to this Agreement or PARTICIPANT's involvement in COMPANY activities shall be resolved by binding arbitration in San Diego, California.
+
+12. ATTORNEY'S FEES
+
+Each party shall be required to cover their own attorney's fees and costs.
+
+13. GOVERNING LAW
+
+California law governs this Agreement.
+
+14. SEVERABILITY
+
+If any provision of this Agreement is determined to be unenforceable, the remaining provisions shall remain in full force and effect.
+
+15. ENTIRE AGREEMENT
+
+This Agreement constitutes the complete agreement between the parties concerning PARTICIPANT's involvement in activities conducted by COMPANY and supersedes all prior discussions or understandings regarding its subject matter.
+
+16. ACKNOWLEDGMENT
+
+CLIENT acknowledges that: This Agreement contains important legal rights. CLIENT has carefully read and understands the entire Agreement. CLIENT has had the opportunity to ask questions before signing. CLIENT understands they are assuming substantial risks associated with equestrian activities on CLIENT's own behalf and, where applicable, on behalf of a minor PARTICIPANT. CLIENT signs voluntarily and without coercion. CLIENT intends this Agreement to be binding upon CLIENT, any minor PARTICIPANT, and their heirs, successors, assigns, and personal representatives.
+
+CLIENT
+
+Date: {{SIG.CLIENT.DATE}}
+Printed Name: {{CLIENT.PRINTED_NAME}}
+Signature: {{SIG.CLIENT.NAME}}
+Phone: {{CLIENT.PHONE}}
+Email: {{CLIENT.EMAIL}}
+
+<!-- CUT-START: MINOR_PARTICIPANT | condition: append only if PARTICIPANT is a minor -->
+MINOR PARTICIPANT (IF APPLICABLE)
+
+Minor's Name: {{PARTICIPANT.FULL_NAME}}
+Date of Birth: {{PARTICIPANT.DOB}}
+
+Where a minor PARTICIPANT is identified above, CLIENT certifies that CLIENT is the parent or legal guardian of the minor and has authority to execute this Agreement on the minor's behalf, consents to the minor's participation in equestrian activities, and agrees to the release of liability, assumption of risk, hold harmless, and indemnification provisions both on CLIENT's own behalf, including as to any claims CLIENT may hold individually arising from the minor's participation, and on behalf of the minor.
+<!-- CUT-END: MINOR_PARTICIPANT -->
+$body$, updated_at = now()
+  WHERE template_key = 'RELEASE_PARTICIPANT';
+
+UPDATE contract_templates SET body = $body$GENERAL LIABILITY RELEASE, ASSUMPTION OF RISK, HOLD HARMLESS & INDEMNIFICATION AGREEMENT
+
+Effective from the Date of Signature until superseded by a later executed version of this Release
+
+This General Liability Release, Assumption of Risk, Hold Harmless & Indemnification Agreement ("Agreement") is made effective as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned client ("CLIENT"), on CLIENT's own behalf and, where a minor is identified, on behalf of that minor ("PARTICIPANT"), in favor of {{ORG.LEGAL_NAME}} ("COMPANY"). By signing below, CLIENT acknowledges and agrees to the terms of this Agreement. Where no minor is identified, references to PARTICIPANT mean CLIENT.
+
+For purposes of this Agreement, the term "Released Parties" means COMPANY, its owners, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, representatives, affiliates, property owners, facility owners, licensors, lessors, lessees, hosts, landowners, successors, assigns, heirs, and any person acting on behalf of COMPANY at any location where it is authorized to conduct business. This Agreement applies to any ranch, barn, arena, trail, pasture, tack room, stable, private property, leased premises, event venue, competition grounds, or other location where COMPANY conducts authorized business activities.
+
+1. VISITOR ACKNOWLEDGEMENT
+
+CLIENT acknowledges that CLIENT, and any accompanying minor, is voluntarily entering property where horses, livestock, equipment, vehicles, machinery, uneven terrain, and other potentially hazardous conditions may exist. CLIENT understands that merely being present at the property involves inherent risks that cannot be completely eliminated.
+
+2. ACKNOWLEDGMENT OF INHERENT RISKS
+
+CLIENT understands and acknowledges that risks include, but are not limited to:
+Horses & Equipment:
+Horses may kick, bite, buck, rear, bolt, stumble, fall, step sideways, spook, or otherwise behave unpredictably. Horses may react suddenly to people, animals, sounds, vehicles, weather, or other stimuli.
+Persons present may be stepped on, struck, pinned, knocked down, or injured by horses or their equipment.
+Property, Machinery & Other Equipment:
+Gates, fences, trailers, tack, tools, machinery, and agricultural equipment may present hazards. Ground conditions may include mud, rocks, holes, uneven footing, irrigation, slippery surfaces, dust, and other natural hazards which may present natural or unforeseeable risks.
+Additional Risks:
+Risks may arise from the actions or omissions of other visitors, participants, horse owners, or third parties.
+Medical Assistance:
+Emergency medical assistance may not be immediately available.
+
+3. ASSUMPTION OF RISK
+
+CLIENT knowingly and voluntarily assumes, on CLIENT's own behalf and on behalf of any accompanying minor, all risks, whether known or unknown, foreseeable or unforeseeable, inherent or otherwise, arising from entering, remaining upon, or departing from any property where COMPANY conducts business. CLIENT accepts full personal responsibility for any injury, illness, death, property damage, or other loss that may occur.
+
+4. PERSONAL RESPONSIBILITY AND CONDITION
+
+CLIENT represents that: CLIENT, and any accompanying minor, is capable of safely being present on the property, or CLIENT has notified COMPANY of any condition, limitation, or circumstance requiring assistance or accommodation while on the property. CLIENT is not under the influence of alcohol, illegal drugs, or any medication that impairs judgment or physical ability, and will not remain on the property while so impaired. CLIENT is solely responsible for determining whether presence on the property is appropriate, for exercising care consistent with CLIENT's own condition and abilities, for remaining in designated visitor areas, and for supervising any accompanying minor at all times.
+
+5. RULES AND CONDUCT AGREEMENT
+
+CLIENT acknowledges receipt of the separately executed Property Rules, Safety Acknowledgment, and Equestrian Conduct Agreement. CLIENT agrees to read, understand, and comply with those rules at all times and to ensure any accompanying minor complies. CLIENT understands that failure to comply may result in immediate removal from the property without refund or compensation.
+
+6. RELEASE OF LIABILITY
+
+CLIENT, on behalf of CLIENT, any accompanying minor, and their heirs, representatives, successors, assigns, and personal representatives, voluntarily releases, waives, and forever discharges the Released Parties from any and all claims, demands, causes of action, damages, losses, liabilities, costs, expenses, or judgments arising out of or related to presence on the property, including claims arising from the ordinary negligence of the Released Parties. This release applies to bodily injury, personal injury, illness, property damage, wrongful death, emotional distress, and all other losses, whether known or unknown, including claims not known or suspected to exist at the time of signing. This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
+
+7. HOLD HARMLESS AND INDEMNIFICATION
+
+CLIENT agrees to defend, indemnify, and hold harmless the Released Parties from and against any claims, liabilities, damages, judgments, costs, expenses, or attorney's fees arising from: CLIENT's or an accompanying minor's acts or omissions; violation of this Agreement or property rules; Claims brought by or on behalf of persons accompanying CLIENT, to the extent caused by CLIENT's conduct; or Damage to property caused by CLIENT or an accompanying minor.
+
+8. PROPERTY DAMAGE
+
+CLIENT accepts responsibility for any damage caused by CLIENT or an accompanying minor to horses, equipment, facilities, vehicles, buildings, or other property and agrees to reimburse the responsible party for repair or replacement costs.
+
+9. MEDIA CONSENT
+
+CLIENT acknowledges that photographs, video recordings, and other media may be captured during visits to, or activities at, any location where COMPANY conducts business. CLIENT grants COMPANY a perpetual, royalty-free license to use such media, including CLIENT's or an accompanying minor's name, image, and likeness, for instructional, promotional, and other lawful business purposes, without compensation. CLIENT may revoke this consent at any time by written notice via email to {{ORG.EMAIL}}; revocation is effective prospectively as to media captured after receipt of the notice.
+
+10. DISPUTE RESOLUTION
+
+Any dispute arising out of or relating to this Agreement or presence at any location where COMPANY conducts business shall be resolved by binding arbitration in San Diego, California.
+
+11. ATTORNEY'S FEES
+
+Each party shall be required to cover their own attorney's fees and costs.
+
+12. GOVERNING LAW
+
+California law governs this Agreement.
+
+13. SEVERABILITY
+
+If any provision of this Agreement is held unenforceable, the remaining provisions shall remain in full force and effect.
+
+14. ENTIRE AGREEMENT
+
+This Agreement constitutes the entire understanding between the parties concerning the subject matter herein and supersedes any prior oral or written representations regarding this subject.
+
+15. ACKNOWLEDGMENT
+
+CLIENT acknowledges that: This Agreement is legally binding. CLIENT has carefully read the entire Agreement. CLIENT understands its contents. CLIENT has had the opportunity to ask questions before signing. CLIENT signs voluntarily and without coercion.
+
+CLIENT
+
+Date: {{SIG.CLIENT.DATE}}
+Printed Name: {{CLIENT.PRINTED_NAME}}
+Signature: {{SIG.CLIENT.NAME}}
+Phone: {{CLIENT.PHONE}}
+Email: {{CLIENT.EMAIL}}
+
+<!-- CUT-START: MINOR_PARTICIPANT | condition: append only if a minor accompanies CLIENT -->
+MINOR (IF APPLICABLE)
+
+Minor's Name: {{PARTICIPANT.FULL_NAME}}
+Date of Birth: {{PARTICIPANT.DOB}}
+
+Where a minor is identified above, CLIENT certifies that CLIENT is the parent or legal guardian of the minor and has authority to sign this Agreement on the minor's behalf, consents to the minor's presence on the property, and agrees to the release of liability, assumption of risk, hold harmless, and indemnification provisions both on CLIENT's own behalf, including as to any claims CLIENT may hold individually arising from the minor's presence or activities, and on behalf of the minor.
+<!-- CUT-END: MINOR_PARTICIPANT -->
+$body$, updated_at = now()
+  WHERE template_key = 'RELEASE_GENERAL';
+
+UPDATE contract_templates SET body = $body$EQUINE SERVICES AUTHORIZATION, LIABILITY RELEASE, ASSUMPTION OF RISK, HOLD HARMLESS & INDEMNIFICATION AGREEMENT
+
+Effective from the Date of Signature until superseded by a later executed version of this Release
+
+This Equine Services Authorization, Liability Release, Assumption of Risk, Hold Harmless & Indemnification Agreement ("Agreement") is made effective as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned client ("CLIENT") in favor of {{ORG.LEGAL_NAME}} ("COMPANY"), as a condition of COMPANY providing equine services for the horse described below. By signing below, CLIENT acknowledges and agrees to the terms of this Agreement.
+
+For purposes of this Agreement, "Released Parties" means COMPANY, its owners, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, representatives, affiliates, property owners, facility owners, licensors, lessors, lessees, hosts, landowners, successors, assigns, heirs, and any person acting on behalf of COMPANY at any location where it is authorized to conduct business.
+
+This Agreement applies at any ranch, barn, arena, stable, tack room, trail, leased premises, private property, competition venue, or other location where COMPANY conducts authorized business.
+
+1. HORSE INFORMATION
+
+Horse Name: {{HORSE.REGISTERED_NAME}}
+Barn Name: {{HORSE.BARN_NAME}}
+Breed: {{HORSE.BREED}}
+Color: {{HORSE.COLOR}}
+Sex: {{HORSE.SEX}}
+Age: {{HORSE.AGE_DOB}}
+Current Location: {{HORSE.CURRENT_LOCATION}}
+CLIENT capacity as to Horse: {{CLIENT.HORSE_CAPACITY}}
+
+2. AUTHORIZATION FOR EQUINE ACTIVITIES
+
+CLIENT authorizes COMPANY and the Released Parties to catch, halter, handle, exercise, school, train, ride, lead, load, unload, and otherwise work with the above-described horse ("Horse") as reasonably necessary in connection with instruction, exercise, conditioning, training, transportation, demonstrations, or other authorized equestrian activities.
+
+Authorized activities include, but are not limited to: Haltering, Leading, Cross tying, Stall handling, Turnout, Hand walking, Tacking, Untacking, Riding, Walking, Trotting, Cantering, Lunging, Round pen work, Arena exercise, Trail riding, Cavaletti, Jumping, Training, Loading, Unloading, Emergency handling, and other similar equine activities reasonably related to instruction, training, exercise, transportation, handling, or care.
+
+3. AUTHORIZATION FOR ROUTINE CARE, GROOMING, AND CLIPPING
+
+CLIENT authorizes COMPANY and the Released Parties to provide routine handling, husbandry, grooming, clipping, and day-to-day care reasonably necessary while the Horse is in their custody or under their supervision.
+
+Authorized activities include, but are not limited to: Feeding, Watering, Blanketing, Fly protection, Grooming, Bathing, Hoof picking, Mane and tail care, Clipping, Wrapping, Ice boots, Poultice, and Stretching.
+
+CLIENT further authorizes COMPANY to make reasonable decisions concerning the Horse's comfort, cleanliness, safety, and ordinary care while acting within the scope of this Agreement and any written instructions provided by CLIENT.
+
+4. AUTHORIZATION FOR TEMPORARY EMERGENCY STABILIZATION
+
+If the Horse appears to become ill, injured, distressed, or exhibits signs of a potentially emergent condition before veterinary care is available or while awaiting veterinary assistance, CLIENT authorizes COMPANY to take reasonable interim measures intended to preserve the Horse's immediate health, comfort, or safety.
+
+Such measures may include: Bandaging, Administering CLIENT-approved medications or emergency medications if CLIENT cannot be reached, Oral supplements, Wound cleaning, Basic first aid, Monitoring for colic, Monitoring lameness, Monitoring swelling, Heat management, and emergency stabilization before veterinarian arrival.
+
+CLIENT acknowledges and agrees that: These measures are temporary in nature and are intended solely to stabilize or comfort the Horse until veterinary care can be obtained. COMPANY is not acting as a licensed veterinarian, diagnosing disease, prescribing treatment, or providing veterinary medical services. This authorization supplements, and does not replace, any separate Emergency Veterinary Authorization executed by CLIENT. The exercise of reasonable judgment by COMPANY in determining whether to provide interim care, monitor the Horse, contact CLIENT, or seek veterinary assistance shall not, by itself, create liability, except as provided in the Release of Liability section below.
+
+5. ACKNOWLEDGMENT OF INHERENT RISKS
+
+CLIENT understands and acknowledges that horses are inherently unpredictable animals and that equine activities and care involve risks that cannot be eliminated, including but not limited to: Injury or death to riders, handlers, spectators, or horses. Falls. Tack or equipment failure. Unpredictable equine behavior. Environmental hazards. Interaction with other horses or people. Illness, injury, escape, property damage, or death resulting despite reasonable care.
+
+6. ASSUMPTION OF RISK
+
+CLIENT knowingly and voluntarily assumes all inherent and ordinary risks associated with allowing COMPANY to work with, handle, exercise, ride, train, groom, clip, and care for the Horse, and with horse handling, routine care, movement, restraint, and related husbandry activities. CLIENT understands that injury, illness, escape, property damage, permanent disability, or death may occur despite reasonable care, and accepts these risks on behalf of CLIENT and with respect to the Horse.
+
+7. RELEASE OF LIABILITY
+
+CLIENT releases, waives, and forever discharges the Released Parties from any and all claims, demands, causes of action, liabilities, damages, losses, expenses, costs, or judgments arising out of or relating to: Handling the Horse; Riding, exercising, schooling, or training the Horse; Providing instruction involving the Horse; Grooming, clipping, and husbandry activities; Authorized routine care described in this Agreement; Temporary emergency stabilization; Decisions made in good faith regarding the Horse's care within the scope of this authorization; and Any injury, illness, death, escape, or property damage involving the Horse or persons interacting with the Horse, including claims arising from the ordinary negligence of the Released Parties. This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
+
+8. HOLD HARMLESS & INDEMNIFICATION
+
+CLIENT agrees to defend, indemnify, and hold harmless the Released Parties from and against any claims, liabilities, damages, judgments, costs, expenses, and reasonable attorney's fees arising out of or relating to: Ownership, custody, or control of the Horse; The Horse's actions, behavior, or temperament; Injury or damage caused by the Horse; CLIENT's failure to disclose material health, behavioral, or handling information; CLIENT's breach of this Agreement; and Claims brought by third parties, including any other owner, co-owner, lessee, or lienholder of the Horse, arising from the Horse or CLIENT's conduct or from any lack of authority to authorize the services.
+
+9. CLIENT REPRESENTATIONS
+
+CLIENT represents and warrants that: CLIENT is an owner, co-owner, lessee, or authorized agent of the Horse with full legal authority to authorize the services described and to execute this Agreement as to the Horse. The Horse has been appropriately vaccinated and maintained in a manner suitable for the authorized activities, and is suitable for those activities. CLIENT has disclosed all known medical conditions, dangerous behaviors, allergies, medication requirements, training limitations, handling precautions, and special instructions concerning the Horse. CLIENT will promptly notify COMPANY of any material change affecting the Horse's health, condition, or behavior.
+
+10. MEDIA CONSENT
+
+CLIENT acknowledges that photographs, video recordings, and other media may be captured during visits to, or activities at, any location where COMPANY conducts business. CLIENT grants COMPANY a perpetual, royalty-free license to use such media, including CLIENT's name, image, and likeness, for instructional, promotional, and other lawful business purposes, without compensation. CLIENT may revoke this consent at any time by written notice via email to {{ORG.EMAIL}}; revocation is effective prospectively as to media captured after receipt of the notice.
+
+11. DISPUTE RESOLUTION
+
+Any dispute arising out of or relating to this Agreement shall be resolved by binding arbitration in San Diego, California.
+
+12. ATTORNEY'S FEES
+
+Each party shall be required to cover their own attorney's fees and costs.
+
+13. GOVERNING LAW
+
+California law governs this Agreement.
+
+14. SEVERABILITY
+
+If any provision of this Agreement is determined to be invalid or unenforceable, the remaining provisions shall remain in full force and effect.
+
+15. ENTIRE AGREEMENT
+
+This Agreement constitutes the complete agreement between the parties concerning the subject matter addressed herein and supersedes all prior oral or written understandings regarding the equine services authorized. It supplements, and does not supersede, any separate Emergency Veterinary Authorization or services contract between CLIENT and COMPANY.
+
+16. ACKNOWLEDGMENT
+
+CLIENT acknowledges that: CLIENT has carefully read this Agreement in its entirety. CLIENT understands its legal effect. CLIENT has had sufficient opportunity to ask questions before signing. CLIENT signs voluntarily and without coercion. CLIENT intends this Agreement to be legally binding upon CLIENT and CLIENT's heirs, successors, assigns, estate, and personal representatives.
+
+CLIENT
+
+Date: {{SIG.CLIENT.DATE}}
+Printed Name: {{CLIENT.PRINTED_NAME}}
+Signature: {{SIG.CLIENT.NAME}}
+Capacity as to Horse: {{CLIENT.HORSE_CAPACITY}}
+Phone: {{CLIENT.PHONE}}
+Email: {{CLIENT.EMAIL}}
+Horse Name: {{HORSE.REGISTERED_NAME}}
+$body$, updated_at = now()
+  WHERE template_key = 'RELEASE_HORSE_CARE';
+
+UPDATE contract_templates SET body = $body$EQUINE SERVICES AUTHORIZATION, LIABILITY RELEASE, ASSUMPTION OF RISK, HOLD HARMLESS & INDEMNIFICATION AGREEMENT
+
+Effective from the Date of Signature until superseded by a later executed version of this Release
+
+This Equine Services Authorization, Liability Release, Assumption of Risk, Hold Harmless & Indemnification Agreement ("Agreement") is made effective as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned client ("CLIENT") in favor of {{ORG.LEGAL_NAME}} ("COMPANY"), as a condition of COMPANY providing equine services for the horse described below. By signing below, CLIENT acknowledges and agrees to the terms of this Agreement.
+
+For purposes of this Agreement, "Released Parties" means COMPANY, its owners, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, representatives, affiliates, property owners, facility owners, licensors, lessors, lessees, hosts, landowners, successors, assigns, heirs, and any person acting on behalf of COMPANY at any location where it is authorized to conduct business.
+
+This Agreement applies at any ranch, barn, arena, stable, tack room, trail, leased premises, private property, competition venue, or other location where COMPANY conducts authorized business.
+
+1. HORSE INFORMATION
+
+Horse Name: {{HORSE.REGISTERED_NAME}}
+Barn Name: {{HORSE.BARN_NAME}}
+Breed: {{HORSE.BREED}}
+Color: {{HORSE.COLOR}}
+Sex: {{HORSE.SEX}}
+Age: {{HORSE.AGE_DOB}}
+Current Location: {{HORSE.CURRENT_LOCATION}}
+CLIENT capacity as to Horse: {{CLIENT.HORSE_CAPACITY}}
+
+2. AUTHORIZATION FOR EQUINE ACTIVITIES
+
+CLIENT authorizes COMPANY and the Released Parties to catch, halter, handle, exercise, school, train, ride, lead, load, unload, and otherwise work with the above-described horse ("Horse") as reasonably necessary in connection with instruction, exercise, conditioning, training, transportation, demonstrations, or other authorized equestrian activities.
+
+Authorized activities include, but are not limited to: Haltering, Leading, Cross tying, Stall handling, Turnout, Hand walking, Tacking, Untacking, Riding, Walking, Trotting, Cantering, Lunging, Round pen work, Arena exercise, Trail riding, Cavaletti, Jumping, Training, Loading, Unloading, Emergency handling, and other similar equine activities reasonably related to instruction, training, exercise, transportation, handling, or care.
+
+3. AUTHORIZATION FOR ROUTINE CARE, GROOMING, AND CLIPPING
+
+CLIENT authorizes COMPANY and the Released Parties to provide routine handling, husbandry, grooming, clipping, and day-to-day care reasonably necessary while the Horse is in their custody or under their supervision.
+
+Authorized activities include, but are not limited to: Feeding, Watering, Blanketing, Fly protection, Grooming, Bathing, Hoof picking, Mane and tail care, Clipping, Wrapping, Ice boots, Poultice, and Stretching.
+
+CLIENT further authorizes COMPANY to make reasonable decisions concerning the Horse's comfort, cleanliness, safety, and ordinary care while acting within the scope of this Agreement and any written instructions provided by CLIENT.
+
+4. AUTHORIZATION FOR TEMPORARY EMERGENCY STABILIZATION
+
+If the Horse appears to become ill, injured, distressed, or exhibits signs of a potentially emergent condition before veterinary care is available or while awaiting veterinary assistance, CLIENT authorizes COMPANY to take reasonable interim measures intended to preserve the Horse's immediate health, comfort, or safety.
+
+Such measures may include: Bandaging, Administering CLIENT-approved medications or emergency medications if CLIENT cannot be reached, Oral supplements, Wound cleaning, Basic first aid, Monitoring for colic, Monitoring lameness, Monitoring swelling, Heat management, and emergency stabilization before veterinarian arrival.
+
+CLIENT acknowledges and agrees that: These measures are temporary in nature and are intended solely to stabilize or comfort the Horse until veterinary care can be obtained. COMPANY is not acting as a licensed veterinarian, diagnosing disease, prescribing treatment, or providing veterinary medical services. This authorization supplements, and does not replace, any separate Emergency Veterinary Authorization executed by CLIENT. The exercise of reasonable judgment by COMPANY in determining whether to provide interim care, monitor the Horse, contact CLIENT, or seek veterinary assistance shall not, by itself, create liability, except as provided in the Release of Liability section below.
+
+5. ACKNOWLEDGMENT OF INHERENT RISKS
+
+CLIENT understands and acknowledges that horses are inherently unpredictable animals and that equine activities and care involve risks that cannot be eliminated, including but not limited to: Injury or death to riders, handlers, spectators, or horses. Falls. Tack or equipment failure. Unpredictable equine behavior. Environmental hazards. Interaction with other horses or people. Illness, injury, escape, property damage, or death resulting despite reasonable care.
+
+6. ASSUMPTION OF RISK
+
+CLIENT knowingly and voluntarily assumes all inherent and ordinary risks associated with allowing COMPANY to work with, handle, exercise, ride, train, groom, clip, and care for the Horse, and with horse handling, routine care, movement, restraint, and related husbandry activities. CLIENT understands that injury, illness, escape, property damage, permanent disability, or death may occur despite reasonable care, and accepts these risks on behalf of CLIENT and with respect to the Horse.
+
+7. RELEASE OF LIABILITY
+
+CLIENT releases, waives, and forever discharges the Released Parties from any and all claims, demands, causes of action, liabilities, damages, losses, expenses, costs, or judgments arising out of or relating to: Handling the Horse; Riding, exercising, schooling, or training the Horse; Providing instruction involving the Horse; Grooming, clipping, and husbandry activities; Authorized routine care described in this Agreement; Temporary emergency stabilization; Decisions made in good faith regarding the Horse's care within the scope of this authorization; and Any injury, illness, death, escape, or property damage involving the Horse or persons interacting with the Horse, including claims arising from the ordinary negligence of the Released Parties. This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
+
+8. HOLD HARMLESS & INDEMNIFICATION
+
+CLIENT agrees to defend, indemnify, and hold harmless the Released Parties from and against any claims, liabilities, damages, judgments, costs, expenses, and reasonable attorney's fees arising out of or relating to: Ownership, custody, or control of the Horse; The Horse's actions, behavior, or temperament; Injury or damage caused by the Horse; CLIENT's failure to disclose material health, behavioral, or handling information; CLIENT's breach of this Agreement; and Claims brought by third parties, including any other owner, co-owner, lessee, or lienholder of the Horse, arising from the Horse or CLIENT's conduct or from any lack of authority to authorize the services.
+
+9. CLIENT REPRESENTATIONS
+
+CLIENT represents and warrants that: CLIENT is an owner, co-owner, lessee, or authorized agent of the Horse with full legal authority to authorize the services described and to execute this Agreement as to the Horse. The Horse has been appropriately vaccinated and maintained in a manner suitable for the authorized activities, and is suitable for those activities. CLIENT has disclosed all known medical conditions, dangerous behaviors, allergies, medication requirements, training limitations, handling precautions, and special instructions concerning the Horse. CLIENT will promptly notify COMPANY of any material change affecting the Horse's health, condition, or behavior.
+
+10. MEDIA CONSENT
+
+CLIENT acknowledges that photographs, video recordings, and other media may be captured during visits to, or activities at, any location where COMPANY conducts business. CLIENT grants COMPANY a perpetual, royalty-free license to use such media, including CLIENT's name, image, and likeness, for instructional, promotional, and other lawful business purposes, without compensation. CLIENT may revoke this consent at any time by written notice via email to {{ORG.EMAIL}}; revocation is effective prospectively as to media captured after receipt of the notice.
+
+11. DISPUTE RESOLUTION
+
+Any dispute arising out of or relating to this Agreement shall be resolved by binding arbitration in San Diego, California.
+
+12. ATTORNEY'S FEES
+
+Each party shall be required to cover their own attorney's fees and costs.
+
+13. GOVERNING LAW
+
+California law governs this Agreement.
+
+14. SEVERABILITY
+
+If any provision of this Agreement is determined to be invalid or unenforceable, the remaining provisions shall remain in full force and effect.
+
+15. ENTIRE AGREEMENT
+
+This Agreement constitutes the complete agreement between the parties concerning the subject matter addressed herein and supersedes all prior oral or written understandings regarding the equine services authorized. It supplements, and does not supersede, any separate Emergency Veterinary Authorization or services contract between CLIENT and COMPANY.
+
+16. ACKNOWLEDGMENT
+
+CLIENT acknowledges that: CLIENT has carefully read this Agreement in its entirety. CLIENT understands its legal effect. CLIENT has had sufficient opportunity to ask questions before signing. CLIENT signs voluntarily and without coercion. CLIENT intends this Agreement to be legally binding upon CLIENT and CLIENT's heirs, successors, assigns, estate, and personal representatives.
+
+CLIENT
+
+Date: {{SIG.CLIENT.DATE}}
+Printed Name: {{CLIENT.PRINTED_NAME}}
+Signature: {{SIG.CLIENT.NAME}}
+Capacity as to Horse: {{CLIENT.HORSE_CAPACITY}}
+Phone: {{CLIENT.PHONE}}
+Email: {{CLIENT.EMAIL}}
+Horse Name: {{HORSE.REGISTERED_NAME}}
+$body$, updated_at = now()
+  WHERE template_key = 'RELEASE_HORSE_EXERCISE';
+
+UPDATE contract_templates SET body = $body$COMPANY POLICIES
+
+This Company Policies document ("Policies") is made effective as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") and sets out the business, payment, scheduling, cancellation, and service terms of {{ORG.LEGAL_NAME}} ("COMPANY"). By signing below, the undersigned client ("CLIENT") acknowledges and agrees to these Policies as a condition of purchasing and receiving COMPANY's services. These Policies apply to CLIENT and to any minor or guest for whom CLIENT purchases services, and to every order, booking, service request, and retainer between CLIENT and COMPANY.
+
+1. SCOPE AND ORDER OF PRECEDENCE
+
+These Policies govern the commercial and administrative terms of the relationship between CLIENT and COMPANY. They supplement, and do not supersede, the separately executed liability release and assumption of risk agreements, the Property Rules, Safety Acknowledgment, and Equestrian Conduct Agreement, and any separately executed retainer or transaction agreement. Where a separately executed retainer or transaction agreement states a term that differs from these Policies, that agreement controls for that engagement. In the event of a conflict regarding risk allocation, release, or indemnity, the liability release and assumption of risk agreements control.
+
+2. PAYMENT METHODS
+
+COMPANY accepts payment by Zelle and by credit card. Zelle is the preferred method and is processed without any added fee. When paying by Zelle, CLIENT must include the unique memo code and the exact amount provided by COMPANY so payment can be correctly identified. Credit card payments are processed through Stripe and are subject to a processing fee, which will be disclosed to CLIENT before the card payment is completed. CLIENT is responsible for the applicable processing fee when choosing to pay by card.
+
+3. ORDERS, APPROVAL, AND CONTRACT FORMATION
+
+All purchases follow a request-and-approval flow: CLIENT submits a request, COMPANY reviews it, and if approved, COMPANY issues an approval for payment. COMPANY's issuance of an approval expresses its willingness to be bound, and the contract is formed upon CLIENT's completion of payment in full; the purchase receipt summarizes the engagement. Scheduled sessions with a reserved time slot are bookings; horse services performed at COMPANY's availability and capacity are service requests; search, evaluation, and transaction representation engagements are retainers. Order summaries confirmed at checkout are binding as part of the contract without a separate signature. Services, packages, and memberships are paid in advance unless a separately executed agreement provides otherwise. Rescheduling terms and fees in these Policies apply to bookings and to service requests once a session date is scheduled. Repeat purchases of the same offering, additional lessons, and subscription renewals do not require new documents; changes to a subscription are confirmed at checkout.
+
+4. SERVICE-SPECIFIC TERMS
+
+Multi-lesson packages are valid for 90 days from the date of purchase; unused lessons expire at the end of that period. Rider memberships require 30 days' written notice to pause or cancel. Standard lessons may be rescheduled subject to the terms below but may not be canceled for a refund. Additional offering-specific terms are stated in the order summary at the time of purchase.
+
+5. NO MONETARY REFUNDS
+
+All sales are final. COMPANY does not provide monetary refunds. A paid booking or service request that is not completed is addressed through rescheduling, subject to the rescheduling terms and fees below. Any accommodation provided by COMPANY takes the form of a rescheduling credit applied to CLIENT's account, replacing the purchase in kind rather than in money, and remains subject to any applicable rescheduling fee.
+
+6. RESCHEDULING NOTICE AND FEES
+
+The standard notice to reschedule any booking is 48 hours before the scheduled start time. A reschedule request made 48 hours or more before the scheduled start time is made without a rescheduling fee. A reschedule request made less than 48 hours before the scheduled start time is subject to a rescheduling fee based on how close the request is made to the scheduled start time, as follows:
+
+Less than 48 hours but more than 24 hours before the scheduled start time: $10.
+Less than 24 hours but more than 8 hours before the scheduled start time: $20.
+Less than 8 hours before the scheduled start time but prior to the scheduled start time: $30.
+No-call/no-show, meaning CLIENT does not attend and does not contact COMPANY before the scheduled start time: $75.
+
+A rescheduling fee is charged upon rescheduling and must be paid before a new booking is confirmed.
+
+7. LATE ARRIVAL
+
+To be eligible for a late start or late finish, CLIENT must notify COMPANY before the scheduled start time. If CLIENT notifies COMPANY before the scheduled start time and the schedule permits, a COMPANY representative may, in their sole discretion, move the booking to a later time slot that day at no additional charge. If the schedule does not permit a later start time, CLIENT must reschedule and is subject to the $30 rescheduling fee for contacting COMPANY prior to the scheduled start time. If CLIENT contacts COMPANY after the scheduled start time and the schedule permits, a COMPANY representative may, in their sole discretion, move the booking to a later start time; if COMPANY is unable to accommodate a later start time for any reason, CLIENT must reschedule and is subject to a $40 rescheduling fee.
+
+8. WEATHER AND UNSAFE CONDITIONS
+
+If weather or unsafe conditions prevent a booking from proceeding safely, COMPANY will offer to reschedule the booking. No refund is provided; a paid booking is rescheduled rather than refunded. A booking rescheduled by COMPANY for weather or unsafe conditions is not subject to a rescheduling fee.
+
+9. MOBILE SERVICES AND TRAVEL
+
+For services COMPANY provides at a location other than its home property, the scheduling, rescheduling, notice, and fee terms above apply in the same manner as for on-site engagements. COMPANY charges for travel based on travel time, not distance. Travel time is estimated in advance using expected traffic conditions for the scheduled day and time; charging time for an electric vehicle is not included in travel time. The travel charge is calculated as the estimated travel time multiplied by COMPANY's travel rate and is added to the approved order for CLIENT's review and paid in full at the time of payment. If CLIENT cancels or reschedules a mobile engagement after a COMPANY representative is en route, the original travel charge is consumed and non-refundable, and a new travel charge applies to the rescheduled engagement. In that event, both the applicable rescheduling fee and the new travel charge are collected at the time of rescheduling.
+
+10. SERVICE TERMS
+
+The following terms apply to all instruction, training, exercise, care, and evaluation services.
+
+No guarantee of results. COMPANY does not guarantee competition results, riding levels, certifications, performance outcomes, behavioral improvements, training milestones, soundness, fitness or conditioning outcomes, or market value changes. Equine services involve living animals and variables outside COMPANY's control.
+
+Scheduling capacity. Requested services are scheduled subject to COMPANY's availability and capacity. A session is fulfilled when COMPANY delivers the selected service on the scheduled date.
+
+Client equipment and farrier. For services performed on a horse CLIENT owns or leases, CLIENT shall provide properly fitted and safe equipment, and COMPANY may refuse to use equipment deemed unsafe. Normal wear and tear is expected, and COMPANY is not responsible for ordinary deterioration of equipment from intended use. CLIENT remains responsible for arranging and paying for farrier services unless otherwise agreed in writing.
+
+Accurate information. CLIENT is responsible for the accuracy and completeness of the information submitted with each order, including horse health, behavior, and disclosure information affirmed in the separately executed Equine Services Release. Failure to disclose material information is a material breach.
+
+Limitation of liability. COMPANY shall not be liable for loss of use of a horse, lost profits, diminution in value, consequential damages, competition losses, or business losses. Any liability shall not exceed amounts paid by CLIENT to COMPANY during the preceding twelve (12) months. This limitation does not apply to gross negligence, reckless conduct, or intentional misconduct.
+
+Termination. COMPANY may suspend or terminate services immediately for dangerous horse behavior, unsafe conditions, nonpayment, abuse directed toward personnel, or conduct addressed in the Property Rules, Safety Acknowledgment, and Equestrian Conduct Agreement. Fees for completed services remain due.
+
+11. SCHEDULING ABUSE
+
+Repeated late reschedules, missed bookings, or no-shows may, at COMPANY's discretion and separate from the fees above, result in restriction or revocation of CLIENT's ability to schedule future engagements. This remedy addresses conduct and is independent of the monetary rescheduling fees.
+
+12. GIFT CERTIFICATES
+
+Where services are purchased as a gift, the purchaser is the CLIENT for payment purposes, and the recipient becomes the CLIENT for the purpose of receiving services and executing the required liability release, rules acknowledgment, and any other documents before participating.
+
+13. DISPUTE RESOLUTION
+
+Any dispute arising out of or relating to these Policies or any order, booking, service request, or engagement between CLIENT and COMPANY, unless governed by the dispute clause of a separately executed agreement, shall be resolved by binding arbitration in San Diego, California.
+
+14. ATTORNEY'S FEES
+
+Each party shall cover their own attorney's fees and costs.
+
+15. AMENDMENT
+
+COMPANY may amend these Policies at any time. An amendment becomes binding on CLIENT upon CLIENT's electronic acknowledgment of the amended version delivered through COMPANY's system. Pending acknowledgment, COMPANY may condition the purchase or provision of services on acceptance of the amended Policies.
+
+16. GOVERNING LAW AND SEVERABILITY
+
+These Policies are governed by the laws of the State of California. If any provision is held invalid or unenforceable, the remaining provisions remain in full force and effect.
+
+CLIENT
+
+Date: {{SIG.CLIENT.DATE}}
+Printed Name: {{CLIENT.PRINTED_NAME}}
+Signature: {{SIG.CLIENT.NAME}}
+Phone: {{CLIENT.PHONE}}
+Email: {{CLIENT.EMAIL}}
+$body$, updated_at = now()
+  WHERE template_key = 'COMPANY_POLICIES';
+
+UPDATE contract_templates SET body = $body$EMERGENCY VETERINARY AUTHORIZATION AND EQUINE MEDICAL CARE DIRECTIVE
+
+This Emergency Veterinary Authorization and Equine Medical Care Directive ("Agreement") is made effective as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned client ("CLIENT") in favor of {{ORG.LEGAL_NAME}} ("COMPANY"), authorizing COMPANY to act as described below with respect to the horse identified. By signing below, CLIENT acknowledges and agrees to the terms of this Agreement.
+
+CLIENT INFORMATION
+
+Name: {{CLIENT.FULL_NAME}}
+Address: {{CLIENT.ADDRESS}}
+Phone: {{CLIENT.PHONE}}
+Email: {{CLIENT.EMAIL}}
+CLIENT capacity as to Horse: {{CLIENT.HORSE_CAPACITY}}
+
+HORSE INFORMATION
+
+Horse Name: {{HORSE.REGISTERED_NAME}}
+Barn Name: {{HORSE.BARN_NAME}}
+Breed: {{HORSE.BREED}}
+Color: {{HORSE.COLOR}}
+Sex: {{HORSE.SEX}}
+Age: {{HORSE.AGE_DOB}}
+Registration / Identification Number: {{HORSE.REGISTRATION_NUMBER}}
+Current Location: {{HORSE.CURRENT_LOCATION}}
+Veterinarian: {{HORSE.VET_NAME}}
+Veterinarian Phone: {{HORSE.VET_PHONE}}
+Farrier: {{HORSE.FARRIER_NAME}}
+Farrier Phone: {{HORSE.FARRIER_PHONE}}
+
+1. AUTHORITY AND CAPACITY
+
+CLIENT represents and warrants that CLIENT owns, leases, manages, or otherwise has authority over the above-described horse ("Horse") and has full legal authority to execute this Agreement and to authorize the actions described.
+
+2. AUTHORIZATION TO SEEK EMERGENCY CARE
+
+CLIENT authorizes COMPANY and its representatives to contact a veterinarian and arrange emergency veterinary evaluation and treatment when COMPANY reasonably believes: The Horse may require immediate medical attention; Delay could reasonably worsen the Horse's condition; or CLIENT cannot be reached in a timely manner.
+
+3. EMERGENCY DECISION-MAKING AUTHORITY
+
+In an emergency, COMPANY may authorize reasonable veterinary actions including: Veterinary examination; Diagnostic evaluation; Emergency stabilization; Pain management; Transportation to a veterinary facility; and other care reasonably recommended by a licensed veterinarian. This authorization does not make COMPANY the owner of the Horse and does not transfer ownership rights.
+
+4. CONTACT INFORMATION
+
+Primary Contact: {{CLIENT.FULL_NAME}}
+Phone: {{CLIENT.PHONE}}
+Secondary Emergency Contact: {{CLIENT.EMERGENCY_CONTACT_1_NAME}} ({{CLIENT.EMERGENCY_CONTACT_1_RELATIONSHIP}})
+Phone: {{CLIENT.EMERGENCY_CONTACT_1_PHONE}}
+
+5. RESPONSIBILITY FOR COSTS
+
+CLIENT acknowledges that all veterinary, transportation, medication, diagnostic, surgical, hospitalization, and related expenses remain the sole responsibility of CLIENT. COMPANY is not responsible for payment of veterinary expenses unless separately agreed in writing.
+
+6. NON-EMERGENCY CARE
+
+COMPANY shall not authorize non-emergency veterinary procedures without CLIENT approval unless delay creates a reasonable concern for the Horse's welfare.
+
+7. EUTHANASIA
+
+COMPANY may not authorize euthanasia without CLIENT approval.
+
+CLIENT Initials: {{CLIENT.EUTHANASIA_INITIALS}}
+
+8. MEDICATION AUTHORIZATION
+
+CLIENT authorizes COMPANY to administer medications only as follows:
+
+Medication: {{HORSE.MEDICATION_NAME}}
+Dosage: {{HORSE.MEDICATION_DOSAGE}}
+Instructions: {{HORSE.MEDICATION_INSTRUCTIONS}}
+Additional instructions: {{HORSE.MEDICATION_ADDITIONAL}}
+
+9. VETERINARY HISTORY DISCLOSURE
+
+CLIENT agrees to disclose all known information regarding: Medical conditions; Injuries; Allergies; Medications; Behavioral issues; and Prior veterinary concerns.
+
+Known Conditions: {{HORSE.KNOWN_CONDITIONS}}
+
+10. RELEASE OF LIABILITY
+
+CLIENT releases COMPANY and its owners, employees, contractors, agents, representatives, and volunteers from claims arising from good-faith actions taken under this Agreement. This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
+
+11. INDEMNIFICATION
+
+CLIENT agrees to indemnify and hold harmless COMPANY from claims, expenses, losses, or liabilities arising from: Veterinary expenses; Medical decisions; Horse conditions; and Information omitted by CLIENT.
+
+12. NO GUARANTEE OF OUTCOME
+
+CLIENT acknowledges that emergency veterinary care cannot guarantee survival, recovery, performance ability, or future usability of the Horse.
+
+13. TERMINATION AND REVOCATION
+
+CLIENT may revoke this authorization by written notice. Revocation shall not affect actions already taken before receipt of written notice.
+
+14. DISPUTE RESOLUTION
+
+Any dispute arising out of or relating to this Agreement shall be resolved by binding arbitration in San Diego, California.
+
+15. ATTORNEY'S FEES
+
+Each party shall be required to cover their own attorney's fees and costs.
+
+16. GOVERNING LAW
+
+California law governs this Agreement.
+
+17. SEVERABILITY
+
+If any provision of this Agreement is determined to be invalid or unenforceable, the remaining provisions shall remain in full force and effect.
+
+18. ENTIRE AGREEMENT
+
+This Agreement contains the entire agreement concerning emergency veterinary authorization and supplements, and does not supersede, any separate Equine Services Release or services contract between CLIENT and COMPANY.
+
+CLIENT
+
+Signature: {{SIG.CLIENT.NAME}}
+Printed Name: {{CLIENT.PRINTED_NAME}}
+Capacity as to Horse: {{CLIENT.HORSE_CAPACITY}}
+Date: {{SIG.CLIENT.DATE}}
+Phone: {{CLIENT.PHONE}}
+Email: {{CLIENT.EMAIL}}
+Horse Name: {{HORSE.REGISTERED_NAME}}
+$body$, updated_at = now()
+  WHERE template_key = 'HORSE_EMERGENCY_VET';
+
+UPDATE contract_templates SET body = $body$HORSE LEASE AGREEMENT
+
+This Horse Lease Agreement ("Agreement") is made effective as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") between the Lessor and Lessee identified below. {{ORG.LEGAL_NAME}} ("COMPANY") is not a party to this Agreement.
+
+LESSOR (HORSE OWNER)
+
+Name: {{LESSOR.FULL_NAME}}
+Address: {{LESSOR.ADDRESS}}
+Phone: {{LESSOR.PHONE}}
+Email: {{LESSOR.EMAIL}}
+
+LESSEE
+
+Name: {{LESSEE.FULL_NAME}}
+Address: {{LESSEE.ADDRESS}}
+Phone: {{LESSEE.PHONE}}
+Email: {{LESSEE.EMAIL}}
+
+HORSE INFORMATION
+
+Registered Name: {{HORSE.REGISTERED_NAME}}
+Barn Name: {{HORSE.BARN_NAME}}
+Breed: {{HORSE.BREED}}
+Color: {{HORSE.COLOR}}
+Sex: {{HORSE.SEX}}
+Age: {{HORSE.AGE_DOB}}
+Registration Number: {{HORSE.REGISTRATION_NUMBER}}
+Microchip / Identification: {{HORSE.MICROCHIP}}
+Current Location: {{HORSE.CURRENT_LOCATION}}
+
+1. LEASE GRANT AND TERM
+
+Lessor owns or has authority to lease the Horse and grants Lessee the right to use and ride the Horse during the Lease Term under the conditions of this Agreement.
+
+Lease Type: {{TXN.LEASE_TYPE}}
+Lease Term: {{TXN.LEASE_TERM}}
+Commencement Date: {{TXN.LEASE_START}}
+Expiration Date: {{TXN.LEASE_END}}
+Renewal Terms: {{TXN.RENEWAL_TERMS}}
+
+2. PERMITTED USE
+
+Activities permitted by Lessor: {{TXN.PERMITTED_ACTIVITIES}}
+Restrictions: {{TXN.USE_RESTRICTIONS}}
+Days reserved for Lessee use: {{TXN.RESERVED_DAYS}}
+Horse may be used by: {{TXN.AUTHORIZED_USERS}}
+Use by any other person is unauthorized.
+
+3. LEASE PAYMENT
+
+Lease Fee: {{TXN.LEASE_FEE}}
+Payment Schedule: {{TXN.PAYMENT_SCHEDULE}}
+Late Payment Terms: {{TXN.PAYMENT_TERMS}}
+
+4. BOARDING AND LOCATION
+
+Current Facility: {{HORSE.CURRENT_LOCATION}}
+Boarding Responsibility: {{TXN.BOARDING_RESPONSIBILITY}}
+Lessee may not move the Horse without Lessor's written approval.
+
+5. CARE, VETERINARY, AND FARRIER RESPONSIBILITIES
+
+Routine care responsibility (feeding, routine care, exercise, scheduling appointments, following facility rules): {{TXN.CARE_RESPONSIBILITY}}
+Routine veterinary care responsibility: {{TXN.ROUTINE_VET_RESPONSIBILITY}}
+Emergency veterinary care responsibility: {{TXN.EMERGENCY_VET_RESPONSIBILITY}}
+Lessor authorization contact: {{TXN.VET_AUTH_CONTACT}}
+Farrier responsibility and schedule: {{TXN.FARRIER_RESPONSIBILITY}}
+
+6. TRAINING, INSURANCE, AND EQUIPMENT
+
+Training provider and restrictions: {{TXN.TRAINING_TERMS}}
+Insurance requirements: {{TXN.INSURANCE_REQUIREMENTS}}
+Equipment provided by Lessor: {{TXN.LESSOR_EQUIPMENT}}
+Equipment provided by Lessee: {{TXN.LESSEE_EQUIPMENT}}
+
+7. COMPETITION
+
+Participation allowed: {{TXN.COMPETITION_TERMS}}
+Competition expenses: {{TXN.COMPETITION_EXPENSES}}
+
+8. HORSE CONDITION AND NOTIFICATION
+
+Lessee acknowledges that horses are living animals, behavior may change, injury risks exist, and no performance outcome is guaranteed. Lessee shall immediately notify Lessor of any injury, illness, lameness, behavioral concern, or significant change in the Horse.
+
+9. RISK OF LOSS
+
+Risk of injury, illness, death, or loss of use is allocated as follows: {{TXN.RISK_ALLOCATION}}
+
+10. TERMINATION AND RETURN
+
+Either party may terminate upon: {{TXN.TERMINATION_TERMS}}. Immediate termination may occur for abuse, unsafe use, nonpayment, or breach of this Agreement. Upon termination, Lessee shall return the Horse in substantially the same condition, with agreed equipment, subject to normal wear and tear.
+
+11. RELEASE AND INDEMNIFICATION
+
+Lessee acknowledges equine activities involve inherent risks and releases Lessor and related parties from claims arising from the ordinary risks of equine activities. This release does not apply to gross negligence, reckless conduct, or intentional misconduct. Lessee agrees to indemnify Lessor for claims arising from Lessee's use, unauthorized activities, Lessee's negligence, and breach of this Agreement.
+
+12. THIRD-PARTY SERVICES
+
+If COMPANY provides training, instruction, or services involving the Horse, the parties acknowledge COMPANY is a separate service provider under its own agreements and is not a party to this Agreement unless added in writing.
+
+13. DISPUTE RESOLUTION
+
+Any dispute arising out of or relating to this Agreement shall be resolved by binding arbitration in San Diego, California.
+
+14. ATTORNEY'S FEES
+
+Each party shall cover their own attorney's fees and costs.
+
+15. GOVERNING LAW AND SEVERABILITY
+
+California law governs this Agreement. If any provision is unenforceable, the remainder remains in effect.
+
+16. ENTIRE AGREEMENT
+
+This Agreement represents the complete agreement regarding the Horse lease.
+
+LESSOR
+
+Signature: {{SIG.LESSOR.NAME}}
+Printed Name: {{LESSOR.PRINTED_NAME}}
+Date: {{SIG.LESSOR.DATE}}
+
+LESSEE
+
+Signature: {{SIG.LESSEE.NAME}}
+Printed Name: {{LESSEE.PRINTED_NAME}}
+Date: {{SIG.LESSEE.DATE}}
+$body$, updated_at = now()
+  WHERE template_key = 'HORSE_LEASE';
+
+UPDATE contract_templates SET body = $body$HORSE PURCHASE AND SALE AGREEMENT
+
+This Horse Purchase and Sale Agreement ("Agreement") is made effective as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") between the Seller and Buyer identified below. {{ORG.LEGAL_NAME}} ("COMPANY") is not a party to this Agreement.
+
+SELLER
+
+Name: {{SELLER.FULL_NAME}}
+Address: {{SELLER.ADDRESS}}
+Phone: {{SELLER.PHONE}}
+Email: {{SELLER.EMAIL}}
+
+BUYER
+
+Name: {{BUYER.FULL_NAME}}
+Address: {{BUYER.ADDRESS}}
+Phone: {{BUYER.PHONE}}
+Email: {{BUYER.EMAIL}}
+
+HORSE INFORMATION
+
+Registered Name: {{HORSE.REGISTERED_NAME}}
+Barn Name: {{HORSE.BARN_NAME}}
+Breed: {{HORSE.BREED}}
+Color: {{HORSE.COLOR}}
+Sex: {{HORSE.SEX}}
+Age / Date of Birth: {{HORSE.AGE_DOB}}
+Height: {{HORSE.HEIGHT}}
+Registration Number: {{HORSE.REGISTRATION_NUMBER}}
+Microchip / Identification: {{HORSE.MICROCHIP}}
+Current Location: {{HORSE.CURRENT_LOCATION}}
+
+1. PURCHASE AND TRANSFER
+
+Seller represents that Seller owns, or has legal authority to sell, the Horse identified above, and agrees to sell and transfer ownership of the Horse to Buyer. Buyer agrees to purchase the Horse subject to the terms of this Agreement.
+
+2. PURCHASE PRICE AND PAYMENT
+
+Purchase Price: {{TXN.PURCHASE_PRICE}}
+Deposit Amount: {{TXN.DEPOSIT_AMOUNT}}
+Deposit Terms: {{TXN.DEPOSIT_TERMS}}
+Balance Due: {{TXN.BALANCE_DUE}}
+Payment Terms: {{TXN.PAYMENT_TERMS}}
+Payment Method: {{TXN.PAYMENT_METHOD}}
+Ownership transfers upon: {{TXN.TRANSFER_CONDITION}}
+
+3. DELIVERY AND POSSESSION
+
+Delivery Date: {{TXN.DELIVERY_DATE}}
+Delivery Location: {{TXN.DELIVERY_LOCATION}}
+Transportation Responsibility: {{TXN.TRANSPORT_RESPONSIBILITY}}
+Risk of loss transfers: {{TXN.RISK_TRANSFER}}
+
+4. SELLER REPRESENTATIONS AND DISCLOSURES
+
+Seller represents, to the best of Seller's knowledge, that Seller has authority to sell the Horse and has disclosed known ownership issues, known liens or claims, known material health issues, and known dangerous behaviors.
+
+Training History: {{HORSE.TRAINING_HISTORY}}
+Competition History: {{HORSE.COMPETITION_HISTORY}}
+Medical History: {{HORSE.MEDICAL_HISTORY}}
+Behavioral History: {{HORSE.BEHAVIORAL_HISTORY}}
+Medication History: {{HORSE.MEDICATION_HISTORY}}
+Additional disclosures: {{TXN.ADDITIONAL_DISCLOSURES}}
+
+5. PRE-PURCHASE EXAMINATION
+
+Buyer has completed or declined a veterinary pre-purchase examination as follows: {{TXN.PPE_STATUS}}
+Veterinarian: {{HORSE.VET_NAME}}
+Examination Date: {{TXN.PPE_DATE}}
+No party can guarantee the results of any examination.
+
+6. TRIAL PERIOD
+
+Trial Period: {{TXN.TRIAL_PERIOD}}
+Terms: {{TXN.TRIAL_TERMS}}
+During any trial period, risk of injury remains with: {{TXN.TRIAL_RISK_PARTY}}
+Care responsibility remains with: {{TXN.TRIAL_CARE_PARTY}}
+
+7. CONDITION OF HORSE; WARRANTIES
+
+Except as specifically stated in this Agreement, Buyer acknowledges that horses are living animals, behavior and performance may change, and future soundness and performance cannot be guaranteed. Seller provides the following warranties: {{TXN.WARRANTIES}}. No other warranties are provided unless specifically written in this Agreement.
+
+8. DOCUMENTS AND EQUIPMENT
+
+Documents transferred: {{TXN.DOCUMENTS_TRANSFERRED}}
+Included equipment: {{TXN.EQUIPMENT_INCLUDED}}
+Excluded equipment: {{TXN.EQUIPMENT_EXCLUDED}}
+
+9. INSURANCE
+
+Buyer is responsible for obtaining appropriate insurance after transfer.
+
+10. THIRD-PARTY ASSISTANCE
+
+If COMPANY assisted with this transaction, the parties acknowledge COMPANY is not the owner of the Horse, is not a party to this purchase, and does not guarantee horse condition, either party's statements, buyer satisfaction, or future performance. Buyer releases COMPANY and third parties assisting with the transaction from claims arising from horse ownership, performance, condition, or Buyer decisions. This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
+
+11. INDEMNIFICATION
+
+Each party agrees to indemnify the other for claims arising from their own misrepresentations, their breach of this Agreement, and their conduct after transfer.
+
+12. DEFAULT
+
+Default terms: {{TXN.DEFAULT_TERMS}}
+
+13. DISPUTE RESOLUTION
+
+Any dispute arising out of or relating to this Agreement shall be resolved by binding arbitration in San Diego, California.
+
+14. ATTORNEY'S FEES
+
+Each party shall cover their own attorney's fees and costs.
+
+15. GOVERNING LAW AND SEVERABILITY
+
+California law governs this Agreement. If any provision is unenforceable, the remainder remains in effect.
+
+16. ENTIRE AGREEMENT
+
+This Agreement contains the complete agreement between Buyer and Seller.
+
+SELLER
+
+Signature: {{SIG.SELLER.NAME}}
+Printed Name: {{SELLER.PRINTED_NAME}}
+Date: {{SIG.SELLER.DATE}}
+
+BUYER
+
+Signature: {{SIG.BUYER.NAME}}
+Printed Name: {{BUYER.PRINTED_NAME}}
+Date: {{SIG.BUYER.DATE}}
+$body$, updated_at = now()
+  WHERE template_key = 'HORSE_PURCHASE_SALE';
+
+UPDATE contract_templates SET body = $body$HORSE SALE AND TRANSFER AGREEMENT
+
+This Horse Sale and Transfer Agreement ("Agreement") is made effective as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") between the Seller and Buyer identified below. {{ORG.LEGAL_NAME}} ("COMPANY") is not a party to this Agreement.
+
+SELLER
+
+Name: {{SELLER.FULL_NAME}}
+Address: {{SELLER.ADDRESS}}
+Phone: {{SELLER.PHONE}}
+Email: {{SELLER.EMAIL}}
+
+BUYER
+
+Name: {{BUYER.FULL_NAME}}
+Address: {{BUYER.ADDRESS}}
+Phone: {{BUYER.PHONE}}
+Email: {{BUYER.EMAIL}}
+
+HORSE INFORMATION
+
+Registered Name: {{HORSE.REGISTERED_NAME}}
+Barn Name: {{HORSE.BARN_NAME}}
+Breed: {{HORSE.BREED}}
+Color: {{HORSE.COLOR}}
+Sex: {{HORSE.SEX}}
+Age / Date of Birth: {{HORSE.AGE_DOB}}
+Height: {{HORSE.HEIGHT}}
+Registration Number: {{HORSE.REGISTRATION_NUMBER}}
+Microchip / Identification: {{HORSE.MICROCHIP}}
+Current Location: {{HORSE.CURRENT_LOCATION}}
+
+1. SALE OF HORSE
+
+Seller owns or has legal authority to sell the Horse and agrees to sell and transfer it to Buyer. Buyer agrees to accept ownership subject to this Agreement.
+
+2. PRICE AND PAYMENT
+
+Total Sale Price: {{TXN.PURCHASE_PRICE}}
+Deposit: {{TXN.DEPOSIT_AMOUNT}}
+Remaining Balance: {{TXN.BALANCE_DUE}}
+Payment Schedule: {{TXN.PAYMENT_SCHEDULE}}
+Payment Method: {{TXN.PAYMENT_METHOD}}
+
+3. TRANSFER OF OWNERSHIP
+
+Ownership transfers upon: {{TXN.TRANSFER_CONDITION}}
+Transfer Date: {{TXN.TRANSFER_DATE}}
+
+4. DELIVERY AND POSSESSION
+
+Delivery Location: {{TXN.DELIVERY_LOCATION}}
+Delivery Date: {{TXN.DELIVERY_DATE}}
+Transportation Responsibility: {{TXN.TRANSPORT_RESPONSIBILITY}}
+Risk of loss transfers: {{TXN.RISK_TRANSFER}}
+
+5. SELLER DISCLOSURES AND REPRESENTATIONS
+
+Seller represents that Seller has authority to sell the Horse, has disclosed known ownership issues and known liens or claims, and has provided truthful information to the best of Seller's knowledge regarding health history, injury history, training history, behavioral issues, medication history, and competition history.
+
+Additional disclosures: {{TXN.ADDITIONAL_DISCLOSURES}}
+
+6. BUYER ACKNOWLEDGMENT
+
+Buyer acknowledges that horses are living animals, performance may change, future soundness cannot be guaranteed, and behavior may vary after transfer.
+
+7. PRE-PURCHASE EXAMINATION
+
+Buyer has completed or declined a veterinary examination as follows: {{TXN.PPE_STATUS}}
+Veterinarian: {{HORSE.VET_NAME}}
+Examination Date: {{TXN.PPE_DATE}}
+
+8. TRIAL PERIOD
+
+Trial Period: {{TXN.TRIAL_PERIOD}}
+Terms: {{TXN.TRIAL_TERMS}}
+Responsibility during trial: {{TXN.TRIAL_CARE_PARTY}}
+
+9. DOCUMENTS AND EQUIPMENT
+
+Seller agrees to provide: {{TXN.DOCUMENTS_TRANSFERRED}}
+Included equipment: {{TXN.EQUIPMENT_INCLUDED}}
+Excluded equipment: {{TXN.EQUIPMENT_EXCLUDED}}
+
+10. NO CONTINUING OBLIGATION
+
+Unless separately agreed in writing, Seller has no continuing responsibility for training, veterinary care, boarding, performance, or future value.
+
+11. THIRD-PARTY DISCLOSURE
+
+If COMPANY assisted with this transaction, the parties acknowledge COMPANY is not the owner of the Horse and is not responsible for horse condition, buyer satisfaction, seller representations, or future performance.
+
+12. RELEASE
+
+Buyer releases Seller and any assisting parties from claims arising after transfer except claims based on fraud, intentional misrepresentation, or obligations expressly stated in this Agreement.
+
+13. INDEMNIFICATION
+
+Each party agrees to indemnify the other for claims arising from their own conduct, their breach of this Agreement, and their misrepresentations.
+
+14. DEFAULT
+
+Default terms: {{TXN.DEFAULT_TERMS}}
+
+15. DISPUTE RESOLUTION
+
+Any dispute arising out of or relating to this Agreement shall be resolved by binding arbitration in San Diego, California.
+
+16. ATTORNEY'S FEES
+
+Each party shall cover their own attorney's fees and costs.
+
+17. GOVERNING LAW AND SEVERABILITY
+
+California law governs this Agreement. If any provision is unenforceable, the remainder remains in effect.
+
+18. ENTIRE AGREEMENT
+
+This Agreement represents the complete agreement between Buyer and Seller.
+
+SELLER
+
+Signature: {{SIG.SELLER.NAME}}
+Printed Name: {{SELLER.PRINTED_NAME}}
+Date: {{SIG.SELLER.DATE}}
+
+BUYER
+
+Signature: {{SIG.BUYER.NAME}}
+Printed Name: {{BUYER.PRINTED_NAME}}
+Date: {{SIG.BUYER.DATE}}
+$body$, updated_at = now()
+  WHERE template_key = 'HORSE_SALE_TRANSFER';
+
+UPDATE contract_templates SET body = $body$HORSE FINDER SEARCH AND SOURCING RETAINER AGREEMENT
+
+This Horse Finder Search and Sourcing Retainer Agreement ("Agreement") is made effective as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned client ("CLIENT") with {{ORG.LEGAL_NAME}} ("COMPANY"). By signing below, CLIENT retains COMPANY to conduct the search described below and agrees to the terms of this Agreement. COMPANY's willingness to be bound is expressed by its issuance of an approval for payment, and the retainer is formed upon CLIENT's completion of payment.
+
+CLIENT INFORMATION
+
+Name: {{CLIENT.FULL_NAME}}
+Address: {{CLIENT.ADDRESS}}
+Phone: {{CLIENT.PHONE}}
+Email: {{CLIENT.EMAIL}}
+
+1. ENGAGEMENT
+
+CLIENT, in CLIENT's capacity as {{DIR.ROLE_TERM}}, retains COMPANY to search for and identify {{DIR.TARGET_TERM}} in connection with a prospective {{DIR.DIRECTION_TERM}}. COMPANY provides search and sourcing assistance on either side of a transaction: locating a horse for a prospective buyer or lessee, or locating a buyer or lessee for a horse CLIENT owns. Services may include understanding CLIENT's goals and requirements; identifying and shortlisting prospective matches; reviewing available information; communicating with owners, trainers, brokers, sellers, prospective buyers, and prospective lessees; coordinating appointments, viewings, and introductions; assisting with search strategy; and providing general observations and opinions based on experience.
+
+2. SEARCH PARAMETERS
+
+Search objective ({{DIR.DIRECTION_TERM}}): {{ENG.SEARCH_OBJECTIVE}}
+Discipline: {{ENG.DISCIPLINE}}
+Breed: {{ENG.BREED_PREFERENCE}}
+Age: {{ENG.AGE_RANGE}}
+Height: {{ENG.HEIGHT_RANGE}}
+Experience Level: {{ENG.EXPERIENCE_LEVEL}}
+Budget: {{ENG.BUDGET}}
+Intended Use: {{ENG.INTENDED_USE}}
+Additional Requirements: {{ENG.ADDITIONAL_REQUIREMENTS}}
+
+3. NO GUARANTEE OF RESULTS OR CONSUMMATION
+
+COMPANY does not guarantee that the search will locate {{DIR.TARGET_TERM}} or any suitable match, that any match will remain available, or that any located match will result in a consummated purchase, sale, or lease. A search may end with no result, and a successful result may still end with no transaction. Fees earned under this Agreement, other than a fee expressly contingent on consummation, remain earned whether or not any transaction closes. COMPANY does not guarantee performance, temperament, health, soundness, value, or suitability of any horse, and does not guarantee the accuracy of information provided by third parties, who may have their own interests.
+
+4. STANDALONE MODULE
+
+This Agreement covers the search only. Per-horse evaluation is a separate service under a separately executed Horse Evaluation Agreement with its own per-horse fee. Representation through an actual purchase, sale, or lease is a separate service under a separately executed Horse Transaction Representation Agreement with its own fee. Any transaction itself requires separate written agreements between the transacting parties. CLIENT may enter any, all, or none of those agreements; none requires a prior one. CLIENT remains solely responsible for all transaction decisions, including whether to view, ride, or trial a horse, obtain veterinary evaluation, or enter into any transaction. COMPANY is not acting as a veterinarian, licensed appraiser, attorney, insurance provider, or financial advisor.
+
+5. FEES
+
+Search Retainer (flat fee): {{TXN.RETAINER_FEE}}
+Due: {{TXN.PAYMENT_TERMS}}
+Success Fee / Acquisition Fee (contingent): {{TXN.SUCCESS_FEE}} or {{TXN.COMMISSION_RATE}} of purchase price / transaction value.
+
+The Success Fee / Acquisition Fee is payable only if the search yields {{DIR.TARGET_TERM}} and CLIENT consummates a {{DIR.DIRECTION_TERM}} transaction involving that introduction, whether or not COMPANY is separately retained to represent CLIENT in that transaction. It is separate from, and in addition to, any per-horse evaluation fee or transaction representation fee under separately executed agreements. CLIENT shall reimburse COMPANY for approved expenses including travel, mileage, entry fees, show attendance, testing fees, and other agreed expenses. Payment methods and travel terms are governed by the separately executed Company Policies.
+
+6. NON-CIRCUMVENTION
+
+If COMPANY introduces CLIENT to a horse, owner, seller, buyer, lessee, trainer, or opportunity, CLIENT agrees not to bypass COMPANY to avoid agreed fees. This provision applies for {{ENG.PROTECTION_PERIOD}} months after introduction.
+
+7. COMMUNICATIONS AND CONFIDENTIALITY
+
+CLIENT authorizes COMPANY to communicate with sellers, prospective buyers, prospective lessees, trainers, owners, brokers, facilities, and other equine professionals for purposes related to the search. COMPANY and CLIENT agree to maintain confidentiality regarding budget, search criteria, negotiation strategy, and private horse information. COMPANY shall disclose known conflicts or relationships that may materially affect the search.
+
+Known disclosures: {{ENG.DISCLOSURES}}
+
+8. INCORPORATED DOCUMENTS
+
+The risk acknowledgments, releases, and indemnity obligations applicable to activities under this Agreement are set forth exclusively in the separately executed liability release and assumption of risk agreements, incorporated herein by reference.
+
+9. TERMINATION
+
+Either party may terminate this Agreement by written notice. Termination does not terminate any separately executed evaluation or transaction representation agreement, each of which terminates on its own terms. Outstanding fees and expenses remain due.
+
+10. DISPUTE RESOLUTION
+
+Any dispute arising out of or relating to this Agreement shall be resolved by binding arbitration in San Diego, California.
+
+11. ATTORNEY'S FEES
+
+Each party shall cover their own attorney's fees and costs.
+
+12. GOVERNING LAW AND SEVERABILITY
+
+California law governs this Agreement. If any provision is unenforceable, the remainder remains in effect.
+
+13. ENTIRE AGREEMENT
+
+This Agreement contains the entire agreement concerning horse search and sourcing services.
+
+CLIENT
+
+Signature: {{SIG.CLIENT.NAME}}
+Printed Name: {{CLIENT.PRINTED_NAME}}
+Date: {{SIG.CLIENT.DATE}}
+$body$, updated_at = now()
+  WHERE template_key = 'HORSE_SEARCH_RETAINER';
+
+UPDATE contract_templates SET body = $body$HORSE TRANSACTION REPRESENTATION AGREEMENT
+
+This Horse Transaction Representation Agreement ("Agreement") is made effective as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned client ("CLIENT") with {{ORG.LEGAL_NAME}} ("COMPANY"). By signing below, CLIENT retains COMPANY to represent CLIENT's side of the prospective transaction described below and agrees to the terms of this Agreement. COMPANY's willingness to be bound is expressed by its issuance of an approval for payment, and the retainer is formed upon CLIENT's completion of payment.
+
+CLIENT INFORMATION
+
+Name: {{CLIENT.FULL_NAME}}
+Address: {{CLIENT.ADDRESS}}
+Phone: {{CLIENT.PHONE}}
+Email: {{CLIENT.EMAIL}}
+
+HORSE INFORMATION (IF IDENTIFIED)
+
+Registered Name: {{HORSE.REGISTERED_NAME}}
+Barn Name: {{HORSE.BARN_NAME}}
+Breed: {{HORSE.BREED}}
+Current Location: {{HORSE.CURRENT_LOCATION}}
+
+1. SCOPE OF REPRESENTATION
+
+CLIENT, as {{DIR.ROLE_TERM}} in a prospective {{DIR.DIRECTION_TERM}}, retains COMPANY to assist CLIENT through the transaction, which may include communicating and negotiating with the {{DIR.COUNTERPARTY_TERM}} and the {{DIR.COUNTERPARTY_TERM}}'s representatives; coordinating trials, appointments, and veterinary examinations; reviewing general transaction considerations; coordinating transaction logistics and documentation; and facilitating communications between the parties. COMPANY represents CLIENT only. The {{DIR.COUNTERPARTY_TERM}} is not represented by COMPANY under this Agreement; where COMPANY relates to both sides of one transaction, each side is engaged under its own separately executed representation agreement, with disclosure to both sides.
+
+2. STANDALONE MODULE
+
+This Agreement may follow a search under a separate search retainer or an evaluation under a separate evaluation agreement, or may be entered fresh where CLIENT has already identified the horse or the {{DIR.COUNTERPARTY_TERM}}. No prior agreement is required. The actual purchase, sale, or lease is documented by separate written agreements between the transacting parties; COMPANY is not the owner of the Horse and is not a party to those transfer documents unless separately stated in writing.
+
+3. NO GUARANTEE; CLIENT DECISIONS
+
+COMPANY does not guarantee that the prospective {{DIR.DIRECTION_TERM}} will be agreed, completed, or consummated, and does not guarantee price, terms, availability, or the conduct of the {{DIR.COUNTERPARTY_TERM}}. COMPANY may rely on information provided by the {{DIR.COUNTERPARTY_TERM}} and other third parties and does not guarantee its accuracy. CLIENT remains solely responsible for all transaction decisions, including whether to enter, complete, or abandon the transaction, the price and terms CLIENT will accept, and whether to obtain veterinary evaluation. COMPANY is not acting as an attorney, veterinarian, insurance provider, financial advisor, or licensed appraiser.
+
+4. FEES
+
+Representation Fee: {{TXN.REPRESENTATION_FEE}} or {{TXN.COMMISSION_RATE}} of purchase price / transaction value (minimum {{TXN.COMMISSION_MIN}}).
+Payment Due: {{TXN.PAYMENT_TERMS}}
+
+The Representation Fee is separate from, and in addition to, any search retainer, success/acquisition fee, or per-horse evaluation fee under separately executed agreements. Payment methods and travel terms are governed by the separately executed Company Policies.
+
+5. INTRODUCED OPPORTUNITIES
+
+If COMPANY introduces CLIENT to a horse, owner, buyer, lessee, trainer, facility, or opportunity, compensation remains due if CLIENT completes a transaction involving that opportunity. Protection Period: {{ENG.PROTECTION_PERIOD}} months.
+
+6. COMMUNICATIONS AND CONFIDENTIALITY
+
+CLIENT authorizes COMPANY to communicate with the {{DIR.COUNTERPARTY_TERM}}, owners, trainers, facilities, brokers, and other equine professionals. The parties shall maintain confidentiality regarding budget, transaction terms, negotiation strategy, and horse information.
+
+7. INCORPORATED DOCUMENTS
+
+The risk acknowledgments, releases, and indemnity obligations applicable to activities under this Agreement are set forth exclusively in the separately executed liability release and assumption of risk agreements, incorporated herein by reference.
+
+8. TERMINATION
+
+Either party may terminate by written notice. Termination does not affect any separately executed search retainer or evaluation agreement. Completed services and earned fees remain payable.
+
+9. DISPUTE RESOLUTION
+
+Any dispute arising out of or relating to this Agreement shall be resolved by binding arbitration in San Diego, California.
+
+10. ATTORNEY'S FEES
+
+Each party shall cover their own attorney's fees and costs.
+
+11. GOVERNING LAW AND SEVERABILITY
+
+California law governs this Agreement. If any provision is unenforceable, the remainder remains in effect.
+
+12. ENTIRE AGREEMENT
+
+This Agreement represents the entire agreement regarding transaction representation services.
+
+CLIENT
+
+Signature: {{SIG.CLIENT.NAME}}
+Printed Name: {{CLIENT.PRINTED_NAME}}
+Date: {{SIG.CLIENT.DATE}}
+$body$, updated_at = now()
+  WHERE template_key = 'HORSE_TRANSACTION_REP';
+

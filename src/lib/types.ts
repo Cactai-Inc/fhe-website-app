@@ -42,6 +42,11 @@ export interface Profile {
   is_suspended: boolean;
 }
 
+/** Flat catalog: an Offering IS the purchasable item (the tier layer was removed
+ *  2026-07-08). Each offering carries its own price, purchase type, and — for
+ *  riding lessons — whether a horse is included. */
+export type PurchaseType = 'one_time' | 'subscription' | 'deposit_retainer';
+
 export interface Offering {
   id: string;
   segment: Segment;
@@ -51,20 +56,16 @@ export interface Offering {
   slug: string;
   active: boolean;
   sort_order: number;
-  tiers?: OfferingTier[];
-}
-
-export interface OfferingTier {
-  id: string;
-  offering_id: string;
-  label: string;
-  description: string | null;
-  price_amount: number;
-  price_unit: PriceUnitDb;
+  service_type: string | null;
+  price_amount: number | null;
+  price_unit: PriceUnitDb | null;
   price_min: number | null;
-  note: string | null;
+  purchase_type: PurchaseType | null;
+  /** Riding lessons only: true = "Ride our horse", false = "Ride your horse",
+   *  null = not a lesson. */
+  horse_included: boolean | null;
   is_popular: boolean;
-  sort_order: number;
+  note: string | null;
 }
 
 export interface ProposedTime {
@@ -89,7 +90,6 @@ export interface RequestInput {
 export interface RequestSelectionInput {
   offering_id?: string;
   offering_slug?: string;
-  tier_id?: string;
   label?: string;
 }
 
@@ -133,7 +133,6 @@ export interface OrderItem {
   id: string;
   order_id: string;
   offering_id: string | null;
-  tier_id: string | null;
   label: string;
   price_amount: number;
   price_unit: PriceUnitDb;

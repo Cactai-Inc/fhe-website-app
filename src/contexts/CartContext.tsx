@@ -16,7 +16,7 @@ interface CartState {
 type CartAction =
   | { type: 'SET_FUNNEL'; funnel: FunnelType }
   | { type: 'ADD_ITEM'; item: CartItem }
-  | { type: 'REMOVE_ITEM'; serviceId: string; tierId: string }
+  | { type: 'REMOVE_ITEM'; offeringId: string }
   | { type: 'TOGGLE_ITEM'; item: CartItem }
   | { type: 'SET_QUALIFIER'; key: string; value: string }
   | { type: 'CLEAR_CART' };
@@ -25,11 +25,11 @@ interface CartContextValue {
   state: CartState;
   setFunnel: (funnel: FunnelType) => void;
   addItem: (item: CartItem) => void;
-  removeItem: (serviceId: string, tierId: string) => void;
+  removeItem: (offeringId: string) => void;
   toggleItem: (item: CartItem) => void;
   setQualifier: (key: string, value: string) => void;
   clearCart: () => void;
-  isSelected: (serviceId: string, tierId: string) => boolean;
+  isSelected: (offeringId: string) => boolean;
   subtotal: number;
   itemCount: number;
   toSelectedServices: () => SelectedService[];
@@ -73,9 +73,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
       return { ...state, funnel: action.funnel };
 
     case 'ADD_ITEM': {
-      const exists = state.items.some(
-        (i) => i.serviceId === action.item.serviceId && i.tierId === action.item.tierId
-      );
+      const exists = state.items.some((i) => i.offeringId === action.item.offeringId);
       if (exists) return state;
       return { ...state, items: [...state.items, action.item] };
     }
@@ -83,26 +81,18 @@ function cartReducer(state: CartState, action: CartAction): CartState {
     case 'REMOVE_ITEM':
       return {
         ...state,
-        items: state.items.filter(
-          (i) => !(i.serviceId === action.serviceId && i.tierId === action.tierId)
-        ),
+        items: state.items.filter((i) => i.offeringId !== action.offeringId),
       };
 
     case 'TOGGLE_ITEM': {
-      const exists = state.items.some(
-        (i) => i.serviceId === action.item.serviceId && i.tierId === action.item.tierId
-      );
+      const exists = state.items.some((i) => i.offeringId === action.item.offeringId);
       if (exists) {
         return {
           ...state,
-          items: state.items.filter(
-            (i) => !(i.serviceId === action.item.serviceId && i.tierId === action.item.tierId)
-          ),
+          items: state.items.filter((i) => i.offeringId !== action.item.offeringId),
         };
       }
-      // When selecting a new tier for the same service, replace any other tier from that service
-      const withoutService = state.items.filter((i) => i.serviceId !== action.item.serviceId);
-      return { ...state, items: [...withoutService, action.item] };
+      return { ...state, items: [...state.items, action.item] };
     }
 
     case 'SET_QUALIFIER':
@@ -143,8 +133,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'ADD_ITEM', item });
   }, []);
 
-  const removeItem = useCallback((serviceId: string, tierId: string) => {
-    dispatch({ type: 'REMOVE_ITEM', serviceId, tierId });
+  const removeItem = useCallback((offeringId: string) => {
+    dispatch({ type: 'REMOVE_ITEM', offeringId });
   }, []);
 
   const toggleItem = useCallback((item: CartItem) => {
@@ -160,8 +150,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const isSelected = useCallback(
-    (serviceId: string, tierId: string) =>
-      state.items.some((i) => i.serviceId === serviceId && i.tierId === tierId),
+    (offeringId: string) =>
+      state.items.some((i) => i.offeringId === offeringId),
     [state.items]
   );
 
@@ -171,10 +161,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const toSelectedServices = useCallback((): SelectedService[] =>
     state.items.map((i) => ({
-      serviceId: i.serviceId,
-      serviceName: i.serviceName,
-      tierId: i.tierId,
-      tierLabel: i.tierLabel,
+      offeringId: i.offeringId,
+      offeringName: i.offeringName,
+      serviceType: i.serviceType,
       price: i.price,
       unit: i.unit,
     })),

@@ -63,7 +63,7 @@ import {
   fetchOfferings,
 } from '../../../lib/api';
 import { adminSendInvitation } from '../../../lib/admin';
-import type { OfferingTier, ProposedTime } from '../../../lib/types';
+import type { Offering, ProposedTime } from '../../../lib/types';
 
 // ════════════════════════════════════════════════════════════════════════════
 // Booking requests — the Request Inbox (Flow A step 2)
@@ -97,8 +97,9 @@ const CONTACT_METHOD_LABEL: Record<string, string> = {
 
 const PAYMENT_METHODS = ['Zelle', 'Cash', 'Card', 'Other'];
 
-/** "$500" / "$587.50" for the tier select labels (mirrors Admin InviteTab). */
-function formatTierPrice(amount: number): string {
+/** "$500" / "$587.50" for the offering select labels (mirrors Admin InviteTab). */
+function formatTierPrice(amount: number | null): string {
+  if (amount == null) return '';
   return `$${Number(amount).toLocaleString('en-US', {
     minimumFractionDigits: Number.isInteger(Number(amount)) ? 0 : 2,
     maximumFractionDigits: 2,
@@ -205,7 +206,7 @@ interface InviteFormState {
   firstName: string;
   lastName: string;
   email: string;
-  tierId: string;
+  offeringId: string;
   markPaid: boolean;
   paymentMethod: string;
   notes: string;
@@ -217,7 +218,7 @@ function inviteFormFor(r: BookingRequest): InviteFormState {
     firstName,
     lastName,
     email: r.contact_email,
-    tierId: '',
+    offeringId: '',
     markPaid: false,
     paymentMethod: 'Zelle',
     notes: r.notes?.trim() ?? '',
@@ -234,9 +235,9 @@ function RequestInbox() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [invite, setInvite] = useState<InviteFormState | null>(null);
   const [inviteResult, setInviteResult] = useState<{
-    url: string; emailed: boolean; tierLabel?: string;
+    url: string; emailed: boolean; offeringLabel?: string;
   } | null>(null);
-  const [tiers, setTiers] = useState<OfferingTier[]>([]);
+  const [offerings, setOfferings] = useState<Offering[]>([]);
   // Schedule-lesson section (invited/converted requests): the provisioned
   // client resolved via request → invitation → email → contact → client, plus
   // the sessions already booked from this request.
@@ -261,11 +262,11 @@ function RequestInbox() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter]);
 
-  // Riding-lesson tiers for the provisioning select (mirrors Admin InviteTab).
+  // Flat riding-lesson offerings for the provisioning select (mirrors Admin InviteTab).
   useEffect(() => {
     fetchOfferings()
-      .then((offerings) => setTiers(offerings.find((o) => o.slug === 'riding-lesson')?.tiers ?? []))
-      .catch(() => setTiers([]));
+      .then((all) => setOfferings(all.filter((o) => o.horse_included !== null)))
+      .catch(() => setOfferings([]));
   }, []);
 
   const openRequest = (row: BookingRequest) => {
@@ -344,12 +345,12 @@ function RequestInbox() {
         requestId: selected.id,
         firstName: invite.firstName.trim(),
         lastName: invite.lastName.trim(),
-        tierId: invite.tierId,
+        offeringId: invite.offeringId,
         markPaid: invite.markPaid,
         ...(invite.markPaid ? { paymentMethod: invite.paymentMethod } : {}),
         ...(invite.notes.trim() ? { notes: invite.notes.trim() } : {}),
       });
-      setInviteResult({ url: r.registerUrl, emailed: r.emailed, tierLabel: r.tierLabel });
+      setInviteResult({ url: r.registerUrl, emailed: r.emailed, offeringLabel: r.offeringLabel });
       // The RPC flipped the request server-side; mirror it locally + refresh.
       setSelected((prev) => (prev ? { ...prev, status: 'invited' } : prev));
       setInviteOpen(false);
@@ -380,7 +381,7 @@ function RequestInbox() {
   const allChecked = LESSON_FIT_CHECKLIST.every((item) => checklist[item.key] === true);
   const inviteReady =
     invite !== null &&
-    invite.tierId !== '' &&
+    invite.offeringId !== '' &&
     invite.email.trim() !== '' &&
     invite.firstName.trim() !== '' &&
     invite.lastName.trim() !== '';
@@ -584,8 +585,8 @@ function RequestInbox() {
             {inviteResult && (
               <div className="bg-green-50 border border-green-200 p-4 text-sm">
                 <p className="text-green-800 mb-2">
-                  {inviteResult.tierLabel
-                    ? `${inviteResult.tierLabel} provisioned — invitation created`
+                  {inviteResult.offeringLabel
+                    ? `${inviteResult.offeringLabel} provisioned — invitation created`
                     : 'Invitation created'}
                   {inviteResult.emailed
                     ? ' and emailed.'
@@ -680,13 +681,13 @@ function RequestInbox() {
                       id={id}
                       className="form-input"
                       required
-                      value={invite.tierId}
-                      onChange={(e) => setInvite({ ...invite, tierId: e.target.value })}
+                      value={invite.offeringId}
+                      onChange={(e) => setInvite({ ...invite, offeringId: e.target.value })}
                     >
-                      <option value="">Select a lesson tier…</option>
-                      {tiers.map((t) => (
-                        <option key={t.id} value={t.id}>
-                          {t.label} — {formatTierPrice(t.price_amount)}
+                      <option value="">Select a lesson…</option>
+                      {offerings.map((o) => (
+                        <option key={o.id} value={o.id}>
+                          {o.name} — {formatTierPrice(o.price_amount)}
                         </option>
                       ))}
                     </select>

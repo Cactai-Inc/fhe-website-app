@@ -238,3 +238,25 @@ export async function setRsvp(eventId: string, status: RsvpStatus): Promise<void
     .upsert({ event_id: eventId, user_id, status }, { onConflict: 'event_id,user_id' });
   if (error) throw error;
 }
+
+export interface ProposeEventInput {
+  title: string;
+  starts_at: string;         // ISO
+  ends_at?: string | null;
+  location?: string | null;
+  description?: string | null;
+}
+
+/** Host an event (Slice 4): members propose an UNPUBLISHED event that operators
+ *  review and publish. Riding-gated server-side. Returns the new event id. */
+export async function proposeEvent(input: ProposeEventInput): Promise<string> {
+  const { data, error } = await supabase.rpc('propose_community_event', {
+    p_title: input.title,
+    p_starts_at: input.starts_at,
+    p_ends_at: input.ends_at ?? null,
+    p_location: input.location ?? null,
+    p_description: input.description ?? null,
+  });
+  if (error) throw error;
+  return data as string;
+}

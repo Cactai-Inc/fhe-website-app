@@ -299,6 +299,17 @@ export function sessionWindow(
   return { starts_at: start.toISOString(), ends_at: end.toISOString() };
 }
 
+/** Write/update the rider-visible progress note on one session (Slice 5). Any
+ *  operator (trainer or admin) may do this — the servicing subset. Passing an
+ *  empty string clears the note. */
+export async function setLessonProgressNote(sessionId: string, note: string): Promise<void> {
+  const { error } = await supabase.rpc('set_lesson_progress_note', {
+    p_session_id: sessionId,
+    p_note: note,
+  });
+  if (error) throw error;
+}
+
 /** Cancel a SCHEDULED lesson (member notified) or record a no-show. */
 export async function cancelLessonSession(
   sessionId: string,

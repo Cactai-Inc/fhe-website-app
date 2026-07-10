@@ -4,7 +4,7 @@
 
 import { supabase } from './supabase';
 import type {
-  Offering, OfferingTier, RequestInput, RequestSelectionInput,
+  Offering, RequestInput, RequestSelectionInput,
   Invitation, AvailabilitySlot, Order, OrderItem, OrderDocument, Payment,
   PaymentMethod, Profile,
 } from './types';
@@ -18,6 +18,9 @@ import type {
 
 // ─── Offerings catalog ──────────────────────────────────────────────────────
 
+/** Flat catalog: each purchasable item is its own active=true offering row.
+ *  Parent "group" offerings were set active=false, so filtering on active
+ *  yields exactly the flat purchasable items. */
 export async function fetchOfferings(): Promise<Offering[]> {
   const { data: offerings, error } = await supabase
     .from('offerings')
@@ -27,18 +30,7 @@ export async function fetchOfferings(): Promise<Offering[]> {
     .order('sort_order');
   if (error) throw error;
 
-  const { data: tiers, error: tierErr } = await supabase
-    .from('offering_tiers')
-    .select('*')
-    .order('sort_order');
-  if (tierErr) throw tierErr;
-
-  const byOffering = new Map<string, OfferingTier[]>();
-  for (const t of (tiers ?? []) as OfferingTier[]) {
-    if (!byOffering.has(t.offering_id)) byOffering.set(t.offering_id, []);
-    byOffering.get(t.offering_id)!.push(t);
-  }
-  return (offerings ?? []).map((o: Offering) => ({ ...o, tiers: byOffering.get(o.id) ?? [] }));
+  return (offerings ?? []) as Offering[];
 }
 
 // ─── Unauthenticated request flow ───────────────────────────────────────────
@@ -63,7 +55,6 @@ export async function submitRequest(
     p_selections: selections.map((s) => ({
       offering_id: s.offering_id ?? null,
       offering_slug: s.offering_slug ?? null,
-      tier_id: s.tier_id ?? null,
       label: s.label ?? null,
     })),
   });
@@ -138,6 +129,8 @@ export interface OnboardingState {
   purchase: OnboardingPurchase | null;
   /** Minor rider on the active onboarding engagement, or null. */
   minor: OnboardingMinor | null;
+  /** The engagement backing the onboarding docs — drives the payment bridge. */
+  engagement_id?: string | null;
 }
 
 /** The signed-in member's onboarding snapshot (profile gate, signing checklist,
@@ -309,7 +302,6 @@ export interface DraftOrderInput {
   items: Array<{
     offering_id?: string;
     offering_slug?: string;  // resolved to offering_id server-side
-    tier_id?: string;
     label: string;
     price_amount: number;
     price_unit: OrderItem['price_unit'];
@@ -350,7 +342,6 @@ export async function createDraftOrder(input: DraftOrderInput): Promise<{ orderI
     const rows = input.items.map((i) => ({
       order_id: order.id,
       offering_id: i.offering_id ?? (i.offering_slug ? slugToId.get(i.offering_slug) ?? null : null),
-      tier_id: i.tier_id ?? null,
       label: i.label,
       price_amount: i.price_amount,
       price_unit: i.price_unit,
@@ -370,6 +361,16 @@ export async function createDraftOrder(input: DraftOrderInput): Promise<{ orderI
     if (qErr) throw qErr;
   }
   return { orderId: order.id };
+}
+
+/** Path-A bridge: mint (or reuse) a payable order from an onboarding engagement,
+ *  so the Zelle OrderPayment UI can complete the "pay after sign" step. */
+export async function createOrderFromEngagement(engagementId: string): Promise<string> {
+  const { data, error } = await supabase.rpc('create_order_from_engagement', {
+    p_engagement_id: engagementId,
+  });
+  if (error) throw error;
+  return data as string;
 }
 
 export async function getOrder(orderId: string): Promise<(Order & { items: OrderItem[] }) | null> {
@@ -400,7 +401,7 @@ export async function listMyOrders(): Promise<Order[]> {
 }
 
 /** Move a draft order to awaiting_payment with the chosen method. The server
- *  RPC finalizes pricing: tier-linked item prices are enforced server-side,
+ *  RPC finalizes pricing: offering-linked item prices are enforced server-side,
  *  totals recomputed, and the Zelle matching keys (unique_amount +
  *  brand-prefixed payment_reference) assigned exactly once. */
 export async function markAwaitingPayment(orderId: string, method: PaymentMethod): Promise<void> {

@@ -2,37 +2,63 @@
  *
  * The submit button and summary copy personalize to the CATEGORY of what the
  * visitor actually chose — never "cart", "checkout", or a generic "selection".
- * Categories come from the underlying Service.category in src/lib/services.ts
- * (rider / horse / support), resolved per cart item by its serviceId. This is
- * robust to repricing and to new tiers: it reads the real category field rather
- * than matching fragile id strings.
+ * Categories derive from each cart item's serviceType (the flat-catalog field
+ * every CartItem carries), mapped to the catalog segments (rider / horse /
+ * support). Robust to repricing and new offerings: it reads the real
+ * service_type rather than matching fragile id strings.
  *
- *   rider   → LESSONS       (RIDING_LESSON, HUNTER_JUMPER, HORSEMANSHIP)
- *   horse   → HORSE SERVICES (HORSE_TRAINING, HORSE_EXERCISE, TURNOUT, CLIPPING)
- *   support → ACQUISITION   (HORSE_LOCATOR, EVALUATION, BROKERING)
+ *   rider   → LESSONS        (RIDING_LESSON, JUMPER_TRAINING, HORSEMANSHIP_TRAINING)
+ *   horse   → HORSE SERVICES (HORSE_TRAINING, HORSE_EXERCISE, HORSE_CLIPPING)
+ *   support → ACQUISITION    (HORSE_FINDER, HORSE_EVALUATION, *_ASSISTANCE)
  */
 import type { CartItem } from './cart';
-import { getServiceById } from './services';
-import type { ServiceCategory } from './services';
 
-/** The three inquiry buckets, mapped from Service.category. */
+/** The three inquiry buckets, mapped from the offering's catalog segment. */
 export type InquiryCategory = 'lessons' | 'horse' | 'acquisition';
 
-const CATEGORY_MAP: Record<ServiceCategory, InquiryCategory> = {
-  rider: 'lessons',
-  horse: 'horse',
-  support: 'acquisition',
-};
+/** service_type → inquiry bucket. Cart items carry either the DB enum
+ *  (RIDING_LESSON…) or the display-catalog id (riding-lesson…), depending on
+ *  which surface built them — both vocabularies map here. */
+function categoryForServiceType(serviceType: string | null): InquiryCategory {
+  switch (serviceType) {
+    // DB service_type enums
+    case 'RIDING_LESSON':
+    case 'JUMPER_TRAINING':
+    case 'HORSEMANSHIP_TRAINING':
+    // display-catalog ids (src/lib/services.ts)
+    case 'riding-lesson':
+    case 'hunter-jumper':
+    case 'horsemanship':
+      return 'lessons';
+    case 'HORSE_TRAINING':
+    case 'HORSE_EXERCISE':
+    case 'HORSE_CLIPPING':
+    case 'horse-training':
+    case 'horse-exercise':
+    case 'riding-turnout':
+    case 'hair-clipping':
+      return 'horse';
+    case 'HORSE_FINDER':
+    case 'HORSE_EVALUATION':
+    case 'HORSE_PURCHASE_ASSISTANCE':
+    case 'HORSE_SALE_ASSISTANCE':
+    case 'HORSE_LEASE_IN_ASSISTANCE':
+    case 'HORSE_LEASE_OUT_ASSISTANCE':
+    case 'horse-locator':
+    case 'evaluation':
+    case 'brokering':
+      return 'acquisition';
+    default:
+      // the rider funnel is the default path, so wording is never left blank
+      return 'lessons';
+  }
+}
 
-/** Resolve the distinct inquiry categories present in a set of cart items.
- *  Items whose service can't be resolved fall back to 'lessons' (the rider
- *  funnel is the default path), so wording is never left blank. */
+/** Resolve the distinct inquiry categories present in a set of cart items. */
 export function inquiryCategories(items: CartItem[]): Set<InquiryCategory> {
   const set = new Set<InquiryCategory>();
   for (const item of items) {
-    const svc = getServiceById(item.serviceId);
-    const category = svc ? CATEGORY_MAP[svc.category] : 'lessons';
-    set.add(category);
+    set.add(categoryForServiceType(item.serviceType));
   }
   return set;
 }

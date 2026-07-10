@@ -7,7 +7,7 @@ import {
   adminSendInvitation, type AdminMemberRow,
 } from '../../lib/admin';
 import { fetchOfferings } from '../../lib/api';
-import type { OfferingTier } from '../../lib/types';
+import type { Offering } from '../../lib/types';
 
 type Tab = 'members' | 'invite' | 'announce' | 'events' | 'content' | 'resources';
 
@@ -97,8 +97,9 @@ function MembersTab() {
 // ── Invite tab ────────────────────────────────────────────────────────────────
 const PAYMENT_METHODS = ['Zelle', 'Cash', 'Card', 'Other'];
 
-/** "$500" / "$587.50" for the tier select labels. */
-function formatTierPrice(amount: number): string {
+/** "$500" / "$587.50" for the offering select labels. */
+function formatTierPrice(amount: number | null): string {
+  if (amount == null) return '';
   return `$${Number(amount).toLocaleString('en-US', {
     minimumFractionDigits: Number.isInteger(Number(amount)) ? 0 : 2,
     maximumFractionDigits: 2,
@@ -108,26 +109,26 @@ function formatTierPrice(amount: number): string {
 function InviteTab() {
   const [email, setEmail] = useState('');
   const [days, setDays] = useState('7');
-  // Provisioning (what they bought): tierId '' = plain invite, no purchase.
+  // Provisioning (what they bought): offeringId '' = plain invite, no purchase.
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [tiers, setTiers] = useState<OfferingTier[]>([]);
-  const [tierId, setTierId] = useState('');
+  const [offerings, setOfferings] = useState<Offering[]>([]);
+  const [offeringId, setOfferingId] = useState('');
   const [markPaid, setMarkPaid] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('Zelle');
   const [notes, setNotes] = useState('');
-  const [result, setResult] = useState<{ url: string; emailed: boolean; tierLabel?: string } | null>(null);
+  const [result, setResult] = useState<{ url: string; emailed: boolean; offeringLabel?: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [working, setWorking] = useState(false);
 
-  // Riding-lesson tiers (label + price) for the "what did they buy?" select.
+  // Flat riding-lesson offerings (name + price) for the "what did they buy?" select.
   useEffect(() => {
     fetchOfferings()
-      .then((offerings) => setTiers(offerings.find((o) => o.slug === 'riding-lesson')?.tiers ?? []))
-      .catch(() => setTiers([]));
+      .then((all) => setOfferings(all.filter((o) => o.horse_included !== null)))
+      .catch(() => setOfferings([]));
   }, []);
 
-  const provisioning = tierId !== '';
+  const provisioning = offeringId !== '';
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -140,16 +141,16 @@ function InviteTab() {
           ? {
               firstName: firstName.trim(),
               lastName: lastName.trim(),
-              tierId,
+              offeringId,
               markPaid,
               ...(markPaid ? { paymentMethod } : {}),
               ...(notes.trim() ? { notes: notes.trim() } : {}),
             }
           : {}),
       });
-      setResult({ url: r.registerUrl, emailed: r.emailed, tierLabel: r.tierLabel });
+      setResult({ url: r.registerUrl, emailed: r.emailed, offeringLabel: r.offeringLabel });
       setEmail(''); setFirstName(''); setLastName('');
-      setTierId(''); setMarkPaid(false); setNotes('');
+      setOfferingId(''); setMarkPaid(false); setNotes('');
     } catch (err) {
       setError(toErrorMessage(err, 'Could not send invitation.'));
     } finally {
@@ -176,11 +177,11 @@ function InviteTab() {
         </Field>
       </div>
       <Field label="What did they buy?">
-        <select className="form-input" value={tierId} onChange={(e) => setTierId(e.target.value)}>
+        <select className="form-input" value={offeringId} onChange={(e) => setOfferingId(e.target.value)}>
           <option value="">No purchase (plain invite)</option>
-          {tiers.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.label} — {formatTierPrice(t.price_amount)}
+          {offerings.map((o) => (
+            <option key={o.id} value={o.id}>
+              {o.name} — {formatTierPrice(o.price_amount)}
             </option>
           ))}
         </select>
@@ -218,7 +219,7 @@ function InviteTab() {
       {result && (
         <div className="bg-green-50 border border-green-200 p-4 mt-5 text-sm">
           <p className="text-green-800 mb-2">
-            {result.tierLabel ? `${result.tierLabel} provisioned — invitation created` : 'Invitation created'}
+            {result.offeringLabel ? `${result.offeringLabel} provisioned — invitation created` : 'Invitation created'}
             {result.emailed ? ' and emailed.' : '. (Email provider not configured — copy the link below.)'}
           </p>
           <code className="block break-all text-xs text-green-900 bg-white border border-green-200 p-2">{result.url}</code>

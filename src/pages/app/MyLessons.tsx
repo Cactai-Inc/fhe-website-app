@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, CalendarClock, GraduationCap, MapPin } from 'lucide-react';
+import { ArrowRight, CalendarClock, GraduationCap, MapPin, NotebookPen } from 'lucide-react';
 import { ModuleGate, useAsync } from '../../lib/ops';
 import { useModules } from '../../lib/ops/useModules';
-import { myLessonsOverview, myLessonSessions, type MemberLessonSession } from '../../lib/ops/api-member';
+import {
+  myLessonsOverview, myLessonSessions, myLessonProgress,
+  type MemberLessonSession, type MyLessonProgress,
+} from '../../lib/ops/api-member';
 import { useDocumentTitle } from '../../lib/hooks';
 
 /**
@@ -22,6 +25,7 @@ export default function MyLessons() {
 
   const load = useAsync(myLessonsOverview);
   const [sessions, setSessions] = useState<MemberLessonSession[]>([]);
+  const [progress, setProgress] = useState<MyLessonProgress[]>([]);
 
   useEffect(() => {
     if (!lessonsOn) return;
@@ -32,6 +36,11 @@ export default function MyLessons() {
       .then(setSessions)
       .catch(() => {
         /* the credits ledger still renders */
+      });
+    myLessonProgress()
+      .then(setProgress)
+      .catch(() => {
+        /* the progress section just stays empty */
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lessonsOn]);
@@ -84,6 +93,29 @@ export default function MyLessons() {
                   <span className="bg-green-800 text-white text-xs font-sans px-2 py-0.5 tracking-wide whitespace-nowrap">
                     SCHEDULED
                   </span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Progress — the aggregated notes your trainer left across your lessons
+            (the second view of per-lesson notes; the first is each session card). */}
+        {progress.length > 0 && (
+          <section aria-label="Your progress" className="mb-8" data-testid="lesson-progress">
+            <h2 className="font-serif font-medium text-green-800 text-xl mb-4 inline-flex items-center gap-2">
+              <NotebookPen size={18} className="text-gold-ink" aria-hidden="true" /> Your progress
+            </h2>
+            <div className="flex flex-col gap-3">
+              {progress.map((p) => (
+                <div key={p.session_id} className="bg-white border border-green-800/10 p-5">
+                  <p className="text-xs text-muted mb-1">
+                    {new Date(p.starts_at).toLocaleDateString(undefined, {
+                      weekday: 'long', month: 'long', day: 'numeric',
+                    })}
+                    {p.location ? ` · ${p.location}` : ''}
+                  </p>
+                  <p className="body-text text-sm text-green-900 whitespace-pre-line">{p.note}</p>
                 </div>
               ))}
             </div>

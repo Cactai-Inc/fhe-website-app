@@ -3,7 +3,7 @@
 export type ServiceCategory = 'rider' | 'horse' | 'support';
 /* 'lesson' is a UI-only unit (riding lessons price "per lesson", not "per
  * session"). The DB check constraint doesn't know it — map it to 'session'
- * before any order_items/offering_tiers write (see Checkout.handleStartPurchase). */
+ * before any order_items write (see Checkout.handleStartPurchase). */
 export type PriceUnit = 'lesson' | 'session' | 'month' | 'week' | 'flat' | 'percent';
 
 export interface ServiceTier {

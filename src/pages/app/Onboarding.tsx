@@ -7,10 +7,15 @@ import {
   myOnboardingState,
   updateMyOnboardingProfile,
   generateMyOnboardingDocuments,
+  createOrderFromEngagement,
+  getOrder,
+  getOrderPayment,
   type OnboardingProfileInput,
   type OnboardingPurchase,
   type OnboardingState,
 } from '../../lib/api';
+import OrderPayment from '../../components/order/OrderPayment';
+import type { Order, OrderItem, Payment } from '../../lib/types';
 import { signMyDocument } from '../../lib/ops/api-client';
 import { BodyWithSignatures } from '../../components/ops/documents/MergedBodyView';
 import { toErrorMessage } from '../../lib/ops/errors';
@@ -40,7 +45,7 @@ import type { Profile } from '../../lib/types';
  *      is attached) + where the signed copies live.
  */
 
-type Step = 'details' | 'sign' | 'done';
+type Step = 'details' | 'sign' | 'payment' | 'done';
 
 /** The plain profile fields (the minor toggle + fields are tracked apart). */
 type ProfileFormFields = Omit<
@@ -113,6 +118,7 @@ function Steps({ current }: { current: Step }) {
   const steps: { id: Step; label: string }[] = [
     { id: 'details', label: 'Your details' },
     { id: 'sign', label: 'Review & sign' },
+    { id: 'payment', label: 'Payment' },
     { id: 'done', label: "You're all set" },
   ];
   const idx = steps.findIndex((s) => s.id === current);
@@ -163,6 +169,40 @@ export default function Onboarding() {
   const [esignConsent, setEsignConsent] = useState(false);
   const [signing, setSigning] = useState(false);
   const [signError, setSignError] = useState<string | null>(null);
+
+  // Step 3 — payment (Path A bridge). Minted from the engagement after signing.
+  const [order, setOrder] = useState<(Order & { items: OrderItem[] }) | null>(null);
+  const [payment, setPayment] = useState<Payment | null>(null);
+  const [payError, setPayError] = useState<string | null>(null);
+
+  // The engagement whose docs we're signing (drives the payment bridge). It's the
+  // engagement backing the onboarding documents — carried on the onboarding state.
+  const engagementId = state?.engagement_id ?? null;
+
+  // Load (or mint) the order for the payment step, then poll for confirmation.
+  async function enterPayment() {
+    setPayError(null);
+    try {
+      if (!engagementId) { setStep('done'); return; }
+      const orderId = await createOrderFromEngagement(engagementId);
+      const [o, p] = await Promise.all([getOrder(orderId), getOrderPayment(orderId)]);
+      setOrder(o);
+      setPayment(p);
+      setStep('payment');
+    } catch (err) {
+      setPayError(toErrorMessage(err, 'Could not start payment. You can pay from your account.'));
+      setStep('done'); // never trap the user — they can pay later from Account
+    }
+  }
+
+  // Re-read the order after a payment action; land on /app once confirmed.
+  async function refreshPayment() {
+    if (!order) return;
+    const [o, p] = await Promise.all([getOrder(order.id), getOrderPayment(order.id)]);
+    setOrder(o);
+    setPayment(p);
+    if (o && (o.status === 'confirmed' || o.status === 'paid')) setStep('done');
+  }
 
   useEffect(() => {
     let active = true;
@@ -275,7 +315,15 @@ export default function Onboarding() {
       const next = await myOnboardingState();
       setState(next);
       setTypedName('');
-      if (!next.documents.some((d) => d.status !== 'EXECUTED')) setStep('done');
+      // All docs signed → pay (sign-before-pay). If already paid (provisioned
+      // paid, or a gift), skip straight to done.
+      if (!next.documents.some((d) => d.status !== 'EXECUTED')) {
+        if (next.purchase && !next.purchase.paid) {
+          await enterPayment();
+        } else {
+          setStep('done');
+        }
+      }
     } catch (err) {
       setSignError(toErrorMessage(err, 'Could not record your signature.'));
     } finally {
@@ -538,7 +586,30 @@ export default function Onboarding() {
         </section>
       )}
 
-      {/* ── Step 3: You're all set ───────────────────────────────────────── */}
+      {/* ── Step 3: Payment (sign-before-pay; Zelle at launch) ───────────── */}
+      {step === 'payment' && (
+        <section aria-labelledby="ob-pay-heading">
+          <h2 id="ob-pay-heading" className="font-serif text-lg text-green-900 mb-3">Payment</h2>
+          <p className="text-sm text-muted mb-6">
+            Your documents are signed. Complete payment to confirm your booking.
+          </p>
+          {payError && <p role="alert" className="form-error mb-4">{payError}</p>}
+          {order ? (
+            <OrderPayment order={order} payment={payment} onChange={refreshPayment} />
+          ) : (
+            <p className="body-text text-muted text-sm">Preparing your payment…</p>
+          )}
+          <button
+            type="button"
+            className="btn-outline-gold text-sm mt-2"
+            onClick={() => setStep('done')}
+          >
+            I'll pay later — finish
+          </button>
+        </section>
+      )}
+
+      {/* ── Step 4: You're all set ───────────────────────────────────────── */}
       {step === 'done' && (
         <section aria-labelledby="ob-done-heading">
           <div className="bg-green-50 border border-green-200 p-6 mb-6">

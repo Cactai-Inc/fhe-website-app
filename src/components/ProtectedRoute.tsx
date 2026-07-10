@@ -7,13 +7,18 @@ import { useAuth } from '../contexts/AuthContext';
 export default function ProtectedRoute({
   children,
   requireAdmin = false,
+  requireStaff = false,
   requireMember = false,
 }: {
   children: React.ReactNode;
   requireAdmin?: boolean;
+  /** Two-operator model (Slice 5): any operator — admin OR trainer — may enter.
+   *  Use for the servicing surfaces trainers share; keep requireAdmin for the
+   *  admin-only total-control surfaces (billing, deal terms, config, oversight). */
+  requireStaff?: boolean;
   requireMember?: boolean;
 }) {
-  const { user, isAdmin, isMember, loading } = useAuth();
+  const { user, isAdmin, isStaff, isMember, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -30,6 +35,11 @@ export default function ProtectedRoute({
 
   if (requireAdmin && !isAdmin) {
     return <Navigate to="/account" replace />;
+  }
+
+  // Staff area: any operator (admin or trainer) may enter; a plain member cannot.
+  if (requireStaff && !isStaff) {
+    return <Navigate to="/app" replace />;
   }
 
   // Member-only areas: signed-in but without an active membership → account page,

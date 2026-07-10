@@ -99,6 +99,23 @@ export async function myLessonSessions(): Promise<MemberLessonSession[]> {
   return (data ?? []) as MemberLessonSession[];
 }
 
+/** One progress note the rider's operator left on a lesson (Slice 5). */
+export interface MyLessonProgress {
+  session_id: string;
+  starts_at: string;
+  status: MemberLessonSessionStatus;
+  location: string | null;
+  note: string;
+}
+
+/** The rider's aggregated progress notes — every noted session, newest first.
+ *  The "second view" of per-lesson notes (the first is the lesson-history card). */
+export async function myLessonProgress(): Promise<MyLessonProgress[]> {
+  const { data, error } = await supabase.rpc('my_lesson_progress');
+  if (error) throw error;
+  return (data ?? []) as MyLessonProgress[];
+}
+
 // ─── MyBrokerage (mod.brokerage) ─────────────────────────────────────────────
 
 /** The member's own engagement, flattened with its service + status lookups. */
@@ -141,6 +158,29 @@ export async function myBrokerageOverview(): Promise<MyBrokerageOverview> {
 
   const engagements = ((data ?? []) as unknown as MemberEngagement[]).filter(
     (e) => e.service?.segment === 'support',
+  );
+  return {
+    engagements,
+    openCount: engagements.filter((e) => e.status_row?.is_terminal !== true).length,
+  };
+}
+
+/** The member's own engagements in a given catalog SEGMENT ('support'=deal,
+ *  'horse'=care, 'rider'=riding), newest first. One query; RLS returns only the
+ *  caller's rows. Powers the purpose-built deal/care dashboards (Slice 4). */
+export async function myEngagementsBySegment(segment: string): Promise<MyBrokerageOverview> {
+  const { data, error } = await supabase
+    .from('engagements')
+    .select(
+      'id, display_code, service_type, status, start_date, created_at, ' +
+        'service:service_types(display_name, segment), ' +
+        'status_row:engagement_status(display_name, is_terminal)',
+    )
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  const engagements = ((data ?? []) as unknown as MemberEngagement[]).filter(
+    (e) => e.service?.segment === segment,
   );
   return {
     engagements,

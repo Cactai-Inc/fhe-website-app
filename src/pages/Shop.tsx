@@ -164,11 +164,12 @@ function toCartItem(family: ShopFamily, tier: ServiceTier): CartItem {
             ? EVALUATION.name
             : BROKERING.name)
       : family.service.name;
+  // Flat-catalog cart shape (Slice 1): the purchasable unit is one offering.
+  // Synthetic offeringId matches the ServiceSelector convention (serviceId-tierId).
   return {
-    serviceId: sourceServiceId,
-    serviceName: sourceServiceName,
-    tierId: tier.id,
-    tierLabel: tier.label,
+    offeringId: `${sourceServiceId}-${tier.id}`,
+    offeringName: `${sourceServiceName} — ${tier.label}`,
+    serviceType: sourceServiceId,
     price: tier.price,
     unit: tier.unit,
   };
@@ -407,7 +408,7 @@ export default function Shop() {
   }
 
   const isSaved = (family: ShopFamily, tier: ServiceTier) =>
-    isSelected(toCartItem(family, tier).serviceId, tier.id);
+    isSelected(toCartItem(family, tier).offeringId);
 
   return (
     <>

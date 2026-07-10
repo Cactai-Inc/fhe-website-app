@@ -10,6 +10,9 @@ import {
 import type {
   OpenBillableLine, MyEngagement, MyTransaction, MyPayment,
 } from '../../lib/ops/api-balance';
+import {
+  listBillingSchedules, setBillingReminders, nextDue, type BillingSchedule,
+} from '../../lib/billing';
 
 const SOURCE_LABEL: Record<string, string> = {
   consumption: 'Supplies & consumption',
@@ -72,6 +75,7 @@ export default function MyBalance() {
   const [engagements, setEngagements] = useState<MyEngagement[]>([]);
   const [transactions, setTransactions] = useState<MyTransaction[]>([]);
   const [payments, setPayments] = useState<MyPayment[]>([]);
+  const [schedules, setSchedules] = useState<BillingSchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -88,15 +92,27 @@ export default function MyBalance() {
         if (active) setError(toErrorMessage(err, 'Could not load your balance.'));
       })
       .finally(() => active && setLoading(false));
+    listBillingSchedules()
+      .then((s) => active && setSchedules(s))
+      .catch(() => { /* billing section just stays empty */ });
     return () => { active = false; };
   }, []);
+
+  async function toggleReminders(s: BillingSchedule) {
+    try {
+      await setBillingReminders(s.id, !s.reminders_on);
+      setSchedules((prev) => prev.map((x) => (x.id === s.id ? { ...x, reminders_on: !x.reminders_on } : x)));
+    } catch {
+      setError('Could not update reminders.');
+    }
+  }
 
   const groups = useMemo(
     () => groupByEngagement(engagements, lines, transactions),
     [engagements, lines, transactions],
   );
   const openTotal = useMemo(() => lines.reduce((sum, l) => sum + Number(l.amount), 0), [lines]);
-  const isEmpty = groups.length === 0 && payments.length === 0;
+  const isEmpty = groups.length === 0 && payments.length === 0 && schedules.length === 0;
 
   return (
     <div className="max-w-3xl">
@@ -164,6 +180,35 @@ export default function MyBalance() {
               </div>
             </section>
           ))}
+
+          {/* Recurring billing (Zelle) — the member's schedules + reminder toggle. */}
+          {schedules.length > 0 && (
+            <section aria-label="Recurring billing">
+              <h2 className="text-sm font-sans font-semibold text-green-900 mb-3">Recurring billing</h2>
+              <div className="flex flex-col gap-2">
+                {schedules.map((s) => (
+                  <div key={s.id} className="bg-white border border-green-800/10 p-4 flex items-center justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="text-sm font-sans font-medium text-green-900">
+                        <Money amount={Number(s.amount)} /> {s.cadence}
+                        {s.two_months_upfront ? ' · 2 months upfront' : ''}
+                      </p>
+                      <p className="text-xs text-muted mt-0.5">
+                        {s.mode === 'request' ? "We'll send a Zelle request each period" : 'You pay by Zelle each period'}
+                        {' · next '}{nextDue(s.start_date, s.cadence).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <button type="button" onClick={() => toggleReminders(s)}
+                      className={`text-xs font-sans px-3 py-1.5 rounded-full whitespace-nowrap ${
+                        s.reminders_on ? 'bg-green-800 text-white' : 'bg-green-800/10 text-green-800'
+                      }`}>
+                      {s.reminders_on ? 'Reminders on' : 'Reminders off'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Payments history */}
           <section aria-label="Payment history">

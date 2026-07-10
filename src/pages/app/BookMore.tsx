@@ -20,10 +20,7 @@ import {
 } from '../../lib/api';
 import { availabilityEntries, type AvailabilitySelection } from '../../lib/availability';
 import AvailabilityPicker, { useAvailabilityPicker } from '../../components/AvailabilityPicker';
-import type { ContactMethod, Offering, OfferingTier } from '../../lib/types';
-
-/** The lessons offering the member app books against (seeded catalog slug). */
-const LESSON_OFFERING_SLUG = 'riding-lesson';
+import type { ContactMethod, Offering } from '../../lib/types';
 
 const CONTACT_OPTIONS: { value: ContactMethod; label: string }[] = [
   { value: 'text', label: 'Text' },
@@ -42,9 +39,8 @@ export default function BookMore() {
   useDocumentTitle('Book More');
   const { profile, user } = useAuth();
   const [purchase, setPurchase] = useState<OnboardingPurchase | null>(null);
-  const [offering, setOffering] = useState<Offering | null>(null);
-  const [tiers, setTiers] = useState<OfferingTier[]>([]);
-  const [tierId, setTierId] = useState('');
+  const [lessonOfferings, setLessonOfferings] = useState<Offering[]>([]);
+  const [offeringId, setOfferingId] = useState('');
   // Members are reached by email by default (they're already in the app).
   const [contactMethod, setContactMethod] = useState<ContactMethod>('email');
   const [note, setNote] = useState('');
@@ -63,13 +59,12 @@ export default function BookMore() {
       if (!active) return;
       const p = state?.purchase ?? null;
       setPurchase(p);
-      const lessons = offerings.find((o) => o.slug === LESSON_OFFERING_SLUG) ?? null;
-      setOffering(lessons);
-      const lessonTiers = lessons?.tiers ?? [];
-      setTiers(lessonTiers);
-      // Default to their current tier when it matches a live riding-lesson tier.
-      const current = p ? lessonTiers.find((t) => t.label === p.tier_label) : undefined;
-      setTierId((current ?? lessonTiers[0])?.id ?? '');
+      // Flat catalog: each riding-lesson offering is its own purchasable item.
+      const lessons = offerings.filter((o) => o.horse_included !== null);
+      setLessonOfferings(lessons);
+      // Default to their current plan when its name matches a live lesson offering.
+      const current = p ? lessons.find((o) => o.name === p.tier_label) : undefined;
+      setOfferingId((current ?? lessons[0])?.id ?? '');
     });
     return () => {
       active = false;
@@ -78,8 +73,8 @@ export default function BookMore() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const tier = tiers.find((t) => t.id === tierId);
-    if (!tier || !offering) return;
+    const offering = lessonOfferings.find((o) => o.id === offeringId);
+    if (!offering) return;
     setSubmitting(true);
     setSubmitError(null);
     try {
@@ -95,7 +90,7 @@ export default function BookMore() {
         ridingExperience: null, // fit already established — never re-asked (Flow D)
       };
       // trimEnd(): no dangling newline when the member leaves the note empty.
-      const notes = `RETURNING MEMBER — ${tier.label} requested\n${note.trim()}`.trimEnd();
+      const notes = `RETURNING MEMBER — ${offering.name} requested\n${note.trim()}`.trimEnd();
       await submitRequest(
         {
           contact_name: contactName,
@@ -108,8 +103,7 @@ export default function BookMore() {
         [{
           offering_id: offering.id,
           offering_slug: offering.slug,
-          tier_id: tier.id,
-          label: `${offering.name} — ${tier.label}`,
+          label: offering.name,
         }],
       );
       setSent(true);
@@ -177,17 +171,17 @@ export default function BookMore() {
 
       <form onSubmit={handleSubmit} noValidate>
         <div className="bg-white border border-green-800/10 p-8 mb-6">
-          {/* Tier — riding-lesson catalog, defaulted to their current plan */}
+          {/* Offering — riding-lesson catalog, defaulted to their current plan */}
           <div>
-            <label className="form-label" htmlFor="tier">What would you like to book?</label>
+            <label className="form-label" htmlFor="offering">What would you like to book?</label>
             <select
-              id="tier"
+              id="offering"
               className="form-input"
-              value={tierId}
-              onChange={(e) => setTierId(e.target.value)}
+              value={offeringId}
+              onChange={(e) => setOfferingId(e.target.value)}
             >
-              {tiers.map((t) => (
-                <option key={t.id} value={t.id}>{t.label}</option>
+              {lessonOfferings.map((o) => (
+                <option key={o.id} value={o.id}>{o.name}</option>
               ))}
             </select>
           </div>
@@ -249,7 +243,7 @@ export default function BookMore() {
 
         <button
           type="submit"
-          disabled={submitting || !tierId}
+          disabled={submitting || !offeringId}
           className="btn-primary w-full justify-center"
         >
           {submitting ? 'Sending…' : 'Send Booking Request'}
