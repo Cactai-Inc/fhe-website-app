@@ -325,7 +325,7 @@ function OfferingForm({
             onChange={(e) => set('horse_included', e.target.value === '' ? null : e.target.value === 'true')}>
             <option value="">Not a lesson</option>
             <option value="true">Ride our horse</option>
-            <option value="false">Ride your horse</option>
+            <option value="false">With your horse</option>
           </select>
         )}
       </FormField>

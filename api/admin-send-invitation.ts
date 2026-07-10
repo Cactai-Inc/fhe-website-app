@@ -151,9 +151,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ registerUrl, emailed, offeringLabel: out.tier_label });
     }
 
-    // Plain invite (legacy path, unchanged).
+    // Plain invite. A scheduled date means terms were agreed in person —
+    // the claim-and-pay window tightens to 48 hours from send.
+    const scheduledFor =
+      typeof body.scheduledFor === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.scheduledFor)
+        ? body.scheduledFor : null;
     const days = Number(body.expiresInDays) > 0 ? Number(body.expiresInDays) : 7;
-    const expiresAt = new Date(Date.now() + days * 86400000).toISOString();
+    const expiresAt = scheduledFor
+      ? new Date(Date.now() + 48 * 3600000).toISOString()
+      : new Date(Date.now() + days * 86400000).toISOString();
     const inviteToken = makeToken();
 
     const { error: insErr } = await db.from('invitations').insert({
@@ -164,6 +170,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       expires_at: expiresAt,
       status: 'sent',
       invited_role: invitedRole,
+      scheduled_for: scheduledFor,
     });
     if (insErr) throw insErr;
 

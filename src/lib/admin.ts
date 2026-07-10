@@ -215,6 +215,8 @@ export async function adminSendInvitation(
     markPaid?: boolean; paymentMethod?: string; notes?: string;
     /** Account type to provision — 'MANAGER' (instructor) / 'ADMIN' need admin caller. */
     role?: 'USER' | 'MANAGER' | 'ADMIN';
+    /** Agreed start date (YYYY-MM-DD): puts the invite on the 48-hour claim-and-pay window. */
+    scheduledFor?: string;
   },
 ): Promise<AdminInviteResult> {
   const { data: sessionData } = await supabase.auth.getSession();
@@ -301,4 +303,62 @@ export async function adminCreateOffering(input: OfferingInput): Promise<Offerin
 export async function adminUpdateOffering(id: string, patch: Partial<OfferingInput>): Promise<void> {
   const { error } = await supabase.from('offerings').update(patch).eq('id', id);
   if (error) throw error;
+}
+
+// ─── Provision-first client accounts ─────────────────────────────────────────
+/** The categories a client can be designated as at creation (multi-select).
+ *  Stored as contact tags — visible on the directory and account views. */
+export const CLIENT_CATEGORIES = [
+  'Rider', 'Horse owner', 'Lessee', 'Lessor', 'Buyer', 'Seller', 'Boarder', 'Care',
+] as const;
+
+export interface ClientAccountRow {
+  kind: 'account' | 'pending';
+  user_id: string | null;
+  contact_id: string | null;
+  client_id: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  display_name: string | null;
+  email: string | null;
+  is_suspended: boolean;
+  membership_status: string | null;
+  created_at: string;
+  tags: string[] | null;
+  invite_status: string | null;
+  invite_expires_at: string | null;
+  invite_scheduled_for: string | null;
+}
+
+export async function adminClientAccounts(): Promise<ClientAccountRow[]> {
+  const { data, error } = await supabase.rpc('admin_client_accounts');
+  if (error) throw error;
+  return (data ?? []) as ClientAccountRow[];
+}
+
+/** Create the client record (contact + categories + clients row) with NO invite —
+ *  items get attached first; the invitation is sent from the account page. */
+export async function adminCreateClient(input: {
+  firstName: string; lastName: string; email: string; phone?: string; categories?: string[];
+}): Promise<{ contact_id: string; client_id: string }> {
+  const { data, error } = await supabase.rpc('admin_create_client', {
+    p_first_name: input.firstName,
+    p_last_name: input.lastName,
+    p_email: input.email,
+    p_phone: input.phone ?? null,
+    p_categories: input.categories ?? [],
+  });
+  if (error) throw error;
+  return data as { contact_id: string; client_id: string };
+}
+
+export interface ClientItems {
+  engagements: { id: string; service_type: string | null; status: string; start_date: string | null; created_at: string }[];
+  documents: { id: string; title: string | null; workflow_state: string | null; status: string; created_at: string }[];
+}
+
+export async function adminClientItems(clientId: string): Promise<ClientItems> {
+  const { data, error } = await supabase.rpc('admin_client_items', { p_client_id: clientId });
+  if (error) throw error;
+  return (data ?? { engagements: [], documents: [] }) as ClientItems;
 }

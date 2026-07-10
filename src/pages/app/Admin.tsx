@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, ChevronLeft, ChevronRight, Plus, Search, UserRound,
 } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
 import { supabase } from '../../lib/supabase';
-import { adminListMembers, adminSetSuspended, type AdminMemberRow } from '../../lib/admin';
+import {
+  adminSetSuspended, adminClientAccounts, adminClientItems, adminSendInvitation,
+  type ClientAccountRow, type ClientItems,
+} from '../../lib/admin';
 import {
   listBillingSchedules, createBillingSchedule, nextDue,
   type BillingSchedule, type BillingMode, type BillingCadence,
@@ -63,8 +66,9 @@ const fmt = (iso: string | null | undefined) =>
   iso ? new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
 const fmtTs = (iso: string | null | undefined) =>
   iso ? new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '—';
-const memberName = (m: AdminMemberRow) =>
+const memberName = (m: ClientAccountRow) =>
   m.display_name || `${m.first_name ?? ''} ${m.last_name ?? ''}`.trim() || m.email || '—';
+const rowKeyOf = (m: ClientAccountRow) => m.user_id ?? m.contact_id ?? m.email ?? '';
 
 // ── generic row list used by several tabs ────────────────────────────────────
 function RowList({ rows, empty }: { rows: { key: string; main: string; sub: string; badge?: string }[]; empty: string }) {
@@ -239,13 +243,145 @@ function LoginTab({ ov }: { ov: Overview }) {
   );
 }
 
+// ── provisioned-client view (no login yet): items + billing + the invite ─────
+function InvitePanel({ row, onSent }: { row: ClientAccountRow; onSent: () => void }) {
+  const [scheduled, setScheduled] = useState(row.invite_scheduled_for ?? '');
+  const [days, setDays] = useState('7');
+  const [result, setResult] = useState<{ url: string; emailed: boolean } | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const sent = row.invite_status === 'sent';
+  const expired = sent && row.invite_expires_at ? new Date(row.invite_expires_at) < new Date() : false;
+
+  async function send() {
+    setBusy(true); setErr(null); setResult(null);
+    try {
+      const r = await adminSendInvitation({
+        email: row.email!,
+        expiresInDays: Number(days) || 7,
+        ...(scheduled ? { scheduledFor: scheduled } : {}),
+      });
+      setResult({ url: r.registerUrl, emailed: r.emailed });
+      onSent();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Could not send the invitation.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="bg-white border border-gold-600/40 rounded-xl p-4 mt-4">
+      <h3 className="font-serif text-green-800 text-base">Invitation</h3>
+      <p className="text-[12px] text-muted mb-3">
+        {sent
+          ? `Last invite ${expired ? 'EXPIRED' : 'expires'} ${row.invite_expires_at ? new Date(row.invite_expires_at).toLocaleString() : ''} — resend any time.`
+          : 'Everything attached? Send the registration invite.'}
+      </p>
+      <div className="grid sm:grid-cols-3 gap-3 mb-3">
+        <div>
+          <span className="form-label">Agreed start date (optional)</span>
+          <input type="date" className="form-input" value={scheduled} onChange={(e) => setScheduled(e.target.value)} />
+        </div>
+        {!scheduled && (
+          <div>
+            <span className="form-label">Expires in (days)</span>
+            <input type="number" min={1} className="form-input" value={days} onChange={(e) => setDays(e.target.value)} />
+          </div>
+        )}
+        {scheduled && (
+          <p className="text-[11.5px] text-gold-800 self-end pb-2.5 sm:col-span-2">
+            A set date puts this on the 48-hour claim &amp; pay window.
+          </p>
+        )}
+      </div>
+      <button type="button" disabled={busy || !row.email} onClick={() => void send()}
+        className="btn-primary text-xs">
+        {busy ? 'Sending…' : sent ? 'Resend invitation' : 'Send invitation'}
+      </button>
+      {err && <p role="alert" className="form-error mt-3">{err}</p>}
+      {result && (
+        <div className="bg-green-50 border border-green-200 p-3 mt-3 text-sm rounded-lg">
+          <p className="text-green-800 mb-1.5">
+            Invitation {result.emailed ? 'sent by email.' : 'created — email not configured; copy the link:'}
+          </p>
+          <code className="block break-all text-xs text-green-900 bg-white border border-green-200 p-2">{result.url}</code>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function PendingClientView({ row, onChanged }: { row: ClientAccountRow; onChanged: () => void }) {
+  const navigate = useNavigate();
+  const [items, setItems] = useState<ClientItems | null>(null);
+  useEffect(() => {
+    if (!row.client_id) { setItems({ engagements: [], documents: [] }); return; }
+    adminClientItems(row.client_id).then(setItems).catch(() => setItems({ engagements: [], documents: [] }));
+  }, [row.client_id]);
+
+  return (
+    <div>
+      {(row.tags ?? []).length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-4">
+          {(row.tags ?? []).map((t) => (
+            <span key={t} className="text-[10.5px] font-sans uppercase tracking-wide px-2.5 py-1 rounded-full bg-green-50 text-green-800 border border-green-200">{t}</span>
+          ))}
+        </div>
+      )}
+
+      <section className="bg-white border border-green-800/10 rounded-xl p-4">
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="font-serif text-green-800 text-base">Associated items</h3>
+          <span className="flex gap-2">
+            <button type="button" className="text-xs underline text-secondary hover:text-green-800"
+              onClick={() => navigate('/app/ops/engagements/new')}>+ engagement</button>
+            <button type="button" className="text-xs underline text-secondary hover:text-green-800"
+              onClick={() => navigate('/app/ops/contracts/new')}>+ contract</button>
+          </span>
+        </div>
+        <p className="text-[12px] text-muted mb-3">
+          What's attached to this account so far — attach everything before inviting.
+        </p>
+        {items === null && <p className="text-sm text-muted">Loading…</p>}
+        {items && items.engagements.length === 0 && items.documents.length === 0 && (
+          <p className="text-sm text-muted">Nothing attached yet.</p>
+        )}
+        {items && items.engagements.map((e) => (
+          <button key={e.id} type="button" onClick={() => navigate(`/app/ops/engagements/${e.id}`)}
+            className="w-full flex items-center justify-between gap-3 border-b border-green-800/[0.06] py-2 text-left hover:bg-cream-100/50">
+            <span className="text-sm text-green-900">{(e.service_type ?? 'Engagement').replace(/_/g, ' ')}</span>
+            <span className="text-xs text-muted">{e.status}{e.start_date ? ` · starts ${e.start_date}` : ''}</span>
+          </button>
+        ))}
+        {items && items.documents.map((d) => (
+          <button key={d.id} type="button" onClick={() => navigate(`/app/contracts/${d.id}`)}
+            className="w-full flex items-center justify-between gap-3 border-b border-green-800/[0.06] py-2 text-left hover:bg-cream-100/50">
+            <span className="text-sm text-green-900">{d.title ?? 'Document'}</span>
+            <span className="text-xs text-muted">{d.workflow_state ?? d.status}</span>
+          </button>
+        ))}
+      </section>
+
+      <section className="bg-white border border-green-800/10 rounded-xl p-4 mt-4">
+        <h3 className="font-serif text-green-800 text-base mb-2">Billing</h3>
+        <BillingTab clientId={row.client_id} />
+      </section>
+
+      <InvitePanel row={row} onSent={onChanged} />
+    </div>
+  );
+}
+
 // ── the page ─────────────────────────────────────────────────────────────────
 type SortKey = 'name' | 'joined' | 'status';
 
 export default function Admin() {
   useDocumentTitle('Clients');
   const navigate = useNavigate();
-  const [members, setMembers] = useState<AdminMemberRow[]>([]);
+  const [params] = useSearchParams();
+  const [members, setMembers] = useState<ClientAccountRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [q, setQ] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('joined');
@@ -255,22 +391,35 @@ export default function Admin() {
   const [tabPage, setTabPage] = useState(0);
 
   const load = useCallback(() => {
-    adminListMembers()
-      // CLIENT accounts only — staff live on Team & access (Settings)
-      .then((rows) => setMembers(rows.filter((r) => (r.role ?? 'USER') === 'USER')))
+    // login-backed clients + provisioned (no-login-yet) clients in one list
+    adminClientAccounts()
+      .then(setMembers)
       .catch(() => setError('Could not load clients.'));
   }, []);
   useEffect(load, [load]);
 
-  // isolated-account overview
+  // /app/admin?open=<contact or user id> — auto-open (e.g. right after creation)
   useEffect(() => {
-    if (!selectedId) { setOv(null); return; }
+    const open = params.get('open');
+    if (open && !selectedId && members.some((m) => rowKeyOf(m) === open || m.contact_id === open)) {
+      const row = members.find((m) => rowKeyOf(m) === open || m.contact_id === open)!;
+      setSelectedId(rowKeyOf(row));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [members, params]);
+
+  const selected = members.find((m) => rowKeyOf(m) === selectedId) ?? null;
+
+  // isolated-account overview (login-backed accounts only)
+  useEffect(() => {
     setOv(null); setTab('overview'); setTabPage(0);
-    supabase.rpc('admin_client_overview', { p_user_id: selectedId })
+    if (!selectedId || !selected?.user_id) return;
+    supabase.rpc('admin_client_overview', { p_user_id: selected.user_id })
       .then(({ data, error: e }) => {
         if (e) setError(e.message);
         else setOv(data as Overview);
       });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId]);
 
   const visible = useMemo(() => {
@@ -286,12 +435,11 @@ export default function Admin() {
     });
   }, [members, q, sortKey]);
 
-  const selected = members.find((m) => m.user_id === selectedId) ?? null;
-  const clientId = ov?.profile?.client_id ?? null;
+  const clientId = selected?.client_id ?? ov?.profile?.client_id ?? null;
   const tabPages = Math.ceil(TABS.length / TAB_PAGE_SIZE);
 
   async function toggleSuspend() {
-    if (!selected) return;
+    if (!selected?.user_id) return;
     try {
       await adminSetSuspended(selected.user_id, !selected.is_suspended);
       load();
@@ -301,15 +449,16 @@ export default function Admin() {
   // ── stable fetchers for query tabs ──
   const fetchOrders = useCallback(async () => {
     const { data } = await supabase.from('orders')
-      .select('id, status, total, created_at').eq('user_id', selectedId!).order('created_at', { ascending: false });
+      .select('id, status, total, created_at').eq('user_id', selected!.user_id!).order('created_at', { ascending: false });
     return (data ?? []).map((o) => ({
       key: o.id as string,
       main: `$${Number(o.total ?? 0).toFixed(2)}`,
       sub: fmtTs(o.created_at as string), badge: String(o.status),
     }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId]);
   const fetchPayments = useCallback(async () => {
-    const { data: orders } = await supabase.from('orders').select('id').eq('user_id', selectedId!);
+    const { data: orders } = await supabase.from('orders').select('id').eq('user_id', selected!.user_id!);
     const ids = (orders ?? []).map((o) => o.id);
     if (ids.length === 0) return [];
     const { data } = await supabase.from('payments')
@@ -324,7 +473,7 @@ export default function Admin() {
   const fetchActivity = useCallback(async () => {
     const { data } = await supabase.from('audit_logs')
       .select('id, occurred_at, action, table_name')
-      .eq('actor_user_id', selectedId!).order('occurred_at', { ascending: false }).limit(50);
+      .eq('actor_user_id', selected!.user_id!).order('occurred_at', { ascending: false }).limit(50);
     return (data ?? []).map((a) => ({
       key: a.id as string, main: String(a.action),
       sub: `${a.table_name ?? ''} · ${fmtTs(a.occurred_at as string)}`,
@@ -333,7 +482,7 @@ export default function Admin() {
   const fetchPosts = useCallback(async () => {
     const { data } = await supabase.from('feed_posts')
       .select('id, post_type, body, published, pulled_down, created_at')
-      .eq('author_id', selectedId!).order('created_at', { ascending: false });
+      .eq('author_id', selected!.user_id!).order('created_at', { ascending: false });
     return (data ?? []).map((p) => ({
       key: p.id as string,
       main: (p.body as string | null)?.slice(0, 80) || `(${p.post_type} post)`,
@@ -379,7 +528,7 @@ export default function Admin() {
           </div>
           <div className="flex flex-col gap-1.5">
             {visible.map((m) => (
-              <button key={m.user_id} type="button" onClick={() => setSelectedId(m.user_id)}
+              <button key={rowKeyOf(m)} type="button" onClick={() => setSelectedId(rowKeyOf(m))}
                 className="w-full flex items-center justify-between gap-3 bg-white border border-green-800/10 rounded-lg px-4 py-3 text-left hover:border-green-800/30 focus-ring">
                 <span className="min-w-0 flex items-center gap-3">
                   <span className="w-9 h-9 rounded-full bg-green-800 text-white grid place-items-center text-sm font-sans shrink-0">
@@ -391,11 +540,21 @@ export default function Admin() {
                   </span>
                 </span>
                 <span className="text-right shrink-0">
-                  <span className={`block text-[10.5px] font-sans uppercase ${m.membership_status === 'active' ? 'text-green-700' : 'text-muted'}`}>
-                    {m.membership_status === 'active' ? 'Active' : 'Inactive'}
-                    {m.is_suspended ? ' · suspended' : ''}
-                  </span>
-                  <span className="block text-[11px] text-muted">joined {fmt(m.created_at)}</span>
+                  {m.kind === 'pending' ? (
+                    <span className={`block text-[10.5px] font-sans uppercase ${
+                      m.invite_status === 'sent' ? 'text-gold-800' : 'text-muted'
+                    }`}>
+                      {m.invite_status === 'sent'
+                        ? (m.invite_expires_at && new Date(m.invite_expires_at) < new Date() ? 'Invite expired' : 'Invited')
+                        : m.invite_status === 'accepted' ? 'Claimed' : 'Not invited'}
+                    </span>
+                  ) : (
+                    <span className={`block text-[10.5px] font-sans uppercase ${m.membership_status === 'active' ? 'text-green-700' : 'text-muted'}`}>
+                      {m.membership_status === 'active' ? 'Active' : 'Inactive'}
+                      {m.is_suspended ? ' · suspended' : ''}
+                    </span>
+                  )}
+                  <span className="block text-[11px] text-muted">{m.kind === 'pending' ? 'created' : 'joined'} {fmt(m.created_at)}</span>
                 </span>
               </button>
             ))}
@@ -421,21 +580,31 @@ export default function Admin() {
                 </span>
                 <span className="min-w-0">
                   <span className="block font-serif text-lg text-green-900 leading-tight truncate">{memberName(selected)}</span>
-                  <span className="block text-xs text-muted truncate">{selected.email} · Client{selected.is_suspended ? ' · SUSPENDED' : ''}</span>
+                  <span className="block text-xs text-muted truncate">
+                    {selected.email} · {selected.kind === 'pending' ? 'Provisioned — no login yet' : 'Client'}
+                    {selected.is_suspended ? ' · SUSPENDED' : ''}
+                  </span>
                 </span>
               </span>
-              <button type="button" onClick={() => void toggleSuspend()}
-                className={`px-3.5 py-2 rounded-lg text-xs font-medium focus-ring shrink-0 ${
-                  selected.is_suspended
-                    ? 'bg-green-800 text-white hover:bg-green-700'
-                    : 'border border-red-300 text-red-700 hover:bg-red-50'
-                }`}>
-                {selected.is_suspended ? 'Reinstate' : 'Suspend'}
-              </button>
+              {selected.kind === 'account' && (
+                <button type="button" onClick={() => void toggleSuspend()}
+                  className={`px-3.5 py-2 rounded-lg text-xs font-medium focus-ring shrink-0 ${
+                    selected.is_suspended
+                      ? 'bg-green-800 text-white hover:bg-green-700'
+                      : 'border border-red-300 text-red-700 hover:bg-red-50'
+                  }`}>
+                  {selected.is_suspended ? 'Reinstate' : 'Suspend'}
+                </button>
+              )}
             </div>
           </div>
 
+          {selected.kind === 'pending' && (
+            <PendingClientView row={selected} onChanged={load} />
+          )}
+
           {/* sliding tab rail: pages of tabs, more → slide, back appears left */}
+          {selected.kind === 'account' && (
           <div className="flex items-center gap-1 mb-4">
             {tabPage > 0 && (
               <button type="button" aria-label="Previous tabs" onClick={() => setTabPage((p) => p - 1)}
@@ -467,14 +636,16 @@ export default function Admin() {
               </button>
             )}
           </div>
+          )}
 
           {/* tab body */}
+          {selected.kind === 'account' && (
           <div className="min-h-[200px]">
             {!ov && <p className="text-sm text-muted">Loading account…</p>}
             {ov && tab === 'overview' && <OverviewTab ov={ov} />}
             {ov && tab === 'billing' && <BillingTab clientId={clientId} />}
             {ov && tab === 'bookings' && (
-              <RpcListTab userId={selected.user_id} rpc="admin_client_bookings" empty="No lessons booked."
+              <RpcListTab userId={selected.user_id!} rpc="admin_client_bookings" empty="No lessons booked."
                 create={{ label: 'Schedule a lesson', onClick: () => navigate('/app/ops/lessons/sessions') }}
                 map={(r) => ({
                   key: String(r.id),
@@ -483,7 +654,7 @@ export default function Admin() {
                 })} />
             )}
             {ov && tab === 'documents' && (
-              <RpcListTab userId={selected.user_id} rpc="admin_client_documents" empty="No documents."
+              <RpcListTab userId={selected.user_id!} rpc="admin_client_documents" empty="No documents."
                 create={{ label: 'New contract', onClick: () => navigate('/app/ops/contracts/new') }}
                 map={(r) => ({
                   key: String(r.id),
@@ -505,17 +676,18 @@ export default function Admin() {
               <QueryListTab fetcher={fetchPosts} empty="No posts." />
             )}
             {ov && tab === 'messages' && (
-              <RpcListTab userId={selected.user_id} rpc="admin_client_messages" empty="No messages."
+              <RpcListTab userId={selected.user_id!} rpc="admin_client_messages" empty="No messages."
                 create={{ label: 'Message them', onClick: () => navigate(`/app/messages/${selected.user_id}`) }}
                 map={(r) => ({
                   key: String(r.id),
                   main: String(r.body ?? '').slice(0, 100),
                   sub: fmtTs(r.created_at as string),
-                  badge: r.sender_id === selected.user_id ? 'sent' : 'received',
+                  badge: r.sender_id === selected.user_id! ? 'sent' : 'received',
                 })} />
             )}
             {ov && tab === 'login' && <LoginTab ov={ov} />}
           </div>
+          )}
         </div>
       )}
     </div>
