@@ -76,7 +76,7 @@ function MembersTab() {
                     onChange={(e) => act(() => adminSetRole(m.user_id, e.target.value as MemberRole))}
                     aria-label="Role"
                   >
-                    <option value="USER">Rider</option>
+                    <option value="USER">Client</option>
                     <option value="MANAGER">Instructor</option>
                     <option value="ADMIN">Admin</option>
                     {isSuperAdmin && <option value="SUPER_ADMIN">Super admin</option>}
@@ -84,7 +84,7 @@ function MembersTab() {
                 ) : (
                   <span className="text-xs text-muted">
                     {(m.role as MemberRole) === 'MANAGER' || (m.role as MemberRole) === 'EMPLOYEE'
-                      ? 'Instructor' : (m.role as MemberRole) === 'ADMIN' ? 'Admin' : 'Rider'}
+                      ? 'Instructor' : (m.role as MemberRole) === 'ADMIN' ? 'Admin' : 'Client'}
                   </span>
                 )}
               </td>

@@ -105,6 +105,7 @@ import AdminBrandingPage from './pages/app/ops/admin/AdminBrandingPage';
 import AdminProductsPage from './pages/app/ops/admin/AdminProductsPage';
 import ProvisionTenantPage from './pages/app/ops/superadmin/ProvisionTenantPage';
 import OrganizationsPage from './pages/app/ops/superadmin/OrganizationsPage';
+import TenantDetailPage from './pages/app/ops/superadmin/TenantDetailPage';
 
 export function AppRoutes() {
   return (
@@ -259,6 +260,7 @@ export function AppRoutes() {
               <Route path="ops/admin/products" element={<ProtectedRoute requireAdmin><AdminProductsPage /></ProtectedRoute>} />
               <Route path="ops/superadmin/provision" element={<ProtectedRoute requireSuperAdmin><ProvisionTenantPage /></ProtectedRoute>} />
               <Route path="ops/superadmin/organizations" element={<ProtectedRoute requireSuperAdmin><OrganizationsPage /></ProtectedRoute>} />
+              <Route path="ops/superadmin/organizations/:id" element={<ProtectedRoute requireSuperAdmin><TenantDetailPage /></ProtectedRoute>} />
             </Route>
 
             {/* Branded 404 */}
