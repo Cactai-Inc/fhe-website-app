@@ -43,18 +43,30 @@ interface ProvisionResult {
  *  branded from the INVITING org's registry — never a hardcoded tenant name.
  *  When the invite carries a provisioned purchase, `offeringLabel` adds the
  *  "your purchase is ready" line above the register link. */
+interface ChecklistRow { kind: string; title: string; action: string; done: boolean }
+
 async function sendEmail(
   db: ReturnType<typeof getSupabaseAdmin>,
   orgId: string | null,
   to: string,
   registerUrl: string,
   offeringLabel?: string | null,
+  checklist?: ChecklistRow[],
 ): Promise<boolean> {
   if (!orgId) return false;
   const identity = await resolveTenantEmailIdentity(db, orgId);
   const fromEmail = process.env.INVITE_FROM_EMAIL || identity.fromEmail;
   const purchaseLine = offeringLabel
     ? `<p>Your ${offeringLabel} is ready — create your account to sign your documents and get started.</p>`
+    : '';
+  // ONE email for everything assigned to them: what they'll do when they click.
+  const pending = (checklist ?? []).filter((c) => !c.done);
+  const checklistBlock = pending.length
+    ? `<p>When you click the link, here's what we'll ask you to do:</p>` +
+      `<ul style="padding-left:18px">` +
+      pending.map((c) => `<li style="margin:4px 0"><strong>${c.title}</strong> — ${c.action.toLowerCase()}</li>`).join('') +
+      `</ul>` +
+      `<p style="color:#666;font-size:13px">This same checklist will be on your dashboard, ticking itself off as you go.</p>`
     : '';
   const out = await sendViaProvider({
     to,
@@ -64,6 +76,7 @@ async function sendEmail(
     html: `
       <p>Welcome — we're so glad to have you.</p>
       ${purchaseLine}
+      ${checklistBlock}
       <p>Create your account here to join the community. You can sign up with Google
       or set a password — your choice on the next page:</p>
       <p><a href="${registerUrl}">${registerUrl}</a></p>
@@ -176,7 +189,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const registerUrl = `${origin}/register?token=${inviteToken}`;
 
-    const emailed = await sendEmail(db, profile.org_id ?? null, email, registerUrl);
+    // one email, all their items: derive the checklist from what's assigned
+    let checklist: ChecklistRow[] = [];
+    try {
+      const { data: contact } = await db
+        .from('contacts').select('id')
+        .ilike('email', email).is('deleted_at', null).limit(1).maybeSingle();
+      if (contact) {
+        const { data: cl } = await db.rpc('contact_checklist', { p_contact_id: contact.id });
+        checklist = (cl as ChecklistRow[]) ?? [];
+      }
+    } catch { /* checklist is best-effort — the invite still goes out */ }
+
+    const emailed = await sendEmail(db, profile.org_id ?? null, email, registerUrl, null, checklist);
     return res.status(200).json({ registerUrl, emailed });
   } catch (err) {
     console.error('invite error', err);
