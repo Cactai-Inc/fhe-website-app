@@ -1,13 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Plus } from 'lucide-react';
 import { useDocumentTitle } from '../../../lib/hooks';
 import { useAuth } from '../../../contexts/AuthContext';
 import {
   GRANTABLE_SURFACES, listAllGrants, addGrant, removeGrant, type SurfaceGrant,
 } from '../../../lib/grants';
 import {
-  adminListMembers, adminSetRole, adminSetSuspended,
+  adminListMembers, adminSetRole, adminSetSuspended, adminSendInvitation,
   type AdminMemberRow, type MemberRole,
 } from '../../../lib/admin';
 
@@ -28,7 +26,7 @@ const memberName = (m: AdminMemberRow) =>
 function RosterSection({
   members, reload,
 }: { members: AdminMemberRow[]; reload: () => void }) {
-  const { isAdmin, isSuperAdmin } = useAuth();
+  const { isAdmin } = useAuth();
   const staff = members.filter((m) => (m.role ?? 'USER') !== 'USER');
 
   async function act(fn: () => Promise<void>) { await fn(); reload(); }
@@ -50,25 +48,31 @@ function RosterSection({
               </span>
             </span>
             <span className="flex items-center gap-2 shrink-0">
-              {isAdmin ? (
+              {/* Super admin is shown, never set — and team roles never demote to
+                  client here (that's a deliberate act, not a dropdown slip). */}
+              {m.role === 'SUPER_ADMIN' ? (
+                <span className="text-xs font-sans uppercase tracking-wide px-2.5 py-1 rounded-full bg-green-800 text-gold-300">
+                  Super admin
+                </span>
+              ) : isAdmin ? (
                 <select
                   className="border border-green-800/20 rounded-md px-2 py-1 text-xs bg-white"
-                  value={(m.role as MemberRole) ?? 'USER'}
+                  value={(m.role as MemberRole) ?? 'MANAGER'}
                   onChange={(e) => void act(() => adminSetRole(m.user_id, e.target.value as MemberRole))}
                   aria-label="Role"
                 >
-                  <option value="USER">Client</option>
                   <option value="MANAGER">Instructor</option>
                   <option value="ADMIN">Admin</option>
-                  {isSuperAdmin && <option value="SUPER_ADMIN">Super admin</option>}
                 </select>
               ) : (
-                <span className="text-xs text-muted">{ROLE_LABEL[m.role ?? ''] ?? 'Client'}</span>
+                <span className="text-xs text-muted">{ROLE_LABEL[m.role ?? ''] ?? 'Staff'}</span>
               )}
-              <button type="button" onClick={() => void act(() => adminSetSuspended(m.user_id, !m.is_suspended))}
-                className="text-xs underline text-secondary hover:text-green-800">
-                {m.is_suspended ? 'Reinstate' : 'Suspend'}
-              </button>
+              {m.role !== 'SUPER_ADMIN' && (
+                <button type="button" onClick={() => void act(() => adminSetSuspended(m.user_id, !m.is_suspended))}
+                  className="text-xs underline text-secondary hover:text-green-800">
+                  {m.is_suspended ? 'Reinstate' : 'Suspend'}
+                </button>
+              )}
             </span>
           </div>
         ))}
@@ -185,9 +189,60 @@ function InstructorAccessSection({ instructors }: { instructors: AdminMemberRow[
   );
 }
 
+function InviteStaffSection() {
+  const [email, setEmail] = useState('');
+  const [role, setRole] = useState<'MANAGER' | 'ADMIN'>('MANAGER');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [result, setResult] = useState<{ url: string; emailed: boolean } | null>(null);
+
+  async function send() {
+    setBusy(true); setErr(null); setResult(null);
+    try {
+      const r = await adminSendInvitation({ email: email.trim(), role, expiresInDays: 7 });
+      setResult({ url: r.registerUrl, emailed: r.emailed });
+      setEmail('');
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Could not send the invitation.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="mb-10">
+      <h2 className="font-serif text-lg text-green-800 mb-1">Invite staff</h2>
+      <p className="text-[12.5px] text-muted mb-4">
+        Send a registration invite that carries the role — applied the moment they register.
+      </p>
+      <div className="flex flex-wrap gap-2 items-center">
+        <input type="email" className="form-input max-w-xs" placeholder="their@email.com"
+          value={email} onChange={(e) => setEmail(e.target.value)} aria-label="Email" />
+        <select className="form-input w-auto" value={role}
+          onChange={(e) => setRole(e.target.value as 'MANAGER' | 'ADMIN')} aria-label="Role">
+          <option value="MANAGER">Instructor</option>
+          <option value="ADMIN">Admin</option>
+        </select>
+        <button type="button" disabled={busy || !email.trim()} onClick={() => void send()}
+          className="px-4 py-2 rounded-lg bg-green-800 text-white text-xs font-medium hover:bg-green-700 focus-ring disabled:opacity-50">
+          {busy ? 'Sending…' : 'Send invite'}
+        </button>
+      </div>
+      {err && <p role="alert" className="form-error mt-2">{err}</p>}
+      {result && (
+        <div className="bg-green-50 border border-green-200 p-3 mt-3 text-sm rounded-lg max-w-xl">
+          <p className="text-green-800 mb-1.5">
+            Invitation {result.emailed ? 'sent by email.' : 'created — email not configured; copy the link:'}
+          </p>
+          <code className="block break-all text-xs text-green-900 bg-white border border-green-200 p-2">{result.url}</code>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function TeamPage() {
   useDocumentTitle('Team');
-  const navigate = useNavigate();
   const [members, setMembers] = useState<AdminMemberRow[]>([]);
   const reload = () => { adminListMembers().then(setMembers).catch(() => setMembers([])); };
   useEffect(reload, []);
@@ -197,17 +252,12 @@ export default function TeamPage() {
 
   return (
     <div className="max-w-3xl">
-      <div className="flex items-center justify-between mb-1">
-        <h1 className="font-serif text-2xl text-green-900">Team</h1>
-        <button type="button" onClick={() => navigate('/app/ops/accounts/new')}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-green-800 text-white text-sm font-medium hover:bg-green-700 focus-ring">
-          <Plus size={15} /> New account
-        </button>
-      </div>
+      <h1 className="font-serif text-2xl text-green-900 mb-1">Team</h1>
       <p className="text-sm text-green-800/70 mb-6">
         Internal accounts — admins and instructors — and what instructors can reach.
       </p>
       <RosterSection members={members} reload={reload} />
+      <InviteStaffSection />
       <PromoteSection members={members} reload={reload} />
       <InstructorAccessSection instructors={instructors} />
     </div>

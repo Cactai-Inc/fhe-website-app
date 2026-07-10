@@ -61,7 +61,7 @@ export interface Offering {
   price_unit: PriceUnitDb | null;
   price_min: number | null;
   purchase_type: PurchaseType | null;
-  /** Riding lessons only: true = "Ride our horse", false = "Ride your horse",
+  /** Riding lessons only: true = "Ride our horse", false = "With your horse",
    *  null = not a lesson. */
   horse_included: boolean | null;
   is_popular: boolean;
