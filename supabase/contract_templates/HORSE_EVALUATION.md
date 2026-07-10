@@ -12,6 +12,7 @@ Evaluation is advisory only. Horses are living animals and may change over time 
 HORSE TO BE EVALUATED
 
 Horse Name: {{HORSE.REGISTERED_NAME}}
+Microchip: {{HORSE.MICROCHIP}}
 Owner/Seller: {{HORSE.OWNER_NAME}}
 Location of Horse: {{HORSE.CURRENT_LOCATION}}
 Breed: {{HORSE.BREED}}
