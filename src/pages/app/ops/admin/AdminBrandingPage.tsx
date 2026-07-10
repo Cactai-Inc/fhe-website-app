@@ -24,6 +24,8 @@ const BRAND_FIELDS: Array<{ key: string; label: string; hint?: string; color?: b
   { key: 'PRIMARY_COLOR', label: 'Primary color', hint: 'Hex, e.g. #14532d', color: true },
   { key: 'SECONDARY_COLOR', label: 'Secondary color', hint: 'Hex, e.g. #b45309', color: true },
   { key: 'LOCATION', label: 'Location', hint: 'Public location line' },
+  { key: 'ZELLE_QR_URL', label: 'Zelle QR link',
+    hint: 'From your bank app: Receive with Zelle → show QR → scan it with your phone camera and paste the link it opens. Checkout then shows a scan-to-pay QR and, on phones, an "open your banking app" button with you preselected.' },
 ];
 
 function brandMap(rows: ConfigValueRow[]): Record<string, string> {
