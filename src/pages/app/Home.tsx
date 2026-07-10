@@ -57,7 +57,7 @@ export default function Home() {
       <DashboardPanel />
 
       <div className="pt-1.5 border-t border-green-800/10 mb-4">
-        <h2 className="font-serif text-green-800 text-xl font-semibold pt-3.5">Your Community</h2>
+        <h2 className="font-serif text-green-800 text-2xl font-semibold pt-3.5">Your Community</h2>
       </div>
 
       <FeedControls view={view} sort={sort} onView={pickView} onSort={setSort} />

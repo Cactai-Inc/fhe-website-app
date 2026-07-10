@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, Handshake, Mail, Phone, UserPlus } from 'lucide-react';
+import { FileText, Handshake, Mail, Phone, Trash2, UserPlus } from 'lucide-react';
+import { useAuth } from '../../../contexts/AuthContext';
 import { toErrorMessage } from '../../../lib/ops/errors';
 import { Modal, useAsync, useToast } from '../../../lib/ops';
 import {
-  createContact, updateContact, staffContactDirectory, type DirectoryContact,
+  createContact, updateContact, deleteContact, staffContactDirectory, type DirectoryContact,
 } from '../../../lib/api';
 import { contactName } from '../../../lib/ops/types';
 import type { Contact, ContactInput } from '../../../lib/ops/types';
@@ -90,12 +91,15 @@ type SortKey = 'name' | 'newest';
 function ContactDirectory({ mode }: { mode: DirectoryMode }) {
   const navigate = useNavigate();
   const toast = useToast();
+  const { isAdmin } = useAuth();
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [rows, setRows] = useState<DirectoryContact[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('All');
   const [sortKey, setSortKey] = useState<SortKey>(mode === 'leads' ? 'newest' : 'name');
-  const [open, setOpen] = useState<DirectoryContact | null>(null);
+  const [open, setOpenRaw] = useState<DirectoryContact | null>(null);
+  const setOpen = (r: DirectoryContact | null) => { setConfirmDelete(false); setOpenRaw(r); };
   const [editing, setEditing] = useState<DirectoryContact | null>(null);
   const [creating, setCreating] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -300,6 +304,27 @@ function ContactDirectory({ mode }: { mode: DirectoryMode }) {
                 <button type="button" onClick={() => navigate('/app/ops/accounts/new')}
                   className="px-3.5 py-2 rounded-lg border border-gold-600/50 text-gold-800 text-xs inline-flex items-center gap-1.5 hover:bg-gold-50 focus-ring">
                   <UserPlus size={13} /> Invite to an account
+                </button>
+              )}
+              {mode === 'leads' && isAdmin && (
+                <button type="button"
+                  onClick={async () => {
+                    if (!confirmDelete) { setConfirmDelete(true); return; }
+                    try {
+                      await deleteContact(open.id);
+                      toast.success('Lead deleted.');
+                      setOpen(null);
+                      load();
+                    } catch {
+                      toast.error('Could not delete the lead.');
+                    }
+                  }}
+                  className={`px-3.5 py-2 rounded-lg text-xs inline-flex items-center gap-1.5 focus-ring ml-auto ${
+                    confirmDelete
+                      ? 'bg-red-600 text-white hover:bg-red-700'
+                      : 'border border-red-300 text-red-700 hover:bg-red-50'
+                  }`}>
+                  <Trash2 size={13} /> {confirmDelete ? 'Really delete?' : 'Delete lead'}
                 </button>
               )}
             </div>
