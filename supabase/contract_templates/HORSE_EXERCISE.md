@@ -10,6 +10,7 @@ This order is a request for horse exercise services from {{ORG.LEGAL_NAME}} ("CO
 HORSE
 
 Horse: {{HORSE.REGISTERED_NAME}} ({{HORSE.BARN_NAME}})
+Microchip: {{HORSE.MICROCHIP}}
 Location: {{HORSE.CURRENT_LOCATION}}
 Known conditions or changes since last engagement: {{REQ.CONDITION_UPDATES}}
 
