@@ -679,8 +679,11 @@ export default function Onboarding() {
           )}
 
           <div className="flex flex-wrap gap-4">
-            <Link to="/app" className="btn-primary">
-              Go to your dashboard <ArrowRight size={16} />
+            <Link to="/app/book" className="btn-primary">
+              Book your first lesson <ArrowRight size={16} />
+            </Link>
+            <Link to="/app" className="btn-outline-gold">
+              Go to your dashboard
             </Link>
             <Link to="/app/documents" className="btn-outline-gold">
               See your documents

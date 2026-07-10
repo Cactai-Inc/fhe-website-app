@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { validateInvitation, upsertMyProfile, redeemInvitation } from '../lib/api';
+import { validateInvitation, upsertMyProfile, redeemInvitation, myOnboardingState } from '../lib/api';
 import { redeemContractInvitation } from '../lib/contracts';
 import { signInWithGoogle } from '../lib/auth';
 import { OAUTH_PROVIDERS } from '../lib/authConfig';
@@ -29,6 +29,11 @@ export default function Register() {
       return `/app/contracts/${documentId}`;
     }
     await redeemInvitation(token);
+    // paperwork assigned → straight into the document flow
+    try {
+      const state = await myOnboardingState();
+      if (state?.needed) return '/app/onboarding';
+    } catch { /* fall through to the dashboard */ }
     return '/app';
   }
 

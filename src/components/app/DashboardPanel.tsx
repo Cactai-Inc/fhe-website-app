@@ -98,6 +98,7 @@ export function DashboardPanel() {
   const [attention, setAttention] = useState<Tile[]>([]);
   const [comingUp, setComingUp] = useState<Tile[]>([]);
   const [checklist, setChecklist] = useState<ChecklistRow[]>([]);
+  const [suggestBooking, setSuggestBooking] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -109,7 +110,12 @@ export function DashboardPanel() {
       supabase.rpc('my_onboarding_checklist')
         .then(({ data, error }) => (error ? [] : ((data as ChecklistRow[]) ?? []))) as Promise<ChecklistRow[]>,
     ]).then(([notifications, sessions, events, schedules, cl]) => {
-      if (active) setChecklist(cl.some((r) => !r.done) ? cl : []);
+      if (!active) return;
+      const anyPending = cl.some((r) => !r.done);
+      setChecklist(anyPending ? cl : []);
+      // paperwork done + nothing on the calendar → the suggested first action
+      const hasUpcoming = sessions.some((x) => x.status === 'SCHEDULED' && new Date(x.starts_at).getTime() > Date.now());
+      setSuggestBooking(cl.length > 0 && !anyPending && !hasUpcoming);
       if (!active) return;
       const now = Date.now();
 
@@ -162,15 +168,23 @@ export function DashboardPanel() {
     return () => { active = false; };
   }, []);
 
-  if (attention.length === 0 && comingUp.length === 0 && checklist.length === 0) return null;
+  if (attention.length === 0 && comingUp.length === 0 && checklist.length === 0 && !suggestBooking) return null;
 
   return (
     <div className="rounded-2xl border border-green-800/10 shadow-[0_14px_34px_-14px_rgba(13,33,24,0.22)] bg-gradient-to-br from-white to-cream-100 p-5 sm:p-6 mb-6 sm:mb-7">
-      {(attention.length > 0 || checklist.length > 0) && (
+      {(attention.length > 0 || checklist.length > 0 || suggestBooking) && (
         <>
           <p className="text-[10px] tracking-widest uppercase text-gold-800 font-semibold mb-3">Needs your attention</p>
           <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
             {checklist.length > 0 && <ChecklistCard rows={checklist} />}
+            {suggestBooking && (
+              <TileCard tile={{
+                id: 'book-first', kind: 'suggestion', gold: true,
+                title: 'Book your next lesson',
+                sub: 'Paperwork done — pick a time that suits you.',
+                cta: 'Book a lesson', to: '/app/book',
+              }} />
+            )}
             {attention.map((t) => <TileCard key={t.id} tile={t} />)}
           </div>
         </>

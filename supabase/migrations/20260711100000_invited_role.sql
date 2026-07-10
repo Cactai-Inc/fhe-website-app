@@ -36,18 +36,19 @@ BEGIN
     RAISE EXCEPTION 'this invitation was issued to a different email address';
   END IF;
 
-  INSERT INTO memberships (user_id, tier, status)
-  VALUES (auth.uid(), 'community', 'active')
-  ON CONFLICT (user_id) DO UPDATE SET status = 'active';
-
-  -- Apply the invited role + tenant. The redeeming user is not an admin, so
-  -- open the role-guard escape hatch for this transaction only.
+  -- Apply the invited role + tenant FIRST — the membership insert's org
+  -- default reads the profile's org (NULL until this stamp). The redeeming
+  -- user is not an admin, so open the role-guard escape for this transaction.
   PERFORM set_config('app.allow_profile_link', '1', true);
   UPDATE profiles
      SET role     = CASE WHEN v_inv.invited_role <> 'USER' THEN v_inv.invited_role ELSE role END,
          is_admin = CASE WHEN v_inv.invited_role = 'ADMIN' THEN true ELSE is_admin END,
          org_id   = coalesce(org_id, v_inv.org_id)
    WHERE user_id = auth.uid();
+
+  INSERT INTO memberships (user_id, tier, status)
+  VALUES (auth.uid(), 'community', 'active')
+  ON CONFLICT (user_id) DO UPDATE SET status = 'active';
 
   UPDATE invitations SET status = 'accepted' WHERE id = v_inv.id;
   RETURN true;

@@ -87,11 +87,11 @@ export function Modal({
         aria-modal="true"
         aria-label={typeof title === 'string' ? title : undefined}
         tabIndex={-1}
-        className="w-full max-w-lg bg-white rounded shadow-xl focus:outline-none"
+        className="w-full max-w-2xl lg:max-w-3xl bg-white rounded-xl shadow-xl focus:outline-none max-h-[90dvh] flex flex-col"
         onKeyDown={handleKeyDown}
       >
         {title && (
-          <div className="flex items-center justify-between border-b border-green-800/10 px-6 py-4">
+          <div className="flex items-center justify-between border-b border-green-800/10 px-6 sm:px-8 py-4 shrink-0">
             <h2 className="font-serif text-xl text-green-900">{title}</h2>
             <button
               type="button"
@@ -103,9 +103,9 @@ export function Modal({
             </button>
           </div>
         )}
-        <div className="px-6 py-5">{children}</div>
+        <div className="px-6 sm:px-8 py-6 overflow-y-auto">{children}</div>
         {footer && (
-          <div className="flex justify-end gap-3 border-t border-green-800/10 px-6 py-4">
+          <div className="flex justify-end gap-3 border-t border-green-800/10 px-6 sm:px-8 py-4 shrink-0">
             {footer}
           </div>
         )}

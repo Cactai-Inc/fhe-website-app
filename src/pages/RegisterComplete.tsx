@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { validateInvitation, upsertMyProfile, redeemInvitation } from '../lib/api';
+import { validateInvitation, upsertMyProfile, redeemInvitation, myOnboardingState } from '../lib/api';
 import { redeemContractInvitation } from '../lib/contracts';
 import { useDocumentTitle } from '../lib/hooks';
 
@@ -86,6 +86,11 @@ export default function RegisterComplete() {
           dest = `/app/contracts/${documentId}`;
         } else {
           await redeemInvitation(stash.token);
+          // paperwork assigned → straight into the document flow
+          try {
+            const state = await myOnboardingState();
+            if (state?.needed) dest = '/app/onboarding';
+          } catch { /* dashboard fallback */ }
         }
       } catch {
         // consumed/expired mid-flow — account exists, membership self-heals for
