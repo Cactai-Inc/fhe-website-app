@@ -343,6 +343,15 @@ export async function adminDeleteInvitation(id: string): Promise<void> {
   if (error) throw error;
 }
 
+/** Remove a client from the app. Provisioned → gone; login-backed → suspended
+ *  + detached (the auth user needs service-role deletion). History preserved.
+ *  Returns had_login so the UI can note a residual login. */
+export async function adminDeleteClient(contactId: string): Promise<{ had_login: boolean }> {
+  const { data, error } = await supabase.rpc('admin_delete_client', { p_contact_id: contactId });
+  if (error) throw error;
+  return { had_login: (data as { had_login?: boolean })?.had_login === true };
+}
+
 export async function adminClientAccounts(): Promise<ClientAccountRow[]> {
   const { data, error } = await supabase.rpc('admin_client_accounts');
   if (error) throw error;

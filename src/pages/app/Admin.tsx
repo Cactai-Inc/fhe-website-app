@@ -7,7 +7,7 @@ import { useDocumentTitle } from '../../lib/hooks';
 import { supabase } from '../../lib/supabase';
 import {
   adminSetSuspended, adminClientAccounts, adminClientItems, adminSendInvitation,
-  adminExpireInvitation, adminDeleteInvitation,
+  adminExpireInvitation, adminDeleteInvitation, adminDeleteClient,
   categoryDocumentDefaults, getContactRequiredDocuments, setContactRequiredDocuments,
   type ClientAccountRow, type ClientItems, type CategoryDocDefault,
 } from '../../lib/admin';
@@ -477,6 +477,7 @@ export default function Admin() {
   const [ov, setOv] = useState<Overview | null>(null);
   const [tab, setTab] = useState<TabId>('overview');
   const [tabPage, setTabPage] = useState(0);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const load = useCallback(() => {
     // login-backed clients + provisioned (no-login-yet) clients in one list
@@ -500,7 +501,7 @@ export default function Admin() {
 
   // isolated-account overview (login-backed accounts only)
   useEffect(() => {
-    setOv(null); setTab('overview'); setTabPage(0);
+    setOv(null); setTab('overview'); setTabPage(0); setConfirmDelete(false);
     if (!selectedId || !selected?.user_id) return;
     supabase.rpc('admin_client_overview', { p_user_id: selected.user_id })
       .then(({ data, error: e }) => {
@@ -532,6 +533,20 @@ export default function Admin() {
       await adminSetSuspended(selected.user_id, !selected.is_suspended);
       load();
     } catch { setError('Could not update the account.'); }
+  }
+
+  async function deleteClient() {
+    if (!selected?.contact_id) return;
+    if (!confirmDelete) { setConfirmDelete(true); return; }
+    try {
+      const { had_login } = await adminDeleteClient(selected.contact_id);
+      setConfirmDelete(false);
+      setSelectedId(null);
+      load();
+      if (had_login) {
+        setError('Client removed. Their login was suspended and detached — full auth deletion needs the owner (service role).');
+      }
+    } catch { setError('Could not delete the client.'); }
   }
 
   // ── stable fetchers for query tabs ──
@@ -674,17 +689,33 @@ export default function Admin() {
                   </span>
                 </span>
               </span>
-              {selected.kind === 'account' && (
-                <button type="button" onClick={() => void toggleSuspend()}
-                  className={`px-3.5 py-2 rounded-lg text-xs font-medium focus-ring shrink-0 ${
-                    selected.is_suspended
-                      ? 'bg-green-800 text-white hover:bg-green-700'
+              <span className="flex items-center gap-2 shrink-0">
+                {selected.kind === 'account' && (
+                  <button type="button" onClick={() => void toggleSuspend()}
+                    className={`px-3.5 py-2 rounded-lg text-xs font-medium focus-ring ${
+                      selected.is_suspended
+                        ? 'bg-green-800 text-white hover:bg-green-700'
+                        : 'border border-red-300 text-red-700 hover:bg-red-50'
+                    }`}>
+                    {selected.is_suspended ? 'Reinstate' : 'Suspend'}
+                  </button>
+                )}
+                <button type="button" onClick={() => void deleteClient()}
+                  className={`px-3.5 py-2 rounded-lg text-xs font-medium focus-ring ${
+                    confirmDelete
+                      ? 'bg-red-600 text-white hover:bg-red-700'
                       : 'border border-red-300 text-red-700 hover:bg-red-50'
                   }`}>
-                  {selected.is_suspended ? 'Reinstate' : 'Suspend'}
+                  {confirmDelete ? 'Confirm delete' : 'Delete'}
                 </button>
-              )}
+              </span>
             </div>
+            {confirmDelete && (
+              <p className="text-[12px] text-red-700 mt-2">
+                Removes this client from the app. Signed documents and history are kept.
+                {selected.kind === 'account' ? ' Their login will be suspended and detached.' : ''}
+              </p>
+            )}
           </div>
 
           {selected.kind === 'pending' && (
