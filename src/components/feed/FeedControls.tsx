@@ -1,24 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import {
-  FEED_VIEWS, SORT_OPTIONS, SEED_UNSEEN, SEED_ENABLED, type FeedView,
-} from '../../lib/seed';
+import { FEED_VIEWS, SORT_OPTIONS, type FeedView } from '../../lib/seed';
 import { fetchUnseenCounts } from '../../lib/communityFeed';
 
 /**
- * FEED CONTROLS — the two dependent dropdowns that drive the community feed.
- * View (single-select, with per-category unseen counts; All has no total) sits
- * beside Sort (options regenerate from the active View). Same control on desktop
- * and mobile — no pill row. Large, comfortable tap targets.
+ * FEED CONTROLS — Filter + Sort, two rows on every breakpoint.
+ *   Desktop:  row 1 = FILTER buttons (with unseen badges) · row 2 = SORT buttons
+ *   Mobile:   row 1 = FILTER dropdown                      · row 2 = SORT buttons
+ * Sort options regenerate from the active filter; filter is single-select.
  */
 
-function Dropdown({
-  cue, value, options, badges, onPick,
+function FilterDropdown({
+  value, options, onPick,
 }: {
-  cue: string;
   value: string;
   options: { label: string; count?: number }[];
-  badges?: boolean;
   onPick: (label: string) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -36,21 +32,21 @@ function Dropdown({
   }, [open]);
 
   return (
-    <div className="relative flex-1 sm:flex-none" ref={ref}>
+    <div className="relative" ref={ref}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full sm:w-auto sm:min-w-[11rem] flex items-center justify-between gap-2 px-4 py-2.5 bg-white border border-green-800/10 rounded-lg text-sm text-green-800 font-medium font-sans hover:border-green-800/25 focus-ring"
+        className="w-full flex items-center justify-between gap-2 px-4 py-2.5 bg-white border border-green-800/10 rounded-lg text-sm text-green-800 font-medium font-sans hover:border-green-800/25 focus-ring"
         aria-expanded={open}
       >
         <span className="inline-flex items-center gap-2 min-w-0">
-          <span className="text-[10px] tracking-widest uppercase text-muted font-semibold shrink-0">{cue}</span>
+          <span className="text-[10px] tracking-widest uppercase text-muted font-semibold shrink-0">Filter</span>
           <span className="truncate">{value}</span>
         </span>
         <ChevronDown size={14} className="text-muted shrink-0" />
       </button>
       {open && (
-        <div className="absolute left-0 z-30 mt-1.5 min-w-full sm:min-w-[15rem] bg-white border border-green-800/10 rounded-xl shadow-lg p-1.5">
+        <div className="absolute left-0 right-0 z-30 mt-1.5 bg-white border border-green-800/10 rounded-xl shadow-lg p-1.5">
           {options.map((o) => (
             <button
               key={o.label}
@@ -61,7 +57,7 @@ function Dropdown({
               }`}
             >
               <span>{o.label}</span>
-              {badges && o.count ? (
+              {o.count ? (
                 <span className="min-w-[1.25rem] h-5 px-1.5 grid place-items-center bg-gold-600 text-white text-[11px] font-semibold rounded-full">
                   {o.count}
                 </span>
@@ -70,6 +66,41 @@ function Dropdown({
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function PillRow({
+  options, value, onPick, badges,
+}: {
+  options: { label: string; count?: number }[];
+  value: string;
+  onPick: (label: string) => void;
+  badges?: boolean;
+}) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {options.map((o) => (
+        <button
+          key={o.label}
+          type="button"
+          onClick={() => onPick(o.label)}
+          className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full border text-[13px] font-sans transition-colors focus-ring ${
+            o.label === value
+              ? 'bg-green-800 text-white border-green-800 font-medium'
+              : 'bg-white text-secondary border-green-800/15 hover:border-green-800/30'
+          }`}
+        >
+          {o.label}
+          {badges && o.count ? (
+            <span className={`min-w-[1.15rem] h-[1.15rem] px-1 grid place-items-center text-[10.5px] font-semibold rounded-full ${
+              o.label === value ? 'bg-white/25 text-white' : 'bg-gold-600 text-white'
+            }`}>
+              {o.count}
+            </span>
+          ) : null}
+        </button>
+      ))}
     </div>
   );
 }
@@ -87,41 +118,33 @@ export function FeedControls({
   useEffect(() => {
     let active = true;
     fetchUnseenCounts()
-      .then((c) => {
-        if (!active) return;
-        // Live counts win; if live returns nothing and seed is on, show seed badges.
-        const hasLive = Object.keys(c).length > 0;
-        setCounts(hasLive || !SEED_ENABLED ? c : SEED_UNSEEN);
-      })
-      .catch(() => { if (active) setCounts(SEED_ENABLED ? SEED_UNSEEN : {}); });
+      .then((c) => { if (active) setCounts(c); })
+      .catch(() => { if (active) setCounts({}); });
     return () => { active = false; };
   }, [view]);
 
   const viewLabel = FEED_VIEWS.find((v) => v.key === view)?.label ?? 'All';
-  const viewOptions = FEED_VIEWS.map((v) => ({
+  const filterOptions = FEED_VIEWS.map((v) => ({
     label: v.label,
     count: v.key === 'all' ? undefined : counts[v.key],
   }));
   const sortOptions = (SORT_OPTIONS[view] ?? SORT_OPTIONS.all).map((label) => ({ label }));
+  const pickFilter = (label: string) => {
+    const next = FEED_VIEWS.find((v) => v.label === label);
+    if (next) onView(next.key);
+  };
 
   return (
-    <div className="flex gap-2.5 mb-4">
-      <Dropdown
-        cue="View"
-        value={viewLabel}
-        options={viewOptions}
-        badges
-        onPick={(label) => {
-          const next = FEED_VIEWS.find((v) => v.label === label);
-          if (next) onView(next.key);
-        }}
-      />
-      <Dropdown
-        cue="Sort"
-        value={sort}
-        options={sortOptions}
-        onPick={onSort}
-      />
+    <div className="flex flex-col gap-2 mb-4">
+      {/* row 1 — FILTER: buttons on desktop, dropdown on mobile */}
+      <div className="hidden sm:block">
+        <PillRow options={filterOptions} value={viewLabel} onPick={pickFilter} badges />
+      </div>
+      <div className="sm:hidden">
+        <FilterDropdown value={viewLabel} options={filterOptions} onPick={pickFilter} />
+      </div>
+      {/* row 2 — SORT: buttons on every breakpoint */}
+      <PillRow options={sortOptions} value={sort} onPick={onSort} />
     </div>
   );
 }

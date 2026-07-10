@@ -25,15 +25,15 @@ export default function ContentPostDetail() {
     return (
       <div className="max-w-2xl">
         <h1 className="heading-section text-green-800 mb-4">Article not found</h1>
-        <Link to="/app/content" className="link-underline">Back to content</Link>
+        <Link to="/app?filter=articles" className="link-underline">Back to articles</Link>
       </div>
     );
   }
 
   return (
     <article className="max-w-2xl">
-      <Link to="/app/content" className="inline-flex items-center gap-2 text-sm text-secondary hover:text-green-800 mb-6 focus-ring">
-        <ArrowLeft size={16} /> Back to content
+      <Link to="/app?filter=articles" className="inline-flex items-center gap-2 text-sm text-secondary hover:text-green-800 mb-6 focus-ring">
+        <ArrowLeft size={16} /> Back to articles
       </Link>
       {post.cover_url && <img src={post.cover_url} alt="" className="w-full h-56 object-cover mb-6" />}
       <h1 className="heading-section text-green-800 mb-2">{post.title}</h1>

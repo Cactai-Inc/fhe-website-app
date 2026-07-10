@@ -193,3 +193,24 @@ export async function deleteStableItem(id: string): Promise<void> {
   const { error } = await supabase.from('stable_items').delete().eq('id', id);
   if (error) throw error;
 }
+
+// ── Marketplace listing eligibility (spec H.9) ─────────────────
+export interface ListableHorse {
+  id: string;
+  registered_name: string | null;
+  barn_name: string | null;
+  breed: string | null;
+  color: string | null;
+  sex: string | null;
+  height: string | null;
+  date_of_birth: string | null;
+}
+
+/** Horses the signed-in member may list (server-enforced eligibility:
+ *  owner → sale always, lease only when un-leased; lessee → lease only when
+ *  sublease_allowed; staff unrestricted). */
+export async function listListableHorses(intent: 'sale' | 'lease'): Promise<ListableHorse[]> {
+  const { data, error } = await supabase.rpc('my_listable_horses', { p_intent: intent });
+  if (error) throw error;
+  return (data ?? []) as ListableHorse[];
+}

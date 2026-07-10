@@ -39,10 +39,10 @@ interface NavItem {
   superAdmin?: boolean;
 }
 
-const QUICK: { label: string; icon: typeof GraduationCap }[] = [
-  { label: 'Book a lesson', icon: GraduationCap },
-  { label: 'Shop for sale', icon: ShoppingBag },
-  { label: 'New message', icon: MessageSquare },
+const QUICK: { label: string; icon: typeof GraduationCap; to: string }[] = [
+  { label: 'Book a lesson', icon: GraduationCap, to: '/app/book' },
+  { label: 'Shop for sale', icon: ShoppingBag, to: '/app?filter=for_sale' },
+  { label: 'New message', icon: MessageSquare, to: '/app/messages' },
 ];
 
 export const MANAGE_NAV: NavItem[] = [
@@ -191,13 +191,14 @@ export default function AppLayout() {
                 <ChevronDown size={14} className="text-secondary" />
               </button>
               {menuOpen && (
-                <div className="absolute right-0 mt-1 w-60 max-w-[calc(100vw-2rem)] bg-white border border-green-800/10 shadow-md rounded-md py-1 max-h-[80vh] overflow-y-auto z-50">
+                <div className="absolute right-0 mt-1 w-60 max-w-[calc(100vw-2rem)] bg-white border border-green-800/10 shadow-md rounded-md py-1 max-h-[calc(100dvh-5rem)] overflow-y-auto z-50 pb-3">
                   <p className="px-4 py-2 text-xs text-muted border-b border-green-800/10 truncate">{name}</p>
                   <MenuLink to="/app" label="Main" icon={HomeIcon} end onNavigate={closeMenu} />
                   <MenuLink to="/app/account" label="Account" icon={UserRound} onNavigate={closeMenu} />
                   <div className="mt-1 border-t border-green-800/10 pt-2 px-4 pb-1 text-xs uppercase tracking-wide text-secondary/60">Quick access</div>
                   {QUICK.map((q) => (
-                    <button key={q.label} type="button" onClick={closeMenu}
+                    <button key={q.label} type="button"
+                      onClick={() => { closeMenu(); navigate(q.to); }}
                       className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">
                       <q.icon size={17} /> {q.label}
                     </button>
@@ -223,8 +224,8 @@ export default function AppLayout() {
 
       <div className="max-w-6xl mx-auto flex">
         {showRail && (
-          <aside className="hidden lg:block w-56 shrink-0 border-r border-green-800/10 bg-cream-100/40 min-h-[calc(100vh-3.5rem)]">
-            <nav className="p-3 sticky top-14">
+          <aside className="hidden lg:block w-56 shrink-0 border-r border-green-800/10 bg-cream-100/40">
+            <nav className="p-3 sticky top-14 h-[calc(100dvh-3.5rem)] overflow-hidden">
               <p className="px-3 pt-1 pb-2 text-[10px] tracking-widest uppercase text-muted font-semibold">
                 {isAdmin ? 'Management' : 'Servicing'}
               </p>
@@ -234,7 +235,7 @@ export default function AppLayout() {
             </nav>
           </aside>
         )}
-        <main className="flex-1 min-w-0 px-4 sm:px-6 py-6 sm:py-9">
+        <main className="flex-1 min-w-0 px-4 sm:px-6 py-6 sm:py-9 pb-24">
           <Outlet />
         </main>
       </div>

@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, GraduationCap, MapPin } from 'lucide-react';
 import { fetchEvents, fetchMyRsvps, setRsvp } from '../../lib/community';
 import { myLessonSessions, type MemberLessonSession } from '../../lib/ops/api-member';
+import { listLessonSessions } from '../../lib/ops/api-lessons';
+import { useAuth } from '../../contexts/AuthContext';
 import { useDocumentTitle } from '../../lib/hooks';
 import type { CommunityEvent, EventRsvp, RsvpStatus } from '../../lib/community-types';
 
@@ -37,6 +39,8 @@ function sessionWhen(s: MemberLessonSession): string {
 
 export default function Schedule() {
   useDocumentTitle('Schedule');
+  // Staff see the whole barn's sessions (org-wide); members see their own.
+  const { isStaff } = useAuth();
   const [events, setEvents] = useState<CommunityEvent[]>([]);
   const [rsvps, setRsvps] = useState<Record<string, RsvpStatus>>({});
   const [sessions, setSessions] = useState<MemberLessonSession[]>([]);
@@ -47,7 +51,10 @@ export default function Schedule() {
     Promise.all([
       fetchEvents().catch(() => []),
       fetchMyRsvps().catch(() => [] as EventRsvp[]),
-      myLessonSessions().catch(() => [] as MemberLessonSession[]),
+      (isStaff
+        ? listLessonSessions().then((rows) => rows as unknown as MemberLessonSession[])
+        : myLessonSessions()
+      ).catch(() => [] as MemberLessonSession[]),
     ])
       .then(([e, r, s]) => {
         if (!active) return;
@@ -57,7 +64,7 @@ export default function Schedule() {
       })
       .finally(() => active && setLoading(false));
     return () => { active = false; };
-  }, []);
+  }, [isStaff]);
 
   async function choose(eventId: string, status: RsvpStatus) {
     setRsvps((prev) => ({ ...prev, [eventId]: status }));

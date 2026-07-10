@@ -45,6 +45,8 @@ export interface FeedCard {
   mobile?: string | null;
   whatsapp?: string | null;
   url?: string | null;
+  /** click-through target (discussion/article detail) */
+  to?: string;
   // per-channel permissions (members; from the directory's shared prefs)
   allowSms?: boolean;
   allowCall?: boolean;
@@ -88,7 +90,7 @@ function fromFeedPost(p: FeedPost): FeedCard {
 function fromThread(t: Thread): FeedCard {
   const name = t.author?.display_name || t.author?.first_name || 'Member';
   return {
-    id: t.id, view: 'discussions', kind: 'discussion',
+    id: t.id, view: 'discussions', kind: 'discussion', to: `/app/threads/${t.id}`,
     title: t.title, body: t.body,
     author: name, authorInitials: initials(name, 'M'),
     when: ago(t.last_post_at || t.created_at), ts: new Date(t.last_post_at || t.created_at).getTime(),
@@ -105,7 +107,7 @@ function fromEvent(e: CommunityEvent): FeedCard {
 }
 function fromArticle(a: ContentPost): FeedCard {
   return {
-    id: a.id, view: 'articles', kind: 'article',
+    id: a.id, view: 'articles', kind: 'article', to: `/app/content/${a.slug}`,
     title: a.title, body: a.excerpt ?? undefined,
     author: 'French Heritage', authorInitials: 'FH',
     when: ago(a.created_at), ts: new Date(a.created_at).getTime(),

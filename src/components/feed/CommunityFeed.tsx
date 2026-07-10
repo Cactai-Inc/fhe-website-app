@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Mail, MessageCircle, Phone, Smartphone, Globe } from 'lucide-react';
 import { fetchViewCards, type FeedCard } from '../../lib/communityFeed';
+import { feedMarkSeen } from '../../lib/feed';
 import { SEED_ENABLED, type FeedView } from '../../lib/seed';
 import {
   mailHref, smsHref, telHref, whatsappHref, type ContactInfo,
@@ -60,8 +62,30 @@ function ContactButtons({ info, url }: { info: ContactInfo; url?: string | null 
 }
 
 function Card({ c }: { c: FeedCard }) {
+  const navigate = useNavigate();
+  const ref = useRef<HTMLElement | null>(null);
+
+  // seen-marking: feed-backed cards (social/for-sale) flip their seen flag when
+  // they scroll into view — this is what drains the filter badges.
+  useEffect(() => {
+    if (c.seen !== false || !ref.current) return;
+    if (c.kind !== 'social' && c.kind !== 'for_sale') return;
+    const el = ref.current;
+    const obs = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) {
+        feedMarkSeen(c.id).catch(() => {});
+        obs.disconnect();
+      }
+    }, { threshold: 0.4 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [c.id, c.seen, c.kind]);
+
   return (
-    <article className="rounded-xl border border-green-800/10 bg-white overflow-hidden mb-4 break-inside-avoid">
+    <article
+      ref={ref}
+      onClick={c.to ? () => navigate(c.to!) : undefined}
+      className={`rounded-xl border border-green-800/10 bg-white overflow-hidden mb-4 break-inside-avoid ${c.to ? 'cursor-pointer hover:border-green-800/30 transition-colors' : ''}`}>
       {c.mediaUrl && <MediaBlock url={c.mediaUrl} label={c.kind === 'for_sale' ? (c.saleTag || 'For Sale') : c.kind === 'social' ? 'Social' : undefined} />}
       <div className="px-4 py-3">
         <div className="flex items-center gap-2 mb-1.5">

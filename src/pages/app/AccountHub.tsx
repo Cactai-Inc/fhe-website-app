@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
 import {
-  SEED_ACCOUNT, SEED_STABLE_HORSES, SEED_STABLE_GEAR, SEED_STABLE_SUPPLIES, SEED_ENABLED,
+  SEED_STABLE_HORSES, SEED_STABLE_GEAR, SEED_STABLE_SUPPLIES, SEED_ENABLED,
 } from '../../lib/seed';
 import {
   listStableHorses, listStableItems,
@@ -18,6 +18,8 @@ import { GiftsPanel, SavedPanel, DocumentsPanel } from '../../components/app/Acc
 import { useAuth } from '../../contexts/AuthContext';
 import { getMyContactPrefs, saveMyContactPrefs, type MyContactPrefs } from '../../lib/contact';
 import { startGoogleChange, startPasswordChange } from '../../lib/emailChange';
+import { listBillingSchedules, nextDue } from '../../lib/billing';
+import { useNavigate } from 'react-router-dom';
 
 /**
  * ACCOUNT HUB (/app/account) — the "me" surface for every user type, reached from
@@ -201,6 +203,7 @@ function ProfileSection() {
       <div className="flex flex-col gap-2">
         <Row icon={UserRound} title="Change email address" sub="Verified before it takes effect" onClick={() => setEmailOpen(true)} />
         <Row icon={BadgeCheck} title="Password" sub="Set or change your password" />
+        <Row icon={UserRound} title="Name, photo & bio" sub="Edit your public identity" onClick={() => { window.location.assign('/app/profile'); }} />
       </div>
 
       {emailOpen && (
@@ -314,6 +317,28 @@ function StableSection() {
 }
 
 export default function AccountHub() {
+  const { profile, membership } = useAuth();
+  const navigate = useNavigate();
+  const realName = profile?.display_name
+    || [profile?.first_name, profile?.last_name].filter(Boolean).join(' ')
+    || 'Your profile';
+  const membershipSub = membership?.status === 'active'
+    ? `${membership.tier ?? 'Member'} · active`
+    : 'Not active yet';
+  const [nextPaymentSub, setNextPaymentSub] = useState('Payments & recurring billing');
+  useEffect(() => {
+    listBillingSchedules()
+      .then((rows) => {
+        const active = rows.filter((r) => r.active);
+        if (active.length === 0) return;
+        const soonest = active
+          .map((r) => nextDue(r.start_date, r.cadence))
+          .sort((a, b) => a.getTime() - b.getTime())[0];
+        setNextPaymentSub(`Next payment ${soonest.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`);
+      })
+      .catch(() => {});
+  }, []);
+
   useDocumentTitle('Account');
   const [open, setOpen] = useState<Section>(null);
   const toggle = (s: Section) => setOpen((cur) => (cur === s ? null : s));
@@ -327,9 +352,10 @@ export default function AccountHub() {
 
       <SectionLabel>You</SectionLabel>
       <div className="flex flex-col gap-2.5">
-        <Row icon={UserRound} title="Profile &amp; preferences" sub={`${SEED_ACCOUNT.name} · contact, socials, notifications`} onClick={() => toggle('profile')} open={open === 'profile'} />
+        <Row icon={UserRound} title="Profile &amp; preferences" sub={`${realName} · contact, socials, notifications`} onClick={() => toggle('profile')} open={open === 'profile'} />
         {open === 'profile' && <ProfileSection />}
-        <Row icon={Grid3x3} title="My posts" sub={`${SEED_ACCOUNT.postsCount} posts · ${SEED_ACCOUNT.listingsCount} listings`} />
+        <Row icon={Grid3x3} title="My posts" sub="Your posts & listings" />
+        <Row icon={Boxes} title="My lessons" sub="Credits, schedule & your progress" onClick={() => navigate('/app/lessons')} />
         <Row icon={Bookmark} title="Saved items" sub="Articles, listings, and links you kept" onClick={() => toggle('saved')} open={open === 'saved'} />
         {open === 'saved' && <SavedPanel />}
         <Row icon={FileText} title="Documents" sub="Signed agreements & releases" onClick={() => toggle('documents')} open={open === 'documents'} />
@@ -340,16 +366,16 @@ export default function AccountHub() {
 
       <SectionLabel>Billing &amp; orders</SectionLabel>
       <div className="flex flex-col gap-2.5">
-        <Row icon={CreditCard} title="Billing" sub={`Next payment ${SEED_ACCOUNT.nextPayment}`} />
-        <Row icon={BadgeCheck} title="Membership" sub={SEED_ACCOUNT.membership} />
-        <Row icon={ShoppingBag} title="Orders & payment method" sub={`${SEED_ACCOUNT.ordersCount} past orders · Zelle on file`} />
+        <Row icon={CreditCard} title="Billing" sub={nextPaymentSub} onClick={() => navigate('/app/balance')} />
+        <Row icon={BadgeCheck} title="Membership" sub={membershipSub} />
+        <Row icon={ShoppingBag} title="Orders & payment method" sub="Past orders · Zelle" onClick={() => navigate('/app/orders')} />
         <Row icon={Gift} title="Gifts" sub="Things you've gifted · resend, transfer" onClick={() => toggle('gifts')} open={open === 'gifts'} />
         {open === 'gifts' && <GiftsPanel />}
       </div>
 
       <SectionLabel>Help</SectionLabel>
       <div className="flex flex-col gap-2.5">
-        <Row icon={LifeBuoy} title="Support" sub="Get help with anything" />
+        <Row icon={LifeBuoy} title="Support" sub="Get help with anything" onClick={() => navigate('/app/support')} />
       </div>
     </div>
   );

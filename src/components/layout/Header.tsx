@@ -272,12 +272,14 @@ export default function Header() {
             </Link>
           )}
 
-          <Link
-            to="/login"
-            className={`hidden md:inline-flex items-center min-h-[44px] text-[11px] font-sans tracking-widest uppercase transition-colors duration-[400ms] focus-ring-dark ${subtleText} ${heroShadow}`}
-          >
-            Sign In
-          </Link>
+          {!user && (
+            <Link
+              to="/login"
+              className={`hidden md:inline-flex items-center min-h-[44px] text-[11px] font-sans tracking-widest uppercase transition-colors duration-[400ms] focus-ring-dark ${subtleText} ${heroShadow}`}
+            >
+              Sign In
+            </Link>
+          )}
 
           {/* Mobile menu button (nav links only — the cart is NOT in here). */}
           <button
@@ -312,12 +314,21 @@ export default function Header() {
                 {link.label}
               </Link>
             ))}
-            <Link
-              to="/login"
-              className="text-sm font-sans tracking-widest uppercase text-white/60 hover:text-white transition-colors focus-ring-dark"
-            >
-              Sign In
-            </Link>
+            {user ? (
+              <Link
+                to="/app"
+                className="text-sm font-sans tracking-widest uppercase text-gold-300 hover:text-gold-200 transition-colors focus-ring-dark"
+              >
+                Member Area
+              </Link>
+            ) : (
+              <Link
+                to="/login"
+                className="text-sm font-sans tracking-widest uppercase text-white/60 hover:text-white transition-colors focus-ring-dark"
+              >
+                Sign In
+              </Link>
+            )}
           </nav>
         </div>
       )}

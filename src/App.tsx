@@ -34,11 +34,9 @@ import ResetPassword from './pages/ResetPassword';
 import Account from './pages/Account';
 import OrderDetail from './pages/OrderDetail';
 // Member app
-import Dashboard from './pages/app/Dashboard';
 import Home from './pages/app/Home';
 import Profile from './pages/app/Profile';
 import Schedule from './pages/app/Schedule';
-import Membership from './pages/app/Membership';
 import Orders from './pages/app/Orders';
 import Documents from './pages/app/Documents';
 import Onboarding from './pages/app/Onboarding';
@@ -48,21 +46,12 @@ import MyEngagements from './pages/app/MyEngagements';
 import MyEngagementDetail from './pages/app/MyEngagementDetail';
 import MyBalance from './pages/app/MyBalance';
 import MyLessons from './pages/app/MyLessons';
-import MyBrokerage from './pages/app/MyBrokerage';
-import MyBoarding from './pages/app/MyBoarding';
-import Members from './pages/app/Members';
-import Chat from './pages/app/Chat';
-import Threads from './pages/app/Threads';
 import ThreadDetail from './pages/app/ThreadDetail';
 import Messages from './pages/app/Messages';
-import Content from './pages/app/Content';
 import ContentPostDetail from './pages/app/ContentPostDetail';
 // Slice 4 — purpose-built dashboards + community/library surfaces
 import DealDashboard from './pages/app/DealDashboard';
 import CareDashboard from './pages/app/CareDashboard';
-import Community from './pages/app/Community';
-import Market from './pages/app/Market';
-import HostEvent from './pages/app/HostEvent';
 import Support from './pages/app/Support';
 import ContractPage from './pages/app/ContractPage';
 import AccountHub from './pages/app/AccountHub';
@@ -187,25 +176,16 @@ export function AppRoutes() {
                   moves to a renamed Dashboard page in Slice 4; kept reachable at
                   /app/dashboard meanwhile. */}
               <Route index element={<Home />} />
-              <Route path="dashboard" element={<Dashboard />} />
               {/* Slice 4 — purpose-built dashboards for non-rider purchase categories */}
               <Route path="deal" element={<DealDashboard />} />
               <Route path="care" element={<CareDashboard />} />
               <Route path="schedule" element={<Schedule />} />
               {/* Slice 4 — Community hub (front door) + its surfaces */}
-              <Route path="community" element={<Community />} />
-              <Route path="community/market" element={<Market />} />
-              <Route path="community/host" element={<HostEvent />} />
-              <Route path="chat" element={<Chat />} />
-              <Route path="threads" element={<Threads />} />
               <Route path="threads/:id" element={<ThreadDetail />} />
               <Route path="messages" element={<Messages />} />
               <Route path="messages/:userId" element={<Messages />} />
-              <Route path="members" element={<Members />} />
               {/* Slice 4 — Library = the conformed Content page (articles + resources
                   + personal docs link). /app/content kept as an alias. */}
-              <Route path="library" element={<Content />} />
-              <Route path="content" element={<Content />} />
               <Route path="content/:slug" element={<ContentPostDetail />} />
               <Route path="documents" element={<Documents />} />
               {/* Rider onboarding (provisioned invite → details → sign → confirmation) */}
@@ -218,9 +198,6 @@ export function AppRoutes() {
               <Route path="engagements/:id" element={<MyEngagementDetail />} />
               <Route path="balance" element={<MyBalance />} />
               <Route path="lessons" element={<MyLessons />} />
-              <Route path="brokerage" element={<MyBrokerage />} />
-              <Route path="boarding" element={<MyBoarding />} />
-              <Route path="membership" element={<Membership />} />
               <Route path="profile" element={<Profile />} />
               <Route path="support" element={<Support />} />
               <Route path="account" element={<AccountHub />} />
