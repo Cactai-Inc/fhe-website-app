@@ -213,6 +213,8 @@ export async function adminSendInvitation(
     email: string; requestId?: string; expiresInDays?: number;
     firstName?: string; lastName?: string; offeringId?: string;
     markPaid?: boolean; paymentMethod?: string; notes?: string;
+    /** Account type to provision — 'MANAGER' (instructor) / 'ADMIN' need admin caller. */
+    role?: 'USER' | 'MANAGER' | 'ADMIN';
   },
 ): Promise<AdminInviteResult> {
   const { data: sessionData } = await supabase.auth.getSession();
@@ -231,4 +233,72 @@ export async function adminSendInvitation(
     throw new Error(msg || 'Could not send invitation.');
   }
   return (await res.json()) as AdminInviteResult;
+}
+
+// ─── Offerings catalog (admin CRUD) ──────────────────────────────────────────
+// The public surfaces (site pricing, booking, checkout, invites) all read
+// offerings via fetchOfferings (active only). This admin reach sees BOTH
+// published and unpublished rows and writes through offerings_admin_write RLS,
+// so an edit here lands at every visibility point immediately.
+import type { Offering, Segment, PriceUnitDb, PurchaseType } from './types';
+
+export interface OfferingInput {
+  segment: Segment;
+  name: string;
+  tagline?: string | null;
+  description?: string | null;
+  service_type?: string | null;
+  price_amount?: number | null;
+  price_unit?: PriceUnitDb | null;
+  price_min?: number | null;
+  purchase_type?: PurchaseType | null;
+  horse_included?: boolean | null;
+  is_popular?: boolean;
+  note?: string | null;
+  active?: boolean;
+  sort_order?: number;
+}
+
+export async function adminListOfferings(): Promise<Offering[]> {
+  const { data, error } = await supabase
+    .from('offerings').select('*')
+    .order('segment').order('sort_order').order('name');
+  if (error) throw error;
+  return (data ?? []) as Offering[];
+}
+
+/** kebab-case the name into a slug namespace-prefixed by segment. */
+function slugify(segment: string, name: string): string {
+  const base = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  return `${segment}-${base}`.slice(0, 60);
+}
+
+/** Collision-free auto-naming: slug from segment+name; -2, -3… on collision. */
+async function uniqueSlug(segment: string, name: string): Promise<string> {
+  const want = slugify(segment, name);
+  const { data, error } = await supabase
+    .from('offerings').select('slug').like('slug', `${want}%`);
+  if (error) throw error;
+  const taken = new Set((data ?? []).map((r) => (r as { slug: string }).slug));
+  if (!taken.has(want)) return want;
+  for (let n = 2; ; n += 1) {
+    const candidate = `${want}-${n}`;
+    if (!taken.has(candidate)) return candidate;
+  }
+}
+
+export async function adminCreateOffering(input: OfferingInput): Promise<Offering> {
+  const slug = await uniqueSlug(input.segment, input.name);
+  const { data, error } = await supabase
+    .from('offerings')
+    .insert({ ...input, slug })
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data as Offering;
+}
+
+export async function adminUpdateOffering(id: string, patch: Partial<OfferingInput>): Promise<void> {
+  const { error } = await supabase.from('offerings').update(patch).eq('id', id);
+  if (error) throw error;
 }

@@ -13,7 +13,7 @@ export interface SurfaceGrant {
 
 /** The admin-only surfaces an admin may grant to instructors. */
 export const GRANTABLE_SURFACES: { key: string; label: string }[] = [
-  { key: '/app/admin', label: 'Accounts (invites & members)' },
+  { key: '/app/admin', label: 'Clients (accounts & invites)' },
   { key: '/app/ops/support', label: 'Support inbox' },
   { key: '/app/ops/moderation', label: 'Moderation' },
   { key: '/app/ops/transactions', label: 'Transactions' },

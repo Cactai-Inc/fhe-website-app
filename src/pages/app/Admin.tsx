@@ -1,487 +1,523 @@
-import { useEffect, useState } from 'react';
-import { toErrorMessage } from '../../lib/ops/errors';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  ArrowLeft, ChevronLeft, ChevronRight, Plus, Search, UserRound,
+} from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
-import { useAuth } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabase';
+import { adminListMembers, adminSetSuspended, type AdminMemberRow } from '../../lib/admin';
 import {
-  GRANTABLE_SURFACES, listAllGrants, addGrant, removeGrant, type SurfaceGrant,
-} from '../../lib/grants';
-import {
-  adminListMembers, adminSetSuspended, adminSetAdmin, adminUpsertMembership,
-  adminSetRole, adminCreateAnnouncement, adminCreateEvent, adminCreateContentPost,
-  adminCreateResource, adminSendInvitation,
-  type AdminMemberRow, type MemberRole,
-} from '../../lib/admin';
-import { fetchOfferings } from '../../lib/api';
-import type { Offering } from '../../lib/types';
+  listBillingSchedules, createBillingSchedule, nextDue,
+  type BillingSchedule, type BillingMode, type BillingCadence,
+} from '../../lib/billing';
 
-type Tab = 'members' | 'invite' | 'announce' | 'events' | 'content' | 'resources' | 'access';
+/**
+ * CLIENTS (/app/admin) — the account-centric surface (owner rework). CLIENT
+ * accounts only (staff live on Team & access under Settings). Two states:
+ *
+ *  LIST — every client, searchable + sortable. Clicking a row isolates it.
+ *  ISOLATED — the other rows disappear; the profile renders below the selected
+ *  row; account-scoped TABS appear (Overview / Billing / Bookings / Documents /
+ *  Orders / Payments / Activity / Posts / Messages / Login). More tabs than fit →
+ *  a "more" control slides the tab rail sideways (animated); a back control
+ *  appears on the left. Each tab carries a create action where one makes sense.
+ *  A clear exit control returns to the list (tabs disappear with it).
+ */
 
-const TABS: { id: Tab; label: string }[] = [
-  { id: 'members', label: 'Members' },
-  { id: 'access', label: 'Instructor access' },
-  { id: 'invite', label: 'Invite' },
-  { id: 'announce', label: 'Announce' },
-  { id: 'events', label: 'Events' },
-  { id: 'content', label: 'Articles' },
-  { id: 'resources', label: 'Resources' },
+// ── account-scoped data shapes ────────────────────────────────────────────────
+interface Overview {
+  profile: {
+    user_id: string; email: string; first_name: string | null; last_name: string | null;
+    display_name: string | null; phone: string | null; mobile: string | null;
+    whatsapp: string | null; riding_level: string | null; bio: string | null;
+    role: string; is_suspended: boolean; created_at: string;
+    contact_id: string | null; client_id: string | null;
+  } | null;
+  login: {
+    providers: string[]; last_sign_in_at: string | null;
+    created_at: string; email_confirmed_at: string | null;
+  } | null;
+  membership: { tier: string | null; status: string | null; started_at: string | null } | null;
+  counts: { orders: number; posts: number; documents: number; bookings: number };
+}
+
+type TabId =
+  | 'overview' | 'billing' | 'bookings' | 'documents' | 'orders' | 'payments'
+  | 'activity' | 'posts' | 'messages' | 'login';
+
+const TABS: { id: TabId; label: string }[] = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'billing', label: 'Billing' },
+  { id: 'bookings', label: 'Bookings' },
+  { id: 'documents', label: 'Documents' },
+  { id: 'orders', label: 'Orders' },
+  { id: 'payments', label: 'Payments' },
+  { id: 'activity', label: 'Activity' },
+  { id: 'posts', label: 'Posts' },
+  { id: 'messages', label: 'Messages' },
+  { id: 'login', label: 'Login' },
 ];
+const TAB_PAGE_SIZE = 6;
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+const fmt = (iso: string | null | undefined) =>
+  iso ? new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+const fmtTs = (iso: string | null | undefined) =>
+  iso ? new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '—';
+const memberName = (m: AdminMemberRow) =>
+  m.display_name || `${m.first_name ?? ''} ${m.last_name ?? ''}`.trim() || m.email || '—';
+
+// ── generic row list used by several tabs ────────────────────────────────────
+function RowList({ rows, empty }: { rows: { key: string; main: string; sub: string; badge?: string }[]; empty: string }) {
+  if (rows.length === 0) return <p className="text-sm text-muted">{empty}</p>;
   return (
-    <div className="mb-4">
-      <span className="form-label">{label}</span>
-      {children}
-    </div>
-  );
-}
-
-// ── Members tab ───────────────────────────────────────────────────────────────
-function MembersTab() {
-  const { isAdmin, isSuperAdmin } = useAuth();
-  const [members, setMembers] = useState<AdminMemberRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const reload = () => { adminListMembers().then(setMembers).catch(() => setMembers([])).finally(() => setLoading(false)); };
-  useEffect(reload, []);
-
-  async function act(fn: () => Promise<void>) {
-    await fn();
-    setLoading(true);
-    reload();
-  }
-
-  if (loading) return <p className="body-text text-muted">Loading…</p>;
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm font-sans">
-        <thead>
-          <tr className="text-left text-muted border-b border-green-800/10">
-            <th className="py-2 pr-4 font-medium">Name</th>
-            <th className="py-2 pr-4 font-medium">Email</th>
-            <th className="py-2 pr-4 font-medium">Role</th>
-            <th className="py-2 pr-4 font-medium">Membership</th>
-            <th className="py-2 pr-4 font-medium">Flags</th>
-            <th className="py-2 font-medium">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {members.map((m) => (
-            <tr key={m.user_id} className="border-b border-green-800/[0.06]">
-              <td className="py-2.5 pr-4 text-green-900">{m.display_name || `${m.first_name ?? ''} ${m.last_name ?? ''}`.trim() || '—'}</td>
-              <td className="py-2.5 pr-4 text-secondary">{m.email}</td>
-              <td className="py-2.5 pr-4">
-                {isAdmin ? (
-                  <select
-                    className="border border-green-800/20 px-2 py-1 text-xs bg-white"
-                    value={(m.role as MemberRole) ?? 'USER'}
-                    onChange={(e) => act(() => adminSetRole(m.user_id, e.target.value as MemberRole))}
-                    aria-label="Role"
-                  >
-                    <option value="USER">Client</option>
-                    <option value="MANAGER">Instructor</option>
-                    <option value="ADMIN">Admin</option>
-                    {isSuperAdmin && <option value="SUPER_ADMIN">Super admin</option>}
-                  </select>
-                ) : (
-                  <span className="text-xs text-muted">
-                    {(m.role as MemberRole) === 'MANAGER' || (m.role as MemberRole) === 'EMPLOYEE'
-                      ? 'Instructor' : (m.role as MemberRole) === 'ADMIN' ? 'Admin' : 'Client'}
-                  </span>
-                )}
-              </td>
-              <td className="py-2.5 pr-4">
-                <select
-                  className="border border-green-800/20 px-2 py-1 text-xs bg-white"
-                  value={m.membership_status ?? 'none'}
-                  onChange={(e) => act(() => adminUpsertMembership(m.user_id, m.membership_tier ?? 'community', e.target.value))}
-                >
-                  <option value="none">none</option>
-                  <option value="active">active</option>
-                  <option value="paused">paused</option>
-                  <option value="cancelled">cancelled</option>
-                </select>
-              </td>
-              <td className="py-2.5 pr-4 text-xs">
-                {m.is_admin && <span className="text-gold-ink mr-2">admin</span>}
-                {m.is_suspended && <span className="text-red-700">suspended</span>}
-              </td>
-              <td className="py-2.5 flex flex-wrap gap-2">
-                <button type="button" onClick={() => act(() => adminSetSuspended(m.user_id, !m.is_suspended))}
-                  className="text-xs underline text-secondary hover:text-green-800">
-                  {m.is_suspended ? 'Reinstate' : 'Suspend'}
-                </button>
-                <button type="button" onClick={() => act(() => adminSetAdmin(m.user_id, !m.is_admin))}
-                  className="text-xs underline text-secondary hover:text-green-800">
-                  {m.is_admin ? 'Remove admin' : 'Make admin'}
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-// ── Invite tab ────────────────────────────────────────────────────────────────
-const PAYMENT_METHODS = ['Zelle', 'Cash', 'Card', 'Other'];
-
-/** "$500" / "$587.50" for the offering select labels. */
-function formatTierPrice(amount: number | null): string {
-  if (amount == null) return '';
-  return `$${Number(amount).toLocaleString('en-US', {
-    minimumFractionDigits: Number.isInteger(Number(amount)) ? 0 : 2,
-    maximumFractionDigits: 2,
-  })}`;
-}
-
-function InviteTab() {
-  const [email, setEmail] = useState('');
-  const [days, setDays] = useState('7');
-  // Provisioning (what they bought): offeringId '' = plain invite, no purchase.
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [offerings, setOfferings] = useState<Offering[]>([]);
-  const [offeringId, setOfferingId] = useState('');
-  const [markPaid, setMarkPaid] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState('Zelle');
-  const [notes, setNotes] = useState('');
-  const [result, setResult] = useState<{ url: string; emailed: boolean; offeringLabel?: string } | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [working, setWorking] = useState(false);
-
-  // Flat riding-lesson offerings (name + price) for the "what did they buy?" select.
-  useEffect(() => {
-    fetchOfferings()
-      .then((all) => setOfferings(all.filter((o) => o.horse_included !== null)))
-      .catch(() => setOfferings([]));
-  }, []);
-
-  const provisioning = offeringId !== '';
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    setWorking(true); setError(null); setResult(null);
-    try {
-      const r = await adminSendInvitation({
-        email: email.trim(),
-        expiresInDays: Number(days) || 7,
-        ...(provisioning
-          ? {
-              firstName: firstName.trim(),
-              lastName: lastName.trim(),
-              offeringId,
-              markPaid,
-              ...(markPaid ? { paymentMethod } : {}),
-              ...(notes.trim() ? { notes: notes.trim() } : {}),
-            }
-          : {}),
-      });
-      setResult({ url: r.registerUrl, emailed: r.emailed, offeringLabel: r.offeringLabel });
-      setEmail(''); setFirstName(''); setLastName('');
-      setOfferingId(''); setMarkPaid(false); setNotes('');
-    } catch (err) {
-      setError(toErrorMessage(err, 'Could not send invitation.'));
-    } finally {
-      setWorking(false);
-    }
-  }
-
-  return (
-    <form onSubmit={submit} className="max-w-md">
-      <p className="body-text text-sm mb-5">
-        Create a registration invitation and email it to the person. If they've already paid for
-        lessons, choose what they bought — their account will open straight into onboarding with
-        the paperwork ready to sign.
-      </p>
-      <Field label="Email">
-        <input type="email" required className="form-input" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="her@email.com" />
-      </Field>
-      <div className="grid grid-cols-2 gap-4">
-        <Field label={provisioning ? 'First name' : 'First name (optional)'}>
-          <input className="form-input" required={provisioning} value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" />
-        </Field>
-        <Field label={provisioning ? 'Last name' : 'Last name (optional)'}>
-          <input className="form-input" required={provisioning} value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last name" />
-        </Field>
-      </div>
-      <Field label="What did they buy?">
-        <select className="form-input" value={offeringId} onChange={(e) => setOfferingId(e.target.value)}>
-          <option value="">No purchase (plain invite)</option>
-          {offerings.map((o) => (
-            <option key={o.id} value={o.id}>
-              {o.name} — {formatTierPrice(o.price_amount)}
-            </option>
-          ))}
-        </select>
-      </Field>
-      {provisioning && (
-        <>
-          <label className="flex items-center gap-2 mb-4 text-sm text-secondary">
-            <input type="checkbox" checked={markPaid} onChange={(e) => setMarkPaid(e.target.checked)} className="accent-green-800" />
-            Already paid
-          </label>
-          {markPaid && (
-            <Field label="Payment method">
-              <select className="form-input" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
-                {PAYMENT_METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
-              </select>
-            </Field>
-          )}
-          <Field label="Notes (optional)">
-            <textarea rows={2} className="form-input resize-none" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. paid via Zelle 7/1, starts next week" />
-          </Field>
-        </>
-      )}
-      <Field label="Expires in (days)">
-        <input type="number" min={1} className="form-input" value={days} onChange={(e) => setDays(e.target.value)} />
-      </Field>
-      <button
-        type="submit"
-        disabled={working || !email.trim() || (provisioning && (!firstName.trim() || !lastName.trim()))}
-        className="btn-primary"
-      >
-        {working ? 'Sending…' : 'Create & send invitation'}
-      </button>
-
-      {error && <p className="form-error mt-4" role="alert">{error}</p>}
-      {result && (
-        <div className="bg-green-50 border border-green-200 p-4 mt-5 text-sm">
-          <p className="text-green-800 mb-2">
-            {result.offeringLabel ? `${result.offeringLabel} provisioned — invitation created` : 'Invitation created'}
-            {result.emailed ? ' and emailed.' : '. (Email provider not configured — copy the link below.)'}
-          </p>
-          <code className="block break-all text-xs text-green-900 bg-white border border-green-200 p-2">{result.url}</code>
+    <div className="flex flex-col gap-1.5">
+      {rows.map((r) => (
+        <div key={r.key} className="flex items-center justify-between gap-3 bg-white border border-green-800/10 rounded-lg px-4 py-2.5">
+          <span className="min-w-0">
+            <span className="block text-sm text-green-900 truncate">{r.main}</span>
+            <span className="block text-xs text-muted">{r.sub}</span>
+          </span>
+          {r.badge && <span className="text-[10.5px] font-sans uppercase px-2 py-0.5 rounded-full bg-cream-100 text-secondary shrink-0">{r.badge}</span>}
         </div>
-      )}
-    </form>
+      ))}
+    </div>
   );
 }
 
-// ── Simple "create" forms ─────────────────────────────────────────────────────
-function AnnounceTab() {
-  const [title, setTitle] = useState(''); const [body, setBody] = useState(''); const [pinned, setPinned] = useState(false);
-  const [done, setDone] = useState(false); const [working, setWorking] = useState(false);
-  async function submit(e: React.FormEvent) {
-    e.preventDefault(); setWorking(true); setDone(false);
-    try { await adminCreateAnnouncement({ title: title.trim(), body: body.trim(), pinned }); setTitle(''); setBody(''); setPinned(false); setDone(true); }
-    finally { setWorking(false); }
-  }
+function TabCreate({ label, onClick }: { label: string; onClick: () => void }) {
   return (
-    <form onSubmit={submit} className="max-w-xl">
-      <Field label="Title"><input className="form-input" value={title} onChange={(e) => setTitle(e.target.value)} required /></Field>
-      <Field label="Body"><textarea rows={5} className="form-input resize-none" value={body} onChange={(e) => setBody(e.target.value)} required /></Field>
-      <label className="flex items-center gap-2 mb-4 text-sm text-secondary">
-        <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} className="accent-green-800" /> Pin to top
-      </label>
-      <button type="submit" disabled={working} className="btn-primary">{working ? 'Posting…' : 'Post announcement'}</button>
-      {done && <p className="text-xs text-green-700 mt-3">Posted.</p>}
-    </form>
+    <button type="button" onClick={onClick}
+      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-green-800 text-white text-xs font-medium hover:bg-green-700 focus-ring mb-3">
+      <Plus size={13} /> {label}
+    </button>
   );
 }
 
-function EventsTab() {
-  const [f, setF] = useState({ title: '', description: '', starts_at: '', ends_at: '', location: '', capacity: '' });
-  const [done, setDone] = useState(false); const [working, setWorking] = useState(false);
-  const upd = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
-  async function submit(e: React.FormEvent) {
-    e.preventDefault(); setWorking(true); setDone(false);
-    try {
-      await adminCreateEvent({
-        title: f.title.trim(), description: f.description.trim() || undefined,
-        starts_at: new Date(f.starts_at).toISOString(),
-        ends_at: f.ends_at ? new Date(f.ends_at).toISOString() : undefined,
-        location: f.location.trim() || undefined,
-        capacity: f.capacity ? Number(f.capacity) : undefined,
-      });
-      setF({ title: '', description: '', starts_at: '', ends_at: '', location: '', capacity: '' }); setDone(true);
-    } finally { setWorking(false); }
-  }
+// ── per-tab bodies ────────────────────────────────────────────────────────────
+function OverviewTab({ ov }: { ov: Overview }) {
+  const p = ov.profile;
+  if (!p) return null;
+  const pairs: [string, string][] = [
+    ['Email', p.email], ['Phone', p.phone ?? '—'], ['Mobile', p.mobile ?? '—'],
+    ['WhatsApp', p.whatsapp ?? '—'], ['Riding level', p.riding_level ?? '—'],
+    ['Joined', fmt(p.created_at)],
+    ['Membership', ov.membership ? `${ov.membership.tier ?? 'member'} · ${ov.membership.status ?? '—'}` : 'None'],
+  ];
   return (
-    <form onSubmit={submit} className="max-w-xl">
-      <Field label="Title"><input className="form-input" value={f.title} onChange={(e) => upd('title', e.target.value)} required /></Field>
-      <Field label="Description"><textarea rows={3} className="form-input resize-none" value={f.description} onChange={(e) => upd('description', e.target.value)} /></Field>
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Starts"><input type="datetime-local" className="form-input" value={f.starts_at} onChange={(e) => upd('starts_at', e.target.value)} required /></Field>
-        <Field label="Ends"><input type="datetime-local" className="form-input" value={f.ends_at} onChange={(e) => upd('ends_at', e.target.value)} /></Field>
+    <div>
+      <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2 mb-4">
+        {pairs.map(([k, v]) => (
+          <div key={k} className="flex justify-between gap-3 text-sm border-b border-green-800/[0.06] py-1.5">
+            <span className="text-muted">{k}</span><span className="text-green-900 text-right truncate">{v}</span>
+          </div>
+        ))}
       </div>
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Location"><input className="form-input" value={f.location} onChange={(e) => upd('location', e.target.value)} /></Field>
-        <Field label="Capacity"><input type="number" className="form-input" value={f.capacity} onChange={(e) => upd('capacity', e.target.value)} /></Field>
+      <div className="grid grid-cols-4 gap-2">
+        {Object.entries(ov.counts).map(([k, v]) => (
+          <div key={k} className="text-center border border-green-800/10 rounded-lg py-2.5 bg-white">
+            <p className="font-serif text-xl text-green-800">{v}</p>
+            <p className="text-[10px] tracking-wide uppercase text-muted font-semibold">{k}</p>
+          </div>
+        ))}
       </div>
-      <button type="submit" disabled={working} className="btn-primary">{working ? 'Creating…' : 'Create event'}</button>
-      {done && <p className="text-xs text-green-700 mt-3">Created.</p>}
-    </form>
+      {p.bio && <p className="body-text text-sm text-secondary mt-4 whitespace-pre-line">{p.bio}</p>}
+    </div>
   );
 }
 
-function ContentTab() {
-  const [f, setF] = useState({ title: '', slug: '', excerpt: '', body: '', cover_url: '', published: true });
-  const [done, setDone] = useState(false); const [working, setWorking] = useState(false);
-  const upd = (k: string, v: string | boolean) => setF((p) => ({ ...p, [k]: v }));
-  async function submit(e: React.FormEvent) {
-    e.preventDefault(); setWorking(true); setDone(false);
-    try {
-      await adminCreateContentPost({
-        title: f.title.trim(),
-        slug: f.slug.trim() || f.title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
-        excerpt: f.excerpt.trim() || undefined, body: f.body, cover_url: f.cover_url.trim() || undefined,
-        published: f.published,
-      });
-      setF({ title: '', slug: '', excerpt: '', body: '', cover_url: '', published: true }); setDone(true);
-    } finally { setWorking(false); }
-  }
-  return (
-    <form onSubmit={submit} className="max-w-xl">
-      <Field label="Title"><input className="form-input" value={f.title} onChange={(e) => upd('title', e.target.value)} required /></Field>
-      <Field label="Slug (optional)"><input className="form-input" value={f.slug} onChange={(e) => upd('slug', e.target.value)} placeholder="auto from title" /></Field>
-      <Field label="Excerpt"><input className="form-input" value={f.excerpt} onChange={(e) => upd('excerpt', e.target.value)} /></Field>
-      <Field label="Cover image URL"><input className="form-input" value={f.cover_url} onChange={(e) => upd('cover_url', e.target.value)} /></Field>
-      <Field label="Body"><textarea rows={8} className="form-input resize-none" value={f.body} onChange={(e) => upd('body', e.target.value)} required /></Field>
-      <label className="flex items-center gap-2 mb-4 text-sm text-secondary">
-        <input type="checkbox" checked={f.published} onChange={(e) => upd('published', e.target.checked)} className="accent-green-800" /> Publish now
-      </label>
-      <button type="submit" disabled={working} className="btn-primary">{working ? 'Saving…' : 'Save article'}</button>
-      {done && <p className="text-xs text-green-700 mt-3">Saved.</p>}
-    </form>
-  );
-}
-
-function ResourcesTab() {
-  const [f, setF] = useState({ title: '', description: '', kind: 'link', url: '', storage_path: '' });
-  const [done, setDone] = useState(false); const [working, setWorking] = useState(false);
-  const upd = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
-  async function submit(e: React.FormEvent) {
-    e.preventDefault(); setWorking(true); setDone(false);
-    try {
-      await adminCreateResource({
-        title: f.title.trim(), description: f.description.trim() || undefined,
-        kind: f.kind as 'file' | 'video' | 'link',
-        url: f.url.trim() || undefined, storage_path: f.storage_path.trim() || undefined,
-      });
-      setF({ title: '', description: '', kind: 'link', url: '', storage_path: '' }); setDone(true);
-    } finally { setWorking(false); }
-  }
-  return (
-    <form onSubmit={submit} className="max-w-xl">
-      <Field label="Title"><input className="form-input" value={f.title} onChange={(e) => upd('title', e.target.value)} required /></Field>
-      <Field label="Description"><input className="form-input" value={f.description} onChange={(e) => upd('description', e.target.value)} /></Field>
-      <Field label="Kind">
-        <select className="form-input" value={f.kind} onChange={(e) => upd('kind', e.target.value)}>
-          <option value="link">Link</option><option value="video">Video</option><option value="file">File (Storage)</option>
-        </select>
-      </Field>
-      {f.kind === 'file' ? (
-        <Field label="Storage path (in 'members' bucket)"><input className="form-input" value={f.storage_path} onChange={(e) => upd('storage_path', e.target.value)} placeholder="guides/seat-basics.pdf" /></Field>
-      ) : (
-        <Field label="URL"><input className="form-input" value={f.url} onChange={(e) => upd('url', e.target.value)} placeholder="https://…" /></Field>
-      )}
-      <button type="submit" disabled={working} className="btn-primary">{working ? 'Adding…' : 'Add resource'}</button>
-      {done && <p className="text-xs text-green-700 mt-3">Added.</p>}
-    </form>
-  );
-}
-
-/** ROLE ARCHITECTURE — the admin's control over what instructors see. A grant
- *  adds one management surface to the instructor rail: for EVERY instructor
- *  (org-wide) or for one account. Sensitive writes stay admin-gated server-side;
- *  a grant opens the surface. */
-function InstructorAccessTab() {
-  const [grants, setGrants] = useState<SurfaceGrant[]>([]);
-  const [instructors, setInstructors] = useState<AdminMemberRow[]>([]);
-  const [who, setWho] = useState<string>('');        // '' = every instructor
+function BillingTab({ clientId }: { clientId: string | null }) {
+  const [rows, setRows] = useState<BillingSchedule[]>([]);
+  const [creating, setCreating] = useState(false);
+  const [amount, setAmount] = useState('');
+  const [mode, setMode] = useState<BillingMode>('request');
+  const [cadence, setCadence] = useState<BillingCadence>('monthly');
+  const [start, setStart] = useState('');
   const [err, setErr] = useState<string | null>(null);
 
-  const load = () => {
-    listAllGrants().then(setGrants).catch(() => setErr('Could not load grants.'));
-    adminListMembers()
-      .then((rows) => setInstructors(rows.filter((r) =>
-        (r.role as MemberRole) === 'MANAGER' || (r.role as MemberRole) === 'EMPLOYEE')))
+  const load = useCallback(() => {
+    listBillingSchedules()
+      .then((all) => setRows(clientId ? all.filter((s) => s.client_id === clientId) : []))
       .catch(() => {});
-  };
-  useEffect(load, []);
+  }, [clientId]);
+  useEffect(load, [load]);
 
-  const scopeGrants = grants.filter((g) => (who ? g.user_id === who : g.user_id === null));
-  const has = (key: string) => scopeGrants.some((g) => g.nav_key === key);
+  if (!clientId) return <p className="text-sm text-muted">No client record yet — billing starts with their first purchase.</p>;
 
-  async function toggle(key: string) {
+  async function create() {
     setErr(null);
+    if (!amount || !start) { setErr('Amount and start date are required.'); return; }
     try {
-      const existing = scopeGrants.find((g) => g.nav_key === key);
-      if (existing) await removeGrant(existing.id);
-      else await addGrant(key, who || null);
-      load();
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not update the grant.');
-    }
+      await createBillingSchedule({ client_id: clientId!, mode, cadence, amount: Number(amount), start_date: start });
+      setCreating(false); setAmount(''); setStart(''); load();
+    } catch { setErr('Could not create the schedule.'); }
   }
 
   return (
-    <div className="max-w-2xl">
-      <p className="body-text text-sm text-muted mb-4">
-        Instructors always have the servicing set (intake, contacts, lessons,
-        availability, horses, engagements, documents). Add management surfaces
-        here — for every instructor, or for one account.
-      </p>
-      <div className="mb-4">
-        <label className="form-label" htmlFor="grant-scope">Applies to</label>
-        <select id="grant-scope" className="border border-green-800/20 px-3 py-2 text-sm bg-white"
-          value={who} onChange={(e) => setWho(e.target.value)}>
-          <option value="">Every instructor</option>
-          {instructors.map((i) => (
-            <option key={i.user_id} value={i.user_id}>
-              {i.display_name || `${i.first_name ?? ''} ${i.last_name ?? ''}`.trim() || i.email}
-            </option>
-          ))}
-        </select>
-      </div>
-      {err && <p role="alert" className="form-error mb-3">{err}</p>}
-      <div className="flex flex-col gap-2">
-        {GRANTABLE_SURFACES.map((sfc) => (
-          <label key={sfc.key}
-            className="flex items-center justify-between bg-white border border-green-800/10 px-4 py-3">
-            <span className="text-sm text-green-900">{sfc.label}</span>
-            <input type="checkbox" className="accent-green-700 w-4 h-4"
-              checked={has(sfc.key)} onChange={() => void toggle(sfc.key)} />
-          </label>
-        ))}
-      </div>
-      {who && (
-        <p className="text-xs text-muted mt-3">
-          Account-specific grants stack on top of the every-instructor grants.
-        </p>
+    <div>
+      <TabCreate label="New billing schedule" onClick={() => setCreating((v) => !v)} />
+      {creating && (
+        <div className="bg-white border border-green-800/10 rounded-lg p-4 mb-3 grid sm:grid-cols-4 gap-3">
+          <input type="number" placeholder="Amount $" className="form-input" value={amount} onChange={(e) => setAmount(e.target.value)} />
+          <select className="form-input" value={mode} onChange={(e) => setMode(e.target.value as BillingMode)}>
+            <option value="request">We request</option><option value="self_recurring">They pay recurring</option>
+          </select>
+          <select className="form-input" value={cadence} onChange={(e) => setCadence(e.target.value as BillingCadence)}>
+            <option value="monthly">Monthly</option><option value="weekly">Weekly</option>
+          </select>
+          <input type="date" className="form-input" value={start} onChange={(e) => setStart(e.target.value)} />
+          {err && <p className="form-error text-xs sm:col-span-3">{err}</p>}
+          <button type="button" className="btn-primary text-xs sm:col-start-4" onClick={() => void create()}>Create</button>
+        </div>
       )}
+      <RowList empty="No billing schedules."
+        rows={rows.map((s) => ({
+          key: s.id,
+          main: `$${Number(s.amount).toFixed(2)} ${s.cadence} · ${s.mode === 'request' ? 'we request' : 'self-recurring'}`,
+          sub: `next ${nextDue(s.start_date, s.cadence).toLocaleDateString()} · reminders ${s.reminders_on ? 'on' : 'off'}${s.active ? '' : ' · inactive'}`,
+        }))} />
     </div>
   );
 }
 
+function RpcListTab({
+  userId, rpc, map, empty, create,
+}: {
+  userId: string;
+  rpc: string;
+  map: (r: Record<string, unknown>) => { key: string; main: string; sub: string; badge?: string };
+  empty: string;
+  create?: { label: string; onClick: () => void };
+}) {
+  const [rows, setRows] = useState<Record<string, unknown>[] | null>(null);
+  useEffect(() => {
+    supabase.rpc(rpc, { p_user_id: userId })
+      .then(({ data, error }) => setRows(error ? [] : ((data as Record<string, unknown>[]) ?? [])));
+  }, [rpc, userId]);
+  return (
+    <div>
+      {create && <TabCreate label={create.label} onClick={create.onClick} />}
+      {rows === null ? <p className="text-sm text-muted">Loading…</p>
+        : <RowList empty={empty} rows={rows.map(map)} />}
+    </div>
+  );
+}
+
+function QueryListTab({
+  fetcher, empty, create,
+}: {
+  fetcher: () => Promise<{ key: string; main: string; sub: string; badge?: string }[]>;
+  empty: string;
+  create?: { label: string; onClick: () => void };
+}) {
+  const [rows, setRows] = useState<{ key: string; main: string; sub: string; badge?: string }[] | null>(null);
+  useEffect(() => { fetcher().then(setRows).catch(() => setRows([])); }, [fetcher]);
+  return (
+    <div>
+      {create && <TabCreate label={create.label} onClick={create.onClick} />}
+      {rows === null ? <p className="text-sm text-muted">Loading…</p> : <RowList empty={empty} rows={rows} />}
+    </div>
+  );
+}
+
+function LoginTab({ ov }: { ov: Overview }) {
+  const l = ov.login;
+  if (!l) return <p className="text-sm text-muted">No login record.</p>;
+  const pairs: [string, string][] = [
+    ['Sign-in method', l.providers.length ? l.providers.join(', ') : 'password'],
+    ['Last active', fmtTs(l.last_sign_in_at)],
+    ['Account created', fmt(l.created_at)],
+    ['Email verified', l.email_confirmed_at ? fmt(l.email_confirmed_at) : 'Not yet'],
+  ];
+  return (
+    <div className="max-w-md">
+      {pairs.map(([k, v]) => (
+        <div key={k} className="flex justify-between gap-3 text-sm border-b border-green-800/[0.06] py-2">
+          <span className="text-muted">{k}</span><span className="text-green-900">{v}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── the page ─────────────────────────────────────────────────────────────────
+type SortKey = 'name' | 'joined' | 'status';
+
 export default function Admin() {
-  const { isAdmin } = useAuth();
-  useDocumentTitle('Admin');
-  const [tab, setTab] = useState<Tab>('members');
+  useDocumentTitle('Clients');
+  const navigate = useNavigate();
+  const [members, setMembers] = useState<AdminMemberRow[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [q, setQ] = useState('');
+  const [sortKey, setSortKey] = useState<SortKey>('joined');
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [ov, setOv] = useState<Overview | null>(null);
+  const [tab, setTab] = useState<TabId>('overview');
+  const [tabPage, setTabPage] = useState(0);
+
+  const load = useCallback(() => {
+    adminListMembers()
+      // CLIENT accounts only — staff live on Team & access (Settings)
+      .then((rows) => setMembers(rows.filter((r) => (r.role ?? 'USER') === 'USER')))
+      .catch(() => setError('Could not load clients.'));
+  }, []);
+  useEffect(load, [load]);
+
+  // isolated-account overview
+  useEffect(() => {
+    if (!selectedId) { setOv(null); return; }
+    setOv(null); setTab('overview'); setTabPage(0);
+    supabase.rpc('admin_client_overview', { p_user_id: selectedId })
+      .then(({ data, error: e }) => {
+        if (e) setError(e.message);
+        else setOv(data as Overview);
+      });
+  }, [selectedId]);
+
+  const visible = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    const filtered = members.filter((m) =>
+      !needle
+      || memberName(m).toLowerCase().includes(needle)
+      || (m.email ?? '').toLowerCase().includes(needle));
+    return [...filtered].sort((a, b) => {
+      if (sortKey === 'name') return memberName(a).localeCompare(memberName(b));
+      if (sortKey === 'status') return Number(b.membership_status === 'active') - Number(a.membership_status === 'active');
+      return new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime();
+    });
+  }, [members, q, sortKey]);
+
+  const selected = members.find((m) => m.user_id === selectedId) ?? null;
+  const clientId = ov?.profile?.client_id ?? null;
+  const tabPages = Math.ceil(TABS.length / TAB_PAGE_SIZE);
+
+  async function toggleSuspend() {
+    if (!selected) return;
+    try {
+      await adminSetSuspended(selected.user_id, !selected.is_suspended);
+      load();
+    } catch { setError('Could not update the account.'); }
+  }
+
+  // ── stable fetchers for query tabs ──
+  const fetchOrders = useCallback(async () => {
+    const { data } = await supabase.from('orders')
+      .select('id, status, total, created_at').eq('user_id', selectedId!).order('created_at', { ascending: false });
+    return (data ?? []).map((o) => ({
+      key: o.id as string,
+      main: `$${Number(o.total ?? 0).toFixed(2)}`,
+      sub: fmtTs(o.created_at as string), badge: String(o.status),
+    }));
+  }, [selectedId]);
+  const fetchPayments = useCallback(async () => {
+    const { data: orders } = await supabase.from('orders').select('id').eq('user_id', selectedId!);
+    const ids = (orders ?? []).map((o) => o.id);
+    if (ids.length === 0) return [];
+    const { data } = await supabase.from('payments')
+      .select('id, method, amount, status, reference_code, created_at')
+      .in('order_id', ids).order('created_at', { ascending: false });
+    return (data ?? []).map((p) => ({
+      key: p.id as string,
+      main: `$${Number(p.amount).toFixed(2)} · ${p.method}${p.reference_code ? ` · ${p.reference_code}` : ''}`,
+      sub: fmtTs(p.created_at as string), badge: String(p.status),
+    }));
+  }, [selectedId]);
+  const fetchActivity = useCallback(async () => {
+    const { data } = await supabase.from('audit_logs')
+      .select('id, occurred_at, action, table_name')
+      .eq('actor_user_id', selectedId!).order('occurred_at', { ascending: false }).limit(50);
+    return (data ?? []).map((a) => ({
+      key: a.id as string, main: String(a.action),
+      sub: `${a.table_name ?? ''} · ${fmtTs(a.occurred_at as string)}`,
+    }));
+  }, [selectedId]);
+  const fetchPosts = useCallback(async () => {
+    const { data } = await supabase.from('feed_posts')
+      .select('id, post_type, body, published, pulled_down, created_at')
+      .eq('author_id', selectedId!).order('created_at', { ascending: false });
+    return (data ?? []).map((p) => ({
+      key: p.id as string,
+      main: (p.body as string | null)?.slice(0, 80) || `(${p.post_type} post)`,
+      sub: fmtTs(p.created_at as string),
+      badge: p.pulled_down ? 'pulled' : p.published ? 'live' : 'scheduled',
+    }));
+  }, [selectedId]);
 
   return (
-    <div className="max-w-5xl">
-      <p className="eyebrow mb-2">Admin</p>
-      <h1 className="heading-section text-green-800 mb-8">Manage the community.</h1>
-
-      <div className="flex flex-wrap gap-2 mb-8 border-b border-green-800/10">
-        {TABS.filter((t) => isAdmin || t.id === 'members' || t.id === 'invite').map((t) => (
-          <button key={t.id} type="button" onClick={() => setTab(t.id)}
-            className={`px-4 py-2 text-sm font-sans -mb-px border-b-2 transition-colors focus-ring ${
-              tab === t.id ? 'border-green-800 text-green-800 font-medium' : 'border-transparent text-muted hover:text-green-800'
-            }`}>
-            {t.label}
+    <div className="max-w-4xl">
+      <div className="flex items-center justify-between mb-1">
+        <h1 className="font-serif text-2xl text-green-900">Clients</h1>
+        {!selected && (
+          <button type="button" onClick={() => navigate('/app/ops/accounts/new')}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-green-800 text-white text-sm font-medium hover:bg-green-700 focus-ring">
+            <Plus size={15} /> New client
           </button>
-        ))}
+        )}
       </div>
+      <p className="text-sm text-green-800/70 mb-5">
+        {selected ? 'Everything about this account, in one place.' : 'Every client account — click one to open it.'}
+      </p>
 
-      {tab === 'members' && <MembersTab />}
-      {tab === 'access' && <InstructorAccessTab />}
-      {tab === 'invite' && <InviteTab />}
-      {tab === 'announce' && <AnnounceTab />}
-      {tab === 'events' && <EventsTab />}
-      {tab === 'content' && <ContentTab />}
-      {tab === 'resources' && <ResourcesTab />}
+      {error && <p role="alert" className="form-error mb-4">{error}</p>}
+
+      {/* LIST state */}
+      {!selected && (
+        <>
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            <div className="relative flex-1 min-w-[220px]">
+              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+              <input className="form-input pl-9 w-full" placeholder="Search name or email…"
+                value={q} onChange={(e) => setQ(e.target.value)} />
+            </div>
+            <div className="flex gap-1.5">
+              {([['joined', 'Newest'], ['name', 'A–Z'], ['status', 'Active first']] as [SortKey, string][]).map(([k, label]) => (
+                <button key={k} type="button" onClick={() => setSortKey(k)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-sans ${sortKey === k ? 'bg-green-800 text-white' : 'bg-green-800/10 text-green-800 hover:bg-green-800/20'}`}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            {visible.map((m) => (
+              <button key={m.user_id} type="button" onClick={() => setSelectedId(m.user_id)}
+                className="w-full flex items-center justify-between gap-3 bg-white border border-green-800/10 rounded-lg px-4 py-3 text-left hover:border-green-800/30 focus-ring">
+                <span className="min-w-0 flex items-center gap-3">
+                  <span className="w-9 h-9 rounded-full bg-green-800 text-white grid place-items-center text-sm font-sans shrink-0">
+                    {(memberName(m)[0] || 'C').toUpperCase()}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-medium text-green-900 truncate">{memberName(m)}</span>
+                    <span className="block text-xs text-muted truncate">{m.email}</span>
+                  </span>
+                </span>
+                <span className="text-right shrink-0">
+                  <span className={`block text-[10.5px] font-sans uppercase ${m.membership_status === 'active' ? 'text-green-700' : 'text-muted'}`}>
+                    {m.membership_status === 'active' ? 'Active' : 'Inactive'}
+                    {m.is_suspended ? ' · suspended' : ''}
+                  </span>
+                  <span className="block text-[11px] text-muted">joined {fmt(m.created_at)}</span>
+                </span>
+              </button>
+            ))}
+            {visible.length === 0 && <p className="text-sm text-muted py-6 text-center">No clients match.</p>}
+          </div>
+        </>
+      )}
+
+      {/* ISOLATED state */}
+      {selected && (
+        <div>
+          <button type="button" onClick={() => setSelectedId(null)}
+            className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-green-800 mb-3 focus-ring rounded-md">
+            <ArrowLeft size={14} /> All clients
+          </button>
+
+          {/* the selected row + profile block */}
+          <div className="bg-white border border-green-800/10 rounded-xl p-4 mb-4">
+            <div className="flex items-center justify-between gap-3">
+              <span className="flex items-center gap-3 min-w-0">
+                <span className="w-11 h-11 rounded-full bg-green-800 text-white grid place-items-center font-sans shrink-0">
+                  <UserRound size={19} />
+                </span>
+                <span className="min-w-0">
+                  <span className="block font-serif text-lg text-green-900 leading-tight truncate">{memberName(selected)}</span>
+                  <span className="block text-xs text-muted truncate">{selected.email} · Client{selected.is_suspended ? ' · SUSPENDED' : ''}</span>
+                </span>
+              </span>
+              <button type="button" onClick={() => void toggleSuspend()}
+                className={`px-3.5 py-2 rounded-lg text-xs font-medium focus-ring shrink-0 ${
+                  selected.is_suspended
+                    ? 'bg-green-800 text-white hover:bg-green-700'
+                    : 'border border-red-300 text-red-700 hover:bg-red-50'
+                }`}>
+                {selected.is_suspended ? 'Reinstate' : 'Suspend'}
+              </button>
+            </div>
+          </div>
+
+          {/* sliding tab rail: pages of tabs, more → slide, back appears left */}
+          <div className="flex items-center gap-1 mb-4">
+            {tabPage > 0 && (
+              <button type="button" aria-label="Previous tabs" onClick={() => setTabPage((p) => p - 1)}
+                className="p-1.5 rounded-md text-secondary hover:text-green-800 focus-ring shrink-0">
+                <ChevronLeft size={16} />
+              </button>
+            )}
+            <div className="overflow-hidden flex-1">
+              <div className="flex gap-1.5 transition-transform duration-300 ease-out"
+                style={{ transform: `translateX(-${tabPage * 100}%)` }}>
+                {Array.from({ length: tabPages }, (_, page) => (
+                  <div key={page} className="flex gap-1.5 min-w-full">
+                    {TABS.slice(page * TAB_PAGE_SIZE, (page + 1) * TAB_PAGE_SIZE).map((t) => (
+                      <button key={t.id} type="button" onClick={() => setTab(t.id)}
+                        className={`px-3.5 py-1.5 rounded-full text-[12.5px] font-sans whitespace-nowrap focus-ring ${
+                          tab === t.id ? 'bg-green-800 text-white' : 'bg-green-800/10 text-green-800 hover:bg-green-800/20'
+                        }`}>
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+            {tabPage < tabPages - 1 && (
+              <button type="button" aria-label="More tabs" onClick={() => setTabPage((p) => p + 1)}
+                className="inline-flex items-center gap-0.5 p-1.5 rounded-md text-secondary hover:text-green-800 text-xs focus-ring shrink-0">
+                more <ChevronRight size={14} />
+              </button>
+            )}
+          </div>
+
+          {/* tab body */}
+          <div className="min-h-[200px]">
+            {!ov && <p className="text-sm text-muted">Loading account…</p>}
+            {ov && tab === 'overview' && <OverviewTab ov={ov} />}
+            {ov && tab === 'billing' && <BillingTab clientId={clientId} />}
+            {ov && tab === 'bookings' && (
+              <RpcListTab userId={selected.user_id} rpc="admin_client_bookings" empty="No lessons booked."
+                create={{ label: 'Schedule a lesson', onClick: () => navigate('/app/ops/lessons/sessions') }}
+                map={(r) => ({
+                  key: String(r.id),
+                  main: fmtTs(r.starts_at as string),
+                  sub: (r.location as string) || '—', badge: String(r.status),
+                })} />
+            )}
+            {ov && tab === 'documents' && (
+              <RpcListTab userId={selected.user_id} rpc="admin_client_documents" empty="No documents."
+                create={{ label: 'New contract', onClick: () => navigate('/app/ops/contracts/new') }}
+                map={(r) => ({
+                  key: String(r.id),
+                  main: String(r.title ?? 'Document'),
+                  sub: fmtTs(r.created_at as string),
+                  badge: String(r.workflow_state ?? r.status),
+                })} />
+            )}
+            {ov && tab === 'orders' && (
+              <QueryListTab fetcher={fetchOrders} empty="No orders." />
+            )}
+            {ov && tab === 'payments' && (
+              <QueryListTab fetcher={fetchPayments} empty="No payments." />
+            )}
+            {ov && tab === 'activity' && (
+              <QueryListTab fetcher={fetchActivity} empty="No recorded activity." />
+            )}
+            {ov && tab === 'posts' && (
+              <QueryListTab fetcher={fetchPosts} empty="No posts." />
+            )}
+            {ov && tab === 'messages' && (
+              <RpcListTab userId={selected.user_id} rpc="admin_client_messages" empty="No messages."
+                create={{ label: 'Message them', onClick: () => navigate(`/app/messages/${selected.user_id}`) }}
+                map={(r) => ({
+                  key: String(r.id),
+                  main: String(r.body ?? '').slice(0, 100),
+                  sub: fmtTs(r.created_at as string),
+                  badge: r.sender_id === selected.user_id ? 'sent' : 'received',
+                })} />
+            )}
+            {ov && tab === 'login' && <LoginTab ov={ov} />}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

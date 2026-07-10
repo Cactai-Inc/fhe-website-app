@@ -128,6 +128,7 @@ export default function ContractPage() {
   const [note, setNote] = useState<string | null>(null);
   const [signName, setSignName] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState('');
   const [crFieldKey, setCrFieldKey] = useState<string | null>(null);
   const [crText, setCrText] = useState('');
   const [showBody, setShowBody] = useState(false);
@@ -153,6 +154,10 @@ export default function ContractPage() {
   const iSigned = (detail?.signatures ?? []).some(
     (s) => s.signed_at && myRoles.includes(s.party_role));
   const counterpartySigned = (detail?.signatures ?? []).some((s) => s.signed_at);
+  // the seats an outside party can be invited into (not mine, not the company's)
+  const invitableRoles = Array.from(new Set((detail?.signatures ?? [])
+    .map((s) => s.party_role)
+    .filter((r) => !myRoles.includes(r) && r !== 'FHE' && r !== 'COMPANY')));
 
   const sections = useMemo(() => {
     const by = new Map<string, ContractField[]>();
@@ -233,16 +238,24 @@ export default function ContractPage() {
               onChange={(e) => void act(() => setRecipientEditing(id!, e.target.checked))} />
             Counterparty may suggest changes
           </label>
-          <div className="flex items-center gap-2 ml-auto">
+          <div className="flex items-center gap-2 ml-auto flex-wrap">
             <input type="email" placeholder="counterparty@email.com" value={inviteEmail}
               onChange={(e) => setInviteEmail(e.target.value)}
               className="px-3 py-1.5 rounded-lg border border-green-800/15 text-sm focus-ring w-52" />
+            {/* which seat they're invited into — derived from the contract's parties */}
+            <select value={inviteRole || invitableRoles[0] || ''} aria-label="Invite as"
+              onChange={(e) => setInviteRole(e.target.value)}
+              className="px-2 py-1.5 rounded-lg border border-green-800/15 text-sm bg-white focus-ring">
+              {(invitableRoles.length ? invitableRoles : ['LESSOR']).map((r) => (
+                <option key={r} value={r}>{r.charAt(0) + r.slice(1).toLowerCase()}</option>
+              ))}
+            </select>
             <button type="button" className="btn-outline-gold text-xs"
               disabled={!inviteEmail}
               onClick={() => void act(
-                () => inviteCounterparty(id!, 'LESSOR', inviteEmail),
+                () => inviteCounterparty(id!, inviteRole || invitableRoles[0] || 'LESSOR', inviteEmail),
                 'Invitation sent.')}>
-              <Mail size={13} /> Invite Lessor
+              <Mail size={13} /> Invite
             </button>
           </div>
         </div>

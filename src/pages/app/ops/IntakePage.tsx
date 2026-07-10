@@ -63,6 +63,7 @@ import {
   fetchOfferings,
 } from '../../../lib/api';
 import { adminSendInvitation } from '../../../lib/admin';
+import { listSupportRequests, setSupportStatus, type SupportRequest } from '../../../lib/support';
 import type { Offering, ProposedTime } from '../../../lib/types';
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -225,7 +226,9 @@ function inviteFormFor(r: BookingRequest): InviteFormState {
   };
 }
 
-function RequestInbox() {
+function RequestInbox({ openId }: { openId?: string } = {}) {
+  // Inbound focus: auto-open one request when handed an id (runs once per id).
+  const [autoOpened, setAutoOpened] = useState<string | null>(null);
   const [rows, setRows] = useState<BookingRequest[]>([]);
   const [statusFilter, setStatusFilter] = useState<RequestFilter>('new');
   const [selected, setSelected] = useState<BookingRequest | null>(null);
@@ -376,6 +379,13 @@ function RequestInbox() {
       setActionError(toErrorMessage(err, 'Could not schedule the lesson.'));
     }
   };
+
+  useEffect(() => {
+    if (!openId || autoOpened === openId) return;
+    const row = rows.find((r) => r.id === openId);
+    if (row) { setAutoOpened(openId); openRequest(row); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openId, rows, autoOpened]);
 
   const busy = addNote.isPending || contact.isPending || send.isPending;
   const allChecked = LESSON_FIT_CHECKLIST.every((item) => checklist[item.key] === true);
@@ -811,7 +821,8 @@ const COLUMNS: Column<IntakeSubmission>[] = [
   { key: 'status', header: 'Status', render: (r) => <StatusBadge status={r.status} /> },
 ];
 
-function SubmissionsQueue() {
+function SubmissionsQueue({ openId }: { openId?: string } = {}) {
+  const [autoOpenedSub, setAutoOpenedSub] = useState<string | null>(null);
   const [rows, setRows] = useState<IntakeSubmission[]>([]);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('NEW');
   const [selected, setSelected] = useState<IntakeSubmission | null>(null);
@@ -819,6 +830,13 @@ function SubmissionsQueue() {
 
   const load = useAsync(listIntakeSubmissions);
   const toast = useToast();
+
+  useEffect(() => {
+    if (!openId || autoOpenedSub === openId) return;
+    const row = rows.find((r) => r.id === openId);
+    if (row) { setAutoOpenedSub(openId); setActionError(null); setSelected(row); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openId, rows, autoOpenedSub]);
 
   const refresh = useCallback(
     async (filter: StatusFilter) => {
@@ -1038,39 +1056,192 @@ function SubmissionsQueue() {
 // Page shell — Request Inbox first, form submissions alongside
 // ════════════════════════════════════════════════════════════════════════════
 
-type IntakeView = 'requests' | 'submissions';
+// ════════════════════════════════════════════════════════════════════════════
+// INBOUND — one chronological list of everything sent to the company (owner
+// unification): booking/purchase requests (the `requests` lifecycle pipeline),
+// form submissions (the `intake_submissions` lead queue — contact-us et al.),
+// and support requests. The old two-tab duality is gone; the KIND filter is
+// buttons on desktop, a dropdown on mobile. Selecting a booking or form row
+// drops into its existing full workflow (auto-opened); support resolves inline.
+// ════════════════════════════════════════════════════════════════════════════
 
-const VIEWS: { id: IntakeView; label: string }[] = [
-  { id: 'requests', label: 'Booking requests' },
-  { id: 'submissions', label: 'Form submissions' },
+type InboundKind = 'all' | 'booking' | 'form' | 'support';
+
+interface InboundRow {
+  key: string;
+  kind: Exclude<InboundKind, 'all'>;
+  when: string;              // ISO
+  who: string;
+  what: string;
+  status: string;
+  refId: string;
+}
+
+const KIND_LABEL: Record<Exclude<InboundKind, 'all'>, string> = {
+  booking: 'Booking request', form: 'Form submission', support: 'Support',
+};
+const KIND_FILTERS: { id: InboundKind; label: string }[] = [
+  { id: 'all', label: 'All' },
+  { id: 'booking', label: 'Booking requests' },
+  { id: 'form', label: 'Form submissions' },
+  { id: 'support', label: 'Support' },
 ];
 
 export function IntakePage() {
-  useDocumentTitle('Intake');
-  const [view, setView] = useState<IntakeView>('requests');
+  useDocumentTitle('Inbound');
+  const [kind, setKind] = useState<InboundKind>('all');
+  const [rows, setRows] = useState<InboundRow[] | null>(null);
+  const [inboundError, setInboundError] = useState<string | null>(null);
+  // focus = drop into the existing deep workflow for one item
+  const [focus, setFocus] = useState<{ kind: 'booking' | 'form'; id: string } | null>(null);
+  const [supportOpen, setSupportOpen] = useState<string | null>(null);
+  const [supportRows, setSupportRows] = useState<SupportRequest[]>([]);
+
+  const loadInbound = useCallback(async () => {
+    try {
+      const [requests, submissions, support] = await Promise.all([
+        listBookingRequests().catch(() => [] as BookingRequest[]),
+        listIntakeSubmissions().catch(() => [] as IntakeSubmission[]),
+        listSupportRequests().catch(() => [] as SupportRequest[]),
+      ]);
+      setSupportRows(support);
+      const merged: InboundRow[] = [
+        ...requests.map((r) => ({
+          key: `b-${r.id}`, kind: 'booking' as const, when: r.created_at,
+          who: r.contact_name || r.contact_email || 'Visitor',
+          what: (r.request_selections ?? []).map((x) => x.label).filter(Boolean).slice(0, 2).join(', ')
+            || 'Booking request',
+          status: r.status, refId: r.id,
+        })),
+        ...submissions.map((f) => ({
+          key: `f-${f.id}`, kind: 'form' as const, when: f.created_at,
+          who: f.contact_name || f.contact_email || 'Visitor',
+          what: (f.form_key || 'Form').replace(/^INTAKE_/, '').replace(/_/g, ' ').toLowerCase(),
+          status: f.status, refId: f.id,
+        })),
+        ...support.map((t) => ({
+          key: `s-${t.id}`, kind: 'support' as const, when: t.created_at,
+          who: 'Member', what: t.subject, status: t.status, refId: t.id,
+        })),
+      ].sort((a, b) => new Date(b.when).getTime() - new Date(a.when).getTime());
+      setRows(merged);
+      setInboundError(null);
+    } catch {
+      setInboundError('Could not load the inbound queue.');
+    }
+  }, []);
+  useEffect(() => { void loadInbound(); }, [loadInbound]);
+
+  const visible = (rows ?? []).filter((r) => kind === 'all' || r.kind === kind);
+
+  // focused: hand off to the existing full workflow with the row pre-opened
+  if (focus?.kind === 'booking') {
+    return (
+      <div className="max-w-5xl">
+        <button type="button" onClick={() => { setFocus(null); void loadInbound(); }}
+          className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-green-800 mb-4">
+          ← Inbound
+        </button>
+        <h1 className="font-serif text-2xl text-green-900 mb-6">Booking request</h1>
+        <RequestInbox openId={focus.id} />
+      </div>
+    );
+  }
+  if (focus?.kind === 'form') {
+    return (
+      <div className="max-w-5xl">
+        <button type="button" onClick={() => { setFocus(null); void loadInbound(); }}
+          className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-green-800 mb-4">
+          ← Inbound
+        </button>
+        <h1 className="font-serif text-2xl text-green-900 mb-6">Form submission</h1>
+        <SubmissionsQueue openId={focus.id} />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl">
-      <h1 className="font-serif text-2xl text-green-900 mb-6">Intake</h1>
+      <h1 className="font-serif text-2xl text-green-900 mb-1">Inbound</h1>
+      <p className="text-sm text-green-800/70 mb-5">
+        Everything sent to the company — booking requests, form submissions, and
+        support — newest first.
+      </p>
 
-      <div className="flex flex-wrap gap-2 mb-6 border-b border-green-800/10">
-        {VIEWS.map((v) => (
-          <button
-            key={v.id}
-            type="button"
-            onClick={() => setView(v.id)}
-            className={`px-4 py-2 text-sm font-sans -mb-px border-b-2 transition-colors focus-ring ${
-              view === v.id
-                ? 'border-green-800 text-green-800 font-medium'
-                : 'border-transparent text-muted hover:text-green-800'
-            }`}
-          >
-            {v.label}
+      {/* kind filter: buttons on desktop, dropdown on mobile */}
+      <div className="hidden sm:flex flex-wrap gap-2 mb-5" aria-label="Filter inbound by kind">
+        {KIND_FILTERS.map((f) => (
+          <button key={f.id} type="button" aria-pressed={kind === f.id}
+            onClick={() => setKind(f.id)}
+            className={`px-3.5 py-1.5 rounded-full text-sm font-sans transition-colors focus-ring ${
+              kind === f.id ? 'bg-green-800 text-white' : 'bg-green-800/10 text-green-800 hover:bg-green-800/20'
+            }`}>
+            {f.label}
           </button>
         ))}
       </div>
+      <div className="sm:hidden mb-5">
+        <select className="form-input" value={kind} onChange={(e) => setKind(e.target.value as InboundKind)}>
+          {KIND_FILTERS.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}
+        </select>
+      </div>
 
-      {view === 'requests' ? <RequestInbox /> : <SubmissionsQueue />}
+      {inboundError && <p role="alert" className="form-error mb-4">{inboundError}</p>}
+      {rows === null && !inboundError && <p className="text-sm text-green-800/70">Loading…</p>}
+      {rows !== null && visible.length === 0 && (
+        <p className="text-sm text-green-800/70">Nothing inbound{kind !== 'all' ? ' in this kind' : ''}.</p>
+      )}
+
+      <div className="flex flex-col gap-2">
+        {visible.map((r) => (
+          <div key={r.key} className="bg-white border border-green-800/10 rounded-lg">
+            <button type="button"
+              onClick={() => {
+                if (r.kind === 'support') setSupportOpen(supportOpen === r.refId ? null : r.refId);
+                else setFocus({ kind: r.kind, id: r.refId });
+              }}
+              className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left focus-ring rounded-lg">
+              <span className="min-w-0">
+                <span className="block text-sm font-medium text-green-900 truncate">
+                  {r.who} <span className="text-muted font-normal">· {r.what}</span>
+                </span>
+                <span className="block text-xs text-muted mt-0.5">
+                  {new Date(r.when).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                </span>
+              </span>
+              <span className="flex items-center gap-2 shrink-0">
+                <span className="text-[10px] font-sans uppercase tracking-wide px-2 py-0.5 rounded-full bg-cream-100 text-secondary">
+                  {KIND_LABEL[r.kind]}
+                </span>
+                <StatusBadge status={r.status} />
+              </span>
+            </button>
+            {r.kind === 'support' && supportOpen === r.refId && (() => {
+              const t = supportRows.find((x) => x.id === r.refId);
+              if (!t) return null;
+              return (
+                <div className="px-4 pb-3 border-t border-green-800/[0.06]">
+                  <p className="body-text text-sm text-green-900/90 whitespace-pre-line my-2">{t.body}</p>
+                  <div className="flex gap-2">
+                    {t.status !== 'resolved' && (
+                      <button type="button" className="btn-primary text-xs"
+                        onClick={() => void setSupportStatus(t.id, 'resolved').then(loadInbound)}>
+                        Resolve
+                      </button>
+                    )}
+                    {t.status === 'open' && (
+                      <button type="button" className="btn-secondary text-xs"
+                        onClick={() => void setSupportStatus(t.id, 'in_progress').then(loadInbound)}>
+                        Start
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

@@ -77,6 +77,9 @@ import TransactionsPage from './pages/app/ops/TransactionsPage';
 import TransactionDetailPage from './pages/app/ops/TransactionDetailPage';
 // Ops / CRM — Wave-7 (intake, payments review, module hubs + module pages)
 import IntakePage from './pages/app/ops/IntakePage';
+import TeamPage from './pages/app/ops/TeamPage';
+import AccountInvitePage from './pages/app/ops/AccountInvitePage';
+import NewContractPage from './pages/app/ops/NewContractPage';
 import AvailabilityPage from './pages/app/ops/AvailabilityPage';
 import PaymentReviewPage from './pages/app/ops/PaymentReviewPage';
 import BrokerageHubPage from './pages/app/ops/hubs/BrokerageHubPage';
@@ -222,6 +225,10 @@ export function AppRoutes() {
               <Route path="ops/documents" element={<ProtectedRoute requireStaff><DocumentsQueuePage /></ProtectedRoute>} />
               <Route path="ops/documents/:id" element={<ProtectedRoute requireStaff><DocumentViewerPage /></ProtectedRoute>} />
               <Route path="ops/intake" element={<ProtectedRoute requireStaff><IntakePage /></ProtectedRoute>} />
+              <Route path="ops/team" element={<ProtectedRoute requireAdmin><TeamPage /></ProtectedRoute>} />
+              {/* staff can invite clients; the page hides staff account types for non-admins */}
+              <Route path="ops/accounts/new" element={<ProtectedRoute requireStaff><AccountInvitePage /></ProtectedRoute>} />
+              <Route path="ops/contracts/new" element={<ProtectedRoute requireStaff><NewContractPage /></ProtectedRoute>} />
               <Route path="ops/availability" element={<ProtectedRoute requireStaff><AvailabilityPage /></ProtectedRoute>} />
               {/* Total control — admins only */}
               <Route path="ops/moderation" element={<ProtectedRoute grantKey="/app/ops/moderation"><ModerationPage /></ProtectedRoute>} />

@@ -81,17 +81,24 @@ function Card({ c }: { c: FeedCard }) {
     return () => obs.disconnect();
   }, [c.id, c.seen, c.kind]);
 
+  const isAnnouncement = c.kind === 'announcement';
   return (
     <article
       ref={ref}
       onClick={c.to ? () => navigate(c.to!) : undefined}
-      className={`rounded-xl border border-green-800/10 bg-white overflow-hidden mb-4 break-inside-avoid ${c.to ? 'cursor-pointer hover:border-green-800/30 transition-colors' : ''}`}>
+      className={`rounded-xl overflow-hidden mb-4 break-inside-avoid ${
+        isAnnouncement
+          ? 'border-2 border-gold-600/70 bg-gradient-to-br from-gold-50 to-white' // official notice — gold like the notification accent
+          : 'border border-green-800/10 bg-white'
+      } ${c.to ? 'cursor-pointer hover:border-green-800/30 transition-colors' : ''}`}>
       {c.mediaUrl && <MediaBlock url={c.mediaUrl} label={c.kind === 'for_sale' ? (c.saleTag || 'For Sale') : c.kind === 'social' ? 'Social' : undefined} />}
       <div className="px-4 py-3">
         <div className="flex items-center gap-2 mb-1.5">
-          <Avatar initials={c.authorInitials} />
+          {!isAnnouncement && <Avatar initials={c.authorInitials} />}
           <div className="min-w-0">
-            <p className="text-[11.5px] font-medium text-green-900">{c.author || c.title}</p>
+            <p className={`text-[11.5px] font-medium ${isAnnouncement ? 'text-gold-800 uppercase tracking-widest text-[10px] font-semibold' : 'text-green-900'}`}>
+              {isAnnouncement ? 'Announcement' : (c.author || c.title)}
+            </p>
             {c.when && <p className="text-[10px] text-muted">{c.when}</p>}
           </div>
         </div>

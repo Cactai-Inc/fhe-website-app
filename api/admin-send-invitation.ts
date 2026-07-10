@@ -95,6 +95,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (offeringId && (!firstName || !lastName)) {
     return res.status(400).json({ error: 'firstName and lastName required when provisioning a purchase' });
   }
+  // Optional role for the account being provisioned (New account flow).
+  const invitedRole =
+    typeof body.role === 'string' && ['USER', 'MANAGER', 'ADMIN'].includes(body.role)
+      ? (body.role as string) : 'USER';
+  if (invitedRole !== 'USER' && offeringId) {
+    return res.status(400).json({ error: 'staff invitations cannot carry a purchase' });
+  }
   // Optional booking-request linkage (staff Request Inbox).
   const requestId =
     typeof body.requestId === 'string' && body.requestId.trim() ? body.requestId.trim() : null;
@@ -112,6 +119,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const isStaff = profile?.is_admin
       || ['ADMIN', 'SUPER_ADMIN', 'MANAGER', 'EMPLOYEE'].includes(profile?.role ?? '');
     if (!profile || !isStaff) return res.status(403).json({ error: 'forbidden' });
+    // Only admins may provision staff accounts; instructors invite clients only.
+    const isAdminCaller = profile.is_admin || ['ADMIN', 'SUPER_ADMIN'].includes(profile.role ?? '');
+    if (invitedRole !== 'USER' && !isAdminCaller) {
+      return res.status(403).json({ error: 'only an admin can create staff accounts' });
+    }
 
     const origin = req.headers.origin || `https://${req.headers.host}`;
 
@@ -151,6 +163,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       token: inviteToken,
       expires_at: expiresAt,
       status: 'sent',
+      invited_role: invitedRole,
     });
     if (insErr) throw insErr;
 
