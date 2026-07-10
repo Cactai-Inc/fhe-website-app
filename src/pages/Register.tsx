@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
 import { validateInvitation, upsertMyProfile, redeemInvitation, myOnboardingState } from '../lib/api';
 import { redeemContractInvitation } from '../lib/contracts';
 import { signInWithGoogle } from '../lib/auth';
@@ -20,7 +19,6 @@ export default function Register() {
   // contact instead of granting community membership, and lands on the contract.
   const isContractInvite = params.get('kind') === 'contract';
   const navigate = useNavigate();
-  const { signUp } = useAuth();
 
   /** Redeem per invite kind; returns the post-redemption destination. */
   async function redeemByKind(): Promise<string> {
@@ -108,20 +106,35 @@ export default function Register() {
     setState('creating');
     setError(null);
 
-    // Create the auth user with the invited email.
-    const { error: signUpError } = await signUp(invitation.email, password);
-    if (signUpError) {
-      setError(signUpError);
+    // Create the auth user SERVER-SIDE, pre-confirmed: the personal invite link
+    // already proved the inbox, and the project's email-confirmation setting
+    // otherwise blocks the immediate sign-in ("Email not confirmed"), which
+    // orphaned password signups entirely (owner-reported).
+    const resp = await fetch('/api/register-invited', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        token,
+        password,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+      }),
+    });
+    if (!resp.ok) {
+      const payload = await resp.json().catch(() => ({ error: '' }));
+      setError(payload.error || 'Could not create your account. Please try again.');
       setState('ready');
       return;
     }
 
-    // Ensure a session exists, then seed the profile. Depending on the project's
-    // email-confirmation setting, signUp may or may not return a session; sign in
-    // to be safe (same credentials).
-    const { data: sessionData } = await supabase.auth.getSession();
-    if (!sessionData.session) {
-      await supabase.auth.signInWithPassword({ email: invitation.email, password });
+    // Confirmed at creation → this sign-in succeeds and establishes the session.
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: invitation.email, password,
+    });
+    if (signInError) {
+      setError(signInError.message);
+      setState('ready');
+      return;
     }
 
     try {
