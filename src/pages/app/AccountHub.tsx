@@ -12,7 +12,9 @@ import {
   listStableHorses, listStableItems,
   type StableHorse, type StableItem,
 } from '../../lib/stable';
-import { AddHorseModal, AddItemModal } from '../../components/app/StableEditors';
+import { AddItemModal } from '../../components/app/StableEditors';
+import { HorseIntakeForm } from '../../components/app/HorseIntakeForm';
+import { X } from 'lucide-react';
 import { EmailChangeModal } from '../../components/app/EmailChangeModal';
 import { GiftsPanel, SavedPanel, DocumentsPanel } from '../../components/app/AccountPanels';
 import { useAuth } from '../../contexts/AuthContext';
@@ -309,7 +311,21 @@ function StableSection() {
         <button type="button" onClick={() => setModal('supply')} className="text-[12px] text-gold-800 font-semibold text-left px-1">+ Add a supply</button>
       </div>
 
-      {modal === 'horse' && <AddHorseModal onClose={() => setModal(null)} onDone={loadHorses} />}
+      {modal === 'horse' && (
+        <div className="fixed inset-0 bg-black/40 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setModal(null)}>
+          <div className="bg-cream w-full sm:max-w-2xl sm:rounded-2xl flex flex-col max-h-[92dvh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-green-800/10 shrink-0">
+              <h2 className="font-serif text-green-800 text-lg">Add a horse</h2>
+              <button type="button" onClick={() => setModal(null)} aria-label="Close"><X size={20} /></button>
+            </div>
+            <div className="p-4 sm:p-5 overflow-y-auto pb-8">
+              {/* the standardized record intake (spec H.2/H.3 path 2) — creates the
+                  real horse record with microchip dedup, then refreshes My Stable */}
+              <HorseIntakeForm submitLabel="Add to my stable" onDone={() => { setModal(null); loadHorses(); }} />
+            </div>
+          </div>
+        </div>
+      )}
       {modal === 'gear' && <AddItemModal kind="gear" onClose={() => setModal(null)} onDone={loadGear} />}
       {modal === 'supply' && <AddItemModal kind="supply" onClose={() => setModal(null)} onDone={loadSupplies} />}
     </div>

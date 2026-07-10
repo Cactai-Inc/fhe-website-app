@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useViewSurfaces } from '../../lib/surfaces';
+import { fetchMyGrantKeys } from '../../lib/grants';
 import { useNotificationsBell } from './NotificationsBell';
 import CalendarModal from './CalendarModal';
 import { CreateModal } from './CreateModal';
@@ -45,45 +46,91 @@ const QUICK: { label: string; icon: typeof GraduationCap; to: string }[] = [
   { label: 'New message', icon: MessageSquare, to: '/app/messages' },
 ];
 
-export const MANAGE_NAV: NavItem[] = [
-  { to: '/app', label: 'Main', icon: HomeIcon, end: true },
+export interface NavGroup { key: string; label: string; items: NavItem[]; defaultOpen?: boolean }
+
+/** ROLE ARCHITECTURE (owner spec):
+ *  SUPER_ADMIN — the PLATFORM admin; belongs to no tenant. Sees platform
+ *    management only (organizations, provisioning, flags, registry).
+ *  ADMIN — the tenant admin. Grouped management sections (short nav, similar
+ *    surfaces consolidated), incl. control of what instructors see.
+ *  INSTRUCTOR (MANAGER/EMPLOYEE) — below admin, above client. Baseline =
+ *    client support + servicing (intake review/processing, invitations via
+ *    Accounts when granted, contacts, lessons, availability, horses,
+ *    engagements, documents) + whatever the admin grants (globally or to the
+ *    one account). */
+const PLATFORM_NAV: NavItem[] = [
+  { to: '/app/ops/superadmin/organizations', label: 'Organizations', icon: Shield },
+  { to: '/app/ops/superadmin/provision', label: 'Provision tenant', icon: Shield },
+  { to: '/app/ops/admin/modules', label: 'Feature flags', icon: Shield },
+  { to: '/app/ops/admin/registry', label: 'Registry', icon: Shield },
+];
+
+const CLIENTS_GROUP: NavItem[] = [
   { to: '/app/ops/intake', label: 'Intake', icon: Mail },
-  { to: '/app/ops/availability', label: 'Availability', icon: CalendarDays },
   { to: '/app/ops/contacts', label: 'Contacts', icon: Contact },
-  { to: '/app/ops/horses', label: 'Horses', icon: Boxes },
+  { to: '/app/admin', label: 'Accounts', icon: Users, adminOnly: true },
+  { to: '/app/ops/support', label: 'Support', icon: LifeBuoy, adminOnly: true },
+];
+const SERVICING_GROUP: NavItem[] = [
+  { to: '/app/ops/lessons', label: 'Lessons', icon: GraduationCap, module: 'mod.lessons' },
+  { to: '/app/ops/availability', label: 'Availability', icon: CalendarDays },
+  { to: '/app/ops/horse-records', label: 'Horses', icon: Boxes },
   { to: '/app/ops/engagements', label: 'Engagements', icon: Handshake },
   { to: '/app/ops/documents', label: 'Documents', icon: FileText },
-  { to: '/app/ops/lessons', label: 'Lessons', icon: GraduationCap, module: 'mod.lessons' },
+];
+const BUSINESS_GROUP: NavItem[] = [
   { to: '/app/ops/transactions', label: 'Transactions', icon: ReceiptText, adminOnly: true },
   { to: '/app/ops/payments/review', label: 'Payment review', icon: ReceiptText, adminOnly: true },
   { to: '/app/ops/billing', label: 'Billing', icon: ReceiptText, adminOnly: true },
+];
+const COMMUNITY_GROUP: NavItem[] = [
   { to: '/app/ops/moderation', label: 'Moderation', icon: Shield, adminOnly: true },
-  { to: '/app/ops/support', label: 'Support', icon: LifeBuoy, adminOnly: true },
-  { to: '/app/ops/oversight', label: 'Oversight', icon: Shield, adminOnly: true },
   { to: '/app/ops/content', label: 'Content store', icon: BookOpen, adminOnly: true },
-  { to: '/app/admin', label: 'Accounts', icon: Users, adminOnly: true },
+  { to: '/app/ops/oversight', label: 'Oversight', icon: Shield, adminOnly: true },
+];
+const MODULES_GROUP: NavItem[] = [
   { to: '/app/ops/brokerage', label: 'Brokerage', icon: Handshake, module: 'mod.brokerage', adminOnly: true },
   { to: '/app/ops/boarding', label: 'Boarding', icon: HomeIcon, module: 'mod.boarding', adminOnly: true },
   { to: '/app/ops/barnops', label: 'Barn Ops', icon: Boxes, module: 'mod.barnops', adminOnly: true },
   { to: '/app/ops/records', label: 'Records', icon: FileText, module: 'mod.horserecords', adminOnly: true },
   { to: '/app/ops/employees', label: 'Employees', icon: Contact, module: 'mod.employees', adminOnly: true },
-  { to: '/app/ops/admin/modules', label: 'Feature flags', icon: Shield, superAdmin: true },
-  { to: '/app/ops/admin/registry', label: 'Registry', icon: Shield, superAdmin: true },
-  { to: '/app/ops/superadmin/organizations', label: 'Organizations', icon: Shield, superAdmin: true },
-  { to: '/app/ops/superadmin/provision', label: 'Provision tenant', icon: Shield, superAdmin: true },
+];
+const SETTINGS_GROUP: NavItem[] = [
+  { to: '/app/ops/admin/branding', label: 'Branding', icon: Shield, adminOnly: true },
+  { to: '/app/ops/admin/products', label: 'Products', icon: Shield, adminOnly: true },
 ];
 
-export function visibleManageNav(
+// kept for compatibility with anything importing MANAGE_NAV
+export const MANAGE_NAV: NavItem[] = [
+  ...CLIENTS_GROUP, ...SERVICING_GROUP, ...BUSINESS_GROUP,
+  ...COMMUNITY_GROUP, ...MODULES_GROUP, ...SETTINGS_GROUP,
+];
+
+/** Build the grouped rail for the caller's role. Instructor grants (nav keys)
+ *  un-hide adminOnly items for that instructor. */
+export function manageNavGroups(
   hasModule: (key: string) => boolean,
   isAdmin: boolean,
   isSuperAdmin: boolean,
-): NavItem[] {
-  return MANAGE_NAV.filter(
-    (item) =>
-      (!item.module || hasModule(item.module)) &&
-      (!item.adminOnly || isAdmin) &&
-      (!item.superAdmin || isSuperAdmin),
+  grantKeys: string[] = [],
+): NavGroup[] {
+  if (isSuperAdmin) {
+    // the platform admin belongs to no tenant — platform surfaces only
+    return [{ key: 'platform', label: 'Platform', items: PLATFORM_NAV, defaultOpen: true }];
+  }
+  const visible = (items: NavItem[]) => items.filter(
+    (i) => (!i.module || hasModule(i.module))
+        && (!i.adminOnly || isAdmin || grantKeys.includes(i.to)),
   );
+  const groups: NavGroup[] = [
+    { key: 'clients', label: 'Clients', items: visible(CLIENTS_GROUP), defaultOpen: true },
+    { key: 'servicing', label: 'Servicing', items: visible(SERVICING_GROUP), defaultOpen: true },
+    { key: 'business', label: 'Business', items: visible(BUSINESS_GROUP) },
+    { key: 'community', label: 'Community', items: visible(COMMUNITY_GROUP) },
+    { key: 'modules', label: 'Modules', items: visible(MODULES_GROUP) },
+    { key: 'settings', label: 'Settings', items: visible(SETTINGS_GROUP) },
+  ];
+  return groups.filter((g) => g.items.length > 0);
 }
 
 function RailLink({ to, label, icon: Icon, end }: NavItem) {
@@ -139,7 +186,16 @@ export default function AppLayout() {
   const initial = (name[0] || 'M').toUpperCase();
 
   const showRail = isStaff;
-  const manageItems = showRail ? visibleManageNav(hasModule, isAdmin, isSuperAdmin) : [];
+  const isTrainer = isStaff && !isAdmin;
+  const [grantKeys, setGrantKeys] = useState<string[]>([]);
+  useEffect(() => {
+    if (!isTrainer) return;
+    fetchMyGrantKeys().then(setGrantKeys).catch(() => {});
+  }, [isTrainer]);
+  const navGroups = showRail ? manageNavGroups(hasModule, isAdmin, isSuperAdmin, grantKeys) : [];
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+  const groupOpen = (g: NavGroup) => openGroups[g.key] ?? g.defaultOpen ?? false;
+  const toggleGroup = (key: string) => setOpenGroups((p) => ({ ...p, [key]: !(p[key] ?? navGroups.find((g) => g.key === key)?.defaultOpen ?? false) }));
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -203,12 +259,16 @@ export default function AppLayout() {
                       <q.icon size={17} /> {q.label}
                     </button>
                   ))}
-                  {manageItems.length > 0 && (
+                  {navGroups.length > 0 && (
                     <div className="lg:hidden">
-                      <div className="mt-1 border-t border-green-800/10 pt-2 px-4 pb-1 text-xs uppercase tracking-wide text-secondary/60">
-                        {isAdmin ? 'Management' : 'Servicing'}
-                      </div>
-                      {manageItems.filter((i) => i.to !== '/app').map((it) => <MenuLink key={it.to} {...it} onNavigate={closeMenu} />)}
+                      {navGroups.map((g) => (
+                        <div key={g.key}>
+                          <div className="mt-1 border-t border-green-800/10 pt-2 px-4 pb-1 text-xs uppercase tracking-wide text-secondary/60">
+                            {g.label}
+                          </div>
+                          {g.items.map((it) => <MenuLink key={it.to} {...it} onNavigate={closeMenu} />)}
+                        </div>
+                      ))}
                     </div>
                   )}
                   <button type="button" onClick={handleSignOut}
@@ -225,12 +285,30 @@ export default function AppLayout() {
       <div className="max-w-6xl mx-auto flex">
         {showRail && (
           <aside className="hidden lg:block w-56 shrink-0 border-r border-green-800/10 bg-cream-100/40">
-            <nav className="p-3 sticky top-14 h-[calc(100dvh-3.5rem)] overflow-hidden">
+            <nav className="p-3 sticky top-14 h-[calc(100dvh-3.5rem)] overflow-y-auto">
               <p className="px-3 pt-1 pb-2 text-[10px] tracking-widest uppercase text-muted font-semibold">
-                {isAdmin ? 'Management' : 'Servicing'}
+                {isSuperAdmin ? 'Platform' : isAdmin ? 'Management' : 'Servicing'}
               </p>
-              <div className="flex flex-col gap-0.5">
-                {manageItems.map((it) => <RailLink key={it.to} {...it} />)}
+              {!isSuperAdmin && (
+                <div className="mb-1"><RailLink to="/app" label="Main" icon={HomeIcon} end /></div>
+              )}
+              <div className="flex flex-col gap-1">
+                {navGroups.map((g) => (
+                  <div key={g.key}>
+                    {navGroups.length > 1 && (
+                      <button type="button" onClick={() => toggleGroup(g.key)}
+                        className="w-full flex items-center justify-between px-3 py-1.5 text-[10px] tracking-widest uppercase text-muted font-semibold hover:text-green-800 focus-ring rounded-md">
+                        {g.label}
+                        <ChevronDown size={12} className={`transition-transform ${groupOpen(g) ? '' : '-rotate-90'}`} />
+                      </button>
+                    )}
+                    {(navGroups.length === 1 || groupOpen(g)) && (
+                      <div className="flex flex-col gap-0.5">
+                        {g.items.map((it) => <RailLink key={it.to} {...it} />)}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             </nav>
           </aside>

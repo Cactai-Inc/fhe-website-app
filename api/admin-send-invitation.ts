@@ -107,8 +107,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (userErr || !userData.user) return res.status(401).json({ error: 'unauthorized' });
     const { data: profile } = await db
       .from('profiles').select('is_admin, role, org_id').eq('user_id', userData.user.id).maybeSingle();
-    const isAdmin = profile?.is_admin || profile?.role === 'ADMIN' || profile?.role === 'SUPER_ADMIN';
-    if (!isAdmin) return res.status(403).json({ error: 'forbidden' });
+    // Two-operator model: instructors (MANAGER/EMPLOYEE) provision + send client
+    // invitations too — client support is a servicing capability.
+    const isStaff = profile?.is_admin
+      || ['ADMIN', 'SUPER_ADMIN', 'MANAGER', 'EMPLOYEE'].includes(profile?.role ?? '');
+    if (!profile || !isStaff) return res.status(403).json({ error: 'forbidden' });
 
     const origin = req.headers.origin || `https://${req.headers.host}`;
 
