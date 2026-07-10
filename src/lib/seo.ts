@@ -144,7 +144,7 @@ export const ROUTE_SEO: RouteSeo[] = [
 ];
 
 /** Routes that must never be indexed (auth/transactional/member app). */
-export const NOINDEX_PREFIXES = ['/checkout', '/confirmation', '/login', '/register', '/account', '/order', '/app'];
+export const NOINDEX_PREFIXES = ['/checkout', '/confirmation', '/login', '/register', '/activate', '/account', '/order', '/app'];
 
 export function seoForPath(path: string): RouteSeo | undefined {
   return ROUTE_SEO.find((r) => r.path === path);

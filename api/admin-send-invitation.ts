@@ -159,7 +159,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (rpcErr) throw rpcErr;
       const out = (Array.isArray(data) ? data[0] : data) as ProvisionResult;
 
-      const registerUrl = `${origin}/register?token=${out.token}`;
+      const registerUrl = `${origin}/activate?token=${out.token}`;
       const emailed = await sendEmail(db, profile.org_id ?? null, email, registerUrl, out.tier_label);
       return res.status(200).json({ registerUrl, emailed, offeringLabel: out.tier_label });
     }
@@ -187,7 +187,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
     if (insErr) throw insErr;
 
-    const registerUrl = `${origin}/register?token=${inviteToken}`;
+    const registerUrl = `${origin}/activate?token=${inviteToken}`;
 
     // one email, all their items: derive the checklist from what's assigned
     let checklist: ChecklistRow[] = [];

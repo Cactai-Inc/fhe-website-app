@@ -6,6 +6,14 @@ import { BrandProvider } from './contexts/BrandProvider';
 import ProtectedRoute from './components/ProtectedRoute';
 import ScrollToTop from './components/ScrollToTop';
 import Layout from './components/layout/Layout';
+import { ActivateShell } from './components/app/ActivateShell';
+import { Navigate as RRNavigate, useLocation as useRRLocation } from 'react-router-dom';
+
+/** Redirect preserving ?token=… so links in already-sent emails keep working. */
+function RedirectWithQuery({ to }: { to: string }) {
+  const loc = useRRLocation();
+  return <RRNavigate to={{ pathname: to, search: loc.search }} replace />;
+}
 import AppLayout from './components/app/AppLayout';
 import Landing from './pages/Landing';
 import About from './pages/About';
@@ -120,6 +128,9 @@ export function AppRoutes() {
             {/* Landing — its own naked nav + no footer, so it renders bare
                 (outside the shared Layout header/footer chrome). */}
             <Route path="/" element={<Landing />} />
+            {/* Account activation lives in APP chrome, not the website (owner). */}
+            <Route path="/activate" element={<ActivateShell><Register /></ActivateShell>} />
+            <Route path="/activate/complete" element={<ActivateShell><RegisterComplete /></ActivateShell>} />
 
             {/* Public marketing + inquiry (marketing chrome) */}
             <Route element={<Layout />}>
@@ -148,8 +159,9 @@ export function AppRoutes() {
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/confirmation" element={<Confirmation />} />
               <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/register/complete" element={<RegisterComplete />} />
+              {/* legacy links in already-sent emails redirect into the app chrome */}
+              <Route path="/register" element={<RedirectWithQuery to="/activate" />} />
+              <Route path="/register/complete" element={<RedirectWithQuery to="/activate/complete" />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
 

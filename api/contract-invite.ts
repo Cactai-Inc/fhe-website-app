@@ -81,7 +81,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const token = (inv as { token: string }).token;
 
     const origin = req.headers.origin || `https://${req.headers.host}`;
-    const link = `${origin}/register?token=${token}&kind=contract`;
+    const link = `${origin}/activate?token=${token}&kind=contract`;
     let identity = { fromName: 'French Heritage Equestrian', fromEmail: '', footer: '' as string | null };
     try { identity = await resolveTenantEmailIdentity(db, doc.org_id); } catch { /* fall back */ }
 
