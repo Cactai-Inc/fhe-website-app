@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { DataTable, StatusBadge, useAsync } from '../../../../lib/ops';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { listOrganizations, type OrganizationRow } from '../../../../lib/ops/api-superadmin';
@@ -14,6 +14,7 @@ import { listOrganizations, type OrganizationRow } from '../../../../lib/ops/api
  */
 export function OrganizationsPage() {
   const { isSuperAdmin } = useAuth();
+  const navigate = useNavigate();
   const orgs = useAsync(listOrganizations);
 
   useEffect(() => {
@@ -35,7 +36,7 @@ export function OrganizationsPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="font-serif text-2xl text-green-900">Organizations</h1>
-          <p className="text-sm text-green-800/70">Every tenant on the platform.</p>
+          <p className="text-sm text-green-800/70">Every tenant on the platform — click one to manage it.</p>
         </div>
         <Link to="/app/ops/superadmin/provision" className="btn-primary">Provision tenant</Link>
       </div>
@@ -53,6 +54,7 @@ export function OrganizationsPage() {
         ]}
         rows={orgs.data ?? []}
         rowKey={(r) => r.id}
+        onRowClick={(r) => navigate(`/app/ops/superadmin/organizations/${r.id}`)}
         loading={orgs.isPending}
         emptyTitle="No organizations"
         emptyMessage="Provision the first tenant to see it here."

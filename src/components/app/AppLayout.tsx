@@ -60,7 +60,6 @@ export interface NavGroup { key: string; label: string; items: NavItem[]; defaul
  *    one account). */
 const PLATFORM_NAV: NavItem[] = [
   { to: '/app/ops/superadmin/organizations', label: 'Organizations', icon: Shield },
-  { to: '/app/ops/superadmin/provision', label: 'Provision tenant', icon: Shield },
   { to: '/app/ops/admin/modules', label: 'Feature flags', icon: Shield },
   { to: '/app/ops/admin/registry', label: 'Registry', icon: Shield },
 ];
