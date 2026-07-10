@@ -1,6 +1,10 @@
 EMERGENCY VETERINARY AUTHORIZATION AND EQUINE MEDICAL CARE DIRECTIVE
 
+Effective from the Date of Signature until superseded by a later executed version of this Authorization
+
 This Emergency Veterinary Authorization and Equine Medical Care Directive ("Agreement") is made effective as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned client ("CLIENT") in favor of {{ORG.LEGAL_NAME}} ("COMPANY"), authorizing COMPANY to act as described below with respect to the horse identified. By signing below, CLIENT acknowledges and agrees to the terms of this Agreement.
+
+For purposes of this Agreement, "Released Parties" means COMPANY, its owners, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, representatives, affiliates, property owners, facility owners, licensors, lessors, lessees, hosts, landowners, successors, assigns, heirs, and any person acting on behalf of COMPANY at any location where it is authorized to conduct business.
 
 CLIENT INFORMATION
 
@@ -44,6 +48,8 @@ Primary Contact: {{CLIENT.FULL_NAME}}
 Phone: {{CLIENT.PHONE}}
 Secondary Emergency Contact: {{CLIENT.EMERGENCY_CONTACT_1_NAME}} ({{CLIENT.EMERGENCY_CONTACT_1_RELATIONSHIP}})
 Phone: {{CLIENT.EMERGENCY_CONTACT_1_PHONE}}
+Additional Emergency Contact: {{CLIENT.EMERGENCY_CONTACT_2_NAME}} ({{CLIENT.EMERGENCY_CONTACT_2_RELATIONSHIP}})
+Phone: {{CLIENT.EMERGENCY_CONTACT_2_PHONE}}
 
 5. RESPONSIBILITY FOR COSTS
 
@@ -76,11 +82,11 @@ Known Conditions: {{HORSE.KNOWN_CONDITIONS}}
 
 10. RELEASE OF LIABILITY
 
-CLIENT releases COMPANY and its owners, employees, contractors, agents, representatives, and volunteers from claims arising from good-faith actions taken under this Agreement. This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
+CLIENT releases, waives, and forever discharges the Released Parties from claims arising from good-faith actions taken under this Agreement. This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
 
 11. INDEMNIFICATION
 
-CLIENT agrees to indemnify and hold harmless COMPANY from claims, expenses, losses, or liabilities arising from: Veterinary expenses; Medical decisions; Horse conditions; and Information omitted by CLIENT.
+CLIENT agrees to defend, indemnify, and hold harmless the Released Parties from and against claims, expenses, losses, liabilities, and reasonable attorney's fees arising from: Veterinary expenses; Medical decisions; Horse conditions; and Information omitted by CLIENT.
 
 12. NO GUARANTEE OF OUTCOME
 
@@ -109,6 +115,10 @@ If any provision of this Agreement is determined to be invalid or unenforceable,
 18. ENTIRE AGREEMENT
 
 This Agreement contains the entire agreement concerning emergency veterinary authorization and supplements, and does not supersede, any separate Equine Services Release or services contract between CLIENT and COMPANY.
+
+19. ACKNOWLEDGMENT
+
+CLIENT acknowledges that: CLIENT has carefully read this Agreement in its entirety. CLIENT understands its legal effect. CLIENT has had sufficient opportunity to ask questions before signing. CLIENT signs voluntarily and without coercion. CLIENT intends this Agreement to be legally binding upon CLIENT and CLIENT's heirs, successors, assigns, estate, and personal representatives.
 
 CLIENT
 
