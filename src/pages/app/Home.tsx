@@ -17,7 +17,7 @@ import { SORT_OPTIONS, type FeedView } from '../../lib/seed';
  */
 export default function Home() {
   const { surfaces, loading: surfacesLoading } = useViewSurfaces();
-  const { profile, isStaff } = useAuth();
+  const { profile, isStaff, isSuperAdmin } = useAuth();
   // Riders get no page name — this IS the app. Staff see their Dashboard.
   useDocumentTitle(isStaff ? 'Dashboard' : 'French Heritage');
   const firstName = profile?.first_name || profile?.display_name || null;
@@ -34,6 +34,9 @@ export default function Home() {
     setView(v);
     setSort((SORT_OPTIONS[v] ?? SORT_OPTIONS.all)[0]); // reset sort to the view's default
   }
+
+  // The PLATFORM operator belongs to no tenant — land on Organizations.
+  if (isSuperAdmin) return <Navigate to="/app/ops/superadmin/organizations" replace />;
 
   // Non-rider (deal/care only) members have no feed — send them to their dashboard.
   if (!surfacesLoading && !hasFeed) {
