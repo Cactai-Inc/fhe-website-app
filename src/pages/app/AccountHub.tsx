@@ -43,13 +43,13 @@ function Row({
     <button
       type="button"
       onClick={onClick}
-      className="w-full flex items-center justify-between px-4 py-4 bg-white border border-green-800/10 rounded-xl hover:border-green-800/20 focus-ring text-left"
+      className="w-full flex items-center justify-between px-5 py-5 bg-white border border-green-800/10 rounded-xl hover:border-green-800/25 hover:shadow-[0_10px_24px_-16px_rgba(13,33,24,0.25)] transition-all focus-ring text-left"
     >
-      <span className="flex items-center gap-3.5 min-w-0">
-        <span className="w-9 h-9 rounded-lg bg-cream-100 grid place-items-center text-green-700 shrink-0"><Icon size={18} /></span>
+      <span className="flex items-center gap-4 min-w-0">
+        <span className="w-11 h-11 rounded-lg bg-cream-100 grid place-items-center text-green-700 shrink-0"><Icon size={20} /></span>
         <span className="min-w-0">
-          <span className="block text-[13.5px] font-medium text-green-900">{title}</span>
-          {sub && <span className="block text-[11.5px] text-muted mt-0.5">{sub}</span>}
+          <span className="block text-[15px] font-medium text-green-900">{title}</span>
+          {sub && <span className="block text-[12.5px] text-muted mt-0.5">{sub}</span>}
         </span>
       </span>
       <ChevronRight size={18} className={`text-muted shrink-0 transition-transform ${open ? 'rotate-90' : ''}`} />
@@ -360,37 +360,33 @@ export default function AccountHub() {
   const toggle = (s: Section) => setOpen((cur) => (cur === s ? null : s));
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-6xl mx-auto">
       <header className="mb-4">
         <p className="eyebrow">Your account</p>
         <h1 className="font-serif text-green-800 text-3xl font-semibold mt-0.5">Account</h1>
       </header>
 
       <SectionLabel>You</SectionLabel>
-      <div className="flex flex-col gap-2.5">
+      <div className="grid lg:grid-cols-2 gap-3">
         <Row icon={UserRound} title="Profile &amp; preferences" sub={`${realName} · contact, socials, notifications`} onClick={() => toggle('profile')} open={open === 'profile'} />
-        {open === 'profile' && <ProfileSection />}
+        {open === 'profile' && <div className="lg:col-span-2"><ProfileSection /></div>}
         <Row icon={Grid3x3} title="My posts" sub="Your posts & listings" />
         <Row icon={Boxes} title="My lessons" sub="Credits, schedule & your progress" onClick={() => navigate('/app/lessons')} />
         <Row icon={Bookmark} title="Saved items" sub="Articles, listings, and links you kept" onClick={() => toggle('saved')} open={open === 'saved'} />
-        {open === 'saved' && <SavedPanel />}
+        {open === 'saved' && <div className="lg:col-span-2"><SavedPanel /></div>}
         <Row icon={FileText} title="Documents" sub="Signed agreements & releases" onClick={() => toggle('documents')} open={open === 'documents'} />
-        {open === 'documents' && <DocumentsPanel />}
+        {open === 'documents' && <div className="lg:col-span-2"><DocumentsPanel /></div>}
         <Row icon={Boxes} title="My Stable" sub="Your horses, gear, and supplies" onClick={() => toggle('stable')} open={open === 'stable'} />
-        {open === 'stable' && <StableSection />}
+        {open === 'stable' && <div className="lg:col-span-2"><StableSection /></div>}
       </div>
 
       <SectionLabel>Billing &amp; orders</SectionLabel>
-      <div className="flex flex-col gap-2.5">
+      <div className="grid lg:grid-cols-2 gap-3">
         <Row icon={CreditCard} title="Billing" sub={nextPaymentSub} onClick={() => navigate('/app/balance')} />
         <Row icon={BadgeCheck} title="Membership" sub={membershipSub} />
         <Row icon={ShoppingBag} title="Orders & payment method" sub="Past orders · Zelle" onClick={() => navigate('/app/orders')} />
         <Row icon={Gift} title="Gifts" sub="Things you've gifted · resend, transfer" onClick={() => toggle('gifts')} open={open === 'gifts'} />
-        {open === 'gifts' && <GiftsPanel />}
-      </div>
-
-      <SectionLabel>Help</SectionLabel>
-      <div className="flex flex-col gap-2.5">
+        {open === 'gifts' && <div className="lg:col-span-2"><GiftsPanel /></div>}
       </div>
     </div>
   );
