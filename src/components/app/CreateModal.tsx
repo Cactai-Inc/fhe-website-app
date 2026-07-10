@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import {
   X, PenSquare, Tag, CalendarDays, MessageSquare, GraduationCap,
   ShoppingBag, Send, ChevronLeft, ImagePlus, Loader2,
+  Handshake, FileText, UserPlus, Megaphone,
 } from 'lucide-react';
 import { feedPostCreate, uploadFeedMedia, type FeedPostType, type FeedVisibility } from '../../lib/feed';
 import { createThread, proposeEvent } from '../../lib/community';
 import { listListableHorses, type ListableHorse } from '../../lib/stable';
 import { useAuth } from '../../contexts/AuthContext';
+import { adminCreateAnnouncement } from '../../lib/admin';
 
 /**
  * CREATE MODAL — the universal "+" from the header, wired to real backends.
@@ -22,12 +24,12 @@ import { useAuth } from '../../contexts/AuthContext';
  * Operators additionally get visibility, post-as-company (admins), and scheduling.
  */
 
-type Step = 'destination' | 'post_type' | 'form';
+type Step = 'destination' | 'post_type' | 'form' | 'announce';
 type PostType = 'social' | 'for_sale' | 'event' | 'discussion';
 
 const POST_TYPES: { key: PostType; label: string; icon: typeof PenSquare; hint: string }[] = [
   { key: 'social', label: 'Social', icon: ImagePlus, hint: 'Share a photo or moment' },
-  { key: 'for_sale', label: 'For Sale', icon: Tag, hint: 'List a horse, gear, or free item' },
+  { key: 'for_sale', label: 'For Sale', icon: Tag, hint: 'List a horse or gear — free is a price' },
   { key: 'event', label: 'Event', icon: CalendarDays, hint: 'Invite the community' },
   { key: 'discussion', label: 'Discussion', icon: MessageSquare, hint: 'Ask or start a conversation' },
 ];
@@ -65,7 +67,8 @@ function PostForm({ type, onClose }: { type: PostType; onClose: () => void }) {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [link, setLink] = useState('');
-  const [saleKind, setSaleKind] = useState<'horse' | 'gear' | 'free'>('gear');
+  const [saleKind, setSaleKind] = useState<'horse' | 'gear'>('gear');
+  const [isFree, setIsFree] = useState(false); // price state, not a listing type
   const [intent, setIntent] = useState<'sale' | 'lease'>('sale');
   const [horses, setHorses] = useState<ListableHorse[]>([]);
   const [horseId, setHorseId] = useState('');
@@ -119,12 +122,12 @@ function PostForm({ type, onClose }: { type: PostType; onClose: () => void }) {
       if (type === 'social' || type === 'for_sale') {
         const media = await uploadFeedMedia(file!);
         const postType: FeedPostType = type === 'social' ? 'rider_post'
-          : saleKind === 'horse' ? 'horse' : 'gear'; // "free" lists as gear at $0
+          : saleKind === 'horse' ? 'horse' : 'gear';
         const bodyText = type === 'for_sale'
           ? [
               title.trim(),
               saleKind === 'horse' ? `For ${intent}` : null,
-              saleKind === 'free' ? 'Free to a good home' : price && `Price: ${price}`,
+              isFree ? 'Free to a good home' : price && `Price: ${price}`,
               body,
             ].filter(Boolean).join('\n')
           : body;
@@ -174,7 +177,7 @@ function PostForm({ type, onClose }: { type: PostType; onClose: () => void }) {
           <div>
             <FieldLabel>Listing type</FieldLabel>
             <div className="flex gap-2">
-              {(['horse', 'gear', 'free'] as const).map((t) => (
+              {(['horse', 'gear'] as const).map((t) => (
                 <button key={t} type="button" onClick={() => setSaleKind(t)}
                   className={`flex-1 py-2 rounded-lg border text-sm capitalize ${saleKind === t ? 'bg-green-50 border-green-300 text-green-800 font-medium' : 'border-green-800/15 text-secondary hover:bg-green-50'}`}>{t}</button>
               ))}
@@ -212,9 +215,18 @@ function PostForm({ type, onClose }: { type: PostType; onClose: () => void }) {
 
           <div className="grid sm:grid-cols-2 gap-3.5">
             <div><FieldLabel>Title</FieldLabel><input className={inputCls} value={title} onChange={(e) => setTitle(e.target.value)} placeholder={saleKind === 'horse' ? 'e.g. Copper — for lease' : 'e.g. Antares saddle, 17.5"'} /></div>
-            {saleKind !== 'free'
-              ? <div><FieldLabel>Price</FieldLabel><input className={inputCls} value={price} onChange={(e) => setPrice(e.target.value)} placeholder='$ or "Inquire"' /></div>
-              : <div><FieldLabel>Price</FieldLabel><input className={inputCls} value="Free" readOnly /></div>}
+            <div>
+              <FieldLabel>Price</FieldLabel>
+              {isFree
+                ? <input className={inputCls} value="Free" readOnly />
+                : <input className={inputCls} value={price} onChange={(e) => setPrice(e.target.value)} placeholder='$ or "Inquire"' />}
+              {saleKind === 'gear' && (
+                <label className="inline-flex items-center gap-1.5 text-[12px] text-secondary mt-1.5">
+                  <input type="checkbox" className="accent-green-700" checked={isFree} onChange={(e) => setIsFree(e.target.checked)} />
+                  Free to a good home
+                </label>
+              )}
+            </div>
           </div>
         </>
       )}
@@ -279,13 +291,59 @@ function PostForm({ type, onClose }: { type: PostType; onClose: () => void }) {
   );
 }
 
+function AnnounceForm({ onClose }: { onClose: () => void }) {
+  const navigate = useNavigate();
+  const [title, setTitle] = useState('');
+  const [body, setBody] = useState('');
+  const [pinned, setPinned] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function submit() {
+    setErr(null);
+    if (!title.trim() || !body.trim()) { setErr('An announcement needs a title and a message.'); return; }
+    setBusy(true);
+    try {
+      await adminCreateAnnouncement({ title: title.trim(), body: body.trim(), pinned });
+      onClose();
+      navigate('/app');
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Could not publish the announcement.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-3.5">
+      {/* gold outline — announcements read as official notices, not social posts */}
+      <div className="border-2 border-gold-700/60 rounded-xl p-4 bg-white flex flex-col gap-3.5">
+        <div><FieldLabel>Title</FieldLabel><input className={inputCls} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Barn closed Friday for the show" /></div>
+        <div><FieldLabel>Message</FieldLabel><textarea className={textareaCls} value={body} onChange={(e) => setBody(e.target.value)} placeholder="What everyone needs to know" /></div>
+        <label className="inline-flex items-center gap-2 text-[12.5px] text-secondary">
+          <input type="checkbox" className="accent-green-700" checked={pinned} onChange={(e) => setPinned(e.target.checked)} />
+          Pin to the top of the feed
+        </label>
+      </div>
+      {err && <p className="form-error text-sm text-red-700">{err}</p>}
+      <button type="button" onClick={submit} disabled={busy}
+        className="w-full py-2.5 rounded-lg bg-green-800 text-white text-sm font-medium hover:bg-green-700 focus-ring inline-flex items-center justify-center gap-2 disabled:opacity-60">
+        {busy && <Loader2 size={16} className="animate-spin" />}
+        Publish announcement
+      </button>
+    </div>
+  );
+}
+
 export function CreateModal({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
+  const { isStaff, isAdmin } = useAuth();
   const [step, setStep] = useState<Step>('destination');
   const [postType, setPostType] = useState<PostType>('social');
 
   const title = step === 'destination' ? 'Create'
     : step === 'post_type' ? 'New community post'
+    : step === 'announce' ? 'Announcement'
     : POST_TYPES.find((p) => p.key === postType)?.label ?? 'Post';
 
   function go(path: string) { onClose(); navigate(path); }
@@ -315,10 +373,26 @@ export function CreateModal({ onClose }: { onClose: () => void }) {
             <div className="flex flex-col gap-2.5">
               <p className="text-[10px] tracking-widest uppercase text-muted font-semibold">Post to community</p>
               <DestButton icon={PenSquare} label="Community post" hint="Social, for sale, event, or discussion" onClick={() => setStep('post_type')} />
-              <p className="text-[10px] tracking-widest uppercase text-muted font-semibold mt-2">Do something</p>
-              <DestButton icon={GraduationCap} label="Book a lesson" hint="Request a time with your instructor" onClick={() => go('/app/book')} />
-              <DestButton icon={ShoppingBag} label="Shop for sale" hint="Browse horses and gear" onClick={() => go('/app?filter=for_sale')} />
-              <DestButton icon={Send} label="New message" hint="Message a community member" onClick={() => go('/app/messages')} />
+              {isAdmin && (
+                <DestButton icon={Megaphone} label="Announcement" hint="An official notice — gold-flagged in the feed" onClick={() => setStep('announce')} />
+              )}
+              {isStaff && (
+                <>
+                  <p className="text-[10px] tracking-widest uppercase text-muted font-semibold mt-2">For a client</p>
+                  <DestButton icon={Handshake} label="New engagement" hint="Start a service engagement — contracts and paperwork attach to it" onClick={() => go('/app/ops/engagements/new')} />
+                  <DestButton icon={FileText} label="New contract" hint="Lease or purchase — pick the client and the horse" onClick={() => go('/app/ops/contracts/new')} />
+                  <DestButton icon={UserPlus} label="New account" hint={isAdmin ? 'Invite a client, instructor, or admin' : 'Invite a client'} onClick={() => go('/app/ops/accounts/new')} />
+                </>
+              )}
+              {/* client actions — an admin's "+" is a company control, not a shopper's */}
+              {!isAdmin && (
+                <>
+                  <p className="text-[10px] tracking-widest uppercase text-muted font-semibold mt-2">Do something</p>
+                  <DestButton icon={GraduationCap} label="Book a lesson" hint="Request a time with your instructor" onClick={() => go('/app/book')} />
+                  <DestButton icon={ShoppingBag} label="Shop for sale" hint="Browse horses and gear" onClick={() => go('/app?filter=for_sale')} />
+                  <DestButton icon={Send} label="New message" hint="Message a community member" onClick={() => go('/app/messages')} />
+                </>
+              )}
             </div>
           )}
           {step === 'post_type' && (
@@ -330,6 +404,7 @@ export function CreateModal({ onClose }: { onClose: () => void }) {
             </div>
           )}
           {step === 'form' && <PostForm type={postType} onClose={onClose} />}
+          {step === 'announce' && <AnnounceForm onClose={onClose} />}
         </div>
       </div>
     </div>

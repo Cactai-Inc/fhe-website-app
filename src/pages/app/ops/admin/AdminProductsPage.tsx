@@ -5,6 +5,10 @@ import {
   listProducts, createProduct, listProductPrices, createProductPrice,
   type Product, type ProductPrice,
 } from '../../../../lib/api';
+import {
+  adminListOfferings, adminCreateOffering, adminUpdateOffering, type OfferingInput,
+} from '../../../../lib/admin';
+import type { Offering, Segment, PriceUnitDb, PurchaseType } from '../../../../lib/types';
 
 /**
  * ADMIN-PRODUCTS — the product catalog + effective-dated price book (admin-only
@@ -18,7 +22,7 @@ import {
 
 const EMPTY_PRODUCT = { product_key: '', name: '', module_key: '', service_type: '' };
 
-export function AdminProductsPage() {
+function PriceBookTab() {
   const toast = useToast();
   const products = useAsync(listProducts);
   const prices = useAsync(listProductPrices);
@@ -97,12 +101,9 @@ export function AdminProductsPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto py-8 px-4">
+    <div>
       <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="font-serif text-2xl text-green-900">Products</h1>
-          <p className="text-sm text-green-800/70">Catalog and effective-dated pricing.</p>
-        </div>
+        <p className="text-sm text-green-800/70">Internal product keys and effective-dated pricing history.</p>
         <button type="button" className="btn-primary" onClick={openCreate}>New product</button>
       </div>
 
@@ -230,6 +231,245 @@ export function AdminProductsPage() {
           emptyMessage="Add the first effective-dated price."
         />
       </Modal>
+    </div>
+  );
+}
+
+// ─── Catalog tab: the OFFERINGS the site, booking, and checkout actually show ──
+const SEGMENTS: Segment[] = ['rider', 'horse', 'support'];
+const PRICE_UNITS: PriceUnitDb[] = ['session', 'week', 'month', 'flat', 'percent'];
+const PURCHASE_TYPES: PurchaseType[] = ['one_time', 'subscription', 'deposit_retainer'];
+
+const EMPTY_OFFERING: OfferingInput = {
+  segment: 'rider', name: '', tagline: '', description: '', service_type: '',
+  price_amount: null, price_unit: null, price_min: null, purchase_type: null,
+  horse_included: null, is_popular: false, note: '', active: true, sort_order: 0,
+};
+
+function OfferingForm({
+  value, onChange,
+}: { value: OfferingInput; onChange: (v: OfferingInput) => void }) {
+  const set = <K extends keyof OfferingInput>(k: K, v: OfferingInput[K]) => onChange({ ...value, [k]: v });
+  return (
+    <div className="grid sm:grid-cols-2 gap-3">
+      <FormField label="Name" required hint="The slug is generated from segment + name, collision-free">
+        {({ id, errorClass }) => (
+          <input id={id} className={`form-input ${errorClass}`} value={value.name}
+            onChange={(e) => set('name', e.target.value)} />
+        )}
+      </FormField>
+      <FormField label="Segment" required hint="Which catalog namespace it lives in">
+        {({ id, errorClass }) => (
+          <select id={id} className={`form-input ${errorClass}`} value={value.segment}
+            onChange={(e) => set('segment', e.target.value as Segment)}>
+            {SEGMENTS.map((sg) => <option key={sg} value={sg}>{sg}</option>)}
+          </select>
+        )}
+      </FormField>
+      <FormField label="Tagline">
+        {({ id, errorClass }) => (
+          <input id={id} className={`form-input ${errorClass}`} value={value.tagline ?? ''}
+            onChange={(e) => set('tagline', e.target.value || null)} />
+        )}
+      </FormField>
+      <FormField label="Service type" hint="Links to servicing (e.g. lesson, training)">
+        {({ id, errorClass }) => (
+          <input id={id} className={`form-input ${errorClass}`} value={value.service_type ?? ''}
+            onChange={(e) => set('service_type', e.target.value || null)} />
+        )}
+      </FormField>
+      <div className="sm:col-span-2">
+        <FormField label="Description">
+          {({ id, errorClass }) => (
+            <textarea id={id} rows={3} className={`form-input resize-none ${errorClass}`} value={value.description ?? ''}
+              onChange={(e) => set('description', e.target.value || null)} />
+          )}
+        </FormField>
+      </div>
+      <FormField label="Price (USD)" hint="Blank = inquire">
+        {({ id, errorClass }) => (
+          <input id={id} type="number" min="0" step="0.01" className={`form-input ${errorClass}`}
+            value={value.price_amount ?? ''}
+            onChange={(e) => set('price_amount', e.target.value === '' ? null : Number(e.target.value))} />
+        )}
+      </FormField>
+      <FormField label="Price unit">
+        {({ id, errorClass }) => (
+          <select id={id} className={`form-input ${errorClass}`} value={value.price_unit ?? ''}
+            onChange={(e) => set('price_unit', (e.target.value || null) as PriceUnitDb | null)}>
+            <option value="">—</option>
+            {PRICE_UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+          </select>
+        )}
+      </FormField>
+      <FormField label="Minimum price" hint='Shows as "from $X"'>
+        {({ id, errorClass }) => (
+          <input id={id} type="number" min="0" step="0.01" className={`form-input ${errorClass}`}
+            value={value.price_min ?? ''}
+            onChange={(e) => set('price_min', e.target.value === '' ? null : Number(e.target.value))} />
+        )}
+      </FormField>
+      <FormField label="Purchase type">
+        {({ id, errorClass }) => (
+          <select id={id} className={`form-input ${errorClass}`} value={value.purchase_type ?? ''}
+            onChange={(e) => set('purchase_type', (e.target.value || null) as PurchaseType | null)}>
+            <option value="">—</option>
+            {PURCHASE_TYPES.map((u) => <option key={u} value={u}>{u.replace('_', ' ')}</option>)}
+          </select>
+        )}
+      </FormField>
+      <FormField label="Lesson horse" hint="Riding lessons only">
+        {({ id, errorClass }) => (
+          <select id={id} className={`form-input ${errorClass}`}
+            value={value.horse_included === null || value.horse_included === undefined ? '' : String(value.horse_included)}
+            onChange={(e) => set('horse_included', e.target.value === '' ? null : e.target.value === 'true')}>
+            <option value="">Not a lesson</option>
+            <option value="true">Ride our horse</option>
+            <option value="false">Ride your horse</option>
+          </select>
+        )}
+      </FormField>
+      <FormField label="Sort order">
+        {({ id, errorClass }) => (
+          <input id={id} type="number" className={`form-input ${errorClass}`} value={value.sort_order ?? 0}
+            onChange={(e) => set('sort_order', Number(e.target.value) || 0)} />
+        )}
+      </FormField>
+      <div className="sm:col-span-2 flex gap-6">
+        <label className="inline-flex items-center gap-2 text-sm text-secondary">
+          <input type="checkbox" className="accent-green-700" checked={value.is_popular ?? false}
+            onChange={(e) => set('is_popular', e.target.checked)} />
+          Mark as popular
+        </label>
+        <label className="inline-flex items-center gap-2 text-sm text-secondary">
+          <input type="checkbox" className="accent-green-700" checked={value.active ?? true}
+            onChange={(e) => set('active', e.target.checked)} />
+          Published (visible everywhere it's wired)
+        </label>
+      </div>
+      <div className="sm:col-span-2">
+        <FormField label="Note" hint="Small print under the price">
+          {({ id, errorClass }) => (
+            <input id={id} className={`form-input ${errorClass}`} value={value.note ?? ''}
+              onChange={(e) => set('note', e.target.value || null)} />
+          )}
+        </FormField>
+      </div>
+    </div>
+  );
+}
+
+function CatalogTab() {
+  const toast = useToast();
+  const [rows, setRows] = useState<Offering[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Offering | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState<OfferingInput>(EMPTY_OFFERING);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const load = () => {
+    adminListOfferings().then(setRows).catch(() => setError('Could not load the catalog.'));
+  };
+  useEffect(load, []);
+
+  function openCreate() {
+    setForm(EMPTY_OFFERING); setFormError(null); setCreating(true); setEditing(null);
+  }
+  function openEdit(row: Offering) {
+    setForm({
+      segment: row.segment, name: row.name, tagline: row.tagline, description: row.description,
+      service_type: row.service_type, price_amount: row.price_amount, price_unit: row.price_unit,
+      price_min: row.price_min, purchase_type: row.purchase_type, horse_included: row.horse_included,
+      is_popular: row.is_popular, note: row.note, active: row.active, sort_order: row.sort_order,
+    });
+    setFormError(null); setEditing(row); setCreating(false);
+  }
+
+  async function submit() {
+    setFormError(null);
+    if (!form.name.trim()) { setFormError('Name is required.'); return; }
+    try {
+      if (editing) {
+        await adminUpdateOffering(editing.id, form);
+        toast.success('Offering updated — live everywhere it appears');
+      } else {
+        const created = await adminCreateOffering({ ...form, name: form.name.trim() });
+        toast.success(`Created — slug ${created.slug}`);
+      }
+      setCreating(false); setEditing(null);
+      load();
+    } catch (err) {
+      setFormError(toErrorMessage(err, 'Could not save the offering.'));
+      throw err;
+    }
+  }
+
+  return (
+    <div>
+      <div className="mb-6 flex items-center justify-between">
+        <p className="text-sm text-green-800/70">
+          What the site, booking, and checkout show. Edits reach every published and
+          unpublished visibility point immediately.
+        </p>
+        <button type="button" className="btn-primary" onClick={openCreate}>New offering</button>
+      </div>
+      {error && <p role="alert" className="form-error mb-4">{error}</p>}
+      <DataTable<Offering>
+        columns={[
+          { key: 'segment', header: 'Segment', render: (r) => r.segment },
+          { key: 'name', header: 'Name', render: (r) => r.name },
+          { key: 'slug', header: 'Slug', render: (r) => <code className="text-xs">{r.slug}</code> },
+          { key: 'price', header: 'Price', render: (r) => (r.price_amount != null ? <Money amount={r.price_amount} /> : r.price_min != null ? `from $${r.price_min}` : '—') },
+          { key: 'active', header: 'Status', render: (r) => <StatusBadge status={r.active ? 'PUBLISHED' : 'HIDDEN'} /> },
+        ]}
+        rows={rows ?? []}
+        rowKey={(r) => r.id}
+        loading={rows === null && !error}
+        emptyTitle="No offerings"
+        emptyMessage="Create your first catalog offering."
+        onRowClick={openEdit}
+      />
+
+      <Modal
+        open={creating || editing !== null}
+        onClose={() => { setCreating(false); setEditing(null); }}
+        title={editing ? `Edit — ${editing.name}` : 'New offering'}
+        footer={
+          <AsyncButton className="btn-primary" onClick={submit} pendingLabel="Saving…">
+            {editing ? 'Save changes' : 'Create offering'}
+          </AsyncButton>
+        }
+      >
+        {formError && <p role="alert" className="form-error mb-3">{formError}</p>}
+        {editing && (
+          <p className="text-[11.5px] text-muted mb-3">
+            Slug <code>{editing.slug}</code> stays stable so existing links keep working.
+          </p>
+        )}
+        <OfferingForm value={form} onChange={setForm} />
+      </Modal>
+    </div>
+  );
+}
+
+export function AdminProductsPage() {
+  const [tab, setTab] = useState<'catalog' | 'pricebook'>('catalog');
+  return (
+    <div className="max-w-5xl mx-auto py-8 px-4">
+      <h1 className="font-serif text-2xl text-green-900 mb-1">Products</h1>
+      <p className="text-sm text-green-800/70 mb-5">The catalog customers see, and the internal price book.</p>
+      <div className="flex gap-1.5 mb-6">
+        {([['catalog', 'Catalog'], ['pricebook', 'Price book']] as ['catalog' | 'pricebook', string][]).map(([k, label]) => (
+          <button key={k} type="button" onClick={() => setTab(k)}
+            className={`px-4 py-2 rounded-full text-sm font-sans focus-ring ${
+              tab === k ? 'bg-green-800 text-white' : 'bg-green-800/10 text-green-800 hover:bg-green-800/20'
+            }`}>
+            {label}
+          </button>
+        ))}
+      </div>
+      {tab === 'catalog' ? <CatalogTab /> : <PriceBookTab />}
     </div>
   );
 }

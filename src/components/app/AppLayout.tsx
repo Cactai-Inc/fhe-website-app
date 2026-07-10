@@ -64,11 +64,20 @@ const PLATFORM_NAV: NavItem[] = [
   { to: '/app/ops/admin/registry', label: 'Registry', icon: Shield },
 ];
 
-const CLIENTS_GROUP: NavItem[] = [
-  { to: '/app/ops/intake', label: 'Intake', icon: Mail },
-  { to: '/app/ops/contacts', label: 'Contacts', icon: Contact },
-  { to: '/app/admin', label: 'Accounts', icon: Users, adminOnly: true },
+/* FRONT DESK — everything inbound that needs handling and moving to a point of
+ * resolution or matriculation (client and non-client alike): booking requests,
+ * form submissions, support. First section — dealing with what came in is the
+ * primary job. */
+const FRONTDESK_GROUP: NavItem[] = [
+  { to: '/app/ops/intake', label: 'Inbound', icon: Mail },
   { to: '/app/ops/support', label: 'Support', icon: LifeBuoy, adminOnly: true },
+];
+/* ACCOUNTS — who we know: customers (Clients), internal accounts (Team), and
+ * the raw contact book behind both. */
+const ACCOUNTS_GROUP: NavItem[] = [
+  { to: '/app/admin', label: 'Clients', icon: Users, adminOnly: true },
+  { to: '/app/ops/team', label: 'Team', icon: Contact, adminOnly: true },
+  { to: '/app/ops/contacts', label: 'Contacts', icon: Contact },
 ];
 const SERVICING_GROUP: NavItem[] = [
   { to: '/app/ops/lessons', label: 'Lessons', icon: GraduationCap, module: 'mod.lessons' },
@@ -101,7 +110,7 @@ const SETTINGS_GROUP: NavItem[] = [
 
 // kept for compatibility with anything importing MANAGE_NAV
 export const MANAGE_NAV: NavItem[] = [
-  ...CLIENTS_GROUP, ...SERVICING_GROUP, ...BUSINESS_GROUP,
+  ...FRONTDESK_GROUP, ...ACCOUNTS_GROUP, ...SERVICING_GROUP, ...BUSINESS_GROUP,
   ...COMMUNITY_GROUP, ...MODULES_GROUP, ...SETTINGS_GROUP,
 ];
 
@@ -122,7 +131,8 @@ export function manageNavGroups(
         && (!i.adminOnly || isAdmin || grantKeys.includes(i.to)),
   );
   const groups: NavGroup[] = [
-    { key: 'clients', label: 'Clients', items: visible(CLIENTS_GROUP), defaultOpen: true },
+    { key: 'frontdesk', label: 'Front desk', items: visible(FRONTDESK_GROUP), defaultOpen: true },
+    { key: 'accounts', label: 'Accounts', items: visible(ACCOUNTS_GROUP), defaultOpen: true },
     { key: 'servicing', label: 'Servicing', items: visible(SERVICING_GROUP), defaultOpen: true },
     { key: 'business', label: 'Business', items: visible(BUSINESS_GROUP) },
     { key: 'community', label: 'Community', items: visible(COMMUNITY_GROUP) },
@@ -259,14 +269,30 @@ export default function AppLayout() {
                   <p className="px-4 py-2 text-xs text-muted border-b border-green-800/10 truncate">{name}</p>
                   <MenuLink to="/app" label="Main" icon={HomeIcon} end onNavigate={closeMenu} />
                   <MenuLink to="/app/account" label="Account" icon={UserRound} onNavigate={closeMenu} />
-                  <div className="mt-1 border-t border-green-800/10 pt-2 px-4 pb-1 text-xs uppercase tracking-wide text-secondary/60">Quick access</div>
-                  {QUICK.map((q) => (
-                    <button key={q.label} type="button"
-                      onClick={() => { closeMenu(); navigate(q.to); }}
-                      className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">
-                      <q.icon size={17} /> {q.label}
-                    </button>
-                  ))}
+                  {/* admin references — company-associable items only */}
+                  {isAdmin && !isSuperAdmin && (
+                    <>
+                      <div className="mt-1 border-t border-green-800/10 pt-2 px-4 pb-1 text-xs uppercase tracking-wide text-secondary/60">Company</div>
+                      <button type="button"
+                        onClick={() => { closeMenu(); navigate('/app/ops/documents'); }}
+                        className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">
+                        <FileText size={17} /> Pending agreements
+                      </button>
+                    </>
+                  )}
+                  {/* client quick links — an admin's menu carries company work, not shopper shortcuts */}
+                  {!isAdmin && !isSuperAdmin && (
+                    <>
+                      <div className="mt-1 border-t border-green-800/10 pt-2 px-4 pb-1 text-xs uppercase tracking-wide text-secondary/60">Quick access</div>
+                      {QUICK.map((q) => (
+                        <button key={q.label} type="button"
+                          onClick={() => { closeMenu(); navigate(q.to); }}
+                          className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">
+                          <q.icon size={17} /> {q.label}
+                        </button>
+                      ))}
+                    </>
+                  )}
                   {navGroups.length > 0 && (
                     <div className="lg:hidden">
                       {navGroups.map((g) => (

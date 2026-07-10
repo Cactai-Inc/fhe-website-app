@@ -12,17 +12,18 @@ import {
 } from './feed';
 import {
   fetchThreads, fetchContentPosts, fetchResources, fetchEvents, fetchMemberDirectory,
+  fetchAnnouncements,
 } from './community';
 import { listVendors, type Vendor } from './stable';
 import type {
-  Thread, ContentPost, ContentResource, CommunityEvent, MemberDirectoryEntry,
+  Thread, ContentPost, ContentResource, CommunityEvent, MemberDirectoryEntry, Announcement,
 } from './community-types';
 import type { FeedView } from './seed';
 
 export interface FeedCard {
   id: string;
   view: Exclude<FeedView, 'all'>;
-  kind: 'social' | 'for_sale' | 'discussion' | 'event' | 'article' | 'resource' | 'member';
+  kind: 'social' | 'for_sale' | 'discussion' | 'event' | 'article' | 'resource' | 'member' | 'announcement';
   title?: string;
   body?: string;
   mediaUrl?: string;
@@ -148,6 +149,17 @@ function fromMember(m: MemberDirectoryEntry): FeedCard {
   };
 }
 
+function fromAnnouncement(a: Announcement): FeedCard {
+  return {
+    id: a.id, view: 'social', kind: 'announcement',
+    title: a.title, body: a.body,
+    author: 'Announcement',
+    when: ago(a.created_at),
+    // pinned announcements float above everything in the merged stream
+    ts: a.pinned ? Number.MAX_SAFE_INTEGER : new Date(a.created_at).getTime(),
+  };
+}
+
 // ── Public: fetch cards for a view ─────────────────────────────
 export async function fetchViewCards(view: FeedView): Promise<FeedCard[]> {
   switch (view) {
@@ -176,17 +188,19 @@ export async function fetchViewCards(view: FeedView): Promise<FeedCard[]> {
       // Merge the post-like sources newest-first (social + for-sale + discussions +
       // events + articles). Members/resources are reference directories, not part
       // of the mixed stream.
-      const [{ posts }, threads, events, articles] = await Promise.all([
+      const [{ posts }, threads, events, articles, announcements] = await Promise.all([
         feedGet(),
         fetchThreads().catch(() => [] as Thread[]),
         fetchEvents().catch(() => [] as CommunityEvent[]),
         fetchContentPosts().catch(() => [] as ContentPost[]),
+        fetchAnnouncements().catch(() => [] as Announcement[]),
       ]);
       const cards: FeedCard[] = [
         ...posts.map(fromFeedPost),
         ...threads.map(fromThread),
         ...events.map(fromEvent),
         ...articles.map(fromArticle),
+        ...announcements.filter((a) => a.published).map(fromAnnouncement),
       ];
       return cards.sort((a, b) => b.ts - a.ts);
     }
