@@ -1,25 +1,32 @@
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom';
 import {
-  CalendarDays, Users, BookOpen, FileText, UserRound,
-  ReceiptText, Shield, LogOut, GraduationCap, Handshake, Home as HomeIcon,
-  Boxes, Contact, LayoutDashboard, Sparkles, BadgeCheck, Mail, ChevronDown,
-  PenSquare, X, LifeBuoy,
+  CalendarDays, Users, FileText, UserRound, ReceiptText, Shield, LogOut,
+  GraduationCap, Handshake, Home as HomeIcon, Boxes, Contact, LayoutDashboard,
+  Mail, ChevronDown, Plus, LifeBuoy, ShoppingBag, MessageSquare, BookOpen,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useViewSurfaces, type Surface, type ViewSurfaces } from '../../lib/surfaces';
-import NotificationsBell, { useNotificationsBell } from './NotificationsBell';
+import { useViewSurfaces } from '../../lib/surfaces';
+import { useNotificationsBell } from './NotificationsBell';
 import CalendarModal from './CalendarModal';
-import { FeedComposer } from '../feed/FeedComposer';
+import { CreateModal } from './CreateModal';
 
 /**
- * APP SHELL (Slice 4 rebuild) — a single avatar menu, no persistent side nav.
- * Logo → Home. Top-right: calendar modal, notifications bell (count badge), and the
- * avatar menu (all navigation lives here). Surfaces are PURCHASE-DRIVEN: the menu
- * shows only the sections the member's purchases unlock (useViewSurfaces). A rider
- * sees feed/community/library/dashboard; a deal/care client sees their dashboard,
- * no feed/community. Operators get the ops menu appended. Mobile-first: the same
- * menu on every breakpoint, opened from the avatar.
+ * APP SHELL — role-adaptive.
+ *
+ * Rider (USER): two surfaces only — Main (dashboard + community) and Account —
+ * reached from the avatar menu. No side rail. The avatar menu also holds quick-
+ * access shortcuts.
+ *
+ * Instructor (MANAGER/EMPLOYEE) and Admin (ADMIN): the same Main page, PLUS
+ * management pages. Because there are more than two destinations, these two get a
+ * PERSISTENT LEFT RAIL on desktop (management nav, always visible, Main included).
+ * On mobile the rail collapses into the avatar menu. Instructor sees the servicing
+ * subset; admin sees that plus the tenant-admin pages. Platform items
+ * (modules/registry/organizations/provision) are SUPER_ADMIN-only.
+ *
+ * Header (all types): logo mark + wordmark (mark-only on mobile) → Main; universal
+ * create "+"; calendar; avatar menu (notifications fold into the avatar badge).
  */
 
 interface NavItem {
@@ -27,57 +34,19 @@ interface NavItem {
   label: string;
   icon: typeof LayoutDashboard;
   end?: boolean;
-  /** Surface this item requires (from the purchase-driven view model). */
-  surface?: Surface;
-  /** Tenant module gate (my_modules()), preserved from the entitlement layer. */
   module?: string;
-  /** Two-operator model (Slice 5): admin-only ops item — hidden from trainers
-   *  (the servicing subset). Trainers see intake/availability/lessons/engagements/
-   *  contacts/horses/documents; billing/deal-terms/config/oversight are admin-only. */
   adminOnly?: boolean;
-  /** SUPER_ADMIN-only platform item. */
   superAdmin?: boolean;
 }
 
-// The member menu. Each item declares the surface it needs; items with no surface
-// (Home, Profile) are always shown. Home routes to the feed for riders/operators and
-// to the member's purpose-built dashboard otherwise (resolved at click via /app).
-const MEMBER_NAV: NavItem[] = [
-  { to: '/app', label: 'Home', icon: HomeIcon, end: true },
-  { to: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard, surface: 'dashboard' },
-  { to: '/app/deal', label: 'My Deal', icon: Handshake, surface: 'deal_dashboard' },
-  { to: '/app/care', label: 'Horse Care', icon: Sparkles, surface: 'care_dashboard' },
-  { to: '/app/schedule', label: 'Schedule', icon: CalendarDays, surface: 'dashboard' },
-  { to: '/app/lessons', label: 'Lessons', icon: GraduationCap, module: 'mod.lessons', surface: 'dashboard' },
-  { to: '/app/community', label: 'Community', icon: Users, surface: 'community' },
-  { to: '/app/messages', label: 'Messages', icon: Mail },
-  { to: '/app/library', label: 'Library', icon: BookOpen, surface: 'library' },
-  { to: '/app/documents', label: 'Documents', icon: FileText, surface: 'documents' },
-  { to: '/app/orders', label: 'Orders', icon: ReceiptText, surface: 'orders' },
-  { to: '/app/engagements', label: 'My Engagements', icon: Handshake },
-  { to: '/app/balance', label: 'Balance', icon: ReceiptText },
-  { to: '/app/membership', label: 'Membership', icon: BadgeCheck },
-  { to: '/app/profile', label: 'Profile', icon: UserRound },
-  { to: '/app/support', label: 'Support', icon: LifeBuoy },
+const QUICK: { label: string; icon: typeof GraduationCap }[] = [
+  { label: 'Book a lesson', icon: GraduationCap },
+  { label: 'Shop for sale', icon: ShoppingBag },
+  { label: 'New message', icon: MessageSquare },
 ];
 
-/** Items the member actually sees: an item shows when its surface is present (or it
- *  has no surface gate) AND its module (if any) is enabled. Pure/unit-testable. */
-export function visibleNav(
-  surfaces: ViewSurfaces,
-  hasModule: (key: string) => boolean,
-): NavItem[] {
-  return MEMBER_NAV.filter(
-    (item) =>
-      (!item.surface || surfaces.surfaces.includes(item.surface)) &&
-      (!item.module || hasModule(item.module)),
-  );
-}
-
-/** Staff/admin operations nav (unchanged entitlement gating from the ops layer). */
-export const OPS_NAV: NavItem[] = [
-  { to: '/app/ops', label: 'Ops Dashboard', icon: LayoutDashboard, end: true },
-  // Servicing subset — trainers + admins
+export const MANAGE_NAV: NavItem[] = [
+  { to: '/app', label: 'Main', icon: HomeIcon, end: true },
   { to: '/app/ops/intake', label: 'Intake', icon: Mail },
   { to: '/app/ops/availability', label: 'Availability', icon: CalendarDays },
   { to: '/app/ops/contacts', label: 'Contacts', icon: Contact },
@@ -85,40 +54,56 @@ export const OPS_NAV: NavItem[] = [
   { to: '/app/ops/engagements', label: 'Engagements', icon: Handshake },
   { to: '/app/ops/documents', label: 'Documents', icon: FileText },
   { to: '/app/ops/lessons', label: 'Lessons', icon: GraduationCap, module: 'mod.lessons' },
-  // Total control — admins only
   { to: '/app/ops/transactions', label: 'Transactions', icon: ReceiptText, adminOnly: true },
   { to: '/app/ops/payments/review', label: 'Payment review', icon: ReceiptText, adminOnly: true },
   { to: '/app/ops/billing', label: 'Billing', icon: ReceiptText, adminOnly: true },
   { to: '/app/ops/moderation', label: 'Moderation', icon: Shield, adminOnly: true },
-  { to: '/app/ops/support', label: 'Support', icon: Mail, adminOnly: true },
+  { to: '/app/ops/support', label: 'Support', icon: LifeBuoy, adminOnly: true },
   { to: '/app/ops/oversight', label: 'Oversight', icon: Shield, adminOnly: true },
+  { to: '/app/ops/content', label: 'Content store', icon: BookOpen, adminOnly: true },
+  { to: '/app/admin', label: 'Accounts', icon: Users, adminOnly: true },
   { to: '/app/ops/brokerage', label: 'Brokerage', icon: Handshake, module: 'mod.brokerage', adminOnly: true },
   { to: '/app/ops/boarding', label: 'Boarding', icon: HomeIcon, module: 'mod.boarding', adminOnly: true },
   { to: '/app/ops/barnops', label: 'Barn Ops', icon: Boxes, module: 'mod.barnops', adminOnly: true },
   { to: '/app/ops/records', label: 'Records', icon: FileText, module: 'mod.horserecords', adminOnly: true },
   { to: '/app/ops/employees', label: 'Employees', icon: Contact, module: 'mod.employees', adminOnly: true },
-  { to: '/app/ops/content', label: 'Content store', icon: BookOpen, adminOnly: true },
-  { to: '/app/ops/admin/modules', label: 'Modules', icon: Shield, adminOnly: true },
-  { to: '/app/ops/admin/registry', label: 'Registry', icon: Shield, adminOnly: true },
-  { to: '/app/ops/admin/branding', label: 'Branding', icon: Shield, adminOnly: true },
-  { to: '/app/ops/admin/products', label: 'Products', icon: Shield, adminOnly: true },
+  { to: '/app/ops/admin/modules', label: 'Feature flags', icon: Shield, superAdmin: true },
+  { to: '/app/ops/admin/registry', label: 'Registry', icon: Shield, superAdmin: true },
   { to: '/app/ops/superadmin/organizations', label: 'Organizations', icon: Shield, superAdmin: true },
   { to: '/app/ops/superadmin/provision', label: 'Provision tenant', icon: Shield, superAdmin: true },
 ];
 
-/** The ops nav a staff session actually sees (pure, unit-testable). Two-operator
- *  model: a trainer (isAdmin=false) sees only the servicing subset; admins see all;
- *  superadmin items gate on isSuperAdmin. */
-export function visibleOpsNav(
+export function visibleManageNav(
   hasModule: (key: string) => boolean,
-  isSuperAdmin = false,
-  isAdmin = true,
+  isAdmin: boolean,
+  isSuperAdmin: boolean,
 ): NavItem[] {
-  return OPS_NAV.filter(
+  return MANAGE_NAV.filter(
     (item) =>
       (!item.module || hasModule(item.module)) &&
-      (!item.superAdmin || isSuperAdmin) &&
-      (!item.adminOnly || isAdmin),
+      (!item.adminOnly || isAdmin) &&
+      (!item.superAdmin || isSuperAdmin),
+  );
+}
+
+function RailLink({ to, label, icon: Icon, end }: NavItem) {
+  return (
+    <NavLink
+      to={to}
+      end={end}
+      className={({ isActive }) =>
+        `flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13.5px] font-sans transition-colors focus-ring ${
+          isActive ? 'bg-green-800 text-white' : 'text-secondary hover:bg-white'
+        }`
+      }
+    >
+      {({ isActive }) => (
+        <>
+          <Icon size={17} aria-hidden="true" className={isActive ? 'text-gold-400' : 'text-green-600'} />
+          {label}
+        </>
+      )}
+    </NavLink>
   );
 }
 
@@ -142,22 +127,20 @@ function MenuLink({ to, label, icon: Icon, end, onNavigate }: NavItem & { onNavi
 
 export default function AppLayout() {
   const { profile, isAdmin, isStaff, isSuperAdmin, hasModule, signOut } = useAuth();
-  const { surfaces } = useViewSurfaces();
+  useViewSurfaces();
   const navigate = useNavigate();
   const bell = useNotificationsBell();
   const [menuOpen, setMenuOpen] = useState(false);
   const [calOpen, setCalOpen] = useState(false);
-  const [composeOpen, setComposeOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
   const name = profile?.display_name || profile?.first_name || 'Member';
   const initial = (name[0] || 'M').toUpperCase();
-  const items = visibleNav(surfaces, hasModule);
-  // Two-operator model: any operator sees the ops section; a trainer sees only the
-  // servicing subset (visibleOpsNav trims adminOnly items when isAdmin=false).
-  const opsItems = isStaff ? visibleOpsNav(hasModule, isSuperAdmin, isAdmin) : [];
 
-  // close the avatar menu on outside click / Escape
+  const showRail = isStaff;
+  const manageItems = showRail ? visibleManageNav(hasModule, isAdmin, isSuperAdmin) : [];
+
   useEffect(() => {
     if (!menuOpen) return;
     function onDoc(e: MouseEvent) {
@@ -174,47 +157,29 @@ export default function AppLayout() {
     await signOut();
     navigate('/');
   }
-
   const closeMenu = () => setMenuOpen(false);
 
   return (
     <div className="min-h-screen bg-cream">
-      {/* Top bar — logo left, calendar + bell + avatar right (every breakpoint) */}
       <header className="sticky top-0 z-40 bg-white border-b border-green-800/10">
-        <div className="max-w-5xl mx-auto flex items-center justify-between px-4 sm:px-6 h-14">
-          <Link to="/app" className="font-display text-green-800 text-lg uppercase tracking-wide">
-            French Heritage
+        <div className="max-w-6xl mx-auto flex items-center justify-between px-4 sm:px-6 h-14">
+          <Link to="/app" className="flex items-center gap-2.5" aria-label="French Heritage — home">
+            <span className="w-[34px] h-[34px] rounded-lg bg-green-800 text-gold-400 grid place-items-center font-display text-lg font-semibold shrink-0">F</span>
+            <span className="hidden sm:inline font-display text-green-800 text-lg uppercase tracking-wide">French Heritage</span>
           </Link>
-          <div className="flex items-center gap-1">
-            {/* Header composer (Slice 5) — operators post to the feed from anywhere. */}
-            {isStaff && (
-              <button
-                type="button"
-                onClick={() => setComposeOpen(true)}
-                className="p-2 text-green-800 focus-ring rounded-md hover:bg-green-800/[0.06]"
-                aria-label="New post"
-              >
-                <PenSquare size={18} />
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => setCalOpen(true)}
-              className="p-2 text-green-800 focus-ring rounded-md hover:bg-green-800/[0.06]"
-              aria-label="Calendar"
-            >
+          <div className="flex items-center gap-3">
+            <button type="button" onClick={() => setCreateOpen(true)}
+              className="p-2 text-green-800 rounded-lg hover:bg-cream-100 focus-ring" aria-label="Create">
+              <Plus size={20} />
+            </button>
+            <button type="button" onClick={() => setCalOpen(true)}
+              className="p-2 text-green-800 rounded-lg hover:bg-cream-100 focus-ring" aria-label="Calendar">
               <CalendarDays size={18} />
             </button>
-            <NotificationsBell bell={bell} />
-            {/* Avatar menu — the single navigation entry point */}
             <div className="relative" ref={menuRef}>
-              <button
-                type="button"
-                onClick={() => setMenuOpen((v) => !v)}
+              <button type="button" onClick={() => setMenuOpen((v) => !v)}
                 className="flex items-center gap-1 pl-1.5 pr-2 py-1 rounded-full hover:bg-green-800/[0.06] focus-ring"
-                aria-label="Account menu"
-                aria-expanded={menuOpen}
-              >
+                aria-label="Account menu" aria-expanded={menuOpen}>
                 <span className="relative w-8 h-8 rounded-full bg-green-800 text-white text-sm font-sans grid place-items-center">
                   {initial}
                   {bell.count > 0 && (
@@ -228,21 +193,25 @@ export default function AppLayout() {
               {menuOpen && (
                 <div className="absolute right-0 mt-1 w-60 max-w-[calc(100vw-2rem)] bg-white border border-green-800/10 shadow-md rounded-md py-1 max-h-[80vh] overflow-y-auto z-50">
                   <p className="px-4 py-2 text-xs text-muted border-b border-green-800/10 truncate">{name}</p>
-                  {items.map((it) => <MenuLink key={it.to} {...it} onNavigate={closeMenu} />)}
-                  {opsItems.length > 0 && (
-                    <>
+                  <MenuLink to="/app" label="Main" icon={HomeIcon} end onNavigate={closeMenu} />
+                  <MenuLink to="/app/account" label="Account" icon={UserRound} onNavigate={closeMenu} />
+                  <div className="mt-1 border-t border-green-800/10 pt-2 px-4 pb-1 text-xs uppercase tracking-wide text-secondary/60">Quick access</div>
+                  {QUICK.map((q) => (
+                    <button key={q.label} type="button" onClick={closeMenu}
+                      className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">
+                      <q.icon size={17} /> {q.label}
+                    </button>
+                  ))}
+                  {manageItems.length > 0 && (
+                    <div className="lg:hidden">
                       <div className="mt-1 border-t border-green-800/10 pt-2 px-4 pb-1 text-xs uppercase tracking-wide text-secondary/60">
-                        {isAdmin ? 'Operations' : 'Servicing'}
+                        {isAdmin ? 'Management' : 'Servicing'}
                       </div>
-                      {isAdmin && <MenuLink to="/app/admin" label="Admin" icon={Shield} onNavigate={closeMenu} />}
-                      {opsItems.map((it) => <MenuLink key={it.to} {...it} onNavigate={closeMenu} />)}
-                    </>
+                      {manageItems.filter((i) => i.to !== '/app').map((it) => <MenuLink key={it.to} {...it} onNavigate={closeMenu} />)}
+                    </div>
                   )}
-                  <button
-                    type="button"
-                    onClick={handleSignOut}
-                    className="flex items-center gap-3 px-4 py-2.5 mt-1 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] border-t border-green-800/10 focus-ring"
-                  >
+                  <button type="button" onClick={handleSignOut}
+                    className="flex items-center gap-3 px-4 py-2.5 mt-1 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] border-t border-green-800/10 focus-ring">
                     <LogOut size={17} aria-hidden="true" /> Sign out
                   </button>
                 </div>
@@ -252,27 +221,26 @@ export default function AppLayout() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 min-w-0">
-        <Outlet />
-      </main>
+      <div className="max-w-6xl mx-auto flex">
+        {showRail && (
+          <aside className="hidden lg:block w-56 shrink-0 border-r border-green-800/10 bg-cream-100/40 min-h-[calc(100vh-3.5rem)]">
+            <nav className="p-3 sticky top-14">
+              <p className="px-3 pt-1 pb-2 text-[10px] tracking-widest uppercase text-muted font-semibold">
+                {isAdmin ? 'Management' : 'Servicing'}
+              </p>
+              <div className="flex flex-col gap-0.5">
+                {manageItems.map((it) => <RailLink key={it.to} {...it} />)}
+              </div>
+            </nav>
+          </aside>
+        )}
+        <main className="flex-1 min-w-0 px-4 sm:px-6 py-6 sm:py-9">
+          <Outlet />
+        </main>
+      </div>
 
       {calOpen && <CalendarModal onClose={() => setCalOpen(false)} />}
-
-      {composeOpen && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
-          onClick={() => setComposeOpen(false)}>
-          <div className="bg-cream w-full sm:max-w-lg sm:rounded-lg max-h-[92vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-4 border-b border-green-800/10 sticky top-0 bg-cream">
-              <h2 className="font-serif text-green-800">New post</h2>
-              <button type="button" onClick={() => setComposeOpen(false)} aria-label="Close"><X size={20} /></button>
-            </div>
-            <div className="p-4">
-              <FeedComposer onPosted={() => setComposeOpen(false)} />
-            </div>
-          </div>
-        </div>
-      )}
+      {createOpen && <CreateModal onClose={() => setCreateOpen(false)} />}
     </div>
   );
 }

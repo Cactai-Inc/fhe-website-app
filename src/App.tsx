@@ -64,9 +64,12 @@ import Community from './pages/app/Community';
 import Market from './pages/app/Market';
 import HostEvent from './pages/app/HostEvent';
 import Support from './pages/app/Support';
+import AccountHub from './pages/app/AccountHub';
+import VerifyEmailScreen from './components/app/VerifyEmailScreen';
+import { verifyWithPassword, verifyWithGoogle } from './lib/emailChange';
 import Admin from './pages/app/Admin';
 // Ops / CRM (staff/admin)
-import OpsDashboard from './pages/app/ops/OpsDashboard';
+import OpsHome from './pages/app/OpsHome';
 import ContactsPage from './pages/app/ops/ContactsPage';
 import HorsesPage from './pages/app/ops/HorsesPage';
 import EngagementsPage from './pages/app/ops/EngagementsPage';
@@ -167,6 +170,9 @@ export function AppRoutes() {
             {/* Guided participant document set — one info form, 4 docs signed in sequence */}
             <Route path="/docs/release-participant" element={<DocsParticipantFlow />} />
 
+            {/* Email-change verification landing — standalone, no chrome */}
+            <Route path="/verify-email" element={<VerifyEmailScreen seams={{ verifyWithPassword, verifyWithGoogle }} />} />
+
             {/* Member community app (its own chrome, member-gated) */}
             <Route
               path="/app"
@@ -216,12 +222,13 @@ export function AppRoutes() {
               <Route path="membership" element={<Membership />} />
               <Route path="profile" element={<Profile />} />
               <Route path="support" element={<Support />} />
+              <Route path="account" element={<AccountHub />} />
               {/* Admin (additionally requires admin) */}
               <Route path="admin" element={<ProtectedRoute requireAdmin><Admin /></ProtectedRoute>} />
 
               {/* Ops / CRM — two-operator model (Slice 5). Servicing subset =
                   requireStaff (trainers + admins); total control = requireAdmin. */}
-              <Route path="ops" element={<ProtectedRoute requireStaff><OpsDashboard /></ProtectedRoute>} />
+              <Route path="ops" element={<ProtectedRoute requireStaff><OpsHome /></ProtectedRoute>} />
               {/* Servicing subset — trainers + admins */}
               <Route path="ops/contacts" element={<ProtectedRoute requireStaff><ContactsPage /></ProtectedRoute>} />
               <Route path="ops/horses" element={<ProtectedRoute requireStaff><HorsesPage /></ProtectedRoute>} />
