@@ -133,16 +133,27 @@ export async function feedModerationList(disputedOnly: boolean): Promise<Moderat
 
 /** Upload one media file to the feed-media bucket under the user's folder;
  *  returns { url, kind }. Enforces single media (one file) at the call site. */
+const MAX_FEED_MEDIA_BYTES = 25 * 1024 * 1024; // 25MB — matches the bucket cap
+
 export async function uploadFeedMedia(file: File): Promise<{ url: string; kind: FeedMediaKind }> {
   const { data: auth } = await supabase.auth.getUser();
   const uid = auth?.user?.id;
   if (!uid) throw new Error('not signed in');
+  // Reject oversized files up front — a large phone video otherwise uploads
+  // silently for a very long time and reads as a hung spinner.
+  if (file.size > MAX_FEED_MEDIA_BYTES) {
+    throw new Error(`That file is ${(file.size / 1048576).toFixed(0)}MB — please keep photos and videos under 25MB.`);
+  }
   const kind: FeedMediaKind = file.type.startsWith('video/') ? 'video' : 'image';
   const ext = file.name.split('.').pop() || (kind === 'video' ? 'mp4' : 'jpg');
   const path = `${uid}/${crypto.randomUUID()}.${ext}`;
-  const { error } = await supabase.storage.from('feed-media').upload(path, file, {
+  // Guard against a stalled connection hanging the upload forever.
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('Upload timed out — check your connection and try again.')), 60_000));
+  const upload = supabase.storage.from('feed-media').upload(path, file, {
     contentType: file.type, upsert: false,
   });
+  const { error } = await Promise.race([upload, timeout]);
   if (error) throw error;
   const { data } = supabase.storage.from('feed-media').getPublicUrl(path);
   return { url: data.publicUrl, kind };

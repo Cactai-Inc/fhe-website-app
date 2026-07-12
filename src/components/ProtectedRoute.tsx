@@ -70,7 +70,7 @@ export default function ProtectedRoute({
       if (grantState === 'denied') return <Navigate to="/app" replace />;
     }
   } else if (requireAdmin && !isAdmin) {
-    return <Navigate to="/account" replace />;
+    return <Navigate to="/app" replace />;
   }
 
   // Staff area: any operator (admin or trainer) may enter; a plain member cannot.
@@ -81,7 +81,7 @@ export default function ProtectedRoute({
   // Member-only areas: signed-in but without an active membership → account page,
   // where a "your membership isn't active yet" note lives.
   if (requireMember && !isMember) {
-    return <Navigate to="/account" replace state={{ needsMembership: true }} />;
+    return <Navigate to="/app/account" replace state={{ needsMembership: true }} />;
   }
 
   return <>{children}</>;

@@ -159,7 +159,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAdmin,
         isStaff,
         isTrainer,
-        isMember: (!profile?.is_suspended) && (isAdmin || membership?.status === 'active'),
+        isMember: (!profile?.is_suspended) && (isStaff || membership?.status === 'active'),
         isSuperAdmin,
         role,
         orgId: profile?.org_id ?? null,
