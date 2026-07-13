@@ -2165,7 +2165,7 @@ export async function createServiceEngagement(input: {
 // ─── Public catalog (website + app read the SAME offerings) ──────────────────
 export interface PublicOffering {
   id: string;
-  segment: 'rider' | 'horse' | 'support';
+  segment: 'rider' | 'horse' | 'acquisition';
   name: string;
   tagline: string | null;
   description: string | null;
@@ -2179,6 +2179,7 @@ export interface PublicOffering {
   is_popular: boolean;
   note: string | null;
   sort_order: number;
+  price_model: import('./types').PriceModel | null;
 }
 
 /** The active catalog for the public site (and anywhere the app wants the

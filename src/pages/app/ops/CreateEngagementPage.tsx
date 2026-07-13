@@ -39,7 +39,7 @@ import { LeaseEngagementForm } from '../../../components/ops/engagements/LeaseEn
  */
 
 const SEGMENT_LABEL: Record<string, string> = {
-  rider: 'Riding & lessons', horse: 'Horse services', support: 'Support services',
+  rider: 'Riding & lessons', horse: 'Horse services', acquisition: 'Acquisition',
 };
 
 function ServiceEngagementForm({

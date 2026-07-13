@@ -236,7 +236,7 @@ function PriceBookTab() {
 }
 
 // ─── Catalog tab: the OFFERINGS the site, booking, and checkout actually show ──
-const SEGMENTS: Segment[] = ['rider', 'horse', 'support'];
+const SEGMENTS: Segment[] = ['rider', 'horse', 'acquisition'];
 const PRICE_UNITS: PriceUnitDb[] = ['session', 'week', 'month', 'flat', 'percent'];
 const PURCHASE_TYPES: PurchaseType[] = ['one_time', 'subscription', 'deposit_retainer'];
 
