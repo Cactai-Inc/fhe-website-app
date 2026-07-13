@@ -147,3 +147,10 @@ export async function staffCreateHorseForContact(
   if (error) throw error;
   return data as { horse_id: string; outcome: 'created' | 'match_found' };
 }
+
+/** The org's canonical company contact id (creates it once if needed). */
+export async function companyContactId(): Promise<string | null> {
+  const { data, error } = await supabase.rpc('company_contact_id');
+  if (error) throw error;
+  return (data as string) ?? null;
+}

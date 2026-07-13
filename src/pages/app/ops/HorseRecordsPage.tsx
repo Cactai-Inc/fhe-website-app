@@ -7,6 +7,7 @@ import {
   type StaffHorseRecord, type ContactOption,
 } from '../../../lib/horses';
 import { HorseIntakeForm } from '../../../components/app/HorseIntakeForm';
+import { companyContactId } from '../../../lib/horses';
 
 /**
  * STAFF HORSE RECORDS (spec H.8, /app/ops/horse-records) — the staff side of the
@@ -160,6 +161,8 @@ function EditableRecord({
 }
 
 export default function HorseRecordsPage() {
+  const [companyId, setCompanyId] = useState<string | null>(null);
+  useEffect(() => { companyContactId().then(setCompanyId).catch(() => {}); }, []);
   useDocumentTitle('Horse records');
   const [rows, setRows] = useState<StaffHorseRecord[] | null>(null);
   const [contacts, setContacts] = useState<ContactOption[]>([]);
@@ -232,7 +235,8 @@ export default function HorseRecordsPage() {
               <button type="button" onClick={() => setAdding(false)} aria-label="Close"><X size={20} /></button>
             </div>
             <div className="p-4 sm:p-5 overflow-y-auto pb-8">
-              <HorseIntakeForm submitLabel="Create record" onDone={() => { setAdding(false); load(); }} />
+              <HorseIntakeForm submitLabel="Create record" ownerContactId={companyId ?? undefined}
+                onDone={() => { setAdding(false); load(); }} />
             </div>
           </div>
         </div>
