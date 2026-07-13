@@ -93,3 +93,13 @@ $fn$;
 
 GRANT EXECUTE ON FUNCTION company_contact_id() TO authenticated;
 GRANT EXECUTE ON FUNCTION my_stable_horses() TO authenticated;
+
+-- Seed FHE's company contact so it exists immediately (company_contact_id()
+-- also creates it lazily, but seeding avoids a first-call race and makes it
+-- selectable in the party picker from the start).
+INSERT INTO contacts (org_id, first_name, is_company)
+SELECT 'e656f20b-ef43-4725-9029-19e7f0190d9c', 'French Heritage Equestrian', true
+WHERE NOT EXISTS (
+  SELECT 1 FROM contacts
+  WHERE org_id = 'e656f20b-ef43-4725-9029-19e7f0190d9c' AND is_company AND deleted_at IS NULL
+);
