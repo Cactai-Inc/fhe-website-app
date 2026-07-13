@@ -8,7 +8,7 @@
  * longer prose description. Every UI that names a service reads from here.
  */
 
-export type ServiceSegment = 'rider' | 'horse' | 'support' | 'internal';
+export type ServiceSegment = 'rider' | 'horse' | 'acquisition' | 'internal';
 
 export interface ServiceTypeDef {
   /** Canonical code, e.g. 'RIDING_LESSON' (security-model §10). */
@@ -21,12 +21,12 @@ export interface ServiceTypeDef {
 }
 
 export const SERVICE_TYPES: ServiceTypeDef[] = [
-  { code: 'HORSE_FINDER',              label: 'Horse Finder',              segment: 'support',  requiresHorse: false },
-  { code: 'HORSE_EVALUATION',         label: 'Horse Evaluation',          segment: 'support',  requiresHorse: true },
-  { code: 'HORSE_PURCHASE_ASSISTANCE', label: 'Horse Purchase Assistance', segment: 'support',  requiresHorse: true },
-  { code: 'HORSE_SALE_ASSISTANCE',     label: 'Horse Sale Assistance',     segment: 'support',  requiresHorse: true },
-  { code: 'HORSE_LEASE_IN_ASSISTANCE', label: 'Horse Lease-In Assistance', segment: 'support',  requiresHorse: true },
-  { code: 'HORSE_LEASE_OUT_ASSISTANCE',label: 'Horse Lease-Out Assistance',segment: 'support',  requiresHorse: true },
+  { code: 'HORSE_FINDER',              label: 'Horse Finder',              segment: 'acquisition',  requiresHorse: false },
+  { code: 'HORSE_EVALUATION',         label: 'Horse Evaluation',          segment: 'acquisition',  requiresHorse: true },
+  { code: 'HORSE_PURCHASE_ASSISTANCE', label: 'Horse Purchase Assistance', segment: 'acquisition',  requiresHorse: true },
+  { code: 'HORSE_SALE_ASSISTANCE',     label: 'Horse Sale Assistance',     segment: 'acquisition',  requiresHorse: true },
+  { code: 'HORSE_LEASE_IN_ASSISTANCE', label: 'Horse Lease-In Assistance', segment: 'acquisition',  requiresHorse: true },
+  { code: 'HORSE_LEASE_OUT_ASSISTANCE',label: 'Horse Lease-Out Assistance',segment: 'acquisition',  requiresHorse: true },
   { code: 'HORSE_TRAINING',           label: 'Horse Training',            segment: 'horse',    requiresHorse: true },
   { code: 'HORSE_EXERCISE',           label: 'Horse Exercise',            segment: 'horse',    requiresHorse: true },
   { code: 'HORSE_CLIPPING',           label: 'Horse Clipping',            segment: 'horse',    requiresHorse: true },

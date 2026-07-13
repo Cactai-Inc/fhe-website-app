@@ -143,7 +143,7 @@ export interface MyBrokerageOverview {
 
 /** The member's own brokerage (search/evaluation/purchase/sale/lease-representation)
  *  engagements: engagements RLS returns only the caller's rows; the brokerage set is
- *  the 'support' segment of the service_types catalog. */
+ *  the 'acquisition' segment of the service_types catalog. */
 export async function myBrokerageOverview(): Promise<MyBrokerageOverview> {
   const { data, error } = await supabase
     .from('engagements')
@@ -157,7 +157,7 @@ export async function myBrokerageOverview(): Promise<MyBrokerageOverview> {
   if (error) throw error;
 
   const engagements = ((data ?? []) as unknown as MemberEngagement[]).filter(
-    (e) => e.service?.segment === 'support',
+    (e) => e.service?.segment === 'acquisition',
   );
   return {
     engagements,

@@ -2,7 +2,17 @@
  * (supabase/migrations/20260623010000_platform_data_model.sql).
  */
 
-export type Segment = 'rider' | 'horse' | 'support';
+export type Segment = 'rider' | 'horse' | 'acquisition';
+
+/** Flexible DISPLAY-ONLY pricing for acquisition offerings. Staff compute the
+ *  actual charge per engagement; the catalog only renders this as text. */
+export interface PriceModel {
+  kind: 'fixed' | 'percent' | 'fee_plus_percent' | 'inquire';
+  fee_amount?: number | null;
+  percent?: number | null;
+  cadence?: 'one_time' | 'per_session' | 'monthly' | 'per_engagement' | null;
+  basis?: string | null; // what the % is of, e.g. 'sale price' (label only)
+}
 export type PriceUnitDb = 'session' | 'week' | 'month' | 'flat' | 'percent';
 export type ContactMethod = 'text' | 'call' | 'email';
 

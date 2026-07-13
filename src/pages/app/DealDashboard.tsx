@@ -6,7 +6,7 @@ import { useDocumentTitle } from '../../lib/hooks';
 
 /**
  * DEAL DASHBOARD (Slice 4, /app/deal) — the purpose-built view for a DEAL party
- * (horse finder / evaluation / purchase or lease brokering — the 'support' segment).
+ * (horse finder / evaluation / acquisition assistance — the 'acquisition' segment).
  * NO feed, NO community: a deal client is here to track a transaction, not to
  * socialize. Read-only status of each search/purchase engagement + the two things
  * they can do: read their documents and message us. Surface-gated to 'deal_dashboard'.
@@ -29,7 +29,7 @@ export default function DealDashboard() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    myEngagementsBySegment('support')
+    myEngagementsBySegment('acquisition')
       .then((o) => setEngagements(o.engagements))
       .catch(() => setError('Could not load your deal.'));
   }, []);
