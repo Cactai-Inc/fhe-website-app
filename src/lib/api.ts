@@ -1948,14 +1948,14 @@ export interface ContractDocumentDetail {
 /** Start a horse lease contract (create engagement + document + seeded owned fields). */
 export async function startLeaseContract(
   lesseeContactId: string, lessorContactId?: string, horseId?: string,
-): Promise<{ document_id: string; engagement_id: string; fields_seeded: number }> {
+): Promise<{ document_id: string; contract_id: string; fields_seeded: number }> {
   const { data, error } = await supabase.rpc('start_lease_contract', {
     p_lessee_contact_id: lesseeContactId,
     p_lessor_contact_id: lessorContactId ?? null,
     p_horse_id: horseId ?? null,
   });
   if (error) throw error;
-  return data as { document_id: string; engagement_id: string; fields_seeded: number };
+  return data as { document_id: string; contract_id: string; fields_seeded: number };
 }
 
 /** Start a BUYER/SELLER horse purchase & sale contract (generic engine instance).
@@ -1964,7 +1964,7 @@ export async function startLeaseContract(
 export async function startPurchaseContract(
   buyerContactId: string, sellerContactId?: string, horseId?: string,
   amount?: number, deposit?: number,
-): Promise<{ document_id: string; engagement_id: string; fields_seeded: number }> {
+): Promise<{ document_id: string; contract_id: string; fields_seeded: number }> {
   const { data, error } = await supabase.rpc('start_purchase_contract', {
     p_buyer_contact_id: buyerContactId,
     p_seller_contact_id: sellerContactId ?? null,
@@ -1973,7 +1973,7 @@ export async function startPurchaseContract(
     p_deposit: deposit ?? null,
   });
   if (error) throw error;
-  return data as { document_id: string; engagement_id: string; fields_seeded: number };
+  return data as { document_id: string; contract_id: string; fields_seeded: number };
 }
 
 /** Start a transaction-representation retainer the CLIENT signs with COMPANY
@@ -1982,14 +1982,14 @@ export async function startPurchaseContract(
  *  dealSide: 'BUY' | 'SELL' (the side we represent). */
 export async function startBrokerContract(
   clientContactId: string, dealSide: 'BUY' | 'SELL' = 'BUY', horseId?: string,
-): Promise<{ document_id: string; engagement_id: string; fields_seeded: number }> {
+): Promise<{ document_id: string; contract_id: string; fields_seeded: number }> {
   const { data, error } = await supabase.rpc('start_broker_contract', {
     p_client_contact_id: clientContactId,
     p_deal_side: dealSide,
     p_horse_id: horseId ?? null,
   });
   if (error) throw error;
-  return data as { document_id: string; engagement_id: string; fields_seeded: number };
+  return data as { document_id: string; contract_id: string; fields_seeded: number };
 }
 
 /** Ownership-enforcing field write (raises server-side when unauthorized/locked). */
