@@ -75,7 +75,8 @@ const DEFAULT_COUNTS = {
  *   'mod.brokerage': '/app/ops/brokerage',
  */
 export const MODULE_HUB_ROUTES: Record<string, string> = {
-  'mod.brokerage': '/app/ops/brokerage',
+  // mod.brokerage hub retired with the deal-wizard teardown; the tile renders as
+  // a non-navigating "Enabled" status tile (dead links are forbidden).
   'mod.lessons': '/app/ops/lessons',
   'mod.boarding': '/app/ops/boarding',
   'mod.barnops': '/app/ops/barnops',
@@ -150,11 +151,8 @@ export default function OpsDashboard({
   const modules = useModules();
 
   const kpis: KpiSpec[] = [
-    { key: 'engagements', label: 'Open engagements', to: '/app/ops/engagements', load: counts.openEngagements },
     { key: 'intake', label: 'Intake to review', to: '/app/ops/intake', load: counts.pendingIntake },
     { key: 'documents', label: 'Documents awaiting signature', to: '/app/ops/documents', load: counts.draftDocuments },
-    // Open charges surface (and settle) on the transactions reconcile screen.
-    { key: 'billing', label: 'Open charges', to: '/app/ops/transactions', load: counts.openBillableLines },
   ];
 
   return (

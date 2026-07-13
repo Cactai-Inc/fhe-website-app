@@ -84,11 +84,9 @@ const SERVICING_GROUP: NavItem[] = [
   { to: '/app/ops/lessons', label: 'Lessons', icon: GraduationCap, module: 'mod.lessons' },
   { to: '/app/ops/availability', label: 'Availability', icon: CalendarDays },
   { to: '/app/ops/horse-records', label: 'Horses', icon: Boxes },
-  { to: '/app/ops/engagements', label: 'Engagements', icon: Handshake },
   { to: '/app/ops/documents', label: 'Documents', icon: FileText },
 ];
 const BUSINESS_GROUP: NavItem[] = [
-  { to: '/app/ops/transactions', label: 'Transactions', icon: ReceiptText },
   { to: '/app/ops/payments/review', label: 'Payment review', icon: ReceiptText },
   { to: '/app/ops/billing', label: 'Billing', icon: ReceiptText },
 ];

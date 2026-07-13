@@ -422,8 +422,6 @@ function PendingClientView({ row, onChanged }: { row: ClientAccountRow; onChange
           <h3 className="font-serif text-green-800 text-base">Associated items</h3>
           <span className="flex gap-2">
             <button type="button" className="text-xs underline text-secondary hover:text-green-800"
-              onClick={() => navigate(`/app/ops/engagements/new?contact=${row.contact_id}`)}>+ engagement</button>
-            <button type="button" className="text-xs underline text-secondary hover:text-green-800"
               onClick={() => navigate('/app/ops/contracts/new')}>+ contract</button>
           </span>
         </div>
@@ -431,16 +429,9 @@ function PendingClientView({ row, onChanged }: { row: ClientAccountRow; onChange
           What's attached to this account so far — attach everything before inviting.
         </p>
         {items === null && <p className="text-sm text-muted">Loading…</p>}
-        {items && items.engagements.length === 0 && items.documents.length === 0 && (
+        {items && items.documents.length === 0 && (
           <p className="text-sm text-muted">Nothing attached yet.</p>
         )}
-        {items && items.engagements.map((e) => (
-          <button key={e.id} type="button" onClick={() => navigate(`/app/ops/engagements/${e.id}`)}
-            className="w-full flex items-center justify-between gap-3 border-b border-green-800/[0.06] py-2 text-left hover:bg-cream-100/50">
-            <span className="text-sm text-green-900">{(e.service_type ?? 'Engagement').replace(/_/g, ' ')}</span>
-            <span className="text-xs text-muted">{e.status}{e.start_date ? ` · starts ${e.start_date}` : ''}</span>
-          </button>
-        ))}
         {items && items.documents.map((d) => (
           <button key={d.id} type="button" onClick={() => navigate(`/app/contracts/${d.id}`)}
             className="w-full flex items-center justify-between gap-3 border-b border-green-800/[0.06] py-2 text-left hover:bg-cream-100/50">

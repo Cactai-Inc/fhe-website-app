@@ -379,7 +379,6 @@ export function CreateModal({ onClose }: { onClose: () => void }) {
               {isStaff && (
                 <>
                   <p className="text-[10px] tracking-widest uppercase text-muted font-semibold mt-2">For a client</p>
-                  <DestButton icon={Handshake} label="New engagement" hint="Start a service engagement — contracts and paperwork attach to it" onClick={() => go('/app/ops/engagements/new')} />
                   <DestButton icon={FileText} label="New contract" hint="Lease or purchase — pick the client and the horse" onClick={() => go('/app/ops/contracts/new')} />
                   <DestButton icon={UserPlus} label="New client" hint="Create the account first — attach items, then invite" onClick={() => go('/app/ops/accounts/new')} />
                 </>
