@@ -144,23 +144,23 @@ export async function listMySignableDocuments(): Promise<SignableDocument[]> {
   if (!contactId) return [];
 
   const parties = await supabase
-    .from('engagement_parties')
-    .select('engagement_id, party_role')
+    .from('document_parties')
+    .select('document_id, party_role')
     .eq('contact_id', contactId)
     .eq('is_signer', true);
   if (parties.error) throw parties.error;
-  const roleByEngagement = new Map(
-    ((parties.data ?? []) as { engagement_id: string; party_role: PartyRole }[]).map((p) => [
-      p.engagement_id,
+  const roleByDocument = new Map(
+    ((parties.data ?? []) as { document_id: string; party_role: PartyRole }[]).map((p) => [
+      p.document_id,
       p.party_role,
     ]),
   );
-  if (roleByEngagement.size === 0) return [];
+  if (roleByDocument.size === 0) return [];
 
   const docs = await supabase
     .from('documents')
     .select('*')
-    .in('engagement_id', [...roleByEngagement.keys()])
+    .in('id', [...roleByDocument.keys()])
     .is('deleted_at', null)
     .neq('status', 'VOID')
     .order('generated_at', { ascending: false });
@@ -182,7 +182,7 @@ export async function listMySignableDocuments(): Promise<SignableDocument[]> {
   );
 
   return documents.map((document) => {
-    const party_role = roleByEngagement.get(document.engagement_id) as PartyRole;
+    const party_role = roleByDocument.get(document.id) as PartyRole;
     return { document, party_role, signed: sealed.has(`${document.id}:${party_role}`) };
   });
 }
