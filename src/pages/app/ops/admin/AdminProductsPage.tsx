@@ -8,7 +8,8 @@ import {
 import {
   adminListOfferings, adminCreateOffering, adminUpdateOffering, type OfferingInput,
 } from '../../../../lib/admin';
-import type { Offering, Segment, PriceUnitDb, PurchaseType } from '../../../../lib/types';
+import type { Offering, Segment, PriceUnitDb, PurchaseType, PriceModel } from '../../../../lib/types';
+import { formatPriceModel } from '../../../../lib/priceModel';
 
 /**
  * ADMIN-PRODUCTS — the product catalog + effective-dated price book (admin-only
@@ -246,6 +247,71 @@ const EMPTY_OFFERING: OfferingInput = {
   horse_included: null, is_popular: false, note: '', active: true, sort_order: 0,
 };
 
+function PriceModelBuilder({ value, onChange }: { value: PriceModel; onChange: (v: PriceModel) => void }) {
+  const set = <K extends keyof PriceModel>(k: K, v: PriceModel[K]) => onChange({ ...value, [k]: v });
+  const showFee = value.kind === 'fixed' || value.kind === 'fee_plus_percent';
+  const showPct = value.kind === 'percent' || value.kind === 'fee_plus_percent';
+  return (
+    <div className="border border-green-800/10 rounded-lg p-4 bg-cream-100/40">
+      <p className="form-label mb-1">Pricing</p>
+      <p className="text-[12px] text-muted mb-3">
+        Display-only — this shows on the catalog; you compute the actual charge per engagement.
+      </p>
+      <div className="grid sm:grid-cols-2 gap-3">
+        <label className="text-sm">
+          <span className="block text-[12px] text-muted mb-1">Model</span>
+          <select className="form-input" value={value.kind}
+            onChange={(e) => set('kind', e.target.value as PriceModel['kind'])}>
+            <option value="inquire">Inquire (no price shown)</option>
+            <option value="fixed">Fixed amount</option>
+            <option value="percent">Percentage only</option>
+            <option value="fee_plus_percent">Fee + percentage</option>
+          </select>
+        </label>
+        {value.kind !== 'inquire' && (
+          <label className="text-sm">
+            <span className="block text-[12px] text-muted mb-1">Cadence</span>
+            <select className="form-input" value={value.cadence ?? 'one_time'}
+              onChange={(e) => set('cadence', e.target.value as PriceModel['cadence'])}>
+              <option value="one_time">One-time</option>
+              <option value="per_session">Per session</option>
+              <option value="monthly">Monthly</option>
+              <option value="per_engagement">Per engagement</option>
+            </select>
+          </label>
+        )}
+        {showFee && (
+          <label className="text-sm">
+            <span className="block text-[12px] text-muted mb-1">Fee amount ($)</span>
+            <input type="number" min="0" step="0.01" className="form-input"
+              value={value.fee_amount ?? ''}
+              onChange={(e) => set('fee_amount', e.target.value === '' ? null : Number(e.target.value))} />
+          </label>
+        )}
+        {showPct && (
+          <>
+            <label className="text-sm">
+              <span className="block text-[12px] text-muted mb-1">Percentage (%)</span>
+              <input type="number" min="0" step="0.1" className="form-input"
+                value={value.percent ?? ''}
+                onChange={(e) => set('percent', e.target.value === '' ? null : Number(e.target.value))} />
+            </label>
+            <label className="text-sm">
+              <span className="block text-[12px] text-muted mb-1">Percent of (label)</span>
+              <input className="form-input" placeholder="e.g. sale price"
+                value={value.basis ?? ''}
+                onChange={(e) => set('basis', e.target.value || null)} />
+            </label>
+          </>
+        )}
+      </div>
+      <p className="text-[13px] text-green-900 mt-3">
+        Shows as: <span className="font-medium">{formatPriceModel(value)}</span>
+      </p>
+    </div>
+  );
+}
+
 function OfferingForm({
   value, onChange,
 }: { value: OfferingInput; onChange: (v: OfferingInput) => void }) {
@@ -286,38 +352,47 @@ function OfferingForm({
           )}
         </FormField>
       </div>
-      <FormField label="Price (USD)" hint="Blank = inquire">
-        {({ id, errorClass }) => (
-          <input id={id} type="number" min="0" step="0.01" className={`form-input ${errorClass}`}
-            value={value.price_amount ?? ''}
-            onChange={(e) => set('price_amount', e.target.value === '' ? null : Number(e.target.value))} />
-        )}
-      </FormField>
-      <FormField label="Price unit">
-        {({ id, errorClass }) => (
-          <select id={id} className={`form-input ${errorClass}`} value={value.price_unit ?? ''}
-            onChange={(e) => set('price_unit', (e.target.value || null) as PriceUnitDb | null)}>
-            <option value="">—</option>
-            {PRICE_UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
-          </select>
-        )}
-      </FormField>
-      <FormField label="Minimum price" hint='Shows as "from $X"'>
-        {({ id, errorClass }) => (
-          <input id={id} type="number" min="0" step="0.01" className={`form-input ${errorClass}`}
-            value={value.price_min ?? ''}
-            onChange={(e) => set('price_min', e.target.value === '' ? null : Number(e.target.value))} />
-        )}
-      </FormField>
-      <FormField label="Purchase type">
-        {({ id, errorClass }) => (
-          <select id={id} className={`form-input ${errorClass}`} value={value.purchase_type ?? ''}
-            onChange={(e) => set('purchase_type', (e.target.value || null) as PurchaseType | null)}>
-            <option value="">—</option>
-            {PURCHASE_TYPES.map((u) => <option key={u} value={u}>{u.replace('_', ' ')}</option>)}
-          </select>
-        )}
-      </FormField>
+      {value.segment === 'acquisition' ? (
+        <div className="sm:col-span-2">
+          <PriceModelBuilder value={value.price_model ?? { kind: 'inquire' }}
+            onChange={(pm) => set('price_model', pm)} />
+        </div>
+      ) : (
+        <>
+          <FormField label="Price (USD)" hint="Blank = inquire">
+            {({ id, errorClass }) => (
+              <input id={id} type="number" min="0" step="0.01" className={`form-input ${errorClass}`}
+                value={value.price_amount ?? ''}
+                onChange={(e) => set('price_amount', e.target.value === '' ? null : Number(e.target.value))} />
+            )}
+          </FormField>
+          <FormField label="Price unit">
+            {({ id, errorClass }) => (
+              <select id={id} className={`form-input ${errorClass}`} value={value.price_unit ?? ''}
+                onChange={(e) => set('price_unit', (e.target.value || null) as PriceUnitDb | null)}>
+                <option value="">—</option>
+                {PRICE_UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+              </select>
+            )}
+          </FormField>
+          <FormField label="Minimum price" hint='Shows as "from $X"'>
+            {({ id, errorClass }) => (
+              <input id={id} type="number" min="0" step="0.01" className={`form-input ${errorClass}`}
+                value={value.price_min ?? ''}
+                onChange={(e) => set('price_min', e.target.value === '' ? null : Number(e.target.value))} />
+            )}
+          </FormField>
+          <FormField label="Purchase type">
+            {({ id, errorClass }) => (
+              <select id={id} className={`form-input ${errorClass}`} value={value.purchase_type ?? ''}
+                onChange={(e) => set('purchase_type', (e.target.value || null) as PurchaseType | null)}>
+                <option value="">—</option>
+                {PURCHASE_TYPES.map((u) => <option key={u} value={u}>{u.replace('_', ' ')}</option>)}
+              </select>
+            )}
+          </FormField>
+        </>
+      )}
       <FormField label="Lesson horse" hint="Riding lessons only">
         {({ id, errorClass }) => (
           <select id={id} className={`form-input ${errorClass}`}
@@ -382,6 +457,7 @@ function CatalogTab() {
       service_type: row.service_type, price_amount: row.price_amount, price_unit: row.price_unit,
       price_min: row.price_min, purchase_type: row.purchase_type, horse_included: row.horse_included,
       is_popular: row.is_popular, note: row.note, active: row.active, sort_order: row.sort_order,
+      price_model: row.price_model,
     });
     setFormError(null); setEditing(row); setCreating(false);
   }
@@ -420,7 +496,10 @@ function CatalogTab() {
           { key: 'segment', header: 'Segment', render: (r) => r.segment },
           { key: 'name', header: 'Name', render: (r) => r.name },
           { key: 'slug', header: 'Slug', render: (r) => <code className="text-xs">{r.slug}</code> },
-          { key: 'price', header: 'Price', render: (r) => (r.price_amount != null ? <Money amount={r.price_amount} /> : r.price_min != null ? `from $${r.price_min}` : '—') },
+          { key: 'price', header: 'Price', render: (r) => (
+            r.segment === 'acquisition' ? formatPriceModel(r.price_model)
+            : r.price_amount != null ? <Money amount={r.price_amount} />
+            : r.price_min != null ? `from $${r.price_min}` : '—') },
           { key: 'active', header: 'Status', render: (r) => <StatusBadge status={r.active ? 'PUBLISHED' : 'HIDDEN'} /> },
         ]}
         rows={rows ?? []}
