@@ -122,44 +122,39 @@ export interface AvailabilitySlot {
   status: SlotStatus;
 }
 
+/** Backed by the `purchases` table (spine refactor). The exported name stays
+ *  `Order` so importing UI keeps its shape; the columns are the purchases ones. */
 export interface Order {
   id: string;
-  user_id: string;
+  buyer_user_id: string;
   status: OrderStatus;
   payment_method: PaymentMethod | null;
-  subtotal: number;
-  fee: number;
-  total: number;
+  /** Inline payment state on the purchase row (payments table retired). */
+  payment_status: 'unpaid' | 'pending' | 'paid';
+  amount: number;
   payment_reference: string | null;
   unique_amount: number | null;
   paid_at: string | null;
-  confirmed_at: string | null;
-  expires_at: string | null;
   created_at: string;
-  updated_at: string;
   items?: OrderItem[];
 }
 
+/** Backed by the `purchase_items` table. */
 export interface OrderItem {
   id: string;
-  order_id: string;
+  purchase_id: string;
   offering_id: string | null;
   label: string;
   price_amount: number;
   price_unit: PriceUnitDb;
-  price_min: number | null;
 }
 
+/** Inline payment view read off a purchase row (the `payments` table is gone). */
 export interface Payment {
-  id: string;
-  order_id: string;
-  method: PaymentMethod;
+  method: PaymentMethod | null;
   amount: number;
   reference_code: string | null;
-  status: PaymentStatus;
-  match_confidence: string | null;
-  matched_at: string | null;
-  created_at: string;
+  status: string;
 }
 
 export interface OrderDocument {

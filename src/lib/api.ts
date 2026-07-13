@@ -279,7 +279,7 @@ export async function fetchOpenSlots(): Promise<AvailabilitySlot[]> {
 /** Atomically place a hold on an open slot for an order. Returns booking id. */
 export async function holdSlot(orderId: string, slotId: string): Promise<string> {
   const { data, error } = await supabase.rpc('hold_slot', {
-    p_order_id: orderId,
+    p_purchase_id: orderId,
     p_slot_id: slotId,
   });
   if (error) throw error;
@@ -288,9 +288,9 @@ export async function holdSlot(orderId: string, slotId: string): Promise<string>
 
 export async function getOrderBooking(orderId: string): Promise<{ id: string; slot_id: string | null; status: string } | null> {
   const { data, error } = await supabase
-    .from('bookings_v2')
+    .from('bookings')
     .select('id, slot_id, status')
-    .eq('order_id', orderId)
+    .eq('purchase_id', orderId)
     .maybeSingle();
   if (error) throw error;
   return data ?? null;
@@ -305,9 +305,7 @@ export interface DraftOrderInput {
     label: string;
     price_amount: number;
     price_unit: OrderItem['price_unit'];
-    price_min?: number;
   }>;
-  qualifiers?: Record<string, string>;
   subtotal: number;
 }
 
@@ -327,12 +325,11 @@ export async function createDraftOrder(input: DraftOrderInput): Promise<{ orderI
   }
 
   const { data: order, error } = await supabase
-    .from('orders')
+    .from('purchases')
     .insert({
-      user_id: auth.user.id,
+      buyer_user_id: auth.user.id,
       status: 'draft',
-      subtotal: input.subtotal,
-      total: input.subtotal,
+      amount: input.subtotal,
     })
     .select('id')
     .single();
@@ -340,33 +337,23 @@ export async function createDraftOrder(input: DraftOrderInput): Promise<{ orderI
 
   if (input.items.length > 0) {
     const rows = input.items.map((i) => ({
-      order_id: order.id,
+      purchase_id: order.id,
       offering_id: i.offering_id ?? (i.offering_slug ? slugToId.get(i.offering_slug) ?? null : null),
       label: i.label,
       price_amount: i.price_amount,
       price_unit: i.price_unit,
-      price_min: i.price_min ?? null,
     }));
-    const { error: itemErr } = await supabase.from('order_items').insert(rows);
+    const { error: itemErr } = await supabase.from('purchase_items').insert(rows);
     if (itemErr) throw itemErr;
   }
 
-  if (input.qualifiers && Object.keys(input.qualifiers).length > 0) {
-    const qRows = Object.entries(input.qualifiers).map(([question_key, answer]) => ({
-      order_id: order.id,
-      question_key,
-      answer,
-    }));
-    const { error: qErr } = await supabase.from('qualifier_answers').insert(qRows);
-    if (qErr) throw qErr;
-  }
   return { orderId: order.id };
 }
 
-/** Path-A bridge: mint (or reuse) a payable order from an onboarding engagement,
+/** Path-A bridge: mint (or reuse) a payable purchase from an onboarding engagement,
  *  so the Zelle OrderPayment UI can complete the "pay after sign" step. */
 export async function createOrderFromEngagement(engagementId: string): Promise<string> {
-  const { data, error } = await supabase.rpc('create_order_from_engagement', {
+  const { data, error } = await supabase.rpc('create_purchase_from_engagement', {
     p_engagement_id: engagementId,
   });
   if (error) throw error;
@@ -375,7 +362,7 @@ export async function createOrderFromEngagement(engagementId: string): Promise<s
 
 export async function getOrder(orderId: string): Promise<(Order & { items: OrderItem[] }) | null> {
   const { data: order, error } = await supabase
-    .from('orders')
+    .from('purchases')
     .select('*')
     .eq('id', orderId)
     .maybeSingle();
@@ -383,9 +370,9 @@ export async function getOrder(orderId: string): Promise<(Order & { items: Order
   if (!order) return null;
 
   const { data: items, error: itemErr } = await supabase
-    .from('order_items')
+    .from('purchase_items')
     .select('*')
-    .eq('order_id', orderId);
+    .eq('purchase_id', orderId);
   if (itemErr) throw itemErr;
 
   return { ...(order as Order), items: (items ?? []) as OrderItem[] };
@@ -393,7 +380,7 @@ export async function getOrder(orderId: string): Promise<(Order & { items: Order
 
 export async function listMyOrders(): Promise<Order[]> {
   const { data, error } = await supabase
-    .from('orders')
+    .from('purchases')
     .select('*')
     .order('created_at', { ascending: false });
   if (error) throw error;
@@ -405,65 +392,51 @@ export async function listMyOrders(): Promise<Order[]> {
  *  totals recomputed, and the Zelle matching keys (unique_amount +
  *  brand-prefixed payment_reference) assigned exactly once. */
 export async function markAwaitingPayment(orderId: string, method: PaymentMethod): Promise<void> {
-  const { error } = await supabase.rpc('finalize_order_payment', {
-    p_order_id: orderId,
+  const { error } = await supabase.rpc('finalize_purchase_payment', {
+    p_purchase_id: orderId,
     p_method: method,
   });
   if (error) throw error;
 }
 
 // ─── Documents ──────────────────────────────────────────────────────────────
+// The `order_documents` surface is retired (spine refactor). These keep their
+// signatures so existing callers compile, but return empty / no-op until the
+// document surface is rebuilt on the contract spine.
 
-export async function fetchOrderDocuments(orderId: string): Promise<OrderDocument[]> {
-  const { data, error } = await supabase
-    .from('order_documents')
-    .select('*')
-    .eq('order_id', orderId);
-  if (error) throw error;
-  return (data ?? []) as OrderDocument[];
+export async function fetchOrderDocuments(_orderId: string): Promise<OrderDocument[]> {
+  return [];
 }
 
-/** All of the current user's documents across every order (RLS scopes to owner). */
+/** Retired surface — returns nothing (order_documents removed). */
 export async function fetchMyDocuments(): Promise<(OrderDocument & { order_created_at?: string })[]> {
-  const { data, error } = await supabase
-    .from('order_documents')
-    .select('*, order:orders!order_documents_order_id_fkey(created_at)')
-    .order('agreed_at', { ascending: false, nullsFirst: false });
-  if (error) throw error;
-  // Flatten the joined order timestamp for display.
-  return (data ?? []).map((d: OrderDocument & { order?: { created_at: string } }) => ({
-    ...d,
-    order_created_at: d.order?.created_at,
-  }));
+  return [];
 }
 
 export async function signOrderDocument(
-  documentId: string,
-  signerName: string,
-  extraFields: Record<string, unknown> = {},
+  _documentId: string,
+  _signerName: string,
+  _extraFields: Record<string, unknown> = {},
 ): Promise<void> {
-  const { error } = await supabase
-    .from('order_documents')
-    .update({
-      signer_name: signerName,
-      agreed_at: new Date().toISOString(),
-      extra_fields: extraFields,
-    })
-    .eq('id', documentId);
-  if (error) throw error;
+  // no-op: order_documents removed.
 }
 
-// ─── Payments (read-only from the client) ───────────────────────────────────
+// ─── Payments (read inline off the purchase row) ────────────────────────────
 
 export async function getOrderPayment(orderId: string): Promise<Payment | null> {
   const { data, error } = await supabase
-    .from('payments')
-    .select('*')
-    .eq('order_id', orderId)
-    .order('created_at', { ascending: false })
+    .from('purchases')
+    .select('payment_method, amount, payment_reference, payment_status')
+    .eq('id', orderId)
     .maybeSingle();
   if (error) throw error;
-  return data as Payment | null;
+  if (!data) return null;
+  return {
+    method: data.payment_method,
+    amount: data.amount,
+    reference_code: data.payment_reference,
+    status: data.payment_status,
+  } as Payment;
 }
 
 // ─── Platform: entitlements, registry, public config, provisioning ───────────

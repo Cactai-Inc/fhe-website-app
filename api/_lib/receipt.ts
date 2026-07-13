@@ -17,27 +17,22 @@ export interface ReceiptResult {
 export async function sendOrderReceipt(db: SupabaseClient, orderId: string): Promise<ReceiptResult> {
   try {
     const { data: order } = await db
-      .from('orders')
-      .select('id, user_id, org_id, total')
+      .from('purchases')
+      .select('id, buyer_user_id, org_id, amount')
       .eq('id', orderId)
       .maybeSingle();
-    if (!order) return { sent: false, reason: 'order not found' };
+    if (!order) return { sent: false, reason: 'purchase not found' };
 
     const { data: profile } = await db
       .from('profiles')
       .select('email')
-      .eq('user_id', order.user_id)
+      .eq('user_id', order.buyer_user_id)
       .maybeSingle();
     const to = profile?.email as string | undefined;
     if (!to) return { sent: false, reason: 'no recipient email' };
 
-    const { data: payment } = await db
-      .from('payments')
-      .select('amount')
-      .eq('order_id', order.id)
-      .eq('status', 'confirmed')
-      .maybeSingle();
-    const amount = Number(payment?.amount ?? order.total);
+    // Payment is inline on the purchase row now — the amount is authoritative there.
+    const amount = Number(order.amount);
 
     const identity = await resolveTenantEmailIdentity(db, order.org_id as string);
     const tpl = renderTemplate('receipt', { amount: `$${amount.toFixed(2)}` }, identity.fromName);

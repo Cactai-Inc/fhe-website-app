@@ -129,7 +129,7 @@ export default function Account() {
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-sm font-serif text-green-800">{usd(o.total)}</span>
+                      <span className="text-sm font-serif text-green-800">{usd(o.amount)}</span>
                       <ArrowRight size={16} className="text-green-800/40" aria-hidden="true" />
                     </div>
                   </Link>

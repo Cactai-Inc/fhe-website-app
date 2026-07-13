@@ -55,11 +55,13 @@ export interface MyTransaction {
 
 export interface MyPayment {
   id: string;
+  /** The purchase id — links each payment back to /order/:id. */
   order_id: string;
   method: 'zelle' | 'stripe';
   amount: number;
   reference_code: string | null;
-  status: 'pending' | 'matched' | 'confirmed' | 'review' | 'failed' | 'refunded';
+  /** Inline purchase.payment_status ('unpaid' | 'pending' | 'paid'). */
+  status: string;
   created_at: string;
 }
 
@@ -99,13 +101,23 @@ export async function listMyTransactions(): Promise<MyTransaction[]> {
   return (data ?? []) as MyTransaction[];
 }
 
-/** The caller's payment history across their orders (owner-read RLS), newest
- *  first. order_id links each payment back to /order/:id. */
+/** The caller's payment history — paid purchases read inline (owner-read RLS),
+ *  newest first. The `payments` table is retired; payment lives on the purchase
+ *  row. `order_id` is the purchase id (links back to /order/:id). */
 export async function listMyPayments(): Promise<MyPayment[]> {
   const { data, error } = await supabase
-    .from('payments')
-    .select('id, order_id, method, amount, reference_code, status, created_at')
+    .from('purchases')
+    .select('id, payment_method, amount, payment_reference, payment_status, created_at')
+    .eq('payment_status', 'paid')
     .order('created_at', { ascending: false });
   if (error) throw error;
-  return (data ?? []) as MyPayment[];
+  return (data ?? []).map((r) => ({
+    id: r.id as string,
+    order_id: r.id as string,
+    method: r.payment_method as 'zelle' | 'stripe',
+    amount: r.amount as number,
+    reference_code: (r.payment_reference as string | null) ?? null,
+    status: r.payment_status as string,
+    created_at: r.created_at as string,
+  }));
 }

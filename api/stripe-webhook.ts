@@ -45,23 +45,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const orderId = (obj.metadata?.order_id as string) || undefined;
       if (orderId) {
         // Idempotency guard: Stripe retries events (and both event types can fire
-        // for one checkout) — an already-confirmed order must not be re-confirmed,
-        // and confirm_booking_for_order must not run twice.
-        const { data: order } = await db.from('orders').select('id, status').eq('id', orderId).single();
+        // for one checkout) — an already-confirmed purchase must not be
+        // re-confirmed, and confirm_booking_for_purchase must not run twice.
+        const { data: order } = await db.from('purchases').select('id, status, amount').eq('id', orderId).single();
         if (!order) return res.status(200).json({ received: true, unknownOrder: true });
         if (order.status === 'confirmed') {
           return res.status(200).json({ received: true, duplicate: true });
         }
 
+        // Payment is inline on the purchase row now (the `payments` table is
+        // retired): mark it paid via RPC, flip the purchase to confirmed, then
+        // confirm the held booking.
         const nowIso = new Date().toISOString();
-        await db.from('orders')
-          .update({ status: 'confirmed', paid_at: nowIso, confirmed_at: nowIso })
+        await db.rpc('mark_purchase_paid', {
+          p_purchase_id: orderId,
+          p_amount: Number(order.amount),
+          p_reference: null,
+        });
+        await db.from('purchases')
+          .update({ status: 'confirmed', paid_at: nowIso })
           .eq('id', orderId);
-        await db.from('payments')
-          .update({ status: 'confirmed', matched_at: nowIso, match_confidence: 'stripe' })
-          .eq('order_id', orderId)
-          .eq('method', 'stripe');
-        await db.rpc('confirm_booking_for_order', { p_order_id: orderId });
+        await db.rpc('confirm_booking_for_purchase', { p_purchase_id: orderId });
         await sendOrderReceipt(db, orderId); // best-effort; never fails the webhook
       }
     }

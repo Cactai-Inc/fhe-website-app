@@ -2,10 +2,10 @@
  *
  * Read paths over `payment_notifications` (admin-read RLS; rows are written
  * server-side by api/_lib/reconcile.ts with the service role) plus the
- * candidate-order lookup over `orders` by unique_amount / payment_reference —
+ * candidate-purchase lookup over `purchases` by unique_amount / payment_reference —
  * the same two matching keys the server reconciler uses — so staff get manual
  * matching context. Payment CONFIRMATION stays server-side (reconcile /
- * Stripe webhook); nothing here writes `payments` or `orders`.
+ * Stripe webhook); nothing here writes payments or `purchases`.
  */
 import { supabase } from '../supabase';
 
@@ -22,7 +22,7 @@ export interface PaymentNotification {
   parsed_sender: string | null;
   parsed_amount: number | null;
   parsed_reference: string | null;
-  matched_payment_id: string | null;
+  matched_purchase_id: string | null;
   status: PaymentNotificationStatus;
 }
 
@@ -49,36 +49,39 @@ export async function listPaymentNotifications(
 }
 
 /**
- * Candidate `awaiting_payment` orders for MANUAL matching context: exact
+ * Candidate `awaiting_payment` purchases for MANUAL matching context: exact
  * unique_amount first (the deterministic reconcile key), then
  * payment_reference; results merged + de-duplicated. Mirrors the server
  * matcher's keys so staff see exactly what reconciliation saw.
+ *
+ * `total` is aliased off the purchase's `amount` column so the read model keeps
+ * its shape.
  */
 export async function findCandidateOrders(
   parsedAmount: number | null,
   parsedReference: string | null,
 ): Promise<CandidateOrder[]> {
   const byId = new Map<string, CandidateOrder>();
-  const cols = 'id, status, total, unique_amount, payment_reference, created_at';
+  const cols = 'id, status, total:amount, unique_amount, payment_reference, created_at';
 
   if (parsedAmount !== null && Number.isFinite(parsedAmount)) {
     const { data, error } = await supabase
-      .from('orders')
+      .from('purchases')
       .select(cols)
       .eq('status', 'awaiting_payment')
       .eq('unique_amount', parsedAmount);
     if (error) throw error;
-    for (const row of (data ?? []) as CandidateOrder[]) byId.set(row.id, row);
+    for (const row of (data ?? []) as unknown as CandidateOrder[]) byId.set(row.id, row);
   }
 
   if (parsedReference) {
     const { data, error } = await supabase
-      .from('orders')
+      .from('purchases')
       .select(cols)
       .eq('status', 'awaiting_payment')
       .eq('payment_reference', parsedReference);
     if (error) throw error;
-    for (const row of (data ?? []) as CandidateOrder[]) byId.set(row.id, row);
+    for (const row of (data ?? []) as unknown as CandidateOrder[]) byId.set(row.id, row);
   }
 
   return [...byId.values()];
@@ -89,7 +92,7 @@ export async function findCandidateOrders(
  *
  * The payment_notifications CHECK allows only unmatched|matched|review — no
  * 'dismissed' and no notes column — so dismissal uses the allowed TERMINAL
- * status 'matched' with matched_payment_id left NULL (reviewed; no payment
+ * status 'matched' with matched_purchase_id left NULL (reviewed; no payment
  * was created), which removes it from the review/unmatched buckets.
  *
  * KNOWN SERVER GAP (flagged in the lane report): current RLS grants staff

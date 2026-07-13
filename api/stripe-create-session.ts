@@ -36,11 +36,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (userErr || !userData.user) return res.status(401).json({ error: 'unauthorized' });
 
     const { data: order } = await db
-      .from('orders')
-      .select('id, user_id, total, status, org_id')
+      .from('purchases')
+      .select('id, buyer_user_id, amount, status, org_id')
       .eq('id', orderId)
       .single();
-    if (!order || order.user_id !== userData.user.id) {
+    if (!order || order.buyer_user_id !== userData.user.id) {
       return res.status(403).json({ error: 'forbidden' });
     }
     if (order.status === 'confirmed') {
@@ -66,7 +66,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       brandName = (cfg?.legal_entity_name as string | undefined) || 'Order';
     }
 
-    const cardTotalCents = Math.round(Number(order.total) * (1 + STRIPE_FEE_RATE) * 100);
+    const cardTotalCents = Math.round(Number(order.amount) * (1 + STRIPE_FEE_RATE) * 100);
     const origin = req.headers.origin || `https://${req.headers.host}`;
 
     const session = await stripe.checkout.sessions.create({
@@ -86,23 +86,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       cancel_url: `${origin}/order/${order.id}`,
     });
 
-    // Move order to awaiting_payment via Stripe; create-or-refresh the single
-    // pending payment row (a retry must not stack duplicate pending rows).
-    await db.from('orders').update({ status: 'awaiting_payment', payment_method: 'stripe' }).eq('id', order.id);
-    const { data: pending } = await db
-      .from('payments')
-      .select('id')
-      .eq('order_id', order.id)
-      .eq('method', 'stripe')
-      .eq('status', 'pending')
-      .maybeSingle();
-    if (pending) {
-      await db.from('payments').update({ amount: cardTotalCents / 100 }).eq('id', pending.id);
-    } else {
-      await db.from('payments').insert({
-        order_id: order.id, method: 'stripe', amount: cardTotalCents / 100, status: 'pending',
-      });
-    }
+    // Move the purchase to awaiting_payment via Stripe. Payment is inline on the
+    // purchase row now (the `payments` table is retired); mark the method + a
+    // pending payment_status. Confirmation happens in the webhook.
+    await db.from('purchases')
+      .update({ status: 'awaiting_payment', payment_method: 'stripe', payment_status: 'pending' })
+      .eq('id', order.id);
 
     return res.status(200).json({ url: session.url });
   } catch (err) {
