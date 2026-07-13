@@ -6,7 +6,7 @@ import { startLeaseContract, startPurchaseContract } from '../../../lib/api';
 import {
   claimDocumentOrigination, setPartyControls, assignHorseSection,
 } from '../../../lib/contracts';
-import { staffHorseRecords, staffContactOptions, type StaffHorseRecord, type ContactOption } from '../../../lib/horses';
+import { staffHorseRecords, staffContactOptions, staffCreateHorseForContact, type StaffHorseRecord, type ContactOption } from '../../../lib/horses';
 
 /**
  * NEW CONTRACT (/app/ops/contracts/new) — company-originated, always.
@@ -74,7 +74,9 @@ export default function NewContractPage() {
 
   const [partyA, setPartyA] = useState('');   // lessee / buyer contact id
   const [partyB, setPartyB] = useState('');   // lessor / seller contact id
-  const [horseMode, setHorseMode] = useState<'pick' | 'party'>('pick');
+  const [horseMode, setHorseMode] = useState<'pick' | 'record' | 'party'>('pick');
+  // inline record: owned by the horse-owning party (lessor in a lease)
+  const [newHorse, setNewHorse] = useState<Record<string, string>>({});
   const [horseId, setHorseId] = useState('');
   const [horseParty, setHorseParty] = useState<string>('');  // which party fills HORSE.*
   const [controlsA, setControlsA] = useState<Controls>(DEFAULT_CONTROLS);
@@ -94,14 +96,19 @@ export default function NewContractPage() {
   }, []);
   useEffect(() => { setHorseParty(roleB); }, [roleB]);
 
-  const ready = !!partyA && !!partyB && (horseMode === 'pick' ? !!horseId : !!horseParty);
+  const ready = !!partyA && !!partyB && (horseMode === 'pick' ? !!horseId : horseMode === 'record' ? !!(newHorse.registered_name || newHorse.barn_name) : !!horseParty);
 
   async function create() {
     setErr(null);
     if (!ready) { setErr('Select both parties and the horse source first.'); return; }
     setBusy(true);
     try {
-      const chosenHorse = horseMode === 'pick' ? horseId : undefined;
+      let chosenHorse = horseMode === 'pick' ? horseId : undefined;
+      if (horseMode === 'record') {
+        // the horse's owner is the horse-owning party: lessor / seller = partyB
+        const out = await staffCreateHorseForContact(partyB, newHorse);
+        chosenHorse = out.horse_id;
+      }
       const result = type === 'lease'
         ? await startLeaseContract(partyA, partyB, chosenHorse)
         : await startPurchaseContract(
@@ -196,7 +203,7 @@ export default function NewContractPage() {
           to one of the parties to fill in.
         </p>
         <div className="flex gap-1.5 mb-3 flex-wrap">
-          {([['pick', 'From records'], ['party', 'A party fills it in']] as ['pick' | 'party', string][]).map(([m, l]) => (
+          {([['pick', 'From records'], ['record', 'Record it now'], ['party', 'A party fills it in']] as ['pick' | 'record' | 'party', string][]).map(([m, l]) => (
             <button key={m} type="button" onClick={() => setHorseMode(m)}
               className={`px-3.5 py-1.5 rounded-full text-xs font-sans focus-ring ${
                 horseMode === m ? 'bg-green-800 text-white' : 'bg-green-800/10 text-green-800 hover:bg-green-800/20'
@@ -214,6 +221,20 @@ export default function NewContractPage() {
               </option>
             ))}
           </select>
+        )}
+        {horseMode === 'record' && (
+          <div className="grid sm:grid-cols-2 gap-3">
+            <p className="text-[12px] text-muted sm:col-span-2">
+              Creates the record now, owned by the {roleLabel(roleB).toLowerCase()} ({roleB === 'LESSOR' ? 'the horse\u2019s owner' : 'seller'}). It autofills the contract and lives in your horse records.
+            </p>
+            {([['registered_name','Registered name'],['barn_name','Barn name'],['breed','Breed'],['color','Color'],['sex','Sex'],['height','Height'],['microchip_id','Microchip'],['registration_number','Registration #']] as [string,string][]).map(([k,label]) => (
+              <div key={k}>
+                <span className="form-label">{label}{k==='registered_name' ? ' *' : ''}</span>
+                <input className="form-input" value={newHorse[k] ?? ''}
+                  onChange={(e) => setNewHorse((h) => ({ ...h, [k]: e.target.value }))} />
+              </div>
+            ))}
+          </div>
         )}
         {horseMode === 'party' && (
           <div className="flex gap-1.5">

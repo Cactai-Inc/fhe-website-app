@@ -133,3 +133,17 @@ export async function staffContactOptions(): Promise<ContactOption[]> {
   if (error) throw error;
   return (data ?? []) as ContactOption[];
 }
+
+/** Staff: create a horse record OWNED BY a specific contact (e.g. recording a
+ *  client's horse from the ops side so a contract can reference it). Same
+ *  microchip-dedup discipline as the client intake. */
+export async function staffCreateHorseForContact(
+  ownerContactId: string,
+  payload: Record<string, string>,
+): Promise<{ horse_id: string; outcome: 'created' | 'match_found' }> {
+  const { data, error } = await supabase.rpc('staff_create_horse_for_contact', {
+    p_owner_contact_id: ownerContactId, p: payload,
+  });
+  if (error) throw error;
+  return data as { horse_id: string; outcome: 'created' | 'match_found' };
+}
