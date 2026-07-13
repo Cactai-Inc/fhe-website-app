@@ -82,6 +82,7 @@ export interface LessonSession {
   id: string;
   org_id: string;
   client_id: string;
+  /** Always null on the spine (lessons no longer hang off engagements). */
   engagement_id: string | null;
   request_id: string | null;
   starts_at: string;
@@ -92,6 +93,40 @@ export interface LessonSession {
   credit_id: string | null;
   created_at: string;
 }
+
+/** A lesson booking row (bookings.kind='lesson') mapped to the LessonSession
+ *  shape the UI already speaks — status surfaced UPPER, engagement_id null. */
+type LessonBookingRow = {
+  id: string;
+  org_id: string;
+  client_id: string | null;
+  request_id: string | null;
+  starts_at: string | null;
+  ends_at: string | null;
+  status: string;
+  location: string | null;
+  notes: string | null;
+  credit_id: string | null;
+  created_at: string;
+};
+function lessonSessionFromBooking(r: LessonBookingRow): LessonSession {
+  return {
+    id: r.id,
+    org_id: r.org_id,
+    client_id: r.client_id ?? '',
+    engagement_id: null,
+    request_id: r.request_id,
+    starts_at: r.starts_at ?? '',
+    ends_at: r.ends_at ?? '',
+    status: r.status.toUpperCase() as LessonSessionStatus,
+    location: r.location,
+    notes: r.notes,
+    credit_id: r.credit_id,
+    created_at: r.created_at,
+  };
+}
+const LESSON_BOOKING_COLS =
+  'id, org_id, client_id, request_id, starts_at, ends_at, status, location, notes, credit_id, created_at';
 
 export interface ScheduleSessionInput {
   client_id: string;
@@ -234,27 +269,28 @@ export async function consumeLessonCredit(id: string, count = 1): Promise<Lesson
 
 // ─── lesson_sessions — the confirmed-booking spine ───────────────────────────
 
-/** The sessions board (staff RLS), soonest first, soft-deleted excluded. */
+/** The sessions board (staff RLS), soonest first. Lessons live on the spine
+ *  bookings table now (kind='lesson'); mapped to the LessonSession shape. */
 export async function listLessonSessions(): Promise<LessonSession[]> {
   const { data, error } = await supabase
-    .from('lesson_sessions')
-    .select('*')
-    .is('deleted_at', null)
+    .from('bookings')
+    .select(LESSON_BOOKING_COLS)
+    .eq('kind', 'lesson')
     .order('starts_at', { ascending: true });
   if (error) throw error;
-  return (data ?? []) as LessonSession[];
+  return ((data ?? []) as unknown as LessonBookingRow[]).map(lessonSessionFromBooking);
 }
 
 /** Sessions booked from one booking request (the IntakePage drawer inline list). */
 export async function listLessonSessionsForRequest(requestId: string): Promise<LessonSession[]> {
   const { data, error } = await supabase
-    .from('lesson_sessions')
-    .select('*')
+    .from('bookings')
+    .select(LESSON_BOOKING_COLS)
+    .eq('kind', 'lesson')
     .eq('request_id', requestId)
-    .is('deleted_at', null)
     .order('starts_at', { ascending: true });
   if (error) throw error;
-  return (data ?? []) as LessonSession[];
+  return ((data ?? []) as unknown as LessonBookingRow[]).map(lessonSessionFromBooking);
 }
 
 /** Book a confirmed lesson (staff-gated RPC; overlaps rejected server-side). */
