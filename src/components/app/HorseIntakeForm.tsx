@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Loader2, ShieldQuestion } from 'lucide-react';
 import {
-  createHorseRecord, type HorseIntakePayload, type HorseRecordOutcome,
+  createHorseRecord, staffCreateHorseForContact,
+  type HorseIntakePayload, type HorseRecordOutcome,
 } from '../../lib/horses';
 
 /**
@@ -28,11 +29,14 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 export function HorseIntakeForm({
-  onDone, submitLabel = 'Add horse',
+  onDone, submitLabel = 'Add horse', ownerContactId,
 }: {
   /** Fires on created OR match_found (both attach an id); pending-review shows in-form. */
   onDone: (horseId: string) => void;
   submitLabel?: string;
+  /** Staff context: create the record OWNED BY this contact (e.g. the company),
+   *  not the caller. When set, routes through the staff create RPC. */
+  ownerContactId?: string;
 }) {
   const [f, setF] = useState<HorseIntakePayload>({ my_relationship: 'OWNER', is_leased: 'no' });
   const [busy, setBusy] = useState(false);
@@ -50,11 +54,16 @@ export function HorseIntakeForm({
     }
     setBusy(true);
     try {
-      const out: HorseRecordOutcome = await createHorseRecord(f);
-      if (out.outcome === 'match_pending_review') {
-        setPending(true);
-      } else {
+      if (ownerContactId) {
+        const out = await staffCreateHorseForContact(ownerContactId, f as Record<string, string>);
         onDone(out.horse_id);
+      } else {
+        const out: HorseRecordOutcome = await createHorseRecord(f);
+        if (out.outcome === 'match_pending_review') {
+          setPending(true);
+        } else {
+          onDone(out.horse_id);
+        }
       }
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Could not save the horse record.');
