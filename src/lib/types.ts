@@ -76,6 +76,7 @@ export interface Offering {
   horse_included: boolean | null;
   is_popular: boolean;
   note: string | null;
+  price_model: PriceModel | null;
 }
 
 export interface ProposedTime {

@@ -259,6 +259,7 @@ export interface OfferingInput {
   note?: string | null;
   active?: boolean;
   sort_order?: number;
+  price_model?: import('./types').PriceModel | null;
 }
 
 export async function adminListOfferings(): Promise<Offering[]> {
