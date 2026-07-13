@@ -1,12 +1,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { getOrder, getOrderPayment, fetchOrderDocuments, getOrderBooking } from '../lib/api';
+import { getOrder, getOrderPayment, getOrderBooking } from '../lib/api';
 import { supabase } from '../lib/supabase';
 import { useDocumentTitle } from '../lib/hooks';
-import type { Order, OrderItem, Payment, OrderDocument } from '../lib/types';
+import type { Order, OrderItem, Payment } from '../lib/types';
 import { formatPrice } from '../lib/services';
-import OrderDocuments from '../components/order/OrderDocuments';
 import OrderPayment from '../components/order/OrderPayment';
 import BookingStep from '../components/order/BookingStep';
 import AddToCalendar from '../components/order/AddToCalendar';
@@ -25,21 +24,18 @@ export default function OrderDetail() {
   const { id } = useParams<{ id: string }>();
   const [order, setOrder] = useState<(Order & { items: OrderItem[] }) | null>(null);
   const [payment, setPayment] = useState<Payment | null>(null);
-  const [documents, setDocuments] = useState<OrderDocument[]>([]);
   const [bookedSlot, setBookedSlot] = useState<{ start: Date; end: Date } | null>(null);
   const [loading, setLoading] = useState(true);
 
   const reload = useCallback(async () => {
     if (!id) return;
-    const [o, p, d, booking] = await Promise.all([
+    const [o, p, booking] = await Promise.all([
       getOrder(id),
       getOrderPayment(id).catch(() => null),
-      fetchOrderDocuments(id).catch(() => []),
       getOrderBooking(id).catch(() => null),
     ]);
     setOrder(o);
     setPayment(p);
-    setDocuments(d);
 
     if (booking?.slot_id) {
       const { data: slot } = await supabase
@@ -81,7 +77,8 @@ export default function OrderDetail() {
   }
 
   const copy = STATUS_COPY[order.status] ?? STATUS_COPY.draft;
-  const allDocsSigned = documents.length === 0 || documents.every((d) => !!d.agreed_at);
+  // The order_documents surface is retired; nothing gates the booking/payment step.
+  const allDocsSigned = true;
   const needsPayment = order.status === 'draft' || order.status === 'awaiting_payment';
 
   return (
@@ -113,12 +110,7 @@ export default function OrderDetail() {
           </div>
         </div>
 
-        {/* Documents */}
-        {documents.length > 0 && order.status !== 'confirmed' && (
-          <OrderDocuments documents={documents} onSigned={reload} />
-        )}
-
-        {/* Booking — choose a time once documents are agreed, before payment */}
+        {/* Booking — choose a time before payment */}
         {needsPayment && allDocsSigned && (
           <BookingStep orderId={order.id} onHeld={reload} />
         )}

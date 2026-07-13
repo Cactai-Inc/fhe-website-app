@@ -559,26 +559,26 @@ export default function Admin() {
 
   // ── stable fetchers for query tabs ──
   const fetchOrders = useCallback(async () => {
-    const { data } = await supabase.from('orders')
-      .select('id, status, total, created_at').eq('user_id', selected!.user_id!).order('created_at', { ascending: false });
+    const { data } = await supabase.from('purchases')
+      .select('id, status, amount, created_at').eq('buyer_user_id', selected!.user_id!).order('created_at', { ascending: false });
     return (data ?? []).map((o) => ({
       key: o.id as string,
-      main: `$${Number(o.total ?? 0).toFixed(2)}`,
+      main: `$${Number(o.amount ?? 0).toFixed(2)}`,
       sub: fmtTs(o.created_at as string), badge: String(o.status),
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId]);
   const fetchPayments = useCallback(async () => {
-    const { data: orders } = await supabase.from('orders').select('id').eq('user_id', selected!.user_id!);
-    const ids = (orders ?? []).map((o) => o.id);
-    if (ids.length === 0) return [];
-    const { data } = await supabase.from('payments')
-      .select('id, method, amount, status, reference_code, created_at')
-      .in('order_id', ids).order('created_at', { ascending: false });
+    // Payment lives inline on the purchase row now; list the buyer's paid purchases.
+    const { data } = await supabase.from('purchases')
+      .select('id, payment_method, amount, payment_status, payment_reference, created_at')
+      .eq('buyer_user_id', selected!.user_id!)
+      .eq('payment_status', 'paid')
+      .order('created_at', { ascending: false });
     return (data ?? []).map((p) => ({
       key: p.id as string,
-      main: `$${Number(p.amount).toFixed(2)} · ${p.method}${p.reference_code ? ` · ${p.reference_code}` : ''}`,
-      sub: fmtTs(p.created_at as string), badge: String(p.status),
+      main: `$${Number(p.amount).toFixed(2)} · ${p.payment_method}${p.payment_reference ? ` · ${p.payment_reference}` : ''}`,
+      sub: fmtTs(p.created_at as string), badge: String(p.payment_status),
     }));
   }, [selectedId]);
   const fetchActivity = useCallback(async () => {

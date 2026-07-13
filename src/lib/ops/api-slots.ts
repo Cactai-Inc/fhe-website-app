@@ -14,9 +14,9 @@
  * DEFAULT current_org() + a restrictive org boundary. No client widening needed.
  *
  * `held`/`booked` are lifecycle states owned by the hold/confirm RPCs
- * (hold_slot / confirm_booking_for_order / release_expired_holds) — these
+ * (hold_slot / confirm_booking_for_purchase / release_expired_holds) — these
  * wrappers only ever move a slot between the admin states `open` ⇄ `blocked`,
- * and refuse to delete a slot a bookings_v2 row still references.
+ * and refuse to delete a slot a bookings row still references.
  */
 import { supabase } from '../supabase';
 
@@ -46,7 +46,7 @@ export interface AvailabilitySlot {
   status: SlotStatus;
   created_by: string | null;
   created_at: string;
-  /** bookings_v2 rows pointing at this slot (reverse FK embed). */
+  /** bookings rows pointing at this slot (reverse FK embed). */
   bookings?: SlotBooking[];
 }
 
@@ -72,7 +72,9 @@ export interface RecurringSlotsInput {
   capacity?: number;
 }
 
-const SLOT_SELECT = '*, bookings:bookings_v2(id, order_id, user_id, status)';
+// The booking columns are aliased (order_id←purchase_id, user_id←account_user_id)
+// so the read model keeps its shape after the bookings_v2 → bookings rename.
+const SLOT_SELECT = '*, bookings(id, order_id:purchase_id, user_id:account_user_id, status)';
 
 // ─── Reads ────────────────────────────────────────────────────────────────────
 
@@ -172,13 +174,13 @@ export async function updateSlotStatus(id: string, status: 'open' | 'blocked'): 
 }
 
 /**
- * Delete a slot, but only when NO bookings_v2 row references it (held, booked,
+ * Delete a slot, but only when NO bookings row references it (held, booked,
  * or even a cancelled booking's history). Surfaces a clear error otherwise —
  * block the slot instead if you just want it off the calendar.
  */
 export async function deleteSlot(id: string): Promise<void> {
   const { count, error: countError } = await supabase
-    .from('bookings_v2')
+    .from('bookings')
     .select('id', { count: 'exact', head: true })
     .eq('slot_id', id);
   if (countError) throw countError;

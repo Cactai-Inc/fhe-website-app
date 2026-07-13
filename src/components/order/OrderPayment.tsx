@@ -73,9 +73,9 @@ export default function OrderPayment({
 
   // The unique-cents amount is assigned server-side when the order moves to
   // awaiting_payment. Until then we show the plain total for orientation.
-  const zelleAmount = order.unique_amount ?? order.total;
+  const zelleAmount = order.unique_amount ?? order.amount;
   const reference = order.payment_reference ?? '— assigned when you continue —';
-  const cardTotal = order.total * (1 + STRIPE_FEE_RATE);
+  const cardTotal = order.amount * (1 + STRIPE_FEE_RATE);
 
   async function chooseZelle() {
     setWorking(true);

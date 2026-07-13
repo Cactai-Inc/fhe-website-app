@@ -113,10 +113,9 @@ export default function Checkout() {
           offering_slug: i.offeringId,
           label: i.offeringName,
           price_amount: i.price,
-          // 'lesson' is a UI-only unit; the order_items check constraint knows 'session'.
+          // 'lesson' is a UI-only unit; the purchase_items check constraint knows 'session'.
           price_unit: i.unit === 'lesson' ? 'session' : i.unit,
         })),
-        qualifiers: state.qualifierAnswers,
         subtotal,
       });
       clearCart();
