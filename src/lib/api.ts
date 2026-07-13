@@ -286,6 +286,18 @@ export async function holdSlot(orderId: string, slotId: string): Promise<string>
   return data as string;
 }
 
+/** Request a custom time (no preset slot). Always available — creates a booking
+ *  at the requested time for staff to confirm. Returns booking id. */
+export async function requestBookingTime(orderId: string, startsAt: string, note?: string): Promise<string> {
+  const { data, error } = await supabase.rpc('request_booking_time', {
+    p_purchase_id: orderId,
+    p_starts_at: startsAt,
+    p_note: note ?? null,
+  });
+  if (error) throw error;
+  return data as string;
+}
+
 export async function getOrderBooking(orderId: string): Promise<{ id: string; slot_id: string | null; status: string } | null> {
   const { data, error } = await supabase
     .from('bookings')
