@@ -2161,3 +2161,31 @@ export async function createServiceEngagement(input: {
   if (error) throw error;
   return data as string;
 }
+
+// ─── Public catalog (website + app read the SAME offerings) ──────────────────
+export interface PublicOffering {
+  id: string;
+  segment: 'rider' | 'horse' | 'support';
+  name: string;
+  tagline: string | null;
+  description: string | null;
+  slug: string;
+  service_type: string | null;
+  price_amount: number | null;
+  price_unit: string | null;
+  price_min: number | null;
+  purchase_type: string | null;
+  horse_included: boolean | null;
+  is_popular: boolean;
+  note: string | null;
+  sort_order: number;
+}
+
+/** The active catalog for the public site (and anywhere the app wants the
+ *  canonical offerings). Single source of truth = the offerings table, which
+ *  the admin Catalog editor drives. */
+export async function fetchPublicOfferings(slug?: string): Promise<PublicOffering[]> {
+  const { data, error } = await supabase.rpc('public_offerings', { p_slug: slug ?? null });
+  if (error) throw error;
+  return (data ?? []) as PublicOffering[];
+}
