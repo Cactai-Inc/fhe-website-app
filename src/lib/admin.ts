@@ -392,14 +392,13 @@ export async function adminCreateClient(input: {
 }
 
 export interface ClientItems {
-  engagements: { id: string; service_type: string | null; status: string; start_date: string | null; created_at: string }[];
   documents: { id: string; title: string | null; workflow_state: string | null; status: string; created_at: string }[];
 }
 
 export async function adminClientItems(clientId: string): Promise<ClientItems> {
   const { data, error } = await supabase.rpc('admin_client_items', { p_client_id: clientId });
   if (error) throw error;
-  return (data ?? { engagements: [], documents: [] }) as ClientItems;
+  return (data ?? { documents: [] }) as ClientItems;
 }
 
 // ─── First-login paperwork (explicit, prefilled by category) ─────────────────

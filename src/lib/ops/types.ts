@@ -144,13 +144,6 @@ export interface EngagementStage {
   updated_at: string;
 }
 
-/** getEngagement() rollup: the engagement row plus its related-record children. */
-export interface EngagementDetail extends Engagement {
-  stages: EngagementStage[];
-  documents: DocumentRow[];
-  transactions: Transaction[];
-}
-
 // ─── Contracts, documents, signatures, deliveries ────────────────────────────
 
 export interface ContractTemplate {
@@ -242,18 +235,6 @@ export interface DocumentPartyContact {
 }
 
 // ─── Transactions & billing ──────────────────────────────────────────────────
-
-export interface Transaction {
-  id: string;
-  display_code: string | null;
-  engagement_id: string;
-  txn_type: 'PURCHASE' | 'SALE' | 'LEASE';
-  amount: number | null;
-  deposit_amount: number | null;
-  status: string;
-  created_at: string;
-  updated_at: string;
-}
 
 export type BillableLineStatus = 'OPEN' | 'SETTLED' | 'VOID';
 

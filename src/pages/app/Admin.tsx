@@ -344,8 +344,8 @@ function PendingClientView({ row, onChanged }: { row: ClientAccountRow; onChange
   const navigate = useNavigate();
   const [items, setItems] = useState<ClientItems | null>(null);
   useEffect(() => {
-    if (!row.client_id) { setItems({ engagements: [], documents: [] }); return; }
-    adminClientItems(row.client_id).then(setItems).catch(() => setItems({ engagements: [], documents: [] }));
+    if (!row.client_id) { setItems({ documents: [] }); return; }
+    adminClientItems(row.client_id).then(setItems).catch(() => setItems({ documents: [] }));
   }, [row.client_id]);
 
   return (

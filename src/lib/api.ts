@@ -10,9 +10,9 @@ import type {
 } from './types';
 import type {
   Contact, ContactInput, Client, Horse, HorseInput, LookupCode,
-  Engagement, EngagementDetail, EngagementStage, ContractTemplate,
+  ContractTemplate,
   DocumentRow, GeneratedDocument, Signature, PartyRole,
-  DocumentDelivery, DeliveryInput, Transaction, BillableLine,
+  DocumentDelivery, DeliveryInput, BillableLine,
   SettlementResult, IntakeRequest,
 } from './ops/types';
 
@@ -362,16 +362,6 @@ export async function createDraftOrder(input: DraftOrderInput): Promise<{ orderI
   return { orderId: order.id };
 }
 
-/** Path-A bridge: mint (or reuse) a payable purchase from an onboarding engagement,
- *  so the Zelle OrderPayment UI can complete the "pay after sign" step. */
-export async function createOrderFromEngagement(engagementId: string): Promise<string> {
-  const { data, error } = await supabase.rpc('create_purchase_from_engagement', {
-    p_engagement_id: engagementId,
-  });
-  if (error) throw error;
-  return data as string;
-}
-
 export async function getOrder(orderId: string): Promise<(Order & { items: OrderItem[] }) | null> {
   const { data: order, error } = await supabase
     .from('purchases')
@@ -631,57 +621,6 @@ export async function listHorseColors(): Promise<LookupCode[]> {
   return (data ?? []) as LookupCode[];
 }
 
-// ─── Engagements ──────────────────────────────────────────────────────────
-
-export async function listEngagements(): Promise<Engagement[]> {
-  const { data, error } = await supabase
-    .from('engagements')
-    .select('*')
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false });
-  if (error) throw error;
-  return (data ?? []) as Engagement[];
-}
-
-/** One engagement plus its stages/documents/transactions rollup (staff detail). */
-export async function getEngagement(id: string): Promise<EngagementDetail | null> {
-  const { data: eng, error } = await supabase
-    .from('engagements')
-    .select('*')
-    .eq('id', id)
-    .maybeSingle();
-  if (error) throw error;
-  if (!eng) return null;
-
-  const { data: stages, error: stErr } = await supabase
-    .from('engagement_stages')
-    .select('*')
-    .eq('engagement_id', id)
-    .order('effective_from');
-  if (stErr) throw stErr;
-
-  const { data: docs, error: docErr } = await supabase
-    .from('documents')
-    .select('*')
-    .eq('engagement_id', id)
-    .order('generated_at', { ascending: false });
-  if (docErr) throw docErr;
-
-  const { data: txns, error: txnErr } = await supabase
-    .from('transactions')
-    .select('*')
-    .eq('engagement_id', id)
-    .order('created_at', { ascending: false });
-  if (txnErr) throw txnErr;
-
-  return {
-    ...(eng as Engagement),
-    stages: (stages ?? []) as EngagementStage[],
-    documents: (docs ?? []) as DocumentRow[],
-    transactions: (txns ?? []) as Transaction[],
-  };
-}
-
 // ─── Contracts: templates & documents ────────────────────────────────────
 
 export async function listContractTemplates(): Promise<ContractTemplate[]> {
@@ -794,28 +733,6 @@ export async function recordDelivery(input: DeliveryInput): Promise<DocumentDeli
     .single();
   if (error) throw error;
   return data as DocumentDelivery;
-}
-
-// ─── Transactions ─────────────────────────────────────────────────────────
-
-export async function listTransactions(): Promise<Transaction[]> {
-  const { data, error } = await supabase
-    .from('transactions')
-    .select('*')
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false });
-  if (error) throw error;
-  return (data ?? []) as Transaction[];
-}
-
-export async function getTransaction(id: string): Promise<Transaction | null> {
-  const { data, error } = await supabase
-    .from('transactions')
-    .select('*')
-    .eq('id', id)
-    .maybeSingle();
-  if (error) throw error;
-  return (data as Transaction | null) ?? null;
 }
 
 // ─── Billing: billable_lines + settlement ────────────────────────────────
@@ -1068,16 +985,6 @@ export interface TimeEntryInput {
   minutes?: number | null; source_kind?: string | null; source_id?: string | null;
 }
 
-export interface ServiceAssignment {
-  id: string; org_id: string; engagement_id: string | null; staff_profile_id: string;
-  service_type: string | null; scheduled_at: string | null; status: string;
-  created_at: string; updated_at: string;
-}
-export interface ServiceAssignmentInput {
-  staff_profile_id: string; engagement_id?: string | null;
-  service_type?: string | null; scheduled_at?: string | null;
-}
-
 // Admin: entitlements, registry, branding, products
 export interface ModuleCatalogRow {
   module_key: string; name: string; description: string | null;
@@ -1209,45 +1116,6 @@ export async function createLeaseEngagement(
   });
   if (error) throw error;
   return data as string;
-}
-
-// ─── Brokerage: engagement stages ───────────────────────────────────────────
-
-export interface EngagementStageInput {
-  engagement_id: string;
-  stage: 'SEARCH' | 'EVALUATION' | 'TRANSACTION_REP';
-  retained_by?: string | null;
-  deal_side?: 'BUY' | 'SELL' | 'LEASE_IN' | 'LEASE_OUT' | null;
-  fee_value_key?: string | null;
-}
-
-/** The stages of one engagement (chain of separately-executed, independently-billed
- *  stages — no required predecessor, §7.1). Soft-deleted excluded. */
-export async function listEngagementStages(engagementId: string): Promise<EngagementStage[]> {
-  const { data, error } = await supabase
-    .from('engagement_stages')
-    .select('*')
-    .eq('engagement_id', engagementId)
-    .is('deleted_at', null)
-    .order('effective_from');
-  if (error) throw error;
-  return (data ?? []) as EngagementStage[];
-}
-
-export async function createEngagementStage(input: EngagementStageInput): Promise<EngagementStage> {
-  const { data, error } = await supabase
-    .from('engagement_stages')
-    .insert({
-      engagement_id: input.engagement_id,
-      stage: input.stage,
-      retained_by: input.retained_by ?? null,
-      deal_side: input.deal_side ?? null,
-      fee_value_key: input.fee_value_key ?? null,
-    })
-    .select('*')
-    .single();
-  if (error) throw error;
-  return data as EngagementStage;
 }
 
 // ─── Boarding (mod.boarding) ────────────────────────────────────────────────
@@ -1664,32 +1532,6 @@ export async function createTimeEntry(input: TimeEntryInput): Promise<TimeEntry>
   return data as TimeEntry;
 }
 
-export async function listServiceAssignments(staffProfileId?: string): Promise<ServiceAssignment[]> {
-  let query = supabase
-    .from('service_assignments')
-    .select('*')
-    .is('deleted_at', null);
-  if (staffProfileId) query = query.eq('staff_profile_id', staffProfileId);
-  const { data, error } = await query.order('scheduled_at', { ascending: false, nullsFirst: false });
-  if (error) throw error;
-  return (data ?? []) as ServiceAssignment[];
-}
-
-export async function createServiceAssignment(input: ServiceAssignmentInput): Promise<ServiceAssignment> {
-  const { data, error } = await supabase
-    .from('service_assignments')
-    .insert({
-      staff_profile_id: input.staff_profile_id,
-      engagement_id: input.engagement_id ?? null,
-      service_type: input.service_type ?? null,
-      scheduled_at: input.scheduled_at ?? null,
-    })
-    .select('*')
-    .single();
-  if (error) throw error;
-  return data as ServiceAssignment;
-}
-
 // ═══════════════════════════════════════════════════════════════════════════
 //  Tenant admin + super-admin wrappers
 // ═══════════════════════════════════════════════════════════════════════════
@@ -2021,18 +1863,6 @@ export async function setRecipientEditing(documentId: string, on: boolean): Prom
   return data as boolean;
 }
 
-/** Log a numbered change request against a field or a free section. */
-export async function requestDocumentChange(
-  documentId: string, fieldKey: string | null, targetSection: string | null, requestedChange: string,
-): Promise<ContractChangeRequest> {
-  const { data, error } = await supabase.rpc('request_document_change', {
-    p_document_id: documentId, p_field_key: fieldKey, p_target_section: targetSection,
-    p_requested_change: requestedChange,
-  });
-  if (error) throw error;
-  return data as ContractChangeRequest;
-}
-
 /** Originator/staff accepts (optionally applying a value) or rejects a change request. */
 export async function resolveChangeRequest(
   changeId: string, accept: boolean, newValue?: string | null,
@@ -2042,15 +1872,6 @@ export async function resolveChangeRequest(
   });
   if (error) throw error;
   return data as { id: string; status: ContractChangeRequest['status'] };
-}
-
-/** Advance the workflow state machine (editable/editing/in_review/locked/void). */
-export async function advanceDocumentWorkflow(
-  documentId: string, to: ContractDocumentSummary['workflow_state'],
-): Promise<string> {
-  const { data, error } = await supabase.rpc('advance_document_workflow', { p_document_id: documentId, p_to: to });
-  if (error) throw error;
-  return data as string;
 }
 
 /** Lock-and-sign bridge to record_signature (seals/executes once all parties sign). */
@@ -2116,35 +1937,6 @@ export async function deleteContact(id: string): Promise<void> {
     .update({ deleted_at: new Date().toISOString(), deleted_by: auth.user?.id ?? null })
     .eq('id', id);
   if (error) throw error;
-}
-
-// ─── Service engagements (general, non-brokerage) ────────────────────────────
-export interface ServiceTypeRow {
-  code: string; display_name: string; description: string | null;
-  segment: string; requires_horse: boolean;
-}
-
-export async function listServiceTypes(): Promise<ServiceTypeRow[]> {
-  const { data, error } = await supabase.rpc('list_service_types');
-  if (error) throw error;
-  return (data ?? []) as ServiceTypeRow[];
-}
-
-/** Create a lesson / training / care engagement for a client. Paperwork flows
- *  via contract_requirements at onboarding/signing. */
-export async function createServiceEngagement(input: {
-  clientContactId: string; serviceType: string;
-  horseId?: string | null; startDate?: string | null; notes?: string | null;
-}): Promise<string> {
-  const { data, error } = await supabase.rpc('create_service_engagement', {
-    p_client_contact_id: input.clientContactId,
-    p_service_type: input.serviceType,
-    p_horse_id: input.horseId ?? null,
-    p_start_date: input.startDate ?? null,
-    p_notes: input.notes ?? null,
-  });
-  if (error) throw error;
-  return data as string;
 }
 
 // ─── Public catalog (website + app read the SAME offerings) ──────────────────

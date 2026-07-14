@@ -24,27 +24,8 @@
 import { supabase } from '../supabase';
 import type {
   DocumentRow,
-  Engagement,
-  EngagementStage,
   PartyRole,
 } from './types';
-
-/** One person on an engagement, as the client may read them. */
-export interface MyEngagementParty {
-  id: string;
-  engagement_id: string;
-  contact_id: string;
-  party_role: PartyRole;
-  is_signer: boolean;
-  signer_order: number | null;
-}
-
-/** getMyEngagement() rollup: the row plus its client-visible children. */
-export interface MyEngagementDetail extends Engagement {
-  stages: EngagementStage[];
-  documents: DocumentRow[];
-  parties: MyEngagementParty[];
-}
 
 /** A document the member is a signer party on, with their signed state. */
 export interface SignableDocument {
@@ -67,59 +48,6 @@ export async function myContactId(): Promise<string | null> {
     .maybeSingle();
   if (error) throw error;
   return (data?.contact_id as string | null) ?? null;
-}
-
-/** The member's own engagements, newest first (RLS: client reads own). */
-export async function listMyEngagements(): Promise<Engagement[]> {
-  const { data, error } = await supabase
-    .from('engagements')
-    .select('*')
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false });
-  if (error) throw error;
-  return (data ?? []) as Engagement[];
-}
-
-/** One of the member's engagements with stages, documents, and parties. */
-export async function getMyEngagement(id: string): Promise<MyEngagementDetail | null> {
-  const { data, error } = await supabase
-    .from('engagements')
-    .select('*')
-    .eq('id', id)
-    .is('deleted_at', null)
-    .maybeSingle();
-  if (error) throw error;
-  if (!data) return null;
-
-  const [stages, documents, parties] = await Promise.all([
-    supabase
-      .from('engagement_stages')
-      .select('*')
-      .eq('engagement_id', id)
-      .is('deleted_at', null)
-      .order('effective_from'),
-    supabase
-      .from('documents')
-      .select('*')
-      .eq('engagement_id', id)
-      .is('deleted_at', null)
-      .order('generated_at', { ascending: false }),
-    supabase
-      .from('engagement_parties')
-      .select('id, engagement_id, contact_id, party_role, is_signer, signer_order')
-      .eq('engagement_id', id)
-      .order('signer_order', { ascending: true, nullsFirst: false }),
-  ]);
-  if (stages.error) throw stages.error;
-  if (documents.error) throw documents.error;
-  if (parties.error) throw parties.error;
-
-  return {
-    ...(data as Engagement),
-    stages: (stages.data ?? []) as EngagementStage[],
-    documents: (documents.data ?? []) as DocumentRow[],
-    parties: (parties.data ?? []) as MyEngagementParty[],
-  };
 }
 
 /** contract_templates id → template_key (global read-active rows). */
