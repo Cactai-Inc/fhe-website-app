@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { toErrorMessage } from '../../../lib/ops/errors';
 import { useToast } from '../../../lib/ops';
+import { listContacts } from '../../../lib/api';
+import { contactName, type Contact } from '../../../lib/ops/types';
 import {
   fetchLeaseTerms,
   saveLeaseTerms,
@@ -32,6 +34,7 @@ const EMPTY: LeaseTerms = {
 
 export function LeaseTermsPanel({ horseId, horseName, onClose }: { horseId: string; horseName: string; onClose: () => void }) {
   const [t, setT] = useState<LeaseTerms>({ ...EMPTY, horse_id: horseId });
+  const [contacts, setContacts] = useState<Contact[]>([]);
   const [weeks, setWeeks] = useState('4');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -40,6 +43,7 @@ export function LeaseTermsPanel({ horseId, horseName, onClose }: { horseId: stri
 
   useEffect(() => {
     fetchLeaseTerms(horseId).then((r) => { if (r) setT({ ...EMPTY, ...r, horse_id: horseId }); }).catch(() => {});
+    listContacts().then(setContacts).catch(() => setContacts([]));
   }, [horseId]);
 
   const toggle = (key: 'days_used' | 'days_unavailable', d: string) =>
@@ -66,6 +70,23 @@ export function LeaseTermsPanel({ horseId, horseName, onClose }: { horseId: stri
   return (
     <div className="flex flex-col gap-4">
       <p className="text-sm text-green-800/70">Lease terms for <strong>{horseName}</strong>.</p>
+
+      <div className="grid grid-cols-1 gap-3">
+        <label className="text-sm">
+          <span className="form-label">Lessee</span>
+          <select className="form-input" value={t.lessee_contact_id ?? ''} onChange={(e) => setT((p) => ({ ...p, lessee_contact_id: e.target.value || null }))}>
+            <option value="">Select…</option>
+            {contacts.map((c) => <option key={c.id} value={c.id}>{contactName(c)}</option>)}
+          </select>
+        </label>
+        <label className="text-sm">
+          <span className="form-label">Shared with another rider (optional)</span>
+          <select className="form-input" value={t.shared_with_contact_id ?? ''} onChange={(e) => setT((p) => ({ ...p, shared_with_contact_id: e.target.value || null }))}>
+            <option value="">Not shared</option>
+            {contacts.map((c) => <option key={c.id} value={c.id}>{contactName(c)}</option>)}
+          </select>
+        </label>
+      </div>
 
       {/* payment options */}
       <div>
@@ -127,7 +148,7 @@ export function LeaseTermsPanel({ horseId, horseName, onClose }: { horseId: stri
       </label>
 
       <label className="text-sm">
-        <span className="form-label">Notes (e.g. shared with another rider)</span>
+        <span className="form-label">Notes</span>
         <textarea rows={2} className="form-input resize-none" value={t.notes ?? ''} onChange={(e) => setT((p) => ({ ...p, notes: e.target.value || null }))} />
       </label>
 

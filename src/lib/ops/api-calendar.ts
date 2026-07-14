@@ -169,6 +169,19 @@ export async function fetchCreditsRoster(): Promise<CreditRosterEntry[]> {
   return (data ?? []) as CreditRosterEntry[];
 }
 
+export interface ClientPurchaseOption {
+  id: string;
+  amount: number | null;
+  label: string;
+  created_at: string;
+}
+/** The purchases a booking can be assigned to (staff picker), for one client. */
+export async function fetchClientPurchases(clientId: string): Promise<ClientPurchaseOption[]> {
+  const { data, error } = await supabase.rpc('client_purchases', { p_client_id: clientId });
+  if (error) throw error;
+  return (data ?? []) as ClientPurchaseOption[];
+}
+
 // ─── Client booking + change flow (Slice 4) ──────────────────────────────────
 
 /** A client claims a flexible-open block. Throws NO_CREDITS when a lesson slot
@@ -195,7 +208,8 @@ export async function requestBookingChange(input: {
   kind: ChangeKind;
   newStart?: string;
   newEnd?: string;
-  scope?: 'one' | 'future' | 'all';
+  /** 'one' | 'future' | 'all' | 'weeks:N' (recurring series reach). */
+  scope?: string;
   note?: string;
 }): Promise<ChangeResult> {
   const { data, error } = await supabase.rpc('request_booking_change', {
