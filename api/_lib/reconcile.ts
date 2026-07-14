@@ -8,6 +8,13 @@ export interface ParsedNotification {
   sender?: string | null;
   amount: number;          // dollars
   reference?: string | null;
+  /** The Zelle "Message"/memo the payer typed (e.g. a name). */
+  memo?: string | null;
+  /** The bank confirmation code (e.g. "99ckoboiv") — for dedup / audit. */
+  confirmation?: string | null;
+  /** True when the bank email says the payment is UNDER REVIEW (not yet
+   *  deposited). Such a payment is queued for review, never auto-confirmed. */
+  pending?: boolean;
   rawSubject?: string;
   rawBody?: string;
   sourceInbox?: string;
@@ -53,6 +60,13 @@ export async function reconcileNotification(
     }
     return { result: 'review', reason };
   };
+
+  // A payment the bank is still REVIEWING has not been deposited — never
+  // auto-confirm it. It is recorded + queued; when the "deposited" email lands
+  // (not pending), that one reconciles and confirms.
+  if (n.pending) {
+    return toReview('payment pending bank review');
+  }
 
   // Find candidate pending purchases by exact unique_amount (deterministic key).
   const purchaseCols = 'id, amount, unique_amount, payment_reference, status, payment_status';
@@ -159,8 +173,8 @@ async function matchRescheduleFee(
   const candidates = (data ?? []) as FeeCandidate[];
   if (candidates.length === 0) return null;
 
-  // The full notification text is the haystack (memo/reference included).
-  const hay = [n.sender, n.reference, n.rawSubject, n.rawBody].filter(Boolean).join(' ').toLowerCase();
+  // The full notification text is the haystack (sender, memo, reference, body).
+  const hay = [n.sender, n.memo, n.reference, n.rawSubject, n.rawBody].filter(Boolean).join(' ').toLowerCase();
   const hayDigits = onlyDigits(hay);
 
   let hits = candidates.filter((c) => identityHit(hay, hayDigits, c));
