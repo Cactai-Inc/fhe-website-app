@@ -90,7 +90,7 @@ export default function Schedule() {
         ) : sessions.length === 0 ? (
           <p className="body-text text-muted text-sm">
             No lessons booked yet.{' '}
-            <Link to="/app/book" className="link-underline">
+            <Link to="/app/calendar" className="link-underline">
               Book a lesson <ArrowRight size={12} />
             </Link>
           </p>

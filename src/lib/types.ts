@@ -23,9 +23,6 @@ export type OrderStatus =
 export type PaymentMethod = 'zelle' | 'stripe';
 export type PaymentStatus =
   | 'pending' | 'matched' | 'confirmed' | 'review' | 'failed' | 'refunded';
-export type SlotStatus = 'open' | 'held' | 'booked' | 'blocked';
-export type SlotType = 'consultation' | 'onsite_visit' | 'lesson' | 'training' | 'other';
-export type LocationMode = 'onsite' | 'mobile';
 export type BookingStatus =
   | 'pending_slot' | 'pending_payment' | 'confirmed' | 'cancelled' | 'expired';
 
@@ -130,16 +127,6 @@ export interface Invitation {
   status: InvitationStatus;
   expires_at: string;
   request_id: string | null;
-}
-
-export interface AvailabilitySlot {
-  id: string;
-  start_at: string;
-  end_at: string;
-  slot_type: SlotType;
-  capacity: number;
-  location_mode: LocationMode;
-  status: SlotStatus;
 }
 
 /** Backed by the `purchases` table (spine refactor). The exported name stays

@@ -387,7 +387,7 @@ export function CreateModal({ onClose }: { onClose: () => void }) {
               {!isAdmin && (
                 <>
                   <p className="text-[10px] tracking-widest uppercase text-muted font-semibold mt-2">Do something</p>
-                  <DestButton icon={GraduationCap} label="Book a lesson" hint="Request a time with your instructor" onClick={() => go('/app/book')} />
+                  <DestButton icon={GraduationCap} label="Book a lesson" hint="Request a time with your instructor" onClick={() => go('/app/calendar')} />
                   <DestButton icon={ShoppingBag} label="Shop for sale" hint="Browse horses and gear" onClick={() => go('/app?filter=for_sale')} />
                   <DestButton icon={Send} label="New message" hint="Message a community member" onClick={() => go('/app/messages')} />
                 </>

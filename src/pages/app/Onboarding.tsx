@@ -664,7 +664,7 @@ export default function Onboarding() {
           )}
 
           <div className="flex flex-wrap gap-4">
-            <Link to="/app/book" className="btn-primary">
+            <Link to="/app/calendar" className="btn-primary">
               Book your first lesson <ArrowRight size={16} />
             </Link>
             <Link to="/app" className="btn-outline-gold">
