@@ -7,7 +7,6 @@ import { useDocumentTitle } from '../lib/hooks';
 import type { Order, OrderItem, Payment } from '../lib/types';
 import { formatPrice } from '../lib/services';
 import OrderPayment from '../components/order/OrderPayment';
-import BookingStep from '../components/order/BookingStep';
 import AddToCalendar from '../components/order/AddToCalendar';
 
 const STATUS_COPY: Record<string, { title: string; body: string }> = {
@@ -110,9 +109,13 @@ export default function OrderDetail() {
           </div>
         </div>
 
-        {/* Booking — choose a time before payment */}
+        {/* Scheduling now lives on the full calendar (Phase 6) — the client
+            books their session there once this is confirmed. */}
         {needsPayment && allDocsSigned && (
-          <BookingStep orderId={order.id} onHeld={reload} />
+          <p className="body-text text-sm text-muted">
+            After payment is confirmed, you’ll pick your time on the{' '}
+            <Link to="/app/calendar" className="text-green-800 underline">Calendar</Link>.
+          </p>
         )}
 
         {/* Payment */}

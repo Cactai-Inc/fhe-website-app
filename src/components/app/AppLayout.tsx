@@ -40,7 +40,7 @@ interface NavItem {
 }
 
 const QUICK: { label: string; icon: typeof GraduationCap; to: string }[] = [
-  { label: 'Book a lesson', icon: GraduationCap, to: '/app/book' },
+  { label: 'Book a lesson', icon: GraduationCap, to: '/app/calendar' },
   { label: 'Shop for sale', icon: ShoppingBag, to: '/app?filter=for_sale' },
   { label: 'New message', icon: MessageSquare, to: '/app/messages' },
 ];
@@ -81,7 +81,6 @@ const ACCOUNTS_GROUP: NavItem[] = [
 ];
 const SERVICING_GROUP: NavItem[] = [
   { to: '/app/ops/lessons', label: 'Lessons', icon: GraduationCap, module: 'mod.lessons' },
-  { to: '/app/ops/availability', label: 'Availability', icon: CalendarDays },
   { to: '/app/ops/horse-records', label: 'Horses', icon: Boxes },
   { to: '/app/ops/documents', label: 'Documents', icon: FileText },
 ];

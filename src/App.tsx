@@ -48,7 +48,6 @@ import CalendarPage from './pages/app/CalendarPage';
 import Orders from './pages/app/Orders';
 import Documents from './pages/app/Documents';
 import Onboarding from './pages/app/Onboarding';
-import BookMore from './pages/app/BookMore';
 // Client portal (CP-* wave)
 import MyLessons from './pages/app/MyLessons';
 import ThreadDetail from './pages/app/ThreadDetail';
@@ -78,7 +77,6 @@ import TeamPage from './pages/app/ops/TeamPage';
 import AccountInvitePage from './pages/app/ops/AccountInvitePage';
 import NewContractPage from './pages/app/ops/NewContractPage';
 import AdminFormsPage from './pages/app/ops/admin/AdminFormsPage';
-import AvailabilityPage from './pages/app/ops/AvailabilityPage';
 import PaymentReviewPage from './pages/app/ops/PaymentReviewPage';
 import BoardingHubPage from './pages/app/ops/hubs/BoardingHubPage';
 import FacilitiesPage from './pages/app/ops/boarding/FacilitiesPage';
@@ -197,7 +195,8 @@ export function AppRoutes() {
               {/* Rider onboarding (provisioned invite → details → sign → confirmation) */}
               <Route path="onboarding" element={<Onboarding />} />
               {/* Flow D — returning member books more (BOOKING_FLOWS_PLAN §2 Flow D) */}
-              <Route path="book" element={<BookMore />} />
+              {/* /app/book retired — booking lives on the full calendar (Phase 6) */}
+              <Route path="book" element={<Navigate to="/app/calendar" replace />} />
               <Route path="orders" element={<Orders />} />
               {/* Client portal (CP-*) */}
               <Route path="lessons" element={<MyLessons />} />
@@ -225,7 +224,8 @@ export function AppRoutes() {
               {/* staff can invite clients; the page hides staff account types for non-admins */}
               <Route path="ops/accounts/new" element={<ProtectedRoute requireStaff><AccountInvitePage /></ProtectedRoute>} />
               <Route path="ops/contracts/new" element={<ProtectedRoute requireStaff><NewContractPage /></ProtectedRoute>} />
-              <Route path="ops/availability" element={<ProtectedRoute requireStaff><AvailabilityPage /></ProtectedRoute>} />
+              {/* ops/availability retired — staff manage availability on the full calendar (Phase 6) */}
+              <Route path="ops/availability" element={<Navigate to="/app/calendar" replace />} />
               {/* Total control — admins only */}
               <Route path="ops/moderation" element={<ProtectedRoute requireStaff><ModerationPage /></ProtectedRoute>} />
               <Route path="ops/support" element={<ProtectedRoute requireStaff><SupportPage /></ProtectedRoute>} />

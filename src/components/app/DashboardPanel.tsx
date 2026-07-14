@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { myNotifications, type AppNotification } from '../../lib/api';
 import { myLessonSessions, type MemberLessonSession } from '../../lib/ops/api-member';
+import { fetchMyPendingChanges } from '../../lib/ops/api-calendar';
 import { fetchEvents } from '../../lib/community';
 import type { CommunityEvent } from '../../lib/community-types';
 import { supabase } from '../../lib/supabase';
@@ -94,9 +95,13 @@ export function DashboardPanel() {
   const [comingUp, setComingUp] = useState<Tile[]>([]);
   const [checklist, setChecklist] = useState<ChecklistRow[]>([]);
   const [suggestBooking, setSuggestBooking] = useState(false);
+  const [pendingChanges, setPendingChanges] = useState(0);
 
   useEffect(() => {
     let active = true;
+    fetchMyPendingChanges()
+      .then((r) => active && setPendingChanges(r.length))
+      .catch(() => {});
     Promise.all([
       myNotifications().catch(() => [] as AppNotification[]),
       myLessonSessions().catch(() => [] as MemberLessonSession[]),
@@ -149,21 +154,29 @@ export function DashboardPanel() {
     return () => { active = false; };
   }, []);
 
-  if (attention.length === 0 && comingUp.length === 0 && checklist.length === 0 && !suggestBooking) return null;
+  if (attention.length === 0 && comingUp.length === 0 && checklist.length === 0 && !suggestBooking && pendingChanges === 0) return null;
 
   return (
     <div className="rounded-2xl border border-green-800/10 shadow-[0_14px_34px_-14px_rgba(13,33,24,0.22)] bg-gradient-to-br from-white to-cream-100 p-5 sm:p-6 mb-6 sm:mb-7">
-      {(attention.length > 0 || checklist.length > 0 || suggestBooking) && (
+      {(attention.length > 0 || checklist.length > 0 || suggestBooking || pendingChanges > 0) && (
         <>
           <p className="text-[10px] tracking-widest uppercase text-gold-800 font-semibold mb-3">Needs your attention</p>
           <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
             {checklist.length > 0 && <ChecklistCard rows={checklist} />}
+            {pendingChanges > 0 && (
+              <TileCard tile={{
+                id: 'pending-changes', kind: 'suggestion',
+                title: `${pendingChanges} pending request${pendingChanges > 1 ? 's' : ''}`,
+                sub: 'Awaiting confirmation from our team.',
+                cta: 'View on calendar', to: '/app/calendar',
+              }} />
+            )}
             {suggestBooking && (
               <TileCard tile={{
                 id: 'book-first', kind: 'suggestion', gold: true,
                 title: 'Book your next lesson',
                 sub: 'Paperwork done — pick a time that suits you.',
-                cta: 'Book a lesson', to: '/app/book',
+                cta: 'Book a lesson', to: '/app/calendar',
               }} />
             )}
             {attention.map((t) => <TileCard key={t.id} tile={t} />)}
