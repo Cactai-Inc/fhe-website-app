@@ -9,6 +9,16 @@ import {
   type CalendarView,
   type CreditRosterEntry,
 } from '../../lib/ops/api-calendar';
+import {
+  bookOpenSlot,
+  requestBookingChange,
+  fetchRescheduleFee,
+  fetchOpenChangeRequests,
+  decideBookingChange,
+  type OpenChangeRequest,
+} from '../../lib/ops/api-calendar';
+import { toErrorMessage } from '../../lib/ops/errors';
+import { Link } from 'react-router-dom';
 import { formatSessionWhen, formatTimeRange } from '../../lib/formatDateTime';
 import { CalendarItemPanel } from './CalendarItemPanel';
 
@@ -241,6 +251,8 @@ export default function CalendarPage() {
         </div>
       )}
 
+      {isStaff && <RequestsBar onDecided={() => void load()} />}
+
       {error && <p role="alert" className="form-error mb-3">{error}</p>}
 
       <div className="bg-white border border-green-800/10 rounded-lg overflow-x-auto">
@@ -260,7 +272,13 @@ export default function CalendarPage() {
 
       {loading && <p className="text-sm text-muted mt-3">Loading…</p>}
 
-      {selected && <DetailPanel item={selected} onClose={() => setSelected(null)} />}
+      {selected && (
+        <DetailPanel
+          item={selected}
+          onClose={() => setSelected(null)}
+          onChanged={() => { setSelected(null); void load(); }}
+        />
+      )}
       {editing && (
         <CalendarItemPanel
           item={editing.item}
@@ -403,9 +421,60 @@ function MonthGrid({
   );
 }
 
-/** Read-only detail (Slice 2). The editable config/booking panels arrive in
- *  Slices 3–4; for now this shows what the caller is allowed to see. */
-function DetailPanel({ item, onClose }: { item: CalendarItem; onClose: () => void }) {
+/** The client-side detail + actions panel (Slice 4): book an open slot, or
+ *  reschedule / cancel / defer your own booking. */
+function DetailPanel({ item, onClose, onChanged }: { item: CalendarItem; onClose: () => void; onChanged: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [noCredits, setNoCredits] = useState(false);
+  const [mode, setMode] = useState<'view' | 'reschedule'>('view');
+  const [newStart, setNewStart] = useState('');
+  const [fee, setFee] = useState(0);
+  const [done, setDone] = useState<string | null>(null);
+
+  useEffect(() => { fetchRescheduleFee().then(setFee).catch(() => setFee(0)); }, []);
+
+  const isAvailable = item.status === 'available';
+  const isMine = !!item.is_mine;
+  const canChange = isMine && ['scheduled', 'confirmed', 'pending'].includes(item.status);
+  const hoursOut = (new Date(item.starts_at).getTime() - Date.now()) / 3_600_000;
+  const feeNow = hoursOut < 48 ? fee : 0;
+  const phoneRequired = hoursOut < 24;
+  const durationMs = item.ends_at ? new Date(item.ends_at).getTime() - new Date(item.starts_at).getTime() : 3_600_000;
+
+  async function book() {
+    setBusy(true); setError(null); setNoCredits(false);
+    try {
+      await bookOpenSlot(item.id);
+      onChanged();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : '';
+      if (msg.includes('NO_CREDITS')) setNoCredits(true);
+      else setError(toErrorMessage(e, 'Could not book that time.'));
+    } finally { setBusy(false); }
+  }
+
+  async function change(kind: 'reschedule' | 'cancel' | 'defer') {
+    setBusy(true); setError(null);
+    try {
+      const payload =
+        kind === 'reschedule'
+          ? { bookingId: item.id, kind, newStart: new Date(newStart).toISOString(), newEnd: new Date(new Date(newStart).getTime() + durationMs).toISOString() }
+          : { bookingId: item.id, kind };
+      const r = await requestBookingChange(payload);
+      setDone(
+        r.phone_required
+          ? 'Request submitted — a phone call is required to confirm this change. We’ll call you.'
+          : r.fee_amount
+            ? `Request submitted — a $${r.fee_amount} fee applies; we’ll confirm once it’s settled.`
+            : 'Request submitted — pending confirmation.',
+      );
+      onChanged();
+    } catch (e) {
+      setError(toErrorMessage(e, 'Could not submit your request.'));
+    } finally { setBusy(false); }
+  }
+
   return (
     <div className="fixed inset-0 z-50 bg-black/30 flex justify-end" onClick={onClose}>
       <div className="bg-cream w-full max-w-sm h-full overflow-y-auto shadow-xl p-5" onClick={(e) => e.stopPropagation()}>
@@ -413,36 +482,19 @@ function DetailPanel({ item, onClose }: { item: CalendarItem; onClose: () => voi
           <h2 className="font-serif text-lg text-green-900">{itemLabel(item)}</h2>
           <button type="button" onClick={onClose} aria-label="Close"><X size={20} /></button>
         </div>
-        <dl className="space-y-3 text-sm">
+        <dl className="space-y-3 text-sm mb-4">
           <div>
             <dt className="text-xs uppercase tracking-wide text-muted">When</dt>
             <dd className="text-green-900">{formatSessionWhen(item.starts_at, item.ends_at)}</dd>
           </div>
-          {item.status && (
-            <div>
-              <dt className="text-xs uppercase tracking-wide text-muted">Status</dt>
-              <dd className="text-green-900 capitalize">{item.status.replace(/_/g, ' ')}</dd>
-            </div>
-          )}
+          <div>
+            <dt className="text-xs uppercase tracking-wide text-muted">Status</dt>
+            <dd className="text-green-900 capitalize">{item.status.replace(/_/g, ' ')}</dd>
+          </div>
           {item.address && (
             <div>
               <dt className="text-xs uppercase tracking-wide text-muted">Address</dt>
-              <dd>
-                <a
-                  className="text-green-800 underline"
-                  href={`https://maps.apple.com/?daddr=${encodeURIComponent(item.address)}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {item.address}
-                </a>
-              </dd>
-            </div>
-          )}
-          {typeof item.price_amount === 'number' && (
-            <div>
-              <dt className="text-xs uppercase tracking-wide text-muted">Price</dt>
-              <dd className="text-green-900">${item.price_amount.toFixed(2)}</dd>
+              <dd><a className="text-green-800 underline" href={`https://maps.apple.com/?daddr=${encodeURIComponent(item.address)}`} target="_blank" rel="noreferrer">{item.address}</a></dd>
             </div>
           )}
           {item.notes && (
@@ -452,10 +504,102 @@ function DetailPanel({ item, onClose }: { item: CalendarItem; onClose: () => voi
             </div>
           )}
         </dl>
-        <p className="text-xs text-muted mt-6">
-          Booking &amp; configuration actions arrive with the next update.
-        </p>
+
+        {done && <p className="bg-green-50 border border-green-200 text-green-800 text-sm p-3 rounded mb-3">{done}</p>}
+
+        {!done && isAvailable && (
+          <div>
+            {noCredits ? (
+              <div className="bg-gold-50 border border-gold-200 p-3 rounded text-sm">
+                <p className="text-green-900 mb-2">You don’t have any lesson credits.</p>
+                <Link to="/lessons" className="btn-primary text-sm justify-center w-full">Purchase a package</Link>
+              </div>
+            ) : (
+              <button type="button" className="btn-primary w-full justify-center" disabled={busy} onClick={() => void book()}>
+                {busy ? 'Booking…' : 'Book this time'}
+              </button>
+            )}
+          </div>
+        )}
+
+        {!done && canChange && mode === 'view' && (
+          <div className="flex flex-col gap-2">
+            <button type="button" className="btn-secondary w-full justify-center" onClick={() => setMode('reschedule')}>Reschedule</button>
+            <button type="button" className="btn-secondary w-full justify-center" disabled={busy} onClick={() => void change('defer')}>Defer (get a credit)</button>
+            <button type="button" className="text-sm text-red-700 py-2 hover:bg-red-50 rounded" disabled={busy} onClick={() => void change('cancel')}>Cancel this booking</button>
+          </div>
+        )}
+
+        {!done && canChange && mode === 'reschedule' && (
+          <div className="flex flex-col gap-3">
+            <label className="text-sm">
+              <span className="form-label">New time</span>
+              <input type="datetime-local" className="form-input" value={newStart} onChange={(e) => setNewStart(e.target.value)} />
+            </label>
+            {(feeNow > 0 || phoneRequired) && (
+              <div className="bg-orange-50 border border-orange-300 text-orange-900 text-xs p-2 rounded">
+                {feeNow > 0 && <p>A ${feeNow} reschedule fee applies (inside 48 hours).</p>}
+                {phoneRequired && <p>Inside 24 hours — a phone call is required to confirm.</p>}
+              </div>
+            )}
+            <div className="flex gap-2">
+              <button type="button" className="btn-primary flex-1 justify-center" disabled={busy || !newStart} onClick={() => void change('reschedule')}>
+                {busy ? 'Submitting…' : 'Submit request'}
+              </button>
+              <button type="button" className="btn-secondary" onClick={() => setMode('view')}>Back</button>
+            </div>
+          </div>
+        )}
+
+        {error && <p role="alert" className="form-error mt-3">{error}</p>}
       </div>
+    </div>
+  );
+}
+
+/** Staff inbox of pending client change requests, shown atop the calendar. */
+function RequestsBar({ onDecided }: { onDecided: () => void }) {
+  const [reqs, setReqs] = useState<OpenChangeRequest[]>([]);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const load = useCallback(() => {
+    fetchOpenChangeRequests().then(setReqs).catch(() => setReqs([]));
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  async function decide(id: string, approve: boolean, waive = false) {
+    setBusy(id);
+    try {
+      await decideBookingChange(id, approve, waive);
+      load();
+      onDecided();
+    } finally { setBusy(null); }
+  }
+
+  if (reqs.length === 0) return null;
+  return (
+    <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-3">
+      <p className="form-label mb-2">Pending requests ({reqs.length})</p>
+      <ul className="flex flex-col gap-2">
+        {reqs.map((r) => (
+          <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 text-sm bg-white border border-orange-100 rounded p-2">
+            <span className="text-green-900">
+              <strong className="capitalize">{r.kind}</strong> · {r.client_name || 'Client'} ·{' '}
+              {r.kind === 'reschedule' && r.proposed_starts_at
+                ? `→ ${formatSessionWhen(r.proposed_starts_at)}`
+                : formatSessionWhen(r.starts_at)}
+              {r.fee_amount ? ` · $${r.fee_amount}${r.fee_paid ? ' paid' : ' unpaid'}` : ''}
+              {r.phone_required ? ' · 📞 call required' : ''}
+            </span>
+            <span className="flex gap-1">
+              <button type="button" className="btn-primary text-xs" disabled={busy === r.id} onClick={() => void decide(r.id, true, !!r.fee_amount && !r.fee_paid)}>
+                {r.fee_amount && !r.fee_paid ? 'Approve + waive' : 'Approve'}
+              </button>
+              <button type="button" className="btn-secondary text-xs" disabled={busy === r.id} onClick={() => void decide(r.id, false)}>Reject</button>
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

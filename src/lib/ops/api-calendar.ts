@@ -168,3 +168,103 @@ export async function fetchCreditsRoster(): Promise<CreditRosterEntry[]> {
   if (error) throw error;
   return (data ?? []) as CreditRosterEntry[];
 }
+
+// ─── Client booking + change flow (Slice 4) ──────────────────────────────────
+
+/** A client claims a flexible-open block. Throws NO_CREDITS when a lesson slot
+ *  needs a credit the client doesn't have (the UI then prompts to purchase). */
+export async function bookOpenSlot(bookingId: string, horseId?: string | null): Promise<{ status: string; kind: string }> {
+  const { data, error } = await supabase.rpc('book_open_slot', { p_booking_id: bookingId, p_horse_id: horseId ?? null });
+  if (error) throw error;
+  return data as { status: string; kind: string };
+}
+
+export type ChangeKind = 'reschedule' | 'cancel' | 'defer';
+
+export interface ChangeResult {
+  change_id: string;
+  fee_amount: number | null;
+  phone_required: boolean;
+  kind: ChangeKind;
+}
+
+/** Request a reschedule / cancel / defer on a booking. Returns the fee owed +
+ *  whether a phone call is required so the UI can surface them before/after. */
+export async function requestBookingChange(input: {
+  bookingId: string;
+  kind: ChangeKind;
+  newStart?: string;
+  newEnd?: string;
+  scope?: 'one' | 'future' | 'all';
+  note?: string;
+}): Promise<ChangeResult> {
+  const { data, error } = await supabase.rpc('request_booking_change', {
+    p_booking_id: input.bookingId,
+    p_kind: input.kind,
+    p_new_start: input.newStart ?? null,
+    p_new_end: input.newEnd ?? null,
+    p_scope: input.scope ?? 'one',
+    p_note: input.note ?? null,
+  });
+  if (error) throw error;
+  return data as ChangeResult;
+}
+
+export interface OpenChangeRequest {
+  id: string;
+  booking_id: string;
+  kind: ChangeKind;
+  proposed_starts_at: string | null;
+  proposed_ends_at: string | null;
+  fee_amount: number | null;
+  fee_paid: boolean;
+  phone_required: boolean;
+  note: string | null;
+  created_at: string;
+  client_name: string;
+  starts_at: string;
+}
+export async function fetchOpenChangeRequests(): Promise<OpenChangeRequest[]> {
+  const { data, error } = await supabase.rpc('open_change_requests');
+  if (error) throw error;
+  return (data ?? []) as OpenChangeRequest[];
+}
+
+export interface MyPendingChange {
+  id: string;
+  booking_id: string;
+  kind: ChangeKind;
+  status: string;
+  proposed_starts_at: string | null;
+  fee_amount: number | null;
+  fee_paid: boolean;
+  phone_required: boolean;
+  created_at: string;
+}
+export async function fetchMyPendingChanges(): Promise<MyPendingChange[]> {
+  const { data, error } = await supabase.rpc('my_pending_changes');
+  if (error) throw error;
+  return (data ?? []) as MyPendingChange[];
+}
+
+export async function decideBookingChange(changeId: string, approve: boolean, waiveFee = false): Promise<void> {
+  const { error } = await supabase.rpc('decide_booking_change', { p_change_id: changeId, p_approve: approve, p_waive_fee: waiveFee });
+  if (error) throw error;
+}
+
+export async function markChangeFeePaid(changeId: string, paid = true): Promise<void> {
+  const { error } = await supabase.rpc('mark_change_fee_paid', { p_change_id: changeId, p_paid: paid });
+  if (error) throw error;
+}
+
+/** The org's reschedule fee (0 = none). Read directly (RLS-scoped). */
+export async function fetchRescheduleFee(): Promise<number> {
+  const { data, error } = await supabase.from('calendar_settings').select('reschedule_fee').maybeSingle();
+  if (error) throw error;
+  return Number(data?.reschedule_fee ?? 0);
+}
+
+export async function setCalendarSettings(rescheduleFee: number): Promise<void> {
+  const { error } = await supabase.rpc('set_calendar_settings', { p_reschedule_fee: rescheduleFee });
+  if (error) throw error;
+}
