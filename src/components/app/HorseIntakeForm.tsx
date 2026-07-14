@@ -155,14 +155,8 @@ export function HorseIntakeForm({
             )}
             <div><L>Lease start</L><input type="date" className={input} value={f.lease_start ?? ''} onChange={set('lease_start')} /></div>
             <div><L>Lease end</L><input type="date" className={input} value={f.lease_end ?? ''} onChange={set('lease_end')} /></div>
-            <div>
-              <L>Subleasing allowed</L>
-              <select className={input} value={f.sublease_allowed ?? 'no'}
-                onChange={(e) => setF((p) => ({ ...p, sublease_allowed: e.target.value as 'yes' | 'no' }))}>
-                <option value="no">No</option>
-                <option value="yes">Yes</option>
-              </select>
-            </div>
+            {/* Subleasing permission is the lessor's discretion, set on the lease
+                contract — not the horse record. */}
           </>
         )}
       </Section>
