@@ -62,6 +62,7 @@ export async function submitRequest(
       offering_slug: s.offering_slug ?? null,
       label: s.label ?? null,
     })),
+    p_details: input.details ?? {},
   });
   if (error) throw error;
   return { requestId: (data as { request_id: string }).request_id };

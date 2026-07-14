@@ -32,6 +32,7 @@ import {
 } from '../../../lib/ops/api-lessons';
 import type { LessonSession, ScheduleHorseOption } from '../../../lib/ops/api-lessons';
 import { formatSessionWhen } from '../../../lib/formatDateTime';
+import { categoryFieldLabel } from '../../../lib/intakeCategoryFields';
 import { ScheduleSessionForm } from './lessons/ScheduleSessionForm';
 import type { ScheduleSessionFormValues } from './lessons/ScheduleSessionForm';
 import type {
@@ -460,6 +461,20 @@ function RequestInbox({ openId }: { openId?: string } = {}) {
               <h3 className="form-label mb-2">Requested</h3>
               <p className="text-sm text-green-900">{requestedSummary(selected)}</p>
             </section>
+
+            {selected.details && Object.keys(selected.details).length > 0 && (
+              <section aria-label="Details">
+                <h3 className="form-label mb-2">Details</h3>
+                <dl className="grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1 text-sm">
+                  {Object.entries(selected.details).map(([k, v]) => (
+                    <div key={k} className="contents">
+                      <dt className="text-green-800/70">{categoryFieldLabel(k)}</dt>
+                      <dd className="text-green-900">{v}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </section>
+            )}
 
             <AvailabilitySection request={selected} />
 

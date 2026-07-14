@@ -113,6 +113,8 @@ export interface RequestInput {
   entry_location?: string;
   /** Hidden purchase-intent tag for analytics. */
   intent?: string;
+  /** Category-specific answers (C1), keyed by field key → requests.details. */
+  details?: Record<string, string>;
 }
 
 export interface RequestSelectionInput {

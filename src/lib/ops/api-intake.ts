@@ -81,6 +81,8 @@ export interface BookingRequest {
   staff_notes: RequestStaffNote[];
   /** Flat object of checklist-item key → boolean; null until staff start it. */
   checklist: Record<string, boolean> | null;
+  /** Category-specific answers (C1), keyed by field key. Empty object when none. */
+  details: Record<string, string> | null;
   request_selections: BookingRequestSelection[];
 }
 
