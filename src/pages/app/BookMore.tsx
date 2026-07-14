@@ -78,12 +78,10 @@ export default function BookMore() {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const contactName =
-        [profile?.first_name, profile?.last_name].filter(Boolean).join(' ').trim()
-        || profile?.display_name
-        || profile?.email
-        || user?.email
-        || 'Member';
+      // We already know the member — split their profile name (last name falls
+      // back so the required-field server check is satisfied for returners).
+      const firstName = profile?.first_name?.trim() || profile?.display_name?.trim() || 'Member';
+      const lastName = profile?.last_name?.trim() || '—';
       // Same structured JSON the public Checkout writes to proposed_times.
       const availability: AvailabilitySelection = {
         ...picker.buildSelection(),
@@ -93,12 +91,17 @@ export default function BookMore() {
       const notes = `RETURNING MEMBER — ${offering.name} requested\n${note.trim()}`.trimEnd();
       await submitRequest(
         {
-          contact_name: contactName,
+          first_name: firstName,
+          last_name: lastName,
           contact_email: profile?.email || user?.email || '',
           contact_phone: profile?.phone || undefined,
           contact_method: contactMethod,
           proposed_times: availabilityEntries(availability),
           notes,
+          category: 'lessons',
+          channel: 'booking',
+          entry_location: 'book_more',
+          intent: 'purchase',
         },
         [{
           offering_id: offering.id,

@@ -1,0 +1,324 @@
+import { useEffect, useState } from 'react';
+import { ArrowRight } from 'lucide-react';
+import { submitRequest } from '../lib/api';
+import { fetchIntakeRequirements } from '../lib/ops/api-public';
+import type {
+  RequestCategory,
+  RequestChannel,
+  RequestSelectionInput,
+  ContactMethod,
+} from '../lib/types';
+
+/**
+ * The ONE public intake form. It shape-shifts by the category dropdown and
+ * carries the same fields everywhere — contact, inquiry, and cart checkout all
+ * write a single `requests` row through submit_public_request. Last name is
+ * required on every path (which also unblocks the staff invite, and lands kiosk
+ * submitters cleanly in the inbox). Phone + a preferred contact method are
+ * additionally required in "cart" mode (a purchase-intent submission).
+ *
+ * `intent` is a hidden analytics tag; `channel` records which form this is;
+ * `entryLocation` carries the "how did you hear" preset. The embedding page sets
+ * the sensible defaults (a Lessons page opens this with category='lessons').
+ */
+
+const CATEGORIES: { value: RequestCategory; label: string }[] = [
+  { value: 'general', label: 'General question' },
+  { value: 'lessons', label: 'Riding lessons' },
+  { value: 'horse_care', label: 'Horse care' },
+  { value: 'acquisition', label: 'Buying or selling a horse' },
+  { value: 'media', label: 'Media / press' },
+  { value: 'partnership', label: 'Partnership / sponsorship' },
+];
+
+const SOURCES: { value: string; label: string }[] = [
+  { value: '', label: 'How did you hear about us?' },
+  { value: 'referral', label: 'A friend or referral' },
+  { value: 'google', label: 'Google search' },
+  { value: 'social', label: 'Instagram / Facebook' },
+  { value: 'event', label: 'An event or show' },
+  { value: 'drive_by', label: 'Saw the barn nearby' },
+  { value: 'returning', label: "I'm a returning client" },
+  { value: 'other', label: 'Other' },
+];
+
+const MESSAGE_MAX = 4000;
+
+/** The message prompt adapts to what they're reaching out about. */
+function messagePrompt(category: RequestCategory): string {
+  switch (category) {
+    case 'lessons':
+      return 'Tell us about the rider — age, experience, and what you’re hoping to work on.';
+    case 'horse_care':
+      return 'Tell us about your horse and the care you’re looking for.';
+    case 'acquisition':
+      return 'What are you looking to buy or sell? Budget, discipline, timeline?';
+    case 'media':
+      return 'Tell us about the outlet, the story, and your deadline.';
+    case 'partnership':
+      return 'Tell us about your brand and what you have in mind.';
+    default:
+      return 'Anything you’d like us to know?';
+  }
+}
+
+/** Derive the analytics intent tag from the category + whether it's a cart. */
+function intentFor(category: RequestCategory, isCart: boolean): string {
+  if (isCart) return 'purchase';
+  if (category === 'media') return 'media';
+  if (category === 'partnership') return 'partnership';
+  return 'inquiry';
+}
+
+export interface PublicIntakeFormProps {
+  channel: RequestChannel;
+  defaultCategory?: RequestCategory;
+  /** Lock the category (hide the dropdown) — e.g. a cart is always its funnel. */
+  lockCategory?: boolean;
+  entryLocation?: string;
+  /** Cart selections; when present the form is in "cart" mode (more required). */
+  selections?: RequestSelectionInput[];
+  /** Extra content rendered above the buttons (e.g. an availability picker). */
+  children?: React.ReactNode;
+  submitLabel?: string;
+  onSubmitted?: (requestId: string) => void;
+}
+
+export function PublicIntakeForm({
+  channel,
+  defaultCategory = 'general',
+  lockCategory = false,
+  entryLocation,
+  selections,
+  children,
+  submitLabel = 'Send it our way',
+  onSubmitted,
+}: PublicIntakeFormProps) {
+  const isCart = !!selections && selections.length > 0;
+  const [category, setCategory] = useState<RequestCategory>(defaultCategory);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [method, setMethod] = useState<ContactMethod>('email');
+  const [source, setSource] = useState('');
+  const [message, setMessage] = useState('');
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Which optional fields THIS channel requires is the owner's call, configured
+  // in-app (intake_requirements). Base fields (first/last/email) are always
+  // required; the config only ever adds to that (in practice, for 'booking').
+  const [req, setReq] = useState<Record<string, boolean>>({});
+  useEffect(() => {
+    let active = true;
+    fetchIntakeRequirements(channel)
+      .then((r) => active && setReq(r))
+      .catch(() => active && setReq({}));
+    return () => {
+      active = false;
+    };
+  }, [channel]);
+  const needs = (field: string) => req[field] === true;
+
+  const ready =
+    firstName.trim() !== '' &&
+    lastName.trim() !== '' &&
+    email.trim() !== '' &&
+    (!needs('phone') || phone.trim() !== '') &&
+    (!needs('source') || source !== '') &&
+    (!needs('message') || message.trim() !== '');
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!ready) {
+      setError('Please fill in every required field (marked *).');
+      return;
+    }
+    if (message.length > MESSAGE_MAX) {
+      setError(`Your message is too long (max ${MESSAGE_MAX} characters).`);
+      return;
+    }
+    setSending(true);
+    setError(null);
+    try {
+      const { requestId } = await submitRequest(
+        {
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          contact_email: email.trim(),
+          contact_phone: phone.trim() || undefined,
+          contact_method: isCart || needs('contact_method') ? method : undefined,
+          notes: message.trim() || undefined,
+          category,
+          channel,
+          entry_location: source || entryLocation,
+          intent: intentFor(category, isCart),
+        },
+        selections ?? [],
+      );
+      onSubmitted?.(requestId);
+    } catch (err) {
+      setError(
+        err instanceof Error && err.message
+          ? err.message
+          : 'Something went wrong. Please email or call us directly.',
+      );
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className="bg-white border border-green-800/10 p-8" noValidate>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        {!lockCategory && (
+          <div className="sm:col-span-2">
+            <label className="form-label" htmlFor="pi-category">
+              What can we help with?
+            </label>
+            <select
+              id="pi-category"
+              className="form-input"
+              value={category}
+              onChange={(e) => setCategory(e.target.value as RequestCategory)}
+            >
+              {CATEGORIES.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        <div>
+          <label className="form-label" htmlFor="pi-first">
+            First name *
+          </label>
+          <input
+            id="pi-first"
+            className="form-input"
+            required
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            autoComplete="given-name"
+          />
+        </div>
+        <div>
+          <label className="form-label" htmlFor="pi-last">
+            Last name *
+          </label>
+          <input
+            id="pi-last"
+            className="form-input"
+            required
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            autoComplete="family-name"
+          />
+        </div>
+
+        <div>
+          <label className="form-label" htmlFor="pi-email">
+            Email *
+          </label>
+          <input
+            id="pi-email"
+            type="email"
+            className="form-input"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+          />
+        </div>
+        <div>
+          <label className="form-label" htmlFor="pi-phone">
+            Phone {needs('phone') ? '*' : ''}
+          </label>
+          <input
+            id="pi-phone"
+            type="tel"
+            className="form-input"
+            required={needs('phone')}
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            autoComplete="tel"
+          />
+        </div>
+
+        {needs('contact_method') && (
+          <div className="sm:col-span-2">
+            <label className="form-label" htmlFor="pi-method">
+              Best way to reach you *
+            </label>
+            <select
+              id="pi-method"
+              className="form-input"
+              value={method}
+              onChange={(e) => setMethod(e.target.value as ContactMethod)}
+            >
+              <option value="email">Email</option>
+              <option value="text">Text</option>
+              <option value="call">Call</option>
+            </select>
+          </div>
+        )}
+
+        <div className="sm:col-span-2">
+          <label className="form-label" htmlFor="pi-source">
+            How did you hear about us? {needs('source') ? '*' : ''}
+          </label>
+          <select
+            id="pi-source"
+            className="form-input"
+            value={source}
+            onChange={(e) => setSource(e.target.value)}
+          >
+            {SOURCES.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="sm:col-span-2">
+          <label className="form-label" htmlFor="pi-msg">
+            {messagePrompt(category)} {needs('message') ? '*' : ''}
+          </label>
+          <textarea
+            id="pi-msg"
+            rows={4}
+            maxLength={MESSAGE_MAX}
+            className="form-input resize-none"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+          />
+          <p className="form-hint text-right">
+            {message.length}/{MESSAGE_MAX}
+          </p>
+        </div>
+      </div>
+
+      {children}
+
+      {error && (
+        <p className="form-error mt-4" role="alert">
+          {error}
+        </p>
+      )}
+      <button
+        type="submit"
+        disabled={sending || !ready}
+        className="btn-primary mt-6 w-full justify-center"
+      >
+        {sending ? 'Sending…' : submitLabel}
+        {!sending && <ArrowRight size={16} />}
+      </button>
+    </form>
+  );
+}
+
+export default PublicIntakeForm;

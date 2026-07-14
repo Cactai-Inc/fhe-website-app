@@ -13,7 +13,7 @@ import type {
   ContractTemplate,
   DocumentRow, GeneratedDocument, Signature, PartyRole,
   DocumentDelivery, DeliveryInput, BillableLine,
-  SettlementResult, IntakeRequest,
+  IntakeRequest,
 } from './ops/types';
 
 // ─── Offerings catalog ──────────────────────────────────────────────────────
@@ -46,12 +46,17 @@ export async function submitRequest(
   // resolves the tenant, stamps org_id, and inserts request + selections
   // atomically (2026-07-04 production fix).
   const { data, error } = await supabase.rpc('submit_public_request', {
-    p_contact_name: input.contact_name,
-    p_contact_email: input.contact_email,
-    p_contact_phone: input.contact_phone ?? null,
+    p_first_name: input.first_name,
+    p_last_name: input.last_name,
+    p_email: input.contact_email,
+    p_phone: input.contact_phone ?? null,
     p_contact_method: input.contact_method ?? null,
-    p_proposed_times: input.proposed_times ?? [],
     p_notes: input.notes ?? null,
+    p_proposed_times: input.proposed_times ?? [],
+    p_category: input.category ?? null,
+    p_channel: input.channel ?? 'contact',
+    p_entry_location: input.entry_location ?? null,
+    p_intent: input.intent ?? null,
     p_selections: selections.map((s) => ({
       offering_id: s.offering_id ?? null,
       offering_slug: s.offering_slug ?? null,

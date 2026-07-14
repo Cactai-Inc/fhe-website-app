@@ -452,7 +452,6 @@ export default function Admin() {
     });
   }, [members, q, sortKey]);
 
-  const clientId = selected?.client_id ?? ov?.profile?.client_id ?? null;
   const tabPages = Math.ceil(TABS.length / TAB_PAGE_SIZE);
 
   async function toggleSuspend() {

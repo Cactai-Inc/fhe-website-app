@@ -4,6 +4,7 @@ import { Check, ArrowRight } from 'lucide-react';
 import Seo from '../components/Seo';
 import { BodyWithSignatures } from '../components/ops/documents/MergedBodyView';
 import { signRelease, fetchReleasePreview } from '../lib/ops/api-public';
+import { submitRequest } from '../lib/api';
 import type { ReleaseTemplateKey, SignReleaseResult } from '../lib/ops/api-public';
 
 /**
@@ -214,6 +215,26 @@ export default function DocsParticipantFlow() {
           body: JSON.stringify({ documentIds: nextSigned.map((d) => d.document_id) }),
         }).catch(() => {
           /* stored either way */
+        });
+        // Land the kiosk signer in the same inbox as every other intake — a
+        // 'kiosk'-tagged request, status 'new' (NOT invited). Nothing here
+        // auto-invites; staff can send an invitation to flip it to 'invited'.
+        // Best-effort: the signed documents already stand on their own.
+        submitRequest(
+          {
+            first_name: firstName.trim(),
+            last_name: lastName.trim(),
+            contact_email: email.trim(),
+            contact_phone: phone.trim() || undefined,
+            category: 'general',
+            channel: 'kiosk',
+            entry_location: 'kiosk',
+            intent: 'inquiry',
+            notes: 'Signed participant documents at the kiosk.',
+          },
+          [],
+        ).catch(() => {
+          /* the request is a convenience; the signed docs are the record */
         });
         setPhase('done');
       }

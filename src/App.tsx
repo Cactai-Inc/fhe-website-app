@@ -25,7 +25,6 @@ import Contact from './pages/Contact';
 import Lessons from './pages/Lessons';
 import Gift from './pages/Gift';
 import Redeem from './pages/Redeem';
-import Inquire from './pages/Inquire';
 import Release from './pages/Release';
 import DocsParticipantFlow from './pages/DocsParticipantFlow';
 import BookRider from './pages/BookRider';
@@ -160,7 +159,8 @@ export function AppRoutes() {
 
             {/* Gift reveal — full-screen immersive, no site chrome */}
             <Route path="/redeem" element={<Redeem />} />
-            <Route path="/inquire" element={<Inquire />} />
+            {/* /inquire retired — the unified intake lives on /contact (Phase 5) */}
+            <Route path="/inquire" element={<Navigate to="/contact" replace />} />
             <Route path="/release" element={<Release />} />
             <Route path="/release/:releaseKey" element={<Release />} />
             {/* Guided participant document set — one info form, 4 docs signed in sequence */}

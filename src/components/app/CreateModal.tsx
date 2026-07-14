@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   X, PenSquare, Tag, CalendarDays, MessageSquare, GraduationCap,
   ShoppingBag, Send, ChevronLeft, ImagePlus, Loader2,
-  Handshake, FileText, UserPlus, Megaphone,
+  FileText, UserPlus, Megaphone,
 } from 'lucide-react';
 import { feedPostCreate, uploadFeedMedia, type FeedPostType, type FeedVisibility } from '../../lib/feed';
 import { createThread, proposeEvent } from '../../lib/community';

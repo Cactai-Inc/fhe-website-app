@@ -62,8 +62,9 @@ function wrap(text: string, font: PDFFont, size: number, maxWidth: number): stri
   return lines;
 }
 
-/** Render one document body to PDF bytes. */
-export async function renderDocumentPdf(title: string, body: string): Promise<Uint8Array> {
+/** Render one document body to PDF bytes. The body already carries the title;
+ *  the title param is kept for signature parity with the server twin. */
+export async function renderDocumentPdf(_title: string, body: string): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.TimesRoman);
   const bold = await pdf.embedFont(StandardFonts.TimesRomanBold);

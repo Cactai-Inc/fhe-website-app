@@ -4,11 +4,11 @@
  * Two public flows, both fenced by RLS/RPC server-side (this file only shapes
  * the calls; policies are the authority):
  *
- *  /inquire  — form_definitions-driven intake: anon reads ACTIVE CLIENT forms
- *              (form_definitions_public_read, 20260702010000) and INSERTs a
- *              NEW row into intake_submissions (intake_submissions_public_insert;
- *              org stamped by the addressed-org/sole-org default). Staff review
- *              at /app/ops/intake — nothing else is readable from here.
+ *  intake    — the unified public form (contact/inquiry/booking) writes ONE
+ *              requests row through submit_public_request (see lib/api). The
+ *              only thing read here is which fields a channel requires
+ *              (intake_requirements RPC) so the form can enforce the owner's
+ *              per-channel configuration.
  *
  *  /release  — the release kiosk: anon previews any of the four RELEASE_*
  *              documents (release_preview RPC — merged org identity + dates,
@@ -19,69 +19,15 @@
 import { supabase } from '../supabase';
 
 // ---------------------------------------------------------------------------
-// /inquire — public intake
+// unified intake — per-channel required-field config (owner-set, read by anon)
 // ---------------------------------------------------------------------------
 
-/** A field of a form_definitions schema (types inferred by the form generator). */
-export interface PublicFormField {
-  key: string;
-  label: string;
-  type: 'text' | 'email' | 'phone' | 'date' | 'currency' | 'checkbox' | 'signature' | 'system';
-  options?: string[];
-  note?: string;
-  token?: string;
-  /** Owner-controlled (admin Forms page): the renderer enforces it. */
-  required?: boolean;
-}
-
-export interface PublicFormSection {
-  heading: string;
-  fields: PublicFormField[];
-}
-
-export interface PublicIntakeForm {
-  form_key: string;
-  title: string;
-  purpose: string | null;
-  schema: { sections: PublicFormSection[] };
-}
-
-/** The ACTIVE CLIENT-audience intake forms the public page may render. */
-export async function listPublicIntakeForms(): Promise<PublicIntakeForm[]> {
-  const { data, error } = await supabase
-    .from('form_definitions')
-    .select('form_key, title, purpose, schema')
-    .eq('audience', 'CLIENT')
-    .eq('active', true)
-    .order('title');
+/** The required-field map for a channel, e.g. { phone: true, message: false }.
+ *  Base fields (first/last/email) are always required and not in this map. */
+export async function fetchIntakeRequirements(channel: string): Promise<Record<string, boolean>> {
+  const { data, error } = await supabase.rpc('intake_requirements', { p_channel: channel });
   if (error) throw error;
-  return (data ?? []) as PublicIntakeForm[];
-}
-
-export interface IntakeSubmissionInput {
-  form_key: string;
-  /** Flat answers keyed by field key (checkbox groups are string arrays). */
-  payload: Record<string, string | string[]>;
-  contact_name: string | null;
-  contact_email: string | null;
-  /** Optional explicit tenant (multi-tenant addressing); defaults server-side. */
-  org_id?: string;
-}
-
-/**
- * Anonymous submit into the staff intake queue. Insert-only — anon has no
- * SELECT on intake_submissions, so no `.select()` after the insert.
- */
-export async function submitIntakeSubmission(input: IntakeSubmissionInput): Promise<void> {
-  const row: Record<string, unknown> = {
-    form_key: input.form_key,
-    payload: input.payload,
-    contact_name: input.contact_name,
-    contact_email: input.contact_email,
-  };
-  if (input.org_id) row.org_id = input.org_id;
-  const { error } = await supabase.from('intake_submissions').insert(row);
-  if (error) throw error;
+  return (data ?? {}) as Record<string, boolean>;
 }
 
 // ---------------------------------------------------------------------------
