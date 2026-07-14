@@ -45,7 +45,6 @@ function pollZelle() {
         reference: parsed.reference,
         memo: parsed.memo,
         confirmation: parsed.confirmation,
-        pending: parsed.pending,
         rawSubject: msg.getSubject(),
         rawBody: msg.getPlainBody().slice(0, 4000),
         sourceInbox: Session.getActiveUser().getEmail(),
@@ -76,11 +75,11 @@ function pollZelle() {
  * ("Pedro"), and a "Confirmation" code ("99ckoboiv"). There is NO payer email
  * or phone in these emails, so name + memo are the identity signals.
  *
- * `pending` is TRUE for the "pending review / we're reviewing / attempted to
- * send" emails — the money is NOT deposited yet, so the server queues (never
- * auto-confirms) those; the later "deposited" email confirms.
+ * NOTE: Bank of America words the email "…is pending review", but this is the
+ * ONLY email BofA sends and its arrival means the money has CLEARED — so it is
+ * NOT treated as a hold.
  *
- * Returns { sender, amount, reference, memo, confirmation, pending }.
+ * Returns { sender, amount, reference, memo, confirmation }.
  */
 function parseZelle_(subject, body) {
   var text = (subject || '') + '\n' + (body || '');
@@ -112,11 +111,8 @@ function parseZelle_(subject, body) {
   var refMatch = text.match(/\b(FH-[A-Z0-9]{4,6})\b/);
   if (refMatch) reference = refMatch[1];
 
-  // Under-review emails are NOT deposits — flag so the server never confirms.
-  var pending = /pending review|we['’]?re reviewing|we are reviewing|attempted to send/i.test(text);
-
   return {
     sender: sender, amount: amount, reference: reference,
-    memo: memo, confirmation: confirmation, pending: pending,
+    memo: memo, confirmation: confirmation,
   };
 }
