@@ -38,8 +38,8 @@ import type { Profile } from '../../lib/types';
  *      body, then type-to-sign. record_signature enforces the typed name
  *      EXACTLY matches the printed name, so the sign button stays disabled
  *      until the typed name matches. The GUARDIAN is the CLIENT signer either
- *      way — a minor never signs. Each successful sign fires the best-effort
- *      /api/deliver-document email (Release.tsx pattern).
+ *      way — a minor never signs. Once the LAST doc is signed, ONE combined
+ *      email delivers every executed doc as a PDF attachment (/api/deliver-documents).
  *   3. "You're all set" — purchase summary (+ the minor rider's name when one
  *      is attached) + where the signed copies live.
  */
@@ -300,20 +300,21 @@ export default function Onboarding() {
     setSignError(null);
     try {
       await signMyDocument(currentDoc.document_id, 'CLIENT', typedName.trim(), true);
-      // Best-effort delivery: email the executed copy. Never blocks the flow —
-      // the document is safely stored either way (Release.tsx pattern).
-      fetch('/api/deliver-document', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ documentId: currentDoc.document_id }),
-      }).catch(() => { /* the document is safely stored either way */ });
 
       const next = await myOnboardingState();
       setState(next);
       setTypedName('');
-      // All docs signed → pay (sign-before-pay). If already paid (provisioned
-      // paid, or a gift), skip straight to done.
+      // All docs signed → ONE combined email with every executed doc attached as
+      // a PDF (unified single-send), then pay (sign-before-pay). If already paid,
+      // skip straight to done. Delivery is best-effort — never blocks the flow.
       if (!next.documents.some((d) => d.status !== 'EXECUTED')) {
+        const documentIds = next.documents.map((d) => d.document_id).filter(Boolean);
+        fetch('/api/deliver-documents', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ documentIds }),
+        }).catch(() => { /* the documents are safely stored either way */ });
+
         if (next.purchase && !next.purchase.paid) {
           await enterPayment();
         } else {

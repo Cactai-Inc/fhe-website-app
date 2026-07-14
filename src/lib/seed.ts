@@ -238,6 +238,8 @@ export const SEED_SAVED: SeedSaved[] = [
 // ─── Documents (render as paper) ───────────────────────────────
 export interface SeedDocument {
   id: string; title: string; signedOn: string; kind: string; pages: string[];
+  /** Full merged text of a REAL document (for PDF download); absent on seed rows. */
+  body?: string;
 }
 export const SEED_DOCUMENTS: SeedDocument[] = [
   {

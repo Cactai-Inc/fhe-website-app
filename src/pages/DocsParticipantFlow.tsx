@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Check, ArrowRight } from 'lucide-react';
 import Seo from '../components/Seo';
 import { BodyWithSignatures } from '../components/ops/documents/MergedBodyView';
@@ -460,6 +461,22 @@ export default function DocsParticipantFlow() {
                   </li>
                 ))}
               </ul>
+
+              {/* The kiosk is a precursor to a client account: these signed docs
+                  attach to the signer's contact and follow them into their
+                  account once activated. */}
+              <div className="mt-6 pt-5 border-t border-green-200">
+                <p className="body-text text-sm mb-3">
+                  Your documents are on file and will appear in your online account.
+                  Sign in to view them anytime — or we'll help you get set up.
+                </p>
+                <Link
+                  to="/login"
+                  className="inline-flex items-center gap-2 text-sm font-medium text-green-800 hover:text-green-700 px-4 py-2 rounded-lg border border-green-800/20 hover:border-green-800/40 focus-ring"
+                >
+                  Sign in to your account
+                </Link>
+              </div>
             </div>
           )}
         </div>
