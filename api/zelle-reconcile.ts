@@ -37,7 +37,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     reference: (body.reference as string | undefined) ?? null,
     memo: (body.memo as string | undefined) ?? null,
     confirmation: (body.confirmation as string | undefined) ?? null,
-    pending: body.pending === true,
     rawSubject: body.rawSubject as string | undefined,
     rawBody: body.rawBody as string | undefined,
     sourceInbox: body.sourceInbox as string | undefined,

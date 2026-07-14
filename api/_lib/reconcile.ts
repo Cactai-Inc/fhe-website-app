@@ -12,9 +12,6 @@ export interface ParsedNotification {
   memo?: string | null;
   /** The bank confirmation code (e.g. "99ckoboiv") — for dedup / audit. */
   confirmation?: string | null;
-  /** True when the bank email says the payment is UNDER REVIEW (not yet
-   *  deposited). Such a payment is queued for review, never auto-confirmed. */
-  pending?: boolean;
   rawSubject?: string;
   rawBody?: string;
   sourceInbox?: string;
@@ -61,12 +58,10 @@ export async function reconcileNotification(
     return { result: 'review', reason };
   };
 
-  // A payment the bank is still REVIEWING has not been deposited — never
-  // auto-confirm it. It is recorded + queued; when the "deposited" email lands
-  // (not pending), that one reconciles and confirms.
-  if (n.pending) {
-    return toReview('payment pending bank review');
-  }
+  // NOTE: Bank of America's Zelle notification is worded "…is pending review /
+  // we're reviewing it", but per the account owner this is the ONLY email sent
+  // and its arrival means the money has CLEARED. So we do NOT treat that wording
+  // as a hold — these reconcile and confirm normally.
 
   // Find candidate pending purchases by exact unique_amount (deterministic key).
   const purchaseCols = 'id, amount, unique_amount, payment_reference, status, payment_status';
