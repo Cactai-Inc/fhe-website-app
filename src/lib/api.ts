@@ -104,6 +104,8 @@ export interface OnboardingDocument {
 export interface OnboardingPurchase {
   /** The spine purchase id — drives the pay-after-sign step. */
   purchase_id: string;
+  /** The horse this purchase is for (own-horse services), once attached. */
+  horse_id: string | null;
   tier_label: string;
   amount: number;
   /** Punch cards / packs: the number of lessons bought. */
@@ -131,6 +133,19 @@ export interface OnboardingState {
   purchase: OnboardingPurchase | null;
   /** Guardian-linked minor rider, or null. */
   minor: OnboardingMinor | null;
+  /** True when the purchase uses the rider's OWN horse and none is on file yet
+   *  (any horse-care service, or a "(With your horse)" lesson) — show the horse
+   *  intake step. */
+  horse_needed: boolean;
+}
+
+/** Attach a created horse to the caller's purchase (own-horse services). */
+export async function attachPurchaseHorse(purchaseId: string, horseId: string): Promise<void> {
+  const { error } = await supabase.rpc('attach_purchase_horse', {
+    p_purchase_id: purchaseId,
+    p_horse_id: horseId,
+  });
+  if (error) throw error;
 }
 
 /** The signed-in member's onboarding snapshot (profile gate, signing checklist,

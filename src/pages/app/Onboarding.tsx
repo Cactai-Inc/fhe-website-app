@@ -9,6 +9,7 @@ import {
   generateMyOnboardingDocuments,
   getOrder,
   getOrderPayment,
+  attachPurchaseHorse,
   type OnboardingProfileInput,
   type OnboardingPurchase,
   type OnboardingState,
@@ -19,6 +20,7 @@ import { signMyDocument } from '../../lib/ops/api-client';
 import { BodyWithSignatures } from '../../components/ops/documents/MergedBodyView';
 import { toErrorMessage } from '../../lib/ops/errors';
 import { useDocumentTitle } from '../../lib/hooks';
+import { HorseIntakeForm } from '../../components/app/HorseIntakeForm';
 import type { Profile } from '../../lib/types';
 
 /**
@@ -44,7 +46,7 @@ import type { Profile } from '../../lib/types';
  *      is attached) + where the signed copies live.
  */
 
-type Step = 'details' | 'sign' | 'payment' | 'done';
+type Step = 'details' | 'horse' | 'sign' | 'payment' | 'done';
 
 /** The plain profile fields (the minor toggle + fields are tracked apart). */
 type ProfileFormFields = Omit<
@@ -113,9 +115,10 @@ function PurchaseCard({ purchase, riderName }: { purchase: OnboardingPurchase; r
 }
 
 /** Step header: which of the three steps we're on. */
-function Steps({ current }: { current: Step }) {
+function Steps({ current, showHorse }: { current: Step; showHorse: boolean }) {
   const steps: { id: Step; label: string }[] = [
     { id: 'details', label: 'Your details' },
+    ...(showHorse ? [{ id: 'horse' as Step, label: 'Your horse' }] : []),
     { id: 'sign', label: 'Review & sign' },
     { id: 'payment', label: 'Payment' },
     { id: 'done', label: "You're all set" },
@@ -228,7 +231,7 @@ export default function Onboarding() {
         }
         if (!s.needed) setStep('done');
         else if (!s.profile_complete) setStep('details');
-        else setStep('sign');
+        else setStep(s.horse_needed ? 'horse' : 'sign');
       })
       .catch((err) => active && setLoadError(toErrorMessage(err, 'Could not load your onboarding.')))
       .finally(() => active && setLoading(false));
@@ -280,12 +283,26 @@ export default function Onboarding() {
       const next = await myOnboardingState();
       setState(next);
       setHadMinor(Boolean(next.minor));
-      setStep('sign');
+      setStep(next.horse_needed ? 'horse' : 'sign');
     } catch (err) {
       setSaveError(toErrorMessage(err, 'Could not save your details.'));
     } finally {
       setSaving(false);
     }
+  }
+
+  // Own-horse services: the intake creates the horse via the ONE unified
+  // create_horse_record path (owned by this member), attaches it to the
+  // purchase, and regenerates the docs so HORSE.* tokens merge, then signs.
+  async function horseCreated(horseId: string) {
+    const purchaseId = state?.purchase?.purchase_id;
+    try {
+      if (purchaseId) await attachPurchaseHorse(purchaseId, horseId);
+      await generateMyOnboardingDocuments();
+      const next = await myOnboardingState();
+      setState(next);
+    } catch { /* best-effort — staff can attach later */ }
+    setStep('sign');
   }
 
   // The printed name on the contracts — the typed signature must match EXACTLY
@@ -364,7 +381,7 @@ export default function Onboarding() {
     <div className="max-w-3xl">
       <p className="eyebrow mb-2">Welcome aboard</p>
       <h1 className="heading-section text-green-800 mb-6">Let's get you set up.</h1>
-      <Steps current={step} />
+      <Steps current={step} showHorse={step === 'horse' || (state?.horse_needed ?? false)} />
 
       {/* ── Step 1: Your details ─────────────────────────────────────────── */}
       {step === 'details' && (
@@ -488,6 +505,24 @@ export default function Onboarding() {
             {!saving && <ArrowRight size={16} />}
           </button>
         </form>
+      )}
+
+      {/* ── Step: Your horse (own-horse services only) ───────────────────── */}
+      {step === 'horse' && (
+        <section aria-labelledby="ob-horse-heading" className="bg-white border border-green-800/10 p-6 sm:p-8">
+          <p className="eyebrow mb-1">Your horse</p>
+          <h2 id="ob-horse-heading" className="font-serif text-green-800 text-xl mb-1.5">Tell us about your horse.</h2>
+          <p className="body-text text-sm text-muted mb-5">
+            Your service is for your own horse — this creates their record with the barn
+            so your paperwork and care notes stay attached to them. Anything you don't
+            know can stay blank.
+          </p>
+          <HorseIntakeForm submitLabel="Save &amp; continue" onDone={(id) => void horseCreated(id)} />
+          <button type="button" onClick={() => setStep('sign')}
+            className="mt-3 text-sm text-muted underline underline-offset-2">
+            Skip for now — I'll add my horse later
+          </button>
+        </section>
       )}
 
       {/* ── Step 2: Review & sign ────────────────────────────────────────── */}
