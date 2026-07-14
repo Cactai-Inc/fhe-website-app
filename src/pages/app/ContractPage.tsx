@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { LeaseExtrasSection } from './LeaseExtrasSection';
 import {
   FileText, CheckCircle2, Lock, Send, PenLine, ShieldCheck, RotateCcw,
   MessageSquarePlus, Mail,
@@ -174,6 +175,12 @@ export default function ContractPage() {
     }
     return Array.from(by.entries());
   }, [detail?.fields]);
+
+  // a lease document carries the lease-type deal field
+  const isLease = useMemo(
+    () => (detail?.fields ?? []).some((f) => f.field_key === 'TXN.LEASE_TYPE'),
+    [detail?.fields],
+  );
 
   async function act(fn: () => Promise<unknown>, okMsg?: string) {
     setError(null); setNote(null);
@@ -353,6 +360,9 @@ export default function ContractPage() {
           </section>
         );
       })}
+
+      {/* Lease-only: partial-lease participants + payment options */}
+      {isLease && id && <LeaseExtrasSection documentId={id} editable={state !== 'executed'} />}
 
       {/* change-request composer */}
       {crFieldKey && (
