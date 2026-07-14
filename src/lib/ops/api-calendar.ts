@@ -302,6 +302,14 @@ export async function attachBookingHorse(bookingId: string, horseId: string): Pr
   if (error) throw error;
 }
 
+/** Notify the client an external appointment is linked to (C5). Resolves the
+ *  horse's owner when the appointment is tied only to a horse. */
+export async function notifyAppointmentClient(bookingId: string): Promise<{ notified: boolean; reason?: string }> {
+  const { data, error } = await supabase.rpc('appointment_notify', { p_booking_id: bookingId });
+  if (error) throw error;
+  return data as { notified: boolean; reason?: string };
+}
+
 /** The org's reschedule fee (0 = none). Read directly (RLS-scoped). */
 export async function fetchRescheduleFee(): Promise<number> {
   const { data, error } = await supabase.from('calendar_settings').select('reschedule_fee').maybeSingle();

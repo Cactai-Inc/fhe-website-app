@@ -89,10 +89,14 @@ const LEGEND: { label: string; cls: string }[] = [
 
 /** A short label for an item the caller may or may not see detail on. */
 function itemLabel(item: CalendarItem): string {
-  if (item.status === 'unavailable') return 'Unavailable';
+  const title = item.notes?.trim();
   if (item.status === 'available') return 'Open';
+  // a block is an appointment/unavailable — show its title when we have it
+  // (staff see every title; a client sees only their own linked appointment's).
+  if (item.kind === 'block') return title || 'Unavailable';
+  if (item.status === 'unavailable') return 'Unavailable';
   if (item.is_mine) return item.kind === 'lesson' ? 'Your lesson' : 'Your booking';
-  return item.kind === 'block' ? 'Block' : 'Booking';
+  return 'Booking';
 }
 
 export default function CalendarPage() {

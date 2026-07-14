@@ -13,6 +13,7 @@ import {
   deleteCalendarItem,
   confirmBooking,
   requestHorseIntake,
+  notifyAppointmentClient,
   type CalendarItem,
   type CalendarLocation,
   type ClientPurchaseOption,
@@ -26,7 +27,7 @@ import {
  * keeps it as a draft on the calendar; Delete removes it (series-scoped).
  */
 
-type ItemType = 'unavailable' | 'offering';
+type ItemType = 'unavailable' | 'offering' | 'appointment';
 
 function toLocalInput(iso: string): string {
   const d = new Date(iso);
@@ -63,7 +64,9 @@ export function CalendarItemPanel({
     item?.ends_at ?? new Date(new Date(initialStart).getTime() + 3_600_000).toISOString();
 
   const [type, setType] = useState<ItemType>(
-    item && item.status === 'unavailable' ? 'unavailable' : item ? 'offering' : 'unavailable',
+    item?.kind === 'block' && (item.client_id || item.horse_id) ? 'appointment'
+      : item && (item.status === 'unavailable' || item.kind === 'block') ? 'unavailable'
+        : item ? 'offering' : 'unavailable',
   );
   const [start, setStart] = useState(toLocalInput(initialStart));
   const [end, setEnd] = useState(toLocalInput(initialEnd));
@@ -112,7 +115,7 @@ export function CalendarItemPanel({
 
   function buildPayload(asDraft: boolean) {
     const kind =
-      type === 'unavailable'
+      type === 'unavailable' || type === 'appointment'
         ? 'block'
         : isFlexible
           ? 'block'
@@ -121,7 +124,7 @@ export function CalendarItemPanel({
             : 'lesson';
     const status = asDraft
       ? 'draft'
-      : type === 'unavailable'
+      : type === 'unavailable' || type === 'appointment'
         ? 'unavailable'
         : isFlexible
           ? 'available'
@@ -133,9 +136,9 @@ export function CalendarItemPanel({
       starts_at: fromLocalInput(start),
       ends_at: fromLocalInput(end),
       is_flexible: type === 'offering' ? isFlexible : false,
-      client_id: type === 'offering' ? clientId || null : null,
+      client_id: type === 'offering' || type === 'appointment' ? clientId || null : null,
       purchase_id: type === 'offering' ? purchaseId || null : null,
-      horse_id: type === 'offering' ? horseId || null : null,
+      horse_id: type === 'offering' || type === 'appointment' ? horseId || null : null,
       offering_id: type === 'offering' ? offeringId || null : null,
       location_id: locationId || null,
       address: offsite ? address || selectedLocation?.address || null : null,
@@ -152,7 +155,11 @@ export function CalendarItemPanel({
     setBusy(true);
     setError(null);
     try {
-      await saveCalendarItem(buildPayload(asDraft));
+      const saved = await saveCalendarItem(buildPayload(asDraft));
+      // C5 — a committed appointment linked to a client/horse notifies them.
+      if (!asDraft && type === 'appointment' && (clientId || horseId) && saved?.id) {
+        try { await notifyAppointmentClient(saved.id); } catch { /* the appointment saved; notice is best-effort */ }
+      }
       done.current = true;
       onSaved();
     } catch (e) {
@@ -166,7 +173,9 @@ export function CalendarItemPanel({
   const hasContent =
     type === 'unavailable'
       ? notes.trim() !== ''
-      : !!offeringId || !!clientId || !!horseId || notes.trim() !== '';
+      : type === 'appointment'
+        ? notes.trim() !== '' || !!clientId || !!horseId
+        : !!offeringId || !!clientId || !!horseId || notes.trim() !== '';
 
   // Back / close: a NEW item with content is autosaved as a draft (never added
   // to the calendar as committed); an empty one, or an edit, just closes.
@@ -236,15 +245,15 @@ export function CalendarItemPanel({
         <div className="p-4 flex flex-col gap-4 flex-1">
           {/* type */}
           <div className="inline-flex rounded-full bg-green-800/10 p-0.5 self-start">
-            {(['unavailable', 'offering'] as ItemType[]).map((t) => (
+            {(['offering', 'appointment', 'unavailable'] as ItemType[]).map((t) => (
               <button
                 key={t}
                 type="button"
                 aria-pressed={type === t}
                 onClick={() => setType(t)}
-                className={`px-3 py-1 rounded-full text-sm capitalize ${type === t ? 'bg-green-800 text-white' : 'text-green-800'}`}
+                className={`px-3 py-1 rounded-full text-sm ${type === t ? 'bg-green-800 text-white' : 'text-green-800'}`}
               >
-                {t === 'offering' ? 'Booking' : 'Unavailable'}
+                {t === 'offering' ? 'Booking' : t === 'appointment' ? 'Appointment' : 'Unavailable'}
               </button>
             ))}
           </div>
@@ -321,6 +330,30 @@ export function CalendarItemPanel({
             </>
           )}
 
+          {/* C5 — external appointment (vet, farrier, offsite): a labeled block
+              optionally tied to a client and/or horse, who's notified + sees it. */}
+          {type === 'appointment' && (
+            <>
+              <label className="text-sm">
+                <span className="form-label">For client (optional)</span>
+                <select className="form-input" value={clientId} onChange={(e) => setClientId(e.target.value)}>
+                  <option value="">No one specific</option>
+                  {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </label>
+              <label className="text-sm">
+                <span className="form-label">About horse (optional)</span>
+                <select className="form-input" value={horseId} onChange={(e) => setHorseId(e.target.value)}>
+                  <option value="">No horse</option>
+                  {horses.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
+                </select>
+              </label>
+              <p className="form-hint">
+                If you link a client (or a horse — we’ll find its owner), they’re notified and it shows on their calendar. It always blocks availability and adds any travel time.
+              </p>
+            </>
+          )}
+
           <label className="text-sm">
             <span className="form-label">Location</span>
             <select className="form-input" value={locationId} onChange={(e) => setLocationId(e.target.value)}>
@@ -375,7 +408,8 @@ export function CalendarItemPanel({
           )}
 
           <label className="text-sm">
-            <span className="form-label">Notes</span>
+            <span className="form-label">{type === 'appointment' ? 'Title / details' : 'Notes'}</span>
+            {type === 'appointment' && <span className="form-hint">Shown as the appointment’s title on the client’s calendar (e.g. “Vet — spring shots”).</span>}
             <textarea rows={2} className="form-input resize-none" value={notes} onChange={(e) => setNotes(e.target.value)} />
           </label>
 
