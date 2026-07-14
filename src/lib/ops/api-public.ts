@@ -171,7 +171,6 @@ export interface SignReleaseInput {
 export interface SignReleaseResult {
   document_id: string;
   document_code: string;
-  engagement_id: string;
   contact_id: string;
   /** 'EXECUTED' — releases are unilateral (single signature executes). */
   status: string;
