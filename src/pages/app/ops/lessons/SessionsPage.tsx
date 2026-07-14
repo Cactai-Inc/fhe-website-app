@@ -5,12 +5,14 @@ import { useModules } from '../../../../lib/ops/useModules';
 import {
   listLessonSessions,
   listLessonClients,
+  listScheduleHorses,
   scheduleLessonSession,
   completeLessonSession,
   cancelLessonSession,
   setLessonProgressNote,
   type LessonSession,
   type LessonClientOption,
+  type ScheduleHorseOption,
 } from '../../../../lib/ops/api-lessons';
 import { ScheduleSessionForm } from './ScheduleSessionForm';
 
@@ -102,6 +104,7 @@ export function SessionsPage() {
 
   const [rows, setRows] = useState<LessonSession[]>([]);
   const [clients, setClients] = useState<LessonClientOption[]>([]);
+  const [horses, setHorses] = useState<ScheduleHorseOption[]>([]);
   const [filter, setFilter] = useState<SessionFilter>('upcoming');
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -114,9 +117,14 @@ export function SessionsPage() {
     setLoading(true);
     setLoadError(null);
     try {
-      const [sessions, clientRows] = await Promise.all([listLessonSessions(), listLessonClients()]);
+      const [sessions, clientRows, horseRows] = await Promise.all([
+        listLessonSessions(),
+        listLessonClients(),
+        listScheduleHorses(),
+      ]);
       setRows(sessions);
       setClients(clientRows);
+      setHorses(horseRows);
     } catch (err) {
       setLoadError(toErrorMessage(err, 'Could not load lesson sessions.'));
     } finally {
@@ -203,6 +211,7 @@ export function SessionsPage() {
     ends_at: string;
     location: string | null;
     notes: string | null;
+    horse_id: string | null;
   }) => {
     setFormError(null);
     try {
@@ -362,6 +371,7 @@ export function SessionsPage() {
           {formOpen && (
             <ScheduleSessionForm
               clients={clients}
+              horses={horses}
               onSubmit={handleSchedule}
               onCancel={() => setFormOpen(false)}
               submitting={schedule.isPending}

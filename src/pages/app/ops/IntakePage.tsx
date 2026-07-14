@@ -39,8 +39,9 @@ import {
 import {
   scheduleLessonSession,
   listLessonSessionsForRequest,
+  listScheduleHorses,
 } from '../../../lib/ops/api-lessons';
-import type { LessonSession } from '../../../lib/ops/api-lessons';
+import type { LessonSession, ScheduleHorseOption } from '../../../lib/ops/api-lessons';
 import { ScheduleSessionForm } from './lessons/ScheduleSessionForm';
 import type { ScheduleSessionFormValues } from './lessons/ScheduleSessionForm';
 import type {
@@ -229,6 +230,7 @@ function RequestInbox({ openId }: { openId?: string } = {}) {
     url: string; emailed: boolean; offeringLabel?: string;
   } | null>(null);
   const [offerings, setOfferings] = useState<Offering[]>([]);
+  const [horses, setHorses] = useState<ScheduleHorseOption[]>([]);
   // Schedule-lesson section (invited/converted requests): the provisioned
   // client resolved via request → invitation → email → contact → client, plus
   // the sessions already booked from this request.
@@ -258,6 +260,9 @@ function RequestInbox({ openId }: { openId?: string } = {}) {
     fetchOfferings()
       .then((all) => setOfferings(all.filter((o) => o.horse_included !== null)))
       .catch(() => setOfferings([]));
+    listScheduleHorses()
+      .then(setHorses)
+      .catch(() => setHorses([]));
   }, []);
 
   const openRequest = (row: BookingRequest) => {
@@ -562,6 +567,7 @@ function RequestInbox({ openId }: { openId?: string } = {}) {
                 {requestClientId ? (
                   <ScheduleSessionForm
                     fixedClientId={requestClientId}
+                    horses={horses}
                     onSubmit={handleScheduleLesson}
                     submitting={scheduleSession.isPending}
                   />

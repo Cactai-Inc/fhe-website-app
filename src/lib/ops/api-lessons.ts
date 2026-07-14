@@ -91,6 +91,9 @@ export interface LessonSession {
   location: string | null;
   notes: string | null;
   credit_id: string | null;
+  /** The horse this lesson concerns — internal tracking; never shown to clients
+   *  on a barn-horse lesson. */
+  horse_id: string | null;
   created_at: string;
 }
 
@@ -107,6 +110,7 @@ type LessonBookingRow = {
   location: string | null;
   notes: string | null;
   credit_id: string | null;
+  horse_id: string | null;
   created_at: string;
 };
 function lessonSessionFromBooking(r: LessonBookingRow): LessonSession {
@@ -122,11 +126,12 @@ function lessonSessionFromBooking(r: LessonBookingRow): LessonSession {
     location: r.location,
     notes: r.notes,
     credit_id: r.credit_id,
+    horse_id: r.horse_id,
     created_at: r.created_at,
   };
 }
 const LESSON_BOOKING_COLS =
-  'id, org_id, client_id, request_id, starts_at, ends_at, status, location, notes, credit_id, created_at';
+  'id, org_id, client_id, request_id, starts_at, ends_at, status, location, notes, credit_id, horse_id, created_at';
 
 export interface ScheduleSessionInput {
   client_id: string;
@@ -137,6 +142,9 @@ export interface ScheduleSessionInput {
   request_id?: string | null;
   location?: string | null;
   notes?: string | null;
+  /** The horse the lesson uses (barn horse or the rider's own). Optional at
+   *  booking time — staff can attach/correct it later via setBookingHorse. */
+  horse_id?: string | null;
 }
 
 /** schedule_lesson_session RPC result (the freshly booked session). */
@@ -147,6 +155,7 @@ export interface ScheduledSessionResult {
   ends_at: string;
   status: LessonSessionStatus;
   location: string | null;
+  horse_id: string | null;
   engagement_id: string | null;
   request_id: string | null;
 }
@@ -305,9 +314,20 @@ export async function scheduleLessonSession(
     p_request_id: input.request_id ?? null,
     p_location: input.location ?? null,
     p_notes: input.notes ?? null,
+    p_horse_id: input.horse_id ?? null,
   });
   if (error) throw error;
   return data as ScheduledSessionResult;
+}
+
+/** Attach or correct the horse on a lesson booking (staff-gated). Passing null
+ *  clears it. This is the mechanism the "wrong-lesson-type" fix rides on. */
+export async function setBookingHorse(bookingId: string, horseId: string | null): Promise<void> {
+  const { error } = await supabase.rpc('set_booking_horse', {
+    p_booking_id: bookingId,
+    p_horse_id: horseId,
+  });
+  if (error) throw error;
 }
 
 /** Mark a lesson taught; by default debits the oldest credit row with balance. */
@@ -380,6 +400,36 @@ export async function listLessonClients(): Promise<LessonClientOption[]> {
     display_code: r.display_code,
     name: contactName(r.contact) || (r.display_code ?? r.id.slice(0, 8)),
     email: r.contact?.email ?? null,
+  }));
+}
+
+// ─── Horses (for the internal booking picker) ────────────────────────────────
+
+/** A horse option for the scheduling form's internal horse picker. */
+export interface ScheduleHorseOption {
+  id: string;
+  name: string;
+}
+
+/** In-tenant horse roster (RLS: org boundary), for the lesson-booking horse
+ *  picker — barn horses and clients' own horses alike. Label prefers the barn
+ *  name, then the registered name, then the display code. */
+export async function listScheduleHorses(): Promise<ScheduleHorseOption[]> {
+  const { data, error } = await supabase
+    .from('horses')
+    .select('id, barn_name, registered_name, display_code')
+    .is('deleted_at', null)
+    .order('barn_name', { nullsFirst: false });
+  if (error) throw error;
+  type Row = {
+    id: string;
+    barn_name: string | null;
+    registered_name: string | null;
+    display_code: string | null;
+  };
+  return ((data ?? []) as Row[]).map((h) => ({
+    id: h.id,
+    name: h.barn_name || h.registered_name || h.display_code || h.id.slice(0, 8),
   }));
 }
 
