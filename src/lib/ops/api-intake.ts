@@ -23,7 +23,6 @@ export interface IntakeSubmission {
   contact_email: string | null;
   contact_name: string | null;
   status: IntakeSubmissionStatus;
-  converted_engagement_id: string | null;
   created_at: string;
   reviewed_at: string | null;
   reviewed_by: string | null;
@@ -55,27 +54,6 @@ export async function markSubmissionStatus(
     .from('intake_submissions')
     .update({
       status,
-      reviewed_at: new Date().toISOString(),
-      reviewed_by: auth?.user?.id ?? null,
-    })
-    .eq('id', id)
-    .select('*')
-    .single();
-  if (error) throw error;
-  return data as IntakeSubmission;
-}
-
-/** Stamp a submission CONVERTED with the engagement the conversion opened. */
-export async function markSubmissionConverted(
-  id: string,
-  engagementId: string,
-): Promise<IntakeSubmission> {
-  const { data: auth } = await supabase.auth.getUser();
-  const { data, error } = await supabase
-    .from('intake_submissions')
-    .update({
-      status: 'CONVERTED',
-      converted_engagement_id: engagementId,
       reviewed_at: new Date().toISOString(),
       reviewed_by: auth?.user?.id ?? null,
     })

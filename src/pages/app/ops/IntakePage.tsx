@@ -19,24 +19,17 @@
  *    opens a detail drawer that renders the submission's payload fields plus
  *    the actions:
  *      - Mark reviewed / Dismiss  → markSubmissionStatus(id, status)
- *      - Convert to engagement    → (brokerage form_keys only) resolve the
- *        contact (findOrCreateContactByEmail), open the engagement through the
- *        REAL brokerage RPC wrappers in src/lib/api.ts, then stamp CONVERTED +
- *        converted_engagement_id via markSubmissionConverted.
- *    The brokerage RPCs self-gate on mod.brokerage server-side (require_module);
- *    a gate rejection surfaces on the drawer's error branch — nothing is faked.
+ *    (Brokerage lead conversion retired with the deal-wizard teardown — deals
+ *    now start from a contract; a brokerage lead is provisioned/invited instead.)
  */
 import { useCallback, useEffect, useState } from 'react';
 import { toErrorMessage } from '../../../lib/ops/errors';
-import { Link } from 'react-router-dom';
 import { DataTable, FormField, Modal, StatusBadge, useAsync, useToast } from '../../../lib/ops';
 import type { Column } from '../../../lib/ops';
 import { useDocumentTitle } from '../../../lib/hooks';
 import {
   listIntakeSubmissions,
   markSubmissionStatus,
-  markSubmissionConverted,
-  findOrCreateContactByEmail,
   findClientForRequest,
   listBookingRequests,
   markRequestContacted,
@@ -56,12 +49,7 @@ import type {
   BookingRequest,
   BookingRequestStatus,
 } from '../../../lib/ops/api-intake';
-import {
-  createPurchaseEngagement,
-  createSearchEngagement,
-  createLeaseEngagement,
-  fetchOfferings,
-} from '../../../lib/api';
+import { fetchOfferings } from '../../../lib/api';
 import { adminSendInvitation } from '../../../lib/admin';
 import { listSupportRequests, setSupportStatus, type SupportRequest } from '../../../lib/support';
 import type { Offering, ProposedTime } from '../../../lib/types';
@@ -776,24 +764,6 @@ type StatusFilter = IntakeSubmissionStatus | 'ALL';
 
 const STATUS_FILTERS: StatusFilter[] = ['NEW', 'REVIEWED', 'CONVERTED', 'DISMISSED', 'ALL'];
 
-/**
- * Brokerage form_key → engagement RPC wrapper. Direction (retained_by /
- * deal_side) is token-driven per form (§7.1) — never hard-coded per document.
- * Non-brokerage intake forms have no conversion path (the button is not
- * rendered for them).
- */
-const BROKERAGE_CONVERSIONS: Record<string, (contactId: string) => Promise<string>> = {
-  INTAKE_HORSE_PURCHASE: (contactId) => createPurchaseEngagement({ buyerContactId: contactId }),
-  INTAKE_HORSE_FINDER: (contactId) =>
-    createSearchEngagement({ clientContactId: contactId, retainedBy: 'buyer', dealSide: 'BUY' }),
-  INTAKE_HORSE_SALE: (contactId) =>
-    createSearchEngagement({ clientContactId: contactId, retainedBy: 'owner', dealSide: 'SELL' }),
-  INTAKE_HORSE_LEASE_IN: (contactId) =>
-    createLeaseEngagement({ clientContactId: contactId, dealSide: 'LEASE_IN' }),
-  INTAKE_HORSE_LEASE_OUT: (contactId) =>
-    createLeaseEngagement({ clientContactId: contactId, dealSide: 'LEASE_OUT' }),
-};
-
 /** Best-available display name for the submitter (drawer + contact creation). */
 function submitterName(sub: IntakeSubmission): string {
   if (sub.contact_name) return sub.contact_name;
@@ -857,17 +827,6 @@ function SubmissionsQueue({ openId }: { openId?: string } = {}) {
     return markSubmissionStatus(sub.id, status);
   });
 
-  const convert = useAsync(async (sub: IntakeSubmission) => {
-    const toEngagement = BROKERAGE_CONVERSIONS[sub.form_key];
-    if (!toEngagement) {
-      throw new Error(`No engagement conversion is defined for ${sub.form_key}.`);
-    }
-    const contactId = await findOrCreateContactByEmail(submitterName(sub), sub.contact_email);
-    const engagementId = await toEngagement(contactId);
-    await markSubmissionConverted(sub.id, engagementId);
-    return engagementId;
-  });
-
   const closeDrawer = () => {
     setActionError(null);
     setSelected(null);
@@ -886,23 +845,7 @@ function SubmissionsQueue({ openId }: { openId?: string } = {}) {
     }
   };
 
-  const handleConvert = async (sub: IntakeSubmission) => {
-    setActionError(null);
-    try {
-      const engagementId = await convert.run(sub);
-      toast.success(`Converted to engagement ${engagementId.slice(0, 8)}.`);
-      setSelected(null);
-      await refresh(statusFilter);
-    } catch (err) {
-      setActionError(toErrorMessage(err, 'Could not convert submission.'));
-    }
-  };
-
-  const busy = review.isPending || convert.isPending;
-  const convertible =
-    selected !== null &&
-    BROKERAGE_CONVERSIONS[selected.form_key] !== undefined &&
-    (selected.status === 'NEW' || selected.status === 'REVIEWED');
+  const busy = review.isPending;
   const actionable = selected !== null && (selected.status === 'NEW' || selected.status === 'REVIEWED');
 
   return (
@@ -977,17 +920,6 @@ function SubmissionsQueue({ openId }: { openId?: string } = {}) {
               <StatusBadge status={selected.status} />
             </div>
 
-            {selected.converted_engagement_id && (
-              <p className="text-sm">
-                <Link
-                  to={`/app/ops/engagements/${selected.converted_engagement_id}`}
-                  className="link-underline"
-                >
-                  View converted engagement
-                </Link>
-              </p>
-            )}
-
             <section aria-label="Submission fields">
               <h3 className="form-label mb-2">Submitted fields</h3>
               {Object.keys(selected.payload).length === 0 ? (
@@ -1032,17 +964,6 @@ function SubmissionsQueue({ openId }: { openId?: string } = {}) {
                     Dismiss
                   </button>
                 </>
-              )}
-              {convertible && (
-                <button
-                  type="button"
-                  className="btn-primary text-sm"
-                  disabled={busy}
-                  aria-busy={convert.isPending}
-                  onClick={() => handleConvert(selected)}
-                >
-                  {convert.isPending ? 'Converting…' : 'Convert to engagement'}
-                </button>
               )}
             </div>
           </div>

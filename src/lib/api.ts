@@ -798,15 +798,6 @@ export async function countHorses(): Promise<number> {
   return count ?? 0;
 }
 
-export async function countEngagements(): Promise<number> {
-  const { count, error } = await supabase
-    .from('engagements')
-    .select('*', { count: 'exact', head: true })
-    .is('deleted_at', null);
-  if (error) throw error;
-  return count ?? 0;
-}
-
 export async function countOpenDocuments(): Promise<number> {
   const { count, error } = await supabase
     .from('documents')
@@ -1045,78 +1036,6 @@ export interface ProductPriceInput {
 // here; the server (RLS + require_module + SECURITY-DEFINER RPCs) is the
 // authoritative fence. Thin, typed seams over supabase.rpc(name)/.from(table)
 // matching the tested backbone signatures (PLATFORM_ARCHITECTURE §7, §15).
-
-// ─── Brokerage: engagement creation (mod.brokerage) ─────────────────────────
-
-export interface CreatePurchaseEngagementInput {
-  buyerContactId: string;
-  horseId?: string | null;
-  sellerContactId?: string | null;
-  amount?: number | null;
-  deposit?: number | null;
-}
-
-/** Open a purchase engagement (buyer client + optional seller + PURCHASE txn) via
- *  the SECURITY-DEFINER RPC. require_module('mod.brokerage') is enforced inside.
- *  Returns the new engagement id. */
-export async function createPurchaseEngagement(
-  input: CreatePurchaseEngagementInput,
-): Promise<string> {
-  const { data, error } = await supabase.rpc('create_purchase_engagement', {
-    p_buyer_contact_id: input.buyerContactId,
-    p_horse_id: input.horseId ?? null,
-    p_seller_contact_id: input.sellerContactId ?? null,
-    p_amount: input.amount ?? null,
-    p_deposit: input.deposit ?? null,
-  });
-  if (error) throw error;
-  return data as string;
-}
-
-export interface CreateSearchEngagementInput {
-  clientContactId: string;
-  retainedBy?: string;
-  dealSide?: 'BUY' | 'SELL' | 'LEASE_IN' | 'LEASE_OUT';
-  horseId?: string | null;
-}
-
-/** Open a search-stage (HORSE_FINDER) engagement via the SECURITY-DEFINER RPC.
- *  deal_side is token-driven, never hard-coded per document. Returns the new
- *  engagement id. */
-export async function createSearchEngagement(
-  input: CreateSearchEngagementInput,
-): Promise<string> {
-  const { data, error } = await supabase.rpc('create_search_engagement', {
-    p_client_contact_id: input.clientContactId,
-    p_retained_by: input.retainedBy ?? 'buyer',
-    p_deal_side: input.dealSide ?? 'BUY',
-    p_horse_id: input.horseId ?? null,
-  });
-  if (error) throw error;
-  return data as string;
-}
-
-export interface CreateLeaseEngagementInput {
-  clientContactId: string;
-  dealSide?: 'LEASE_IN' | 'LEASE_OUT';
-  horseId?: string | null;
-  counterpartyContactId?: string | null;
-}
-
-/** Open a lease engagement (LEASE_IN/LEASE_OUT) via the SECURITY-DEFINER RPC.
- *  Returns the new engagement id. */
-export async function createLeaseEngagement(
-  input: CreateLeaseEngagementInput,
-): Promise<string> {
-  const { data, error } = await supabase.rpc('create_lease_engagement', {
-    p_client_contact_id: input.clientContactId,
-    p_deal_side: input.dealSide ?? 'LEASE_IN',
-    p_horse_id: input.horseId ?? null,
-    p_counterparty_contact_id: input.counterpartyContactId ?? null,
-  });
-  if (error) throw error;
-  return data as string;
-}
 
 // ─── Boarding (mod.boarding) ────────────────────────────────────────────────
 

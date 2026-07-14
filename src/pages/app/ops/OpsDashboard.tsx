@@ -2,9 +2,7 @@ import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import {
-  countEngagements,
   countOpenDocuments,
-  countOpenBillableLines,
   listIntake,
 } from '../../../lib/api';
 import { ModuleGate, useAsync } from '../../../lib/ops';
@@ -50,20 +48,16 @@ export interface KpiSpec {
 export interface OpsDashboardProps {
   /** Injected count fns (default = real INT-API-CORE wrappers). */
   counts?: {
-    openEngagements: () => Promise<number>;
     pendingIntake: () => Promise<number>;
     draftDocuments: () => Promise<number>;
-    openBillableLines: () => Promise<number>;
   };
   /** Injected module-hub route map (default = MODULE_HUB_ROUTES). */
   hubRoutes?: Record<string, string>;
 }
 
 const DEFAULT_COUNTS = {
-  openEngagements: countEngagements,
   pendingIntake: countPendingIntake,
   draftDocuments: countOpenDocuments,
-  openBillableLines: countOpenBillableLines,
 };
 
 /**
