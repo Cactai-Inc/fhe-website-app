@@ -45,9 +45,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const db = getSupabaseAdmin();
 
-    // 1. write the due reminders (best-effort).
+    // 1. write the due reminders (best-effort): booking 1h/2h + lease start/expiry.
     let swept: unknown = null;
     try { const { data } = await db.rpc('calendar_reminder_sweep'); swept = data; } catch (e) { console.error('reminder sweep', e); }
+    try { await db.rpc('lease_reminder_sweep'); } catch (e) { console.error('lease sweep', e); }
 
     // Outside the email window: rows are written, we just skip sending.
     const hour = pacificHour();
@@ -63,7 +64,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .from('notifications')
       .select('id, user_id, org_id, kind, title')
       .is('emailed_at', null)
-      .like('kind', 'booking_%')
+      .or('kind.like.booking_%,kind.like.lease_%')
       .order('created_at', { ascending: false });
     if (error) throw error;
     const rows = (rowsRaw ?? []) as Row[];
