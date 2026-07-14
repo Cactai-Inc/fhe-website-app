@@ -30,7 +30,6 @@ export interface HorseIntakePayload {
   lessee_email?: string;
   lease_start?: string;
   lease_end?: string;
-  sublease_allowed?: 'yes' | 'no';
   vet_name?: string;
   vet_phone?: string;
   farrier_name?: string;
@@ -84,7 +83,6 @@ export interface StaffHorseRecord {
   lessee_name_text: string | null;
   lease_start: string | null;
   lease_end: string | null;
-  sublease_allowed: boolean;
   document_count: number;
   created_at: string;
 }

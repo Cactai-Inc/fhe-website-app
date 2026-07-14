@@ -8,6 +8,7 @@ import {
 } from '../../../lib/horses';
 import { HorseIntakeForm } from '../../../components/app/HorseIntakeForm';
 import { companyContactId } from '../../../lib/horses';
+import { generateLeaseAvailability } from '../../../lib/ops/api-lease';
 
 /**
  * STAFF HORSE RECORDS (spec H.8, /app/ops/horse-records) — the staff side of the
@@ -43,6 +44,16 @@ function EditableRecord({
       )}
     </div>
   );
+
+  async function genAvailability() {
+    setBusy(true); setErr(null);
+    try {
+      const n = await generateLeaseAvailability(r.id, 4);
+      setErr(n > 0 ? `Generated ${n} bookable slots on the calendar.` : 'No new slots (already generated or none due).');
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Could not generate availability.');
+    } finally { setBusy(false); }
+  }
 
   async function save() {
     setBusy(true); setErr(null);
@@ -130,7 +141,6 @@ function EditableRecord({
             <p className="text-sm text-green-900">
               {r.lessee_name || r.lessee_name_text || '— not leased'}
               {r.lease_end && <span className="text-muted text-xs"> · through {r.lease_end}</span>}
-              {r.sublease_allowed && <span className="text-gold-800 text-xs"> · sublease OK</span>}
             </p>
           )}
         </div>
@@ -150,10 +160,18 @@ function EditableRecord({
             </button>
           </>
         ) : (
-          <button type="button" onClick={() => setEditing(true)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-green-800/15 text-xs text-green-800 hover:bg-green-50 focus-ring">
-            <PencilLine size={13} /> Edit record & parties
-          </button>
+          <>
+            <button type="button" onClick={() => setEditing(true)}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-green-800/15 text-xs text-green-800 hover:bg-green-50 focus-ring">
+              <PencilLine size={13} /> Edit record & parties
+            </button>
+            {r.lessee_contact_id && (!r.lease_end || r.lease_end >= new Date().toISOString().slice(0, 10)) && (
+              <button type="button" disabled={busy} onClick={() => void genAvailability()}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-green-800/15 text-xs text-green-800 hover:bg-green-50 focus-ring disabled:opacity-60">
+                Generate availability
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>

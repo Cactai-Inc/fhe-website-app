@@ -13,7 +13,6 @@ import {
 import type { Horse, HorseInput, LookupCode, Contact } from '../../../lib/ops/types';
 import { HorseTable } from '../../../components/ops/horses/HorseTable';
 import { HorseForm } from '../../../components/ops/horses/HorseForm';
-import { LeaseTermsPanel } from './LeaseTermsPanel';
 
 /**
  * OPS-HORSES — Horses roster + create/edit.
@@ -25,7 +24,7 @@ import { LeaseTermsPanel } from './LeaseTermsPanel';
  * place (new row rendered) and the modal closes; a load failure renders an
  * inline error branch.
  */
-type ModalState = { mode: 'closed' } | { mode: 'create' } | { mode: 'edit'; horse: Horse } | { mode: 'lease'; horse: Horse };
+type ModalState = { mode: 'closed' } | { mode: 'create' } | { mode: 'edit'; horse: Horse };
 
 export default function HorsesPage() {
   const [horses, setHorses] = useState<Horse[]>([]);
@@ -107,35 +106,18 @@ export default function HorsesPage() {
       <Modal
         open={modal.mode !== 'closed'}
         onClose={() => setModal({ mode: 'closed' })}
-        title={modal.mode === 'lease' ? 'Lease terms' : modal.mode === 'edit' ? 'Edit horse' : 'New horse'}
+        title={modal.mode === 'edit' ? 'Edit horse' : 'New horse'}
         disableBackdropClose
       >
-        {modal.mode === 'lease' ? (
-          <LeaseTermsPanel
-            horseId={modal.horse.id}
-            horseName={modal.horse.barn_name || modal.horse.registered_name || 'this horse'}
-            onClose={() => setModal({ mode: 'closed' })}
+        {modal.mode !== 'closed' && (
+          <HorseForm
+            breeds={breeds}
+            colors={colors}
+            owners={owners}
+            horse={modal.mode === 'edit' ? modal.horse : null}
+            onSubmit={modal.mode === 'edit' ? handleUpdate(modal.horse.id) : handleCreate}
+            onCancel={() => setModal({ mode: 'closed' })}
           />
-        ) : modal.mode !== 'closed' && (
-          <>
-            <HorseForm
-              breeds={breeds}
-              colors={colors}
-              owners={owners}
-              horse={modal.mode === 'edit' ? modal.horse : null}
-              onSubmit={modal.mode === 'edit' ? handleUpdate(modal.horse.id) : handleCreate}
-              onCancel={() => setModal({ mode: 'closed' })}
-            />
-            {modal.mode === 'edit' && (
-              <button
-                type="button"
-                className="mt-3 text-sm text-green-800 underline"
-                onClick={() => setModal({ mode: 'lease', horse: modal.horse })}
-              >
-                Lease terms &amp; availability →
-              </button>
-            )}
-          </>
         )}
       </Modal>
     </div>
