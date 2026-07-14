@@ -44,6 +44,7 @@ import OrderDetail from './pages/OrderDetail';
 import Home from './pages/app/Home';
 import Profile from './pages/app/Profile';
 import Schedule from './pages/app/Schedule';
+import CalendarPage from './pages/app/CalendarPage';
 import Orders from './pages/app/Orders';
 import Documents from './pages/app/Documents';
 import Onboarding from './pages/app/Onboarding';
@@ -184,6 +185,7 @@ export function AppRoutes() {
               <Route index element={<Home />} />
               {/* Slice 4 — purpose-built dashboards for non-rider purchase categories */}
               <Route path="schedule" element={<Schedule />} />
+              <Route path="calendar" element={<CalendarPage />} />
               {/* Slice 4 — Community hub (front door) + its surfaces */}
               <Route path="threads/:id" element={<ThreadDetail />} />
               <Route path="messages" element={<Messages />} />
