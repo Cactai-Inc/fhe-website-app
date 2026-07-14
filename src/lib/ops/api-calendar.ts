@@ -271,6 +271,24 @@ export async function markChangeFeePaid(changeId: string, paid = true): Promise<
   if (error) throw error;
 }
 
+/** A client requests an arbitrary open time for a new booking (→ pending). */
+export async function requestOpenTime(input: {
+  startISO: string; endISO: string; offeringId?: string | null; horseId?: string | null; note?: string;
+}): Promise<{ booking_id: string; status: string }> {
+  const { data, error } = await supabase.rpc('request_open_time', {
+    p_starts_at: input.startISO, p_ends_at: input.endISO,
+    p_offering_id: input.offeringId ?? null, p_horse_id: input.horseId ?? null, p_note: input.note ?? null,
+  });
+  if (error) throw error;
+  return data as { booking_id: string; status: string };
+}
+
+/** Staff confirm a pending booking (a requested time). */
+export async function confirmBooking(bookingId: string): Promise<void> {
+  const { error } = await supabase.rpc('confirm_booking', { p_booking_id: bookingId });
+  if (error) throw error;
+}
+
 /** The org's reschedule fee (0 = none). Read directly (RLS-scoped). */
 export async function fetchRescheduleFee(): Promise<number> {
   const { data, error } = await supabase.from('calendar_settings').select('reschedule_fee').maybeSingle();

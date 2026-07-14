@@ -10,6 +10,7 @@ import {
   fetchClientPurchases,
   saveCalendarItem,
   deleteCalendarItem,
+  confirmBooking,
   type CalendarItem,
   type CalendarLocation,
   type ClientPurchaseOption,
@@ -170,6 +171,18 @@ export function CalendarItemPanel({
     if (done.current || editing || busy || !hasContent) { onClose(); return; }
     try { await saveCalendarItem(buildPayload(true)); } catch { /* keep the panel forgiving */ }
     onClose();
+  }
+
+  async function confirm() {
+    if (!item?.id) return;
+    setBusy(true); setError(null);
+    try {
+      await confirmBooking(item.id);
+      done.current = true;
+      onSaved();
+    } catch (e) {
+      setError(toErrorMessage(e, 'Could not confirm.'));
+    } finally { setBusy(false); }
   }
 
   async function remove() {
@@ -347,6 +360,11 @@ export function CalendarItemPanel({
 
         {/* actions */}
         <div className="p-4 border-t border-green-800/10 flex items-center gap-2 sticky bottom-0 bg-cream">
+          {item?.status === 'pending' && (
+            <button type="button" className="btn-primary justify-center" disabled={busy} onClick={() => void confirm()}>
+              Confirm request
+            </button>
+          )}
           <button type="button" className="btn-primary flex-1 justify-center" disabled={busy} onClick={() => void submit(false)}>
             {busy ? 'Saving…' : 'Submit'}
           </button>

@@ -12,6 +12,7 @@ import {
 import {
   bookOpenSlot,
   requestBookingChange,
+  requestOpenTime,
   fetchRescheduleFee,
   fetchOpenChangeRequests,
   decideBookingChange,
@@ -103,6 +104,7 @@ export default function CalendarPage() {
   const [roster, setRoster] = useState<CreditRosterEntry[] | null>(null);
   const [rosterOpen, setRosterOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [requesting, setRequesting] = useState<Date | null>(null);
 
   const isStaff = data?.role === 'staff';
 
@@ -157,9 +159,9 @@ export default function CalendarPage() {
     else setSelected(it);
   }
   function onEmptyClick(day: Date, hour: number) {
-    if (!isStaff) return;
     const s = new Date(day.getFullYear(), day.getMonth(), day.getDate(), hour, 0, 0);
-    setEditing({ item: null, start: s });
+    if (isStaff) setEditing({ item: null, start: s });
+    else setRequesting(s); // client: request this open time
   }
 
   // the hour band from business hours (fallback 10–18), for the week grid rows.
@@ -271,7 +273,7 @@ export default function CalendarPage() {
             closeHour={closeHour}
             items={items}
             onSelect={onItemClick}
-            onEmpty={isStaff ? onEmptyClick : undefined}
+            onEmpty={onEmptyClick}
           />
         ) : (
           <MonthGrid anchor={anchor} items={items} onPickDay={(d) => { setView('week'); setAnchor(d); }} />
@@ -297,6 +299,9 @@ export default function CalendarPage() {
       )}
       {settingsOpen && (
         <CalendarSettingsPanel onClose={() => setSettingsOpen(false)} onSaved={() => void load()} />
+      )}
+      {requesting && (
+        <RequestTimePanel start={requesting} onClose={() => setRequesting(null)} onDone={() => { setRequesting(null); void load(); }} />
       )}
     </div>
   );
@@ -442,6 +447,7 @@ function DetailPanel({ item, onClose, onChanged }: { item: CalendarItem; onClose
   const [newStart, setNewStart] = useState('');
   const [scope, setScope] = useState('one');
   const [fee, setFee] = useState(0);
+  const [payShown, setPayShown] = useState(false); // fee payment screen surfaced before submit
   const [done, setDone] = useState<string | null>(null);
 
   useEffect(() => { fetchRescheduleFee().then(setFee).catch(() => setFee(0)); }, []);
@@ -567,16 +573,89 @@ function DetailPanel({ item, onClose, onChanged }: { item: CalendarItem; onClose
                 {phoneRequired && <p>Inside 24 hours — a phone call is required to confirm.</p>}
               </div>
             )}
+            {feeNow > 0 && payShown && (
+              <div className="bg-white border border-green-800/15 rounded p-3 text-sm">
+                <p className="font-medium text-green-900 mb-1">Pay the ${feeNow} reschedule fee</p>
+                <p className="text-green-900/80">
+                  Send <strong>${feeNow}</strong> via Zelle to <strong>hello@fhequestrian.com</strong>, memo
+                  “reschedule”. Your request submits now and is confirmed once the payment is recognized
+                  (staff can also waive it).
+                </p>
+              </div>
+            )}
             <div className="flex gap-2">
-              <button type="button" className="btn-primary flex-1 justify-center" disabled={busy || !newStart} onClick={() => void change('reschedule')}>
-                {busy ? 'Submitting…' : 'Submit request'}
-              </button>
-              <button type="button" className="btn-secondary" onClick={() => setMode('view')}>Back</button>
+              {feeNow > 0 && !payShown ? (
+                <button type="button" className="btn-primary flex-1 justify-center" disabled={!newStart} onClick={() => setPayShown(true)}>
+                  Continue to payment
+                </button>
+              ) : (
+                <button type="button" className="btn-primary flex-1 justify-center" disabled={busy || !newStart} onClick={() => void change('reschedule')}>
+                  {busy ? 'Submitting…' : feeNow > 0 ? 'I’ve sent it — submit' : 'Submit request'}
+                </button>
+              )}
+              <button type="button" className="btn-secondary" onClick={() => { setMode('view'); setPayShown(false); }}>Back</button>
             </div>
           </div>
         )}
 
         {error && <p role="alert" className="form-error mt-3">{error}</p>}
+      </div>
+    </div>
+  );
+}
+
+/** Client: request an arbitrary open time (A2). Availability is a suggestion —
+ *  any open in-hours time can be requested; it lands pending for staff to confirm. */
+function RequestTimePanel({ start, onClose, onDone }: { start: Date; onClose: () => void; onDone: () => void }) {
+  const [duration, setDuration] = useState('60');
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+
+  async function submit() {
+    setBusy(true); setError(null);
+    try {
+      const endISO = new Date(start.getTime() + Number(duration) * 60_000).toISOString();
+      await requestOpenTime({ startISO: start.toISOString(), endISO, note: note.trim() || undefined });
+      setDone(true);
+      onDone();
+    } catch (e) {
+      setError(toErrorMessage(e, 'Could not request that time.'));
+    } finally { setBusy(false); }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/30 flex justify-end" onClick={onClose}>
+      <div className="bg-cream w-full max-w-sm h-full overflow-y-auto shadow-xl p-5" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-serif text-lg text-green-900">Request this time</h2>
+          <button type="button" onClick={onClose} aria-label="Close"><X size={20} /></button>
+        </div>
+        {done ? (
+          <p className="bg-green-50 border border-green-200 text-green-800 text-sm p-3 rounded">
+            Requested — we’ll confirm your time shortly.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-3">
+            <p className="text-sm text-green-900">{formatSessionWhen(start.toISOString())}</p>
+            <label className="text-sm">
+              <span className="form-label">Duration</span>
+              <select className="form-input" value={duration} onChange={(e) => setDuration(e.target.value)}>
+                {['30', '45', '60', '90'].map((d) => <option key={d} value={d}>{d} minutes</option>)}
+              </select>
+            </label>
+            <label className="text-sm">
+              <span className="form-label">Note (optional)</span>
+              <textarea rows={2} className="form-input resize-none" value={note} onChange={(e) => setNote(e.target.value)} />
+            </label>
+            <p className="form-hint">You can request any open time — we’ll confirm it (or suggest the nearest fit).</p>
+            <button type="button" className="btn-primary w-full justify-center" disabled={busy} onClick={() => void submit()}>
+              {busy ? 'Requesting…' : 'Request this time'}
+            </button>
+            {error && <p role="alert" className="form-error">{error}</p>}
+          </div>
+        )}
       </div>
     </div>
   );
