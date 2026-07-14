@@ -1,8 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { CalendarDays, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, X, Wallet } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
-import { fetchCalendar, type CalendarItem, type CalendarView } from '../../lib/ops/api-calendar';
+import {
+  fetchCalendar,
+  fetchRevenue,
+  fetchCreditsRoster,
+  type CalendarItem,
+  type CalendarView,
+  type CreditRosterEntry,
+} from '../../lib/ops/api-calendar';
 import { formatSessionWhen, formatTimeRange } from '../../lib/formatDateTime';
+import { CalendarItemPanel } from './CalendarItemPanel';
 
 /*
  * CP-CALENDAR — the one full-page calendar for client/staff/admin (Phase 6,
@@ -78,6 +86,12 @@ export default function CalendarPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<CalendarItem | null>(null);
+  const [editing, setEditing] = useState<{ item: CalendarItem | null; start?: Date } | null>(null);
+  const [money, setMoney] = useState<{ week: number; month: number } | null>(null);
+  const [roster, setRoster] = useState<CreditRosterEntry[] | null>(null);
+  const [rosterOpen, setRosterOpen] = useState(false);
+
+  const isStaff = data?.role === 'staff';
 
   // the visible range: a Sunday-start week, or the 6-week grid covering a month.
   const range = useMemo(() => {
@@ -106,7 +120,34 @@ export default function CalendarPage() {
     void load();
   }, [load]);
 
+  // staff revenue (this week + this month) + credits roster
+  useEffect(() => {
+    if (!isStaff) return;
+    const now = new Date();
+    const wkFrom = startOfWeek(now);
+    const wkTo = addDays(wkFrom, 7);
+    const moFrom = new Date(now.getFullYear(), now.getMonth(), 1);
+    const moTo = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    Promise.all([
+      fetchRevenue(wkFrom.toISOString(), wkTo.toISOString()),
+      fetchRevenue(moFrom.toISOString(), moTo.toISOString()),
+    ])
+      .then(([wk, mo]) => setMoney({ week: wk.total, month: mo.total }))
+      .catch(() => setMoney(null));
+    fetchCreditsRoster().then(setRoster).catch(() => setRoster([]));
+  }, [isStaff, data]);
+
   const items = data?.items ?? [];
+
+  function onItemClick(it: CalendarItem) {
+    if (isStaff) setEditing({ item: it });
+    else setSelected(it);
+  }
+  function onEmptyClick(day: Date, hour: number) {
+    if (!isStaff) return;
+    const s = new Date(day.getFullYear(), day.getMonth(), day.getDate(), hour, 0, 0);
+    setEditing({ item: null, start: s });
+  }
 
   // the hour band from business hours (fallback 10–18), for the week grid rows.
   const [openHour, closeHour] = useMemo(() => {
@@ -172,6 +213,34 @@ export default function CalendarPage() {
         </div>
       </div>
 
+      {isStaff && money && (
+        <div className="flex flex-wrap items-center gap-4 mb-3 text-sm">
+          <span className="inline-flex items-center gap-1.5 text-green-900">
+            <Wallet size={15} className="text-gold-ink" aria-hidden="true" />
+            This week <strong>${money.week.toFixed(0)}</strong>
+          </span>
+          <span className="text-green-900">This month <strong>${money.month.toFixed(0)}</strong></span>
+          {roster && roster.length > 0 && (
+            <button type="button" className="text-green-800 underline underline-offset-2" onClick={() => setRosterOpen((o) => !o)}>
+              {roster.length} with credits
+            </button>
+          )}
+        </div>
+      )}
+      {isStaff && rosterOpen && roster && (
+        <div className="bg-white border border-green-800/10 rounded-lg p-3 mb-3 max-w-sm">
+          <p className="form-label mb-1">Credits / plan balances</p>
+          <ul className="text-sm divide-y divide-green-800/5">
+            {roster.map((r) => (
+              <li key={r.client_id} className="flex justify-between py-1">
+                <span className="text-green-900">{r.name || 'Client'}</span>
+                <span className="text-green-800 font-medium">{r.credits_remaining}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {error && <p role="alert" className="form-error mb-3">{error}</p>}
 
       <div className="bg-white border border-green-800/10 rounded-lg overflow-x-auto">
@@ -181,7 +250,8 @@ export default function CalendarPage() {
             openHour={openHour}
             closeHour={closeHour}
             items={items}
-            onSelect={setSelected}
+            onSelect={onItemClick}
+            onEmpty={isStaff ? onEmptyClick : undefined}
           />
         ) : (
           <MonthGrid anchor={anchor} items={items} onPickDay={(d) => { setView('week'); setAnchor(d); }} />
@@ -191,6 +261,14 @@ export default function CalendarPage() {
       {loading && <p className="text-sm text-muted mt-3">Loading…</p>}
 
       {selected && <DetailPanel item={selected} onClose={() => setSelected(null)} />}
+      {editing && (
+        <CalendarItemPanel
+          item={editing.item}
+          defaultStart={editing.start}
+          onClose={() => setEditing(null)}
+          onSaved={() => { setEditing(null); void load(); }}
+        />
+      )}
     </div>
   );
 }
@@ -201,12 +279,14 @@ function WeekGrid({
   closeHour,
   items,
   onSelect,
+  onEmpty,
 }: {
   weekStart: Date;
   openHour: number;
   closeHour: number;
   items: CalendarItem[];
   onSelect: (i: CalendarItem) => void;
+  onEmpty?: (day: Date, hour: number) => void;
 }) {
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const hours = Array.from({ length: Math.max(1, closeHour - openHour) }, (_, i) => openHour + i);
@@ -242,12 +322,16 @@ function WeekGrid({
           {days.map((d) => {
             const cell = itemsFor(d, h);
             return (
-              <div key={d.toISOString()} className="border-l border-green-800/10 min-h-[44px] p-0.5 space-y-0.5">
+              <div
+                key={d.toISOString()}
+                className={`border-l border-green-800/10 min-h-[44px] p-0.5 space-y-0.5 ${onEmpty ? 'cursor-pointer hover:bg-green-50/50' : ''}`}
+                onClick={onEmpty && cell.length === 0 ? () => onEmpty(d, h) : undefined}
+              >
                 {cell.map((it) => (
                   <button
                     key={it.id}
                     type="button"
-                    onClick={() => onSelect(it)}
+                    onClick={(e) => { e.stopPropagation(); onSelect(it); }}
                     className={`w-full text-left rounded px-1.5 py-1 text-[11px] leading-tight ${itemClass(it)}`}
                   >
                     {itemLabel(it)}

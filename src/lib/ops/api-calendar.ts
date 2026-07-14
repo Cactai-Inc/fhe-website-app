@@ -72,9 +72,99 @@ export async function fetchCalendar(fromISO: string, toISO: string): Promise<Cal
   return data as CalendarView;
 }
 
-/** The business-hours frame for the current org (staff-editable in Slice 3). */
+/** The business-hours frame for the current org (staff-editable). */
 export async function fetchBusinessHours(): Promise<BusinessHour[]> {
   const { data, error } = await supabase.rpc('business_hours');
   if (error) throw error;
   return (data ?? []) as BusinessHour[];
+}
+
+// ─── Locations pick-list ─────────────────────────────────────────────────────
+
+export interface CalendarLocation {
+  id: string;
+  name: string;
+  address: string | null;
+  is_offsite: boolean;
+  is_default: boolean;
+}
+
+export async function fetchLocations(): Promise<CalendarLocation[]> {
+  const { data, error } = await supabase
+    .from('locations')
+    .select('id, name, address, is_offsite, is_default, sort_order')
+    .eq('active', true)
+    .order('sort_order');
+  if (error) throw error;
+  return (data ?? []) as CalendarLocation[];
+}
+
+// ─── Staff writes (Slice 3) ──────────────────────────────────────────────────
+
+/** The full calendar-item payload the staff config panel submits. save_calendar_item
+ *  overwrites every field, so the panel must send the item's COMPLETE state. */
+export interface CalendarItemInput {
+  id?: string | null;
+  kind?: 'block' | 'lesson' | 'care' | 'purchase';
+  status?: string;
+  starts_at: string;
+  ends_at: string;
+  all_day?: boolean;
+  is_flexible?: boolean;
+  client_id?: string | null;
+  horse_id?: string | null;
+  purchase_id?: string | null;
+  offering_id?: string | null;
+  location_id?: string | null;
+  address?: string | null;
+  travel_before_minutes?: number;
+  travel_after_minutes?: number;
+  price_amount?: number | null;
+  notes?: string | null;
+  recurrence_weeks?: number;
+  /** Series edit/delete reach: 'one' | 'future' | 'all'. */
+  scope?: 'one' | 'future' | 'all';
+}
+
+export async function saveCalendarItem(input: CalendarItemInput): Promise<{ id: string; series_id: string | null }> {
+  const { data, error } = await supabase.rpc('save_calendar_item', { p: input });
+  if (error) throw error;
+  return data as { id: string; series_id: string | null };
+}
+
+export async function deleteCalendarItem(id: string, scope: 'one' | 'future' | 'all' = 'one'): Promise<number> {
+  const { data, error } = await supabase.rpc('delete_calendar_item', { p_id: id, p_scope: scope });
+  if (error) throw error;
+  return data as number;
+}
+
+export async function closeDay(dateISO: string, reason?: string): Promise<void> {
+  const { error } = await supabase.rpc('close_day', { p_date: dateISO, p_reason: reason ?? null });
+  if (error) throw error;
+}
+
+export async function setBusinessHours(hours: BusinessHour[]): Promise<void> {
+  const { error } = await supabase.rpc('set_business_hours', { p: hours });
+  if (error) throw error;
+}
+
+export interface CalendarRevenue {
+  total: number;
+  count: number;
+}
+export async function fetchRevenue(fromISO: string, toISO: string): Promise<CalendarRevenue> {
+  const { data, error } = await supabase.rpc('calendar_revenue', { p_from: fromISO, p_to: toISO });
+  if (error) throw error;
+  return data as CalendarRevenue;
+}
+
+export interface CreditRosterEntry {
+  client_id: string;
+  name: string;
+  credits_remaining: number;
+}
+export async function fetchCreditsRoster(): Promise<CreditRosterEntry[]> {
+  const { data, error } = await supabase.rpc('credits_roster');
+  if (error) throw error;
+  return (data ?? []) as CreditRosterEntry[];
 }
