@@ -103,8 +103,26 @@ export function PublicIntakeForm({
   const [method, setMethod] = useState<ContactMethod>('email');
   const [source, setSource] = useState('');
   const [message, setMessage] = useState('');
+  // Availability (owner spec): day/time PREFERENCES, and/or SPECIFIC date+times —
+  // all optional. Either, both, or neither.
+  const [days, setDays] = useState<string[]>([]);
+  const [times, setTimes] = useState<string[]>([]);
+  const [specifics, setSpecifics] = useState<{ date: string; time: string }[]>([]);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const toggle = (list: string[], set: (v: string[]) => void, v: string) =>
+    set(list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
+
+  function buildProposedTimes() {
+    const out: { date: string; time: string; days?: string }[] = [];
+    if (days.length > 0 || times.length > 0) {
+      const label = [days.join(', '), times.join(' / ')].filter(Boolean).join(' — ');
+      out.push({ date: '', time: label || 'Flexible', days: days.join(', ') });
+    }
+    for (const s of specifics) if (s.date) out.push({ date: s.date, time: s.time || 'Any time' });
+    return out;
+  }
 
   // Which optional fields THIS channel requires is the owner's call, configured
   // in-app (intake_requirements). Base fields (first/last/email) are always
@@ -149,6 +167,7 @@ export function PublicIntakeForm({
           contact_email: email.trim(),
           contact_phone: phone.trim() || undefined,
           contact_method: isCart || needs('contact_method') ? method : undefined,
+          proposed_times: buildProposedTimes(),
           notes: message.trim() || undefined,
           category,
           channel,
@@ -299,6 +318,50 @@ export function PublicIntakeForm({
           <p className="form-hint text-right">
             {message.length}/{MESSAGE_MAX}
           </p>
+        </div>
+
+        {/* Availability — preferences and/or specific date+times, all optional */}
+        <div className="sm:col-span-2">
+          <span className="form-label">When works for you? (optional)</span>
+          <div className="flex flex-wrap gap-1.5 mt-1">
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+              <button
+                key={d}
+                type="button"
+                aria-pressed={days.includes(d)}
+                onClick={() => toggle(days, setDays, d)}
+                className={`text-xs px-2 py-1 rounded-full border ${days.includes(d) ? 'bg-green-800 text-white border-green-800' : 'bg-white text-green-800 border-green-800/30'}`}
+              >
+                {d}
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-1.5 mt-1.5">
+            {['Morning', 'Afternoon', 'Evening'].map((t) => (
+              <button
+                key={t}
+                type="button"
+                aria-pressed={times.includes(t)}
+                onClick={() => toggle(times, setTimes, t)}
+                className={`text-xs px-2 py-1 rounded-full border ${times.includes(t) ? 'bg-green-800 text-white border-green-800' : 'bg-white text-green-800 border-green-800/30'}`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+          <p className="form-hint mt-2">Prefer exact dates? Add them:</p>
+          {specifics.map((s, i) => (
+            <div key={i} className="flex gap-2 mt-1">
+              <input type="date" className="form-input" value={s.date} onChange={(e) => setSpecifics((p) => p.map((x, j) => (j === i ? { ...x, date: e.target.value } : x)))} />
+              <input type="time" className="form-input" value={s.time} onChange={(e) => setSpecifics((p) => p.map((x, j) => (j === i ? { ...x, time: e.target.value } : x)))} />
+              <button type="button" className="text-muted px-2" onClick={() => setSpecifics((p) => p.filter((_, j) => j !== i))} aria-label="Remove">×</button>
+            </div>
+          ))}
+          {specifics.length < 5 && (
+            <button type="button" className="text-xs text-green-800 underline mt-1.5" onClick={() => setSpecifics((p) => [...p, { date: '', time: '' }])}>
+              + Add a date &amp; time
+            </button>
+          )}
         </div>
       </div>
 
