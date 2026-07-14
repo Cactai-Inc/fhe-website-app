@@ -1671,11 +1671,13 @@ export interface ContractDocumentDetail {
 /** Start a horse lease contract (create engagement + document + seeded owned fields). */
 export async function startLeaseContract(
   lesseeContactId: string, lessorContactId?: string, horseId?: string,
+  responsibleRole: 'LESSEE' | 'LESSOR' = 'LESSEE',
 ): Promise<{ document_id: string; contract_id: string; fields_seeded: number }> {
   const { data, error } = await supabase.rpc('start_lease_contract', {
     p_lessee_contact_id: lesseeContactId,
     p_lessor_contact_id: lessorContactId ?? null,
     p_horse_id: horseId ?? null,
+    p_responsible_role: responsibleRole,
   });
   if (error) throw error;
   return data as { document_id: string; contract_id: string; fields_seeded: number };
