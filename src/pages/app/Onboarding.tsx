@@ -7,7 +7,6 @@ import {
   myOnboardingState,
   updateMyOnboardingProfile,
   generateMyOnboardingDocuments,
-  createOrderFromEngagement,
   getOrder,
   getOrderPayment,
   type OnboardingProfileInput,
@@ -20,8 +19,6 @@ import { signMyDocument } from '../../lib/ops/api-client';
 import { BodyWithSignatures } from '../../components/ops/documents/MergedBodyView';
 import { toErrorMessage } from '../../lib/ops/errors';
 import { useDocumentTitle } from '../../lib/hooks';
-import { HorseIntakeForm } from '../../components/app/HorseIntakeForm';
-import { onboardingHorseStep, attachOnboardingHorse } from '../../lib/horses';
 import type { Profile } from '../../lib/types';
 
 /**
@@ -47,7 +44,7 @@ import type { Profile } from '../../lib/types';
  *      is attached) + where the signed copies live.
  */
 
-type Step = 'details' | 'horse' | 'sign' | 'payment' | 'done';
+type Step = 'details' | 'sign' | 'payment' | 'done';
 
 /** The plain profile fields (the minor toggle + fields are tracked apart). */
 type ProfileFormFields = Omit<
@@ -119,7 +116,6 @@ function PurchaseCard({ purchase, riderName }: { purchase: OnboardingPurchase; r
 function Steps({ current }: { current: Step }) {
   const steps: { id: Step; label: string }[] = [
     { id: 'details', label: 'Your details' },
-    { id: 'horse', label: 'Your horse' },
     { id: 'sign', label: 'Review & sign' },
     { id: 'payment', label: 'Payment' },
     { id: 'done', label: "You're all set" },
@@ -173,22 +169,19 @@ export default function Onboarding() {
   const [signing, setSigning] = useState(false);
   const [signError, setSignError] = useState<string | null>(null);
 
-  // Step 3 — payment (Path A bridge). Minted from the engagement after signing.
+  // Step 3 — payment (sign-before-pay). The client pays their spine purchase
+  // (surfaced by my_onboarding_state) directly — no engagement bridge.
   const [order, setOrder] = useState<(Order & { items: OrderItem[] }) | null>(null);
   const [payment, setPayment] = useState<Payment | null>(null);
   const [payError, setPayError] = useState<string | null>(null);
 
-  // The engagement whose docs we're signing (drives the payment bridge). It's the
-  // engagement backing the onboarding documents — carried on the onboarding state.
-  const engagementId = state?.engagement_id ?? null;
-
-  // Load (or mint) the order for the payment step, then poll for confirmation.
+  // Load the purchase for the payment step, then poll for confirmation.
   async function enterPayment() {
     setPayError(null);
+    const purchaseId = state?.purchase?.purchase_id ?? null;
     try {
-      if (!engagementId) { setStep('done'); return; }
-      const orderId = await createOrderFromEngagement(engagementId);
-      const [o, p] = await Promise.all([getOrder(orderId), getOrderPayment(orderId)]);
+      if (!purchaseId) { setStep('done'); return; }
+      const [o, p] = await Promise.all([getOrder(purchaseId), getOrderPayment(purchaseId)]);
       setOrder(o);
       setPayment(p);
       setStep('payment');
@@ -235,7 +228,7 @@ export default function Onboarding() {
         }
         if (!s.needed) setStep('done');
         else if (!s.profile_complete) setStep('details');
-        else void enterSignOrHorse(s.engagement_id);
+        else setStep('sign');
       })
       .catch((err) => active && setLoadError(toErrorMessage(err, 'Could not load your onboarding.')))
       .finally(() => active && setLoading(false));
@@ -263,33 +256,6 @@ export default function Onboarding() {
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       setForm((prev) => ({ ...prev, [key]: e.target.value }));
 
-  /** H.7: a horse-involving activation (own-horse lesson / horse-care service)
-   *  collects the full horse intake before signing, so the record attaches to the
-   *  engagement and the horse-dependent documents merge from it. */
-  async function enterSignOrHorse(engagementId: string | null | undefined) {
-    if (engagementId) {
-      try {
-        const h = await onboardingHorseStep(engagementId);
-        if (h.needed) { setStep('horse'); return; }
-      } catch { /* fall through to sign */ }
-    }
-    setStep('sign');
-  }
-
-  async function horseCreated(horseId: string) {
-    const engagementId = state?.engagement_id;
-    try {
-      if (engagementId) {
-        await attachOnboardingHorse(engagementId, horseId);
-        // regenerate the unsigned docs so the horse's details merge into the text
-        await generateMyOnboardingDocuments();
-        const next = await myOnboardingState();
-        setState(next);
-      }
-    } catch { /* attach is best-effort here; staff can attach later */ }
-    setStep('sign');
-  }
-
   async function saveDetails(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
@@ -314,7 +280,7 @@ export default function Onboarding() {
       const next = await myOnboardingState();
       setState(next);
       setHadMinor(Boolean(next.minor));
-      await enterSignOrHorse(next.engagement_id);
+      setStep('sign');
     } catch (err) {
       setSaveError(toErrorMessage(err, 'Could not save your details.'));
     } finally {
@@ -524,23 +490,6 @@ export default function Onboarding() {
       )}
 
       {/* ── Step 2: Review & sign ────────────────────────────────────────── */}
-      {step === 'horse' && (
-        <div className="bg-white border border-green-800/10 p-6 sm:p-8">
-          <p className="eyebrow mb-1">Your horse</p>
-          <h2 className="font-serif text-green-800 text-xl mb-1.5">Tell us about your horse.</h2>
-          <p className="body-text text-sm text-muted mb-5">
-            Your purchase involves your own horse — this creates their record with the
-            barn so your paperwork and care notes stay attached to them. Anything you
-            don't know can stay blank.
-          </p>
-          <HorseIntakeForm submitLabel="Save & continue" onDone={(id) => void horseCreated(id)} />
-          <button type="button" onClick={() => setStep('sign')}
-            className="mt-3 text-sm text-muted underline underline-offset-2">
-            Skip for now — I'll add my horse later
-          </button>
-        </div>
-      )}
-
       {step === 'sign' && (
         <section aria-labelledby="ob-sign-heading">
           <h2 id="ob-sign-heading" className="font-serif text-lg text-green-900 mb-3">Review & sign</h2>

@@ -102,6 +102,8 @@ export interface OnboardingDocument {
 /** What the client bought offline (provisioned by staff with the invite).
  *  Stays populated after onboarding completes — the dashboard plan card. */
 export interface OnboardingPurchase {
+  /** The spine purchase id — drives the pay-after-sign step. */
+  purchase_id: string;
   tier_label: string;
   amount: number;
   /** Punch cards / packs: the number of lessons bought. */
@@ -127,10 +129,8 @@ export interface OnboardingState {
   profile_complete: boolean;
   documents: OnboardingDocument[];
   purchase: OnboardingPurchase | null;
-  /** Minor rider on the active onboarding engagement, or null. */
+  /** Guardian-linked minor rider, or null. */
   minor: OnboardingMinor | null;
-  /** The engagement backing the onboarding docs — drives the payment bridge. */
-  engagement_id?: string | null;
 }
 
 /** The signed-in member's onboarding snapshot (profile gate, signing checklist,
