@@ -440,7 +440,7 @@ function DetailPanel({ item, onClose, onChanged }: { item: CalendarItem; onClose
   const [noCredits, setNoCredits] = useState(false);
   const [mode, setMode] = useState<'view' | 'reschedule'>('view');
   const [newStart, setNewStart] = useState('');
-  const [scope, setScope] = useState<'one' | 'future' | 'all'>('one');
+  const [scope, setScope] = useState('one');
   const [fee, setFee] = useState(0);
   const [done, setDone] = useState<string | null>(null);
 
@@ -551,8 +551,11 @@ function DetailPanel({ item, onClose, onChanged }: { item: CalendarItem; onClose
             {item.series_id && (
               <label className="text-sm">
                 <span className="form-label">This is a recurring booking — move</span>
-                <select className="form-input" value={scope} onChange={(e) => setScope(e.target.value as 'one' | 'future' | 'all')}>
+                <select className="form-input" value={scope} onChange={(e) => setScope(e.target.value)}>
                   <option value="one">Just this one</option>
+                  <option value="weeks:2">The next 2 weeks</option>
+                  <option value="weeks:4">The next 4 weeks</option>
+                  <option value="weeks:8">The next 8 weeks</option>
                   <option value="future">This &amp; all future</option>
                   <option value="all">The whole series</option>
                 </select>

@@ -7,10 +7,12 @@ import { listLessonClients, listScheduleHorses } from '../../lib/ops/api-lessons
 import type { LessonClientOption, ScheduleHorseOption } from '../../lib/ops/api-lessons';
 import {
   fetchLocations,
+  fetchClientPurchases,
   saveCalendarItem,
   deleteCalendarItem,
   type CalendarItem,
   type CalendarLocation,
+  type ClientPurchaseOption,
 } from '../../lib/ops/api-calendar';
 
 /*
@@ -62,6 +64,8 @@ export function CalendarItemPanel({
   const [end, setEnd] = useState(toLocalInput(initialEnd));
   const [offeringId, setOfferingId] = useState(item?.offering_id ?? '');
   const [clientId, setClientId] = useState(item?.client_id ?? '');
+  const [purchaseId, setPurchaseId] = useState(item?.purchase_id ?? '');
+  const [purchases, setPurchases] = useState<ClientPurchaseOption[]>([]);
   const [horseId, setHorseId] = useState(item?.horse_id ?? '');
   const [isFlexible, setIsFlexible] = useState(item?.is_flexible ?? false);
   const [locationId, setLocationId] = useState(item?.location_id ?? '');
@@ -81,6 +85,12 @@ export function CalendarItemPanel({
     listScheduleHorses().then(setHorses).catch(() => setHorses([]));
     fetchLocations().then(setLocations).catch(() => setLocations([]));
   }, []);
+
+  // purchases for the chosen client (assign-purchase picker)
+  useEffect(() => {
+    if (!clientId) { setPurchases([]); return; }
+    fetchClientPurchases(clientId).then(setPurchases).catch(() => setPurchases([]));
+  }, [clientId]);
 
   const selectedOffering = offerings.find((o) => o.id === offeringId);
   const selectedLocation = locations.find((l) => l.id === locationId);
@@ -119,6 +129,7 @@ export function CalendarItemPanel({
       ends_at: fromLocalInput(end),
       is_flexible: type === 'offering' ? isFlexible : false,
       client_id: type === 'offering' ? clientId || null : null,
+      purchase_id: type === 'offering' ? purchaseId || null : null,
       horse_id: type === 'offering' ? horseId || null : null,
       offering_id: type === 'offering' ? offeringId || null : null,
       location_id: locationId || null,
@@ -223,9 +234,22 @@ export function CalendarItemPanel({
               {!isFlexible && (
                 <label className="text-sm">
                   <span className="form-label">Client</span>
-                  <select className="form-input" value={clientId} onChange={(e) => setClientId(e.target.value)}>
+                  <select className="form-input" value={clientId} onChange={(e) => { setClientId(e.target.value); setPurchaseId(''); }}>
                     <option value="">Unassigned</option>
                     {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </label>
+              )}
+              {!isFlexible && clientId && purchases.length > 0 && (
+                <label className="text-sm">
+                  <span className="form-label">Assign to purchase</span>
+                  <select className="form-input" value={purchaseId} onChange={(e) => setPurchaseId(e.target.value)}>
+                    <option value="">None</option>
+                    {purchases.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.label}{p.amount != null ? ` — $${p.amount}` : ''}
+                      </option>
+                    ))}
                   </select>
                 </label>
               )}
