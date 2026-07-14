@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { submitRequest } from '../lib/api';
 import { fetchIntakeRequirements } from '../lib/ops/api-public';
+import { CATEGORY_FIELDS } from '../lib/intakeCategoryFields';
 import type {
   RequestCategory,
   RequestChannel,
@@ -103,6 +104,9 @@ export function PublicIntakeForm({
   const [method, setMethod] = useState<ContactMethod>('email');
   const [source, setSource] = useState('');
   const [message, setMessage] = useState('');
+  // Category-specific answers (C1) — keyed by field key, folded into details.
+  const [details, setDetails] = useState<Record<string, string>>({});
+  const categoryFields = CATEGORY_FIELDS[category] ?? [];
   // Availability (owner spec): day/time PREFERENCES, and/or SPECIFIC date+times —
   // all optional. Either, both, or neither.
   const [days, setDays] = useState<string[]>([]);
@@ -160,6 +164,12 @@ export function PublicIntakeForm({
     setSending(true);
     setError(null);
     try {
+      // only the current category's answered fields travel in details
+      const cleanDetails: Record<string, string> = {};
+      for (const f of categoryFields) {
+        const v = details[f.key]?.trim();
+        if (v) cleanDetails[f.key] = v;
+      }
       const { requestId } = await submitRequest(
         {
           first_name: firstName.trim(),
@@ -173,6 +183,7 @@ export function PublicIntakeForm({
           channel,
           entry_location: source || entryLocation,
           intent: intentFor(category, isCart),
+          details: Object.keys(cleanDetails).length ? cleanDetails : undefined,
         },
         selections ?? [],
       );
@@ -210,6 +221,33 @@ export function PublicIntakeForm({
             </select>
           </div>
         )}
+
+        {/* C1 — fields distinct to the chosen category */}
+        {categoryFields.map((f) => (
+          <div key={f.key} className={f.type === 'select' || f.type === 'date' ? '' : 'sm:col-span-1'}>
+            <label className="form-label" htmlFor={`pi-${f.key}`}>{f.label}</label>
+            {f.type === 'select' ? (
+              <select
+                id={`pi-${f.key}`}
+                className="form-input"
+                value={details[f.key] ?? ''}
+                onChange={(e) => setDetails((p) => ({ ...p, [f.key]: e.target.value }))}
+              >
+                <option value="">Select…</option>
+                {f.options?.map((o) => <option key={o} value={o}>{o}</option>)}
+              </select>
+            ) : (
+              <input
+                id={`pi-${f.key}`}
+                type={f.type === 'number' ? 'number' : f.type === 'date' ? 'date' : 'text'}
+                className="form-input"
+                placeholder={f.placeholder}
+                value={details[f.key] ?? ''}
+                onChange={(e) => setDetails((p) => ({ ...p, [f.key]: e.target.value }))}
+              />
+            )}
+          </div>
+        ))}
 
         <div>
           <label className="form-label" htmlFor="pi-first">

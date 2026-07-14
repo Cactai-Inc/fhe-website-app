@@ -207,8 +207,8 @@ export interface ListableHorse {
 }
 
 /** Horses the signed-in member may list (server-enforced eligibility:
- *  owner → sale always, lease only when un-leased; lessee → lease only when
- *  sublease_allowed; staff unrestricted). */
+ *  owner → sale always, lease only when un-leased; lessee → lease only when the
+ *  executed lease contract permits subleasing; staff unrestricted). */
 export async function listListableHorses(intent: 'sale' | 'lease'): Promise<ListableHorse[]> {
   const { data, error } = await supabase.rpc('my_listable_horses', { p_intent: intent });
   if (error) throw error;

@@ -6,7 +6,6 @@ import {
   setLessonProgressNote,
   addBookingNote,
   getBookingReport,
-  type LessonSession,
   type BookingReport,
   type BookingNote,
 } from '../../../../lib/ops/api-lessons';
@@ -18,7 +17,9 @@ import {
  * "Instructor notes" (kept in bookings.notes). Below both, the authored-notes
  * thread — pre-lesson and post notes from rider and instructor, uneditable,
  * authorship-labeled. A clipping-style category with no checklist simply shows
- * no activities (report-only).
+ * no activities (report-only). Works for any serviced booking — a riding lesson
+ * or a horse-care session (kind lesson|care): the checklist is resolved per the
+ * booking's own category, so a care session shows its care activities.
  */
 function noteLabel(n: BookingNote): string {
   const who = n.author_name || (n.author_role === 'rider' ? 'Rider' : 'Instructor');
@@ -27,22 +28,23 @@ function noteLabel(n: BookingNote): string {
 }
 
 export function LessonLogEditor({
-  session,
-  checklist,
+  bookingId,
+  initialReport,
   onReportChange,
 }: {
-  session: LessonSession;
-  checklist: string[];
-  onReportChange: (report: string) => void;
+  bookingId: string;
+  initialReport?: string | null;
+  onReportChange?: (report: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
+  const [checklist, setChecklist] = useState<string[]>([]);
   const [activities, setActivities] = useState<string[]>([]);
   const [logText, setLogText] = useState('');
-  const [report, setReport] = useState(session.notes ?? '');
+  const [report, setReport] = useState(initialReport ?? '');
   const [notes, setNotes] = useState<BookingNote[]>([]);
   const [newNote, setNewNote] = useState('');
   const [newPhase, setNewPhase] = useState<'pre' | 'post'>('post');
@@ -51,7 +53,8 @@ export function LessonLogEditor({
     setOpen(true);
     if (loaded) return;
     try {
-      const r: BookingReport = await getBookingReport(session.id);
+      const r: BookingReport = await getBookingReport(bookingId);
+      setChecklist(r.checklist ?? []);
       setActivities(r.activity_log?.activities ?? []);
       setLogText(r.activity_log?.text ?? '');
       setReport(r.report ?? '');
@@ -72,7 +75,7 @@ export function LessonLogEditor({
     setBusy(true);
     setErr(null);
     try {
-      await setBookingLog(session.id, activities, logText.trim() || null);
+      await setBookingLog(bookingId, activities, logText.trim() || null);
     } catch (e) {
       setErr(toErrorMessage(e, 'Could not save the log.'));
     } finally {
@@ -84,8 +87,8 @@ export function LessonLogEditor({
     setBusy(true);
     setErr(null);
     try {
-      await setLessonProgressNote(session.id, report);
-      onReportChange(report.trim());
+      await setLessonProgressNote(bookingId, report);
+      onReportChange?.(report.trim());
     } catch (e) {
       setErr(toErrorMessage(e, 'Could not save the report.'));
     } finally {
@@ -98,7 +101,7 @@ export function LessonLogEditor({
     setBusy(true);
     setErr(null);
     try {
-      const saved = await addBookingNote(session.id, newPhase, newNote.trim());
+      const saved = await addBookingNote(bookingId, newPhase, newNote.trim());
       setNotes((prev) => [...prev, saved]);
       setNewNote('');
     } catch (e) {
@@ -149,11 +152,11 @@ export function LessonLogEditor({
         </div>
       )}
       <div>
-        <label className="form-label mb-1 block" htmlFor={`log-${session.id}`}>
+        <label className="form-label mb-1 block" htmlFor={`log-${bookingId}`}>
           Log (instructor record)
         </label>
         <textarea
-          id={`log-${session.id}`}
+          id={`log-${bookingId}`}
           value={logText}
           onChange={(e) => setLogText(e.target.value)}
           rows={2}
@@ -172,11 +175,11 @@ export function LessonLogEditor({
 
       {/* REPORT — rider-visible instructor notes */}
       <div>
-        <label className="form-label mb-1 block" htmlFor={`report-${session.id}`}>
+        <label className="form-label mb-1 block" htmlFor={`report-${bookingId}`}>
           Instructor notes (the rider sees this)
         </label>
         <textarea
-          id={`report-${session.id}`}
+          id={`report-${bookingId}`}
           value={report}
           onChange={(e) => setReport(e.target.value)}
           rows={2}

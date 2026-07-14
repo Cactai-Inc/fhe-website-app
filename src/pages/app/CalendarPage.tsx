@@ -12,13 +12,18 @@ import {
 import {
   bookOpenSlot,
   requestBookingChange,
+  requestOpenTime,
   fetchRescheduleFee,
   fetchOpenChangeRequests,
   decideBookingChange,
   type OpenChangeRequest,
 } from '../../lib/ops/api-calendar';
+import { getBookingReport, type BookingReport, type BookingNote } from '../../lib/ops/api-lessons';
+import { fetchOfferings, createDraftOrder } from '../../lib/api';
+import type { Offering } from '../../lib/types';
 import { toErrorMessage } from '../../lib/ops/errors';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { ClipboardList } from 'lucide-react';
 import { formatSessionWhen, formatTimeRange } from '../../lib/formatDateTime';
 import { CalendarItemPanel } from './CalendarItemPanel';
 import { CalendarSettingsPanel } from './CalendarSettingsPanel';
@@ -84,10 +89,14 @@ const LEGEND: { label: string; cls: string }[] = [
 
 /** A short label for an item the caller may or may not see detail on. */
 function itemLabel(item: CalendarItem): string {
-  if (item.status === 'unavailable') return 'Unavailable';
+  const title = item.notes?.trim();
   if (item.status === 'available') return 'Open';
+  // a block is an appointment/unavailable — show its title when we have it
+  // (staff see every title; a client sees only their own linked appointment's).
+  if (item.kind === 'block') return title || 'Unavailable';
+  if (item.status === 'unavailable') return 'Unavailable';
   if (item.is_mine) return item.kind === 'lesson' ? 'Your lesson' : 'Your booking';
-  return item.kind === 'block' ? 'Block' : 'Booking';
+  return 'Booking';
 }
 
 export default function CalendarPage() {
@@ -103,6 +112,8 @@ export default function CalendarPage() {
   const [roster, setRoster] = useState<CreditRosterEntry[] | null>(null);
   const [rosterOpen, setRosterOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [requesting, setRequesting] = useState<Date | null>(null);
+  const [buying, setBuying] = useState(false); // A5 — client lesson-purchase panel
 
   const isStaff = data?.role === 'staff';
 
@@ -157,9 +168,9 @@ export default function CalendarPage() {
     else setSelected(it);
   }
   function onEmptyClick(day: Date, hour: number) {
-    if (!isStaff) return;
     const s = new Date(day.getFullYear(), day.getMonth(), day.getDate(), hour, 0, 0);
-    setEditing({ item: null, start: s });
+    if (isStaff) setEditing({ item: null, start: s });
+    else setRequesting(s); // client: request this open time
   }
 
   // the hour band from business hours (fallback 10–18), for the week grid rows.
@@ -222,7 +233,12 @@ export default function CalendarPage() {
 
       <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
         <p className="font-serif text-lg text-green-900">{title}</p>
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          {!isStaff && (
+            <button type="button" className="btn-secondary text-sm" onClick={() => setBuying(true)}>
+              Buy lessons
+            </button>
+          )}
           {LEGEND.map((l) => (
             <span key={l.label} className="inline-flex items-center gap-1.5 text-xs text-green-800/70">
               <span className={`w-3 h-3 rounded-sm ${l.cls}`} /> {l.label}
@@ -271,7 +287,7 @@ export default function CalendarPage() {
             closeHour={closeHour}
             items={items}
             onSelect={onItemClick}
-            onEmpty={isStaff ? onEmptyClick : undefined}
+            onEmpty={onEmptyClick}
           />
         ) : (
           <MonthGrid anchor={anchor} items={items} onPickDay={(d) => { setView('week'); setAnchor(d); }} />
@@ -285,6 +301,7 @@ export default function CalendarPage() {
           item={selected}
           onClose={() => setSelected(null)}
           onChanged={() => { setSelected(null); void load(); }}
+          onBuy={() => { setSelected(null); setBuying(true); }}
         />
       )}
       {editing && (
@@ -298,6 +315,10 @@ export default function CalendarPage() {
       {settingsOpen && (
         <CalendarSettingsPanel onClose={() => setSettingsOpen(false)} onSaved={() => void load()} />
       )}
+      {requesting && (
+        <RequestTimePanel start={requesting} onClose={() => setRequesting(null)} onDone={() => { setRequesting(null); void load(); }} />
+      )}
+      {buying && <PurchaseLessonsPanel onClose={() => setBuying(false)} />}
     </div>
   );
 }
@@ -434,7 +455,77 @@ function MonthGrid({
 
 /** The client-side detail + actions panel (Slice 4): book an open slot, or
  *  reschedule / cancel / defer your own booking. */
-function DetailPanel({ item, onClose, onChanged }: { item: CalendarItem; onClose: () => void; onChanged: () => void }) {
+/* A1 — the client's read-only view of a session's report: the instructor/care
+ * notes, the activities completed, and the authored-notes thread. Available on
+ * any of the client's own serviced bookings (a lesson or a horse-care session).
+ * Collapsed behind a toggle; loads on expand. */
+function ClientReportView({ bookingId }: { bookingId: string }) {
+  const [open, setOpen] = useState(false);
+  const [report, setReport] = useState<BookingReport | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function expand() {
+    setOpen(true);
+    if (report || loading) return;
+    setLoading(true);
+    try {
+      setReport(await getBookingReport(bookingId));
+    } catch (e) {
+      setErr(toErrorMessage(e, 'Could not load the report.'));
+    } finally { setLoading(false); }
+  }
+
+  if (!open) {
+    return (
+      <button type="button" className="text-sm text-green-800 underline underline-offset-2 inline-flex items-center gap-1 mt-2" onClick={() => void expand()}>
+        <ClipboardList size={14} aria-hidden="true" /> View session report
+      </button>
+    );
+  }
+
+  const activities = report?.activity_log?.activities ?? [];
+  const hasReport = !!report?.report?.trim();
+  const notes = (report?.notes ?? []) as BookingNote[];
+
+  return (
+    <div className="mt-3 border-t border-green-800/10 pt-3 text-sm flex flex-col gap-3">
+      {loading && <p className="text-muted">Loading…</p>}
+      {err && <p className="form-error">{err}</p>}
+      {report && !hasReport && activities.length === 0 && notes.length === 0 && (
+        <p className="text-muted">No report has been posted for this session yet.</p>
+      )}
+      {hasReport && (
+        <div>
+          <p className="text-xs uppercase tracking-wide text-muted mb-1">Notes for you</p>
+          <p className="text-green-900 whitespace-pre-line">{report!.report}</p>
+        </div>
+      )}
+      {activities.length > 0 && (
+        <div>
+          <p className="text-xs uppercase tracking-wide text-muted mb-1">What we did</p>
+          <div className="flex flex-wrap gap-1.5">
+            {activities.map((a) => (
+              <span key={a} className="text-xs px-2 py-1 rounded-full bg-green-800 text-white">{a}</span>
+            ))}
+          </div>
+        </div>
+      )}
+      {notes.length > 0 && (
+        <ul className="flex flex-col gap-1.5">
+          {notes.map((n, i) => (
+            <li key={n.id ?? i} className="text-xs text-green-900/90">
+              <span className="font-medium text-green-800">{n.author_name || (n.author_role === 'rider' ? 'You' : 'Instructor')}:</span>{' '}
+              <span className="whitespace-pre-line">{n.body}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function DetailPanel({ item, onClose, onChanged, onBuy }: { item: CalendarItem; onClose: () => void; onChanged: () => void; onBuy: () => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [noCredits, setNoCredits] = useState(false);
@@ -442,6 +533,7 @@ function DetailPanel({ item, onClose, onChanged }: { item: CalendarItem; onClose
   const [newStart, setNewStart] = useState('');
   const [scope, setScope] = useState('one');
   const [fee, setFee] = useState(0);
+  const [payShown, setPayShown] = useState(false); // fee payment screen surfaced before submit
   const [done, setDone] = useState<string | null>(null);
 
   useEffect(() => { fetchRescheduleFee().then(setFee).catch(() => setFee(0)); }, []);
@@ -517,6 +609,8 @@ function DetailPanel({ item, onClose, onChanged }: { item: CalendarItem; onClose
           )}
         </dl>
 
+        {isMine && (item.kind === 'lesson' || item.kind === 'care') && <ClientReportView bookingId={item.id} />}
+
         {done && <p className="bg-green-50 border border-green-200 text-green-800 text-sm p-3 rounded mb-3">{done}</p>}
 
         {!done && isAvailable && (
@@ -524,7 +618,7 @@ function DetailPanel({ item, onClose, onChanged }: { item: CalendarItem; onClose
             {noCredits ? (
               <div className="bg-gold-50 border border-gold-200 p-3 rounded text-sm">
                 <p className="text-green-900 mb-2">You don’t have any lesson credits.</p>
-                <Link to="/lessons" className="btn-primary text-sm justify-center w-full">Purchase a package</Link>
+                <button type="button" className="btn-primary text-sm justify-center w-full" onClick={onBuy}>Buy lessons</button>
               </div>
             ) : (
               <button type="button" className="btn-primary w-full justify-center" disabled={busy} onClick={() => void book()}>
@@ -567,16 +661,181 @@ function DetailPanel({ item, onClose, onChanged }: { item: CalendarItem; onClose
                 {phoneRequired && <p>Inside 24 hours — a phone call is required to confirm.</p>}
               </div>
             )}
+            {feeNow > 0 && payShown && (
+              <div className="bg-white border border-green-800/15 rounded p-3 text-sm">
+                <p className="font-medium text-green-900 mb-1">Pay the ${feeNow} reschedule fee</p>
+                <p className="text-green-900/80">
+                  Send <strong>${feeNow}</strong> via Zelle to <strong>hello@fhequestrian.com</strong>, memo
+                  “reschedule”. Your request submits now and is confirmed once the payment is recognized
+                  (staff can also waive it).
+                </p>
+              </div>
+            )}
             <div className="flex gap-2">
-              <button type="button" className="btn-primary flex-1 justify-center" disabled={busy || !newStart} onClick={() => void change('reschedule')}>
-                {busy ? 'Submitting…' : 'Submit request'}
-              </button>
-              <button type="button" className="btn-secondary" onClick={() => setMode('view')}>Back</button>
+              {feeNow > 0 && !payShown ? (
+                <button type="button" className="btn-primary flex-1 justify-center" disabled={!newStart} onClick={() => setPayShown(true)}>
+                  Continue to payment
+                </button>
+              ) : (
+                <button type="button" className="btn-primary flex-1 justify-center" disabled={busy || !newStart} onClick={() => void change('reschedule')}>
+                  {busy ? 'Submitting…' : feeNow > 0 ? 'I’ve sent it — submit' : 'Submit request'}
+                </button>
+              )}
+              <button type="button" className="btn-secondary" onClick={() => { setMode('view'); setPayShown(false); }}>Back</button>
             </div>
           </div>
         )}
 
         {error && <p role="alert" className="form-error mt-3">{error}</p>}
+      </div>
+    </div>
+  );
+}
+
+/** Client: request an arbitrary open time (A2). Availability is a suggestion —
+ *  any open in-hours time can be requested; it lands pending for staff to confirm. */
+function RequestTimePanel({ start, onClose, onDone }: { start: Date; onClose: () => void; onDone: () => void }) {
+  const [duration, setDuration] = useState('60');
+  const [note, setNote] = useState('');
+  const [recurring, setRecurring] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+
+  const weekday = start.toLocaleDateString(undefined, { weekday: 'long' });
+  const clock = start.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+
+  async function submit() {
+    setBusy(true); setError(null);
+    try {
+      const endISO = new Date(start.getTime() + Number(duration) * 60_000).toISOString();
+      // A5 — a "dedicated weekly slot" request is flagged for staff, who set up
+      // the recurring series (payment + confirmation stay a staff-approved step).
+      const composed = recurring
+        ? `[Requesting a dedicated weekly slot — every ${weekday} at ${clock}] ${note.trim()}`.trim()
+        : note.trim();
+      await requestOpenTime({ startISO: start.toISOString(), endISO, note: composed || undefined });
+      setDone(true);
+      onDone();
+    } catch (e) {
+      setError(toErrorMessage(e, 'Could not request that time.'));
+    } finally { setBusy(false); }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/30 flex justify-end" onClick={onClose}>
+      <div className="bg-cream w-full max-w-sm h-full overflow-y-auto shadow-xl p-5" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-serif text-lg text-green-900">Request this time</h2>
+          <button type="button" onClick={onClose} aria-label="Close"><X size={20} /></button>
+        </div>
+        {done ? (
+          <p className="bg-green-50 border border-green-200 text-green-800 text-sm p-3 rounded">
+            Requested — we’ll confirm your time shortly.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-3">
+            <p className="text-sm text-green-900">{formatSessionWhen(start.toISOString())}</p>
+            <label className="text-sm">
+              <span className="form-label">Duration</span>
+              <select className="form-input" value={duration} onChange={(e) => setDuration(e.target.value)}>
+                {['30', '45', '60', '90'].map((d) => <option key={d} value={d}>{d} minutes</option>)}
+              </select>
+            </label>
+            <label className="flex items-start gap-2 text-sm text-green-900">
+              <input type="checkbox" className="mt-0.5" checked={recurring} onChange={(e) => setRecurring(e.target.checked)} />
+              <span>Make this a dedicated weekly slot — same day &amp; time, held for me every week ({weekday}s at {clock}).</span>
+            </label>
+            <label className="text-sm">
+              <span className="form-label">Note (optional)</span>
+              <textarea rows={2} className="form-input resize-none" value={note} onChange={(e) => setNote(e.target.value)} />
+            </label>
+            <p className="form-hint">
+              {recurring
+                ? 'We’ll set up your recurring slot and confirm it. Payment is arranged separately — staff confirm your bookings.'
+                : 'You can request any open time — we’ll confirm it (or suggest the nearest fit).'}
+            </p>
+            <button type="button" className="btn-primary w-full justify-center" disabled={busy} onClick={() => void submit()}>
+              {busy ? 'Requesting…' : recurring ? 'Request my weekly slot' : 'Request this time'}
+            </button>
+            {error && <p role="alert" className="form-error">{error}</p>}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* A5 — the client buys lessons without leaving the calendar. Lists the lesson
+ * offerings and routes the chosen one through the existing draft-order → Zelle
+ * checkout (/order/:id). Payment and booking stay decoupled: paying never
+ * confirms a time — staff approve each booking. */
+function PurchaseLessonsPanel({ onClose }: { onClose: () => void }) {
+  const navigate = useNavigate();
+  const [offerings, setOfferings] = useState<Offering[] | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchOfferings()
+      .then((all) => setOfferings(all.filter((o) => o.segment === 'rider' && o.active)))
+      .catch(() => setError('Could not load lessons to purchase.'));
+  }, []);
+
+  async function buy(o: Offering) {
+    setBusy(o.id); setError(null);
+    try {
+      const { orderId } = await createDraftOrder({
+        items: [{
+          offering_slug: o.slug,
+          label: o.name,
+          price_amount: o.price_amount ?? 0,
+          price_unit: o.price_unit === 'week' || o.price_unit === 'month' ? 'session' : (o.price_unit ?? 'session'),
+        }],
+        subtotal: o.price_amount ?? 0,
+      });
+      navigate(`/order/${orderId}`);
+    } catch (e) {
+      setError(toErrorMessage(e, 'Could not start your purchase.'));
+      setBusy(null);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/30 flex justify-end" onClick={onClose}>
+      <div className="bg-cream w-full max-w-sm h-full overflow-y-auto shadow-xl p-5" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-serif text-lg text-green-900">Buy lessons</h2>
+          <button type="button" onClick={onClose} aria-label="Close"><X size={20} /></button>
+        </div>
+        {error && <p role="alert" className="form-error mb-3">{error}</p>}
+        {offerings === null ? (
+          <p className="text-sm text-muted">Loading…</p>
+        ) : offerings.length === 0 ? (
+          <p className="text-sm text-muted">No lessons are available to purchase right now.</p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {offerings.map((o) => (
+              <li key={o.id} className="bg-white border border-green-800/10 rounded-lg p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-green-900">{o.name}</p>
+                    {o.tagline && <p className="text-xs text-green-800/70 mt-0.5">{o.tagline}</p>}
+                    {o.price_amount != null && (
+                      <p className="text-sm text-green-900 mt-1">${o.price_amount}{o.price_unit ? ` / ${o.price_unit}` : ''}</p>
+                    )}
+                  </div>
+                  <button type="button" className="btn-primary text-sm shrink-0" disabled={busy !== null} onClick={() => void buy(o)}>
+                    {busy === o.id ? '…' : 'Buy'}
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="form-hint mt-4">
+          You’ll get Zelle payment instructions on the next screen. Bookings are still confirmed by our staff — paying holds your purchase, not a specific time.
+        </p>
       </div>
     </div>
   );

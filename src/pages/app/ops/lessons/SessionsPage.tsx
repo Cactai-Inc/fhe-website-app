@@ -6,7 +6,6 @@ import {
   listLessonSessions,
   listLessonClients,
   listScheduleHorses,
-  activityChecklist,
   scheduleLessonSession,
   completeLessonSession,
   cancelLessonSession,
@@ -53,7 +52,6 @@ export function SessionsPage() {
   const [rows, setRows] = useState<LessonSession[]>([]);
   const [clients, setClients] = useState<LessonClientOption[]>([]);
   const [horses, setHorses] = useState<ScheduleHorseOption[]>([]);
-  const [checklist, setChecklist] = useState<string[]>([]);
   const [filter, setFilter] = useState<SessionFilter>('upcoming');
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -66,16 +64,14 @@ export function SessionsPage() {
     setLoading(true);
     setLoadError(null);
     try {
-      const [sessions, clientRows, horseRows, checklistRows] = await Promise.all([
+      const [sessions, clientRows, horseRows] = await Promise.all([
         listLessonSessions(),
         listLessonClients(),
         listScheduleHorses(),
-        activityChecklist('RIDING_LESSON'),
       ]);
       setRows(sessions);
       setClients(clientRows);
       setHorses(horseRows);
-      setChecklist(checklistRows);
     } catch (err) {
       setLoadError(toErrorMessage(err, 'Could not load lesson sessions.'));
     } finally {
@@ -267,8 +263,8 @@ export function SessionsPage() {
                         )}
                         <div className="mt-1">
                           <LessonLogEditor
-                            session={s}
-                            checklist={checklist}
+                            bookingId={s.id}
+                            initialReport={s.notes}
                             onReportChange={(note) =>
                               setRows((prev) => prev.map((x) => (x.id === s.id ? { ...x, notes: note || null } : x)))
                             }
