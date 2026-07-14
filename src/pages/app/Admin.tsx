@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, ChevronLeft, ChevronRight, Plus, Search, UserRound,
 } from 'lucide-react';
@@ -68,19 +68,31 @@ const memberName = (m: ClientAccountRow) =>
 const rowKeyOf = (m: ClientAccountRow) => m.user_id ?? m.contact_id ?? m.email ?? '';
 
 // ── generic row list used by several tabs ────────────────────────────────────
-function RowList({ rows, empty }: { rows: { key: string; main: string; sub: string; badge?: string }[]; empty: string }) {
+type ListRow = { key: string; main: string; sub: string; badge?: string; href?: string };
+function RowList({ rows, empty }: { rows: ListRow[]; empty: string }) {
   if (rows.length === 0) return <p className="text-sm text-muted">{empty}</p>;
   return (
     <div className="flex flex-col gap-1.5">
-      {rows.map((r) => (
-        <div key={r.key} className="flex items-center justify-between gap-3 bg-white border border-green-800/10 rounded-lg px-4 py-2.5">
-          <span className="min-w-0">
-            <span className="block text-sm text-green-900 truncate">{r.main}</span>
-            <span className="block text-xs text-muted">{r.sub}</span>
-          </span>
-          {r.badge && <span className="text-[10.5px] font-sans uppercase px-2 py-0.5 rounded-full bg-cream-100 text-secondary shrink-0">{r.badge}</span>}
-        </div>
-      ))}
+      {rows.map((r) => {
+        const inner = (
+          <>
+            <span className="min-w-0">
+              <span className="block text-sm text-green-900 truncate">{r.main}</span>
+              <span className="block text-xs text-muted">{r.sub}</span>
+            </span>
+            {r.badge && <span className="text-[10.5px] font-sans uppercase px-2 py-0.5 rounded-full bg-cream-100 text-secondary shrink-0">{r.badge}</span>}
+          </>
+        );
+        const base = 'flex items-center justify-between gap-3 bg-white border border-green-800/10 rounded-lg px-4 py-2.5';
+        return r.href ? (
+          <Link key={r.key} to={r.href} className={`${base} hover:border-green-800/30 hover:bg-green-50/40 focus-ring transition-colors`}>
+            {inner}
+            <ChevronRight size={15} className="text-green-800/40 shrink-0" aria-hidden="true" />
+          </Link>
+        ) : (
+          <div key={r.key} className={base}>{inner}</div>
+        );
+      })}
     </div>
   );
 }
@@ -131,7 +143,7 @@ function RpcListTab({
 }: {
   userId: string;
   rpc: string;
-  map: (r: Record<string, unknown>) => { key: string; main: string; sub: string; badge?: string };
+  map: (r: Record<string, unknown>) => ListRow;
   empty: string;
   create?: { label: string; onClick: () => void };
 }) {
@@ -374,7 +386,7 @@ function PendingClientView({ row, onChanged }: { row: ClientAccountRow; onChange
           <p className="text-sm text-muted">Nothing attached yet.</p>
         )}
         {items && items.documents.map((d) => (
-          <button key={d.id} type="button" onClick={() => navigate(`/app/contracts/${d.id}`)}
+          <button key={d.id} type="button" onClick={() => navigate(`/app/ops/documents/${d.id}`)}
             className="w-full flex items-center justify-between gap-3 border-b border-green-800/[0.06] py-2 text-left hover:bg-cream-100/50">
             <span className="text-sm text-green-900">{d.title ?? 'Document'}</span>
             <span className="text-xs text-muted">{d.workflow_state ?? d.status}</span>
@@ -750,6 +762,7 @@ export default function Admin() {
                   main: String(r.title ?? 'Document'),
                   sub: fmtTs(r.created_at as string),
                   badge: String(r.workflow_state ?? r.status),
+                  href: `/app/ops/documents/${String(r.id)}`,
                 })} />
             )}
             {ov && tab === 'orders' && (
