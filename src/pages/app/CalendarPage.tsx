@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { CalendarDays, ChevronLeft, ChevronRight, X, Wallet } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, X, Wallet, Settings } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
 import {
   fetchCalendar,
@@ -21,6 +21,7 @@ import { toErrorMessage } from '../../lib/ops/errors';
 import { Link } from 'react-router-dom';
 import { formatSessionWhen, formatTimeRange } from '../../lib/formatDateTime';
 import { CalendarItemPanel } from './CalendarItemPanel';
+import { CalendarSettingsPanel } from './CalendarSettingsPanel';
 
 /*
  * CP-CALENDAR — the one full-page calendar for client/staff/admin (Phase 6,
@@ -58,7 +59,8 @@ function itemClass(item: CalendarItem): string {
     case 'unavailable':
       return 'bg-green-800/5 border border-green-800/15 text-green-800/50 [background-image:repeating-linear-gradient(45deg,transparent,transparent_5px,rgba(0,0,0,0.03)_5px,rgba(0,0,0,0.03)_10px)]';
     case 'draft':
-      return 'bg-white border border-dashed border-green-800/40 text-green-800/80';
+      // yellow = a notice / not-yet-committed item that needs attention
+      return 'bg-yellow-50 border border-dashed border-yellow-500 text-yellow-800';
     case 'pending':
     case 'pending_slot':
     case 'pending_payment':
@@ -76,7 +78,7 @@ const LEGEND: { label: string; cls: string }[] = [
   { label: 'Available', cls: 'bg-green-50 border border-green-600/40' },
   { label: 'Booked', cls: 'bg-green-700 border border-green-800' },
   { label: 'Pending', cls: 'bg-orange-50 border border-orange-400' },
-  { label: 'Draft', cls: 'bg-white border border-dashed border-green-800/40' },
+  { label: 'Draft / notice', cls: 'bg-yellow-50 border border-dashed border-yellow-500' },
   { label: 'Unavailable', cls: 'bg-green-800/5 border border-green-800/15' },
 ];
 
@@ -100,6 +102,7 @@ export default function CalendarPage() {
   const [money, setMoney] = useState<{ week: number; month: number } | null>(null);
   const [roster, setRoster] = useState<CreditRosterEntry[] | null>(null);
   const [rosterOpen, setRosterOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const isStaff = data?.role === 'staff';
 
@@ -209,6 +212,11 @@ export default function CalendarPage() {
           <button type="button" aria-label="Next" onClick={() => shift(1)} className="p-2 text-green-800 hover:bg-green-50 rounded-md focus-ring">
             <ChevronRight size={18} />
           </button>
+          {isStaff && (
+            <button type="button" aria-label="Calendar settings" onClick={() => setSettingsOpen(true)} className="p-2 text-green-800 hover:bg-green-50 rounded-md focus-ring">
+              <Settings size={18} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -286,6 +294,9 @@ export default function CalendarPage() {
           onClose={() => setEditing(null)}
           onSaved={() => { setEditing(null); void load(); }}
         />
+      )}
+      {settingsOpen && (
+        <CalendarSettingsPanel onClose={() => setSettingsOpen(false)} onSaved={() => void load()} />
       )}
     </div>
   );
@@ -429,6 +440,7 @@ function DetailPanel({ item, onClose, onChanged }: { item: CalendarItem; onClose
   const [noCredits, setNoCredits] = useState(false);
   const [mode, setMode] = useState<'view' | 'reschedule'>('view');
   const [newStart, setNewStart] = useState('');
+  const [scope, setScope] = useState<'one' | 'future' | 'all'>('one');
   const [fee, setFee] = useState(0);
   const [done, setDone] = useState<string | null>(null);
 
@@ -459,8 +471,8 @@ function DetailPanel({ item, onClose, onChanged }: { item: CalendarItem; onClose
     try {
       const payload =
         kind === 'reschedule'
-          ? { bookingId: item.id, kind, newStart: new Date(newStart).toISOString(), newEnd: new Date(new Date(newStart).getTime() + durationMs).toISOString() }
-          : { bookingId: item.id, kind };
+          ? { bookingId: item.id, kind, newStart: new Date(newStart).toISOString(), newEnd: new Date(new Date(newStart).getTime() + durationMs).toISOString(), scope: item.series_id ? scope : undefined }
+          : { bookingId: item.id, kind, scope: item.series_id ? scope : undefined };
       const r = await requestBookingChange(payload);
       setDone(
         r.phone_required
@@ -536,6 +548,16 @@ function DetailPanel({ item, onClose, onChanged }: { item: CalendarItem; onClose
               <span className="form-label">New time</span>
               <input type="datetime-local" className="form-input" value={newStart} onChange={(e) => setNewStart(e.target.value)} />
             </label>
+            {item.series_id && (
+              <label className="text-sm">
+                <span className="form-label">This is a recurring booking — move</span>
+                <select className="form-input" value={scope} onChange={(e) => setScope(e.target.value as 'one' | 'future' | 'all')}>
+                  <option value="one">Just this one</option>
+                  <option value="future">This &amp; all future</option>
+                  <option value="all">The whole series</option>
+                </select>
+              </label>
+            )}
             {(feeNow > 0 || phoneRequired) && (
               <div className="bg-orange-50 border border-orange-300 text-orange-900 text-xs p-2 rounded">
                 {feeNow > 0 && <p>A ${feeNow} reschedule fee applies (inside 48 hours).</p>}
