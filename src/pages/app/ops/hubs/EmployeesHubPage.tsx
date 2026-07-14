@@ -44,7 +44,7 @@ export function EmployeesHubPage() {
         )}
 
         {kpis && (
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2">
             <Link to="/app/ops/employees/staff" className="rounded border border-green-800/15 bg-green-800/5 p-5 focus-ring" data-testid="kpi-active-staff">
               <p className="form-label mb-1">Active staff</p>
               <p className="font-serif text-3xl text-green-900">{kpis.activeStaff}</p>
@@ -52,10 +52,6 @@ export function EmployeesHubPage() {
             <Link to="/app/ops/employees/schedule" className="rounded border border-green-800/15 bg-green-800/5 p-5 focus-ring" data-testid="kpi-shifts-week">
               <p className="form-label mb-1">Shifts this week</p>
               <p className="font-serif text-3xl text-green-900">{kpis.shiftsThisWeek}</p>
-            </Link>
-            <Link to="/app/ops/employees/staff" className="rounded border border-green-800/15 bg-green-800/5 p-5 focus-ring" data-testid="kpi-open-assignments">
-              <p className="form-label mb-1">Open assignments</p>
-              <p className="font-serif text-3xl text-green-900">{kpis.openAssignments}</p>
             </Link>
           </div>
         )}

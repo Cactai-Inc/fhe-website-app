@@ -25,7 +25,6 @@ import Contact from './pages/Contact';
 import Lessons from './pages/Lessons';
 import Gift from './pages/Gift';
 import Redeem from './pages/Redeem';
-import Inquire from './pages/Inquire';
 import Release from './pages/Release';
 import DocsParticipantFlow from './pages/DocsParticipantFlow';
 import BookRider from './pages/BookRider';
@@ -45,21 +44,16 @@ import OrderDetail from './pages/OrderDetail';
 import Home from './pages/app/Home';
 import Profile from './pages/app/Profile';
 import Schedule from './pages/app/Schedule';
+import CalendarPage from './pages/app/CalendarPage';
 import Orders from './pages/app/Orders';
 import Documents from './pages/app/Documents';
 import Onboarding from './pages/app/Onboarding';
-import BookMore from './pages/app/BookMore';
 // Client portal (CP-* wave)
-import MyEngagements from './pages/app/MyEngagements';
-import MyEngagementDetail from './pages/app/MyEngagementDetail';
-import MyBalance from './pages/app/MyBalance';
 import MyLessons from './pages/app/MyLessons';
 import ThreadDetail from './pages/app/ThreadDetail';
 import Messages from './pages/app/Messages';
 import ContentPostDetail from './pages/app/ContentPostDetail';
 // Slice 4 — purpose-built dashboards + community/library surfaces
-import DealDashboard from './pages/app/DealDashboard';
-import CareDashboard from './pages/app/CareDashboard';
 import Support from './pages/app/Support';
 import ContractPage from './pages/app/ContractPage';
 import AccountHub from './pages/app/AccountHub';
@@ -71,27 +65,19 @@ import OpsHome from './pages/app/OpsHome';
 import ContactsPage, { LeadsPage } from './pages/app/ops/ContactsPage';
 import HorsesPage from './pages/app/ops/HorsesPage';
 import HorseRecordsPage from './pages/app/ops/HorseRecordsPage';
-import EngagementsPage from './pages/app/ops/EngagementsPage';
-import CreateEngagementPage from './pages/app/ops/CreateEngagementPage';
-import EngagementDetailPage from './pages/app/ops/EngagementDetailPage';
 import DocumentsQueuePage from './pages/app/ops/DocumentsQueuePage';
 import DocumentViewerPage from './pages/app/ops/DocumentViewerPage';
 import ModerationPage from './pages/app/ops/ModerationPage';
 import SupportPage from './pages/app/ops/SupportPage';
 import OversightPage from './pages/app/ops/OversightPage';
-import BillingPage from './pages/app/ops/BillingPage';
 import ContentStorePage from './pages/app/ops/ContentStorePage';
-import TransactionsPage from './pages/app/ops/TransactionsPage';
-import TransactionDetailPage from './pages/app/ops/TransactionDetailPage';
 // Ops / CRM — Wave-7 (intake, payments review, module hubs + module pages)
 import IntakePage from './pages/app/ops/IntakePage';
 import TeamPage from './pages/app/ops/TeamPage';
 import AccountInvitePage from './pages/app/ops/AccountInvitePage';
 import NewContractPage from './pages/app/ops/NewContractPage';
 import AdminFormsPage from './pages/app/ops/admin/AdminFormsPage';
-import AvailabilityPage from './pages/app/ops/AvailabilityPage';
 import PaymentReviewPage from './pages/app/ops/PaymentReviewPage';
-import BrokerageHubPage from './pages/app/ops/hubs/BrokerageHubPage';
 import BoardingHubPage from './pages/app/ops/hubs/BoardingHubPage';
 import FacilitiesPage from './pages/app/ops/boarding/FacilitiesPage';
 import BoardAgreementsPage from './pages/app/ops/boarding/BoardAgreementsPage';
@@ -172,7 +158,8 @@ export function AppRoutes() {
 
             {/* Gift reveal — full-screen immersive, no site chrome */}
             <Route path="/redeem" element={<Redeem />} />
-            <Route path="/inquire" element={<Inquire />} />
+            {/* /inquire retired — the unified intake lives on /contact (Phase 5) */}
+            <Route path="/inquire" element={<Navigate to="/contact" replace />} />
             <Route path="/release" element={<Release />} />
             <Route path="/release/:releaseKey" element={<Release />} />
             {/* Guided participant document set — one info form, 4 docs signed in sequence */}
@@ -195,9 +182,8 @@ export function AppRoutes() {
                   /app/dashboard meanwhile. */}
               <Route index element={<Home />} />
               {/* Slice 4 — purpose-built dashboards for non-rider purchase categories */}
-              <Route path="deal" element={<DealDashboard />} />
-              <Route path="care" element={<CareDashboard />} />
               <Route path="schedule" element={<Schedule />} />
+              <Route path="calendar" element={<CalendarPage />} />
               {/* Slice 4 — Community hub (front door) + its surfaces */}
               <Route path="threads/:id" element={<ThreadDetail />} />
               <Route path="messages" element={<Messages />} />
@@ -209,12 +195,10 @@ export function AppRoutes() {
               {/* Rider onboarding (provisioned invite → details → sign → confirmation) */}
               <Route path="onboarding" element={<Onboarding />} />
               {/* Flow D — returning member books more (BOOKING_FLOWS_PLAN §2 Flow D) */}
-              <Route path="book" element={<BookMore />} />
+              {/* /app/book retired — booking lives on the full calendar (Phase 6) */}
+              <Route path="book" element={<Navigate to="/app/calendar" replace />} />
               <Route path="orders" element={<Orders />} />
               {/* Client portal (CP-*) */}
-              <Route path="engagements" element={<MyEngagements />} />
-              <Route path="engagements/:id" element={<MyEngagementDetail />} />
-              <Route path="balance" element={<MyBalance />} />
               <Route path="lessons" element={<MyLessons />} />
               <Route path="profile" element={<Profile />} />
               <Route path="support" element={<Support />} />
@@ -233,9 +217,6 @@ export function AppRoutes() {
               <Route path="ops/leads" element={<ProtectedRoute requireStaff><LeadsPage /></ProtectedRoute>} />
               <Route path="ops/horses" element={<ProtectedRoute requireStaff><HorsesPage /></ProtectedRoute>} />
               <Route path="ops/horse-records" element={<ProtectedRoute requireStaff><HorseRecordsPage /></ProtectedRoute>} />
-              <Route path="ops/engagements" element={<ProtectedRoute requireStaff><EngagementsPage /></ProtectedRoute>} />
-              <Route path="ops/engagements/new" element={<ProtectedRoute requireStaff><CreateEngagementPage /></ProtectedRoute>} />
-              <Route path="ops/engagements/:id" element={<ProtectedRoute requireStaff><EngagementDetailPage /></ProtectedRoute>} />
               <Route path="ops/documents" element={<ProtectedRoute requireStaff><DocumentsQueuePage /></ProtectedRoute>} />
               <Route path="ops/documents/:id" element={<ProtectedRoute requireStaff><DocumentViewerPage /></ProtectedRoute>} />
               <Route path="ops/intake" element={<ProtectedRoute requireStaff><IntakePage /></ProtectedRoute>} />
@@ -243,18 +224,15 @@ export function AppRoutes() {
               {/* staff can invite clients; the page hides staff account types for non-admins */}
               <Route path="ops/accounts/new" element={<ProtectedRoute requireStaff><AccountInvitePage /></ProtectedRoute>} />
               <Route path="ops/contracts/new" element={<ProtectedRoute requireStaff><NewContractPage /></ProtectedRoute>} />
-              <Route path="ops/availability" element={<ProtectedRoute requireStaff><AvailabilityPage /></ProtectedRoute>} />
+              {/* ops/availability retired — staff manage availability on the full calendar (Phase 6) */}
+              <Route path="ops/availability" element={<Navigate to="/app/calendar" replace />} />
               {/* Total control — admins only */}
               <Route path="ops/moderation" element={<ProtectedRoute requireStaff><ModerationPage /></ProtectedRoute>} />
               <Route path="ops/support" element={<ProtectedRoute requireStaff><SupportPage /></ProtectedRoute>} />
               <Route path="ops/oversight" element={<ProtectedRoute requireStaff><OversightPage /></ProtectedRoute>} />
-              <Route path="ops/billing" element={<ProtectedRoute requireStaff><BillingPage /></ProtectedRoute>} />
               <Route path="ops/content" element={<ProtectedRoute requireStaff><ContentStorePage /></ProtectedRoute>} />
-              <Route path="ops/transactions" element={<ProtectedRoute requireStaff><TransactionsPage /></ProtectedRoute>} />
-              <Route path="ops/transactions/:id" element={<ProtectedRoute requireStaff><TransactionDetailPage /></ProtectedRoute>} />
               <Route path="ops/payments/review" element={<ProtectedRoute requireStaff><PaymentReviewPage /></ProtectedRoute>} />
               {/* Wave-7: module hubs + module pages (module-gated inside via ModuleGate) */}
-              <Route path="ops/brokerage" element={<ProtectedRoute requireStaff><BrokerageHubPage /></ProtectedRoute>} />
               <Route path="ops/boarding" element={<ProtectedRoute requireStaff><BoardingHubPage /></ProtectedRoute>} />
               <Route path="ops/boarding/facilities" element={<ProtectedRoute requireStaff><FacilitiesPage /></ProtectedRoute>} />
               <Route path="ops/boarding/agreements" element={<ProtectedRoute requireStaff><BoardAgreementsPage /></ProtectedRoute>} />

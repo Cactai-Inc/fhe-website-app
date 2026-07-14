@@ -11,10 +11,6 @@ import {
   categoryDocumentDefaults, getContactRequiredDocuments, setContactRequiredDocuments,
   type ClientAccountRow, type ClientItems, type CategoryDocDefault,
 } from '../../lib/admin';
-import {
-  listBillingSchedules, createBillingSchedule, nextDue,
-  type BillingSchedule, type BillingMode, type BillingCadence,
-} from '../../lib/billing';
 
 /**
  * CLIENTS (/app/admin) — the account-centric surface (owner rework). CLIENT
@@ -47,12 +43,11 @@ interface Overview {
 }
 
 type TabId =
-  | 'overview' | 'billing' | 'bookings' | 'documents' | 'orders' | 'payments'
+  | 'overview' | 'bookings' | 'documents' | 'orders' | 'payments'
   | 'activity' | 'posts' | 'messages' | 'login';
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'overview', label: 'Overview' },
-  { id: 'billing', label: 'Billing' },
   { id: 'bookings', label: 'Bookings' },
   { id: 'documents', label: 'Documents' },
   { id: 'orders', label: 'Orders' },
@@ -127,60 +122,6 @@ function OverviewTab({ ov }: { ov: Overview }) {
         ))}
       </div>
       {p.bio && <p className="body-text text-sm text-secondary mt-4 whitespace-pre-line">{p.bio}</p>}
-    </div>
-  );
-}
-
-function BillingTab({ clientId }: { clientId: string | null }) {
-  const [rows, setRows] = useState<BillingSchedule[]>([]);
-  const [creating, setCreating] = useState(false);
-  const [amount, setAmount] = useState('');
-  const [mode, setMode] = useState<BillingMode>('request');
-  const [cadence, setCadence] = useState<BillingCadence>('monthly');
-  const [start, setStart] = useState('');
-  const [err, setErr] = useState<string | null>(null);
-
-  const load = useCallback(() => {
-    listBillingSchedules()
-      .then((all) => setRows(clientId ? all.filter((s) => s.client_id === clientId) : []))
-      .catch(() => {});
-  }, [clientId]);
-  useEffect(load, [load]);
-
-  if (!clientId) return <p className="text-sm text-muted">No client record yet — billing starts with their first purchase.</p>;
-
-  async function create() {
-    setErr(null);
-    if (!amount || !start) { setErr('Amount and start date are required.'); return; }
-    try {
-      await createBillingSchedule({ client_id: clientId!, mode, cadence, amount: Number(amount), start_date: start });
-      setCreating(false); setAmount(''); setStart(''); load();
-    } catch { setErr('Could not create the schedule.'); }
-  }
-
-  return (
-    <div>
-      <TabCreate label="New billing schedule" onClick={() => setCreating((v) => !v)} />
-      {creating && (
-        <div className="bg-white border border-green-800/10 rounded-lg p-4 mb-3 grid sm:grid-cols-4 gap-3">
-          <input type="number" placeholder="Amount $" className="form-input" value={amount} onChange={(e) => setAmount(e.target.value)} />
-          <select className="form-input" value={mode} onChange={(e) => setMode(e.target.value as BillingMode)}>
-            <option value="request">We request</option><option value="self_recurring">They pay recurring</option>
-          </select>
-          <select className="form-input" value={cadence} onChange={(e) => setCadence(e.target.value as BillingCadence)}>
-            <option value="monthly">Monthly</option><option value="weekly">Weekly</option>
-          </select>
-          <input type="date" className="form-input" value={start} onChange={(e) => setStart(e.target.value)} />
-          {err && <p className="form-error text-xs sm:col-span-3">{err}</p>}
-          <button type="button" className="btn-primary text-xs sm:col-start-4" onClick={() => void create()}>Create</button>
-        </div>
-      )}
-      <RowList empty="No billing schedules."
-        rows={rows.map((s) => ({
-          key: s.id,
-          main: `$${Number(s.amount).toFixed(2)} ${s.cadence} · ${s.mode === 'request' ? 'we request' : 'self-recurring'}`,
-          sub: `next ${nextDue(s.start_date, s.cadence).toLocaleDateString()} · reminders ${s.reminders_on ? 'on' : 'off'}${s.active ? '' : ' · inactive'}`,
-        }))} />
     </div>
   );
 }
@@ -403,8 +344,8 @@ function PendingClientView({ row, onChanged }: { row: ClientAccountRow; onChange
   const navigate = useNavigate();
   const [items, setItems] = useState<ClientItems | null>(null);
   useEffect(() => {
-    if (!row.client_id) { setItems({ engagements: [], documents: [] }); return; }
-    adminClientItems(row.client_id).then(setItems).catch(() => setItems({ engagements: [], documents: [] }));
+    if (!row.client_id) { setItems({ documents: [] }); return; }
+    adminClientItems(row.client_id).then(setItems).catch(() => setItems({ documents: [] }));
   }, [row.client_id]);
 
   return (
@@ -422,8 +363,6 @@ function PendingClientView({ row, onChanged }: { row: ClientAccountRow; onChange
           <h3 className="font-serif text-green-800 text-base">Associated items</h3>
           <span className="flex gap-2">
             <button type="button" className="text-xs underline text-secondary hover:text-green-800"
-              onClick={() => navigate(`/app/ops/engagements/new?contact=${row.contact_id}`)}>+ engagement</button>
-            <button type="button" className="text-xs underline text-secondary hover:text-green-800"
               onClick={() => navigate('/app/ops/contracts/new')}>+ contract</button>
           </span>
         </div>
@@ -431,16 +370,9 @@ function PendingClientView({ row, onChanged }: { row: ClientAccountRow; onChange
           What's attached to this account so far — attach everything before inviting.
         </p>
         {items === null && <p className="text-sm text-muted">Loading…</p>}
-        {items && items.engagements.length === 0 && items.documents.length === 0 && (
+        {items && items.documents.length === 0 && (
           <p className="text-sm text-muted">Nothing attached yet.</p>
         )}
-        {items && items.engagements.map((e) => (
-          <button key={e.id} type="button" onClick={() => navigate(`/app/ops/engagements/${e.id}`)}
-            className="w-full flex items-center justify-between gap-3 border-b border-green-800/[0.06] py-2 text-left hover:bg-cream-100/50">
-            <span className="text-sm text-green-900">{(e.service_type ?? 'Engagement').replace(/_/g, ' ')}</span>
-            <span className="text-xs text-muted">{e.status}{e.start_date ? ` · starts ${e.start_date}` : ''}</span>
-          </button>
-        ))}
         {items && items.documents.map((d) => (
           <button key={d.id} type="button" onClick={() => navigate(`/app/contracts/${d.id}`)}
             className="w-full flex items-center justify-between gap-3 border-b border-green-800/[0.06] py-2 text-left hover:bg-cream-100/50">
@@ -451,11 +383,6 @@ function PendingClientView({ row, onChanged }: { row: ClientAccountRow; onChange
       </section>
 
       {row.contact_id && <PaperworkEditor contactId={row.contact_id} />}
-
-      <section className="bg-white border border-green-800/10 rounded-xl p-4 mt-4">
-        <h3 className="font-serif text-green-800 text-base mb-2">Billing</h3>
-        <BillingTab clientId={row.client_id} />
-      </section>
 
       <InvitePanel row={row} onSent={onChanged} />
     </div>
@@ -525,7 +452,6 @@ export default function Admin() {
     });
   }, [members, q, sortKey]);
 
-  const clientId = selected?.client_id ?? ov?.profile?.client_id ?? null;
   const tabPages = Math.ceil(TABS.length / TAB_PAGE_SIZE);
 
   async function toggleSuspend() {
@@ -807,7 +733,6 @@ export default function Admin() {
           <div className="min-h-[200px]">
             {!ov && <p className="text-sm text-muted">Loading account…</p>}
             {ov && tab === 'overview' && <OverviewTab ov={ov} />}
-            {ov && tab === 'billing' && <BillingTab clientId={clientId} />}
             {ov && tab === 'bookings' && (
               <RpcListTab userId={selected.user_id!} rpc="admin_client_bookings" empty="No lessons booked."
                 create={{ label: 'Schedule a lesson', onClick: () => navigate('/app/ops/lessons/sessions') }}

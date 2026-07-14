@@ -5,14 +5,18 @@ import { useModules } from '../../../../lib/ops/useModules';
 import {
   listLessonSessions,
   listLessonClients,
+  listScheduleHorses,
+  activityChecklist,
   scheduleLessonSession,
   completeLessonSession,
   cancelLessonSession,
-  setLessonProgressNote,
   type LessonSession,
   type LessonClientOption,
+  type ScheduleHorseOption,
 } from '../../../../lib/ops/api-lessons';
+import { formatTimeRange } from '../../../../lib/formatDateTime';
 import { ScheduleSessionForm } from './ScheduleSessionForm';
+import { LessonLogEditor } from './LessonLogEditor';
 
 /**
  * OPS-LESSON-SESSIONS — the confirmed-booking board (module mod.lessons,
@@ -37,63 +41,9 @@ const FILTERS: { id: SessionFilter; label: string }[] = [
   { id: 'all', label: 'All' },
 ];
 
-/** '2:00 PM – 3:00 PM' for one session row. */
+/** '2:00 – 3:00 PM EDT' for one session row (full time window with zone). */
 function timeRange(s: LessonSession): string {
-  const opts: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit' };
-  return `${new Date(s.starts_at).toLocaleTimeString(undefined, opts)} – ${new Date(
-    s.ends_at,
-  ).toLocaleTimeString(undefined, opts)}`;
-}
-
-/** Per-lesson progress note (Slice 5). Any operator writes/edits the rider-visible
- *  note on a session; the rider reads it in the lesson-history card + progress view. */
-function NoteEditor({ session, onSaved }: { session: LessonSession; onSaved: (note: string) => void }) {
-  const [open, setOpen] = useState(false);
-  const [value, setValue] = useState(session.notes ?? '');
-  const [saving, setSaving] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-
-  async function save() {
-    setSaving(true); setErr(null);
-    try {
-      await setLessonProgressNote(session.id, value);
-      onSaved(value.trim());
-      setOpen(false);
-    } catch (e) {
-      setErr(toErrorMessage(e, 'Could not save the note.'));
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  if (!open) {
-    return (
-      <button type="button" className="text-xs text-green-800 underline underline-offset-2"
-        onClick={() => { setValue(session.notes ?? ''); setOpen(true); }}>
-        {session.notes ? 'Edit note' : 'Add note'}
-      </button>
-    );
-  }
-  return (
-    <div className="w-full mt-2">
-      <textarea
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        rows={2}
-        placeholder="What did they work on? What's next? (the rider sees this)"
-        className="form-input text-sm w-full"
-      />
-      {err && <p className="form-error text-xs mt-1">{err}</p>}
-      <div className="flex gap-2 mt-1">
-        <button type="button" className="btn-primary text-xs" disabled={saving} onClick={() => void save()}>
-          {saving ? 'Saving…' : 'Save note'}
-        </button>
-        <button type="button" className="btn-secondary text-xs" disabled={saving} onClick={() => setOpen(false)}>
-          Cancel
-        </button>
-      </div>
-    </div>
-  );
+  return formatTimeRange(s.starts_at, s.ends_at);
 }
 
 export function SessionsPage() {
@@ -102,6 +52,8 @@ export function SessionsPage() {
 
   const [rows, setRows] = useState<LessonSession[]>([]);
   const [clients, setClients] = useState<LessonClientOption[]>([]);
+  const [horses, setHorses] = useState<ScheduleHorseOption[]>([]);
+  const [checklist, setChecklist] = useState<string[]>([]);
   const [filter, setFilter] = useState<SessionFilter>('upcoming');
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -114,9 +66,16 @@ export function SessionsPage() {
     setLoading(true);
     setLoadError(null);
     try {
-      const [sessions, clientRows] = await Promise.all([listLessonSessions(), listLessonClients()]);
+      const [sessions, clientRows, horseRows, checklistRows] = await Promise.all([
+        listLessonSessions(),
+        listLessonClients(),
+        listScheduleHorses(),
+        activityChecklist('RIDING_LESSON'),
+      ]);
       setRows(sessions);
       setClients(clientRows);
+      setHorses(horseRows);
+      setChecklist(checklistRows);
     } catch (err) {
       setLoadError(toErrorMessage(err, 'Could not load lesson sessions.'));
     } finally {
@@ -203,6 +162,7 @@ export function SessionsPage() {
     ends_at: string;
     location: string | null;
     notes: string | null;
+    horse_id: string | null;
   }) => {
     setFormError(null);
     try {
@@ -306,9 +266,10 @@ export function SessionsPage() {
                           <p className="text-xs text-green-900/80 mt-1 italic line-clamp-2">“{s.notes}”</p>
                         )}
                         <div className="mt-1">
-                          <NoteEditor
+                          <LessonLogEditor
                             session={s}
-                            onSaved={(note) =>
+                            checklist={checklist}
+                            onReportChange={(note) =>
                               setRows((prev) => prev.map((x) => (x.id === s.id ? { ...x, notes: note || null } : x)))
                             }
                           />
@@ -362,6 +323,7 @@ export function SessionsPage() {
           {formOpen && (
             <ScheduleSessionForm
               clients={clients}
+              horses={horses}
               onSubmit={handleSchedule}
               onCancel={() => setFormOpen(false)}
               submitting={schedule.isPending}

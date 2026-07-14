@@ -91,7 +91,6 @@ export interface BoardAgreementInput {
 export interface BoardChargeLine {
   id: string;
   status: 'OPEN' | 'SETTLED' | 'VOID';
-  transaction_id: string | null;
 }
 
 export interface BoardCharge {
@@ -141,7 +140,7 @@ const AGREEMENT_SELECT =
   '*, horse:horses(id, barn_name, registered_name), boarder:contacts(id, first_name, last_name), stall:stalls(id, code)';
 
 const CHARGE_SELECT =
-  '*, agreement:board_agreements(id, boarder_contact_id, horse_id, horse:horses(id, barn_name, registered_name), boarder:contacts(id, first_name, last_name)), billable_line:billable_lines(id, status, transaction_id)';
+  '*, agreement:board_agreements(id, boarder_contact_id, horse_id, horse:horses(id, barn_name, registered_name), boarder:contacts(id, first_name, last_name)), billable_line:billable_lines(id, status)';
 
 // ─── Facilities ──────────────────────────────────────────────────────────────
 
@@ -307,7 +306,7 @@ export async function emitBoardCharge(
       amount: charge.amount,
       period: `[${charge.period_start},${charge.period_end}]`,
     })
-    .select('id, status, transaction_id')
+    .select('id, status')
     .single();
   if (lineError) throw lineError;
 

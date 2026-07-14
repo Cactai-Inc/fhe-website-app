@@ -5,15 +5,15 @@
 import { supabase } from './supabase';
 import type {
   Offering, RequestInput, RequestSelectionInput,
-  Invitation, AvailabilitySlot, Order, OrderItem, OrderDocument, Payment,
+  Invitation, Order, OrderItem, OrderDocument, Payment,
   PaymentMethod, Profile,
 } from './types';
 import type {
   Contact, ContactInput, Client, Horse, HorseInput, LookupCode,
-  Engagement, EngagementDetail, EngagementStage, ContractTemplate,
+  ContractTemplate,
   DocumentRow, GeneratedDocument, Signature, PartyRole,
-  DocumentDelivery, DeliveryInput, Transaction, BillableLine,
-  SettlementResult, IntakeRequest,
+  DocumentDelivery, DeliveryInput, BillableLine,
+  IntakeRequest,
 } from './ops/types';
 
 // ─── Offerings catalog ──────────────────────────────────────────────────────
@@ -46,12 +46,17 @@ export async function submitRequest(
   // resolves the tenant, stamps org_id, and inserts request + selections
   // atomically (2026-07-04 production fix).
   const { data, error } = await supabase.rpc('submit_public_request', {
-    p_contact_name: input.contact_name,
-    p_contact_email: input.contact_email,
-    p_contact_phone: input.contact_phone ?? null,
+    p_first_name: input.first_name,
+    p_last_name: input.last_name,
+    p_email: input.contact_email,
+    p_phone: input.contact_phone ?? null,
     p_contact_method: input.contact_method ?? null,
-    p_proposed_times: input.proposed_times ?? [],
     p_notes: input.notes ?? null,
+    p_proposed_times: input.proposed_times ?? [],
+    p_category: input.category ?? null,
+    p_channel: input.channel ?? 'contact',
+    p_entry_location: input.entry_location ?? null,
+    p_intent: input.intent ?? null,
     p_selections: selections.map((s) => ({
       offering_id: s.offering_id ?? null,
       offering_slug: s.offering_slug ?? null,
@@ -102,6 +107,10 @@ export interface OnboardingDocument {
 /** What the client bought offline (provisioned by staff with the invite).
  *  Stays populated after onboarding completes — the dashboard plan card. */
 export interface OnboardingPurchase {
+  /** The spine purchase id — drives the pay-after-sign step. */
+  purchase_id: string;
+  /** The horse this purchase is for (own-horse services), once attached. */
+  horse_id: string | null;
   tier_label: string;
   amount: number;
   /** Punch cards / packs: the number of lessons bought. */
@@ -127,10 +136,21 @@ export interface OnboardingState {
   profile_complete: boolean;
   documents: OnboardingDocument[];
   purchase: OnboardingPurchase | null;
-  /** Minor rider on the active onboarding engagement, or null. */
+  /** Guardian-linked minor rider, or null. */
   minor: OnboardingMinor | null;
-  /** The engagement backing the onboarding docs — drives the payment bridge. */
-  engagement_id?: string | null;
+  /** True when the purchase uses the rider's OWN horse and none is on file yet
+   *  (any horse-care service, or a "(With your horse)" lesson) — show the horse
+   *  intake step. */
+  horse_needed: boolean;
+}
+
+/** Attach a created horse to the caller's purchase (own-horse services). */
+export async function attachPurchaseHorse(purchaseId: string, horseId: string): Promise<void> {
+  const { error } = await supabase.rpc('attach_purchase_horse', {
+    p_purchase_id: purchaseId,
+    p_horse_id: horseId,
+  });
+  if (error) throw error;
 }
 
 /** The signed-in member's onboarding snapshot (profile gate, signing checklist,
@@ -263,51 +283,6 @@ export async function upsertMyProfile(patch: Partial<Profile>): Promise<void> {
   if (error) throw error;
 }
 
-// ─── Availability ───────────────────────────────────────────────────────────
-
-export async function fetchOpenSlots(): Promise<AvailabilitySlot[]> {
-  const { data, error } = await supabase
-    .from('availability_slots')
-    .select('*')
-    .eq('status', 'open')
-    .gte('start_at', new Date().toISOString())
-    .order('start_at');
-  if (error) throw error;
-  return (data ?? []) as AvailabilitySlot[];
-}
-
-/** Atomically place a hold on an open slot for an order. Returns booking id. */
-export async function holdSlot(orderId: string, slotId: string): Promise<string> {
-  const { data, error } = await supabase.rpc('hold_slot', {
-    p_purchase_id: orderId,
-    p_slot_id: slotId,
-  });
-  if (error) throw error;
-  return data as string;
-}
-
-/** Request a custom time (no preset slot). Always available — creates a booking
- *  at the requested time for staff to confirm. Returns booking id. */
-export async function requestBookingTime(orderId: string, startsAt: string, note?: string): Promise<string> {
-  const { data, error } = await supabase.rpc('request_booking_time', {
-    p_purchase_id: orderId,
-    p_starts_at: startsAt,
-    p_note: note ?? null,
-  });
-  if (error) throw error;
-  return data as string;
-}
-
-export async function getOrderBooking(orderId: string): Promise<{ id: string; slot_id: string | null; status: string } | null> {
-  const { data, error } = await supabase
-    .from('bookings')
-    .select('id, slot_id, status')
-    .eq('purchase_id', orderId)
-    .maybeSingle();
-  if (error) throw error;
-  return data ?? null;
-}
-
 // ─── Orders (authenticated purchase flow) ───────────────────────────────────
 
 export interface DraftOrderInput {
@@ -360,16 +335,6 @@ export async function createDraftOrder(input: DraftOrderInput): Promise<{ orderI
   }
 
   return { orderId: order.id };
-}
-
-/** Path-A bridge: mint (or reuse) a payable purchase from an onboarding engagement,
- *  so the Zelle OrderPayment UI can complete the "pay after sign" step. */
-export async function createOrderFromEngagement(engagementId: string): Promise<string> {
-  const { data, error } = await supabase.rpc('create_purchase_from_engagement', {
-    p_engagement_id: engagementId,
-  });
-  if (error) throw error;
-  return data as string;
 }
 
 export async function getOrder(orderId: string): Promise<(Order & { items: OrderItem[] }) | null> {
@@ -631,57 +596,6 @@ export async function listHorseColors(): Promise<LookupCode[]> {
   return (data ?? []) as LookupCode[];
 }
 
-// ─── Engagements ──────────────────────────────────────────────────────────
-
-export async function listEngagements(): Promise<Engagement[]> {
-  const { data, error } = await supabase
-    .from('engagements')
-    .select('*')
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false });
-  if (error) throw error;
-  return (data ?? []) as Engagement[];
-}
-
-/** One engagement plus its stages/documents/transactions rollup (staff detail). */
-export async function getEngagement(id: string): Promise<EngagementDetail | null> {
-  const { data: eng, error } = await supabase
-    .from('engagements')
-    .select('*')
-    .eq('id', id)
-    .maybeSingle();
-  if (error) throw error;
-  if (!eng) return null;
-
-  const { data: stages, error: stErr } = await supabase
-    .from('engagement_stages')
-    .select('*')
-    .eq('engagement_id', id)
-    .order('effective_from');
-  if (stErr) throw stErr;
-
-  const { data: docs, error: docErr } = await supabase
-    .from('documents')
-    .select('*')
-    .eq('engagement_id', id)
-    .order('generated_at', { ascending: false });
-  if (docErr) throw docErr;
-
-  const { data: txns, error: txnErr } = await supabase
-    .from('transactions')
-    .select('*')
-    .eq('engagement_id', id)
-    .order('created_at', { ascending: false });
-  if (txnErr) throw txnErr;
-
-  return {
-    ...(eng as Engagement),
-    stages: (stages ?? []) as EngagementStage[],
-    documents: (docs ?? []) as DocumentRow[],
-    transactions: (txns ?? []) as Transaction[],
-  };
-}
-
 // ─── Contracts: templates & documents ────────────────────────────────────
 
 export async function listContractTemplates(): Promise<ContractTemplate[]> {
@@ -796,28 +710,6 @@ export async function recordDelivery(input: DeliveryInput): Promise<DocumentDeli
   return data as DocumentDelivery;
 }
 
-// ─── Transactions ─────────────────────────────────────────────────────────
-
-export async function listTransactions(): Promise<Transaction[]> {
-  const { data, error } = await supabase
-    .from('transactions')
-    .select('*')
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false });
-  if (error) throw error;
-  return (data ?? []) as Transaction[];
-}
-
-export async function getTransaction(id: string): Promise<Transaction | null> {
-  const { data, error } = await supabase
-    .from('transactions')
-    .select('*')
-    .eq('id', id)
-    .maybeSingle();
-  if (error) throw error;
-  return (data as Transaction | null) ?? null;
-}
-
 // ─── Billing: billable_lines + settlement ────────────────────────────────
 
 /** OPEN billable lines for a payer (or all OPEN lines when no payer given). */
@@ -833,19 +725,6 @@ export async function listOpenBillableLines(payerContactId?: string): Promise<Bi
   return (data ?? []) as BillableLine[];
 }
 
-/** Roll a payer's OPEN billable lines into an INVOICE transaction via the
- *  SECURITY-DEFINER RPC. p_period is a tstzrange string (or null for all OPEN). */
-export async function settleBillableLines(
-  payerContactId: string,
-  period?: string | null,
-): Promise<SettlementResult[]> {
-  const { data, error } = await supabase.rpc('settle_billable_lines', {
-    p_payer_contact_id: payerContactId,
-    p_period: period ?? null,
-  });
-  if (error) throw error;
-  return (data ?? []) as SettlementResult[];
-}
 
 // ─── Public intake (requests) ─────────────────────────────────────────────
 
@@ -875,15 +754,6 @@ export async function countContacts(): Promise<number> {
 export async function countHorses(): Promise<number> {
   const { count, error } = await supabase
     .from('horses')
-    .select('*', { count: 'exact', head: true })
-    .is('deleted_at', null);
-  if (error) throw error;
-  return count ?? 0;
-}
-
-export async function countEngagements(): Promise<number> {
-  const { count, error } = await supabase
-    .from('engagements')
     .select('*', { count: 'exact', head: true })
     .is('deleted_at', null);
   if (error) throw error;
@@ -1068,16 +938,6 @@ export interface TimeEntryInput {
   minutes?: number | null; source_kind?: string | null; source_id?: string | null;
 }
 
-export interface ServiceAssignment {
-  id: string; org_id: string; engagement_id: string | null; staff_profile_id: string;
-  service_type: string | null; scheduled_at: string | null; status: string;
-  created_at: string; updated_at: string;
-}
-export interface ServiceAssignmentInput {
-  staff_profile_id: string; engagement_id?: string | null;
-  service_type?: string | null; scheduled_at?: string | null;
-}
-
 // Admin: entitlements, registry, branding, products
 export interface ModuleCatalogRow {
   module_key: string; name: string; description: string | null;
@@ -1138,117 +998,6 @@ export interface ProductPriceInput {
 // here; the server (RLS + require_module + SECURITY-DEFINER RPCs) is the
 // authoritative fence. Thin, typed seams over supabase.rpc(name)/.from(table)
 // matching the tested backbone signatures (PLATFORM_ARCHITECTURE §7, §15).
-
-// ─── Brokerage: engagement creation (mod.brokerage) ─────────────────────────
-
-export interface CreatePurchaseEngagementInput {
-  buyerContactId: string;
-  horseId?: string | null;
-  sellerContactId?: string | null;
-  amount?: number | null;
-  deposit?: number | null;
-}
-
-/** Open a purchase engagement (buyer client + optional seller + PURCHASE txn) via
- *  the SECURITY-DEFINER RPC. require_module('mod.brokerage') is enforced inside.
- *  Returns the new engagement id. */
-export async function createPurchaseEngagement(
-  input: CreatePurchaseEngagementInput,
-): Promise<string> {
-  const { data, error } = await supabase.rpc('create_purchase_engagement', {
-    p_buyer_contact_id: input.buyerContactId,
-    p_horse_id: input.horseId ?? null,
-    p_seller_contact_id: input.sellerContactId ?? null,
-    p_amount: input.amount ?? null,
-    p_deposit: input.deposit ?? null,
-  });
-  if (error) throw error;
-  return data as string;
-}
-
-export interface CreateSearchEngagementInput {
-  clientContactId: string;
-  retainedBy?: string;
-  dealSide?: 'BUY' | 'SELL' | 'LEASE_IN' | 'LEASE_OUT';
-  horseId?: string | null;
-}
-
-/** Open a search-stage (HORSE_FINDER) engagement via the SECURITY-DEFINER RPC.
- *  deal_side is token-driven, never hard-coded per document. Returns the new
- *  engagement id. */
-export async function createSearchEngagement(
-  input: CreateSearchEngagementInput,
-): Promise<string> {
-  const { data, error } = await supabase.rpc('create_search_engagement', {
-    p_client_contact_id: input.clientContactId,
-    p_retained_by: input.retainedBy ?? 'buyer',
-    p_deal_side: input.dealSide ?? 'BUY',
-    p_horse_id: input.horseId ?? null,
-  });
-  if (error) throw error;
-  return data as string;
-}
-
-export interface CreateLeaseEngagementInput {
-  clientContactId: string;
-  dealSide?: 'LEASE_IN' | 'LEASE_OUT';
-  horseId?: string | null;
-  counterpartyContactId?: string | null;
-}
-
-/** Open a lease engagement (LEASE_IN/LEASE_OUT) via the SECURITY-DEFINER RPC.
- *  Returns the new engagement id. */
-export async function createLeaseEngagement(
-  input: CreateLeaseEngagementInput,
-): Promise<string> {
-  const { data, error } = await supabase.rpc('create_lease_engagement', {
-    p_client_contact_id: input.clientContactId,
-    p_deal_side: input.dealSide ?? 'LEASE_IN',
-    p_horse_id: input.horseId ?? null,
-    p_counterparty_contact_id: input.counterpartyContactId ?? null,
-  });
-  if (error) throw error;
-  return data as string;
-}
-
-// ─── Brokerage: engagement stages ───────────────────────────────────────────
-
-export interface EngagementStageInput {
-  engagement_id: string;
-  stage: 'SEARCH' | 'EVALUATION' | 'TRANSACTION_REP';
-  retained_by?: string | null;
-  deal_side?: 'BUY' | 'SELL' | 'LEASE_IN' | 'LEASE_OUT' | null;
-  fee_value_key?: string | null;
-}
-
-/** The stages of one engagement (chain of separately-executed, independently-billed
- *  stages — no required predecessor, §7.1). Soft-deleted excluded. */
-export async function listEngagementStages(engagementId: string): Promise<EngagementStage[]> {
-  const { data, error } = await supabase
-    .from('engagement_stages')
-    .select('*')
-    .eq('engagement_id', engagementId)
-    .is('deleted_at', null)
-    .order('effective_from');
-  if (error) throw error;
-  return (data ?? []) as EngagementStage[];
-}
-
-export async function createEngagementStage(input: EngagementStageInput): Promise<EngagementStage> {
-  const { data, error } = await supabase
-    .from('engagement_stages')
-    .insert({
-      engagement_id: input.engagement_id,
-      stage: input.stage,
-      retained_by: input.retained_by ?? null,
-      deal_side: input.deal_side ?? null,
-      fee_value_key: input.fee_value_key ?? null,
-    })
-    .select('*')
-    .single();
-  if (error) throw error;
-  return data as EngagementStage;
-}
 
 // ─── Boarding (mod.boarding) ────────────────────────────────────────────────
 
@@ -1664,32 +1413,6 @@ export async function createTimeEntry(input: TimeEntryInput): Promise<TimeEntry>
   return data as TimeEntry;
 }
 
-export async function listServiceAssignments(staffProfileId?: string): Promise<ServiceAssignment[]> {
-  let query = supabase
-    .from('service_assignments')
-    .select('*')
-    .is('deleted_at', null);
-  if (staffProfileId) query = query.eq('staff_profile_id', staffProfileId);
-  const { data, error } = await query.order('scheduled_at', { ascending: false, nullsFirst: false });
-  if (error) throw error;
-  return (data ?? []) as ServiceAssignment[];
-}
-
-export async function createServiceAssignment(input: ServiceAssignmentInput): Promise<ServiceAssignment> {
-  const { data, error } = await supabase
-    .from('service_assignments')
-    .insert({
-      staff_profile_id: input.staff_profile_id,
-      engagement_id: input.engagement_id ?? null,
-      service_type: input.service_type ?? null,
-      scheduled_at: input.scheduled_at ?? null,
-    })
-    .select('*')
-    .single();
-  if (error) throw error;
-  return data as ServiceAssignment;
-}
-
 // ═══════════════════════════════════════════════════════════════════════════
 //  Tenant admin + super-admin wrappers
 // ═══════════════════════════════════════════════════════════════════════════
@@ -2021,18 +1744,6 @@ export async function setRecipientEditing(documentId: string, on: boolean): Prom
   return data as boolean;
 }
 
-/** Log a numbered change request against a field or a free section. */
-export async function requestDocumentChange(
-  documentId: string, fieldKey: string | null, targetSection: string | null, requestedChange: string,
-): Promise<ContractChangeRequest> {
-  const { data, error } = await supabase.rpc('request_document_change', {
-    p_document_id: documentId, p_field_key: fieldKey, p_target_section: targetSection,
-    p_requested_change: requestedChange,
-  });
-  if (error) throw error;
-  return data as ContractChangeRequest;
-}
-
 /** Originator/staff accepts (optionally applying a value) or rejects a change request. */
 export async function resolveChangeRequest(
   changeId: string, accept: boolean, newValue?: string | null,
@@ -2042,15 +1753,6 @@ export async function resolveChangeRequest(
   });
   if (error) throw error;
   return data as { id: string; status: ContractChangeRequest['status'] };
-}
-
-/** Advance the workflow state machine (editable/editing/in_review/locked/void). */
-export async function advanceDocumentWorkflow(
-  documentId: string, to: ContractDocumentSummary['workflow_state'],
-): Promise<string> {
-  const { data, error } = await supabase.rpc('advance_document_workflow', { p_document_id: documentId, p_to: to });
-  if (error) throw error;
-  return data as string;
 }
 
 /** Lock-and-sign bridge to record_signature (seals/executes once all parties sign). */
@@ -2116,35 +1818,6 @@ export async function deleteContact(id: string): Promise<void> {
     .update({ deleted_at: new Date().toISOString(), deleted_by: auth.user?.id ?? null })
     .eq('id', id);
   if (error) throw error;
-}
-
-// ─── Service engagements (general, non-brokerage) ────────────────────────────
-export interface ServiceTypeRow {
-  code: string; display_name: string; description: string | null;
-  segment: string; requires_horse: boolean;
-}
-
-export async function listServiceTypes(): Promise<ServiceTypeRow[]> {
-  const { data, error } = await supabase.rpc('list_service_types');
-  if (error) throw error;
-  return (data ?? []) as ServiceTypeRow[];
-}
-
-/** Create a lesson / training / care engagement for a client. Paperwork flows
- *  via contract_requirements at onboarding/signing. */
-export async function createServiceEngagement(input: {
-  clientContactId: string; serviceType: string;
-  horseId?: string | null; startDate?: string | null; notes?: string | null;
-}): Promise<string> {
-  const { data, error } = await supabase.rpc('create_service_engagement', {
-    p_client_contact_id: input.clientContactId,
-    p_service_type: input.serviceType,
-    p_horse_id: input.horseId ?? null,
-    p_start_date: input.startDate ?? null,
-    p_notes: input.notes ?? null,
-  });
-  if (error) throw error;
-  return data as string;
 }
 
 // ─── Public catalog (website + app read the SAME offerings) ──────────────────

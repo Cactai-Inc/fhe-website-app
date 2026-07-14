@@ -1,14 +1,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { getOrder, getOrderPayment, getOrderBooking } from '../lib/api';
-import { supabase } from '../lib/supabase';
+import { getOrder, getOrderPayment } from '../lib/api';
 import { useDocumentTitle } from '../lib/hooks';
 import type { Order, OrderItem, Payment } from '../lib/types';
 import { formatPrice } from '../lib/services';
 import OrderPayment from '../components/order/OrderPayment';
-import BookingStep from '../components/order/BookingStep';
-import AddToCalendar from '../components/order/AddToCalendar';
 
 const STATUS_COPY: Record<string, { title: string; body: string }> = {
   draft: { title: 'Let’s finish setting this up', body: 'Review the details below, agree to the documents, and choose how you’d like to pay.' },
@@ -24,29 +21,16 @@ export default function OrderDetail() {
   const { id } = useParams<{ id: string }>();
   const [order, setOrder] = useState<(Order & { items: OrderItem[] }) | null>(null);
   const [payment, setPayment] = useState<Payment | null>(null);
-  const [bookedSlot, setBookedSlot] = useState<{ start: Date; end: Date } | null>(null);
   const [loading, setLoading] = useState(true);
 
   const reload = useCallback(async () => {
     if (!id) return;
-    const [o, p, booking] = await Promise.all([
+    const [o, p] = await Promise.all([
       getOrder(id),
       getOrderPayment(id).catch(() => null),
-      getOrderBooking(id).catch(() => null),
     ]);
     setOrder(o);
     setPayment(p);
-
-    if (booking?.slot_id) {
-      const { data: slot } = await supabase
-        .from('availability_slots')
-        .select('start_at, end_at')
-        .eq('id', booking.slot_id)
-        .maybeSingle();
-      if (slot) setBookedSlot({ start: new Date(slot.start_at), end: new Date(slot.end_at) });
-    } else {
-      setBookedSlot(null);
-    }
   }, [id]);
 
   useEffect(() => {
@@ -110,9 +94,13 @@ export default function OrderDetail() {
           </div>
         </div>
 
-        {/* Booking — choose a time before payment */}
+        {/* Scheduling now lives on the full calendar (Phase 6) — the client
+            books their session there once this is confirmed. */}
         {needsPayment && allDocsSigned && (
-          <BookingStep orderId={order.id} onHeld={reload} />
+          <p className="body-text text-sm text-muted">
+            After payment is confirmed, you’ll pick your time on the{' '}
+            <Link to="/app/calendar" className="text-green-800 underline">Calendar</Link>.
+          </p>
         )}
 
         {/* Payment */}
@@ -128,20 +116,11 @@ export default function OrderDetail() {
 
         {order.status === 'confirmed' && (
           <div className="bg-green-50 border border-green-200 p-8 text-center">
-            <p className="body-text text-green-800 mb-6">
+            <p className="body-text text-green-800 mb-4">
               Everything is confirmed and copies are on their way to your inbox. We can’t wait to
               ride with you.
             </p>
-            {bookedSlot && (
-              <div className="flex justify-center">
-                <AddToCalendar
-                  title="French Heritage Equestrian"
-                  start={bookedSlot.start}
-                  end={bookedSlot.end}
-                  description="Your session at Carmel Creek Ranch."
-                />
-              </div>
-            )}
+            <Link to="/app/calendar" className="btn-primary">Schedule on the Calendar</Link>
           </div>
         )}
       </div>

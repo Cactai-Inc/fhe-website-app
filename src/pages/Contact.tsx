@@ -1,43 +1,20 @@
 import { useState } from 'react';
-import { Mail, Phone, MapPin, ArrowRight } from 'lucide-react';
+import { Mail, Phone, MapPin } from 'lucide-react';
 import { BRAND } from '../lib/brand';
-import { submitRequest } from '../lib/api';
+import { PublicIntakeForm } from '../components/PublicIntakeForm';
+import type { RequestCategory } from '../lib/types';
 import Seo from '../components/Seo';
 import { seoForPath } from '../lib/seo';
 
-export default function Contact() {
+export default function Contact({
+  defaultCategory = 'general',
+  entryLocation = 'contact_page',
+}: {
+  defaultCategory?: RequestCategory;
+  entryLocation?: string;
+}) {
   const seo = seoForPath('/contact');
-  const [form, setForm] = useState({ name: '', email: '', phone: '', message: '' });
-  const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  function upd(k: string, v: string) {
-    setForm((f) => ({ ...f, [k]: v }));
-  }
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!form.name.trim() || !form.email.trim()) return;
-    setSending(true);
-    setError(null);
-    try {
-      await submitRequest(
-        {
-          contact_name: form.name.trim(),
-          contact_email: form.email.trim(),
-          contact_phone: form.phone.trim() || undefined,
-          notes: form.message.trim() || undefined,
-        },
-        [],
-      );
-      setSent(true);
-    } catch {
-      setError('Something went wrong. Please email or call us directly.');
-    } finally {
-      setSending(false);
-    }
-  }
 
   return (
     <>
@@ -75,31 +52,12 @@ export default function Contact() {
                   <p className="body-text text-sm">One of us will be in touch today. Talk soon.</p>
                 </div>
               ) : (
-                <form onSubmit={submit} className="bg-white border border-green-800/10 p-8">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    <div>
-                      <label className="form-label" htmlFor="c-name">Name *</label>
-                      <input id="c-name" className="form-input" required value={form.name} onChange={(e) => upd('name', e.target.value)} autoComplete="name" />
-                    </div>
-                    <div>
-                      <label className="form-label" htmlFor="c-phone">Phone</label>
-                      <input id="c-phone" type="tel" className="form-input" value={form.phone} onChange={(e) => upd('phone', e.target.value)} autoComplete="tel" />
-                    </div>
-                    <div className="sm:col-span-2">
-                      <label className="form-label" htmlFor="c-email">Email *</label>
-                      <input id="c-email" type="email" className="form-input" required value={form.email} onChange={(e) => upd('email', e.target.value)} autoComplete="email" />
-                    </div>
-                    <div className="sm:col-span-2">
-                      <label className="form-label" htmlFor="c-msg">Anything you'd like us to know?</label>
-                      <textarea id="c-msg" rows={4} className="form-input resize-none" value={form.message} onChange={(e) => upd('message', e.target.value)} />
-                    </div>
-                  </div>
-                  {error && <p className="form-error mt-4" role="alert">{error}</p>}
-                  <button type="submit" disabled={sending || !form.name.trim() || !form.email.trim()} className="btn-primary mt-6 w-full justify-center">
-                    {sending ? 'Sending…' : 'Send it our way'}
-                    {!sending && <ArrowRight size={16} />}
-                  </button>
-                </form>
+                <PublicIntakeForm
+                  channel="contact"
+                  defaultCategory={defaultCategory}
+                  entryLocation={entryLocation}
+                  onSubmitted={() => setSent(true)}
+                />
               )}
             </div>
           </div>

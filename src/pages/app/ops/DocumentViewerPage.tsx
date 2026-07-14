@@ -234,7 +234,6 @@ export default function DocumentViewerPage() {
         <div className="print-hidden">
           <DeliveryPanel
             documentId={document.id}
-            engagementId={document.engagement_id}
             status={document.status}
           />
         </div>

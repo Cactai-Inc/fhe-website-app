@@ -1,29 +1,29 @@
 /**
  * OPS-DOC-DELIVER data seam (lane-owned; src/lib/api.ts is integrator-owned).
  *
- * Thin, typed read over supabase.from('engagement_parties') joined to
+ * Thin, typed read over supabase.from('document_parties') joined to
  * contacts, powering the delivery panel's recipient dropdown: staff picks a
  * PERSON (name — role (email)) instead of pasting a raw contact id. RLS
- * (org boundary on engagement_parties + contacts) is the authoritative fence;
+ * (org boundary on document_parties + contacts) is the authoritative fence;
  * this seam only shapes the call.
  */
 import { supabase } from '../supabase';
 import { contactName } from './types';
-import type { EngagementPartyContact, PartyRole } from './types';
+import type { DocumentPartyContact, PartyRole } from './types';
 
 /**
- * The engagement's parties with their contact name (official canon:
+ * The document's parties with their contact name (official canon:
  * first+last via contactName) and email, in signer order. `email` is null
  * when the contact has no address on file — the UI disables email sends to
  * such a recipient.
  */
-export async function listEngagementPartyContacts(
-  engagementId: string,
-): Promise<EngagementPartyContact[]> {
+export async function listDocumentPartyContacts(
+  documentId: string,
+): Promise<DocumentPartyContact[]> {
   const { data, error } = await supabase
-    .from('engagement_parties')
+    .from('document_parties')
     .select('contact_id, party_role, contact:contacts(first_name, last_name, email)')
-    .eq('engagement_id', engagementId)
+    .eq('document_id', documentId)
     .order('signer_order', { ascending: true, nullsFirst: false });
   if (error) throw error;
   type Row = {

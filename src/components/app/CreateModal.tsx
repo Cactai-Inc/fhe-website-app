@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   X, PenSquare, Tag, CalendarDays, MessageSquare, GraduationCap,
   ShoppingBag, Send, ChevronLeft, ImagePlus, Loader2,
-  Handshake, FileText, UserPlus, Megaphone,
+  FileText, UserPlus, Megaphone,
 } from 'lucide-react';
 import { feedPostCreate, uploadFeedMedia, type FeedPostType, type FeedVisibility } from '../../lib/feed';
 import { createThread, proposeEvent } from '../../lib/community';
@@ -379,7 +379,6 @@ export function CreateModal({ onClose }: { onClose: () => void }) {
               {isStaff && (
                 <>
                   <p className="text-[10px] tracking-widest uppercase text-muted font-semibold mt-2">For a client</p>
-                  <DestButton icon={Handshake} label="New engagement" hint="Start a service engagement — contracts and paperwork attach to it" onClick={() => go('/app/ops/engagements/new')} />
                   <DestButton icon={FileText} label="New contract" hint="Lease or purchase — pick the client and the horse" onClick={() => go('/app/ops/contracts/new')} />
                   <DestButton icon={UserPlus} label="New client" hint="Create the account first — attach items, then invite" onClick={() => go('/app/ops/accounts/new')} />
                 </>
@@ -388,7 +387,7 @@ export function CreateModal({ onClose }: { onClose: () => void }) {
               {!isAdmin && (
                 <>
                   <p className="text-[10px] tracking-widest uppercase text-muted font-semibold mt-2">Do something</p>
-                  <DestButton icon={GraduationCap} label="Book a lesson" hint="Request a time with your instructor" onClick={() => go('/app/book')} />
+                  <DestButton icon={GraduationCap} label="Book a lesson" hint="Request a time with your instructor" onClick={() => go('/app/calendar')} />
                   <DestButton icon={ShoppingBag} label="Shop for sale" hint="Browse horses and gear" onClick={() => go('/app?filter=for_sale')} />
                   <DestButton icon={Send} label="New message" hint="Message a community member" onClick={() => go('/app/messages')} />
                 </>

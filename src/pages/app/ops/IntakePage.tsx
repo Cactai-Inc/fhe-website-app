@@ -1,42 +1,24 @@
 /**
  * OPS-INTAKE — staff intake surfaces (surface `ops`, core — ungated).
  *
- * /app/ops/intake carries two queues behind one route:
- *
- * 1. BOOKING REQUESTS (default view) — the Request Inbox of BOOKING_FLOWS_PLAN
- *    §2 Flow A step 2. Rows from the public "Submit a Booking Request" form
- *    (requests table) filtered by status tab (New default). A row opens the
- *    working drawer: contact + requested items, the structured availability
- *    (weeks / day prefs / AM-PM prefs / riding experience / visitor notes),
- *    the staff call-notes timeline (append_request_note RPC), the LESSON FIT
- *    CHECKLIST (set_request_checklist RPC), "Mark contacted", and the
- *    checklist-gated "Send confirmation & invite" provisioning form that
- *    submits to /api/admin-send-invitation with requestId — server-side the
- *    RPC stamps invitations.request_id and flips the request to 'invited'.
- *
- * 2. FORM SUBMISSIONS — the intake_submissions queue (unchanged behavior):
- *    listIntakeSubmissions filtered by status (NEW default). Clicking a row
- *    opens a detail drawer that renders the submission's payload fields plus
- *    the actions:
- *      - Mark reviewed / Dismiss  → markSubmissionStatus(id, status)
- *      - Convert to engagement    → (brokerage form_keys only) resolve the
- *        contact (findOrCreateContactByEmail), open the engagement through the
- *        REAL brokerage RPC wrappers in src/lib/api.ts, then stamp CONVERTED +
- *        converted_engagement_id via markSubmissionConverted.
- *    The brokerage RPCs self-gate on mod.brokerage server-side (require_module);
- *    a gate rejection surfaces on the drawer's error branch — nothing is faked.
+ * /app/ops/intake is the INBOUND queue — one chronological list of everything
+ * sent to the company. The unified public form (Phase 5) writes every
+ * contact / inquiry / booking / kiosk submission into the `requests` table, so
+ * there is no separate form-submissions queue anymore; support requests join
+ * the same list. A booking row opens the working drawer: contact + requested
+ * items, the structured availability (weeks / day prefs / AM-PM prefs / riding
+ * experience / visitor notes), the staff call-notes timeline (append_request_note
+ * RPC), the LESSON FIT CHECKLIST (set_request_checklist RPC), "Mark contacted",
+ * and the checklist-gated "Send confirmation & invite" provisioning form that
+ * submits to /api/admin-send-invitation with requestId — server-side the RPC
+ * stamps invitations.request_id and flips the request to 'invited'.
  */
 import { useCallback, useEffect, useState } from 'react';
 import { toErrorMessage } from '../../../lib/ops/errors';
-import { Link } from 'react-router-dom';
 import { DataTable, FormField, Modal, StatusBadge, useAsync, useToast } from '../../../lib/ops';
 import type { Column } from '../../../lib/ops';
 import { useDocumentTitle } from '../../../lib/hooks';
 import {
-  listIntakeSubmissions,
-  markSubmissionStatus,
-  markSubmissionConverted,
-  findOrCreateContactByEmail,
   findClientForRequest,
   listBookingRequests,
   markRequestContacted,
@@ -46,24 +28,20 @@ import {
 import {
   scheduleLessonSession,
   listLessonSessionsForRequest,
+  listScheduleHorses,
 } from '../../../lib/ops/api-lessons';
-import type { LessonSession } from '../../../lib/ops/api-lessons';
+import type { LessonSession, ScheduleHorseOption } from '../../../lib/ops/api-lessons';
+import { formatSessionWhen } from '../../../lib/formatDateTime';
 import { ScheduleSessionForm } from './lessons/ScheduleSessionForm';
 import type { ScheduleSessionFormValues } from './lessons/ScheduleSessionForm';
 import type {
-  IntakeSubmission,
-  IntakeSubmissionStatus,
   BookingRequest,
   BookingRequestStatus,
 } from '../../../lib/ops/api-intake';
-import {
-  createPurchaseEngagement,
-  createSearchEngagement,
-  createLeaseEngagement,
-  fetchOfferings,
-} from '../../../lib/api';
+import { fetchOfferings } from '../../../lib/api';
 import { adminSendInvitation } from '../../../lib/admin';
 import { listSupportRequests, setSupportStatus, type SupportRequest } from '../../../lib/support';
+import { BookingFieldsSettings } from './BookingFieldsSettings';
 import type { Offering, ProposedTime } from '../../../lib/types';
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -214,10 +192,12 @@ interface InviteFormState {
 }
 
 function inviteFormFor(r: BookingRequest): InviteFormState {
-  const { firstName, lastName } = splitContactName(r.contact_name);
+  // The unified intake stores first/last directly; fall back to the legacy
+  // first-space split only for older rows that predate the split.
+  const split = splitContactName(r.contact_name);
   return {
-    firstName,
-    lastName,
+    firstName: r.contact_first_name?.trim() || split.firstName,
+    lastName: r.contact_last_name?.trim() || split.lastName,
     email: r.contact_email,
     offeringId: '',
     markPaid: false,
@@ -241,6 +221,7 @@ function RequestInbox({ openId }: { openId?: string } = {}) {
     url: string; emailed: boolean; offeringLabel?: string;
   } | null>(null);
   const [offerings, setOfferings] = useState<Offering[]>([]);
+  const [horses, setHorses] = useState<ScheduleHorseOption[]>([]);
   // Schedule-lesson section (invited/converted requests): the provisioned
   // client resolved via request → invitation → email → contact → client, plus
   // the sessions already booked from this request.
@@ -270,6 +251,9 @@ function RequestInbox({ openId }: { openId?: string } = {}) {
     fetchOfferings()
       .then((all) => setOfferings(all.filter((o) => o.horse_included !== null)))
       .catch(() => setOfferings([]));
+    listScheduleHorses()
+      .then(setHorses)
+      .catch(() => setHorses([]));
   }, []);
 
   const openRequest = (row: BookingRequest) => {
@@ -389,9 +373,12 @@ function RequestInbox({ openId }: { openId?: string } = {}) {
 
   const busy = addNote.isPending || contact.isPending || send.isPending;
   const allChecked = LESSON_FIT_CHECKLIST.every((item) => checklist[item.key] === true);
+  // An offering is OPTIONAL: leaving it blank sends a plain account-activation
+  // invite (the server's PLAIN INVITE path). This is what lets kiosk submitters
+  // — who carry no purchase selection — still be invited. First/last/email are
+  // always required (the unified intake guarantees them).
   const inviteReady =
     invite !== null &&
-    invite.offeringId !== '' &&
     invite.email.trim() !== '' &&
     invite.firstName.trim() !== '' &&
     invite.lastName.trim() !== '';
@@ -559,13 +546,7 @@ function RequestInbox({ openId }: { openId?: string } = {}) {
                         key={s.id}
                         className="flex items-center justify-between gap-3 text-sm text-green-900"
                       >
-                        <span>
-                          {new Date(s.starts_at).toLocaleString(undefined, {
-                            weekday: 'short', month: 'short', day: 'numeric',
-                            hour: 'numeric', minute: '2-digit',
-                          })}
-                          {s.location ? ` · ${s.location}` : ''}
-                        </span>
+                        <span>{formatSessionWhen(s.starts_at, s.ends_at, s.location)}</span>
                         <StatusBadge status={s.status} />
                       </li>
                     ))}
@@ -574,6 +555,7 @@ function RequestInbox({ openId }: { openId?: string } = {}) {
                 {requestClientId ? (
                   <ScheduleSessionForm
                     fixedClientId={requestClientId}
+                    horses={horses}
                     onSubmit={handleScheduleLesson}
                     submitting={scheduleSession.isPending}
                   />
@@ -685,16 +667,15 @@ function RequestInbox({ openId }: { openId?: string } = {}) {
                     />
                   )}
                 </FormField>
-                <FormField label="What did they buy?" required>
+                <FormField label="What did they buy?">
                   {({ id }) => (
                     <select
                       id={id}
                       className="form-input"
-                      required
                       value={invite.offeringId}
                       onChange={(e) => setInvite({ ...invite, offeringId: e.target.value })}
                     >
-                      <option value="">Select a lesson…</option>
+                      <option value="">No purchase — account activation only</option>
                       {offerings.map((o) => (
                         <option key={o.id} value={o.id}>
                           {o.name} — {formatTierPrice(o.price_amount)}
@@ -769,294 +750,6 @@ function RequestInbox({ openId }: { openId?: string } = {}) {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// Form submissions — the intake_submissions queue (behavior unchanged)
-// ════════════════════════════════════════════════════════════════════════════
-
-type StatusFilter = IntakeSubmissionStatus | 'ALL';
-
-const STATUS_FILTERS: StatusFilter[] = ['NEW', 'REVIEWED', 'CONVERTED', 'DISMISSED', 'ALL'];
-
-/**
- * Brokerage form_key → engagement RPC wrapper. Direction (retained_by /
- * deal_side) is token-driven per form (§7.1) — never hard-coded per document.
- * Non-brokerage intake forms have no conversion path (the button is not
- * rendered for them).
- */
-const BROKERAGE_CONVERSIONS: Record<string, (contactId: string) => Promise<string>> = {
-  INTAKE_HORSE_PURCHASE: (contactId) => createPurchaseEngagement({ buyerContactId: contactId }),
-  INTAKE_HORSE_FINDER: (contactId) =>
-    createSearchEngagement({ clientContactId: contactId, retainedBy: 'buyer', dealSide: 'BUY' }),
-  INTAKE_HORSE_SALE: (contactId) =>
-    createSearchEngagement({ clientContactId: contactId, retainedBy: 'owner', dealSide: 'SELL' }),
-  INTAKE_HORSE_LEASE_IN: (contactId) =>
-    createLeaseEngagement({ clientContactId: contactId, dealSide: 'LEASE_IN' }),
-  INTAKE_HORSE_LEASE_OUT: (contactId) =>
-    createLeaseEngagement({ clientContactId: contactId, dealSide: 'LEASE_OUT' }),
-};
-
-/** Best-available display name for the submitter (drawer + contact creation). */
-function submitterName(sub: IntakeSubmission): string {
-  if (sub.contact_name) return sub.contact_name;
-  const fromPayload =
-    sub.payload['full_legal_name'] ?? sub.payload['full_name'] ?? sub.payload['client_name'];
-  if (typeof fromPayload === 'string' && fromPayload.trim()) return fromPayload;
-  return 'Intake contact';
-}
-
-function payloadValue(value: unknown): string {
-  if (value === null || value === undefined || value === '') return '—';
-  if (typeof value === 'object') return JSON.stringify(value);
-  return String(value);
-}
-
-const COLUMNS: Column<IntakeSubmission>[] = [
-  {
-    key: 'created_at',
-    header: 'Received',
-    render: (r) => new Date(r.created_at).toLocaleDateString(),
-  },
-  { key: 'form_key', header: 'Form', render: (r) => <span className="font-mono text-xs">{r.form_key}</span> },
-  { key: 'contact_name', header: 'Name', render: (r) => submitterName(r) },
-  { key: 'contact_email', header: 'Email', render: (r) => r.contact_email ?? '—' },
-  { key: 'status', header: 'Status', render: (r) => <StatusBadge status={r.status} /> },
-];
-
-function SubmissionsQueue({ openId }: { openId?: string } = {}) {
-  const [autoOpenedSub, setAutoOpenedSub] = useState<string | null>(null);
-  const [rows, setRows] = useState<IntakeSubmission[]>([]);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('NEW');
-  const [selected, setSelected] = useState<IntakeSubmission | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
-
-  const load = useAsync(listIntakeSubmissions);
-  const toast = useToast();
-
-  useEffect(() => {
-    if (!openId || autoOpenedSub === openId) return;
-    const row = rows.find((r) => r.id === openId);
-    if (row) { setAutoOpenedSub(openId); setActionError(null); setSelected(row); }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [openId, rows, autoOpenedSub]);
-
-  const refresh = useCallback(
-    async (filter: StatusFilter) => {
-      const data = await load.run(filter === 'ALL' ? undefined : filter);
-      setRows(data);
-    },
-    [load],
-  );
-
-  useEffect(() => {
-    refresh(statusFilter).catch(() => {
-      /* surfaced via load.isError */
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter]);
-
-  const review = useAsync(async (sub: IntakeSubmission, status: 'REVIEWED' | 'DISMISSED') => {
-    return markSubmissionStatus(sub.id, status);
-  });
-
-  const convert = useAsync(async (sub: IntakeSubmission) => {
-    const toEngagement = BROKERAGE_CONVERSIONS[sub.form_key];
-    if (!toEngagement) {
-      throw new Error(`No engagement conversion is defined for ${sub.form_key}.`);
-    }
-    const contactId = await findOrCreateContactByEmail(submitterName(sub), sub.contact_email);
-    const engagementId = await toEngagement(contactId);
-    await markSubmissionConverted(sub.id, engagementId);
-    return engagementId;
-  });
-
-  const closeDrawer = () => {
-    setActionError(null);
-    setSelected(null);
-  };
-
-  const handleReview = async (sub: IntakeSubmission, status: 'REVIEWED' | 'DISMISSED') => {
-    setActionError(null);
-    try {
-      await review.run(sub, status);
-      toast.success(status === 'REVIEWED' ? 'Submission marked reviewed.' : 'Submission dismissed.');
-      setSelected(null);
-      await refresh(statusFilter);
-    } catch (err) {
-      // Error branch: keep the drawer open, surface the message.
-      setActionError(toErrorMessage(err, 'Could not update submission.'));
-    }
-  };
-
-  const handleConvert = async (sub: IntakeSubmission) => {
-    setActionError(null);
-    try {
-      const engagementId = await convert.run(sub);
-      toast.success(`Converted to engagement ${engagementId.slice(0, 8)}.`);
-      setSelected(null);
-      await refresh(statusFilter);
-    } catch (err) {
-      setActionError(toErrorMessage(err, 'Could not convert submission.'));
-    }
-  };
-
-  const busy = review.isPending || convert.isPending;
-  const convertible =
-    selected !== null &&
-    BROKERAGE_CONVERSIONS[selected.form_key] !== undefined &&
-    (selected.status === 'NEW' || selected.status === 'REVIEWED');
-  const actionable = selected !== null && (selected.status === 'NEW' || selected.status === 'REVIEWED');
-
-  return (
-    <div>
-      <div className="flex justify-end mb-4">
-        <div>
-          <label htmlFor="intake-status-filter" className="sr-only">
-            Filter by status
-          </label>
-          <select
-            id="intake-status-filter"
-            className="form-input"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-          >
-            {STATUS_FILTERS.map((s) => (
-              <option key={s} value={s}>
-                {s === 'ALL' ? 'All statuses' : s}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {toast.toasts.map((t) => (
-        <div
-          key={t.id}
-          role="status"
-          className={`mb-4 rounded px-4 py-2 text-sm ${
-            t.tone === 'error' ? 'bg-red-50 text-red-800' : 'bg-green-50 text-green-900'
-          }`}
-        >
-          {t.message}
-        </div>
-      ))}
-
-      {load.isError && (
-        <p role="alert" className="form-error mb-4">
-          {load.error?.message ?? 'Could not load intake submissions.'}
-        </p>
-      )}
-
-      <DataTable
-        columns={COLUMNS}
-        rows={rows}
-        loading={load.isPending && rows.length === 0}
-        rowKey={(r) => r.id}
-        emptyTitle="No submissions"
-        emptyMessage="Nothing in the intake queue for this status."
-        onRowClick={(row) => {
-          setActionError(null);
-          setSelected(row);
-        }}
-      />
-
-      <Modal
-        open={selected !== null}
-        onClose={closeDrawer}
-        title="Intake submission"
-        disableBackdropClose={busy}
-      >
-        {selected && (
-          <div className="flex flex-col gap-5">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm font-sans font-medium text-green-900">
-                  {submitterName(selected)}
-                </p>
-                <p className="text-xs text-green-800/70">{selected.contact_email ?? 'No email'}</p>
-                <p className="font-mono text-xs text-green-800/70 mt-1">{selected.form_key}</p>
-              </div>
-              <StatusBadge status={selected.status} />
-            </div>
-
-            {selected.converted_engagement_id && (
-              <p className="text-sm">
-                <Link
-                  to={`/app/ops/engagements/${selected.converted_engagement_id}`}
-                  className="link-underline"
-                >
-                  View converted engagement
-                </Link>
-              </p>
-            )}
-
-            <section aria-label="Submission fields">
-              <h3 className="form-label mb-2">Submitted fields</h3>
-              {Object.keys(selected.payload).length === 0 ? (
-                <p className="text-sm text-green-800/70">No fields submitted.</p>
-              ) : (
-                <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  {Object.entries(selected.payload).map(([key, value]) => (
-                    <div key={key}>
-                      <dt className="text-xs font-sans font-medium text-green-800/70">{key}</dt>
-                      <dd className="text-sm text-green-900">{payloadValue(value)}</dd>
-                    </div>
-                  ))}
-                </dl>
-              )}
-            </section>
-
-            {actionError && (
-              <p role="alert" className="form-error">
-                {actionError}
-              </p>
-            )}
-
-            <div className="flex flex-wrap justify-end gap-3">
-              {actionable && (
-                <>
-                  {selected.status === 'NEW' && (
-                    <button
-                      type="button"
-                      className="btn-outline-gold text-sm"
-                      disabled={busy}
-                      onClick={() => handleReview(selected, 'REVIEWED')}
-                    >
-                      Mark reviewed
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    className="btn-outline-gold text-sm"
-                    disabled={busy}
-                    onClick={() => handleReview(selected, 'DISMISSED')}
-                  >
-                    Dismiss
-                  </button>
-                </>
-              )}
-              {convertible && (
-                <button
-                  type="button"
-                  className="btn-primary text-sm"
-                  disabled={busy}
-                  aria-busy={convert.isPending}
-                  onClick={() => handleConvert(selected)}
-                >
-                  {convert.isPending ? 'Converting…' : 'Convert to engagement'}
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-      </Modal>
-    </div>
-  );
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// Page shell — Request Inbox first, form submissions alongside
-// ════════════════════════════════════════════════════════════════════════════
-
-// ════════════════════════════════════════════════════════════════════════════
 // INBOUND — one chronological list of everything sent to the company (owner
 // unification): booking/purchase requests (the `requests` lifecycle pipeline),
 // form submissions (the `intake_submissions` lead queue — contact-us et al.),
@@ -1065,7 +758,7 @@ function SubmissionsQueue({ openId }: { openId?: string } = {}) {
 // drops into its existing full workflow (auto-opened); support resolves inline.
 // ════════════════════════════════════════════════════════════════════════════
 
-type InboundKind = 'all' | 'booking' | 'form' | 'support';
+type InboundKind = 'all' | 'booking' | 'support';
 
 interface InboundRow {
   key: string;
@@ -1078,12 +771,11 @@ interface InboundRow {
 }
 
 const KIND_LABEL: Record<Exclude<InboundKind, 'all'>, string> = {
-  booking: 'Booking request', form: 'Form submission', support: 'Support',
+  booking: 'Booking request', support: 'Support',
 };
 const KIND_FILTERS: { id: InboundKind; label: string }[] = [
   { id: 'all', label: 'All' },
   { id: 'booking', label: 'Booking requests' },
-  { id: 'form', label: 'Form submissions' },
   { id: 'support', label: 'Support' },
 ];
 
@@ -1093,15 +785,14 @@ export function IntakePage() {
   const [rows, setRows] = useState<InboundRow[] | null>(null);
   const [inboundError, setInboundError] = useState<string | null>(null);
   // focus = drop into the existing deep workflow for one item
-  const [focus, setFocus] = useState<{ kind: 'booking' | 'form'; id: string } | null>(null);
+  const [focus, setFocus] = useState<{ kind: 'booking'; id: string } | null>(null);
   const [supportOpen, setSupportOpen] = useState<string | null>(null);
   const [supportRows, setSupportRows] = useState<SupportRequest[]>([]);
 
   const loadInbound = useCallback(async () => {
     try {
-      const [requests, submissions, support] = await Promise.all([
+      const [requests, support] = await Promise.all([
         listBookingRequests().catch(() => [] as BookingRequest[]),
-        listIntakeSubmissions().catch(() => [] as IntakeSubmission[]),
         listSupportRequests().catch(() => [] as SupportRequest[]),
       ]);
       setSupportRows(support);
@@ -1112,12 +803,6 @@ export function IntakePage() {
           what: (r.request_selections ?? []).map((x) => x.label).filter(Boolean).slice(0, 2).join(', ')
             || 'Booking request',
           status: r.status, refId: r.id,
-        })),
-        ...submissions.map((f) => ({
-          key: `f-${f.id}`, kind: 'form' as const, when: f.created_at,
-          who: f.contact_name || f.contact_email || 'Visitor',
-          what: (f.form_key || 'Form').replace(/^INTAKE_/, '').replace(/_/g, ' ').toLowerCase(),
-          status: f.status, refId: f.id,
         })),
         ...support.map((t) => ({
           key: `s-${t.id}`, kind: 'support' as const, when: t.created_at,
@@ -1147,26 +832,15 @@ export function IntakePage() {
       </div>
     );
   }
-  if (focus?.kind === 'form') {
-    return (
-      <div className="max-w-5xl">
-        <button type="button" onClick={() => { setFocus(null); void loadInbound(); }}
-          className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-green-800 mb-4">
-          ← Inbound
-        </button>
-        <h1 className="font-serif text-2xl text-green-900 mb-6">Form submission</h1>
-        <SubmissionsQueue openId={focus.id} />
-      </div>
-    );
-  }
-
   return (
     <div className="max-w-5xl">
       <h1 className="font-serif text-2xl text-green-900 mb-1">Inbound</h1>
       <p className="text-sm text-green-800/70 mb-5">
-        Everything sent to the company — booking requests, form submissions, and
-        support — newest first.
+        Everything sent to the company — booking requests, contact/inquiry notes,
+        kiosk signers, and support — newest first.
       </p>
+
+      <BookingFieldsSettings />
 
       {/* kind filter: buttons on desktop, dropdown on mobile */}
       <div className="hidden sm:flex flex-wrap gap-2 mb-5" aria-label="Filter inbound by kind">

@@ -23,9 +23,6 @@ export type OrderStatus =
 export type PaymentMethod = 'zelle' | 'stripe';
 export type PaymentStatus =
   | 'pending' | 'matched' | 'confirmed' | 'review' | 'failed' | 'refunded';
-export type SlotStatus = 'open' | 'held' | 'booked' | 'blocked';
-export type SlotType = 'consultation' | 'onsite_visit' | 'lesson' | 'training' | 'other';
-export type LocationMode = 'onsite' | 'mobile';
 export type BookingStatus =
   | 'pending_slot' | 'pending_payment' | 'confirmed' | 'cancelled' | 'expired';
 
@@ -89,13 +86,33 @@ export interface ProposedTime {
   days?: string;  // day-of-week preference, e.g. 'Open to any day of the week' or 'Mon, Wed'
 }
 
+/** The service category the unified intake form shape-shifts by. */
+export type RequestCategory =
+  | 'general'
+  | 'lessons'
+  | 'horse_care'
+  | 'acquisition'
+  | 'media'
+  | 'partnership';
+
+/** Which public form the request came in through. */
+export type RequestChannel = 'contact' | 'inquiry' | 'booking' | 'kiosk';
+
 export interface RequestInput {
-  contact_name: string;
+  /** First + last are the canonical split; last name is required server-side. */
+  first_name: string;
+  last_name: string;
   contact_email: string;
   contact_phone?: string;
   contact_method?: ContactMethod;
   proposed_times?: ProposedTime[];
   notes?: string;
+  category?: RequestCategory;
+  channel?: RequestChannel;
+  /** The page/context the visitor submitted from (preset key). */
+  entry_location?: string;
+  /** Hidden purchase-intent tag for analytics. */
+  intent?: string;
 }
 
 export interface RequestSelectionInput {
@@ -110,16 +127,6 @@ export interface Invitation {
   status: InvitationStatus;
   expires_at: string;
   request_id: string | null;
-}
-
-export interface AvailabilitySlot {
-  id: string;
-  start_at: string;
-  end_at: string;
-  slot_type: SlotType;
-  capacity: number;
-  location_mode: LocationMode;
-  status: SlotStatus;
 }
 
 /** Backed by the `purchases` table (spine refactor). The exported name stays

@@ -9,7 +9,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useViewSurfaces } from '../../lib/surfaces';
 import { fetchMyGrantKeys } from '../../lib/grants';
 import { useNotificationsBell } from './NotificationsBell';
-import CalendarModal from './CalendarModal';
 import { CreateModal } from './CreateModal';
 
 /**
@@ -41,7 +40,7 @@ interface NavItem {
 }
 
 const QUICK: { label: string; icon: typeof GraduationCap; to: string }[] = [
-  { label: 'Book a lesson', icon: GraduationCap, to: '/app/book' },
+  { label: 'Book a lesson', icon: GraduationCap, to: '/app/calendar' },
   { label: 'Shop for sale', icon: ShoppingBag, to: '/app?filter=for_sale' },
   { label: 'New message', icon: MessageSquare, to: '/app/messages' },
 ];
@@ -82,15 +81,11 @@ const ACCOUNTS_GROUP: NavItem[] = [
 ];
 const SERVICING_GROUP: NavItem[] = [
   { to: '/app/ops/lessons', label: 'Lessons', icon: GraduationCap, module: 'mod.lessons' },
-  { to: '/app/ops/availability', label: 'Availability', icon: CalendarDays },
   { to: '/app/ops/horse-records', label: 'Horses', icon: Boxes },
-  { to: '/app/ops/engagements', label: 'Engagements', icon: Handshake },
   { to: '/app/ops/documents', label: 'Documents', icon: FileText },
 ];
 const BUSINESS_GROUP: NavItem[] = [
-  { to: '/app/ops/transactions', label: 'Transactions', icon: ReceiptText },
   { to: '/app/ops/payments/review', label: 'Payment review', icon: ReceiptText },
-  { to: '/app/ops/billing', label: 'Billing', icon: ReceiptText },
 ];
 const COMMUNITY_GROUP: NavItem[] = [
   { to: '/app/ops/moderation', label: 'Moderation', icon: Shield },
@@ -189,7 +184,6 @@ export default function AppLayout() {
   const navigate = useNavigate();
   const bell = useNotificationsBell();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [calOpen, setCalOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -248,7 +242,7 @@ export default function AppLayout() {
               className="p-2 text-green-800 rounded-lg hover:bg-cream-100 focus-ring" aria-label="Create">
               <Plus size={20} />
             </button>
-            <button type="button" onClick={() => setCalOpen(true)}
+            <button type="button" onClick={() => navigate('/app/calendar')}
               className="p-2 text-green-800 rounded-lg hover:bg-cream-100 focus-ring" aria-label="Calendar">
               <CalendarDays size={18} />
             </button>
@@ -325,7 +319,10 @@ export default function AppLayout() {
                 {isSuperAdmin ? 'Platform' : isAdmin ? 'Management' : 'Servicing'}
               </p>
               {!isSuperAdmin && (
-                <div className="mb-1"><RailLink to="/app" label="Dashboard" icon={HomeIcon} end /></div>
+                <div className="mb-1 flex flex-col gap-0.5">
+                  <RailLink to="/app" label="Dashboard" icon={HomeIcon} end />
+                  <RailLink to="/app/calendar" label="Calendar" icon={CalendarDays} />
+                </div>
               )}
               <div className="flex flex-col gap-1">
                 {navGroups.map((g) => (
@@ -353,7 +350,6 @@ export default function AppLayout() {
         </main>
       </div>
 
-      {calOpen && <CalendarModal onClose={() => setCalOpen(false)} />}
       {createOpen && <CreateModal onClose={() => setCreateOpen(false)} />}
     </div>
   );

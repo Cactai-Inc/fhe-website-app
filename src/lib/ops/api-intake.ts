@@ -1,89 +1,45 @@
 /**
  * OPS-INTAKE data seams (lane-owned; src/lib/api.ts is integrator-owned).
  *
- * Thin, typed wrappers over supabase.from('intake_submissions') — the staff
- * intake queue created by migration 20260701020000_intake_submissions.sql —
- * and over supabase.from('requests') — the public booking-request inbox
- * (BOOKING_FLOWS_PLAN §2 Flow A step 2; migration 20260703080000).
- * RLS (org_boundary + has_staff_access) is the authoritative fence; these
- * seams only shape the calls. Engagement creation on CONVERT goes through the
- * existing brokerage RPC wrappers in src/lib/api.ts (createPurchaseEngagement /
- * createSearchEngagement / createLeaseEngagement) — imported by the page, not
- * re-wrapped here.
+ * Thin, typed wrappers over supabase.from('requests') — the public inbox that
+ * the unified intake (Phase 5) writes every contact/inquiry/booking/kiosk
+ * submission into. RLS (org_boundary + has_staff_access) is the authoritative
+ * fence; these seams only shape the calls.
  */
 import { supabase } from '../supabase';
 import type { ProposedTime } from '../types';
 
-export type IntakeSubmissionStatus = 'NEW' | 'REVIEWED' | 'CONVERTED' | 'DISMISSED';
+// ─── Intake requirements (owner-configured, per channel) ─────────────────────
 
-export interface IntakeSubmission {
-  id: string;
-  form_key: string;
-  payload: Record<string, unknown>;
-  contact_email: string | null;
-  contact_name: string | null;
-  status: IntakeSubmissionStatus;
-  converted_engagement_id: string | null;
-  created_at: string;
-  reviewed_at: string | null;
-  reviewed_by: string | null;
+/** The configurable optional fields the owner can require on a channel. */
+export const INTAKE_FIELDS: { key: string; label: string }[] = [
+  { key: 'phone', label: 'Phone number' },
+  { key: 'contact_method', label: 'Preferred contact method' },
+  { key: 'message', label: 'A message / note' },
+  { key: 'source', label: 'How they heard about us' },
+  { key: 'availability', label: 'Availability' },
+  { key: 'experience', label: 'Rider experience' },
+];
+
+/** Read a channel's required-field map, e.g. { phone: true }. */
+export async function getIntakeRequirements(channel: string): Promise<Record<string, boolean>> {
+  const { data, error } = await supabase.rpc('intake_requirements', { p_channel: channel });
+  if (error) throw error;
+  return (data ?? {}) as Record<string, boolean>;
 }
 
-/** The staff intake queue, newest first; optionally filtered to one status. */
-export async function listIntakeSubmissions(
-  status?: IntakeSubmissionStatus,
-): Promise<IntakeSubmission[]> {
-  let query = supabase
-    .from('intake_submissions')
-    .select('*')
-    .order('created_at', { ascending: false });
-  if (status) {
-    query = query.eq('status', status);
-  }
-  const { data, error } = await query;
+/** Staff: set whether one field is required for a channel (upsert). */
+export async function setIntakeRequirement(
+  channel: string,
+  fieldKey: string,
+  required: boolean,
+): Promise<void> {
+  const { error } = await supabase.rpc('set_intake_requirement', {
+    p_channel: channel,
+    p_field_key: fieldKey,
+    p_required: required,
+  });
   if (error) throw error;
-  return (data ?? []) as IntakeSubmission[];
-}
-
-/** Mark a submission REVIEWED or DISMISSED, stamping reviewed_at + reviewed_by. */
-export async function markSubmissionStatus(
-  id: string,
-  status: 'REVIEWED' | 'DISMISSED',
-): Promise<IntakeSubmission> {
-  const { data: auth } = await supabase.auth.getUser();
-  const { data, error } = await supabase
-    .from('intake_submissions')
-    .update({
-      status,
-      reviewed_at: new Date().toISOString(),
-      reviewed_by: auth?.user?.id ?? null,
-    })
-    .eq('id', id)
-    .select('*')
-    .single();
-  if (error) throw error;
-  return data as IntakeSubmission;
-}
-
-/** Stamp a submission CONVERTED with the engagement the conversion opened. */
-export async function markSubmissionConverted(
-  id: string,
-  engagementId: string,
-): Promise<IntakeSubmission> {
-  const { data: auth } = await supabase.auth.getUser();
-  const { data, error } = await supabase
-    .from('intake_submissions')
-    .update({
-      status: 'CONVERTED',
-      converted_engagement_id: engagementId,
-      reviewed_at: new Date().toISOString(),
-      reviewed_by: auth?.user?.id ?? null,
-    })
-    .eq('id', id)
-    .select('*')
-    .single();
-  if (error) throw error;
-  return data as IntakeSubmission;
 }
 
 // ─── Booking requests (the Request Inbox) ────────────────────────────────────
@@ -110,9 +66,15 @@ export interface BookingRequest {
   created_at: string;
   status: BookingRequestStatus;
   contact_name: string;
+  /** Canonical split from the unified intake (older rows may be null). */
+  contact_first_name: string | null;
+  contact_last_name: string | null;
   contact_email: string;
   contact_phone: string | null;
   contact_method: 'text' | 'call' | 'email' | null;
+  /** Where the submission came from + what it's about (unified intake). */
+  category: string | null;
+  channel: string | null;
   /** Structured availability (src/lib/availability.ts) — legacy {date,time} entries may coexist. */
   proposed_times: ProposedTime[];
   notes: string | null;

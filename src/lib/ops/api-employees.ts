@@ -2,13 +2,13 @@
  * INT-API-EMPLOYEES — data wrappers for mod.employees (U12).
  *
  * Tables (supabase/migrations/20260630110000_mod_employees.sql):
- *   staff_profiles / shifts / time_entries / service_assignments
+ *   staff_profiles / shifts / time_entries
  *
  * staff_profiles is the employment record on a profiles(user_id) row (+ an
  * optional CRM contact link); shifts are scheduled work windows; time_entries
  * are clock in/out rows (a shift's entries are tied back via the generic
- * source_kind='shift' + source_id columns); service_assignments put staff on
- * an engagement / service occurrence.
+ * source_kind='shift' + source_id columns). (Service assignments retired with
+ * the engagements teardown.)
  *
  * RLS enforces org boundary + module gate (mod.employees) + access (admin
  * RCUD, employee reads own rows) server-side; these wrappers only shape calls.
@@ -28,17 +28,6 @@ export interface ContactOption {
   id: string;
   first_name: string | null;
   last_name: string | null;
-}
-
-export interface EngagementOption {
-  id: string;
-  display_code: string | null;
-  service_type: string;
-}
-
-export interface ServiceTypeOption {
-  code: string;
-  display_name: string;
 }
 
 export interface StaffProfile {
@@ -111,42 +100,11 @@ export interface TimeEntryInput {
   shift_id: string;
 }
 
-export type ServiceAssignmentStatus = 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
-
-export interface ServiceAssignment {
-  id: string;
-  org_id: string;
-  engagement_id: string | null;
-  staff_profile_id: string;
-  service_type: string | null;
-  scheduled_at: string | null;
-  status: string;
-  created_at: string;
-  updated_at: string;
-  /** Joined children (listServiceAssignments / create / status updates). */
-  staff?: {
-    id: string;
-    title: string | null;
-    profile?: Pick<ProfileOption, 'user_id' | 'first_name' | 'last_name'> | null;
-  } | null;
-  engagement?: EngagementOption | null;
-  service?: ServiceTypeOption | null;
-}
-
-export interface ServiceAssignmentInput {
-  staff_profile_id: string;
-  engagement_id?: string | null;
-  service_type?: string | null;
-  scheduled_at?: string | null;
-}
-
 export interface EmployeesKpis {
   /** Active (non-deleted, active=true) staff profiles. */
   activeStaff: number;
   /** Shifts starting inside the current Monday-anchored week. */
   shiftsThisWeek: number;
-  /** SCHEDULED (not yet completed/cancelled) service assignments. */
-  openAssignments: number;
 }
 
 const STAFF_SELECT =
@@ -154,10 +112,6 @@ const STAFF_SELECT =
 
 const SHIFT_SELECT =
   '*, staff:staff_profiles(id, title, profile:profiles(user_id, first_name, last_name))';
-
-const ASSIGNMENT_SELECT =
-  '*, staff:staff_profiles(id, title, profile:profiles(user_id, first_name, last_name)), ' +
-  'engagement:engagements(id, display_code, service_type), service:service_types(code, display_name)';
 
 // ─── Week helper (shared by SchedulePage + the hub KPIs + their tests) ────────
 
@@ -195,26 +149,6 @@ export async function listContactOptions(): Promise<ContactOption[]> {
     .order('last_name');
   if (error) throw error;
   return (data ?? []) as ContactOption[];
-}
-
-export async function listEngagementOptions(): Promise<EngagementOption[]> {
-  const { data, error } = await supabase
-    .from('engagements')
-    .select('id, display_code, service_type')
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false });
-  if (error) throw error;
-  return (data ?? []) as EngagementOption[];
-}
-
-export async function listServiceTypes(): Promise<ServiceTypeOption[]> {
-  const { data, error } = await supabase
-    .from('service_types')
-    .select('code, display_name')
-    .eq('active', true)
-    .order('sort_order');
-  if (error) throw error;
-  return (data ?? []) as ServiceTypeOption[];
 }
 
 // ─── Staff profiles ──────────────────────────────────────────────────────────
@@ -348,56 +282,11 @@ export async function createTimeEntry(input: TimeEntryInput): Promise<TimeEntry>
   return data as TimeEntry;
 }
 
-// ─── Service assignments ─────────────────────────────────────────────────────
-
-export async function listServiceAssignments(): Promise<ServiceAssignment[]> {
-  const { data, error } = await supabase
-    .from('service_assignments')
-    .select(ASSIGNMENT_SELECT)
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false });
-  if (error) throw error;
-  return (data ?? []) as unknown as ServiceAssignment[];
-}
-
-export async function createServiceAssignment(
-  input: ServiceAssignmentInput,
-): Promise<ServiceAssignment> {
-  const { data, error } = await supabase
-    .from('service_assignments')
-    .insert({
-      staff_profile_id: input.staff_profile_id,
-      engagement_id: input.engagement_id ?? null,
-      service_type: input.service_type ?? null,
-      scheduled_at: input.scheduled_at ?? null,
-    })
-    .select(ASSIGNMENT_SELECT)
-    .single();
-  if (error) throw error;
-  return data as unknown as ServiceAssignment;
-}
-
-/** Status transition (SCHEDULED / COMPLETED / CANCELLED). Hard delete is
- *  revoked in the DB — status + soft-delete are the only removal mechanisms. */
-export async function updateServiceAssignmentStatus(
-  id: string,
-  status: ServiceAssignmentStatus,
-): Promise<ServiceAssignment> {
-  const { data, error } = await supabase
-    .from('service_assignments')
-    .update({ status })
-    .eq('id', id)
-    .select(ASSIGNMENT_SELECT)
-    .single();
-  if (error) throw error;
-  return data as unknown as ServiceAssignment;
-}
-
 // ─── Hub KPIs ────────────────────────────────────────────────────────────────
 
 export async function getEmployeesKpis(): Promise<EmployeesKpis> {
   const { startISO, endISO } = weekRange(new Date());
-  const [staffRes, shiftsRes, assignmentsRes] = await Promise.all([
+  const [staffRes, shiftsRes] = await Promise.all([
     supabase
       .from('staff_profiles')
       .select('id')
@@ -409,20 +298,13 @@ export async function getEmployeesKpis(): Promise<EmployeesKpis> {
       .is('deleted_at', null)
       .gte('starts_at', startISO)
       .lt('starts_at', endISO),
-    supabase
-      .from('service_assignments')
-      .select('id')
-      .eq('status', 'SCHEDULED')
-      .is('deleted_at', null),
   ]);
   if (staffRes.error) throw staffRes.error;
   if (shiftsRes.error) throw shiftsRes.error;
-  if (assignmentsRes.error) throw assignmentsRes.error;
 
   return {
     activeStaff: (staffRes.data ?? []).length,
     shiftsThisWeek: (shiftsRes.data ?? []).length,
-    openAssignments: (assignmentsRes.data ?? []).length,
   };
 }
 

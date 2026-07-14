@@ -75,7 +75,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // 1. Load the document (status + org + title). No delivery unless EXECUTED.
     const { data: doc, error: docErr } = await db
       .from('documents')
-      .select('id, engagement_id, org_id, status, title, display_code, merged_body, execution_hash')
+      .select('id, org_id, status, title, display_code, merged_body, execution_hash')
       .eq('id', documentId)
       .maybeSingle();
     if (docErr) throw docErr;
@@ -86,11 +86,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(409).json({ error: `document not EXECUTED (status=${doc.status})` });
     }
 
-    // 2. Recipients = the engagement's parties (+ their contact email).
+    // 2. Recipients = the document's parties (+ their contact email).
     const { data: partiesRaw, error: partyErr } = await db
-      .from('engagement_parties')
+      .from('document_parties')
       .select('contact_id, contacts:contact_id (email, first_name, last_name)')
-      .eq('engagement_id', doc.engagement_id);
+      .eq('document_id', documentId);
     if (partyErr) throw partyErr;
     const parties = (partiesRaw ?? []) as unknown as PartyRow[];
 

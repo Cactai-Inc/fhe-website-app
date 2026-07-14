@@ -144,13 +144,6 @@ export interface EngagementStage {
   updated_at: string;
 }
 
-/** getEngagement() rollup: the engagement row plus its related-record children. */
-export interface EngagementDetail extends Engagement {
-  stages: EngagementStage[];
-  documents: DocumentRow[];
-  transactions: Transaction[];
-}
-
 // ─── Contracts, documents, signatures, deliveries ────────────────────────────
 
 export interface ContractTemplate {
@@ -168,7 +161,12 @@ export type DocumentStatus = 'DRAFT' | 'PENDING' | 'PARTIALLY_SIGNED' | 'EXECUTE
 export interface DocumentRow {
   id: string;
   display_code: string | null;
-  engagement_id: string;
+  /** Legacy link; null on all spine docs (contract/onboarding/kiosk). */
+  engagement_id?: string | null;
+  /** Spine link: the contract this doc belongs to, when it's a deal doc. */
+  contract_id?: string | null;
+  /** Spine link: the contact who owns the doc. */
+  contact_id?: string | null;
   template_id: string | null;
   title: string | null;
   merged_body: string | null;
@@ -229,7 +227,7 @@ export interface DeliveryInput {
 /** An engagement party flattened for recipient pickers: contact id + role +
  *  the OFFICIAL name canon (contactName: first+last) + email (null when the
  *  contact has none on file — such a recipient cannot be emailed). */
-export interface EngagementPartyContact {
+export interface DocumentPartyContact {
   contact_id: string;
   party_role: PartyRole;
   name: string;
@@ -237,18 +235,6 @@ export interface EngagementPartyContact {
 }
 
 // ─── Transactions & billing ──────────────────────────────────────────────────
-
-export interface Transaction {
-  id: string;
-  display_code: string | null;
-  engagement_id: string;
-  txn_type: 'PURCHASE' | 'SALE' | 'LEASE';
-  amount: number | null;
-  deposit_amount: number | null;
-  status: string;
-  created_at: string;
-  updated_at: string;
-}
 
 export type BillableLineStatus = 'OPEN' | 'SETTLED' | 'VOID';
 
@@ -269,12 +255,6 @@ export interface BillableLine {
   updated_at: string;
 }
 
-/** settle_billable_lines(p_payer_contact_id, p_period) → TABLE(transaction_id, amount, lines_settled). */
-export interface SettlementResult {
-  transaction_id: string;
-  amount: number;
-  lines_settled: number;
-}
 
 // ─── Public intake (requests) ────────────────────────────────────────────────
 

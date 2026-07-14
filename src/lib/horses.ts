@@ -55,21 +55,6 @@ export async function createHorseRecord(p: HorseIntakePayload): Promise<HorseRec
   return data as HorseRecordOutcome;
 }
 
-// ── onboarding append (spec H.7) ─────────────────────────────────────────────
-
-export async function onboardingHorseStep(engagementId: string): Promise<{ needed: boolean; horse_id: string | null }> {
-  const { data, error } = await supabase.rpc('my_onboarding_horse_step', { p_engagement_id: engagementId });
-  if (error) throw error;
-  return data as { needed: boolean; horse_id: string | null };
-}
-
-export async function attachOnboardingHorse(engagementId: string, horseId: string): Promise<void> {
-  const { error } = await supabase.rpc('my_onboarding_attach_horse', {
-    p_engagement_id: engagementId, p_horse_id: horseId,
-  });
-  if (error) throw error;
-}
-
 // ── staff records surface (spec H.8) ─────────────────────────────────────────
 
 export interface StaffHorseRecord {

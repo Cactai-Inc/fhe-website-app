@@ -38,7 +38,6 @@ function stripFacilityRulesTail(body: string): string {
 
 interface DocRow {
   id: string;
-  engagement_id: string;
   org_id: string;
   status: string;
   title: string;
@@ -71,7 +70,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // 1. Load all documents. Every one must be EXECUTED and share one org.
     const { data: docsRaw, error: docErr } = await db
       .from('documents')
-      .select('id, engagement_id, org_id, status, title, display_code, merged_body')
+      .select('id, org_id, status, title, display_code, merged_body')
       .in('id', documentIds);
     if (docErr) throw docErr;
     const docs = (docsRaw ?? []) as DocRow[];
@@ -99,11 +98,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const allAttachments = pdfs.map((p) => p.attachment);
 
     // 3. Recipients = union of all documents' parties, grouped by contact.
-    const engagementIds = Array.from(new Set(docs.map((d) => d.engagement_id)));
     const { data: partiesRaw, error: partyErr } = await db
-      .from('engagement_parties')
+      .from('document_parties')
       .select('contact_id, contacts:contact_id (email, first_name, last_name)')
-      .in('engagement_id', engagementIds);
+      .in('document_id', documentIds);
     if (partyErr) throw partyErr;
     const parties = (partiesRaw ?? []) as unknown as PartyRow[];
     // dedupe by contact_id

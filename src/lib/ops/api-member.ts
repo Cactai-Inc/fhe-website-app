@@ -116,76 +116,50 @@ export async function myLessonProgress(): Promise<MyLessonProgress[]> {
   return (data ?? []) as MyLessonProgress[];
 }
 
-// ─── MyBrokerage (mod.brokerage) ─────────────────────────────────────────────
+// ─── My lesson reports (Phase 4 — full log/report feed) ──────────────────────
 
-/** The member's own engagement, flattened with its service + status lookups. */
-export interface MemberEngagement {
-  id: string;
-  display_code: string | null;
-  /** NULL for non-service engagements (kiosk releases); those carry no
-   *  service_types embed and never pass the brokerage segment filter. */
-  service_type: string | null;
-  status: string;
-  start_date: string | null;
+/** One authored note on the rider's lesson (pre-lesson or post). */
+export interface MemberBookingNote {
+  author_role: 'rider' | 'instructor' | 'staff' | 'admin';
+  author_name: string | null;
+  phase: 'pre' | 'post';
+  body: string;
   created_at: string;
-  /** service_types lookup (world-readable). */
-  service: { display_name: string; segment: string | null } | null;
-  /** engagement_status lookup (world-readable); is_terminal = closed. */
-  status_row: { display_name: string; is_terminal: boolean } | null;
 }
 
-export interface MyBrokerageOverview {
-  /** The member's search/purchase (brokerage-segment) engagements, newest first. */
-  engagements: MemberEngagement[];
-  /** Engagements not in a terminal status. */
-  openCount: number;
+/** One of the rider's lesson reports: the instructor's write-up, the logged
+ *  activities, and the authored-notes thread (pre-lesson + post). */
+export interface MemberLessonReport {
+  booking_id: string;
+  starts_at: string;
+  ends_at: string;
+  status: MemberLessonSessionStatus;
+  location: string | null;
+  activity_log: { activities: string[]; text: string | null } | null;
+  report: string | null;
+  notes: MemberBookingNote[];
 }
 
-/** The member's own brokerage (search/evaluation/purchase/sale/lease-representation)
- *  engagements: engagements RLS returns only the caller's rows; the brokerage set is
- *  the 'acquisition' segment of the service_types catalog. */
-export async function myBrokerageOverview(): Promise<MyBrokerageOverview> {
-  const { data, error } = await supabase
-    .from('engagements')
-    .select(
-      'id, display_code, service_type, status, start_date, created_at, ' +
-        'service:service_types(display_name, segment), ' +
-        'status_row:engagement_status(display_name, is_terminal)',
-    )
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false });
+/** Every lesson the rider has a write-up for (report, log, or notes), newest
+ *  first — the client-facing "Your progress" feed. */
+export async function myLessonReports(): Promise<MemberLessonReport[]> {
+  const { data, error } = await supabase.rpc('my_lesson_reports');
   if (error) throw error;
-
-  const engagements = ((data ?? []) as unknown as MemberEngagement[]).filter(
-    (e) => e.service?.segment === 'acquisition',
-  );
-  return {
-    engagements,
-    openCount: engagements.filter((e) => e.status_row?.is_terminal !== true).length,
-  };
+  return (data ?? []) as MemberLessonReport[];
 }
 
-/** The member's own engagements in a given catalog SEGMENT ('support'=deal,
- *  'horse'=care, 'rider'=riding), newest first. One query; RLS returns only the
- *  caller's rows. Powers the purpose-built deal/care dashboards (Slice 4). */
-export async function myEngagementsBySegment(segment: string): Promise<MyBrokerageOverview> {
-  const { data, error } = await supabase
-    .from('engagements')
-    .select(
-      'id, display_code, service_type, status, start_date, created_at, ' +
-        'service:service_types(display_name, segment), ' +
-        'status_row:engagement_status(display_name, is_terminal)',
-    )
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false });
+/** Add the rider's own note to one of their lessons (visible to the instructor). */
+export async function addMyLessonNote(
+  bookingId: string,
+  phase: 'pre' | 'post',
+  body: string,
+): Promise<void> {
+  const { error } = await supabase.rpc('add_booking_note', {
+    p_booking_id: bookingId,
+    p_phase: phase,
+    p_body: body,
+  });
   if (error) throw error;
-  const engagements = ((data ?? []) as unknown as MemberEngagement[]).filter(
-    (e) => e.service?.segment === segment,
-  );
-  return {
-    engagements,
-    openCount: engagements.filter((e) => e.status_row?.is_terminal !== true).length,
-  };
 }
 
 // ─── MyBoarding (mod.boarding) ───────────────────────────────────────────────

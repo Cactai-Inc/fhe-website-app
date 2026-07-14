@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
-  UserRound, Grid3x3, Bookmark, FileText, Boxes, CreditCard, BadgeCheck,
+  UserRound, Grid3x3, Bookmark, FileText, Boxes, BadgeCheck,
   ShoppingBag, Gift, ChevronRight, ExternalLink, Mail, Smartphone,
   MessageSquare, Instagram, Facebook, Linkedin, Music2, Check,
 } from 'lucide-react';
@@ -20,7 +20,6 @@ import { GiftsPanel, SavedPanel, DocumentsPanel } from '../../components/app/Acc
 import { useAuth } from '../../contexts/AuthContext';
 import { getMyContactPrefs, saveMyContactPrefs, type MyContactPrefs } from '../../lib/contact';
 import { startGoogleChange, startPasswordChange } from '../../lib/emailChange';
-import { listBillingSchedules, nextDue } from '../../lib/billing';
 import { useNavigate } from 'react-router-dom';
 
 /**
@@ -341,20 +340,6 @@ export default function AccountHub() {
   const membershipSub = membership?.status === 'active'
     ? `${membership.tier ?? 'Member'} · active`
     : 'Not active yet';
-  const [nextPaymentSub, setNextPaymentSub] = useState('Payments & recurring billing');
-  useEffect(() => {
-    listBillingSchedules()
-      .then((rows) => {
-        const active = rows.filter((r) => r.active);
-        if (active.length === 0) return;
-        const soonest = active
-          .map((r) => nextDue(r.start_date, r.cadence))
-          .sort((a, b) => a.getTime() - b.getTime())[0];
-        setNextPaymentSub(`Next payment ${soonest.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`);
-      })
-      .catch(() => {});
-  }, []);
-
   useDocumentTitle('Account');
   const [open, setOpen] = useState<Section>(null);
   const toggle = (s: Section) => setOpen((cur) => (cur === s ? null : s));
@@ -380,9 +365,8 @@ export default function AccountHub() {
         {open === 'stable' && <div className="lg:col-span-2"><StableSection /></div>}
       </div>
 
-      <SectionLabel>Billing &amp; orders</SectionLabel>
+      <SectionLabel>Orders &amp; membership</SectionLabel>
       <div className="grid lg:grid-cols-2 gap-3">
-        <Row icon={CreditCard} title="Billing" sub={nextPaymentSub} onClick={() => navigate('/app/balance')} />
         <Row icon={BadgeCheck} title="Membership" sub={membershipSub} />
         <Row icon={ShoppingBag} title="Orders & payment method" sub="Past orders · Zelle" onClick={() => navigate('/app/orders')} />
         <Row icon={Gift} title="Gifts" sub="Things you've gifted · resend, transfer" onClick={() => toggle('gifts')} open={open === 'gifts'} />

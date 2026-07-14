@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Users, Handshake, LifeBuoy, Image, Flag } from 'lucide-react';
+import { Users, LifeBuoy, Image, Flag } from 'lucide-react';
 import { useDocumentTitle } from '../../../lib/hooks';
 import { adminOversight, type Oversight } from '../../../lib/support';
 
@@ -11,7 +11,6 @@ import { adminOversight, type Oversight } from '../../../lib/support';
  */
 const CARDS: { key: keyof Oversight['usage']; label: string; icon: typeof Users }[] = [
   { key: 'members', label: 'Members', icon: Users },
-  { key: 'open_engagements', label: 'Open engagements', icon: Handshake },
   { key: 'open_support', label: 'Open support', icon: LifeBuoy },
   { key: 'feed_posts', label: 'Live posts', icon: Image },
   { key: 'flagged_posts', label: 'Flagged', icon: Flag },

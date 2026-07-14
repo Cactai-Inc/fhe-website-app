@@ -36,16 +36,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // the document must belong to the caller's org
     const { data: doc } = await db
-      .from('documents').select('org_id, title, engagement_id').eq('id', documentId).maybeSingle();
+      .from('documents').select('org_id, title').eq('id', documentId).maybeSingle();
     if (!doc || doc.org_id !== profile?.org_id) {
       return res.status(404).json({ error: 'document not found in your organization' });
     }
 
-    // resolve the engagement party contact for the requested role
+    // resolve the document party contact for the requested role
     const { data: party } = await db
-      .from('engagement_parties')
+      .from('document_parties')
       .select('contact_id')
-      .eq('engagement_id', doc.engagement_id)
+      .eq('document_id', documentId)
       .eq('party_role', partyRole.toUpperCase())
       .maybeSingle();
     if (!party?.contact_id) {

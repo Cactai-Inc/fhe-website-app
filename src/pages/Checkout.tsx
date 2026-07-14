@@ -1,10 +1,12 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, X } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import type { ContactMethod } from '../lib/supabase';
 import { submitRequest, createDraftOrder } from '../lib/api';
+import { fetchIntakeRequirements } from '../lib/ops/api-public';
+import type { RequestCategory } from '../lib/types';
 import { formatPrice } from '../lib/services';
 import { inquiryLabel } from '../lib/inquiry';
 import {
@@ -70,6 +72,19 @@ export default function Checkout() {
   const [errors, setErrors] = useState<Partial<FormState>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  // Which extra fields a booking submission requires is owner-configured
+  // (intake_requirements, channel='booking') — read it so this form enforces
+  // the same rules the unified public form does.
+  const [bookingReq, setBookingReq] = useState<Record<string, boolean>>({ phone: true });
+  useEffect(() => {
+    let active = true;
+    fetchIntakeRequirements('booking')
+      .then((r) => active && setBookingReq(r))
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
 
   function buildAvailability(): AvailabilitySelection {
     return { ...picker.buildSelection(), ridingExperience: experience };
@@ -91,12 +106,16 @@ export default function Checkout() {
   function validate(): Partial<FormState> {
     const newErrors: Partial<FormState> = {};
     if (!form.first_name.trim()) newErrors.first_name = 'First name is required';
+    if (!form.last_name.trim()) newErrors.last_name = 'Last name is required';
     if (!form.email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       newErrors.email = 'Please enter a valid email';
     }
-    if (!form.phone.trim()) newErrors.phone = 'Phone number is required';
+    // phone + message are required only when the owner configured them for the
+    // booking channel (base fields above are always required).
+    if (bookingReq.phone && !form.phone.trim()) newErrors.phone = 'Phone number is required';
+    if (bookingReq.message && !form.notes.trim()) newErrors.notes = 'Please add a note';
     return newErrors;
   }
 
@@ -145,13 +164,28 @@ export default function Checkout() {
       else if (newErrors.phone) phoneRef.current?.focus();
       return;
     }
+    // Owner-configured booking requirements for the structured fields this page
+    // owns (availability + rider experience).
+    const avail = buildAvailability();
+    const hasAvailability =
+      avail.weeks.length > 0 || avail.anyDay || avail.days.length > 0 ||
+      avail.prefs.weekdayAm || avail.prefs.weekdayPm || avail.prefs.weekendAm || avail.prefs.weekendPm;
+    if (bookingReq.availability && !hasAvailability) {
+      setSubmitError('Please share when you’re available.');
+      requestAnimationFrame(() => errorBannerRef.current?.focus());
+      return;
+    }
+    if (bookingReq.experience && !experience) {
+      setSubmitError('Please tell us the rider’s experience level.');
+      requestAnimationFrame(() => errorBannerRef.current?.focus());
+      return;
+    }
     if (state.items.length === 0) return;
 
     setSubmitting(true);
     setSubmitError(null);
 
     try {
-      const fullName = [form.first_name.trim(), form.last_name.trim()].filter(Boolean).join(' ');
       // Structured availability travels twice: as JSON in the proposed_times
       // jsonb column AND as a clean human-readable block appended to the notes.
       const availability = buildAvailability();
@@ -161,14 +195,23 @@ export default function Checkout() {
         availabilityBlock ? `— Availability & experience —\n${availabilityBlock}` : '',
       ].filter(Boolean).join('\n\n');
       // Primary: write a structured request + selections (architecture-flow-spec).
+      // Cart checkout is the 'booking' channel with purchase intent; the category
+      // follows the cart's funnel.
+      const funnelCategory: RequestCategory =
+        state.funnel === 'horse' ? 'horse_care' : state.funnel === 'support' ? 'acquisition' : 'lessons';
       await submitRequest(
         {
-          contact_name: fullName,
+          first_name: form.first_name.trim(),
+          last_name: form.last_name.trim(),
           contact_email: form.email.trim(),
           contact_phone: form.phone.trim(),
           contact_method: contactMethod,
           proposed_times: availabilityEntries(availability),
           notes: combinedNotes || undefined,
+          category: funnelCategory,
+          channel: 'booking',
+          entry_location: 'checkout',
+          intent: 'purchase',
         },
         state.items.map((i) => ({
           offering_slug: i.offeringId,
@@ -309,17 +352,22 @@ export default function Checkout() {
 
                   {/* Last name */}
                   <div>
-                    <label className="form-label" htmlFor="last_name">Last Name</label>
+                    <label className="form-label" htmlFor="last_name">Last Name *</label>
                     <input
                       id="last_name"
                       name="last_name"
                       type="text"
                       value={form.last_name}
                       onChange={handleChange}
-                      className="form-input"
+                      aria-invalid={!!errors.last_name}
+                      aria-describedby={errors.last_name ? 'last_name-error' : undefined}
+                      className={`form-input ${errors.last_name ? 'form-input-error' : ''}`}
                       placeholder="Last name"
                       autoComplete="family-name"
                     />
+                    {errors.last_name && (
+                      <p id="last_name-error" className="form-error">{errors.last_name}</p>
+                    )}
                   </div>
 
                   {/* Email */}

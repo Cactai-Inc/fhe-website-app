@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { FormField } from '../../../../lib/ops';
-import { sessionWindow, type LessonClientOption } from '../../../../lib/ops/api-lessons';
+import {
+  sessionWindow,
+  type LessonClientOption,
+  type ScheduleHorseOption,
+} from '../../../../lib/ops/api-lessons';
 
 /**
  * The lesson-booking form shared by the ops SessionsPage modal and the
@@ -19,10 +23,12 @@ export interface ScheduleSessionFormValues {
   ends_at: string;
   location: string | null;
   notes: string | null;
+  horse_id: string | null;
 }
 
 export function ScheduleSessionForm({
   clients = [],
+  horses = [],
   fixedClientId,
   onSubmit,
   onCancel,
@@ -30,6 +36,8 @@ export function ScheduleSessionForm({
   error,
 }: {
   clients?: LessonClientOption[];
+  /** The org horse roster for the internal horse picker (barn + client horses). */
+  horses?: ScheduleHorseOption[];
   /** When booking for a known client (e.g. a request drawer), the picker is skipped. */
   fixedClientId?: string;
   onSubmit: (input: ScheduleSessionFormValues) => Promise<void>;
@@ -43,6 +51,7 @@ export function ScheduleSessionForm({
   const [duration, setDuration] = useState('60');
   const [location, setLocation] = useState('');
   const [note, setNote] = useState('');
+  const [horseId, setHorseId] = useState('');
   const [fieldError, setFieldError] = useState<string | null>(null);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -64,6 +73,7 @@ export function ScheduleSessionForm({
       ends_at: window.ends_at,
       location: location.trim() || null,
       notes: note.trim() || null,
+      horse_id: horseId || null,
     });
   }
 
@@ -147,6 +157,30 @@ export function ScheduleSessionForm({
           />
         )}
       </FormField>
+
+      {horses.length > 0 && (
+        <FormField
+          label="Horse"
+          hint="The horse for this lesson (barn horse or the rider's own). Internal tracking — not shown to the client. You can set or change this later."
+        >
+          {({ id }) => (
+            <select
+              id={id}
+              className="form-input"
+              value={horseId}
+              onChange={(e) => setHorseId(e.target.value)}
+              disabled={submitting}
+            >
+              <option value="">No horse yet</option>
+              {horses.map((h) => (
+                <option key={h.id} value={h.id}>
+                  {h.name}
+                </option>
+              ))}
+            </select>
+          )}
+        </FormField>
+      )}
 
       <FormField label="Lesson note (optional)">
         {({ id }) => (

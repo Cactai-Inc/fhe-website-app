@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   X, Gift, Send, Clock, ArrowRightLeft, Link as LinkIcon, FileText, BookmarkX,
-  Newspaper, Tag, ExternalLink, ChevronLeft, ChevronRight,
+  Newspaper, Tag, ExternalLink, ChevronLeft, ChevronRight, Download,
 } from 'lucide-react';
 import {
   SEED_GIFTS, SEED_SAVED,
@@ -144,6 +144,7 @@ export function DocumentsPanel() {
             kind: d.status === 'EXECUTED' ? 'Signed' : 'Awaiting signature',
             signedOn: `${it.signed ? 'Signed' : 'Generated'} ${new Date(when).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`,
             pages: pages.length ? pages : [body],
+            body,
           };
         })))
       .catch(() => setRows([]));
@@ -187,7 +188,20 @@ function PaperViewer({ doc, onClose }: { doc: SeedDocument; onClose: () => void 
           <p className="font-serif text-green-800 text-[15px] font-semibold truncate">{doc.title}</p>
           <p className="text-[11px] text-muted">{doc.signedOn}</p>
         </div>
-        <button type="button" onClick={onClose} aria-label="Close" className="text-secondary hover:text-green-800 p-2 -mr-2"><X size={20} /></button>
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            type="button"
+            onClick={async () => {
+              const text = doc.body ?? doc.pages.join('\n\n');
+              const { downloadDocumentPdf } = await import('../../lib/documentPdf');
+              await downloadDocumentPdf(doc.title, text);
+            }}
+            className="inline-flex items-center gap-1.5 text-[12px] text-green-800 hover:text-green-700 px-2.5 py-1.5 rounded-lg border border-green-800/15 hover:border-green-800/30 focus-ring"
+          >
+            <Download size={14} /> PDF
+          </button>
+          <button type="button" onClick={onClose} aria-label="Close" className="text-secondary hover:text-green-800 p-2 -mr-2"><X size={20} /></button>
+        </div>
       </div>
 
       {/* paper scroll region */}

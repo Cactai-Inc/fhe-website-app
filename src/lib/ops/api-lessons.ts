@@ -82,6 +82,7 @@ export interface LessonSession {
   id: string;
   org_id: string;
   client_id: string;
+  /** Always null on the spine (lessons no longer hang off engagements). */
   engagement_id: string | null;
   request_id: string | null;
   starts_at: string;
@@ -90,8 +91,47 @@ export interface LessonSession {
   location: string | null;
   notes: string | null;
   credit_id: string | null;
+  /** The horse this lesson concerns — internal tracking; never shown to clients
+   *  on a barn-horse lesson. */
+  horse_id: string | null;
   created_at: string;
 }
+
+/** A lesson booking row (bookings.kind='lesson') mapped to the LessonSession
+ *  shape the UI already speaks — status surfaced UPPER, engagement_id null. */
+type LessonBookingRow = {
+  id: string;
+  org_id: string;
+  client_id: string | null;
+  request_id: string | null;
+  starts_at: string | null;
+  ends_at: string | null;
+  status: string;
+  location: string | null;
+  notes: string | null;
+  credit_id: string | null;
+  horse_id: string | null;
+  created_at: string;
+};
+function lessonSessionFromBooking(r: LessonBookingRow): LessonSession {
+  return {
+    id: r.id,
+    org_id: r.org_id,
+    client_id: r.client_id ?? '',
+    engagement_id: null,
+    request_id: r.request_id,
+    starts_at: r.starts_at ?? '',
+    ends_at: r.ends_at ?? '',
+    status: r.status.toUpperCase() as LessonSessionStatus,
+    location: r.location,
+    notes: r.notes,
+    credit_id: r.credit_id,
+    horse_id: r.horse_id,
+    created_at: r.created_at,
+  };
+}
+const LESSON_BOOKING_COLS =
+  'id, org_id, client_id, request_id, starts_at, ends_at, status, location, notes, credit_id, horse_id, created_at';
 
 export interface ScheduleSessionInput {
   client_id: string;
@@ -102,6 +142,9 @@ export interface ScheduleSessionInput {
   request_id?: string | null;
   location?: string | null;
   notes?: string | null;
+  /** The horse the lesson uses (barn horse or the rider's own). Optional at
+   *  booking time — staff can attach/correct it later via setBookingHorse. */
+  horse_id?: string | null;
 }
 
 /** schedule_lesson_session RPC result (the freshly booked session). */
@@ -112,6 +155,7 @@ export interface ScheduledSessionResult {
   ends_at: string;
   status: LessonSessionStatus;
   location: string | null;
+  horse_id: string | null;
   engagement_id: string | null;
   request_id: string | null;
 }
@@ -234,27 +278,28 @@ export async function consumeLessonCredit(id: string, count = 1): Promise<Lesson
 
 // ─── lesson_sessions — the confirmed-booking spine ───────────────────────────
 
-/** The sessions board (staff RLS), soonest first, soft-deleted excluded. */
+/** The sessions board (staff RLS), soonest first. Lessons live on the spine
+ *  bookings table now (kind='lesson'); mapped to the LessonSession shape. */
 export async function listLessonSessions(): Promise<LessonSession[]> {
   const { data, error } = await supabase
-    .from('lesson_sessions')
-    .select('*')
-    .is('deleted_at', null)
+    .from('bookings')
+    .select(LESSON_BOOKING_COLS)
+    .eq('kind', 'lesson')
     .order('starts_at', { ascending: true });
   if (error) throw error;
-  return (data ?? []) as LessonSession[];
+  return ((data ?? []) as unknown as LessonBookingRow[]).map(lessonSessionFromBooking);
 }
 
 /** Sessions booked from one booking request (the IntakePage drawer inline list). */
 export async function listLessonSessionsForRequest(requestId: string): Promise<LessonSession[]> {
   const { data, error } = await supabase
-    .from('lesson_sessions')
-    .select('*')
+    .from('bookings')
+    .select(LESSON_BOOKING_COLS)
+    .eq('kind', 'lesson')
     .eq('request_id', requestId)
-    .is('deleted_at', null)
     .order('starts_at', { ascending: true });
   if (error) throw error;
-  return (data ?? []) as LessonSession[];
+  return ((data ?? []) as unknown as LessonBookingRow[]).map(lessonSessionFromBooking);
 }
 
 /** Book a confirmed lesson (staff-gated RPC; overlaps rejected server-side). */
@@ -269,9 +314,93 @@ export async function scheduleLessonSession(
     p_request_id: input.request_id ?? null,
     p_location: input.location ?? null,
     p_notes: input.notes ?? null,
+    p_horse_id: input.horse_id ?? null,
   });
   if (error) throw error;
   return data as ScheduledSessionResult;
+}
+
+/** Attach or correct the horse on a lesson booking (staff-gated). Passing null
+ *  clears it. This is the mechanism the "wrong-lesson-type" fix rides on. */
+export async function setBookingHorse(bookingId: string, horseId: string | null): Promise<void> {
+  const { error } = await supabase.rpc('set_booking_horse', {
+    p_booking_id: bookingId,
+    p_horse_id: horseId,
+  });
+  if (error) throw error;
+}
+
+// ─── Lesson log + report (Phase 4) ───────────────────────────────────────────
+
+/** One authored, uneditable note on a booking (pre-lesson or post). */
+export interface BookingNote {
+  id?: string;
+  author_role: 'rider' | 'instructor' | 'staff' | 'admin';
+  author_name: string | null;
+  phase: 'pre' | 'post';
+  body: string;
+  created_at?: string;
+}
+
+/** The assembled report for one booking: the LOG (checked activities + raw
+ *  text), the rider-visible REPORT text, and the authored notes thread. */
+export interface BookingReport {
+  booking_id: string;
+  kind: string;
+  starts_at: string | null;
+  ends_at: string | null;
+  status: string;
+  location: string | null;
+  horse_id: string | null;
+  service_type: string | null;
+  /** The configurable activity checklist for this booking's category. */
+  checklist: string[];
+  activity_log: { activities: string[]; text: string | null } | null;
+  report: string | null;
+  notes: BookingNote[];
+}
+
+/** The active activity checklist for a service category (e.g. RIDING_LESSON). */
+export async function activityChecklist(serviceType: string): Promise<string[]> {
+  const { data, error } = await supabase.rpc('activity_checklist', { p_service_type: serviceType });
+  if (error) throw error;
+  return (data ?? []) as string[];
+}
+
+/** Write the LOG on a booking: the checked activities + the raw log text. */
+export async function setBookingLog(
+  bookingId: string,
+  activities: string[],
+  text: string | null,
+): Promise<void> {
+  const { error } = await supabase.rpc('set_booking_log', {
+    p_booking_id: bookingId,
+    p_activities: activities,
+    p_text: text,
+  });
+  if (error) throw error;
+}
+
+/** Add an authored (uneditable) note to a booking — pre-lesson or post. */
+export async function addBookingNote(
+  bookingId: string,
+  phase: 'pre' | 'post',
+  body: string,
+): Promise<BookingNote> {
+  const { data, error } = await supabase.rpc('add_booking_note', {
+    p_booking_id: bookingId,
+    p_phase: phase,
+    p_body: body,
+  });
+  if (error) throw error;
+  return data as BookingNote;
+}
+
+/** The assembled report for one booking (staff in-org or the booking's client). */
+export async function getBookingReport(bookingId: string): Promise<BookingReport> {
+  const { data, error } = await supabase.rpc('booking_report', { p_booking_id: bookingId });
+  if (error) throw error;
+  return data as BookingReport;
 }
 
 /** Mark a lesson taught; by default debits the oldest credit row with balance. */
@@ -344,6 +473,36 @@ export async function listLessonClients(): Promise<LessonClientOption[]> {
     display_code: r.display_code,
     name: contactName(r.contact) || (r.display_code ?? r.id.slice(0, 8)),
     email: r.contact?.email ?? null,
+  }));
+}
+
+// ─── Horses (for the internal booking picker) ────────────────────────────────
+
+/** A horse option for the scheduling form's internal horse picker. */
+export interface ScheduleHorseOption {
+  id: string;
+  name: string;
+}
+
+/** In-tenant horse roster (RLS: org boundary), for the lesson-booking horse
+ *  picker — barn horses and clients' own horses alike. Label prefers the barn
+ *  name, then the registered name, then the display code. */
+export async function listScheduleHorses(): Promise<ScheduleHorseOption[]> {
+  const { data, error } = await supabase
+    .from('horses')
+    .select('id, barn_name, registered_name, display_code')
+    .is('deleted_at', null)
+    .order('barn_name', { nullsFirst: false });
+  if (error) throw error;
+  type Row = {
+    id: string;
+    barn_name: string | null;
+    registered_name: string | null;
+    display_code: string | null;
+  };
+  return ((data ?? []) as Row[]).map((h) => ({
+    id: h.id,
+    name: h.barn_name || h.registered_name || h.display_code || h.id.slice(0, 8),
   }));
 }
 

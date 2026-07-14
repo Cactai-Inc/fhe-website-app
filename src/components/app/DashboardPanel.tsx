@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { myNotifications, type AppNotification } from '../../lib/api';
 import { myLessonSessions, type MemberLessonSession } from '../../lib/ops/api-member';
+import { fetchMyPendingChanges } from '../../lib/ops/api-calendar';
 import { fetchEvents } from '../../lib/community';
-import { listBillingSchedules, nextDue, type BillingSchedule } from '../../lib/billing';
 import type { CommunityEvent } from '../../lib/community-types';
 import { supabase } from '../../lib/supabase';
 import { useNavigate as useNav } from 'react-router-dom';
@@ -12,7 +12,6 @@ import { useNavigate as useNav } from 'react-router-dom';
  * DASHBOARD PANEL — the thin, high-value strip above the community feed on the
  * main page. Two bands, LIVE-wired and clickable:
  *   "Needs your attention" — unread notifications (each links to its target) and
- *   a billing due-date inside the next 7 days.
  *   "Coming up" — the next scheduled lessons and community events.
  * Renders nothing when there is truly nothing (no placeholder filler).
  */
@@ -87,9 +86,6 @@ function ChecklistCard({ rows }: { rows: ChecklistRow[] }) {
   );
 }
 
-function fmtDay(d: Date): string {
-  return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-}
 function fmtTime(d: Date): string {
   return d.toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 }
@@ -99,17 +95,20 @@ export function DashboardPanel() {
   const [comingUp, setComingUp] = useState<Tile[]>([]);
   const [checklist, setChecklist] = useState<ChecklistRow[]>([]);
   const [suggestBooking, setSuggestBooking] = useState(false);
+  const [pendingChanges, setPendingChanges] = useState(0);
 
   useEffect(() => {
     let active = true;
+    fetchMyPendingChanges()
+      .then((r) => active && setPendingChanges(r.length))
+      .catch(() => {});
     Promise.all([
       myNotifications().catch(() => [] as AppNotification[]),
       myLessonSessions().catch(() => [] as MemberLessonSession[]),
       fetchEvents().catch(() => [] as CommunityEvent[]),
-      listBillingSchedules().catch(() => [] as BillingSchedule[]),
       supabase.rpc('my_onboarding_checklist')
         .then(({ data, error }) => (error ? [] : ((data as ChecklistRow[]) ?? []))) as Promise<ChecklistRow[]>,
-    ]).then(([notifications, sessions, events, schedules, cl]) => {
+    ]).then(([notifications, sessions, events, cl]) => {
       if (!active) return;
       const anyPending = cl.some((r) => !r.done);
       setChecklist(anyPending ? cl : []);
@@ -119,7 +118,7 @@ export function DashboardPanel() {
       if (!active) return;
       const now = Date.now();
 
-      // ── needs attention: unread notifications (linked) + imminent billing ──
+      // ── needs attention: unread notifications (linked) ──
       const att: Tile[] = notifications
         .filter((n) => !n.read_at)
         .slice(0, 3)
@@ -127,19 +126,6 @@ export function DashboardPanel() {
           id: `n-${n.id}`, kind: n.kind.replace(/_/g, ' '), title: n.title,
           sub: n.body ?? undefined, cta: 'Open', to: n.link || '/app', gold: true,
         }));
-      for (const b of schedules) {
-        if (!b.active || !b.reminders_on) continue;
-        const due = nextDue(b.start_date, b.cadence);
-        const days = Math.ceil((due.getTime() - now) / 86400000);
-        if (days >= 0 && days <= 7) {
-          att.push({
-            id: `bill-${b.id}`, kind: 'payment', gold: true,
-            title: `$${Number(b.amount).toFixed(0)} due ${fmtDay(due)}`,
-            sub: b.mode === 'request' ? "We'll send a Zelle request" : 'Zelle payment',
-            cta: 'View billing', to: '/app/balance',
-          });
-        }
-      }
 
       // ── coming up: next lessons + next events ──
       const up: Tile[] = [];
@@ -168,21 +154,29 @@ export function DashboardPanel() {
     return () => { active = false; };
   }, []);
 
-  if (attention.length === 0 && comingUp.length === 0 && checklist.length === 0 && !suggestBooking) return null;
+  if (attention.length === 0 && comingUp.length === 0 && checklist.length === 0 && !suggestBooking && pendingChanges === 0) return null;
 
   return (
     <div className="rounded-2xl border border-green-800/10 shadow-[0_14px_34px_-14px_rgba(13,33,24,0.22)] bg-gradient-to-br from-white to-cream-100 p-5 sm:p-6 mb-6 sm:mb-7">
-      {(attention.length > 0 || checklist.length > 0 || suggestBooking) && (
+      {(attention.length > 0 || checklist.length > 0 || suggestBooking || pendingChanges > 0) && (
         <>
           <p className="text-[10px] tracking-widest uppercase text-gold-800 font-semibold mb-3">Needs your attention</p>
           <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
             {checklist.length > 0 && <ChecklistCard rows={checklist} />}
+            {pendingChanges > 0 && (
+              <TileCard tile={{
+                id: 'pending-changes', kind: 'suggestion',
+                title: `${pendingChanges} pending request${pendingChanges > 1 ? 's' : ''}`,
+                sub: 'Awaiting confirmation from our team.',
+                cta: 'View on calendar', to: '/app/calendar',
+              }} />
+            )}
             {suggestBooking && (
               <TileCard tile={{
                 id: 'book-first', kind: 'suggestion', gold: true,
                 title: 'Book your next lesson',
                 sub: 'Paperwork done — pick a time that suits you.',
-                cta: 'Book a lesson', to: '/app/book',
+                cta: 'Book a lesson', to: '/app/calendar',
               }} />
             )}
             {attention.map((t) => <TileCard key={t.id} tile={t} />)}
