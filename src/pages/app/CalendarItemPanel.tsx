@@ -5,6 +5,7 @@ import { fetchOfferings } from '../../lib/api';
 import type { Offering } from '../../lib/types';
 import { listLessonClients, listScheduleHorses } from '../../lib/ops/api-lessons';
 import type { LessonClientOption, ScheduleHorseOption } from '../../lib/ops/api-lessons';
+import { LessonLogEditor } from './ops/lessons/LessonLogEditor';
 import {
   fetchLocations,
   fetchClientPurchases,
@@ -354,6 +355,13 @@ export function CalendarItemPanel({
             <span className="form-label">Notes</span>
             <textarea rows={2} className="form-input resize-none" value={notes} onChange={(e) => setNotes(e.target.value)} />
           </label>
+
+          {/* A1 — log + report for a real serviced booking (lesson or horse-care) */}
+          {editing && item?.id && (item.kind === 'lesson' || item.kind === 'care') && (
+            <div className="pt-1">
+              <LessonLogEditor bookingId={item.id} initialReport={item.notes} />
+            </div>
+          )}
 
           {error && <p role="alert" className="form-error">{error}</p>}
         </div>

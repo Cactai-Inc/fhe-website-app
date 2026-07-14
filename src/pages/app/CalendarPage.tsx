@@ -18,8 +18,10 @@ import {
   decideBookingChange,
   type OpenChangeRequest,
 } from '../../lib/ops/api-calendar';
+import { getBookingReport, type BookingReport, type BookingNote } from '../../lib/ops/api-lessons';
 import { toErrorMessage } from '../../lib/ops/errors';
 import { Link } from 'react-router-dom';
+import { ClipboardList } from 'lucide-react';
 import { formatSessionWhen, formatTimeRange } from '../../lib/formatDateTime';
 import { CalendarItemPanel } from './CalendarItemPanel';
 import { CalendarSettingsPanel } from './CalendarSettingsPanel';
@@ -439,6 +441,76 @@ function MonthGrid({
 
 /** The client-side detail + actions panel (Slice 4): book an open slot, or
  *  reschedule / cancel / defer your own booking. */
+/* A1 — the client's read-only view of a session's report: the instructor/care
+ * notes, the activities completed, and the authored-notes thread. Available on
+ * any of the client's own serviced bookings (a lesson or a horse-care session).
+ * Collapsed behind a toggle; loads on expand. */
+function ClientReportView({ bookingId }: { bookingId: string }) {
+  const [open, setOpen] = useState(false);
+  const [report, setReport] = useState<BookingReport | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function expand() {
+    setOpen(true);
+    if (report || loading) return;
+    setLoading(true);
+    try {
+      setReport(await getBookingReport(bookingId));
+    } catch (e) {
+      setErr(toErrorMessage(e, 'Could not load the report.'));
+    } finally { setLoading(false); }
+  }
+
+  if (!open) {
+    return (
+      <button type="button" className="text-sm text-green-800 underline underline-offset-2 inline-flex items-center gap-1 mt-2" onClick={() => void expand()}>
+        <ClipboardList size={14} aria-hidden="true" /> View session report
+      </button>
+    );
+  }
+
+  const activities = report?.activity_log?.activities ?? [];
+  const hasReport = !!report?.report?.trim();
+  const notes = (report?.notes ?? []) as BookingNote[];
+
+  return (
+    <div className="mt-3 border-t border-green-800/10 pt-3 text-sm flex flex-col gap-3">
+      {loading && <p className="text-muted">Loading…</p>}
+      {err && <p className="form-error">{err}</p>}
+      {report && !hasReport && activities.length === 0 && notes.length === 0 && (
+        <p className="text-muted">No report has been posted for this session yet.</p>
+      )}
+      {hasReport && (
+        <div>
+          <p className="text-xs uppercase tracking-wide text-muted mb-1">Notes for you</p>
+          <p className="text-green-900 whitespace-pre-line">{report!.report}</p>
+        </div>
+      )}
+      {activities.length > 0 && (
+        <div>
+          <p className="text-xs uppercase tracking-wide text-muted mb-1">What we did</p>
+          <div className="flex flex-wrap gap-1.5">
+            {activities.map((a) => (
+              <span key={a} className="text-xs px-2 py-1 rounded-full bg-green-800 text-white">{a}</span>
+            ))}
+          </div>
+        </div>
+      )}
+      {notes.length > 0 && (
+        <ul className="flex flex-col gap-1.5">
+          {notes.map((n, i) => (
+            <li key={n.id ?? i} className="text-xs text-green-900/90">
+              <span className="font-medium text-green-800">{n.author_name || (n.author_role === 'rider' ? 'You' : 'Instructor')}:</span>{' '}
+              <span className="whitespace-pre-line">{n.body}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function DetailPanel({ item, onClose, onChanged }: { item: CalendarItem; onClose: () => void; onChanged: () => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -522,6 +594,8 @@ function DetailPanel({ item, onClose, onChanged }: { item: CalendarItem; onClose
             </div>
           )}
         </dl>
+
+        {isMine && (item.kind === 'lesson' || item.kind === 'care') && <ClientReportView bookingId={item.id} />}
 
         {done && <p className="bg-green-50 border border-green-200 text-green-800 text-sm p-3 rounded mb-3">{done}</p>}
 
