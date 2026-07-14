@@ -7,6 +7,7 @@ import { signInWithGoogle } from '../lib/auth';
 import { OAUTH_PROVIDERS } from '../lib/authConfig';
 import { supabase } from '../lib/supabase';
 import { useDocumentTitle } from '../lib/hooks';
+import { useAuth } from '../contexts/AuthContext';
 import type { Invitation } from '../lib/types';
 
 type State = 'checking' | 'invalid' | 'ready' | 'creating';
@@ -19,6 +20,7 @@ export default function Register() {
   // contact instead of granting community membership, and lands on the contract.
   const isContractInvite = params.get('kind') === 'contract';
   const navigate = useNavigate();
+  const { refreshProfile } = useAuth();
 
   /** Redeem per invite kind; returns the post-redemption destination. */
   async function redeemByKind(): Promise<string> {
@@ -150,12 +152,17 @@ export default function Register() {
 
     try {
       const dest = await redeemByKind(); // membership grant, or contract-party link
+      // Load the freshly-stamped role/membership into context before navigating,
+      // so a staff invitee is recognized as an operator at /app (not bounced to a
+      // blank, member-gated /app/account from the stale pre-redeem snapshot).
+      await refreshProfile().catch(() => {});
       navigate(dest, { replace: true });
       return;
     } catch {
       // token consumed by a parallel attempt or expired mid-flow; the account
       // exists, and for provisioned clients membership self-heals at sign-in
       // (ensure_my_membership) — land in the app, not the legacy /account page.
+      await refreshProfile().catch(() => {});
       navigate('/app', { replace: true });
       return;
     }

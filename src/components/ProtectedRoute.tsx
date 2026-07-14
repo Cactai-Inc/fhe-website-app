@@ -78,10 +78,28 @@ export default function ProtectedRoute({
     return <Navigate to="/app" replace />;
   }
 
-  // Member-only areas: signed-in but without an active membership → account page,
-  // where a "your membership isn't active yet" note lives.
+  // Member-only areas: signed-in but without an active membership. We render an
+  // inline notice rather than redirecting — the whole /app subtree (incl.
+  // /app/account) is member-gated, so any Navigate here would loop into a blank
+  // screen. This is the safety net for an account whose provisioning didn't
+  // complete (e.g. a redeem that stamped no role); refreshing usually clears it.
   if (requireMember && !isMember) {
-    return <Navigate to="/app/account" replace state={{ needsMembership: true }} />;
+    return (
+      <div className="min-h-screen bg-cream flex items-center justify-center px-6">
+        <div className="max-w-md text-center">
+          <p className="eyebrow mb-3">Almost there</p>
+          <h1 className="heading-section text-green-800 mb-4">Finishing setting up your account</h1>
+          <p className="body-text mb-8">
+            Your account isn’t fully activated yet. Try refreshing — if this keeps happening, open your
+            invitation link again or contact us and we’ll sort it out.
+          </p>
+          <div className="flex items-center justify-center gap-3">
+            <button type="button" onClick={() => window.location.reload()} className="btn-primary">Refresh</button>
+            <a href="/" className="btn-secondary">Return home</a>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return <>{children}</>;

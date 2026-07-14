@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import { validateInvitation, upsertMyProfile, redeemInvitation, myOnboardingState } from '../lib/api';
 import { redeemContractInvitation } from '../lib/contracts';
 import { useDocumentTitle } from '../lib/hooks';
+import { useAuth } from '../contexts/AuthContext';
 
 type State = 'working' | 'done' | 'mismatch' | 'invalid';
 
@@ -22,6 +23,7 @@ type State = 'working' | 'done' | 'mismatch' | 'invalid';
 export default function RegisterComplete() {
   useDocumentTitle('Finishing Sign-Up');
   const navigate = useNavigate();
+  const { refreshProfile } = useAuth();
   const [state, setState] = useState<State>('working');
   const [invitedEmail, setInvitedEmail] = useState('');
   const [actualEmail, setActualEmail] = useState('');
@@ -96,10 +98,15 @@ export default function RegisterComplete() {
         // consumed/expired mid-flow — account exists, membership self-heals for
         // provisioned clients (ensure_my_membership); land in the app.
         window.localStorage.removeItem('fhe-invite');
+        await refreshProfile().catch(() => {});
         if (active) { setState('done'); navigate('/app', { replace: true }); }
         return;
       }
       window.localStorage.removeItem('fhe-invite');
+      // Pull the freshly-stamped role/membership into context BEFORE navigating,
+      // or /app renders from the pre-redeem snapshot (role=USER) and the member
+      // gate loops a staff invitee into a blank /app/account.
+      await refreshProfile().catch(() => {});
       if (active) {
         setState('done');
         navigate(dest, { replace: true });
