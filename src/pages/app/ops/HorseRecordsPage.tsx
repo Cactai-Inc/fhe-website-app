@@ -31,6 +31,7 @@ function EditableRecord({
   const [leaseEnd, setLeaseEnd] = useState(r.lease_end ?? '');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [okMsg, setOkMsg] = useState<string | null>(null);
 
   const field = (key: keyof StaffHorseRecord & string, label: string) => (
     <div key={key}>
@@ -46,10 +47,10 @@ function EditableRecord({
   );
 
   async function genAvailability() {
-    setBusy(true); setErr(null);
+    setBusy(true); setErr(null); setOkMsg(null);
     try {
       const n = await generateLeaseAvailability(r.id, 4);
-      setErr(n > 0 ? `Generated ${n} bookable slots on the calendar.` : 'No new slots (already generated or none due).');
+      setOkMsg(n > 0 ? `Generated ${n} bookable slots on the calendar.` : 'No new slots (already generated or none due).');
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Could not generate availability.');
     } finally { setBusy(false); }
@@ -147,6 +148,7 @@ function EditableRecord({
       </div>
 
       {err && <p className="form-error text-sm text-red-700 mt-2">{err}</p>}
+      {okMsg && <p className="text-sm text-green-700 mt-2">{okMsg}</p>}
       <div className="flex gap-2 mt-3">
         {editing ? (
           <>

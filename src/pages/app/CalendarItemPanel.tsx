@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { toErrorMessage } from '../../lib/ops/errors';
 import { fetchOfferings } from '../../lib/api';
@@ -52,6 +52,7 @@ export function CalendarItemPanel({
   const [locations, setLocations] = useState<CalendarLocation[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const done = useRef(false); // submitted/deleted → don't autosave a draft on close
 
   const initialStart = item?.starts_at ?? defaultStart?.toISOString() ?? new Date().toISOString();
   const initialEnd =
@@ -148,6 +149,7 @@ export function CalendarItemPanel({
     setError(null);
     try {
       await saveCalendarItem(buildPayload(asDraft));
+      done.current = true;
       onSaved();
     } catch (e) {
       setError(toErrorMessage(e, 'Could not save.'));
@@ -156,12 +158,27 @@ export function CalendarItemPanel({
     }
   }
 
+  // Whether a NEW item has enough entered to be worth keeping as a draft.
+  const hasContent =
+    type === 'unavailable'
+      ? notes.trim() !== ''
+      : !!offeringId || !!clientId || !!horseId || notes.trim() !== '';
+
+  // Back / close: a NEW item with content is autosaved as a draft (never added
+  // to the calendar as committed); an empty one, or an edit, just closes.
+  async function handleClose() {
+    if (done.current || editing || busy || !hasContent) { onClose(); return; }
+    try { await saveCalendarItem(buildPayload(true)); } catch { /* keep the panel forgiving */ }
+    onClose();
+  }
+
   async function remove() {
     if (!item?.id) return;
     setBusy(true);
     setError(null);
     try {
       await deleteCalendarItem(item.id, isSeries ? scope : 'one');
+      done.current = true;
       onSaved();
     } catch (e) {
       setError(toErrorMessage(e, 'Could not delete.'));
@@ -179,14 +196,14 @@ export function CalendarItemPanel({
   );
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/30 flex justify-end" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-black/30 flex justify-end" onClick={() => void handleClose()}>
       <div
         className="bg-cream w-full sm:max-w-md h-full overflow-y-auto shadow-xl flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-4 border-b border-green-800/10 sticky top-0 bg-cream z-10">
           <h2 className="font-serif text-lg text-green-900">{editing ? 'Edit' : 'New'} calendar item</h2>
-          <button type="button" onClick={onClose} aria-label="Close"><X size={20} /></button>
+          <button type="button" onClick={() => void handleClose()} aria-label="Close"><X size={20} /></button>
         </div>
 
         <div className="p-4 flex flex-col gap-4 flex-1">
