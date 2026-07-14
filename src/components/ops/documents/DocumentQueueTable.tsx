@@ -53,10 +53,10 @@ const COLUMNS: Column<DocumentRow>[] = [
     ),
   },
   {
-    key: 'engagement',
-    header: 'Engagement',
+    key: 'contract',
+    header: 'Contract',
     render: (row) => (
-      <span className="text-green-800/80">{row.engagement_id.slice(0, 8)}</span>
+      <span className="text-green-800/80">{row.contract_id ? row.contract_id.slice(0, 8) : '—'}</span>
     ),
   },
   {

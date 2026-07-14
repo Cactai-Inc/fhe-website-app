@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { FormField, StatusBadge, EmptyState, useAsync } from '../../../lib/ops';
 import { listDeliveries, recordDelivery } from '../../../lib/api';
-import { listEngagementPartyContacts } from '../../../lib/ops/api-documents';
+import { listDocumentPartyContacts } from '../../../lib/ops/api-documents';
 import type {
   DocumentDelivery,
   DeliveryChannel,
   DeliveryInput,
-  EngagementPartyContact,
+  DocumentPartyContact,
 } from '../../../lib/ops/types';
 
 /**
@@ -17,9 +17,9 @@ import type {
  * `supabase.from('document_deliveries').insert(...)` (RLS org-scoped). The
  * delivery log lists prior sends (newest first) from `listDeliveries`.
  *
- * RECIPIENT is picked from the engagement's parties (owner directive: no raw
- * contact-id input) — `listEngagementPartyContacts(engagementId)` flattens
- * engagement_parties → contacts into "Name — role (email)". A recipient with
+ * RECIPIENT is picked from the document's parties (owner directive: no raw
+ * contact-id input) — `listDocumentPartyContacts(documentId)` flattens
+ * document_parties → contacts into "Name — role (email)". A recipient with
  * no email on file DISABLES the send button (with a hint) so staff never
  * records an email delivery that cannot land.
  *
@@ -46,18 +46,16 @@ const CHANNELS: { value: DeliveryChannel; label: string }[] = [
 
 export interface DeliveryPanelProps {
   documentId: string;
-  /** The document's engagement — source of the recipient (parties) dropdown. */
-  engagementId: string;
   /** The document's current lifecycle status; delivery is gated on EXECUTED. */
   status: string;
 }
 
-export function DeliveryPanel({ documentId, engagementId, status }: DeliveryPanelProps) {
+export function DeliveryPanel({ documentId, status }: DeliveryPanelProps) {
   const isExecuted = status.trim().toUpperCase() === DELIVERABLE_STATUS;
 
   const [deliveries, setDeliveries] = useState<DocumentDelivery[]>([]);
   const [loadError, setLoadError] = useState<Error | null>(null);
-  const [parties, setParties] = useState<EngagementPartyContact[]>([]);
+  const [parties, setParties] = useState<DocumentPartyContact[]>([]);
   const [partiesError, setPartiesError] = useState<Error | null>(null);
   const [recipient, setRecipient] = useState('');
   const [channel, setChannel] = useState<DeliveryChannel>('EMAIL');
@@ -87,13 +85,13 @@ export function DeliveryPanel({ documentId, engagementId, status }: DeliveryPane
     void loadLog();
   }, [loadLog]);
 
-  // Load the engagement's parties for the recipient dropdown (only once the
+  // Load the document's parties for the recipient dropdown (only once the
   // form is reachable — a gated DRAFT never needs the roster).
   useEffect(() => {
     if (!isExecuted) return;
     let cancelled = false;
     setPartiesError(null);
-    listEngagementPartyContacts(engagementId)
+    listDocumentPartyContacts(documentId)
       .then((rows) => {
         if (!cancelled) setParties(rows);
       })
@@ -103,7 +101,7 @@ export function DeliveryPanel({ documentId, engagementId, status }: DeliveryPane
     return () => {
       cancelled = true;
     };
-  }, [engagementId, isExecuted]);
+  }, [documentId, isExecuted]);
 
   const selected = parties.find((p) => p.contact_id === recipient) ?? null;
   const selectedHasNoEmail = selected !== null && !selected.email;
