@@ -330,6 +330,79 @@ export async function setBookingHorse(bookingId: string, horseId: string | null)
   if (error) throw error;
 }
 
+// ─── Lesson log + report (Phase 4) ───────────────────────────────────────────
+
+/** One authored, uneditable note on a booking (pre-lesson or post). */
+export interface BookingNote {
+  id?: string;
+  author_role: 'rider' | 'instructor' | 'staff' | 'admin';
+  author_name: string | null;
+  phase: 'pre' | 'post';
+  body: string;
+  created_at?: string;
+}
+
+/** The assembled report for one booking: the LOG (checked activities + raw
+ *  text), the rider-visible REPORT text, and the authored notes thread. */
+export interface BookingReport {
+  booking_id: string;
+  kind: string;
+  starts_at: string | null;
+  ends_at: string | null;
+  status: string;
+  location: string | null;
+  horse_id: string | null;
+  service_type: string | null;
+  /** The configurable activity checklist for this booking's category. */
+  checklist: string[];
+  activity_log: { activities: string[]; text: string | null } | null;
+  report: string | null;
+  notes: BookingNote[];
+}
+
+/** The active activity checklist for a service category (e.g. RIDING_LESSON). */
+export async function activityChecklist(serviceType: string): Promise<string[]> {
+  const { data, error } = await supabase.rpc('activity_checklist', { p_service_type: serviceType });
+  if (error) throw error;
+  return (data ?? []) as string[];
+}
+
+/** Write the LOG on a booking: the checked activities + the raw log text. */
+export async function setBookingLog(
+  bookingId: string,
+  activities: string[],
+  text: string | null,
+): Promise<void> {
+  const { error } = await supabase.rpc('set_booking_log', {
+    p_booking_id: bookingId,
+    p_activities: activities,
+    p_text: text,
+  });
+  if (error) throw error;
+}
+
+/** Add an authored (uneditable) note to a booking — pre-lesson or post. */
+export async function addBookingNote(
+  bookingId: string,
+  phase: 'pre' | 'post',
+  body: string,
+): Promise<BookingNote> {
+  const { data, error } = await supabase.rpc('add_booking_note', {
+    p_booking_id: bookingId,
+    p_phase: phase,
+    p_body: body,
+  });
+  if (error) throw error;
+  return data as BookingNote;
+}
+
+/** The assembled report for one booking (staff in-org or the booking's client). */
+export async function getBookingReport(bookingId: string): Promise<BookingReport> {
+  const { data, error } = await supabase.rpc('booking_report', { p_booking_id: bookingId });
+  if (error) throw error;
+  return data as BookingReport;
+}
+
 /** Mark a lesson taught; by default debits the oldest credit row with balance. */
 export async function completeLessonSession(
   sessionId: string,

@@ -4,9 +4,11 @@ import { ArrowRight, CalendarClock, GraduationCap, MapPin, NotebookPen } from 'l
 import { ModuleGate, useAsync } from '../../lib/ops';
 import { useModules } from '../../lib/ops/useModules';
 import {
-  myLessonsOverview, myLessonSessions, myLessonProgress,
-  type MemberLessonSession, type MyLessonProgress,
+  myLessonsOverview, myLessonSessions, myLessonReports, addMyLessonNote,
+  type MemberLessonSession, type MemberLessonReport,
 } from '../../lib/ops/api-member';
+import { formatSessionWhen } from '../../lib/formatDateTime';
+import { toErrorMessage } from '../../lib/ops/errors';
 import { useDocumentTitle } from '../../lib/hooks';
 
 /**
@@ -18,6 +20,92 @@ import { useDocumentTitle } from '../../lib/hooks';
  * the purchase ledger, and the tenant's active packages linking to the public
  * /lessons funnel to buy more.
  */
+/** One lesson report for the rider: logged activities, the instructor write-up,
+ *  the pre-lesson/notes thread (authorship-labeled, uneditable), and a box to
+ *  add their own note for the instructor. */
+function ReportCard({ report: r }: { report: MemberLessonReport }) {
+  const [notes, setNotes] = useState(r.notes);
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const activities = r.activity_log?.activities ?? [];
+
+  async function add() {
+    if (!text.trim()) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      await addMyLessonNote(r.booking_id, 'post', text.trim());
+      setNotes((prev) => [
+        ...prev,
+        { author_role: 'rider', author_name: 'You', phase: 'post', body: text.trim(), created_at: '' },
+      ]);
+      setText('');
+    } catch (e) {
+      setErr(toErrorMessage(e, 'Could not add your note.'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="bg-white border border-green-800/10 p-5">
+      <p className="text-xs text-muted mb-2">{formatSessionWhen(r.starts_at, r.ends_at, r.location)}</p>
+
+      {activities.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {activities.map((a) => (
+            <span
+              key={a}
+              className="text-xs px-2 py-0.5 rounded-full bg-green-800/10 text-green-800"
+            >
+              {a}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {r.report && (
+        <p className="body-text text-sm text-green-900 whitespace-pre-line mb-2">{r.report}</p>
+      )}
+
+      {notes.length > 0 && (
+        <ul className="flex flex-col gap-1.5 mb-2 border-t border-green-800/10 pt-2">
+          {notes.map((n, i) => (
+            <li key={i} className="text-xs text-green-900/90">
+              <span className="font-medium text-green-800">
+                {n.phase === 'pre' ? 'Pre-lesson' : 'Note'} ·{' '}
+                {n.author_name || (n.author_role === 'rider' ? 'You' : 'Instructor')}:
+              </span>{' '}
+              <span className="whitespace-pre-line">{n.body}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="flex items-end gap-2">
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          rows={1}
+          placeholder="Add a note for your instructor…"
+          className="form-input text-sm flex-1"
+        />
+        <button
+          type="button"
+          className="btn-secondary text-xs"
+          disabled={busy || !text.trim()}
+          onClick={() => void add()}
+        >
+          Add
+        </button>
+      </div>
+      {err && <p className="form-error text-xs mt-1">{err}</p>}
+    </div>
+  );
+}
+
 export default function MyLessons() {
   useDocumentTitle('My Lessons');
   const modules = useModules();
@@ -25,7 +113,7 @@ export default function MyLessons() {
 
   const load = useAsync(myLessonsOverview);
   const [sessions, setSessions] = useState<MemberLessonSession[]>([]);
-  const [progress, setProgress] = useState<MyLessonProgress[]>([]);
+  const [reports, setReports] = useState<MemberLessonReport[]>([]);
 
   useEffect(() => {
     if (!lessonsOn) return;
@@ -37,8 +125,8 @@ export default function MyLessons() {
       .catch(() => {
         /* the credits ledger still renders */
       });
-    myLessonProgress()
-      .then(setProgress)
+    myLessonReports()
+      .then(setReports)
       .catch(() => {
         /* the progress section just stays empty */
       });
@@ -79,9 +167,7 @@ export default function MyLessons() {
                     <CalendarClock size={18} className="text-gold-ink flex-shrink-0" aria-hidden="true" />
                     <div>
                       <p className="text-sm font-sans font-medium text-green-900">
-                        {new Date(s.starts_at).toLocaleString(undefined, {
-                          weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit',
-                        })}
+                        {formatSessionWhen(s.starts_at, s.ends_at)}
                       </p>
                       {s.location && (
                         <p className="text-xs text-muted mt-0.5 inline-flex items-center gap-1.5">
@@ -99,24 +185,17 @@ export default function MyLessons() {
           </section>
         )}
 
-        {/* Progress — the aggregated notes your trainer left across your lessons
-            (the second view of per-lesson notes; the first is each session card). */}
-        {progress.length > 0 && (
+        {/* Progress — your instructor's report for each lesson: what you worked
+            on (logged activities), the write-up, and the notes thread you can
+            add to for your instructor. */}
+        {reports.length > 0 && (
           <section aria-label="Your progress" className="mb-8" data-testid="lesson-progress">
             <h2 className="font-serif font-medium text-green-800 text-xl mb-4 inline-flex items-center gap-2">
               <NotebookPen size={18} className="text-gold-ink" aria-hidden="true" /> Your progress
             </h2>
             <div className="flex flex-col gap-3">
-              {progress.map((p) => (
-                <div key={p.session_id} className="bg-white border border-green-800/10 p-5">
-                  <p className="text-xs text-muted mb-1">
-                    {new Date(p.starts_at).toLocaleDateString(undefined, {
-                      weekday: 'long', month: 'long', day: 'numeric',
-                    })}
-                    {p.location ? ` · ${p.location}` : ''}
-                  </p>
-                  <p className="body-text text-sm text-green-900 whitespace-pre-line">{p.note}</p>
-                </div>
+              {reports.map((r) => (
+                <ReportCard key={r.booking_id} report={r} />
               ))}
             </div>
           </section>

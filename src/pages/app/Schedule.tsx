@@ -4,6 +4,7 @@ import { ArrowRight, GraduationCap, MapPin } from 'lucide-react';
 import { fetchEvents, fetchMyRsvps, setRsvp } from '../../lib/community';
 import { myLessonSessions, type MemberLessonSession } from '../../lib/ops/api-member';
 import { listLessonSessions } from '../../lib/ops/api-lessons';
+import { formatSessionWhen } from '../../lib/formatDateTime';
 import { useAuth } from '../../contexts/AuthContext';
 import { useDocumentTitle } from '../../lib/hooks';
 import type { CommunityEvent, EventRsvp, RsvpStatus } from '../../lib/community-types';
@@ -30,11 +31,7 @@ const SESSION_STATUS_CLASS: Record<MemberLessonSession['status'], string> = {
 };
 
 function sessionWhen(s: MemberLessonSession): string {
-  const start = new Date(s.starts_at);
-  const end = new Date(s.ends_at);
-  return `${start.toLocaleString(undefined, {
-    weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit',
-  })} – ${end.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`;
+  return formatSessionWhen(s.starts_at, s.ends_at);
 }
 
 export default function Schedule() {

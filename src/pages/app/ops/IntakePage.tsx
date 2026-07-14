@@ -42,6 +42,7 @@ import {
   listScheduleHorses,
 } from '../../../lib/ops/api-lessons';
 import type { LessonSession, ScheduleHorseOption } from '../../../lib/ops/api-lessons';
+import { formatSessionWhen } from '../../../lib/formatDateTime';
 import { ScheduleSessionForm } from './lessons/ScheduleSessionForm';
 import type { ScheduleSessionFormValues } from './lessons/ScheduleSessionForm';
 import type {
@@ -552,13 +553,7 @@ function RequestInbox({ openId }: { openId?: string } = {}) {
                         key={s.id}
                         className="flex items-center justify-between gap-3 text-sm text-green-900"
                       >
-                        <span>
-                          {new Date(s.starts_at).toLocaleString(undefined, {
-                            weekday: 'short', month: 'short', day: 'numeric',
-                            hour: 'numeric', minute: '2-digit',
-                          })}
-                          {s.location ? ` · ${s.location}` : ''}
-                        </span>
+                        <span>{formatSessionWhen(s.starts_at, s.ends_at, s.location)}</span>
                         <StatusBadge status={s.status} />
                       </li>
                     ))}

@@ -116,6 +116,52 @@ export async function myLessonProgress(): Promise<MyLessonProgress[]> {
   return (data ?? []) as MyLessonProgress[];
 }
 
+// ─── My lesson reports (Phase 4 — full log/report feed) ──────────────────────
+
+/** One authored note on the rider's lesson (pre-lesson or post). */
+export interface MemberBookingNote {
+  author_role: 'rider' | 'instructor' | 'staff' | 'admin';
+  author_name: string | null;
+  phase: 'pre' | 'post';
+  body: string;
+  created_at: string;
+}
+
+/** One of the rider's lesson reports: the instructor's write-up, the logged
+ *  activities, and the authored-notes thread (pre-lesson + post). */
+export interface MemberLessonReport {
+  booking_id: string;
+  starts_at: string;
+  ends_at: string;
+  status: MemberLessonSessionStatus;
+  location: string | null;
+  activity_log: { activities: string[]; text: string | null } | null;
+  report: string | null;
+  notes: MemberBookingNote[];
+}
+
+/** Every lesson the rider has a write-up for (report, log, or notes), newest
+ *  first — the client-facing "Your progress" feed. */
+export async function myLessonReports(): Promise<MemberLessonReport[]> {
+  const { data, error } = await supabase.rpc('my_lesson_reports');
+  if (error) throw error;
+  return (data ?? []) as MemberLessonReport[];
+}
+
+/** Add the rider's own note to one of their lessons (visible to the instructor). */
+export async function addMyLessonNote(
+  bookingId: string,
+  phase: 'pre' | 'post',
+  body: string,
+): Promise<void> {
+  const { error } = await supabase.rpc('add_booking_note', {
+    p_booking_id: bookingId,
+    p_phase: phase,
+    p_body: body,
+  });
+  if (error) throw error;
+}
+
 // ─── MyBoarding (mod.boarding) ───────────────────────────────────────────────
 
 /** A period charge on one of the member's board agreements (RLS-scoped). */
