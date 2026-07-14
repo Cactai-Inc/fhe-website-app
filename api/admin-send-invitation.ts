@@ -34,7 +34,7 @@ function makeToken(): string {
 interface ProvisionResult {
   invitation_id: string;
   token: string;
-  engagement_id: string;
+  purchase_id: string;
   tier_label: string;
   amount: number;
 }
