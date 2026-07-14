@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { toErrorMessage } from '../../../../lib/ops/errors';
 import type { FormEvent } from 'react';
-import { Link } from 'react-router-dom';
 import {
   DataTable,
   FormField,
@@ -279,17 +278,10 @@ export function BoardChargesPage() {
     },
     {
       key: 'settlement',
-      header: 'Settlement',
+      header: '',
       render: (c) =>
-        c.billable_line?.transaction_id ? (
-          <Link
-            to={`/app/ops/transactions/${c.billable_line.transaction_id}`}
-            className="link-underline"
-          >
-            View invoice
-          </Link>
-        ) : c.billable_line ? (
-          <span className="text-green-800/70">Awaiting settlement</span>
+        c.billable_line ? (
+          <span className="text-green-800/70">Emitted</span>
         ) : (
           <button
             type="button"
@@ -310,11 +302,7 @@ export function BoardChargesPage() {
           <div>
             <h1 className="font-serif text-2xl text-green-900">Board charges</h1>
             <p className="text-sm text-green-800/70">
-              Period charges emitted to billing; open charges settle into invoices on{' '}
-              <Link to="/app/ops/transactions" className="link-underline">
-                Transactions
-              </Link>
-              .
+              Period charges emitted to billing.
             </p>
           </div>
           <button

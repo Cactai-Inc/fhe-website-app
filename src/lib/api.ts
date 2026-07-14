@@ -750,19 +750,6 @@ export async function listOpenBillableLines(payerContactId?: string): Promise<Bi
   return (data ?? []) as BillableLine[];
 }
 
-/** Roll a payer's OPEN billable lines into an INVOICE transaction via the
- *  SECURITY-DEFINER RPC. p_period is a tstzrange string (or null for all OPEN). */
-export async function settleBillableLines(
-  payerContactId: string,
-  period?: string | null,
-): Promise<SettlementResult[]> {
-  const { data, error } = await supabase.rpc('settle_billable_lines', {
-    p_payer_contact_id: payerContactId,
-    p_period: period ?? null,
-  });
-  if (error) throw error;
-  return (data ?? []) as SettlementResult[];
-}
 
 // ─── Public intake (requests) ─────────────────────────────────────────────
 

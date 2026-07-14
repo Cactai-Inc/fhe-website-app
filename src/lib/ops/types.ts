@@ -255,12 +255,6 @@ export interface BillableLine {
   updated_at: string;
 }
 
-/** settle_billable_lines(p_payer_contact_id, p_period) → TABLE(transaction_id, amount, lines_settled). */
-export interface SettlementResult {
-  transaction_id: string;
-  amount: number;
-  lines_settled: number;
-}
 
 // ─── Public intake (requests) ────────────────────────────────────────────────
 
