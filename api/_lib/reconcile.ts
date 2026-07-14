@@ -15,6 +15,7 @@ export interface ParsedNotification {
 
 export type ReconcileOutcome =
   | { result: 'confirmed'; orderId: string }
+  | { result: 'fee_confirmed'; changeId: string }
   | { result: 'review'; reason: string }
   | { result: 'duplicate'; orderId: string };
 
@@ -74,7 +75,28 @@ export async function reconcileNotification(
   }
 
   if (candidates.length === 0) {
-    return toReview('no matching pending purchase');
+    // Fallback: a reschedule FEE (booking_change_requests.fee_amount). Fees are
+    // not unique-cents, so we only auto-mark-paid when EXACTLY ONE open unpaid
+    // change request matches the amount; anything else goes to review.
+    const { data: fees } = await db
+      .from('booking_change_requests')
+      .select('id, fee_amount, status, fee_paid')
+      .eq('status', 'pending')
+      .eq('fee_paid', false)
+      .eq('fee_amount', n.amount);
+    const feeMatches = fees ?? [];
+    if (feeMatches.length === 1) {
+      const changeId = feeMatches[0].id as string;
+      await db.from('booking_change_requests').update({ fee_paid: true }).eq('id', changeId);
+      if (notificationId) {
+        await db.from('payment_notifications').update({ status: 'matched' }).eq('id', notificationId);
+      }
+      return { result: 'fee_confirmed', changeId };
+    }
+    if (feeMatches.length > 1) {
+      return toReview('ambiguous: multiple reschedule fees match this amount');
+    }
+    return toReview('no matching pending purchase or fee');
   }
   if (candidates.length > 1) {
     return toReview('ambiguous: multiple pending purchases match');
