@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { myNotifications, type AppNotification } from '../../lib/api';
 import { myLessonSessions, type MemberLessonSession } from '../../lib/ops/api-member';
 import { fetchEvents } from '../../lib/community';
-import { listBillingSchedules, nextDue, type BillingSchedule } from '../../lib/billing';
 import type { CommunityEvent } from '../../lib/community-types';
 import { supabase } from '../../lib/supabase';
 import { useNavigate as useNav } from 'react-router-dom';
@@ -12,7 +11,6 @@ import { useNavigate as useNav } from 'react-router-dom';
  * DASHBOARD PANEL — the thin, high-value strip above the community feed on the
  * main page. Two bands, LIVE-wired and clickable:
  *   "Needs your attention" — unread notifications (each links to its target) and
- *   a billing due-date inside the next 7 days.
  *   "Coming up" — the next scheduled lessons and community events.
  * Renders nothing when there is truly nothing (no placeholder filler).
  */
@@ -87,9 +85,6 @@ function ChecklistCard({ rows }: { rows: ChecklistRow[] }) {
   );
 }
 
-function fmtDay(d: Date): string {
-  return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-}
 function fmtTime(d: Date): string {
   return d.toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 }
@@ -106,10 +101,9 @@ export function DashboardPanel() {
       myNotifications().catch(() => [] as AppNotification[]),
       myLessonSessions().catch(() => [] as MemberLessonSession[]),
       fetchEvents().catch(() => [] as CommunityEvent[]),
-      listBillingSchedules().catch(() => [] as BillingSchedule[]),
       supabase.rpc('my_onboarding_checklist')
         .then(({ data, error }) => (error ? [] : ((data as ChecklistRow[]) ?? []))) as Promise<ChecklistRow[]>,
-    ]).then(([notifications, sessions, events, schedules, cl]) => {
+    ]).then(([notifications, sessions, events, cl]) => {
       if (!active) return;
       const anyPending = cl.some((r) => !r.done);
       setChecklist(anyPending ? cl : []);
@@ -119,7 +113,7 @@ export function DashboardPanel() {
       if (!active) return;
       const now = Date.now();
 
-      // ── needs attention: unread notifications (linked) + imminent billing ──
+      // ── needs attention: unread notifications (linked) ──
       const att: Tile[] = notifications
         .filter((n) => !n.read_at)
         .slice(0, 3)
@@ -127,19 +121,6 @@ export function DashboardPanel() {
           id: `n-${n.id}`, kind: n.kind.replace(/_/g, ' '), title: n.title,
           sub: n.body ?? undefined, cta: 'Open', to: n.link || '/app', gold: true,
         }));
-      for (const b of schedules) {
-        if (!b.active || !b.reminders_on) continue;
-        const due = nextDue(b.start_date, b.cadence);
-        const days = Math.ceil((due.getTime() - now) / 86400000);
-        if (days >= 0 && days <= 7) {
-          att.push({
-            id: `bill-${b.id}`, kind: 'payment', gold: true,
-            title: `$${Number(b.amount).toFixed(0)} due ${fmtDay(due)}`,
-            sub: b.mode === 'request' ? "We'll send a Zelle request" : 'Zelle payment',
-            cta: 'View billing', to: '/app/balance',
-          });
-        }
-      }
 
       // ── coming up: next lessons + next events ──
       const up: Tile[] = [];

@@ -1,31 +1,30 @@
 /* Calendar modal — a real MONTH-GRID calendar in the header affordance. Days with
  * items carry dot markers; tapping a day lists that day's items below with the
  * date writ large. Sources are role-aware: staff see the whole barn's lesson
- * sessions (org-wide); members see their own — plus community events and the
- * member's billing due dates. Prev/next month navigation. */
+ * sessions (org-wide); members see their own — plus community events. Prev/next
+ * month navigation. */
 import { useEffect, useMemo, useState } from 'react';
 import {
-  X, CalendarDays, GraduationCap, MapPin, CreditCard, ChevronLeft, ChevronRight,
+  X, CalendarDays, GraduationCap, MapPin, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { fetchEvents } from '../../lib/community';
 import { myLessonSessions, type MemberLessonSession } from '../../lib/ops/api-member';
 import { listLessonSessions, type LessonSession } from '../../lib/ops/api-lessons';
-import { listBillingSchedules, nextDue, type BillingSchedule } from '../../lib/billing';
 import { useAuth } from '../../contexts/AuthContext';
 import type { CommunityEvent } from '../../lib/community-types';
 
-type Kind = 'lesson' | 'event' | 'payment';
+type Kind = 'lesson' | 'event';
 
 interface Entry { key: string; when: Date; title: string; detail: string; kind: Kind; }
 
 const ICON: Record<Kind, typeof CalendarDays> = {
-  lesson: GraduationCap, event: MapPin, payment: CreditCard,
+  lesson: GraduationCap, event: MapPin,
 };
 const TINT: Record<Kind, string> = {
-  lesson: 'text-green-800', event: 'text-gold-800', payment: 'text-red-700',
+  lesson: 'text-green-800', event: 'text-gold-800',
 };
 const DOT: Record<Kind, string> = {
-  lesson: 'bg-green-700', event: 'bg-gold-600', payment: 'bg-red-600',
+  lesson: 'bg-green-700', event: 'bg-gold-600',
 };
 
 function dayKey(d: Date): string {
@@ -49,8 +48,7 @@ export default function CalendarModal({ onClose }: { onClose: () => void }) {
         ? Promise.resolve([] as MemberLessonSession[])
         : myLessonSessions().catch(() => [] as MemberLessonSession[]),
       fetchEvents().catch(() => [] as CommunityEvent[]),
-      listBillingSchedules().catch(() => [] as BillingSchedule[]),
-    ]).then(([orgSessions, mySessions, events, schedules]) => {
+    ]).then(([orgSessions, mySessions, events]) => {
       if (!active) return;
       const rows: Entry[] = [];
       for (const s of orgSessions) {
@@ -75,15 +73,6 @@ export default function CalendarModal({ onClose }: { onClose: () => void }) {
         rows.push({
           key: `e-${e.id}`, when: t, kind: 'event', title: e.title,
           detail: `${t.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}${e.location ? ` · ${e.location}` : ''}`,
-        });
-      }
-      for (const b of schedules) {
-        if (!b.active) continue;
-        const due = nextDue(b.start_date, b.cadence);
-        rows.push({
-          key: `p-${b.id}`, when: due, kind: 'payment',
-          title: `Payment due · $${Number(b.amount).toFixed(0)}`,
-          detail: b.mode === 'request' ? "We'll send a Zelle request" : 'Zelle payment',
         });
       }
       setEntries(rows);

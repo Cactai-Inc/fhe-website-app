@@ -71,7 +71,6 @@ import DocumentViewerPage from './pages/app/ops/DocumentViewerPage';
 import ModerationPage from './pages/app/ops/ModerationPage';
 import SupportPage from './pages/app/ops/SupportPage';
 import OversightPage from './pages/app/ops/OversightPage';
-import BillingPage from './pages/app/ops/BillingPage';
 import ContentStorePage from './pages/app/ops/ContentStorePage';
 // Ops / CRM — Wave-7 (intake, payments review, module hubs + module pages)
 import IntakePage from './pages/app/ops/IntakePage';
@@ -229,7 +228,6 @@ export function AppRoutes() {
               <Route path="ops/moderation" element={<ProtectedRoute requireStaff><ModerationPage /></ProtectedRoute>} />
               <Route path="ops/support" element={<ProtectedRoute requireStaff><SupportPage /></ProtectedRoute>} />
               <Route path="ops/oversight" element={<ProtectedRoute requireStaff><OversightPage /></ProtectedRoute>} />
-              <Route path="ops/billing" element={<ProtectedRoute requireStaff><BillingPage /></ProtectedRoute>} />
               <Route path="ops/content" element={<ProtectedRoute requireStaff><ContentStorePage /></ProtectedRoute>} />
               <Route path="ops/payments/review" element={<ProtectedRoute requireStaff><PaymentReviewPage /></ProtectedRoute>} />
               {/* Wave-7: module hubs + module pages (module-gated inside via ModuleGate) */}

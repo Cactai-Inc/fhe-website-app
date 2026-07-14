@@ -88,7 +88,6 @@ const SERVICING_GROUP: NavItem[] = [
 ];
 const BUSINESS_GROUP: NavItem[] = [
   { to: '/app/ops/payments/review', label: 'Payment review', icon: ReceiptText },
-  { to: '/app/ops/billing', label: 'Billing', icon: ReceiptText },
 ];
 const COMMUNITY_GROUP: NavItem[] = [
   { to: '/app/ops/moderation', label: 'Moderation', icon: Shield },
