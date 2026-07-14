@@ -289,6 +289,19 @@ export async function confirmBooking(bookingId: string): Promise<void> {
   if (error) throw error;
 }
 
+/** Staff ask a booking's client to provide their horse (A4). Notifies the client
+ *  with a click-through link that carries the booking id. */
+export async function requestHorseIntake(bookingId: string): Promise<void> {
+  const { error } = await supabase.rpc('request_horse_intake', { p_booking_id: bookingId });
+  if (error) throw error;
+}
+
+/** The client attaches a horse they own to a booking they own (A4). */
+export async function attachBookingHorse(bookingId: string, horseId: string): Promise<void> {
+  const { error } = await supabase.rpc('attach_booking_horse', { p_booking_id: bookingId, p_horse_id: horseId });
+  if (error) throw error;
+}
+
 /** The org's reschedule fee (0 = none). Read directly (RLS-scoped). */
 export async function fetchRescheduleFee(): Promise<number> {
   const { data, error } = await supabase.from('calendar_settings').select('reschedule_fee').maybeSingle();

@@ -12,6 +12,7 @@ import {
   saveCalendarItem,
   deleteCalendarItem,
   confirmBooking,
+  requestHorseIntake,
   type CalendarItem,
   type CalendarLocation,
   type ClientPurchaseOption,
@@ -55,6 +56,7 @@ export function CalendarItemPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const done = useRef(false); // submitted/deleted → don't autosave a draft on close
+  const [intakeSent, setIntakeSent] = useState(false); // A4 — horse-intake request sent to client
 
   const initialStart = item?.starts_at ?? defaultStart?.toISOString() ?? new Date().toISOString();
   const initialEnd =
@@ -186,6 +188,17 @@ export function CalendarItemPanel({
     } finally { setBusy(false); }
   }
 
+  async function sendHorseIntake() {
+    if (!item?.id) return;
+    setBusy(true); setError(null);
+    try {
+      await requestHorseIntake(item.id);
+      setIntakeSent(true);
+    } catch (e) {
+      setError(toErrorMessage(e, 'Could not send the horse-intake request.'));
+    } finally { setBusy(false); }
+  }
+
   async function remove() {
     if (!item?.id) return;
     setBusy(true);
@@ -290,6 +303,16 @@ export function CalendarItemPanel({
                   <option value="">No horse</option>
                   {horses.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
                 </select>
+                {/* A4 — ask the client to provide their own horse (attaches on submit) */}
+                {editing && item?.id && clientId && !horseId && (
+                  intakeSent ? (
+                    <p className="text-xs text-green-700 mt-1">Horse-intake request sent to the client.</p>
+                  ) : (
+                    <button type="button" className="text-xs text-green-800 underline underline-offset-2 mt-1" disabled={busy} onClick={() => void sendHorseIntake()}>
+                      Ask the client to add their horse
+                    </button>
+                  )
+                )}
               </label>
               <label className="text-sm">
                 <span className="form-label">Price</span>
