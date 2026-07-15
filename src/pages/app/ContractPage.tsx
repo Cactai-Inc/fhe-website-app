@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { LeaseExtrasSection } from './LeaseExtrasSection';
 import {
@@ -150,6 +150,20 @@ export default function ContractPage() {
   useEffect(() => { void load(); }, [load]);
 
   const doc = detail?.document;
+
+  // Email the signer a PDF copy once the document is executed. The endpoint is
+  // idempotent per (document, recipient), so viewing an already-delivered doc
+  // re-checks but never re-sends.
+  const deliveredRef = useRef(false);
+  useEffect(() => {
+    if (doc?.status === 'EXECUTED' && id && !deliveredRef.current) {
+      deliveredRef.current = true;
+      fetch('/api/deliver-documents', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ documentIds: [id] }),
+      }).catch(() => {});
+    }
+  }, [doc?.status, id]);
   const myRoles = detail?.my_roles ?? [];
   const isOwnerSide = isStaff || (doc?.is_originator ?? false);
   const isLessor = myRoles.includes('LESSOR');

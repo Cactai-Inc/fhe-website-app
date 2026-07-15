@@ -5,6 +5,8 @@ import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import type { ContactMethod } from '../lib/supabase';
 import { submitRequest, createDraftOrder } from '../lib/api';
+import { ensureHorseDocuments } from '../lib/horses';
+import { HorseCareSelect } from '../components/app/HorseCareSelect';
 import { fetchIntakeRequirements } from '../lib/ops/api-public';
 import type { RequestCategory } from '../lib/types';
 import { formatPrice } from '../lib/services';
@@ -57,6 +59,9 @@ export default function Checkout() {
   const inquiryCta = inquiryLabel(state.items);
   const { user } = useAuth();
   const navigate = useNavigate();
+  // Horse-care purchases require choosing the horse(s) so each has a Care Release.
+  const isHorseCare = state.funnel === 'horse';
+  const [careHorses, setCareHorses] = useState<string[]>([]);
   const [form, setForm] = useState<FormState>({
     first_name: '',
     last_name: '',
@@ -124,9 +129,20 @@ export default function Checkout() {
   // (documents → payment → confirmation). This is the single boundary from the spec.
   async function handleStartPurchase() {
     if (state.items.length === 0) return;
+    if (isHorseCare && careHorses.length === 0) {
+      setSubmitError('Please select the horse(s) this service is for (or add one).');
+      requestAnimationFrame(() => errorBannerRef.current?.focus());
+      return;
+    }
     setSubmitting(true);
     setSubmitError(null);
     try {
+      // Ensure a Care Release exists (to sign) for each chosen horse before the order.
+      if (isHorseCare) {
+        for (const horseId of careHorses) {
+          await ensureHorseDocuments(horseId, { includeCare: true });
+        }
+      }
       const { orderId } = await createDraftOrder({
         items: state.items.map((i) => ({
           offering_slug: i.offeringId,
@@ -301,6 +317,7 @@ export default function Checkout() {
                   We'll use the details on your account. On the next screen you'll review any
                   documents and choose how you'd like to pay. Nothing is charged until you confirm.
                 </p>
+                {isHorseCare && <HorseCareSelect selected={careHorses} onChange={setCareHorses} />}
                 {submitError && (
                   <div
                     ref={errorBannerRef}
