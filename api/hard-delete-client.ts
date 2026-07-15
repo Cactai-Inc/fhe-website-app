@@ -58,16 +58,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (target.role === 'SUPER_ADMIN') {
         return res.status(403).json({ error: 'a super admin account cannot be deleted here' });
       }
+      // The email BEFORE we delete the auth user — used to revoke stale invites.
+      const { data: authUser } = await db.schema('auth').from('users').select('email').eq('id', userId).maybeSingle();
       const { error: delErr } = await db.auth.admin.deleteUser(userId);
       if (delErr) return res.status(500).json({ error: `could not delete the account: ${delErr.message}` });
+      // Deleting a member must not leave a live invite pointing at a now-missing
+      // account: a lingering `sent` row lets the deleted person re-claim the login
+      // and land in a broken, profile-less state. Retire every pending invite for
+      // their email in this org.
+      if (authUser?.email) {
+        await db.from('invitations').update({ status: 'revoked' })
+          .eq('org_id', target.org_id).ilike('email', authUser.email).eq('status', 'sent');
+      }
       return res.status(200).json({ ok: true, deletedUser: true, deletedContact: false });
     }
 
     // the contact must be in the caller's org
     const { data: contact } = await db
-      .from('contacts').select('id, org_id').eq('id', contactId).maybeSingle();
+      .from('contacts').select('id, org_id, email').eq('id', contactId).maybeSingle();
     if (!contact || contact.org_id !== caller?.org_id) {
       return res.status(404).json({ error: 'contact not found in your organization' });
+    }
+    // Retire any pending invite for this person so it can't be re-claimed later.
+    if (contact.email) {
+      await db.from('invitations').update({ status: 'revoked' })
+        .eq('org_id', contact.org_id).ilike('email', contact.email).eq('status', 'sent');
     }
 
     // the linked auth user (if any) goes first

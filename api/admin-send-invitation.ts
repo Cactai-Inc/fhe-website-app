@@ -176,6 +176,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       : new Date(Date.now() + days * 86400000).toISOString();
     const inviteToken = makeToken();
 
+    // Only the newest link should ever be live. Retire any prior pending invite
+    // for this email in the org so a stale one can't validate alongside this one
+    // (re-inviting a deleted/failed account otherwise leaves a pile of `sent`
+    // rows, and the wrong one can win).
+    await db.from('invitations').update({ status: 'revoked' })
+      .eq('org_id', profile.org_id ?? '').ilike('email', email).eq('status', 'sent');
+
     const { error: insErr } = await db.from('invitations').insert({
       org_id: profile.org_id ?? null, // service-role insert has no current_org(); stamp the admin's org
       request_id: requestId,
