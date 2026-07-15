@@ -87,6 +87,23 @@ export async function contractDocumentDetail(documentId: string): Promise<Contra
   return data as ContractDetail;
 }
 
+/** One document in a contract's ordered signing set (lease → vet → care). */
+export interface SigningSetDoc {
+  document_id: string;
+  title: string | null;
+  template_key: string;
+  sign_sequence: number;
+  status: string;
+  executed: boolean;
+}
+/** The ordered set of documents to sign for this document's contract; [] when the
+ *  document isn't part of a multi-doc sequenced set. */
+export async function contractSigningSet(documentId: string): Promise<SigningSetDoc[]> {
+  const { data, error } = await supabase.rpc('contract_signing_set', { p_document_id: documentId });
+  if (error) throw error;
+  return (data ?? []) as SigningSetDoc[];
+}
+
 export async function setContractField(documentId: string, fieldKey: string, value: string): Promise<void> {
   const { error } = await supabase.rpc('set_contract_field', {
     p_document_id: documentId, p_field_key: fieldKey, p_value: value,

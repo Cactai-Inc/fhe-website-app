@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { LeaseExtrasSection } from './LeaseExtrasSection';
 import {
   FileText, CheckCircle2, Lock, Send, PenLine, ShieldCheck, RotateCcw,
@@ -11,8 +11,9 @@ import {
   contractDocumentDetail, setContractField, requestDocumentChange,
   resolveChangeRequest, advanceWorkflow, lockAndSign, confirmHorseSection,
   reopenHorseSection, inviteCounterparty, composeCostPhrase,
-  setPartyControls, contractMessagesList, contractMessagePost,
+  setPartyControls, contractMessagesList, contractMessagePost, contractSigningSet,
   type ContractDetail, type ContractField, type ContractMessage, type PartyControls,
+  type SigningSetDoc,
 } from '../../lib/contracts';
 
 /**
@@ -123,9 +124,11 @@ function CostComposer({
 
 export default function ContractPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   useDocumentTitle('Contract');
   const { isStaff } = useAuth();
   const [detail, setDetail] = useState<ContractDetail | null>(null);
+  const [signingSet, setSigningSet] = useState<SigningSetDoc[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [signName, setSignName] = useState('');
@@ -142,6 +145,7 @@ export default function ContractPage() {
     try {
       setDetail(await contractDocumentDetail(id));
       contractMessagesList(id).then(setMessages).catch(() => setMessages([]));
+      contractSigningSet(id).then(setSigningSet).catch(() => setSigningSet([]));
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not load the contract.');
@@ -224,8 +228,59 @@ export default function ContractPage() {
     locked: 'Ready to sign', executed: 'Executed', void: 'Void',
   };
 
+  // ── segmented signing set (lease → vet auth → care release) ──
+  const stepLabel = (k: string) =>
+    k === 'HORSE_LEASE' ? 'Lease agreement'
+      : k === 'HORSE_EMERGENCY_VET' ? 'Vet authorization'
+        : k === 'RELEASE_HORSE_CARE' ? 'Care liability release' : 'Document';
+  const inSet = signingSet.length > 1;
+  const curIdx = signingSet.findIndex((s) => s.document_id === id);
+  const nextInSeq = curIdx >= 0 ? signingSet.slice(curIdx + 1).find((s) => !s.executed) : undefined;
+  const allExecuted = inSet && signingSet.every((s) => s.executed);
+  const thisExecuted = doc.status === 'EXECUTED';
+
   return (
     <div className="max-w-5xl">
+      {inSet && (
+        <div className="bg-white border border-green-800/10 rounded-xl p-4 mb-4">
+          <p className="form-label mb-2.5">Document {curIdx + 1} of {signingSet.length} — signed in order</p>
+          <ol className="flex flex-wrap items-center gap-y-2">
+            {signingSet.map((s, i) => {
+              const current = s.document_id === id;
+              const prevDone = signingSet.slice(0, i).every((p) => p.executed);
+              const locked = !s.executed && !prevDone;
+              return (
+                <li key={s.document_id} className="flex items-center">
+                  <Link to={`/app/contracts/${s.document_id}`} aria-current={current ? 'step' : undefined}
+                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
+                      s.executed ? 'bg-green-700 text-white border-green-700'
+                        : current ? 'bg-gold-50 text-gold-900 border-gold-400'
+                          : locked ? 'bg-cream-100 text-muted border-green-800/15'
+                            : 'bg-white text-green-800 border-green-800/25 hover:border-green-800/50'}`}>
+                    {s.executed ? <CheckCircle2 size={13} aria-hidden="true" />
+                      : locked ? <Lock size={12} aria-hidden="true" />
+                        : <span className="w-3.5 text-center tabular-nums">{i + 1}</span>}
+                    {stepLabel(s.template_key)}
+                  </Link>
+                  {i < signingSet.length - 1 && <span className="text-green-800/30 mx-1.5" aria-hidden="true">→</span>}
+                </li>
+              );
+            })}
+          </ol>
+          {allExecuted ? (
+            <p className="text-sm text-green-700 mt-3 inline-flex items-center gap-1.5">
+              <CheckCircle2 size={16} aria-hidden="true" /> All documents in this set are signed.
+            </p>
+          ) : thisExecuted && nextInSeq ? (
+            <button type="button" onClick={() => navigate(`/app/contracts/${nextInSeq.document_id}`)}
+              className="btn-primary mt-3">
+              Continue to {stepLabel(nextInSeq.template_key)} →
+            </button>
+          ) : !thisExecuted ? (
+            <p className="form-hint mt-3">Sign this document to continue to the next.</p>
+          ) : null}
+        </div>
+      )}
       <div className="flex items-start justify-between gap-3 mb-1">
         <h1 className="font-serif text-2xl text-green-900 flex items-center gap-2">
           <FileText size={22} className="text-gold-ink" /> {doc.title}
