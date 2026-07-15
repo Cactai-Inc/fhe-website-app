@@ -4,8 +4,10 @@ import { useAuth } from '../../../contexts/AuthContext';
 import {
   GRANTABLE_SURFACES, listAllGrants, addGrant, removeGrant, type SurfaceGrant,
 } from '../../../lib/grants';
+import { X, ChevronRight } from 'lucide-react';
 import {
   adminListMembers, adminSetRole, adminSetSuspended, adminSendInvitation,
+  adminUpdateProfile, adminHardDeleteMember,
   type AdminMemberRow, type MemberRole,
 } from '../../../lib/admin';
 
@@ -28,19 +30,20 @@ function RosterSection({
 }: { members: AdminMemberRow[]; reload: () => void }) {
   const { isAdmin } = useAuth();
   const staff = members.filter((m) => (m.role ?? 'USER') !== 'USER');
-
-  async function act(fn: () => Promise<void>) { await fn(); reload(); }
+  const [selected, setSelected] = useState<AdminMemberRow | null>(null);
 
   return (
     <section className="mb-10">
       <h2 className="font-serif text-lg text-green-800 mb-1">Team roster</h2>
       <p className="text-[12.5px] text-muted mb-4">
-        Everyone with an internal role. Demoting to Client moves them back to the Clients page.
+        Everyone with an internal role. Click a member to edit their record, change their role,
+        demote them back to a client, or delete their account.
       </p>
       {staff.length === 0 && <p className="text-sm text-muted">No staff accounts yet.</p>}
       <div className="flex flex-col gap-1.5">
         {staff.map((m) => (
-          <div key={m.user_id} className="flex flex-wrap items-center justify-between gap-3 bg-white border border-green-800/10 rounded-lg px-4 py-3">
+          <button key={m.user_id} type="button" onClick={() => setSelected(m)}
+            className="flex items-center justify-between gap-3 bg-white border border-green-800/10 rounded-lg px-4 py-3 text-left hover:border-green-800/30 hover:bg-green-50/40 focus-ring transition-colors">
             <span className="min-w-0">
               <span className="block text-sm font-medium text-green-900 truncate">{memberName(m)}</span>
               <span className="block text-xs text-muted truncate">
@@ -48,36 +51,165 @@ function RosterSection({
               </span>
             </span>
             <span className="flex items-center gap-2 shrink-0">
-              {/* Super admin is shown, never set — and team roles never demote to
-                  client here (that's a deliberate act, not a dropdown slip). */}
-              {m.role === 'SUPER_ADMIN' ? (
-                <span className="text-xs font-sans uppercase tracking-wide px-2.5 py-1 rounded-full bg-green-800 text-gold-300">
-                  Super admin
-                </span>
-              ) : isAdmin ? (
-                <select
-                  className="border border-green-800/20 rounded-md px-2 py-1 text-xs bg-white"
-                  value={(m.role as MemberRole) ?? 'MANAGER'}
-                  onChange={(e) => void act(() => adminSetRole(m.user_id, e.target.value as MemberRole))}
-                  aria-label="Role"
-                >
-                  <option value="MANAGER">Instructor</option>
-                  <option value="ADMIN">Admin</option>
-                </select>
-              ) : (
-                <span className="text-xs text-muted">{ROLE_LABEL[m.role ?? ''] ?? 'Staff'}</span>
-              )}
-              {m.role !== 'SUPER_ADMIN' && (
-                <button type="button" onClick={() => void act(() => adminSetSuspended(m.user_id, !m.is_suspended))}
-                  className="text-xs underline text-secondary hover:text-green-800">
-                  {m.is_suspended ? 'Reinstate' : 'Suspend'}
-                </button>
-              )}
+              <span className={`text-xs font-sans uppercase tracking-wide px-2.5 py-1 rounded-full ${
+                m.role === 'SUPER_ADMIN' ? 'bg-green-800 text-gold-300' : 'bg-cream-100 text-secondary'}`}>
+                {ROLE_LABEL[m.role ?? ''] ?? 'Staff'}
+              </span>
+              <ChevronRight size={16} className="text-green-800/40" aria-hidden="true" />
             </span>
-          </div>
+          </button>
         ))}
       </div>
+      {selected && (
+        <TeamMemberPanel
+          member={selected}
+          canManage={isAdmin}
+          onClose={() => setSelected(null)}
+          onChanged={() => { setSelected(null); reload(); }}
+        />
+      )}
     </section>
+  );
+}
+
+/** Click-into record for one team member: edit identity/contact, change role,
+ *  demote to client, suspend, or delete. Admin-only actions are gated. */
+function TeamMemberPanel({
+  member, canManage, onClose, onChanged,
+}: { member: AdminMemberRow; canManage: boolean; onClose: () => void; onChanged: () => void }) {
+  const isSuper = member.role === 'SUPER_ADMIN';
+  const [form, setForm] = useState({
+    first_name: member.first_name ?? '', last_name: member.last_name ?? '',
+    display_name: member.display_name ?? '', email: member.email ?? '',
+    phone: member.phone ?? '', riding_level: member.riding_level ?? '', bio: member.bio ?? '',
+  });
+  const [role, setRole] = useState<MemberRole>((member.role as MemberRole) ?? 'MANAGER');
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState('');
+
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+    setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  async function run(fn: () => Promise<void>, done?: string) {
+    setBusy(true); setError(null); setNote(null);
+    try {
+      await fn();
+      if (done) { setNote(done); } else { onChanged(); }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'That action failed.');
+    } finally { setBusy(false); }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/30 flex justify-end" onClick={onClose}>
+      <div className="bg-cream w-full max-w-md h-full overflow-y-auto shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-4 border-b border-green-800/10 sticky top-0 bg-cream z-10">
+          <h2 className="font-serif text-lg text-green-900 truncate">{memberName(member)}</h2>
+          <button type="button" onClick={onClose} aria-label="Close"><X size={20} /></button>
+        </div>
+
+        <div className="p-4 flex flex-col gap-5">
+          <p className="text-xs text-muted">
+            {ROLE_LABEL[member.role ?? ''] ?? 'Staff'}{member.is_suspended ? ' · Suspended' : ''}
+          </p>
+
+          {!canManage ? (
+            <p className="text-sm text-muted">You have read-only access. An admin can edit this record.</p>
+          ) : (
+            <>
+              {/* ── Record ── */}
+              <div className="flex flex-col gap-3">
+                <p className="form-label">Record</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="text-sm"><span className="form-label">First name</span>
+                    <input className="form-input" value={form.first_name} onChange={set('first_name')} /></label>
+                  <label className="text-sm"><span className="form-label">Last name</span>
+                    <input className="form-input" value={form.last_name} onChange={set('last_name')} /></label>
+                </div>
+                <label className="text-sm"><span className="form-label">Display name</span>
+                  <input className="form-input" value={form.display_name} onChange={set('display_name')} /></label>
+                <label className="text-sm"><span className="form-label">Email</span>
+                  <input type="email" className="form-input" value={form.email} onChange={set('email')} /></label>
+                <label className="text-sm"><span className="form-label">Phone</span>
+                  <input className="form-input" value={form.phone} onChange={set('phone')} /></label>
+                <label className="text-sm"><span className="form-label">Riding level</span>
+                  <input className="form-input" value={form.riding_level} onChange={set('riding_level')} /></label>
+                <label className="text-sm"><span className="form-label">Bio</span>
+                  <textarea rows={2} className="form-input resize-none" value={form.bio} onChange={set('bio')} /></label>
+                <button type="button" className="btn-primary justify-center" disabled={busy}
+                  onClick={() => void run(() => adminUpdateProfile(member.user_id, form), 'Saved.')}>
+                  {busy ? 'Saving…' : 'Save record'}
+                </button>
+              </div>
+
+              {!isSuper && (
+                <>
+                  {/* ── Role ── */}
+                  <div className="flex flex-col gap-2 border-t border-green-800/10 pt-4">
+                    <p className="form-label">Role</p>
+                    <div className="flex gap-2">
+                      <select className="form-input" value={role} onChange={(e) => setRole(e.target.value as MemberRole)} aria-label="Role">
+                        <option value="MANAGER">Instructor</option>
+                        <option value="EMPLOYEE">Staff</option>
+                        <option value="ADMIN">Admin</option>
+                      </select>
+                      <button type="button" className="btn-secondary shrink-0" disabled={busy || role === member.role}
+                        onClick={() => void run(() => adminSetRole(member.user_id, role))}>
+                        Update role
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* ── Status ── */}
+                  <div className="flex items-center justify-between border-t border-green-800/10 pt-4">
+                    <span className="text-sm text-green-900">{member.is_suspended ? 'Suspended' : 'Active'}</span>
+                    <button type="button" className="btn-secondary" disabled={busy}
+                      onClick={() => void run(() => adminSetSuspended(member.user_id, !member.is_suspended))}>
+                      {member.is_suspended ? 'Reinstate' : 'Suspend'}
+                    </button>
+                  </div>
+
+                  {/* ── Demote to client ── */}
+                  <div className="border-t border-green-800/10 pt-4">
+                    <p className="form-label mb-1">Demote to client</p>
+                    <p className="text-xs text-muted mb-2">
+                      Removes their internal role and moves them to the Clients page. Their account and history stay.
+                    </p>
+                    <button type="button" className="btn-secondary" disabled={busy}
+                      onClick={() => void run(() => adminSetRole(member.user_id, 'USER'))}>
+                      Demote to client
+                    </button>
+                  </div>
+
+                  {/* ── Delete ── */}
+                  <div className="border-t border-red-800/15 pt-4">
+                    <p className="form-label mb-1 text-red-800">Delete account</p>
+                    <p className="text-xs text-muted mb-2">
+                      Permanently deletes this team member’s account and login. This can’t be undone.
+                      Type <strong>DELETE</strong> to confirm.
+                    </p>
+                    <div className="flex gap-2">
+                      <input className="form-input" placeholder="DELETE" value={confirmDelete}
+                        onChange={(e) => setConfirmDelete(e.target.value)} aria-label="Type DELETE to confirm" />
+                      <button type="button" disabled={busy || confirmDelete !== 'DELETE'}
+                        className="px-4 py-2 rounded-lg bg-red-700 text-white text-sm font-medium hover:bg-red-800 focus-ring disabled:opacity-50 shrink-0"
+                        onClick={() => void run(() => adminHardDeleteMember(member.user_id))}>
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {note && <p className="text-sm text-green-700">{note}</p>}
+              {error && <p role="alert" className="form-error">{error}</p>}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 

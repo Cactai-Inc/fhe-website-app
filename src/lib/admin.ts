@@ -56,6 +56,34 @@ export async function adminSetSuspended(userId: string, suspended: boolean): Pro
   await logModeration('user', userId, suspended ? 'suspend' : 'reinstate');
 }
 
+/** Admin-edit another member's profile fields (name, contact, riding level, bio).
+ *  RLS profiles_update_own allows is_admin() to write any row. Role/suspension go
+ *  through their own dedicated actions; this is identity/contact content only. */
+export type MemberProfilePatch = Partial<Pick<Profile,
+  'first_name' | 'last_name' | 'display_name' | 'email' | 'phone' | 'riding_level' | 'bio'>>;
+export async function adminUpdateProfile(userId: string, patch: MemberProfilePatch): Promise<void> {
+  const { error } = await supabase.from('profiles').update(patch).eq('user_id', userId);
+  if (error) throw error;
+  await logModeration('user', userId, 'edit_profile');
+}
+
+/** Permanently delete a team member's account (auth user cascade → profile,
+ *  membership, grants). Staff have no contact row, so this keys on user_id. */
+export async function adminHardDeleteMember(userId: string): Promise<void> {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+  if (!token) throw new Error('not signed in');
+  const res = await fetch('/api/hard-delete-client', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ userId }),
+  });
+  if (!res.ok) {
+    const j = await res.json().catch(() => ({}));
+    throw new Error(j.error || 'Could not delete this team member.');
+  }
+}
+
 export async function adminSetAdmin(userId: string, isAdmin: boolean): Promise<void> {
   const { error } = await supabase.from('profiles').update({ is_admin: isAdmin }).eq('user_id', userId);
   if (error) throw error;
