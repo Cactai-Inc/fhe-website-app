@@ -6,24 +6,66 @@ import {
 } from '../../lib/horses';
 
 /**
- * HORSE RECORD INTAKE (spec H.2) — the standardized form, the matched pair to the
- * record: microchip FIRST (dedup runs server-side at submit), then identity,
- * description, ownership, lease, vet/farrier, health, history. Every field maps
- * to a record column; anything not needed for a signed document may stay blank.
- * Shared by: onboarding append (H.7), Account add-a-horse (H.3 path 2), staff
- * add-a-horse (H.3 path 4). Submits through create_horse_record — the ONE path.
+ * HORSE RECORD INTAKE — the standardized form, the matched pair to the record and
+ * the source of every {{HORSE.*}} on the vet-auth / care-release / lease docs.
+ *
+ * Owner rule: EVERY field must be answered — either filled in or explicitly
+ * marked "N/A" (a horse genuinely may have no microchip, registration, meds…),
+ * so a legal document never renders a silently-blank field. Each field carries an
+ * N/A toggle; submit is blocked until all applicable fields are answered.
+ *
+ * Submits through create_horse_record (client) / staff_create_horse_for_contact.
  */
 
-const input = 'w-full px-3 py-2 rounded-lg border border-green-800/15 text-sm text-green-900 placeholder:text-muted focus-ring bg-white';
+const input = 'w-full px-3 py-2 rounded-lg border border-green-800/15 text-sm text-green-900 placeholder:text-muted focus-ring bg-white disabled:bg-cream-100 disabled:text-muted';
+const NA = 'N/A';
+const filled = (v?: string) => !!v && v.trim() !== '';
 
-function L({ children }: { children: React.ReactNode }) {
-  return <label className="block text-[11px] tracking-wide uppercase text-muted font-semibold mb-1">{children}</label>;
-}
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
       <p className="text-[10px] tracking-widest uppercase text-gold-800 font-semibold mt-4 mb-2 first:mt-0">{title}</p>
       <div className="grid sm:grid-cols-2 gap-3">{children}</div>
+    </div>
+  );
+}
+
+/** A required field with an N/A escape. When N/A is checked the control disables
+ *  and the value becomes the sentinel "N/A" (a conscious answer, not a blank). */
+function Field({
+  label, value, onChange, type = 'text', placeholder, options, span, textarea, showError,
+}: {
+  label: string;
+  value?: string;
+  onChange: (v: string) => void;
+  type?: string;
+  placeholder?: string;
+  options?: { value: string; label: string }[];
+  span?: boolean;
+  textarea?: boolean;
+  showError?: boolean;
+}) {
+  const na = value === NA;
+  const answered = na || filled(value);
+  const cls = `${input}${showError && !answered ? ' border-red-400' : ''}`;
+  return (
+    <div className={span ? 'sm:col-span-2' : ''}>
+      <div className="flex items-center justify-between mb-1">
+        <label className="block text-[11px] tracking-wide uppercase text-muted font-semibold">{label}</label>
+        <label className="flex items-center gap-1 text-[10px] text-muted cursor-pointer select-none">
+          <input type="checkbox" checked={na} onChange={(e) => onChange(e.target.checked ? NA : '')} /> N/A
+        </label>
+      </div>
+      {options ? (
+        <select className={cls} disabled={na} value={na ? '' : (value ?? '')} onChange={(e) => onChange(e.target.value)}>
+          <option value="">Select…</option>
+          {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+      ) : textarea ? (
+        <textarea rows={2} className={`${cls} resize-y max-h-40`} disabled={na} value={na ? '' : (value ?? '')} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
+      ) : (
+        <input type={type} className={cls} disabled={na} value={na ? '' : (value ?? '')} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
+      )}
     </div>
   );
 }
@@ -34,22 +76,53 @@ export function HorseIntakeForm({
   /** Fires on created OR match_found (both attach an id); pending-review shows in-form. */
   onDone: (horseId: string) => void;
   submitLabel?: string;
-  /** Staff context: create the record OWNED BY this contact (e.g. the company),
-   *  not the caller. When set, routes through the staff create RPC. */
+  /** Staff context: create the record OWNED BY this contact, not the caller. */
   ownerContactId?: string;
 }) {
   const [f, setF] = useState<HorseIntakePayload>({ my_relationship: 'OWNER', is_leased: 'no' });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [showError, setShowError] = useState(false);
 
-  const set = (k: keyof HorseIntakePayload) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
-    setF((p) => ({ ...p, [k]: e.target.value }));
+  const set = (k: keyof HorseIntakePayload) => (v: string) => setF((p) => ({ ...p, [k]: v }));
+
+  const leased = f.is_leased === 'yes';
+  const lessee = f.my_relationship === 'LESSEE';
+
+  // Every applicable field must be answered (filled or N/A). Names are special:
+  // at least one of registered/barn must be a REAL name (not N/A).
+  const answered = (v?: string) => v === NA || filled(v);
+  const alwaysKeys: (keyof HorseIntakePayload)[] = [
+    'microchip_id', 'breed', 'registration_number', 'registration_org',
+    'passport_number', 'passport_country', 'color', 'markings', 'sex',
+    'date_of_birth', 'height', 'fair_market_value', 'current_location',
+    'vet_name', 'vet_phone', 'farrier_name', 'farrier_phone',
+    'medical_history', 'behavioral_history',
+    'medication_name', 'medication_dosage', 'medication_instructions', 'medication_additional',
+    'known_conditions', 'training_history', 'competition_history',
+  ];
+  const condKeys: (keyof HorseIntakePayload)[] = [
+    ...(lessee ? (['owner_name_text', 'owner_email'] as (keyof HorseIntakePayload)[]) : []),
+    ...(leased && !lessee ? (['lessee_name_text', 'lessee_email'] as (keyof HorseIntakePayload)[]) : []),
+    ...(leased ? (['lease_start', 'lease_end'] as (keyof HorseIntakePayload)[]) : []),
+  ];
+  const hasRealName = filled(f.registered_name) || filled(f.barn_name);
+  const nameAnswered = answered(f.registered_name) && answered(f.barn_name);
+  const complete = hasRealName && nameAnswered
+    && alwaysKeys.every((k) => answered(f[k] as string | undefined))
+    && condKeys.every((k) => answered(f[k] as string | undefined));
 
   async function submit() {
     setErr(null);
-    if (!f.registered_name?.trim() && !f.barn_name?.trim()) {
-      setErr('Give the horse at least a registered or barn name.');
+    if (!hasRealName) {
+      setShowError(true);
+      setErr('Give the horse at least a registered or barn name (N/A can’t apply to both).');
+      return;
+    }
+    if (!complete) {
+      setShowError(true);
+      setErr('Please answer every field — fill it in or mark it N/A.');
       return;
     }
     setBusy(true);
@@ -59,11 +132,8 @@ export function HorseIntakeForm({
         onDone(out.horse_id);
       } else {
         const out: HorseRecordOutcome = await createHorseRecord(f);
-        if (out.outcome === 'match_pending_review') {
-          setPending(true);
-        } else {
-          onDone(out.horse_id);
-        }
+        if (out.outcome === 'match_pending_review') setPending(true);
+        else onDone(out.horse_id);
       }
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Could not save the horse record.');
@@ -87,97 +157,96 @@ export function HorseIntakeForm({
 
   return (
     <div className="flex flex-col gap-1">
+      <p className="text-xs text-muted mb-1">
+        Every field is required. If something doesn’t apply to your horse, mark it <strong>N/A</strong>.
+      </p>
+
       <Section title="Horse identity">
-        <div className="sm:col-span-2">
-          <L>Microchip number (checked first — leave blank if none)</L>
-          <input className={input} value={f.microchip_id ?? ''} onChange={set('microchip_id')} placeholder="e.g. 985 112233445566" />
-        </div>
-        <div><L>Registered name</L><input className={input} value={f.registered_name ?? ''} onChange={set('registered_name')} /></div>
-        <div><L>Barn name</L><input className={input} value={f.barn_name ?? ''} onChange={set('barn_name')} /></div>
-        <div><L>Breed</L><input className={input} value={f.breed ?? ''} onChange={set('breed')} /></div>
-        <div><L>Registration number</L><input className={input} value={f.registration_number ?? ''} onChange={set('registration_number')} /></div>
-        <div><L>Registration organization</L><input className={input} value={f.registration_org ?? ''} onChange={set('registration_org')} /></div>
-        <div><L>Passport number</L><input className={input} value={f.passport_number ?? ''} onChange={set('passport_number')} /></div>
-        <div><L>Passport country</L><input className={input} value={f.passport_country ?? ''} onChange={set('passport_country')} /></div>
+        <Field span label="Microchip number (checked first)" value={f.microchip_id} onChange={set('microchip_id')} placeholder="e.g. 985 112233445566" showError={showError} />
+        <Field label="Registered name" value={f.registered_name} onChange={set('registered_name')} showError={showError} />
+        <Field label="Barn name" value={f.barn_name} onChange={set('barn_name')} showError={showError} />
+        <Field label="Breed" value={f.breed} onChange={set('breed')} showError={showError} />
+        <Field label="Registration number" value={f.registration_number} onChange={set('registration_number')} showError={showError} />
+        <Field label="Registration organization" value={f.registration_org} onChange={set('registration_org')} showError={showError} />
+        <Field label="Passport number" value={f.passport_number} onChange={set('passport_number')} showError={showError} />
+        <Field label="Passport country" value={f.passport_country} onChange={set('passport_country')} showError={showError} />
       </Section>
 
       <Section title="Description">
-        <div><L>Color</L><input className={input} value={f.color ?? ''} onChange={set('color')} /></div>
-        <div><L>Markings</L><input className={input} value={f.markings ?? ''} onChange={set('markings')} /></div>
-        <div>
-          <L>Sex</L>
-          <select className={input} value={f.sex ?? ''} onChange={set('sex')}>
-            <option value="">Select…</option>
-            <option value="mare">Mare</option>
-            <option value="gelding">Gelding</option>
-            <option value="stallion">Stallion</option>
-          </select>
-        </div>
-        <div><L>Date of birth</L><input type="date" className={input} value={f.date_of_birth ?? ''} onChange={set('date_of_birth')} /></div>
-        <div><L>Height</L><input className={input} value={f.height ?? ''} onChange={set('height')} placeholder='e.g. 16.2 hh' /></div>
-        <div><L>Current fair market value</L><input className={input} value={f.fair_market_value ?? ''} onChange={set('fair_market_value')} placeholder="$" /></div>
-        <div className="sm:col-span-2"><L>Current location</L><input className={input} value={f.current_location ?? ''} onChange={set('current_location')} placeholder="Carmel Creek Ranch" /></div>
+        <Field label="Color" value={f.color} onChange={set('color')} showError={showError} />
+        <Field label="Markings" value={f.markings} onChange={set('markings')} showError={showError} />
+        <Field label="Sex" value={f.sex} onChange={set('sex')} showError={showError}
+          options={[
+            { value: 'MARE', label: 'Mare' }, { value: 'GELDING', label: 'Gelding' },
+            { value: 'STALLION', label: 'Stallion' }, { value: 'FILLY', label: 'Filly' },
+            { value: 'COLT', label: 'Colt' },
+          ]} />
+        <Field label="Date of birth" type="date" value={f.date_of_birth} onChange={set('date_of_birth')} showError={showError} />
+        <Field label="Height" value={f.height} onChange={set('height')} placeholder="e.g. 16.2 hh" showError={showError} />
+        <Field label="Current fair market value" value={f.fair_market_value} onChange={set('fair_market_value')} placeholder="$" showError={showError} />
+        <Field span label="Current location" value={f.current_location} onChange={set('current_location')} placeholder="Carmel Creek Ranch" showError={showError} />
       </Section>
 
       <Section title="Ownership">
         <div>
-          <L>Your relationship to this horse</L>
+          <label className="block text-[11px] tracking-wide uppercase text-muted font-semibold mb-1">Your relationship to this horse</label>
           <select className={input} value={f.my_relationship}
             onChange={(e) => setF((p) => ({ ...p, my_relationship: e.target.value as 'OWNER' | 'LESSEE' }))}>
             <option value="OWNER">I own this horse</option>
             <option value="LESSEE">I lease this horse</option>
           </select>
         </div>
-        {f.my_relationship === 'LESSEE' && (
+        {lessee && (
           <>
-            <div><L>Owner name</L><input className={input} value={f.owner_name_text ?? ''} onChange={set('owner_name_text')} /></div>
-            <div><L>Owner email</L><input type="email" className={input} value={f.owner_email ?? ''} onChange={set('owner_email')} /></div>
+            <Field label="Owner name" value={f.owner_name_text} onChange={set('owner_name_text')} showError={showError} />
+            <Field label="Owner email" type="email" value={f.owner_email} onChange={set('owner_email')} showError={showError} />
           </>
         )}
       </Section>
 
       <Section title="Lease (if applicable)">
         <div>
-          <L>Horse is leased</L>
+          <label className="block text-[11px] tracking-wide uppercase text-muted font-semibold mb-1">Horse is leased</label>
           <select className={input} value={f.is_leased}
             onChange={(e) => setF((p) => ({ ...p, is_leased: e.target.value as 'yes' | 'no' }))}>
             <option value="no">No</option>
             <option value="yes">Yes</option>
           </select>
         </div>
-        {f.is_leased === 'yes' && (
+        {leased && (
           <>
             {f.my_relationship === 'OWNER' && (
               <>
-                <div><L>Lessee name</L><input className={input} value={f.lessee_name_text ?? ''} onChange={set('lessee_name_text')} /></div>
-                <div><L>Lessee email</L><input type="email" className={input} value={f.lessee_email ?? ''} onChange={set('lessee_email')} /></div>
+                <Field label="Lessee name" value={f.lessee_name_text} onChange={set('lessee_name_text')} showError={showError} />
+                <Field label="Lessee email" type="email" value={f.lessee_email} onChange={set('lessee_email')} showError={showError} />
               </>
             )}
-            <div><L>Lease start</L><input type="date" className={input} value={f.lease_start ?? ''} onChange={set('lease_start')} /></div>
-            <div><L>Lease end</L><input type="date" className={input} value={f.lease_end ?? ''} onChange={set('lease_end')} /></div>
-            {/* Subleasing permission is the lessor's discretion, set on the lease
-                contract — not the horse record. */}
+            <Field label="Lease start" type="date" value={f.lease_start} onChange={set('lease_start')} showError={showError} />
+            <Field label="Lease end" type="date" value={f.lease_end} onChange={set('lease_end')} showError={showError} />
           </>
         )}
       </Section>
 
       <Section title="Veterinary and farrier">
-        <div><L>Preferred veterinarian</L><input className={input} value={f.vet_name ?? ''} onChange={set('vet_name')} /></div>
-        <div><L>Veterinarian phone</L><input className={input} value={f.vet_phone ?? ''} onChange={set('vet_phone')} /></div>
-        <div><L>Preferred farrier</L><input className={input} value={f.farrier_name ?? ''} onChange={set('farrier_name')} /></div>
-        <div><L>Farrier phone</L><input className={input} value={f.farrier_phone ?? ''} onChange={set('farrier_phone')} /></div>
+        <Field label="Preferred veterinarian" value={f.vet_name} onChange={set('vet_name')} showError={showError} />
+        <Field label="Veterinarian phone" value={f.vet_phone} onChange={set('vet_phone')} showError={showError} />
+        <Field label="Preferred farrier" value={f.farrier_name} onChange={set('farrier_name')} showError={showError} />
+        <Field label="Farrier phone" value={f.farrier_phone} onChange={set('farrier_phone')} showError={showError} />
       </Section>
 
       <Section title="Health and care">
-        <div className="sm:col-span-2"><L>Known medical history</L><textarea rows={2} className={`${input} resize-y max-h-40`} value={f.medical_history ?? ''} onChange={set('medical_history')} /></div>
-        <div className="sm:col-span-2"><L>Known behavioral concerns</L><textarea rows={2} className={`${input} resize-y max-h-40`} value={f.behavioral_history ?? ''} onChange={set('behavioral_history')} /></div>
-        <div><L>Current medications / supplements</L><input className={input} value={f.medication_current ?? ''} onChange={set('medication_current')} /></div>
-        <div><L>Known conditions</L><input className={input} value={f.known_conditions ?? ''} onChange={set('known_conditions')} /></div>
+        <Field span label="Known medical history" textarea value={f.medical_history} onChange={set('medical_history')} showError={showError} />
+        <Field span label="Known behavioral concerns" textarea value={f.behavioral_history} onChange={set('behavioral_history')} showError={showError} />
+        <Field label="Current medication — name" value={f.medication_name} onChange={set('medication_name')} showError={showError} />
+        <Field label="Medication — dosage" value={f.medication_dosage} onChange={set('medication_dosage')} showError={showError} />
+        <Field label="Medication — instructions" value={f.medication_instructions} onChange={set('medication_instructions')} showError={showError} />
+        <Field label="Medication — additional notes" value={f.medication_additional} onChange={set('medication_additional')} showError={showError} />
+        <Field span label="Known conditions" value={f.known_conditions} onChange={set('known_conditions')} showError={showError} />
       </Section>
 
-      <Section title="History (optional)">
-        <div><L>Training history</L><input className={input} value={f.training_history ?? ''} onChange={set('training_history')} /></div>
-        <div><L>Competition history</L><input className={input} value={f.competition_history ?? ''} onChange={set('competition_history')} /></div>
+      <Section title="History">
+        <Field label="Training history" value={f.training_history} onChange={set('training_history')} showError={showError} />
+        <Field label="Competition history" value={f.competition_history} onChange={set('competition_history')} showError={showError} />
       </Section>
 
       {err && <p className="form-error text-sm text-red-700 mt-2">{err}</p>}

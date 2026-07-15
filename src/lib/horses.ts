@@ -37,6 +37,10 @@ export interface HorseIntakePayload {
   medical_history?: string;
   behavioral_history?: string;
   medication_current?: string;
+  medication_name?: string;
+  medication_dosage?: string;
+  medication_instructions?: string;
+  medication_additional?: string;
   known_conditions?: string;
   training_history?: string;
   competition_history?: string;
@@ -52,6 +56,38 @@ export async function createHorseRecord(p: HorseIntakePayload): Promise<HorseRec
   const { data, error } = await supabase.rpc('create_horse_record', { p });
   if (error) throw error;
   return data as HorseRecordOutcome;
+}
+
+/** A horse document produced/kept by the engine. */
+export interface GeneratedHorseDoc { template_key: string; document_id: string }
+
+/** Ensure the horse's Vet Auth (+ Care Release when on file / requested) exist,
+ *  signed by the horse's owner. Voids + reissues blank/horse-less copies. */
+export async function ensureHorseDocuments(
+  horseId: string,
+  opts: { contractId?: string | null; includeCare?: boolean | null } = {},
+): Promise<{ owner_contact_id: string; generated: GeneratedHorseDoc[]; voided: number }> {
+  const { data, error } = await supabase.rpc('ensure_horse_documents', {
+    p_horse_id: horseId,
+    p_contract_id: opts.contractId ?? null,
+    p_include_care: opts.includeCare ?? null,
+  });
+  if (error) throw error;
+  return data as { owner_contact_id: string; generated: GeneratedHorseDoc[]; voided: number };
+}
+
+export interface HorseOnboardingState {
+  pending_horse_docs: { document_id: string; template_key: string; title: string; link: string }[];
+  needs_horse: boolean;
+  service_blocked: boolean;
+}
+
+/** The persistent horse-documents dashboard state (what's outstanding + whether a
+ *  purchased horse-care service is blocked on an unsigned release). */
+export async function fetchHorseOnboardingState(): Promise<HorseOnboardingState> {
+  const { data, error } = await supabase.rpc('my_horse_onboarding_state');
+  if (error) throw error;
+  return data as HorseOnboardingState;
 }
 
 // ── staff records surface (spec H.8) ─────────────────────────────────────────

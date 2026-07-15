@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { myNotifications, type AppNotification } from '../../lib/api';
 import { myLessonSessions, type MemberLessonSession } from '../../lib/ops/api-member';
 import { fetchMyPendingChanges } from '../../lib/ops/api-calendar';
+import { fetchHorseOnboardingState, type HorseOnboardingState } from '../../lib/horses';
 import { fetchEvents } from '../../lib/community';
 import type { CommunityEvent } from '../../lib/community-types';
 import { supabase } from '../../lib/supabase';
@@ -96,11 +97,15 @@ export function DashboardPanel() {
   const [checklist, setChecklist] = useState<ChecklistRow[]>([]);
   const [suggestBooking, setSuggestBooking] = useState(false);
   const [pendingChanges, setPendingChanges] = useState(0);
+  const [horse, setHorse] = useState<HorseOnboardingState | null>(null);
 
   useEffect(() => {
     let active = true;
     fetchMyPendingChanges()
       .then((r) => active && setPendingChanges(r.length))
+      .catch(() => {});
+    fetchHorseOnboardingState()
+      .then((h) => active && setHorse(h))
       .catch(() => {});
     Promise.all([
       myNotifications().catch(() => [] as AppNotification[]),
@@ -154,14 +159,38 @@ export function DashboardPanel() {
     return () => { active = false; };
   }, []);
 
-  if (attention.length === 0 && comingUp.length === 0 && checklist.length === 0 && !suggestBooking && pendingChanges === 0) return null;
+  // The horse documents are their own persistent item — shown until they're
+  // signed (or until a horse is added, when one is needed). The "your service
+  // won't begin" warning shows ONLY when a horse-care service has been purchased
+  // and is waiting on an unsigned release.
+  const horseCard = horse && (horse.pending_horse_docs.length > 0 || horse.needs_horse);
+  const horseTile: Tile | null = horseCard
+    ? {
+        id: 'horse-docs',
+        kind: 'horse documents',
+        gold: horse!.service_blocked,
+        title: horse!.needs_horse ? 'Add your horse to continue' : 'Complete your horse documents',
+        sub: horse!.service_blocked
+          ? 'Your purchased horse-care service won’t begin until these are completed and signed.'
+          : horse!.needs_horse
+            ? 'Add your horse’s details so we can prepare its documents.'
+            : `${horse!.pending_horse_docs.length} document${horse!.pending_horse_docs.length > 1 ? 's' : ''} to review & sign.`,
+        cta: horse!.needs_horse ? 'Add your horse' : 'Review & sign',
+        to: horse!.needs_horse
+          ? '/app/horse-intake'
+          : (horse!.pending_horse_docs[0]?.link ?? '/app/horse-intake'),
+      }
+    : null;
+
+  if (attention.length === 0 && comingUp.length === 0 && checklist.length === 0 && !suggestBooking && pendingChanges === 0 && !horseTile) return null;
 
   return (
     <div className="rounded-2xl border border-green-800/10 shadow-[0_14px_34px_-14px_rgba(13,33,24,0.22)] bg-gradient-to-br from-white to-cream-100 p-5 sm:p-6 mb-6 sm:mb-7">
-      {(attention.length > 0 || checklist.length > 0 || suggestBooking || pendingChanges > 0) && (
+      {(attention.length > 0 || checklist.length > 0 || suggestBooking || pendingChanges > 0 || horseTile) && (
         <>
           <p className="text-[10px] tracking-widest uppercase text-gold-800 font-semibold mb-3">Needs your attention</p>
           <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+            {horseTile && <TileCard tile={horseTile} />}
             {checklist.length > 0 && <ChecklistCard rows={checklist} />}
             {pendingChanges > 0 && (
               <TileCard tile={{
