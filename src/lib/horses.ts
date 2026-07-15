@@ -42,6 +42,8 @@ export interface HorseIntakePayload {
   medication_instructions?: string;
   medication_additional?: string;
   known_conditions?: string;
+  /** Owner's emergency-euthanasia authorization: 'A' authorize | 'B' do not. */
+  euthanasia_authorization?: 'A' | 'B';
   training_history?: string;
   competition_history?: string;
   claim_note?: string;

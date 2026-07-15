@@ -109,7 +109,11 @@ export function HorseIntakeForm({
   ];
   const hasRealName = filled(f.registered_name) || filled(f.barn_name);
   const nameAnswered = answered(f.registered_name) && answered(f.barn_name);
-  const complete = hasRealName && nameAnswered
+  // The euthanasia authorization is the OWNER's to make; required when the person
+  // filling the form owns the horse (a lessee leaves it for the owner).
+  const owns = f.my_relationship === 'OWNER';
+  const euthanasiaAnswered = !owns || f.euthanasia_authorization === 'A' || f.euthanasia_authorization === 'B';
+  const complete = hasRealName && nameAnswered && euthanasiaAnswered
     && alwaysKeys.every((k) => answered(f[k] as string | undefined))
     && condKeys.every((k) => answered(f[k] as string | undefined));
 
@@ -118,6 +122,11 @@ export function HorseIntakeForm({
     if (!hasRealName) {
       setShowError(true);
       setErr('Give the horse at least a registered or barn name (N/A can’t apply to both).');
+      return;
+    }
+    if (owns && !euthanasiaAnswered) {
+      setShowError(true);
+      setErr('Please choose an emergency euthanasia authorization (Option A or B).');
       return;
     }
     if (!complete) {
@@ -243,6 +252,35 @@ export function HorseIntakeForm({
         <Field label="Medication — additional notes" value={f.medication_additional} onChange={set('medication_additional')} showError={showError} />
         <Field span label="Known conditions" value={f.known_conditions} onChange={set('known_conditions')} showError={showError} />
       </Section>
+
+      {owns && (
+        <div>
+          <p className="text-[10px] tracking-widest uppercase text-gold-800 font-semibold mt-4 mb-2">Emergency euthanasia authorization (required)</p>
+          <p className="text-xs text-muted mb-2">
+            As the owner, choose one. This is included in your horse’s Emergency Vet Authorization.
+          </p>
+          <div className="flex flex-col gap-2">
+            {([
+              ['A', 'I AUTHORIZE the attending veterinarian to perform humane euthanasia if, in the vet’s professional judgment, it’s necessary to relieve the horse’s suffering and I can’t be reached in time.'],
+              ['B', 'I DO NOT AUTHORIZE euthanasia without my express consent. Every reasonable effort must be made to reach me (or my emergency contact) before any such decision, except where required by law.'],
+            ] as const).map(([opt, text]) => {
+              const on = f.euthanasia_authorization === opt;
+              return (
+                <button key={opt} type="button"
+                  onClick={() => setF((p) => ({ ...p, euthanasia_authorization: opt }))}
+                  className={`flex items-start gap-3 rounded-lg border px-4 py-3 text-left focus-ring transition-colors ${
+                    on ? 'border-green-700 bg-green-50' : `bg-white hover:border-green-800/30 ${showError && !euthanasiaAnswered ? 'border-red-400' : 'border-green-800/15'}`
+                  }`}>
+                  <span className={`mt-0.5 w-4 h-4 rounded-full border grid place-items-center shrink-0 ${on ? 'border-green-700' : 'border-green-800/30'}`}>
+                    {on && <span className="w-2 h-2 rounded-full bg-green-700" />}
+                  </span>
+                  <span className="text-sm text-green-900"><strong>Option {opt}</strong> — {text}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <Section title="History">
         <Field label="Training history" value={f.training_history} onChange={set('training_history')} showError={showError} />
