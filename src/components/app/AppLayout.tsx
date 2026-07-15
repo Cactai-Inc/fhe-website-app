@@ -40,6 +40,9 @@ interface NavItem {
 }
 
 const QUICK: { label: string; icon: typeof GraduationCap; to: string }[] = [
+  // Calendar + booking are the same surface: view your times on the calendar,
+  // or start a booking (the calendar opens when you pick something to see).
+  { label: 'Calendar', icon: CalendarDays, to: '/app/calendar' },
   { label: 'Book a lesson', icon: GraduationCap, to: '/app/calendar' },
   { label: 'Shop for sale', icon: ShoppingBag, to: '/app?filter=for_sale' },
   { label: 'New message', icon: MessageSquare, to: '/app/messages' },

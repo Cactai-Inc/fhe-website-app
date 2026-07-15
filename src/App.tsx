@@ -58,6 +58,8 @@ import Support from './pages/app/Support';
 import ContractPage from './pages/app/ContractPage';
 import AccountHub from './pages/app/AccountHub';
 import HorseIntakePage from './pages/app/HorseIntakePage';
+import CareHome from './pages/app/CareHome';
+import DealHome from './pages/app/DealHome';
 import VerifyEmailScreen from './components/app/VerifyEmailScreen';
 import { verifyWithPassword, verifyWithGoogle } from './lib/emailChange';
 import Admin from './pages/app/Admin';
@@ -204,6 +206,9 @@ export function AppRoutes() {
               <Route path="profile" element={<Profile />} />
               <Route path="support" element={<Support />} />
               <Route path="account" element={<AccountHub />} />
+              {/* Purpose-built client homes (surface model: care / deal) */}
+              <Route path="care" element={<CareHome />} />
+              <Route path="deal" element={<DealHome />} />
               {/* A4 — client horse-intake opened from a staff request; ?booking=<id> attaches the horse */}
               <Route path="horse-intake" element={<HorseIntakePage />} />
               {/* Negotiated contracts (Update A): owner authoring + counterparty
