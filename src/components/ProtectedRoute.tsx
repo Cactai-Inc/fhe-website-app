@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { fetchMyGrantKeys } from '../lib/grants';
+import { redeemMyPendingInvitation, ensureMyMembership } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 
 /** Gates a route behind authentication. Redirects unauthenticated visitors to
@@ -27,7 +28,7 @@ export default function ProtectedRoute({
    *  admin always passes). Pass the surface's nav key (its route path). */
   grantKey?: string;
 }) {
-  const { user, isAdmin, isStaff, isSuperAdmin, isMember, loading } = useAuth();
+  const { user, isAdmin, isStaff, isSuperAdmin, isMember, loading, refreshProfile, signOut } = useAuth();
   const location = useLocation();
   const [grantState, setGrantState] = useState<'idle' | 'checking' | 'granted' | 'denied'>('idle');
 
@@ -39,6 +40,28 @@ export default function ProtectedRoute({
       .then((keys) => setGrantState(keys.includes(grantKey!) ? 'granted' : 'denied'))
       .catch(() => setGrantState('denied'));
   }, [needsGrantCheck, grantKey]);
+
+  // Self-heal the stale-session trap: a signed-in user who lands on a
+  // member-gated route WITHOUT membership (e.g. clicked their invite while
+  // already signed in, so the acceptance flow was skipped) shouldn't dead-end.
+  // Try to redeem their own pending invitation / heal their membership, then
+  // re-fetch. 'healing' → in progress; 'exhausted' → nothing to redeem, show
+  // the honest notice.
+  const [healState, setHealState] = useState<'idle' | 'healing' | 'exhausted'>('idle');
+  const needsHeal = Boolean(user) && requireMember && !isMember && !loading;
+  useEffect(() => {
+    if (!needsHeal || healState !== 'idle') return;
+    setHealState('healing');
+    (async () => {
+      let healed = false;
+      try { healed = await redeemMyPendingInvitation(); } catch { /* fall through */ }
+      if (!healed) { try { healed = await ensureMyMembership(); } catch { /* fall through */ } }
+      if (healed) await refreshProfile().catch(() => {});
+      // Whether or not it worked, re-fetch once so isMember reflects reality.
+      else await refreshProfile().catch(() => {});
+      setHealState('exhausted');
+    })();
+  }, [needsHeal, healState, refreshProfile]);
 
   if (loading) {
     return (
@@ -84,18 +107,32 @@ export default function ProtectedRoute({
   // screen. This is the safety net for an account whose provisioning didn't
   // complete (e.g. a redeem that stamped no role); refreshing usually clears it.
   if (requireMember && !isMember) {
+    // Still trying to auto-activate (redeem a pending invite / heal membership).
+    if (healState !== 'exhausted') {
+      return (
+        <div className="min-h-screen bg-cream flex items-center justify-center px-6">
+          <div className="max-w-md text-center">
+            <p className="eyebrow mb-3">Almost there</p>
+            <h1 className="heading-section text-green-800 mb-4">Activating your account…</h1>
+            <p className="body-text">Just a moment while we finish setting you up.</p>
+          </div>
+        </div>
+      );
+    }
+    // Genuinely nothing to redeem — be honest, and offer a real next step.
     return (
       <div className="min-h-screen bg-cream flex items-center justify-center px-6">
         <div className="max-w-md text-center">
           <p className="eyebrow mb-3">Almost there</p>
-          <h1 className="heading-section text-green-800 mb-4">Finishing setting up your account</h1>
+          <h1 className="heading-section text-green-800 mb-4">We couldn’t activate your account</h1>
           <p className="body-text mb-8">
-            Your account isn’t fully activated yet. Try refreshing — if this keeps happening, open your
-            invitation link again or contact us and we’ll sort it out.
+            You’re signed in, but we couldn’t find an active invitation for <strong>{user.email}</strong>.
+            If you were invited with a different email, sign out and sign in with that address — or ask
+            whoever invited you to re-send it.
           </p>
           <div className="flex items-center justify-center gap-3">
-            <button type="button" onClick={() => window.location.reload()} className="btn-primary">Refresh</button>
-            <a href="/" className="btn-secondary">Return home</a>
+            <button type="button" onClick={() => { setHealState('idle'); }} className="btn-primary">Try again</button>
+            <button type="button" onClick={() => { void signOut(); }} className="btn-secondary">Sign out</button>
           </div>
         </div>
       </div>

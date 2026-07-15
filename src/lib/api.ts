@@ -87,6 +87,17 @@ export async function ensureMyMembership(): Promise<boolean> {
   return Boolean(data);
 }
 
+/** Self-heal for the stale-session trap: if the signed-in user has a live,
+ *  unaccepted invitation to their own email, redeem it (grants profile/role/
+ *  membership/staff). Returns true if the account is now active. Called by the
+ *  member gate before it ever shows a dead-end, so an already-signed-in invitee
+ *  who clicked their link never gets stranded. */
+export async function redeemMyPendingInvitation(): Promise<boolean> {
+  const { data, error } = await supabase.rpc('redeem_my_pending_invitation');
+  if (error) throw error;
+  return Boolean(data);
+}
+
 /** Validate a signup token via the SECURITY DEFINER RPC. Returns null if invalid/expired. */
 export async function validateInvitation(token: string): Promise<Invitation | null> {
   const { data, error } = await supabase.rpc('validate_invitation', { p_token: token });

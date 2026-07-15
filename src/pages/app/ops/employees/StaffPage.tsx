@@ -101,6 +101,7 @@ export function StaffPage() {
         <DataTable<StaffProfile>
           columns={[
             { key: 'name', header: 'Name', render: (r) => staffDisplayName(r.profile, contactName(r.contact) || 'Unknown staff') },
+            { key: 'email', header: 'Email', render: (r) => r.profile?.email ?? '—' },
             { key: 'title', header: 'Title', render: (r) => r.title ?? '—' },
             { key: 'pay', header: 'Pay type', render: (r) => r.pay_type ?? '—' },
             { key: 'active', header: 'Status', render: (r) => <StatusBadge status={r.active ? 'ACTIVE' : 'INACTIVE'} /> },

@@ -188,9 +188,10 @@ function TeamMemberPanel({
                     <p className="form-label">Role</p>
                     <div className="flex gap-2">
                       <select className="form-input" value={role} onChange={(e) => setRole(e.target.value as MemberRole)} aria-label="Role">
-                        <option value="MANAGER">Instructor</option>
-                        <option value="EMPLOYEE">Staff</option>
                         <option value="ADMIN">Admin</option>
+                        {/* legacy roles kept selectable only if the account already holds one */}
+                        {member.role === 'MANAGER' && <option value="MANAGER">Instructor (legacy)</option>}
+                        {member.role === 'EMPLOYEE' && <option value="EMPLOYEE">Staff (legacy)</option>}
                       </select>
                       <button type="button" className="btn-secondary shrink-0" disabled={busy || role === member.role}
                         onClick={() => void run(() => adminSetRole(member.user_id, role))}>
@@ -255,14 +256,13 @@ function PromoteSection({
 }: { members: AdminMemberRow[]; reload: () => void }) {
   const clients = members.filter((m) => (m.role ?? 'USER') === 'USER');
   const [who, setWho] = useState('');
-  const [role, setRole] = useState<MemberRole>('MANAGER');
   const [err, setErr] = useState<string | null>(null);
 
   async function promote() {
     if (!who) return;
     setErr(null);
     try {
-      await adminSetRole(who, role);
+      await adminSetRole(who, 'ADMIN'); // staff = Admin only
       setWho('');
       reload();
     } catch (e) {
@@ -272,22 +272,18 @@ function PromoteSection({
 
   return (
     <section className="mb-10">
-      <h2 className="font-serif text-lg text-green-800 mb-1">Promote a client</h2>
+      <h2 className="font-serif text-lg text-green-800 mb-1">Promote a client to Admin</h2>
       <p className="text-[12.5px] text-muted mb-4">
-        Give an existing client account an internal role.
+        Give an existing client account admin access.
       </p>
       <div className="flex flex-wrap gap-2 items-center">
         <select className="form-input max-w-xs" value={who} onChange={(e) => setWho(e.target.value)} aria-label="Client">
           <option value="">Choose a client…</option>
           {clients.map((c) => <option key={c.user_id} value={c.user_id}>{memberName(c)}</option>)}
         </select>
-        <select className="form-input w-auto" value={role} onChange={(e) => setRole(e.target.value as MemberRole)} aria-label="New role">
-          <option value="MANAGER">Instructor</option>
-          <option value="ADMIN">Admin</option>
-        </select>
         <button type="button" disabled={!who} onClick={() => void promote()}
           className="px-4 py-2 rounded-lg bg-green-800 text-white text-xs font-medium hover:bg-green-700 focus-ring disabled:opacity-50">
-          Promote
+          Promote to Admin
         </button>
       </div>
       {err && <p role="alert" className="form-error mt-2">{err}</p>}
@@ -363,7 +359,8 @@ function InviteStaffSection({ onSent }: { onSent: () => void }) {
   const [lastName, setLastName] = useState('');
   const [title, setTitle] = useState('');
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<'MANAGER' | 'ADMIN'>('MANAGER');
+  // Staff are invited as Admin only (Instructor/MANAGER retired per owner).
+  const role = 'ADMIN' as const;
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [result, setResult] = useState<{ url: string; emailed: boolean } | null>(null);
@@ -387,9 +384,9 @@ function InviteStaffSection({ onSent }: { onSent: () => void }) {
 
   return (
     <section className="mb-10">
-      <h2 className="font-serif text-lg text-green-800 mb-1">Invite staff</h2>
+      <h2 className="font-serif text-lg text-green-800 mb-1">Invite an admin</h2>
       <p className="text-[12.5px] text-muted mb-4">
-        Set their name, title, and role — applied to their account the moment they register.
+        Set their name and title — applied to their admin account the moment they register.
       </p>
       <div className="grid sm:grid-cols-2 gap-2 max-w-xl mb-2">
         <input className="form-input" placeholder="First name"
@@ -402,14 +399,9 @@ function InviteStaffSection({ onSent }: { onSent: () => void }) {
           value={email} onChange={(e) => setEmail(e.target.value)} aria-label="Email" />
       </div>
       <div className="flex flex-wrap gap-2 items-center">
-        <select className="form-input w-auto" value={role}
-          onChange={(e) => setRole(e.target.value as 'MANAGER' | 'ADMIN')} aria-label="Role">
-          <option value="MANAGER">Instructor</option>
-          <option value="ADMIN">Admin</option>
-        </select>
         <button type="button" disabled={busy || !email.trim()} onClick={() => void send()}
           className="px-4 py-2 rounded-lg bg-green-800 text-white text-xs font-medium hover:bg-green-700 focus-ring disabled:opacity-50">
-          {busy ? 'Sending…' : 'Send invite'}
+          {busy ? 'Sending…' : 'Send admin invite'}
         </button>
       </div>
       {err && <p role="alert" className="form-error mt-2">{err}</p>}
