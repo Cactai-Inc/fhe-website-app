@@ -12,8 +12,10 @@ import {
   resolveChangeRequest, advanceWorkflow, lockAndSign, confirmHorseSection,
   reopenHorseSection, inviteCounterparty, composeCostPhrase,
   setPartyControls, contractMessagesList, contractMessagePost, contractSigningSet,
+  contractRedlineState, proposeFieldEdit, resolveFieldEdit, withdrawFieldEdit,
+  proposeClause, resolveClause, withdrawClause,
   type ContractDetail, type ContractField, type ContractMessage, type PartyControls,
-  type SigningSetDoc,
+  type SigningSetDoc, type RedlineState,
 } from '../../lib/contracts';
 
 /**
@@ -122,6 +124,143 @@ function CostComposer({
   );
 }
 
+/** Redlining: propose an edit (staged, highlighted) or add a free-text clause,
+ *  gated by the party's controls; the owner/staff accept or reject. */
+function RedlineSection({
+  documentId, dealFields, redline, isOwnerSide, editablePhase, onChanged,
+}: {
+  documentId: string;
+  dealFields: ContractField[];
+  redline: RedlineState;
+  isOwnerSide: boolean;
+  editablePhase: boolean;
+  onChanged: () => void;
+}) {
+  const [pickField, setPickField] = useState('');
+  const [editVal, setEditVal] = useState('');
+  const [clause, setClause] = useState('');
+  const [err, setErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function run(fn: () => Promise<void>, reset?: () => void) {
+    setBusy(true); setErr(null);
+    try { await fn(); reset?.(); onChanged(); }
+    catch (e) { setErr(e instanceof Error ? e.message : 'That action failed.'); }
+    finally { setBusy(false); }
+  }
+
+  const pendingEdits = redline.field_proposals;
+  const openClauses = redline.addenda.filter((a) => a.status === 'open');
+  const acceptedClauses = redline.addenda.filter((a) => a.status === 'accepted');
+  const anything = pendingEdits.length > 0 || redline.addenda.length > 0
+    || (editablePhase && (redline.can_suggest || redline.can_add_clause));
+  if (!anything) return null;
+
+  return (
+    <section className="bg-white border border-green-800/10 rounded-xl p-5 mb-4">
+      <h2 className="font-serif text-lg text-green-900 mb-1">Proposed changes</h2>
+      <p className="text-[12.5px] text-muted mb-4">
+        Proposed edits and new clauses are highlighted here until the owner accepts or rejects them.
+      </p>
+
+      {/* pending edits */}
+      {pendingEdits.map((p) => (
+        <div key={p.field_key} className="border-l-4 border-gold-400 bg-gold-50/60 rounded-r-lg p-3 mb-2.5">
+          <p className="text-xs text-gold-900 font-medium mb-1">
+            Edit proposed{p.proposed_by ? ` by ${p.proposed_by}` : ''} · {p.label || p.field_key}
+          </p>
+          <p className="text-sm text-green-900">
+            <span className="line-through text-muted">{p.current_value || '—'}</span>
+            {' → '}
+            <span className="font-medium bg-gold-100 px-1 rounded">{p.proposed_value || '—'}</span>
+          </p>
+          <div className="flex gap-2 mt-2">
+            {isOwnerSide ? (
+              <>
+                <button type="button" className="btn-primary text-xs" disabled={busy}
+                  onClick={() => void run(() => resolveFieldEdit(documentId, p.field_key, true))}>Accept</button>
+                <button type="button" className="text-xs text-red-700 px-3 py-1 hover:bg-red-50 rounded" disabled={busy}
+                  onClick={() => void run(() => resolveFieldEdit(documentId, p.field_key, false))}>Reject</button>
+              </>
+            ) : p.mine ? (
+              <button type="button" className="text-xs underline text-secondary" disabled={busy}
+                onClick={() => void run(() => withdrawFieldEdit(documentId, p.field_key))}>Withdraw</button>
+            ) : <span className="text-xs text-muted">Pending owner review</span>}
+          </div>
+        </div>
+      ))}
+
+      {/* clauses (open = highlighted pending; accepted = agreed) */}
+      {openClauses.map((a) => (
+        <div key={a.id} className="border-l-4 border-gold-400 bg-gold-50/60 rounded-r-lg p-3 mb-2.5">
+          <p className="text-xs text-gold-900 font-medium mb-1">
+            New clause proposed{a.proposed_by ? ` by ${a.proposed_by}` : ''}{a.proposed_by_role ? ` (${a.proposed_by_role})` : ''}
+          </p>
+          <p className="text-sm text-green-900 whitespace-pre-line">{a.body}</p>
+          <div className="flex gap-2 mt-2">
+            {isOwnerSide ? (
+              <>
+                <button type="button" className="btn-primary text-xs" disabled={busy}
+                  onClick={() => void run(() => resolveClause(a.id, true))}>Accept</button>
+                <button type="button" className="text-xs text-red-700 px-3 py-1 hover:bg-red-50 rounded" disabled={busy}
+                  onClick={() => void run(() => resolveClause(a.id, false))}>Reject</button>
+              </>
+            ) : a.mine ? (
+              <button type="button" className="text-xs underline text-secondary" disabled={busy}
+                onClick={() => void run(() => withdrawClause(a.id))}>Withdraw</button>
+            ) : <span className="text-xs text-muted">Pending owner review</span>}
+          </div>
+        </div>
+      ))}
+
+      {acceptedClauses.length > 0 && (
+        <div className="mb-2.5">
+          <p className="form-label mb-1">Agreed additional terms</p>
+          <ul className="text-sm text-green-900 flex flex-col gap-1">
+            {acceptedClauses.map((a, i) => (
+              <li key={a.id} className="flex gap-2"><span className="text-muted">A-{i + 1}.</span><span className="whitespace-pre-line">{a.body}</span></li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* propose tools */}
+      {editablePhase && (redline.can_suggest || redline.can_add_clause) && (
+        <div className="border-t border-green-800/10 pt-4 mt-3 flex flex-col gap-4">
+          {redline.can_suggest && dealFields.length > 0 && (
+            <div>
+              <p className="form-label mb-1">Propose an edit to a term</p>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <select className="form-input sm:w-56" value={pickField} onChange={(e) => setPickField(e.target.value)} aria-label="Term">
+                  <option value="">Choose a term…</option>
+                  {dealFields.map((f) => <option key={f.field_key} value={f.field_key}>{f.label || f.field_key}</option>)}
+                </select>
+                <input className="form-input flex-1" placeholder="Proposed value" value={editVal} onChange={(e) => setEditVal(e.target.value)} />
+                <button type="button" className="btn-secondary shrink-0" disabled={busy || !pickField || !editVal.trim()}
+                  onClick={() => void run(() => proposeFieldEdit(documentId, pickField, editVal.trim()), () => { setPickField(''); setEditVal(''); })}>
+                  Propose edit
+                </button>
+              </div>
+            </div>
+          )}
+          {redline.can_add_clause && (
+            <div>
+              <p className="form-label mb-1">Add a clause</p>
+              <textarea rows={3} className="form-input resize-y" placeholder="Write a new clause to propose…"
+                value={clause} onChange={(e) => setClause(e.target.value)} />
+              <button type="button" className="btn-secondary mt-2" disabled={busy || !clause.trim()}
+                onClick={() => void run(() => proposeClause(documentId, clause.trim()), () => setClause(''))}>
+                Propose clause
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+      {err && <p role="alert" className="form-error mt-2">{err}</p>}
+    </section>
+  );
+}
+
 export default function ContractPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -129,6 +268,7 @@ export default function ContractPage() {
   const { isStaff } = useAuth();
   const [detail, setDetail] = useState<ContractDetail | null>(null);
   const [signingSet, setSigningSet] = useState<SigningSetDoc[]>([]);
+  const [redline, setRedline] = useState<RedlineState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [signName, setSignName] = useState('');
@@ -146,6 +286,7 @@ export default function ContractPage() {
       setDetail(await contractDocumentDetail(id));
       contractMessagesList(id).then(setMessages).catch(() => setMessages([]));
       contractSigningSet(id).then(setSigningSet).catch(() => setSigningSet([]));
+      contractRedlineState(id).then(setRedline).catch(() => setRedline(null));
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not load the contract.');
@@ -281,6 +422,17 @@ export default function ContractPage() {
           ) : null}
         </div>
       )}
+
+      {redline && (
+        <RedlineSection
+          documentId={id!}
+          dealFields={(detail.fields ?? []).filter((f) => f.owner_role === 'DEAL')}
+          redline={redline}
+          isOwnerSide={isOwnerSide}
+          editablePhase={editablePhase}
+          onChanged={() => void load()}
+        />
+      )}
       <div className="flex items-start justify-between gap-3 mb-1">
         <h1 className="font-serif text-2xl text-green-900 flex items-center gap-2">
           <FileText size={22} className="text-gold-ink" /> {doc.title}
@@ -324,7 +476,7 @@ export default function ContractPage() {
               .filter((r, i, a) => a.indexOf(r) === i && r !== 'FHE' && r !== 'COMPANY')
               .map((role) => {
                 const c = partyControls.find((x) => x.party_role === role)
-                  ?? { party_role: role, can_fill: true, can_edit_deal: false, can_suggest: false };
+                  ?? { party_role: role, can_fill: true, can_edit_deal: false, can_suggest: false, can_add_clause: false };
                 const save = (patch: Partial<PartyControls>) => void act(() =>
                   setPartyControls(id!, role, { ...c, ...patch }));
                 return (
@@ -344,7 +496,12 @@ export default function ContractPage() {
                       <label className="inline-flex items-center gap-2">
                         <input type="checkbox" className="accent-green-700" checked={c.can_suggest}
                           onChange={(e) => save({ can_suggest: e.target.checked })} />
-                        Can suggest changes
+                        Can propose edits to terms
+                      </label>
+                      <label className="inline-flex items-center gap-2">
+                        <input type="checkbox" className="accent-green-700" checked={c.can_add_clause ?? false}
+                          onChange={(e) => save({ can_add_clause: e.target.checked })} />
+                        Can add new clauses
                       </label>
                     </div>
                   </div>

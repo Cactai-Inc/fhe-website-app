@@ -36,6 +36,7 @@ export interface PartyControls {
   can_fill: boolean;
   can_edit_deal: boolean;
   can_suggest: boolean;
+  can_add_clause?: boolean;
 }
 
 export interface ContractMessage {
@@ -220,14 +221,61 @@ export function composeCostPhrase(
  *  suggest changes. The invitation language derives from these. */
 export async function setPartyControls(
   documentId: string, role: string,
-  controls: { can_fill: boolean; can_edit_deal: boolean; can_suggest: boolean },
+  controls: { can_fill: boolean; can_edit_deal: boolean; can_suggest: boolean; can_add_clause?: boolean },
 ): Promise<void> {
   const { error } = await supabase.rpc('set_party_controls', {
     p_document_id: documentId, p_role: role,
     p_can_fill: controls.can_fill,
     p_can_edit_deal: controls.can_edit_deal,
     p_can_suggest: controls.can_suggest,
+    p_can_add_clause: controls.can_add_clause ?? false,
   });
+  if (error) throw error;
+}
+
+// ── Redlining: propose/resolve edits + clauses, and the read model ──
+export interface RedlineFieldProposal {
+  field_key: string; label: string | null;
+  current_value: string | null; proposed_value: string | null;
+  proposed_by: string | null; mine: boolean; proposed_at: string;
+}
+export interface RedlineAddendum {
+  id: string; item_number: number; body: string; status: string;
+  proposed_by_role: string | null; proposed_by: string | null; mine: boolean; created_at: string;
+}
+export interface RedlineState {
+  field_proposals: RedlineFieldProposal[];
+  addenda: RedlineAddendum[];
+  can_suggest: boolean;
+  can_add_clause: boolean;
+}
+export async function contractRedlineState(documentId: string): Promise<RedlineState> {
+  const { data, error } = await supabase.rpc('contract_redline_state', { p_document_id: documentId });
+  if (error) throw error;
+  return data as RedlineState;
+}
+export async function proposeFieldEdit(documentId: string, fieldKey: string, proposedValue: string): Promise<void> {
+  const { error } = await supabase.rpc('propose_field_edit', { p_document_id: documentId, p_field_key: fieldKey, p_proposed_value: proposedValue });
+  if (error) throw error;
+}
+export async function resolveFieldEdit(documentId: string, fieldKey: string, accept: boolean): Promise<void> {
+  const { error } = await supabase.rpc('resolve_field_edit', { p_document_id: documentId, p_field_key: fieldKey, p_accept: accept });
+  if (error) throw error;
+}
+export async function withdrawFieldEdit(documentId: string, fieldKey: string): Promise<void> {
+  const { error } = await supabase.rpc('withdraw_field_edit', { p_document_id: documentId, p_field_key: fieldKey });
+  if (error) throw error;
+}
+export async function proposeClause(documentId: string, body: string): Promise<void> {
+  const { error } = await supabase.rpc('propose_clause', { p_document_id: documentId, p_body: body });
+  if (error) throw error;
+}
+export async function resolveClause(addendumId: string, accept: boolean): Promise<void> {
+  const { error } = await supabase.rpc('resolve_clause', { p_addendum_id: addendumId, p_accept: accept });
+  if (error) throw error;
+}
+export async function withdrawClause(addendumId: string): Promise<void> {
+  const { error } = await supabase.rpc('withdraw_clause', { p_addendum_id: addendumId });
   if (error) throw error;
 }
 
