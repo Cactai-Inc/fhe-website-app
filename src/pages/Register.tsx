@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { validateInvitation, upsertMyProfile, redeemInvitation, myOnboardingState } from '../lib/api';
+import { validateInvitation, redeemInvitation, myOnboardingState } from '../lib/api';
 import { redeemContractInvitation } from '../lib/contracts';
 import { signInWithGoogle } from '../lib/auth';
 import { OAUTH_PROVIDERS } from '../lib/authConfig';
@@ -134,18 +134,19 @@ export default function Register() {
       return;
     }
 
-    try {
-      await upsertMyProfile({ email: invitation.email, created_from_request_id: invitation.request_id });
-    } catch { /* best-effort; redemption stamps the name from the invite */ }
-
+    // NOTE: no profile upsert here. redeem_invitation creates the profile with
+    // its org_id; a bare insert with a null org_id trips the contact-link trigger
+    // (contacts.org_id NOT NULL) and aborts, leaving the account half-built.
     try {
       const dest = await redeemByKind();
       await refreshProfile().catch(() => {});
       navigate(dest === '/app' ? '/app?welcome=1' : dest, { replace: true });
       return;
-    } catch {
-      await refreshProfile().catch(() => {});
-      navigate('/app?welcome=1', { replace: true });
+    } catch (err) {
+      // Don't mask a real failure as success. Surface it so nobody is misled
+      // into thinking the account is ready when it isn't.
+      setError(err instanceof Error ? err.message : 'We could not finish activating your account.');
+      setState('ready');
       return;
     }
   }

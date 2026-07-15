@@ -36,6 +36,43 @@ export async function adminListMembers(): Promise<AdminMemberRow[]> {
   }));
 }
 
+/** A staff invitation that hasn't been accepted yet — no profile row exists
+ *  until redemption, so these are invisible to adminListMembers. The team roster
+ *  surfaces them as "Invited" rows (mirroring how the Clients page shows pending
+ *  invitees), so an admin can see who's been invited and resend/revoke. */
+export interface PendingStaffInvite {
+  id: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  title: string | null;
+  invited_role: MemberRole;
+  status: string;
+  expires_at: string;
+  created_at: string;
+}
+
+/** Pending (sent, unexpired, unaccepted) invitations for STAFF roles only.
+ *  Excludes USER invites (those show on the Clients page) and any invite whose
+ *  invitee already has a profile (they've accepted → they're in the roster). */
+export async function adminPendingStaffInvites(): Promise<PendingStaffInvite[]> {
+  const { data, error } = await supabase
+    .from('invitations')
+    .select('id, email, first_name, last_name, title, invited_role, status, expires_at, created_at')
+    .in('invited_role', ['MANAGER', 'ADMIN', 'EMPLOYEE'])
+    .eq('status', 'sent')
+    .gt('expires_at', new Date().toISOString())
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as PendingStaffInvite[];
+}
+
+/** Revoke a pending staff invite (kills the link; admin can re-send a fresh one). */
+export async function adminRevokeStaffInvite(id: string): Promise<void> {
+  const { error } = await supabase.from('invitations').update({ status: 'revoked' }).eq('id', id);
+  if (error) throw error;
+}
+
 /** Promote/demote an activated user by writing profiles.role — the authoritative
  *  role the app derives nav + surfaces from. Setting MANAGER makes the user an
  *  instructor (servicing subset); ADMIN makes them a tenant admin; USER returns

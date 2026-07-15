@@ -8,7 +8,8 @@ import { X, ChevronRight } from 'lucide-react';
 import {
   adminListMembers, adminSetRole, adminSetSuspended, adminSendInvitation,
   adminUpdateProfile, adminHardDeleteMember,
-  type AdminMemberRow, type MemberRole,
+  adminPendingStaffInvites, adminRevokeStaffInvite,
+  type AdminMemberRow, type MemberRole, type PendingStaffInvite,
 } from '../../../lib/admin';
 
 /**
@@ -25,12 +26,22 @@ const ROLE_LABEL: Record<string, string> = {
 const memberName = (m: AdminMemberRow) =>
   m.display_name || `${m.first_name ?? ''} ${m.last_name ?? ''}`.trim() || m.email || '—';
 
+const inviteName = (i: PendingStaffInvite) =>
+  `${i.first_name ?? ''} ${i.last_name ?? ''}`.trim() || i.email;
+
 function RosterSection({
-  members, reload,
-}: { members: AdminMemberRow[]; reload: () => void }) {
+  members, pending, reload,
+}: { members: AdminMemberRow[]; pending: PendingStaffInvite[]; reload: () => void }) {
   const { isAdmin } = useAuth();
   const staff = members.filter((m) => (m.role ?? 'USER') !== 'USER');
   const [selected, setSelected] = useState<AdminMemberRow | null>(null);
+  const [revoking, setRevoking] = useState<string | null>(null);
+
+  async function revoke(id: string) {
+    setRevoking(id);
+    try { await adminRevokeStaffInvite(id); reload(); }
+    finally { setRevoking(null); }
+  }
 
   return (
     <section className="mb-10">
@@ -39,7 +50,7 @@ function RosterSection({
         Everyone with an internal role. Click a member to edit their record, change their role,
         demote them back to a client, or delete their account.
       </p>
-      {staff.length === 0 && <p className="text-sm text-muted">No staff accounts yet.</p>}
+      {staff.length === 0 && pending.length === 0 && <p className="text-sm text-muted">No staff accounts yet.</p>}
       <div className="flex flex-col gap-1.5">
         {staff.map((m) => (
           <button key={m.user_id} type="button" onClick={() => setSelected(m)}
@@ -58,6 +69,32 @@ function RosterSection({
               <ChevronRight size={16} className="text-green-800/40" aria-hidden="true" />
             </span>
           </button>
+        ))}
+
+        {/* Invited-but-not-yet-accepted staff. No profile exists until they redeem,
+            so these come straight from the invitations table — matching how the
+            Clients page shows pending invitees. */}
+        {pending.map((i) => (
+          <div key={i.id}
+            className="flex items-center justify-between gap-3 bg-gold-50/60 border border-dashed border-gold-300 rounded-lg px-4 py-3">
+            <span className="min-w-0">
+              <span className="block text-sm font-medium text-green-900 truncate">{inviteName(i)}</span>
+              <span className="block text-xs text-muted truncate">
+                {i.email}{i.title ? ` · ${i.title}` : ''}
+              </span>
+            </span>
+            <span className="flex items-center gap-2 shrink-0">
+              <span className="text-xs font-sans uppercase tracking-wide px-2.5 py-1 rounded-full bg-gold-200 text-gold-900">
+                Invited · {ROLE_LABEL[i.invited_role] ?? 'Staff'}
+              </span>
+              {isAdmin && (
+                <button type="button" onClick={() => revoke(i.id)} disabled={revoking === i.id}
+                  className="text-xs text-red-700 hover:text-red-800 underline underline-offset-2 disabled:opacity-50 focus-ring">
+                  {revoking === i.id ? 'Revoking…' : 'Revoke'}
+                </button>
+              )}
+            </span>
+          </div>
         ))}
       </div>
       {selected && (
@@ -321,7 +358,7 @@ function InstructorAccessSection({ instructors }: { instructors: AdminMemberRow[
   );
 }
 
-function InviteStaffSection() {
+function InviteStaffSection({ onSent }: { onSent: () => void }) {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [title, setTitle] = useState('');
@@ -340,6 +377,7 @@ function InviteStaffSection() {
       });
       setResult({ url: r.registerUrl, emailed: r.emailed });
       setFirstName(''); setLastName(''); setTitle(''); setEmail('');
+      onSent(); // surface the new "Invited" row in the roster immediately
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Could not send the invitation.');
     } finally {
@@ -390,7 +428,11 @@ function InviteStaffSection() {
 export default function TeamPage() {
   useDocumentTitle('Team');
   const [members, setMembers] = useState<AdminMemberRow[]>([]);
-  const reload = () => { adminListMembers().then(setMembers).catch(() => setMembers([])); };
+  const [pending, setPending] = useState<PendingStaffInvite[]>([]);
+  const reload = () => {
+    adminListMembers().then(setMembers).catch(() => setMembers([]));
+    adminPendingStaffInvites().then(setPending).catch(() => setPending([]));
+  };
   useEffect(reload, []);
 
   const instructors = members.filter((m) =>
@@ -402,8 +444,8 @@ export default function TeamPage() {
       <p className="text-sm text-green-800/70 mb-6">
         Internal accounts — admins and instructors — and what instructors can reach.
       </p>
-      <RosterSection members={members} reload={reload} />
-      <InviteStaffSection />
+      <RosterSection members={members} pending={pending} reload={reload} />
+      <InviteStaffSection onSent={reload} />
       <PromoteSection members={members} reload={reload} />
       <InstructorAccessSection instructors={instructors} />
     </div>

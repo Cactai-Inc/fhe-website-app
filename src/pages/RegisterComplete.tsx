@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { validateInvitation, upsertMyProfile, redeemInvitation, myOnboardingState } from '../lib/api';
+import { validateInvitation, redeemInvitation, myOnboardingState } from '../lib/api';
 import { redeemContractInvitation } from '../lib/contracts';
 import { useDocumentTitle } from '../lib/hooks';
 import { useAuth } from '../contexts/AuthContext';
 
-type State = 'working' | 'done' | 'mismatch' | 'invalid';
+type State = 'working' | 'done' | 'mismatch' | 'invalid' | 'failed';
 
 /**
  * OAuth leg of invite-only registration. /register stashes the invitation in
@@ -27,6 +27,7 @@ export default function RegisterComplete() {
   const [state, setState] = useState<State>('working');
   const [invitedEmail, setInvitedEmail] = useState('');
   const [actualEmail, setActualEmail] = useState('');
+  const [redeemError, setRedeemError] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -71,14 +72,12 @@ export default function RegisterComplete() {
         return;
       }
 
-      try {
-        await upsertMyProfile({
-          email: invitation.email,
-          created_from_request_id: invitation.request_id,
-        });
-      } catch {
-        // best-effort, same as the password path
-      }
+      // NOTE: do NOT upsert the profile here. redeem_invitation creates the
+      // profile row WITH its org_id (which contacts.org_id defaults to via
+      // current_org()). A bare profiles insert with a null org_id makes the
+      // profiles_link_contact trigger insert a contact with a null org_id →
+      // NOT NULL violation → the insert aborts, the redeem never seeds the
+      // profile, and the invitee lands on the "finishing setup" dead-end.
       let dest = '/app?welcome=1';
       try {
         if (stash.kind === 'contract') {
@@ -94,12 +93,15 @@ export default function RegisterComplete() {
             if (state?.needed) dest = '/app/onboarding';
           } catch { /* dashboard fallback */ }
         }
-      } catch {
-        // consumed/expired mid-flow — account exists, membership self-heals for
-        // provisioned clients (ensure_my_membership); land in the app.
+      } catch (err) {
+        // Redemption genuinely failed — do NOT pretend it worked. Surface the
+        // real reason so the invitee (and you) aren't misled into thinking the
+        // account is set up when it isn't.
         window.localStorage.removeItem('fhe-invite');
-        await refreshProfile().catch(() => {});
-        if (active) { setState('done'); navigate('/app', { replace: true }); }
+        if (active) {
+          setRedeemError(err instanceof Error ? err.message : 'We could not finish setting up your account.');
+          setState('failed');
+        }
         return;
       }
       window.localStorage.removeItem('fhe-invite');
@@ -122,6 +124,30 @@ export default function RegisterComplete() {
     return (
       <div className="min-h-[calc(100dvh-3.5rem)] flex items-center justify-center">
         <p className="body-text text-muted">Finishing your sign-up…</p>
+      </div>
+    );
+  }
+
+  if (state === 'failed') {
+    return (
+      <div className="min-h-[calc(100dvh-3.5rem)] flex items-center justify-center px-6 pt-12 pb-20">
+        <div className="max-w-md text-center">
+          <p className="eyebrow mb-3">Invitation</p>
+          <h1 className="heading-section text-green-800 mb-4">We couldn't finish setting up your account</h1>
+          <p className="body-text mb-4">
+            You're signed in, but the last step didn't complete, so your account isn't active yet.
+            Please try again — if it keeps failing, send this detail to whoever invited you:
+          </p>
+          <p className="body-text text-sm font-mono bg-cream-100 border border-green-800/10 rounded px-3 py-2 mb-8 break-words">
+            {redeemError}
+          </p>
+          <div className="flex items-center justify-center gap-3">
+            <button type="button" onClick={() => window.location.reload()} className="btn-primary">
+              Try again
+            </button>
+            <Link to="/" className="btn-secondary">Return home</Link>
+          </div>
+        </div>
       </div>
     );
   }
