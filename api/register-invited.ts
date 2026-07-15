@@ -60,8 +60,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
     if (createErr) {
       const msg = createErr.message || '';
+      // The email already has an auth account (e.g. an earlier partial signup, or
+      // a reused address). The invitation is the credential, so let the invitee
+      // CLAIM it: set the password they just chose + confirm, then they sign in.
       if (/already|registered|exists/i.test(msg)) {
-        return res.status(409).json({ error: 'an account already exists for this email — sign in instead' });
+        const { data: existing } = await db
+          .schema('auth').from('users').select('id').ilike('email', inv.email).limit(1).maybeSingle();
+        if (!existing?.id) {
+          return res.status(409).json({ error: 'an account already exists for this email — sign in instead' });
+        }
+        const { error: updErr } = await db.auth.admin.updateUserById(existing.id, {
+          password, email_confirm: true,
+        });
+        if (updErr) return res.status(400).json({ error: updErr.message || 'could not set the password' });
+        return res.status(200).json({ ok: true, existed: true });
       }
       return res.status(400).json({ error: msg || 'could not create the account' });
     }

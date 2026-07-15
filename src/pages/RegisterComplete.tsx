@@ -79,7 +79,7 @@ export default function RegisterComplete() {
       } catch {
         // best-effort, same as the password path
       }
-      let dest = '/app';
+      let dest = '/app?welcome=1';
       try {
         if (stash.kind === 'contract') {
           // contract-counterparty invite: link the party contact, no membership,

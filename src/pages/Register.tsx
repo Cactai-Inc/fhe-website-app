@@ -41,12 +41,13 @@ export default function Register() {
   const [invitation, setInvitation] = useState<Invitation | null>(null);
   // Gmail invites lead with Google only — the password form stays one click
   // away for the rare Gmail user who wants a password anyway.
-  const isGmail = /@(gmail|googlemail)\.com$/i.test(invitation?.email ?? '');
-  const [showPasswordForm, setShowPasswordForm] = useState(false);
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
   const [password, setPassword] = useState('');
+  const [password2, setPassword2] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  const pwLongEnough = password.length >= 8;
+  const pwMatch = password.length > 0 && password === password2;
+  const pwReady = pwLongEnough && pwMatch;
 
   useEffect(() => {
     let active = true;
@@ -104,32 +105,26 @@ export default function Register() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!invitation) return;
+    if (!invitation || !pwReady) return;
     setState('creating');
     setError(null);
 
-    // Create the auth user SERVER-SIDE, pre-confirmed: the personal invite link
-    // already proved the inbox, and the project's email-confirmation setting
-    // otherwise blocks the immediate sign-in ("Email not confirmed"), which
-    // orphaned password signups entirely (owner-reported).
+    // Set the account's password server-side (creates the account if new, or
+    // claims an existing one via the invite), pre-confirmed — the personal invite
+    // link already proves the inbox. The name rides on the invitation and is
+    // stamped onto the profile at redemption; no name entry needed here.
     const resp = await fetch('/api/register-invited', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        token,
-        password,
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-      }),
+      body: JSON.stringify({ token, password }),
     });
     if (!resp.ok) {
       const payload = await resp.json().catch(() => ({ error: '' }));
-      setError(payload.error || 'Could not create your account. Please try again.');
+      setError(payload.error || 'Could not activate your account. Please try again.');
       setState('ready');
       return;
     }
 
-    // Confirmed at creation → this sign-in succeeds and establishes the session.
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email: invitation.email, password,
     });
@@ -140,30 +135,17 @@ export default function Register() {
     }
 
     try {
-      await upsertMyProfile({
-        first_name: firstName.trim() || null,
-        last_name: lastName.trim() || null,
-        email: invitation.email,
-        created_from_request_id: invitation.request_id,
-      });
-    } catch {
-      // Profile seeding is best-effort; the account exists either way.
-    }
+      await upsertMyProfile({ email: invitation.email, created_from_request_id: invitation.request_id });
+    } catch { /* best-effort; redemption stamps the name from the invite */ }
 
     try {
-      const dest = await redeemByKind(); // membership grant, or contract-party link
-      // Load the freshly-stamped role/membership into context before navigating,
-      // so a staff invitee is recognized as an operator at /app (not bounced to a
-      // blank, member-gated /app/account from the stale pre-redeem snapshot).
+      const dest = await redeemByKind();
       await refreshProfile().catch(() => {});
-      navigate(dest, { replace: true });
+      navigate(dest === '/app' ? '/app?welcome=1' : dest, { replace: true });
       return;
     } catch {
-      // token consumed by a parallel attempt or expired mid-flow; the account
-      // exists, and for provisioned clients membership self-heals at sign-in
-      // (ensure_my_membership) — land in the app, not the legacy /account page.
       await refreshProfile().catch(() => {});
-      navigate('/app', { replace: true });
+      navigate('/app?welcome=1', { replace: true });
       return;
     }
   }
@@ -205,79 +187,51 @@ export default function Register() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <p className="eyebrow mb-3">Welcome</p>
-          <h1 className="heading-section text-green-800">Create your account</h1>
+          <h1 className="heading-section text-green-800">Sign in to activate your account</h1>
           <p className="body-text text-sm mt-2">
-            Setting up for <span className="font-medium text-green-800">{invitation?.email}</span>
+            for <span className="font-medium text-green-800">{invitation?.email}</span>
           </p>
         </div>
 
         {OAUTH_PROVIDERS.google && (
           <div className="mb-5">
-            <button
-              type="button"
-              onClick={continueWithGoogle}
-              className={`w-full justify-center ${isGmail ? 'btn-primary' : 'btn-outline-gold'}`}
-            >
+            <button type="button" onClick={continueWithGoogle} className="btn-outline-gold w-full justify-center">
               Continue with Google
             </button>
-            {isGmail && !showPasswordForm ? (
-              <p className="text-center text-xs font-sans text-muted mt-3">
-                This is a Gmail address — one click and you're in.{' '}
-                <button type="button" className="underline hover:text-green-800"
-                  onClick={() => setShowPasswordForm(true)}>
-                  Prefer a password instead?
-                </button>
-              </p>
-            ) : (
-              <p className="text-center text-xs font-sans text-muted mt-3">
-                or set a password below
-              </p>
-            )}
+            <div className="flex items-center gap-3 my-5 text-muted">
+              <span className="h-px flex-1 bg-green-800/10" />
+              <span className="text-xs font-sans uppercase tracking-wide">or set a password</span>
+              <span className="h-px flex-1 bg-green-800/10" />
+            </div>
           </div>
         )}
 
-        {(!OAUTH_PROVIDERS.google || !isGmail || showPasswordForm) && (
         <form onSubmit={handleSubmit} noValidate className="bg-white border border-green-800/10 p-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
-            <div>
-              <label className="form-label" htmlFor="first_name">First Name</label>
-              <input
-                id="first_name"
-                type="text"
-                autoComplete="given-name"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                className="form-input"
-                placeholder="First name"
-              />
-            </div>
-            <div>
-              <label className="form-label" htmlFor="last_name">Last Name</label>
-              <input
-                id="last_name"
-                type="text"
-                autoComplete="family-name"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                className="form-input"
-                placeholder="Last name"
-              />
-            </div>
-          </div>
-          <div className="mb-6">
-            <label className="form-label" htmlFor="password">Choose a Password</label>
+          <div className="mb-4">
+            <label className="form-label" htmlFor="password">Create a password</label>
             <input
-              id="password"
-              type="password"
-              autoComplete="new-password"
-              required
-              minLength={8}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="form-input"
-              placeholder="At least 8 characters"
+              id="password" type="text" autoComplete="off" required minLength={8}
+              value={password} onChange={(e) => setPassword(e.target.value)}
+              className="form-input font-mono" placeholder="At least 8 characters"
             />
           </div>
+          <div className="mb-3">
+            <label className="form-label" htmlFor="password2">Re-enter your password</label>
+            <input
+              id="password2" type="text" autoComplete="off" required
+              value={password2} onChange={(e) => setPassword2(e.target.value)}
+              className="form-input font-mono" placeholder="Type it again"
+            />
+          </div>
+
+          {/* live match feedback so they can see they typed it correctly */}
+          {(password || password2) && (
+            <p className={`text-xs font-sans mb-5 ${pwReady ? 'text-green-700' : 'text-secondary'}`}>
+              {!pwLongEnough ? 'Password must be at least 8 characters.'
+                : !pwMatch ? 'The two passwords don’t match yet.'
+                  : '✓ Passwords match.'}
+            </p>
+          )}
 
           {error && (
             <div role="alert" className="bg-red-50 border border-red-200 text-red-700 text-sm font-sans px-4 py-3 mb-5">
@@ -285,12 +239,12 @@ export default function Register() {
             </div>
           )}
 
-          <button type="submit" disabled={state === 'creating'} className="btn-primary w-full justify-center">
-            {state === 'creating' ? 'Creating your account…' : 'Create Account'}
+          <button type="submit" disabled={state === 'creating' || !pwReady}
+            className="btn-primary w-full justify-center disabled:opacity-50">
+            {state === 'creating' ? 'Signing you in…' : 'Continue'}
             {state !== 'creating' && <ArrowRight size={16} />}
           </button>
         </form>
-        )}
       </div>
     </div>
   );
