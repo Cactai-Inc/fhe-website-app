@@ -322,6 +322,9 @@ function InstructorAccessSection({ instructors }: { instructors: AdminMemberRow[
 }
 
 function InviteStaffSection() {
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [title, setTitle] = useState('');
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<'MANAGER' | 'ADMIN'>('MANAGER');
   const [busy, setBusy] = useState(false);
@@ -331,9 +334,12 @@ function InviteStaffSection() {
   async function send() {
     setBusy(true); setErr(null); setResult(null);
     try {
-      const r = await adminSendInvitation({ email: email.trim(), role, expiresInDays: 7 });
+      const r = await adminSendInvitation({
+        email: email.trim(), role, expiresInDays: 7,
+        firstName: firstName.trim(), lastName: lastName.trim(), title: title.trim(),
+      });
       setResult({ url: r.registerUrl, emailed: r.emailed });
-      setEmail('');
+      setFirstName(''); setLastName(''); setTitle(''); setEmail('');
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Could not send the invitation.');
     } finally {
@@ -345,11 +351,19 @@ function InviteStaffSection() {
     <section className="mb-10">
       <h2 className="font-serif text-lg text-green-800 mb-1">Invite staff</h2>
       <p className="text-[12.5px] text-muted mb-4">
-        Send a registration invite that carries the role — applied the moment they register.
+        Set their name, title, and role — applied to their account the moment they register.
       </p>
-      <div className="flex flex-wrap gap-2 items-center">
-        <input type="email" className="form-input max-w-xs" placeholder="their@email.com"
+      <div className="grid sm:grid-cols-2 gap-2 max-w-xl mb-2">
+        <input className="form-input" placeholder="First name"
+          value={firstName} onChange={(e) => setFirstName(e.target.value)} aria-label="First name" />
+        <input className="form-input" placeholder="Last name"
+          value={lastName} onChange={(e) => setLastName(e.target.value)} aria-label="Last name" />
+        <input className="form-input" placeholder="Title (e.g. Head Trainer)"
+          value={title} onChange={(e) => setTitle(e.target.value)} aria-label="Title" />
+        <input type="email" className="form-input" placeholder="their@email.com"
           value={email} onChange={(e) => setEmail(e.target.value)} aria-label="Email" />
+      </div>
+      <div className="flex flex-wrap gap-2 items-center">
         <select className="form-input w-auto" value={role}
           onChange={(e) => setRole(e.target.value as 'MANAGER' | 'ADMIN')} aria-label="Role">
           <option value="MANAGER">Instructor</option>

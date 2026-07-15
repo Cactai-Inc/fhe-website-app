@@ -239,7 +239,7 @@ export interface AdminInviteResult {
 export async function adminSendInvitation(
   input: {
     email: string; requestId?: string; expiresInDays?: number;
-    firstName?: string; lastName?: string; offeringId?: string;
+    firstName?: string; lastName?: string; title?: string; offeringId?: string;
     markPaid?: boolean; paymentMethod?: string; notes?: string;
     /** Account type to provision — 'MANAGER' (instructor) / 'ADMIN' need admin caller. */
     role?: 'USER' | 'MANAGER' | 'ADMIN';

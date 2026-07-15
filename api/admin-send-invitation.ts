@@ -105,6 +105,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const offeringId = typeof body.offeringId === 'string' ? body.offeringId.trim() : '';
   const firstName = ((body.firstName as string) || '').trim();
   const lastName = ((body.lastName as string) || '').trim();
+  const title = ((body.title as string) || '').trim();
   if (offeringId && (!firstName || !lastName)) {
     return res.status(400).json({ error: 'firstName and lastName required when provisioning a purchase' });
   }
@@ -184,6 +185,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       status: 'sent',
       invited_role: invitedRole,
       scheduled_for: scheduledFor,
+      // carried onto the account at redemption (name → profile, title → staff_profiles)
+      first_name: firstName || null,
+      last_name: lastName || null,
+      title: title || null,
     });
     if (insErr) throw insErr;
 
