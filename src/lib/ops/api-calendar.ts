@@ -87,16 +87,23 @@ export interface CalendarLocation {
   address: string | null;
   is_offsite: boolean;
   is_default: boolean;
+  is_mine?: boolean;
 }
 
+/** Barn-wide locations + the caller's own personal ones (barn default first). */
 export async function fetchLocations(): Promise<CalendarLocation[]> {
-  const { data, error } = await supabase
-    .from('locations')
-    .select('id, name, address, is_offsite, is_default, sort_order')
-    .eq('active', true)
-    .order('sort_order');
+  const { data, error } = await supabase.rpc('my_locations');
   if (error) throw error;
   return (data ?? []) as CalendarLocation[];
+}
+
+/** Add a personal location for the signed-in member (visible only to them). */
+export async function addMyLocation(name: string, address?: string): Promise<string> {
+  const { data, error } = await supabase.rpc('add_my_location', {
+    p_name: name, p_address: address ?? null,
+  });
+  if (error) throw error;
+  return data as string;
 }
 
 // ─── Staff writes (Slice 3) ──────────────────────────────────────────────────

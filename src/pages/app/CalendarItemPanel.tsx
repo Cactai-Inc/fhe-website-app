@@ -7,7 +7,7 @@ import { listLessonClients, listScheduleHorses } from '../../lib/ops/api-lessons
 import type { LessonClientOption, ScheduleHorseOption } from '../../lib/ops/api-lessons';
 import { LessonLogEditor } from './ops/lessons/LessonLogEditor';
 import {
-  fetchLocations,
+  fetchLocations, addMyLocation,
   fetchClientPurchases,
   saveCalendarItem,
   deleteCalendarItem,
@@ -91,8 +91,27 @@ export function CalendarItemPanel({
       .catch(() => setOfferings([]));
     listLessonClients().then(setClients).catch(() => setClients([]));
     listScheduleHorses().then(setHorses).catch(() => setHorses([]));
-    fetchLocations().then(setLocations).catch(() => setLocations([]));
+    fetchLocations().then((locs) => {
+      setLocations(locs);
+      // No hardcoded placeholder anymore — default to the barn default (or the
+      // first location) when this is a new item with none chosen.
+      if (!item?.location_id && locs.length) {
+        setLocationId((locs.find((l) => l.is_default) ?? locs[0]).id);
+      }
+    }).catch(() => setLocations([]));
   }, []);
+
+  async function addLocation() {
+    const name = window.prompt('New location name');
+    if (!name?.trim()) return;
+    const addr = window.prompt('Address (optional)') ?? undefined;
+    try {
+      const newId = await addMyLocation(name.trim(), addr?.trim() || undefined);
+      const locs = await fetchLocations();
+      setLocations(locs);
+      setLocationId(newId);
+    } catch { /* keep current selection on failure */ }
+  }
 
   // purchases for the chosen client (assign-purchase picker)
   useEffect(() => {
@@ -356,9 +375,15 @@ export function CalendarItemPanel({
 
           <label className="text-sm">
             <span className="form-label">Location</span>
-            <select className="form-input" value={locationId} onChange={(e) => setLocationId(e.target.value)}>
-              <option value="">Home property (default)</option>
-              {locations.map((l) => <option key={l.id} value={l.id}>{l.name}{l.is_offsite ? ' (offsite)' : ''}</option>)}
+            <select className="form-input" value={locationId}
+              onChange={(e) => { if (e.target.value === '__add') { void addLocation(); } else setLocationId(e.target.value); }}>
+              {/* only real locations — the default is just the first/only one */}
+              {locations.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.name}{l.is_offsite ? ' (offsite)' : ''}{l.is_mine ? ' (mine)' : ''}
+                </option>
+              ))}
+              <option value="__add">+ Add a location…</option>
             </select>
           </label>
 
