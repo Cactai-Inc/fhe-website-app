@@ -38,11 +38,21 @@ export default function Home() {
   // The PLATFORM operator belongs to no tenant — land on Organizations.
   if (isSuperAdmin) return <Navigate to="/app/ops/superadmin/organizations" replace />;
 
-  // Non-rider (deal/care only) members have no feed — send them to their dashboard.
+  // Deal/care-only members have their own purpose-built home.
   if (!surfacesLoading && !hasFeed) {
     if (surfaces.surfaces.includes('deal_dashboard')) return <Navigate to="/app/deal" replace />;
     if (surfaces.surfaces.includes('care_dashboard')) return <Navigate to="/app/care" replace />;
-    return <Navigate to="/app/account" replace />;
+    // Everyone gets a dashboard (it's where notifications live). A member with no
+    // category still lands here — the priority-actions panel, minus the community
+    // feed — instead of being bounced to Account in a redirect loop.
+    return (
+      <div>
+        <header className="mb-4">
+          <p className="eyebrow">Good {daypart}{firstName ? `, ${firstName}` : ''}</p>
+        </header>
+        <DashboardPanel />
+      </div>
+    );
   }
 
   return (
