@@ -63,6 +63,7 @@ export interface ContractDetail {
     sent_at: string | null;
     archived_at: string | null;
     cancelled_at: string | null;
+    horse_id: string | null;
   };
   my_roles: string[];
   fields: ContractField[];

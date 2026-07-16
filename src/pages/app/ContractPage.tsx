@@ -404,10 +404,12 @@ export default function ContractPage() {
     [detail?.fields],
   );
   const horseIsMine = horseFields.some((f) => f.can_edit) || isOwnerSide;
-  const horseUnset = horseFields.length > 0
-    && !horseFields.some((f) => f.field_key.replace(/[{}]/g, '').endsWith('BARN_NAME') && (f.value ?? '').trim())
-    && !horseFields.some((f) => f.field_key.replace(/[{}]/g, '').endsWith('REGISTERED_NAME') && (f.value ?? '').trim());
-  const showHorseGate = editablePhase && horseIsMine && horseUnset && !horseConfirmed;
+  // Gate ONLY when there is genuinely no horse attached to the document — NOT when
+  // horse fields happen to be blank. A document with a horse_id always shows its
+  // sections (fields are editable inline whether filled or not).
+  const noHorseAttached = !doc?.horse_id;
+  const showHorseGate = editablePhase && horseIsMine && horseFields.length > 0
+    && noHorseAttached && !horseConfirmed;
 
   async function act(fn: () => Promise<unknown>, okMsg?: string) {
     setError(null); setNote(null);
