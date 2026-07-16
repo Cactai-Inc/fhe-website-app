@@ -12,7 +12,7 @@ import {
   resolveChangeRequest, advanceWorkflow, lockAndSign, confirmHorseSection,
   reopenHorseSection, inviteCounterparty, composeCostPhrase,
   setPartyControls, contractMessagesList, contractMessagePost, contractSigningSet,
-  contractRedlineState, proposeFieldEdit, resolveFieldEdit, withdrawFieldEdit,
+  contractRedlineState, resolveFieldEdit, withdrawFieldEdit,
   proposeClause, resolveClause, withdrawClause, attachHorseToDocument,
   type ContractDetail, type ContractField, type ContractMessage, type PartyControls,
   type SigningSetDoc, type RedlineState,
@@ -183,17 +183,14 @@ function CostComposer({
 /** Redlining: propose an edit (staged, highlighted) or add a free-text clause,
  *  gated by the party's controls; the owner/staff accept or reject. */
 function RedlineSection({
-  documentId, dealFields, redline, isOwnerSide, editablePhase, onChanged,
+  documentId, redline, isOwnerSide, editablePhase, onChanged,
 }: {
   documentId: string;
-  dealFields: ContractField[];
   redline: RedlineState;
   isOwnerSide: boolean;
   editablePhase: boolean;
   onChanged: () => void;
 }) {
-  const [pickField, setPickField] = useState('');
-  const [editVal, setEditVal] = useState('');
   const [clause, setClause] = useState('');
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -280,25 +277,10 @@ function RedlineSection({
         </div>
       )}
 
-      {/* propose tools */}
-      {editablePhase && (redline.can_suggest || redline.can_add_clause) && (
+      {/* propose tools — edits to existing terms happen INLINE on the field itself
+          (per controls), not via a separate dropdown. Only clause-adding lives here. */}
+      {editablePhase && redline.can_add_clause && (
         <div className="border-t border-green-800/10 pt-4 mt-3 flex flex-col gap-4">
-          {redline.can_suggest && dealFields.length > 0 && (
-            <div>
-              <p className="form-label mb-1">Propose an edit to a term</p>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <select className="form-input sm:w-56" value={pickField} onChange={(e) => setPickField(e.target.value)} aria-label="Term">
-                  <option value="">Choose a term…</option>
-                  {dealFields.map((f) => <option key={f.field_key} value={f.field_key}>{f.label || f.field_key}</option>)}
-                </select>
-                <input className="form-input flex-1" placeholder="Proposed value" value={editVal} onChange={(e) => setEditVal(e.target.value)} />
-                <button type="button" className="btn-secondary shrink-0" disabled={busy || !pickField || !editVal.trim()}
-                  onClick={() => void run(() => proposeFieldEdit(documentId, pickField, editVal.trim()), () => { setPickField(''); setEditVal(''); })}>
-                  Propose edit
-                </button>
-              </div>
-            </div>
-          )}
           {redline.can_add_clause && (
             <div>
               <p className="form-label mb-1">Add a clause</p>
@@ -496,7 +478,6 @@ export default function ContractPage() {
       {redline && (
         <RedlineSection
           documentId={id!}
-          dealFields={(detail.fields ?? []).filter((f) => f.owner_role === 'DEAL')}
           redline={redline}
           isOwnerSide={isOwnerSide}
           editablePhase={editablePhase}

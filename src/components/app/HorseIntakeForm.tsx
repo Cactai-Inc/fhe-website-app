@@ -4,7 +4,10 @@ import {
   createHorseRecord, staffCreateHorseForContact,
   type HorseIntakePayload, type HorseRecordOutcome,
 } from '../../lib/horses';
-import { fetchLocations, addMyLocation, type CalendarLocation } from '../../lib/ops/api-calendar';
+import {
+  fetchLocations, addMyLocation, fetchContactLocations, addContactLocation,
+  type CalendarLocation,
+} from '../../lib/ops/api-calendar';
 
 /**
  * HORSE RECORD INTAKE — the standardized form, the matched pair to the record and
@@ -75,7 +78,7 @@ function Field({
  *  path (a personal location, visible only to them). Stores the location NAME
  *  (current_location is text). Keeps the same N/A escape as Field. */
 function LocationField({
-  value, onChange, locations, onAdded, showError, span,
+  value, onChange, locations, onAdded, showError, span, ownerContactId,
 }: {
   value?: string;
   onChange: (v: string) => void;
@@ -83,6 +86,8 @@ function LocationField({
   onAdded: () => void;
   showError?: boolean;
   span?: boolean;
+  /** staff-on-behalf: the client the location belongs to */
+  ownerContactId?: string;
 }) {
   const na = value === NA;
   const answered = na || filled(value);
@@ -93,7 +98,8 @@ function LocationField({
     if (!name?.trim()) return;
     const addr = window.prompt('Address (optional)') ?? undefined;
     try {
-      await addMyLocation(name.trim(), addr?.trim() || undefined);
+      if (ownerContactId) await addContactLocation(ownerContactId, name.trim(), addr?.trim() || undefined);
+      else await addMyLocation(name.trim(), addr?.trim() || undefined);
       onAdded();
       onChange(name.trim()); // select the newly added location
     } catch { /* leave selection as-is on failure */ }
@@ -135,10 +141,11 @@ export function HorseIntakeForm({
   const [showError, setShowError] = useState(false);
   const [locations, setLocations] = useState<CalendarLocation[]>([]);
 
-  const loadLocations = () => fetchLocations().then((locs) => {
-    setLocations(locs);
-    return locs;
-  }).catch(() => { setLocations([]); return [] as CalendarLocation[]; });
+  // Staff creating for a client → that CLIENT's locations; otherwise the caller's.
+  const loadLocations = () =>
+    (ownerContactId ? fetchContactLocations(ownerContactId) : fetchLocations())
+      .then((locs) => { setLocations(locs); return locs; })
+      .catch(() => { setLocations([]); return [] as CalendarLocation[]; });
   useEffect(() => {
     loadLocations().then((locs) => {
       // pre-select the barn default when the field is still empty
@@ -257,7 +264,7 @@ export function HorseIntakeForm({
         <Field label="Height" value={f.height} onChange={set('height')} placeholder="e.g. 16.2 hh" showError={showError} />
         <Field label="Current fair market value" value={f.fair_market_value} onChange={set('fair_market_value')} placeholder="$" showError={showError} />
         <LocationField span value={f.current_location} onChange={set('current_location')}
-          locations={locations} onAdded={loadLocations} showError={showError} />
+          locations={locations} onAdded={loadLocations} showError={showError} ownerContactId={ownerContactId} />
       </Section>
 
       <Section title="Ownership">

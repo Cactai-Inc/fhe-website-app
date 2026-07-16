@@ -106,6 +106,23 @@ export async function addMyLocation(name: string, address?: string): Promise<str
   return data as string;
 }
 
+/** Staff: locations for a SPECIFIC contact (barn-wide + that client's own). Used
+ *  when creating a horse record / capturing a sale destination on their behalf. */
+export async function fetchContactLocations(contactId: string): Promise<CalendarLocation[]> {
+  const { data, error } = await supabase.rpc('contact_locations', { p_contact_id: contactId });
+  if (error) throw error;
+  return (data ?? []) as CalendarLocation[];
+}
+
+/** Staff: add a personal location on behalf of a client. */
+export async function addContactLocation(contactId: string, name: string, address?: string): Promise<string> {
+  const { data, error } = await supabase.rpc('add_contact_location', {
+    p_contact_id: contactId, p_name: name, p_address: address ?? null,
+  });
+  if (error) throw error;
+  return data as string;
+}
+
 // ─── Staff writes (Slice 3) ──────────────────────────────────────────────────
 
 /** The full calendar-item payload the staff config panel submits. save_calendar_item
