@@ -60,6 +60,9 @@ export interface ContractDetail {
     is_originator: boolean;
     horse_section_confirmed_at: string | null;
     horse_section_confirmed_by: string | null;
+    sent_at: string | null;
+    archived_at: string | null;
+    cancelled_at: string | null;
   };
   my_roles: string[];
   fields: ContractField[];
@@ -292,6 +295,30 @@ export async function assignHorseSection(documentId: string, role: string): Prom
   });
   if (error) throw error;
   return data as number;
+}
+
+/** Send the document to a party = notify them + confirm access. */
+export async function sendContractToParty(documentId: string, partyRole: string): Promise<void> {
+  const { error } = await supabase.rpc('send_contract_to_party', { p_document_id: documentId, p_party_role: partyRole });
+  if (error) throw error;
+}
+
+/** A party cancels the document — notifies all other parties + staff, who then archive or delete. */
+export async function cancelContract(documentId: string): Promise<void> {
+  const { error } = await supabase.rpc('cancel_contract', { p_document_id: documentId });
+  if (error) throw error;
+}
+
+/** Staff: archive (findable + resumable) or unarchive the document. */
+export async function archiveContract(documentId: string, archive = true): Promise<void> {
+  const { error } = await supabase.rpc('archive_contract', { p_document_id: documentId, p_archive: archive });
+  if (error) throw error;
+}
+
+/** Staff: hard-delete the document, as if it never existed (not for executed docs). */
+export async function hardDeleteContract(documentId: string): Promise<void> {
+  const { error } = await supabase.rpc('hard_delete_contract', { p_document_id: documentId });
+  if (error) throw error;
 }
 
 /** Attach a horse RECORD to this contract and fill the HORSE.* fields from it.

@@ -14,6 +14,7 @@ import {
   setPartyControls, contractMessagesList, contractMessagePost, contractSigningSet,
   contractRedlineState, resolveFieldEdit, withdrawFieldEdit,
   proposeClause, resolveClause, withdrawClause, attachHorseToDocument,
+  sendContractToParty, cancelContract, archiveContract, hardDeleteContract,
   type ContractDetail, type ContractField, type ContractMessage, type PartyControls,
   type SigningSetDoc, type RedlineState,
 } from '../../lib/contracts';
@@ -353,6 +354,12 @@ export default function ContractPage() {
   const state = doc?.workflow_state ?? 'editable';
   const editablePhase = state === 'editable' || state === 'editing';
   const horseConfirmed = !!doc?.horse_section_confirmed_at;
+  const isSent = !!doc?.sent_at;
+  const isArchived = !!doc?.archived_at;
+  const isCancelled = !!doc?.cancelled_at;
+  // seats we can send to = the parties that aren't the company/originator side
+  const sendableRoles = Array.from(new Set((detail?.signatures ?? [])
+    .map((s) => s.party_role).filter((r) => !myRoles.includes(r) && r !== 'FHE' && r !== 'COMPANY')));
   const iSigned = (detail?.signatures ?? []).some(
     (s) => s.signed_at && myRoles.includes(s.party_role));
   const counterpartySigned = (detail?.signatures ?? []).some((s) => s.signed_at);
@@ -503,6 +510,22 @@ export default function ContractPage() {
 
       {error && <p role="alert" className="form-error mb-3">{error}</p>}
       {note && <p className="mb-3 rounded px-4 py-2 text-sm bg-green-50 text-green-900">{note}</p>}
+
+      {/* lifecycle status banners */}
+      {isCancelled && (
+        <div className="mb-4 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
+          <p className="font-medium">This document was cancelled.</p>
+          {isStaff && <p className="mt-0.5">Archive it (findable &amp; resumable) or delete it entirely below.</p>}
+        </div>
+      )}
+      {isArchived && !isCancelled && (
+        <div className="mb-4 rounded-lg border border-green-800/20 bg-cream-100 px-4 py-2.5 text-sm text-secondary">
+          Archived — kept on file and resumable. {isStaff && 'Unarchive it below to continue.'}
+        </div>
+      )}
+      {isSent && !isCancelled && !isArchived && state !== 'executed' && (
+        <p className="mb-3 text-xs text-muted">Sent to the other party — they’ve been notified.</p>
+      )}
 
       {/* Executed: the sealed document */}
       {state === 'executed' && (
@@ -744,6 +767,37 @@ export default function ContractPage() {
               <button type="button" className="btn-secondary text-xs"
                 onClick={() => void act(() => advanceWorkflow(id!, 'editable'), 'Reopened for corrections.')}>
                 <RotateCcw size={13} /> Withdraw / correct
+              </button>
+            )}
+
+            {/* Send to a party = notify them + grant access. Locked = for signature only. */}
+            {isOwnerSide && (state === 'in_review' || state === 'locked') && sendableRoles.map((r) => (
+              <button key={r} type="button" className="btn-primary text-xs"
+                onClick={() => void act(() => sendContractToParty(id!, r),
+                  `Sent to ${r.charAt(0) + r.slice(1).toLowerCase()} — they’ve been notified.`)}>
+                <Send size={13} /> Send to {r.charAt(0) + r.slice(1).toLowerCase()}
+              </button>
+            ))}
+          </div>
+
+          {/* Cancel (any party) / Archive + Delete (staff) */}
+          <div className="flex flex-wrap items-center gap-2 border-t border-green-800/10 pt-3">
+            {!isCancelled && (
+              <button type="button" className="text-xs text-red-700 hover:bg-red-50 rounded px-3 py-1.5 focus-ring"
+                onClick={() => { if (window.confirm('Cancel this document? All parties will be notified and the barn will archive or remove it.')) void act(() => cancelContract(id!), 'Document cancelled — all parties notified.'); }}>
+                Cancel document
+              </button>
+            )}
+            {isStaff && (
+              <button type="button" className="text-xs text-secondary hover:bg-green-800/5 rounded px-3 py-1.5 focus-ring"
+                onClick={() => void act(() => archiveContract(id!, !isArchived), isArchived ? 'Unarchived.' : 'Archived — findable and resumable.')}>
+                {isArchived ? 'Unarchive' : 'Archive'}
+              </button>
+            )}
+            {isStaff && (
+              <button type="button" className="text-xs text-red-700 hover:bg-red-50 rounded px-3 py-1.5 focus-ring ml-auto"
+                onClick={() => { if (window.confirm('Delete this document entirely? This is a hard delete — as if it never existed. This cannot be undone.')) void act(async () => { await hardDeleteContract(id!); navigate('/app/ops/documents'); }); }}>
+                Delete entirely
               </button>
             )}
           </div>
