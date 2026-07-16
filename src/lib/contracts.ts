@@ -294,6 +294,16 @@ export async function assignHorseSection(documentId: string, role: string): Prom
   return data as number;
 }
 
+/** Attach a horse RECORD to this contract and fill the HORSE.* fields from it.
+ *  Used by the "which horse is this contract for?" gate — the owner picks one of
+ *  their horses (or adds a new record first), then attaches it here. */
+export async function attachHorseToDocument(documentId: string, horseId: string): Promise<void> {
+  const { error } = await supabase.rpc('attach_horse_to_document', {
+    p_document_id: documentId, p_horse_id: horseId,
+  });
+  if (error) throw error;
+}
+
 export async function contractMessagesList(documentId: string): Promise<ContractMessage[]> {
   const { data, error } = await supabase.rpc('contract_messages_list', { p_document_id: documentId });
   if (error) throw error;

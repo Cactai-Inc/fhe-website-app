@@ -13,10 +13,11 @@ import {
   reopenHorseSection, inviteCounterparty, composeCostPhrase,
   setPartyControls, contractMessagesList, contractMessagePost, contractSigningSet,
   contractRedlineState, proposeFieldEdit, resolveFieldEdit, withdrawFieldEdit,
-  proposeClause, resolveClause, withdrawClause,
+  proposeClause, resolveClause, withdrawClause, attachHorseToDocument,
   type ContractDetail, type ContractField, type ContractMessage, type PartyControls,
   type SigningSetDoc, type RedlineState,
 } from '../../lib/contracts';
+import { listStableHorses, type StableHorse } from '../../lib/stable';
 
 /**
  * CONTRACT (/app/contracts/:id) — the negotiated-contract surface (Update A).
@@ -31,6 +32,61 @@ import {
  */
 
 const COST_SECTIONS = new Set(['Cost Allocation', 'Insurance']);
+
+/** "Which horse is this contract for?" gate. Shown before the rest of the contract
+ *  when the horse section is the caller's to fill but no horse is chosen yet. Lets
+ *  them pick one of their horse records or add a new one (via intake), then attaches
+ *  it — filling the HORSE.* fields from the record. */
+function HorseGate({ documentId, onAttached }: { documentId: string; onAttached: () => void }) {
+  const [horses, setHorses] = useState<StableHorse[] | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    listStableHorses().then(setHorses).catch(() => setHorses([]));
+  }, []);
+
+  async function attach(horseId: string) {
+    setBusy(horseId); setErr(null);
+    try { await attachHorseToDocument(documentId, horseId); onAttached(); }
+    catch (e) { setErr(e instanceof Error ? e.message : 'Could not attach that horse.'); setBusy(null); }
+  }
+
+  return (
+    <section className="bg-gold-50 border border-gold-500/40 rounded-xl p-6 mb-5">
+      <h2 className="font-serif text-green-900 text-lg mb-1">Which horse is this contract for?</h2>
+      <p className="text-[13px] text-green-900/75 mb-4">
+        Choose the horse this agreement covers. We'll fill in its details for you. If the right
+        horse isn't listed, add it — it becomes a record on your account.
+      </p>
+      {err && <p role="alert" className="form-error mb-3">{err}</p>}
+      {horses === null ? (
+        <p className="text-sm text-muted">Loading your horses…</p>
+      ) : (
+        <div className="flex flex-col gap-2 max-w-xl">
+          {horses.map((h) => (
+            <button key={h.id} type="button" disabled={!!busy} onClick={() => void attach(h.id)}
+              className="flex items-center justify-between gap-3 bg-white border border-green-800/10 rounded-lg px-4 py-3 text-left hover:border-green-800/30 focus-ring disabled:opacity-50">
+              <span className="min-w-0">
+                <span className="block text-sm font-medium text-green-900 truncate">{h.name}</span>
+                <span className="block text-xs text-muted truncate">
+                  {[h.breed, h.sex, h.color].filter(Boolean).join(' · ') || 'Horse record'}
+                </span>
+              </span>
+              <span className="text-xs text-gold-800 font-medium shrink-0">
+                {busy === h.id ? 'Attaching…' : 'Use this horse →'}
+              </span>
+            </button>
+          ))}
+          <Link to={`/app/horse-intake?contract=${documentId}`}
+            className="flex items-center justify-center gap-2 border border-dashed border-green-800/30 rounded-lg px-4 py-3 text-sm text-green-800 hover:bg-white focus-ring">
+            + Add a different horse
+          </Link>
+        </div>
+      )}
+    </section>
+  );
+}
 
 function FieldInput({
   f, onSave,
@@ -341,6 +397,20 @@ export default function ContractPage() {
     [detail?.fields],
   );
 
+  // Horse gate: this contract has a Horse section that's MINE to fill (editable)
+  // but no horse is chosen yet (its identifying fields are empty). Until the owner
+  // picks/adds the horse, we gate the rest of the contract behind that choice —
+  // the horse fields depend on it. (Staff/originator can also use it to set the horse.)
+  const horseFields = useMemo(
+    () => (detail?.fields ?? []).filter((f) => (f.section || '') === 'Horse'),
+    [detail?.fields],
+  );
+  const horseIsMine = horseFields.some((f) => f.can_edit) || isOwnerSide;
+  const horseUnset = horseFields.length > 0
+    && !horseFields.some((f) => f.field_key.replace(/[{}]/g, '').endsWith('BARN_NAME') && (f.value ?? '').trim())
+    && !horseFields.some((f) => f.field_key.replace(/[{}]/g, '').endsWith('REGISTERED_NAME') && (f.value ?? '').trim());
+  const showHorseGate = editablePhase && horseIsMine && horseUnset && !horseConfirmed;
+
   async function act(fn: () => Promise<unknown>, okMsg?: string) {
     setError(null); setNote(null);
     try {
@@ -531,8 +601,13 @@ export default function ContractPage() {
         </div>
       )}
 
-      {/* Field sections */}
-      {state !== 'executed' && sections.map(([section, fields]) => {
+      {/* Horse gate — pick/add the horse before the rest of the contract */}
+      {showHorseGate && id && (
+        <HorseGate documentId={id} onAttached={() => { void load(); }} />
+      )}
+
+      {/* Field sections — hidden until a horse is chosen when the gate applies */}
+      {state !== 'executed' && !showHorseGate && sections.map(([section, fields]) => {
         const isHorse = section === 'Horse';
         const anyEditable = fields.some((f) => f.can_edit);
         // counterparty intake: show only sections with something for them (or filled)

@@ -4,6 +4,7 @@ import { CheckCircle2, FileSignature } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
 import { HorseIntakeForm } from '../../components/app/HorseIntakeForm';
 import { attachBookingHorse } from '../../lib/ops/api-calendar';
+import { attachHorseToDocument } from '../../lib/contracts';
 import { ensureHorseDocuments, type GeneratedHorseDoc } from '../../lib/horses';
 import { toErrorMessage } from '../../lib/ops/errors';
 
@@ -21,6 +22,7 @@ export default function HorseIntakePage() {
   useDocumentTitle('Your horse');
   const [params] = useSearchParams();
   const bookingId = params.get('booking');
+  const contractId = params.get('contract');
   const wantCare = params.get('care') === '1';
   const [done, setDone] = useState(false);
   const [docs, setDocs] = useState<GeneratedHorseDoc[]>([]);
@@ -32,6 +34,11 @@ export default function HorseIntakePage() {
     if (bookingId) {
       try { await attachBookingHorse(bookingId, horseId); }
       catch (e) { setNote(toErrorMessage(e, 'Your horse was saved; staff can link it to your session.')); }
+    }
+    // came from the contract horse-gate → attach the new horse to that contract
+    if (contractId) {
+      try { await attachHorseToDocument(contractId, horseId); }
+      catch (e) { setNote(toErrorMessage(e, 'Your horse was saved; open the contract to attach it.')); }
     }
     // generate the horse's documents for the owner to sign
     try {
@@ -61,6 +68,11 @@ export default function HorseIntakePage() {
             <CheckCircle2 size={18} aria-hidden="true" /> Your horse has been added.
           </p>
           {note && <p className="text-orange-800">{note}</p>}
+          {contractId && (
+            <Link to={`/app/contracts/${contractId}`} className="btn-primary text-sm justify-center inline-flex">
+              <FileSignature size={15} /> Back to your contract
+            </Link>
+          )}
           {docs.length > 0 ? (
             <div className="flex flex-col gap-2">
               <p className="text-green-900/80">These documents are ready for you to review and sign:</p>
