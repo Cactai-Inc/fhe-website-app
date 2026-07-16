@@ -31,6 +31,7 @@ export interface MemberDirectoryEntry {
   allow_sms: boolean;
   allow_call: boolean;
   allow_whatsapp: boolean;
+  allow_whatsapp_call: boolean;
   social_tiktok: string | null;
   social_instagram: string | null;
   social_facebook: string | null;

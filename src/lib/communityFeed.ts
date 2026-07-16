@@ -51,7 +51,8 @@ export interface FeedCard {
   // per-channel permissions (members; from the directory's shared prefs)
   allowSms?: boolean;
   allowCall?: boolean;
-  allowWhatsapp?: boolean;
+  allowWhatsapp?: boolean;      // WhatsApp chat
+  allowWhatsappCall?: boolean;  // WhatsApp voice call
 }
 
 function initials(name: string | null | undefined, fallback = '·'): string {
@@ -146,6 +147,7 @@ function fromMember(m: MemberDirectoryEntry): FeedCard {
     allowSms: m.allow_sms,
     allowCall: m.allow_call,
     allowWhatsapp: m.allow_whatsapp,
+    allowWhatsappCall: m.allow_whatsapp_call,
   };
 }
 

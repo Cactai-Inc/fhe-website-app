@@ -169,6 +169,7 @@ function ProfileSection() {
           hidden={p?.hide_whatsapp ?? false} onHidden={(v) => set('hide_whatsapp', v)}
           checks={[
             { label: 'Text', on: p?.allow_whatsapp ?? true, onToggle: () => set('allow_whatsapp', !(p?.allow_whatsapp ?? true)) },
+            { label: 'Calls', on: p?.allow_whatsapp_call ?? true, onToggle: () => set('allow_whatsapp_call', !(p?.allow_whatsapp_call ?? true)) },
           ]} />
       </div>
 

@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, MessageCircle, Phone, Smartphone, Globe } from 'lucide-react';
+import { Mail, MessageCircle, Phone, Smartphone, PhoneCall, Globe } from 'lucide-react';
 import { fetchViewCards, type FeedCard } from '../../lib/communityFeed';
 import { feedMarkSeen } from '../../lib/feed';
 import { SEED_ENABLED, type FeedView } from '../../lib/seed';
 import {
-  mailHref, smsHref, telHref, whatsappHref, type ContactInfo,
+  contactActions, type ContactInfo, type ContactMethod,
 } from '../../lib/contact';
 
 /**
@@ -36,13 +36,15 @@ function Avatar({ initials }: { initials?: string }) {
     </span>
   );
 }
+const CONTACT_ICON: Record<ContactMethod, typeof Mail> = {
+  email: Mail, sms: MessageCircle, call: Phone, whatsapp: Smartphone, whatsapp_call: PhoneCall,
+};
 function ContactButtons({ info, url }: { info: ContactInfo; url?: string | null }) {
   const cls = 'flex-1 grid place-items-center py-2 border border-green-800/10 rounded-lg text-green-700 hover:bg-green-50 focus-ring';
-  const links: { key: string; href: string; label: string; icon: typeof Mail }[] = [];
-  if (info.email) links.push({ key: 'email', href: mailHref(info.email), label: 'Email', icon: Mail });
-  if (info.mobile && info.allowSms !== false) links.push({ key: 'sms', href: smsHref(info.mobile), label: 'Text', icon: MessageCircle });
-  if (info.whatsapp && (info.allowWhatsappText !== false || info.allowWhatsappCall !== false)) links.push({ key: 'wa', href: whatsappHref(info.whatsapp), label: 'WhatsApp', icon: Smartphone });
-  if (info.mobile && info.allowCall !== false) links.push({ key: 'call', href: telHref(info.mobile), label: 'Call', icon: Phone });
+  // Single source of truth: contactActions honors every allow-toggle, including
+  // the split WhatsApp chat vs WhatsApp call.
+  const links: { key: string; href: string; label: string; icon: typeof Mail }[] =
+    contactActions(info).map((a) => ({ key: a.method, href: a.href, label: a.label, icon: CONTACT_ICON[a.method] }));
   if (url) links.push({ key: 'web', href: url, label: 'Website', icon: Globe });
 
   if (links.length === 0) {
@@ -159,7 +161,7 @@ export function CommunityFeed({ view }: { view: FeedView }) {
             <ContactButtons info={{
               email: m.email, mobile: m.mobile, whatsapp: m.whatsapp,
               allowSms: m.allowSms, allowCall: m.allowCall,
-              allowWhatsappText: m.allowWhatsapp, allowWhatsappCall: m.allowWhatsapp,
+              allowWhatsappText: m.allowWhatsapp, allowWhatsappCall: m.allowWhatsappCall,
             }} />
           </div>
         ))}
@@ -248,6 +250,7 @@ function SeedFallback({ view }: { view: FeedView }) {
             <ContactButtons info={{
               email: m.email, mobile: m.mobile, whatsapp: m.whatsapp,
               allowSms: m.allowSms, allowCall: m.allowCall,
+              // seed preview has no separate call pref; mirror the chat toggle
               allowWhatsappText: m.allowWhatsapp, allowWhatsappCall: m.allowWhatsapp,
             }} />
           </div>

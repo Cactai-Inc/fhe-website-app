@@ -11,15 +11,19 @@ export function smsHref(number: string): string {
   return `sms:${number.replace(/[^\d+]/g, '')}`;
 }
 export function whatsappHref(number: string): string {
-  // wa.me wants digits only, no +, no spaces.
+  // wa.me wants digits only, no +, no spaces. Opens a chat.
   return `https://wa.me/${number.replace(/[^\d]/g, '')}`;
+}
+export function whatsappCallHref(number: string): string {
+  // Deep link that opens WhatsApp straight to a voice call for the number.
+  return `whatsapp://call?phone=${number.replace(/[^\d]/g, '')}`;
 }
 export function mailHref(email: string, subject?: string): string {
   const q = subject ? `?subject=${encodeURIComponent(subject)}` : '';
   return `mailto:${email.trim()}${q}`;
 }
 
-export type ContactMethod = 'email' | 'sms' | 'call' | 'whatsapp';
+export type ContactMethod = 'email' | 'sms' | 'call' | 'whatsapp' | 'whatsapp_call';
 
 export interface ContactInfo {
   email?: string | null;
@@ -38,8 +42,11 @@ export function contactActions(info: ContactInfo): { method: ContactMethod; href
   if (info.email) out.push({ method: 'email', href: mailHref(info.email), label: 'Email' });
   if (info.mobile && info.allowSms !== false) out.push({ method: 'sms', href: smsHref(info.mobile), label: 'Text' });
   if (info.mobile && info.allowCall !== false) out.push({ method: 'call', href: telHref(info.mobile), label: 'Call' });
-  if (info.whatsapp && (info.allowWhatsappText !== false || info.allowWhatsappCall !== false)) {
+  if (info.whatsapp && info.allowWhatsappText !== false) {
     out.push({ method: 'whatsapp', href: whatsappHref(info.whatsapp), label: 'WhatsApp' });
+  }
+  if (info.whatsapp && info.allowWhatsappCall !== false) {
+    out.push({ method: 'whatsapp_call', href: whatsappCallHref(info.whatsapp), label: 'WhatsApp Call' });
   }
   return out;
 }
@@ -53,6 +60,7 @@ export interface MyContactPrefs {
   allow_sms: boolean;
   allow_call: boolean;
   allow_whatsapp: boolean;
+  allow_whatsapp_call: boolean;
   hide_email: boolean;
   hide_mobile: boolean;
   hide_whatsapp: boolean;
@@ -64,7 +72,7 @@ export interface MyContactPrefs {
 }
 
 const PREF_COLS =
-  'email, mobile, whatsapp, allow_sms, allow_call, allow_whatsapp, ' +
+  'email, mobile, whatsapp, allow_sms, allow_call, allow_whatsapp, allow_whatsapp_call, ' +
   'hide_email, hide_mobile, hide_whatsapp, ' +
   'social_tiktok, social_instagram, social_facebook, social_linkedin, payment_reminders';
 
