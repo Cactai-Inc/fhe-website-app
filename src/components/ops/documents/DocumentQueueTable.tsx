@@ -44,7 +44,9 @@ const COLUMNS: Column<DocumentRow>[] = [
     header: 'Document',
     render: (row) => (
       <Link
-        to={`/app/ops/documents/${row.id}`}
+        // Contract/deal docs open the full contract workspace (fill, send, sign,
+        // archive, delete); other docs open the read-only viewer.
+        to={row.contract_id ? `/app/contracts/${row.id}` : `/app/ops/documents/${row.id}`}
         className="link-underline font-sans font-medium text-green-900"
         data-testid={`doc-link-${row.id}`}
       >
