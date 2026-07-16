@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Loader2, ShieldQuestion } from 'lucide-react';
 import {
   createHorseRecord, staffCreateHorseForContact,
   type HorseIntakePayload, type HorseRecordOutcome,
 } from '../../lib/horses';
+import { fetchLocations, addMyLocation, type CalendarLocation } from '../../lib/ops/api-calendar';
 
 /**
  * HORSE RECORD INTAKE — the standardized form, the matched pair to the record and
@@ -70,6 +71,54 @@ function Field({
   );
 }
 
+/** Location picker: barn + the member's own personal locations, with a "+ Add"
+ *  path (a personal location, visible only to them). Stores the location NAME
+ *  (current_location is text). Keeps the same N/A escape as Field. */
+function LocationField({
+  value, onChange, locations, onAdded, showError, span,
+}: {
+  value?: string;
+  onChange: (v: string) => void;
+  locations: CalendarLocation[];
+  onAdded: () => void;
+  showError?: boolean;
+  span?: boolean;
+}) {
+  const na = value === NA;
+  const answered = na || filled(value);
+  const cls = `${input}${showError && !answered ? ' border-red-400' : ''}`;
+
+  async function add() {
+    const name = window.prompt('New location name');
+    if (!name?.trim()) return;
+    const addr = window.prompt('Address (optional)') ?? undefined;
+    try {
+      await addMyLocation(name.trim(), addr?.trim() || undefined);
+      onAdded();
+      onChange(name.trim()); // select the newly added location
+    } catch { /* leave selection as-is on failure */ }
+  }
+
+  return (
+    <div className={span ? 'sm:col-span-2' : ''}>
+      <div className="flex items-center justify-between mb-1">
+        <label className="block text-[11px] tracking-wide uppercase text-muted font-semibold">Current location</label>
+        <label className="flex items-center gap-1 text-[10px] text-muted cursor-pointer select-none">
+          <input type="checkbox" checked={na} onChange={(e) => onChange(e.target.checked ? NA : '')} /> N/A
+        </label>
+      </div>
+      <select className={cls} disabled={na} value={na ? '' : (value ?? '')}
+        onChange={(e) => { if (e.target.value === '__add') { void add(); } else onChange(e.target.value); }}>
+        <option value="">Select…</option>
+        {locations.map((l) => (
+          <option key={l.id} value={l.name}>{l.name}{l.is_mine ? ' (mine)' : ''}</option>
+        ))}
+        <option value="__add">+ Add a location…</option>
+      </select>
+    </div>
+  );
+}
+
 export function HorseIntakeForm({
   onDone, submitLabel = 'Add horse', ownerContactId,
 }: {
@@ -84,6 +133,20 @@ export function HorseIntakeForm({
   const [err, setErr] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [showError, setShowError] = useState(false);
+  const [locations, setLocations] = useState<CalendarLocation[]>([]);
+
+  const loadLocations = () => fetchLocations().then((locs) => {
+    setLocations(locs);
+    return locs;
+  }).catch(() => { setLocations([]); return [] as CalendarLocation[]; });
+  useEffect(() => {
+    loadLocations().then((locs) => {
+      // pre-select the barn default when the field is still empty
+      const def = locs.find((l) => l.is_default);
+      if (def) setF((p) => p.current_location ? p : { ...p, current_location: def.name });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const set = (k: keyof HorseIntakePayload) => (v: string) => setF((p) => ({ ...p, [k]: v }));
 
@@ -193,7 +256,8 @@ export function HorseIntakeForm({
         <Field label="Date of birth" type="date" value={f.date_of_birth} onChange={set('date_of_birth')} showError={showError} />
         <Field label="Height" value={f.height} onChange={set('height')} placeholder="e.g. 16.2 hh" showError={showError} />
         <Field label="Current fair market value" value={f.fair_market_value} onChange={set('fair_market_value')} placeholder="$" showError={showError} />
-        <Field span label="Current location" value={f.current_location} onChange={set('current_location')} placeholder="Carmel Creek Ranch" showError={showError} />
+        <LocationField span value={f.current_location} onChange={set('current_location')}
+          locations={locations} onAdded={loadLocations} showError={showError} />
       </Section>
 
       <Section title="Ownership">

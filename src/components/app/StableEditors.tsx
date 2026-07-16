@@ -4,6 +4,7 @@ import {
   addStableHorse, addStableItem, addVendor, listVendors,
   type StableItemKind, type StableOwnership, type Vendor,
 } from '../../lib/stable';
+import { fetchLocations, addMyLocation, type CalendarLocation } from '../../lib/ops/api-calendar';
 
 /**
  * MY STABLE editors — purpose-built add forms that WRITE real rows.
@@ -41,7 +42,28 @@ export function AddHorseModal({ onClose, onDone }: { onClose: () => void; onDone
   const [ownership, setOwnership] = useState<StableOwnership>('owned');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [locations, setLocations] = useState<CalendarLocation[]>([]);
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement>) => setF({ ...f, [k]: e.target.value });
+
+  const loadLocations = () => fetchLocations().then((locs) => { setLocations(locs); return locs; }).catch(() => [] as CalendarLocation[]);
+  useEffect(() => {
+    loadLocations().then((locs) => {
+      const def = locs.find((l) => l.is_default);
+      if (def) setF((p) => (p.location && p.location !== 'Carmel Creek Ranch') ? p : { ...p, location: def.name });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function addLocation() {
+    const name = window.prompt('New location name');
+    if (!name?.trim()) return;
+    const addr = window.prompt('Address (optional)') ?? undefined;
+    try {
+      await addMyLocation(name.trim(), addr?.trim() || undefined);
+      await loadLocations();
+      setF((p) => ({ ...p, location: name.trim() }));
+    } catch { /* keep selection */ }
+  }
 
   async function submit() {
     if (!f.name.trim()) { setErr('A name is required.'); return; }
@@ -75,7 +97,15 @@ export function AddHorseModal({ onClose, onDone }: { onClose: () => void; onDone
             ))}
           </div>
         </div>
-        <div><FieldLabel>Location</FieldLabel><input className={inputCls} value={f.location} onChange={set('location')} placeholder="Carmel Creek Ranch" /></div>
+        <div>
+          <FieldLabel>Location</FieldLabel>
+          <select className={inputCls} value={f.location}
+            onChange={(e) => { if (e.target.value === '__add') { void addLocation(); } else setF({ ...f, location: e.target.value }); }}>
+            {!locations.some((l) => l.name === f.location) && f.location && <option value={f.location}>{f.location}</option>}
+            {locations.map((l) => <option key={l.id} value={l.name}>{l.name}{l.is_mine ? ' (mine)' : ''}</option>)}
+            <option value="__add">+ Add a location…</option>
+          </select>
+        </div>
         <div><FieldLabel>Markings / notes</FieldLabel><input className={inputCls} value={f.markings} onChange={set('markings')} placeholder="Optional" /></div>
         {err && <p className="text-sm text-red-700">{err}</p>}
         <button type="button" onClick={submit} disabled={busy}
