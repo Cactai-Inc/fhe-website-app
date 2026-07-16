@@ -21,6 +21,7 @@ export interface HorseIntakePayload {
   date_of_birth?: string;
   height?: string;
   fair_market_value?: string;
+  home_location?: string;
   current_location?: string;
   my_relationship?: 'OWNER' | 'LESSEE';
   owner_name_text?: string;
@@ -53,6 +54,19 @@ export type HorseRecordOutcome =
   | { outcome: 'created'; horse_id: string }
   | { outcome: 'match_found'; horse_id: string }
   | { outcome: 'match_pending_review' };
+
+/** Resolve/set a horse's Home + Current locations (by name) to real location rows.
+ *  Called after the horse form saves so the three-location model is populated. */
+export async function setHorseLocations(
+  horseId: string, homeName?: string | null, currentName?: string | null,
+): Promise<void> {
+  const { error } = await supabase.rpc('set_horse_locations', {
+    p_horse_id: horseId,
+    p_home_name: homeName ?? null,
+    p_current_name: currentName ?? null,
+  });
+  if (error) throw error;
+}
 
 export async function createHorseRecord(p: HorseIntakePayload): Promise<HorseRecordOutcome> {
   const { data, error } = await supabase.rpc('create_horse_record', { p });

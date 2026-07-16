@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Loader2, ShieldQuestion } from 'lucide-react';
 import {
-  createHorseRecord, staffCreateHorseForContact,
+  createHorseRecord, staffCreateHorseForContact, setHorseLocations,
   type HorseIntakePayload, type HorseRecordOutcome,
 } from '../../lib/horses';
 import {
@@ -78,8 +78,10 @@ function Field({
  *  path (a personal location, visible only to them). Stores the location NAME
  *  (current_location is text). Keeps the same N/A escape as Field. */
 function LocationField({
-  value, onChange, locations, onAdded, showError, span, ownerContactId,
+  label, hint, value, onChange, locations, onAdded, showError, span, ownerContactId,
 }: {
+  label: string;
+  hint?: string;
   value?: string;
   onChange: (v: string) => void;
   locations: CalendarLocation[];
@@ -108,7 +110,7 @@ function LocationField({
   return (
     <div className={span ? 'sm:col-span-2' : ''}>
       <div className="flex items-center justify-between mb-1">
-        <label className="block text-[11px] tracking-wide uppercase text-muted font-semibold">Current location</label>
+        <label className="block text-[11px] tracking-wide uppercase text-muted font-semibold">{label}</label>
         <label className="flex items-center gap-1 text-[10px] text-muted cursor-pointer select-none">
           <input type="checkbox" checked={na} onChange={(e) => onChange(e.target.checked ? NA : '')} /> N/A
         </label>
@@ -121,6 +123,7 @@ function LocationField({
         ))}
         <option value="__add">+ Add a location…</option>
       </select>
+      {hint && <p className="text-[10px] text-muted mt-1">{hint}</p>}
     </div>
   );
 }
@@ -148,9 +151,13 @@ export function HorseIntakeForm({
       .catch(() => { setLocations([]); return [] as CalendarLocation[]; });
   useEffect(() => {
     loadLocations().then((locs) => {
-      // pre-select the barn default when the field is still empty
+      // pre-select the barn default for both Home + Current when still empty
       const def = locs.find((l) => l.is_default);
-      if (def) setF((p) => p.current_location ? p : { ...p, current_location: def.name });
+      if (def) setF((p) => ({
+        ...p,
+        home_location: p.home_location || def.name,
+        current_location: p.current_location || def.name,
+      }));
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -166,7 +173,7 @@ export function HorseIntakeForm({
   const alwaysKeys: (keyof HorseIntakePayload)[] = [
     'microchip_id', 'breed', 'registration_number', 'registration_org',
     'passport_number', 'passport_country', 'color', 'markings', 'sex',
-    'date_of_birth', 'height', 'fair_market_value', 'current_location',
+    'date_of_birth', 'height', 'fair_market_value', 'home_location', 'current_location',
     'vet_name', 'vet_phone', 'farrier_name', 'farrier_phone',
     'medical_history', 'behavioral_history',
     'medication_name', 'medication_dosage', 'medication_instructions', 'medication_additional',
@@ -206,13 +213,20 @@ export function HorseIntakeForm({
     }
     setBusy(true);
     try {
+      // Resolve Home + Current to real location rows once the record exists.
+      const linkLocations = async (horseId: string) => {
+        const home = f.home_location && f.home_location !== NA ? f.home_location : null;
+        const curr = f.current_location && f.current_location !== NA ? f.current_location : null;
+        if (home || curr) { try { await setHorseLocations(horseId, home, curr); } catch { /* record saved; locations best-effort */ } }
+      };
       if (ownerContactId) {
         const out = await staffCreateHorseForContact(ownerContactId, f as Record<string, string>);
+        await linkLocations(out.horse_id);
         onDone(out.horse_id);
       } else {
         const out: HorseRecordOutcome = await createHorseRecord(f);
         if (out.outcome === 'match_pending_review') setPending(true);
-        else onDone(out.horse_id);
+        else { await linkLocations(out.horse_id); onDone(out.horse_id); }
       }
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Could not save the horse record.');
@@ -263,7 +277,11 @@ export function HorseIntakeForm({
         <Field label="Date of birth" type="date" value={f.date_of_birth} onChange={set('date_of_birth')} showError={showError} />
         <Field label="Height" value={f.height} onChange={set('height')} placeholder="e.g. 16.2 hh" showError={showError} />
         <Field label="Current fair market value" value={f.fair_market_value} onChange={set('fair_market_value')} placeholder="$" showError={showError} />
-        <LocationField span value={f.current_location} onChange={set('current_location')}
+        <LocationField label="Home Location" hint="Where the horse normally resides for boarding."
+          value={f.home_location} onChange={set('home_location')}
+          locations={locations} onAdded={loadLocations} showError={showError} ownerContactId={ownerContactId} />
+        <LocationField label="Current Location" hint="Where the horse actually is right now."
+          value={f.current_location} onChange={set('current_location')}
           locations={locations} onAdded={loadLocations} showError={showError} ownerContactId={ownerContactId} />
       </Section>
 
