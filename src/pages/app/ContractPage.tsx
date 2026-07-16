@@ -357,6 +357,15 @@ export default function ContractPage() {
   const isSent = !!doc?.sent_at;
   const isArchived = !!doc?.archived_at;
   const isCancelled = !!doc?.cancelled_at;
+
+  // Receiving-party rendering (§C): a party who has fields to fill sees the doc
+  // with THEIR empty fields highlighted and locked fields lightened; a party with
+  // NOTHING to fill (review-for-signature only) sees the whole document as
+  // uneditable rich text — the same as the post-lock review view.
+  const myFillableEmpty = (detail?.fields ?? []).filter(
+    (f) => f.can_edit && !(f.value ?? '').trim(),
+  );
+  const reviewOnly = !isOwnerSide && editablePhase && myFillableEmpty.length === 0;
   // seats we can send to = the parties that aren't the company/originator side
   const sendableRoles = Array.from(new Set((detail?.signatures ?? [])
     .map((s) => s.party_role).filter((r) => !myRoles.includes(r) && r !== 'FHE' && r !== 'COMPANY')));
@@ -505,7 +514,9 @@ export default function ContractPage() {
       <p className="text-sm text-muted mb-5">
         {isOwnerSide
           ? 'The company originates this contract. Fill any side\u2019s fields \u2014 acting on behalf of a party where needed \u2014 set the controls, lock, then invite.'
-          : 'Complete your information below, review the finished document, and sign \u2014 or message the other party.'}
+          : reviewOnly
+            ? 'Review the document below and sign \u2014 or respond to the other party.'
+            : 'The highlighted fields need your input. Anything shown lighter is locked while you complete your part.'}
       </p>
 
       {error && <p role="alert" className="form-error mb-3">{error}</p>}
@@ -610,8 +621,9 @@ export default function ContractPage() {
         <HorseGate documentId={id} onAttached={() => { void load(); }} />
       )}
 
-      {/* Field sections — hidden until a horse is chosen when the gate applies */}
-      {state !== 'executed' && !showHorseGate && sections.map(([section, fields]) => {
+      {/* Field sections — hidden until a horse is chosen when the gate applies, and
+          hidden entirely for a review-only party (they see the rich-text document). */}
+      {state !== 'executed' && !showHorseGate && !reviewOnly && sections.map(([section, fields]) => {
         const isHorse = section === 'Horse';
         const anyEditable = fields.some((f) => f.can_edit);
         // counterparty intake: show only sections with something for them (or filled)
@@ -642,11 +654,22 @@ export default function ContractPage() {
               )}
             </div>
             <div className="flex flex-col gap-5 max-w-2xl">
-              {fields.map((f) => (
-                <div key={f.field_key} className={f.value_type === 'longtext' ? 'sm:col-span-2' : ''}>
+              {fields.map((f) => {
+                // §C highlighting: a field THIS party must fill and hasn't = highlighted;
+                // a field they can't edit = lightened (locked while they edit).
+                const emptyMine = f.can_edit && !(f.value ?? '').trim();
+                const lockedForMe = !f.can_edit && !isOwnerSide;
+                return (
+                <div key={f.field_key}
+                  className={[
+                    f.value_type === 'longtext' ? 'sm:col-span-2' : '',
+                    emptyMine ? 'rounded-lg -mx-2 px-2 py-1.5 bg-gold-50 ring-1 ring-gold-400/50' : '',
+                    lockedForMe ? 'opacity-55' : '',
+                  ].filter(Boolean).join(' ')}>
                   <div className="flex items-center gap-1.5 mb-1.5">
                     <span className="text-[13.5px] font-medium text-green-900">{f.label ?? f.field_key}</span>
                     {f.required && <span className="text-red-700 text-xs">*</span>}
+                    {emptyMine && <span className="text-[10px] uppercase tracking-wide text-gold-800 font-semibold">Needs your input</span>}
                     {/* counterparty change-request affordance on DEAL fields */}
                     {!isOwnerSide && mySuggest && f.owner_role === 'DEAL'
                       && !f.can_edit && editablePhase && (
@@ -660,7 +683,8 @@ export default function ContractPage() {
                     ? <CostComposer f={f} onSave={saveField} />
                     : <FieldInput f={f} onSave={saveField} />}
                 </div>
-              ))}
+                );
+              })}
             </div>
           </section>
         );
@@ -719,8 +743,19 @@ export default function ContractPage() {
         </section>
       )}
 
-      {/* document preview (pre-executed) */}
-      {state !== 'executed' && doc.merged_body && (
+      {/* review-only party (§C): nothing for them to fill → the whole document as
+          uneditable rich text, shown expanded (same as the post-lock review view). */}
+      {state !== 'executed' && reviewOnly && doc.merged_body && (
+        <section className="bg-white border border-green-800/10 rounded-lg p-5 mb-4">
+          <p className="text-sm text-muted mb-3">Please review the document below and sign, or respond to the other party.</p>
+          <div className="max-h-[70vh] overflow-y-auto whitespace-pre-line text-[13.5px] leading-relaxed text-green-950 bg-cream-100/50 border border-green-800/10 rounded p-6">
+            {doc.merged_body}
+          </div>
+        </section>
+      )}
+
+      {/* document preview (pre-executed) — collapsible, for parties still filling fields */}
+      {state !== 'executed' && !reviewOnly && doc.merged_body && (
         <section className="bg-white border border-green-800/10 rounded-lg p-5 mb-4">
           <button type="button" className="font-serif text-green-800 underline-offset-4 hover:underline"
             onClick={() => setShowBody((v) => !v)}>
