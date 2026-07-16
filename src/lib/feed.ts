@@ -2,7 +2,7 @@
  * RPCs + feed-media storage. RLS/RPC are the authority; these shape the calls. */
 import { supabase } from './supabase';
 
-export type FeedPostType = 'horse' | 'gear' | 'rider_post' | 'event' | 'article' | 'marketing';
+export type FeedPostType = 'horse' | 'gear' | 'rider_post' | 'event' | 'article' | 'marketing' | 'member_joined';
 export type FeedMediaKind = 'image' | 'video';
 export type FeedVisibility = 'public' | 'members' | 'both';
 export type FeedViewShape = 'blended' | 'pockets' | 'separate';
@@ -10,8 +10,8 @@ export type FeedViewShape = 'blended' | 'pockets' | 'separate';
 export interface FeedPost {
   id: string;
   post_type: FeedPostType;
-  media_url: string;
-  media_kind: FeedMediaKind;
+  media_url: string | null;
+  media_kind: FeedMediaKind | null;
   body: string | null;
   source_link: string | null;
   subject_horse_id: string | null;

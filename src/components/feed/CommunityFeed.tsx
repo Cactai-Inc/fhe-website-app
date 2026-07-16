@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, MessageCircle, Phone, Smartphone, PhoneCall, Globe } from 'lucide-react';
-import { fetchViewCards, type FeedCard } from '../../lib/communityFeed';
+import { Mail, MessageCircle, Phone, Smartphone, PhoneCall, Globe, Hand } from 'lucide-react';
+import { fetchViewCards, sayHi, myGreetedUserIds, type FeedCard } from '../../lib/communityFeed';
 import { feedMarkSeen } from '../../lib/feed';
 import { SEED_ENABLED, type FeedView } from '../../lib/seed';
+import { useAuth } from '../../contexts/AuthContext';
 import {
   contactActions, type ContactInfo, type ContactMethod,
 } from '../../lib/contact';
@@ -63,7 +64,29 @@ function ContactButtons({ info, url }: { info: ContactInfo; url?: string | null 
   );
 }
 
-function Card({ c }: { c: FeedCard }) {
+/** One-click "Say hi 👋" for a new-member card. Disabled once sent (this session
+ *  or already greeted per myGreetedUserIds). Self is never shown a button. */
+function SayHiButton({ toUserId, alreadyGreeted }: { toUserId: string; alreadyGreeted: boolean }) {
+  const [state, setState] = useState<'idle' | 'sending' | 'done'>(alreadyGreeted ? 'done' : 'idle');
+  async function greet() {
+    if (state !== 'idle') return;
+    setState('sending');
+    try { await sayHi(toUserId); setState('done'); }
+    catch { setState('idle'); }
+  }
+  return (
+    <button type="button" onClick={greet} disabled={state !== 'idle'}
+      className={`inline-flex items-center gap-1.5 text-xs font-medium rounded-lg px-3 py-1.5 focus-ring ${
+        state === 'done'
+          ? 'bg-green-50 text-green-700 border border-green-200'
+          : 'bg-green-800 text-white hover:bg-green-700'}`}>
+      <Hand size={14} aria-hidden="true" />
+      {state === 'done' ? 'Welcomed 👋' : state === 'sending' ? 'Saying hi…' : 'Say hi 👋'}
+    </button>
+  );
+}
+
+function Card({ c, myId, greeted }: { c: FeedCard; myId?: string; greeted: Set<string> }) {
   const navigate = useNavigate();
   const ref = useRef<HTMLElement | null>(null);
 
@@ -107,6 +130,12 @@ function Card({ c }: { c: FeedCard }) {
         {c.title && c.kind !== 'social' && <p className="font-serif text-green-900 text-[17px] leading-snug font-semibold mb-1">{c.title}</p>}
         {c.body && <p className="text-[12.5px] leading-relaxed text-secondary line-clamp-3">{c.body}</p>}
         {typeof c.replies === 'number' && <p className="text-[11px] text-gold-800 font-semibold mt-2">{c.replies} replies →</p>}
+        {/* new-member card: welcome them with one click (never shown for your own join) */}
+        {c.kind === 'member_joined' && c.memberUserId && c.memberUserId !== myId && (
+          <div className="mt-3">
+            <SayHiButton toUserId={c.memberUserId} alreadyGreeted={greeted.has(c.memberUserId)} />
+          </div>
+        )}
       </div>
     </article>
   );
@@ -126,7 +155,9 @@ function EmptyState({ view }: { view: FeedView }) {
 }
 
 export function CommunityFeed({ view }: { view: FeedView }) {
+  const { user } = useAuth();
   const [cards, setCards] = useState<FeedCard[] | null>(null);
+  const [greeted, setGreeted] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let active = true;
@@ -136,6 +167,13 @@ export function CommunityFeed({ view }: { view: FeedView }) {
       .catch(() => { if (active) setCards([]); });
     return () => { active = false; };
   }, [view]);
+
+  // Which new members I've already welcomed — so the Say-hi buttons render as done.
+  useEffect(() => {
+    let active = true;
+    myGreetedUserIds().then((s) => { if (active) setGreeted(s); }).catch(() => {});
+    return () => { active = false; };
+  }, [user?.id]);
 
   if (cards === null) return <p className="body-text text-muted text-sm">Loading…</p>;
 
@@ -225,7 +263,7 @@ export function CommunityFeed({ view }: { view: FeedView }) {
   // All / Social / Discussions / Events → cards (masonry)
   return (
     <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 [column-fill:_balance]">
-      {cards.map((c) => <Card key={`${c.kind}-${c.id}`} c={c} />)}
+      {cards.map((c) => <Card key={`${c.kind}-${c.id}`} c={c} myId={user?.id} greeted={greeted} />)}
     </div>
   );
 }

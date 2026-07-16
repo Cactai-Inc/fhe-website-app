@@ -10,6 +10,7 @@
 import {
   feedGet, type FeedPost,
 } from './feed';
+import { supabase } from './supabase';
 import {
   fetchThreads, fetchContentPosts, fetchResources, fetchEvents, fetchMemberDirectory,
   fetchAnnouncements,
@@ -23,7 +24,7 @@ import type { FeedView } from './seed';
 export interface FeedCard {
   id: string;
   view: Exclude<FeedView, 'all'>;
-  kind: 'social' | 'for_sale' | 'discussion' | 'event' | 'article' | 'resource' | 'member' | 'announcement';
+  kind: 'social' | 'for_sale' | 'discussion' | 'event' | 'article' | 'resource' | 'member' | 'announcement' | 'member_joined';
   title?: string;
   body?: string;
   mediaUrl?: string;
@@ -41,6 +42,8 @@ export interface FeedCard {
   audience?: string;
   readMins?: number;
   role?: string;
+  /** the new member's user_id — set on member_joined cards, for the Say-hi button */
+  memberUserId?: string;
   // contact (members/resources)
   email?: string | null;
   mobile?: string | null;
@@ -71,6 +74,19 @@ function ago(iso: string): string {
 
 // ── Normalizers ────────────────────────────────────────────────
 function fromFeedPost(p: FeedPost): FeedCard {
+  // A member joining is its own card kind (permanent in the feed) with a Say-hi button.
+  if (p.post_type === 'member_joined') {
+    return {
+      id: p.id,
+      view: 'social',
+      kind: 'member_joined',
+      body: p.body ?? undefined,
+      memberUserId: p.author_id ?? undefined,
+      when: ago(p.publish_at),
+      ts: new Date(p.publish_at).getTime(),
+      seen: p.seen,
+    };
+  }
   const isSale = p.post_type === 'horse' || p.post_type === 'gear';
   const author = p.as_company ? 'French Heritage' : (p.author_id ? 'Member' : 'French Heritage');
   return {
@@ -78,8 +94,8 @@ function fromFeedPost(p: FeedPost): FeedCard {
     view: isSale ? 'for_sale' : 'social',
     kind: isSale ? 'for_sale' : 'social',
     body: p.body ?? undefined,
-    mediaUrl: p.media_url,
-    mediaKind: p.media_kind,
+    mediaUrl: p.media_url ?? undefined,
+    mediaKind: p.media_kind ?? undefined,
     author,
     authorInitials: p.as_company ? 'FH' : initials(author, 'M'),
     when: ago(p.publish_at),
@@ -229,4 +245,32 @@ export async function fetchUnseenCounts(): Promise<Partial<Record<FeedView, numb
   } catch {
     return {};
   }
+}
+
+// ── New-member greetings (say hi / say hi back) ─────────────────────────────
+
+/** Say hi to a new member (one-time). Returns true if this recorded the greeting. */
+export async function sayHi(toUserId: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc('say_hi', { p_to_user: toUserId });
+  if (error) throw error;
+  return Boolean(data);
+}
+
+/** Reply to a greeter with a thank-you note (one-time). */
+export async function sayHiBack(toUserId: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc('say_hi_back', { p_to_user: toUserId });
+  if (error) throw error;
+  return Boolean(data);
+}
+
+/** The set of member user_ids the signed-in member has already said hi to — so the
+ *  feed can show the button as done without a round-trip per card. */
+export async function myGreetedUserIds(): Promise<Set<string>> {
+  const { data: auth } = await supabase.auth.getUser();
+  const uid = auth?.user?.id;
+  if (!uid) return new Set();
+  const { data, error } = await supabase
+    .from('member_greetings').select('to_user').eq('from_user', uid).eq('kind', 'hi');
+  if (error) return new Set();
+  return new Set((data ?? []).map((r: { to_user: string }) => r.to_user));
 }

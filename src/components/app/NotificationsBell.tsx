@@ -11,10 +11,41 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Bell } from 'lucide-react';
+import { Bell, Hand } from 'lucide-react';
 import {
   myNotifications, myUnreadCount, markNotificationRead, type AppNotification,
 } from '../../lib/api';
+import { sayHiBack } from '../../lib/communityFeed';
+
+/** Pull the greeter's user_id out of a member_hi notification's link
+ *  (/app?filter=members&hi_back=<id>). Returns null for other notifications. */
+function hiBackTarget(n: AppNotification): string | null {
+  if (n.kind !== 'member_hi' || !n.link) return null;
+  const m = n.link.match(/hi_back=([0-9a-f-]{36})/i);
+  return m ? m[1] : null;
+}
+
+/** One-click thank-you reply on a "welcome" notification. */
+function SayHiBackButton({ toUserId }: { toUserId: string }) {
+  const [state, setState] = useState<'idle' | 'sending' | 'done'>('idle');
+  async function reply(e: React.MouseEvent) {
+    e.stopPropagation(); // don't trigger the notification's own navigate
+    if (state !== 'idle') return;
+    setState('sending');
+    try { await sayHiBack(toUserId); setState('done'); }
+    catch { setState('done'); /* already replied → treat as done */ }
+  }
+  return (
+    <button type="button" onClick={reply} disabled={state !== 'idle'}
+      className={`mt-2 inline-flex items-center gap-1.5 text-xs font-medium rounded-lg px-3 py-1.5 focus-ring ${
+        state === 'done'
+          ? 'bg-green-50 text-green-700 border border-green-200'
+          : 'bg-green-800 text-white hover:bg-green-700'}`}>
+      <Hand size={13} aria-hidden="true" />
+      {state === 'done' ? 'Thanked 👋' : state === 'sending' ? 'Sending…' : 'Say hi back'}
+    </button>
+  );
+}
 
 export interface NotificationsBellState {
   count: number;
@@ -109,7 +140,9 @@ export default function NotificationsBell({ bell }: { bell: NotificationsBellSta
             <p className="body-text text-muted text-sm px-4 py-3">Nothing yet.</p>
           ) : (
             <ul className="max-h-80 overflow-y-auto">
-              {items.map((n) => (
+              {items.map((n) => {
+                const hiBack = hiBackTarget(n);
+                return (
                 <li key={n.id} className="border-b border-green-800/10 last:border-b-0">
                   <button
                     type="button"
@@ -124,8 +157,11 @@ export default function NotificationsBell({ bell }: { bell: NotificationsBellSta
                       {new Date(n.created_at).toLocaleDateString()}
                     </span>
                   </button>
+                  {/* welcome note → one-click thank-you reply */}
+                  {hiBack && <div className="px-4 pb-3 -mt-1"><SayHiBackButton toUserId={hiBack} /></div>}
                 </li>
-              ))}
+                );
+              })}
             </ul>
           )}
         </div>
