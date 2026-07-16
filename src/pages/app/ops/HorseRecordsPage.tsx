@@ -103,6 +103,15 @@ function EditableRecord({
             <FileText size={13} className="text-gold-800" /> {r.document_count} attached
             <Link to="/app/ops/documents" className="text-gold-800 underline underline-offset-2 text-xs ml-1">open queue</Link>
           </p>
+          {r.active_lease_doc && (
+            <p className="text-xs text-green-800 mt-1">
+              Active lease:{' '}
+              <Link to={`/app/contracts/${r.active_lease_doc.document_id}`} className="underline underline-offset-2 font-medium">
+                {r.active_lease_doc.display_code ?? 'View lease'}
+                {r.active_lease_doc.effective_date ? ` · ${r.active_lease_doc.effective_date}` : ''}
+              </Link>
+            </p>
+          )}
         </div>
       </div>
 

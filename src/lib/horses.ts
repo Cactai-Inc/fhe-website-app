@@ -136,6 +136,7 @@ export interface StaffHorseRecord {
   lease_start: string | null;
   lease_end: string | null;
   document_count: number;
+  active_lease_doc: { document_id: string; display_code: string | null; effective_date: string | null } | null;
   created_at: string;
 }
 
