@@ -148,11 +148,21 @@ export async function staffAssignHorseParty(
 }
 
 export interface ContactOption { id: string; name: string; email: string | null }
+export interface PartyOption extends ContactOption { is_company: boolean }
 
 export async function staffContactOptions(): Promise<ContactOption[]> {
   const { data, error } = await supabase.rpc('staff_contact_options');
   if (error) throw error;
   return (data ?? []) as ContactOption[];
+}
+
+/** Party picker for contracts: the company ("French Heritage Equestrian") plus
+ *  real client contacts — excludes personal staff contacts and placeholders.
+ *  Company is returned first. */
+export async function contractPartyOptions(): Promise<PartyOption[]> {
+  const { data, error } = await supabase.rpc('contract_party_options');
+  if (error) throw error;
+  return (data ?? []) as PartyOption[];
 }
 
 /** Staff: create a horse record OWNED BY a specific contact (e.g. recording a

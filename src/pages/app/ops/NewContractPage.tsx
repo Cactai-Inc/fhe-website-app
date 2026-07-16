@@ -6,7 +6,7 @@ import { startLeaseContract, startPurchaseContract } from '../../../lib/api';
 import {
   claimDocumentOrigination, setPartyControls, assignHorseSection,
 } from '../../../lib/contracts';
-import { staffHorseRecords, staffContactOptions, staffCreateHorseForContact, type StaffHorseRecord, type ContactOption } from '../../../lib/horses';
+import { staffHorseRecords, contractPartyOptions, staffCreateHorseForContact, type StaffHorseRecord, type PartyOption } from '../../../lib/horses';
 
 /**
  * NEW CONTRACT (/app/ops/contracts/new) — company-originated, always.
@@ -69,7 +69,7 @@ export default function NewContractPage() {
   useDocumentTitle('New contract');
   const navigate = useNavigate();
   const [type, setType] = useState<ContractType>('lease');
-  const [contacts, setContacts] = useState<ContactOption[]>([]);
+  const [contacts, setContacts] = useState<PartyOption[]>([]);
   const [horses, setHorses] = useState<StaffHorseRecord[]>([]);
 
   const [partyA, setPartyA] = useState('');   // lessee / buyer contact id
@@ -93,7 +93,7 @@ export default function NewContractPage() {
   const [roleA, roleB] = t.roles;
 
   useEffect(() => {
-    staffContactOptions().then(setContacts).catch(() => setContacts([]));
+    contractPartyOptions().then(setContacts).catch(() => setContacts([]));
     staffHorseRecords().then(setHorses).catch(() => setHorses([]));
   }, []);
   useEffect(() => { setHorseParty(roleB); }, [roleB]);
