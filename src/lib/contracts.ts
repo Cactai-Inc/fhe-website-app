@@ -3,6 +3,13 @@
  * the authority; these shape the calls for /app/contracts/:id. */
 import { supabase } from './supabase';
 
+export type FieldInputKind =
+  | 'text' | 'longtext' | 'select' | 'buttons' | 'responsibility'
+  | 'week_grid' | 'contact' | 'currency' | 'date' | 'percent' | 'prose' | 'checkbox';
+
+export interface FieldOption { value: string; label: string }
+export interface FieldConditional { field_key: string; equals: string[] }
+
 export interface ContractField {
   field_key: string;
   label: string | null;
@@ -13,6 +20,17 @@ export interface ContractField {
   required: boolean;
   sort_order: number;
   can_edit: boolean;
+  // ── cascading living-document model (nullable on legacy docs) ──
+  parent_field_key?: string | null;
+  input_kind?: FieldInputKind | null;
+  options?: FieldOption[] | null;
+  conditional_on?: FieldConditional | null;
+  guidance?: string | null;
+  is_optional?: boolean | null;
+  included?: boolean | null;
+  is_na?: boolean | null;
+  control_override?: { lock?: boolean; edit?: boolean; suggest?: boolean } | null;
+  responsibility?: { party?: string; detail?: string; split?: { owner?: number; lessee?: number } } | null;
 }
 
 export interface ContractChangeRequest {
@@ -319,6 +337,20 @@ export async function archiveContract(documentId: string, archive = true): Promi
 /** Staff: hard-delete the document, as if it never existed (not for executed docs). */
 export async function hardDeleteContract(documentId: string): Promise<void> {
   const { error } = await supabase.rpc('hard_delete_contract', { p_document_id: documentId });
+  if (error) throw error;
+}
+
+/** Cascading-field writes (living-document model). */
+export async function setFieldResponsibility(documentId: string, fieldKey: string, resp: ContractField['responsibility']): Promise<void> {
+  const { error } = await supabase.rpc('set_field_responsibility', { p_document_id: documentId, p_field_key: fieldKey, p_responsibility: resp ?? {} });
+  if (error) throw error;
+}
+export async function setFieldIncluded(documentId: string, fieldKey: string, included: boolean): Promise<void> {
+  const { error } = await supabase.rpc('set_field_included', { p_document_id: documentId, p_field_key: fieldKey, p_included: included });
+  if (error) throw error;
+}
+export async function setFieldNa(documentId: string, fieldKey: string, isNa: boolean): Promise<void> {
+  const { error } = await supabase.rpc('set_field_na', { p_document_id: documentId, p_field_key: fieldKey, p_is_na: isNa });
   if (error) throw error;
 }
 

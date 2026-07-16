@@ -15,10 +15,12 @@ import {
   contractRedlineState, resolveFieldEdit, withdrawFieldEdit,
   proposeClause, resolveClause, withdrawClause, attachHorseToDocument,
   sendContractToParty, cancelContract, archiveContract, hardDeleteContract,
+  setFieldResponsibility, setFieldIncluded, setFieldNa,
   type ContractDetail, type ContractField, type ContractMessage, type PartyControls,
   type SigningSetDoc, type RedlineState,
 } from '../../lib/contracts';
 import { listStableHorses, type StableHorse } from '../../lib/stable';
+import { ContractCascade } from '../../components/app/ContractCascade';
 
 /**
  * CONTRACT (/app/contracts/:id) — the negotiated-contract surface (Update A).
@@ -630,6 +632,25 @@ export default function ContractPage() {
         const anyEditable = fields.some((f) => f.can_edit);
         // counterparty intake: show only sections with something for them (or filled)
         if (!isOwnerSide && !anyEditable && !fields.some((f) => f.value)) return null;
+
+        // Cascading living-document sections (Horse Care, etc.) render via the new
+        // ContractCascade — subject-grouped, dropdowns, decomposed responsibility,
+        // conditional reveals, N/A + include/omit, ⓘ guidance.
+        if (section === 'Horse Care') {
+          return (
+            <section key={section} className="bg-white border border-green-800/10 rounded-xl p-6 mb-5">
+              <h2 className="font-serif text-green-800 mb-3">{section}</h2>
+              <ContractCascade
+                fields={fields}
+                editable={editablePhase && anyEditable}
+                onSave={saveField}
+                onSaveResponsibility={(k, r) => void act(() => setFieldResponsibility(id!, k, r))}
+                onInclude={(k, inc) => void act(() => setFieldIncluded(id!, k, inc))}
+                onNa={(k, na) => void act(() => setFieldNa(id!, k, na))}
+              />
+            </section>
+          );
+        }
         return (
           <section key={section} className="bg-white border border-green-800/10 rounded-xl p-6 mb-5">
             <div className="flex items-center justify-between mb-3">
