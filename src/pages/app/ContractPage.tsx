@@ -539,6 +539,25 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         // counterparty intake: show only sections with something for them (or filled)
         if (!isOwnerSide && !anyEditable && !fields.some((f) => f.value)) return null;
 
+        // Section-level include/omit: a section is OPTIONAL when every field is
+        // optional; it's OMITTED when none of its fields are included. An omitted
+        // optional section collapses to a "＋ Include" placeholder; including it
+        // turns its fields on. Non-optional (essential) sections always show.
+        const sectionOptional = fields.length > 0 && fields.every((f) => f.is_optional);
+        const sectionIncluded = fields.some((f) => f.included !== false);
+        const includeSection = (on: boolean) => fields.forEach((f) => {
+          if (f.is_optional) void act(() => setFieldIncluded(id!, f.field_key, on));
+        });
+        if (sectionOptional && !sectionIncluded) {
+          return (
+            <button key={section} type="button" disabled={!editablePhase}
+              onClick={() => includeSection(true)}
+              className="w-full text-left text-sm text-gold-800 border border-dashed border-gold-400 rounded-xl px-5 py-3 mb-5 hover:bg-gold-50 focus-ring">
+              ＋ Include “{section}”
+            </button>
+          );
+        }
+
         // EVERY section renders via the cascading living-document renderer —
         // subject-grouped, dropdowns/buttons, decomposed responsibility, conditional
         // reveals, N/A + include/omit, ⓘ guidance. The Horse section keeps its
@@ -546,7 +565,13 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         return (
           <section key={section} className="bg-white border border-green-800/10 rounded-xl p-6 mb-5">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="font-serif text-green-800">{section}</h2>
+              <h2 className="font-serif text-green-800">
+                {section}
+                {sectionOptional && editablePhase && (
+                  <button type="button" className="ml-3 text-[11px] text-muted underline align-middle"
+                    onClick={() => includeSection(false)}>omit section</button>
+                )}
+              </h2>
               {isHorse && (
                 horseConfirmed ? (
                   <span className="inline-flex items-center gap-1.5 text-xs text-green-700">
