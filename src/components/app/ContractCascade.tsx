@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { Info } from 'lucide-react';
-import type { ContractField } from '../../lib/contracts';
+import type { ContractField, FieldStructured, PartyChoice } from '../../lib/contracts';
 
 /**
  * CONTRACT CASCADE — the living-document field renderer.
@@ -19,9 +19,126 @@ import type { ContractField } from '../../lib/contracts';
 
 type SaveFn = (fieldKey: string, value: string) => void | Promise<void>;
 type SaveRespFn = (fieldKey: string, resp: ContractField['responsibility']) => void | Promise<void>;
+type SaveStructFn = (fieldKey: string, structured: FieldStructured | null) => void | Promise<void>;
 type IncludeFn = (fieldKey: string, included: boolean) => void | Promise<void>;
 type NaFn = (fieldKey: string, isNa: boolean) => void | Promise<void>;
 type ControlFn = (fieldKey: string, override: ContractField['control_override']) => void | Promise<void>;
+
+/** Party options. The manage side offers Care Provider; the cost side offers a
+ *  "same as responsible party" default plus specific parties / shared split. */
+const PARTY_OPTS = [
+  { value: 'LESSOR', label: 'Owner (Lessor)' },
+  { value: 'LESSEE', label: 'Lessee' },
+  { value: 'CARE_PROVIDER', label: 'Care Provider' },
+  { value: 'SHARED', label: 'Shared' },
+];
+const COST_PARTY_OPTS = [
+  { value: 'LESSOR', label: 'Owner (Lessor)' },
+  { value: 'LESSEE', label: 'Lessee' },
+  { value: 'SHARED', label: 'Shared (split %)' },
+];
+
+/** The structured party picker: a dropdown, plus the sub-inputs it reveals —
+ *  Care Provider → discrete contact fields; Shared → per-party % rows + a note.
+ *  Everything writes into one PartyChoice object (structured, reusable). */
+function PartyPicker({
+  value, placeholder, opts, onChange, disabled, allowProvider = true,
+}: {
+  value: PartyChoice;
+  placeholder: string;
+  opts: { value: string; label: string }[];
+  onChange: (v: PartyChoice) => void;
+  disabled: boolean;
+  allowProvider?: boolean;
+}) {
+  const party = value.party ?? '';
+  const set = (patch: Partial<PartyChoice>) => onChange({ ...value, ...patch });
+  const parties = value.parties ?? [{ party: 'LESSOR', pct: '50' }, { party: 'LESSEE', pct: '50' }];
+  const setPct = (i: number, pct: string) => {
+    const next = parties.map((p, j) => (j === i ? { ...p, pct } : p));
+    set({ parties: next });
+  };
+  return (
+    <div className="flex flex-col gap-1.5">
+      <select className={inputCls} disabled={disabled} value={party}
+        onChange={(e) => set({ party: e.target.value })}>
+        <option value="">{placeholder}</option>
+        {opts.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+      {party === 'CARE_PROVIDER' && allowProvider && (
+        <div className="grid grid-cols-2 gap-1.5">
+          <input className={inputCls} disabled={disabled} placeholder="Contact name"
+            value={value.provider?.name ?? ''} onChange={(e) => set({ provider: { ...value.provider, name: e.target.value } })} />
+          <input className={inputCls} disabled={disabled} placeholder="Company"
+            value={value.provider?.company ?? ''} onChange={(e) => set({ provider: { ...value.provider, company: e.target.value } })} />
+          <input type="tel" className={inputCls} disabled={disabled} placeholder="Phone"
+            value={value.provider?.phone ?? ''} onChange={(e) => set({ provider: { ...value.provider, phone: e.target.value } })} />
+          <input type="email" className={inputCls} disabled={disabled} placeholder="Email"
+            value={value.provider?.email ?? ''} onChange={(e) => set({ provider: { ...value.provider, email: e.target.value } })} />
+        </div>
+      )}
+      {party === 'SHARED' && (
+        <div className="flex flex-col gap-1.5 bg-cream-100/40 rounded-lg p-2">
+          {parties.map((p, i) => (
+            <div key={i} className="flex items-center gap-2 text-sm text-secondary">
+              <span className="w-28 truncate">{p.party === 'LESSOR' ? 'Owner' : p.party === 'LESSEE' ? 'Lessee' : p.party}</span>
+              <input type="number" min={0} max={100} className={`${inputCls} w-20`} disabled={disabled}
+                value={p.pct ?? ''} onChange={(e) => setPct(i, e.target.value)} />
+              <span>%</span>
+            </div>
+          ))}
+          <input className={inputCls} disabled={disabled} placeholder="Optional note (e.g. Lessee covers routine, Owner covers major)"
+            value={value.note ?? ''} onChange={(e) => set({ note: e.target.value })} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** The paired manage↔cost mini-block. Left = who manages (placeholder guidance),
+ *  right = who pays (defaults to "Same as responsible party"; diverges only when
+ *  changed). One structured value: { manage: PartyChoice, cost: {...} }. */
+function PairControl({
+  f, onSaveStructured, disabled,
+}: { f: ContractField; onSaveStructured: SaveStructFn; disabled: boolean }) {
+  const s = f.structured ?? {};
+  const manage: PartyChoice = s.manage ?? {};
+  const cost = s.cost ?? { same_as_manage: true };
+  const subject = (f.label ?? f.field_key).replace(/responsibility/i, '').trim().toLowerCase() || 'this item';
+  const commit = (next: FieldStructured) => void onSaveStructured(f.field_key, next);
+  const setManage = (m: PartyChoice) => commit({ ...s, manage: m, cost });
+  const sameAs = cost.same_as_manage !== false;
+  const costChoice: PartyChoice = { party: cost.party, parties: cost.parties, note: cost.note };
+  return (
+    <div className="grid sm:grid-cols-2 gap-3 bg-white border border-green-800/10 rounded-lg p-3">
+      <div>
+        <p className="text-[11px] uppercase tracking-wide text-muted mb-1">Who manages it</p>
+        <PartyPicker value={manage} disabled={disabled} opts={PARTY_OPTS}
+          placeholder={`Select the party responsible for managing ${subject}`}
+          onChange={setManage} />
+      </div>
+      <div>
+        <p className="text-[11px] uppercase tracking-wide text-muted mb-1">Who pays for it</p>
+        <select className={inputCls} disabled={disabled}
+          value={sameAs ? 'SAME' : (cost.party ?? '')}
+          onChange={(e) => {
+            if (e.target.value === 'SAME') commit({ ...s, manage, cost: { same_as_manage: true } });
+            else commit({ ...s, manage, cost: { same_as_manage: false, party: e.target.value, parties: cost.parties, note: cost.note } });
+          }}>
+          <option value="SAME">Same as responsible party</option>
+          {COST_PARTY_OPTS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+        {!sameAs && cost.party === 'SHARED' && (
+          <div className="mt-1.5">
+            <PartyPicker value={{ party: 'SHARED', ...costChoice }} disabled={disabled} opts={COST_PARTY_OPTS}
+              placeholder="Shared" allowProvider={false}
+              onChange={(v) => commit({ ...s, manage, cost: { same_as_manage: false, party: 'SHARED', parties: v.parties, note: v.note } })} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 const NA = 'N/A';
 const filled = (v?: string | null) => !!v && v.trim() !== '' && v.trim() !== NA;
@@ -46,14 +163,76 @@ function InfoDot({ text }: { text: string }) {
 
 const inputCls = 'w-full px-3 py-2 rounded-lg border border-green-800/15 text-sm text-green-900 placeholder:text-muted focus-ring bg-white disabled:bg-cream-100 disabled:text-muted';
 
-/** A single field's control, chosen by input_kind. */
+/** Renders the composed contract body, turning the composer's ⟦NEEDS:label⟧text⟧
+ *  markers into a highlighted "needs input" span (the blank shows AND is flagged),
+ *  so unfinished parts of the document stand out instead of reading as complete. */
+const NEEDS_RE = /⟦NEEDS:(.*?)⟧(.*?)⟧/g;
+export function ContractBody({ body }: { body: string | null }) {
+  if (!body) return null;
+  const nodes: ReactNode[] = [];
+  let last = 0; let m: RegExpExecArray | null; let i = 0;
+  NEEDS_RE.lastIndex = 0;
+  while ((m = NEEDS_RE.exec(body))) {
+    if (m.index > last) nodes.push(body.slice(last, m.index));
+    nodes.push(
+      <mark key={`n${i++}`} title={`Needs: ${m[1]}`}
+        className="bg-gold-100 text-gold-900 rounded px-1 border border-gold-400/60 border-dashed">
+        {m[2]}
+      </mark>,
+    );
+    last = m.index + m[0].length;
+  }
+  if (last < body.length) nodes.push(body.slice(last));
+  return <>{nodes}</>;
+}
+
+/** A single field's control, chosen by format_type (preferred) or input_kind. */
 function FieldControl({
-  f, onSave, onSaveResponsibility, disabled,
-}: { f: ContractField; onSave: SaveFn; onSaveResponsibility: SaveRespFn; disabled: boolean }) {
+  f, onSave, onSaveResponsibility, onSaveStructured, disabled,
+}: { f: ContractField; onSave: SaveFn; onSaveResponsibility: SaveRespFn; onSaveStructured: SaveStructFn; disabled: boolean }) {
   const [local, setLocal] = useState(f.value ?? '');
+  const fmt = f.format_type ?? '';
   const kind = f.input_kind ?? 'text';
   const save = () => { if (local !== (f.value ?? '')) void onSave(f.field_key, local); };
 
+  // ── structured formats (source of truth = f.structured) ──
+  if (fmt === 'pair') {
+    return <PairControl f={f} onSaveStructured={onSaveStructured} disabled={disabled} />;
+  }
+  if (fmt === 'party') {
+    const val = (f.structured ?? {}) as PartyChoice;
+    return <PartyPicker value={val} disabled={disabled} opts={PARTY_OPTS}
+      placeholder={f.guidance ?? 'Select the responsible party'}
+      onChange={(v) => void onSaveStructured(f.field_key, v as FieldStructured)} />;
+  }
+  if (fmt === 'person') {
+    const s = f.structured ?? {};
+    const set = (patch: Partial<FieldStructured>) => void onSaveStructured(f.field_key, { ...s, ...patch });
+    return (
+      <div className="grid grid-cols-2 gap-1.5">
+        <input className={inputCls} disabled={disabled} placeholder="Contact name" value={s.name ?? ''} onChange={(e) => set({ name: e.target.value })} />
+        <input className={inputCls} disabled={disabled} placeholder="Company" value={s.company ?? ''} onChange={(e) => set({ company: e.target.value })} />
+        <input type="tel" className={inputCls} disabled={disabled} placeholder="Phone" value={s.phone ?? ''} onChange={(e) => set({ phone: e.target.value })} />
+        <input type="email" className={inputCls} disabled={disabled} placeholder="Email" value={s.email ?? ''} onChange={(e) => set({ email: e.target.value })} />
+      </div>
+    );
+  }
+  if (fmt === 'address') {
+    const s = f.structured ?? {};
+    const set = (patch: Partial<FieldStructured>) => void onSaveStructured(f.field_key, { ...s, ...patch });
+    return (
+      <div className="grid grid-cols-2 gap-1.5">
+        <input className={`${inputCls} col-span-2`} disabled={disabled} placeholder="Street address" value={s.line1 ?? ''} onChange={(e) => set({ line1: e.target.value })} />
+        <input className={inputCls} disabled={disabled} placeholder="City" value={s.city ?? ''} onChange={(e) => set({ city: e.target.value })} />
+        <div className="grid grid-cols-2 gap-1.5">
+          <input className={inputCls} disabled={disabled} placeholder="State" value={s.state ?? ''} onChange={(e) => set({ state: e.target.value })} />
+          <input className={inputCls} disabled={disabled} placeholder="ZIP" value={s.postal ?? ''} onChange={(e) => set({ postal: e.target.value })} />
+        </div>
+      </div>
+    );
+  }
+
+  // ── legacy responsibility (kept for any field still on input_kind) ──
   if (kind === 'responsibility') {
     return <ResponsibilityControl f={f} onSaveResponsibility={onSaveResponsibility} disabled={disabled} />;
   }
@@ -229,18 +408,21 @@ function conditionMet(f: ContractField, byKey: Map<string, ContractField>): bool
 
 /** One field + its cascading children. */
 function FieldNode({
-  f, childrenByParent, byKey, onSave, onSaveResponsibility, onInclude, onNa, onControl, canSetControl, editable,
+  f, childrenByParent, byKey, onSave, onSaveResponsibility, onSaveStructured, onInclude, onNa, onControl, canSetControl, editable,
 }: {
   f: ContractField;
   childrenByParent: Map<string, ContractField[]>;
   byKey: Map<string, ContractField>;
-  onSave: SaveFn; onSaveResponsibility: SaveRespFn; onInclude: IncludeFn; onNa: NaFn; onControl: ControlFn;
+  onSave: SaveFn; onSaveResponsibility: SaveRespFn; onSaveStructured: SaveStructFn; onInclude: IncludeFn; onNa: NaFn; onControl: ControlFn;
   canSetControl: boolean;
   editable: boolean;
 }) {
+  // A pair COST child is rendered inside its manage field's mini-block, never as its
+  // own row — hide it here.
+  if (f.pair_manage_key) return null;
   const kids = childrenByParent.get(f.field_key) ?? [];
   const included = f.is_optional ? (f.included ?? false) : true;
-  const hasContent = filled(f.value) || !!f.responsibility?.party;
+  const hasContent = filled(f.value) || !!f.responsibility?.party || !!f.structured?.manage?.party || !!f.structured?.party;
   // children surface when the parent has content (or is a non-optional container)
   const showKids = included && (hasContent || !f.is_optional);
   const na = f.is_na === true;
@@ -278,7 +460,7 @@ function FieldNode({
             onClick={() => void onInclude(f.field_key, false)}>remove</button>
         )}
       </div>
-      {!na && <FieldControl f={f} onSave={onSave} onSaveResponsibility={onSaveResponsibility} disabled={!editable || !f.can_edit} />}
+      {!na && <FieldControl f={f} onSave={onSave} onSaveResponsibility={onSaveResponsibility} onSaveStructured={onSaveStructured} disabled={!editable || !f.can_edit} />}
       {na && <p className="text-xs text-muted italic">Marked not applicable.</p>}
       {/* per-field control override (author only, on a filled field): overrides the
           document-global control. lock is exclusive; edits + suggestions may coexist. */}
@@ -298,7 +480,7 @@ function FieldNode({
         <div className="mt-2 ml-3 pl-3 border-l-2 border-gold-200 flex flex-col gap-1">
           {kids.filter((k) => conditionMet(k, byKey)).map((k) => (
             <FieldNode key={k.field_key} f={k} childrenByParent={childrenByParent} byKey={byKey}
-              onSave={onSave} onSaveResponsibility={onSaveResponsibility} onInclude={onInclude} onNa={onNa}
+              onSave={onSave} onSaveResponsibility={onSaveResponsibility} onSaveStructured={onSaveStructured} onInclude={onInclude} onNa={onNa}
               onControl={onControl} canSetControl={canSetControl} editable={editable} />
           ))}
         </div>
@@ -309,11 +491,12 @@ function FieldNode({
 
 /** Renders one subject-section's cascading fields. */
 export function ContractCascade({
-  fields, onSave, onSaveResponsibility, onInclude, onNa, onControl, canSetControl = false, editable,
+  fields, onSave, onSaveResponsibility, onSaveStructured, onInclude, onNa, onControl, canSetControl = false, editable,
 }: {
   fields: ContractField[];
   onSave: SaveFn;
   onSaveResponsibility: SaveRespFn;
+  onSaveStructured: SaveStructFn;
   onInclude: IncludeFn;
   onNa: NaFn;
   onControl: ControlFn;
@@ -336,7 +519,7 @@ export function ContractCascade({
     <div className="flex flex-col gap-2">
       {roots.filter((f) => conditionMet(f, byKey)).map((f) => (
         <FieldNode key={f.field_key} f={f} childrenByParent={childrenByParent} byKey={byKey}
-          onSave={onSave} onSaveResponsibility={onSaveResponsibility} onInclude={onInclude} onNa={onNa}
+          onSave={onSave} onSaveResponsibility={onSaveResponsibility} onSaveStructured={onSaveStructured} onInclude={onInclude} onNa={onNa}
           onControl={onControl} canSetControl={canSetControl} editable={editable} />
       ))}
     </div>

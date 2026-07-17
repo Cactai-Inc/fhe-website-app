@@ -14,12 +14,12 @@ import {
   contractRedlineState, resolveFieldEdit, withdrawFieldEdit,
   proposeClause, resolveClause, withdrawClause, attachHorseToDocument,
   sendContractToParty, cancelContract, archiveContract, hardDeleteContract,
-  setFieldResponsibility, setFieldIncluded, setFieldNa, setFieldControlOverride,
+  setFieldResponsibility, setFieldIncluded, setFieldNa, setFieldControlOverride, setFieldStructured,
   type ContractDetail, type ContractField, type ContractMessage, type PartyControls,
   type SigningSetDoc, type RedlineState,
 } from '../../lib/contracts';
 import { listStableHorses, type StableHorse } from '../../lib/stable';
-import { ContractCascade } from '../../components/app/ContractCascade';
+import { ContractCascade, ContractBody } from '../../components/app/ContractCascade';
 
 /**
  * CONTRACT (/app/contracts/:id) — the negotiated-contract surface (Update A).
@@ -455,7 +455,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
             <CheckCircle2 size={16} /> Executed{doc.execution_hash ? ` · ${doc.execution_hash.slice(0, 12)}…` : ''}
           </p>
           <div className="prose-sm max-h-[70vh] overflow-y-auto whitespace-pre-line text-[13px] leading-relaxed text-green-950 bg-cream-100/50 border border-green-800/10 rounded p-5">
-            {doc.merged_body}
+            <ContractBody body={doc.merged_body} />
           </div>
         </div>
       )}
@@ -600,6 +600,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
               editable={editablePhase && anyEditable}
               onSave={saveField}
               onSaveResponsibility={(k, r) => void act(() => setFieldResponsibility(id!, k, r))}
+              onSaveStructured={(k, s) => void act(() => setFieldStructured(id!, k, s))}
               onInclude={(k, inc) => void act(() => setFieldIncluded(id!, k, inc))}
               onNa={(k, na) => void act(() => setFieldNa(id!, k, na))}
               onControl={(k, ov) => void act(() => setFieldControlOverride(id!, k, ov))}
@@ -668,7 +669,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         <section className="bg-white border border-green-800/10 rounded-lg p-5 mb-4">
           <p className="text-sm text-muted mb-3">Please review the document below and sign, or respond to the other party.</p>
           <div className="max-h-[70vh] overflow-y-auto whitespace-pre-line text-[13.5px] leading-relaxed text-green-950 bg-cream-100/50 border border-green-800/10 rounded p-6">
-            {doc.merged_body}
+            <ContractBody body={doc.merged_body} />
           </div>
         </section>
       )}
@@ -682,7 +683,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           </button>
           {showBody && (
             <div className="mt-3 max-h-[60vh] overflow-y-auto whitespace-pre-line text-[13px] leading-relaxed text-green-950 bg-cream-100/50 border border-green-800/10 rounded p-5">
-              {doc.merged_body}
+              <ContractBody body={doc.merged_body} />
             </div>
           )}
         </section>

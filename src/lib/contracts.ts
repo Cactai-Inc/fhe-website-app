@@ -31,6 +31,40 @@ export interface ContractField {
   is_na?: boolean | null;
   control_override?: { lock?: boolean; edit?: boolean; suggest?: boolean } | null;
   responsibility?: { party?: string; detail?: string; split?: { owner?: number; lessee?: number } } | null;
+  // ── structured-fields model ──
+  format_type?: string | null;     // registry key: phone | party | pair | person | currency | …
+  structured?: FieldStructured | null;   // canonical structured value (source of truth)
+  pair_cost_key?: string | null;   // on a 'pair' manage field → its cost child's field_key
+  pair_manage_key?: string | null; // on a cost child → its manage field's field_key (hidden as a row)
+}
+
+/** A party choice, with the sub-inputs revealed by CARE_PROVIDER / SHARED. */
+export interface PartyChoice {
+  party?: string;   // OWNER | LESSOR | LESSEE | BUYER | SELLER | CARE_PROVIDER | SHARED
+  provider?: { name?: string; company?: string; phone?: string; email?: string };
+  parties?: { party?: string; pct?: string }[];   // when SHARED
+  note?: string;
+}
+
+/** The canonical structured value; shape depends on format_type. Loosely typed
+ *  because it spans every format — the composer (DB) is the authority on prose. */
+export interface FieldStructured {
+  // scalars
+  value?: string; text?: string; amount?: string;
+  // person / provider
+  name?: string; company?: string; phone?: string; email?: string;
+  // address
+  line1?: string; line2?: string; city?: string; state?: string; postal?: string;
+  // list
+  items?: string[];
+  // party (flat) — also used by percent_split via `parties`
+  party?: string;
+  provider?: PartyChoice['provider'];
+  parties?: PartyChoice['parties'];
+  note?: string;
+  // pair
+  manage?: PartyChoice;
+  cost?: { same_as_manage?: boolean; party?: string; parties?: PartyChoice['parties']; note?: string };
 }
 
 export interface ContractChangeRequest {
@@ -356,6 +390,27 @@ export async function setFieldNa(documentId: string, fieldKey: string, isNa: boo
 export async function setFieldControlOverride(documentId: string, fieldKey: string, override: ContractField['control_override']): Promise<void> {
   const { error } = await supabase.rpc('set_field_control_override', { p_document_id: documentId, p_field_key: fieldKey, p_override: override ?? {} });
   if (error) throw error;
+}
+/** Persist a field's STRUCTURED value (the source of truth). The DB recomposes the
+ *  derived prose (and any pair cost-child) and re-merges the body. */
+export async function setFieldStructured(documentId: string, fieldKey: string, structured: FieldStructured | null): Promise<void> {
+  const { error } = await supabase.rpc('set_field_structured', { p_document_id: documentId, p_field_key: fieldKey, p_structured: structured ?? {} });
+  if (error) throw error;
+}
+
+/** The format registry (read-only) — powers the add-field modal's type picker and
+ *  any format-driven UI. Cached per session. */
+export interface ContractFormat {
+  format_type: string; label: string; category: string;
+  input_kind: string; guidance: string | null; reusable_as: string | null; sort_order: number;
+}
+let _formatsCache: ContractFormat[] | null = null;
+export async function listContractFormats(): Promise<ContractFormat[]> {
+  if (_formatsCache) return _formatsCache;
+  const { data, error } = await supabase.from('contract_formats').select('*').order('sort_order');
+  if (error) throw error;
+  _formatsCache = (data ?? []) as ContractFormat[];
+  return _formatsCache;
 }
 
 /** Attach a horse RECORD to this contract and fill the HORSE.* fields from it.
