@@ -56,6 +56,9 @@ function FieldControl({
   if (kind === 'responsibility') {
     return <ResponsibilityControl f={f} onSaveResponsibility={onSaveResponsibility} disabled={disabled} />;
   }
+  if (kind === 'week_grid') {
+    return <WeekGrid f={f} onSave={onSave} disabled={disabled} />;
+  }
   if (kind === 'select') {
     return (
       <select className={inputCls} disabled={disabled} value={f.value ?? ''}
@@ -140,6 +143,75 @@ function ResponsibilityControl({
         <textarea rows={2} className={`${inputCls} resize-y`} disabled={disabled}
           placeholder="Contact name, phone, email, company name."
           value={resp.detail ?? ''} onChange={(e) => set({ detail: e.target.value })} />
+      )}
+    </div>
+  );
+}
+
+/** Weekly schedule grid: one row per party, a checkbox per day, and an optional
+ *  timeframes toggle that splits each day into presets (default 6a–12p / 12p–6p,
+ *  editable). Value serializes to JSON so it's structured for downstream use. The
+ *  context label ("responsible" / "entitled" / "authorized") comes from the field. */
+const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
+type WeekState = {
+  parties: string[];
+  days: Record<string, string[]>;           // party -> ['Mon','Wed',...]
+  timeframes?: boolean;
+  windows?: { start: string; end: string }[];  // default two 6h windows
+};
+function parseWeek(v?: string | null): WeekState {
+  if (v) { try { const p = JSON.parse(v); if (p && p.days) return p; } catch { /* fall through */ } }
+  return { parties: ['Lessee', 'Owner'], days: { Lessee: [], Owner: [] },
+    timeframes: false, windows: [{ start: '06:00', end: '12:00' }, { start: '12:00', end: '18:00' }] };
+}
+function WeekGrid({ f, onSave, disabled }: { f: ContractField; onSave: SaveFn; disabled: boolean }) {
+  const [w, setW] = useState<WeekState>(() => parseWeek(f.value));
+  const commit = (next: WeekState) => { setW(next); void onSave(f.field_key, JSON.stringify(next)); };
+  const toggleDay = (party: string, day: string) => {
+    if (disabled) return;
+    const cur = w.days[party] ?? [];
+    const nextDays = cur.includes(day) ? cur.filter((d) => d !== day) : [...cur, day];
+    commit({ ...w, days: { ...w.days, [party]: nextDays } });
+  };
+  return (
+    <div className="overflow-x-auto">
+      <table className="text-xs border-collapse">
+        <thead>
+          <tr>
+            <th className="text-left px-2 py-1 text-muted font-semibold">Party</th>
+            {DAYS.map((d) => <th key={d} className="px-2 py-1 text-green-800 font-semibold text-center">{d}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {w.parties.map((p) => (
+            <tr key={p}>
+              <td className="px-2 py-1 font-medium text-green-900 whitespace-nowrap">{p}</td>
+              {DAYS.map((d) => (
+                <td key={d} className="px-2 py-1 text-center">
+                  <input type="checkbox" className="accent-green-700" disabled={disabled}
+                    checked={(w.days[p] ?? []).includes(d)} onChange={() => toggleDay(p, d)} />
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <label className="flex items-center gap-1.5 text-[11px] text-muted mt-2 cursor-pointer select-none">
+        <input type="checkbox" disabled={disabled} checked={w.timeframes ?? false}
+          onChange={(e) => commit({ ...w, timeframes: e.target.checked })} /> Add timeframes
+      </label>
+      {w.timeframes && (
+        <div className="flex flex-wrap gap-2 mt-1.5">
+          {(w.windows ?? []).map((win, i) => (
+            <span key={i} className="inline-flex items-center gap-1 text-[11px] text-secondary">
+              <input type="time" className="border border-green-800/15 rounded px-1 py-0.5" disabled={disabled}
+                value={win.start} onChange={(e) => { const ws = [...(w.windows ?? [])]; ws[i] = { ...ws[i], start: e.target.value }; commit({ ...w, windows: ws }); }} />
+              –
+              <input type="time" className="border border-green-800/15 rounded px-1 py-0.5" disabled={disabled}
+                value={win.end} onChange={(e) => { const ws = [...(w.windows ?? [])]; ws[i] = { ...ws[i], end: e.target.value }; commit({ ...w, windows: ws }); }} />
+            </span>
+          ))}
+        </div>
       )}
     </div>
   );
