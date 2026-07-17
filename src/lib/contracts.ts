@@ -353,6 +353,10 @@ export async function setFieldNa(documentId: string, fieldKey: string, isNa: boo
   const { error } = await supabase.rpc('set_field_na', { p_document_id: documentId, p_field_key: fieldKey, p_is_na: isNa });
   if (error) throw error;
 }
+export async function setFieldControlOverride(documentId: string, fieldKey: string, override: ContractField['control_override']): Promise<void> {
+  const { error } = await supabase.rpc('set_field_control_override', { p_document_id: documentId, p_field_key: fieldKey, p_override: override ?? {} });
+  if (error) throw error;
+}
 
 /** Attach a horse RECORD to this contract and fill the HORSE.* fields from it.
  *  Used by the "which horse is this contract for?" gate — the owner picks one of

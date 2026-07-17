@@ -14,7 +14,7 @@ import {
   contractRedlineState, resolveFieldEdit, withdrawFieldEdit,
   proposeClause, resolveClause, withdrawClause, attachHorseToDocument,
   sendContractToParty, cancelContract, archiveContract, hardDeleteContract,
-  setFieldResponsibility, setFieldIncluded, setFieldNa,
+  setFieldResponsibility, setFieldIncluded, setFieldNa, setFieldControlOverride,
   type ContractDetail, type ContractField, type ContractMessage, type PartyControls,
   type SigningSetDoc, type RedlineState,
 } from '../../lib/contracts';
@@ -600,6 +600,8 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
               onSaveResponsibility={(k, r) => void act(() => setFieldResponsibility(id!, k, r))}
               onInclude={(k, inc) => void act(() => setFieldIncluded(id!, k, inc))}
               onNa={(k, na) => void act(() => setFieldNa(id!, k, na))}
+              onControl={(k, ov) => void act(() => setFieldControlOverride(id!, k, ov))}
+              canSetControl={isOwnerSide}
             />
           </section>
         );

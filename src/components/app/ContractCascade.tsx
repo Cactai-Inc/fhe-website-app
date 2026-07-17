@@ -21,6 +21,7 @@ type SaveFn = (fieldKey: string, value: string) => void | Promise<void>;
 type SaveRespFn = (fieldKey: string, resp: ContractField['responsibility']) => void | Promise<void>;
 type IncludeFn = (fieldKey: string, included: boolean) => void | Promise<void>;
 type NaFn = (fieldKey: string, isNa: boolean) => void | Promise<void>;
+type ControlFn = (fieldKey: string, override: ContractField['control_override']) => void | Promise<void>;
 
 const NA = 'N/A';
 const filled = (v?: string | null) => !!v && v.trim() !== '' && v.trim() !== NA;
@@ -228,12 +229,13 @@ function conditionMet(f: ContractField, byKey: Map<string, ContractField>): bool
 
 /** One field + its cascading children. */
 function FieldNode({
-  f, childrenByParent, byKey, onSave, onSaveResponsibility, onInclude, onNa, editable,
+  f, childrenByParent, byKey, onSave, onSaveResponsibility, onInclude, onNa, onControl, canSetControl, editable,
 }: {
   f: ContractField;
   childrenByParent: Map<string, ContractField[]>;
   byKey: Map<string, ContractField>;
-  onSave: SaveFn; onSaveResponsibility: SaveRespFn; onInclude: IncludeFn; onNa: NaFn;
+  onSave: SaveFn; onSaveResponsibility: SaveRespFn; onInclude: IncludeFn; onNa: NaFn; onControl: ControlFn;
+  canSetControl: boolean;
   editable: boolean;
 }) {
   const kids = childrenByParent.get(f.field_key) ?? [];
@@ -242,6 +244,14 @@ function FieldNode({
   // children surface when the parent has content (or is a non-optional container)
   const showKids = included && (hasContent || !f.is_optional);
   const na = f.is_na === true;
+  const ov = f.control_override ?? {};
+  const toggleControl = (key: 'lock' | 'edit' | 'suggest') => {
+    // lock is exclusive with edit/suggest; edit+suggest may coexist
+    const next = key === 'lock'
+      ? { lock: !ov.lock, edit: false, suggest: false }
+      : { ...ov, lock: false, [key]: !ov[key] };
+    void onControl(f.field_key, next);
+  };
 
   if (f.is_optional && !included) {
     return (
@@ -270,11 +280,26 @@ function FieldNode({
       </div>
       {!na && <FieldControl f={f} onSave={onSave} onSaveResponsibility={onSaveResponsibility} disabled={!editable || !f.can_edit} />}
       {na && <p className="text-xs text-muted italic">Marked not applicable.</p>}
+      {/* per-field control override (author only, on a filled field): overrides the
+          document-global control. lock is exclusive; edits + suggestions may coexist. */}
+      {canSetControl && !na && hasContent && (
+        <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+          <span className="text-[10px] uppercase tracking-wide text-muted">This field:</span>
+          {(['lock', 'edit', 'suggest'] as const).map((k) => (
+            <button key={k} type="button" onClick={() => toggleControl(k)}
+              className={`text-[10px] rounded px-2 py-0.5 border focus-ring ${
+                ov[k] ? 'bg-green-800 text-white border-green-800' : 'border-green-800/15 text-muted hover:bg-green-50'}`}>
+              {k === 'lock' ? 'Lock' : k === 'edit' ? 'Allow edits' : 'Allow suggestions'}
+            </button>
+          ))}
+        </div>
+      )}
       {showKids && kids.length > 0 && (
         <div className="mt-2 ml-3 pl-3 border-l-2 border-gold-200 flex flex-col gap-1">
           {kids.filter((k) => conditionMet(k, byKey)).map((k) => (
             <FieldNode key={k.field_key} f={k} childrenByParent={childrenByParent} byKey={byKey}
-              onSave={onSave} onSaveResponsibility={onSaveResponsibility} onInclude={onInclude} onNa={onNa} editable={editable} />
+              onSave={onSave} onSaveResponsibility={onSaveResponsibility} onInclude={onInclude} onNa={onNa}
+              onControl={onControl} canSetControl={canSetControl} editable={editable} />
           ))}
         </div>
       )}
@@ -284,13 +309,15 @@ function FieldNode({
 
 /** Renders one subject-section's cascading fields. */
 export function ContractCascade({
-  fields, onSave, onSaveResponsibility, onInclude, onNa, editable,
+  fields, onSave, onSaveResponsibility, onInclude, onNa, onControl, canSetControl = false, editable,
 }: {
   fields: ContractField[];
   onSave: SaveFn;
   onSaveResponsibility: SaveRespFn;
   onInclude: IncludeFn;
   onNa: NaFn;
+  onControl: ControlFn;
+  canSetControl?: boolean;
   editable: boolean;
 }) {
   const { roots, childrenByParent, byKey } = useMemo(() => {
@@ -309,7 +336,8 @@ export function ContractCascade({
     <div className="flex flex-col gap-2">
       {roots.filter((f) => conditionMet(f, byKey)).map((f) => (
         <FieldNode key={f.field_key} f={f} childrenByParent={childrenByParent} byKey={byKey}
-          onSave={onSave} onSaveResponsibility={onSaveResponsibility} onInclude={onInclude} onNa={onNa} editable={editable} />
+          onSave={onSave} onSaveResponsibility={onSaveResponsibility} onInclude={onInclude} onNa={onNa}
+          onControl={onControl} canSetControl={canSetControl} editable={editable} />
       ))}
     </div>
   );
