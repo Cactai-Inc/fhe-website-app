@@ -31,8 +31,8 @@ const TYPES: { id: ContractType; label: string; hint: string; roles: [string, st
   { id: 'purchase', label: 'Purchase & sale', hint: 'Purchase agreement — buyer & seller', roles: ['BUYER', 'SELLER'] },
 ];
 
-interface Controls { can_fill: boolean; can_edit_deal: boolean; can_suggest: boolean }
-const DEFAULT_CONTROLS: Controls = { can_fill: true, can_edit_deal: false, can_suggest: false };
+interface Controls { can_fill: boolean; can_edit_deal: boolean; can_suggest: boolean; can_add_clause: boolean }
+const DEFAULT_CONTROLS: Controls = { can_fill: true, can_edit_deal: false, can_suggest: false, can_add_clause: false };
 
 function roleLabel(r: string): string {
   return r.charAt(0) + r.slice(1).toLowerCase();
@@ -45,6 +45,7 @@ function ControlsCard({
     { key: 'can_fill', label: 'Can add their information', hint: 'They complete the fields their side owns. Off = you fill everything acting on their behalf.' },
     { key: 'can_edit_deal', label: 'Can edit deal terms', hint: 'Direct changes to the negotiated terms. Usually off — the terms are the deal.' },
     { key: 'can_suggest', label: 'Can suggest changes', hint: 'They may propose changes for you to accept or reject. Off = take-it-or-leave-it.' },
+    { key: 'can_add_clause', label: 'Can add new clauses', hint: 'They may propose entirely new clauses for you to accept or reject. Off = no additions.' },
   ];
   return (
     <div className="border border-green-800/10 rounded-lg p-3.5">

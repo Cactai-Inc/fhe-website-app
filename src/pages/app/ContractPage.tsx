@@ -460,8 +460,10 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         </div>
       )}
 
-      {/* Owner-side: per-party document controls + invite */}
-      {isOwnerSide && editablePhase && (
+      {/* Owner-side: per-party document controls + invite.
+          Hidden when embedded on the creation page — that page already collected
+          controls; restating them here (with a 4th option) confused the flow. */}
+      {isOwnerSide && editablePhase && !embedded && (
         <div className="bg-white border border-green-800/10 rounded-lg p-4 mb-5">
           <p className="text-[12px] text-muted mb-2.5">
             Document controls — what each party may do. The invitation wording follows these.
