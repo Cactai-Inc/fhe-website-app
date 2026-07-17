@@ -2,15 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { LeaseExtrasSection } from './LeaseExtrasSection';
 import {
-  FileText, CheckCircle2, Lock, Send, PenLine, ShieldCheck, RotateCcw,
-  MessageSquarePlus, Mail,
+  FileText, CheckCircle2, Lock, Send, PenLine, ShieldCheck, RotateCcw, Mail,
 } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   contractDocumentDetail, setContractField, requestDocumentChange,
   resolveChangeRequest, advanceWorkflow, lockAndSign, confirmHorseSection,
-  reopenHorseSection, inviteCounterparty, composeCostPhrase,
+  reopenHorseSection, inviteCounterparty,
   setPartyControls, contractMessagesList, contractMessagePost, contractSigningSet,
   contractRedlineState, resolveFieldEdit, withdrawFieldEdit,
   proposeClause, resolveClause, withdrawClause, attachHorseToDocument,
@@ -34,7 +33,6 @@ import { ContractCascade } from '../../components/app/ContractCascade';
  * authority — this page only calls its RPCs and renders what detail returns.
  */
 
-const COST_SECTIONS = new Set(['Cost Allocation', 'Insurance']);
 
 /** "Which horse is this contract for?" gate. Shown before the rest of the contract
  *  when the horse section is the caller's to fill but no horse is chosen yet. Lets
@@ -91,97 +89,6 @@ function HorseGate({ documentId, onAttached }: { documentId: string; onAttached:
   );
 }
 
-function FieldInput({
-  f, onSave,
-}: { f: ContractField; onSave: (key: string, value: string) => Promise<void> }) {
-  const [val, setVal] = useState(f.value ?? '');
-  const [saving, setSaving] = useState(false);
-  useEffect(() => { setVal(f.value ?? ''); }, [f.value]);
-
-  async function save() {
-    if ((f.value ?? '') === val) return;
-    setSaving(true);
-    try { await onSave(f.field_key, val); } finally { setSaving(false); }
-  }
-
-  const base = 'w-full px-3.5 py-2.5 rounded-lg border border-green-800/15 text-[15px] text-green-900 focus-ring disabled:bg-green-800/[0.04] disabled:text-muted';
-  if (!f.can_edit) {
-    return <p className="text-sm text-green-900 whitespace-pre-line min-h-[1.5rem]">{f.value || <span className="text-muted">—</span>}</p>;
-  }
-  if (f.value_type === 'longtext') {
-    return <textarea rows={3} className={base} value={val} disabled={saving}
-      onChange={(e) => setVal(e.target.value)} onBlur={() => void save()} />;
-  }
-  if (f.value_type === 'date') {
-    return <input type="date" className={base} value={val} disabled={saving}
-      onChange={(e) => setVal(e.target.value)} onBlur={() => void save()} />;
-  }
-  if (f.field_key === 'TXN.LEASE_TYPE') {
-    return (
-      <select className={base} value={val} disabled={saving}
-        onChange={(e) => { setVal(e.target.value); void onSave(f.field_key, e.target.value); }}>
-        <option value="">Select…</option>
-        <option value="Full Lease">Full Lease</option>
-        <option value="Partial Lease">Partial Lease</option>
-      </select>
-    );
-  }
-  return <input className={base} value={val} disabled={saving}
-    onChange={(e) => setVal(e.target.value)} onBlur={() => void save()} />;
-}
-
-/** Composer for cost/insurance *_COST fields: responsibility + split → phrase. */
-function CostComposer({
-  f, onSave,
-}: { f: ContractField; onSave: (key: string, value: string) => Promise<void> }) {
-  const parsed = useMemo(() => {
-    const v = f.value ?? '';
-    if (/^Lessee 100%$/i.test(v)) return { resp: 'Lessee' as const, pct: 0 };
-    if (/^Lessor 100%$/i.test(v)) return { resp: 'Lessor' as const, pct: 100 };
-    const m = v.match(/Lessor\s+(\d+)%/i);
-    if (m) return { resp: 'Split' as const, pct: Number(m[1]) };
-    return { resp: '' as const, pct: 50 };
-  }, [f.value]);
-  const [resp, setResp] = useState<'Lessor' | 'Lessee' | 'Split' | ''>(parsed.resp);
-  const [pct, setPct] = useState(parsed.pct || 50);
-  useEffect(() => { setResp(parsed.resp); setPct(parsed.pct || 50); }, [parsed.resp, parsed.pct]);
-
-  if (!f.can_edit) {
-    return <p className="text-sm text-green-900">{f.value || <span className="text-muted">— (omitted)</span>}</p>;
-  }
-  function apply(r: typeof resp, p: number) {
-    void onSave(f.field_key, composeCostPhrase(r, p));
-  }
-  return (
-    <div className="flex items-center gap-2">
-      <select
-        className="px-2 py-1.5 rounded-lg border border-green-800/15 text-sm focus-ring"
-        value={resp}
-        onChange={(e) => {
-          const r = e.target.value as typeof resp;
-          setResp(r);
-          if (r === '') void onSave(f.field_key, '');
-          else apply(r, pct);
-        }}
-      >
-        <option value="">Omit</option>
-        <option value="Lessor">Lessor</option>
-        <option value="Lessee">Lessee</option>
-        <option value="Split">Split</option>
-      </select>
-      {resp === 'Split' && (
-        <>
-          <input type="number" min={0} max={100} value={pct}
-            className="w-20 px-2 py-1.5 rounded-lg border border-green-800/15 text-sm focus-ring"
-            onChange={(e) => setPct(Number(e.target.value))}
-            onBlur={() => apply('Split', pct)} />
-          <span className="text-xs text-muted">% Lessor</span>
-        </>
-      )}
-      {f.value && <span className="text-xs text-green-700 font-medium">{f.value}</span>}
-    </div>
-  );
-}
 
 /** Redlining: propose an edit (staged, highlighted) or add a free-text clause,
  *  gated by the party's controls; the owner/staff accept or reject. */
@@ -376,8 +283,6 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
     (s) => s.signed_at && myRoles.includes(s.party_role));
   const counterpartySigned = (detail?.signatures ?? []).some((s) => s.signed_at);
   const partyControls: PartyControls[] = detail?.party_controls ?? [];
-  const mySuggest = partyControls.some((c) => myRoles.includes(c.party_role) && c.can_suggest)
-    || (doc?.recipient_editing ?? false);
   // the seats an outside party can be invited into (not mine, not the company's)
   const invitableRoles = Array.from(new Set((detail?.signatures ?? [])
     .map((s) => s.party_role)
@@ -634,24 +539,10 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         // counterparty intake: show only sections with something for them (or filled)
         if (!isOwnerSide && !anyEditable && !fields.some((f) => f.value)) return null;
 
-        // Cascading living-document sections (Horse Care, etc.) render via the new
-        // ContractCascade — subject-grouped, dropdowns, decomposed responsibility,
-        // conditional reveals, N/A + include/omit, ⓘ guidance.
-        if (section === 'Horse Care') {
-          return (
-            <section key={section} className="bg-white border border-green-800/10 rounded-xl p-6 mb-5">
-              <h2 className="font-serif text-green-800 mb-3">{section}</h2>
-              <ContractCascade
-                fields={fields}
-                editable={editablePhase && anyEditable}
-                onSave={saveField}
-                onSaveResponsibility={(k, r) => void act(() => setFieldResponsibility(id!, k, r))}
-                onInclude={(k, inc) => void act(() => setFieldIncluded(id!, k, inc))}
-                onNa={(k, na) => void act(() => setFieldNa(id!, k, na))}
-              />
-            </section>
-          );
-        }
+        // EVERY section renders via the cascading living-document renderer —
+        // subject-grouped, dropdowns/buttons, decomposed responsibility, conditional
+        // reveals, N/A + include/omit, ⓘ guidance. The Horse section keeps its
+        // "reviewed & accurate" confirm affordance in the header.
         return (
           <section key={section} className="bg-white border border-green-800/10 rounded-xl p-6 mb-5">
             <div className="flex items-center justify-between mb-3">
@@ -677,39 +568,14 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                 )
               )}
             </div>
-            <div className="flex flex-col gap-5 max-w-2xl">
-              {fields.map((f) => {
-                // §C highlighting: a field THIS party must fill and hasn't = highlighted;
-                // a field they can't edit = lightened (locked while they edit).
-                const emptyMine = f.can_edit && !(f.value ?? '').trim();
-                const lockedForMe = !f.can_edit && !isOwnerSide;
-                return (
-                <div key={f.field_key}
-                  className={[
-                    f.value_type === 'longtext' ? 'sm:col-span-2' : '',
-                    emptyMine ? 'rounded-lg -mx-2 px-2 py-1.5 bg-gold-50 ring-1 ring-gold-400/50' : '',
-                    lockedForMe ? 'opacity-55' : '',
-                  ].filter(Boolean).join(' ')}>
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <span className="text-[13.5px] font-medium text-green-900">{f.label ?? f.field_key}</span>
-                    {f.required && <span className="text-red-700 text-xs">*</span>}
-                    {emptyMine && <span className="text-[10px] uppercase tracking-wide text-gold-800 font-semibold">Needs your input</span>}
-                    {/* counterparty change-request affordance on DEAL fields */}
-                    {!isOwnerSide && mySuggest && f.owner_role === 'DEAL'
-                      && !f.can_edit && editablePhase && (
-                      <button type="button" className="text-muted hover:text-gold-ink" title="Request a change"
-                        onClick={() => { setCrFieldKey(f.field_key); setCrText(''); }}>
-                        <MessageSquarePlus size={13} />
-                      </button>
-                    )}
-                  </div>
-                  {COST_SECTIONS.has(section) && f.field_key.endsWith('_COST')
-                    ? <CostComposer f={f} onSave={saveField} />
-                    : <FieldInput f={f} onSave={saveField} />}
-                </div>
-                );
-              })}
-            </div>
+            <ContractCascade
+              fields={fields}
+              editable={editablePhase && anyEditable}
+              onSave={saveField}
+              onSaveResponsibility={(k, r) => void act(() => setFieldResponsibility(id!, k, r))}
+              onInclude={(k, inc) => void act(() => setFieldIncluded(id!, k, inc))}
+              onNa={(k, na) => void act(() => setFieldNa(id!, k, na))}
+            />
           </section>
         );
       })}

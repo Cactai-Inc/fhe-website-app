@@ -94,13 +94,25 @@ function FieldControl({
     placeholder={kind === 'currency' ? '$' : kind === 'percent' ? '%' : undefined} />;
 }
 
-/** Owner / Lessee / Care Provider / Shared, with a %-split when Shared+cost. */
+const COST_OPTS = [
+  { value: 'OWNER', label: 'Owner' }, { value: 'LESSEE', label: 'Lessee' },
+  { value: 'SHARED', label: 'Shared (split %)' },
+];
+const DUTY_OPTS = [
+  { value: 'OWNER', label: 'Owner' }, { value: 'LESSEE', label: 'Lessee' },
+  { value: 'CARE_PROVIDER', label: 'Care Provider' }, { value: 'SHARED', label: 'Shared' },
+];
+
+/** Owner / Lessee / Care Provider / Shared, with a %-split when Shared+cost.
+ *  Falls back to sensible default options: cost fields → Owner/Lessee/Shared(split),
+ *  other responsibility fields → the full four. */
 function ResponsibilityControl({
   f, onSaveResponsibility, disabled,
 }: { f: ContractField; onSaveResponsibility: SaveRespFn; disabled: boolean }) {
   const resp = f.responsibility ?? {};
   const party = resp.party ?? '';
-  const opts = f.options ?? [];
+  const isCost = f.field_key.endsWith('_COST') || /\.COST$/.test(f.field_key) || /cost/i.test(f.label ?? '');
+  const opts = (f.options && f.options.length) ? f.options : (isCost ? COST_OPTS : DUTY_OPTS);
   const set = (patch: Partial<NonNullable<ContractField['responsibility']>>) =>
     void onSaveResponsibility(f.field_key, { ...resp, ...patch });
   const sharedIsSplit = opts.some((o) => o.value === 'SHARED' && /split/i.test(o.label));
