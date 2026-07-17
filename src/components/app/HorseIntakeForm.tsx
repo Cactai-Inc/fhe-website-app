@@ -136,6 +136,49 @@ function SelectOrOther({
   );
 }
 
+/** PERSON BLOCK: a contact grouped as one structured unit — a name plus a second
+ *  typed part (phone or email) — instead of two loose fields. Writes each part to its
+ *  own underlying field (the columns stay separate); the grouping is what makes it read
+ *  and behave as a single reusable contact. Shared N/A marks the whole contact absent. */
+function PersonBlock({
+  title, name, second, showError, span = true,
+}: {
+  title: string;
+  name: { label: string; value?: string; onChange: (v: string) => void; placeholder?: string };
+  second: { label: string; kind: 'tel' | 'email'; value?: string; onChange: (v: string) => void; placeholder?: string };
+  showError?: boolean;
+  span?: boolean;
+}) {
+  // N/A applies to the whole block: both parts become the sentinel together.
+  const na = name.value === NA && second.value === NA;
+  const answered = na || filled(name.value);
+  const setNa = (on: boolean) => { name.onChange(on ? NA : ''); second.onChange(on ? NA : ''); };
+  const cls = (bad: boolean) => `${input}${showError && bad ? ' border-red-400' : ''}`;
+  return (
+    <div className={`${span ? 'sm:col-span-2' : ''} rounded-lg border border-green-800/10 p-3`}>
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-[11px] tracking-wide uppercase text-muted font-semibold">{title}</p>
+        <label className="flex items-center gap-1 text-[10px] text-muted cursor-pointer select-none">
+          <input type="checkbox" checked={na} onChange={(e) => setNa(e.target.checked)} /> N/A
+        </label>
+      </div>
+      <div className="grid sm:grid-cols-2 gap-2">
+        <div>
+          <label className="block text-[10px] uppercase tracking-wide text-muted mb-1">{name.label}</label>
+          <input className={cls(!answered)} disabled={na} value={na ? '' : (name.value ?? '')} placeholder={name.placeholder}
+            onChange={(e) => name.onChange(e.target.value)} />
+        </div>
+        <div>
+          <label className="block text-[10px] uppercase tracking-wide text-muted mb-1">{second.label}</label>
+          <input type={second.kind} inputMode={second.kind} className={cls(false)} disabled={na}
+            value={na ? '' : (second.value ?? '')} placeholder={second.placeholder}
+            onChange={(e) => second.onChange(e.target.value)} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** Location picker: barn + the member's own personal locations, with a "+ Add"
  *  path (a personal location, visible only to them). Stores the location NAME
  *  (current_location is text). Keeps the same N/A escape as Field. */
@@ -249,18 +292,23 @@ export function HorseIntakeForm({
   // Every applicable field must be answered (filled or N/A). Names are special:
   // at least one of registered/barn must be a REAL name (not N/A).
   const answered = (v?: string) => v === NA || filled(v);
+  // A person block's secondary part (phone/email) is satisfied once its name partner
+  // is answered — a named contact needn't also carry a phone to complete the form.
+  const secondaryOk = (name?: string, second?: string) => answered(second) || answered(name);
   const alwaysKeys: (keyof HorseIntakePayload)[] = [
     'microchip_id', 'breed', 'registration_number', 'registration_org',
     'passport_number', 'passport_country', 'color', 'markings', 'sex',
     'date_of_birth', 'height', 'fair_market_value', 'home_location', 'current_location',
-    'vet_name', 'vet_phone', 'farrier_name', 'farrier_phone',
+    'vet_name', 'farrier_name',
     'medical_history', 'behavioral_history',
     'medication_name', 'medication_dosage', 'medication_instructions', 'medication_additional',
     'known_conditions', 'training_history', 'competition_history',
   ];
+  // Person-block partner names must be answered; their email is secondary (satisfied
+  // once the name is). Lease dates required when leased.
   const condKeys: (keyof HorseIntakePayload)[] = [
-    ...(lessee ? (['owner_name_text', 'owner_email'] as (keyof HorseIntakePayload)[]) : []),
-    ...(leased && !lessee ? (['lessee_name_text', 'lessee_email'] as (keyof HorseIntakePayload)[]) : []),
+    ...(lessee ? (['owner_name_text'] as (keyof HorseIntakePayload)[]) : []),
+    ...(leased && !lessee ? (['lessee_name_text'] as (keyof HorseIntakePayload)[]) : []),
     ...(leased ? (['lease_start', 'lease_end'] as (keyof HorseIntakePayload)[]) : []),
   ];
   const hasRealName = filled(f.registered_name) || filled(f.barn_name);
@@ -269,7 +317,12 @@ export function HorseIntakeForm({
   // filling the form owns the horse (a lessee leaves it for the owner).
   const owns = f.my_relationship === 'OWNER';
   const euthanasiaAnswered = !owns || f.euthanasia_authorization === 'A' || f.euthanasia_authorization === 'B';
-  const complete = hasRealName && nameAnswered && euthanasiaAnswered
+  // person-block secondaries: vet/farrier phone, owner/lessee email
+  const secondariesOk = secondaryOk(f.vet_name, f.vet_phone)
+    && secondaryOk(f.farrier_name, f.farrier_phone)
+    && (!lessee || secondaryOk(f.owner_name_text, f.owner_email))
+    && (!(leased && !lessee) || secondaryOk(f.lessee_name_text, f.lessee_email));
+  const complete = hasRealName && nameAnswered && euthanasiaAnswered && secondariesOk
     && alwaysKeys.every((k) => answered(f[k] as string | undefined))
     && condKeys.every((k) => answered(f[k] as string | undefined));
 
@@ -379,10 +432,9 @@ export function HorseIntakeForm({
           </select>
         </div>
         {lessee && (
-          <>
-            <Field label="Owner name" value={f.owner_name_text} onChange={set('owner_name_text')} showError={showError} />
-            <Field label="Owner email" type="email" value={f.owner_email} onChange={set('owner_email')} showError={showError} />
-          </>
+          <PersonBlock title="Owner" showError={showError}
+            name={{ label: 'Owner name', value: f.owner_name_text, onChange: set('owner_name_text'), placeholder: 'Full name' }}
+            second={{ label: 'Owner email', kind: 'email', value: f.owner_email, onChange: set('owner_email'), placeholder: 'name@example.com' }} />
         )}
       </Section>
 
@@ -398,10 +450,9 @@ export function HorseIntakeForm({
         {leased && (
           <>
             {f.my_relationship === 'OWNER' && (
-              <>
-                <Field label="Lessee name" value={f.lessee_name_text} onChange={set('lessee_name_text')} showError={showError} />
-                <Field label="Lessee email" type="email" value={f.lessee_email} onChange={set('lessee_email')} showError={showError} />
-              </>
+              <PersonBlock title="Lessee" showError={showError}
+                name={{ label: 'Lessee name', value: f.lessee_name_text, onChange: set('lessee_name_text'), placeholder: 'Full name' }}
+                second={{ label: 'Lessee email', kind: 'email', value: f.lessee_email, onChange: set('lessee_email'), placeholder: 'name@example.com' }} />
             )}
             <Field label="Lease start" type="date" value={f.lease_start} onChange={set('lease_start')} showError={showError} />
             <Field label="Lease end" type="date" value={f.lease_end} onChange={set('lease_end')} showError={showError} />
@@ -410,10 +461,12 @@ export function HorseIntakeForm({
       </Section>
 
       <Section title="Veterinary and farrier">
-        <Field label="Preferred veterinarian" value={f.vet_name} onChange={set('vet_name')} showError={showError} placeholder="Practice or vet name" />
-        <Field label="Veterinarian phone" type="tel" value={f.vet_phone} onChange={set('vet_phone')} showError={showError} placeholder="(555) 555-5555" />
-        <Field label="Preferred farrier" value={f.farrier_name} onChange={set('farrier_name')} showError={showError} placeholder="Farrier name" />
-        <Field label="Farrier phone" type="tel" value={f.farrier_phone} onChange={set('farrier_phone')} showError={showError} placeholder="(555) 555-5555" />
+        <PersonBlock title="Preferred veterinarian" showError={showError}
+          name={{ label: 'Practice / vet name', value: f.vet_name, onChange: set('vet_name'), placeholder: 'Dr. name or practice' }}
+          second={{ label: 'Phone', kind: 'tel', value: f.vet_phone, onChange: set('vet_phone'), placeholder: '(555) 555-5555' }} />
+        <PersonBlock title="Preferred farrier" showError={showError}
+          name={{ label: 'Farrier name', value: f.farrier_name, onChange: set('farrier_name'), placeholder: 'Farrier name' }}
+          second={{ label: 'Phone', kind: 'tel', value: f.farrier_phone, onChange: set('farrier_phone'), placeholder: '(555) 555-5555' }} />
       </Section>
 
       <Section title="Health and care">
