@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Navigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { getDocument, listSignatures } from '../../../lib/api';
 import type { DocumentRow, Signature } from '../../../lib/ops/types';
@@ -123,6 +123,14 @@ export default function DocumentViewerPage() {
   }
 
   const document = data?.document ?? null;
+
+  // A CONTRACT document belongs on the full contract workspace (fill / send / sign
+  // / cascade), not this read-only viewer. Redirect so any link that lands a
+  // contract here goes to the right page — no read-only dead-end for contracts.
+  if (document?.contract_id && id) {
+    return <Navigate to={`/app/contracts/${id}`} replace />;
+  }
+
   const signatures = data?.signatures ?? [];
   const isExecuted =
     (document?.status ?? '').trim().toUpperCase() === EXECUTED_STATUS;

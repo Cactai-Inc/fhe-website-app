@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { ArrowLeft, Loader2, UserPlus } from 'lucide-react';
 import { useDocumentTitle } from '../../../lib/hooks';
 import { startLeaseContract, startPurchaseContract } from '../../../lib/api';
@@ -7,6 +7,7 @@ import {
   claimDocumentOrigination, setPartyControls, assignHorseSection,
 } from '../../../lib/contracts';
 import { staffHorseRecords, contractPartyOptions, staffCreateHorseForContact, type StaffHorseRecord, type PartyOption } from '../../../lib/horses';
+import ContractPage from '../ContractPage';
 
 /**
  * NEW CONTRACT (/app/ops/contracts/new) — company-originated, always.
@@ -67,7 +68,6 @@ function ControlsCard({
 
 export default function NewContractPage() {
   useDocumentTitle('New contract');
-  const navigate = useNavigate();
   const [type, setType] = useState<ContractType>('lease');
   const [contacts, setContacts] = useState<PartyOption[]>([]);
   const [horses, setHorses] = useState<StaffHorseRecord[]>([]);
@@ -88,6 +88,9 @@ export default function NewContractPage() {
 
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  // Once created, the full contract renders INLINE below the config on THIS page
+  // (no navigation) — the config block stays at the top.
+  const [createdDocId, setCreatedDocId] = useState<string | null>(null);
 
   const t = TYPES.find((x) => x.id === type)!;
   const [roleA, roleB] = t.roles;
@@ -128,7 +131,8 @@ export default function NewContractPage() {
       if (horseMode === 'party' && horseParty) {
         await assignHorseSection(docId, horseParty);
       }
-      navigate(`/app/contracts/${docId}`);
+      // Stay on this page — reveal the full contract inline below the config.
+      setCreatedDocId(docId);
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Could not start the contract.');
     } finally {
@@ -292,16 +296,26 @@ export default function NewContractPage() {
       )}
 
       {err && <p role="alert" className="form-error mb-3">{err}</p>}
-      <button type="button" onClick={() => void create()} disabled={busy || !ready}
-        className="w-full py-2.5 rounded-lg bg-green-800 text-white text-sm font-medium hover:bg-green-700 focus-ring inline-flex items-center justify-center gap-2 disabled:opacity-60">
-        {busy && <Loader2 size={16} className="animate-spin" />}
-        Create &amp; start filling
-      </button>
-      <p className="text-[11px] text-muted mt-2">
-        Nothing is emailed yet. Fill the fields (acting for a party where needed),
-        lock it, then send ONE invitation from the person's account page — it
-        lists everything assigned to them, worded by the controls you set above.
-      </p>
+
+      {/* Before creation: the Get started button (enabled once parties + horse set).
+          After creation: the full contract renders INLINE below, on this same page. */}
+      {!createdDocId ? (
+        <>
+          <button type="button" onClick={() => void create()} disabled={busy || !ready}
+            className="w-full py-2.5 rounded-lg bg-green-800 text-white text-sm font-medium hover:bg-green-700 focus-ring inline-flex items-center justify-center gap-2 disabled:opacity-60">
+            {busy && <Loader2 size={16} className="animate-spin" />}
+            Get started
+          </button>
+          <p className="text-[11px] text-muted mt-2">
+            Add the parties and the horse above, then Get started — the full contract
+            opens right here on this page for you to fill.
+          </p>
+        </>
+      ) : (
+        <section className="mt-6 pt-6 border-t border-green-800/15">
+          <ContractPage documentId={createdDocId} embedded />
+        </section>
+      )}
     </div>
   );
 }

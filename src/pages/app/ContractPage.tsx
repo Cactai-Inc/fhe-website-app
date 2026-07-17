@@ -302,8 +302,9 @@ function RedlineSection({
   );
 }
 
-export default function ContractPage() {
-  const { id } = useParams<{ id: string }>();
+export default function ContractPage({ documentId, embedded }: { documentId?: string; embedded?: boolean } = {}) {
+  const { id: routeId } = useParams<{ id: string }>();
+  const id = documentId ?? routeId;   // embedded (inline on the creation page) or routed
   const navigate = useNavigate();
   useDocumentTitle('Contract');
   const { isStaff } = useAuth();
@@ -453,7 +454,7 @@ export default function ContractPage() {
   const thisExecuted = doc.status === 'EXECUTED';
 
   return (
-    <div className="max-w-5xl">
+    <div className={embedded ? '' : 'max-w-5xl'}>
       {inSet && (
         <div className="bg-white border border-green-800/10 rounded-xl p-4 mb-4">
           <p className="form-label mb-2.5">Document {curIdx + 1} of {signingSet.length} — signed in order</p>
