@@ -8,6 +8,8 @@ import {
   fetchLocations, addMyLocation, fetchContactLocations, addContactLocation,
   type CalendarLocation,
 } from '../../lib/ops/api-calendar';
+import { listHorseBreeds, listHorseColors } from '../../lib/api';
+import type { LookupCode } from '../../lib/ops/types';
 
 /**
  * HORSE RECORD INTAKE — the standardized form, the matched pair to the record and
@@ -37,7 +39,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 /** A required field with an N/A escape. When N/A is checked the control disables
  *  and the value becomes the sentinel "N/A" (a conscious answer, not a blank). */
 function Field({
-  label, value, onChange, type = 'text', placeholder, options, span, textarea, showError,
+  label, value, onChange, type = 'text', placeholder, options, span, textarea, showError, inputMode, onBlurFormat,
 }: {
   label: string;
   value?: string;
@@ -48,6 +50,9 @@ function Field({
   span?: boolean;
   textarea?: boolean;
   showError?: boolean;
+  inputMode?: 'numeric' | 'tel' | 'email' | 'url' | 'text';
+  /** normalize the value on blur (e.g. currency) — returns the display string. */
+  onBlurFormat?: (v: string) => string;
 }) {
   const na = value === NA;
   const answered = na || filled(value);
@@ -68,7 +73,9 @@ function Field({
       ) : textarea ? (
         <textarea rows={2} className={`${cls} resize-y max-h-40`} disabled={na} value={na ? '' : (value ?? '')} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
       ) : (
-        <input type={type} className={cls} disabled={na} value={na ? '' : (value ?? '')} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
+        <input type={type} inputMode={inputMode} className={cls} disabled={na} value={na ? '' : (value ?? '')} placeholder={placeholder}
+          onChange={(e) => onChange(e.target.value)}
+          onBlur={onBlurFormat ? (e) => { const out = onBlurFormat(e.target.value); if (out !== e.target.value) onChange(out); } : undefined} />
       )}
     </div>
   );
@@ -143,6 +150,11 @@ export function HorseIntakeForm({
   const [pending, setPending] = useState(false);
   const [showError, setShowError] = useState(false);
   const [locations, setLocations] = useState<CalendarLocation[]>([]);
+  // Reference lookups — breed & color are CODES the backend resolves to display
+  // names for {{HORSE.BREED}}/{{HORSE.COLOR}}. A free-text value never matches a
+  // code, so these MUST be selects from the reference tables.
+  const [breeds, setBreeds] = useState<LookupCode[]>([]);
+  const [colors, setColors] = useState<LookupCode[]>([]);
 
   // Staff creating for a client → that CLIENT's locations; otherwise the caller's.
   const loadLocations = () =>
@@ -159,8 +171,13 @@ export function HorseIntakeForm({
         current_location: p.current_location || def.name,
       }));
     });
+    listHorseBreeds().then(setBreeds).catch(() => setBreeds([]));
+    listHorseColors().then(setColors).catch(() => setColors([]));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const breedOpts = breeds.map((b) => ({ value: b.code, label: b.display_name }));
+  const colorOpts = colors.map((c) => ({ value: c.code, label: c.display_name }));
 
   const set = (k: keyof HorseIntakePayload) => (v: string) => setF((p) => ({ ...p, [k]: v }));
 
@@ -258,7 +275,7 @@ export function HorseIntakeForm({
         <Field span label="Microchip number (checked first)" value={f.microchip_id} onChange={set('microchip_id')} placeholder="e.g. 985 112233445566" showError={showError} />
         <Field label="Registered name" value={f.registered_name} onChange={set('registered_name')} showError={showError} />
         <Field label="Barn name" value={f.barn_name} onChange={set('barn_name')} showError={showError} />
-        <Field label="Breed" value={f.breed} onChange={set('breed')} showError={showError} />
+        <Field label="Breed" value={f.breed} onChange={set('breed')} showError={showError} options={breedOpts} />
         <Field label="Registration number" value={f.registration_number} onChange={set('registration_number')} showError={showError} />
         <Field label="Registration organization" value={f.registration_org} onChange={set('registration_org')} showError={showError} />
         <Field label="Passport number" value={f.passport_number} onChange={set('passport_number')} showError={showError} />
@@ -266,7 +283,7 @@ export function HorseIntakeForm({
       </Section>
 
       <Section title="Description">
-        <Field label="Color" value={f.color} onChange={set('color')} showError={showError} />
+        <Field label="Color" value={f.color} onChange={set('color')} showError={showError} options={colorOpts} />
         <Field label="Markings" value={f.markings} onChange={set('markings')} showError={showError} />
         <Field label="Sex" value={f.sex} onChange={set('sex')} showError={showError}
           options={[
@@ -276,7 +293,12 @@ export function HorseIntakeForm({
           ]} />
         <Field label="Date of birth" type="date" value={f.date_of_birth} onChange={set('date_of_birth')} showError={showError} />
         <Field label="Height" value={f.height} onChange={set('height')} placeholder="e.g. 16.2 hh" showError={showError} />
-        <Field label="Current fair market value" value={f.fair_market_value} onChange={set('fair_market_value')} placeholder="$" showError={showError} />
+        <Field label="Current fair market value" type="text" inputMode="numeric" value={f.fair_market_value}
+          onChange={set('fair_market_value')} placeholder="$0.00" showError={showError}
+          onBlurFormat={(v) => {
+            const n = Number(v.replace(/[$,\s]/g, ''));
+            return Number.isFinite(n) && v.trim() !== '' ? n.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) : v;
+          }} />
         <LocationField label="Home Location" hint="Where the horse normally resides for boarding."
           value={f.home_location} onChange={set('home_location')}
           locations={locations} onAdded={loadLocations} showError={showError} ownerContactId={ownerContactId} />
@@ -326,10 +348,10 @@ export function HorseIntakeForm({
       </Section>
 
       <Section title="Veterinary and farrier">
-        <Field label="Preferred veterinarian" value={f.vet_name} onChange={set('vet_name')} showError={showError} />
-        <Field label="Veterinarian phone" value={f.vet_phone} onChange={set('vet_phone')} showError={showError} />
-        <Field label="Preferred farrier" value={f.farrier_name} onChange={set('farrier_name')} showError={showError} />
-        <Field label="Farrier phone" value={f.farrier_phone} onChange={set('farrier_phone')} showError={showError} />
+        <Field label="Preferred veterinarian" value={f.vet_name} onChange={set('vet_name')} showError={showError} placeholder="Practice or vet name" />
+        <Field label="Veterinarian phone" type="tel" value={f.vet_phone} onChange={set('vet_phone')} showError={showError} placeholder="(555) 555-5555" />
+        <Field label="Preferred farrier" value={f.farrier_name} onChange={set('farrier_name')} showError={showError} placeholder="Farrier name" />
+        <Field label="Farrier phone" type="tel" value={f.farrier_phone} onChange={set('farrier_phone')} showError={showError} placeholder="(555) 555-5555" />
       </Section>
 
       <Section title="Health and care">
