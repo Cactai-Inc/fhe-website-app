@@ -398,6 +398,29 @@ export async function setFieldStructured(documentId: string, fieldKey: string, s
   if (error) throw error;
 }
 
+/** Add a new section or field to a live contract, with placement + format.
+ *  kind='section' inserts after p.afterSection; kind='field' adds to p.section at
+ *  p.position (1-based; null = end) with the chosen format_type. */
+export async function addContractElement(documentId: string, p: {
+  kind: 'section' | 'field';
+  section: string;
+  afterSection?: string | null;
+  position?: number | null;
+  label?: string | null;
+  formatType?: string;
+  options?: { value: string; label: string }[] | null;
+  guidance?: string | null;
+}): Promise<{ field_key: string; section: string }> {
+  const { data, error } = await supabase.rpc('add_contract_element', {
+    p_document_id: documentId, p_kind: p.kind, p_section: p.section,
+    p_after_section: p.afterSection ?? null, p_position: p.position ?? null,
+    p_label: p.label ?? null, p_format_type: p.formatType ?? 'text',
+    p_options: p.options ?? null, p_guidance: p.guidance ?? null,
+  });
+  if (error) throw error;
+  return data as { field_key: string; section: string };
+}
+
 /** The format registry (read-only) — powers the add-field modal's type picker and
  *  any format-driven UI. Cached per session. */
 export interface ContractFormat {

@@ -20,6 +20,7 @@ import {
 } from '../../lib/contracts';
 import { listStableHorses, type StableHorse } from '../../lib/stable';
 import { ContractCascade, ContractBody } from '../../components/app/ContractCascade';
+import { AddElementButton } from '../../components/app/AddElementModal';
 
 /**
  * CONTRACT (/app/contracts/:id) — the negotiated-contract surface (Update A).
@@ -609,6 +610,17 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           </section>
         );
       })}
+
+      {/* Add section / item / field — a compact affordance (no more full-width block).
+          Opens a modal that asks WHERE (section + position, or which section to insert
+          after) and WHAT (type from the format registry). */}
+      {isOwnerSide && editablePhase && !showHorseGate && id && (
+        <div className="mb-5">
+          <AddElementButton documentId={id} disabled={!editablePhase}
+            sections={sections.map(([s]) => s)}
+            onAdded={() => void load()} />
+        </div>
+      )}
 
       {/* Lease-only: partial-lease participants + payment options */}
       {isLease && id && <LeaseExtrasSection documentId={id} editable={state !== 'executed'} />}
