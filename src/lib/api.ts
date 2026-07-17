@@ -608,6 +608,50 @@ export async function listHorseColors(): Promise<LookupCode[]> {
   return (data ?? []) as LookupCode[];
 }
 
+/** Generic vocabulary lookup for select-or-other fields that live in lookup_options
+ *  (markings, registration org, passport country, …). breeds/colors keep their own
+ *  dedicated tables and their own list functions above. */
+export async function listLookupOptions(lookupKey: string): Promise<LookupCode[]> {
+  const { data, error } = await supabase
+    .from('lookup_options')
+    .select('code, display_name, active, sort_order')
+    .eq('lookup_key', lookupKey)
+    .eq('active', true)
+    .order('sort_order');
+  if (error) throw error;
+  return (data ?? []) as LookupCode[];
+}
+
+/** Capture an "Other" free-text entry for periodic review (best-effort; never blocks
+ *  the user — a failure is swallowed by the caller). De-dupes + counts server-side. */
+export async function recordLookupSuggestion(lookupKey: string, rawValue: string): Promise<void> {
+  const { error } = await supabase.rpc('record_lookup_suggestion', { p_lookup_key: lookupKey, p_raw_value: rawValue });
+  if (error) throw error;
+}
+
+/** Admin review queue: the captured "Other" entries, most-frequent first. */
+export interface LookupSuggestion {
+  id: string; lookup_key: string; raw_value: string; count: number; status: string;
+  first_seen: string; last_seen: string;
+}
+export async function listLookupSuggestions(status = 'open'): Promise<LookupSuggestion[]> {
+  const { data, error } = await supabase
+    .from('lookup_suggestions')
+    .select('id, lookup_key, raw_value, count, status, first_seen, last_seen')
+    .eq('status', status)
+    .order('count', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as LookupSuggestion[];
+}
+export async function promoteLookupSuggestion(id: string, code?: string): Promise<void> {
+  const { error } = await supabase.rpc('promote_lookup_suggestion', { p_id: id, p_code: code ?? null });
+  if (error) throw error;
+}
+export async function dismissLookupSuggestion(id: string): Promise<void> {
+  const { error } = await supabase.from('lookup_suggestions').update({ status: 'dismissed' }).eq('id', id);
+  if (error) throw error;
+}
+
 // ─── Contracts: templates & documents ────────────────────────────────────
 
 export async function listContractTemplates(): Promise<ContractTemplate[]> {

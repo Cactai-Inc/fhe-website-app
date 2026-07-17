@@ -71,6 +71,7 @@ import HorseRecordsPage from './pages/app/ops/HorseRecordsPage';
 import DocumentsQueuePage from './pages/app/ops/DocumentsQueuePage';
 import DocumentViewerPage from './pages/app/ops/DocumentViewerPage';
 import ModerationPage from './pages/app/ops/ModerationPage';
+import LookupReviewPage from './pages/app/ops/LookupReviewPage';
 import SupportPage from './pages/app/ops/SupportPage';
 import OversightPage from './pages/app/ops/OversightPage';
 import ContentStorePage from './pages/app/ops/ContentStorePage';
@@ -236,6 +237,7 @@ export function AppRoutes() {
               <Route path="ops/availability" element={<Navigate to="/app/calendar" replace />} />
               {/* Total control — admins only */}
               <Route path="ops/moderation" element={<ProtectedRoute requireStaff><ModerationPage /></ProtectedRoute>} />
+              <Route path="ops/lookups" element={<ProtectedRoute requireStaff><LookupReviewPage /></ProtectedRoute>} />
               <Route path="ops/support" element={<ProtectedRoute requireStaff><SupportPage /></ProtectedRoute>} />
               <Route path="ops/oversight" element={<ProtectedRoute requireStaff><OversightPage /></ProtectedRoute>} />
               <Route path="ops/content" element={<ProtectedRoute requireStaff><ContentStorePage /></ProtectedRoute>} />

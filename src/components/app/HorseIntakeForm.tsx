@@ -8,7 +8,7 @@ import {
   fetchLocations, addMyLocation, fetchContactLocations, addContactLocation,
   type CalendarLocation,
 } from '../../lib/ops/api-calendar';
-import { listHorseBreeds, listHorseColors } from '../../lib/api';
+import { listHorseBreeds, listHorseColors, listLookupOptions, recordLookupSuggestion } from '../../lib/api';
 import type { LookupCode } from '../../lib/ops/types';
 
 /**
@@ -77,6 +77,61 @@ function Field({
           onChange={(e) => onChange(e.target.value)}
           onBlur={onBlurFormat ? (e) => { const out = onBlurFormat(e.target.value); if (out !== e.target.value) onChange(out); } : undefined} />
       )}
+    </div>
+  );
+}
+
+const OTHER = '__other__';
+
+/** SELECT-OR-OTHER: a dropdown of known options plus an "Other" escape that reveals
+ *  a free-text box. When the user types an "Other" value it's stored as the value AND
+ *  captured (record_lookup_suggestion) so the barn can promote frequent entries into
+ *  the official list later. A stored value that isn't a known option code is treated
+ *  as a prior "Other" entry and shown in the text box. Keeps the N/A escape. */
+function SelectOrOther({
+  label, value, onChange, options, lookupKey, placeholder, span, showError, hint,
+}: {
+  label: string;
+  value?: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+  lookupKey: string;
+  placeholder?: string;
+  span?: boolean;
+  showError?: boolean;
+  hint?: string;
+}) {
+  const na = value === NA;
+  const isKnown = !!value && value !== NA && options.some((o) => o.value === value);
+  const isOther = !na && !!value && value !== NA && !isKnown;
+  const [otherOpen, setOtherOpen] = useState(isOther);
+  const answered = na || filled(value);
+  const cls = `${input}${showError && !answered ? ' border-red-400' : ''}`;
+
+  const selectValue = na ? '' : otherOpen || isOther ? OTHER : (isKnown ? value : '');
+  return (
+    <div className={span ? 'sm:col-span-2' : ''}>
+      <div className="flex items-center justify-between mb-1">
+        <label className="block text-[11px] tracking-wide uppercase text-muted font-semibold">{label}</label>
+        <label className="flex items-center gap-1 text-[10px] text-muted cursor-pointer select-none">
+          <input type="checkbox" checked={na} onChange={(e) => { setOtherOpen(false); onChange(e.target.checked ? NA : ''); }} /> N/A
+        </label>
+      </div>
+      <select className={cls} disabled={na} value={selectValue}
+        onChange={(e) => {
+          if (e.target.value === OTHER) { setOtherOpen(true); onChange(''); }
+          else { setOtherOpen(false); onChange(e.target.value); }
+        }}>
+        <option value="">Select…</option>
+        {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        <option value={OTHER}>Other (enter manually)…</option>
+      </select>
+      {(otherOpen || isOther) && !na && (
+        <input className={`${cls} mt-1.5`} disabled={na} value={isKnown ? '' : (value ?? '')} placeholder={placeholder ?? 'Type the value'}
+          onChange={(e) => onChange(e.target.value)}
+          onBlur={(e) => { const v = e.target.value.trim(); if (v) recordLookupSuggestion(lookupKey, v).catch(() => {}); }} />
+      )}
+      {hint && <p className="text-[10px] text-muted mt-1">{hint}</p>}
     </div>
   );
 }
@@ -155,6 +210,9 @@ export function HorseIntakeForm({
   // code, so these MUST be selects from the reference tables.
   const [breeds, setBreeds] = useState<LookupCode[]>([]);
   const [colors, setColors] = useState<LookupCode[]>([]);
+  const [markingOpts, setMarkingOpts] = useState<LookupCode[]>([]);
+  const [regOrgOpts, setRegOrgOpts] = useState<LookupCode[]>([]);
+  const [passportCountryOpts, setPassportCountryOpts] = useState<LookupCode[]>([]);
 
   // Staff creating for a client → that CLIENT's locations; otherwise the caller's.
   const loadLocations = () =>
@@ -173,11 +231,15 @@ export function HorseIntakeForm({
     });
     listHorseBreeds().then(setBreeds).catch(() => setBreeds([]));
     listHorseColors().then(setColors).catch(() => setColors([]));
+    listLookupOptions('horse_markings').then(setMarkingOpts).catch(() => setMarkingOpts([]));
+    listLookupOptions('horse_registration_org').then(setRegOrgOpts).catch(() => setRegOrgOpts([]));
+    listLookupOptions('horse_passport_country').then(setPassportCountryOpts).catch(() => setPassportCountryOpts([]));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const breedOpts = breeds.map((b) => ({ value: b.code, label: b.display_name }));
-  const colorOpts = colors.map((c) => ({ value: c.code, label: c.display_name }));
+  const toOpts = (rows: LookupCode[]) => rows.map((r) => ({ value: r.code, label: r.display_name }));
+  const breedOpts = toOpts(breeds);
+  const colorOpts = toOpts(colors);
 
   const set = (k: keyof HorseIntakePayload) => (v: string) => setF((p) => ({ ...p, [k]: v }));
 
@@ -275,16 +337,16 @@ export function HorseIntakeForm({
         <Field span label="Microchip number (checked first)" value={f.microchip_id} onChange={set('microchip_id')} placeholder="e.g. 985 112233445566" showError={showError} />
         <Field label="Registered name" value={f.registered_name} onChange={set('registered_name')} showError={showError} />
         <Field label="Barn name" value={f.barn_name} onChange={set('barn_name')} showError={showError} />
-        <Field label="Breed" value={f.breed} onChange={set('breed')} showError={showError} options={breedOpts} />
+        <SelectOrOther label="Breed" value={f.breed} onChange={set('breed')} showError={showError} options={breedOpts} lookupKey="horse_breeds" placeholder="Breed name" />
         <Field label="Registration number" value={f.registration_number} onChange={set('registration_number')} showError={showError} />
-        <Field label="Registration organization" value={f.registration_org} onChange={set('registration_org')} showError={showError} />
+        <SelectOrOther label="Registration organization" value={f.registration_org} onChange={set('registration_org')} showError={showError} options={toOpts(regOrgOpts)} lookupKey="horse_registration_org" placeholder="Registry name" />
         <Field label="Passport number" value={f.passport_number} onChange={set('passport_number')} showError={showError} />
-        <Field label="Passport country" value={f.passport_country} onChange={set('passport_country')} showError={showError} />
+        <SelectOrOther label="Passport country" value={f.passport_country} onChange={set('passport_country')} showError={showError} options={toOpts(passportCountryOpts)} lookupKey="horse_passport_country" placeholder="Country" />
       </Section>
 
       <Section title="Description">
-        <Field label="Color" value={f.color} onChange={set('color')} showError={showError} options={colorOpts} />
-        <Field label="Markings" value={f.markings} onChange={set('markings')} showError={showError} />
+        <SelectOrOther label="Color" value={f.color} onChange={set('color')} showError={showError} options={colorOpts} lookupKey="horse_colors" placeholder="Color" />
+        <SelectOrOther label="Markings" value={f.markings} onChange={set('markings')} showError={showError} options={toOpts(markingOpts)} lookupKey="horse_markings" placeholder="Describe the markings" />
         <Field label="Sex" value={f.sex} onChange={set('sex')} showError={showError}
           options={[
             { value: 'MARE', label: 'Mare' }, { value: 'GELDING', label: 'Gelding' },

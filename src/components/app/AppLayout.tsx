@@ -3,7 +3,7 @@ import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom';
 import {
   CalendarDays, Users, FileText, UserRound, ReceiptText, Shield, LogOut,
   GraduationCap, Handshake, Home as HomeIcon, Boxes, Contact, LayoutDashboard,
-  Mail, ChevronDown, Plus, LifeBuoy, ShoppingBag, MessageSquare, BookOpen,
+  Mail, ChevronDown, Plus, LifeBuoy, ShoppingBag, MessageSquare, BookOpen, ListChecks,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useViewSurfaces } from '../../lib/surfaces';
@@ -92,6 +92,7 @@ const BUSINESS_GROUP: NavItem[] = [
 ];
 const COMMUNITY_GROUP: NavItem[] = [
   { to: '/app/ops/moderation', label: 'Moderation', icon: Shield },
+  { to: '/app/ops/lookups', label: 'Field options', icon: ListChecks },
   { to: '/app/ops/content', label: 'Content store', icon: BookOpen },
   { to: '/app/ops/oversight', label: 'Oversight', icon: Shield },
 ];
