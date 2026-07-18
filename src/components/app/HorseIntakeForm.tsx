@@ -236,32 +236,33 @@ function VetBlock({
 /** PREFIX INPUT — a standardized composite: a small dropdown that picks the label
  *  (e.g. Barn / Stable) + a typed value, producing one string like "Barn A". Reduces
  *  variance and speeds entry. The value is stored/read as "<prefix> <value>". */
-function PrefixInput({
-  prefixes, value, onChange, placeholder,
-}: {
-  prefixes: string[];
-  value?: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-}) {
-  // parse an existing "<prefix> <rest>" back into its two parts
+// Parse/compose a composite "<prefix> <value>" (e.g. "Barn A"). Split into two
+// standalone controls (PrefixSelect + PrefixValue) so they can sit as separate items
+// in a row rather than a nested composite.
+function parsePrefix(value: string | undefined, prefixes: string[]) {
   const parts = (value ?? '').trim().split(/\s+/);
-  const curPrefix = parts.length && prefixes.includes(parts[0]) ? parts[0] : prefixes[0];
-  const curRest = parts.length && prefixes.includes(parts[0]) ? parts.slice(1).join(' ') : (value ?? '');
-  const compose = (p: string, rest: string) => (rest.trim() ? `${p} ${rest.trim()}` : '');
+  const prefix = parts.length && prefixes.includes(parts[0]) ? parts[0] : prefixes[0];
+  const rest = parts.length && prefixes.includes(parts[0]) ? parts.slice(1).join(' ') : (value ?? '');
+  return { prefix, rest };
+}
+const composePrefix = (p: string, rest: string) => (rest.trim() ? `${p} ${rest.trim()}` : '');
+
+function PrefixSelect({ prefixes, value, onChange }: { prefixes: string[]; value?: string; onChange: (v: string) => void }) {
+  const { prefix, rest } = parsePrefix(value, prefixes);
   return (
-    <div className="flex gap-1.5">
-      <select className={`${input} w-24 shrink-0`} value={curPrefix}
-        onChange={(e) => onChange(compose(e.target.value, curRest))}>
-        {prefixes.map((p) => <option key={p} value={p}>{p}</option>)}
-      </select>
-      {/* flex-1 min-w-0 so the typed value takes the remaining space instead of the
-          shared w-full class forcing it to overflow the cell */}
-      <input className={`${input} flex-1 min-w-0`} value={curRest} placeholder={placeholder}
-        onChange={(e) => onChange(compose(curPrefix, e.target.value))} />
-    </div>
+    <select className={input} value={prefix} onChange={(e) => onChange(composePrefix(e.target.value, rest))}>
+      {prefixes.map((p) => <option key={p} value={p}>{p}</option>)}
+    </select>
   );
 }
+function PrefixValue({ prefixes, value, onChange, placeholder }: { prefixes: string[]; value?: string; onChange: (v: string) => void; placeholder?: string }) {
+  const { prefix, rest } = parsePrefix(value, prefixes);
+  return (
+    <input className={input} value={rest} placeholder={placeholder}
+      onChange={(e) => onChange(composePrefix(prefix, e.target.value))} />
+  );
+}
+
 
 /** LOCATION ENTRY — a fully findable location: name + structured address (on the
  *  shared place), plus THIS horse's barn/stall, findability notes, and on-site people
@@ -301,10 +302,17 @@ function LocationEntry({
           <div><L>State</L><input className={input} value={v.state ?? ''} placeholder="CA" onChange={(e) => set({ state: e.target.value })} /></div>
           <div><L>ZIP</L><input className={input} inputMode="numeric" value={v.postal ?? ''} placeholder="92109" onChange={(e) => set({ postal: e.target.value })} /></div>
         </div>
-        <div><L>Barn <span className="text-muted normal-case">(blank if outdoor)</span></L>
-          <PrefixInput prefixes={['Barn', 'Stable']} value={v.barn} placeholder="e.g. A" onChange={(barn) => set({ barn })} /></div>
-        <div><L>Stall</L>
-          <PrefixInput prefixes={['Stall', 'Pen']} value={v.stall} placeholder="e.g. 16" onChange={(stall) => set({ stall })} /></div>
+        {/* Barn + Stall as four items in one row: prefix select + typed value for each. */}
+        <div className="sm:col-span-2 grid grid-cols-4 gap-2 items-end">
+          <div className="min-w-0"><L>Barn <span className="text-muted normal-case">(blank if outdoor)</span></L>
+            <PrefixSelect prefixes={['Barn', 'Stable']} value={v.barn} onChange={(barn) => set({ barn })} /></div>
+          <div className="min-w-0"><L>&nbsp;</L>
+            <PrefixValue value={v.barn} prefixes={['Barn', 'Stable']} placeholder="e.g. A" onChange={(barn) => set({ barn })} /></div>
+          <div className="min-w-0"><L>Stall</L>
+            <PrefixSelect prefixes={['Stall', 'Pen']} value={v.stall} onChange={(stall) => set({ stall })} /></div>
+          <div className="min-w-0"><L>&nbsp;</L>
+            <PrefixValue value={v.stall} prefixes={['Stall', 'Pen']} placeholder="e.g. 16" onChange={(stall) => set({ stall })} /></div>
+        </div>
         <div className="sm:col-span-2"><L>Notes</L>
           <textarea rows={2} className={`${input} resize-y`} value={v.notes ?? ''}
             placeholder="information that would be helpful in finding this location"
