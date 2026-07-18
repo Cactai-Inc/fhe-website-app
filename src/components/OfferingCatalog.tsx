@@ -50,7 +50,11 @@ function splitPrice(amount: number, unit: PriceUnitDb) {
 }
 
 function PriceTag({ o }: { o: Offering }) {
-  const { amount, unit } = splitPrice(o.price_amount ?? 0, o.price_unit ?? 'flat');
+  // Active offerings without a set price are quote-based — show "Inquire for pricing".
+  if (o.price_amount == null) {
+    return <p className="font-serif text-green-800 leading-none text-lg sm:text-xl italic">Inquire for pricing</p>;
+  }
+  const { amount, unit } = splitPrice(o.price_amount, o.price_unit ?? 'flat');
   return (
     <p className="font-serif text-green-800 leading-none text-2xl sm:text-3xl">
       {amount}
@@ -69,24 +73,25 @@ export function OfferingCatalog({ onCheckout, actionLabel = 'Add' }: { onCheckou
     fetchOfferings()
       .then((rows) => {
         setOfferings(rows);
-        // open the first family that has purchasable offerings so the page never
-        // reads as a wall of closed cards.
-        const first = rows.find((o) => o.price_amount != null)?.service_type;
+        // open the first family so the page never reads as a wall of closed cards.
+        const first = rows[0]?.service_type;
         if (first) setOpen(new Set([first]));
       })
       .catch((e) => setError(e instanceof Error ? e.message : 'Could not load the catalog.'));
   }, []);
 
-  // group: segment → service family (service_type) → offerings
+  // group: segment → service family (service_type) → offerings. fetchOfferings
+  // already filters to active rows; priced ones sort by price, quote-based
+  // (price-less) ones sort to the end.
   const bySegment = useMemo(() => {
     const map = new Map<Segment, Map<string, Offering[]>>();
     for (const o of offerings ?? []) {
-      if (o.price_amount == null) continue;   // only priced rows are purchasable
       const fam = map.get(o.segment) ?? map.set(o.segment, new Map()).get(o.segment)!;
       const key = o.service_type ?? 'other';
       (fam.get(key) ?? fam.set(key, []).get(key)!).push(o);
     }
-    for (const fam of map.values()) for (const items of fam.values()) items.sort((a, b) => (a.price_amount ?? 0) - (b.price_amount ?? 0));
+    for (const fam of map.values()) for (const items of fam.values())
+      items.sort((a, b) => (a.price_amount ?? Infinity) - (b.price_amount ?? Infinity));
     return map;
   }, [offerings]);
 
@@ -205,14 +210,18 @@ function OfferingRow({
       <div className="flex items-center justify-between gap-4 sm:justify-end sm:gap-6 shrink-0">
         <PriceTag o={o} />
         <div className="flex items-center gap-2.5">
-          <button type="button" onClick={onSave} aria-pressed={saved}
-            className={`inline-flex items-center justify-center gap-1.5 px-4 py-2.5 border font-sans text-xs font-medium tracking-widest uppercase transition-all duration-200 focus-ring min-h-[44px] whitespace-nowrap ${
-              saved ? 'border-green-800 bg-green-800/5 text-green-900' : 'border-green-800/40 text-green-900 hover:border-green-800'}`}>
-            {saved ? <><Check size={14} aria-hidden="true" /> Saved</> : 'Save it'}
-          </button>
+          {/* Quote-based (price-less) offerings are inquiry-only — no "Save it" to a
+              purchase cart, and the primary action always reads "Inquire". */}
+          {o.price_amount != null && (
+            <button type="button" onClick={onSave} aria-pressed={saved}
+              className={`inline-flex items-center justify-center gap-1.5 px-4 py-2.5 border font-sans text-xs font-medium tracking-widest uppercase transition-all duration-200 focus-ring min-h-[44px] whitespace-nowrap ${
+                saved ? 'border-green-800 bg-green-800/5 text-green-900' : 'border-green-800/40 text-green-900 hover:border-green-800'}`}>
+              {saved ? <><Check size={14} aria-hidden="true" /> Saved</> : 'Save it'}
+            </button>
+          )}
           <button type="button" onClick={onAct}
             className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-green-800 text-white font-sans text-xs font-medium tracking-widest uppercase transition-all duration-200 hover:bg-green-700 focus-ring min-h-[44px] whitespace-nowrap">
-            {actionLabel}
+            {o.price_amount == null ? 'Inquire' : actionLabel}
             <ArrowRight size={14} aria-hidden="true" />
           </button>
         </div>
