@@ -53,7 +53,7 @@ export default function Shop() {
       {/* ── Catalog: offerings-backed, from the database (no hardcoded services). ── */}
       <section className="bg-cream">
         <div className="container-site pb-24 sm:pb-32 pt-8 sm:pt-10">
-          <OfferingCatalog onCheckout={() => navigate('/checkout')} />
+          <OfferingCatalog onCheckout={() => navigate('/checkout')} actionLabel="Inquire" />
         </div>
       </section>
     </>
