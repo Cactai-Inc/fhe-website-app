@@ -206,7 +206,7 @@ function VetBlock({
   return (
     <div className="sm:col-span-2 rounded-lg border border-green-800/10 p-3">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-[11px] tracking-wide uppercase text-muted font-semibold">Preferred veterinarian</p>
+        <p className="text-[11px] tracking-wide uppercase text-muted font-semibold">Current Veterinarian</p>
         <label className="flex items-center gap-1 text-[10px] text-muted cursor-pointer select-none">
           <input type="checkbox" checked={na} onChange={(e) => setNa(e.target.checked)} /> N/A
         </label>
@@ -221,12 +221,12 @@ function VetBlock({
         <div><L>Street address</L>
           <input className={cls(false)} disabled={na} value={val('vet_address_line1')} placeholder="123 Barn Rd" onChange={(e) => set('vet_address_line1')(e.target.value)} /></div>
         <div><L>City</L>
-          <input className={cls(false)} disabled={na} value={val('vet_city')} placeholder="City" onChange={(e) => set('vet_city')(e.target.value)} /></div>
+          <input className={cls(false)} disabled={na} value={val('vet_city')} placeholder="San Diego" onChange={(e) => set('vet_city')(e.target.value)} /></div>
         <div className="grid grid-cols-2 gap-2">
           <div><L>State</L>
-            <input className={cls(false)} disabled={na} value={val('vet_state')} placeholder="ST" onChange={(e) => set('vet_state')(e.target.value)} /></div>
+            <input className={cls(false)} disabled={na} value={val('vet_state')} placeholder="CA" onChange={(e) => set('vet_state')(e.target.value)} /></div>
           <div><L>ZIP</L>
-            <input className={cls(false)} inputMode="numeric" disabled={na} value={val('vet_postal')} placeholder="ZIP" onChange={(e) => set('vet_postal')(e.target.value)} /></div>
+            <input className={cls(false)} inputMode="numeric" disabled={na} value={val('vet_postal')} placeholder="92109" onChange={(e) => set('vet_postal')(e.target.value)} /></div>
         </div>
       </div>
     </div>
@@ -707,9 +707,9 @@ export function HorseIntakeForm({
         <RepeatableMeds kind="SUPPLEMENT" items={supplements} onChange={setSupplements} />
       </Section>
       
-      <Section title="Veterinary and farrier">
+      <Section title="Veterinary and Farrier">
         <VetBlock f={f} set={set} showError={showError} />
-        <PersonBlock title="Preferred farrier" showError={showError}
+        <PersonBlock title="Current Farrier" showError={showError}
           name={{ label: 'Farrier name', value: f.farrier_name, onChange: set('farrier_name'), placeholder: 'Farrier name' }}
           second={{ label: 'Phone', kind: 'tel', value: f.farrier_phone, onChange: set('farrier_phone'), placeholder: '(555) 555-5555' }} />
       </Section>
