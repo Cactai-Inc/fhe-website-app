@@ -33,6 +33,11 @@ export interface HorseIntakePayload {
   lease_end?: string;
   vet_name?: string;
   vet_phone?: string;
+  vet_business_name?: string;
+  vet_address_line1?: string;
+  vet_city?: string;
+  vet_state?: string;
+  vet_postal?: string;
   farrier_name?: string;
   farrier_phone?: string;
   medical_history?: string;

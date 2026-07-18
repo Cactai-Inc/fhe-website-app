@@ -179,6 +179,56 @@ function PersonBlock({
   );
 }
 
+/** VET BLOCK: the veterinarian as a fuller contact — vet/practice name, business
+ *  name, phone, and a structured address (street / city / state / ZIP). Each part
+ *  writes to its own horses column; the block groups them and shares one N/A. Only
+ *  the vet name is required to complete the block. */
+function VetBlock({
+  f, set, showError,
+}: {
+  f: HorseIntakePayload;
+  set: (k: keyof HorseIntakePayload) => (v: string) => void;
+  showError?: boolean;
+}) {
+  const parts: (keyof HorseIntakePayload)[] = ['vet_name', 'vet_phone', 'vet_business_name', 'vet_address_line1', 'vet_city', 'vet_state', 'vet_postal'];
+  const na = parts.every((k) => f[k] === NA);
+  const answered = na || filled(f.vet_name as string | undefined);
+  const setNa = (on: boolean) => parts.forEach((k) => set(k)(on ? NA : ''));
+  const val = (k: keyof HorseIntakePayload) => (na ? '' : ((f[k] as string | undefined) ?? ''));
+  const cls = (bad: boolean) => `${input}${showError && bad ? ' border-red-400' : ''}`;
+  const L = ({ children }: { children: React.ReactNode }) => (
+    <label className="block text-[10px] uppercase tracking-wide text-muted mb-1">{children}</label>
+  );
+  return (
+    <div className="sm:col-span-2 rounded-lg border border-green-800/10 p-3">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-[11px] tracking-wide uppercase text-muted font-semibold">Preferred veterinarian</p>
+        <label className="flex items-center gap-1 text-[10px] text-muted cursor-pointer select-none">
+          <input type="checkbox" checked={na} onChange={(e) => setNa(e.target.checked)} /> N/A
+        </label>
+      </div>
+      <div className="grid sm:grid-cols-2 gap-2">
+        <div><L>Veterinarian name</L>
+          <input className={cls(!answered)} disabled={na} value={val('vet_name')} placeholder="Dr. name" onChange={(e) => set('vet_name')(e.target.value)} /></div>
+        <div><L>Business / practice name</L>
+          <input className={cls(false)} disabled={na} value={val('vet_business_name')} placeholder="Practice name" onChange={(e) => set('vet_business_name')(e.target.value)} /></div>
+        <div><L>Phone</L>
+          <input type="tel" inputMode="tel" className={cls(false)} disabled={na} value={val('vet_phone')} placeholder="(555) 555-5555" onChange={(e) => set('vet_phone')(e.target.value)} /></div>
+        <div><L>Street address</L>
+          <input className={cls(false)} disabled={na} value={val('vet_address_line1')} placeholder="123 Barn Rd" onChange={(e) => set('vet_address_line1')(e.target.value)} /></div>
+        <div><L>City</L>
+          <input className={cls(false)} disabled={na} value={val('vet_city')} placeholder="City" onChange={(e) => set('vet_city')(e.target.value)} /></div>
+        <div className="grid grid-cols-2 gap-2">
+          <div><L>State</L>
+            <input className={cls(false)} disabled={na} value={val('vet_state')} placeholder="ST" onChange={(e) => set('vet_state')(e.target.value)} /></div>
+          <div><L>ZIP</L>
+            <input className={cls(false)} inputMode="numeric" disabled={na} value={val('vet_postal')} placeholder="ZIP" onChange={(e) => set('vet_postal')(e.target.value)} /></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** Location picker: barn + the member's own personal locations, with a "+ Add"
  *  path (a personal location, visible only to them). Stores the location NAME
  *  (current_location is text). Keeps the same N/A escape as Field. */
@@ -461,9 +511,7 @@ export function HorseIntakeForm({
       </Section>
 
       <Section title="Veterinary and farrier">
-        <PersonBlock title="Preferred veterinarian" showError={showError}
-          name={{ label: 'Practice / vet name', value: f.vet_name, onChange: set('vet_name'), placeholder: 'Dr. name or practice' }}
-          second={{ label: 'Phone', kind: 'tel', value: f.vet_phone, onChange: set('vet_phone'), placeholder: '(555) 555-5555' }} />
+        <VetBlock f={f} set={set} showError={showError} />
         <PersonBlock title="Preferred farrier" showError={showError}
           name={{ label: 'Farrier name', value: f.farrier_name, onChange: set('farrier_name'), placeholder: 'Farrier name' }}
           second={{ label: 'Phone', kind: 'tel', value: f.farrier_phone, onChange: set('farrier_phone'), placeholder: '(555) 555-5555' }} />
