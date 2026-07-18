@@ -119,8 +119,9 @@ export interface HorsePageDetail {
   medications: HorseMedication[];
   documents: { id: string; title: string; display_code: string | null; status: string | null; workflow_state: string | null; effective_date: string | null; created_at: string }[];
   schedule: { id: string; kind: string | null; starts_at: string | null; ends_at: string | null; status: string | null; location: string | null; notes: string | null }[];
-  health_events: { id: string; event_type: string | null; occurred_at: string | null; next_due: string | null; notes: string | null }[];
-  relationships: { relationship: string; party: string | null; term_start: string | null; term_end: string | null; active: boolean }[];
+  /** Session/lesson/training reports: bookings with a logged activity or write-up. */
+  sessions: { id: string; kind: string | null; offering: string | null; starts_at: string | null; status: string | null; location: string | null; activities: string[] | null; report: string | null }[];
+  purchases: { id: string; display_code: string | null; amount: number | null; status: string | null; payment_status: string | null; notes: string | null; paid_at: string | null; created_at: string }[];
 }
 export async function horsePageDetail(horseId: string): Promise<HorsePageDetail> {
   const { data, error } = await supabase.rpc('horse_page_detail', { p_horse_id: horseId });

@@ -53,16 +53,26 @@ BEGIN
         'status', b.status, 'location', coalesce(b.location, (SELECT name FROM locations WHERE id = b.location_id)),
         'notes', b.notes) ORDER BY b.starts_at DESC)
       FROM bookings b WHERE b.horse_id = p_horse_id), '[]'::jsonb),
-    -- history: health events + relationship (ownership/lease) timeline
-    'health_events', coalesce((SELECT jsonb_agg(jsonb_build_object(
-        'id', e.id, 'event_type', e.event_type, 'occurred_at', e.occurred_at,
-        'next_due', e.next_due, 'notes', e.notes) ORDER BY e.occurred_at DESC)
-      FROM horse_health_events e WHERE e.horse_id = p_horse_id AND e.deleted_at IS NULL), '[]'::jsonb),
-    'relationships', coalesce((SELECT jsonb_agg(jsonb_build_object(
-        'relationship', r.relationship,
-        'party', coalesce((SELECT nullif(btrim(coalesce(first_name,'') || ' ' || coalesce(last_name,'')),'') FROM contacts WHERE id = r.party_contact_id), r.party_name_text),
-        'term_start', r.term_start, 'term_end', r.term_end, 'active', r.active) ORDER BY r.created_at DESC)
-      FROM horse_relationships r WHERE r.horse_id = p_horse_id), '[]'::jsonb)
+    -- activity: session/lesson/training REPORTS (bookings with an activity log or
+    -- write-up), newest first. The report is the logged activities + free-text.
+    'sessions', coalesce((SELECT jsonb_agg(jsonb_build_object(
+        'id', b.id, 'kind', b.kind,
+        'offering', (SELECT name FROM offerings WHERE id = b.offering_id),
+        'starts_at', b.starts_at, 'status', b.status,
+        'location', coalesce(b.location, (SELECT name FROM locations WHERE id = b.location_id)),
+        'activities', b.activity_log -> 'activities',
+        'report', coalesce(b.activity_log ->> 'text', b.notes))
+        ORDER BY b.starts_at DESC)
+      FROM bookings b
+      WHERE b.horse_id = p_horse_id
+        AND (b.activity_log IS NOT NULL OR coalesce(btrim(b.notes),'') <> '')), '[]'::jsonb),
+    -- purchases tied to the horse
+    'purchases', coalesce((SELECT jsonb_agg(jsonb_build_object(
+        'id', pu.id, 'display_code', pu.display_code, 'amount', pu.amount,
+        'status', pu.status, 'payment_status', pu.payment_status,
+        'notes', pu.notes, 'paid_at', pu.paid_at, 'created_at', pu.created_at)
+        ORDER BY pu.created_at DESC)
+      FROM purchases pu WHERE pu.horse_id = p_horse_id AND pu.deleted_at IS NULL), '[]'::jsonb)
   );
   RETURN v_out;
 END;

@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { FileText, CalendarDays, ClipboardList, PencilLine, Trash2, ArrowLeft, ShieldCheck } from 'lucide-react';
+import { FileText, CalendarDays, ClipboardList, PencilLine, Trash2, ArrowLeft, Activity } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
 import { horsePageDetail, deleteStableHorse, updateHorseRecord, type HorsePageDetail } from '../../lib/horses';
 
 /**
  * HORSE PAGE (/app/horses/:horseId) — the client-facing record for one horse, with
  * tabs for everything tied to it: the Record (read-only, with Edit), Documents,
- * Schedule, and History & notes. One read (horse_page_detail) feeds every tab.
+ * Schedule, and Activity (lesson/training reports + purchases). One read
+ * (horse_page_detail) feeds every tab.
  */
 
 type Tab = 'record' | 'documents' | 'schedule' | 'history';
@@ -75,7 +76,7 @@ export default function HorsePage() {
     { id: 'record', label: 'Record', icon: ClipboardList },
     { id: 'documents', label: 'Documents', icon: FileText, count: detail.documents.length },
     { id: 'schedule', label: 'Schedule', icon: CalendarDays, count: detail.schedule.length },
-    { id: 'history', label: 'History & notes', icon: ShieldCheck, count: detail.health_events.length + detail.relationships.length },
+    { id: 'history', label: 'Activity', icon: Activity, count: detail.sessions.length + detail.purchases.length },
   ];
 
   return (
@@ -209,27 +210,42 @@ export default function HorsePage() {
 
           {tab === 'history' && (
             <div className="flex flex-col gap-5">
-              <ListCard title="Ownership & lease" empty="No ownership or lease history.">
-                {detail.relationships.map((rel, i) => (
-                  <div key={i} className="px-4 py-3 flex items-center justify-between gap-3">
-                    <span className="text-sm text-green-900">
-                      <span className="font-medium">{titleCase(rel.relationship)}</span>{rel.party ? ` — ${rel.party}` : ''}
-                    </span>
-                    <span className="text-[11px] text-muted whitespace-nowrap">
-                      {rel.term_start ? `${fmtDate(rel.term_start)} – ${fmtDate(rel.term_end)}` : rel.active ? 'Current' : 'Past'}
-                    </span>
+              <ListCard title="Sessions & reports" empty="No lesson or training reports for this horse yet.">
+                {detail.sessions.map((s) => (
+                  <div key={s.id} className="px-4 py-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm font-medium text-green-900">
+                        {s.offering || titleCase(s.kind) || 'Session'}
+                      </span>
+                      <span className="text-[11px] text-muted whitespace-nowrap">{fmtDate(s.starts_at)}</span>
+                    </div>
+                    {s.activities && s.activities.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1.5">
+                        {s.activities.map((a, j) => (
+                          <span key={j} className="text-[10px] bg-green-800/8 text-green-800 rounded px-1.5 py-0.5">{a}</span>
+                        ))}
+                      </div>
+                    )}
+                    {s.report && <p className="text-[12.5px] text-secondary mt-1.5 whitespace-pre-line">{s.report}</p>}
+                    {s.location && <p className="text-[11px] text-muted mt-1">{s.location}</p>}
                   </div>
                 ))}
               </ListCard>
-              <ListCard title="Health events" empty="No health events recorded.">
-                {detail.health_events.map((e) => (
-                  <div key={e.id} className="px-4 py-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-sm font-medium text-green-900">{titleCase(e.event_type)}</span>
-                      <span className="text-[11px] text-muted">{fmtDate(e.occurred_at)}</span>
-                    </div>
-                    {e.notes && <p className="text-[12px] text-secondary mt-0.5">{e.notes}</p>}
-                    {e.next_due && <p className="text-[11px] text-gold-800 mt-0.5">Next due {fmtDate(e.next_due)}</p>}
+              <ListCard title="Purchases" empty="No purchases associated with this horse.">
+                {detail.purchases.map((p) => (
+                  <div key={p.id} className="px-4 py-3 flex items-center justify-between gap-3">
+                    <span className="min-w-0">
+                      <span className="block text-sm font-medium text-green-900">
+                        {p.amount != null ? `$${Number(p.amount).toLocaleString()}` : 'Purchase'}
+                        {p.display_code && <span className="text-muted font-normal text-[11px]"> · {p.display_code}</span>}
+                      </span>
+                      <span className="block text-[11px] text-muted">
+                        {fmtDate(p.paid_at || p.created_at)}{p.notes ? ` · ${p.notes}` : ''}
+                      </span>
+                    </span>
+                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-green-800/10 text-green-800 whitespace-nowrap">
+                      {titleCase(p.payment_status || p.status)}
+                    </span>
                   </div>
                 ))}
               </ListCard>
