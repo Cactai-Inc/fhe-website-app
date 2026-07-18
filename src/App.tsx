@@ -47,6 +47,7 @@ import Schedule from './pages/app/Schedule';
 import CalendarPage from './pages/app/CalendarPage';
 import Orders from './pages/app/Orders';
 import Gifts from './pages/app/Gifts';
+import CatalogPage from './pages/app/CatalogPage';
 import Documents from './pages/app/Documents';
 import Onboarding from './pages/app/Onboarding';
 // Client portal (CP-* wave)
@@ -205,6 +206,8 @@ export function AppRoutes() {
               <Route path="book" element={<Navigate to="/app/calendar" replace />} />
               <Route path="orders" element={<Orders />} />
               <Route path="gifts" element={<Gifts />} />
+              <Route path="catalog" element={<CatalogPage />} />
+              <Route path="checkout" element={<Checkout />} />
               {/* Client portal (CP-*) */}
               <Route path="lessons" element={<MyLessons />} />
               <Route path="profile" element={<Profile />} />

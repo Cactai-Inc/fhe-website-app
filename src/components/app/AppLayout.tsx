@@ -3,7 +3,7 @@ import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom';
 import {
   CalendarDays, Users, FileText, UserRound, ReceiptText, Shield, LogOut,
   GraduationCap, Handshake, Home as HomeIcon, Boxes, Contact, LayoutDashboard,
-  Mail, ChevronDown, Plus, LifeBuoy, ShoppingBag, MessageSquare, BookOpen, ListChecks,
+  Mail, ChevronDown, Plus, LifeBuoy, ShoppingBag, MessageSquare, BookOpen, ListChecks, Store,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useViewSurfaces } from '../../lib/surfaces';
@@ -40,11 +40,14 @@ interface NavItem {
 }
 
 const QUICK: { label: string; icon: typeof GraduationCap; to: string }[] = [
+  { label: 'Dashboard', icon: LayoutDashboard, to: '/app' },
   // Calendar + booking are the same surface: view your times on the calendar,
   // or start a booking (the calendar opens when you pick something to see).
   { label: 'Calendar', icon: CalendarDays, to: '/app/calendar' },
   { label: 'Book a lesson', icon: GraduationCap, to: '/app/calendar' },
-  { label: 'Shop for sale', icon: ShoppingBag, to: '/app?filter=for_sale' },
+  // The in-app catalog: shop services & book them (real purchase flow).
+  { label: 'Catalog', icon: ShoppingBag, to: '/app/catalog' },
+  { label: 'Shop for sale', icon: Store, to: '/app?filter=for_sale' },
   { label: 'New message', icon: MessageSquare, to: '/app/messages' },
 ];
 
