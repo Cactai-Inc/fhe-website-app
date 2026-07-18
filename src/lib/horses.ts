@@ -42,11 +42,6 @@ export interface HorseIntakePayload {
   farrier_phone?: string;
   medical_history?: string;
   behavioral_history?: string;
-  medication_current?: string;
-  medication_name?: string;
-  medication_dosage?: string;
-  medication_instructions?: string;
-  medication_additional?: string;
   known_conditions?: string;
   /** Owner's emergency-euthanasia authorization: 'A' authorize | 'B' do not. */
   euthanasia_authorization?: 'A' | 'B';
@@ -100,6 +95,32 @@ export async function createHorseRecord(p: HorseIntakePayload): Promise<HorseRec
   const { data, error } = await supabase.rpc('create_horse_record', { p });
   if (error) throw error;
   return data as HorseRecordOutcome;
+}
+
+/** A repeatable medication or supplement entry with cost, supplier, and order qty.
+ *  rx_info applies to medications only. */
+export interface HorseMedication {
+  id?: string;
+  kind: 'MEDICATION' | 'SUPPLEMENT';
+  name?: string;
+  dosage?: string;
+  instructions?: string;
+  cost?: string;
+  supplier_website?: string;
+  supplier_phone?: string;
+  rx_info?: string;
+  order_units?: string;
+  days_supply?: string;
+}
+/** Replace-all a horse's medications + supplements. */
+export async function setHorseMedications(horseId: string, items: HorseMedication[]): Promise<void> {
+  const { error } = await supabase.rpc('set_horse_medications', { p_horse_id: horseId, p_items: items });
+  if (error) throw error;
+}
+export async function listHorseMedications(horseId: string): Promise<HorseMedication[]> {
+  const { data, error } = await supabase.rpc('horse_medications_list', { p_horse_id: horseId });
+  if (error) throw error;
+  return (data ?? []) as HorseMedication[];
 }
 
 /** A horse document produced/kept by the engine. */

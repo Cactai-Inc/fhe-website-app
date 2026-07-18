@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Loader2, ShieldQuestion } from 'lucide-react';
 import {
-  createHorseRecord, setHorseLocations,
-  type HorseIntakePayload, type HorseRecordOutcome, type HorseLocationDetail,
+  createHorseRecord, setHorseLocations, setHorseMedications,
+  type HorseIntakePayload, type HorseRecordOutcome, type HorseLocationDetail, type HorseMedication,
 } from '../../lib/horses';
 import {
   fetchLocations, fetchContactLocations,
@@ -320,6 +320,73 @@ function LocationEntry({
   );
 }
 
+/** A single medication/supplement block: name, dosage, instructions, cost, structured
+ *  supplier (website/phone[/Rx]), and order quantity (units + days supply). rx_info is
+ *  shown for medications only. */
+function MedicationBlock({
+  v, kind, onChange, onRemove,
+}: {
+  v: HorseMedication;
+  kind: 'MEDICATION' | 'SUPPLEMENT';
+  onChange: (v: HorseMedication) => void;
+  onRemove: () => void;
+}) {
+  const set = (patch: Partial<HorseMedication>) => onChange({ ...v, ...patch });
+  const L = ({ children }: { children: React.ReactNode }) => (
+    <label className="block text-[10px] uppercase tracking-wide text-muted mb-1">{children}</label>
+  );
+  const noun = kind === 'SUPPLEMENT' ? 'supplement' : 'medication';
+  return (
+    <div className="rounded-lg border border-green-800/15 p-3">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-[11px] tracking-wide uppercase text-gold-800 font-semibold">{noun}</p>
+        <button type="button" onClick={onRemove} className="text-[11px] text-muted hover:text-red-700 underline">Remove</button>
+      </div>
+      <div className="grid sm:grid-cols-2 gap-2">
+        <div><L>Name</L><input className={input} value={v.name ?? ''} placeholder={`${noun} name`} onChange={(e) => set({ name: e.target.value })} /></div>
+        <div><L>Dosage</L><input className={input} value={v.dosage ?? ''} placeholder="e.g. 10 mg" onChange={(e) => set({ dosage: e.target.value })} /></div>
+        <div className="sm:col-span-2"><L>Instructions</L>
+          <input className={input} value={v.instructions ?? ''} placeholder="e.g. one scoop AM/PM with feed" onChange={(e) => set({ instructions: e.target.value })} /></div>
+        <div><L>Order quantity (units)</L><input className={input} value={v.order_units ?? ''} placeholder="e.g. 30 tablets" onChange={(e) => set({ order_units: e.target.value })} /></div>
+        <div><L>Days supply</L><input className={input} inputMode="numeric" value={v.days_supply ?? ''} placeholder="e.g. 30" onChange={(e) => set({ days_supply: e.target.value })} /></div>
+        <div><L>Cost (per order)</L>
+          <input className={input} inputMode="numeric" value={v.cost ?? ''} placeholder="$0.00"
+            onChange={(e) => set({ cost: e.target.value })}
+            onBlur={(e) => { const n = Number(e.target.value.replace(/[$,\s]/g, '')); if (Number.isFinite(n) && e.target.value.trim()) set({ cost: n.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) }); }} /></div>
+        <div><L>Supplier website</L><input type="url" className={input} value={v.supplier_website ?? ''} placeholder="https://…" onChange={(e) => set({ supplier_website: e.target.value })} /></div>
+        <div><L>Supplier phone</L><input type="tel" className={input} value={v.supplier_phone ?? ''} placeholder="(555) 555-5555" onChange={(e) => set({ supplier_phone: e.target.value })} /></div>
+        {kind === 'MEDICATION' && (
+          <div><L>Rx info</L><input className={input} value={v.rx_info ?? ''} placeholder="Rx #, prescriber" onChange={(e) => set({ rx_info: e.target.value })} /></div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** A repeatable list of medication or supplement blocks, with an "add" button. */
+function RepeatableMeds({
+  kind, items, onChange,
+}: {
+  kind: 'MEDICATION' | 'SUPPLEMENT';
+  items: HorseMedication[];
+  onChange: (items: HorseMedication[]) => void;
+}) {
+  const noun = kind === 'SUPPLEMENT' ? 'supplement' : 'medication';
+  return (
+    <div className="sm:col-span-2 flex flex-col gap-2">
+      {items.map((it, i) => (
+        <MedicationBlock key={i} v={it} kind={kind}
+          onChange={(nv) => onChange(items.map((x, j) => (j === i ? nv : x)))}
+          onRemove={() => onChange(items.filter((_, j) => j !== i))} />
+      ))}
+      <button type="button" onClick={() => onChange([...items, { kind }])}
+        className="self-start text-xs text-gold-800 border border-dashed border-gold-400 rounded-lg px-3 py-1.5 hover:bg-gold-50 focus-ring">
+        ＋ Add {noun}
+      </button>
+    </div>
+  );
+}
+
 export function HorseIntakeForm({
   onDone, submitLabel = 'Add horse', ownerContactId,
 }: {
@@ -347,6 +414,9 @@ export function HorseIntakeForm({
   const [homeLoc, setHomeLoc] = useState<HorseLocationDetail>({});
   const [currentLoc, setCurrentLoc] = useState<HorseLocationDetail>({});
   const [currentDiffers, setCurrentDiffers] = useState(false);
+  // Repeatable medications + supplements (each a block).
+  const [meds, setMeds] = useState<HorseMedication[]>([]);
+  const [supplements, setSupplements] = useState<HorseMedication[]>([]);
   // Reference lookups — breed & color are CODES the backend resolves to display
   // names for {{HORSE.BREED}}/{{HORSE.COLOR}}. A free-text value never matches a
   // code, so these MUST be selects from the reference tables.
@@ -404,9 +474,10 @@ export function HorseIntakeForm({
     'date_of_birth', 'height', 'fair_market_value',
     'vet_name', 'farrier_name',
     'medical_history', 'behavioral_history',
-    'medication_name', 'medication_dosage', 'medication_instructions', 'medication_additional',
     'known_conditions', 'training_history', 'competition_history',
   ];
+  // Medications & supplements are repeatable and OPTIONAL (a horse may have none);
+  // they're not part of the answer-or-N/A completeness gate.
   // Person-block partner names must be answered; their email is secondary (satisfied
   // once the name is). Lease dates required when leased.
   const condKeys: (keyof HorseIntakePayload)[] = [
@@ -464,6 +535,13 @@ export function HorseIntakeForm({
         try { await setHorseLocations(horseId, homeLoc, currentDiffers ? currentLoc : null); }
         catch { /* record saved; locations best-effort */ }
       };
+      // Persist the repeatable medications + supplements (blank blocks are dropped
+      // server-side). Best-effort — the record is already saved.
+      const linkMeds = async (horseId: string) => {
+        const items = [...meds, ...supplements].filter((m) => filled(m.name));
+        if (!items.length) return;
+        try { await setHorseMedications(horseId, items); } catch { /* record saved */ }
+      };
       // ONE path. Staff assigning to a client passes owner_contact_id; the backend
       // honors it only for staff. A client caller never sets it — the horse binds to them.
       const payload: HorseIntakePayload = isStaff && assignTo
@@ -471,7 +549,7 @@ export function HorseIntakeForm({
         : f;
       const out: HorseRecordOutcome = await createHorseRecord(payload);
       if (out.outcome === 'match_pending_review') setPending(true);
-      else { await linkLocations(out.horse_id); onDone(out.horse_id); }
+      else { await linkLocations(out.horse_id); await linkMeds(out.horse_id); onDone(out.horse_id); }
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Could not save the horse record.');
     } finally {
@@ -624,10 +702,11 @@ export function HorseIntakeForm({
       </Section>
 
       <Section title="Medications">
-        <Field label="Current medication — name" value={f.medication_name} onChange={set('medication_name')} showError={showError} />
-        <Field label="Medication — dosage" value={f.medication_dosage} onChange={set('medication_dosage')} showError={showError} />
-        <Field label="Medication — instructions" value={f.medication_instructions} onChange={set('medication_instructions')} showError={showError} />
-        <Field label="Medication — additional notes" value={f.medication_additional} onChange={set('medication_additional')} showError={showError} />
+        <RepeatableMeds kind="MEDICATION" items={meds} onChange={setMeds} />
+      </Section>
+
+      <Section title="Supplements">
+        <RepeatableMeds kind="SUPPLEMENT" items={supplements} onChange={setSupplements} />
       </Section>
 
       {owns && (
