@@ -7,14 +7,22 @@ import { supabase } from './supabase';
  *  to a column — supabase/horse_record/horse_intake_form.md). All optional except
  *  a name; blanks stay blank. */
 export interface HorseIntakePayload {
+  owner_name_text?: string;
+  owner_email?: string;
+  my_relationship?: 'OWNER' | 'LESSEE';
+  is_leased?: 'yes' | 'no';
+  lessee_name_text?: string;
+  lessee_email?: string;
+  lease_start?: string;
+  lease_end?: string;
   microchip_id?: string;
-  registered_name?: string;
   nickname?: string;
-  breed?: string;
+  registered_name?: string;
   registration_number?: string;
   registration_org?: string;
   passport_number?: string;
   passport_country?: string;
+  breed?: string;
   color?: string;
   markings?: string;
   sex?: string;
@@ -23,14 +31,6 @@ export interface HorseIntakePayload {
   fair_market_value?: string;
   home_location?: string;
   current_location?: string;
-  my_relationship?: 'OWNER' | 'LESSEE';
-  owner_name_text?: string;
-  owner_email?: string;
-  is_leased?: 'yes' | 'no';
-  lessee_name_text?: string;
-  lessee_email?: string;
-  lease_start?: string;
-  lease_end?: string;
   vet_name?: string;
   vet_phone?: string;
   vet_business_name?: string;
@@ -158,24 +158,6 @@ export async function fetchHorseOnboardingState(): Promise<HorseOnboardingState>
 // ── staff records surface (spec H.8) ─────────────────────────────────────────
 
 export interface StaffHorseRecord {
-  id: string;
-  registered_name: string | null;
-  nickname: string | null;
-  breed: string | null;
-  color: string | null;
-  markings: string | null;
-  sex: string | null;
-  date_of_birth: string | null;
-  height: string | null;
-  registration_number: string | null;
-  registration_org: string | null;
-  microchip_id: string | null;
-  current_location: string | null;
-  fair_market_value: number | null;
-  vet_name: string | null;
-  vet_phone: string | null;
-  farrier_name: string | null;
-  farrier_phone: string | null;
   owner_contact_id: string | null;
   owner_name: string | null;
   owner_name_text: string | null;
@@ -187,6 +169,24 @@ export interface StaffHorseRecord {
   document_count: number;
   active_lease_doc: { document_id: string; display_code: string | null; effective_date: string | null } | null;
   created_at: string;
+  id: string;
+  nickname: string | null;
+  registered_name: string | null;
+  registration_number: string | null;
+  registration_org: string | null;
+  microchip_id: string | null;
+  breed: string | null;
+  color: string | null;
+  markings: string | null;
+  sex: string | null;
+  date_of_birth: string | null;
+  height: string | null;
+  current_location: string | null;
+  fair_market_value: number | null;
+  vet_name: string | null;
+  vet_phone: string | null;
+  farrier_name: string | null;
+  farrier_phone: string | null;
 }
 
 export async function staffHorseRecords(): Promise<StaffHorseRecord[]> {
