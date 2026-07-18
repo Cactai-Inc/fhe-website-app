@@ -206,7 +206,7 @@ function VetBlock({
   return (
     <div className="sm:col-span-2 rounded-lg border border-green-800/10 p-3">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-[11px] tracking-wide uppercase text-muted font-semibold">Preferred veterinarian</p>
+        <p className="text-[11px] tracking-wide uppercase text-muted font-semibold">Current Veterinarian</p>
         <label className="flex items-center gap-1 text-[10px] text-muted cursor-pointer select-none">
           <input type="checkbox" checked={na} onChange={(e) => setNa(e.target.checked)} /> N/A
         </label>
@@ -602,36 +602,6 @@ export function HorseIntakeForm({
         Every field is required. If something doesn’t apply to your horse, mark it <strong>N/A</strong>.
       </p>
 
-      <Section title="Horse identity">
-        <Field span label="Microchip number (checked first)" value={f.microchip_id} onChange={set('microchip_id')} placeholder="e.g. 985 112233445566" showError={showError} />
-        <Field label="Registered name" value={f.registered_name} onChange={set('registered_name')} showError={showError} />
-        <Field label="Nickname" value={f.nickname} onChange={set('nickname')} showError={showError} placeholder="Everyday name (e.g. Beau)" />
-        <SelectOrOther label="Breed" value={f.breed} onChange={set('breed')} showError={showError} options={breedOpts} lookupKey="horse_breeds" placeholder="Breed name" />
-        <Field label="Registration number" value={f.registration_number} onChange={set('registration_number')} showError={showError} />
-        <SelectOrOther label="Registration organization" value={f.registration_org} onChange={set('registration_org')} showError={showError} options={toOpts(regOrgOpts)} lookupKey="horse_registration_org" placeholder="Registry name" />
-        <Field label="Passport number" value={f.passport_number} onChange={set('passport_number')} showError={showError} />
-        <SelectOrOther label="Passport country" value={f.passport_country} onChange={set('passport_country')} showError={showError} options={toOpts(passportCountryOpts)} lookupKey="horse_passport_country" placeholder="Country" />
-      </Section>
-
-      <Section title="Description">
-        <SelectOrOther label="Color" value={f.color} onChange={set('color')} showError={showError} options={colorOpts} lookupKey="horse_colors" placeholder="Color" />
-        <SelectOrOther label="Markings" value={f.markings} onChange={set('markings')} showError={showError} options={toOpts(markingOpts)} lookupKey="horse_markings" placeholder="Describe the markings" />
-        <Field label="Sex" value={f.sex} onChange={set('sex')} showError={showError}
-          options={[
-            { value: 'MARE', label: 'Mare' }, { value: 'GELDING', label: 'Gelding' },
-            { value: 'STALLION', label: 'Stallion' }, { value: 'FILLY', label: 'Filly' },
-            { value: 'COLT', label: 'Colt' },
-          ]} />
-        <Field label="Date of birth" type="date" value={f.date_of_birth} onChange={set('date_of_birth')} showError={showError} />
-        <Field label="Height" value={f.height} onChange={set('height')} placeholder="e.g. 16.2 hh" showError={showError} />
-        <Field label="Current fair market value" type="text" inputMode="numeric" value={f.fair_market_value}
-          onChange={set('fair_market_value')} placeholder="$0.00" showError={showError}
-          onBlurFormat={(v) => {
-            const n = Number(v.replace(/[$,\s]/g, ''));
-            return Number.isFinite(n) && v.trim() !== '' ? n.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) : v;
-          }} />
-      </Section>
-
       <Section title="Location">
         <div className="sm:col-span-2 flex flex-col gap-3">
           <LocationEntry title="Home location" heading="Where the horse normally resides for boarding."
@@ -682,11 +652,39 @@ export function HorseIntakeForm({
         )}
       </Section>
 
-      <Section title="Veterinary and farrier">
-        <VetBlock f={f} set={set} showError={showError} />
-        <PersonBlock title="Preferred farrier" showError={showError}
-          name={{ label: 'Farrier name', value: f.farrier_name, onChange: set('farrier_name'), placeholder: 'Farrier name' }}
-          second={{ label: 'Phone', kind: 'tel', value: f.farrier_phone, onChange: set('farrier_phone'), placeholder: '(555) 555-5555' }} />
+      <Section title="Horse identity">
+        <Field label="Nickname" value={f.nickname} onChange={set('nickname')} showError={showError} placeholder="Everyday name (e.g. Beau)" />
+        <Field label="Registered name" value={f.registered_name} onChange={set('registered_name')} showError={showError} />
+        <Field label="Registration number" value={f.registration_number} onChange={set('registration_number')} showError={showError} />
+        <SelectOrOther label="Registration organization" value={f.registration_org} onChange={set('registration_org')} showError={showError} options={toOpts(regOrgOpts)} lookupKey="horse_registration_org" placeholder="Registry name" />
+        <Field span label="Microchip number (checked first)" value={f.microchip_id} onChange={set('microchip_id')} placeholder="e.g. 985 112233445566" showError={showError} />
+        <Field label="Current fair market value" type="text" inputMode="numeric" value={f.fair_market_value}
+          onChange={set('fair_market_value')} placeholder="$0.00" showError={showError}
+          onBlurFormat={(v) => {
+            const n = Number(v.replace(/[$,\s]/g, ''));
+            return Number.isFinite(n) && v.trim() !== '' ? n.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) : v;
+          }} />
+        <Field label="Passport number" value={f.passport_number} onChange={set('passport_number')} showError={showError} />
+        <SelectOrOther label="Passport country" value={f.passport_country} onChange={set('passport_country')} showError={showError} options={toOpts(passportCountryOpts)} lookupKey="horse_passport_country" placeholder="Country" />
+      </Section>
+
+      <Section title="Description">
+        <SelectOrOther label="Breed" value={f.breed} onChange={set('breed')} showError={showError} options={breedOpts} lookupKey="horse_breeds" placeholder="Breed name" />
+        <SelectOrOther label="Color" value={f.color} onChange={set('color')} showError={showError} options={colorOpts} lookupKey="horse_colors" placeholder="Color" />
+        <SelectOrOther label="Markings" value={f.markings} onChange={set('markings')} showError={showError} options={toOpts(markingOpts)} lookupKey="horse_markings" placeholder="Describe the markings" />
+        <Field label="Sex" value={f.sex} onChange={set('sex')} showError={showError}
+          options={[
+            { value: 'MARE', label: 'Mare' }, { value: 'GELDING', label: 'Gelding' },
+            { value: 'STALLION', label: 'Stallion' }, { value: 'FILLY', label: 'Filly' },
+            { value: 'COLT', label: 'Colt' },
+          ]} />
+        <Field label="Date of birth" type="date" value={f.date_of_birth} onChange={set('date_of_birth')} showError={showError} />
+        <Field label="Height" value={f.height} onChange={set('height')} placeholder="e.g. 16.2 hh" showError={showError} />
+      </Section>
+
+      <Section title="History">
+        <Field label="Training history" value={f.training_history} onChange={set('training_history')} showError={showError} />
+        <Field label="Competition history" value={f.competition_history} onChange={set('competition_history')} showError={showError} />
       </Section>
 
       {/* Health & history — the three narrative fields grouped together (they were
@@ -711,6 +709,13 @@ export function HorseIntakeForm({
 
       <Section title="Supplements">
         <RepeatableMeds kind="SUPPLEMENT" items={supplements} onChange={setSupplements} />
+      </Section>
+
+      <Section title="Veterinary and Farrier">
+        <VetBlock f={f} set={set} showError={showError} />
+        <PersonBlock title="Current Farrier" showError={showError}
+          name={{ label: 'Farrier name', value: f.farrier_name, onChange: set('farrier_name'), placeholder: 'Farrier name' }}
+          second={{ label: 'Phone', kind: 'tel', value: f.farrier_phone, onChange: set('farrier_phone'), placeholder: '(555) 555-5555' }} />
       </Section>
 
       <div>
@@ -739,11 +744,6 @@ export function HorseIntakeForm({
             })}
           </div>
       </div>
-
-      <Section title="History">
-        <Field label="Training history" value={f.training_history} onChange={set('training_history')} showError={showError} />
-        <Field label="Competition history" value={f.competition_history} onChange={set('competition_history')} showError={showError} />
-      </Section>
 
       {err && <p className="form-error text-sm text-red-700 mt-2">{err}</p>}
       <button type="button" onClick={submit} disabled={busy}
