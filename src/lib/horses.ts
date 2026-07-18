@@ -97,6 +97,47 @@ export async function createHorseRecord(p: HorseIntakePayload): Promise<HorseRec
   return data as HorseRecordOutcome;
 }
 
+/** The full client horse page: record + documents + schedule + history, one call. */
+export interface HorsePageDetail {
+  record: Record<string, unknown> & {
+    id: string; registered_name: string | null; nickname: string | null;
+    breed: string | null; color: string | null; markings: string | null; sex: string | null;
+    date_of_birth: string | null; height: string | null;
+    registration_number: string | null; registration_org: string | null; microchip_id: string | null;
+    passport_number: string | null; passport_country: string | null; fair_market_value: number | null;
+    home_location: { name?: string; address_line1?: string; city?: string; state?: string; postal?: string } | null;
+    home_barn: string | null; home_stall: string | null; home_notes: string | null;
+    home_trainer: string | null; home_care_giver: string | null; home_groom: string | null; home_other: string | null;
+    current_location: { name?: string; address_line1?: string; city?: string; state?: string; postal?: string } | null;
+    current_barn: string | null; current_stall: string | null;
+    vet_name: string | null; vet_phone: string | null; vet_business_name: string | null;
+    farrier_name: string | null; farrier_phone: string | null;
+    medical_history: string | null; behavioral_history: string | null; known_conditions: string | null;
+    training_history: string | null; competition_history: string | null; euthanasia_authorization: string | null;
+    owner_name: string | null; lessee_name: string | null; lease_start: string | null; lease_end: string | null;
+  };
+  medications: HorseMedication[];
+  documents: { id: string; title: string; display_code: string | null; status: string | null; workflow_state: string | null; effective_date: string | null; created_at: string }[];
+  schedule: { id: string; kind: string | null; starts_at: string | null; ends_at: string | null; status: string | null; location: string | null; notes: string | null }[];
+  health_events: { id: string; event_type: string | null; occurred_at: string | null; next_due: string | null; notes: string | null }[];
+  relationships: { relationship: string; party: string | null; term_start: string | null; term_end: string | null; active: boolean }[];
+}
+export async function horsePageDetail(horseId: string): Promise<HorsePageDetail> {
+  const { data, error } = await supabase.rpc('horse_page_detail', { p_horse_id: horseId });
+  if (error) throw error;
+  return data as HorsePageDetail;
+}
+/** Delete a horse from the caller's stable (owner/staff). */
+export async function deleteStableHorse(horseId: string): Promise<void> {
+  const { error } = await supabase.rpc('my_stable_delete_horse', { p_id: horseId });
+  if (error) throw error;
+}
+/** Update a horse record (owner/staff). Partial patch — only the keys present change. */
+export async function updateHorseRecord(horseId: string, patch: Record<string, string>): Promise<void> {
+  const { error } = await supabase.rpc('update_horse_record', { p_id: horseId, p: patch });
+  if (error) throw error;
+}
+
 /** A repeatable medication or supplement entry with cost, supplier, and order qty.
  *  rx_info applies to medications only. */
 export interface HorseMedication {

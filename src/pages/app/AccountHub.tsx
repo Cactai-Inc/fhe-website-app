@@ -20,7 +20,7 @@ import { GiftsPanel, SavedPanel, DocumentsPanel } from '../../components/app/Acc
 import { useAuth } from '../../contexts/AuthContext';
 import { getMyContactPrefs, saveMyContactPrefs, type MyContactPrefs } from '../../lib/contact';
 import { startGoogleChange, startPasswordChange } from '../../lib/emailChange';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 /**
  * ACCOUNT HUB (/app/account) — the "me" surface for every user type, reached from
@@ -259,7 +259,8 @@ function StableSection() {
       <SectionLabel>Horses</SectionLabel>
       <div className="flex flex-col gap-2.5">
         {showHorses.map((h) => (
-          <div key={h.id} className="bg-white border border-green-800/10 rounded-xl p-4">
+          <Link key={h.id} to={`/app/horses/${h.id}`}
+            className="block bg-white border border-green-800/10 rounded-xl p-4 hover:border-green-800/30 focus-ring transition-colors">
             <div className="flex items-center gap-3">
               <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-green-50 to-gold-50 shrink-0" />
               <div className="min-w-0">
@@ -270,7 +271,7 @@ function StableSection() {
                 <p className="text-[11px] text-gold-800 font-semibold mt-0.5">{[h.ownership, h.discipline, h.location].filter(Boolean).join(' · ')}</p>
               </div>
             </div>
-          </div>
+          </Link>
         ))}
         <button type="button" onClick={() => setModal('horse')} className="text-[12px] text-gold-800 font-semibold text-left px-1">+ Add a horse</button>
       </div>
