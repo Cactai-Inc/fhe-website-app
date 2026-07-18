@@ -294,10 +294,10 @@ function LocationEntry({
         <div className="sm:col-span-2"><L>Street address</L>
           <input className={input} value={v.address_line1 ?? ''} placeholder="123 Ranch Rd" onChange={(e) => set({ address_line1: e.target.value })} /></div>
         <div><L>City</L>
-          <input className={input} value={v.city ?? ''} placeholder="City" onChange={(e) => set({ city: e.target.value })} /></div>
+          <input className={input} value={v.city ?? ''} placeholder="San Diego" onChange={(e) => set({ city: e.target.value })} /></div>
         <div className="grid grid-cols-2 gap-2">
-          <div><L>State</L><input className={input} value={v.state ?? ''} placeholder="ST" onChange={(e) => set({ state: e.target.value })} /></div>
-          <div><L>ZIP</L><input className={input} inputMode="numeric" value={v.postal ?? ''} placeholder="ZIP" onChange={(e) => set({ postal: e.target.value })} /></div>
+          <div><L>State</L><input className={input} value={v.state ?? ''} placeholder="CA" onChange={(e) => set({ state: e.target.value })} /></div>
+          <div><L>ZIP</L><input className={input} inputMode="numeric" value={v.postal ?? ''} placeholder="92109" onChange={(e) => set({ postal: e.target.value })} /></div>
         </div>
         <div><L>Barn <span className="text-muted normal-case">(blank if outdoor)</span></L>
           <PrefixInput prefixes={['Barn', 'Stable']} value={v.barn} placeholder="e.g. A" onChange={(barn) => set({ barn })} /></div>
