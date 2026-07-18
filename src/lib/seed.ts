@@ -212,17 +212,6 @@ export const SEED_ACCOUNT = {
   listingsCount: 2,
 };
 
-// ─── Gifts ─────────────────────────────────────────────────────
-export interface SeedGift {
-  id: string; item: string; recipient: string; recipientEmail: string;
-  status: 'delivered' | 'scheduled' | 'unclaimed'; date: string; amount: string;
-}
-export const SEED_GIFTS: SeedGift[] = [
-  { id: 'gf1', item: '4-lesson package', recipient: 'Anna Beaumont', recipientEmail: 'anna@example.com', status: 'delivered', date: 'Given Jun 12', amount: '$300' },
-  { id: 'gf2', item: 'Single private lesson', recipient: 'Théo Marchand', recipientEmail: 'theo@example.com', status: 'scheduled', date: 'Sends Jul 20', amount: '$85' },
-  { id: 'gf3', item: 'Gift credit', recipient: 'Unclaimed', recipientEmail: '—', status: 'unclaimed', date: 'Purchased Jun 30', amount: '$150' },
-];
-
 // ─── Saved items ───────────────────────────────────────────────
 export type SeedSavedKind = 'article' | 'listing' | 'link';
 export interface SeedSaved {

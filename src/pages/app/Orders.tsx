@@ -25,15 +25,14 @@ export default function Orders() {
 
   return (
     <div className="max-w-3xl">
-      <p className="eyebrow mb-2">Order history</p>
-      <h1 className="heading-section text-green-800 mb-8">Everything you've booked.</h1>
+      <p className="eyebrow mb-2">Orders</p>
+      <h1 className="heading-section text-green-800 mb-8">Your purchases.</h1>
 
       {loading ? (
         <p className="body-text text-muted">Loading…</p>
       ) : orders.length === 0 ? (
-        <div className="bg-white border border-green-800/10 p-8 text-center">
-          <p className="body-text text-sm mb-6">Nothing here yet.</p>
-          <Link to="/services" className="btn-outline-gold">Ways to Ride <ArrowRight size={16} /></Link>
+        <div className="bg-white border border-green-800/10 rounded-xl p-8 text-center">
+          <p className="body-text text-sm text-muted">You haven't made any purchases yet.</p>
         </div>
       ) : (
         <div className="flex flex-col gap-3">
