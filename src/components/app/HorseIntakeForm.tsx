@@ -285,8 +285,8 @@ function LocationEntry({
   );
   return (
     <div className="rounded-lg border border-green-800/15 p-3">
-      <p className="text-[11px] tracking-wide uppercase text-gold-800 font-semibold mb-0.5">{title}</p>
-      <p className="text-[10px] text-muted mb-2.5">{heading}</p>
+      {title && <p className="text-[11px] tracking-wide uppercase text-gold-800 font-semibold mb-0.5">{title}</p>}
+      {heading && <p className="text-[10px] text-muted mb-2.5">{heading}</p>}
       <div className="grid sm:grid-cols-2 gap-2">
         <div className="sm:col-span-2"><L>Location name</L>
           <input list={listId} className={`${input}${bad ? ' border-red-400' : ''}`} value={v.name ?? ''}
@@ -419,10 +419,12 @@ export function HorseIntakeForm({
   // Repeatable medications + supplements (each a block).
   const [meds, setMeds] = useState<HorseMedication[]>([]);
   const [supplements, setSupplements] = useState<HorseMedication[]>([]);
-  // Lease: whether the leased state came from an executed contract (read-only), and
-  // the optional lease-duration location.
-  const [leaseLocationDiffers, setLeaseLocationDiffers] = useState(false);
+  // Lease: whether the leased state came from an executed contract (read-only), the
+  // lease location (= current location during the term), and an optional temporary
+  // current location (a >48h stay elsewhere during the lease).
   const [leaseLoc, setLeaseLoc] = useState<HorseLocationDetail>({});
+  const [tempLocOpen, setTempLocOpen] = useState(false);
+  const [tempLoc, setTempLoc] = useState<HorseLocationDetail>({});
   // On a NEW horse there's no contract yet, so the checkbox is always manual here.
   // (The contract-driven read-only state applies when viewing an existing leased horse.)
   const leaseFromContract = false;
@@ -465,6 +467,17 @@ export function HorseIntakeForm({
   const accountLabel = (a: ClientAccountRow) =>
     a.display_name || [a.first_name, a.last_name].filter(Boolean).join(' ') || a.email || 'Account';
   const locationNameOpts = locations.map((l) => ({ value: l.name, label: l.name }));
+  // Known locations for the temporary-location picker: the horse's own entries (home,
+  // lease) + any location records from the system, MINUS the current lease location
+  // (offering the current location as a "temporary" choice is meaningless). Each carries
+  // its full detail so picking one fills the temporary block.
+  const knownLocations: HorseLocationDetail[] = [
+    homeLoc,
+    ...locations.map((l) => ({ name: l.name, address_line1: l.address ?? undefined })),
+  ].filter((k) => filled(k.name) && k.name !== leaseLoc.name);
+  const knownLocationOpts = knownLocations
+    .filter((k, i, a) => a.findIndex((x) => x.name === k.name) === i)   // de-dup by name
+    .map((k) => ({ value: k.name!, label: k.name! }));
 
   const set = (k: keyof HorseIntakePayload) => (v: string) => setF((p) => ({ ...p, [k]: v }));
 
@@ -502,8 +515,12 @@ export function HorseIntakeForm({
     && (!leased || secondaryOk(f.lessee_name_text, f.lessee_email));
   // Staff must assign the record to an account before it can be created.
   const accountChosen = !isStaff || !!assignTo;
-  // Home location must be named; if current differs it too must be named.
-  const locationsOk = filled(homeLoc.name) && (!currentDiffers || filled(currentLoc.name));
+  // Home must be named. When NOT leased and "different location" is on, the alternate
+  // must be named. When leased off-system, the lease location (= current) must be named
+  // (a contract-driven lease supplies it, so no manual requirement there).
+  const locationsOk = filled(homeLoc.name)
+    && (leased || !currentDiffers || filled(currentLoc.name))
+    && (!leased || leaseFromContract || filled(leaseLoc.name));
   const complete = hasRealName && nameAnswered && euthanasiaAnswered && secondariesOk && accountChosen && locationsOk
     && alwaysKeys.every((k) => answered(f[k] as string | undefined))
     && condKeys.every((k) => answered(f[k] as string | undefined));
@@ -532,13 +549,18 @@ export function HorseIntakeForm({
     }
     setBusy(true);
     try {
-      // Persist the rich home/current locations once the record exists. The horse's
-      // CURRENT location is: the lease location when it's leased-and-moved, else the
-      // "current differs" entry, else home.
+      // Persist home + the resolved CURRENT location once the record exists. Precedence:
+      //   temporary current (a >48h stay during the lease)
+      //   → lease location (when leased)
+      //   → the general "different location" alternate (when NOT leased)
+      //   → home (current === home when nothing else applies).
       const linkLocations = async (horseId: string) => {
         if (!filled(homeLoc.name)) return;
-        const current = (leased && leaseLocationDiffers && filled(leaseLoc.name)) ? leaseLoc
-          : currentDiffers ? currentLoc : null;
+        const current =
+          (leased && tempLocOpen && filled(tempLoc.name)) ? tempLoc :
+          (leased && filled(leaseLoc.name)) ? leaseLoc :
+          (!leased && currentDiffers) ? currentLoc :
+          null;
         try { await setHorseLocations(horseId, homeLoc, current); }
         catch { /* record saved; locations best-effort */ }
       };
@@ -606,13 +628,25 @@ export function HorseIntakeForm({
         <div className="sm:col-span-2 flex flex-col gap-3">
           <LocationEntry title="Home location" heading="Where the horse normally resides for boarding."
             v={homeLoc} onChange={setHomeLoc} showError={showError} nameOptions={locationNameOpts} />
-          <label className="flex items-center gap-2 text-[13px] text-green-900 cursor-pointer select-none">
-            <input type="checkbox" checked={currentDiffers} onChange={(e) => setCurrentDiffers(e.target.checked)} />
-            The horse is currently at a different location
-          </label>
-          {currentDiffers && (
-            <LocationEntry title="Current location" heading="Where the horse actually is right now."
-              v={currentLoc} onChange={setCurrentLoc} showError={showError} nameOptions={locationNameOpts} />
+          {/* The general "different location" alternate applies ONLY when the horse is
+              NOT leased. When leased, the lease location (below) IS the current location,
+              so this is hidden — showing it too would be redundant or contradictory. */}
+          {!leased && (
+            <>
+              <label className="flex items-center gap-2 text-[13px] text-green-900 cursor-pointer select-none">
+                <input type="checkbox" checked={currentDiffers} onChange={(e) => setCurrentDiffers(e.target.checked)} />
+                The horse is currently at a different location
+              </label>
+              {currentDiffers && (
+                <LocationEntry title="Current location" heading="Where the horse actually is right now."
+                  v={currentLoc} onChange={setCurrentLoc} showError={showError} nameOptions={locationNameOpts} />
+              )}
+            </>
+          )}
+          {leased && (
+            <p className="text-[11px] text-muted">
+              This horse is leased — its current location is set under <strong>Lease</strong> below.
+            </p>
           )}
         </div>
       </Section>
@@ -640,13 +674,50 @@ export function HorseIntakeForm({
                 <Field label="Lease end" type="date" value={f.lease_end} onChange={set('lease_end')} showError={showError} />
               </div>
             </div>
-            <label className="flex items-center gap-2 text-[13px] text-green-900 cursor-pointer select-none">
-              <input type="checkbox" checked={leaseLocationDiffers} onChange={(e) => setLeaseLocationDiffers(e.target.checked)} />
-              The horse moves to a different location for the lease
-            </label>
-            {leaseLocationDiffers && (
-              <LocationEntry title="Lease location" heading="Where the horse resides during the lease term."
+            {/* The lease location IS the horse's current location during the term. From
+                the contract (read-only) when one exists; entered here for off-system leases. */}
+            {leaseFromContract ? (
+              <div className="rounded-lg border border-green-800/15 bg-cream-100/40 p-3">
+                <p className="text-[11px] tracking-wide uppercase text-muted font-semibold mb-1">Lease location (current)</p>
+                <p className="text-sm text-green-900">{leaseLoc.name || 'From the lease contract'}</p>
+                <p className="text-[10px] text-muted mt-0.5">Set by the executed lease contract.</p>
+              </div>
+            ) : (
+              <LocationEntry title="Lease location (current)" heading="Where the horse resides during the lease term — this is its current location."
                 v={leaseLoc} onChange={setLeaseLoc} showError={showError} nameOptions={locationNameOpts} />
+            )}
+
+            {/* Temporary current location: an explicit override for a >48h stay during
+                the lease (show, vet, another boarding property). Pick from the horse's
+                known locations (excluding the current lease location) or add a new one. */}
+            {!tempLocOpen ? (
+              <button type="button" onClick={() => setTempLocOpen(true)}
+                className="self-start text-xs text-gold-800 border border-dashed border-gold-400 rounded-lg px-3 py-1.5 hover:bg-gold-50 focus-ring">
+                ＋ Add temporary current location
+              </button>
+            ) : (
+              <div className="rounded-lg border border-gold-400/50 p-3 flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-[11px] tracking-wide uppercase text-gold-800 font-semibold">Temporary current location</p>
+                  <button type="button" onClick={() => { setTempLocOpen(false); setTempLoc({}); }} className="text-[11px] text-muted hover:text-red-700 underline">Remove</button>
+                </div>
+                <p className="text-[10px] text-muted">A stay of more than 48 hours away from the lease location (show, vet, another barn).</p>
+                {knownLocationOpts.length > 0 && (
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-wide text-muted mb-1">Pick a known location, or enter one below</label>
+                    <select className={input}
+                      value={knownLocationOpts.some((o) => o.value === tempLoc.name) ? tempLoc.name : ''}
+                      onChange={(e) => {
+                        const picked = knownLocations.find((k) => k.name === e.target.value);
+                        setTempLoc(picked ?? {});
+                      }}>
+                      <option value="">— choose or enter below —</option>
+                      {knownLocationOpts.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                  </div>
+                )}
+                <LocationEntry title="" heading="" v={tempLoc} onChange={setTempLoc} showError={false} nameOptions={locationNameOpts} />
+              </div>
             )}
           </div>
         )}
