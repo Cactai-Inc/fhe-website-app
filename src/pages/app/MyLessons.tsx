@@ -17,8 +17,8 @@ import { useDocumentTitle } from '../../lib/hooks';
  * lock and myLessonsOverview() never fires. Inside the gate: the member's
  * upcoming confirmed sessions (my_lesson_sessions RPC), the remaining-credit
  * balance (their own lesson_credits rows via the client-scoped RLS policy),
- * the purchase ledger, and the tenant's active packages linking to the public
- * /lessons funnel to buy more.
+ * the purchase ledger, and the tenant's active packages linking to the in-app
+ * catalog (/app/catalog) to buy more.
  */
 /** One lesson report for the rider: logged activities, the instructor write-up,
  *  the pre-lesson/notes thread (authorship-labeled, uneditable), and a box to
@@ -243,7 +243,7 @@ export default function MyLessons() {
               </div>
             )}
 
-            {/* Buy more — the public lessons funnel is the purchase path */}
+            {/* Buy more — the in-app catalog is the authenticated purchase path */}
             <div className="bg-white border border-green-800/10 p-8">
               <p className="text-sm font-sans font-medium text-green-900 mb-1">Need more lessons?</p>
               {overview.packages.length > 0 && (
@@ -255,8 +255,8 @@ export default function MyLessons() {
                   ))}
                 </ul>
               )}
-              <Link to="/lessons" className="btn-outline-gold">
-                Purchase a package <ArrowRight size={16} />
+              <Link to="/app/catalog" className="btn-outline-gold">
+                Shop the catalog <ArrowRight size={16} />
               </Link>
             </div>
           </>
