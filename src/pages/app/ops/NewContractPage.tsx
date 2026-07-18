@@ -102,7 +102,7 @@ export default function NewContractPage() {
   }, []);
   useEffect(() => { setHorseParty(roleB); }, [roleB]);
 
-  const ready = !!partyA && !!partyB && (horseMode === 'pick' ? !!horseId : horseMode === 'record' ? !!(newHorse.registered_name || newHorse.barn_name) : !!horseParty);
+  const ready = !!partyA && !!partyB && (horseMode === 'pick' ? !!horseId : horseMode === 'record' ? !!(newHorse.registered_name || newHorse.nickname) : !!horseParty);
 
   async function create() {
     setErr(null);
@@ -239,7 +239,7 @@ export default function NewContractPage() {
             <option value="">{horses.length === 0 ? 'No horse records yet' : 'Choose a horse…'}</option>
             {horses.map((h) => (
               <option key={h.id} value={h.id}>
-                {[h.barn_name || h.registered_name, h.breed, h.owner_name || h.owner_name_text].filter(Boolean).join(' · ')}
+                {[h.nickname || h.registered_name, h.breed, h.owner_name || h.owner_name_text].filter(Boolean).join(' · ')}
               </option>
             ))}
           </select>
@@ -249,7 +249,7 @@ export default function NewContractPage() {
             <p className="text-[12px] text-muted sm:col-span-2">
               Creates the record now, owned by the {roleLabel(roleB).toLowerCase()} ({roleB === 'LESSOR' ? 'the horse\u2019s owner' : 'seller'}). It autofills the contract and lives in your horse records.
             </p>
-            {([['registered_name','Registered name'],['barn_name','Barn name'],['breed','Breed'],['color','Color'],['sex','Sex'],['height','Height'],['microchip_id','Microchip'],['registration_number','Registration #']] as [string,string][]).map(([k,label]) => (
+            {([['registered_name','Registered name'],['nickname','Barn name'],['breed','Breed'],['color','Color'],['sex','Sex'],['height','Height'],['microchip_id','Microchip'],['registration_number','Registration #']] as [string,string][]).map(([k,label]) => (
               <div key={k}>
                 <span className="form-label">{label}{k==='registered_name' ? ' *' : ''}</span>
                 <input className="form-input" value={newHorse[k] ?? ''}

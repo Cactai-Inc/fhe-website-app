@@ -81,7 +81,7 @@ function EditableRecord({
     <div className="border-t border-green-800/10 pt-4 mt-3">
       <div className="grid sm:grid-cols-3 gap-3 mb-3">
         {field('registered_name', 'Registered name')}
-        {field('barn_name', 'Barn name')}
+        {field('nickname', 'Barn name')}
         {field('breed', 'Breed')}
         {field('color', 'Color')}
         {field('markings', 'Markings')}
@@ -232,8 +232,8 @@ export default function HorseRecordsPage() {
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <p className="font-serif text-green-800 text-lg font-semibold leading-tight truncate">
-                    {r.barn_name || r.registered_name || 'Horse'}
-                    {r.barn_name && r.registered_name && (
+                    {r.nickname || r.registered_name || 'Horse'}
+                    {r.nickname && r.registered_name && (
                       <span className="text-muted font-sans text-sm font-normal"> · {r.registered_name}</span>
                     )}
                   </p>

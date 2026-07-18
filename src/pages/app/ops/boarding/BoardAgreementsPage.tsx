@@ -55,8 +55,8 @@ const TRANSITION_LABEL: Record<BoardAgreementStatus, string> = {
   CANCELLED: 'Cancel',
 };
 
-export function horseLabel(h: Pick<Horse, 'barn_name' | 'registered_name'> | null | undefined): string {
-  return h?.barn_name ?? h?.registered_name ?? '—';
+export function horseLabel(h: Pick<Horse, 'nickname' | 'registered_name'> | null | undefined): string {
+  return h?.nickname ?? h?.registered_name ?? '—';
 }
 
 interface AgreementFormProps {

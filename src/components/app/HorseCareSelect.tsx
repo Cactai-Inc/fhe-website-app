@@ -44,7 +44,7 @@ export function HorseCareSelect({
                 className={`flex items-center justify-between gap-3 rounded-lg border px-4 py-2.5 text-left focus-ring transition-colors ${
                   on ? 'border-green-700 bg-green-50' : 'border-green-800/15 bg-white hover:border-green-800/30'
                 }`}>
-                <span className="text-sm text-green-900">{h.name}{h.barn_name && h.barn_name !== h.name ? ` · ${h.barn_name}` : ''}</span>
+                <span className="text-sm text-green-900">{h.name}{h.nickname && h.nickname !== h.name ? ` · ${h.nickname}` : ''}</span>
                 <span className={`w-5 h-5 rounded grid place-items-center ${on ? 'bg-green-700 text-white' : 'border border-green-800/20'}`}>
                   {on && <Check size={13} />}
                 </span>

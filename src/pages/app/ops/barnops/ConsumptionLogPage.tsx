@@ -31,7 +31,7 @@ import {
  */
 
 function horseLabel(h: HorseOption): string {
-  return h.barn_name ?? h.registered_name ?? h.display_code ?? h.id.slice(0, 8);
+  return h.nickname ?? h.registered_name ?? h.display_code ?? h.id.slice(0, 8);
 }
 
 export default function ConsumptionLogPage() {

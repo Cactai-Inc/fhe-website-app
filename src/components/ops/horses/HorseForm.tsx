@@ -30,7 +30,7 @@ function emptyish(value: string): string | null {
 }
 
 export function HorseForm({ breeds, colors, owners, horse, onSubmit, onCancel }: HorseFormProps) {
-  const [barnName, setBarnName] = useState(horse?.barn_name ?? '');
+  const [barnName, setBarnName] = useState(horse?.nickname ?? '');
   const [registeredName, setRegisteredName] = useState(horse?.registered_name ?? '');
   const [breed, setBreed] = useState(horse?.breed ?? '');
   const [color, setColor] = useState(horse?.color ?? '');
@@ -47,7 +47,7 @@ export function HorseForm({ breeds, colors, owners, horse, onSubmit, onCancel }:
     }
     setFieldError(null);
     return {
-      barn_name: emptyish(barnName),
+      nickname: emptyish(barnName),
       registered_name: emptyish(registeredName),
       breed: emptyish(breed),
       color: emptyish(color),

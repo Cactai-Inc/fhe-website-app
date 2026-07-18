@@ -240,7 +240,7 @@ function StableSection() {
 
   // Fall back to seed only when a live list is empty (preview).
   const showHorses = (horses && horses.length > 0)
-    ? horses.map((h) => ({ id: h.id, name: h.name, barnName: h.barn_name ?? undefined,
+    ? horses.map((h) => ({ id: h.id, name: h.name, barnName: h.nickname ?? undefined,
         breed: h.breed ?? '', sex: h.sex ?? '', height: h.height_hh ?? '', age: h.age_or_foaling ?? '',
         color: h.color ?? '', discipline: h.discipline ?? '', ownership: h.ownership === 'leased' ? 'Leased' : 'Owned',
         location: h.location }))

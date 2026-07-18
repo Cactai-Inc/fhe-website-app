@@ -92,7 +92,7 @@ export default function CareHome() {
             {horses.map((h) => (
               <li key={h.id} className="bg-white border border-green-800/10 rounded-lg px-4 py-3">
                 <span className="inline-flex items-center gap-2 text-green-900"><Boxes size={16} className="text-green-700" /> {h.name}</span>
-                {h.barn_name && h.barn_name !== h.name && <span className="block text-xs text-muted mt-0.5">Barn: {h.barn_name}</span>}
+                {h.nickname && h.nickname !== h.name && <span className="block text-xs text-muted mt-0.5">Barn: {h.nickname}</span>}
               </li>
             ))}
           </ul>

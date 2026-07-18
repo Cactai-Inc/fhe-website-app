@@ -30,7 +30,7 @@ export function HorseTable({ horses, breeds, colors, owners, loading, onRowClick
       header: 'Name',
       render: (h) => (
         <span className="font-medium">
-          {h.barn_name ?? h.registered_name ?? '—'}
+          {h.nickname ?? h.registered_name ?? '—'}
         </span>
       ),
     },

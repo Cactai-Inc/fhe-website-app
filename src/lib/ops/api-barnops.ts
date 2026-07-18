@@ -132,7 +132,7 @@ export interface ContactOption {
 export interface HorseOption {
   id: string;
   display_code: string | null;
-  barn_name: string | null;
+  nickname: string | null;
   registered_name: string | null;
 }
 
@@ -352,9 +352,9 @@ export async function listContactOptions(): Promise<ContactOption[]> {
 export async function listHorseOptions(): Promise<HorseOption[]> {
   const { data, error } = await supabase
     .from('horses')
-    .select('id, display_code, barn_name, registered_name')
+    .select('id, display_code, nickname, registered_name')
     .is('deleted_at', null)
-    .order('barn_name', { nullsFirst: false });
+    .order('nickname', { nullsFirst: false });
   if (error) throw error;
   return (data ?? []) as HorseOption[];
 }

@@ -181,7 +181,7 @@ export interface MemberBoardAgreement {
   end_date: string | null;
   status: string;
   /** horses read is itself RLS-gated (owner/engagement); null when not readable. */
-  horse: { barn_name: string | null; registered_name: string | null } | null;
+  horse: { nickname: string | null; registered_name: string | null } | null;
   charges: MemberBoardCharge[];
 }
 
@@ -199,7 +199,7 @@ export async function myBoardingOverview(): Promise<MyBoardingOverview> {
     .from('board_agreements')
     .select(
       'id, board_rate, board_type, start_date, end_date, status, ' +
-        'horse:horses(barn_name, registered_name), ' +
+        'horse:horses(nickname, registered_name), ' +
         'charges:board_charges(id, period_start, period_end, amount)',
     )
     .is('deleted_at', null)
@@ -222,7 +222,7 @@ export async function myBoardingOverview(): Promise<MyBoardingOverview> {
 
 /** Display helper: a horse's presentable name. */
 export function horseName(
-  horse: { barn_name: string | null; registered_name: string | null } | null,
+  horse: { nickname: string | null; registered_name: string | null } | null,
 ): string {
-  return horse?.barn_name ?? horse?.registered_name ?? 'Your horse';
+  return horse?.nickname ?? horse?.registered_name ?? 'Your horse';
 }

@@ -562,7 +562,7 @@ export async function listHorses(): Promise<Horse[]> {
     .from('horses')
     .select('*')
     .is('deleted_at', null)
-    .order('barn_name', { nullsFirst: false });
+    .order('nickname', { nullsFirst: false });
   if (error) throw error;
   return (data ?? []) as Horse[];
 }

@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { Loader2, ShieldQuestion } from 'lucide-react';
 import {
   createHorseRecord, setHorseLocations,
-  type HorseIntakePayload, type HorseRecordOutcome,
+  type HorseIntakePayload, type HorseRecordOutcome, type HorseLocationDetail,
 } from '../../lib/horses';
 import {
-  fetchLocations, addMyLocation, fetchContactLocations, addContactLocation,
+  fetchLocations, fetchContactLocations,
   type CalendarLocation,
 } from '../../lib/ops/api-calendar';
 import { listHorseBreeds, listHorseColors, listLookupOptions, recordLookupSuggestion } from '../../lib/api';
@@ -233,56 +233,89 @@ function VetBlock({
   );
 }
 
-/** Location picker: barn + the member's own personal locations, with a "+ Add"
- *  path (a personal location, visible only to them). Stores the location NAME
- *  (current_location is text). Keeps the same N/A escape as Field. */
-function LocationField({
-  label, hint, value, onChange, locations, onAdded, showError, span, ownerContactId,
+/** PREFIX INPUT — a standardized composite: a small dropdown that picks the label
+ *  (e.g. Barn / Stable) + a typed value, producing one string like "Barn A". Reduces
+ *  variance and speeds entry. The value is stored/read as "<prefix> <value>". */
+function PrefixInput({
+  prefixes, value, onChange, placeholder,
 }: {
-  label: string;
-  hint?: string;
+  prefixes: string[];
   value?: string;
   onChange: (v: string) => void;
-  locations: CalendarLocation[];
-  onAdded: () => void;
-  showError?: boolean;
-  span?: boolean;
-  /** staff-on-behalf: the client the location belongs to */
-  ownerContactId?: string;
+  placeholder?: string;
 }) {
-  const na = value === NA;
-  const answered = na || filled(value);
-  const cls = `${input}${showError && !answered ? ' border-red-400' : ''}`;
-
-  async function add() {
-    const name = window.prompt('New location name');
-    if (!name?.trim()) return;
-    const addr = window.prompt('Address (optional)') ?? undefined;
-    try {
-      if (ownerContactId) await addContactLocation(ownerContactId, name.trim(), addr?.trim() || undefined);
-      else await addMyLocation(name.trim(), addr?.trim() || undefined);
-      onAdded();
-      onChange(name.trim()); // select the newly added location
-    } catch { /* leave selection as-is on failure */ }
-  }
-
+  // parse an existing "<prefix> <rest>" back into its two parts
+  const parts = (value ?? '').trim().split(/\s+/);
+  const curPrefix = parts.length && prefixes.includes(parts[0]) ? parts[0] : prefixes[0];
+  const curRest = parts.length && prefixes.includes(parts[0]) ? parts.slice(1).join(' ') : (value ?? '');
+  const compose = (p: string, rest: string) => (rest.trim() ? `${p} ${rest.trim()}` : '');
   return (
-    <div className={span ? 'sm:col-span-2' : ''}>
-      <div className="flex items-center justify-between mb-1">
-        <label className="block text-[11px] tracking-wide uppercase text-muted font-semibold">{label}</label>
-        <label className="flex items-center gap-1 text-[10px] text-muted cursor-pointer select-none">
-          <input type="checkbox" checked={na} onChange={(e) => onChange(e.target.checked ? NA : '')} /> N/A
-        </label>
-      </div>
-      <select className={cls} disabled={na} value={na ? '' : (value ?? '')}
-        onChange={(e) => { if (e.target.value === '__add') { void add(); } else onChange(e.target.value); }}>
-        <option value="">Select…</option>
-        {locations.map((l) => (
-          <option key={l.id} value={l.name}>{l.name}{l.is_mine ? ' (mine)' : ''}</option>
-        ))}
-        <option value="__add">+ Add a location…</option>
+    <div className="flex gap-1.5">
+      <select className={`${input} w-28 shrink-0`} value={curPrefix}
+        onChange={(e) => onChange(compose(e.target.value, curRest))}>
+        {prefixes.map((p) => <option key={p} value={p}>{p}</option>)}
       </select>
-      {hint && <p className="text-[10px] text-muted mt-1">{hint}</p>}
+      <input className={input} value={curRest} placeholder={placeholder}
+        onChange={(e) => onChange(compose(curPrefix, e.target.value))} />
+    </div>
+  );
+}
+
+/** LOCATION ENTRY — a fully findable location: name + structured address (on the
+ *  shared place), plus THIS horse's barn/stall, findability notes, and on-site people
+ *  (trainer / care giver / groom / other). A bare name like "Carmel Creek Ranch" isn't
+ *  enough to find a horse; the address + barn/stall are what make it locatable. */
+function LocationEntry({
+  title, heading, v, onChange, showError, nameOptions,
+}: {
+  title: string;
+  heading: string;
+  v: HorseLocationDetail;
+  onChange: (v: HorseLocationDetail) => void;
+  showError?: boolean;
+  nameOptions: { value: string; label: string }[];
+}) {
+  const set = (patch: Partial<HorseLocationDetail>) => onChange({ ...v, ...patch });
+  const listId = `loc-names-${title.replace(/\s+/g, '-')}`;
+  const bad = showError && !filled(v.name);
+  const L = ({ children }: { children: React.ReactNode }) => (
+    <label className="block text-[10px] uppercase tracking-wide text-muted mb-1">{children}</label>
+  );
+  return (
+    <div className="rounded-lg border border-green-800/15 p-3">
+      <p className="text-[11px] tracking-wide uppercase text-gold-800 font-semibold mb-0.5">{title}</p>
+      <p className="text-[10px] text-muted mb-2.5">{heading}</p>
+      <div className="grid sm:grid-cols-2 gap-2">
+        <div className="sm:col-span-2"><L>Location name</L>
+          <input list={listId} className={`${input}${bad ? ' border-red-400' : ''}`} value={v.name ?? ''}
+            placeholder="e.g. Carmel Creek Ranch" onChange={(e) => set({ name: e.target.value })} />
+          <datalist id={listId}>{nameOptions.map((o) => <option key={o.value} value={o.value} />)}</datalist>
+        </div>
+        <div className="sm:col-span-2"><L>Street address</L>
+          <input className={input} value={v.address_line1 ?? ''} placeholder="123 Ranch Rd" onChange={(e) => set({ address_line1: e.target.value })} /></div>
+        <div><L>City</L>
+          <input className={input} value={v.city ?? ''} placeholder="City" onChange={(e) => set({ city: e.target.value })} /></div>
+        <div className="grid grid-cols-2 gap-2">
+          <div><L>State</L><input className={input} value={v.state ?? ''} placeholder="ST" onChange={(e) => set({ state: e.target.value })} /></div>
+          <div><L>ZIP</L><input className={input} inputMode="numeric" value={v.postal ?? ''} placeholder="ZIP" onChange={(e) => set({ postal: e.target.value })} /></div>
+        </div>
+        <div><L>Barn <span className="text-muted normal-case">(blank if outdoor)</span></L>
+          <PrefixInput prefixes={['Barn', 'Stable']} value={v.barn} placeholder="e.g. A" onChange={(barn) => set({ barn })} /></div>
+        <div><L>Stall</L>
+          <PrefixInput prefixes={['Stall', 'Pen']} value={v.stall} placeholder="e.g. 16" onChange={(stall) => set({ stall })} /></div>
+        <div className="sm:col-span-2"><L>Notes</L>
+          <textarea rows={2} className={`${input} resize-y`} value={v.notes ?? ''}
+            placeholder="information that would be helpful in finding this location"
+            onChange={(e) => set({ notes: e.target.value })} /></div>
+        <div><L>Trainer</L>
+          <input className={input} value={v.trainer ?? ''} placeholder="Name (optional)" onChange={(e) => set({ trainer: e.target.value })} /></div>
+        <div><L>Care giver</L>
+          <input className={input} value={v.care_giver ?? ''} placeholder="Name (optional)" onChange={(e) => set({ care_giver: e.target.value })} /></div>
+        <div><L>Groom</L>
+          <input className={input} value={v.groom ?? ''} placeholder="Name (optional)" onChange={(e) => set({ groom: e.target.value })} /></div>
+        <div><L>Other</L>
+          <input className={input} value={v.other ?? ''} placeholder="Role — name (optional)" onChange={(e) => set({ other: e.target.value })} /></div>
+      </div>
     </div>
   );
 }
@@ -310,6 +343,10 @@ export function HorseIntakeForm({
   // caller this stays empty and the backend binds the horse to them.
   const [accounts, setAccounts] = useState<ClientAccountRow[]>([]);
   const [assignTo, setAssignTo] = useState<string>(ownerContactId ?? '');
+  // Rich location model: home always; current only when it differs from home.
+  const [homeLoc, setHomeLoc] = useState<HorseLocationDetail>({});
+  const [currentLoc, setCurrentLoc] = useState<HorseLocationDetail>({});
+  const [currentDiffers, setCurrentDiffers] = useState(false);
   // Reference lookups — breed & color are CODES the backend resolves to display
   // names for {{HORSE.BREED}}/{{HORSE.COLOR}}. A free-text value never matches a
   // code, so these MUST be selects from the reference tables.
@@ -325,15 +362,7 @@ export function HorseIntakeForm({
       .then((locs) => { setLocations(locs); return locs; })
       .catch(() => { setLocations([]); return [] as CalendarLocation[]; });
   useEffect(() => {
-    loadLocations().then((locs) => {
-      // pre-select the barn default for both Home + Current when still empty
-      const def = locs.find((l) => l.is_default);
-      if (def) setF((p) => ({
-        ...p,
-        home_location: p.home_location || def.name,
-        current_location: p.current_location || def.name,
-      }));
-    });
+    loadLocations();   // populates the location-name suggestions; no auto-pre-fill
     // Staff get the client-account list for the assign-to picker.
     if (isStaff) adminClientAccounts().then(setAccounts).catch(() => setAccounts([]));
     listHorseBreeds().then(setBreeds).catch(() => setBreeds([]));
@@ -356,6 +385,7 @@ export function HorseIntakeForm({
   const colorOpts = toOpts(colors);
   const accountLabel = (a: ClientAccountRow) =>
     a.display_name || [a.first_name, a.last_name].filter(Boolean).join(' ') || a.email || 'Account';
+  const locationNameOpts = locations.map((l) => ({ value: l.name, label: l.name }));
 
   const set = (k: keyof HorseIntakePayload) => (v: string) => setF((p) => ({ ...p, [k]: v }));
 
@@ -371,7 +401,7 @@ export function HorseIntakeForm({
   const alwaysKeys: (keyof HorseIntakePayload)[] = [
     'microchip_id', 'breed', 'registration_number', 'registration_org',
     'passport_number', 'passport_country', 'color', 'markings', 'sex',
-    'date_of_birth', 'height', 'fair_market_value', 'home_location', 'current_location',
+    'date_of_birth', 'height', 'fair_market_value',
     'vet_name', 'farrier_name',
     'medical_history', 'behavioral_history',
     'medication_name', 'medication_dosage', 'medication_instructions', 'medication_additional',
@@ -384,8 +414,8 @@ export function HorseIntakeForm({
     ...(leased && !lessee ? (['lessee_name_text'] as (keyof HorseIntakePayload)[]) : []),
     ...(leased ? (['lease_start', 'lease_end'] as (keyof HorseIntakePayload)[]) : []),
   ];
-  const hasRealName = filled(f.registered_name) || filled(f.barn_name);
-  const nameAnswered = answered(f.registered_name) && answered(f.barn_name);
+  const hasRealName = filled(f.registered_name) || filled(f.nickname);
+  const nameAnswered = answered(f.registered_name) && answered(f.nickname);
   // The euthanasia authorization is the OWNER's to make; required when the person
   // filling the form owns the horse (a lessee leaves it for the owner).
   const owns = f.my_relationship === 'OWNER';
@@ -397,7 +427,9 @@ export function HorseIntakeForm({
     && (!(leased && !lessee) || secondaryOk(f.lessee_name_text, f.lessee_email));
   // Staff must assign the record to an account before it can be created.
   const accountChosen = !isStaff || !!assignTo;
-  const complete = hasRealName && nameAnswered && euthanasiaAnswered && secondariesOk && accountChosen
+  // Home location must be named; if current differs it too must be named.
+  const locationsOk = filled(homeLoc.name) && (!currentDiffers || filled(currentLoc.name));
+  const complete = hasRealName && nameAnswered && euthanasiaAnswered && secondariesOk && accountChosen && locationsOk
     && alwaysKeys.every((k) => answered(f[k] as string | undefined))
     && condKeys.every((k) => answered(f[k] as string | undefined));
 
@@ -425,15 +457,15 @@ export function HorseIntakeForm({
     }
     setBusy(true);
     try {
-      // Resolve Home + Current to real location rows once the record exists.
+      // Persist the rich home/current locations once the record exists. Current is
+      // sent only when it differs from home; otherwise the horse is at home.
       const linkLocations = async (horseId: string) => {
-        const home = f.home_location && f.home_location !== NA ? f.home_location : null;
-        const curr = f.current_location && f.current_location !== NA ? f.current_location : null;
-        if (home || curr) { try { await setHorseLocations(horseId, home, curr); } catch { /* record saved; locations best-effort */ } }
+        if (!filled(homeLoc.name)) return;
+        try { await setHorseLocations(horseId, homeLoc, currentDiffers ? currentLoc : null); }
+        catch { /* record saved; locations best-effort */ }
       };
       // ONE path. Staff assigning to a client passes owner_contact_id; the backend
-      // honors it only for staff. A client caller never sets it — the horse binds to
-      // them. linkLocations uses the same setHorseLocations regardless of who owns it.
+      // honors it only for staff. A client caller never sets it — the horse binds to them.
       const payload: HorseIntakePayload = isStaff && assignTo
         ? { ...f, owner_contact_id: assignTo }
         : f;
@@ -488,7 +520,7 @@ export function HorseIntakeForm({
       <Section title="Horse identity">
         <Field span label="Microchip number (checked first)" value={f.microchip_id} onChange={set('microchip_id')} placeholder="e.g. 985 112233445566" showError={showError} />
         <Field label="Registered name" value={f.registered_name} onChange={set('registered_name')} showError={showError} />
-        <Field label="Barn name" value={f.barn_name} onChange={set('barn_name')} showError={showError} />
+        <Field label="Nickname" value={f.nickname} onChange={set('nickname')} showError={showError} placeholder="Everyday name (e.g. Beau)" />
         <SelectOrOther label="Breed" value={f.breed} onChange={set('breed')} showError={showError} options={breedOpts} lookupKey="horse_breeds" placeholder="Breed name" />
         <Field label="Registration number" value={f.registration_number} onChange={set('registration_number')} showError={showError} />
         <SelectOrOther label="Registration organization" value={f.registration_org} onChange={set('registration_org')} showError={showError} options={toOpts(regOrgOpts)} lookupKey="horse_registration_org" placeholder="Registry name" />
@@ -513,12 +545,21 @@ export function HorseIntakeForm({
             const n = Number(v.replace(/[$,\s]/g, ''));
             return Number.isFinite(n) && v.trim() !== '' ? n.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) : v;
           }} />
-        <LocationField label="Home Location" hint="Where the horse normally resides for boarding."
-          value={f.home_location} onChange={set('home_location')}
-          locations={locations} onAdded={loadLocations} showError={showError} ownerContactId={assignTo || undefined} />
-        <LocationField label="Current Location" hint="Where the horse actually is right now."
-          value={f.current_location} onChange={set('current_location')}
-          locations={locations} onAdded={loadLocations} showError={showError} ownerContactId={assignTo || undefined} />
+      </Section>
+
+      <Section title="Location">
+        <div className="sm:col-span-2 flex flex-col gap-3">
+          <LocationEntry title="Home location" heading="Where the horse normally resides for boarding."
+            v={homeLoc} onChange={setHomeLoc} showError={showError} nameOptions={locationNameOpts} />
+          <label className="flex items-center gap-2 text-[13px] text-green-900 cursor-pointer select-none">
+            <input type="checkbox" checked={currentDiffers} onChange={(e) => setCurrentDiffers(e.target.checked)} />
+            The horse is currently at a different location
+          </label>
+          {currentDiffers && (
+            <LocationEntry title="Current location" heading="Where the horse actually is right now."
+              v={currentLoc} onChange={setCurrentLoc} showError={showError} nameOptions={locationNameOpts} />
+          )}
+        </div>
       </Section>
 
       <Section title="Ownership">
@@ -566,14 +607,27 @@ export function HorseIntakeForm({
           second={{ label: 'Phone', kind: 'tel', value: f.farrier_phone, onChange: set('farrier_phone'), placeholder: '(555) 555-5555' }} />
       </Section>
 
-      <Section title="Health and care">
-        <Field span label="Known medical history" textarea value={f.medical_history} onChange={set('medical_history')} showError={showError} />
-        <Field span label="Known behavioral concerns" textarea value={f.behavioral_history} onChange={set('behavioral_history')} showError={showError} />
+      {/* Health & history — the three narrative fields grouped together (they were
+          previously split by the medication fields). Each is distinct:
+          medical history = past surgeries/treatments; behavior = temperament/handling
+          concerns; conditions = current or recurring issues. */}
+      <Section title="Health &amp; history">
+        <Field span label="Medical history (past surgeries, injuries, treatments)" textarea
+          value={f.medical_history} onChange={set('medical_history')} showError={showError}
+          placeholder="e.g. colic surgery 2022; suspensory injury, fully recovered" />
+        <Field span label="Behavioral concerns (temperament, handling)" textarea
+          value={f.behavioral_history} onChange={set('behavioral_history')} showError={showError}
+          placeholder="e.g. cross-ties well; spooky in wind" />
+        <Field span label="Known conditions (current or recurring)" textarea
+          value={f.known_conditions} onChange={set('known_conditions')} showError={showError}
+          placeholder="e.g. allergic to cedar bedding; prone to right-front bruising when jumping" />
+      </Section>
+
+      <Section title="Medications">
         <Field label="Current medication — name" value={f.medication_name} onChange={set('medication_name')} showError={showError} />
         <Field label="Medication — dosage" value={f.medication_dosage} onChange={set('medication_dosage')} showError={showError} />
         <Field label="Medication — instructions" value={f.medication_instructions} onChange={set('medication_instructions')} showError={showError} />
         <Field label="Medication — additional notes" value={f.medication_additional} onChange={set('medication_additional')} showError={showError} />
-        <Field span label="Known conditions" value={f.known_conditions} onChange={set('known_conditions')} showError={showError} />
       </Section>
 
       {owns && (

@@ -36,7 +36,7 @@ export function RecordsHubPage() {
     {
       key: 'horse',
       header: 'Horse',
-      render: (h) => h.barn_name ?? h.registered_name ?? h.display_code ?? h.id.slice(0, 8),
+      render: (h) => h.nickname ?? h.registered_name ?? h.display_code ?? h.id.slice(0, 8),
     },
     { key: 'breed', header: 'Breed', render: (h) => h.breed ?? '—' },
     { key: 'vet', header: 'Vet', render: (h) => h.vet_name ?? '—' },

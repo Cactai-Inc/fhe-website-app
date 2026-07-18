@@ -68,7 +68,7 @@ export interface BoardAgreement {
   created_at: string;
   updated_at: string;
   /** Joined children (listBoardAgreements / create / status updates). */
-  horse?: { id: string; barn_name: string | null; registered_name: string | null } | null;
+  horse?: { id: string; nickname: string | null; registered_name: string | null } | null;
   boarder?: { id: string; first_name: string | null; last_name: string | null } | null;
   stall?: { id: string; code: string } | null;
 }
@@ -108,7 +108,7 @@ export interface BoardCharge {
     id: string;
     boarder_contact_id: string;
     horse_id: string;
-    horse?: { id: string; barn_name: string | null; registered_name: string | null } | null;
+    horse?: { id: string; nickname: string | null; registered_name: string | null } | null;
     boarder?: { id: string; first_name: string | null; last_name: string | null } | null;
   } | null;
   /** Joined emitted billable_line — settlement state lives here. */
@@ -137,10 +137,10 @@ export interface BoardingKpis {
 }
 
 const AGREEMENT_SELECT =
-  '*, horse:horses(id, barn_name, registered_name), boarder:contacts(id, first_name, last_name), stall:stalls(id, code)';
+  '*, horse:horses(id, nickname, registered_name), boarder:contacts(id, first_name, last_name), stall:stalls(id, code)';
 
 const CHARGE_SELECT =
-  '*, agreement:board_agreements(id, boarder_contact_id, horse_id, horse:horses(id, barn_name, registered_name), boarder:contacts(id, first_name, last_name)), billable_line:billable_lines(id, status)';
+  '*, agreement:board_agreements(id, boarder_contact_id, horse_id, horse:horses(id, nickname, registered_name), boarder:contacts(id, first_name, last_name)), billable_line:billable_lines(id, status)';
 
 // ─── Facilities ──────────────────────────────────────────────────────────────
 

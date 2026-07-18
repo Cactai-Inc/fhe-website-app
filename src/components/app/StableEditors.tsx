@@ -36,7 +36,7 @@ function Shell({ title, onClose, children }: { title: string; onClose: () => voi
 
 export function AddHorseModal({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
   const [f, setF] = useState({
-    name: '', barn_name: '', breed: '', sex: '', height_hh: '', age_or_foaling: '',
+    name: '', nickname: '', breed: '', sex: '', height_hh: '', age_or_foaling: '',
     color: '', discipline: '', markings: '', location: 'Carmel Creek Ranch',
   });
   const [ownership, setOwnership] = useState<StableOwnership>('owned');
@@ -79,7 +79,7 @@ export function AddHorseModal({ onClose, onDone }: { onClose: () => void; onDone
     <Shell title="Add a horse" onClose={onClose}>
       <div className="flex flex-col gap-3">
         <div><FieldLabel>Name</FieldLabel><input className={inputCls} value={f.name} onChange={set('name')} placeholder="Registered or full name" /></div>
-        <div><FieldLabel>Barn name</FieldLabel><input className={inputCls} value={f.barn_name} onChange={set('barn_name')} placeholder="Everyday name" /></div>
+        <div><FieldLabel>Barn name</FieldLabel><input className={inputCls} value={f.nickname} onChange={set('nickname')} placeholder="Everyday name" /></div>
         <div className="grid grid-cols-2 gap-3">
           <div><FieldLabel>Breed</FieldLabel><input className={inputCls} value={f.breed} onChange={set('breed')} placeholder="Warmblood" /></div>
           <div><FieldLabel>Sex</FieldLabel><input className={inputCls} value={f.sex} onChange={set('sex')} placeholder="Gelding" /></div>

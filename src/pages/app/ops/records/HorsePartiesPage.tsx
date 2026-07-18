@@ -334,7 +334,7 @@ export function HorsePartiesPage() {
     { key: 'notes', header: 'Notes', render: (p) => p.notes ?? '—' },
   ];
 
-  const horseLabel = horse?.barn_name ?? horse?.registered_name ?? 'Horse';
+  const horseLabel = horse?.nickname ?? horse?.registered_name ?? 'Horse';
 
   return (
     <div className="max-w-4xl mx-auto py-8 px-4">

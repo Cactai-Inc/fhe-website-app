@@ -9,7 +9,7 @@ import { supabase } from './supabase';
 export interface HorseIntakePayload {
   microchip_id?: string;
   registered_name?: string;
-  barn_name?: string;
+  nickname?: string;
   breed?: string;
   registration_number?: string;
   registration_org?: string;
@@ -65,13 +65,33 @@ export type HorseRecordOutcome =
 
 /** Resolve/set a horse's Home + Current locations (by name) to real location rows.
  *  Called after the horse form saves so the three-location model is populated. */
+/** A findable location: the place (name + structured address) plus THIS horse's
+ *  detail there (barn/stall, notes, on-site people). */
+export interface HorseLocationDetail {
+  name?: string;
+  address_line1?: string;
+  city?: string;
+  state?: string;
+  postal?: string;
+  /** Composite "Barn A" / "Stable A" (prefix select + typed value); blank when the
+   *  property has outdoor stalls only. */
+  barn?: string;
+  /** Composite "Stall 16" / "Pen 16". */
+  stall?: string;
+  notes?: string;
+  trainer?: string;
+  care_giver?: string;
+  groom?: string;
+  other?: string;
+}
+/** Persist a horse's home and (optional) current location. `current` null/omitted
+ *  means the horse is at its home location. */
 export async function setHorseLocations(
-  horseId: string, homeName?: string | null, currentName?: string | null,
+  horseId: string, home: HorseLocationDetail, current?: HorseLocationDetail | null,
 ): Promise<void> {
   const { error } = await supabase.rpc('set_horse_locations', {
     p_horse_id: horseId,
-    p_home_name: homeName ?? null,
-    p_current_name: currentName ?? null,
+    p_payload: { home, current: current ?? null },
   });
   if (error) throw error;
 }
@@ -119,7 +139,7 @@ export async function fetchHorseOnboardingState(): Promise<HorseOnboardingState>
 export interface StaffHorseRecord {
   id: string;
   registered_name: string | null;
-  barn_name: string | null;
+  nickname: string | null;
   breed: string | null;
   color: string | null;
   markings: string | null;

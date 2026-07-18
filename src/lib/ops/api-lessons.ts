@@ -490,19 +490,19 @@ export interface ScheduleHorseOption {
 export async function listScheduleHorses(): Promise<ScheduleHorseOption[]> {
   const { data, error } = await supabase
     .from('horses')
-    .select('id, barn_name, registered_name, display_code')
+    .select('id, nickname, registered_name, display_code')
     .is('deleted_at', null)
-    .order('barn_name', { nullsFirst: false });
+    .order('nickname', { nullsFirst: false });
   if (error) throw error;
   type Row = {
     id: string;
-    barn_name: string | null;
+    nickname: string | null;
     registered_name: string | null;
     display_code: string | null;
   };
   return ((data ?? []) as Row[]).map((h) => ({
     id: h.id,
-    name: h.barn_name || h.registered_name || h.display_code || h.id.slice(0, 8),
+    name: h.nickname || h.registered_name || h.display_code || h.id.slice(0, 8),
   }));
 }
 

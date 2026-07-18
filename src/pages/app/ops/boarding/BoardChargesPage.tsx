@@ -54,7 +54,7 @@ function lastOfMonth(): string {
 }
 
 function agreementLabel(a: BoardAgreement): string {
-  const horse = a.horse?.barn_name ?? a.horse?.registered_name ?? 'Horse';
+  const horse = a.horse?.nickname ?? a.horse?.registered_name ?? 'Horse';
   const boarder = contactName(a.boarder) || 'boarder';
   return `${horse} — ${boarder}`;
 }
@@ -255,7 +255,7 @@ export function BoardChargesPage() {
       header: 'Agreement',
       render: (c) =>
         c.agreement
-          ? `${c.agreement.horse?.barn_name ?? c.agreement.horse?.registered_name ?? '—'} — ${
+          ? `${c.agreement.horse?.nickname ?? c.agreement.horse?.registered_name ?? '—'} — ${
               contactName(c.agreement.boarder) || '—'
             }`
           : '—',

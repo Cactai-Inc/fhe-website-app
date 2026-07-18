@@ -56,7 +56,7 @@ const inputCls = 'w-full px-3 py-2.5 rounded-lg border border-green-800/15 text-
 const textareaCls = `${inputCls} resize-y min-h-[5.5rem] max-h-56`;
 
 function horseLabel(h: ListableHorse): string {
-  const name = h.barn_name || h.registered_name || 'Horse';
+  const name = h.nickname || h.registered_name || 'Horse';
   return [name, h.breed, h.height].filter(Boolean).join(' · ');
 }
 
@@ -98,7 +98,7 @@ function PostForm({ type, onClose }: { type: PostType; onClose: () => void }) {
     if (!horseId) return;
     const h = horses.find((x) => x.id === horseId);
     if (!h) return;
-    const name = h.barn_name || h.registered_name || '';
+    const name = h.nickname || h.registered_name || '';
     if (!title) setTitle(`${name} — for ${intent}`);
     const desc = [
       h.registered_name && `Registered name: ${h.registered_name}`,

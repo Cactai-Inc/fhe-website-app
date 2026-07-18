@@ -82,7 +82,7 @@ export interface Horse {
   id: string;
   display_code: string | null;
   registered_name: string | null;
-  barn_name: string | null;
+  nickname: string | null;
   breed: string | null;
   color: string | null;
   sex: HorseSex | null;
@@ -100,7 +100,7 @@ export interface Horse {
 export type HorseInput = Partial<
   Pick<
     Horse,
-    | 'registered_name' | 'barn_name' | 'breed' | 'color' | 'sex'
+    | 'registered_name' | 'nickname' | 'breed' | 'color' | 'sex'
     | 'date_of_birth' | 'height' | 'registration_number' | 'microchip_id'
     | 'current_location' | 'current_owner_contact_id' | 'notes'
   >

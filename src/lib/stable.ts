@@ -24,7 +24,7 @@ export type StableItemKind = 'gear' | 'supply';
 export interface StableHorse {
   id: string;
   name: string;
-  barn_name: string | null;
+  nickname: string | null;
   breed: string | null;
   sex: string | null;
   height_hh: string | null;
@@ -69,7 +69,7 @@ export interface StableItem {
 interface StableHorseRow {
   id: string;
   registered_name: string | null;
-  barn_name: string | null;
+  nickname: string | null;
   breed: string | null;
   sex: string | null;
   height: string | null;
@@ -82,8 +82,8 @@ interface StableHorseRow {
 function toStableHorse(r: StableHorseRow): StableHorse {
   return {
     id: r.id,
-    name: r.barn_name || r.registered_name || 'Horse',
-    barn_name: r.barn_name,
+    name: r.nickname || r.registered_name || 'Horse',
+    nickname: r.nickname,
     breed: r.breed,
     sex: r.sex,
     height_hh: r.height,
@@ -106,7 +106,7 @@ export async function listStableHorses(): Promise<StableHorse[]> {
 export async function addStableHorse(input: Partial<StableHorse> & { name: string }): Promise<string> {
   const { data, error } = await supabase.rpc('my_stable_add_horse', {
     p_name: input.name,
-    p_barn_name: input.barn_name ?? null,
+    p_barn_name: input.nickname ?? null,
     p_breed: input.breed ?? null,
     p_sex: input.sex ?? null,
     p_height: input.height_hh ?? null,
@@ -122,7 +122,7 @@ export async function addStableHorse(input: Partial<StableHorse> & { name: strin
 export async function updateStableHorse(id: string, patch: Partial<StableHorse>): Promise<void> {
   const { error } = await supabase.rpc('my_stable_update_horse', {
     p_id: id,
-    p_barn_name: patch.barn_name ?? null,
+    p_barn_name: patch.nickname ?? null,
     p_breed: patch.breed ?? null,
     p_sex: patch.sex ?? null,
     p_height: patch.height_hh ?? null,
@@ -198,7 +198,7 @@ export async function deleteStableItem(id: string): Promise<void> {
 export interface ListableHorse {
   id: string;
   registered_name: string | null;
-  barn_name: string | null;
+  nickname: string | null;
   breed: string | null;
   color: string | null;
   sex: string | null;
