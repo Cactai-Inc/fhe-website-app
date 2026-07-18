@@ -251,11 +251,13 @@ function PrefixInput({
   const compose = (p: string, rest: string) => (rest.trim() ? `${p} ${rest.trim()}` : '');
   return (
     <div className="flex gap-1.5">
-      <select className={`${input} w-28 shrink-0`} value={curPrefix}
+      <select className={`${input} w-24 shrink-0`} value={curPrefix}
         onChange={(e) => onChange(compose(e.target.value, curRest))}>
         {prefixes.map((p) => <option key={p} value={p}>{p}</option>)}
       </select>
-      <input className={input} value={curRest} placeholder={placeholder}
+      {/* flex-1 min-w-0 so the typed value takes the remaining space instead of the
+          shared w-full class forcing it to overflow the cell */}
+      <input className={`${input} flex-1 min-w-0`} value={curRest} placeholder={placeholder}
         onChange={(e) => onChange(compose(curPrefix, e.target.value))} />
     </div>
   );
@@ -399,7 +401,7 @@ export function HorseIntakeForm({
   ownerContactId?: string;
 }) {
   const { isStaff } = useAuth();
-  const [f, setF] = useState<HorseIntakePayload>({ my_relationship: 'OWNER', is_leased: 'no' });
+  const [f, setF] = useState<HorseIntakePayload>({ is_leased: 'no' });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -417,6 +419,13 @@ export function HorseIntakeForm({
   // Repeatable medications + supplements (each a block).
   const [meds, setMeds] = useState<HorseMedication[]>([]);
   const [supplements, setSupplements] = useState<HorseMedication[]>([]);
+  // Lease: whether the leased state came from an executed contract (read-only), and
+  // the optional lease-duration location.
+  const [leaseLocationDiffers, setLeaseLocationDiffers] = useState(false);
+  const [leaseLoc, setLeaseLoc] = useState<HorseLocationDetail>({});
+  // On a NEW horse there's no contract yet, so the checkbox is always manual here.
+  // (The contract-driven read-only state applies when viewing an existing leased horse.)
+  const leaseFromContract = false;
   // Reference lookups — breed & color are CODES the backend resolves to display
   // names for {{HORSE.BREED}}/{{HORSE.COLOR}}. A free-text value never matches a
   // code, so these MUST be selects from the reference tables.
@@ -460,7 +469,8 @@ export function HorseIntakeForm({
   const set = (k: keyof HorseIntakePayload) => (v: string) => setF((p) => ({ ...p, [k]: v }));
 
   const leased = f.is_leased === 'yes';
-  const lessee = f.my_relationship === 'LESSEE';
+  // This record is always the OWNER's (creator or staff-assigned client) — there is no
+  // lessee-creator path.
 
   // Every applicable field must be answered (filled or N/A). Names are special:
   // at least one of registered/barn must be a REAL name (not N/A).
@@ -478,24 +488,18 @@ export function HorseIntakeForm({
   ];
   // Medications & supplements are repeatable and OPTIONAL (a horse may have none);
   // they're not part of the answer-or-N/A completeness gate.
-  // Person-block partner names must be answered; their email is secondary (satisfied
-  // once the name is). Lease dates required when leased.
+  // When leased (off-system), the lessee name + lease dates are required.
   const condKeys: (keyof HorseIntakePayload)[] = [
-    ...(lessee ? (['owner_name_text'] as (keyof HorseIntakePayload)[]) : []),
-    ...(leased && !lessee ? (['lessee_name_text'] as (keyof HorseIntakePayload)[]) : []),
-    ...(leased ? (['lease_start', 'lease_end'] as (keyof HorseIntakePayload)[]) : []),
+    ...(leased ? (['lessee_name_text', 'lease_start', 'lease_end'] as (keyof HorseIntakePayload)[]) : []),
   ];
   const hasRealName = filled(f.registered_name) || filled(f.nickname);
   const nameAnswered = answered(f.registered_name) && answered(f.nickname);
-  // The euthanasia authorization is the OWNER's to make; required when the person
-  // filling the form owns the horse (a lessee leaves it for the owner).
-  const owns = f.my_relationship === 'OWNER';
-  const euthanasiaAnswered = !owns || f.euthanasia_authorization === 'A' || f.euthanasia_authorization === 'B';
-  // person-block secondaries: vet/farrier phone, owner/lessee email
+  // The owner (who owns this record) always makes the emergency euthanasia authorization.
+  const euthanasiaAnswered = f.euthanasia_authorization === 'A' || f.euthanasia_authorization === 'B';
+  // person-block secondaries: vet/farrier phone, lessee email
   const secondariesOk = secondaryOk(f.vet_name, f.vet_phone)
     && secondaryOk(f.farrier_name, f.farrier_phone)
-    && (!lessee || secondaryOk(f.owner_name_text, f.owner_email))
-    && (!(leased && !lessee) || secondaryOk(f.lessee_name_text, f.lessee_email));
+    && (!leased || secondaryOk(f.lessee_name_text, f.lessee_email));
   // Staff must assign the record to an account before it can be created.
   const accountChosen = !isStaff || !!assignTo;
   // Home location must be named; if current differs it too must be named.
@@ -516,7 +520,7 @@ export function HorseIntakeForm({
       setErr('Give the horse at least a registered or barn name (N/A can’t apply to both).');
       return;
     }
-    if (owns && !euthanasiaAnswered) {
+    if (!euthanasiaAnswered) {
       setShowError(true);
       setErr('Please choose an emergency euthanasia authorization (Option A or B).');
       return;
@@ -528,11 +532,14 @@ export function HorseIntakeForm({
     }
     setBusy(true);
     try {
-      // Persist the rich home/current locations once the record exists. Current is
-      // sent only when it differs from home; otherwise the horse is at home.
+      // Persist the rich home/current locations once the record exists. The horse's
+      // CURRENT location is: the lease location when it's leased-and-moved, else the
+      // "current differs" entry, else home.
       const linkLocations = async (horseId: string) => {
         if (!filled(homeLoc.name)) return;
-        try { await setHorseLocations(horseId, homeLoc, currentDiffers ? currentLoc : null); }
+        const current = (leased && leaseLocationDiffers && filled(leaseLoc.name)) ? leaseLoc
+          : currentDiffers ? currentLoc : null;
+        try { await setHorseLocations(horseId, homeLoc, current); }
         catch { /* record saved; locations best-effort */ }
       };
       // Persist the repeatable medications + supplements (blank blocks are dropped
@@ -640,41 +647,38 @@ export function HorseIntakeForm({
         </div>
       </Section>
 
-      <Section title="Ownership">
-        <div>
-          <label className="block text-[11px] tracking-wide uppercase text-muted font-semibold mb-1">Your relationship to this horse</label>
-          <select className={input} value={f.my_relationship}
-            onChange={(e) => setF((p) => ({ ...p, my_relationship: e.target.value as 'OWNER' | 'LESSEE' }))}>
-            <option value="OWNER">I own this horse</option>
-            <option value="LESSEE">I lease this horse</option>
-          </select>
-        </div>
-        {lessee && (
-          <PersonBlock title="Owner" showError={showError}
-            name={{ label: 'Owner name', value: f.owner_name_text, onChange: set('owner_name_text'), placeholder: 'Full name' }}
-            second={{ label: 'Owner email', kind: 'email', value: f.owner_email, onChange: set('owner_email'), placeholder: 'name@example.com' }} />
-        )}
-      </Section>
-
-      <Section title="Lease (if applicable)">
-        <div>
-          <label className="block text-[11px] tracking-wide uppercase text-muted font-semibold mb-1">Horse is leased</label>
-          <select className={input} value={f.is_leased}
-            onChange={(e) => setF((p) => ({ ...p, is_leased: e.target.value as 'yes' | 'no' }))}>
-            <option value="no">No</option>
-            <option value="yes">Yes</option>
-          </select>
-        </div>
+      {/* Lease — this record belongs to the horse's OWNER (the creating account or the
+          staff-assigned client), so there's no "owner vs lessee" choice. A checkbox
+          marks the horse as currently leased: it reveals the lessee + term + lease
+          location for an OFF-SYSTEM lease. When an executed lease contract exists for
+          the horse, this state is set from the contract (and reverts at term end). */}
+      <Section title="Lease">
+        <label className="sm:col-span-2 flex items-center gap-2 text-[13px] text-green-900 cursor-pointer select-none">
+          <input type="checkbox" checked={leased} disabled={leaseFromContract}
+            onChange={(e) => setF((p) => ({ ...p, is_leased: e.target.checked ? 'yes' : 'no' }))} />
+          This horse is currently leased
+          {leaseFromContract && <span className="text-[11px] text-muted">(from an executed lease contract)</span>}
+        </label>
         {leased && (
-          <>
-            {f.my_relationship === 'OWNER' && (
-              <PersonBlock title="Lessee" showError={showError}
+          <div className="sm:col-span-2 flex flex-col gap-3">
+            <div className="grid sm:grid-cols-2 gap-3">
+              <PersonBlock title="Lessee" showError={showError} span={false}
                 name={{ label: 'Lessee name', value: f.lessee_name_text, onChange: set('lessee_name_text'), placeholder: 'Full name' }}
                 second={{ label: 'Lessee email', kind: 'email', value: f.lessee_email, onChange: set('lessee_email'), placeholder: 'name@example.com' }} />
+              <div className="grid grid-cols-2 gap-2 self-start">
+                <Field label="Lease start" type="date" value={f.lease_start} onChange={set('lease_start')} showError={showError} />
+                <Field label="Lease end" type="date" value={f.lease_end} onChange={set('lease_end')} showError={showError} />
+              </div>
+            </div>
+            <label className="flex items-center gap-2 text-[13px] text-green-900 cursor-pointer select-none">
+              <input type="checkbox" checked={leaseLocationDiffers} onChange={(e) => setLeaseLocationDiffers(e.target.checked)} />
+              The horse moves to a different location for the lease
+            </label>
+            {leaseLocationDiffers && (
+              <LocationEntry title="Lease location" heading="Where the horse resides during the lease term."
+                v={leaseLoc} onChange={setLeaseLoc} showError={showError} nameOptions={locationNameOpts} />
             )}
-            <Field label="Lease start" type="date" value={f.lease_start} onChange={set('lease_start')} showError={showError} />
-            <Field label="Lease end" type="date" value={f.lease_end} onChange={set('lease_end')} showError={showError} />
-          </>
+          </div>
         )}
       </Section>
 
@@ -709,9 +713,8 @@ export function HorseIntakeForm({
         <RepeatableMeds kind="SUPPLEMENT" items={supplements} onChange={setSupplements} />
       </Section>
 
-      {owns && (
-        <div>
-          <p className="text-[10px] tracking-widest uppercase text-gold-800 font-semibold mt-4 mb-2">Emergency euthanasia authorization (required)</p>
+      <div>
+        <p className="text-[10px] tracking-widest uppercase text-gold-800 font-semibold mt-4 mb-2">Emergency euthanasia authorization (required)</p>
           <p className="text-xs text-muted mb-2">
             As the owner, choose one. This is included in your horse’s Emergency Vet Authorization.
           </p>
@@ -735,8 +738,7 @@ export function HorseIntakeForm({
               );
             })}
           </div>
-        </div>
-      )}
+      </div>
 
       <Section title="History">
         <Field label="Training history" value={f.training_history} onChange={set('training_history')} showError={showError} />
