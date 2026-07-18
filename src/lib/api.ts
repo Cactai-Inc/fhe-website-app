@@ -376,6 +376,20 @@ export async function listMyOrders(): Promise<Order[]> {
   return (data ?? []) as Order[];
 }
 
+/** A gift the caller received (to use) or gave. */
+export interface MyGift {
+  id: string; code: string | null; item_type: string | null; item_label: string | null;
+  amount: number | null; status: string | null; gift_message: string | null;
+  buyer_name: string | null; recipient_name: string | null;
+  unlocked: boolean; opened_at: string | null; redeemed_at: string | null;
+  expires_at: string | null; created_at: string; direction: 'given' | 'received';
+}
+export async function listMyGifts(): Promise<MyGift[]> {
+  const { data, error } = await supabase.rpc('my_gifts');
+  if (error) throw error;
+  return (data ?? []) as MyGift[];
+}
+
 /** Move a draft order to awaiting_payment with the chosen method. The server
  *  RPC finalizes pricing: offering-linked item prices are enforced server-side,
  *  totals recomputed, and the Zelle matching keys (unique_amount +

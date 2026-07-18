@@ -16,7 +16,7 @@ import { AddItemModal } from '../../components/app/StableEditors';
 import { HorseIntakeForm } from '../../components/app/HorseIntakeForm';
 import { X } from 'lucide-react';
 import { EmailChangeModal } from '../../components/app/EmailChangeModal';
-import { GiftsPanel, SavedPanel, DocumentsPanel } from '../../components/app/AccountPanels';
+import { SavedPanel, DocumentsPanel } from '../../components/app/AccountPanels';
 import { useAuth } from '../../contexts/AuthContext';
 import { getMyContactPrefs, saveMyContactPrefs, type MyContactPrefs } from '../../lib/contact';
 import { startGoogleChange, startPasswordChange } from '../../lib/emailChange';
@@ -31,7 +31,7 @@ import { useNavigate, Link } from 'react-router-dom';
  * and full My Stable editing land in the follow-up passes.
  */
 
-type Section = 'profile' | 'stable' | 'saved' | 'documents' | 'gifts' | null;
+type Section = 'profile' | 'stable' | 'saved' | 'documents' | null;
 
 function Row({
   icon: Icon, title, sub, onClick, open,
@@ -334,14 +334,11 @@ function StableSection() {
 }
 
 export default function AccountHub() {
-  const { profile, membership } = useAuth();
+  const { profile } = useAuth();
   const navigate = useNavigate();
   const realName = profile?.display_name
     || [profile?.first_name, profile?.last_name].filter(Boolean).join(' ')
     || 'Your profile';
-  const membershipSub = membership?.status === 'active'
-    ? `${membership.tier ?? 'Member'} · active`
-    : 'Not active yet';
   useDocumentTitle('Account');
   const [open, setOpen] = useState<Section>(null);
   const toggle = (s: Section) => setOpen((cur) => (cur === s ? null : s));
@@ -353,7 +350,6 @@ export default function AccountHub() {
         <h1 className="font-serif text-green-800 text-3xl font-semibold mt-0.5">Account</h1>
       </header>
 
-      <SectionLabel>You</SectionLabel>
       <div className="grid lg:grid-cols-2 gap-3">
         <Row icon={UserRound} title="Profile &amp; preferences" sub={`${realName} · contact, socials, notifications`} onClick={() => toggle('profile')} open={open === 'profile'} />
         {open === 'profile' && <div className="lg:col-span-2"><ProfileSection /></div>}
@@ -365,14 +361,8 @@ export default function AccountHub() {
         {open === 'documents' && <div className="lg:col-span-2"><DocumentsPanel /></div>}
         <Row icon={Boxes} title="My Stable" sub="Your horses, gear, and supplies" onClick={() => toggle('stable')} open={open === 'stable'} />
         {open === 'stable' && <div className="lg:col-span-2"><StableSection /></div>}
-      </div>
-
-      <SectionLabel>Orders &amp; membership</SectionLabel>
-      <div className="grid lg:grid-cols-2 gap-3">
-        <Row icon={BadgeCheck} title="Membership" sub={membershipSub} />
-        <Row icon={ShoppingBag} title="Orders & payment method" sub="Past orders · Zelle" onClick={() => navigate('/app/orders')} />
-        <Row icon={Gift} title="Gifts" sub="Things you've gifted · resend, transfer" onClick={() => toggle('gifts')} open={open === 'gifts'} />
-        {open === 'gifts' && <div className="lg:col-span-2"><GiftsPanel /></div>}
+        <Row icon={ShoppingBag} title="Orders" sub="Your purchases" onClick={() => navigate('/app/orders')} />
+        <Row icon={Gift} title="Gifts" sub="Gifts you can use" onClick={() => navigate('/app/gifts')} />
       </div>
     </div>
   );

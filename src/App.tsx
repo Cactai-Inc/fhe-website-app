@@ -46,6 +46,7 @@ import Profile from './pages/app/Profile';
 import Schedule from './pages/app/Schedule';
 import CalendarPage from './pages/app/CalendarPage';
 import Orders from './pages/app/Orders';
+import Gifts from './pages/app/Gifts';
 import Documents from './pages/app/Documents';
 import Onboarding from './pages/app/Onboarding';
 // Client portal (CP-* wave)
@@ -203,6 +204,7 @@ export function AppRoutes() {
               {/* /app/book retired — booking lives on the full calendar (Phase 6) */}
               <Route path="book" element={<Navigate to="/app/calendar" replace />} />
               <Route path="orders" element={<Orders />} />
+              <Route path="gifts" element={<Gifts />} />
               {/* Client portal (CP-*) */}
               <Route path="lessons" element={<MyLessons />} />
               <Route path="profile" element={<Profile />} />
