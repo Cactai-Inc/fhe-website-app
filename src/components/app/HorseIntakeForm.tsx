@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Loader2, ShieldQuestion } from 'lucide-react';
 import {
-  createHorseRecord, staffCreateHorseForContact, setHorseLocations,
+  createHorseRecord, setHorseLocations,
   type HorseIntakePayload, type HorseRecordOutcome,
 } from '../../lib/horses';
 import {
@@ -9,6 +9,8 @@ import {
   type CalendarLocation,
 } from '../../lib/ops/api-calendar';
 import { listHorseBreeds, listHorseColors, listLookupOptions, recordLookupSuggestion } from '../../lib/api';
+import { adminClientAccounts, type ClientAccountRow } from '../../lib/admin';
+import { useAuth } from '../../contexts/AuthContext';
 import type { LookupCode } from '../../lib/ops/types';
 
 /**
@@ -20,7 +22,9 @@ import type { LookupCode } from '../../lib/ops/types';
  * so a legal document never renders a silently-blank field. Each field carries an
  * N/A toggle; submit is blocked until all applicable fields are answered.
  *
- * Submits through create_horse_record (client) / staff_create_horse_for_contact.
+ * ONE creation path: create_horse_record. A client's record binds to their own
+ * account; STAFF pick the owning client via the in-form "Assign to account" picker
+ * (create_horse_record honors owner_contact_id for staff only).
  */
 
 const input = 'w-full px-3 py-2 rounded-lg border border-green-800/15 text-sm text-green-900 placeholder:text-muted focus-ring bg-white disabled:bg-cream-100 disabled:text-muted';
@@ -289,15 +293,23 @@ export function HorseIntakeForm({
   /** Fires on created OR match_found (both attach an id); pending-review shows in-form. */
   onDone: (horseId: string) => void;
   submitLabel?: string;
-  /** Staff context: create the record OWNED BY this contact, not the caller. */
+  /** Optional PRESET of the owning account (e.g. a staff page that already knows the
+   *  client). Staff can still change it via the in-form account picker; ignored for
+   *  non-staff callers (the record always binds to them). */
   ownerContactId?: string;
 }) {
+  const { isStaff } = useAuth();
   const [f, setF] = useState<HorseIntakePayload>({ my_relationship: 'OWNER', is_leased: 'no' });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [showError, setShowError] = useState(false);
   const [locations, setLocations] = useState<CalendarLocation[]>([]);
+  // Staff-only: the account this record is assigned to. The record binds to the
+  // creating account UNLESS staff assigns it to another client here. For a client
+  // caller this stays empty and the backend binds the horse to them.
+  const [accounts, setAccounts] = useState<ClientAccountRow[]>([]);
+  const [assignTo, setAssignTo] = useState<string>(ownerContactId ?? '');
   // Reference lookups — breed & color are CODES the backend resolves to display
   // names for {{HORSE.BREED}}/{{HORSE.COLOR}}. A free-text value never matches a
   // code, so these MUST be selects from the reference tables.
@@ -307,9 +319,9 @@ export function HorseIntakeForm({
   const [regOrgOpts, setRegOrgOpts] = useState<LookupCode[]>([]);
   const [passportCountryOpts, setPassportCountryOpts] = useState<LookupCode[]>([]);
 
-  // Staff creating for a client → that CLIENT's locations; otherwise the caller's.
+  // Staff assigning to a client → that CLIENT's locations; otherwise the caller's.
   const loadLocations = () =>
-    (ownerContactId ? fetchContactLocations(ownerContactId) : fetchLocations())
+    (assignTo ? fetchContactLocations(assignTo) : fetchLocations())
       .then((locs) => { setLocations(locs); return locs; })
       .catch(() => { setLocations([]); return [] as CalendarLocation[]; });
   useEffect(() => {
@@ -322,6 +334,8 @@ export function HorseIntakeForm({
         current_location: p.current_location || def.name,
       }));
     });
+    // Staff get the client-account list for the assign-to picker.
+    if (isStaff) adminClientAccounts().then(setAccounts).catch(() => setAccounts([]));
     listHorseBreeds().then(setBreeds).catch(() => setBreeds([]));
     listHorseColors().then(setColors).catch(() => setColors([]));
     listLookupOptions('horse_markings').then(setMarkingOpts).catch(() => setMarkingOpts([]));
@@ -330,9 +344,18 @@ export function HorseIntakeForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Staff changed the assigned account → reload that client's locations.
+  useEffect(() => {
+    if (!isStaff) return;
+    loadLocations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assignTo]);
+
   const toOpts = (rows: LookupCode[]) => rows.map((r) => ({ value: r.code, label: r.display_name }));
   const breedOpts = toOpts(breeds);
   const colorOpts = toOpts(colors);
+  const accountLabel = (a: ClientAccountRow) =>
+    a.display_name || [a.first_name, a.last_name].filter(Boolean).join(' ') || a.email || 'Account';
 
   const set = (k: keyof HorseIntakePayload) => (v: string) => setF((p) => ({ ...p, [k]: v }));
 
@@ -372,12 +395,19 @@ export function HorseIntakeForm({
     && secondaryOk(f.farrier_name, f.farrier_phone)
     && (!lessee || secondaryOk(f.owner_name_text, f.owner_email))
     && (!(leased && !lessee) || secondaryOk(f.lessee_name_text, f.lessee_email));
-  const complete = hasRealName && nameAnswered && euthanasiaAnswered && secondariesOk
+  // Staff must assign the record to an account before it can be created.
+  const accountChosen = !isStaff || !!assignTo;
+  const complete = hasRealName && nameAnswered && euthanasiaAnswered && secondariesOk && accountChosen
     && alwaysKeys.every((k) => answered(f[k] as string | undefined))
     && condKeys.every((k) => answered(f[k] as string | undefined));
 
   async function submit() {
     setErr(null);
+    if (isStaff && !assignTo) {
+      setShowError(true);
+      setErr('Choose the account this horse belongs to.');
+      return;
+    }
     if (!hasRealName) {
       setShowError(true);
       setErr('Give the horse at least a registered or barn name (N/A can’t apply to both).');
@@ -401,15 +431,15 @@ export function HorseIntakeForm({
         const curr = f.current_location && f.current_location !== NA ? f.current_location : null;
         if (home || curr) { try { await setHorseLocations(horseId, home, curr); } catch { /* record saved; locations best-effort */ } }
       };
-      if (ownerContactId) {
-        const out = await staffCreateHorseForContact(ownerContactId, f as Record<string, string>);
-        await linkLocations(out.horse_id);
-        onDone(out.horse_id);
-      } else {
-        const out: HorseRecordOutcome = await createHorseRecord(f);
-        if (out.outcome === 'match_pending_review') setPending(true);
-        else { await linkLocations(out.horse_id); onDone(out.horse_id); }
-      }
+      // ONE path. Staff assigning to a client passes owner_contact_id; the backend
+      // honors it only for staff. A client caller never sets it — the horse binds to
+      // them. linkLocations uses the same setHorseLocations regardless of who owns it.
+      const payload: HorseIntakePayload = isStaff && assignTo
+        ? { ...f, owner_contact_id: assignTo }
+        : f;
+      const out: HorseRecordOutcome = await createHorseRecord(payload);
+      if (out.outcome === 'match_pending_review') setPending(true);
+      else { await linkLocations(out.horse_id); onDone(out.horse_id); }
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Could not save the horse record.');
     } finally {
@@ -432,6 +462,25 @@ export function HorseIntakeForm({
 
   return (
     <div className="flex flex-col gap-1">
+      {/* Account-type-first: STAFF must pick the account this record belongs to; a
+          CLIENT's record binds to their own account automatically (no picker). */}
+      {isStaff && (
+        <div className="rounded-lg border border-gold-500/40 bg-gold-50 p-3 mb-2">
+          <label className="block text-[11px] tracking-wide uppercase text-gold-900 font-semibold mb-1">
+            Assign this horse to an account *
+          </label>
+          <select
+            className={`${input} bg-white${showError && !assignTo ? ' border-red-400' : ''}`}
+            value={assignTo} onChange={(e) => setAssignTo(e.target.value)}>
+            <option value="">Select the client account…</option>
+            {accounts
+              .filter((a) => a.contact_id)
+              .map((a) => <option key={a.contact_id!} value={a.contact_id!}>{accountLabel(a)}{a.email ? ` — ${a.email}` : ''}</option>)}
+          </select>
+          <p className="text-[10px] text-gold-900/80 mt-1">The record will be owned by the selected client.</p>
+        </div>
+      )}
+
       <p className="text-xs text-muted mb-1">
         Every field is required. If something doesn’t apply to your horse, mark it <strong>N/A</strong>.
       </p>
@@ -466,10 +515,10 @@ export function HorseIntakeForm({
           }} />
         <LocationField label="Home Location" hint="Where the horse normally resides for boarding."
           value={f.home_location} onChange={set('home_location')}
-          locations={locations} onAdded={loadLocations} showError={showError} ownerContactId={ownerContactId} />
+          locations={locations} onAdded={loadLocations} showError={showError} ownerContactId={assignTo || undefined} />
         <LocationField label="Current Location" hint="Where the horse actually is right now."
           value={f.current_location} onChange={set('current_location')}
-          locations={locations} onAdded={loadLocations} showError={showError} ownerContactId={ownerContactId} />
+          locations={locations} onAdded={loadLocations} showError={showError} ownerContactId={assignTo || undefined} />
       </Section>
 
       <Section title="Ownership">

@@ -53,6 +53,9 @@ export interface HorseIntakePayload {
   training_history?: string;
   competition_history?: string;
   claim_note?: string;
+  /** Staff-only: assign the record to this client account. Honored by the backend
+   *  only when the caller is staff; ignored (record binds to caller) otherwise. */
+  owner_contact_id?: string;
 }
 
 export type HorseRecordOutcome =
@@ -183,20 +186,6 @@ export async function contractPartyOptions(): Promise<PartyOption[]> {
   const { data, error } = await supabase.rpc('contract_party_options');
   if (error) throw error;
   return (data ?? []) as PartyOption[];
-}
-
-/** Staff: create a horse record OWNED BY a specific contact (e.g. recording a
- *  client's horse from the ops side so a contract can reference it). Same
- *  microchip-dedup discipline as the client intake. */
-export async function staffCreateHorseForContact(
-  ownerContactId: string,
-  payload: Record<string, string>,
-): Promise<{ horse_id: string; outcome: 'created' | 'match_found' }> {
-  const { data, error } = await supabase.rpc('staff_create_horse_for_contact', {
-    p_owner_contact_id: ownerContactId, p: payload,
-  });
-  if (error) throw error;
-  return data as { horse_id: string; outcome: 'created' | 'match_found' };
 }
 
 /** The org's canonical company contact id (creates it once if needed). */

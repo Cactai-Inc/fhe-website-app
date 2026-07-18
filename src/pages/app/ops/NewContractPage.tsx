@@ -6,7 +6,7 @@ import { startLeaseContract, startPurchaseContract } from '../../../lib/api';
 import {
   claimDocumentOrigination, setPartyControls, assignHorseSection,
 } from '../../../lib/contracts';
-import { staffHorseRecords, contractPartyOptions, staffCreateHorseForContact, type StaffHorseRecord, type PartyOption } from '../../../lib/horses';
+import { staffHorseRecords, contractPartyOptions, createHorseRecord, type StaffHorseRecord, type PartyOption } from '../../../lib/horses';
 import ContractPage from '../ContractPage';
 
 /**
@@ -111,8 +111,13 @@ export default function NewContractPage() {
     try {
       let chosenHorse = horseMode === 'pick' ? horseId : undefined;
       if (horseMode === 'record') {
-        // the horse's owner is the horse-owning party: lessor / seller = partyB
-        const out = await staffCreateHorseForContact(partyB, newHorse);
+        // the horse's owner is the horse-owning party: lessor / seller = partyB.
+        // Single intake path: create_horse_record honors owner_contact_id for staff.
+        const out = await createHorseRecord({ ...newHorse, owner_contact_id: partyB });
+        if (out.outcome === 'match_pending_review') {
+          setErr('That horse may already be on file — a review was opened. Pick it from records instead.');
+          setBusy(false); return;
+        }
         chosenHorse = out.horse_id;
       }
       const result = type === 'lease'
