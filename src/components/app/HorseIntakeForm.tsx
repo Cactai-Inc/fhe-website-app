@@ -737,14 +737,14 @@ export function HorseIntakeForm({
         <Field label="Registration number" value={f.registration_number} onChange={set('registration_number')} showError={showError} />
         <SelectOrOther label="Registration organization" value={f.registration_org} onChange={set('registration_org')} showError={showError} options={toOpts(regOrgOpts)} lookupKey="horse_registration_org" placeholder="Registry name" />
         <Field span label="Microchip number (checked first)" value={f.microchip_id} onChange={set('microchip_id')} placeholder="e.g. 985 112233445566" showError={showError} />
+        <Field label="Passport number" value={f.passport_number} onChange={set('passport_number')} showError={showError} />
+        <SelectOrOther label="Passport country" value={f.passport_country} onChange={set('passport_country')} showError={showError} options={toOpts(passportCountryOpts)} lookupKey="horse_passport_country" placeholder="Country" />
         <Field label="Current fair market value" type="text" inputMode="numeric" value={f.fair_market_value}
           onChange={set('fair_market_value')} placeholder="$0.00" showError={showError}
           onBlurFormat={(v) => {
             const n = Number(v.replace(/[$,\s]/g, ''));
             return Number.isFinite(n) && v.trim() !== '' ? n.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) : v;
           }} />
-        <Field label="Passport number" value={f.passport_number} onChange={set('passport_number')} showError={showError} />
-        <SelectOrOther label="Passport country" value={f.passport_country} onChange={set('passport_country')} showError={showError} options={toOpts(passportCountryOpts)} lookupKey="horse_passport_country" placeholder="Country" />
       </Section>
 
       <Section title="Description">
