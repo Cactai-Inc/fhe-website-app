@@ -43,12 +43,14 @@ export interface ServiceCategory {
   cover_image_url: string | null;
   card_weight: number;
   sort_order: number;
+  catalog_rank: number | null;
 }
 export async function fetchServiceCategories(): Promise<ServiceCategory[]> {
   const { data, error } = await supabase
     .from('service_types')
-    .select('code, display_name, description, segment, cover_image_url, card_weight, sort_order')
+    .select('code, display_name, description, segment, cover_image_url, card_weight, sort_order, catalog_rank')
     .eq('active', true)
+    .order('catalog_rank', { nullsFirst: false })
     .order('sort_order');
   if (error) throw error;
   return (data ?? []) as ServiceCategory[];

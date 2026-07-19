@@ -73,11 +73,11 @@ export function OfferingCatalog({ onCheckout, actionLabel = 'Add' }: { onCheckou
     return map;
   }, [offerings]);
 
-  // categories that have purchasable offerings, largest first (featured), then sort_order.
+  // categories with purchasable offerings, in the owner's explicit catalog_rank
+  // order (card_weight controls SIZE, not order). fetchServiceCategories already
+  // orders by catalog_rank then sort_order, so preserve that here.
   const cards = useMemo(() =>
-    categories
-      .filter((c) => byType.has(c.code))
-      .sort((a, b) => b.card_weight - a.card_weight || a.sort_order - b.sort_order),
+    categories.filter((c) => byType.has(c.code)),
   [categories, byType]);
 
   const add = (o: Offering) => {
@@ -91,24 +91,23 @@ export function OfferingCatalog({ onCheckout, actionLabel = 'Add' }: { onCheckou
 
   return (
     <>
-      {/* Bento grid: featured (weight 2) span 2 columns on desktop; the rest are 1.
-          Mobile is a single stacked column. */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 auto-rows-[minmax(0,1fr)]">
+      {/* Uniform grid, fluid & full-width: 1 col on mobile, 2 on tablet, 3 on desktop.
+          Every category is the same size, in strict catalog_rank order — no gaps. */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {cards.map((c) => {
-          const featured = c.card_weight >= 2;
+          const n = byType.get(c.code)?.length ?? 0;
           return (
             <button key={c.code} type="button" onClick={() => setOpenCat(c.code)}
-              className={`group relative overflow-hidden rounded-xl text-left focus-ring border border-green-800/10 min-h-[200px] flex flex-col justify-end ${
-                featured ? 'sm:col-span-2 min-h-[280px]' : ''}`}>
+              className="group relative overflow-hidden rounded-xl text-left focus-ring border border-green-800/10 min-h-[240px] flex flex-col justify-end">
               {c.cover_image_url
                 ? <img src={c.cover_image_url} alt="" className="absolute inset-0 w-full h-full object-cover" />
                 : <CoverPlaceholder label={c.display_name} />}
               <div className="absolute inset-0 bg-gradient-to-t from-green-950/85 via-green-950/25 to-transparent" aria-hidden="true" />
               <div className="relative p-4 sm:p-5">
-                <h3 className={`font-serif text-white font-semibold leading-tight ${featured ? 'text-2xl sm:text-3xl' : 'text-xl'}`}>{c.display_name}</h3>
-                {c.description && <p className="text-white/80 text-[12.5px] mt-1.5 line-clamp-2 max-w-lg">{c.description}</p>}
+                <h3 className="font-serif text-white font-semibold leading-tight text-xl sm:text-2xl">{c.display_name}</h3>
+                {c.description && <p className="text-white/80 text-[12.5px] mt-1.5 line-clamp-2">{c.description}</p>}
                 <span className="inline-flex items-center gap-1 text-gold-200 text-[11px] font-medium tracking-widest uppercase mt-3 group-hover:gap-2 transition-all">
-                  View {byType.get(c.code)?.length ?? 0} option{(byType.get(c.code)?.length ?? 0) > 1 ? 's' : ''} <ArrowRight size={13} />
+                  View {n} option{n > 1 ? 's' : ''} <ArrowRight size={13} />
                 </span>
               </div>
             </button>

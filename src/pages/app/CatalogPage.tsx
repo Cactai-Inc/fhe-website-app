@@ -12,7 +12,7 @@ export default function CatalogPage() {
   useDocumentTitle('Catalog');
   const navigate = useNavigate();
   return (
-    <div className="max-w-5xl">
+    <div className="w-full">
       <header className="mb-6">
         <p className="eyebrow">Shop</p>
         <h1 className="font-serif text-green-800 text-3xl font-semibold mt-0.5">Catalog</h1>
