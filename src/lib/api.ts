@@ -33,6 +33,27 @@ export async function fetchOfferings(): Promise<Offering[]> {
   return (offerings ?? []) as Offering[];
 }
 
+/** A catalog category = a service_type, with its cover image + description + the
+ *  card-size weight that drives the variable-size grid (2 = featured/large). */
+export interface ServiceCategory {
+  code: string;
+  display_name: string;
+  description: string | null;
+  segment: string;
+  cover_image_url: string | null;
+  card_weight: number;
+  sort_order: number;
+}
+export async function fetchServiceCategories(): Promise<ServiceCategory[]> {
+  const { data, error } = await supabase
+    .from('service_types')
+    .select('code, display_name, description, segment, cover_image_url, card_weight, sort_order')
+    .eq('active', true)
+    .order('sort_order');
+  if (error) throw error;
+  return (data ?? []) as ServiceCategory[];
+}
+
 // ─── Unauthenticated request flow ───────────────────────────────────────────
 
 export async function submitRequest(
