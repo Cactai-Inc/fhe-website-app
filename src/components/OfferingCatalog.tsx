@@ -94,25 +94,19 @@ export function OfferingCatalog({ onCheckout, actionLabel = 'Add' }: { onCheckou
       {/* Uniform grid, fluid & full-width: 1 col on mobile, 2 on tablet, 3 on desktop.
           Every category is the same size, in strict catalog_rank order — no gaps. */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {cards.map((c) => {
-          const n = byType.get(c.code)?.length ?? 0;
-          return (
-            <button key={c.code} type="button" onClick={() => setOpenCat(c.code)}
-              className="group relative overflow-hidden rounded-xl text-left focus-ring border border-green-800/10 min-h-[240px] flex flex-col justify-end">
-              {c.cover_image_url
-                ? <img src={c.cover_image_url} alt="" className="absolute inset-0 w-full h-full object-cover" />
-                : <CoverPlaceholder label={c.display_name} />}
-              <div className="absolute inset-0 bg-gradient-to-t from-green-950/85 via-green-950/25 to-transparent" aria-hidden="true" />
-              <div className="relative p-4 sm:p-5">
-                <h3 className="font-serif text-white font-semibold leading-tight text-xl sm:text-2xl">{c.display_name}</h3>
-                {c.description && <p className="text-white/80 text-[12.5px] mt-1.5 line-clamp-2">{c.description}</p>}
-                <span className="inline-flex items-center gap-1 text-gold-200 text-[11px] font-medium tracking-widest uppercase mt-3 group-hover:gap-2 transition-all">
-                  View {n} option{n > 1 ? 's' : ''} <ArrowRight size={13} />
-                </span>
-              </div>
-            </button>
-          );
-        })}
+        {cards.map((c) => (
+          <button key={c.code} type="button" onClick={() => setOpenCat(c.code)}
+            className="group relative overflow-hidden rounded-xl text-left focus-ring border border-green-800/10 min-h-[240px] flex flex-col justify-end hover:brightness-105 transition-all">
+            {c.cover_image_url
+              ? <img src={c.cover_image_url} alt="" className="absolute inset-0 w-full h-full object-cover" />
+              : <CoverPlaceholder label={c.display_name} />}
+            <div className="absolute inset-0 bg-gradient-to-t from-green-950/85 via-green-950/25 to-transparent" aria-hidden="true" />
+            <div className="relative p-4 sm:p-5">
+              <h3 className="font-serif text-white font-semibold leading-tight text-xl sm:text-2xl">{c.display_name}</h3>
+              {c.description && <p className="text-white/80 text-[12.5px] mt-1.5 line-clamp-2">{c.description}</p>}
+            </div>
+          </button>
+        ))}
       </div>
 
       {active && (
@@ -139,10 +133,11 @@ function CategoryModal({
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-green-950/50 p-0 sm:p-4" onClick={onClose}>
-      <div className="bg-cream w-full sm:max-w-2xl sm:rounded-2xl flex flex-col max-h-[100dvh] sm:max-h-[90dvh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+      {/* ~50% larger than before (was max-w-2xl / 672px → 5xl / 1024px). */}
+      <div className="bg-cream w-full sm:max-w-5xl sm:rounded-2xl flex flex-col max-h-[100dvh] sm:max-h-[92dvh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
         {/* Header: cover + name + description */}
         <div className="relative shrink-0">
-          <div className="relative h-40 sm:h-48 overflow-hidden">
+          <div className="relative h-56 sm:h-72 overflow-hidden">
             {category.cover_image_url
               ? <img src={category.cover_image_url} alt="" className="absolute inset-0 w-full h-full object-cover" />
               : <CoverPlaceholder label={category.display_name} />}
