@@ -105,6 +105,21 @@ export interface DirectMessage {
   body: string;
   read_at: string | null;
   created_at: string;
+  edited_at: string | null;
+  deleted_at: string | null;
+}
+
+/** One conversation row from dm_list_conversations() — a partner + the last
+ *  message + unread count, for the messenger's conversation list. */
+export interface DmConversation {
+  user_id: string;               // the OTHER party
+  display_name: string | null;
+  first_name: string | null;
+  avatar_url: string | null;
+  last_body: string | null;      // null when the last message was deleted
+  last_mine: boolean;
+  last_at: string;
+  unread: number;
 }
 
 export interface ContentPost {

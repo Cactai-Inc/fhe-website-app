@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { FEED_VIEWS, FEED_VIEW_META, type FeedView } from '../../lib/seed';
+import { dmUnreadTotal } from '../../lib/community';
 import {
   CalendarDays, Users, FileText, UserRound, ReceiptText, Shield, LogOut,
   GraduationCap, Handshake, Home as HomeIcon, Boxes, Contact, LayoutDashboard,
@@ -41,17 +42,15 @@ interface NavItem {
   superAdmin?: boolean;
 }
 
-// `badge: 'notifications'` surfaces the unread count on that nav link (Dashboard is
-// where notifications live). Community is position 1 and the sign-in landing page.
-// `badge: 'notifications'` surfaces the unread count on that nav link (Dashboard is
-// where notifications live). "Community Feed" is its own nested group (below) and is
+// `badge` surfaces an unread count on that nav link: 'notifications' (Dashboard) or
+// 'messages' (Messages). "Community Feed" is its own nested group (below) and is
 // position 1; these are the rest of the quick-access destinations.
-const QUICK: { label: string; icon: typeof GraduationCap; to: string; end?: boolean; badge?: 'notifications' }[] = [
+const QUICK: { label: string; icon: typeof GraduationCap; to: string; end?: boolean; badge?: 'notifications' | 'messages' }[] = [
   { label: 'Dashboard', icon: LayoutDashboard, to: '/app/dashboard', badge: 'notifications' },
   { label: 'Calendar', icon: CalendarDays, to: '/app/calendar' },
   // The in-app catalog: shop services & book them (real purchase flow).
   { label: 'Catalog', icon: ShoppingBag, to: '/app/catalog' },
-  { label: 'New message', icon: MessageSquare, to: '/app/messages' },
+  { label: 'Messages', icon: MessageSquare, to: '/app/messages', badge: 'messages' },
 ];
 
 /** The community-feed views, as nested nav links. Each filters the one feed
@@ -278,11 +277,23 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
   );
 }
 
+/** Unread DM total for the Messages nav badge. Refreshes on mount + route change. */
+function useDmUnread(): number {
+  const location = useLocation();
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    let active = true;
+    dmUnreadTotal().then((c) => active && setN(c)).catch(() => {});
+    return () => { active = false; };
+  }, [location.pathname]);
+  return n;
+}
+
 /** CLIENT LEFT RAIL (desktop only) — a thin icon strip that expands on hover with
  *  almost no delay, and a pin/toggle that keeps it open. Holds the same quick-access
  *  destinations the avatar menu carries. Members only (staff get the management rail).
  */
-function ClientRail({ bellCount }: { bellCount: number }) {
+function ClientRail({ bellCount, dmCount }: { bellCount: number; dmCount: number }) {
   const [pinned, setPinned] = useState(() => localStorage.getItem('clientRail.pinned') === '1');
   const [hovered, setHovered] = useState(false);
   useEffect(() => { localStorage.setItem('clientRail.pinned', pinned ? '1' : '0'); }, [pinned]);
@@ -313,7 +324,8 @@ function ClientRail({ bellCount }: { bellCount: number }) {
           {/* Community Feed (position 1) with its views nested underneath */}
           <CommunityNav open={open} indentClass={open ? 'pl-9' : 'pl-3'} />
           {QUICK.map((q) => {
-            const badge = q.badge === 'notifications' && bellCount > 0 ? bellCount : 0;
+            const raw = q.badge === 'notifications' ? bellCount : q.badge === 'messages' ? dmCount : 0;
+            const badge = raw > 0 ? raw : 0;
             return (
               <NavLink key={q.label} to={q.to} end={q.end}
                 className={({ isActive: active }) =>
@@ -347,6 +359,7 @@ function ClientRail({ bellCount }: { bellCount: number }) {
 
 export default function AppLayout() {
   const { profile, isAdmin, isStaff, isSuperAdmin, hasModule, signOut } = useAuth();
+  const dmCount = useDmUnread();
   useViewSurfaces();
   const navigate = useNavigate();
   const bell = useNotificationsBell();
@@ -458,7 +471,8 @@ export default function AppLayout() {
                       <div className="mt-1 border-t border-green-800/10 pt-2 px-4 pb-1 text-xs uppercase tracking-wide text-secondary/60">Quick access</div>
                       <div className="px-1"><CommunityNav onNavigate={closeMenu} indentClass="pl-9" /></div>
                       {QUICK.map((q) => {
-                        const badge = q.badge === 'notifications' && bell.count > 0 ? bell.count : 0;
+                        const raw = q.badge === 'notifications' ? bell.count : q.badge === 'messages' ? dmCount : 0;
+                        const badge = raw > 0 ? raw : 0;
                         return (
                           <button key={q.label} type="button"
                             onClick={() => { closeMenu(); navigate(q.to); }}
@@ -495,7 +509,7 @@ export default function AppLayout() {
 
       <div className="w-full max-w-[120rem] mx-auto flex">
         {/* Members (non-staff) get a collapsible quick-access rail on desktop. */}
-        {!showRail && !isSuperAdmin && <ClientRail bellCount={bell.count} />}
+        {!showRail && !isSuperAdmin && <ClientRail bellCount={bell.count} dmCount={dmCount} />}
         {showRail && (
           <aside className="hidden lg:block w-60 xl:w-64 shrink-0 border-r border-green-800/10 bg-cream-100/40">
             <nav className="p-3 sticky top-14 h-[calc(100dvh-3.5rem)] overflow-y-auto">

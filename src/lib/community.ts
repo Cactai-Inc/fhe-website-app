@@ -4,7 +4,7 @@
 import { supabase } from './supabase';
 import type {
   Membership, MemberDirectoryEntry, MemberHorse, Announcement, Channel, ChannelMessage,
-  Thread, ThreadPost, DirectMessage, ContentPost, ContentResource,
+  Thread, ThreadPost, DirectMessage, DmConversation, ContentPost, ContentResource,
   CommunityEvent, EventRsvp, RsvpStatus,
 } from './community-types';
 
@@ -195,6 +195,84 @@ export async function listMyConversations(): Promise<DirectMessage[]> {
     .limit(200);
   if (error) throw error;
   return (data ?? []) as DirectMessage[];
+}
+
+/** Rich conversation list: one row per partner, newest-first, with the last
+ *  (non-deleted) message preview, unread count, and the partner's identity.
+ *  Respects per-user hide cutoffs. */
+export async function dmListConversations(): Promise<DmConversation[]> {
+  const { data, error } = await supabase.rpc('dm_list_conversations');
+  if (error) throw error;
+  return (data ?? []) as DmConversation[];
+}
+
+/** Total unread DMs — drives the Messages nav badge. */
+export async function dmUnreadTotal(): Promise<number> {
+  const { data, error } = await supabase.rpc('dm_unread_total');
+  if (error) throw error;
+  return (data as number) ?? 0;
+}
+
+/** Mark every message from `otherId` to me as read. */
+export async function dmMarkConversationRead(otherId: string): Promise<void> {
+  const { error } = await supabase.rpc('dm_mark_conversation_read', { p_other_id: otherId });
+  if (error) throw error;
+}
+
+/** Edit one of my sent messages (stamps edited_at). */
+export async function dmEditMessage(messageId: string, body: string): Promise<void> {
+  const { error } = await supabase.rpc('dm_edit_message', { p_message_id: messageId, p_body: body });
+  if (error) throw error;
+}
+
+/** Soft-delete one of my sent messages. */
+export async function dmDeleteMessage(messageId: string): Promise<void> {
+  const { error } = await supabase.rpc('dm_delete_message', { p_message_id: messageId });
+  if (error) throw error;
+}
+
+/** Hide (delete-for-me) a whole conversation. */
+export async function dmHideConversation(otherId: string): Promise<void> {
+  const { error } = await supabase.rpc('dm_hide_conversation', { p_other_id: otherId });
+  if (error) throw error;
+}
+
+/** Presence + typing for a 1:1 conversation. Both parties join the SAME channel
+ *  (keyed by the sorted user-id pair), so each sees the other's online state and
+ *  "typing…" broadcasts. Returns { setTyping, unsubscribe }. Ephemeral — no schema.
+ *  onPresence(true/false) = is the OTHER party currently in the conversation;
+ *  onTyping(true/false)   = is the OTHER party typing right now. */
+export function joinConversationPresence(
+  myId: string,
+  otherId: string,
+  handlers: { onPresence: (online: boolean) => void; onTyping: (typing: boolean) => void },
+): { setTyping: (typing: boolean) => void; unsubscribe: () => void } {
+  const key = [myId, otherId].sort().join('__');
+  const channel = supabase.channel(`dm-presence-${key}`, { config: { presence: { key: myId } } });
+
+  const otherOnline = () => {
+    const state = channel.presenceState() as Record<string, unknown[]>;
+    return Object.keys(state).some((k) => k === otherId);
+  };
+
+  channel
+    .on('presence', { event: 'sync' }, () => handlers.onPresence(otherOnline()))
+    .on('presence', { event: 'join' }, () => handlers.onPresence(otherOnline()))
+    .on('presence', { event: 'leave' }, () => handlers.onPresence(otherOnline()))
+    .on('broadcast', { event: 'typing' }, (payload) => {
+      const p = payload.payload as { from: string; typing: boolean };
+      if (p.from === otherId) handlers.onTyping(p.typing);
+    })
+    .subscribe((status) => {
+      if (status === 'SUBSCRIBED') channel.track({ at: new Date().toISOString() });
+    });
+
+  return {
+    setTyping: (typing: boolean) => {
+      channel.send({ type: 'broadcast', event: 'typing', payload: { from: myId, typing } });
+    },
+    unsubscribe: () => { supabase.removeChannel(channel); },
+  };
 }
 
 // ─── Content ─────────────────────────────────────────────────────────────────
