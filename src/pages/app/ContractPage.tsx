@@ -7,7 +7,7 @@ import {
 import { useDocumentTitle } from '../../lib/hooks';
 import { useAuth } from '../../contexts/AuthContext';
 import {
-  contractDocumentDetail, setContractField, requestDocumentChange,
+  contractDocumentDetail, setContractField,
   resolveChangeRequest, advanceWorkflow, lockAndSign, confirmHorseSection,
   reopenHorseSection, inviteCounterparty,
   setPartyControls, contractMessagesList, contractMessagePost, contractSigningSet,
@@ -224,8 +224,6 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   const [signName, setSignName] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('');
-  const [crFieldKey, setCrFieldKey] = useState<string | null>(null);
-  const [crText, setCrText] = useState('');
   const [showBody, setShowBody] = useState(false);
   const [messages, setMessages] = useState<ContractMessage[]>([]);
   const [msgText, setMsgText] = useState('');
@@ -625,25 +623,11 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       {/* Lease-only: partial-lease participants + payment options */}
       {isLease && id && <LeaseExtrasSection documentId={id} editable={state !== 'executed'} />}
 
-      {/* change-request composer */}
-      {crFieldKey && (
-        <div className="bg-gold-50 border border-gold-400/30 rounded-lg p-4 mb-4">
-          <p className="text-sm font-medium text-green-900 mb-2">Request a change to {crFieldKey}</p>
-          <textarea rows={2} className="w-full px-3 py-2 rounded-lg border border-green-800/15 text-sm focus-ring"
-            value={crText} onChange={(e) => setCrText(e.target.value)}
-            placeholder="What should this say instead, and why?" />
-          <div className="flex gap-2 mt-2">
-            <button type="button" className="btn-primary text-xs" disabled={!crText.trim()}
-              onClick={() => void act(async () => {
-                await requestDocumentChange(id!, crFieldKey, crText.trim());
-                setCrFieldKey(null);
-              }, 'Change request sent.')}>
-              Send request
-            </button>
-            <button type="button" className="btn-secondary text-xs" onClick={() => setCrFieldKey(null)}>Cancel</button>
-          </div>
-        </div>
-      )}
+      {/* (change-request composer removed 2026-07-20, audit M-3: it was
+          unreachable — crFieldKey was never set. A field-level "suggest a change"
+          flow is provided by redline proposeFieldEdit + pinned comments, so this
+          superseded third mechanism is gone. The "Open change requests" list
+          below still renders any existing requests.) */}
 
       {/* open change requests */}
       {(detail.open_change_requests.length > 0) && state !== 'executed' && (

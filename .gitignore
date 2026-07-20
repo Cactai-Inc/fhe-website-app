@@ -31,3 +31,6 @@ out/
 .env.db
 .build-state/
 supabase/.temp/
+
+# Local DB credential drop (never commit) — see conversation setup
+.fhe-db-url/

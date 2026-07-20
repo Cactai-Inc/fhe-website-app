@@ -259,18 +259,8 @@ export async function inviteCounterparty(
   if (!res.ok) throw new Error(json.error || 'Could not send the invitation.');
 }
 
-/** The cost-composition rule (spec E.3): responsibility + optional split percent →
- *  the stored phrase. 'Lessee'/'Lessor' 100% → "Lessee 100%"; split → both. */
-export function composeCostPhrase(
-  responsibility: 'Lessor' | 'Lessee' | 'Split' | '',
-  lessorPct?: number,
-): string {
-  if (!responsibility) return '';
-  if (responsibility === 'Lessee') return 'Lessee 100%';
-  if (responsibility === 'Lessor') return 'Lessor 100%';
-  const lp = Math.max(0, Math.min(100, lessorPct ?? 50));
-  return `Lessor ${lp}% / Lessee ${100 - lp}%`;
-}
+// (composeCostPhrase removed 2026-07-20, audit m-1: superseded — cost prose is
+//  composed server-side by set_field_structured/recompose. No client callers.)
 
 // ─── Per-party document controls + company origination + messages ────────────
 /** Set one party's controls: can they add their information, edit deal terms,
@@ -455,6 +445,92 @@ export async function contractMessagesList(documentId: string): Promise<Contract
 export async function contractMessagePost(documentId: string, body: string): Promise<void> {
   const { error } = await supabase.rpc('contract_message_post', {
     p_document_id: documentId, p_body: body,
+  });
+  if (error) throw error;
+}
+
+// ─── Track changes (contract_change_log) ─────────────────────────────────────
+/** One logged change to a contract's content. `change_kind` distinguishes field
+ *  value/structured edits from redline/clause/change-request resolutions. Powers
+ *  the always-on track-changes panel and the retained audit trail. */
+export interface ContractChange {
+  id: string;
+  change_kind: string;
+  field_key: string | null;
+  field_label: string | null;
+  owner_role: string | null;
+  old_value: string | null;
+  new_value: string | null;
+  detail: Record<string, unknown>;
+  actor_label: string | null;
+  actor_roles: string[];
+  actor_is_staff: boolean;
+  created_at: string;
+}
+export async function contractChangeLog(documentId: string, limit = 200): Promise<ContractChange[]> {
+  const { data, error } = await supabase.rpc('contract_change_log_list', {
+    p_document_id: documentId, p_limit: limit,
+  });
+  if (error) throw error;
+  return (data ?? []) as ContractChange[];
+}
+
+// ─── Pinned comments (contract_comments) ─────────────────────────────────────
+/** A comment on a contract. `anchor_kind`:
+ *   'field'    → anchor_ref is a field_key (stable),
+ *   'span'     → anchor_ref is a clause/section id + `quote` is the selected text
+ *                (relocated by quote-match after re-merge; `is_stale` when lost),
+ *   'document' → whole-document comment (and all replies).
+ *  Threaded: a reply carries `parent_comment_id`; resolving the root closes the
+ *  thread to further replies. */
+export interface ContractComment {
+  id: string;
+  parent_comment_id: string | null;
+  anchor_kind: 'field' | 'span' | 'document';
+  anchor_ref: string | null;
+  quote: string | null;
+  quote_prefix: string | null;
+  is_stale: boolean;
+  body: string;
+  author_label: string | null;
+  author_role: string | null;
+  resolved_at: string | null;
+  created_at: string;
+}
+export async function contractCommentsList(documentId: string): Promise<ContractComment[]> {
+  const { data, error } = await supabase.rpc('contract_comments_list', { p_document_id: documentId });
+  if (error) throw error;
+  return (data ?? []) as ContractComment[];
+}
+export async function postContractComment(documentId: string, p: {
+  body: string;
+  anchorKind?: 'field' | 'span' | 'document';
+  anchorRef?: string | null;
+  quote?: string | null;
+  quotePrefix?: string | null;
+  parentId?: string | null;
+}): Promise<{ id: string }> {
+  const { data, error } = await supabase.rpc('post_contract_comment', {
+    p_document_id: documentId,
+    p_body: p.body,
+    p_anchor_kind: p.anchorKind ?? 'document',
+    p_anchor_ref: p.anchorRef ?? null,
+    p_quote: p.quote ?? null,
+    p_quote_prefix: p.quotePrefix ?? null,
+    p_parent_id: p.parentId ?? null,
+  });
+  if (error) throw error;
+  return data as { id: string };
+}
+export async function resolveContractComment(commentId: string, resolved = true): Promise<void> {
+  const { error } = await supabase.rpc('resolve_contract_comment', {
+    p_comment_id: commentId, p_resolved: resolved,
+  });
+  if (error) throw error;
+}
+export async function markCommentStale(commentId: string, stale = true): Promise<void> {
+  const { error } = await supabase.rpc('mark_comment_stale', {
+    p_comment_id: commentId, p_stale: stale,
   });
   if (error) throw error;
 }

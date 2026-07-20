@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Info } from 'lucide-react';
 import type { ContractField, FieldStructured, PartyChoice } from '../../lib/contracts';
 
@@ -191,6 +191,12 @@ function FieldControl({
   f, onSave, onSaveResponsibility, onSaveStructured, disabled,
 }: { f: ContractField; onSave: SaveFn; onSaveResponsibility: SaveRespFn; onSaveStructured: SaveStructFn; disabled: boolean }) {
   const [local, setLocal] = useState(f.value ?? '');
+  // Re-sync local input state when the server value changes (after a save +
+  // parent reload, or a redline/recompose that normalizes the value). Without
+  // this, `local` drifts from `f.value` and can fire a spurious save or miss a
+  // real change. The input is uncontrolled-ish (typed into `local`, committed on
+  // blur), so only re-seed when the incoming value actually differs.
+  useEffect(() => { setLocal(f.value ?? ''); }, [f.value]);
   const fmt = f.format_type ?? '';
   const kind = f.input_kind ?? 'text';
   const save = () => { if (local !== (f.value ?? '')) void onSave(f.field_key, local); };
