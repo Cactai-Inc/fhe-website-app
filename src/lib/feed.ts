@@ -19,6 +19,9 @@ export interface FeedPost {
   publish_at: string;
   as_company: boolean;
   author_id: string | null;
+  /** author's display name + avatar (from feed_get's profile join) */
+  author_name: string | null;
+  author_avatar: string | null;
   seen: boolean;
   shared_by: string | null;
 }

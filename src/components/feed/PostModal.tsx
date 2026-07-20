@@ -282,7 +282,15 @@ function PostBody({ card }: { card: FeedCard }) {
         </div>
       )}
       <div className="flex items-center gap-2 mb-2 text-xs text-muted">
-        {card.author && <span className="font-medium text-green-900">{card.author}</span>}
+        {card.authorAvatar
+          ? <img src={card.authorAvatar} alt="" className="w-6 h-6 rounded-full object-cover" />
+          : card.author && <span className="w-6 h-6 rounded-full bg-green-100 text-green-800 grid place-items-center text-[9px] font-semibold">{card.authorInitials}</span>}
+        {card.author && (
+          <span className="text-green-900">
+            <span className="font-semibold">{card.author}</span>
+            {card.kind === 'social' ? ' posted' : ''}
+          </span>
+        )}
         {card.when && <span>· {card.when}</span>}
       </div>
       {card.title && card.kind !== 'social' && <h3 className="font-serif text-green-900 text-xl font-semibold leading-snug mb-2">{card.title}</h3>}

@@ -30,7 +30,10 @@ function MediaBlock({ url, label }: { url?: string; label?: string }) {
     </div>
   );
 }
-function Avatar({ initials }: { initials?: string }) {
+function Avatar({ initials, src }: { initials?: string; src?: string | null }) {
+  if (src) {
+    return <img src={src} alt="" className="w-[22px] h-[22px] rounded-full object-cover" />;
+  }
   return (
     <span className="w-[22px] h-[22px] rounded-full bg-green-100 text-green-800 grid place-items-center text-[9px] font-semibold">
       {initials || '·'}
@@ -189,10 +192,12 @@ function Card({ c, myId, greeted, onOpen }: { c: FeedCard; myId?: string; greete
       {c.mediaUrl && <MediaBlock url={c.mediaUrl} label={c.kind === 'social' ? 'Social' : undefined} />}
       <div className="px-4 py-3">
         <div className="flex items-center gap-2 mb-1.5">
-          {!isAnnouncement && <Avatar initials={c.authorInitials} />}
+          {!isAnnouncement && <Avatar initials={c.authorInitials} src={c.authorAvatar} />}
           <div className="min-w-0">
             <p className={`text-[11.5px] font-medium ${isAnnouncement ? 'text-gold-800 uppercase tracking-widest text-[10px] font-semibold' : 'text-green-900'}`}>
-              {isAnnouncement ? 'Announcement' : (c.author || c.title)}
+              {isAnnouncement ? 'Announcement'
+                : c.kind === 'social' ? <><span className="font-semibold">{c.author || 'Member'}</span> posted</>
+                : (c.author || c.title)}
             </p>
             {c.when && <p className="text-[10px] text-muted">{c.when}</p>}
           </div>

@@ -31,6 +31,7 @@ export interface FeedCard {
   mediaKind?: 'image' | 'video';
   author?: string;
   authorInitials?: string;
+  authorAvatar?: string | null;
   when?: string;              // human label
   ts: number;                 // sort key (ms)
   seen?: boolean;
@@ -91,7 +92,9 @@ function ago(iso: string): string {
 // ── Normalizers ────────────────────────────────────────────────
 function fromFeedPost(p: FeedPost): FeedCard {
   const isSale = p.post_type === 'horse' || p.post_type === 'gear';
-  const author = p.as_company ? 'French Heritage' : (p.author_id ? 'Member' : 'French Heritage');
+  // Company posts show as French Heritage; member posts use the author's real
+  // name + avatar (from feed_get's profile join).
+  const author = p.as_company ? 'French Heritage' : (p.author_name || 'Member');
   return {
     id: p.id,
     view: isSale ? 'for_sale' : 'social',
@@ -101,6 +104,7 @@ function fromFeedPost(p: FeedPost): FeedCard {
     mediaKind: p.media_kind ?? undefined,
     author,
     authorInitials: p.as_company ? 'FH' : initials(author, 'M'),
+    authorAvatar: p.as_company ? null : (p.author_avatar ?? null),
     when: ago(p.publish_at),
     ts: new Date(p.publish_at).getTime(),
     seen: p.seen,
