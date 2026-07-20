@@ -3,7 +3,7 @@
  */
 import { supabase } from './supabase';
 import type {
-  Membership, MemberDirectoryEntry, Announcement, Channel, ChannelMessage,
+  Membership, MemberDirectoryEntry, MemberHorse, Announcement, Channel, ChannelMessage,
   Thread, ThreadPost, DirectMessage, ContentPost, ContentResource,
   CommunityEvent, EventRsvp, RsvpStatus,
 } from './community-types';
@@ -29,6 +29,25 @@ export async function fetchMemberDirectory(): Promise<MemberDirectoryEntry[]> {
     .order('display_name', { nullsFirst: false });
   if (error) throw error;
   return (data ?? []) as MemberDirectoryEntry[];
+}
+
+/** A single member's public profile (from the same directory view, so hide/allow
+ *  prefs are already enforced). Returns null if not a visible member. */
+export async function fetchMemberProfile(userId: string): Promise<MemberDirectoryEntry | null> {
+  const { data, error } = await supabase
+    .from('member_directory')
+    .select('*')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error) throw error;
+  return (data ?? null) as MemberDirectoryEntry | null;
+}
+
+/** A member's owned horses (name + home location) for their community profile. */
+export async function fetchMemberHorses(userId: string): Promise<MemberHorse[]> {
+  const { data, error } = await supabase.rpc('member_horses', { p_user_id: userId });
+  if (error) throw error;
+  return (data ?? []) as MemberHorse[];
 }
 
 // ─── Announcements ───────────────────────────────────────────────────────────

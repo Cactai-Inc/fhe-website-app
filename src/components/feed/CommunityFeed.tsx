@@ -106,28 +106,24 @@ function Card({ c, myId, greeted }: { c: FeedCard; myId?: string; greeted: Set<s
     return () => obs.disconnect();
   }, [c.id, c.seen, c.kind]);
 
-  // ── MEMBER: a standard, vertical, centered community profile card ──
+  // ── MEMBER: a standard, vertical, centered community profile card. The whole card
+  //    clicks through to the profile; Say hi is the one inline action. ──
   if (c.kind === 'member') {
     const isMine = c.memberUserId && c.memberUserId === myId;
     return (
-      <article ref={ref} className="rounded-xl mb-4 break-inside-avoid border border-green-800/10 bg-white p-5 flex flex-col items-center text-center">
+      <article ref={ref} onClick={c.to ? () => navigate(c.to!) : undefined}
+        className={`rounded-xl mb-4 break-inside-avoid border border-green-800/10 bg-white p-5 flex flex-col items-center text-center ${c.to ? 'cursor-pointer hover:border-green-800/30 transition-colors' : ''}`}>
         {c.memberAvatar
           ? <img src={c.memberAvatar} alt="" className="w-20 h-20 rounded-full object-cover" />
           : <span className="w-20 h-20 rounded-full bg-green-100 text-green-800 grid place-items-center text-2xl font-serif font-semibold">{c.authorInitials}</span>}
         <p className="font-serif text-green-900 text-[17px] font-semibold leading-tight mt-3">{c.title}</p>
         {c.role && <p className="text-[11px] uppercase tracking-wide text-gold-800 font-semibold mt-0.5">{c.role}</p>}
         {c.memberUserId && !isMine && (
-          <div className="mt-3">
+          // stop the card's navigate when tapping the Say-hi button itself
+          <div className="mt-3" onClick={(e) => e.stopPropagation()}>
             <SayHiButton toUserId={c.memberUserId} alreadyGreeted={greeted.has(c.memberUserId)} />
           </div>
         )}
-        <div className="mt-3 w-full flex justify-center">
-          <ContactButtons info={{
-            email: c.email, mobile: c.mobile, whatsapp: c.whatsapp,
-            allowSms: c.allowSms, allowCall: c.allowCall,
-            allowWhatsappText: c.allowWhatsapp, allowWhatsappCall: c.allowWhatsappCall,
-          }} />
-        </div>
       </article>
     );
   }
@@ -247,10 +243,11 @@ export function CommunityFeed({ view }: { view: FeedView }) {
     return <EmptyState view={view} />;
   }
 
-  // ONE feed, ONE card, ONE grid. Every view uses the same masonry of <Card>s; the
-  // filter buttons only change WHICH cards are in `cards` — never how they render.
+  // ONE feed, ONE card, ONE uniform grid. Every view uses the same grid of <Card>s;
+  // the filter buttons only change WHICH cards are in `cards` — never how they render.
+  // Uniform (not masonry) so rows align; each card clicks through to its full content.
   return (
-    <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 [column-fill:_balance]">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
       {cards.map((c) => <Card key={`${c.kind}-${c.id}`} c={c} myId={user?.id} greeted={greeted} />)}
     </div>
   );

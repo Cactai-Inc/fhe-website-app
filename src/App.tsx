@@ -53,6 +53,7 @@ import Onboarding from './pages/app/Onboarding';
 // Client portal (CP-* wave)
 import MyLessons from './pages/app/MyLessons';
 import ThreadDetail from './pages/app/ThreadDetail';
+import MemberProfile from './pages/app/MemberProfile';
 import Messages from './pages/app/Messages';
 import ContentPostDetail from './pages/app/ContentPostDetail';
 // Slice 4 — purpose-built dashboards + community/library surfaces
@@ -193,6 +194,7 @@ export function AppRoutes() {
               <Route path="calendar" element={<CalendarPage />} />
               {/* Slice 4 — Community hub (front door) + its surfaces */}
               <Route path="threads/:id" element={<ThreadDetail />} />
+              <Route path="members/:userId" element={<MemberProfile />} />
               <Route path="messages" element={<Messages />} />
               <Route path="messages/:userId" element={<Messages />} />
               {/* Slice 4 — Library = the conformed Content page (articles + resources

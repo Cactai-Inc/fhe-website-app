@@ -36,6 +36,14 @@ export interface MemberDirectoryEntry {
   social_instagram: string | null;
   social_facebook: string | null;
   social_linkedin: string | null;
+  /** true when this member owns at least one horse in the system */
+  is_horse_owner: boolean;
+}
+
+/** A horse a member owns — for their community profile. */
+export interface MemberHorse {
+  name: string | null;
+  home_location: string | null;
 }
 
 export interface Announcement {

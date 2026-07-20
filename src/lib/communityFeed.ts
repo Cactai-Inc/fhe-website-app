@@ -138,13 +138,17 @@ function fromVendor(v: Vendor): FeedCard {
 }
 function fromMember(m: MemberDirectoryEntry): FeedCard {
   const name = m.display_name || m.first_name || 'Member';
+  // Horse owners carry a "Horse Owner" tag alongside their riding role.
+  const role = [m.riding_level || 'Rider', m.is_horse_owner ? 'Horse Owner' : null].filter(Boolean).join(' · ');
   return {
     id: m.user_id, view: 'members', kind: 'member',
-    title: name, role: m.riding_level || 'Rider',
+    title: name, role,
     authorInitials: initials(name, 'M'),
-    // a member is a feed item too (shown in All + Members) with a Say-hi target
+    // a member is a feed item too (shown in All + Members) with a Say-hi target;
+    // the card clicks through to their profile.
     memberUserId: m.user_id,
     memberAvatar: m.avatar_url ?? null,
+    to: `/app/members/${m.user_id}`,
     ts: 0,
     // Shared contact fields straight from the widened member_directory view —
     // hide-from-community is enforced server-side (hidden → null); the per-channel
