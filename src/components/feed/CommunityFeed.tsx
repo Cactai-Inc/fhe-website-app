@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Mail, MessageCircle, Phone, Smartphone, PhoneCall, Globe, Hand } from 'lucide-react';
 import { fetchViewCards, sayHi, myGreetedUserIds, type FeedCard } from '../../lib/communityFeed';
 import { feedMarkSeen } from '../../lib/feed';
@@ -8,6 +7,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import {
   contactActions, type ContactInfo, type ContactMethod,
 } from '../../lib/contact';
+import { PostModal } from './PostModal';
 
 /**
  * COMMUNITY FEED (adaptive, live) — fetches the active view's real source(s) via
@@ -86,8 +86,7 @@ function SayHiButton({ toUserId, alreadyGreeted }: { toUserId: string; alreadyGr
   );
 }
 
-function Card({ c, myId, greeted }: { c: FeedCard; myId?: string; greeted: Set<string> }) {
-  const navigate = useNavigate();
+function Card({ c, myId, greeted, onOpen }: { c: FeedCard; myId?: string; greeted: Set<string>; onOpen: (c: FeedCard) => void }) {
   const ref = useRef<HTMLElement | null>(null);
 
   // seen-marking: feed-backed cards (social/for-sale) flip their seen flag when
@@ -106,20 +105,23 @@ function Card({ c, myId, greeted }: { c: FeedCard; myId?: string; greeted: Set<s
     return () => obs.disconnect();
   }, [c.id, c.seen, c.kind]);
 
-  // ── MEMBER: a standard, vertical, centered community profile card. The whole card
-  //    clicks through to the profile; Say hi is the one inline action. ──
+  // EVERY card opens its full content in a modal — no page navigation, ever.
+  const open = () => onOpen(c);
+  const clickable = 'cursor-pointer hover:border-green-800/30 transition-colors';
+
+  // ── MEMBER: a standard, vertical, centered community profile card. ──
   if (c.kind === 'member') {
     const isMine = c.memberUserId && c.memberUserId === myId;
     return (
-      <article ref={ref} onClick={c.to ? () => navigate(c.to!) : undefined}
-        className={`rounded-xl mb-4 break-inside-avoid border border-green-800/10 bg-white p-5 flex flex-col items-center text-center ${c.to ? 'cursor-pointer hover:border-green-800/30 transition-colors' : ''}`}>
+      <article ref={ref} onClick={open}
+        className={`rounded-xl border border-green-800/10 bg-white p-5 flex flex-col items-center text-center ${clickable}`}>
         {c.memberAvatar
           ? <img src={c.memberAvatar} alt="" className="w-20 h-20 rounded-full object-cover" />
           : <span className="w-20 h-20 rounded-full bg-green-100 text-green-800 grid place-items-center text-2xl font-serif font-semibold">{c.authorInitials}</span>}
         <p className="font-serif text-green-900 text-[17px] font-semibold leading-tight mt-3">{c.title}</p>
         {c.role && <p className="text-[11px] uppercase tracking-wide text-gold-800 font-semibold mt-0.5">{c.role}</p>}
         {c.memberUserId && !isMine && (
-          // stop the card's navigate when tapping the Say-hi button itself
+          // stop the card's open when tapping the Say-hi button itself
           <div className="mt-3" onClick={(e) => e.stopPropagation()}>
             <SayHiButton toUserId={c.memberUserId} alreadyGreeted={greeted.has(c.memberUserId)} />
           </div>
@@ -131,8 +133,8 @@ function Card({ c, myId, greeted }: { c: FeedCard; myId?: string; greeted: Set<s
   // ── FOR SALE: media-forward listing with a price ──
   if (c.kind === 'for_sale') {
     return (
-      <article ref={ref} onClick={c.to ? () => navigate(c.to!) : undefined}
-        className={`rounded-xl overflow-hidden mb-4 break-inside-avoid border border-green-800/10 bg-white ${c.to ? 'cursor-pointer hover:border-green-800/30 transition-colors' : ''}`}>
+      <article ref={ref} onClick={open}
+        className={`rounded-xl overflow-hidden border border-green-800/10 bg-white ${clickable}`}>
         <div className="relative aspect-square bg-gradient-to-br from-green-50 to-gold-50 overflow-hidden">
           {c.mediaUrl && <img src={c.mediaUrl} alt="" loading="lazy" className="w-full h-full object-cover" />}
           {c.saleTag && <span className="absolute top-2.5 left-2.5 bg-cream/90 text-[9px] tracking-wide uppercase px-2 py-1 rounded-full text-green-800 font-semibold">{c.saleTag}</span>}
@@ -148,9 +150,11 @@ function Card({ c, myId, greeted }: { c: FeedCard; myId?: string; greeted: Set<s
   // ── ARTICLE: media + read time ──
   if (c.kind === 'article') {
     return (
-      <article ref={ref} onClick={c.to ? () => navigate(c.to!) : undefined}
-        className={`rounded-xl overflow-hidden mb-4 break-inside-avoid border border-green-800/10 bg-white ${c.to ? 'cursor-pointer hover:border-green-800/30 transition-colors' : ''}`}>
-        <div className="aspect-[16/9] bg-gradient-to-br from-green-50 to-gold-50" />
+      <article ref={ref} onClick={open}
+        className={`rounded-xl overflow-hidden border border-green-800/10 bg-white ${clickable}`}>
+        {c.coverUrl
+          ? <img src={c.coverUrl} alt="" loading="lazy" className="aspect-[16/9] w-full object-cover" />
+          : <div className="aspect-[16/9] bg-gradient-to-br from-green-50 to-gold-50" />}
         <div className="px-4 py-3">
           <p className="text-[9px] tracking-widest uppercase text-gold-800 font-semibold">Article · {c.readMins} min</p>
           <p className="font-serif text-green-900 text-[17px] font-semibold leading-snug my-0.5">{c.title}</p>
@@ -160,13 +164,13 @@ function Card({ c, myId, greeted }: { c: FeedCard; myId?: string; greeted: Set<s
     );
   }
 
-  // ── RESOURCE: title + body + contact ──
+  // ── RESOURCE: title + body (contact lives in the modal) ──
   if (c.kind === 'resource') {
     return (
-      <article ref={ref} className="rounded-xl mb-4 break-inside-avoid border border-green-800/10 bg-white p-4">
+      <article ref={ref} onClick={open}
+        className={`rounded-xl border border-green-800/10 bg-white p-4 ${clickable}`}>
         <p className="font-serif text-green-800 text-[17px] font-semibold leading-snug mb-1">{c.title}</p>
-        {c.body && <p className="text-[12px] text-muted mb-3">{c.body}</p>}
-        <ContactButtons info={{ email: c.email, mobile: c.mobile }} url={c.url} />
+        {c.body && <p className="text-[12px] text-muted line-clamp-2">{c.body}</p>}
       </article>
     );
   }
@@ -176,12 +180,12 @@ function Card({ c, myId, greeted }: { c: FeedCard; myId?: string; greeted: Set<s
   return (
     <article
       ref={ref}
-      onClick={c.to ? () => navigate(c.to!) : undefined}
-      className={`rounded-xl overflow-hidden mb-4 break-inside-avoid ${
+      onClick={open}
+      className={`rounded-xl overflow-hidden ${
         isAnnouncement
           ? 'border-2 border-gold-600/70 bg-gradient-to-br from-gold-50 to-white'
           : 'border border-green-800/10 bg-white'
-      } ${c.to ? 'cursor-pointer hover:border-green-800/30 transition-colors' : ''}`}>
+      } ${clickable}`}>
       {c.mediaUrl && <MediaBlock url={c.mediaUrl} label={c.kind === 'social' ? 'Social' : undefined} />}
       <div className="px-4 py-3">
         <div className="flex items-center gap-2 mb-1.5">
@@ -218,6 +222,7 @@ export function CommunityFeed({ view }: { view: FeedView }) {
   const { user } = useAuth();
   const [cards, setCards] = useState<FeedCard[] | null>(null);
   const [greeted, setGreeted] = useState<Set<string>>(new Set());
+  const [openCard, setOpenCard] = useState<FeedCard | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -245,11 +250,14 @@ export function CommunityFeed({ view }: { view: FeedView }) {
 
   // ONE feed, ONE card, ONE uniform grid. Every view uses the same grid of <Card>s;
   // the filter buttons only change WHICH cards are in `cards` — never how they render.
-  // Uniform (not masonry) so rows align; each card clicks through to its full content.
+  // Uniform (not masonry) so rows align; each card opens its full content in a modal.
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
-      {cards.map((c) => <Card key={`${c.kind}-${c.id}`} c={c} myId={user?.id} greeted={greeted} />)}
-    </div>
+    <>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
+        {cards.map((c) => <Card key={`${c.kind}-${c.id}`} c={c} myId={user?.id} greeted={greeted} onOpen={setOpenCard} />)}
+      </div>
+      {openCard && <PostModal card={openCard} onClose={() => setOpenCard(null)} />}
+    </>
   );
 }
 

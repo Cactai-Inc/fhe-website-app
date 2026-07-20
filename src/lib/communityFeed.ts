@@ -42,9 +42,24 @@ export interface FeedCard {
   audience?: string;
   readMins?: number;
   role?: string;
+  /** discussion: thread id (for fetching the thread + replies in the modal) */
+  threadId?: string;
+  /** article: slug (for fetching the full post body in the modal) */
+  slug?: string;
+  /** article cover image */
+  coverUrl?: string | null;
+  /** event: raw times + place for the modal */
+  startsAt?: string;
+  endsAt?: string | null;
+  location?: string | null;
   /** member cards: the member's user_id (Say-hi target) + avatar. */
   memberUserId?: string;
   memberAvatar?: string | null;
+  isHorseOwner?: boolean;
+  socialInstagram?: string | null;
+  socialFacebook?: string | null;
+  socialLinkedin?: string | null;
+  socialTiktok?: string | null;
   // contact (members/resources)
   email?: string | null;
   mobile?: string | null;
@@ -96,7 +111,7 @@ function fromFeedPost(p: FeedPost): FeedCard {
 function fromThread(t: Thread): FeedCard {
   const name = t.author?.display_name || t.author?.first_name || 'Member';
   return {
-    id: t.id, view: 'discussions', kind: 'discussion', to: `/app/threads/${t.id}`,
+    id: t.id, view: 'discussions', kind: 'discussion', threadId: t.id,
     title: t.title, body: t.body,
     author: name, authorInitials: initials(name, 'M'),
     when: ago(t.last_post_at || t.created_at), ts: new Date(t.last_post_at || t.created_at).getTime(),
@@ -109,12 +124,13 @@ function fromEvent(e: CommunityEvent): FeedCard {
     author: 'French Heritage', authorInitials: 'FH',
     when: new Date(e.starts_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
     ts: new Date(e.starts_at).getTime(),
+    startsAt: e.starts_at, endsAt: e.ends_at, location: e.location,
   };
 }
 function fromArticle(a: ContentPost): FeedCard {
   return {
-    id: a.id, view: 'articles', kind: 'article', to: `/app/content/${a.slug}`,
-    title: a.title, body: a.excerpt ?? undefined,
+    id: a.id, view: 'articles', kind: 'article', slug: a.slug,
+    title: a.title, body: a.excerpt ?? undefined, coverUrl: a.cover_url,
     author: 'French Heritage', authorInitials: 'FH',
     when: ago(a.created_at), ts: new Date(a.created_at).getTime(),
     readMins: Math.max(2, Math.round((a.body?.length ?? 600) / 900)),
@@ -148,8 +164,13 @@ function fromMember(m: MemberDirectoryEntry): FeedCard {
     // the card clicks through to their profile.
     memberUserId: m.user_id,
     memberAvatar: m.avatar_url ?? null,
-    to: `/app/members/${m.user_id}`,
     ts: 0,
+    bio: m.bio ?? undefined,
+    isHorseOwner: m.is_horse_owner,
+    socialInstagram: m.social_instagram,
+    socialFacebook: m.social_facebook,
+    socialLinkedin: m.social_linkedin,
+    socialTiktok: m.social_tiktok,
     // Shared contact fields straight from the widened member_directory view —
     // hide-from-community is enforced server-side (hidden → null); the per-channel
     // allow-flags travel with the card so the buttons honor them exactly.
