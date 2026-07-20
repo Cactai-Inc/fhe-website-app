@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Info, MessageSquarePlus } from 'lucide-react';
-import type { ContractField, FieldStructured, PartyChoice } from '../../lib/contracts';
+import { clauseConditionMet, type ContractField, type FieldStructured, type PartyChoice } from '../../lib/contracts';
 
 /**
  * CONTRACT CASCADE — the living-document field renderer.
@@ -34,6 +34,20 @@ const PARTY_OPTS = [
   { value: 'LESSOR', label: 'Owner (Lessor)' },
   { value: 'LESSEE', label: 'Lessee' },
   { value: 'CARE_PROVIDER', label: 'Care Provider' },
+  { value: 'SHARED', label: 'Shared' },
+];
+/** Responsibility party sets by kind (the FHE model):
+ *   financial → who PAYS: Owner / Lessee / Shared%  (FHE never financial unless named)
+ *   care      → who DOES/oversees: Owner / Lessee / FHE / Shared  (FHE is care-giver) */
+const FINANCIAL_PARTY_OPTS = [
+  { value: 'LESSOR', label: 'Owner (Lessor)' },
+  { value: 'LESSEE', label: 'Lessee' },
+  { value: 'SHARED', label: 'Shared (split %)' },
+];
+const CARE_PARTY_OPTS = [
+  { value: 'LESSOR', label: 'Owner (Lessor)' },
+  { value: 'LESSEE', label: 'Lessee' },
+  { value: 'FHE', label: 'FHE (care & oversight)' },
   { value: 'SHARED', label: 'Shared' },
 ];
 const COST_PARTY_OPTS = [
@@ -291,9 +305,49 @@ function FieldControl({
   }
   if (fmt === 'party') {
     const val = (f.structured ?? {}) as PartyChoice;
-    return <PartyPicker value={val} disabled={disabled} opts={PARTY_OPTS}
+    // option set by responsibility_kind: financial = who pays (no FHE);
+    // care = who does/oversees (FHE is the default care party).
+    const partyOpts = f.responsibility_kind === 'financial' ? FINANCIAL_PARTY_OPTS
+      : f.responsibility_kind === 'care' ? CARE_PARTY_OPTS
+      : PARTY_OPTS;
+    return <PartyPicker value={val} disabled={disabled} opts={partyOpts}
       placeholder={f.guidance ?? 'Select the responsible party'}
       onChange={(v) => void onSaveStructured(f.field_key, v as FieldStructured)} />;
+  }
+  if (fmt === 'contact') {
+    // A full reusable contact block: name · business · address · phone · email · website.
+    // Used for trainer / instructor / farrier / vet / care provider (ELS §11-13).
+    const s = f.structured ?? {};
+    const set = (patch: Partial<FieldStructured>) => void onSaveStructured(f.field_key, { ...s, ...patch });
+    return (
+      <div className="grid grid-cols-2 gap-1.5">
+        <input className={inputCls} disabled={disabled} placeholder="Name" value={s.name ?? ''} onChange={(e) => set({ name: e.target.value })} />
+        <input className={inputCls} disabled={disabled} placeholder="Business" value={s.company ?? ''} onChange={(e) => set({ company: e.target.value })} />
+        <input className={`${inputCls} col-span-2`} disabled={disabled} placeholder="Street address" value={s.line1 ?? ''} onChange={(e) => set({ line1: e.target.value })} />
+        <input className={inputCls} disabled={disabled} placeholder="City" value={s.city ?? ''} onChange={(e) => set({ city: e.target.value })} />
+        <div className="grid grid-cols-2 gap-1.5">
+          <input className={inputCls} disabled={disabled} placeholder="State" value={s.state ?? ''} onChange={(e) => set({ state: e.target.value })} />
+          <input className={inputCls} disabled={disabled} placeholder="ZIP" value={s.postal ?? ''} onChange={(e) => set({ postal: e.target.value })} />
+        </div>
+        <input type="tel" className={inputCls} disabled={disabled} placeholder="Phone" value={s.phone ?? ''} onChange={(e) => set({ phone: e.target.value })} />
+        <input type="email" className={inputCls} disabled={disabled} placeholder="Email" value={s.email ?? ''} onChange={(e) => set({ email: e.target.value })} />
+        <input className={`${inputCls} col-span-2`} disabled={disabled} placeholder="Website (optional)" value={s.website ?? ''} onChange={(e) => set({ website: e.target.value })} />
+      </div>
+    );
+  }
+  if (fmt === 'yesno') {
+    const cur = f.value ?? '';
+    return (
+      <div className="flex gap-1.5">
+        {[['YES', 'Yes'], ['NO', 'No']].map(([v, label]) => (
+          <button key={v} type="button" disabled={disabled} onClick={() => void onSave(f.field_key, v)}
+            className={`text-sm rounded-lg px-4 py-1.5 border focus-ring ${
+              cur === v ? 'bg-green-800 text-white border-green-800' : 'border-green-800/15 text-secondary hover:bg-green-50'}`}>
+            {label}
+          </button>
+        ))}
+      </div>
+    );
   }
   if (fmt === 'person') {
     const s = f.structured ?? {};
@@ -498,13 +552,15 @@ function WeekGrid({ f, onSave, disabled }: { f: ContractField; onSave: SaveFn; d
   );
 }
 
-/** Is `f` currently revealed, given its conditional_on gate against sibling values? */
+/** Is `f` currently revealed, given its conditional_on gate against sibling values?
+ *  Uses the shared clauseConditionMet evaluator (equals + contains) so field-level
+ *  and clause-level gating behave identically. */
 function conditionMet(f: ContractField, byKey: Map<string, ContractField>): boolean {
   const c = f.conditional_on;
   if (!c) return true;
   const ctrl = byKey.get(c.field_key);
   const v = ctrl?.responsibility?.party ?? ctrl?.value ?? '';
-  return c.equals.includes(v);
+  return clauseConditionMet(c, { [c.field_key]: v });
 }
 
 /** One field + its cascading children. */

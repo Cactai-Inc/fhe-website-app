@@ -8,13 +8,19 @@ export type FieldInputKind =
   | 'week_grid' | 'contact' | 'currency' | 'date' | 'percent' | 'prose' | 'checkbox';
 
 export interface FieldOption { value: string; label: string }
-export interface FieldConditional { field_key: string; equals: string[] }
+/** A clause/field reveal gate: shown when the controlling field equals one of
+ *  `equals`, or (for a multi-select control) contains one of `contains`. */
+export interface FieldConditional { field_key: string; equals?: string[]; contains?: string[] }
 
 export interface ContractField {
   field_key: string;
   label: string | null;
   section: string | null;
+  clause_key?: string | null;  // which clause this field belongs to (Section›Clause›Field)
   owner_role: string;          // 'LESSEE' | 'LESSOR' | 'DEAL' | ...
+  // For a party/responsibility field: 'financial' (Owner/Lessee/Shared) vs
+  // 'care' (Owner/Lessee/FHE/Shared). Drives the party picker's option set.
+  responsibility_kind?: 'financial' | 'care' | null;
   value: string | null;
   value_type: string;          // text | longtext | currency | date | select | checkbox
   required: boolean;
@@ -51,8 +57,8 @@ export interface PartyChoice {
 export interface FieldStructured {
   // scalars
   value?: string; text?: string; amount?: string;
-  // person / provider
-  name?: string; company?: string; phone?: string; email?: string;
+  // person / provider / contact-block
+  name?: string; company?: string; phone?: string; email?: string; website?: string;
   // address
   line1?: string; line2?: string; city?: string; state?: string; postal?: string;
   // list
@@ -142,6 +148,60 @@ export async function contractDocumentDetail(documentId: string): Promise<Contra
   const { data, error } = await supabase.rpc('contract_document_detail', { p_document_id: documentId });
   if (error) throw error;
   return data as ContractDetail;
+}
+
+// ─── Section › Clause › Field structure (authoring engine) ───────────────────
+export interface ClauseDef {
+  clause_key: string;
+  heading: string | null;
+  clause_type: 'input' | 'prose' | 'choice';
+  sort_order: number;
+  is_optional: boolean;
+  conditional_on: FieldConditional | null;
+  guidance: string | null;
+}
+export interface SectionDef {
+  section_key: string;
+  heading: string;
+  sort_order: number;
+  is_optional: boolean;
+  guidance: string | null;
+  clauses: ClauseDef[];
+}
+export interface TemplateStructure { template_key: string; sections: SectionDef[] }
+
+/** The clause structure for a template — sections › clauses, ordered. Powers the
+ *  numbered Section›Clause›Field rendering. Cached per template. */
+const _structureCache = new Map<string, TemplateStructure>();
+export async function contractTemplateStructure(templateKey: string): Promise<TemplateStructure> {
+  const cached = _structureCache.get(templateKey);
+  if (cached) return cached;
+  const { data, error } = await supabase.rpc('contract_template_structure', { p_template_key: templateKey });
+  if (error) throw error;
+  const s = data as TemplateStructure;
+  _structureCache.set(templateKey, s);
+  return s;
+}
+
+/** Shared clause/field reveal-gate evaluator — mirrors the SQL clause_condition_met
+ *  so the authoring UI shows/hides clauses in real time exactly as the composed
+ *  document will. `fieldValues` maps field_key → current value (multi-select values
+ *  are comma-joined, matching the engine). */
+export function clauseConditionMet(
+  cond: FieldConditional | null | undefined,
+  fieldValues: Record<string, string>,
+): boolean {
+  if (!cond || !cond.field_key) return true;
+  const raw = fieldValues[cond.field_key] ?? '';
+  if (cond.equals && cond.equals.includes(raw)) return true;
+  if (cond.contains) {
+    const have = raw.split(',').map((s) => s.trim()).filter(Boolean);
+    if (cond.contains.some((v) => have.includes(v))) return true;
+  }
+  // if only one operator was given and it didn't match, it's not met; if NEITHER
+  // operator is present, treat as ungated (shown)
+  if (!cond.equals && !cond.contains) return true;
+  return false;
 }
 
 /** One document in a contract's ordered signing set (lease → vet → care). */
