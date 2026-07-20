@@ -109,6 +109,7 @@ export interface ContractDetail {
   party_controls?: PartyControls[];
   document: {
     document_id: string;
+    template_key?: string | null;   // for clause-model documents (Section›Clause›Field)
     title: string;
     status: string;
     workflow_state: 'editable' | 'editing' | 'in_review' | 'locked' | 'executed' | 'void';

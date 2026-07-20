@@ -24,6 +24,8 @@ import { AddElementButton } from '../../components/app/AddElementModal';
 import { PartyControlsCard, type PartyControlValues } from '../../components/app/PartyControlsCard';
 import { TrackChangesPanel } from '../../components/app/TrackChangesPanel';
 import { ContractComments, type PendingAnchor } from '../../components/app/ContractComments';
+import { ClauseDocument } from '../../components/app/ClauseDocument';
+import { contractTemplateStructure, type TemplateStructure } from '../../lib/contracts';
 
 /**
  * CONTRACT (/app/contracts/:id) — the negotiated-contract surface (Update A).
@@ -224,6 +226,8 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   // track-changes + comments panels after any edit.
   const [pendingAnchor, setPendingAnchor] = useState<PendingAnchor | null>(null);
   const [changeKey, setChangeKey] = useState(0);
+  // Clause structure for clause-model (Section›Clause›Field) documents.
+  const [structure, setStructure] = useState<TemplateStructure | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -240,6 +244,16 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   useEffect(() => { void load(); }, [load]);
 
   const doc = detail?.document;
+
+  // Fetch the clause structure for clause-model documents (those carrying a
+  // template_key with section/clause defs). Null → render the legacy flat grouping.
+  const templateKey = doc?.template_key ?? null;
+  useEffect(() => {
+    if (!templateKey) { setStructure(null); return; }
+    contractTemplateStructure(templateKey)
+      .then((s) => setStructure(s.sections.length > 0 ? s : null))
+      .catch(() => setStructure(null));
+  }, [templateKey]);
 
   // Email the signer a PDF copy once the document is executed. The endpoint is
   // idempotent per (document, recipient), so viewing an already-delivered doc
@@ -422,6 +436,19 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           {STATE_LABEL[state] ?? state}
         </span>
       </div>
+
+      {/* Sticky "Add to contract" sub-header — one button that launches the
+          section/clause/field modal. Present for clause-model docs while editable
+          so it's always reachable; the modal asks WHAT and WHERE. */}
+      {structure && isOwnerSide && editablePhase && id && (
+        <div className="sticky top-0 z-20 -mx-1 px-1 py-2 mb-3 bg-cream-100/95 backdrop-blur border-b border-green-800/10">
+          <AddElementButton documentId={id} disabled={!editablePhase}
+            sections={structure.sections.map((s) => s.heading)}
+            canAddStructure={isOwnerSide}
+            canAddClause={isOwnerSide || (redline?.can_add_clause ?? false)}
+            onAdded={() => void act(async () => {})} />
+        </div>
+      )}
       <p className="text-sm text-muted mb-5">
         {isOwnerSide
           ? 'The company originates this contract. Fill any side\u2019s fields \u2014 acting on behalf of a party where needed \u2014 set the controls, lock, then invite.'
@@ -535,9 +562,32 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         <HorseGate documentId={id} onAttached={() => { void load(); }} />
       )}
 
-      {/* Field sections — hidden until a horse is chosen when the gate applies, and
-          hidden entirely for a review-only party (they see the rich-text document). */}
-      {state !== 'executed' && !showHorseGate && !reviewOnly && sections.map(([section, fields]) => {
+      {/* Clause-model documents (Section›Clause›Field): numbered structure with
+          live gating. Falls through to the legacy flat grouping when no structure. */}
+      {state !== 'executed' && !showHorseGate && !reviewOnly && structure && (
+        <ClauseDocument
+          sections={structure.sections}
+          fields={detail.fields}
+          cb={{
+            editable: editablePhase,
+            onSave: saveField,
+            onSaveStructured: (k, s) => void act(() => setFieldStructured(id!, k, s as never)),
+            onSaveResponsibility: (k, r) => void act(() => setFieldResponsibility(id!, k, r as never)),
+            onInclude: (k, inc) => void act(() => setFieldIncluded(id!, k, inc)),
+            onNa: (k, na) => void act(() => setFieldNa(id!, k, na)),
+            onControl: (k, ov) => void act(() => setFieldControlOverride(id!, k, ov as never)),
+            canSetControl: isOwnerSide,
+            canSuggest: redline?.can_suggest ?? false,
+            onSuggestEdit: suggestFieldEdit,
+            onCommentField: commentOnField,
+          }}
+        />
+      )}
+
+      {/* Field sections (legacy flat grouping) — hidden until a horse is chosen when
+          the gate applies, hidden for a review-only party, and skipped entirely for
+          clause-model documents (rendered above). */}
+      {state !== 'executed' && !showHorseGate && !reviewOnly && !structure && sections.map(([section, fields]) => {
         const isHorse = section === 'Horse';
         const anyEditable = fields.some((f) => f.can_edit);
         // counterparty intake: show only sections with something for them (or filled)
@@ -616,10 +666,9 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       })}
 
       {/* Unified "Add" toolbar (M-2): one button for field / section / clause.
-          Owner-side adds structure + clauses directly; a party may propose a
-          clause when their controls allow it. Replaces the three separate add
-          surfaces (this button, the redline clause box, lease extras). */}
-      {editablePhase && !showHorseGate && id && (
+          For clause-model docs the sticky sub-header above provides this, so it's
+          only shown here for legacy flat documents. */}
+      {editablePhase && !showHorseGate && !structure && id && (
         <div className="mb-5">
           <AddElementButton documentId={id} disabled={!editablePhase}
             sections={sections.map(([s]) => s)}
