@@ -96,7 +96,7 @@ export function OfferingCatalog({ onCheckout, actionLabel = 'Add' }: { onCheckou
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {cards.map((c) => (
           <button key={c.code} type="button" onClick={() => setOpenCat(c.code)}
-            className="group relative overflow-hidden rounded-xl text-left focus-ring border border-green-800/10 min-h-[240px] flex flex-col justify-end hover:brightness-105 transition-all">
+            className="group relative overflow-hidden rounded-xl text-left focus-ring border border-green-800/10 aspect-square flex flex-col justify-end hover:brightness-105 transition-all">
             {c.cover_image_url
               ? <img src={c.cover_image_url} alt="" className="absolute inset-0 w-full h-full object-cover" />
               : <CoverPlaceholder label={c.display_name} />}
@@ -135,9 +135,9 @@ function CategoryModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-green-950/50 p-0 sm:p-4" onClick={onClose}>
       {/* ~50% larger than before (was max-w-2xl / 672px → 5xl / 1024px). */}
       <div className="bg-cream w-full sm:max-w-5xl sm:rounded-2xl flex flex-col max-h-[100dvh] sm:max-h-[92dvh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        {/* Header: cover + name + description */}
+        {/* Header: cover + name + description. Taller cover so more of the photo shows. */}
         <div className="relative shrink-0">
-          <div className="relative h-56 sm:h-72 overflow-hidden">
+          <div className="relative h-72 sm:h-[26rem] overflow-hidden">
             {category.cover_image_url
               ? <img src={category.cover_image_url} alt="" className="absolute inset-0 w-full h-full object-cover" />
               : <CoverPlaceholder label={category.display_name} />}
