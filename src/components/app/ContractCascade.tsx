@@ -285,6 +285,23 @@ function FieldControl({
       </div>
     );
   }
+  if (fmt === 'location') {
+    // A location is a named place + its address — e.g. a boarding facility.
+    // Structured so it reads back as "Name — Street, City, ST ZIP".
+    const s = f.structured ?? {};
+    const set = (patch: Partial<FieldStructured>) => void onSaveStructured(f.field_key, { ...s, ...patch });
+    return (
+      <div className="grid grid-cols-2 gap-1.5">
+        <input className={`${inputCls} col-span-2`} disabled={disabled} placeholder="Facility / place name (e.g. Willow Creek Stables)" value={s.name ?? ''} onChange={(e) => set({ name: e.target.value })} />
+        <input className={`${inputCls} col-span-2`} disabled={disabled} placeholder="Street address" value={s.line1 ?? ''} onChange={(e) => set({ line1: e.target.value })} />
+        <input className={inputCls} disabled={disabled} placeholder="City" value={s.city ?? ''} onChange={(e) => set({ city: e.target.value })} />
+        <div className="grid grid-cols-2 gap-1.5">
+          <input className={inputCls} disabled={disabled} placeholder="State" value={s.state ?? ''} onChange={(e) => set({ state: e.target.value })} />
+          <input className={inputCls} disabled={disabled} placeholder="ZIP" value={s.postal ?? ''} onChange={(e) => set({ postal: e.target.value })} />
+        </div>
+      </div>
+    );
+  }
 
   // ── legacy responsibility (kept for any field still on input_kind) ──
   if (kind === 'responsibility') {
