@@ -95,13 +95,13 @@ export default function BookSupport() {
         {step === 0 && (
           <div>
             <p className="eyebrow mb-3">Step 1 of 3</p>
-            <h1 className="heading-section text-green-800 mb-3">Rider Support Services</h1>
+            <h1 className="heading-section text-green-800 mb-3">Acquisition Support Services</h1>
             <p className="body-text mb-10">
               Finding the right horse is one of the most significant decisions in an equestrian's life. Our support services provide expert guidance at each stage — from the first search to the final handshake.
             </p>
             <div className="flex flex-col gap-8">
               {SUPPORT_SERVICES.map((svc) => (
-                <ServiceSelector key={svc.id} service={svc} category="Rider Support" />
+                <ServiceSelector key={svc.id} service={svc} category="Acquisition Support" />
               ))}
             </div>
           </div>

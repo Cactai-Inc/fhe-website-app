@@ -24,7 +24,7 @@ import type { FeedView } from './seed';
 export interface FeedCard {
   id: string;
   view: Exclude<FeedView, 'all'>;
-  kind: 'social' | 'for_sale' | 'discussion' | 'event' | 'article' | 'resource' | 'member' | 'announcement' | 'member_joined';
+  kind: 'social' | 'for_sale' | 'discussion' | 'event' | 'article' | 'resource' | 'member' | 'announcement';
   title?: string;
   body?: string;
   mediaUrl?: string;
@@ -42,10 +42,8 @@ export interface FeedCard {
   audience?: string;
   readMins?: number;
   role?: string;
-  /** member_joined cards: the new member's user_id (Say-hi target) + resolved
-   *  display name + avatar (live, not the frozen post body). */
+  /** member cards: the member's user_id (Say-hi target) + avatar. */
   memberUserId?: string;
-  memberName?: string;
   memberAvatar?: string | null;
   // contact (members/resources)
   email?: string | null;
@@ -77,19 +75,6 @@ function ago(iso: string): string {
 
 // ── Normalizers ────────────────────────────────────────────────
 function fromFeedPost(p: FeedPost): FeedCard {
-  // A member joining is its own card kind (permanent in the feed) with a Say-hi button.
-  if (p.post_type === 'member_joined') {
-    return {
-      id: p.id,
-      view: 'social',
-      kind: 'member_joined',
-      body: p.body ?? undefined,
-      memberUserId: p.author_id ?? undefined,
-      when: ago(p.publish_at),
-      ts: new Date(p.publish_at).getTime(),
-      seen: p.seen,
-    };
-  }
   const isSale = p.post_type === 'horse' || p.post_type === 'gear';
   const author = p.as_company ? 'French Heritage' : (p.author_id ? 'Member' : 'French Heritage');
   return {
@@ -156,7 +141,11 @@ function fromMember(m: MemberDirectoryEntry): FeedCard {
   return {
     id: m.user_id, view: 'members', kind: 'member',
     title: name, role: m.riding_level || 'Rider',
-    authorInitials: initials(name, 'M'), ts: 0,
+    authorInitials: initials(name, 'M'),
+    // a member is a feed item too (shown in All + Members) with a Say-hi target
+    memberUserId: m.user_id,
+    memberAvatar: m.avatar_url ?? null,
+    ts: 0,
     // Shared contact fields straight from the widened member_directory view —
     // hide-from-community is enforced server-side (hidden → null); the per-channel
     // allow-flags travel with the card so the buttons honor them exactly.
@@ -202,48 +191,33 @@ export async function fetchViewCards(view: FeedView): Promise<FeedCard[]> {
     }
     case 'social': {
       const { posts } = await feedGet();
-      // member_joined cards live in the social stream too — enrich with live name/avatar.
-      const cards = posts
-        .filter((p) => p.post_type === 'rider_post' || p.post_type === 'marketing' || p.post_type === 'member_joined')
-        .map(fromFeedPost);
-      return enrichMemberCards(cards);
+      return posts.filter((p) => p.post_type === 'rider_post' || p.post_type === 'marketing').map(fromFeedPost);
     }
     case 'all':
     default: {
-      // Merge the post-like sources newest-first (social + for-sale + discussions +
-      // events + articles). Members/resources are reference directories, not part
-      // of the mixed stream.
-      const [{ posts }, threads, events, articles, announcements] = await Promise.all([
+      // "All" = the whole feed, unfiltered: posts + discussions + events + articles +
+      // announcements + the member directory (members ARE feed items too — the buttons
+      // are filters over one feed, not separate content types). Newest-first.
+      const [{ posts }, threads, events, articles, announcements, members] = await Promise.all([
         feedGet(),
         fetchThreads().catch(() => [] as Thread[]),
         fetchEvents().catch(() => [] as CommunityEvent[]),
         fetchContentPosts().catch(() => [] as ContentPost[]),
         fetchAnnouncements().catch(() => [] as Announcement[]),
+        fetchMemberDirectory().catch(() => [] as MemberDirectoryEntry[]),
       ]);
       const cards: FeedCard[] = [
-        ...posts.map(fromFeedPost),
+        // member_joined posts are superseded by the member directory cards below.
+        ...posts.filter((p) => p.post_type !== 'member_joined').map(fromFeedPost),
         ...threads.map(fromThread),
         ...events.map(fromEvent),
         ...articles.map(fromArticle),
         ...announcements.filter((a) => a.published).map(fromAnnouncement),
+        ...members.map(fromMember),
       ];
-      return (await enrichMemberCards(cards)).sort((a, b) => b.ts - a.ts);
+      return cards.sort((a, b) => b.ts - a.ts);
     }
   }
-}
-
-/** Fill member_joined cards with the member's live name + avatar from the directory
- *  (the post body is frozen at join time; the profile fills in afterwards). */
-async function enrichMemberCards(cards: FeedCard[]): Promise<FeedCard[]> {
-  const needy = cards.filter((c) => c.kind === 'member_joined' && c.memberUserId);
-  if (needy.length === 0) return cards;
-  const dir = await fetchMemberDirectory().catch(() => [] as MemberDirectoryEntry[]);
-  const byId = new Map(dir.map((m) => [m.user_id, m]));
-  return cards.map((c) => {
-    if (c.kind !== 'member_joined' || !c.memberUserId) return c;
-    const m = byId.get(c.memberUserId);
-    return { ...c, memberName: m?.display_name || m?.first_name || 'A new member', memberAvatar: m?.avatar_url ?? null };
-  });
 }
 
 /** Per-view unseen counts. Feed-backed views (social/for-sale) use the real seen

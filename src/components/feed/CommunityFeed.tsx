@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, MessageCircle, Phone, Smartphone, PhoneCall, Globe, Hand } from 'lucide-react';
-import { fetchViewCards, sayHi, myGreetedUserIds, initials, type FeedCard } from '../../lib/communityFeed';
+import { fetchViewCards, sayHi, myGreetedUserIds, type FeedCard } from '../../lib/communityFeed';
 import { feedMarkSeen } from '../../lib/feed';
 import { SEED_ENABLED, type FeedView } from '../../lib/seed';
 import { useAuth } from '../../contexts/AuthContext';
@@ -106,23 +106,30 @@ function Card({ c, myId, greeted }: { c: FeedCard; myId?: string; greeted: Set<s
     return () => obs.disconnect();
   }, [c.id, c.seen, c.kind]);
 
-  // New-member card: a proper profile card — avatar + real name (live) + Say hi.
-  if (c.kind === 'member_joined') {
-    const name = c.memberName || 'A new member';
+  // A member is a feed item too (appears in All alongside posts). Render the SAME
+  // profile card the Members filter uses — avatar + name + role + contact + Say hi.
+  if (c.kind === 'member') {
     const isMine = c.memberUserId && c.memberUserId === myId;
     return (
       <article ref={ref} className="rounded-xl overflow-hidden mb-4 break-inside-avoid border border-green-800/10 bg-white">
-        <div className="px-4 py-4 flex items-center gap-3">
-          {c.memberAvatar
-            ? <img src={c.memberAvatar} alt="" className="w-12 h-12 rounded-full object-cover shrink-0" />
-            : <Avatar initials={initials(name, 'M')} />}
-          <div className="min-w-0 flex-1">
-            <p className="font-serif text-green-900 text-[16px] font-semibold leading-tight truncate">{name}</p>
-            <p className="text-[11.5px] text-muted">Joined the community{c.when ? ` · ${c.when}` : ''}</p>
+        <div className="px-4 py-4">
+          <div className="flex items-center gap-3 mb-3">
+            {c.memberAvatar
+              ? <img src={c.memberAvatar} alt="" className="w-11 h-11 rounded-full object-cover shrink-0" />
+              : <span className="w-11 h-11 rounded-full bg-green-100 text-green-800 grid place-items-center text-base font-serif font-semibold shrink-0">{c.authorInitials}</span>}
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-green-900 truncate">{c.title}</p>
+              <p className="text-[11px] uppercase tracking-wide text-gold-800 font-semibold">{c.role}</p>
+            </div>
+            {c.memberUserId && !isMine && (
+              <SayHiButton toUserId={c.memberUserId} alreadyGreeted={greeted.has(c.memberUserId)} />
+            )}
           </div>
-          {c.memberUserId && !isMine && (
-            <SayHiButton toUserId={c.memberUserId} alreadyGreeted={greeted.has(c.memberUserId)} />
-          )}
+          <ContactButtons info={{
+            email: c.email, mobile: c.mobile, whatsapp: c.whatsapp,
+            allowSms: c.allowSms, allowCall: c.allowCall,
+            allowWhatsappText: c.allowWhatsapp, allowWhatsappCall: c.allowWhatsappCall,
+          }} />
         </div>
       </article>
     );
@@ -199,18 +206,23 @@ export function CommunityFeed({ view }: { view: FeedView }) {
     return <EmptyState view={view} />;
   }
 
-  // Members → roster
+  // Members → roster (same profile card the mixed feed uses, with Say hi)
   if (view === 'members') {
     return (
       <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
         {cards.map((m) => (
           <div key={m.id} className="bg-white border border-green-800/10 rounded-xl p-4">
             <div className="flex items-center gap-3 mb-3">
-              <span className="w-11 h-11 rounded-full bg-green-100 text-green-800 grid place-items-center text-base font-serif font-semibold">{m.authorInitials}</span>
-              <div className="min-w-0">
+              {m.memberAvatar
+                ? <img src={m.memberAvatar} alt="" className="w-11 h-11 rounded-full object-cover shrink-0" />
+                : <span className="w-11 h-11 rounded-full bg-green-100 text-green-800 grid place-items-center text-base font-serif font-semibold shrink-0">{m.authorInitials}</span>}
+              <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-green-900 truncate">{m.title}</p>
                 <p className="text-[11px] uppercase tracking-wide text-gold-800 font-semibold">{m.role}</p>
               </div>
+              {m.memberUserId && m.memberUserId !== user?.id && (
+                <SayHiButton toUserId={m.memberUserId} alreadyGreeted={greeted.has(m.memberUserId)} />
+              )}
             </div>
             <ContactButtons info={{
               email: m.email, mobile: m.mobile, whatsapp: m.whatsapp,

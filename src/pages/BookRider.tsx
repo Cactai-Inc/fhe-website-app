@@ -153,7 +153,7 @@ export default function BookRider() {
               <QualifierGroup
                 qualifierKey="wants_horse"
                 question="Are you considering owning or leasing a horse?"
-                help="If so, our Rider Support services may be a natural next step for you."
+                help="If so, our Acquisition Support services may be a natural next step for you."
                 layout="wide"
                 options={[
                   { value: 'yes-soon', label: 'Yes, actively looking' },
@@ -216,12 +216,12 @@ export default function BookRider() {
             */}
             {ownsHorse !== 'yes' && (wantsHorse === 'yes-soon' || wantsHorse === 'maybe') && (
               <div className="mb-6 bg-white border border-green-800/10 p-6">
-                <p className="text-xs font-sans font-medium tracking-wide uppercase text-gold-ink mb-3">Rider Support Available</p>
+                <p className="text-xs font-sans font-medium tracking-wide uppercase text-gold-ink mb-3">Acquisition Support Available</p>
                 <p className="text-sm font-sans text-secondary mb-4">
-                  Since you are considering owning or leasing a horse, our Rider Support services are designed to make that journey smooth, safe, and inspired. We can tell you more when we speak.
+                  Since you are considering owning or leasing a horse, our Acquisition Support services are designed to make that journey smooth, safe, and inspired. We can tell you more when we speak.
                 </p>
                 <Link to="/book/support" className="link-underline">
-                  Explore Rider Support
+                  Explore Acquisition Support
                   <ArrowRight size={12} />
                 </Link>
               </div>

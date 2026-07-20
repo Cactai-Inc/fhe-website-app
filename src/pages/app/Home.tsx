@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Navigate, useSearchParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Navigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useDocumentTitle } from '../../lib/hooks';
 import { useViewSurfaces } from '../../lib/surfaces';
 import { useAuth } from '../../contexts/AuthContext';
@@ -27,6 +27,14 @@ export default function Home() {
   const initialFilter = (params.get('filter') as FeedView | null) ?? 'all';
   const [view, setView] = useState<FeedView>(initialFilter);
   const [sort, setSort] = useState<string>((SORT_OPTIONS[initialFilter] ?? SORT_OPTIONS.all)[0]);
+
+  // Scroll to the community section when linked with #community (from the menu).
+  const { hash } = useLocation();
+  useEffect(() => {
+    if (hash === '#community') {
+      document.getElementById('community')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [hash]);
 
   const hasFeed = surfaces.has_feed;
 
@@ -66,7 +74,7 @@ export default function Home() {
 
       <DashboardPanel />
 
-      <div className="pt-1.5 border-t border-green-800/10 mb-4">
+      <div id="community" className="pt-1.5 border-t border-green-800/10 mb-4 scroll-mt-20">
         <h2 className="font-serif text-green-800 text-2xl font-semibold pt-3.5">Your Community</h2>
       </div>
 

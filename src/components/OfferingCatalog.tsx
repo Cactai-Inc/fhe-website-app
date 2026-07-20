@@ -91,9 +91,9 @@ export function OfferingCatalog({ onCheckout, actionLabel = 'Add' }: { onCheckou
 
   return (
     <>
-      {/* Uniform grid, fluid & full-width: 1 col on mobile, 2 on tablet, 3 on desktop.
-          Every category is the same size, in strict catalog_rank order — no gaps. */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* Uniform grid, fluid & full-width, scaling with screen: 1 col mobile, 2 tablet,
+          3 laptop, 4 desktop, 5 on large screens. Same size, strict catalog_rank order. */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
         {cards.map((c) => (
           <button key={c.code} type="button" onClick={() => setOpenCat(c.code)}
             className="group relative overflow-hidden rounded-xl text-left focus-ring border border-green-800/10 aspect-square flex flex-col justify-end hover:brightness-105 transition-all">

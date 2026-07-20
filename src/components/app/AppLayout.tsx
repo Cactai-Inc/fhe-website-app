@@ -41,10 +41,8 @@ interface NavItem {
 
 const QUICK: { label: string; icon: typeof GraduationCap; to: string }[] = [
   { label: 'Dashboard', icon: LayoutDashboard, to: '/app' },
-  // Calendar + booking are the same surface: view your times on the calendar,
-  // or start a booking (the calendar opens when you pick something to see).
+  { label: 'Community', icon: Users, to: '/app#community' },
   { label: 'Calendar', icon: CalendarDays, to: '/app/calendar' },
-  { label: 'Book a lesson', icon: GraduationCap, to: '/app/calendar' },
   // The in-app catalog: shop services & book them (real purchase flow).
   { label: 'Catalog', icon: ShoppingBag, to: '/app/catalog' },
   { label: 'Shop for sale', icon: Store, to: '/app?filter=for_sale' },
@@ -280,11 +278,16 @@ export default function AppLayout() {
                         className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">
                         <FileText size={17} /> Pending agreements
                       </button>
-                      {/* admins shop too — Dashboard + Catalog shortcuts */}
+                      {/* Both operators navigate to the community + catalog to help
+                          members with what they're seeing — no shopper-only links. */}
                       <div className="mt-1 border-t border-green-800/10 pt-2 px-4 pb-1 text-xs uppercase tracking-wide text-secondary/60">Quick access</div>
                       <button type="button" onClick={() => { closeMenu(); navigate('/app'); }}
                         className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">
                         <LayoutDashboard size={17} /> Dashboard
+                      </button>
+                      <button type="button" onClick={() => { closeMenu(); navigate('/app#community'); }}
+                        className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">
+                        <Users size={17} /> Community
                       </button>
                       <button type="button" onClick={() => { closeMenu(); navigate('/app/catalog'); }}
                         className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">

@@ -32,7 +32,7 @@ interface FormState {
 const FUNNEL_LABELS: Record<string, string> = {
   rider: 'Rider Services',
   horse: 'Horse Care Services',
-  support: 'Rider Support',
+  support: 'Acquisition Support',
 };
 
 /** Where "back / add more" points for each funnel (the canonical picker pages). */

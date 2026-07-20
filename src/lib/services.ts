@@ -293,7 +293,7 @@ export const HAIR_CLIPPING: Service = {
   ],
 };
 
-// ─── Rider Support Services ───────────────────────────────────────────────
+// ─── Acquisition Support Services ───────────────────────────────────────────────
 
 export const HORSE_LOCATOR: Service = {
   id: 'horse-locator',
