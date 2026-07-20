@@ -42,6 +42,7 @@ import Account from './pages/Account';
 import OrderDetail from './pages/OrderDetail';
 // Member app
 import Home from './pages/app/Home';
+import DashboardHome from './pages/app/DashboardHome';
 import Profile from './pages/app/Profile';
 import Schedule from './pages/app/Schedule';
 import CalendarPage from './pages/app/CalendarPage';
@@ -53,6 +54,7 @@ import Onboarding from './pages/app/Onboarding';
 // Client portal (CP-* wave)
 import MyLessons from './pages/app/MyLessons';
 import ThreadDetail from './pages/app/ThreadDetail';
+import MemberProfile from './pages/app/MemberProfile';
 import Messages from './pages/app/Messages';
 import ContentPostDetail from './pages/app/ContentPostDetail';
 // Slice 4 — purpose-built dashboards + community/library surfaces
@@ -184,15 +186,16 @@ export function AppRoutes() {
                 </ProtectedRoute>
               }
             >
-              {/* /app index = the Home feed (Slice 3). The old dashboard content
-                  moves to a renamed Dashboard page in Slice 4; kept reachable at
-                  /app/dashboard meanwhile. */}
+              {/* /app index = Community (the front door on sign-in). The dashboard
+                  (priority actions + notifications) is its own page at /app/dashboard. */}
               <Route index element={<Home />} />
+              <Route path="dashboard" element={<DashboardHome />} />
               {/* Slice 4 — purpose-built dashboards for non-rider purchase categories */}
               <Route path="schedule" element={<Schedule />} />
               <Route path="calendar" element={<CalendarPage />} />
               {/* Slice 4 — Community hub (front door) + its surfaces */}
               <Route path="threads/:id" element={<ThreadDetail />} />
+              <Route path="members/:userId" element={<MemberProfile />} />
               <Route path="messages" element={<Messages />} />
               <Route path="messages/:userId" element={<Messages />} />
               {/* Slice 4 — Library = the conformed Content page (articles + resources

@@ -20,6 +20,7 @@ import type {
   Thread, ContentPost, ContentResource, CommunityEvent, MemberDirectoryEntry, Announcement,
 } from './community-types';
 import type { FeedView } from './seed';
+import type { PreferredContact } from './contact';
 
 export interface FeedCard {
   id: string;
@@ -31,6 +32,7 @@ export interface FeedCard {
   mediaKind?: 'image' | 'video';
   author?: string;
   authorInitials?: string;
+  authorAvatar?: string | null;
   when?: string;              // human label
   ts: number;                 // sort key (ms)
   seen?: boolean;
@@ -42,9 +44,25 @@ export interface FeedCard {
   audience?: string;
   readMins?: number;
   role?: string;
+  /** discussion: thread id (for fetching the thread + replies in the modal) */
+  threadId?: string;
+  /** article: slug (for fetching the full post body in the modal) */
+  slug?: string;
+  /** article cover image */
+  coverUrl?: string | null;
+  /** event: raw times + place for the modal */
+  startsAt?: string;
+  endsAt?: string | null;
+  location?: string | null;
   /** member cards: the member's user_id (Say-hi target) + avatar. */
   memberUserId?: string;
   memberAvatar?: string | null;
+  isHorseOwner?: boolean;
+  preferredContact?: PreferredContact;
+  socialInstagram?: string | null;
+  socialFacebook?: string | null;
+  socialLinkedin?: string | null;
+  socialTiktok?: string | null;
   // contact (members/resources)
   email?: string | null;
   mobile?: string | null;
@@ -76,7 +94,9 @@ function ago(iso: string): string {
 // ── Normalizers ────────────────────────────────────────────────
 function fromFeedPost(p: FeedPost): FeedCard {
   const isSale = p.post_type === 'horse' || p.post_type === 'gear';
-  const author = p.as_company ? 'French Heritage' : (p.author_id ? 'Member' : 'French Heritage');
+  // Company posts show as French Heritage; member posts use the author's real
+  // name + avatar (from feed_get's profile join).
+  const author = p.as_company ? 'French Heritage' : (p.author_name || 'Member');
   return {
     id: p.id,
     view: isSale ? 'for_sale' : 'social',
@@ -86,6 +106,7 @@ function fromFeedPost(p: FeedPost): FeedCard {
     mediaKind: p.media_kind ?? undefined,
     author,
     authorInitials: p.as_company ? 'FH' : initials(author, 'M'),
+    authorAvatar: p.as_company ? null : (p.author_avatar ?? null),
     when: ago(p.publish_at),
     ts: new Date(p.publish_at).getTime(),
     seen: p.seen,
@@ -96,7 +117,7 @@ function fromFeedPost(p: FeedPost): FeedCard {
 function fromThread(t: Thread): FeedCard {
   const name = t.author?.display_name || t.author?.first_name || 'Member';
   return {
-    id: t.id, view: 'discussions', kind: 'discussion', to: `/app/threads/${t.id}`,
+    id: t.id, view: 'discussions', kind: 'discussion', threadId: t.id,
     title: t.title, body: t.body,
     author: name, authorInitials: initials(name, 'M'),
     when: ago(t.last_post_at || t.created_at), ts: new Date(t.last_post_at || t.created_at).getTime(),
@@ -109,12 +130,13 @@ function fromEvent(e: CommunityEvent): FeedCard {
     author: 'French Heritage', authorInitials: 'FH',
     when: new Date(e.starts_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
     ts: new Date(e.starts_at).getTime(),
+    startsAt: e.starts_at, endsAt: e.ends_at, location: e.location,
   };
 }
 function fromArticle(a: ContentPost): FeedCard {
   return {
-    id: a.id, view: 'articles', kind: 'article', to: `/app/content/${a.slug}`,
-    title: a.title, body: a.excerpt ?? undefined,
+    id: a.id, view: 'articles', kind: 'article', slug: a.slug,
+    title: a.title, body: a.excerpt ?? undefined, coverUrl: a.cover_url,
     author: 'French Heritage', authorInitials: 'FH',
     when: ago(a.created_at), ts: new Date(a.created_at).getTime(),
     readMins: Math.max(2, Math.round((a.body?.length ?? 600) / 900)),
@@ -138,14 +160,24 @@ function fromVendor(v: Vendor): FeedCard {
 }
 function fromMember(m: MemberDirectoryEntry): FeedCard {
   const name = m.display_name || m.first_name || 'Member';
+  // Horse owners carry a "Horse Owner" tag alongside their riding role.
+  const role = [m.riding_level || 'Rider', m.is_horse_owner ? 'Horse Owner' : null].filter(Boolean).join(' · ');
   return {
     id: m.user_id, view: 'members', kind: 'member',
-    title: name, role: m.riding_level || 'Rider',
+    title: name, role,
     authorInitials: initials(name, 'M'),
-    // a member is a feed item too (shown in All + Members) with a Say-hi target
+    // a member is a feed item too (shown in All + Members) with a Say-hi target;
+    // the card clicks through to their profile.
     memberUserId: m.user_id,
     memberAvatar: m.avatar_url ?? null,
     ts: 0,
+    bio: m.bio ?? undefined,
+    isHorseOwner: m.is_horse_owner,
+    preferredContact: m.preferred_contact,
+    socialInstagram: m.social_instagram,
+    socialFacebook: m.social_facebook,
+    socialLinkedin: m.social_linkedin,
+    socialTiktok: m.social_tiktok,
     // Shared contact fields straight from the widened member_directory view —
     // hide-from-community is enforced server-side (hidden → null); the per-channel
     // allow-flags travel with the card so the buttons honor them exactly.

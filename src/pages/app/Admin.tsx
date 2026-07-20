@@ -622,8 +622,8 @@ export default function Admin() {
 
           {/* the selected row + profile block */}
           <div className="bg-white border border-green-800/10 rounded-xl p-4 mb-4">
-            <div className="flex items-center justify-between gap-3">
-              <span className="flex items-center gap-3 min-w-0">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span className="flex items-center gap-3 min-w-0 flex-1 basis-full sm:basis-auto">
                 <span className="w-11 h-11 rounded-full bg-green-800 text-white grid place-items-center font-sans shrink-0">
                   <UserRound size={19} />
                 </span>

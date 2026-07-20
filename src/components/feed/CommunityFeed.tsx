@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Mail, MessageCircle, Phone, Smartphone, PhoneCall, Globe, Hand } from 'lucide-react';
 import { fetchViewCards, sayHi, myGreetedUserIds, type FeedCard } from '../../lib/communityFeed';
 import { feedMarkSeen } from '../../lib/feed';
@@ -8,6 +7,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import {
   contactActions, type ContactInfo, type ContactMethod,
 } from '../../lib/contact';
+import { PostModal } from './PostModal';
 
 /**
  * COMMUNITY FEED (adaptive, live) — fetches the active view's real source(s) via
@@ -30,7 +30,10 @@ function MediaBlock({ url, label }: { url?: string; label?: string }) {
     </div>
   );
 }
-function Avatar({ initials }: { initials?: string }) {
+function Avatar({ initials, src }: { initials?: string; src?: string | null }) {
+  if (src) {
+    return <img src={src} alt="" className="w-[22px] h-[22px] rounded-full object-cover" />;
+  }
   return (
     <span className="w-[22px] h-[22px] rounded-full bg-green-100 text-green-800 grid place-items-center text-[9px] font-semibold">
       {initials || '·'}
@@ -86,8 +89,7 @@ function SayHiButton({ toUserId, alreadyGreeted }: { toUserId: string; alreadyGr
   );
 }
 
-function Card({ c, myId, greeted }: { c: FeedCard; myId?: string; greeted: Set<string> }) {
-  const navigate = useNavigate();
+function Card({ c, myId, greeted, onOpen }: { c: FeedCard; myId?: string; greeted: Set<string>; onOpen: (c: FeedCard) => void }) {
   const ref = useRef<HTMLElement | null>(null);
 
   // seen-marking: feed-backed cards (social/for-sale) flip their seen flag when
@@ -106,52 +108,96 @@ function Card({ c, myId, greeted }: { c: FeedCard; myId?: string; greeted: Set<s
     return () => obs.disconnect();
   }, [c.id, c.seen, c.kind]);
 
-  // A member is a feed item too (appears in All alongside posts). Render the SAME
-  // profile card the Members filter uses — avatar + name + role + contact + Say hi.
+  // EVERY card opens its full content in a modal — no page navigation, ever.
+  const open = () => onOpen(c);
+  const clickable = 'cursor-pointer hover:border-green-800/30 transition-colors';
+
+  // ── MEMBER: a standard, vertical, centered community profile card. ──
   if (c.kind === 'member') {
     const isMine = c.memberUserId && c.memberUserId === myId;
     return (
-      <article ref={ref} className="rounded-xl overflow-hidden mb-4 break-inside-avoid border border-green-800/10 bg-white">
-        <div className="px-4 py-4">
-          <div className="flex items-center gap-3 mb-3">
-            {c.memberAvatar
-              ? <img src={c.memberAvatar} alt="" className="w-11 h-11 rounded-full object-cover shrink-0" />
-              : <span className="w-11 h-11 rounded-full bg-green-100 text-green-800 grid place-items-center text-base font-serif font-semibold shrink-0">{c.authorInitials}</span>}
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-green-900 truncate">{c.title}</p>
-              <p className="text-[11px] uppercase tracking-wide text-gold-800 font-semibold">{c.role}</p>
-            </div>
-            {c.memberUserId && !isMine && (
-              <SayHiButton toUserId={c.memberUserId} alreadyGreeted={greeted.has(c.memberUserId)} />
-            )}
+      <article ref={ref} onClick={open}
+        className={`rounded-xl border border-green-800/10 bg-white p-5 flex flex-col items-center text-center ${clickable}`}>
+        {c.memberAvatar
+          ? <img src={c.memberAvatar} alt="" className="w-20 h-20 rounded-full object-cover" />
+          : <span className="w-20 h-20 rounded-full bg-green-100 text-green-800 grid place-items-center text-2xl font-serif font-semibold">{c.authorInitials}</span>}
+        <p className="font-serif text-green-900 text-[17px] font-semibold leading-tight mt-3">{c.title}</p>
+        {c.role && <p className="text-[11px] uppercase tracking-wide text-gold-800 font-semibold mt-0.5">{c.role}</p>}
+        {c.memberUserId && !isMine && (
+          // stop the card's open when tapping the Say-hi button itself
+          <div className="mt-3" onClick={(e) => e.stopPropagation()}>
+            <SayHiButton toUserId={c.memberUserId} alreadyGreeted={greeted.has(c.memberUserId)} />
           </div>
-          <ContactButtons info={{
-            email: c.email, mobile: c.mobile, whatsapp: c.whatsapp,
-            allowSms: c.allowSms, allowCall: c.allowCall,
-            allowWhatsappText: c.allowWhatsapp, allowWhatsappCall: c.allowWhatsappCall,
-          }} />
+        )}
+      </article>
+    );
+  }
+
+  // ── FOR SALE: media-forward listing with a price ──
+  if (c.kind === 'for_sale') {
+    return (
+      <article ref={ref} onClick={open}
+        className={`rounded-xl overflow-hidden border border-green-800/10 bg-white ${clickable}`}>
+        <div className="relative aspect-square bg-gradient-to-br from-green-50 to-gold-50 overflow-hidden">
+          {c.mediaUrl && <img src={c.mediaUrl} alt="" loading="lazy" className="w-full h-full object-cover" />}
+          {c.saleTag && <span className="absolute top-2.5 left-2.5 bg-cream/90 text-[9px] tracking-wide uppercase px-2 py-1 rounded-full text-green-800 font-semibold">{c.saleTag}</span>}
+          {c.price && <span className="absolute bottom-2.5 right-2.5 bg-green-800 text-gold-200 font-serif text-sm px-2.5 py-0.5 rounded-lg">{c.price}</span>}
+        </div>
+        <div className="px-4 py-3">
+          <p className="font-serif text-green-900 text-[15px] font-semibold leading-snug">{c.title || c.body}</p>
         </div>
       </article>
     );
   }
 
+  // ── ARTICLE: media + read time ──
+  if (c.kind === 'article') {
+    return (
+      <article ref={ref} onClick={open}
+        className={`rounded-xl overflow-hidden border border-green-800/10 bg-white ${clickable}`}>
+        {c.coverUrl
+          ? <img src={c.coverUrl} alt="" loading="lazy" className="aspect-[16/9] w-full object-cover" />
+          : <div className="aspect-[16/9] bg-gradient-to-br from-green-50 to-gold-50" />}
+        <div className="px-4 py-3">
+          <p className="text-[9px] tracking-widest uppercase text-gold-800 font-semibold">Article · {c.readMins} min</p>
+          <p className="font-serif text-green-900 text-[17px] font-semibold leading-snug my-0.5">{c.title}</p>
+          {c.body && <p className="text-[12px] text-muted leading-snug line-clamp-2">{c.body}</p>}
+        </div>
+      </article>
+    );
+  }
+
+  // ── RESOURCE: title + body (contact lives in the modal) ──
+  if (c.kind === 'resource') {
+    return (
+      <article ref={ref} onClick={open}
+        className={`rounded-xl border border-green-800/10 bg-white p-4 ${clickable}`}>
+        <p className="font-serif text-green-800 text-[17px] font-semibold leading-snug mb-1">{c.title}</p>
+        {c.body && <p className="text-[12px] text-muted line-clamp-2">{c.body}</p>}
+      </article>
+    );
+  }
+
+  // ── SOCIAL / DISCUSSION / EVENT / ANNOUNCEMENT: the standard post card ──
   const isAnnouncement = c.kind === 'announcement';
   return (
     <article
       ref={ref}
-      onClick={c.to ? () => navigate(c.to!) : undefined}
-      className={`rounded-xl overflow-hidden mb-4 break-inside-avoid ${
+      onClick={open}
+      className={`rounded-xl overflow-hidden ${
         isAnnouncement
-          ? 'border-2 border-gold-600/70 bg-gradient-to-br from-gold-50 to-white' // official notice — gold like the notification accent
+          ? 'border-2 border-gold-600/70 bg-gradient-to-br from-gold-50 to-white'
           : 'border border-green-800/10 bg-white'
-      } ${c.to ? 'cursor-pointer hover:border-green-800/30 transition-colors' : ''}`}>
-      {c.mediaUrl && <MediaBlock url={c.mediaUrl} label={c.kind === 'for_sale' ? (c.saleTag || 'For Sale') : c.kind === 'social' ? 'Social' : undefined} />}
+      } ${clickable}`}>
+      {c.mediaUrl && <MediaBlock url={c.mediaUrl} label={c.kind === 'social' ? 'Social' : undefined} />}
       <div className="px-4 py-3">
         <div className="flex items-center gap-2 mb-1.5">
-          {!isAnnouncement && <Avatar initials={c.authorInitials} />}
+          {!isAnnouncement && <Avatar initials={c.authorInitials} src={c.authorAvatar} />}
           <div className="min-w-0">
             <p className={`text-[11.5px] font-medium ${isAnnouncement ? 'text-gold-800 uppercase tracking-widest text-[10px] font-semibold' : 'text-green-900'}`}>
-              {isAnnouncement ? 'Announcement' : (c.author || c.title)}
+              {isAnnouncement ? 'Announcement'
+                : c.kind === 'social' ? <><span className="font-semibold">{c.author || 'Member'}</span> posted</>
+                : (c.author || c.title)}
             </p>
             {c.when && <p className="text-[10px] text-muted">{c.when}</p>}
           </div>
@@ -181,6 +227,7 @@ export function CommunityFeed({ view }: { view: FeedView }) {
   const { user } = useAuth();
   const [cards, setCards] = useState<FeedCard[] | null>(null);
   const [greeted, setGreeted] = useState<Set<string>>(new Set());
+  const [openCard, setOpenCard] = useState<FeedCard | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -206,93 +253,16 @@ export function CommunityFeed({ view }: { view: FeedView }) {
     return <EmptyState view={view} />;
   }
 
-  // Members → roster (same profile card the mixed feed uses, with Say hi)
-  if (view === 'members') {
-    return (
-      <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
-        {cards.map((m) => (
-          <div key={m.id} className="bg-white border border-green-800/10 rounded-xl p-4">
-            <div className="flex items-center gap-3 mb-3">
-              {m.memberAvatar
-                ? <img src={m.memberAvatar} alt="" className="w-11 h-11 rounded-full object-cover shrink-0" />
-                : <span className="w-11 h-11 rounded-full bg-green-100 text-green-800 grid place-items-center text-base font-serif font-semibold shrink-0">{m.authorInitials}</span>}
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-green-900 truncate">{m.title}</p>
-                <p className="text-[11px] uppercase tracking-wide text-gold-800 font-semibold">{m.role}</p>
-              </div>
-              {m.memberUserId && m.memberUserId !== user?.id && (
-                <SayHiButton toUserId={m.memberUserId} alreadyGreeted={greeted.has(m.memberUserId)} />
-              )}
-            </div>
-            <ContactButtons info={{
-              email: m.email, mobile: m.mobile, whatsapp: m.whatsapp,
-              allowSms: m.allowSms, allowCall: m.allowCall,
-              allowWhatsappText: m.allowWhatsapp, allowWhatsappCall: m.allowWhatsappCall,
-            }} />
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  // Resources → listing cards
-  if (view === 'resources') {
-    return (
-      <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
-        {cards.map((r) => (
-          <div key={r.id} className="bg-white border border-green-800/10 rounded-xl p-4">
-            <p className="font-serif text-green-800 text-[17px] font-semibold leading-snug mb-1">{r.title}</p>
-            {r.body && <p className="text-[12px] text-muted mb-3">{r.body}</p>}
-            <ContactButtons info={{ email: r.email, mobile: r.mobile }} url={r.url} />
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  // Articles → reading list
-  if (view === 'articles') {
-    return (
-      <div className="flex flex-col gap-3.5">
-        {cards.map((a) => (
-          <div key={a.id} className="flex gap-3.5 p-3.5 bg-white border border-green-800/10 rounded-xl hover:shadow-[0_10px_22px_-14px_rgba(13,33,24,0.18)] transition-shadow cursor-pointer">
-            <div className="w-24 h-[70px] rounded-lg bg-gradient-to-br from-green-50 to-gold-50 shrink-0" />
-            <div className="min-w-0">
-              <p className="text-[9px] tracking-widest uppercase text-gold-800 font-semibold">Article · {a.readMins} min</p>
-              <p className="font-serif text-green-800 text-[17px] font-semibold leading-snug my-0.5">{a.title}</p>
-              {a.body && <p className="text-[12px] text-muted leading-snug line-clamp-2">{a.body}</p>}
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  // For Sale → square grid
-  if (view === 'for_sale') {
-    return (
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
-        {cards.map((l) => (
-          <div key={l.id} className="bg-white border border-green-800/10 rounded-xl overflow-hidden cursor-pointer hover:-translate-y-0.5 transition-transform">
-            <div className="relative aspect-square bg-gradient-to-br from-green-50 to-gold-50 overflow-hidden">
-              {l.mediaUrl && <img src={l.mediaUrl} alt="" loading="lazy" className="w-full h-full object-cover" />}
-              {l.saleTag && <span className="absolute top-2.5 left-2.5 bg-cream/90 text-[9px] tracking-wide uppercase px-2 py-1 rounded-full text-green-800 font-semibold">{l.saleTag}</span>}
-              {l.price && <span className="absolute bottom-2.5 right-2.5 bg-green-800 text-gold-200 font-serif text-sm px-2.5 py-0.5 rounded-lg">{l.price}</span>}
-            </div>
-            <div className="px-3.5 py-2.5">
-              <p className="font-serif text-green-900 text-[15px] font-semibold leading-snug">{l.title || l.body}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  // All / Social / Discussions / Events → cards (masonry)
+  // ONE feed, ONE card, ONE uniform grid. Every view uses the same grid of <Card>s;
+  // the filter buttons only change WHICH cards are in `cards` — never how they render.
+  // Uniform (not masonry) so rows align; each card opens its full content in a modal.
   return (
-    <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 [column-fill:_balance]">
-      {cards.map((c) => <Card key={`${c.kind}-${c.id}`} c={c} myId={user?.id} greeted={greeted} />)}
-    </div>
+    <>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
+        {cards.map((c) => <Card key={`${c.kind}-${c.id}`} c={c} myId={user?.id} greeted={greeted} onOpen={setOpenCard} />)}
+      </div>
+      {openCard && <PostModal card={openCard} onClose={() => setOpenCard(null)} />}
+    </>
   );
 }
 

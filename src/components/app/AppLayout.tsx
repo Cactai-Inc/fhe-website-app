@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { FEED_VIEWS, FEED_VIEW_META, type FeedView } from '../../lib/seed';
+import { dmUnreadTotal } from '../../lib/community';
 import {
   CalendarDays, Users, FileText, UserRound, ReceiptText, Shield, LogOut,
   GraduationCap, Handshake, Home as HomeIcon, Boxes, Contact, LayoutDashboard,
-  Mail, ChevronDown, Plus, LifeBuoy, ShoppingBag, MessageSquare, BookOpen, ListChecks, Store,
+  Mail, ChevronDown, Plus, LifeBuoy, ShoppingBag, MessageSquare, BookOpen, ListChecks,
+  PanelLeft, PanelLeftClose,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useViewSurfaces } from '../../lib/surfaces';
@@ -39,15 +42,28 @@ interface NavItem {
   superAdmin?: boolean;
 }
 
-const QUICK: { label: string; icon: typeof GraduationCap; to: string }[] = [
-  { label: 'Dashboard', icon: LayoutDashboard, to: '/app' },
-  { label: 'Community', icon: Users, to: '/app#community' },
+// `badge` surfaces an unread count on that nav link: 'notifications' (Dashboard) or
+// 'messages' (Messages). "Community Feed" is its own nested group (below) and is
+// position 1; these are the rest of the quick-access destinations.
+const QUICK: { label: string; icon: typeof GraduationCap; to: string; end?: boolean; badge?: 'notifications' | 'messages' }[] = [
+  { label: 'Dashboard', icon: LayoutDashboard, to: '/app/dashboard', badge: 'notifications' },
   { label: 'Calendar', icon: CalendarDays, to: '/app/calendar' },
   // The in-app catalog: shop services & book them (real purchase flow).
   { label: 'Catalog', icon: ShoppingBag, to: '/app/catalog' },
-  { label: 'Shop for sale', icon: Store, to: '/app?filter=for_sale' },
-  { label: 'New message', icon: MessageSquare, to: '/app/messages' },
+  { label: 'Messages', icon: MessageSquare, to: '/app/messages', badge: 'messages' },
 ];
+
+/** The community-feed views, as nested nav links. Each filters the one feed
+ *  (/app?filter=…). The 'all' view is NOT a sublink — the parent "Community Feed"
+ *  link IS the full view; the sublinks are the specific filters. The selected view
+ *  highlights (not the parent), matching the page header. "Shop for sale" is simply
+ *  the For Sale view, so it lives here too instead of as a top-level shortcut. */
+const COMMUNITY_VIEWS: { key: FeedView; label: string }[] =
+  FEED_VIEWS.map((v) => ({ key: v.key, label: FEED_VIEW_META[v.key].navLabel }));
+
+function communityHref(key: FeedView): string {
+  return key === 'all' ? '/app' : `/app?filter=${key}`;
+}
 
 export interface NavGroup { key: string; label: string; items: NavItem[]; defaultOpen?: boolean }
 
@@ -144,7 +160,7 @@ export function manageNavGroups(
   return groups.filter((g) => g.items.length > 0);
 }
 
-function RailLink({ to, label, icon: Icon, end }: NavItem) {
+function RailLink({ to, label, icon: Icon, end, badge = 0 }: NavItem & { badge?: number }) {
   return (
     <NavLink
       to={to}
@@ -158,7 +174,10 @@ function RailLink({ to, label, icon: Icon, end }: NavItem) {
       {({ isActive }) => (
         <>
           <Icon size={17} aria-hidden="true" className={isActive ? 'text-gold-400' : 'text-green-600'} />
-          {label}
+          <span className="flex-1">{label}</span>
+          {badge > 0 && (
+            <span className={`min-w-[1.25rem] h-5 px-1.5 text-[11px] leading-5 text-center rounded-full ${isActive ? 'bg-white/20 text-white' : 'bg-gold-600 text-white'}`}>{badge > 9 ? '9+' : badge}</span>
+          )}
         </>
       )}
     </NavLink>
@@ -183,8 +202,164 @@ function MenuLink({ to, label, icon: Icon, end, onNavigate }: NavItem & { onNavi
   );
 }
 
+/** Which community-feed view the current location represents (null when not on the
+ *  feed at all). On /app the active view is the `?filter=` value, or 'all'. */
+function useActiveCommunityView(): FeedView | null {
+  const location = useLocation();
+  const [params] = useSearchParams();
+  if (location.pathname !== '/app') return null;
+  const f = params.get('filter');
+  return f && FEED_VIEWS.some((v) => v.key === f) ? (f as FeedView) : 'all';
+}
+
+/** COMMUNITY FEED nav group — a parent header + its views nested as indented links.
+ *  Each view filters the one feed; the SELECTED view highlights (not the parent),
+ *  and the page header changes to match. The parent is COLLAPSIBLE: a chevron shows/
+ *  hides the sublinks (persisted); it auto-expands while you're on the feed so the
+ *  active view stays visible. `open` collapses labels in the rail strip.
+ *  `onNavigate` closes the mobile menu. */
+function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
+  open?: boolean; onNavigate?: () => void; indentClass?: string;
+}) {
+  const active = useActiveCommunityView();
+  const onFeed = active !== null;
+  // The parent IS the "All" view: it's highlighted (solid) on the full feed, and a
+  // specific-filter sublink owns the highlight when one is selected. No "All posts"
+  // sublink — clicking "Community Feed" (or the browser Back) returns to the full view.
+  const isAll = active === 'all';
+  // collapse state for the sublinks (persisted, chevron-controlled). Default expanded.
+  const [expanded, setExpanded] = useState(() => localStorage.getItem('communityNav.expanded') !== '0');
+  useEffect(() => { localStorage.setItem('communityNav.expanded', expanded ? '1' : '0'); }, [expanded]);
+
+  if (!open) {
+    // collapsed rail strip: just the parent icon, active whenever on the feed
+    return (
+      <Link to="/app" onClick={onNavigate} title="Community Feed"
+        className={`flex items-center justify-center rounded-lg px-3 py-2.5 focus-ring ${onFeed ? 'bg-green-800 text-white' : 'text-secondary hover:bg-white'}`}>
+        <Users size={18} className={onFeed ? 'text-gold-400' : 'text-green-600'} />
+      </Link>
+    );
+  }
+
+  return (
+    <div>
+      {/* parent row — the label links to the full feed (= All) and highlights when
+          it's the active view; the chevron toggles the sublinks. */}
+      <div className={`flex items-center rounded-lg pr-1 ${isAll ? 'bg-green-800' : 'hover:bg-white'}`}>
+        <Link to="/app" onClick={onNavigate}
+          className={`flex items-center gap-3 flex-1 min-w-0 px-3 py-2.5 text-[13.5px] font-sans focus-ring rounded-lg ${isAll ? 'text-white font-medium' : 'text-secondary'}`}>
+          <Users size={18} className={`shrink-0 ${isAll ? 'text-gold-400' : 'text-green-600'}`} />
+          <span className="whitespace-nowrap">Community Feed</span>
+        </Link>
+        <button type="button" onClick={() => setExpanded((v) => !v)}
+          aria-label={expanded ? 'Collapse community views' : 'Expand community views'}
+          aria-expanded={expanded}
+          className={`shrink-0 p-1.5 rounded-md focus-ring ${isAll ? 'text-white/90 hover:bg-white/15' : 'text-green-700 hover:bg-green-800/[0.06]'}`}>
+          <ChevronDown size={15} className={`transition-transform ${expanded ? '' : '-rotate-90'}`} />
+        </button>
+      </div>
+      {/* nested views (specific filters only) — the selected one highlights */}
+      {expanded && (
+        <div className="flex flex-col gap-0.5 mt-0.5">
+          {COMMUNITY_VIEWS.filter((v) => v.key !== 'all').map((v) => {
+            const isActive = active === v.key;
+            return (
+              <Link key={v.key} to={communityHref(v.key)} onClick={onNavigate}
+                className={`flex items-center ${indentClass} pr-3 py-1.5 rounded-lg text-[13px] font-sans transition-colors focus-ring ${
+                  isActive ? 'bg-green-800 text-white font-medium' : 'text-secondary hover:bg-white'}`}>
+                <span className="whitespace-nowrap">{v.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Unread DM total for the Messages nav badge. Refreshes on mount + route change. */
+function useDmUnread(): number {
+  const location = useLocation();
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    let active = true;
+    dmUnreadTotal().then((c) => active && setN(c)).catch(() => {});
+    return () => { active = false; };
+  }, [location.pathname]);
+  return n;
+}
+
+/** CLIENT LEFT RAIL (desktop only) — a thin icon strip that expands on hover with
+ *  almost no delay, and a pin/toggle that keeps it open. Holds the same quick-access
+ *  destinations the avatar menu carries. Members only (staff get the management rail).
+ */
+function ClientRail({ bellCount, dmCount }: { bellCount: number; dmCount: number }) {
+  const [pinned, setPinned] = useState(() => localStorage.getItem('clientRail.pinned') === '1');
+  const [hovered, setHovered] = useState(false);
+  useEffect(() => { localStorage.setItem('clientRail.pinned', pinned ? '1' : '0'); }, [pinned]);
+  const open = pinned || hovered;
+
+  // The <aside> RESERVES the width: 56px normally, 240px when PINNED (page sits
+  // beside it). The <nav> is sticky (scroll-follows) and grows to 240px on HOVER —
+  // when not pinned it overflows its 56px aside to overlay the page, so hovering
+  // causes no layout shift. z-30 keeps it above main, below the sticky header (z-40).
+  return (
+    <aside
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className={`hidden lg:block shrink-0 relative z-30 transition-[width] duration-100 ease-out ${pinned ? 'w-60' : 'w-14'}`}
+    >
+      <nav
+        className={`sticky top-14 h-[calc(100dvh-3.5rem)] border-r border-green-800/10 bg-cream-100 p-2 overflow-y-auto overflow-x-hidden flex flex-col transition-[width] duration-100 ease-out ${open ? 'w-60' : 'w-14'} ${hovered && !pinned ? 'shadow-[8px_0_24px_-12px_rgba(13,33,24,0.25)]' : ''}`}
+      >
+        {/* pin / show toggle — keeps the rail open when pinned */}
+        <button type="button" onClick={() => setPinned((v) => !v)}
+          aria-label={pinned ? 'Collapse menu' : 'Keep menu open'} aria-pressed={pinned}
+          className={`flex items-center gap-3 rounded-lg px-3 py-2.5 mb-1 text-green-700 hover:bg-white focus-ring ${open ? '' : 'justify-center'}`}>
+          {pinned ? <PanelLeftClose size={18} className="shrink-0" /> : <PanelLeft size={18} className="shrink-0" />}
+          {open && <span className="text-[13.5px] font-sans text-secondary whitespace-nowrap">{pinned ? 'Collapse' : 'Keep open'}</span>}
+        </button>
+
+        <div className="flex flex-col gap-0.5">
+          {/* Community Feed (position 1) with its views nested underneath */}
+          <CommunityNav open={open} indentClass={open ? 'pl-9' : 'pl-3'} />
+          {QUICK.map((q) => {
+            const raw = q.badge === 'notifications' ? bellCount : q.badge === 'messages' ? dmCount : 0;
+            const badge = raw > 0 ? raw : 0;
+            return (
+              <NavLink key={q.label} to={q.to} end={q.end}
+                className={({ isActive: active }) =>
+                  `relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans transition-colors focus-ring ${open ? '' : 'justify-center'} ${
+                    active ? 'bg-green-800 text-white' : 'text-secondary hover:bg-white'}`}
+                title={open ? undefined : q.label}>
+                {({ isActive: active }) => (
+                    <>
+                      <span className="relative shrink-0">
+                        <q.icon size={18} aria-hidden="true" className={active ? 'text-gold-400' : 'text-green-600'} />
+                        {/* collapsed strip: badge dots the icon */}
+                        {badge > 0 && !open && (
+                          <span className="absolute -top-1.5 -right-1.5 min-w-[1rem] h-4 px-1 bg-gold-600 text-white text-[10px] leading-4 text-center rounded-full">{badge > 9 ? '9+' : badge}</span>
+                        )}
+                      </span>
+                      {open && <span className="whitespace-nowrap flex-1">{q.label}</span>}
+                      {/* expanded: badge sits at the end of the row */}
+                      {badge > 0 && open && (
+                        <span className={`min-w-[1.25rem] h-5 px-1.5 text-[11px] leading-5 text-center rounded-full ${active ? 'bg-white/20 text-white' : 'bg-gold-600 text-white'}`}>{badge > 9 ? '9+' : badge}</span>
+                      )}
+                    </>
+                )}
+              </NavLink>
+            );
+          })}
+        </div>
+      </nav>
+    </aside>
+  );
+}
+
 export default function AppLayout() {
   const { profile, isAdmin, isStaff, isSuperAdmin, hasModule, signOut } = useAuth();
+  const dmCount = useDmUnread();
   useViewSurfaces();
   const navigate = useNavigate();
   const bell = useNotificationsBell();
@@ -255,13 +430,10 @@ export default function AppLayout() {
               <button type="button" onClick={() => setMenuOpen((v) => !v)}
                 className="flex items-center gap-1 pl-1.5 pr-2 py-1 rounded-full hover:bg-green-800/[0.06] focus-ring"
                 aria-label="Account menu" aria-expanded={menuOpen}>
-                <span className="relative w-8 h-8 rounded-full bg-green-800 text-white text-sm font-sans grid place-items-center">
+                {/* No notifications badge on the avatar — the count lives on the
+                    Dashboard nav link (desktop rail + mobile menu) instead. */}
+                <span className="w-8 h-8 rounded-full bg-green-800 text-white text-sm font-sans grid place-items-center">
                   {initial}
-                  {bell.count > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 min-w-[1rem] h-4 px-1 bg-gold-600 text-white text-[10px] leading-4 text-center rounded-full">
-                      {bell.count > 9 ? '9+' : bell.count}
-                    </span>
-                  )}
                 </span>
                 <ChevronDown size={14} className="text-secondary" />
               </button>
@@ -281,13 +453,11 @@ export default function AppLayout() {
                       {/* Both operators navigate to the community + catalog to help
                           members with what they're seeing — no shopper-only links. */}
                       <div className="mt-1 border-t border-green-800/10 pt-2 px-4 pb-1 text-xs uppercase tracking-wide text-secondary/60">Quick access</div>
-                      <button type="button" onClick={() => { closeMenu(); navigate('/app'); }}
+                      <div className="px-1"><CommunityNav onNavigate={closeMenu} indentClass="pl-9" /></div>
+                      <button type="button" onClick={() => { closeMenu(); navigate('/app/dashboard'); }}
                         className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">
                         <LayoutDashboard size={17} /> Dashboard
-                      </button>
-                      <button type="button" onClick={() => { closeMenu(); navigate('/app#community'); }}
-                        className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">
-                        <Users size={17} /> Community
+                        {bell.count > 0 && <span className="ml-auto min-w-[1.25rem] h-5 px-1.5 text-[11px] leading-5 text-center rounded-full bg-gold-600 text-white">{bell.count > 9 ? '9+' : bell.count}</span>}
                       </button>
                       <button type="button" onClick={() => { closeMenu(); navigate('/app/catalog'); }}
                         className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">
@@ -299,13 +469,19 @@ export default function AppLayout() {
                   {!isAdmin && !isSuperAdmin && (
                     <>
                       <div className="mt-1 border-t border-green-800/10 pt-2 px-4 pb-1 text-xs uppercase tracking-wide text-secondary/60">Quick access</div>
-                      {QUICK.map((q) => (
-                        <button key={q.label} type="button"
-                          onClick={() => { closeMenu(); navigate(q.to); }}
-                          className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">
-                          <q.icon size={17} /> {q.label}
-                        </button>
-                      ))}
+                      <div className="px-1"><CommunityNav onNavigate={closeMenu} indentClass="pl-9" /></div>
+                      {QUICK.map((q) => {
+                        const raw = q.badge === 'notifications' ? bell.count : q.badge === 'messages' ? dmCount : 0;
+                        const badge = raw > 0 ? raw : 0;
+                        return (
+                          <button key={q.label} type="button"
+                            onClick={() => { closeMenu(); navigate(q.to); }}
+                            className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">
+                            <q.icon size={17} /> {q.label}
+                            {badge > 0 && <span className="ml-auto min-w-[1.25rem] h-5 px-1.5 text-[11px] leading-5 text-center rounded-full bg-gold-600 text-white">{badge > 9 ? '9+' : badge}</span>}
+                          </button>
+                        );
+                      })}
                     </>
                   )}
                   {navGroups.length > 0 && (
@@ -332,6 +508,8 @@ export default function AppLayout() {
       </header>
 
       <div className="w-full max-w-[120rem] mx-auto flex">
+        {/* Members (non-staff) get a collapsible quick-access rail on desktop. */}
+        {!showRail && !isSuperAdmin && <ClientRail bellCount={bell.count} dmCount={dmCount} />}
         {showRail && (
           <aside className="hidden lg:block w-60 xl:w-64 shrink-0 border-r border-green-800/10 bg-cream-100/40">
             <nav className="p-3 sticky top-14 h-[calc(100dvh-3.5rem)] overflow-y-auto">
@@ -340,7 +518,8 @@ export default function AppLayout() {
               </p>
               {!isSuperAdmin && (
                 <div className="mb-1 flex flex-col gap-0.5">
-                  <RailLink to="/app" label="Dashboard" icon={HomeIcon} end />
+                  <CommunityNav indentClass="pl-9" />
+                  <RailLink to="/app/dashboard" label="Dashboard" icon={HomeIcon} badge={bell.count} />
                   <RailLink to="/app/calendar" label="Calendar" icon={CalendarDays} />
                 </div>
               )}

@@ -1,6 +1,7 @@
 /* Community / members-app domain types
  * (supabase/migrations/20260623040000_community.sql).
  */
+import type { PreferredContact } from './contact';
 
 export type MembershipTier = 'community' | 'rider' | 'full';
 export type MembershipStatus = 'active' | 'paused' | 'cancelled';
@@ -36,6 +37,16 @@ export interface MemberDirectoryEntry {
   social_instagram: string | null;
   social_facebook: string | null;
   social_linkedin: string | null;
+  /** true when this member owns at least one horse in the system */
+  is_horse_owner: boolean;
+  /** the member's preferred contact method (hidden channels suppressed to 'none') */
+  preferred_contact: PreferredContact;
+}
+
+/** A horse a member owns — for their community profile. */
+export interface MemberHorse {
+  name: string | null;
+  home_location: string | null;
 }
 
 export interface Announcement {
@@ -97,6 +108,21 @@ export interface DirectMessage {
   body: string;
   read_at: string | null;
   created_at: string;
+  edited_at: string | null;
+  deleted_at: string | null;
+}
+
+/** One conversation row from dm_list_conversations() — a partner + the last
+ *  message + unread count, for the messenger's conversation list. */
+export interface DmConversation {
+  user_id: string;               // the OTHER party
+  display_name: string | null;
+  first_name: string | null;
+  avatar_url: string | null;
+  last_body: string | null;      // null when the last message was deleted
+  last_mine: boolean;
+  last_at: string;
+  unread: number;
 }
 
 export interface ContentPost {

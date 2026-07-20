@@ -193,7 +193,7 @@ export default function CalendarPage() {
       : anchor.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
 
   return (
-    <div className="max-w-6xl">
+    <div className="w-full">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <h1 className="font-serif text-2xl text-green-900 inline-flex items-center gap-2">
           <CalendarDays size={22} className="text-gold-ink" aria-hidden="true" /> Calendar
