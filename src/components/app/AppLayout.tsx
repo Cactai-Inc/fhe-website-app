@@ -280,6 +280,16 @@ export default function AppLayout() {
                         className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">
                         <FileText size={17} /> Pending agreements
                       </button>
+                      {/* admins shop too — Dashboard + Catalog shortcuts */}
+                      <div className="mt-1 border-t border-green-800/10 pt-2 px-4 pb-1 text-xs uppercase tracking-wide text-secondary/60">Quick access</div>
+                      <button type="button" onClick={() => { closeMenu(); navigate('/app'); }}
+                        className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">
+                        <LayoutDashboard size={17} /> Dashboard
+                      </button>
+                      <button type="button" onClick={() => { closeMenu(); navigate('/app/catalog'); }}
+                        className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">
+                        <ShoppingBag size={17} /> Catalog
+                      </button>
                     </>
                   )}
                   {/* client quick links — an admin's menu carries company work, not shopper shortcuts */}

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, MessageCircle, Phone, Smartphone, PhoneCall, Globe, Hand } from 'lucide-react';
-import { fetchViewCards, sayHi, myGreetedUserIds, type FeedCard } from '../../lib/communityFeed';
+import { fetchViewCards, sayHi, myGreetedUserIds, initials, type FeedCard } from '../../lib/communityFeed';
 import { feedMarkSeen } from '../../lib/feed';
 import { SEED_ENABLED, type FeedView } from '../../lib/seed';
 import { useAuth } from '../../contexts/AuthContext';
@@ -106,6 +106,28 @@ function Card({ c, myId, greeted }: { c: FeedCard; myId?: string; greeted: Set<s
     return () => obs.disconnect();
   }, [c.id, c.seen, c.kind]);
 
+  // New-member card: a proper profile card — avatar + real name (live) + Say hi.
+  if (c.kind === 'member_joined') {
+    const name = c.memberName || 'A new member';
+    const isMine = c.memberUserId && c.memberUserId === myId;
+    return (
+      <article ref={ref} className="rounded-xl overflow-hidden mb-4 break-inside-avoid border border-green-800/10 bg-white">
+        <div className="px-4 py-4 flex items-center gap-3">
+          {c.memberAvatar
+            ? <img src={c.memberAvatar} alt="" className="w-12 h-12 rounded-full object-cover shrink-0" />
+            : <Avatar initials={initials(name, 'M')} />}
+          <div className="min-w-0 flex-1">
+            <p className="font-serif text-green-900 text-[16px] font-semibold leading-tight truncate">{name}</p>
+            <p className="text-[11.5px] text-muted">Joined the community{c.when ? ` · ${c.when}` : ''}</p>
+          </div>
+          {c.memberUserId && !isMine && (
+            <SayHiButton toUserId={c.memberUserId} alreadyGreeted={greeted.has(c.memberUserId)} />
+          )}
+        </div>
+      </article>
+    );
+  }
+
   const isAnnouncement = c.kind === 'announcement';
   return (
     <article
@@ -130,12 +152,6 @@ function Card({ c, myId, greeted }: { c: FeedCard; myId?: string; greeted: Set<s
         {c.title && c.kind !== 'social' && <p className="font-serif text-green-900 text-[17px] leading-snug font-semibold mb-1">{c.title}</p>}
         {c.body && <p className="text-[12.5px] leading-relaxed text-secondary line-clamp-3">{c.body}</p>}
         {typeof c.replies === 'number' && <p className="text-[11px] text-gold-800 font-semibold mt-2">{c.replies} replies →</p>}
-        {/* new-member card: welcome them with one click (never shown for your own join) */}
-        {c.kind === 'member_joined' && c.memberUserId && c.memberUserId !== myId && (
-          <div className="mt-3">
-            <SayHiButton toUserId={c.memberUserId} alreadyGreeted={greeted.has(c.memberUserId)} />
-          </div>
-        )}
       </div>
     </article>
   );

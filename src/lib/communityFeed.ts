@@ -42,8 +42,11 @@ export interface FeedCard {
   audience?: string;
   readMins?: number;
   role?: string;
-  /** the new member's user_id — set on member_joined cards, for the Say-hi button */
+  /** member_joined cards: the new member's user_id (Say-hi target) + resolved
+   *  display name + avatar (live, not the frozen post body). */
   memberUserId?: string;
+  memberName?: string;
+  memberAvatar?: string | null;
   // contact (members/resources)
   email?: string | null;
   mobile?: string | null;
@@ -58,7 +61,7 @@ export interface FeedCard {
   allowWhatsappCall?: boolean;  // WhatsApp voice call
 }
 
-function initials(name: string | null | undefined, fallback = '·'): string {
+export function initials(name: string | null | undefined, fallback = '·'): string {
   if (!name) return fallback;
   const parts = name.trim().split(/\s+/);
   return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || fallback;
@@ -199,7 +202,11 @@ export async function fetchViewCards(view: FeedView): Promise<FeedCard[]> {
     }
     case 'social': {
       const { posts } = await feedGet();
-      return posts.filter((p) => p.post_type === 'rider_post' || p.post_type === 'marketing').map(fromFeedPost);
+      // member_joined cards live in the social stream too — enrich with live name/avatar.
+      const cards = posts
+        .filter((p) => p.post_type === 'rider_post' || p.post_type === 'marketing' || p.post_type === 'member_joined')
+        .map(fromFeedPost);
+      return enrichMemberCards(cards);
     }
     case 'all':
     default: {
@@ -220,9 +227,23 @@ export async function fetchViewCards(view: FeedView): Promise<FeedCard[]> {
         ...articles.map(fromArticle),
         ...announcements.filter((a) => a.published).map(fromAnnouncement),
       ];
-      return cards.sort((a, b) => b.ts - a.ts);
+      return (await enrichMemberCards(cards)).sort((a, b) => b.ts - a.ts);
     }
   }
+}
+
+/** Fill member_joined cards with the member's live name + avatar from the directory
+ *  (the post body is frozen at join time; the profile fills in afterwards). */
+async function enrichMemberCards(cards: FeedCard[]): Promise<FeedCard[]> {
+  const needy = cards.filter((c) => c.kind === 'member_joined' && c.memberUserId);
+  if (needy.length === 0) return cards;
+  const dir = await fetchMemberDirectory().catch(() => [] as MemberDirectoryEntry[]);
+  const byId = new Map(dir.map((m) => [m.user_id, m]));
+  return cards.map((c) => {
+    if (c.kind !== 'member_joined' || !c.memberUserId) return c;
+    const m = byId.get(c.memberUserId);
+    return { ...c, memberName: m?.display_name || m?.first_name || 'A new member', memberAvatar: m?.avatar_url ?? null };
+  });
 }
 
 /** Per-view unseen counts. Feed-backed views (social/for-sale) use the real seen
