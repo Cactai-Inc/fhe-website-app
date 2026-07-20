@@ -54,10 +54,11 @@ const QUICK: { label: string; icon: typeof GraduationCap; to: string; end?: bool
   { label: 'New message', icon: MessageSquare, to: '/app/messages' },
 ];
 
-/** The community-feed views, as nested nav links. Each just filters the one feed
- *  (/app?filter=…); "All posts" is the bare /app. The selected view highlights (not
- *  the parent), matching the page header. "Shop for sale" is simply the For Sale
- *  view, so it lives here too instead of as a separate top-level shortcut. */
+/** The community-feed views, as nested nav links. Each filters the one feed
+ *  (/app?filter=…). The 'all' view is NOT a sublink — the parent "Community Feed"
+ *  link IS the full view; the sublinks are the specific filters. The selected view
+ *  highlights (not the parent), matching the page header. "Shop for sale" is simply
+ *  the For Sale view, so it lives here too instead of as a top-level shortcut. */
 const COMMUNITY_VIEWS: { key: FeedView; label: string }[] =
   FEED_VIEWS.map((v) => ({ key: v.key, label: FEED_VIEW_META[v.key].navLabel }));
 
@@ -223,11 +224,13 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
 }) {
   const active = useActiveCommunityView();
   const onFeed = active !== null;
-  // collapse state for the sublinks (persisted). Default expanded.
+  // The parent IS the "All" view: it's highlighted (solid) on the full feed, and a
+  // specific-filter sublink owns the highlight when one is selected. No "All posts"
+  // sublink — clicking "Community Feed" (or the browser Back) returns to the full view.
+  const isAll = active === 'all';
+  // collapse state for the sublinks (persisted, chevron-controlled). Default expanded.
   const [expanded, setExpanded] = useState(() => localStorage.getItem('communityNav.expanded') !== '0');
   useEffect(() => { localStorage.setItem('communityNav.expanded', expanded ? '1' : '0'); }, [expanded]);
-  // while on a feed view, force the sublinks open so the active one is visible.
-  const showViews = expanded || onFeed;
 
   if (!open) {
     // collapsed rail strip: just the parent icon, active whenever on the feed
@@ -241,26 +244,25 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
 
   return (
     <div>
-      {/* parent row — the label links to the combined feed; the chevron toggles the
-          sublinks. Parent is only "active-tinted" (not solid) so the SELECTED child
-          owns the highlight. */}
-      <div className={`flex items-center rounded-lg pr-1 ${onFeed ? '' : 'hover:bg-white'}`}>
+      {/* parent row — the label links to the full feed (= All) and highlights when
+          it's the active view; the chevron toggles the sublinks. */}
+      <div className={`flex items-center rounded-lg pr-1 ${isAll ? 'bg-green-800' : 'hover:bg-white'}`}>
         <Link to="/app" onClick={onNavigate}
-          className={`flex items-center gap-3 flex-1 min-w-0 px-3 py-2.5 text-[13.5px] font-sans focus-ring rounded-lg ${onFeed ? 'text-green-900 font-semibold' : 'text-secondary'}`}>
-          <Users size={18} className="shrink-0 text-green-600" />
+          className={`flex items-center gap-3 flex-1 min-w-0 px-3 py-2.5 text-[13.5px] font-sans focus-ring rounded-lg ${isAll ? 'text-white font-medium' : 'text-secondary'}`}>
+          <Users size={18} className={`shrink-0 ${isAll ? 'text-gold-400' : 'text-green-600'}`} />
           <span className="whitespace-nowrap">Community Feed</span>
         </Link>
         <button type="button" onClick={() => setExpanded((v) => !v)}
-          aria-label={showViews ? 'Collapse community views' : 'Expand community views'}
-          aria-expanded={showViews}
-          className="shrink-0 p-1.5 rounded-md text-green-700 hover:bg-green-800/[0.06] focus-ring">
-          <ChevronDown size={15} className={`transition-transform ${showViews ? '' : '-rotate-90'}`} />
+          aria-label={expanded ? 'Collapse community views' : 'Expand community views'}
+          aria-expanded={expanded}
+          className={`shrink-0 p-1.5 rounded-md focus-ring ${isAll ? 'text-white/90 hover:bg-white/15' : 'text-green-700 hover:bg-green-800/[0.06]'}`}>
+          <ChevronDown size={15} className={`transition-transform ${expanded ? '' : '-rotate-90'}`} />
         </button>
       </div>
-      {/* nested views — the selected one highlights */}
-      {showViews && (
+      {/* nested views (specific filters only) — the selected one highlights */}
+      {expanded && (
         <div className="flex flex-col gap-0.5 mt-0.5">
-          {COMMUNITY_VIEWS.map((v) => {
+          {COMMUNITY_VIEWS.filter((v) => v.key !== 'all').map((v) => {
             const isActive = active === v.key;
             return (
               <Link key={v.key} to={communityHref(v.key)} onClick={onNavigate}
