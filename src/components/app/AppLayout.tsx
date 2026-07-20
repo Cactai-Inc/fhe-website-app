@@ -214,13 +214,20 @@ function useActiveCommunityView(): FeedView | null {
 
 /** COMMUNITY FEED nav group — a parent header + its views nested as indented links.
  *  Each view filters the one feed; the SELECTED view highlights (not the parent),
- *  and the page header changes to match. `open` collapses labels in the rail strip.
+ *  and the page header changes to match. The parent is COLLAPSIBLE: a chevron shows/
+ *  hides the sublinks (persisted); it auto-expands while you're on the feed so the
+ *  active view stays visible. `open` collapses labels in the rail strip.
  *  `onNavigate` closes the mobile menu. */
 function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
   open?: boolean; onNavigate?: () => void; indentClass?: string;
 }) {
   const active = useActiveCommunityView();
   const onFeed = active !== null;
+  // collapse state for the sublinks (persisted). Default expanded.
+  const [expanded, setExpanded] = useState(() => localStorage.getItem('communityNav.expanded') !== '0');
+  useEffect(() => { localStorage.setItem('communityNav.expanded', expanded ? '1' : '0'); }, [expanded]);
+  // while on a feed view, force the sublinks open so the active one is visible.
+  const showViews = expanded || onFeed;
 
   if (!open) {
     // collapsed rail strip: just the parent icon, active whenever on the feed
@@ -234,26 +241,37 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
 
   return (
     <div>
-      {/* parent — links to the combined feed; shown as a section header, only
-          "active-tinted" (not solid) so the SELECTED child owns the highlight */}
-      <Link to="/app" onClick={onNavigate}
-        className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans focus-ring ${onFeed ? 'text-green-900 font-semibold' : 'text-secondary hover:bg-white'}`}>
-        <Users size={18} className="shrink-0 text-green-600" />
-        <span className="whitespace-nowrap">Community Feed</span>
-      </Link>
-      {/* nested views — the selected one highlights */}
-      <div className="flex flex-col gap-0.5 mt-0.5">
-        {COMMUNITY_VIEWS.map((v) => {
-          const isActive = active === v.key;
-          return (
-            <Link key={v.key} to={communityHref(v.key)} onClick={onNavigate}
-              className={`flex items-center ${indentClass} pr-3 py-1.5 rounded-lg text-[13px] font-sans transition-colors focus-ring ${
-                isActive ? 'bg-green-800 text-white font-medium' : 'text-secondary hover:bg-white'}`}>
-              <span className="whitespace-nowrap">{v.label}</span>
-            </Link>
-          );
-        })}
+      {/* parent row — the label links to the combined feed; the chevron toggles the
+          sublinks. Parent is only "active-tinted" (not solid) so the SELECTED child
+          owns the highlight. */}
+      <div className={`flex items-center rounded-lg pr-1 ${onFeed ? '' : 'hover:bg-white'}`}>
+        <Link to="/app" onClick={onNavigate}
+          className={`flex items-center gap-3 flex-1 min-w-0 px-3 py-2.5 text-[13.5px] font-sans focus-ring rounded-lg ${onFeed ? 'text-green-900 font-semibold' : 'text-secondary'}`}>
+          <Users size={18} className="shrink-0 text-green-600" />
+          <span className="whitespace-nowrap">Community Feed</span>
+        </Link>
+        <button type="button" onClick={() => setExpanded((v) => !v)}
+          aria-label={showViews ? 'Collapse community views' : 'Expand community views'}
+          aria-expanded={showViews}
+          className="shrink-0 p-1.5 rounded-md text-green-700 hover:bg-green-800/[0.06] focus-ring">
+          <ChevronDown size={15} className={`transition-transform ${showViews ? '' : '-rotate-90'}`} />
+        </button>
       </div>
+      {/* nested views — the selected one highlights */}
+      {showViews && (
+        <div className="flex flex-col gap-0.5 mt-0.5">
+          {COMMUNITY_VIEWS.map((v) => {
+            const isActive = active === v.key;
+            return (
+              <Link key={v.key} to={communityHref(v.key)} onClick={onNavigate}
+                className={`flex items-center ${indentClass} pr-3 py-1.5 rounded-lg text-[13px] font-sans transition-colors focus-ring ${
+                  isActive ? 'bg-green-800 text-white font-medium' : 'text-secondary hover:bg-white'}`}>
+                <span className="whitespace-nowrap">{v.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

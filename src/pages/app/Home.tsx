@@ -21,9 +21,9 @@ const isFeedView = (v: string | null): v is FeedView =>
 export default function Home() {
   const { surfaces, loading: surfacesLoading } = useViewSurfaces();
   const { isSuperAdmin } = useAuth();
-  const [params, setParams] = useSearchParams();
+  const [params] = useSearchParams();
 
-  // URL is the source of truth for the active view (so nav links drive it).
+  // URL is the source of truth for the active view — the nested nav links drive it.
   const view: FeedView = isFeedView(params.get('filter')) ? (params.get('filter') as FeedView) : 'all';
   const meta = FEED_VIEW_META[view];
   useDocumentTitle(view === 'all' ? 'Community Feed' : `${meta.title} · Community`);
@@ -33,15 +33,6 @@ export default function Home() {
   useEffect(() => { setSort((SORT_OPTIONS[view] ?? SORT_OPTIONS.all)[0]); }, [view]);
 
   const hasFeed = surfaces.has_feed;
-
-  function pickView(v: FeedView) {
-    // Drive the URL — the pills, nav, and header all read from it.
-    setParams((prev) => {
-      const next = new URLSearchParams(prev);
-      if (v === 'all') next.delete('filter'); else next.set('filter', v);
-      return next;
-    }, { replace: true });
-  }
 
   // The PLATFORM operator belongs to no tenant — land on Organizations.
   if (isSuperAdmin) return <Navigate to="/app/ops/superadmin/organizations" replace />;
@@ -61,7 +52,7 @@ export default function Home() {
         <p className="body-text text-secondary text-sm mt-1.5 max-w-2xl">{meta.description}</p>
       </header>
 
-      <FeedControls view={view} sort={sort} onView={pickView} onSort={setSort} />
+      <FeedControls view={view} sort={sort} onSort={setSort} />
 
       <CommunityFeed view={view} />
     </div>
