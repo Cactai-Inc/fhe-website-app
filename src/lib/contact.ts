@@ -39,7 +39,9 @@ export const PREFERRED_CONTACT_OPTIONS: {
 }[] = [
   { value: 'none',      label: 'No preference',        requires: null },
   { value: 'platform',  label: 'Message on French Heritage', requires: null },
-  { value: 'email',     label: 'Email',                requires: 'email' },
+  // Email is always part of the account, so it's always selectable (the stored
+  // prefs.email can be null because it's managed by the auth/email-change flow).
+  { value: 'email',     label: 'Email',                requires: null },
   { value: 'sms',       label: 'Text message',         requires: 'mobile' },
   { value: 'call',      label: 'Phone call',           requires: 'mobile' },
   { value: 'whatsapp',  label: 'WhatsApp',             requires: 'whatsapp' },
