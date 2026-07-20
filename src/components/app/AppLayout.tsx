@@ -40,13 +40,20 @@ interface NavItem {
   superAdmin?: boolean;
 }
 
-const QUICK: { label: string; icon: typeof GraduationCap; to: string }[] = [
-  { label: 'Dashboard', icon: LayoutDashboard, to: '/app' },
-  { label: 'Community', icon: Users, to: '/app#community' },
+// `badge: 'notifications'` surfaces the unread count on that nav link (Dashboard is
+// where notifications live). Community is position 1 and the sign-in landing page.
+// `badge: 'notifications'` surfaces the unread count on that nav link (Dashboard is
+// where notifications live). Community is position 1 and the sign-in landing page.
+// `noActive` = a shortcut to a filtered view of another page (Shop = Community
+// filtered) that must NOT claim the active highlight — only the highest-level page
+// (Community) lights up for /app.
+const QUICK: { label: string; icon: typeof GraduationCap; to: string; end?: boolean; badge?: 'notifications'; noActive?: boolean }[] = [
+  { label: 'Community', icon: Users, to: '/app', end: true },
+  { label: 'Dashboard', icon: LayoutDashboard, to: '/app/dashboard', badge: 'notifications' },
   { label: 'Calendar', icon: CalendarDays, to: '/app/calendar' },
   // The in-app catalog: shop services & book them (real purchase flow).
   { label: 'Catalog', icon: ShoppingBag, to: '/app/catalog' },
-  { label: 'Shop for sale', icon: Store, to: '/app?filter=for_sale' },
+  { label: 'Shop for sale', icon: Store, to: '/app?filter=for_sale', noActive: true },
   { label: 'New message', icon: MessageSquare, to: '/app/messages' },
 ];
 
@@ -145,7 +152,7 @@ export function manageNavGroups(
   return groups.filter((g) => g.items.length > 0);
 }
 
-function RailLink({ to, label, icon: Icon, end }: NavItem) {
+function RailLink({ to, label, icon: Icon, end, badge = 0 }: NavItem & { badge?: number }) {
   return (
     <NavLink
       to={to}
@@ -159,7 +166,10 @@ function RailLink({ to, label, icon: Icon, end }: NavItem) {
       {({ isActive }) => (
         <>
           <Icon size={17} aria-hidden="true" className={isActive ? 'text-gold-400' : 'text-green-600'} />
-          {label}
+          <span className="flex-1">{label}</span>
+          {badge > 0 && (
+            <span className={`min-w-[1.25rem] h-5 px-1.5 text-[11px] leading-5 text-center rounded-full ${isActive ? 'bg-white/20 text-white' : 'bg-gold-600 text-white'}`}>{badge > 9 ? '9+' : badge}</span>
+          )}
         </>
       )}
     </NavLink>
@@ -188,7 +198,7 @@ function MenuLink({ to, label, icon: Icon, end, onNavigate }: NavItem & { onNavi
  *  almost no delay, and a pin/toggle that keeps it open. Holds the same quick-access
  *  destinations the avatar menu carries. Members only (staff get the management rail).
  */
-function ClientRail() {
+function ClientRail({ bellCount }: { bellCount: number }) {
   const [pinned, setPinned] = useState(() => localStorage.getItem('clientRail.pinned') === '1');
   const [hovered, setHovered] = useState(false);
   useEffect(() => { localStorage.setItem('clientRail.pinned', pinned ? '1' : '0'); }, [pinned]);
@@ -216,20 +226,38 @@ function ClientRail() {
         </button>
 
         <div className="flex flex-col gap-0.5">
-          {QUICK.map((q) => (
-            <NavLink key={q.label} to={q.to} end={q.to === '/app'}
-              className={({ isActive }) =>
-                `flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans transition-colors focus-ring ${open ? '' : 'justify-center'} ${
-                  isActive ? 'bg-green-800 text-white' : 'text-secondary hover:bg-white'}`}
-              title={open ? undefined : q.label}>
-              {({ isActive }) => (
-                <>
-                  <q.icon size={18} aria-hidden="true" className={`shrink-0 ${isActive ? 'text-gold-400' : 'text-green-600'}`} />
-                  {open && <span className="whitespace-nowrap">{q.label}</span>}
-                </>
-              )}
-            </NavLink>
-          ))}
+          {QUICK.map((q) => {
+            const badge = q.badge === 'notifications' && bellCount > 0 ? bellCount : 0;
+            return (
+              <NavLink key={q.label} to={q.to} end={q.end}
+                className={({ isActive }) => {
+                  const active = isActive && !q.noActive;
+                  return `relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans transition-colors focus-ring ${open ? '' : 'justify-center'} ${
+                    active ? 'bg-green-800 text-white' : 'text-secondary hover:bg-white'}`;
+                }}
+                title={open ? undefined : q.label}>
+                {({ isActive }) => {
+                  const active = isActive && !q.noActive;
+                  return (
+                    <>
+                      <span className="relative shrink-0">
+                        <q.icon size={18} aria-hidden="true" className={active ? 'text-gold-400' : 'text-green-600'} />
+                        {/* collapsed strip: badge dots the icon */}
+                        {badge > 0 && !open && (
+                          <span className="absolute -top-1.5 -right-1.5 min-w-[1rem] h-4 px-1 bg-gold-600 text-white text-[10px] leading-4 text-center rounded-full">{badge > 9 ? '9+' : badge}</span>
+                        )}
+                      </span>
+                      {open && <span className="whitespace-nowrap flex-1">{q.label}</span>}
+                      {/* expanded: badge sits at the end of the row */}
+                      {badge > 0 && open && (
+                        <span className={`min-w-[1.25rem] h-5 px-1.5 text-[11px] leading-5 text-center rounded-full ${active ? 'bg-white/20 text-white' : 'bg-gold-600 text-white'}`}>{badge > 9 ? '9+' : badge}</span>
+                      )}
+                    </>
+                  );
+                }}
+              </NavLink>
+            );
+          })}
         </div>
       </nav>
     </aside>
@@ -308,13 +336,10 @@ export default function AppLayout() {
               <button type="button" onClick={() => setMenuOpen((v) => !v)}
                 className="flex items-center gap-1 pl-1.5 pr-2 py-1 rounded-full hover:bg-green-800/[0.06] focus-ring"
                 aria-label="Account menu" aria-expanded={menuOpen}>
-                <span className="relative w-8 h-8 rounded-full bg-green-800 text-white text-sm font-sans grid place-items-center">
+                {/* No notifications badge on the avatar — the count lives on the
+                    Dashboard nav link (desktop rail + mobile menu) instead. */}
+                <span className="w-8 h-8 rounded-full bg-green-800 text-white text-sm font-sans grid place-items-center">
                   {initial}
-                  {bell.count > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 min-w-[1rem] h-4 px-1 bg-gold-600 text-white text-[10px] leading-4 text-center rounded-full">
-                      {bell.count > 9 ? '9+' : bell.count}
-                    </span>
-                  )}
                 </span>
                 <ChevronDown size={14} className="text-secondary" />
               </button>
@@ -336,11 +361,12 @@ export default function AppLayout() {
                       <div className="mt-1 border-t border-green-800/10 pt-2 px-4 pb-1 text-xs uppercase tracking-wide text-secondary/60">Quick access</div>
                       <button type="button" onClick={() => { closeMenu(); navigate('/app'); }}
                         className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">
-                        <LayoutDashboard size={17} /> Dashboard
-                      </button>
-                      <button type="button" onClick={() => { closeMenu(); navigate('/app#community'); }}
-                        className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">
                         <Users size={17} /> Community
+                      </button>
+                      <button type="button" onClick={() => { closeMenu(); navigate('/app/dashboard'); }}
+                        className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">
+                        <LayoutDashboard size={17} /> Dashboard
+                        {bell.count > 0 && <span className="ml-auto min-w-[1.25rem] h-5 px-1.5 text-[11px] leading-5 text-center rounded-full bg-gold-600 text-white">{bell.count > 9 ? '9+' : bell.count}</span>}
                       </button>
                       <button type="button" onClick={() => { closeMenu(); navigate('/app/catalog'); }}
                         className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">
@@ -352,13 +378,17 @@ export default function AppLayout() {
                   {!isAdmin && !isSuperAdmin && (
                     <>
                       <div className="mt-1 border-t border-green-800/10 pt-2 px-4 pb-1 text-xs uppercase tracking-wide text-secondary/60">Quick access</div>
-                      {QUICK.map((q) => (
-                        <button key={q.label} type="button"
-                          onClick={() => { closeMenu(); navigate(q.to); }}
-                          className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">
-                          <q.icon size={17} /> {q.label}
-                        </button>
-                      ))}
+                      {QUICK.map((q) => {
+                        const badge = q.badge === 'notifications' && bell.count > 0 ? bell.count : 0;
+                        return (
+                          <button key={q.label} type="button"
+                            onClick={() => { closeMenu(); navigate(q.to); }}
+                            className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">
+                            <q.icon size={17} /> {q.label}
+                            {badge > 0 && <span className="ml-auto min-w-[1.25rem] h-5 px-1.5 text-[11px] leading-5 text-center rounded-full bg-gold-600 text-white">{badge > 9 ? '9+' : badge}</span>}
+                          </button>
+                        );
+                      })}
                     </>
                   )}
                   {navGroups.length > 0 && (
@@ -386,7 +416,7 @@ export default function AppLayout() {
 
       <div className="w-full max-w-[120rem] mx-auto flex">
         {/* Members (non-staff) get a collapsible quick-access rail on desktop. */}
-        {!showRail && !isSuperAdmin && <ClientRail />}
+        {!showRail && !isSuperAdmin && <ClientRail bellCount={bell.count} />}
         {showRail && (
           <aside className="hidden lg:block w-60 xl:w-64 shrink-0 border-r border-green-800/10 bg-cream-100/40">
             <nav className="p-3 sticky top-14 h-[calc(100dvh-3.5rem)] overflow-y-auto">
@@ -395,7 +425,8 @@ export default function AppLayout() {
               </p>
               {!isSuperAdmin && (
                 <div className="mb-1 flex flex-col gap-0.5">
-                  <RailLink to="/app" label="Dashboard" icon={HomeIcon} end />
+                  <RailLink to="/app" label="Community" icon={Users} end />
+                  <RailLink to="/app/dashboard" label="Dashboard" icon={HomeIcon} badge={bell.count} />
                   <RailLink to="/app/calendar" label="Calendar" icon={CalendarDays} />
                 </div>
               )}
