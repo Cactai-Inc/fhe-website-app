@@ -234,6 +234,42 @@ export function ContractBody({
   );
 }
 
+/** A dropdown that offers its options first, plus an "Other (specify)…" choice
+ *  that reveals a free-text box. This is the house pattern for structured-first
+ *  capture: options are the primary path, open text stays available as an escape.
+ *  A stored value that matches no option is shown as a custom entry. */
+const OTHER_VALUE = '__other__';
+function SelectWithOther({ f, onSave, disabled }: { f: ContractField; onSave: SaveFn; disabled: boolean }) {
+  const opts = f.options ?? [];
+  const stored = f.value ?? '';
+  const storedIsCustom = stored !== '' && !opts.some((o) => o.value === stored);
+  const [otherMode, setOtherMode] = useState(storedIsCustom);
+  const [custom, setCustom] = useState(storedIsCustom ? stored : '');
+  useEffect(() => {
+    if (stored !== '' && !opts.some((o) => o.value === stored)) { setOtherMode(true); setCustom(stored); }
+  }, [stored]);  // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <select className={inputCls} disabled={disabled}
+        value={otherMode ? OTHER_VALUE : stored}
+        onChange={(e) => {
+          if (e.target.value === OTHER_VALUE) { setOtherMode(true); }
+          else { setOtherMode(false); setCustom(''); void onSave(f.field_key, e.target.value); }
+        }}>
+        <option value="">Select…</option>
+        {opts.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        <option value={OTHER_VALUE}>Other (specify)…</option>
+      </select>
+      {otherMode && (
+        <input className={inputCls} disabled={disabled} autoFocus placeholder="Enter a custom value"
+          value={custom} onChange={(e) => setCustom(e.target.value)}
+          onBlur={() => void onSave(f.field_key, custom.trim())} />
+      )}
+    </div>
+  );
+}
+
 /** A single field's control, chosen by format_type (preferred) or input_kind. */
 function FieldControl({
   f, onSave, onSaveResponsibility, onSaveStructured, disabled,
@@ -311,13 +347,7 @@ function FieldControl({
     return <WeekGrid f={f} onSave={onSave} disabled={disabled} />;
   }
   if (kind === 'select') {
-    return (
-      <select className={inputCls} disabled={disabled} value={f.value ?? ''}
-        onChange={(e) => void onSave(f.field_key, e.target.value)}>
-        <option value="">Select…</option>
-        {(f.options ?? []).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
-    );
+    return <SelectWithOther f={f} onSave={onSave} disabled={disabled} />;
   }
   if (kind === 'buttons') {
     const selected = (f.value ?? '').split(',').map((s) => s.trim()).filter(Boolean);

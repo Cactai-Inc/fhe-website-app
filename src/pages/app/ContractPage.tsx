@@ -97,12 +97,11 @@ function HorseGate({ documentId, onAttached }: { documentId: string; onAttached:
 /** Redlining: propose an edit (staged, highlighted) or add a free-text clause,
  *  gated by the party's controls; the owner/staff accept or reject. */
 function RedlineSection({
-  documentId, redline, isOwnerSide, editablePhase, onChanged,
+  documentId, redline, isOwnerSide, onChanged,
 }: {
   documentId: string;
   redline: RedlineState;
   isOwnerSide: boolean;
-  editablePhase: boolean;
   onChanged: () => void;
 }) {
   const [err, setErr] = useState<string | null>(null);
@@ -118,8 +117,11 @@ function RedlineSection({
   const pendingEdits = redline.field_proposals;
   const openClauses = redline.addenda.filter((a) => a.status === 'open');
   const acceptedClauses = redline.addenda.filter((a) => a.status === 'accepted');
-  const anything = pendingEdits.length > 0 || redline.addenda.length > 0
-    || (editablePhase && (redline.can_suggest || redline.can_add_clause));
+  // Show ONLY when something is actually pending/agreed to review — never just
+  // because a party *could* suggest edits. (Adding clauses now lives in the
+  // unified Add toolbar, so an empty "Proposed changes" box must not render at
+  // the top of a fresh contract.)
+  const anything = pendingEdits.length > 0 || redline.addenda.length > 0;
   if (!anything) return null;
 
   return (
@@ -454,7 +456,6 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           documentId={id!}
           redline={redline}
           isOwnerSide={isOwnerSide}
-          editablePhase={editablePhase}
           onChanged={() => void load()}
         />
       )}
