@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Info } from 'lucide-react';
+import { Info, MessageSquarePlus } from 'lucide-react';
 import type { ContractField, FieldStructured, PartyChoice } from '../../lib/contracts';
 
 /**
@@ -23,6 +23,10 @@ type SaveStructFn = (fieldKey: string, structured: FieldStructured | null) => vo
 type IncludeFn = (fieldKey: string, included: boolean) => void | Promise<void>;
 type NaFn = (fieldKey: string, isNa: boolean) => void | Promise<void>;
 type ControlFn = (fieldKey: string, override: ContractField['control_override']) => void | Promise<void>;
+/** A party proposes an edit to a field they can't directly change (redline). */
+type SuggestFn = (field: ContractField) => void;
+/** Open a comment anchored to a specific field. */
+type CommentFn = (field: ContractField) => void;
 
 /** Party options. The manage side offers Care Provider; the cost side offers a
  *  "same as responsible party" default plus specific parties / shared split. */
@@ -165,9 +169,37 @@ const inputCls = 'w-full px-3 py-2 rounded-lg border border-green-800/15 text-sm
 
 /** Renders the composed contract body, turning the composer's ⟦NEEDS:label⟧text⟧
  *  markers into a highlighted "needs input" span (the blank shows AND is flagged),
- *  so unfinished parts of the document stand out instead of reading as complete. */
+ *  so unfinished parts of the document stand out instead of reading as complete.
+ *
+ *  When `onSelectSpan` is provided, selecting text inside the body surfaces a
+ *  floating "Comment" button; clicking it reports the selected quote (plus a
+ *  little preceding context to disambiguate) so a pinned span-comment can be
+ *  anchored to it. This is the single body renderer used across the app (m-5). */
 const NEEDS_RE = /⟦NEEDS:(.*?)⟧(.*?)⟧/g;
-export function ContractBody({ body }: { body: string | null }) {
+export function ContractBody({
+  body, onSelectSpan,
+}: {
+  body: string | null;
+  onSelectSpan?: (span: { quote: string; quotePrefix: string }) => void;
+}) {
+  const [sel, setSel] = useState<{ x: number; y: number; quote: string; quotePrefix: string } | null>(null);
+
+  const onMouseUp = () => {
+    if (!onSelectSpan) return;
+    const s = window.getSelection();
+    const text = s?.toString().trim() ?? '';
+    if (!text || text.length < 2) { setSel(null); return; }
+    // a little preceding context (up to 40 chars) to help relocate after re-merge
+    let prefix = '';
+    try {
+      const range = s!.getRangeAt(0);
+      const pre = range.startContainer.textContent?.slice(0, range.startOffset) ?? '';
+      prefix = pre.slice(-40);
+      const rect = range.getBoundingClientRect();
+      setSel({ x: rect.left + rect.width / 2, y: rect.top - 8, quote: text, quotePrefix: prefix });
+    } catch { setSel({ x: 0, y: 0, quote: text, quotePrefix: '' }); }
+  };
+
   if (!body) return null;
   const nodes: ReactNode[] = [];
   let last = 0; let m: RegExpExecArray | null; let i = 0;
@@ -183,7 +215,23 @@ export function ContractBody({ body }: { body: string | null }) {
     last = m.index + m[0].length;
   }
   if (last < body.length) nodes.push(body.slice(last));
-  return <>{nodes}</>;
+
+  if (!onSelectSpan) return <>{nodes}</>;
+
+  return (
+    <span onMouseUp={onMouseUp} className="relative">
+      {nodes}
+      {sel && (
+        <button type="button"
+          style={{ position: 'fixed', left: sel.x, top: sel.y, transform: 'translate(-50%, -100%)' }}
+          className="z-30 inline-flex items-center gap-1 bg-green-800 text-white text-xs rounded-full px-2.5 py-1 shadow-md hover:bg-green-700 focus-ring"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => { onSelectSpan({ quote: sel.quote, quotePrefix: sel.quotePrefix }); setSel(null); window.getSelection()?.removeAllRanges(); }}>
+          <MessageSquarePlus size={12} aria-hidden="true" /> Comment
+        </button>
+      )}
+    </span>
+  );
 }
 
 /** A single field's control, chosen by format_type (preferred) or input_kind. */
@@ -415,6 +463,7 @@ function conditionMet(f: ContractField, byKey: Map<string, ContractField>): bool
 /** One field + its cascading children. */
 function FieldNode({
   f, childrenByParent, byKey, onSave, onSaveResponsibility, onSaveStructured, onInclude, onNa, onControl, canSetControl, editable,
+  onSuggestEdit, onCommentField, canSuggest,
 }: {
   f: ContractField;
   childrenByParent: Map<string, ContractField[]>;
@@ -422,6 +471,7 @@ function FieldNode({
   onSave: SaveFn; onSaveResponsibility: SaveRespFn; onSaveStructured: SaveStructFn; onInclude: IncludeFn; onNa: NaFn; onControl: ControlFn;
   canSetControl: boolean;
   editable: boolean;
+  onSuggestEdit?: SuggestFn; onCommentField?: CommentFn; canSuggest?: boolean;
 }) {
   // A pair COST child is rendered inside its manage field's mini-block, never as its
   // own row — hide it here.
@@ -465,6 +515,16 @@ function FieldNode({
           <button type="button" className="text-[10px] text-muted underline"
             onClick={() => void onInclude(f.field_key, false)}>remove</button>
         )}
+        {/* Always-on comment affordance; suggest-a-change appears when the field
+            isn't directly editable by the caller but suggestions are allowed. */}
+        {onCommentField && (
+          <button type="button" className={`text-[10px] text-muted hover:text-green-800 ${f.is_optional && included && editable ? '' : 'ml-auto'}`}
+            onClick={() => onCommentField(f)} title="Comment on this field">💬</button>
+        )}
+        {onSuggestEdit && !f.can_edit && canSuggest && (
+          <button type="button" className="text-[10px] text-gold-700 hover:text-gold-900 underline"
+            onClick={() => onSuggestEdit(f)} title="Suggest a change to this field">suggest</button>
+        )}
       </div>
       {!na && <FieldControl f={f} onSave={onSave} onSaveResponsibility={onSaveResponsibility} onSaveStructured={onSaveStructured} disabled={!editable || !f.can_edit} />}
       {na && <p className="text-xs text-muted italic">Marked not applicable.</p>}
@@ -487,7 +547,8 @@ function FieldNode({
           {kids.filter((k) => conditionMet(k, byKey)).map((k) => (
             <FieldNode key={k.field_key} f={k} childrenByParent={childrenByParent} byKey={byKey}
               onSave={onSave} onSaveResponsibility={onSaveResponsibility} onSaveStructured={onSaveStructured} onInclude={onInclude} onNa={onNa}
-              onControl={onControl} canSetControl={canSetControl} editable={editable} />
+              onControl={onControl} canSetControl={canSetControl} editable={editable}
+              onSuggestEdit={onSuggestEdit} onCommentField={onCommentField} canSuggest={canSuggest} />
           ))}
         </div>
       )}
@@ -498,6 +559,7 @@ function FieldNode({
 /** Renders one subject-section's cascading fields. */
 export function ContractCascade({
   fields, onSave, onSaveResponsibility, onSaveStructured, onInclude, onNa, onControl, canSetControl = false, editable,
+  onSuggestEdit, onCommentField, canSuggest = false,
 }: {
   fields: ContractField[];
   onSave: SaveFn;
@@ -508,6 +570,9 @@ export function ContractCascade({
   onControl: ControlFn;
   canSetControl?: boolean;
   editable: boolean;
+  onSuggestEdit?: SuggestFn;
+  onCommentField?: CommentFn;
+  canSuggest?: boolean;
 }) {
   const { roots, childrenByParent, byKey } = useMemo(() => {
     const byKey = new Map(fields.map((f) => [f.field_key, f]));
@@ -526,7 +591,8 @@ export function ContractCascade({
       {roots.filter((f) => conditionMet(f, byKey)).map((f) => (
         <FieldNode key={f.field_key} f={f} childrenByParent={childrenByParent} byKey={byKey}
           onSave={onSave} onSaveResponsibility={onSaveResponsibility} onSaveStructured={onSaveStructured} onInclude={onInclude} onNa={onNa}
-          onControl={onControl} canSetControl={canSetControl} editable={editable} />
+          onControl={onControl} canSetControl={canSetControl} editable={editable}
+          onSuggestEdit={onSuggestEdit} onCommentField={onCommentField} canSuggest={canSuggest} />
       ))}
     </div>
   );

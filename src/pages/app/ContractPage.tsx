@@ -9,10 +9,10 @@ import { useAuth } from '../../contexts/AuthContext';
 import {
   contractDocumentDetail, setContractField,
   resolveChangeRequest, advanceWorkflow, lockAndSign, confirmHorseSection,
-  reopenHorseSection, inviteCounterparty,
+  reopenHorseSection, inviteCounterparty, setRecipientEditing,
   setPartyControls, contractMessagesList, contractMessagePost, contractSigningSet,
-  contractRedlineState, resolveFieldEdit, withdrawFieldEdit,
-  proposeClause, resolveClause, withdrawClause, attachHorseToDocument,
+  contractRedlineState, resolveFieldEdit, withdrawFieldEdit, proposeFieldEdit,
+  resolveClause, withdrawClause, attachHorseToDocument,
   sendContractToParty, cancelContract, archiveContract, hardDeleteContract,
   setFieldResponsibility, setFieldIncluded, setFieldNa, setFieldControlOverride, setFieldStructured,
   type ContractDetail, type ContractField, type ContractMessage, type PartyControls,
@@ -21,6 +21,9 @@ import {
 import { listStableHorses, type StableHorse } from '../../lib/stable';
 import { ContractCascade, ContractBody } from '../../components/app/ContractCascade';
 import { AddElementButton } from '../../components/app/AddElementModal';
+import { PartyControlsCard, type PartyControlValues } from '../../components/app/PartyControlsCard';
+import { TrackChangesPanel } from '../../components/app/TrackChangesPanel';
+import { ContractComments, type PendingAnchor } from '../../components/app/ContractComments';
 
 /**
  * CONTRACT (/app/contracts/:id) — the negotiated-contract surface (Update A).
@@ -102,7 +105,6 @@ function RedlineSection({
   editablePhase: boolean;
   onChanged: () => void;
 }) {
-  const [clause, setClause] = useState('');
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -188,23 +190,9 @@ function RedlineSection({
         </div>
       )}
 
-      {/* propose tools — edits to existing terms happen INLINE on the field itself
-          (per controls), not via a separate dropdown. Only clause-adding lives here. */}
-      {editablePhase && redline.can_add_clause && (
-        <div className="border-t border-green-800/10 pt-4 mt-3 flex flex-col gap-4">
-          {redline.can_add_clause && (
-            <div>
-              <p className="form-label mb-1">Add a clause</p>
-              <textarea rows={3} className="form-input resize-y" placeholder="Write a new clause to propose…"
-                value={clause} onChange={(e) => setClause(e.target.value)} />
-              <button type="button" className="btn-secondary mt-2" disabled={busy || !clause.trim()}
-                onClick={() => void run(() => proposeClause(documentId, clause.trim()), () => setClause(''))}>
-                Propose clause
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+      {/* (The "Add a clause" box moved out of here into the unified Add toolbar
+          (M-2) — clause proposals now live alongside add-field/section. This
+          section is purely the review surface for pending edits + clauses.) */}
       {err && <p role="alert" className="form-error mt-2">{err}</p>}
     </section>
   );
@@ -224,9 +212,16 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   const [signName, setSignName] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('');
-  const [showBody, setShowBody] = useState(false);
+  // Document body is visible by default (DocuSign principle: you sign what you
+  // see). Parties can collapse it while filling fields, but it no longer hides.
+  const [showBody, setShowBody] = useState(true);
   const [messages, setMessages] = useState<ContractMessage[]>([]);
   const [msgText, setMsgText] = useState('');
+  // Comments: a span selection or a field's "Comment" button sets a pending
+  // anchor that opens the comments composer. changeKey bumps to reload the
+  // track-changes + comments panels after any edit.
+  const [pendingAnchor, setPendingAnchor] = useState<PendingAnchor | null>(null);
+  const [changeKey, setChangeKey] = useState(0);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -324,6 +319,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       await fn();
       if (okMsg) setNote(okMsg);
       await load();
+      setChangeKey((k) => k + 1);   // refresh track-changes / comments
     } catch (e) {
       setError(e instanceof Error ? e.message : 'That action failed.');
     }
@@ -333,10 +329,23 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
     try {
       await setContractField(id!, key, value);
       await load();
+      setChangeKey((k) => k + 1);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not save that field.');
     }
   }, [id, load]);
+
+  // A party proposes a change to a field they can't directly edit (redline, M-4).
+  const suggestFieldEdit = useCallback((f: ContractField) => {
+    const proposed = window.prompt(`Suggest a new value for "${f.label ?? f.field_key}":`, f.value ?? '');
+    if (proposed == null) return;
+    void act(() => proposeFieldEdit(id!, f.field_key, proposed.trim()), 'Suggested change sent for review.');
+  }, [id]);
+
+  // Comment anchored to a specific field (opens the comments composer).
+  const commentOnField = useCallback((f: ContractField) => {
+    setPendingAnchor({ kind: 'field', ref: f.field_key, label: f.label ?? f.field_key });
+  }, []);
 
   if (error && !detail) return <p role="alert" className="form-error">{error}</p>;
   if (!detail || !doc) return <p className="body-text text-muted text-sm">Loading the contract…</p>;
@@ -400,15 +409,6 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         </div>
       )}
 
-      {redline && (
-        <RedlineSection
-          documentId={id!}
-          redline={redline}
-          isOwnerSide={isOwnerSide}
-          editablePhase={editablePhase}
-          onChanged={() => void load()}
-        />
-      )}
       <div className="flex items-start justify-between gap-3 mb-1">
         <h1 className="font-serif text-2xl text-green-900 flex items-center gap-2">
           <FileText size={22} className="text-gold-ink" /> {doc.title}
@@ -447,6 +447,18 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         <p className="mb-3 text-xs text-muted">Sent to the other party — they’ve been notified.</p>
       )}
 
+      {/* Proposed changes (redline) — now positioned in the Review zone, after the
+          document identity/status rather than above the title (m-7). */}
+      {redline && (
+        <RedlineSection
+          documentId={id!}
+          redline={redline}
+          isOwnerSide={isOwnerSide}
+          editablePhase={editablePhase}
+          onChanged={() => void load()}
+        />
+      )}
+
       {/* Executed: the sealed document */}
       {state === 'executed' && (
         <div className="bg-white border border-green-800/10 rounded-lg p-6 mb-6">
@@ -454,7 +466,8 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
             <CheckCircle2 size={16} /> Executed{doc.execution_hash ? ` · ${doc.execution_hash.slice(0, 12)}…` : ''}
           </p>
           <div className="prose-sm max-h-[70vh] overflow-y-auto whitespace-pre-line text-[13px] leading-relaxed text-green-950 bg-cream-100/50 border border-green-800/10 rounded p-5">
-            <ContractBody body={doc.merged_body} />
+            <ContractBody body={doc.merged_body}
+              onSelectSpan={(sp) => setPendingAnchor({ kind: 'span', quote: sp.quote, quotePrefix: sp.quotePrefix })} />
           </div>
         </div>
       )}
@@ -473,37 +486,26 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
               .map((role) => {
                 const c = partyControls.find((x) => x.party_role === role)
                   ?? { party_role: role, can_fill: true, can_edit_deal: false, can_suggest: false, can_add_clause: false };
-                const save = (patch: Partial<PartyControls>) => void act(() =>
-                  setPartyControls(id!, role, { ...c, ...patch }));
+                const value: PartyControlValues = {
+                  can_fill: c.can_fill, can_edit_deal: c.can_edit_deal,
+                  can_suggest: c.can_suggest, can_add_clause: c.can_add_clause ?? false,
+                };
                 return (
-                  <div key={role} className="border border-green-800/10 rounded-lg px-3.5 py-2.5">
-                    <p className="text-[12.5px] font-medium text-green-900 mb-1.5">{role.charAt(0) + role.slice(1).toLowerCase()}</p>
-                    <div className="flex flex-col gap-1.5 text-[12.5px] text-secondary">
-                      <label className="inline-flex items-center gap-2">
-                        <input type="checkbox" className="accent-green-700" checked={c.can_fill}
-                          onChange={(e) => save({ can_fill: e.target.checked })} />
-                        Can add their information
-                      </label>
-                      <label className="inline-flex items-center gap-2">
-                        <input type="checkbox" className="accent-green-700" checked={c.can_edit_deal}
-                          onChange={(e) => save({ can_edit_deal: e.target.checked })} />
-                        Can edit deal terms
-                      </label>
-                      <label className="inline-flex items-center gap-2">
-                        <input type="checkbox" className="accent-green-700" checked={c.can_suggest}
-                          onChange={(e) => save({ can_suggest: e.target.checked })} />
-                        Can propose edits to terms
-                      </label>
-                      <label className="inline-flex items-center gap-2">
-                        <input type="checkbox" className="accent-green-700" checked={c.can_add_clause ?? false}
-                          onChange={(e) => save({ can_add_clause: e.target.checked })} />
-                        Can add new clauses
-                      </label>
-                    </div>
-                  </div>
+                  <PartyControlsCard key={role} role={role} value={value}
+                    onChange={(v) => void act(() => setPartyControls(id!, role, v))} />
                 );
               })}
           </div>
+          {/* Recipient editing (M-5): let the counterparty edit DEAL terms/body
+              directly while negotiating. Distinct from can_edit_deal per-party —
+              this is the document-wide switch the field-write RPCs check. */}
+          <label className="inline-flex items-center gap-2 text-[12.5px] text-secondary mb-3">
+            <input type="checkbox" className="accent-green-700"
+              checked={doc?.recipient_editing ?? false}
+              onChange={(e) => void act(() => setRecipientEditing(id!, e.target.checked),
+                e.target.checked ? 'Counterparty may now edit the deal terms.' : 'Counterparty edit access turned off.')} />
+            Let the other party edit deal terms while negotiating
+          </label>
           <div className="flex items-center gap-2 flex-wrap">
             <input type="email" placeholder="counterparty@email.com" value={inviteEmail}
               onChange={(e) => setInviteEmail(e.target.value)}
@@ -604,19 +606,25 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
               onNa={(k, na) => void act(() => setFieldNa(id!, k, na))}
               onControl={(k, ov) => void act(() => setFieldControlOverride(id!, k, ov))}
               canSetControl={isOwnerSide}
+              onCommentField={commentOnField}
+              onSuggestEdit={suggestFieldEdit}
+              canSuggest={redline?.can_suggest ?? false}
             />
           </section>
         );
       })}
 
-      {/* Add section / item / field — a compact affordance (no more full-width block).
-          Opens a modal that asks WHERE (section + position, or which section to insert
-          after) and WHAT (type from the format registry). */}
-      {isOwnerSide && editablePhase && !showHorseGate && id && (
+      {/* Unified "Add" toolbar (M-2): one button for field / section / clause.
+          Owner-side adds structure + clauses directly; a party may propose a
+          clause when their controls allow it. Replaces the three separate add
+          surfaces (this button, the redline clause box, lease extras). */}
+      {editablePhase && !showHorseGate && id && (
         <div className="mb-5">
           <AddElementButton documentId={id} disabled={!editablePhase}
             sections={sections.map(([s]) => s)}
-            onAdded={() => void load()} />
+            canAddStructure={isOwnerSide}
+            canAddClause={isOwnerSide || (redline?.can_add_clause ?? false)}
+            onAdded={() => void act(async () => {})} />
         </div>
       )}
 
@@ -665,7 +673,8 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         <section className="bg-white border border-green-800/10 rounded-lg p-5 mb-4">
           <p className="text-sm text-muted mb-3">Please review the document below and sign, or respond to the other party.</p>
           <div className="max-h-[70vh] overflow-y-auto whitespace-pre-line text-[13.5px] leading-relaxed text-green-950 bg-cream-100/50 border border-green-800/10 rounded p-6">
-            <ContractBody body={doc.merged_body} />
+            <ContractBody body={doc.merged_body}
+              onSelectSpan={(sp) => setPendingAnchor({ kind: 'span', quote: sp.quote, quotePrefix: sp.quotePrefix })} />
           </div>
         </section>
       )}
@@ -679,7 +688,8 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           </button>
           {showBody && (
             <div className="mt-3 max-h-[60vh] overflow-y-auto whitespace-pre-line text-[13px] leading-relaxed text-green-950 bg-cream-100/50 border border-green-800/10 rounded p-5">
-              <ContractBody body={doc.merged_body} />
+              <ContractBody body={doc.merged_body}
+              onSelectSpan={(sp) => setPendingAnchor({ kind: 'span', quote: sp.quote, quotePrefix: sp.quotePrefix })} />
             </div>
           )}
         </section>
@@ -789,6 +799,25 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
             </div>
           )}
         </section>
+      )}
+
+      {/* Pinned comments (always-on) — anchored to fields or selected passages,
+          threaded and resolvable. Select text in the document above to comment. */}
+      {id && (
+        <div className="mt-5">
+          <ContractComments documentId={id} canComment={!isCancelled && state !== 'void'}
+            pendingAnchor={pendingAnchor}
+            onAnchorConsumed={() => setPendingAnchor(null)}
+            onChanged={() => setChangeKey((k) => k + 1)} />
+        </div>
+      )}
+
+      {/* Change history / track changes (always-on) — what each party changed,
+          and the human face of the retained audit trail. */}
+      {id && (
+        <div className="mt-5">
+          <TrackChangesPanel documentId={id} refreshKey={changeKey} />
+        </div>
       )}
 
       {/* Contract messages — parties talk here; the company sees every message

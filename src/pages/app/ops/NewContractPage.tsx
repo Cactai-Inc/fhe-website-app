@@ -8,6 +8,10 @@ import {
 } from '../../../lib/contracts';
 import { staffHorseRecords, contractPartyOptions, createHorseRecord, type StaffHorseRecord, type PartyOption } from '../../../lib/horses';
 import ContractPage from '../ContractPage';
+import {
+  PartyControlsCard, DEFAULT_PARTY_CONTROLS, roleLabel,
+  type PartyControlValues,
+} from '../../../components/app/PartyControlsCard';
 
 /**
  * NEW CONTRACT (/app/ops/contracts/new) — company-originated, always.
@@ -31,41 +35,8 @@ const TYPES: { id: ContractType; label: string; hint: string; roles: [string, st
   { id: 'purchase', label: 'Purchase & sale', hint: 'Purchase agreement — buyer & seller', roles: ['BUYER', 'SELLER'] },
 ];
 
-interface Controls { can_fill: boolean; can_edit_deal: boolean; can_suggest: boolean; can_add_clause: boolean }
-const DEFAULT_CONTROLS: Controls = { can_fill: true, can_edit_deal: false, can_suggest: false, can_add_clause: false };
-
-function roleLabel(r: string): string {
-  return r.charAt(0) + r.slice(1).toLowerCase();
-}
-
-function ControlsCard({
-  role, value, onChange,
-}: { role: string; value: Controls; onChange: (v: Controls) => void }) {
-  const rows: { key: keyof Controls; label: string; hint: string }[] = [
-    { key: 'can_fill', label: 'Can add their information', hint: 'They complete the fields their side owns. Off = you fill everything acting on their behalf.' },
-    { key: 'can_edit_deal', label: 'Can edit deal terms', hint: 'Direct changes to the negotiated terms. Usually off — the terms are the deal.' },
-    { key: 'can_suggest', label: 'Can suggest changes', hint: 'They may propose changes for you to accept or reject. Off = take-it-or-leave-it.' },
-    { key: 'can_add_clause', label: 'Can add new clauses', hint: 'They may propose entirely new clauses for you to accept or reject. Off = no additions.' },
-  ];
-  return (
-    <div className="border border-green-800/10 rounded-lg p-3.5">
-      <p className="text-sm font-medium text-green-900 mb-2">{roleLabel(role)}</p>
-      <div className="flex flex-col gap-2.5">
-        {rows.map((r) => (
-          <label key={r.key} className="flex items-start justify-between gap-3">
-            <span className="min-w-0">
-              <span className="block text-[13px] text-green-900">{r.label}</span>
-              <span className="block text-[11px] text-muted">{r.hint}</span>
-            </span>
-            <input type="checkbox" className="accent-green-700 w-4 h-4 mt-0.5 shrink-0"
-              checked={value[r.key]}
-              onChange={(e) => onChange({ ...value, [r.key]: e.target.checked })} />
-          </label>
-        ))}
-      </div>
-    </div>
-  );
-}
+type Controls = PartyControlValues;
+const DEFAULT_CONTROLS = DEFAULT_PARTY_CONTROLS;
 
 export default function NewContractPage() {
   useDocumentTitle('New contract');
@@ -280,8 +251,8 @@ export default function NewContractPage() {
           and the invitation will say review &amp; sign, nothing more.
         </p>
         <div className="grid sm:grid-cols-2 gap-3">
-          <ControlsCard role={roleA} value={controlsA} onChange={setControlsA} />
-          <ControlsCard role={roleB} value={controlsB} onChange={setControlsB} />
+          <PartyControlsCard role={roleA} value={controlsA} onChange={setControlsA} />
+          <PartyControlsCard role={roleB} value={controlsB} onChange={setControlsB} />
         </div>
       </section>
 

@@ -534,3 +534,23 @@ export async function markCommentStale(commentId: string, stale = true): Promise
   });
   if (error) throw error;
 }
+
+// ─── Retained execution audit (contract_execution_audit) ─────────────────────
+/** The frozen negotiation record captured when a contract executed: the change
+ *  log and comment threads as they stood, plus the executed body/hash. Retained
+ *  for legal audit; never shown on the clean delivered PDF. Null until executed. */
+export interface ContractExecutionAudit {
+  document_id: string;
+  executed_at: string;
+  execution_hash: string | null;
+  merged_body: string | null;
+  change_log: ContractChange[];
+  comments: ContractComment[];
+  change_count: number;
+  comment_count: number;
+}
+export async function contractExecutionAudit(documentId: string): Promise<ContractExecutionAudit | null> {
+  const { data, error } = await supabase.rpc('contract_execution_audit_get', { p_document_id: documentId });
+  if (error) throw error;
+  return (data as ContractExecutionAudit | null) ?? null;
+}

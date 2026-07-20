@@ -40,6 +40,11 @@ function SelfSignRow({
   const trimmed = typedName.trim();
   const { document: doc, party_role, signed } = item;
   const inputId = `sign-name-${doc.id}`;
+  // Contract-workflow documents (contract_id set) are reviewed + signed on the
+  // full contract surface, which uses the contract-aware seal. Only release /
+  // waiver docs sign inline here. This keeps one signing entry point per contract
+  // (audit M-7) — the list deep-links contracts to /app/contracts/:id.
+  const isContractDoc = !!doc.contract_id;
 
   const sign = async () => {
     setPending(true);
@@ -65,6 +70,11 @@ function SelfSignRow({
             <p className="text-xs text-green-700 mt-2 inline-flex items-center gap-1">
               <Check size={12} aria-hidden="true" /> You've signed this document.
             </p>
+          ) : isContractDoc ? (
+            <Link to={`/app/contracts/${doc.id}`}
+              className="btn-outline-gold inline-flex items-center mt-3 text-sm">
+              Open to review &amp; sign →
+            </Link>
           ) : (
             <div className="mt-3 flex flex-wrap items-end gap-3">
               <div>
