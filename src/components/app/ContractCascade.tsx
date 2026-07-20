@@ -82,7 +82,14 @@ function PartyPicker({
         onChange={(e) => set({ party: e.target.value })}>
         <option value="">{placeholder}</option>
         {opts.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        {/* ELS gives every allocation an "Other (please specify)" escape. */}
+        <option value="OTHER">Other (specify)…</option>
       </select>
+      {party === 'OTHER' && (
+        <input className={inputCls} disabled={disabled} autoFocus
+          placeholder="Describe the arrangement (e.g. a specific split, a third party, conditions)"
+          value={value.note ?? ''} onChange={(e) => set({ note: e.target.value })} />
+      )}
       {party === 'CARE_PROVIDER' && allowProvider && (
         <div className="grid grid-cols-2 gap-1.5">
           <input className={inputCls} disabled={disabled} placeholder="Contact name"
