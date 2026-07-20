@@ -18,7 +18,10 @@ import { X } from 'lucide-react';
 import { EmailChangeModal } from '../../components/app/EmailChangeModal';
 import { SavedPanel, DocumentsPanel } from '../../components/app/AccountPanels';
 import { useAuth } from '../../contexts/AuthContext';
-import { getMyContactPrefs, saveMyContactPrefs, type MyContactPrefs } from '../../lib/contact';
+import {
+  getMyContactPrefs, saveMyContactPrefs, type MyContactPrefs,
+  PREFERRED_CONTACT_OPTIONS,
+} from '../../lib/contact';
 import { startGoogleChange, startPasswordChange } from '../../lib/emailChange';
 import { useNavigate, Link } from 'react-router-dom';
 
@@ -184,6 +187,18 @@ function ProfileSection() {
         <SocialField icon={Linkedin} label="LinkedIn" placeholder="profile URL"
           value={p?.social_linkedin ?? ''} onValue={(v) => set('social_linkedin', v || null)} />
       </div>
+
+      <SectionLabel>Preferred contact method</SectionLabel>
+      <p className="text-[11.5px] text-muted -mt-1.5 mb-2.5">How you'd rather be reached. Shown on your profile — all your shared channels still appear.</p>
+      <select
+        value={p?.preferred_contact ?? 'none'}
+        onChange={(e) => set('preferred_contact', e.target.value as MyContactPrefs['preferred_contact'])}
+        className="form-input w-full text-sm">
+        {PREFERRED_CONTACT_OPTIONS
+          // only offer channels the member has actually filled in (or the always-on ones)
+          .filter((o) => o.requires === null || !!(p && p[o.requires]))
+          .map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
 
       <SectionLabel>Notifications</SectionLabel>
       <div className="flex flex-col gap-2">

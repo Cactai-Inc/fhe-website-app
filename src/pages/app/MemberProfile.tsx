@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, MessageSquare, Instagram, Facebook, Linkedin, Music2, Mail, Phone, MapPin } from 'lucide-react';
+import { ArrowLeft, MessageSquare, Instagram, Facebook, Linkedin, Music2, Mail, Phone, MapPin, Star } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
 import { useAuth } from '../../contexts/AuthContext';
 import { fetchMemberProfile, fetchMemberHorses } from '../../lib/community';
 import { sayHi, myGreetedUserIds } from '../../lib/communityFeed';
+import { preferredContactLabel } from '../../lib/contact';
 import type { MemberDirectoryEntry, MemberHorse } from '../../lib/community-types';
 
 /**
@@ -71,6 +72,11 @@ export default function MemberProfile() {
         <p className="text-[11px] uppercase tracking-wide text-gold-800 font-semibold mt-1">
           {[m.riding_level || 'Rider', m.is_horse_owner ? 'Horse Owner' : null].filter(Boolean).join(' · ')}
         </p>
+        {preferredContactLabel(m.preferred_contact) && !isMe && (
+          <span className="mt-2.5 inline-flex items-center gap-1.5 text-xs font-medium text-green-800 bg-green-50 border border-green-200 rounded-full px-3 py-1.5">
+            <Star size={13} className="text-gold-600" /> Prefers {preferredContactLabel(m.preferred_contact)}
+          </span>
+        )}
         {m.bio && <p className="text-sm text-secondary mt-4 max-w-md leading-relaxed">{m.bio}</p>}
 
         {/* Horses this member owns — name + home location */}

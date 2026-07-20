@@ -1,6 +1,7 @@
 /* Community / members-app domain types
  * (supabase/migrations/20260623040000_community.sql).
  */
+import type { PreferredContact } from './contact';
 
 export type MembershipTier = 'community' | 'rider' | 'full';
 export type MembershipStatus = 'active' | 'paused' | 'cancelled';
@@ -38,6 +39,8 @@ export interface MemberDirectoryEntry {
   social_linkedin: string | null;
   /** true when this member owns at least one horse in the system */
   is_horse_owner: boolean;
+  /** the member's preferred contact method (hidden channels suppressed to 'none') */
+  preferred_contact: PreferredContact;
 }
 
 /** A horse a member owns — for their community profile. */

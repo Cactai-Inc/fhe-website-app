@@ -20,6 +20,7 @@ import type {
   Thread, ContentPost, ContentResource, CommunityEvent, MemberDirectoryEntry, Announcement,
 } from './community-types';
 import type { FeedView } from './seed';
+import type { PreferredContact } from './contact';
 
 export interface FeedCard {
   id: string;
@@ -57,6 +58,7 @@ export interface FeedCard {
   memberUserId?: string;
   memberAvatar?: string | null;
   isHorseOwner?: boolean;
+  preferredContact?: PreferredContact;
   socialInstagram?: string | null;
   socialFacebook?: string | null;
   socialLinkedin?: string | null;
@@ -171,6 +173,7 @@ function fromMember(m: MemberDirectoryEntry): FeedCard {
     ts: 0,
     bio: m.bio ?? undefined,
     isHorseOwner: m.is_horse_owner,
+    preferredContact: m.preferred_contact,
     socialInstagram: m.social_instagram,
     socialFacebook: m.social_facebook,
     socialLinkedin: m.social_linkedin,

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  MessageSquare, Instagram, Facebook, Linkedin, Music2, Mail, Phone, MapPin, Calendar, Globe,
+  MessageSquare, Instagram, Facebook, Linkedin, Music2, Mail, Phone, MapPin, Calendar, Globe, Star,
 } from 'lucide-react';
 import { Modal } from '../ops/kit/Modal';
 import { useAuth } from '../../contexts/AuthContext';
@@ -9,7 +9,7 @@ import {
   fetchThread, replyToThread, fetchContentPost, fetchMemberHorses, setRsvp,
 } from '../../lib/community';
 import { sayHi, myGreetedUserIds, type FeedCard } from '../../lib/communityFeed';
-import { contactActions } from '../../lib/contact';
+import { contactActions, preferredContactLabel, type PreferredContact } from '../../lib/contact';
 import type { ThreadPost, ContentPost, MemberHorse, RsvpStatus } from '../../lib/community-types';
 
 /**
@@ -51,6 +51,23 @@ function Body({ card, onClose }: { card: FeedCard; onClose: () => void }) {
   }
 }
 
+/** The launch URL for a member's preferred channel, from the card's shared fields.
+ *  Returns null for 'platform'/'none' (platform = the in-app Message button below). */
+function preferredHref(card: FeedCard): string | null {
+  const p = card.preferredContact as PreferredContact | undefined;
+  switch (p) {
+    case 'email':     return card.email ? `mailto:${card.email}` : null;
+    case 'sms':       return card.mobile ? `sms:${card.mobile.replace(/[^\d+]/g, '')}` : null;
+    case 'call':      return card.mobile ? `tel:${card.mobile.replace(/[^\d+]/g, '')}` : null;
+    case 'whatsapp':  return card.whatsapp ? `https://wa.me/${card.whatsapp.replace(/[^\d]/g, '')}` : null;
+    case 'instagram': return card.socialInstagram ?? null;
+    case 'facebook':  return card.socialFacebook ?? null;
+    case 'linkedin':  return card.socialLinkedin ?? null;
+    case 'tiktok':    return card.socialTiktok ?? null;
+    default:          return null;
+  }
+}
+
 // ── MEMBER ──────────────────────────────────────────────────────────────────
 function MemberBody({ card, onClose }: { card: FeedCard; onClose: () => void }) {
   const navigate = useNavigate();
@@ -74,12 +91,29 @@ function MemberBody({ card, onClose }: { card: FeedCard; onClose: () => void }) 
     card.socialTiktok && { icon: Music2, href: card.socialTiktok, label: 'TikTok' },
   ].filter(Boolean) as { icon: typeof Instagram; href: string; label: string }[];
 
+  // Preferred contact — a hint chip. Where it maps to a launchable channel, the chip
+  // links straight to it; 'platform' points at the Message action below.
+  const prefLabel = preferredContactLabel(card.preferredContact);
+  const prefHref = preferredHref(card);
+
   return (
     <div className="flex flex-col items-center text-center">
       {card.memberAvatar
         ? <img src={card.memberAvatar} alt="" className="w-24 h-24 rounded-full object-cover" />
         : <span className="w-24 h-24 rounded-full bg-green-100 text-green-800 grid place-items-center text-3xl font-serif font-semibold">{card.authorInitials}</span>}
       {card.role && <p className="text-[11px] uppercase tracking-wide text-gold-800 font-semibold mt-3">{card.role}</p>}
+      {prefLabel && !isMe && (
+        prefHref ? (
+          <a href={prefHref} target={prefHref.startsWith('http') ? '_blank' : undefined} rel="noopener noreferrer"
+            className="mt-2.5 inline-flex items-center gap-1.5 text-xs font-medium text-green-800 bg-green-50 border border-green-200 rounded-full px-3 py-1.5 hover:bg-green-100 focus-ring">
+            <Star size={13} className="text-gold-600" /> Prefers {prefLabel}
+          </a>
+        ) : (
+          <span className="mt-2.5 inline-flex items-center gap-1.5 text-xs font-medium text-green-800 bg-green-50 border border-green-200 rounded-full px-3 py-1.5">
+            <Star size={13} className="text-gold-600" /> Prefers {prefLabel}
+          </span>
+        )
+      )}
       {card.bio && <p className="text-sm text-secondary mt-3 max-w-md leading-relaxed">{card.bio}</p>}
 
       {horses.filter((h) => h.name).length > 0 && (

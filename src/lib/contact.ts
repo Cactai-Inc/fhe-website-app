@@ -25,6 +25,36 @@ export function mailHref(email: string, subject?: string): string {
 
 export type ContactMethod = 'email' | 'sms' | 'call' | 'whatsapp' | 'whatsapp_call';
 
+/** A member's preferred way to be reached (a hint shown on their profile — all their
+ *  shared channels still appear, this just flags the favored one). 'platform' = a
+ *  message on French Heritage; 'none' = no stated preference. */
+export type PreferredContact =
+  | 'none' | 'platform' | 'email' | 'sms' | 'call' | 'whatsapp'
+  | 'instagram' | 'facebook' | 'linkedin' | 'tiktok';
+
+/** Label + the profile field a preference depends on (so the picker only offers
+ *  channels the member has actually filled in). `channel` null → always available. */
+export const PREFERRED_CONTACT_OPTIONS: {
+  value: PreferredContact; label: string; requires: keyof MyContactPrefs | null;
+}[] = [
+  { value: 'none',      label: 'No preference',        requires: null },
+  { value: 'platform',  label: 'Message on French Heritage', requires: null },
+  { value: 'email',     label: 'Email',                requires: 'email' },
+  { value: 'sms',       label: 'Text message',         requires: 'mobile' },
+  { value: 'call',      label: 'Phone call',           requires: 'mobile' },
+  { value: 'whatsapp',  label: 'WhatsApp',             requires: 'whatsapp' },
+  { value: 'instagram', label: 'Instagram',            requires: 'social_instagram' },
+  { value: 'facebook',  label: 'Facebook',             requires: 'social_facebook' },
+  { value: 'linkedin',  label: 'LinkedIn',             requires: 'social_linkedin' },
+  { value: 'tiktok',    label: 'TikTok',               requires: 'social_tiktok' },
+];
+
+/** Short label for displaying a member's preference on their profile. */
+export function preferredContactLabel(v: PreferredContact | null | undefined): string | null {
+  if (!v || v === 'none') return null;
+  return PREFERRED_CONTACT_OPTIONS.find((o) => o.value === v)?.label ?? null;
+}
+
 export interface ContactInfo {
   email?: string | null;
   mobile?: string | null;      // used for sms + call
@@ -68,13 +98,14 @@ export interface MyContactPrefs {
   social_instagram: string | null;
   social_facebook: string | null;
   social_linkedin: string | null;
+  preferred_contact: PreferredContact;
   payment_reminders: boolean;
 }
 
 const PREF_COLS =
   'email, mobile, whatsapp, allow_sms, allow_call, allow_whatsapp, allow_whatsapp_call, ' +
   'hide_email, hide_mobile, hide_whatsapp, ' +
-  'social_tiktok, social_instagram, social_facebook, social_linkedin, payment_reminders';
+  'social_tiktok, social_instagram, social_facebook, social_linkedin, preferred_contact, payment_reminders';
 
 /** Load the signed-in member's contact prefs (own profiles row). */
 export async function getMyContactPrefs(): Promise<MyContactPrefs | null> {
