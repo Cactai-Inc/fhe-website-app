@@ -4,6 +4,7 @@ import {
   CalendarDays, Users, FileText, UserRound, ReceiptText, Shield, LogOut,
   GraduationCap, Handshake, Home as HomeIcon, Boxes, Contact, LayoutDashboard,
   Mail, ChevronDown, Plus, LifeBuoy, ShoppingBag, MessageSquare, BookOpen, ListChecks, Store,
+  PanelLeft, PanelLeftClose,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useViewSurfaces } from '../../lib/surfaces';
@@ -183,6 +184,58 @@ function MenuLink({ to, label, icon: Icon, end, onNavigate }: NavItem & { onNavi
   );
 }
 
+/** CLIENT LEFT RAIL (desktop only) — a thin icon strip that expands on hover with
+ *  almost no delay, and a pin/toggle that keeps it open. Holds the same quick-access
+ *  destinations the avatar menu carries. Members only (staff get the management rail).
+ */
+function ClientRail() {
+  const [pinned, setPinned] = useState(() => localStorage.getItem('clientRail.pinned') === '1');
+  const [hovered, setHovered] = useState(false);
+  useEffect(() => { localStorage.setItem('clientRail.pinned', pinned ? '1' : '0'); }, [pinned]);
+  const open = pinned || hovered;
+
+  // The <aside> RESERVES the width: 56px normally, 240px when PINNED (page sits
+  // beside it). The <nav> is sticky (scroll-follows) and grows to 240px on HOVER —
+  // when not pinned it overflows its 56px aside to overlay the page, so hovering
+  // causes no layout shift. z-30 keeps it above main, below the sticky header (z-40).
+  return (
+    <aside
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className={`hidden lg:block shrink-0 relative z-30 transition-[width] duration-100 ease-out ${pinned ? 'w-60' : 'w-14'}`}
+    >
+      <nav
+        className={`sticky top-14 h-[calc(100dvh-3.5rem)] border-r border-green-800/10 bg-cream-100 p-2 overflow-y-auto overflow-x-hidden flex flex-col transition-[width] duration-100 ease-out ${open ? 'w-60' : 'w-14'} ${hovered && !pinned ? 'shadow-[8px_0_24px_-12px_rgba(13,33,24,0.25)]' : ''}`}
+      >
+        {/* pin / show toggle — keeps the rail open when pinned */}
+        <button type="button" onClick={() => setPinned((v) => !v)}
+          aria-label={pinned ? 'Collapse menu' : 'Keep menu open'} aria-pressed={pinned}
+          className={`flex items-center gap-3 rounded-lg px-3 py-2.5 mb-1 text-green-700 hover:bg-white focus-ring ${open ? '' : 'justify-center'}`}>
+          {pinned ? <PanelLeftClose size={18} className="shrink-0" /> : <PanelLeft size={18} className="shrink-0" />}
+          {open && <span className="text-[13.5px] font-sans text-secondary whitespace-nowrap">{pinned ? 'Collapse' : 'Keep open'}</span>}
+        </button>
+
+        <div className="flex flex-col gap-0.5">
+          {QUICK.map((q) => (
+            <NavLink key={q.label} to={q.to} end={q.to === '/app'}
+              className={({ isActive }) =>
+                `flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans transition-colors focus-ring ${open ? '' : 'justify-center'} ${
+                  isActive ? 'bg-green-800 text-white' : 'text-secondary hover:bg-white'}`}
+              title={open ? undefined : q.label}>
+              {({ isActive }) => (
+                <>
+                  <q.icon size={18} aria-hidden="true" className={`shrink-0 ${isActive ? 'text-gold-400' : 'text-green-600'}`} />
+                  {open && <span className="whitespace-nowrap">{q.label}</span>}
+                </>
+              )}
+            </NavLink>
+          ))}
+        </div>
+      </nav>
+    </aside>
+  );
+}
+
 export default function AppLayout() {
   const { profile, isAdmin, isStaff, isSuperAdmin, hasModule, signOut } = useAuth();
   useViewSurfaces();
@@ -332,6 +385,8 @@ export default function AppLayout() {
       </header>
 
       <div className="w-full max-w-[120rem] mx-auto flex">
+        {/* Members (non-staff) get a collapsible quick-access rail on desktop. */}
+        {!showRail && !isSuperAdmin && <ClientRail />}
         {showRail && (
           <aside className="hidden lg:block w-60 xl:w-64 shrink-0 border-r border-green-800/10 bg-cream-100/40">
             <nav className="p-3 sticky top-14 h-[calc(100dvh-3.5rem)] overflow-y-auto">

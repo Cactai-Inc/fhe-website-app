@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ChevronDown } from 'lucide-react';
 import { myNotifications, type AppNotification } from '../../lib/api';
 import { myLessonSessions, type MemberLessonSession } from '../../lib/ops/api-member';
 import { fetchMyPendingChanges } from '../../lib/ops/api-calendar';
@@ -98,6 +99,9 @@ export function DashboardPanel() {
   const [suggestBooking, setSuggestBooking] = useState(false);
   const [pendingChanges, setPendingChanges] = useState(0);
   const [horse, setHorse] = useState<HorseOnboardingState | null>(null);
+  // Collapse the panel body to a thin strip (persisted). Show/Hide lives top-right.
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem('dash.collapsed') === '1');
+  useEffect(() => { localStorage.setItem('dash.collapsed', collapsed ? '1' : '0'); }, [collapsed]);
 
   useEffect(() => {
     let active = true;
@@ -184,9 +188,34 @@ export function DashboardPanel() {
 
   if (attention.length === 0 && comingUp.length === 0 && checklist.length === 0 && !suggestBooking && pendingChanges === 0 && !horseTile) return null;
 
+  // count of everything demanding attention — shown in the collapsed strip.
+  const attentionCount = attention.length + checklist.length + (suggestBooking ? 1 : 0)
+    + (pendingChanges > 0 ? 1 : 0) + (horseTile ? 1 : 0);
+
   return (
-    <div className="rounded-2xl border border-green-800/10 shadow-[0_14px_34px_-14px_rgba(13,33,24,0.22)] bg-gradient-to-br from-white to-cream-100 p-5 sm:p-6 mb-6 sm:mb-7">
-      {(attention.length > 0 || checklist.length > 0 || suggestBooking || pendingChanges > 0 || horseTile) && (
+    <div className={`rounded-2xl border border-green-800/10 shadow-[0_14px_34px_-14px_rgba(13,33,24,0.22)] bg-gradient-to-br from-white to-cream-100 mb-6 sm:mb-7 ${collapsed ? 'px-5 sm:px-6 py-3' : 'p-5 sm:p-6'}`}>
+      {/* header: title + Show/Hide toggle in the top-right corner */}
+      <div className={`flex items-center justify-between ${collapsed ? '' : 'mb-4'}`}>
+        {collapsed ? (
+          <p className="text-[12px] text-secondary font-medium">
+            {attentionCount > 0
+              ? <><span className="text-gold-800 font-semibold">{attentionCount}</span> item{attentionCount > 1 ? 's' : ''} need{attentionCount > 1 ? '' : 's'} your attention</>
+              : comingUp.length > 0
+                ? <><span className="text-green-800 font-semibold">{comingUp.length}</span> coming up</>
+                : 'Dashboard'}
+          </p>
+        ) : (
+          <p className="text-[10px] tracking-widest uppercase text-muted font-semibold">Dashboard</p>
+        )}
+        <button type="button" onClick={() => setCollapsed((v) => !v)}
+          className="inline-flex items-center gap-1 text-[11px] font-semibold text-green-800 hover:text-green-700 focus-ring rounded-md px-1.5 py-1"
+          aria-expanded={!collapsed}>
+          {collapsed ? 'Show' : 'Hide'}
+          <ChevronDown size={13} className={`transition-transform ${collapsed ? '-rotate-90' : ''}`} />
+        </button>
+      </div>
+
+      {!collapsed && (attention.length > 0 || checklist.length > 0 || suggestBooking || pendingChanges > 0 || horseTile) && (
         <>
           <p className="text-[10px] tracking-widest uppercase text-gold-800 font-semibold mb-3">Needs your attention</p>
           <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
@@ -212,7 +241,7 @@ export function DashboardPanel() {
           </div>
         </>
       )}
-      {comingUp.length > 0 && (
+      {!collapsed && comingUp.length > 0 && (
         <>
           <p className={`text-[10px] tracking-widest uppercase text-muted font-semibold mb-3 ${attention.length > 0 ? 'mt-5' : ''}`}>Coming up</p>
           <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
