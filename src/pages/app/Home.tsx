@@ -1,36 +1,46 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navigate, useSearchParams } from 'react-router-dom';
 import { useDocumentTitle } from '../../lib/hooks';
 import { useViewSurfaces } from '../../lib/surfaces';
 import { useAuth } from '../../contexts/AuthContext';
 import { FeedControls } from '../../components/feed/FeedControls';
 import { CommunityFeed } from '../../components/feed/CommunityFeed';
-import { SORT_OPTIONS, type FeedView } from '../../lib/seed';
+import { SORT_OPTIONS, FEED_VIEW_META, FEED_VIEWS, type FeedView } from '../../lib/seed';
 
 /**
- * COMMUNITY (/app index) — the front door on sign-in for riders, instructors, and
- * admins: the full filterable feed with the View/Sort dropdowns. The dashboard
- * (priority actions + coming up) now lives on its own page at /app/dashboard.
- * Deal/care-only members (no feed surface) are redirected to their purpose-built
- * home, preserving the purchase-driven view model.
+ * COMMUNITY FEED (/app index) — the front door on sign-in. ONE stream of
+ * categorized posts; the `?filter=` param picks which category shows. The nav
+ * nests each filter under "Community Feed" as an indented link (→ /app?filter=…),
+ * so each view reads like its own page while really just filtering this feed. The
+ * URL is the source of truth: nav links, the in-page pills, and the header all
+ * stay in sync through it. Deal/care-only members (no feed) redirect to their home.
  */
+const isFeedView = (v: string | null): v is FeedView =>
+  !!v && FEED_VIEWS.some((f) => f.key === v);
+
 export default function Home() {
   const { surfaces, loading: surfacesLoading } = useViewSurfaces();
-  const { profile, isStaff, isSuperAdmin } = useAuth();
-  useDocumentTitle('Community');
-  const firstName = profile?.first_name || profile?.display_name || null;
-  const hour = new Date().getHours();
-  const daypart = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
-  const [params] = useSearchParams();
-  const initialFilter = (params.get('filter') as FeedView | null) ?? 'all';
-  const [view, setView] = useState<FeedView>(initialFilter);
-  const [sort, setSort] = useState<string>((SORT_OPTIONS[initialFilter] ?? SORT_OPTIONS.all)[0]);
+  const { isSuperAdmin } = useAuth();
+  const [params, setParams] = useSearchParams();
+
+  // URL is the source of truth for the active view (so nav links drive it).
+  const view: FeedView = isFeedView(params.get('filter')) ? (params.get('filter') as FeedView) : 'all';
+  const meta = FEED_VIEW_META[view];
+  useDocumentTitle(view === 'all' ? 'Community Feed' : `${meta.title} · Community`);
+
+  const [sort, setSort] = useState<string>((SORT_OPTIONS[view] ?? SORT_OPTIONS.all)[0]);
+  // Reset sort to the view's default whenever the view changes.
+  useEffect(() => { setSort((SORT_OPTIONS[view] ?? SORT_OPTIONS.all)[0]); }, [view]);
 
   const hasFeed = surfaces.has_feed;
 
   function pickView(v: FeedView) {
-    setView(v);
-    setSort((SORT_OPTIONS[v] ?? SORT_OPTIONS.all)[0]); // reset sort to the view's default
+    // Drive the URL — the pills, nav, and header all read from it.
+    setParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (v === 'all') next.delete('filter'); else next.set('filter', v);
+      return next;
+    }, { replace: true });
   }
 
   // The PLATFORM operator belongs to no tenant — land on Organizations.
@@ -40,18 +50,15 @@ export default function Home() {
   if (!surfacesLoading && !hasFeed) {
     if (surfaces.surfaces.includes('deal_dashboard')) return <Navigate to="/app/deal" replace />;
     if (surfaces.surfaces.includes('care_dashboard')) return <Navigate to="/app/care" replace />;
-    // A member with no category lands on the dashboard (where their notifications
-    // and priority actions live) rather than an empty community feed.
     return <Navigate to="/app/dashboard" replace />;
   }
 
   return (
     <div>
       <header className="mb-4">
-        <p className="eyebrow">Good {daypart}{firstName ? `, ${firstName}` : ''}</p>
-        <h1 className="font-serif text-green-800 text-3xl font-semibold mt-0.5">
-          {isStaff ? 'Community' : 'Your Community'}
-        </h1>
+        <p className="eyebrow">Community Feed</p>
+        <h1 className="font-serif text-green-800 text-3xl font-semibold mt-0.5">{meta.title}</h1>
+        <p className="body-text text-secondary text-sm mt-1.5 max-w-2xl">{meta.description}</p>
       </header>
 
       <FeedControls view={view} sort={sort} onView={pickView} onSort={setSort} />

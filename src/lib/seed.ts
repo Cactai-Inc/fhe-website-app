@@ -26,6 +26,22 @@ export const FEED_VIEWS: { key: FeedView; label: string }[] = [
   { key: 'members', label: 'Members' },
 ];
 
+/** Per-view header copy. The community feed is ONE stream of categorized posts;
+ *  each "view" is just that stream filtered to one category. The nav nests these
+ *  under "Community Feed" as indented links, and the page header swaps to the
+ *  matching title + blurb so each filter reads like its own place. `navLabel` is
+ *  what the nested nav link shows (e.g. "All posts" for the combined view). */
+export const FEED_VIEW_META: Record<FeedView, { title: string; navLabel: string; description: string }> = {
+  all:         { title: 'Community Feed', navLabel: 'All posts',   description: 'Everything from the barn and community, newest first.' },
+  social:      { title: 'Social',         navLabel: 'Social',      description: 'Photos, updates, and moments members are sharing.' },
+  discussions: { title: 'Discussions',    navLabel: 'Discussions', description: 'Questions and conversations — jump in or start your own.' },
+  for_sale:    { title: 'For Sale',       navLabel: 'For Sale',    description: 'Horses and gear listed by the barn and members.' },
+  events:      { title: 'Events',         navLabel: 'Events',      description: 'Clinics, shows, and gatherings — RSVP to save your spot.' },
+  articles:    { title: 'Articles',       navLabel: 'Articles',    description: 'Guides and reading from French Heritage.' },
+  resources:   { title: 'Resources',      navLabel: 'Resources',   description: 'Trusted vets, farriers, and suppliers members recommend.' },
+  members:     { title: 'Members',        navLabel: 'Members',     description: 'Meet the community — say hi, or send a message.' },
+};
+
 /** Sort options are dependent on the active view. Each view names its own set; the
  *  first entry is the default. `all` sorts by recency/activity. */
 export const SORT_OPTIONS: Record<FeedView, string[]> = {

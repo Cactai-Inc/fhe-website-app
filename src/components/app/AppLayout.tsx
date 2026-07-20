@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { FEED_VIEWS, FEED_VIEW_META, type FeedView } from '../../lib/seed';
 import {
   CalendarDays, Users, FileText, UserRound, ReceiptText, Shield, LogOut,
   GraduationCap, Handshake, Home as HomeIcon, Boxes, Contact, LayoutDashboard,
-  Mail, ChevronDown, Plus, LifeBuoy, ShoppingBag, MessageSquare, BookOpen, ListChecks, Store,
+  Mail, ChevronDown, Plus, LifeBuoy, ShoppingBag, MessageSquare, BookOpen, ListChecks,
   PanelLeft, PanelLeftClose,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -43,19 +44,26 @@ interface NavItem {
 // `badge: 'notifications'` surfaces the unread count on that nav link (Dashboard is
 // where notifications live). Community is position 1 and the sign-in landing page.
 // `badge: 'notifications'` surfaces the unread count on that nav link (Dashboard is
-// where notifications live). Community is position 1 and the sign-in landing page.
-// `noActive` = a shortcut to a filtered view of another page (Shop = Community
-// filtered) that must NOT claim the active highlight — only the highest-level page
-// (Community) lights up for /app.
-const QUICK: { label: string; icon: typeof GraduationCap; to: string; end?: boolean; badge?: 'notifications'; noActive?: boolean }[] = [
-  { label: 'Community', icon: Users, to: '/app', end: true },
+// where notifications live). "Community Feed" is its own nested group (below) and is
+// position 1; these are the rest of the quick-access destinations.
+const QUICK: { label: string; icon: typeof GraduationCap; to: string; end?: boolean; badge?: 'notifications' }[] = [
   { label: 'Dashboard', icon: LayoutDashboard, to: '/app/dashboard', badge: 'notifications' },
   { label: 'Calendar', icon: CalendarDays, to: '/app/calendar' },
   // The in-app catalog: shop services & book them (real purchase flow).
   { label: 'Catalog', icon: ShoppingBag, to: '/app/catalog' },
-  { label: 'Shop for sale', icon: Store, to: '/app?filter=for_sale', noActive: true },
   { label: 'New message', icon: MessageSquare, to: '/app/messages' },
 ];
+
+/** The community-feed views, as nested nav links. Each just filters the one feed
+ *  (/app?filter=…); "All posts" is the bare /app. The selected view highlights (not
+ *  the parent), matching the page header. "Shop for sale" is simply the For Sale
+ *  view, so it lives here too instead of as a separate top-level shortcut. */
+const COMMUNITY_VIEWS: { key: FeedView; label: string }[] =
+  FEED_VIEWS.map((v) => ({ key: v.key, label: FEED_VIEW_META[v.key].navLabel }));
+
+function communityHref(key: FeedView): string {
+  return key === 'all' ? '/app' : `/app?filter=${key}`;
+}
 
 export interface NavGroup { key: string; label: string; items: NavItem[]; defaultOpen?: boolean }
 
@@ -194,6 +202,62 @@ function MenuLink({ to, label, icon: Icon, end, onNavigate }: NavItem & { onNavi
   );
 }
 
+/** Which community-feed view the current location represents (null when not on the
+ *  feed at all). On /app the active view is the `?filter=` value, or 'all'. */
+function useActiveCommunityView(): FeedView | null {
+  const location = useLocation();
+  const [params] = useSearchParams();
+  if (location.pathname !== '/app') return null;
+  const f = params.get('filter');
+  return f && FEED_VIEWS.some((v) => v.key === f) ? (f as FeedView) : 'all';
+}
+
+/** COMMUNITY FEED nav group — a parent header + its views nested as indented links.
+ *  Each view filters the one feed; the SELECTED view highlights (not the parent),
+ *  and the page header changes to match. `open` collapses labels in the rail strip.
+ *  `onNavigate` closes the mobile menu. */
+function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
+  open?: boolean; onNavigate?: () => void; indentClass?: string;
+}) {
+  const active = useActiveCommunityView();
+  const onFeed = active !== null;
+
+  if (!open) {
+    // collapsed rail strip: just the parent icon, active whenever on the feed
+    return (
+      <Link to="/app" onClick={onNavigate} title="Community Feed"
+        className={`flex items-center justify-center rounded-lg px-3 py-2.5 focus-ring ${onFeed ? 'bg-green-800 text-white' : 'text-secondary hover:bg-white'}`}>
+        <Users size={18} className={onFeed ? 'text-gold-400' : 'text-green-600'} />
+      </Link>
+    );
+  }
+
+  return (
+    <div>
+      {/* parent — links to the combined feed; shown as a section header, only
+          "active-tinted" (not solid) so the SELECTED child owns the highlight */}
+      <Link to="/app" onClick={onNavigate}
+        className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans focus-ring ${onFeed ? 'text-green-900 font-semibold' : 'text-secondary hover:bg-white'}`}>
+        <Users size={18} className="shrink-0 text-green-600" />
+        <span className="whitespace-nowrap">Community Feed</span>
+      </Link>
+      {/* nested views — the selected one highlights */}
+      <div className="flex flex-col gap-0.5 mt-0.5">
+        {COMMUNITY_VIEWS.map((v) => {
+          const isActive = active === v.key;
+          return (
+            <Link key={v.key} to={communityHref(v.key)} onClick={onNavigate}
+              className={`flex items-center ${indentClass} pr-3 py-1.5 rounded-lg text-[13px] font-sans transition-colors focus-ring ${
+                isActive ? 'bg-green-800 text-white font-medium' : 'text-secondary hover:bg-white'}`}>
+              <span className="whitespace-nowrap">{v.label}</span>
+            </Link>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 /** CLIENT LEFT RAIL (desktop only) — a thin icon strip that expands on hover with
  *  almost no delay, and a pin/toggle that keeps it open. Holds the same quick-access
  *  destinations the avatar menu carries. Members only (staff get the management rail).
@@ -226,19 +290,17 @@ function ClientRail({ bellCount }: { bellCount: number }) {
         </button>
 
         <div className="flex flex-col gap-0.5">
+          {/* Community Feed (position 1) with its views nested underneath */}
+          <CommunityNav open={open} indentClass={open ? 'pl-9' : 'pl-3'} />
           {QUICK.map((q) => {
             const badge = q.badge === 'notifications' && bellCount > 0 ? bellCount : 0;
             return (
               <NavLink key={q.label} to={q.to} end={q.end}
-                className={({ isActive }) => {
-                  const active = isActive && !q.noActive;
-                  return `relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans transition-colors focus-ring ${open ? '' : 'justify-center'} ${
-                    active ? 'bg-green-800 text-white' : 'text-secondary hover:bg-white'}`;
-                }}
+                className={({ isActive: active }) =>
+                  `relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans transition-colors focus-ring ${open ? '' : 'justify-center'} ${
+                    active ? 'bg-green-800 text-white' : 'text-secondary hover:bg-white'}`}
                 title={open ? undefined : q.label}>
-                {({ isActive }) => {
-                  const active = isActive && !q.noActive;
-                  return (
+                {({ isActive: active }) => (
                     <>
                       <span className="relative shrink-0">
                         <q.icon size={18} aria-hidden="true" className={active ? 'text-gold-400' : 'text-green-600'} />
@@ -253,8 +315,7 @@ function ClientRail({ bellCount }: { bellCount: number }) {
                         <span className={`min-w-[1.25rem] h-5 px-1.5 text-[11px] leading-5 text-center rounded-full ${active ? 'bg-white/20 text-white' : 'bg-gold-600 text-white'}`}>{badge > 9 ? '9+' : badge}</span>
                       )}
                     </>
-                  );
-                }}
+                )}
               </NavLink>
             );
           })}
@@ -359,10 +420,7 @@ export default function AppLayout() {
                       {/* Both operators navigate to the community + catalog to help
                           members with what they're seeing — no shopper-only links. */}
                       <div className="mt-1 border-t border-green-800/10 pt-2 px-4 pb-1 text-xs uppercase tracking-wide text-secondary/60">Quick access</div>
-                      <button type="button" onClick={() => { closeMenu(); navigate('/app'); }}
-                        className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">
-                        <Users size={17} /> Community
-                      </button>
+                      <div className="px-1"><CommunityNav onNavigate={closeMenu} indentClass="pl-9" /></div>
                       <button type="button" onClick={() => { closeMenu(); navigate('/app/dashboard'); }}
                         className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">
                         <LayoutDashboard size={17} /> Dashboard
@@ -378,6 +436,7 @@ export default function AppLayout() {
                   {!isAdmin && !isSuperAdmin && (
                     <>
                       <div className="mt-1 border-t border-green-800/10 pt-2 px-4 pb-1 text-xs uppercase tracking-wide text-secondary/60">Quick access</div>
+                      <div className="px-1"><CommunityNav onNavigate={closeMenu} indentClass="pl-9" /></div>
                       {QUICK.map((q) => {
                         const badge = q.badge === 'notifications' && bell.count > 0 ? bell.count : 0;
                         return (
@@ -425,7 +484,7 @@ export default function AppLayout() {
               </p>
               {!isSuperAdmin && (
                 <div className="mb-1 flex flex-col gap-0.5">
-                  <RailLink to="/app" label="Community" icon={Users} end />
+                  <CommunityNav indentClass="pl-9" />
                   <RailLink to="/app/dashboard" label="Dashboard" icon={HomeIcon} badge={bell.count} />
                   <RailLink to="/app/calendar" label="Calendar" icon={CalendarDays} />
                 </div>
