@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X } from 'lucide-react';
+import { X, Hand } from 'lucide-react';
 import { myNotifications, markNotificationRead, type AppNotification } from '../../lib/api';
+import { sayHiBack } from '../../lib/communityFeed';
 import { myLessonSessions, type MemberLessonSession } from '../../lib/ops/api-member';
 import { fetchMyPendingChanges } from '../../lib/ops/api-calendar';
 import { fetchHorseOnboardingState, type HorseOnboardingState } from '../../lib/horses';
@@ -29,12 +30,36 @@ interface Tile {
   /** the underlying notification id — set for notification-backed tiles so they can
    *  be dismissed (marked read → gone). Non-notification tiles omit it. */
   notificationId?: string;
+  /** member_hi greetings: the greeter's user_id, for a "Say hi back" action. */
+  greeterUserId?: string;
+  /** auto-dismiss this tile once it's actually scrolled into view (greetings). */
+  dismissOnView?: boolean;
 }
 
-function TileCard({ tile, onDismiss }: { tile: Tile; onDismiss?: () => void }) {
+function TileCard({ tile, onDismiss }: { tile: Tile; onDismiss?: (opts?: { silent?: boolean }) => void }) {
   const navigate = useNavigate();
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [saidHiBack, setSaidHiBack] = useState(false);
+  const isGreeting = !!tile.greeterUserId;
+
+  // Dismiss-on-VIEW: a greeting clears the moment its tile actually scrolls into view
+  // (marks the notification read silently, but stays on screen this session so the
+  // user can still Say hi back — it just won't return).
+  useEffect(() => {
+    if (!tile.dismissOnView || !onDismiss || !ref.current) return;
+    const el = ref.current;
+    const obs = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) {
+        onDismiss({ silent: true });
+        obs.disconnect();
+      }
+    }, { threshold: 0.6 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [tile.dismissOnView, onDismiss]);
+
   return (
-    <div
+    <div ref={ref}
       className={`relative rounded-xl p-4 border ${
         tile.gold
           ? 'border-gold-400 shadow-[0_0_0_1px_theme(colors.gold.400)] bg-gradient-to-br from-gold-50 to-white'
@@ -42,7 +67,7 @@ function TileCard({ tile, onDismiss }: { tile: Tile; onDismiss?: () => void }) {
       }`}
     >
       {onDismiss && (
-        <button type="button" onClick={onDismiss} aria-label="Dismiss"
+        <button type="button" onClick={() => onDismiss()} aria-label="Dismiss"
           className="absolute top-2.5 right-2.5 p-1 text-muted hover:text-green-800 focus-ring rounded-md">
           <X size={15} />
         </button>
@@ -50,13 +75,28 @@ function TileCard({ tile, onDismiss }: { tile: Tile; onDismiss?: () => void }) {
       <p className="text-[9px] tracking-widest uppercase text-gold-800 font-semibold mb-1.5 pr-5">{tile.kind}</p>
       <p className="font-serif text-green-800 text-xl leading-tight font-semibold">{tile.title}</p>
       {tile.sub && <p className="text-sm text-muted mt-1">{tile.sub}</p>}
-      <button
-        type="button"
-        onClick={() => navigate(tile.to)}
-        className="inline-flex mt-3 text-[10.5px] tracking-wide uppercase text-white bg-green-800 px-3.5 py-2 rounded-lg font-medium hover:bg-green-700 focus-ring"
-      >
-        {tile.cta} →
-      </button>
+      {isGreeting ? (
+        <button
+          type="button"
+          disabled={saidHiBack}
+          onClick={async () => {
+            try { await sayHiBack(tile.greeterUserId!); } catch { /* treat as done */ }
+            setSaidHiBack(true);
+          }}
+          className={`inline-flex items-center gap-1.5 mt-3 text-[10.5px] tracking-wide uppercase px-3.5 py-2 rounded-lg font-medium focus-ring ${
+            saidHiBack ? 'bg-green-50 text-green-700 border border-green-200' : 'text-white bg-green-800 hover:bg-green-700'}`}
+        >
+          <Hand size={13} /> {saidHiBack ? 'Thanked 👋' : 'Say hi back'}
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => navigate(tile.to)}
+          className="inline-flex mt-3 text-[10.5px] tracking-wide uppercase text-white bg-green-800 px-3.5 py-2 rounded-lg font-medium hover:bg-green-700 focus-ring"
+        >
+          {tile.cta} →
+        </button>
+      )}
     </div>
   );
 }
@@ -134,16 +174,21 @@ export function DashboardPanel() {
       const now = Date.now();
 
       // ── needs attention: unread notifications (linked, dismissable) ──
-      // Welcome greetings ("[member] said hi") are a one-time hello, not a standing
-      // to-do, so they don't appear here — they surface (and dismiss on view) in the
-      // notifications bell instead.
+      // Welcome greetings ("[member] said hi") appear here like any notification, but
+      // they auto-dismiss the moment their tile is actually SEEN (dismissOnView) — a
+      // one-time hello, not a standing to-do — and carry a "Say hi back" action.
       const att: Tile[] = notifications
-        .filter((n) => !n.read_at && n.kind !== 'member_hi')
+        .filter((n) => !n.read_at)
         .slice(0, 3)
-        .map((n) => ({
-          id: `n-${n.id}`, notificationId: n.id, kind: n.kind.replace(/_/g, ' '), title: n.title,
-          sub: n.body ?? undefined, cta: 'Open', to: n.link || '/app', gold: true,
-        }));
+        .map((n) => {
+          const greeter = n.kind === 'member_hi' ? (n.link?.match(/hi_back=([0-9a-f-]{36})/i)?.[1] ?? null) : null;
+          return {
+            id: `n-${n.id}`, notificationId: n.id, kind: n.kind.replace(/_/g, ' '), title: n.title,
+            sub: n.body ?? undefined, cta: 'Open', to: n.link || '/app', gold: true,
+            greeterUserId: greeter ?? undefined,
+            dismissOnView: n.kind === 'member_hi',
+          };
+        });
 
       // ── coming up: next lessons + next events ──
       const up: Tile[] = [];
@@ -195,10 +240,12 @@ export function DashboardPanel() {
       }
     : null;
 
-  // Manually dismiss a notification tile: mark it read server-side and drop it here.
-  function dismiss(notificationId: string) {
-    setAttention((prev) => prev.filter((t) => t.notificationId !== notificationId));
+  // Dismiss a notification tile. `silent` (auto-dismiss-on-view for greetings) marks
+  // it read server-side but KEEPS it on screen this session, so the user can still act
+  // on it — it just won't return on reload. The manual × removes it from view too.
+  function dismiss(notificationId: string, opts?: { silent?: boolean }) {
     markNotificationRead(notificationId).catch(() => {});
+    if (!opts?.silent) setAttention((prev) => prev.filter((t) => t.notificationId !== notificationId));
   }
 
   if (attention.length === 0 && comingUp.length === 0 && checklist.length === 0 && !suggestBooking && pendingChanges === 0 && !horseTile) return null;
@@ -227,7 +274,7 @@ export function DashboardPanel() {
                 cta: 'Book a lesson', to: '/app/calendar',
               }} />
             )}
-            {attention.map((t) => <TileCard key={t.id} tile={t} onDismiss={t.notificationId ? () => dismiss(t.notificationId!) : undefined} />)}
+            {attention.map((t) => <TileCard key={t.id} tile={t} onDismiss={t.notificationId ? (opts) => dismiss(t.notificationId!, opts) : undefined} />)}
           </div>
         </>
       )}
