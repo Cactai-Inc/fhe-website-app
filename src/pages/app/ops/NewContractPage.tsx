@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Loader2, UserPlus } from 'lucide-react';
 import { useDocumentTitle } from '../../../lib/hooks';
 import { startLeaseContract, startPurchaseContract } from '../../../lib/api';
@@ -61,8 +61,13 @@ export default function NewContractPage() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   // Once created, the full contract renders INLINE below the config on THIS page
-  // (no navigation) — the config block stays at the top.
-  const [createdDocId, setCreatedDocId] = useState<string | null>(null);
+  // (no navigation) — the config block stays at the top. The created doc id is
+  // mirrored into the URL (?doc=…) so a REFRESH re-opens the same contract inline
+  // instead of losing it: the document is already persisted server-side; only the
+  // "which doc am I showing" state needs to survive the reload. We read it back
+  // on mount and write it with replace (no history entry, no navigation).
+  const [params, setParams] = useSearchParams();
+  const [createdDocId, setCreatedDocId] = useState<string | null>(params.get('doc'));
   // The viewport must NOT jump when the contract reveals: revealing the (tall)
   // document under the button would otherwise shift the scroll position. We
   // capture scrollY at click time and pin it back before the browser paints the
@@ -121,8 +126,10 @@ export default function NewContractPage() {
       }
       // Stay on this page — reveal the full contract inline below the config,
       // pinning the scroll position so the viewport doesn't jump (see the
-      // useLayoutEffect above).
+      // useLayoutEffect above). Mirror the id into the URL so a refresh re-opens
+      // this same contract inline (replace: no history entry, no navigation).
       scrollAnchor.current = window.scrollY;
+      setParams((p) => { p.set('doc', docId); return p; }, { replace: true });
       setCreatedDocId(docId);
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Could not start the contract.');
@@ -304,6 +311,19 @@ export default function NewContractPage() {
         </>
       ) : (
         <section className="mt-6 pt-6 border-t border-green-800/15">
+          <div className="flex justify-end mb-2">
+            <button type="button"
+              className="text-xs text-green-800 hover:text-green-700 underline underline-offset-2 focus-ring"
+              onClick={() => {
+                // Drop ?doc= and reset to a fresh form. The created contract is
+                // saved and reachable from the Documents / contracts list — this
+                // only clears the inline view so a new one can be started.
+                setParams((p) => { p.delete('doc'); return p; }, { replace: true });
+                setCreatedDocId(null);
+              }}>
+              ＋ Start another contract
+            </button>
+          </div>
           <ContractPage documentId={createdDocId} embedded />
         </section>
       )}
