@@ -80,7 +80,7 @@ function PartyPicker({
     <div className="flex flex-col gap-1.5">
       <select className={inputCls} disabled={disabled} value={party}
         onChange={(e) => set({ party: e.target.value })}>
-        <option value="">{placeholder}</option>
+        <option value="">{SELECT_PLACEHOLDER}</option>
         {opts.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         {/* ELS gives every allocation an "Other (please specify)" escape. */}
         <option value="OTHER">Other (specify)…</option>
@@ -260,6 +260,8 @@ export function ContractBody({
  *  capture: options are the primary path, open text stays available as an escape.
  *  A stored value that matches no option is shown as a custom entry. */
 const OTHER_VALUE = '__other__';
+/** Uniform empty-state prompt for every dropdown. */
+const SELECT_PLACEHOLDER = 'MAKE A SELECTION';
 function SelectWithOther({ f, onSave, disabled }: { f: ContractField; onSave: SaveFn; disabled: boolean }) {
   const opts = f.options ?? [];
   // Use the field's own "Other" option when it defines one; only synthesize a
@@ -282,7 +284,7 @@ function SelectWithOther({ f, onSave, disabled }: { f: ContractField; onSave: Sa
           if (e.target.value === otherVal) { setOtherMode(true); setCustom(''); void onSave(f.field_key, ''); }
           else { setOtherMode(false); setCustom(''); void onSave(f.field_key, e.target.value); }
         }}>
-        <option value="">Select…</option>
+        <option value="">{SELECT_PLACEHOLDER}</option>
         {opts.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         {!ownOther && <option value={OTHER_VALUE}>Other (specify)…</option>}
       </select>
@@ -615,7 +617,7 @@ function InlineSelect({ f, disabled, onSave }: { f: ContractField; disabled: boo
   useEffect(() => {
     if (stored !== '' && !opts.some((o) => o.value === stored)) setOtherMode(true);
   }, [stored]); // eslint-disable-line react-hooks/exhaustive-deps
-  const placeholder = f.label ?? 'select…';
+  const placeholder = SELECT_PLACEHOLDER;   // "MAKE A SELECTION" in the empty state
   const selectValue = otherMode || stored === otherVal ? otherVal : stored;
   const shownLabel = otherMode
     ? (ownOther?.label ?? 'Other…')
@@ -787,7 +789,7 @@ function ResponsibilityControl({
     <div className="flex flex-col gap-2">
       <select className={inputCls} disabled={disabled} value={party}
         onChange={(e) => set({ party: e.target.value })}>
-        <option value="">Choose…</option>
+        <option value="">{SELECT_PLACEHOLDER}</option>
         {opts.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
       {party === 'SHARED' && sharedIsSplit && (

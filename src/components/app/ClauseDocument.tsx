@@ -74,7 +74,35 @@ function optionLabel(f: ContractField): string {
   return v;
 }
 
-/** Render a clause's prose with input controls dropped inline at each {{token}}. */
+/** Render a single {{token}} → an inline editable control, or a read-only value
+ *  (horse-record imports, auto-fill, signatures). */
+function renderToken(
+  token: string, key: string,
+  fieldByKey: Map<string, ContractField>, valueByKey: Record<string, string>, cb: FieldCallbacks,
+): ReactNode {
+  const field = fieldByKey.get(token);
+  // HORSE.* imports read-only from the horse record — to change one, the horse
+  // record is edited, not the contract. Label-resolved for display.
+  const isHorseImport = token.startsWith('HORSE.');
+  if (field && field.can_edit !== undefined && !isHorseImport) {
+    return (
+      <InlineFieldControl key={key} f={field} editable={cb.editable}
+        onSave={cb.onSave} onSaveStructured={cb.onSaveStructured as never}
+        onSaveResponsibility={cb.onSaveResponsibility as never}
+        onCommentField={cb.onCommentField} onSuggestEdit={cb.onSuggestEdit} canSuggest={cb.canSuggest} />
+    );
+  }
+  const display = field ? optionLabel(field) : (valueByKey[token] ?? '');
+  return <TokenValue key={key} token={token} value={display} />;
+}
+
+// A line that is purely "Label: {{TOKEN}}" — rendered as a matrix cell (bold
+// label + value) rather than a sentence.
+const MATRIX_LINE = /^([^{}:]{1,40}):\s*\{\{([A-Z0-9_.]+)\}\}\s*$/;
+
+/** Render a clause body. Consecutive "Label: {{token}}" lines become a compact
+ *  bold-label matrix (e.g. the horse identity block); other lines render as prose
+ *  with controls/values inline at each token. */
 function ClauseProse({
   body, fieldByKey, valueByKey, cb,
 }: {
@@ -83,35 +111,46 @@ function ClauseProse({
   valueByKey: Record<string, string>;
   cb: FieldCallbacks;
 }) {
-  const nodes: ReactNode[] = [];
-  let last = 0; let m: RegExpExecArray | null; let i = 0;
-  TOKEN_RE.lastIndex = 0;
-  while ((m = TOKEN_RE.exec(body))) {
-    if (m.index > last) nodes.push(body.slice(last, m.index));
-    const token = m[1];
-    const field = fieldByKey.get(token);
-    // HORSE.* imports read-only from the horse record — shown as a value, never an
-    // editable control. To change one, the horse record is edited (by owner/staff),
-    // not the contract. Its display value resolves option codes to labels.
-    const isHorseImport = token.startsWith('HORSE.');
-    if (field && field.can_edit !== undefined && !isHorseImport) {
-      // an editable field lives here → drop its control inline
-      nodes.push(
-        <InlineFieldControl key={`f${i++}`} f={field} editable={cb.editable}
-          onSave={cb.onSave} onSaveStructured={cb.onSaveStructured as never}
-          onSaveResponsibility={cb.onSaveResponsibility as never}
-          onCommentField={cb.onCommentField} onSuggestEdit={cb.onSuggestEdit} canSuggest={cb.canSuggest} />,
-      );
-    } else {
-      // auto-fill / signature / horse-record import → value (label-resolved) or hint
-      const display = field ? optionLabel(field) : (valueByKey[token] ?? '');
-      nodes.push(<TokenValue key={`t${i++}`} token={token} value={display} />);
+  const lines = body.split('\n');
+  const blocks: ReactNode[] = [];
+  let matrix: { label: string; token: string }[] = [];
+  let bi = 0;
+
+  const flushMatrix = () => {
+    if (matrix.length === 0) return;
+    const cells = matrix;
+    matrix = [];
+    blocks.push(
+      <div key={`mx${bi++}`} className="grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-x-6 gap-y-1 my-1">
+        {cells.map((c, j) => (
+          <div key={j} className="flex items-baseline gap-1.5 text-[13.5px] text-green-950">
+            <span className="font-semibold whitespace-nowrap">{c.label}:</span>
+            <span>{renderToken(c.token, `mx${bi}-${j}`, fieldByKey, valueByKey, cb)}</span>
+          </div>
+        ))}
+      </div>,
+    );
+  };
+
+  for (const line of lines) {
+    const mm = line.match(MATRIX_LINE);
+    if (mm) { matrix.push({ label: mm[1].trim(), token: mm[2] }); continue; }
+    flushMatrix();
+    if (line.trim() === '') { continue; }
+    // prose line: interleave text and inline tokens
+    const nodes: ReactNode[] = [];
+    let last = 0; let m: RegExpExecArray | null; let ti = 0;
+    TOKEN_RE.lastIndex = 0;
+    while ((m = TOKEN_RE.exec(line))) {
+      if (m.index > last) nodes.push(line.slice(last, m.index));
+      nodes.push(renderToken(m[1], `p${bi}-${ti++}`, fieldByKey, valueByKey, cb));
+      last = m.index + m[0].length;
     }
-    last = m.index + m[0].length;
+    if (last < line.length) nodes.push(line.slice(last));
+    blocks.push(<p key={`p${bi++}`} className="text-[13.5px] leading-[1.9] text-green-950">{nodes}</p>);
   }
-  if (last < body.length) nodes.push(body.slice(last));
-  // preserve paragraph breaks in the prose
-  return <p className="text-[13.5px] leading-[1.9] text-green-950 whitespace-pre-wrap">{nodes}</p>;
+  flushMatrix();
+  return <>{blocks}</>;
 }
 
 export function ClauseDocument({
@@ -172,14 +211,14 @@ export function ClauseDocument({
                 const bodyTokens = new Set(
                   [...(clause.body ?? '').matchAll(TOKEN_RE)].map((mm) => mm[1]),
                 );
-                // Authoring-gate fields: a field attached to an EMPTY-body clause
-                // (e.g. a yes/no enable gate) renders as an authoring control. A
-                // field on a clause that HAS prose but whose token isn't in that
-                // prose is stale/misconfigured and is NOT rendered here — its value
-                // belongs wherever its token appears, or the field should be removed.
-                const orphanFields = !clause.body
-                  ? (fieldsByClause.get(clause.clause_key) ?? []).filter((f) => !bodyTokens.has(f.field_key))
-                  : [];
+                // Authoring-control fields for this clause not placed by a {{token}}
+                // in its prose — e.g. a yes/no enable gate ("Any exceptions?"), the
+                // lease-type selector, etc. These are the field's DESIGNATED clause
+                // (clause_key), so they're intentional and render below the prose as
+                // authoring controls. (Stale fields are removed at the data layer,
+                // not hidden here.)
+                const orphanFields = (fieldsByClause.get(clause.clause_key) ?? [])
+                  .filter((f) => !bodyTokens.has(f.field_key));
                 return (
                   <div key={clause.clause_key}>
                     {clause.heading && (
