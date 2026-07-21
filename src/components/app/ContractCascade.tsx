@@ -295,6 +295,82 @@ function SelectWithOther({ f, onSave, disabled }: { f: ContractField; onSave: Sa
   );
 }
 
+/** §3.1 LEASE-FEE builder. One structured value { initial_due, options:[{amount,
+ *  notes}], selected }. An "Initial payment due" free-text, then a repeatable list
+ *  of monthly fee options ("$<amount> due on the first day of each month. <notes>").
+ *  With ≥2 options a radio appears on each so one can be selected; a selection can
+ *  be cleared while still editable (i.e. before signing → `disabled`). Options are
+ *  editable/removable and new ones can be added until one is selected. */
+function LeaseFeeBuilder({
+  f, onSaveStructured, disabled,
+}: { f: ContractField; onSaveStructured: SaveStructFn; disabled: boolean }) {
+  const s = f.structured ?? {};
+  const options = s.options ?? [];
+  const selected = s.selected ?? null;
+  const commit = (next: FieldStructured) => void onSaveStructured(f.field_key, next);
+  const locked = disabled;                               // signing lock proxy
+  const multi = options.length > 1;
+
+  const setInitial = (v: string) => commit({ ...s, initial_due: v });
+  const addOption = () => { if (selected == null) commit({ ...s, options: [...options, { amount: '', notes: '' }] }); };
+  const editOption = (i: number, patch: { amount?: string; notes?: string }) =>
+    commit({ ...s, options: options.map((o, j) => (j === i ? { ...o, ...patch } : o)) });
+  const removeOption = (i: number) => commit({
+    ...s,
+    options: options.filter((_, j) => j !== i),
+    selected: selected == null ? null : selected === i ? null : selected > i ? selected - 1 : selected,
+  });
+  const toggleSelect = (i: number) => commit({ ...s, selected: selected === i ? null : i });
+
+  return (
+    <div className="flex flex-col gap-2 w-full max-w-xl">
+      <label className="flex items-baseline gap-2 text-[13.5px] text-green-950">
+        <span className="whitespace-nowrap">Initial payment due:</span>
+        <input className={`${inputCls} flex-1`} disabled={locked} value={s.initial_due ?? ''}
+          placeholder="e.g. upon signing, or a specific date"
+          onChange={(e) => setInitial(e.target.value)} />
+      </label>
+
+      {options.map((o, i) => (
+        <div key={i} className="flex items-start gap-2">
+          {multi && (
+            <input type="radio" className="mt-2 accent-green-700" disabled={locked}
+              checked={selected === i} onChange={() => toggleSelect(i)}
+              aria-label={`Select fee option ${i + 1}`} />
+          )}
+          <div className={`flex-1 flex flex-wrap items-baseline gap-x-1.5 gap-y-1 rounded-lg border p-2 ${
+            selected === i ? 'border-green-700 bg-green-50/50' : 'border-green-800/15'}`}>
+            <span className="inline-flex items-baseline">
+              <span className="text-green-900 mr-0.5">$</span>
+              <input className="w-20 px-2 py-1 rounded border border-green-800/15 text-sm text-green-900 focus-ring bg-white disabled:bg-cream-100"
+                disabled={locked || selected === i} value={o.amount ?? ''} placeholder="amount"
+                onChange={(e) => editOption(i, { amount: e.target.value })} />
+            </span>
+            <span className="text-[13.5px] text-green-950">due on the first day of each month.</span>
+            <input className="flex-1 min-w-[8rem] px-2 py-1 rounded border border-green-800/15 text-sm text-green-900 placeholder:text-muted focus-ring bg-white disabled:bg-cream-100"
+              disabled={locked || selected === i} value={o.notes ?? ''} placeholder="Notes"
+              onChange={(e) => editOption(i, { notes: e.target.value })} />
+          </div>
+          {!locked && selected !== i && (
+            <button type="button" className="mt-1.5 text-muted hover:text-red-700 text-xs"
+              onClick={() => removeOption(i)} title="Delete this fee option">✕</button>
+          )}
+        </div>
+      ))}
+
+      {!locked && selected == null && (
+        <button type="button" onClick={addOption}
+          className="self-start text-sm text-gold-800 border border-dashed border-gold-400 rounded-lg px-3 py-1.5 hover:bg-gold-50 focus-ring">
+          ＋ Add fee option
+        </button>
+      )}
+      {multi && selected == null && (
+        <p className="text-[11px] text-muted">Select the fee option that applies. It can be changed until the contract is signed.</p>
+      )}
+    </div>
+  );
+}
+
 /** A single field's control, chosen by format_type (preferred) or input_kind. */
 function FieldControl({
   f, onSave, onSaveResponsibility, onSaveStructured, disabled,
@@ -311,6 +387,9 @@ function FieldControl({
   const save = () => { if (local !== (f.value ?? '')) void onSave(f.field_key, local); };
 
   // ── structured formats (source of truth = f.structured) ──
+  if (fmt === 'fee_schedule') {
+    return <LeaseFeeBuilder f={f} onSaveStructured={onSaveStructured} disabled={disabled} />;
+  }
   if (fmt === 'pair') {
     return <PairControl f={f} onSaveStructured={onSaveStructured} disabled={disabled} />;
   }
@@ -653,7 +732,7 @@ export function InlineFieldControl({
 
   // Structured / multi-part formats can't collapse to a single inline token —
   // render the block control, but inline-block and compact so it stays in flow.
-  const isStructured = ['party', 'contact', 'person', 'address', 'location', 'pair'].includes(fmt)
+  const isStructured = ['party', 'contact', 'person', 'address', 'location', 'pair', 'fee_schedule'].includes(fmt)
     || kind === 'responsibility' || kind === 'week_grid';
   if (isStructured) {
     return (

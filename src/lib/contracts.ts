@@ -71,6 +71,10 @@ export interface FieldStructured {
   // pair
   manage?: PartyChoice;
   cost?: { same_as_manage?: boolean; party?: string; parties?: PartyChoice['parties']; note?: string };
+  // fee_schedule (§3.1 lease-fee builder)
+  initial_due?: string;
+  options?: { amount?: string; notes?: string }[];
+  selected?: number | null;
 }
 
 export interface ContractChangeRequest {
