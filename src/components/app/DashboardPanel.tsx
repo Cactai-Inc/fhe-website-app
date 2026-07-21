@@ -133,15 +133,10 @@ export function DashboardPanel() {
       if (!active) return;
       const now = Date.now();
 
-      // Welcome greetings ("[member] said hi") auto-dismiss the moment they're seen —
-      // they're a one-time hello, not a standing to-do. Mark them read on view so they
-      // don't persist here or in the bell.
-      for (const n of notifications) {
-        if (n.kind === 'member_hi' && !n.read_at) markNotificationRead(n.id).catch(() => {});
-      }
-
       // ── needs attention: unread notifications (linked, dismissable) ──
-      // member_hi is excluded — it's auto-dismissed above, so it never lingers.
+      // Welcome greetings ("[member] said hi") are a one-time hello, not a standing
+      // to-do, so they don't appear here — they surface (and dismiss on view) in the
+      // notifications bell instead.
       const att: Tile[] = notifications
         .filter((n) => !n.read_at && n.kind !== 'member_hi')
         .slice(0, 3)

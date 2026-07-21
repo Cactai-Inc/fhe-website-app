@@ -79,7 +79,19 @@ export function useNotificationsBell(): NotificationsBellState {
     setOpen((wasOpen) => {
       if (!wasOpen) {
         myNotifications()
-          .then(setItems)
+          .then((list) => {
+            setItems(list);
+            // Welcome greetings dismiss the moment they're VIEWED: opening the panel
+            // shows them, so mark any unread member_hi read now. They stay listed here
+            // (with "Say hi back") — just no longer counted as unread.
+            const greetings = list.filter((n) => n.kind === 'member_hi' && !n.read_at);
+            if (greetings.length > 0) {
+              greetings.forEach((n) => markNotificationRead(n.id).catch(() => {}));
+              setItems((prev) => prev?.map((x) =>
+                x.kind === 'member_hi' && !x.read_at ? { ...x, read_at: new Date().toISOString() } : x) ?? prev);
+              setCount((c) => Math.max(0, c - greetings.length));
+            }
+          })
           .catch(() => setItems([]));
       }
       return !wasOpen;
