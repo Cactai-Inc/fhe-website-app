@@ -59,7 +59,15 @@ const POST_SEED_TEMPLATES = {
   RIDER_LESSON:           { title: 'Riding Lesson Order Form',                          parties: ['CLIENT'] },
 };
 
-const files = readdirSync(BODIES).filter((f) => f.endsWith('.md')).sort();
+// Retired templates: their .md is a pointer/note, not contract text. The lease is
+// now built from DB clause defs (HORSE_LEASE_V2), so never re-load HORSE_LEASE's
+// body from its (retired) .md file. See supabase/contract_templates/HORSE_LEASE.md.
+const RETIRED = new Set(['HORSE_LEASE']);
+
+const files = readdirSync(BODIES)
+  .filter((f) => f.endsWith('.md'))
+  .filter((f) => !RETIRED.has(basename(f, '.md')))
+  .sort();
 
 let sql = `/*
   # FHE CRM — Load Contract Bodies (migration 17)
