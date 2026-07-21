@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown } from 'lucide-react';
-import { myNotifications, type AppNotification } from '../../lib/api';
+import { X } from 'lucide-react';
+import { myNotifications, markNotificationRead, type AppNotification } from '../../lib/api';
 import { myLessonSessions, type MemberLessonSession } from '../../lib/ops/api-member';
 import { fetchMyPendingChanges } from '../../lib/ops/api-calendar';
 import { fetchHorseOnboardingState, type HorseOnboardingState } from '../../lib/horses';
@@ -26,19 +26,28 @@ interface Tile {
   cta: string;
   to: string;
   gold?: boolean;
+  /** the underlying notification id — set for notification-backed tiles so they can
+   *  be dismissed (marked read → gone). Non-notification tiles omit it. */
+  notificationId?: string;
 }
 
-function TileCard({ tile }: { tile: Tile }) {
+function TileCard({ tile, onDismiss }: { tile: Tile; onDismiss?: () => void }) {
   const navigate = useNavigate();
   return (
     <div
-      className={`rounded-xl p-4 border ${
+      className={`relative rounded-xl p-4 border ${
         tile.gold
           ? 'border-gold-400 shadow-[0_0_0_1px_theme(colors.gold.400)] bg-gradient-to-br from-gold-50 to-white'
           : 'border-green-800/10 bg-white'
       }`}
     >
-      <p className="text-[9px] tracking-widest uppercase text-gold-800 font-semibold mb-1.5">{tile.kind}</p>
+      {onDismiss && (
+        <button type="button" onClick={onDismiss} aria-label="Dismiss"
+          className="absolute top-2.5 right-2.5 p-1 text-muted hover:text-green-800 focus-ring rounded-md">
+          <X size={15} />
+        </button>
+      )}
+      <p className="text-[9px] tracking-widest uppercase text-gold-800 font-semibold mb-1.5 pr-5">{tile.kind}</p>
       <p className="font-serif text-green-800 text-xl leading-tight font-semibold">{tile.title}</p>
       {tile.sub && <p className="text-sm text-muted mt-1">{tile.sub}</p>}
       <button
@@ -99,9 +108,6 @@ export function DashboardPanel() {
   const [suggestBooking, setSuggestBooking] = useState(false);
   const [pendingChanges, setPendingChanges] = useState(0);
   const [horse, setHorse] = useState<HorseOnboardingState | null>(null);
-  // Collapse the panel body to a thin strip (persisted). Show/Hide lives top-right.
-  const [collapsed, setCollapsed] = useState(() => localStorage.getItem('dash.collapsed') === '1');
-  useEffect(() => { localStorage.setItem('dash.collapsed', collapsed ? '1' : '0'); }, [collapsed]);
 
   useEffect(() => {
     let active = true;
@@ -127,12 +133,20 @@ export function DashboardPanel() {
       if (!active) return;
       const now = Date.now();
 
-      // ── needs attention: unread notifications (linked) ──
+      // Welcome greetings ("[member] said hi") auto-dismiss the moment they're seen —
+      // they're a one-time hello, not a standing to-do. Mark them read on view so they
+      // don't persist here or in the bell.
+      for (const n of notifications) {
+        if (n.kind === 'member_hi' && !n.read_at) markNotificationRead(n.id).catch(() => {});
+      }
+
+      // ── needs attention: unread notifications (linked, dismissable) ──
+      // member_hi is excluded — it's auto-dismissed above, so it never lingers.
       const att: Tile[] = notifications
-        .filter((n) => !n.read_at)
+        .filter((n) => !n.read_at && n.kind !== 'member_hi')
         .slice(0, 3)
         .map((n) => ({
-          id: `n-${n.id}`, kind: n.kind.replace(/_/g, ' '), title: n.title,
+          id: `n-${n.id}`, notificationId: n.id, kind: n.kind.replace(/_/g, ' '), title: n.title,
           sub: n.body ?? undefined, cta: 'Open', to: n.link || '/app', gold: true,
         }));
 
@@ -186,36 +200,17 @@ export function DashboardPanel() {
       }
     : null;
 
+  // Manually dismiss a notification tile: mark it read server-side and drop it here.
+  function dismiss(notificationId: string) {
+    setAttention((prev) => prev.filter((t) => t.notificationId !== notificationId));
+    markNotificationRead(notificationId).catch(() => {});
+  }
+
   if (attention.length === 0 && comingUp.length === 0 && checklist.length === 0 && !suggestBooking && pendingChanges === 0 && !horseTile) return null;
 
-  // count of everything demanding attention — shown in the collapsed strip.
-  const attentionCount = attention.length + checklist.length + (suggestBooking ? 1 : 0)
-    + (pendingChanges > 0 ? 1 : 0) + (horseTile ? 1 : 0);
-
   return (
-    <div className={`rounded-2xl border border-green-800/10 shadow-[0_14px_34px_-14px_rgba(13,33,24,0.22)] bg-gradient-to-br from-white to-cream-100 mb-6 sm:mb-7 ${collapsed ? 'px-5 sm:px-6 py-3' : 'p-5 sm:p-6'}`}>
-      {/* header: title + Show/Hide toggle in the top-right corner */}
-      <div className={`flex items-center justify-between ${collapsed ? '' : 'mb-4'}`}>
-        {collapsed ? (
-          <p className="text-[12px] text-secondary font-medium">
-            {attentionCount > 0
-              ? <><span className="text-gold-800 font-semibold">{attentionCount}</span> item{attentionCount > 1 ? 's' : ''} need{attentionCount > 1 ? '' : 's'} your attention</>
-              : comingUp.length > 0
-                ? <><span className="text-green-800 font-semibold">{comingUp.length}</span> coming up</>
-                : 'Dashboard'}
-          </p>
-        ) : (
-          <p className="text-[10px] tracking-widest uppercase text-muted font-semibold">Dashboard</p>
-        )}
-        <button type="button" onClick={() => setCollapsed((v) => !v)}
-          className="inline-flex items-center gap-1 text-[11px] font-semibold text-green-800 hover:text-green-700 focus-ring rounded-md px-1.5 py-1"
-          aria-expanded={!collapsed}>
-          {collapsed ? 'Show' : 'Hide'}
-          <ChevronDown size={13} className={`transition-transform ${collapsed ? '-rotate-90' : ''}`} />
-        </button>
-      </div>
-
-      {!collapsed && (attention.length > 0 || checklist.length > 0 || suggestBooking || pendingChanges > 0 || horseTile) && (
+    <div className="rounded-2xl border border-green-800/10 shadow-[0_14px_34px_-14px_rgba(13,33,24,0.22)] bg-gradient-to-br from-white to-cream-100 mb-6 sm:mb-7 p-5 sm:p-6">
+      {(attention.length > 0 || checklist.length > 0 || suggestBooking || pendingChanges > 0 || horseTile) && (
         <>
           <p className="text-[10px] tracking-widest uppercase text-gold-800 font-semibold mb-3">Needs your attention</p>
           <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
@@ -237,11 +232,11 @@ export function DashboardPanel() {
                 cta: 'Book a lesson', to: '/app/calendar',
               }} />
             )}
-            {attention.map((t) => <TileCard key={t.id} tile={t} />)}
+            {attention.map((t) => <TileCard key={t.id} tile={t} onDismiss={t.notificationId ? () => dismiss(t.notificationId!) : undefined} />)}
           </div>
         </>
       )}
-      {!collapsed && comingUp.length > 0 && (
+      {comingUp.length > 0 && (
         <>
           <p className={`text-[10px] tracking-widest uppercase text-muted font-semibold mb-3 ${attention.length > 0 ? 'mt-5' : ''}`}>Coming up</p>
           <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
