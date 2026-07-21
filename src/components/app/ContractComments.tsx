@@ -155,42 +155,28 @@ function Thread({
 }
 
 export function ContractComments({
-  documentId, canComment, pendingAnchor, onAnchorConsumed, onChanged, visible = true, onCount,
+  documentId, canComment, onChanged, visible = true, onCount, refreshKey,
 }: {
   documentId: string;
   canComment: boolean;
-  /** When set (e.g. from a text selection or a field's "Comment" button), the
-   *  composer opens pre-anchored to it. */
-  pendingAnchor?: PendingAnchor | null;
-  onAnchorConsumed?: () => void;
   onChanged?: () => void;
   /** Controlled visibility — the subheader's View/Hide toggle. */
   visible?: boolean;
   /** Reports the number of root comment threads (for the subheader badge). */
   onCount?: (n: number) => void;
+  /** Bump to force a reload after a comment is posted from the modal. */
+  refreshKey?: number;
 }) {
   const [comments, setComments] = useState<ContractComment[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [draft, setDraft] = useState('');
-  const [composerOpen, setComposerOpen] = useState(false);
-  const [anchor, setAnchor] = useState<PendingAnchor>({ kind: 'document' });
   const [myContactId, setMyContactId] = useState<string | null>(null);
 
   const load = useCallback(() => {
     contractCommentsList(documentId).then(setComments).catch(() => setComments([]));
   }, [documentId]);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); }, [load, refreshKey]);
   useEffect(() => { myCommentIdentity(documentId).then(setMyContactId).catch(() => setMyContactId(null)); }, [documentId]);
-
-  // An external anchor (span selection / field comment) opens the composer.
-  useEffect(() => {
-    if (pendingAnchor) {
-      setAnchor(pendingAnchor);
-      setComposerOpen(true);
-      onAnchorConsumed?.();
-    }
-  }, [pendingAnchor, onAnchorConsumed]);
 
   // report the root-thread count to the parent (subheader badge).
   useEffect(() => {
@@ -216,14 +202,6 @@ export function ContractComments({
     finally { setBusy(false); }
   }
 
-  const post = () => run(async () => {
-    await postContractComment(documentId, {
-      body: draft.trim(), anchorKind: anchor.kind, anchorRef: anchor.ref ?? null,
-      quote: anchor.quote ?? null, quotePrefix: anchor.quotePrefix ?? null,
-    });
-    setDraft(''); setComposerOpen(false); setAnchor({ kind: 'document' });
-  });
-
   const reply = (parentId: string, body: string) =>
     run(() => postContractComment(documentId, { body, parentId }).then(() => {}));
   const resolve = (id: string, resolved: boolean) =>
@@ -233,9 +211,9 @@ export function ContractComments({
 
   const openCount = roots.filter((r) => !r.resolved_at).length;
 
-  // Controlled by the subheader's View/Hide toggle. Still render while the composer
-  // is open (a just-triggered comment) so the draft isn't lost when hidden.
-  if (!visible && !composerOpen) return null;
+  // Controlled by the subheader's View/Hide toggle (comments are authored from the
+  // Add-a-Comment modal, not here — this panel only lists and manages threads).
+  if (!visible) return null;
 
   return (
     <section className="bg-white border border-green-800/10 rounded-xl p-5">
@@ -243,44 +221,15 @@ export function ContractComments({
         <MessageSquarePlus size={16} className="text-gold-ink" aria-hidden="true" />
         <h2 className="font-serif text-green-800">Comments</h2>
         <span className="text-xs text-muted">{openCount > 0 ? `${openCount} open` : 'none open'}</span>
-        {canComment && !composerOpen && (
-          <button type="button" className="ml-auto btn-outline-gold text-xs"
-            onClick={() => { setAnchor({ kind: 'document' }); setComposerOpen(true); }}>
-            + Comment
-          </button>
-        )}
       </div>
 
       {err && <p role="alert" className="form-error mb-2">{err}</p>}
-
-      {composerOpen && (
-        <div className="border border-gold-400/40 rounded-lg p-3 mb-3 bg-gold-50/40">
-          <p className="text-[11px] text-muted mb-1.5">
-            Commenting on <span className="text-green-900">{
-              anchor.label ?? (anchor.kind === 'field' ? (anchor.ref ?? 'a field')
-                : anchor.kind === 'span' ? (anchor.quote ? `“${anchor.quote.slice(0, 48)}…”` : 'a passage')
-                : 'the whole document')
-            }</span>
-          </p>
-          <textarea rows={2} className="form-input resize-y text-sm" placeholder="Write a comment or a question…"
-            value={draft} onChange={(e) => setDraft(e.target.value)} autoFocus />
-          <div className="flex gap-2 mt-2">
-            <button type="button" className="btn-primary text-xs" disabled={busy || !draft.trim()} onClick={() => void post()}>
-              Comment
-            </button>
-            <button type="button" className="btn-secondary text-xs"
-              onClick={() => { setComposerOpen(false); setDraft(''); setAnchor({ kind: 'document' }); }}>
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
 
       {comments === null ? (
         <p className="text-sm text-muted">Loading…</p>
       ) : roots.length === 0 ? (
         <p className="text-sm text-muted">
-          No comments yet. {canComment ? 'Select text in the document, or use “+ Comment”, to start a thread.' : ''}
+          No comments yet.{canComment ? ' Use “Add a Comment” in the header above to start a thread.' : ''}
         </p>
       ) : (
         <div className="flex flex-col gap-2.5 max-h-[32rem] overflow-y-auto">

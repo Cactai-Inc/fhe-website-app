@@ -9,12 +9,13 @@ import {
   contractDocumentDetail, setContractField,
   resolveChangeRequest, advanceWorkflow, lockAndSign, confirmHorseSection,
   reopenHorseSection, inviteCounterparty, setRecipientEditing,
-  setPartyControls, contractMessagesList, contractMessagePost, contractSigningSet,
+  setPartyControls, contractSigningSet,
   contractRedlineState, resolveFieldEdit, withdrawFieldEdit, proposeFieldEdit,
   resolveClause, withdrawClause, attachHorseToDocument,
   sendContractToParty, cancelContract, archiveContract, hardDeleteContract,
   setFieldResponsibility, setFieldIncluded, setFieldNa, setFieldControlOverride, setFieldStructured,
-  type ContractDetail, type ContractField, type ContractMessage, type PartyControls,
+  postContractComment,
+  type ContractDetail, type ContractField, type PartyControls,
   type SigningSetDoc, type RedlineState,
 } from '../../lib/contracts';
 import { listStableHorses, type StableHorse } from '../../lib/stable';
@@ -22,7 +23,7 @@ import { ContractCascade, ContractBody } from '../../components/app/ContractCasc
 import { AddElementButton } from '../../components/app/AddElementModal';
 import { PartyControlsCard, type PartyControlValues } from '../../components/app/PartyControlsCard';
 import { TrackChangesPanel } from '../../components/app/TrackChangesPanel';
-import { ContractComments, type PendingAnchor } from '../../components/app/ContractComments';
+import { ContractComments } from '../../components/app/ContractComments';
 import { ClauseDocument } from '../../components/app/ClauseDocument';
 import { contractTemplateStructure, type TemplateStructure } from '../../lib/contracts';
 
@@ -218,25 +219,26 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   // Document body is visible by default (DocuSign principle: you sign what you
   // see). Parties can collapse it while filling fields, but it no longer hides.
   const [showBody, setShowBody] = useState(true);
-  const [messages, setMessages] = useState<ContractMessage[]>([]);
-  const [msgText, setMsgText] = useState('');
-  // Comments: a span selection or a field's "Comment" button sets a pending
-  // anchor that opens the comments composer. changeKey bumps to reload the
-  // track-changes + comments panels after any edit.
-  const [pendingAnchor, setPendingAnchor] = useState<PendingAnchor | null>(null);
+  // changeKey bumps to reload the track-changes + comments panels after any edit.
   const [changeKey, setChangeKey] = useState(0);
   // Clause structure for clause-model (Section›Clause›Field) documents.
   const [structure, setStructure] = useState<TemplateStructure | null>(null);
-  // Comments UX: visibility toggle, comment count, and the "pick where" modal.
+  // Comments UX: visibility toggle, comment count, and the two-step Add-a-Comment
+  // modal (pick a section → author the comment inline in the modal).
   const [commentsOpen, setCommentsOpen] = useState(false);
-  const [pickCommentOpen, setPickCommentOpen] = useState(false);
   const [commentCount, setCommentCount] = useState(0);
+  const [commentModal, setCommentModal] = useState<
+    | { step: 'pick' }
+    | { step: 'write'; anchorRef: string; heading: string }
+    | null
+  >(null);
+  const [commentDraft, setCommentDraft] = useState('');
+  const [commentPosting, setCommentPosting] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
     try {
       setDetail(await contractDocumentDetail(id));
-      contractMessagesList(id).then(setMessages).catch(() => setMessages([]));
       contractSigningSet(id).then(setSigningSet).catch(() => setSigningSet([]));
       contractRedlineState(id).then(setRedline).catch(() => setRedline(null));
       setError(null);
@@ -355,9 +357,11 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
     void act(() => proposeFieldEdit(id!, f.field_key, proposed.trim()), 'Suggested change sent for review.');
   }, [id]);
 
-  // Comment anchored to a specific field (opens the comments composer).
+  // Comment anchored to a specific field — opens the Add-a-Comment modal straight
+  // at the write step, pre-anchored to that field.
   const commentOnField = useCallback((f: ContractField) => {
-    setPendingAnchor({ kind: 'field', ref: f.field_key, label: f.label ?? f.field_key });
+    setCommentDraft('');
+    setCommentModal({ step: 'write', anchorRef: f.field_key, heading: f.label ?? f.field_key });
   }, []);
 
   if (error && !detail) return <p role="alert" className="form-error">{error}</p>;
@@ -441,7 +445,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         <div className="sticky top-0 z-20 -mx-1 px-1 py-1.5 mb-3 bg-cream-100/95 backdrop-blur border-b border-green-800/10 flex flex-wrap items-center gap-2">
           {!isCancelled && state !== 'void' && (
             <button type="button" className="btn-outline-gold text-xs inline-flex items-center gap-1"
-              onClick={() => setPickCommentOpen(true)}>
+              onClick={() => { setCommentModal({ step: 'pick' }); setCommentDraft(''); }}>
               <MessageSquarePlus size={13} /> Add a Comment
             </button>
           )}
@@ -464,32 +468,70 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           </button>
         </div>
       )}
-      {/* "pick where to comment" prompt: choose a section (the pinned target). */}
-      {pickCommentOpen && structure && (
+      {/* Add-a-Comment modal — step 1: pick the section to pin to; step 2: author
+          the comment inline and post. Everything happens in the modal. */}
+      {commentModal && structure && id && (
         <div className="fixed inset-0 z-40 bg-black/30 flex items-center justify-center p-4"
-          onClick={() => setPickCommentOpen(false)}>
+          onClick={() => { setCommentModal(null); setCommentDraft(''); }}>
           <div className="bg-white rounded-xl border border-green-800/15 p-5 max-w-md w-full shadow-lg"
             onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-serif text-green-900 mb-1">Add a comment</h3>
-            <p className="text-sm text-muted mb-3">
-              Select the section to pin your comment to — or close this and select
-              any text in the document to pin the comment to that passage.
-            </p>
-            <div className="max-h-[50vh] overflow-y-auto flex flex-col gap-1">
-              {structure.sections.map((s) => (
-                <button key={s.section_key} type="button"
-                  className="text-left text-sm px-3 py-2 rounded-lg hover:bg-cream-100 focus-ring"
-                  onClick={() => {
-                    setPendingAnchor({ kind: 'field', ref: s.section_key, label: s.heading });
-                    setPickCommentOpen(false); setCommentsOpen(true);
-                  }}>
-                  {s.heading}
-                </button>
-              ))}
-            </div>
-            <div className="mt-3 text-right">
-              <button type="button" className="btn-secondary text-xs" onClick={() => setPickCommentOpen(false)}>Cancel</button>
-            </div>
+            {commentModal.step === 'pick' ? (
+              <>
+                <h3 className="font-serif text-green-900 mb-1">Add a comment</h3>
+                <p className="text-sm text-muted mb-3">
+                  Choose the section you want to comment on. To comment on a specific
+                  item or field instead, close this window and click the comment
+                  affordance on that item.
+                </p>
+                <div className="max-h-[50vh] overflow-y-auto flex flex-col gap-1">
+                  {structure.sections.map((s) => (
+                    <button key={s.section_key} type="button"
+                      className="text-left text-sm px-3 py-2 rounded-lg hover:bg-cream-100 focus-ring"
+                      onClick={() => setCommentModal({ step: 'write', anchorRef: s.section_key, heading: s.heading })}>
+                      {s.heading}
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-3 text-right">
+                  <button type="button" className="btn-secondary text-xs"
+                    onClick={() => { setCommentModal(null); setCommentDraft(''); }}>Cancel</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3 className="font-serif text-green-900 mb-1">Comment</h3>
+                <p className="text-[11px] text-muted mb-2">
+                  On <span className="text-green-900">{commentModal.heading}</span>
+                  <button type="button" className="underline ml-2"
+                    onClick={() => setCommentModal({ step: 'pick' })}>change</button>
+                </p>
+                <textarea rows={4} className="form-input resize-y text-sm w-full" autoFocus
+                  placeholder="Write a comment or a question…"
+                  value={commentDraft} onChange={(e) => setCommentDraft(e.target.value)} />
+                <div className="mt-3 flex justify-end gap-2">
+                  <button type="button" className="btn-secondary text-xs"
+                    onClick={() => { setCommentModal(null); setCommentDraft(''); }}>Cancel</button>
+                  <button type="button" className="btn-primary text-xs"
+                    disabled={commentPosting || !commentDraft.trim()}
+                    onClick={async () => {
+                      if (commentModal.step !== 'write') return;
+                      setCommentPosting(true);
+                      try {
+                        await postContractComment(id, {
+                          body: commentDraft.trim(), anchorKind: 'field',
+                          anchorRef: commentModal.anchorRef,
+                        });
+                        setCommentModal(null); setCommentDraft(''); setCommentsOpen(true);
+                        setChangeKey((k) => k + 1);
+                      } catch (e) {
+                        setNote(e instanceof Error ? e.message : 'Could not post the comment.');
+                      } finally { setCommentPosting(false); }
+                    }}>
+                    {commentPosting ? 'Posting…' : 'Post comment'}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -543,8 +585,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
             <CheckCircle2 size={16} /> Executed{doc.execution_hash ? ` · ${doc.execution_hash.slice(0, 12)}…` : ''}
           </p>
           <div className="prose-sm max-h-[70vh] overflow-y-auto whitespace-pre-line text-[13px] leading-relaxed text-green-950 bg-cream-100/50 border border-green-800/10 rounded p-5">
-            <ContractBody body={doc.merged_body}
-              onSelectSpan={(sp) => setPendingAnchor({ kind: 'span', quote: sp.quote, quotePrefix: sp.quotePrefix })} />
+            <ContractBody body={doc.merged_body} />
           </div>
         </div>
       )}
@@ -770,8 +811,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         <section className="bg-white border border-green-800/10 rounded-lg p-5 mb-4">
           <p className="text-sm text-muted mb-3">Please review the document below and sign, or respond to the other party.</p>
           <div className="max-h-[70vh] overflow-y-auto whitespace-pre-line text-[13.5px] leading-relaxed text-green-950 bg-cream-100/50 border border-green-800/10 rounded p-6">
-            <ContractBody body={doc.merged_body}
-              onSelectSpan={(sp) => setPendingAnchor({ kind: 'span', quote: sp.quote, quotePrefix: sp.quotePrefix })} />
+            <ContractBody body={doc.merged_body} />
           </div>
         </section>
       )}
@@ -790,8 +830,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           </button>
           {showBody && (
             <div className="mt-3 max-h-[60vh] overflow-y-auto whitespace-pre-line text-[13px] leading-relaxed text-green-950 bg-cream-100/50 border border-green-800/10 rounded p-5">
-              <ContractBody body={doc.merged_body}
-              onSelectSpan={(sp) => setPendingAnchor({ kind: 'span', quote: sp.quote, quotePrefix: sp.quotePrefix })} />
+              <ContractBody body={doc.merged_body} />
             </div>
           )}
         </section>
@@ -908,11 +947,10 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       {id && (
         <div className="mt-5">
           <ContractComments documentId={id} canComment={!isCancelled && state !== 'void'}
-            pendingAnchor={pendingAnchor}
-            onAnchorConsumed={() => setPendingAnchor(null)}
             onChanged={() => setChangeKey((k) => k + 1)}
             visible={commentsOpen}
-            onCount={setCommentCount} />
+            onCount={setCommentCount}
+            refreshKey={changeKey} />
         </div>
       )}
 
@@ -924,41 +962,6 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         </div>
       )}
 
-      {/* Contract messages — parties talk here; the company sees every message
-          (deal-conversation oversight), whichever side it serves. */}
-      <section className="bg-white border border-green-800/10 rounded-xl p-5 mt-5">
-        <h2 className="font-serif text-green-800 mb-1">Messages</h2>
-        <p className="text-[12px] text-muted mb-3">
-          {isOwnerSide
-            ? 'Everything said on this contract, both sides.'
-            : state === 'locked' && !iSigned
-              ? 'Not ready to sign? Say why here — the other party and the company are notified.'
-              : 'Questions or negotiation notes — the other party and the company see these.'}
-        </p>
-        <div className="flex flex-col gap-2 mb-3 max-h-72 overflow-y-auto">
-          {messages.length === 0 && <p className="text-sm text-muted">No messages yet.</p>}
-          {messages.map((m) => (
-            <div key={m.id} className="border border-green-800/10 rounded-lg px-3.5 py-2.5">
-              <p className="text-[11px] text-muted mb-0.5">
-                {m.sender_label} · {new Date(m.created_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
-              </p>
-              <p className="text-sm text-green-900 whitespace-pre-line">{m.body}</p>
-            </div>
-          ))}
-        </div>
-        <div className="flex gap-2">
-          <textarea rows={2} value={msgText} onChange={(e) => setMsgText(e.target.value)}
-            placeholder="Write a message about this contract…"
-            className="flex-1 px-3.5 py-2.5 rounded-lg border border-green-800/15 text-sm focus-ring resize-none" />
-          <button type="button" className="btn-primary text-xs self-end" disabled={!msgText.trim()}
-            onClick={() => void act(async () => {
-              await contractMessagePost(id!, msgText.trim());
-              setMsgText('');
-            })}>
-            Send
-          </button>
-        </div>
-      </section>
     </div>
   );
 }
