@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { LeaseExtrasSection } from './LeaseExtrasSection';
 import {
   FileText, CheckCircle2, Lock, Send, PenLine, ShieldCheck, RotateCcw, Mail,
 } from 'lucide-react';
@@ -306,12 +305,6 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
     }
     return Array.from(by.entries());
   }, [detail?.fields]);
-
-  // a lease document carries the lease-type deal field
-  const isLease = useMemo(
-    () => (detail?.fields ?? []).some((f) => f.field_key === 'TXN.LEASE_TYPE'),
-    [detail?.fields],
-  );
 
   // Horse gate: this contract has a Horse section that's MINE to fill (editable)
   // but no horse is chosen yet (its identifying fields are empty). Until the owner
@@ -678,8 +671,6 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         </div>
       )}
 
-      {/* Lease-only: partial-lease participants + payment options */}
-      {isLease && id && <LeaseExtrasSection documentId={id} editable={state !== 'executed'} />}
 
       {/* (change-request composer removed 2026-07-20, audit M-3: it was
           unreachable — crFieldKey was never set. A field-level "suggest a change"

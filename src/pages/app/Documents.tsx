@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Check } from 'lucide-react';
+import { FileText, Check, Download } from 'lucide-react';
 import { fetchMyDocuments } from '../../lib/api';
 import {
   listMySignableDocuments,
@@ -67,9 +67,23 @@ function SelfSignRow({
           <p className="text-xs text-muted mt-1">You sign as {party_role.replace(/_/g, ' ').toLowerCase()}.</p>
 
           {signed ? (
-            <p className="text-xs text-green-700 mt-2 inline-flex items-center gap-1">
-              <Check size={12} aria-hidden="true" /> You've signed this document.
-            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <p className="text-xs text-green-700 inline-flex items-center gap-1">
+                <Check size={12} aria-hidden="true" /> You've signed this document.
+              </p>
+              {/* Fully-executed docs can be downloaded as a signed PDF, rendered
+                  from the document's merged_body (same renderer used elsewhere). */}
+              {doc.status === 'EXECUTED' && doc.merged_body && (
+                <button type="button"
+                  className="inline-flex items-center gap-1.5 text-xs text-green-800 hover:text-green-700 px-2.5 py-1 rounded-lg border border-green-800/15 hover:border-green-800/30 focus-ring"
+                  onClick={async () => {
+                    const { downloadDocumentPdf } = await import('../../lib/documentPdf');
+                    await downloadDocumentPdf(doc.title ?? 'Document', doc.merged_body ?? '');
+                  }}>
+                  <Download size={13} aria-hidden="true" /> Download signed PDF
+                </button>
+              )}
+            </div>
           ) : isContractDoc ? (
             <Link to={`/app/contracts/${doc.id}`}
               className="btn-outline-gold inline-flex items-center mt-3 text-sm">
