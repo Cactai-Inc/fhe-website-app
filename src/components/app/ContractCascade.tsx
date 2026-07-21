@@ -262,6 +262,10 @@ export function ContractBody({
 const OTHER_VALUE = '__other__';
 function SelectWithOther({ f, onSave, disabled }: { f: ContractField; onSave: SaveFn; disabled: boolean }) {
   const opts = f.options ?? [];
+  // Use the field's own "Other" option when it defines one; only synthesize a
+  // second when it doesn't (prevents the "Other" + "Other (specify)…" dupe).
+  const ownOther = opts.find((o) => o.value === 'OTHER' || /^other\b/i.test(o.label));
+  const otherVal = ownOther?.value ?? OTHER_VALUE;
   const stored = f.value ?? '';
   const storedIsCustom = stored !== '' && !opts.some((o) => o.value === stored);
   const [otherMode, setOtherMode] = useState(storedIsCustom);
@@ -273,14 +277,14 @@ function SelectWithOther({ f, onSave, disabled }: { f: ContractField; onSave: Sa
   return (
     <div className="flex flex-col gap-1.5">
       <select className={inputCls} disabled={disabled}
-        value={otherMode ? OTHER_VALUE : stored}
+        value={otherMode || stored === otherVal ? otherVal : stored}
         onChange={(e) => {
-          if (e.target.value === OTHER_VALUE) { setOtherMode(true); }
+          if (e.target.value === otherVal) { setOtherMode(true); setCustom(''); void onSave(f.field_key, ''); }
           else { setOtherMode(false); setCustom(''); void onSave(f.field_key, e.target.value); }
         }}>
         <option value="">Select…</option>
         {opts.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-        <option value={OTHER_VALUE}>Other (specify)…</option>
+        {!ownOther && <option value={OTHER_VALUE}>Other (specify)…</option>}
       </select>
       {otherMode && (
         <input className={inputCls} disabled={disabled} autoFocus placeholder="Enter a custom value"
@@ -512,34 +516,49 @@ function InlineTextarea({
   );
 }
 
+/** True when an option is the field's own "Other" escape (value OTHER, or a label
+ *  beginning with "Other"). When a field already defines one, we must NOT append
+ *  a second synthetic one — that was the "Other" + "Other (specify)…" duplication. */
+const isOtherOpt = (o: { value: string; label: string }) =>
+  o.value === 'OTHER' || /^other\b/i.test(o.label);
+
 /** Inline select: shows the chosen option's label as text; the label is the
- *  placeholder while empty. "Other (specify)…" reveals an inline text input. */
+ *  placeholder while empty. An "Other" choice (the field's own, or a synthetic
+ *  one when the field defines none) reveals an inline text input for free text. */
 function InlineSelect({ f, disabled, onSave }: { f: ContractField; disabled: boolean; onSave: SaveFn }) {
   const opts = f.options ?? [];
+  const ownOther = opts.find(isOtherOpt);            // the field's own Other option, if any
+  const otherVal = ownOther?.value ?? OTHER_VALUE;   // the value that means "specify free text"
   const stored = f.value ?? '';
+  // a stored value that matches no listed option is a saved custom entry
   const storedIsCustom = stored !== '' && !opts.some((o) => o.value === stored);
   const [otherMode, setOtherMode] = useState(storedIsCustom);
   useEffect(() => {
     if (stored !== '' && !opts.some((o) => o.value === stored)) setOtherMode(true);
   }, [stored]); // eslint-disable-line react-hooks/exhaustive-deps
   const placeholder = f.label ?? 'select…';
+  const selectValue = otherMode || stored === otherVal ? otherVal : stored;
+  const shownLabel = otherMode
+    ? (ownOther?.label ?? 'Other…')
+    : (opts.find((o) => o.value === stored)?.label ?? placeholder);
   return (
     <span className="inline-flex items-baseline gap-1 align-baseline">
       <span className="inline-grid">
         <span className="col-start-1 row-start-1 invisible whitespace-pre px-5 text-[13.5px]" aria-hidden="true">
-          {otherMode ? 'Other…' : (opts.find((o) => o.value === stored)?.label ?? placeholder)}
+          {shownLabel}
         </span>
         <select
           className={`${inlineBase} col-start-1 row-start-1 w-full cursor-pointer pr-4 ${stored || otherMode ? '' : 'text-gold-700/80 italic'}`}
           disabled={disabled}
-          value={otherMode ? OTHER_VALUE : stored}
+          value={selectValue}
           onChange={(e) => {
-            if (e.target.value === OTHER_VALUE) setOtherMode(true);
+            if (e.target.value === otherVal) { setOtherMode(true); void onSave(f.field_key, ''); }
             else { setOtherMode(false); void onSave(f.field_key, e.target.value); }
           }}>
           <option value="">{placeholder}</option>
           {opts.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-          <option value={OTHER_VALUE}>Other (specify)…</option>
+          {/* only add a synthetic Other when the field doesn't define its own */}
+          {!ownOther && <option value={OTHER_VALUE}>Other (specify)…</option>}
         </select>
       </span>
       {otherMode && (
