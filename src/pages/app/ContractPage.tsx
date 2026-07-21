@@ -473,7 +473,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       {commentModal && structure && id && (
         <div className="fixed inset-0 z-40 bg-black/30 flex items-center justify-center p-4"
           onClick={() => { setCommentModal(null); setCommentDraft(''); }}>
-          <div className="bg-white rounded-xl border border-green-800/15 p-5 max-w-md w-full shadow-lg"
+          <div className="bg-white rounded-xl border border-green-800/15 p-6 max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-lg"
             onClick={(e) => e.stopPropagation()}>
             {commentModal.step === 'pick' ? (
               <>

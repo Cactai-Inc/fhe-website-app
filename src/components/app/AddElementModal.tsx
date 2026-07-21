@@ -41,7 +41,7 @@ export function AddElementButton({
         <AddElementModal sections={sections} documentId={documentId}
           canAddStructure={canAddStructure} canAddClause={canAddClause}
           onClose={() => setOpen(false)}
-          onAdded={() => { setOpen(false); onAdded(); }} />
+          onAdded={onAdded} />
       )}
     </>
   );
@@ -65,6 +65,12 @@ function AddElementModal({
   const [formats, setFormats] = useState<ContractFormat[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  // A running log of what's been added this session, so the author can build out a
+  // section without reopening the modal for each item.
+  const [added, setAdded] = useState<string[]>([]);
+  // Sections created this session (targetable immediately for fields).
+  const [extraSections, setExtraSections] = useState<string[]>([]);
+  const allSections = [...sections, ...extraSections];
 
   // section mode
   const [newSectionName, setNewSectionName] = useState('');
@@ -86,18 +92,29 @@ function AddElementModal({
   const selectedFormat = formats.find((f) => f.format_type === formatType);
   const isChoiceFormat = formatType === 'select' || formatType === 'buttons';
 
+  // Add one item, then STAY OPEN so the author can keep building. After creating a
+  // section we switch straight to field mode targeting it, so they can fill it out.
   async function submit() {
     setErr(null); setBusy(true);
     try {
       if (mode === 'clause') {
         if (!clauseText.trim()) throw new Error('Write the clause to propose.');
         await proposeClause(documentId, clauseText.trim());
+        setAdded((a) => [...a, `Clause proposed`]);
+        setClauseText('');
       } else if (mode === 'section') {
-        if (!newSectionName.trim()) throw new Error('Name the new section.');
+        const name = newSectionName.trim();
+        if (!name) throw new Error('Name the new section.');
         await addContractElement(documentId, {
-          kind: 'section', section: newSectionName.trim(), afterSection,
-          label: `${newSectionName.trim()} — details`, formatType: 'longtext',
+          kind: 'section', section: name, afterSection,
+          label: `${name} — details`, formatType: 'longtext',
         });
+        setAdded((a) => [...a, `Section “${name}”`]);
+        setExtraSections((s) => (s.includes(name) ? s : [...s, name]));
+        setNewSectionName('');
+        // advance: now add fields into the section we just created
+        setTargetSection(name);
+        setMode('field');
       } else {
         if (!label.trim()) throw new Error('Give the field a label.');
         const opts = isChoiceFormat
@@ -109,8 +126,10 @@ function AddElementModal({
           label: label.trim(), formatType, options: opts,
           guidance: guidance.trim() || null,
         });
+        setAdded((a) => [...a, `Field “${label.trim()}” in ${targetSection}`]);
+        setLabel(''); setChoices(''); setGuidance(''); setPosition('');
       }
-      onAdded();
+      onAdded();   // refresh the document behind the modal
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Could not add that.');
     } finally { setBusy(false); }
@@ -118,7 +137,7 @@ function AddElementModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-green-950/40 p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[85vh] overflow-y-auto p-5" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[88vh] overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-serif text-lg text-green-900">Add to this contract</h3>
           <button type="button" onClick={onClose} aria-label="Close" className="text-muted hover:text-green-800 focus-ring rounded"><X size={18} /></button>
@@ -164,7 +183,7 @@ function AddElementModal({
               <div>
                 <span className="form-label">Section</span>
                 <select className="form-input" value={targetSection} onChange={(e) => setTargetSection(e.target.value)}>
-                  {sections.map((s) => <option key={s} value={s}>{s}</option>)}
+                  {allSections.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
               <div>
@@ -201,10 +220,22 @@ function AddElementModal({
           </div>
         )}
 
+        {/* running log of what's been added — build out a section without reopening */}
+        {added.length > 0 && (
+          <div className="mt-4 rounded-lg bg-green-50/60 border border-green-800/10 p-3">
+            <p className="text-[11px] uppercase tracking-wide text-muted mb-1">Added this session</p>
+            <ul className="text-sm text-green-900 list-disc list-inside space-y-0.5">
+              {added.map((a, i) => <li key={i}>{a}</li>)}
+            </ul>
+          </div>
+        )}
+
         <div className="flex justify-end gap-2 mt-5">
-          <button type="button" className="btn-secondary text-sm" onClick={onClose}>Cancel</button>
+          <button type="button" className="btn-secondary text-sm" onClick={onClose}>
+            {added.length > 0 ? 'Done' : 'Cancel'}
+          </button>
           <button type="button" className="btn-primary text-sm" disabled={busy} onClick={() => void submit()}>
-            <Plus size={14} /> {mode === 'clause' ? 'Propose' : 'Add'}
+            <Plus size={14} /> {mode === 'clause' ? 'Propose' : mode === 'section' ? 'Add section & continue' : 'Add field'}
           </button>
         </div>
       </div>

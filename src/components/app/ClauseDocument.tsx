@@ -188,12 +188,42 @@ export function ClauseDocument({
 
   const clauseVisible = (c: ClauseDef) => clauseConditionMet(c.conditional_on, valueByKey);
 
+  // Author-added fields (CUSTOM.*) grouped by their section value. A field whose
+  // section matches a template section renders at the end of that section; the
+  // rest (custom sections) render as their own sections after the template ones.
+  const sectionKeys = useMemo(() => new Set(sections.map((s) => s.section_key)), [sections]);
+  const customBySection = useMemo(() => {
+    const m = new Map<string, ContractField[]>();
+    for (const f of fields) {
+      if (!f.field_key.startsWith('CUSTOM.')) continue;
+      const k = f.section ?? '';
+      (m.get(k) ?? m.set(k, []).get(k)!).push(f);
+    }
+    return m;
+  }, [fields]);
+  const customSectionNames = useMemo(
+    () => [...customBySection.keys()].filter((k) => k && !sectionKeys.has(k)).sort(),
+    [customBySection, sectionKeys],
+  );
+
+  const renderCustom = (f: ContractField, num: string) => (
+    <div key={f.field_key} className="flex items-baseline gap-1.5">
+      <span className="text-muted tabular-nums text-[13px]">{num}</span>
+      <span className="text-[13.5px] font-semibold text-green-900">{f.label ?? f.field_key}:</span>
+      <InlineFieldControl f={f} editable={cb.editable}
+        onSave={cb.onSave} onSaveStructured={cb.onSaveStructured as never}
+        onSaveResponsibility={cb.onSaveResponsibility as never}
+        onCommentField={cb.onCommentField} onSuggestEdit={cb.onSuggestEdit} canSuggest={cb.canSuggest} />
+    </div>
+  );
+
   let sectionNo = 0;
   return (
     <div className="flex flex-col gap-7">
       {sections.map((section) => {
         const visibleClauses = section.clauses.filter(clauseVisible);
-        if (visibleClauses.length === 0) return null;
+        const sectionCustom = customBySection.get(section.section_key) ?? [];
+        if (visibleClauses.length === 0 && sectionCustom.length === 0) return null;
         sectionNo += 1;
         const secNum = sectionNo;
         let clauseNo = 0;
@@ -251,6 +281,27 @@ export function ClauseDocument({
                   </div>
                 );
               })}
+              {/* author-added fields appended to this template section */}
+              {sectionCustom.map((f) => renderCustom(f, `${secNum}.${++clauseNo}`))}
+            </div>
+          </section>
+        );
+      })}
+
+      {/* custom sections (author-added, not in the template) — rendered after the
+          template sections, each with its own fields. */}
+      {customSectionNames.map((name) => {
+        sectionNo += 1;
+        const secNum = sectionNo;
+        let clauseNo = 0;
+        return (
+          <section key={`custom:${name}`}>
+            <h2 className="font-serif text-green-900 text-lg mb-3 flex items-baseline gap-2 border-b border-green-800/10 pb-1.5">
+              <span className="text-gold-ink tabular-nums">{secNum}.</span>
+              {name}
+            </h2>
+            <div className="flex flex-col gap-4">
+              {(customBySection.get(name) ?? []).map((f) => renderCustom(f, `${secNum}.${++clauseNo}`))}
             </div>
           </section>
         );
