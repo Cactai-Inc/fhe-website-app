@@ -79,6 +79,14 @@ export default function NewContractPage() {
       scrollAnchor.current = null;
     }
   }, [createdDocId]);
+  // On a fresh load that restores a doc from ?doc=, pin the viewport to the top so
+  // the page doesn't land mid-document (a deep field grabbing focus, or the
+  // browser's scroll restoration, would otherwise jump us down).
+  useLayoutEffect(() => {
+    if (params.get('doc')) window.scrollTo(0, 0);
+    // run once on mount only
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const t = TYPES.find((x) => x.id === type)!;
   const [roleA, roleB] = t.roles;
@@ -311,19 +319,6 @@ export default function NewContractPage() {
         </>
       ) : (
         <section className="mt-6 pt-6 border-t border-green-800/15">
-          <div className="flex justify-end mb-2">
-            <button type="button"
-              className="text-xs text-green-800 hover:text-green-700 underline underline-offset-2 focus-ring"
-              onClick={() => {
-                // Drop ?doc= and reset to a fresh form. The created contract is
-                // saved and reachable from the Documents / contracts list — this
-                // only clears the inline view so a new one can be started.
-                setParams((p) => { p.delete('doc'); return p; }, { replace: true });
-                setCreatedDocId(null);
-              }}>
-              ＋ Start another contract
-            </button>
-          </div>
           <ContractPage documentId={createdDocId} embedded />
         </section>
       )}

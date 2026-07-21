@@ -86,7 +86,7 @@ function PartyPicker({
         <option value="OTHER">Other (specify)…</option>
       </select>
       {party === 'OTHER' && (
-        <input className={inputCls} disabled={disabled} autoFocus
+        <input className={inputCls} disabled={disabled}
           placeholder="Describe the arrangement (e.g. a specific split, a third party, conditions)"
           value={value.note ?? ''} onChange={(e) => set({ note: e.target.value })} />
       )}
@@ -169,7 +169,7 @@ const NA = 'N/A';
 const filled = (v?: string | null) => !!v && v.trim() !== '' && v.trim() !== NA;
 
 /** ⓘ info popover — click/tap to toggle. */
-function InfoDot({ text }: { text: string }) {
+export function InfoDot({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
   return (
     <span className="relative inline-block">
@@ -287,7 +287,7 @@ function SelectWithOther({ f, onSave, disabled }: { f: ContractField; onSave: Sa
         {!ownOther && <option value={OTHER_VALUE}>Other (specify)…</option>}
       </select>
       {otherMode && (
-        <input className={inputCls} disabled={disabled} autoFocus placeholder="Enter a custom value"
+        <input className={inputCls} disabled={disabled} placeholder="Enter a custom value"
           value={custom} onChange={(e) => setCustom(e.target.value)}
           onBlur={() => void onSave(f.field_key, custom.trim())} />
       )}
@@ -620,13 +620,14 @@ function fieldDisplayValue(f: ContractField): string {
  *  (party / contact / pair / location) fall back to the block FieldControl inside
  *  a compact inline-block wrapper, since they can't collapse to a single word. */
 export function InlineFieldControl({
-  f, editable, onSave, onSaveResponsibility, onSaveStructured, onCommentField, onSuggestEdit, canSuggest = false,
+  f, editable, onSave, onSaveResponsibility, onSaveStructured, onSuggestEdit, canSuggest = false,
 }: {
   f: ContractField;
   editable: boolean;
   onSave: SaveFn;
   onSaveResponsibility: SaveRespFn;
   onSaveStructured: SaveStructFn;
+  /** Accepted for call-site compatibility; the inline comment bubble was removed. */
   onCommentField?: (f: ContractField) => void;
   onSuggestEdit?: (f: ContractField) => void;
   canSuggest?: boolean;
@@ -636,16 +637,13 @@ export function InlineFieldControl({
   const kind = f.input_kind ?? 'text';
   const label = f.label ?? f.field_key;
 
-  // affordances (ⓘ hint · comment · suggest) — rendered as tiny superscript marks
-  // that don't disrupt the text flow, shown only when they exist.
+  // affordances — a required mark, the ⓘ guidance popover, and a suggest-edit
+  // affordance for parties who can't directly edit. The per-field comment bubble
+  // was removed (it cluttered the prose and its scroll-on-click was disruptive).
   const marks = (
     <>
       {f.required && <span className="text-red-700 align-super text-[9px]">*</span>}
       {f.guidance && <InfoDot text={f.guidance} />}
-      {onCommentField && (
-        <button type="button" className="text-muted/60 hover:text-green-800 align-super text-[10px]"
-          title="Comment on this field" onClick={() => onCommentField(f)}>💬</button>
-      )}
       {onSuggestEdit && !f.can_edit && canSuggest && (
         <button type="button" className="text-gold-700 hover:text-gold-900 underline align-super text-[10px]"
           title="Suggest a change" onClick={() => onSuggestEdit(f)}>✎</button>

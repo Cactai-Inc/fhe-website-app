@@ -1,10 +1,9 @@
 import { useMemo, type ReactNode } from 'react';
-import { Info } from 'lucide-react';
 import {
   clauseConditionMet,
   type ContractField, type SectionDef, type ClauseDef,
 } from '../../lib/contracts';
-import { InlineFieldControl } from './ContractCascade';
+import { InlineFieldControl, InfoDot } from './ContractCascade';
 
 /**
  * CLAUSE DOCUMENT — the numbered Section › Clause › Field authoring surface, as a
@@ -36,13 +35,27 @@ type FieldCallbacks = {
 
 const TOKEN_RE = /\{\{([A-Z0-9_.]+)\}\}/g;
 
-/** An auto-fill / signature token (no editable field) → its current value or a blank. */
+/** Auto-fill tokens that IMPORT from the party contact or horse record — they are
+ *  never hand-filled in the document, so an empty one shows a muted "imports from…"
+ *  hint (not a fillable blank). Value present → the value. */
+const AUTOFILL_HINT: Record<string, string> = {
+  'LESSOR.FULL_NAME': 'Lessor name on file', 'LESSOR.ADDRESS': 'Lessor address on file',
+  'LESSOR.PRINTED_NAME': 'Lessor name on file',
+  'LESSEE.FULL_NAME': 'Lessee name on file', 'LESSEE.ADDRESS': 'Lessee address on file',
+  'LESSEE.PRINTED_NAME': 'Lessee name on file',
+};
+
+/** An auto-fill / signature token (no editable field) → its current value or a hint. */
 function TokenValue({ token, value }: { token: string; value: string }) {
   if (token.startsWith('SIG.')) {
     // signature ceremony token — a marker, filled at signing
     return <span className="text-muted italic">［signature］</span>;
   }
   if (value.trim()) return <span className="font-medium text-green-900">{value}</span>;
+  // party/horse imports show a muted "on file" hint instead of a fillable blank —
+  // they're changed on the contact / horse record, not typed into the contract.
+  const hint = AUTOFILL_HINT[token] ?? (token.startsWith('HORSE.') ? 'from horse record' : null);
+  if (hint) return <span className="text-muted italic text-[12.5px]">{hint}</span>;
   return (
     <mark className="bg-gold-100 text-gold-900 rounded px-1.5 border border-gold-400/60 border-dashed text-[13px]">
       ____
@@ -134,11 +147,7 @@ export function ClauseDocument({
             <h2 className="font-serif text-green-900 text-lg mb-3 flex items-baseline gap-2 border-b border-green-800/10 pb-1.5">
               <span className="text-gold-ink tabular-nums">{secNum}.</span>
               {section.heading}
-              {section.guidance && (
-                <span title={section.guidance} className="text-muted cursor-help">
-                  <Info size={14} className="inline align-middle" aria-hidden="true" />
-                </span>
-              )}
+              {section.guidance && <InfoDot text={section.guidance} />}
             </h2>
             <div className="flex flex-col gap-4">
               {visibleClauses.map((clause) => {
@@ -155,11 +164,7 @@ export function ClauseDocument({
                     {clause.heading && (
                       <p className="text-[13px] font-semibold text-green-900 mb-1 flex items-center gap-1.5">
                         <span className="text-muted tabular-nums">{num}</span>{clause.heading}
-                        {clause.guidance && (
-                          <span title={clause.guidance} className="text-muted cursor-help">
-                            <Info size={13} className="inline align-middle" aria-hidden="true" />
-                          </span>
-                        )}
+                        {clause.guidance && <InfoDot text={clause.guidance} />}
                       </p>
                     )}
                     {clause.body
