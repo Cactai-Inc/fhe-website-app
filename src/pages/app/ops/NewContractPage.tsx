@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Loader2, UserPlus } from 'lucide-react';
 import { useDocumentTitle } from '../../../lib/hooks';
@@ -63,6 +63,17 @@ export default function NewContractPage() {
   // Once created, the full contract renders INLINE below the config on THIS page
   // (no navigation) — the config block stays at the top.
   const [createdDocId, setCreatedDocId] = useState<string | null>(null);
+  // The viewport must NOT jump when the contract reveals: revealing the (tall)
+  // document under the button would otherwise shift the scroll position. We
+  // capture scrollY at click time and pin it back before the browser paints the
+  // new layout, so the author stays exactly where they clicked "Get started".
+  const scrollAnchor = useRef<number | null>(null);
+  useLayoutEffect(() => {
+    if (createdDocId && scrollAnchor.current !== null) {
+      window.scrollTo(0, scrollAnchor.current);
+      scrollAnchor.current = null;
+    }
+  }, [createdDocId]);
 
   const t = TYPES.find((x) => x.id === type)!;
   const [roleA, roleB] = t.roles;
@@ -108,7 +119,10 @@ export default function NewContractPage() {
       if (horseMode === 'party' && horseParty) {
         await assignHorseSection(docId, horseParty);
       }
-      // Stay on this page — reveal the full contract inline below the config.
+      // Stay on this page — reveal the full contract inline below the config,
+      // pinning the scroll position so the viewport doesn't jump (see the
+      // useLayoutEffect above).
+      scrollAnchor.current = window.scrollY;
       setCreatedDocId(docId);
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Could not start the contract.');

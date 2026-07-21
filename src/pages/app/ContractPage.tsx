@@ -720,8 +720,13 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         </section>
       )}
 
-      {/* document preview (pre-executed) — collapsible, for parties still filling fields */}
-      {state !== 'executed' && !reviewOnly && doc.merged_body && (
+      {/* The pre-executed "document preview" (collapsible merged_body) is gone:
+          the clause-model authoring surface above IS the full document in context
+          — every clause's prose renders with its inputs inline, selected and
+          unselected alike. For a LEGACY flat document (no clause structure) the
+          author still needs a way to read the composed text, so the collapsible
+          preview is kept ONLY in that fall-through case. */}
+      {state !== 'executed' && !reviewOnly && !structure && doc.merged_body && (
         <section className="bg-white border border-green-800/10 rounded-lg p-5 mb-4">
           <button type="button" className="font-serif text-green-800 underline-offset-4 hover:underline"
             onClick={() => setShowBody((v) => !v)}>

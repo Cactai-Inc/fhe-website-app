@@ -439,6 +439,43 @@ function FieldControl({
     placeholder={kind === 'currency' ? '$' : kind === 'percent' ? '%' : undefined} />;
 }
 
+/** A single field's control, for rendering INLINE within clause prose (the
+ *  "document is the form" authoring view). Same control as the cascade uses, just
+ *  usable standalone. Shows the field label + ⓘ hint above the control, and (when
+ *  editable) a small comment/suggest affordance. */
+export function InlineFieldControl({
+  f, editable, onSave, onSaveResponsibility, onSaveStructured, onCommentField, onSuggestEdit, canSuggest = false,
+}: {
+  f: ContractField;
+  editable: boolean;
+  onSave: SaveFn;
+  onSaveResponsibility: SaveRespFn;
+  onSaveStructured: SaveStructFn;
+  onCommentField?: (f: ContractField) => void;
+  onSuggestEdit?: (f: ContractField) => void;
+  canSuggest?: boolean;
+}) {
+  return (
+    <span className="inline-flex flex-col align-top gap-0.5 mx-0.5 my-1 min-w-[8rem] max-w-full">
+      <span className="inline-flex items-center gap-1 text-[11px] text-muted leading-none">
+        {f.label ?? f.field_key}
+        {f.required && <span className="text-red-700">*</span>}
+        {f.guidance && <InfoDot text={f.guidance} />}
+        {onCommentField && (
+          <button type="button" className="text-muted hover:text-green-800" title="Comment on this field"
+            onClick={() => onCommentField(f)}>💬</button>
+        )}
+        {onSuggestEdit && !f.can_edit && canSuggest && (
+          <button type="button" className="text-gold-700 hover:text-gold-900 underline" title="Suggest a change"
+            onClick={() => onSuggestEdit(f)}>suggest</button>
+        )}
+      </span>
+      <FieldControl f={f} onSave={onSave} onSaveResponsibility={onSaveResponsibility}
+        onSaveStructured={onSaveStructured} disabled={!editable || !f.can_edit} />
+    </span>
+  );
+}
+
 const COST_OPTS = [
   { value: 'OWNER', label: 'Owner' }, { value: 'LESSEE', label: 'Lessee' },
   { value: 'SHARED', label: 'Shared (split %)' },

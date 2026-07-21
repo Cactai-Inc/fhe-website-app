@@ -155,6 +155,7 @@ export async function contractDocumentDetail(documentId: string): Promise<Contra
 export interface ClauseDef {
   clause_key: string;
   heading: string | null;
+  body: string | null;         // the clause's legal prose (tokens rendered inline)
   clause_type: 'input' | 'prose' | 'choice';
   sort_order: number;
   is_optional: boolean;
