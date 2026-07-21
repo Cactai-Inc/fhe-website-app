@@ -31,27 +31,27 @@ type CommentFn = (field: ContractField) => void;
 /** Party options. The manage side offers Care Provider; the cost side offers a
  *  "same as responsible party" default plus specific parties / shared split. */
 const PARTY_OPTS = [
-  { value: 'LESSOR', label: 'Owner (Lessor)' },
+  { value: 'LESSOR', label: 'Lessor' },
   { value: 'LESSEE', label: 'Lessee' },
   { value: 'CARE_PROVIDER', label: 'Care Provider' },
   { value: 'SHARED', label: 'Shared' },
 ];
 /** Responsibility party sets by kind (the FHE model):
- *   financial → who PAYS: Owner / Lessee / Shared%  (FHE never financial unless named)
- *   care      → who DOES/oversees: Owner / Lessee / FHE / Shared  (FHE is care-giver) */
+ *   financial → who PAYS: Lessor / Lessee / Shared%  (FHE never financial unless named)
+ *   care      → who DOES/oversees: Lessor / Lessee / FHE / Shared  (FHE is care-giver) */
 const FINANCIAL_PARTY_OPTS = [
-  { value: 'LESSOR', label: 'Owner (Lessor)' },
+  { value: 'LESSOR', label: 'Lessor' },
   { value: 'LESSEE', label: 'Lessee' },
   { value: 'SHARED', label: 'Shared (split %)' },
 ];
 const CARE_PARTY_OPTS = [
-  { value: 'LESSOR', label: 'Owner (Lessor)' },
+  { value: 'LESSOR', label: 'Lessor' },
   { value: 'LESSEE', label: 'Lessee' },
   { value: 'FHE', label: 'FHE (care & oversight)' },
   { value: 'SHARED', label: 'Shared' },
 ];
 const COST_PARTY_OPTS = [
-  { value: 'LESSOR', label: 'Owner (Lessor)' },
+  { value: 'LESSOR', label: 'Lessor' },
   { value: 'LESSEE', label: 'Lessee' },
   { value: 'SHARED', label: 'Shared (split %)' },
 ];
@@ -106,7 +106,7 @@ function PartyPicker({
         <div className="flex flex-col gap-1.5 bg-cream-100/40 rounded-lg p-2">
           {parties.map((p, i) => (
             <div key={i} className="flex items-center gap-2 text-sm text-secondary">
-              <span className="w-28 truncate">{p.party === 'LESSOR' ? 'Owner' : p.party === 'LESSEE' ? 'Lessee' : p.party}</span>
+              <span className="w-28 truncate">{p.party === 'LESSOR' ? 'Lessor' : p.party === 'LESSEE' ? 'Lessee' : p.party}</span>
               <input type="number" min={0} max={100} className={`${inputCls} w-20`} disabled={disabled}
                 value={p.pct ?? ''} onChange={(e) => setPct(i, e.target.value)} />
               <span>%</span>
@@ -439,10 +439,167 @@ function FieldControl({
     placeholder={kind === 'currency' ? '$' : kind === 'percent' ? '%' : undefined} />;
 }
 
+// ───────────────────────────── INLINE CONTROLS ──────────────────────────────
+// Rendering for the "document is the form" authoring view: controls sit ON the
+// text baseline inside the clause sentence, the field LABEL is the input's
+// placeholder (never a stacked label above/below), inputs auto-size to their
+// content, and multi-selects render as inline chips. Guidance stays behind the ⓘ
+// dot. This keeps the document reading like prose while every blank is fillable.
+
+const inlineBase =
+  'inline text-[13.5px] text-green-900 bg-gold-50/70 border-b border-gold-400/70 ' +
+  'focus:outline-none focus:border-gold-600 focus:bg-gold-50 rounded-sm px-1 align-baseline ' +
+  'placeholder:text-gold-700/70 placeholder:italic disabled:bg-transparent disabled:border-dotted disabled:text-green-900';
+
+/** An inline text/date/currency input that grows with its content. A hidden
+ *  sizing span mirrors the text (or the placeholder) so the input is exactly as
+ *  wide as it needs to be — no fixed-width boxes floating over the prose. */
+function InlineInput({
+  value, placeholder, type = 'text', disabled, onCommit, prefix,
+}: {
+  value: string; placeholder: string; type?: 'text' | 'date';
+  disabled: boolean; onCommit: (v: string) => void; prefix?: string;
+}) {
+  const [local, setLocal] = useState(value);
+  useEffect(() => { setLocal(value); }, [value]);
+  const commit = () => { if (local !== value) onCommit(local); };
+  // width driver: the longer of the value or placeholder, plus the prefix
+  const sizer = (prefix ?? '') + (local || placeholder);
+  return (
+    <span className="inline-flex items-baseline align-baseline relative">
+      {prefix && local && <span className="text-green-900">{prefix}</span>}
+      <span className="inline-grid">
+        {/* invisible sizer sets the column width; the input overlays it */}
+        <span className="col-start-1 row-start-1 invisible whitespace-pre px-1 text-[13.5px]" aria-hidden="true">
+          {sizer || placeholder}
+        </span>
+        <input
+          type={type}
+          className={`${inlineBase} col-start-1 row-start-1 w-full min-w-[3ch]`}
+          disabled={disabled}
+          value={local}
+          placeholder={placeholder}
+          onChange={(e) => setLocal(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => { if (e.key === 'Enter' && type !== 'date') { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }}
+        />
+      </span>
+    </span>
+  );
+}
+
+/** An inline longtext control — auto-growing textarea that reads as inline text. */
+function InlineTextarea({
+  value, placeholder, disabled, onCommit,
+}: { value: string; placeholder: string; disabled: boolean; onCommit: (v: string) => void }) {
+  const [local, setLocal] = useState(value);
+  useEffect(() => { setLocal(value); }, [value]);
+  return (
+    <span className="inline-grid align-baseline w-full max-w-full">
+      <span className="col-start-1 row-start-1 invisible whitespace-pre-wrap break-words px-1 text-[13.5px] leading-[1.9]" aria-hidden="true">
+        {(local || placeholder) + ' '}
+      </span>
+      <textarea
+        className={`${inlineBase} col-start-1 row-start-1 w-full resize-none overflow-hidden leading-[1.9]`}
+        rows={1}
+        disabled={disabled}
+        value={local}
+        placeholder={placeholder}
+        onChange={(e) => setLocal(e.target.value)}
+        onBlur={() => { if (local !== value) onCommit(local); }}
+      />
+    </span>
+  );
+}
+
+/** Inline select: shows the chosen option's label as text; the label is the
+ *  placeholder while empty. "Other (specify)…" reveals an inline text input. */
+function InlineSelect({ f, disabled, onSave }: { f: ContractField; disabled: boolean; onSave: SaveFn }) {
+  const opts = f.options ?? [];
+  const stored = f.value ?? '';
+  const storedIsCustom = stored !== '' && !opts.some((o) => o.value === stored);
+  const [otherMode, setOtherMode] = useState(storedIsCustom);
+  useEffect(() => {
+    if (stored !== '' && !opts.some((o) => o.value === stored)) setOtherMode(true);
+  }, [stored]); // eslint-disable-line react-hooks/exhaustive-deps
+  const placeholder = f.label ?? 'select…';
+  return (
+    <span className="inline-flex items-baseline gap-1 align-baseline">
+      <span className="inline-grid">
+        <span className="col-start-1 row-start-1 invisible whitespace-pre px-5 text-[13.5px]" aria-hidden="true">
+          {otherMode ? 'Other…' : (opts.find((o) => o.value === stored)?.label ?? placeholder)}
+        </span>
+        <select
+          className={`${inlineBase} col-start-1 row-start-1 w-full cursor-pointer pr-4 ${stored || otherMode ? '' : 'text-gold-700/80 italic'}`}
+          disabled={disabled}
+          value={otherMode ? OTHER_VALUE : stored}
+          onChange={(e) => {
+            if (e.target.value === OTHER_VALUE) setOtherMode(true);
+            else { setOtherMode(false); void onSave(f.field_key, e.target.value); }
+          }}>
+          <option value="">{placeholder}</option>
+          {opts.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          <option value={OTHER_VALUE}>Other (specify)…</option>
+        </select>
+      </span>
+      {otherMode && (
+        <InlineInput value={storedIsCustom ? stored : ''} placeholder="specify…" disabled={disabled}
+          onCommit={(v) => void onSave(f.field_key, v.trim())} />
+      )}
+    </span>
+  );
+}
+
+/** Inline yes/no — a small pair of pills sitting on the baseline. */
+function InlineYesNo({ f, disabled, onSave }: { f: ContractField; disabled: boolean; onSave: SaveFn }) {
+  const cur = f.value ?? '';
+  return (
+    <span className="inline-flex items-baseline gap-1 align-baseline mx-0.5">
+      {[['YES', 'Yes'], ['NO', 'No']].map(([v, label]) => (
+        <button key={v} type="button" disabled={disabled} onClick={() => void onSave(f.field_key, v)}
+          className={`text-[12px] rounded-full px-2.5 py-0.5 border align-baseline focus-ring ${
+            cur === v ? 'bg-green-800 text-white border-green-800' : 'border-green-800/25 text-secondary hover:bg-green-50'} ${disabled ? 'opacity-70' : ''}`}>
+          {label}
+        </button>
+      ))}
+    </span>
+  );
+}
+
+/** Inline multi-select chips (buttons kind not in a dropdown) — rendered inline. */
+function InlineChips({ f, disabled, onSave }: { f: ContractField; disabled: boolean; onSave: SaveFn }) {
+  const selected = (f.value ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+  const toggle = (val: string) => {
+    const next = selected.includes(val) ? selected.filter((s) => s !== val) : [...selected, val];
+    void onSave(f.field_key, next.join(','));
+  };
+  return (
+    <span className="inline-flex flex-wrap items-baseline gap-1 align-baseline mx-0.5">
+      {(f.options ?? []).map((o) => (
+        <button key={o.value} type="button" disabled={disabled} onClick={() => toggle(o.value)}
+          className={`text-[12px] rounded-full px-2.5 py-0.5 border align-baseline focus-ring ${
+            selected.includes(o.value) ? 'bg-green-800 text-white border-green-800' : 'border-green-800/25 text-secondary hover:bg-green-50'} ${disabled ? 'opacity-70' : ''}`}>
+          {o.label}
+        </button>
+      ))}
+    </span>
+  );
+}
+
+/** Read the current display value of a field (for the inline value renderer). */
+function fieldDisplayValue(f: ContractField): string {
+  if (f.options && f.value) {
+    const opt = f.options.find((o) => o.value === f.value);
+    if (opt) return opt.label;
+  }
+  return f.value ?? '';
+}
+
 /** A single field's control, for rendering INLINE within clause prose (the
- *  "document is the form" authoring view). Same control as the cascade uses, just
- *  usable standalone. Shows the field label + ⓘ hint above the control, and (when
- *  editable) a small comment/suggest affordance. */
+ *  "document is the form" authoring view). The label is the placeholder, the
+ *  value sits on the text baseline, guidance hides behind ⓘ. Structured formats
+ *  (party / contact / pair / location) fall back to the block FieldControl inside
+ *  a compact inline-block wrapper, since they can't collapse to a single word. */
 export function InlineFieldControl({
   f, editable, onSave, onSaveResponsibility, onSaveStructured, onCommentField, onSuggestEdit, canSuggest = false,
 }: {
@@ -455,33 +612,65 @@ export function InlineFieldControl({
   onSuggestEdit?: (f: ContractField) => void;
   canSuggest?: boolean;
 }) {
-  return (
-    <span className="inline-flex flex-col align-top gap-0.5 mx-0.5 my-1 min-w-[8rem] max-w-full">
-      <span className="inline-flex items-center gap-1 text-[11px] text-muted leading-none">
-        {f.label ?? f.field_key}
-        {f.required && <span className="text-red-700">*</span>}
-        {f.guidance && <InfoDot text={f.guidance} />}
-        {onCommentField && (
-          <button type="button" className="text-muted hover:text-green-800" title="Comment on this field"
-            onClick={() => onCommentField(f)}>💬</button>
-        )}
-        {onSuggestEdit && !f.can_edit && canSuggest && (
-          <button type="button" className="text-gold-700 hover:text-gold-900 underline" title="Suggest a change"
-            onClick={() => onSuggestEdit(f)}>suggest</button>
-        )}
-      </span>
-      <FieldControl f={f} onSave={onSave} onSaveResponsibility={onSaveResponsibility}
-        onSaveStructured={onSaveStructured} disabled={!editable || !f.can_edit} />
-    </span>
+  const disabled = !editable || !f.can_edit;
+  const fmt = f.format_type ?? '';
+  const kind = f.input_kind ?? 'text';
+  const label = f.label ?? f.field_key;
+
+  // affordances (ⓘ hint · comment · suggest) — rendered as tiny superscript marks
+  // that don't disrupt the text flow, shown only when they exist.
+  const marks = (
+    <>
+      {f.required && <span className="text-red-700 align-super text-[9px]">*</span>}
+      {f.guidance && <InfoDot text={f.guidance} />}
+      {onCommentField && (
+        <button type="button" className="text-muted/60 hover:text-green-800 align-super text-[10px]"
+          title="Comment on this field" onClick={() => onCommentField(f)}>💬</button>
+      )}
+      {onSuggestEdit && !f.can_edit && canSuggest && (
+        <button type="button" className="text-gold-700 hover:text-gold-900 underline align-super text-[10px]"
+          title="Suggest a change" onClick={() => onSuggestEdit(f)}>✎</button>
+      )}
+    </>
   );
+
+  // Structured / multi-part formats can't collapse to a single inline token —
+  // render the block control, but inline-block and compact so it stays in flow.
+  const isStructured = ['party', 'contact', 'person', 'address', 'location', 'pair'].includes(fmt)
+    || kind === 'responsibility' || kind === 'week_grid';
+  if (isStructured) {
+    return (
+      <span className="inline-block align-top mx-0.5 my-0.5 min-w-[14rem] max-w-full">
+        <span className="text-[11px] text-muted">{label}{marks}</span>
+        <FieldControl f={f} onSave={onSave} onSaveResponsibility={onSaveResponsibility}
+          onSaveStructured={onSaveStructured} disabled={disabled} />
+      </span>
+    );
+  }
+
+  let control: ReactNode;
+  if (fmt === 'yesno') control = <InlineYesNo f={f} disabled={disabled} onSave={onSave} />;
+  else if (kind === 'buttons') control = <InlineChips f={f} disabled={disabled} onSave={onSave} />;
+  else if (kind === 'select') control = <InlineSelect f={f} disabled={disabled} onSave={onSave} />;
+  else if (kind === 'longtext') {
+    control = <InlineTextarea value={f.value ?? ''} placeholder={label} disabled={disabled}
+      onCommit={(v) => void onSave(f.field_key, v)} />;
+  } else {
+    const type = kind === 'date' ? 'date' : 'text';
+    const prefix = kind === 'currency' ? '$' : undefined;
+    control = <InlineInput value={fieldDisplayValue(f)} placeholder={label} type={type}
+      disabled={disabled} prefix={prefix} onCommit={(v) => void onSave(f.field_key, v)} />;
+  }
+
+  return <span className="align-baseline">{control}{marks}</span>;
 }
 
 const COST_OPTS = [
-  { value: 'OWNER', label: 'Owner' }, { value: 'LESSEE', label: 'Lessee' },
+  { value: 'LESSOR', label: 'Lessor' }, { value: 'LESSEE', label: 'Lessee' },
   { value: 'SHARED', label: 'Shared (split %)' },
 ];
 const DUTY_OPTS = [
-  { value: 'OWNER', label: 'Owner' }, { value: 'LESSEE', label: 'Lessee' },
+  { value: 'LESSOR', label: 'Lessor' }, { value: 'LESSEE', label: 'Lessee' },
   { value: 'CARE_PROVIDER', label: 'Care Provider' }, { value: 'SHARED', label: 'Shared' },
 ];
 
@@ -507,7 +696,7 @@ function ResponsibilityControl({
       </select>
       {party === 'SHARED' && sharedIsSplit && (
         <div className="flex items-center gap-2 text-sm text-secondary">
-          Owner <input type="number" min={0} max={100} className={`${inputCls} w-20`} disabled={disabled}
+          Lessor <input type="number" min={0} max={100} className={`${inputCls} w-20`} disabled={disabled}
             value={resp.split?.owner ?? 50}
             onChange={(e) => { const o = Number(e.target.value); set({ split: { owner: o, lessee: 100 - o } }); }} />%
           · Lessee {(resp.split?.lessee ?? 50)}%
@@ -540,7 +729,7 @@ type WeekState = {
 };
 function parseWeek(v?: string | null): WeekState {
   if (v) { try { const p = JSON.parse(v); if (p && p.days) return p; } catch { /* fall through */ } }
-  return { parties: ['Lessee', 'Owner'], days: { Lessee: [], Owner: [] },
+  return { parties: ['Lessee', 'Lessor'], days: { Lessee: [], Lessor: [] },
     timeframes: false, windows: [{ start: '06:00', end: '12:00' }, { start: '12:00', end: '18:00' }] };
 }
 function WeekGrid({ f, onSave, disabled }: { f: ContractField; onSave: SaveFn; disabled: boolean }) {

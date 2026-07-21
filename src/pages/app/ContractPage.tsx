@@ -442,13 +442,18 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
             onAdded={() => void act(async () => {})} />
         </div>
       )}
-      <p className="text-sm text-muted mb-5">
-        {isOwnerSide
-          ? 'The company originates this contract. Fill any side\u2019s fields \u2014 acting on behalf of a party where needed \u2014 set the controls, lock, then invite.'
-          : reviewOnly
-            ? 'Review the document below and sign \u2014 or respond to the other party.'
-            : 'The highlighted fields need your input. Anything shown lighter is locked while you complete your part.'}
-      </p>
+      {/* Party-facing notes/instructions don't apply during the creation step
+          (the embedded inline authoring view) \u2014 nothing has been sent to either
+          party yet. Only show guidance on the standalone contract page. */}
+      {!embedded && (
+        <p className="text-sm text-muted mb-5">
+          {isOwnerSide
+            ? 'Fill any side\u2019s fields \u2014 acting on behalf of a party where needed \u2014 set the controls, lock, then invite.'
+            : reviewOnly
+              ? 'Review the document below and sign \u2014 or respond to the other party.'
+              : 'The highlighted fields need your input. Anything shown lighter is locked while you complete your part.'}
+        </p>
+      )}
 
       {error && <p role="alert" className="form-error mb-3">{error}</p>}
       {note && <p className="mb-3 rounded px-4 py-2 text-sm bg-green-50 text-green-900">{note}</p>}

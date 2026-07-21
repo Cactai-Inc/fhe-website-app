@@ -166,12 +166,20 @@ export function ClauseDocument({
                       ? <ClauseProse body={clause.body} fieldByKey={fieldByKey} valueByKey={valueByKey} cb={cb} />
                       : null}
                     {orphanFields.length > 0 && (
-                      <div className="flex flex-wrap gap-3 mt-1.5 pl-1">
+                      // Fields attached to the clause but not placed by a {{token}}
+                      // in its prose — e.g. a yes/no authoring gate. These are
+                      // authoring controls (they don't print in the final document),
+                      // so they render on a muted line with the field label as the
+                      // prompt: "Any exceptions to note? [Yes] [No]".
+                      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 mt-1 pl-1 text-[12.5px] text-muted">
                         {orphanFields.map((f) => (
-                          <InlineFieldControl key={f.field_key} f={f} editable={cb.editable}
-                            onSave={cb.onSave} onSaveStructured={cb.onSaveStructured as never}
-                            onSaveResponsibility={cb.onSaveResponsibility as never}
-                            onCommentField={cb.onCommentField} onSuggestEdit={cb.onSuggestEdit} canSuggest={cb.canSuggest} />
+                          <span key={f.field_key} className="inline-flex items-baseline gap-1.5">
+                            <span className="italic">{f.label ?? f.field_key}</span>
+                            <InlineFieldControl f={f} editable={cb.editable}
+                              onSave={cb.onSave} onSaveStructured={cb.onSaveStructured as never}
+                              onSaveResponsibility={cb.onSaveResponsibility as never}
+                              onCommentField={cb.onCommentField} onSuggestEdit={cb.onSuggestEdit} canSuggest={cb.canSuggest} />
+                          </span>
                         ))}
                       </div>
                     )}
