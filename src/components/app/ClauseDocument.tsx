@@ -172,9 +172,14 @@ export function ClauseDocument({
                 const bodyTokens = new Set(
                   [...(clause.body ?? '').matchAll(TOKEN_RE)].map((mm) => mm[1]),
                 );
-                // any fields for this clause NOT already placed inline via a token
-                const orphanFields = (fieldsByClause.get(clause.clause_key) ?? [])
-                  .filter((f) => !bodyTokens.has(f.field_key));
+                // Authoring-gate fields: a field attached to an EMPTY-body clause
+                // (e.g. a yes/no enable gate) renders as an authoring control. A
+                // field on a clause that HAS prose but whose token isn't in that
+                // prose is stale/misconfigured and is NOT rendered here — its value
+                // belongs wherever its token appears, or the field should be removed.
+                const orphanFields = !clause.body
+                  ? (fieldsByClause.get(clause.clause_key) ?? []).filter((f) => !bodyTokens.has(f.field_key))
+                  : [];
                 return (
                   <div key={clause.clause_key}>
                     {clause.heading && (

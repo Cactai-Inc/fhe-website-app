@@ -837,6 +837,24 @@ function WeekGrid({ f, onSave, disabled }: { f: ContractField; onSave: SaveFn; d
     const nextDays = cur.includes(day) ? cur.filter((d) => d !== day) : [...cur, day];
     commit({ ...w, days: { ...w.days, [party]: nextDays } });
   };
+  // rename a party row (keeps its day selections)
+  const renameParty = (i: number, name: string) => {
+    const old = w.parties[i];
+    const nextParties = w.parties.map((p, j) => (j === i ? name : p));
+    const nextDays = { ...w.days };
+    if (name !== old) { nextDays[name] = nextDays[old] ?? []; delete nextDays[old]; }
+    commit({ ...w, parties: nextParties, days: nextDays });
+  };
+  const addParty = () => {
+    let n = 1; let name = `Party ${w.parties.length + 1}`;
+    while (w.parties.includes(name)) { n += 1; name = `Party ${w.parties.length + n}`; }
+    commit({ ...w, parties: [...w.parties, name], days: { ...w.days, [name]: [] } });
+  };
+  const removeParty = (i: number) => {
+    const name = w.parties[i];
+    const nextDays = { ...w.days }; delete nextDays[name];
+    commit({ ...w, parties: w.parties.filter((_, j) => j !== i), days: nextDays });
+  };
   return (
     <div className="overflow-x-auto">
       <table className="text-xs border-collapse">
@@ -844,22 +862,39 @@ function WeekGrid({ f, onSave, disabled }: { f: ContractField; onSave: SaveFn; d
           <tr>
             <th className="text-left px-2 py-1 text-muted font-semibold">Party</th>
             {DAYS.map((d) => <th key={d} className="px-2 py-1 text-green-800 font-semibold text-center">{d}</th>)}
+            <th></th>
           </tr>
         </thead>
         <tbody>
-          {w.parties.map((p) => (
-            <tr key={p}>
-              <td className="px-2 py-1 font-medium text-green-900 whitespace-nowrap">{p}</td>
+          {w.parties.map((p, i) => (
+            <tr key={i}>
+              <td className="px-2 py-1">
+                <input className="w-28 px-1.5 py-0.5 rounded border border-green-800/15 text-xs font-medium text-green-900 bg-white disabled:bg-cream-100"
+                  disabled={disabled} value={p} aria-label={`Party ${i + 1} name`}
+                  onChange={(e) => renameParty(i, e.target.value)} />
+              </td>
               {DAYS.map((d) => (
                 <td key={d} className="px-2 py-1 text-center">
                   <input type="checkbox" className="accent-green-700" disabled={disabled}
                     checked={(w.days[p] ?? []).includes(d)} onChange={() => toggleDay(p, d)} />
                 </td>
               ))}
+              <td className="px-1">
+                {!disabled && w.parties.length > 1 && (
+                  <button type="button" className="text-muted hover:text-red-700 text-xs"
+                    onClick={() => removeParty(i)} title="Remove this party">✕</button>
+                )}
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
+      {!disabled && (
+        <button type="button" onClick={addParty}
+          className="mt-1.5 text-[11px] text-gold-800 border border-dashed border-gold-400 rounded px-2 py-1 hover:bg-gold-50 focus-ring">
+          ＋ Add party
+        </button>
+      )}
       <label className="flex items-center gap-1.5 text-[11px] text-muted mt-2 cursor-pointer select-none">
         <input type="checkbox" disabled={disabled} checked={w.timeframes ?? false}
           onChange={(e) => commit({ ...w, timeframes: e.target.checked })} /> Add timeframes

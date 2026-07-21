@@ -10,7 +10,11 @@ export type FieldInputKind =
 export interface FieldOption { value: string; label: string }
 /** A clause/field reveal gate: shown when the controlling field equals one of
  *  `equals`, or (for a multi-select control) contains one of `contains`. */
-export interface FieldConditional { field_key: string; equals?: string[]; contains?: string[] }
+export interface FieldConditional {
+  field_key?: string; equals?: string[]; contains?: string[];
+  /** composite AND — every sub-condition must hold (mirrors clause_condition_met). */
+  all?: FieldConditional[];
+}
 
 export interface ContractField {
   field_key: string;
@@ -197,7 +201,10 @@ export function clauseConditionMet(
   cond: FieldConditional | null | undefined,
   fieldValues: Record<string, string>,
 ): boolean {
-  if (!cond || !cond.field_key) return true;
+  if (!cond) return true;
+  // composite AND: every sub-condition must hold
+  if (cond.all) return cond.all.every((c) => clauseConditionMet(c, fieldValues));
+  if (!cond.field_key) return true;
   const raw = fieldValues[cond.field_key] ?? '';
   if (cond.equals && cond.equals.includes(raw)) return true;
   if (cond.contains) {
