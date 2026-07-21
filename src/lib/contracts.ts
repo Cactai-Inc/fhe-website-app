@@ -79,6 +79,8 @@ export interface FieldStructured {
   initial_due?: string;
   options?: { amount?: string; notes?: string }[];
   selected?: number | null;
+  // med_schedule (§11 medications & supplements builder)
+  medItems?: { name?: string; dose?: string; schedule?: string; party?: string; party_note?: string }[];
 }
 
 export interface ContractChangeRequest {

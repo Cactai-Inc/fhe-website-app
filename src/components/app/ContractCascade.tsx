@@ -297,6 +297,72 @@ function SelectWithOther({ f, onSave, disabled }: { f: ContractField; onSave: Sa
   );
 }
 
+const MED_PARTY_OPTS = [
+  { value: 'LESSOR', label: 'Lessor' },
+  { value: 'LESSEE', label: 'Lessee' },
+  { value: 'TRAINER', label: 'Trainer/Instructor' },
+  { value: 'BOARDING', label: 'Boarding Staff' },
+  { value: 'VETERINARIAN', label: 'Veterinarian' },
+  { value: 'OTHER', label: 'Other' },
+];
+
+/** §11 MEDICATIONS & SUPPLEMENTS builder. Structured { medItems:[{name,dose,
+ *  schedule,party,party_note}] }. A single "add a medication or supplement" button
+ *  appends a formatted block: Name / Dose / Schedule (free text) + a responsible-
+ *  party dropdown (Other reveals a free-text note). Each block is removable. */
+function MedicationBuilder({
+  f, onSaveStructured, disabled,
+}: { f: ContractField; onSaveStructured: SaveStructFn; disabled: boolean }) {
+  const s = f.structured ?? {};
+  const items = s.medItems ?? [];
+  const commit = (next: FieldStructured) => void onSaveStructured(f.field_key, next);
+  const add = () => commit({ ...s, medItems: [...items, { name: '', dose: '', schedule: '', party: '' }] });
+  const edit = (i: number, patch: Partial<NonNullable<FieldStructured['medItems']>[number]>) =>
+    commit({ ...s, medItems: items.map((it, j) => (j === i ? { ...it, ...patch } : it)) });
+  const remove = (i: number) => commit({ ...s, medItems: items.filter((_, j) => j !== i) });
+  const cell = 'w-full px-2 py-1 rounded border border-green-800/15 text-sm text-green-900 placeholder:text-muted focus-ring bg-white disabled:bg-cream-100';
+  return (
+    <div className="flex flex-col gap-3 w-full max-w-2xl">
+      {items.map((it, i) => (
+        <div key={i} className="rounded-lg border border-green-800/15 p-3">
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <p className="text-[11px] uppercase tracking-wide text-muted">Medication / supplement {i + 1}</p>
+            {!disabled && (
+              <button type="button" className="text-muted hover:text-red-700 text-xs"
+                onClick={() => remove(i)} title="Remove">✕</button>
+            )}
+          </div>
+          <div className="grid sm:grid-cols-3 gap-2">
+            <label className="flex flex-col gap-0.5 text-[11px] text-muted">Name
+              <input className={cell} disabled={disabled} value={it.name ?? ''} onChange={(e) => edit(i, { name: e.target.value })} /></label>
+            <label className="flex flex-col gap-0.5 text-[11px] text-muted">Dose
+              <input className={cell} disabled={disabled} value={it.dose ?? ''} onChange={(e) => edit(i, { dose: e.target.value })} /></label>
+            <label className="flex flex-col gap-0.5 text-[11px] text-muted">Schedule
+              <input className={cell} disabled={disabled} value={it.schedule ?? ''} onChange={(e) => edit(i, { schedule: e.target.value })} /></label>
+          </div>
+          <label className="flex flex-col gap-0.5 text-[11px] text-muted mt-2">
+            Party responsible for ordering, administering, and cost
+            <select className={cell} disabled={disabled} value={it.party ?? ''} onChange={(e) => edit(i, { party: e.target.value })}>
+              <option value="">{SELECT_PLACEHOLDER}</option>
+              {MED_PARTY_OPTS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </label>
+          {it.party === 'OTHER' && (
+            <input className={`${cell} mt-1.5`} disabled={disabled} placeholder="Specify the responsible party"
+              value={it.party_note ?? ''} onChange={(e) => edit(i, { party_note: e.target.value })} />
+          )}
+        </div>
+      ))}
+      {!disabled && (
+        <button type="button" onClick={add}
+          className="self-start text-sm text-gold-800 border border-dashed border-gold-400 rounded-lg px-3 py-1.5 hover:bg-gold-50 focus-ring">
+          ＋ Add a medication or supplement
+        </button>
+      )}
+    </div>
+  );
+}
+
 /** §3.1 LEASE-FEE builder. One structured value { initial_due, options:[{amount,
  *  notes}], selected }. An "Initial payment due" free-text, then a repeatable list
  *  of monthly fee options ("$<amount> due on the first day of each month. <notes>").
@@ -389,6 +455,9 @@ function FieldControl({
   const save = () => { if (local !== (f.value ?? '')) void onSave(f.field_key, local); };
 
   // ── structured formats (source of truth = f.structured) ──
+  if (fmt === 'med_schedule') {
+    return <MedicationBuilder f={f} onSaveStructured={onSaveStructured} disabled={disabled} />;
+  }
   if (fmt === 'fee_schedule') {
     return <LeaseFeeBuilder f={f} onSaveStructured={onSaveStructured} disabled={disabled} />;
   }
@@ -734,7 +803,7 @@ export function InlineFieldControl({
 
   // Structured / multi-part formats can't collapse to a single inline token —
   // render the block control, but inline-block and compact so it stays in flow.
-  const isStructured = ['party', 'contact', 'person', 'address', 'location', 'pair', 'fee_schedule'].includes(fmt)
+  const isStructured = ['party', 'contact', 'person', 'address', 'location', 'pair', 'fee_schedule', 'med_schedule'].includes(fmt)
     || kind === 'responsibility' || kind === 'week_grid';
   if (isStructured) {
     return (
