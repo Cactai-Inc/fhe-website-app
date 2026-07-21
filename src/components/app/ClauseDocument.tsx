@@ -63,6 +63,17 @@ function TokenValue({ token, value }: { token: string; value: string }) {
   );
 }
 
+/** A field's value resolved to its option label (for read-only display). */
+function optionLabel(f: ContractField): string {
+  const v = f.value ?? '';
+  if (!v) return '';
+  if (f.options && f.options.length) {
+    const opt = f.options.find((o) => o.value === v);
+    if (opt) return opt.label;
+  }
+  return v;
+}
+
 /** Render a clause's prose with input controls dropped inline at each {{token}}. */
 function ClauseProse({
   body, fieldByKey, valueByKey, cb,
@@ -79,7 +90,11 @@ function ClauseProse({
     if (m.index > last) nodes.push(body.slice(last, m.index));
     const token = m[1];
     const field = fieldByKey.get(token);
-    if (field && field.can_edit !== undefined) {
+    // HORSE.* imports read-only from the horse record — shown as a value, never an
+    // editable control. To change one, the horse record is edited (by owner/staff),
+    // not the contract. Its display value resolves option codes to labels.
+    const isHorseImport = token.startsWith('HORSE.');
+    if (field && field.can_edit !== undefined && !isHorseImport) {
       // an editable field lives here → drop its control inline
       nodes.push(
         <InlineFieldControl key={`f${i++}`} f={field} editable={cb.editable}
@@ -88,8 +103,9 @@ function ClauseProse({
           onCommentField={cb.onCommentField} onSuggestEdit={cb.onSuggestEdit} canSuggest={cb.canSuggest} />,
       );
     } else {
-      // auto-fill / signature token → current value or blank
-      nodes.push(<TokenValue key={`t${i++}`} token={token} value={valueByKey[token] ?? ''} />);
+      // auto-fill / signature / horse-record import → value (label-resolved) or hint
+      const display = field ? optionLabel(field) : (valueByKey[token] ?? '');
+      nodes.push(<TokenValue key={`t${i++}`} token={token} value={display} />);
     }
     last = m.index + m[0].length;
   }
