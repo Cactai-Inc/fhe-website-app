@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { MessageSquarePlus, Check, CornerDownRight, AlertTriangle } from 'lucide-react';
+import { MessageSquarePlus, Check, CornerDownRight, AlertTriangle, Pencil, Trash2 } from 'lucide-react';
 import {
   contractCommentsList, postContractComment, resolveContractComment,
+  editContractComment, deleteContractComment, myCommentIdentity,
   type ContractComment,
 } from '../../lib/contracts';
 
@@ -37,24 +38,71 @@ function anchorLabel(c: ContractComment): string {
   return 'the document';
 }
 
-/** One thread: a root comment, its replies, resolve control, and a reply box. */
+/** One comment row (root or reply): body + author, with author edit/delete. */
+function CommentRow({
+  c, mine, canAct, busy, onEdit, onDelete, reply,
+}: {
+  c: ContractComment; mine: boolean; canAct: boolean; busy: boolean;
+  onEdit: (id: string, body: string) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+  reply?: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(c.body);
+  return (
+    <div className={reply ? 'ml-5' : ''}>
+      {reply && <CornerDownRight size={13} className="text-muted inline mr-1 -ml-5 align-top mt-1" aria-hidden="true" />}
+      {editing ? (
+        <div className="flex flex-col gap-1.5">
+          <textarea rows={2} className="form-input resize-y text-sm" value={text}
+            onChange={(e) => setText(e.target.value)} autoFocus />
+          <div className="flex gap-2">
+            <button type="button" className="btn-primary text-xs" disabled={busy || !text.trim()}
+              onClick={() => void onEdit(c.id, text.trim()).then(() => setEditing(false))}>Save</button>
+            <button type="button" className="btn-secondary text-xs" onClick={() => { setText(c.body); setEditing(false); }}>Cancel</button>
+          </div>
+        </div>
+      ) : (
+        <p className="text-sm text-green-900 whitespace-pre-line">{c.body}</p>
+      )}
+      <p className="text-[11px] text-muted mt-0.5 flex items-center gap-1.5">
+        {c.author_label ?? 'A party'}{c.author_role ? ` (${c.author_role})` : ''} · {when(c.created_at)}
+        {c.edited_at && <span className="italic">· edited</span>}
+        {mine && canAct && !editing && (
+          <>
+            <button type="button" className="text-muted hover:text-green-800 inline-flex items-center gap-0.5"
+              onClick={() => { setText(c.body); setEditing(true); }} title="Edit"><Pencil size={11} /></button>
+            <button type="button" className="text-muted hover:text-red-700 inline-flex items-center gap-0.5"
+              onClick={() => void onDelete(c.id)} title="Delete"><Trash2 size={11} /></button>
+          </>
+        )}
+      </p>
+    </div>
+  );
+}
+
+/** One thread: a root comment + replies, resolve/edit/delete + a reply box. */
 function Thread({
-  root, replies, canAct, onReply, onResolve, busy,
+  root, replies, canAct, myContactId, onReply, onResolve, onEdit, onDelete, busy,
 }: {
   root: ContractComment;
   replies: ContractComment[];
   canAct: boolean;
+  myContactId: string | null;
   onReply: (parentId: string, body: string) => Promise<void>;
   onResolve: (id: string, resolved: boolean) => Promise<void>;
+  onEdit: (id: string, body: string) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
   busy: boolean;
 }) {
   const [replyText, setReplyText] = useState('');
   const [replying, setReplying] = useState(false);
   const resolved = !!root.resolved_at;
+  const isMine = (c: ContractComment) => !!myContactId && c.author_contact_id === myContactId;
 
   return (
     <div className={`border rounded-lg p-3 ${resolved ? 'border-green-800/10 bg-cream-100/40 opacity-80' : 'border-gold-400/40 bg-white'}`}>
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex items-start justify-between gap-2 mb-1">
         <p className="text-[11px] text-muted">
           On <span className="text-green-900">{anchorLabel(root)}</span>
           {root.is_stale && (
@@ -73,23 +121,12 @@ function Thread({
         )}
       </div>
 
-      <p className="text-sm text-green-900 mt-1 whitespace-pre-line">{root.body}</p>
-      <p className="text-[11px] text-muted mt-0.5">
-        {root.author_label ?? 'A party'}{root.author_role ? ` (${root.author_role})` : ''} · {when(root.created_at)}
-      </p>
+      <CommentRow c={root} mine={isMine(root)} canAct={canAct} busy={busy} onEdit={onEdit} onDelete={onDelete} />
 
       {replies.length > 0 && (
         <div className="mt-2 ml-3 pl-3 border-l-2 border-green-800/10 flex flex-col gap-2">
           {replies.map((r) => (
-            <div key={r.id}>
-              <p className="text-sm text-green-900 whitespace-pre-line flex gap-1.5">
-                <CornerDownRight size={13} className="text-muted mt-1 shrink-0" aria-hidden="true" />
-                <span>{r.body}</span>
-              </p>
-              <p className="text-[11px] text-muted mt-0.5 ml-5">
-                {r.author_label ?? 'A party'}{r.author_role ? ` (${r.author_role})` : ''} · {when(r.created_at)}
-              </p>
-            </div>
+            <CommentRow key={r.id} c={r} mine={isMine(r)} canAct={canAct} busy={busy} onEdit={onEdit} onDelete={onDelete} reply />
           ))}
         </div>
       )}
@@ -118,7 +155,7 @@ function Thread({
 }
 
 export function ContractComments({
-  documentId, canComment, pendingAnchor, onAnchorConsumed, onChanged,
+  documentId, canComment, pendingAnchor, onAnchorConsumed, onChanged, visible = true, onCount,
 }: {
   documentId: string;
   canComment: boolean;
@@ -127,6 +164,10 @@ export function ContractComments({
   pendingAnchor?: PendingAnchor | null;
   onAnchorConsumed?: () => void;
   onChanged?: () => void;
+  /** Controlled visibility — the subheader's View/Hide toggle. */
+  visible?: boolean;
+  /** Reports the number of root comment threads (for the subheader badge). */
+  onCount?: (n: number) => void;
 }) {
   const [comments, setComments] = useState<ContractComment[] | null>(null);
   const [busy, setBusy] = useState(false);
@@ -134,11 +175,13 @@ export function ContractComments({
   const [draft, setDraft] = useState('');
   const [composerOpen, setComposerOpen] = useState(false);
   const [anchor, setAnchor] = useState<PendingAnchor>({ kind: 'document' });
+  const [myContactId, setMyContactId] = useState<string | null>(null);
 
   const load = useCallback(() => {
     contractCommentsList(documentId).then(setComments).catch(() => setComments([]));
   }, [documentId]);
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { myCommentIdentity(documentId).then(setMyContactId).catch(() => setMyContactId(null)); }, [documentId]);
 
   // An external anchor (span selection / field comment) opens the composer.
   useEffect(() => {
@@ -148,6 +191,11 @@ export function ContractComments({
       onAnchorConsumed?.();
     }
   }, [pendingAnchor, onAnchorConsumed]);
+
+  // report the root-thread count to the parent (subheader badge).
+  useEffect(() => {
+    if (comments) onCount?.(comments.filter((c) => !c.parent_comment_id).length);
+  }, [comments, onCount]);
 
   const { roots, repliesByParent } = useMemo(() => {
     const all = comments ?? [];
@@ -180,8 +228,14 @@ export function ContractComments({
     run(() => postContractComment(documentId, { body, parentId }).then(() => {}));
   const resolve = (id: string, resolved: boolean) =>
     run(() => resolveContractComment(id, resolved));
+  const editComment = (id: string, body: string) => run(() => editContractComment(id, body));
+  const deleteComment = (id: string) => run(() => deleteContractComment(id));
 
   const openCount = roots.filter((r) => !r.resolved_at).length;
+
+  // Controlled by the subheader's View/Hide toggle. Still render while the composer
+  // is open (a just-triggered comment) so the draft isn't lost when hidden.
+  if (!visible && !composerOpen) return null;
 
   return (
     <section className="bg-white border border-green-800/10 rounded-xl p-5">
@@ -232,7 +286,8 @@ export function ContractComments({
         <div className="flex flex-col gap-2.5 max-h-[32rem] overflow-y-auto">
           {roots.map((root) => (
             <Thread key={root.id} root={root} replies={repliesByParent.get(root.id) ?? []}
-              canAct={canComment} onReply={reply} onResolve={resolve} busy={busy} />
+              canAct={canComment} myContactId={myContactId}
+              onReply={reply} onResolve={resolve} onEdit={editComment} onDelete={deleteComment} busy={busy} />
           ))}
         </div>
       )}

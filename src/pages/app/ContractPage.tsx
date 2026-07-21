@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
-  FileText, CheckCircle2, Lock, Send, PenLine, ShieldCheck, RotateCcw, Mail,
+  FileText, CheckCircle2, Lock, Send, PenLine, ShieldCheck, RotateCcw, Mail, MessageSquarePlus,
 } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
 import { useAuth } from '../../contexts/AuthContext';
@@ -227,6 +227,10 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   const [changeKey, setChangeKey] = useState(0);
   // Clause structure for clause-model (Section›Clause›Field) documents.
   const [structure, setStructure] = useState<TemplateStructure | null>(null);
+  // Comments UX: visibility toggle, comment count, and the "pick where" modal.
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [pickCommentOpen, setPickCommentOpen] = useState(false);
+  const [commentCount, setCommentCount] = useState(0);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -430,16 +434,63 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         </span>
       </div>
 
-      {/* Sticky "Add to contract" sub-header — one button that launches the
-          section/clause/field modal. Present for clause-model docs while editable
-          so it's always reachable; the modal asks WHAT and WHERE. */}
-      {structure && isOwnerSide && editablePhase && id && (
-        <div className="sticky top-0 z-20 -mx-1 px-1 py-2 mb-3 bg-cream-100/95 backdrop-blur border-b border-green-800/10">
-          <AddElementButton documentId={id} disabled={!editablePhase}
-            sections={structure.sections.map((s) => s.heading)}
-            canAddStructure={isOwnerSide}
-            canAddClause={isOwnerSide || (redline?.can_add_clause ?? false)}
-            onAdded={() => void act(async () => {})} />
+      {/* Sticky action sub-header (minimal height): Add a Comment · Add a Section,
+          Item, or Field · View/Hide Comments · Proceed to Signatures. Present for
+          clause-model docs so the actions are always reachable. */}
+      {structure && id && state !== 'executed' && (
+        <div className="sticky top-0 z-20 -mx-1 px-1 py-1.5 mb-3 bg-cream-100/95 backdrop-blur border-b border-green-800/10 flex flex-wrap items-center gap-2">
+          {!isCancelled && state !== 'void' && (
+            <button type="button" className="btn-outline-gold text-xs inline-flex items-center gap-1"
+              onClick={() => setPickCommentOpen(true)}>
+              <MessageSquarePlus size={13} /> Add a Comment
+            </button>
+          )}
+          {isOwnerSide && editablePhase && (
+            <AddElementButton documentId={id} disabled={!editablePhase}
+              sections={structure.sections.map((s) => s.heading)}
+              canAddStructure={isOwnerSide}
+              canAddClause={isOwnerSide || (redline?.can_add_clause ?? false)}
+              onAdded={() => void act(async () => {})} />
+          )}
+          {commentCount > 0 && (
+            <button type="button" className="text-xs text-green-800 hover:text-green-700 underline underline-offset-2"
+              onClick={() => setCommentsOpen((v) => !v)}>
+              {commentsOpen ? 'Hide Comments' : `View Comments (${commentCount})`}
+            </button>
+          )}
+          <button type="button" className="ml-auto text-xs text-green-800 hover:text-green-700 underline underline-offset-2"
+            onClick={() => document.getElementById('contract-signatures')?.scrollIntoView({ behavior: 'smooth' })}>
+            Proceed to Signatures →
+          </button>
+        </div>
+      )}
+      {/* "pick where to comment" prompt: choose a section (the pinned target). */}
+      {pickCommentOpen && structure && (
+        <div className="fixed inset-0 z-40 bg-black/30 flex items-center justify-center p-4"
+          onClick={() => setPickCommentOpen(false)}>
+          <div className="bg-white rounded-xl border border-green-800/15 p-5 max-w-md w-full shadow-lg"
+            onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-serif text-green-900 mb-1">Add a comment</h3>
+            <p className="text-sm text-muted mb-3">
+              Select the section to pin your comment to — or close this and select
+              any text in the document to pin the comment to that passage.
+            </p>
+            <div className="max-h-[50vh] overflow-y-auto flex flex-col gap-1">
+              {structure.sections.map((s) => (
+                <button key={s.section_key} type="button"
+                  className="text-left text-sm px-3 py-2 rounded-lg hover:bg-cream-100 focus-ring"
+                  onClick={() => {
+                    setPendingAnchor({ kind: 'field', ref: s.section_key, label: s.heading });
+                    setPickCommentOpen(false); setCommentsOpen(true);
+                  }}>
+                  {s.heading}
+                </button>
+              ))}
+            </div>
+            <div className="mt-3 text-right">
+              <button type="button" className="btn-secondary text-xs" onClick={() => setPickCommentOpen(false)}>Cancel</button>
+            </div>
+          </div>
         </div>
       )}
       {/* Party-facing notes/instructions don't apply during the creation step
@@ -748,7 +799,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
 
       {/* workflow + signing */}
       {state !== 'executed' && state !== 'void' && (
-        <section className="bg-white border border-green-800/10 rounded-lg p-5">
+        <section id="contract-signatures" className="bg-white border border-green-800/10 rounded-lg p-5 scroll-mt-16">
           <h2 className="font-serif text-green-800 mb-3">Next steps</h2>
           <div className="flex flex-wrap items-center gap-2 mb-4">
             {isOwnerSide && editablePhase && (
@@ -859,7 +910,9 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           <ContractComments documentId={id} canComment={!isCancelled && state !== 'void'}
             pendingAnchor={pendingAnchor}
             onAnchorConsumed={() => setPendingAnchor(null)}
-            onChanged={() => setChangeKey((k) => k + 1)} />
+            onChanged={() => setChangeKey((k) => k + 1)}
+            visible={commentsOpen}
+            onCount={setCommentCount} />
         </div>
       )}
 

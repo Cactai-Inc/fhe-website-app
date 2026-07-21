@@ -566,10 +566,13 @@ export interface ContractComment {
   quote: string | null;
   quote_prefix: string | null;
   is_stale: boolean;
+  needs_review: boolean;
   body: string;
   author_label: string | null;
   author_role: string | null;
+  author_contact_id: string | null;
   resolved_at: string | null;
+  edited_at: string | null;
   created_at: string;
 }
 export async function contractCommentsList(documentId: string): Promise<ContractComment[]> {
@@ -602,6 +605,25 @@ export async function resolveContractComment(commentId: string, resolved = true)
     p_comment_id: commentId, p_resolved: resolved,
   });
   if (error) throw error;
+}
+export async function editContractComment(commentId: string, body: string): Promise<void> {
+  const { error } = await supabase.rpc('edit_contract_comment', { p_comment_id: commentId, p_body: body });
+  if (error) throw error;
+}
+export async function deleteContractComment(commentId: string): Promise<void> {
+  const { error } = await supabase.rpc('delete_contract_comment', { p_comment_id: commentId });
+  if (error) throw error;
+}
+export async function markCommentReview(commentId: string, on = true): Promise<void> {
+  const { error } = await supabase.rpc('mark_comment_review', { p_comment_id: commentId, p_on: on });
+  if (error) throw error;
+}
+/** The current caller's contact id for this document (to tell "my" comments apart). */
+export async function myCommentIdentity(documentId: string): Promise<string | null> {
+  const { data, error } = await supabase.rpc('comment_author_identity', { p_document_id: documentId });
+  if (error) return null;
+  const row = Array.isArray(data) ? data[0] : data;
+  return (row?.contact_id as string) ?? null;
 }
 export async function markCommentStale(commentId: string, stale = true): Promise<void> {
   const { error } = await supabase.rpc('mark_comment_stale', {
