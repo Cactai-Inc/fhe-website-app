@@ -120,10 +120,13 @@ function ClauseProse({
     if (matrix.length === 0) return;
     const cells = matrix;
     matrix = [];
+    // one label:value per line — a select or long value in a side-by-side grid
+    // overflowed its column and overlapped the neighbouring cell. A single column
+    // is collision-proof and reads cleanly; short values still sit compactly.
     blocks.push(
-      <div key={`mx${bi++}`} className="grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-x-6 gap-y-1 my-1">
+      <div key={`mx${bi++}`} className="flex flex-col gap-1 my-1">
         {cells.map((c, j) => (
-          <div key={j} className="flex items-baseline gap-1.5 text-[13.5px] text-green-950">
+          <div key={j} className="flex flex-wrap items-baseline gap-x-1.5 text-[13.5px] text-green-950">
             <span className="font-semibold whitespace-nowrap">{c.label}:</span>
             <span>{renderToken(c.token, `mx${bi}-${j}`, fieldByKey, valueByKey, cb)}</span>
           </div>
@@ -229,7 +232,7 @@ export function ClauseDocument({
         let clauseNo = 0;
         return (
           <section key={section.section_key}>
-            <h2 className="font-serif text-green-900 text-lg mb-3 flex items-baseline gap-2 border-b border-green-800/10 pb-1.5">
+            <h2 className="font-serif text-green-900 text-2xl mb-3 flex items-baseline gap-2 border-b border-green-800/10 pb-1.5">
               <span className="text-gold-ink tabular-nums">{secNum}.</span>
               {section.heading}
               {section.guidance && <InfoDot text={section.guidance} />}
@@ -262,14 +265,13 @@ export function ClauseDocument({
                       : null}
                     {orphanFields.length > 0 && (
                       // Fields attached to the clause but not placed by a {{token}}
-                      // in its prose — e.g. a yes/no authoring gate. These are
-                      // authoring controls (they don't print in the final document),
-                      // so they render on a muted line with the field label as the
-                      // prompt: "Any exceptions to note? [Yes] [No]".
-                      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 mt-1 pl-1 text-[12.5px] text-muted">
+                      // in its prose — e.g. a yes/no authoring gate ("Any exceptions
+                      // to note? [Yes] [No]"). Rendered at the same size/colour as the
+                      // clause prose so the section reads uniformly.
+                      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 mt-1 text-[13.5px] text-green-950 leading-[1.9]">
                         {orphanFields.map((f) => (
                           <span key={f.field_key} className="inline-flex items-baseline gap-1.5">
-                            <span className="italic">{f.label ?? f.field_key}</span>
+                            <span>{f.label ?? f.field_key}</span>
                             <InlineFieldControl f={f} editable={cb.editable}
                               onSave={cb.onSave} onSaveStructured={cb.onSaveStructured as never}
                               onSaveResponsibility={cb.onSaveResponsibility as never}
@@ -296,7 +298,7 @@ export function ClauseDocument({
         let clauseNo = 0;
         return (
           <section key={`custom:${name}`}>
-            <h2 className="font-serif text-green-900 text-lg mb-3 flex items-baseline gap-2 border-b border-green-800/10 pb-1.5">
+            <h2 className="font-serif text-green-900 text-2xl mb-3 flex items-baseline gap-2 border-b border-green-800/10 pb-1.5">
               <span className="text-gold-ink tabular-nums">{secNum}.</span>
               {name}
             </h2>

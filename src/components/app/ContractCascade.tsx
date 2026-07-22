@@ -297,6 +297,46 @@ function SelectWithOther({ f, onSave, disabled }: { f: ContractField; onSave: Sa
   );
 }
 
+/** A yes/no question that, on Yes, is REPLACED by a free-text input with a small
+ *  ✕ to revert to the question. Structured value: { enabled, text }. The composed
+ *  sentence appears only when text is present (empty → clause omitted). */
+function RevealText({
+  f, onSaveStructured, disabled,
+}: { f: ContractField; onSaveStructured: SaveStructFn; disabled: boolean }) {
+  const s = f.structured ?? {};
+  const open = s.enabled === true || (s.text ?? '') !== '';
+  const [text, setText] = useState(s.text ?? '');
+  useEffect(() => { setText(s.text ?? ''); }, [s.text]);
+  const question = f.label ?? 'Add details?';
+  if (!open) {
+    return (
+      <span className="inline-flex items-baseline gap-2 align-baseline">
+        <span className="text-[13.5px] text-green-950">{question}</span>
+        <button type="button" disabled={disabled}
+          className="text-[12px] rounded-full px-2.5 py-0.5 border border-green-800/25 text-secondary hover:bg-green-50 focus-ring"
+          onClick={() => void onSaveStructured(f.field_key, { ...s, enabled: true })}>Yes</button>
+        <button type="button" disabled={disabled}
+          className="text-[12px] rounded-full px-2.5 py-0.5 border border-green-800/25 text-secondary hover:bg-green-50 focus-ring"
+          onClick={() => void onSaveStructured(f.field_key, { enabled: false, text: '' })}>No</button>
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-baseline gap-1 align-baseline w-full">
+      <span className="text-[13.5px] text-green-950 whitespace-nowrap">Lessee is prohibited from using these items:</span>
+      <input className="flex-1 min-w-[8rem] px-1 text-[13.5px] text-green-900 bg-gold-50/70 border-b border-gold-400/70 focus:outline-none focus:border-gold-600 rounded-sm"
+        disabled={disabled} value={text} placeholder="list the prohibited tack / equipment"
+        onChange={(e) => setText(e.target.value)}
+        onBlur={() => { if (text !== (s.text ?? '')) void onSaveStructured(f.field_key, { ...s, enabled: true, text }); }} />
+      {!disabled && (
+        <button type="button" title="Remove" aria-label="Remove"
+          className="text-muted hover:text-red-700 text-xs px-1"
+          onClick={() => void onSaveStructured(f.field_key, { enabled: false, text: '' })}>✕</button>
+      )}
+    </span>
+  );
+}
+
 const MED_PARTY_OPTS = [
   { value: 'LESSOR', label: 'Lessor' },
   { value: 'LESSEE', label: 'Lessee' },
@@ -455,6 +495,9 @@ function FieldControl({
   const save = () => { if (local !== (f.value ?? '')) void onSave(f.field_key, local); };
 
   // ── structured formats (source of truth = f.structured) ──
+  if (fmt === 'reveal_text') {
+    return <RevealText f={f} onSaveStructured={onSaveStructured} disabled={disabled} />;
+  }
   if (fmt === 'med_schedule') {
     return <MedicationBuilder f={f} onSaveStructured={onSaveStructured} disabled={disabled} />;
   }
@@ -803,9 +846,19 @@ export function InlineFieldControl({
 
   // Structured / multi-part formats can't collapse to a single inline token —
   // render the block control, but inline-block and compact so it stays in flow.
-  const isStructured = ['party', 'contact', 'person', 'address', 'location', 'pair', 'fee_schedule', 'med_schedule'].includes(fmt)
+  const isStructured = ['party', 'contact', 'person', 'address', 'location', 'pair', 'fee_schedule', 'med_schedule', 'reveal_text'].includes(fmt)
     || kind === 'responsibility' || kind === 'week_grid';
   if (isStructured) {
+    // reveal_text self-labels (it shows its own question), so render it inline
+    // in the prose flow with no extra label above it.
+    if (fmt === 'reveal_text') {
+      return (
+        <span className="align-baseline">
+          <FieldControl f={f} onSave={onSave} onSaveResponsibility={onSaveResponsibility}
+            onSaveStructured={onSaveStructured} disabled={disabled} />{marks}
+        </span>
+      );
+    }
     return (
       <span className="inline-block align-top mx-0.5 my-0.5 min-w-[14rem] max-w-full">
         <span className="text-[11px] text-muted">{label}{marks}</span>

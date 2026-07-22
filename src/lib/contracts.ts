@@ -81,6 +81,8 @@ export interface FieldStructured {
   selected?: number | null;
   // med_schedule (§11 medications & supplements builder)
   medItems?: { name?: string; dose?: string; schedule?: string; party?: string; party_note?: string }[];
+  // reveal_text (§11.6 tack yes/no → input)
+  enabled?: boolean;
 }
 
 export interface ContractChangeRequest {
