@@ -237,8 +237,6 @@ export function ClauseDocument({
     return m;
   }, [fields]);
 
-  const clauseVisible = (c: ClauseDef) => clauseConditionMet(c.conditional_on, valueByKey);
-
   // Author-added fields (CUSTOM.*) grouped by their section value. A field whose
   // section matches a template section renders at the end of that section; the
   // rest (custom sections) render as their own sections after the template ones.
@@ -272,9 +270,21 @@ export function ClauseDocument({
   return (
     <div className="flex flex-col gap-7">
       {sections.map((section) => {
-        const visibleClauses = section.clauses.filter(clauseVisible);
+        // AUTHORING VIEW: render every clause, even gated-off ones, so nothing
+        // disappears before signing and the author can always change their mind.
+        // A gated-off clause shows muted (a "not currently included" state) with its
+        // controls still live; the FINAL composed/locked document (merged_body) is
+        // where not-applicable clauses are actually omitted. Empty-body authoring
+        // gates that are gated-off AND carry no field are the exception — nothing to
+        // show — so they're skipped.
+        const clausesToShow = section.clauses.filter((c) => {
+          if (clauseConditionMet(c.conditional_on, valueByKey)) return true;
+          // gated-off: still show if it has body prose or any fields to reveal.
+          const hasFields = (fieldsByClause.get(c.clause_key) ?? []).length > 0;
+          return !!(c.body && c.body.trim()) || hasFields;
+        });
         const sectionCustom = customBySection.get(section.section_key) ?? [];
-        if (visibleClauses.length === 0 && sectionCustom.length === 0) return null;
+        if (clausesToShow.length === 0 && sectionCustom.length === 0) return null;
         sectionNo += 1;
         const secNum = sectionNo;
         let clauseNo = 0;
@@ -286,9 +296,13 @@ export function ClauseDocument({
               {section.guidance && <InfoDot text={section.guidance} />}
             </h2>
             <div className="flex flex-col gap-4">
-              {visibleClauses.map((clause) => {
-                clauseNo += 1;
-                const num = `${secNum}.${clauseNo}`;
+              {clausesToShow.map((clause) => {
+                const gatedOff = !clauseConditionMet(clause.conditional_on, valueByKey);
+                // Only clauses that WILL appear in the final document consume a
+                // number, so the visible numbering matches the executed form. A
+                // gated-off clause shows without a number, muted.
+                if (!gatedOff) clauseNo += 1;
+                const num = gatedOff ? '' : `${secNum}.${clauseNo}`;
                 const bodyTokens = new Set(
                   [...(clause.body ?? '').matchAll(TOKEN_RE)].map((mm) => mm[1]),
                 );
@@ -301,10 +315,15 @@ export function ClauseDocument({
                 const orphanFields = (fieldsByClause.get(clause.clause_key) ?? [])
                   .filter((f) => !bodyTokens.has(f.field_key));
                 return (
-                  <div key={clause.clause_key}>
+                  <div key={clause.clause_key} className={gatedOff ? 'opacity-55' : ''}>
+                    {gatedOff && (
+                      <p className="text-[10.5px] uppercase tracking-wide text-gold-700/80 mb-0.5">
+                        Optional — included in the final agreement only if selected
+                      </p>
+                    )}
                     {clause.heading && (
                       <p className="text-[13px] font-semibold text-green-900 mb-1 flex items-center gap-1.5">
-                        <span className="text-muted tabular-nums">{num}</span>{clause.heading}
+                        {num && <span className="text-muted tabular-nums">{num}</span>}{clause.heading}
                         {clause.guidance && <InfoDot text={clause.guidance} />}
                       </p>
                     )}

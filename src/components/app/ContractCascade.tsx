@@ -297,41 +297,37 @@ function SelectWithOther({ f, onSave, disabled }: { f: ContractField; onSave: Sa
   );
 }
 
-/** A yes/no question that, on Yes, is REPLACED by a free-text input with a small
- *  ✕ to revert to the question. Structured value: { enabled, text }. The composed
- *  sentence appears only when text is present (empty → clause omitted). */
+/** A yes/no question whose "Yes" reveals a free-text input. Structured value:
+ *  { enabled, text }. Yes and No are ALWAYS shown as selectable pills with a clear
+ *  selected state — choosing No collapses the input (and clears it); the answer can
+ *  be changed any time before signing. The composed sentence appears only when Yes
+ *  with text; No / unanswered → the clause is omitted from the final document. */
 function RevealText({
   f, onSaveStructured, disabled,
 }: { f: ContractField; onSaveStructured: SaveStructFn; disabled: boolean }) {
   const s = f.structured ?? {};
-  const open = s.enabled === true || (s.text ?? '') !== '';
+  const yes = s.enabled === true || (s.text ?? '') !== '';
+  const no = s.enabled === false && (s.text ?? '') === '';
   const [text, setText] = useState(s.text ?? '');
   useEffect(() => { setText(s.text ?? ''); }, [s.text]);
-  const question = f.label ?? 'Add details?';
-  if (!open) {
-    return (
-      <span className="inline-flex items-baseline gap-2 align-baseline">
-        <span className="text-[13.5px] text-green-950">{question}</span>
-        <button type="button" disabled={disabled}
-          className="text-[12px] rounded-full px-2.5 py-0.5 border border-green-800/25 text-secondary hover:bg-green-50 focus-ring"
-          onClick={() => void onSaveStructured(f.field_key, { ...s, enabled: true })}>Yes</button>
-        <button type="button" disabled={disabled}
-          className="text-[12px] rounded-full px-2.5 py-0.5 border border-green-800/25 text-secondary hover:bg-green-50 focus-ring"
-          onClick={() => void onSaveStructured(f.field_key, { enabled: false, text: '' })}>No</button>
-      </span>
-    );
-  }
+  const pill = (active: boolean) =>
+    `text-[12px] rounded-full px-2.5 py-0.5 border align-baseline focus-ring ${
+      active ? 'bg-green-800 text-white border-green-800' : 'border-green-800/25 text-secondary hover:bg-green-50'} ${disabled ? 'opacity-70' : ''}`;
   return (
-    <span className="inline-flex items-baseline gap-1 align-baseline w-full">
-      <span className="text-[13.5px] text-green-950 whitespace-nowrap">Lessee is prohibited from using these items:</span>
-      <input className="flex-1 min-w-[8rem] px-1 text-[13.5px] text-green-900 bg-gold-50/70 border-b border-gold-400/70 focus:outline-none focus:border-gold-600 rounded-sm"
-        disabled={disabled} value={text} placeholder="list the prohibited tack / equipment"
-        onChange={(e) => setText(e.target.value)}
-        onBlur={() => { if (text !== (s.text ?? '')) void onSaveStructured(f.field_key, { ...s, enabled: true, text }); }} />
-      {!disabled && (
-        <button type="button" title="Remove" aria-label="Remove"
-          className="text-muted hover:text-red-700 text-xs px-1"
-          onClick={() => void onSaveStructured(f.field_key, { enabled: false, text: '' })}>✕</button>
+    <span className="inline-flex flex-wrap items-baseline gap-x-2 gap-y-1 align-baseline">
+      <span className="text-[13.5px] text-green-950">{f.label ?? 'Add details?'}</span>
+      <button type="button" disabled={disabled} className={pill(yes)}
+        onClick={() => void onSaveStructured(f.field_key, { ...s, enabled: true })}>Yes</button>
+      <button type="button" disabled={disabled} className={pill(no)}
+        onClick={() => void onSaveStructured(f.field_key, { enabled: false, text: '' })}>No</button>
+      {yes && (
+        <span className="inline-flex items-baseline gap-1 w-full mt-1">
+          <span className="text-[13.5px] text-green-950 whitespace-nowrap">Lessee is prohibited from using these items:</span>
+          <input className="flex-1 min-w-[8rem] px-1 text-[13.5px] text-green-900 bg-gold-50/70 border-b border-gold-400/70 focus:outline-none focus:border-gold-600 rounded-sm"
+            disabled={disabled} value={text} placeholder="list the prohibited tack / equipment"
+            onChange={(e) => setText(e.target.value)}
+            onBlur={() => { if (text !== (s.text ?? '')) void onSaveStructured(f.field_key, { ...s, enabled: true, text }); }} />
+        </span>
       )}
     </span>
   );
