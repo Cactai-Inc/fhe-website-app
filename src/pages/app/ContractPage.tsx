@@ -296,9 +296,18 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
     (f) => f.can_edit && !(f.value ?? '').trim(),
   );
   const reviewOnly = !isOwnerSide && editablePhase && myFillableEmpty.length === 0;
-  // seats we can send to = the parties that aren't the company/originator side
-  const sendableRoles = Array.from(new Set((detail?.signatures ?? [])
-    .map((s) => s.party_role).filter((r) => !myRoles.includes(r) && r !== 'FHE' && r !== 'COMPANY')));
+  const partyControls: PartyControls[] = detail?.party_controls ?? [];
+  // Counterparty seats = every party on the document that isn't one of my own
+  // roles or the company. Derived from party_controls (a row per party, always
+  // present) UNIONed with any signature rows — NOT from signature rows alone,
+  // which are empty until a doc is locked, so "Send for review" used to invite
+  // nobody and no email ever went out.
+  const counterpartyRoles = Array.from(new Set([
+    ...partyControls.map((c) => c.party_role),
+    ...(detail?.signatures ?? []).map((s) => s.party_role),
+  ].filter((r) => r && !myRoles.includes(r) && r !== 'FHE' && r !== 'COMPANY')));
+  const sendableRoles = counterpartyRoles;
+  const invitableRoles = counterpartyRoles;
   const iSigned = (detail?.signatures ?? []).some(
     (s) => s.signed_at && myRoles.includes(s.party_role));
   const counterpartySigned = (detail?.signatures ?? []).some((s) => s.signed_at);
@@ -307,11 +316,6 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   const pendingSignerRoles = Array.from(new Set((detail?.signatures ?? [])
     .filter((s) => !s.signed_at && s.party_role !== 'FHE' && s.party_role !== 'COMPANY')
     .map((s) => s.party_role)));
-  const partyControls: PartyControls[] = detail?.party_controls ?? [];
-  // the seats an outside party can be invited into (not mine, not the company's)
-  const invitableRoles = Array.from(new Set((detail?.signatures ?? [])
-    .map((s) => s.party_role)
-    .filter((r) => !myRoles.includes(r) && r !== 'FHE' && r !== 'COMPANY')));
 
   const sections = useMemo(() => {
     const by = new Map<string, ContractField[]>();
