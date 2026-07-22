@@ -838,9 +838,9 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
 
       {/* workflow + signing */}
       {state !== 'executed' && state !== 'void' && (
-        <section id="contract-signatures" className="bg-white border border-green-800/10 rounded-lg p-5 scroll-mt-16">
-          <h2 className="font-serif text-green-800 mb-3">Next steps</h2>
-          <div className="flex flex-wrap items-center gap-2 mb-4">
+        <section id="contract-signatures" className="bg-white border border-green-800/10 rounded-xl p-6 scroll-mt-16 mt-6">
+          <h2 className="font-serif text-lg text-green-800 mb-4">Next steps</h2>
+          <div className="flex flex-wrap items-center gap-2.5 mb-5">
             {isOwnerSide && editablePhase && (
               <>
                 <button type="button" className="btn-secondary text-xs"
@@ -882,22 +882,24 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
             ))}
           </div>
 
-          {/* Cancel (any party) / Archive + Delete (staff) */}
-          <div className="flex flex-wrap items-center gap-2 border-t border-green-800/10 pt-3">
+          {/* Manage row: Cancel (any party) / Archive + Delete (staff) — separated
+              from the primary workflow actions for a cleaner, less cramped layout. */}
+          <div className="flex flex-wrap items-center gap-1 border-t border-green-800/10 pt-4 mt-1">
+            <span className="text-[11px] uppercase tracking-wide text-muted mr-2">Manage</span>
             {!isCancelled && (
-              <button type="button" className="text-xs text-red-700 hover:bg-red-50 rounded px-3 py-1.5 focus-ring"
+              <button type="button" className="text-xs text-red-700 hover:bg-red-50 rounded-lg px-3 py-1.5 focus-ring"
                 onClick={() => { if (window.confirm('Cancel this document? All parties will be notified and the barn will archive or remove it.')) void act(() => cancelContract(id!), 'Document cancelled — all parties notified.'); }}>
                 Cancel document
               </button>
             )}
             {isStaff && (
-              <button type="button" className="text-xs text-secondary hover:bg-green-800/5 rounded px-3 py-1.5 focus-ring"
+              <button type="button" className="text-xs text-secondary hover:bg-green-800/5 rounded-lg px-3 py-1.5 focus-ring"
                 onClick={() => void act(() => archiveContract(id!, !isArchived), isArchived ? 'Unarchived.' : 'Archived — findable and resumable.')}>
                 {isArchived ? 'Unarchive' : 'Archive'}
               </button>
             )}
             {isStaff && (
-              <button type="button" className="text-xs text-red-700 hover:bg-red-50 rounded px-3 py-1.5 focus-ring ml-auto"
+              <button type="button" className="text-xs text-red-700 hover:bg-red-50 rounded-lg px-3 py-1.5 focus-ring ml-auto"
                 onClick={() => { if (window.confirm('Delete this document entirely? This is a hard delete — as if it never existed. This cannot be undone.')) void act(async () => { await hardDeleteContract(id!); navigate('/app/ops/documents'); }); }}>
                 Delete entirely
               </button>

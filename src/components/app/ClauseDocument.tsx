@@ -142,6 +142,21 @@ function ClauseProse({
         <span>{renderToken(c.token, `mx${bi}-${j}`, fieldByKey, valueByKey, cb)}</span>
       </div>
     );
+    // A signature triple — Signature / Printed Name / Date for one party — lays out
+    // as a fixed 3-column row (the classic signature-block look), not the packed
+    // grid, so it never wraps to one-per-line.
+    const isSigTriple = cells.length === 3
+      && cells.some((c) => c.token.startsWith('SIG.'))
+      && cells.map((c) => c.label.toLowerCase()).join('|') === 'signature|printed name|date';
+    if (isSigTriple) {
+      const key = bi++;
+      blocks.push(
+        <div key={`sig${key}`} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,0.8fr)] gap-x-6 gap-y-1 my-1 items-baseline">
+          {cells.map((c, j) => cell(c, j))}
+        </div>,
+      );
+      return;
+    }
     // group consecutive compact cells into a packed grid; wide cells break out to
     // their own full-width row. This keeps the Horse identity grid AND avoids the
     // Farrier/Vet dropdown collision.
