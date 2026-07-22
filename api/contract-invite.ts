@@ -19,9 +19,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   } catch {
     return res.status(400).json({ error: 'invalid JSON body' });
   }
-  const { documentId, partyRole, email } = body;
-  if (!documentId || !partyRole || !email) {
-    return res.status(400).json({ error: 'documentId, partyRole and email are required' });
+  const { documentId, partyRole } = body;
+  let { email } = body;
+  if (!documentId || !partyRole) {
+    return res.status(400).json({ error: 'documentId and partyRole are required' });
   }
 
   try {
@@ -50,6 +51,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .maybeSingle();
     if (!party?.contact_id) {
       return res.status(404).json({ error: `no ${partyRole} party on this contract` });
+    }
+
+    // The party is already assigned, so derive their email from the contact record
+    // when the caller didn't pass one (Send-for-review path). Skip silently if the
+    // contact has no email on file — the in-app notification still reaches them.
+    if (!email) {
+      const { data: c } = await db.from('contacts').select('email').eq('id', party.contact_id).maybeSingle();
+      email = c?.email ?? undefined;
+      if (!email) return res.status(200).json({ ok: true, emailed: false, reason: 'no email on file for this party' });
     }
 
     // Invitation language derives from THIS party's document controls + whether

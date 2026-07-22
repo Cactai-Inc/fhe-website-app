@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
-  FileText, CheckCircle2, Lock, Send, PenLine, ShieldCheck, RotateCcw, Mail, MessageSquarePlus,
+  FileText, CheckCircle2, Lock, Send, PenLine, ShieldCheck, RotateCcw, MessageSquarePlus,
 } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   contractDocumentDetail, setContractField,
-  resolveChangeRequest, advanceWorkflow, lockAndSign, confirmHorseSection,
-  reopenHorseSection, inviteCounterparty, setRecipientEditing,
+  resolveChangeRequest, advanceWorkflow, sendForReview, lockAndSign, confirmHorseSection,
+  reopenHorseSection, setRecipientEditing,
   setPartyControls, contractSigningSet,
   contractRedlineState, resolveFieldEdit, withdrawFieldEdit, proposeFieldEdit,
   resolveClause, withdrawClause, attachHorseToDocument,
@@ -214,8 +214,6 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [signName, setSignName] = useState('');
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState('');
   // Document body is visible by default (DocuSign principle: you sign what you
   // see). Parties can collapse it while filling fields, but it no longer hides.
   const [showBody, setShowBody] = useState(true);
@@ -624,26 +622,9 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                 e.target.checked ? 'Counterparty may now edit the deal terms.' : 'Counterparty edit access turned off.')} />
             Let the other party edit deal terms while negotiating
           </label>
-          <div className="flex items-center gap-2 flex-wrap">
-            <input type="email" placeholder="counterparty@email.com" value={inviteEmail}
-              onChange={(e) => setInviteEmail(e.target.value)}
-              className="px-3 py-1.5 rounded-lg border border-green-800/15 text-sm focus-ring w-52" />
-            {/* which seat they're invited into — derived from the contract's parties */}
-            <select value={inviteRole || invitableRoles[0] || ''} aria-label="Invite as"
-              onChange={(e) => setInviteRole(e.target.value)}
-              className="px-2 py-1.5 rounded-lg border border-green-800/15 text-sm bg-white focus-ring">
-              {(invitableRoles.length ? invitableRoles : ['LESSOR']).map((r) => (
-                <option key={r} value={r}>{r.charAt(0) + r.slice(1).toLowerCase()}</option>
-              ))}
-            </select>
-            <button type="button" className="btn-outline-gold text-xs"
-              disabled={!inviteEmail}
-              onClick={() => void act(
-                () => inviteCounterparty(id!, inviteRole || invitableRoles[0] || 'LESSOR', inviteEmail),
-                'Invitation sent.')}>
-              <Mail size={13} /> Invite
-            </button>
-          </div>
+          {/* No manual email-invite box: the parties are already assigned at
+              creation. They're notified — in-app and by email — when you click
+              "Send for review" (or "Send to <party>") below. */}
         </div>
       )}
 
@@ -844,7 +825,9 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
             {isOwnerSide && editablePhase && (
               <>
                 <button type="button" className="btn-secondary text-xs"
-                  onClick={() => void act(() => advanceWorkflow(id!, 'in_review'), 'Sent for review.')}>
+                  onClick={() => void act(
+                    () => sendForReview(id!, invitableRoles),
+                    'Sent for review — the parties were notified by email and in-app.')}>
                   <Send size={13} /> Send for review
                 </button>
                 <button type="button" className="btn-outline-gold text-xs"

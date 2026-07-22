@@ -322,7 +322,7 @@ export async function redeemContractInvitation(token: string): Promise<string> {
  *  party contact for the given role (LESSOR/LESSEE/BUYER/SELLER), issues the
  *  token, and sends the branded email. */
 export async function inviteCounterparty(
-  documentId: string, partyRole: string, email: string,
+  documentId: string, partyRole: string, email?: string,
 ): Promise<void> {
   const { data: sess } = await supabase.auth.getSession();
   const bearer = sess?.session?.access_token;
@@ -330,10 +330,20 @@ export async function inviteCounterparty(
   const res = await fetch('/api/contract-invite', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${bearer}` },
-    body: JSON.stringify({ documentId, partyRole, email }),
+    // email is optional — the server derives it from the assigned party contact.
+    body: JSON.stringify(email ? { documentId, partyRole, email } : { documentId, partyRole }),
   });
   const json = (await res.json().catch(() => ({}))) as { error?: string };
   if (!res.ok) throw new Error(json.error || 'Could not send the invitation.');
+}
+
+/** Send for review: advance the workflow (in-app notifications fire server-side)
+ *  AND email each of the given party roles (their email is derived from the
+ *  assigned contact). Email failures are swallowed so one bad address doesn't
+ *  block the workflow advance — the in-app notification still reaches them. */
+export async function sendForReview(documentId: string, partyRoles: string[]): Promise<void> {
+  await advanceWorkflow(documentId, 'in_review');
+  await Promise.allSettled(partyRoles.map((r) => inviteCounterparty(documentId, r)));
 }
 
 // (composeCostPhrase removed 2026-07-20, audit m-1: superseded — cost prose is
