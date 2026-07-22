@@ -47,7 +47,7 @@ const FINANCIAL_PARTY_OPTS = [
 const CARE_PARTY_OPTS = [
   { value: 'LESSOR', label: 'Lessor' },
   { value: 'LESSEE', label: 'Lessee' },
-  { value: 'FHE', label: 'FHE (care & oversight)' },
+  { value: 'FHE', label: 'French Heritage Equestrian (care & oversight)' },
   { value: 'SHARED', label: 'Shared' },
 ];
 const COST_PARTY_OPTS = [

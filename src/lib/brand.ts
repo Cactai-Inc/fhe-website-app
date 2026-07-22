@@ -4,7 +4,10 @@
 
 export const BRAND = {
   name: 'French Heritage Equestrian',
-  shortName: 'FHE',
+  // Brand standard: always spell out the full name; never abbreviate to "FHE"
+  // unless explicitly requested. shortName intentionally holds the full name so
+  // any consumer that renders it stays compliant.
+  shortName: 'French Heritage Equestrian',
   tagline: 'A family-run hunter/jumper barn and community, rooted in classical European horsemanship.',
   email: 'Hello@FHEquestrian.com',
   emailHref: 'mailto:Hello@FHEquestrian.com',
