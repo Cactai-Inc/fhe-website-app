@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
-import { Users, Pencil, Check } from 'lucide-react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Users, Pencil, Check, Plus, MapPin, Phone, Mail } from 'lucide-react';
 import {
   documentPartiesSummary, reassignDocumentParty, attachHorseToDocument,
-  type PartiesHorseSummary,
+  type PartiesHorseSummary, type PartySummary, type PartyField,
 } from '../../lib/contracts';
 import { contractPartyOptions, staffHorseRecords, type PartyOption, type StaffHorseRecord } from '../../lib/horses';
+import { CaptureInfoModal } from './CaptureInfoModal';
 
 /**
  * PARTIES & HORSE — a compact summary card at the top of the contract showing who
@@ -25,6 +26,8 @@ export function PartiesHorseCard({
   const [horses, setHorses] = useState<StaffHorseRecord[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  // reusable capture modal: which party + which field(s) to collect
+  const [capture, setCapture] = useState<{ party: PartySummary; fields?: PartyField[] } | null>(null);
 
   const load = () => { documentPartiesSummary(documentId).then(setSummary).catch(() => setSummary(null)); };
   useEffect(load, [documentId]);
@@ -65,7 +68,7 @@ export function PartiesHorseCard({
       </div>
       {err && <p role="alert" className="form-error mb-2">{err}</p>}
 
-      <dl className="grid sm:grid-cols-3 gap-x-6 gap-y-2 text-sm">
+      <dl className="grid sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
         {summary.parties.map((p) => (
           <div key={p.party_role}>
             <dt className="text-[11px] uppercase tracking-wide text-muted">{roleLabel(p.party_role)}</dt>
@@ -76,7 +79,28 @@ export function PartiesHorseCard({
                 {contacts.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             ) : (
-              <dd className="text-green-900 font-medium">{p.name ?? '—'}</dd>
+              <dd className="mt-0.5">
+                <span className="text-green-900 font-medium">{p.name ?? '—'}</span>
+                {/* full contact detail — the value when present, an Add affordance when missing */}
+                <div className="mt-1 flex flex-col gap-0.5 text-[13px]">
+                  <ContactLine icon={<MapPin size={12} />} value={p.address}
+                    missing={p.missing.includes('address')} label="address"
+                    onAdd={canEdit && p.contact_id ? () => setCapture({ party: p, fields: ['address'] }) : undefined} />
+                  <ContactLine icon={<Phone size={12} />} value={p.phone}
+                    missing={p.missing.includes('phone')} label="phone"
+                    onAdd={canEdit && p.contact_id ? () => setCapture({ party: p, fields: ['phone'] }) : undefined} />
+                  <ContactLine icon={<Mail size={12} />} value={p.email}
+                    missing={p.missing.includes('email')} label="email"
+                    onAdd={canEdit && p.contact_id ? () => setCapture({ party: p, fields: ['email'] }) : undefined} />
+                </div>
+                {canEdit && p.contact_id && p.missing.length > 1 && (
+                  <button type="button"
+                    className="mt-1.5 text-xs text-gold-ink hover:underline inline-flex items-center gap-1"
+                    onClick={() => setCapture({ party: p })}>
+                    <Plus size={12} /> Complete {roleLabel(p.party_role)}’s info ({p.missing.length} missing)
+                  </button>
+                )}
+              </dd>
             )}
           </div>
         ))}
@@ -89,11 +113,53 @@ export function PartiesHorseCard({
               {horses.map((h) => <option key={h.id} value={h.id}>{h.registered_name || h.nickname || 'Horse'}</option>)}
             </select>
           ) : (
-            <dd className="text-green-900 font-medium">{summary.horse_name ?? '—'}</dd>
+            <dd className="mt-0.5 text-green-900 font-medium">{summary.horse_name ?? '—'}</dd>
           )}
         </div>
       </dl>
+
+      {capture && (
+        <CaptureInfoModal
+          documentId={documentId}
+          party={capture.party}
+          fields={capture.fields}
+          onClose={() => setCapture(null)}
+          onSaved={() => { setCapture(null); load(); onChanged(); }}
+        />
+      )}
     </div>
+  );
+}
+
+/** One contact line — shows the value, or a muted "Add …" button when it's missing. */
+function ContactLine({
+  icon, value, missing, label, onAdd,
+}: {
+  icon: ReactNode; value: string | null; missing: boolean; label: string;
+  onAdd?: () => void;
+}) {
+  if (value) {
+    return (
+      <span className="inline-flex items-start gap-1.5 text-green-900/80">
+        <span className="text-muted mt-0.5">{icon}</span>
+        <span className="min-w-0 break-words">{value}</span>
+      </span>
+    );
+  }
+  if (!missing) return null;
+  if (onAdd) {
+    return (
+      <button type="button" onClick={onAdd}
+        className="inline-flex items-center gap-1.5 text-gold-ink hover:underline w-fit">
+        <span className="text-gold-ink"><Plus size={12} /></span>
+        Add {label}
+      </button>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1.5 text-muted italic">
+      <span>{icon}</span> No {label} on file
+    </span>
   );
 }
 

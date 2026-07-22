@@ -444,16 +444,66 @@ export async function reassignDocumentParty(documentId: string, partyRole: strin
   if (error) throw error;
 }
 
+/** The required contact fields a lease party must have (owner directive 2026-07-22). */
+export type PartyField = 'name' | 'address' | 'email' | 'phone';
+
+export interface PartySummary {
+  party_role: string;
+  contact_id: string | null;
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  // address components (for the capture modal to edit in parts)
+  address_line1: string | null;
+  address_line2: string | null;
+  city: string | null;
+  state: string | null;
+  postal_code: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  /** required fields (name/address/email/phone) this party is still missing */
+  missing: PartyField[];
+}
 export interface PartiesHorseSummary {
-  parties: { party_role: string; contact_id: string | null; name: string | null }[];
+  parties: PartySummary[];
   horse_id: string | null;
   horse_name: string | null;
+  /** ['horse'] if no horse attached, ['identity'] if attached but unnamed, else [] */
+  horse_missing: string[];
 }
 /** The parties + horse summary for the editable "Parties & Horse" card. */
 export async function documentPartiesSummary(documentId: string): Promise<PartiesHorseSummary> {
   const { data, error } = await supabase.rpc('document_parties_summary', { p_document_id: documentId });
   if (error) throw error;
   return data as PartiesHorseSummary;
+}
+
+/**
+ * Write missing/updated contact fields to the CENTRAL contact record, then refill
+ * the document's party auto-fill tokens and re-merge so the change shows in the
+ * contract immediately. This is the reusable "capture once, reuse everywhere"
+ * path: the value lands on the contact (reused by every document), not just here.
+ * Address is written as components; the contract composes it from those.
+ */
+export async function captureContactInfo(
+  documentId: string,
+  contactId: string,
+  patch: {
+    first_name?: string; last_name?: string; email?: string; phone?: string;
+    address_line1?: string; address_line2?: string; city?: string; state?: string; postal_code?: string;
+  },
+): Promise<void> {
+  // NOTE: contacts.address_composed is a GENERATED column
+  // (compose_address(line1,line2,city,state,postal)) — never write it; it
+  // recomputes automatically from the components we set here.
+  const { error: upErr } = await supabase.from('contacts').update(patch).eq('id', contactId);
+  if (upErr) throw upErr;
+  // refill the doc's party tokens from the now-updated contact, then re-merge
+  const { error: fillErr } = await supabase.rpc('fill_party_fields_from_contacts', { p_document_id: documentId });
+  if (fillErr) throw fillErr;
+  const { error: mergeErr } = await supabase.rpc('remerge_contract_from_clauses', { p_document_id: documentId });
+  if (mergeErr) throw mergeErr;
 }
 
 /** Send the document to a party = notify them + confirm access. */

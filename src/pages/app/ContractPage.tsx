@@ -14,10 +14,11 @@ import {
   resolveClause, withdrawClause, attachHorseToDocument,
   sendContractToParty, cancelContract, archiveContract, hardDeleteContract,
   setFieldResponsibility, setFieldIncluded, setFieldNa, setFieldControlOverride, setFieldStructured,
-  postContractComment,
+  postContractComment, documentPartiesSummary,
   type ContractDetail, type ContractField, type PartyControls,
-  type SigningSetDoc, type RedlineState,
+  type SigningSetDoc, type RedlineState, type PartiesHorseSummary, type PartySummary,
 } from '../../lib/contracts';
+import { CaptureInfoModal } from '../../components/app/CaptureInfoModal';
 import { listStableHorses, type StableHorse } from '../../lib/stable';
 import { ContractCascade, ContractBody } from '../../components/app/ContractCascade';
 import { AddElementButton } from '../../components/app/AddElementModal';
@@ -236,6 +237,10 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   >(null);
   const [commentDraft, setCommentDraft] = useState('');
   const [commentPosting, setCommentPosting] = useState(false);
+  // Parties/horse summary drives the "required info missing" gate on lock, and the
+  // capture modal shown when locking with gaps.
+  const [partiesSummary, setPartiesSummary] = useState<PartiesHorseSummary | null>(null);
+  const [captureParty, setCaptureParty] = useState<PartySummary | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -243,6 +248,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       setDetail(await contractDocumentDetail(id));
       contractSigningSet(id).then(setSigningSet).catch(() => setSigningSet([]));
       contractRedlineState(id).then(setRedline).catch(() => setRedline(null));
+      documentPartiesSummary(id).then(setPartiesSummary).catch(() => setPartiesSummary(null));
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not load the contract.');
@@ -352,6 +358,24 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
     } catch (e) {
       setError(e instanceof Error ? e.message : 'That action failed.');
     }
+  }
+
+  // Lock-for-signing gate: a party missing required info (name/address/email/phone)
+  // can't be locked for signature — open the reusable capture modal on the first
+  // incomplete party instead. The horse must also be attached and identified.
+  function lockForSigning() {
+    setError(null); setNote(null);
+    const incomplete = (partiesSummary?.parties ?? []).find((p) => p.missing.length > 0);
+    if (incomplete) {
+      setCaptureParty(incomplete);
+      setNote(`${incomplete.party_role.charAt(0) + incomplete.party_role.slice(1).toLowerCase()} is missing required contact information. Add it to continue.`);
+      return;
+    }
+    if ((partiesSummary?.horse_missing ?? []).length > 0) {
+      setError('This lease needs a horse selected and identified before it can be locked for signature.');
+      return;
+    }
+    void act(() => advanceWorkflow(id!, 'locked'), 'Locked — the final document is ready to sign.');
   }
 
   const saveField = useCallback(async (key: string, value: string) => {
@@ -850,7 +874,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                   <Send size={13} /> Send for review
                 </button>
                 <button type="button" className="btn-outline-gold text-xs"
-                  onClick={() => void act(() => advanceWorkflow(id!, 'locked'), 'Locked — the final document is ready to sign.')}>
+                  onClick={lockForSigning}>
                   <Lock size={13} /> Lock for signing
                 </button>
               </>
@@ -862,7 +886,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                   Back to editing
                 </button>
                 <button type="button" className="btn-outline-gold text-xs"
-                  onClick={() => void act(() => advanceWorkflow(id!, 'locked'), 'Locked — ready to sign.')}>
+                  onClick={lockForSigning}>
                   <Lock size={13} /> Lock for signing
                 </button>
               </>
@@ -1000,6 +1024,17 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         <div className="mt-5">
           <TrackChangesPanel documentId={id} refreshKey={changeKey} />
         </div>
+      )}
+
+      {/* Capture-missing-info modal, opened by the lock-for-signing gate. Writes to
+          the central contact, then reloads so the doc + card reflect it. */}
+      {captureParty && id && (
+        <CaptureInfoModal
+          documentId={id}
+          party={captureParty}
+          onClose={() => setCaptureParty(null)}
+          onSaved={() => { setCaptureParty(null); void load(); setChangeKey((k) => k + 1); }}
+        />
       )}
 
     </div>
