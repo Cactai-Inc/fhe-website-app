@@ -233,6 +233,9 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   >(null);
   const [commentDraft, setCommentDraft] = useState('');
   const [commentPosting, setCommentPosting] = useState(false);
+  // Suggest-a-change modal (the ✎ affordance) — a free-text proposed value.
+  const [suggestModal, setSuggestModal] = useState<{ field: ContractField } | null>(null);
+  const [suggestDraft, setSuggestDraft] = useState('');
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -350,11 +353,11 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   }, [id, load]);
 
   // A party proposes a change to a field they can't directly edit (redline, M-4).
+  // Opens a proper modal (free-text) rather than a native prompt.
   const suggestFieldEdit = useCallback((f: ContractField) => {
-    const proposed = window.prompt(`Suggest a new value for "${f.label ?? f.field_key}":`, f.value ?? '');
-    if (proposed == null) return;
-    void act(() => proposeFieldEdit(id!, f.field_key, proposed.trim()), 'Suggested change sent for review.');
-  }, [id]);
+    setSuggestDraft(f.value ?? '');
+    setSuggestModal({ field: f });
+  }, []);
 
   // Comment anchored to a specific field — opens the Add-a-Comment modal straight
   // at the write step, pre-anchored to that field.
@@ -531,6 +534,34 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+      {/* Suggest-a-change modal (the ✎ affordance) — a free-text proposed value
+          submitted as a redline proposal for the owner to accept or reject. */}
+      {suggestModal && id && (
+        <div className="fixed inset-0 z-40 bg-black/30 flex items-center justify-center p-4"
+          onClick={() => { setSuggestModal(null); setSuggestDraft(''); }}>
+          <div className="bg-white rounded-xl border border-green-800/15 p-6 max-w-lg w-full shadow-lg"
+            onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-serif text-green-900 mb-1">Suggest a change</h3>
+            <p className="text-[12px] text-muted mb-3">
+              For <span className="text-green-900">{suggestModal.field.label ?? suggestModal.field.field_key}</span>.
+              Your suggestion is sent to the other party to accept or reject — it doesn’t change the contract until accepted.
+            </p>
+            <textarea rows={4} className="form-input resize-y text-sm w-full" autoFocus
+              placeholder="Describe the change you’re proposing…"
+              value={suggestDraft} onChange={(e) => setSuggestDraft(e.target.value)} />
+            <div className="mt-3 flex justify-end gap-2">
+              <button type="button" className="btn-secondary text-xs"
+                onClick={() => { setSuggestModal(null); setSuggestDraft(''); }}>Cancel</button>
+              <button type="button" className="btn-primary text-xs" disabled={!suggestDraft.trim()}
+                onClick={() => {
+                  const fk = suggestModal.field.field_key;
+                  void act(() => proposeFieldEdit(id, fk, suggestDraft.trim()), 'Suggested change sent for review.');
+                  setSuggestModal(null); setSuggestDraft('');
+                }}>Send suggestion</button>
+            </div>
           </div>
         </div>
       )}

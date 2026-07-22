@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Info, MessageSquarePlus } from 'lucide-react';
 import { clauseConditionMet, type ContractField, type FieldStructured, type PartyChoice } from '../../lib/contracts';
 
@@ -309,7 +309,8 @@ function RevealText({
   const yes = s.enabled === true || (s.text ?? '') !== '';
   const no = s.enabled === false && (s.text ?? '') === '';
   const [text, setText] = useState(s.text ?? '');
-  useEffect(() => { setText(s.text ?? ''); }, [s.text]);
+  const editingRef = useRef(false);
+  useEffect(() => { if (!editingRef.current) setText(s.text ?? ''); }, [s.text]);
   const pill = (active: boolean) =>
     `text-[12px] rounded-full px-2.5 py-0.5 border align-baseline focus-ring ${
       active ? 'bg-green-800 text-white border-green-800' : 'border-green-800/25 text-secondary hover:bg-green-50'} ${disabled ? 'opacity-70' : ''}`;
@@ -325,8 +326,9 @@ function RevealText({
           <span className="text-[13.5px] text-green-950 whitespace-nowrap">Lessee is prohibited from using these items:</span>
           <input className="flex-1 min-w-[8rem] px-1 text-[13.5px] text-green-900 bg-gold-50/70 border-b border-gold-400/70 focus:outline-none focus:border-gold-600 rounded-sm"
             disabled={disabled} value={text} placeholder="list the prohibited tack / equipment"
+            onFocus={() => { editingRef.current = true; }}
             onChange={(e) => setText(e.target.value)}
-            onBlur={() => { if (text !== (s.text ?? '')) void onSaveStructured(f.field_key, { ...s, enabled: true, text }); }} />
+            onBlur={() => { editingRef.current = false; if (text !== (s.text ?? '')) void onSaveStructured(f.field_key, { ...s, enabled: true, text }); }} />
         </span>
       )}
     </span>
@@ -342,6 +344,38 @@ const MED_PARTY_OPTS = [
   { value: 'OTHER', label: 'Other' },
 ];
 
+/** Local-draft for a structured builder. Typing updates the DRAFT only (no server
+ *  round-trip per keystroke — that reload was resetting the controlled value mid-
+ *  type and dropping characters). Text inputs call setLocal + flush(onBlur);
+ *  structural actions call commit (immediate). The draft re-seeds from the server
+ *  value only when it changes AND the user isn't mid-edit. */
+function useStructuredDraft(
+  f: ContractField, onSaveStructured: SaveStructFn,
+): {
+  draft: FieldStructured;
+  setLocal: (next: FieldStructured) => void;
+  commit: (next: FieldStructured) => void;
+  beginEdit: () => void;
+  flush: () => void;
+} {
+  const [draft, setDraft] = useState<FieldStructured>(f.structured ?? {});
+  const editingRef = useRef(false);
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
+  useEffect(() => {
+    if (editingRef.current) return;
+    if (JSON.stringify(f.structured ?? {}) !== JSON.stringify(draftRef.current)) setDraft(f.structured ?? {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [f.structured]);
+  return {
+    draft,
+    setLocal: (next) => setDraft(next),
+    commit: (next) => { setDraft(next); void onSaveStructured(f.field_key, next); },
+    beginEdit: () => { editingRef.current = true; },
+    flush: () => { editingRef.current = false; void onSaveStructured(f.field_key, draftRef.current); },
+  };
+}
+
 /** §11 MEDICATIONS & SUPPLEMENTS builder. Structured { medItems:[{name,dose,
  *  schedule,party,party_note}] }. A single "add a medication or supplement" button
  *  appends a formatted block: Name / Dose / Schedule (free text) + a responsible-
@@ -349,13 +383,15 @@ const MED_PARTY_OPTS = [
 function MedicationBuilder({
   f, onSaveStructured, disabled,
 }: { f: ContractField; onSaveStructured: SaveStructFn; disabled: boolean }) {
-  const s = f.structured ?? {};
-  const items = s.medItems ?? [];
-  const commit = (next: FieldStructured) => void onSaveStructured(f.field_key, next);
-  const add = () => commit({ ...s, medItems: [...items, { name: '', dose: '', schedule: '', party: '' }] });
-  const edit = (i: number, patch: Partial<NonNullable<FieldStructured['medItems']>[number]>) =>
-    commit({ ...s, medItems: items.map((it, j) => (j === i ? { ...it, ...patch } : it)) });
-  const remove = (i: number) => commit({ ...s, medItems: items.filter((_, j) => j !== i) });
+  const { draft, setLocal, commit, beginEdit, flush } = useStructuredDraft(f, onSaveStructured);
+  const items = draft.medItems ?? [];
+  const add = () => commit({ ...draft, medItems: [...items, { name: '', dose: '', schedule: '', party: '' }] });
+  // text edits: local only (commit on blur). the party select commits immediately.
+  const editLocal = (i: number, patch: Partial<NonNullable<FieldStructured['medItems']>[number]>) =>
+    setLocal({ ...draft, medItems: items.map((it, j) => (j === i ? { ...it, ...patch } : it)) });
+  const editNow = (i: number, patch: Partial<NonNullable<FieldStructured['medItems']>[number]>) =>
+    commit({ ...draft, medItems: items.map((it, j) => (j === i ? { ...it, ...patch } : it)) });
+  const remove = (i: number) => commit({ ...draft, medItems: items.filter((_, j) => j !== i) });
   const cell = 'w-full px-2 py-1 rounded border border-green-800/15 text-sm text-green-900 placeholder:text-muted focus-ring bg-white disabled:bg-cream-100';
   return (
     <div className="flex flex-col gap-3 w-full max-w-2xl">
@@ -370,22 +406,22 @@ function MedicationBuilder({
           </div>
           <div className="grid sm:grid-cols-3 gap-2">
             <label className="flex flex-col gap-0.5 text-[11px] text-muted">Name
-              <input className={cell} disabled={disabled} value={it.name ?? ''} onChange={(e) => edit(i, { name: e.target.value })} /></label>
+              <input className={cell} disabled={disabled} value={it.name ?? ''} onFocus={beginEdit} onBlur={flush} onChange={(e) => editLocal(i, { name: e.target.value })} /></label>
             <label className="flex flex-col gap-0.5 text-[11px] text-muted">Dose
-              <input className={cell} disabled={disabled} value={it.dose ?? ''} onChange={(e) => edit(i, { dose: e.target.value })} /></label>
+              <input className={cell} disabled={disabled} value={it.dose ?? ''} onFocus={beginEdit} onBlur={flush} onChange={(e) => editLocal(i, { dose: e.target.value })} /></label>
             <label className="flex flex-col gap-0.5 text-[11px] text-muted">Schedule
-              <input className={cell} disabled={disabled} value={it.schedule ?? ''} onChange={(e) => edit(i, { schedule: e.target.value })} /></label>
+              <input className={cell} disabled={disabled} value={it.schedule ?? ''} onFocus={beginEdit} onBlur={flush} onChange={(e) => editLocal(i, { schedule: e.target.value })} /></label>
           </div>
           <label className="flex flex-col gap-0.5 text-[11px] text-muted mt-2">
             Party responsible for ordering, administering, and cost
-            <select className={cell} disabled={disabled} value={it.party ?? ''} onChange={(e) => edit(i, { party: e.target.value })}>
+            <select className={cell} disabled={disabled} value={it.party ?? ''} onChange={(e) => editNow(i, { party: e.target.value })}>
               <option value="">{SELECT_PLACEHOLDER}</option>
               {MED_PARTY_OPTS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </label>
           {it.party === 'OTHER' && (
             <input className={`${cell} mt-1.5`} disabled={disabled} placeholder="Specify the responsible party"
-              value={it.party_note ?? ''} onChange={(e) => edit(i, { party_note: e.target.value })} />
+              value={it.party_note ?? ''} onFocus={beginEdit} onBlur={flush} onChange={(e) => editLocal(i, { party_note: e.target.value })} />
           )}
         </div>
       ))}
@@ -408,55 +444,75 @@ function MedicationBuilder({
 function LeaseFeeBuilder({
   f, onSaveStructured, disabled,
 }: { f: ContractField; onSaveStructured: SaveStructFn; disabled: boolean }) {
-  const s = f.structured ?? {};
-  const options = s.options ?? [];
-  const selected = s.selected ?? null;
-  const commit = (next: FieldStructured) => void onSaveStructured(f.field_key, next);
-  const locked = disabled;                               // signing lock proxy
-  const multi = options.length > 1;
+  // LOCAL draft so typing never round-trips to the server per keystroke (which
+  // caused the "character replaced/dropped" glitch — a save-then-reload reset the
+  // controlled value mid-type). Text edits commit on blur; structural actions
+  // (add / remove / select) commit immediately. The draft re-seeds from the server
+  // value only when it actually differs AND the user isn't mid-edit.
+  const [draft, setDraft] = useState<FieldStructured>(f.structured ?? {});
+  const editingRef = useRef(false);
+  useEffect(() => {
+    if (editingRef.current) return;
+    const incoming = JSON.stringify(f.structured ?? {});
+    if (incoming !== JSON.stringify(draft)) setDraft(f.structured ?? {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [f.structured]);
 
-  const setInitial = (v: string) => commit({ ...s, initial_due: v });
-  const addOption = () => { if (selected == null) commit({ ...s, options: [...options, { amount: '', notes: '' }] }); };
-  const editOption = (i: number, patch: { amount?: string; notes?: string }) =>
-    commit({ ...s, options: options.map((o, j) => (j === i ? { ...o, ...patch } : o)) });
+  const options = draft.options ?? [];
+  const selected = draft.selected ?? null;
+  const locked = disabled;
+  const multi = options.length > 1;
+  const commit = (next: FieldStructured) => { setDraft(next); void onSaveStructured(f.field_key, next); };
+
+  // local (uncommitted) edits — update draft only; commit happens on blur
+  const setLocal = (next: FieldStructured) => setDraft(next);
+  const editOptionLocal = (i: number, patch: { amount?: string; notes?: string }) =>
+    setLocal({ ...draft, options: options.map((o, j) => (j === i ? { ...o, ...patch } : o)) });
+  const flush = () => { editingRef.current = false; void onSaveStructured(f.field_key, draft); };
+  const beginEdit = () => { editingRef.current = true; };
+
+  const addOption = () => { if (selected == null) commit({ ...draft, options: [...options, { amount: '', notes: '' }] }); };
   const removeOption = (i: number) => commit({
-    ...s,
+    ...draft,
     options: options.filter((_, j) => j !== i),
     selected: selected == null ? null : selected === i ? null : selected > i ? selected - 1 : selected,
   });
-  const toggleSelect = (i: number) => commit({ ...s, selected: selected === i ? null : i });
+  const toggleSelect = (i: number) => commit({ ...draft, selected: selected === i ? null : i });
 
   return (
-    <div className="flex flex-col gap-2 w-full max-w-xl">
+    <div className="flex flex-col gap-2 w-full max-w-2xl">
       <label className="flex items-baseline gap-2 text-[13.5px] text-green-950">
         <span className="whitespace-nowrap">Initial payment due:</span>
-        <input className={`${inputCls} flex-1`} disabled={locked} value={s.initial_due ?? ''}
+        <input className={`${inputCls} flex-1`} disabled={locked} value={draft.initial_due ?? ''}
           placeholder="e.g. upon signing, or a specific date"
-          onChange={(e) => setInitial(e.target.value)} />
+          onFocus={beginEdit} onBlur={flush}
+          onChange={(e) => setLocal({ ...draft, initial_due: e.target.value })} />
       </label>
 
       {options.map((o, i) => (
-        <div key={i} className="flex items-start gap-2">
+        <div key={i} className="flex items-stretch gap-2">
           {multi && (
-            <input type="radio" className="mt-2 accent-green-700" disabled={locked}
+            <input type="radio" className="mt-3 accent-green-700 shrink-0" disabled={locked}
               checked={selected === i} onChange={() => toggleSelect(i)}
               aria-label={`Select fee option ${i + 1}`} />
           )}
-          <div className={`flex-1 flex flex-wrap items-baseline gap-x-1.5 gap-y-1 rounded-lg border p-2 ${
+          <div className={`flex-1 flex items-center gap-2 rounded-lg border p-2 ${
             selected === i ? 'border-green-700 bg-green-50/50' : 'border-green-800/15'}`}>
-            <span className="inline-flex items-baseline">
+            <span className="inline-flex items-center shrink-0">
               <span className="text-green-900 mr-0.5">$</span>
-              <input className="w-20 px-2 py-1 rounded border border-green-800/15 text-sm text-green-900 focus-ring bg-white disabled:bg-cream-100"
+              <input className="w-24 px-2 py-1 rounded border border-green-800/15 text-sm text-green-900 focus-ring bg-white disabled:bg-cream-100"
                 disabled={locked || selected === i} value={o.amount ?? ''} placeholder="amount"
-                onChange={(e) => editOption(i, { amount: e.target.value })} />
+                onFocus={beginEdit} onBlur={flush}
+                onChange={(e) => editOptionLocal(i, { amount: e.target.value })} />
             </span>
-            <span className="text-[13.5px] text-green-950">due on the first day of each month.</span>
-            <input className="flex-1 min-w-[8rem] px-2 py-1 rounded border border-green-800/15 text-sm text-green-900 placeholder:text-muted focus-ring bg-white disabled:bg-cream-100"
+            {/* Notes fills the space between the amount and the card edge. */}
+            <input className="flex-1 min-w-0 px-2 py-1 rounded border border-green-800/15 text-sm text-green-900 placeholder:text-muted focus-ring bg-white disabled:bg-cream-100"
               disabled={locked || selected === i} value={o.notes ?? ''} placeholder="Notes"
-              onChange={(e) => editOption(i, { notes: e.target.value })} />
+              onFocus={beginEdit} onBlur={flush}
+              onChange={(e) => editOptionLocal(i, { notes: e.target.value })} />
           </div>
           {!locked && selected !== i && (
-            <button type="button" className="mt-1.5 text-muted hover:text-red-700 text-xs"
+            <button type="button" className="self-center text-muted hover:text-red-700 text-xs shrink-0"
               onClick={() => removeOption(i)} title="Delete this fee option">✕</button>
           )}
         </div>
@@ -480,15 +536,15 @@ function FieldControl({
   f, onSave, onSaveResponsibility, onSaveStructured, disabled,
 }: { f: ContractField; onSave: SaveFn; onSaveResponsibility: SaveRespFn; onSaveStructured: SaveStructFn; disabled: boolean }) {
   const [local, setLocal] = useState(f.value ?? '');
-  // Re-sync local input state when the server value changes (after a save +
-  // parent reload, or a redline/recompose that normalizes the value). Without
-  // this, `local` drifts from `f.value` and can fire a spurious save or miss a
-  // real change. The input is uncontrolled-ish (typed into `local`, committed on
-  // blur), so only re-seed when the incoming value actually differs.
-  useEffect(() => { setLocal(f.value ?? ''); }, [f.value]);
+  const editingRef = useRef(false);
+  // Re-sync local input state when the server value changes (after a save + parent
+  // reload, or a redline/recompose that normalizes the value) — but NOT while the
+  // user is mid-edit, or a background reload would reset the input and drop the
+  // characters being typed. Committed on blur.
+  useEffect(() => { if (!editingRef.current) setLocal(f.value ?? ''); }, [f.value]);
   const fmt = f.format_type ?? '';
   const kind = f.input_kind ?? 'text';
-  const save = () => { if (local !== (f.value ?? '')) void onSave(f.field_key, local); };
+  const save = () => { editingRef.current = false; if (local !== (f.value ?? '')) void onSave(f.field_key, local); };
 
   // ── structured formats (source of truth = f.structured) ──
   if (fmt === 'reveal_text') {
@@ -623,12 +679,12 @@ function FieldControl({
   }
   if (kind === 'longtext' || kind === 'contact') {
     return <textarea rows={kind === 'contact' ? 3 : 2} className={`${inputCls} resize-y`} disabled={disabled}
-      value={local} onChange={(e) => setLocal(e.target.value)} onBlur={save}
+      value={local} onFocus={() => { editingRef.current = true; }} onChange={(e) => setLocal(e.target.value)} onBlur={save}
       placeholder={f.guidance ?? undefined} />;
   }
   const type = kind === 'date' ? 'date' : kind === 'currency' || kind === 'percent' ? 'text' : 'text';
   return <input type={type} className={inputCls} disabled={disabled}
-    value={local} onChange={(e) => setLocal(e.target.value)} onBlur={save}
+    value={local} onFocus={() => { editingRef.current = true; }} onChange={(e) => setLocal(e.target.value)} onBlur={save}
     placeholder={kind === 'currency' ? '$' : kind === 'percent' ? '%' : undefined} />;
 }
 
@@ -654,8 +710,12 @@ function InlineInput({
   disabled: boolean; onCommit: (v: string) => void; prefix?: string;
 }) {
   const [local, setLocal] = useState(value);
-  useEffect(() => { setLocal(value); }, [value]);
-  const commit = () => { if (local !== value) onCommit(local); };
+  const editingRef = useRef(false);
+  // Re-seed from the server value ONLY when not mid-edit — otherwise a background
+  // reload (triggered by any other field's save) could reset the input while the
+  // user is typing, dropping characters.
+  useEffect(() => { if (!editingRef.current) setLocal(value); }, [value]);
+  const commit = () => { editingRef.current = false; if (local !== value) onCommit(local); };
   // width driver: the longer of the value or placeholder, plus the prefix
   const sizer = (prefix ?? '') + (local || placeholder);
   return (
@@ -672,6 +732,7 @@ function InlineInput({
           disabled={disabled}
           value={local}
           placeholder={placeholder}
+          onFocus={() => { editingRef.current = true; }}
           onChange={(e) => setLocal(e.target.value)}
           onBlur={commit}
           onKeyDown={(e) => { if (e.key === 'Enter' && type !== 'date') { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }}
@@ -686,7 +747,8 @@ function InlineTextarea({
   value, placeholder, disabled, onCommit,
 }: { value: string; placeholder: string; disabled: boolean; onCommit: (v: string) => void }) {
   const [local, setLocal] = useState(value);
-  useEffect(() => { setLocal(value); }, [value]);
+  const editingRef = useRef(false);
+  useEffect(() => { if (!editingRef.current) setLocal(value); }, [value]);
   return (
     <span className="inline-grid align-baseline w-full max-w-full">
       <span className="col-start-1 row-start-1 invisible whitespace-pre-wrap break-words px-1 text-[13.5px] leading-[1.9]" aria-hidden="true">
@@ -698,8 +760,9 @@ function InlineTextarea({
         disabled={disabled}
         value={local}
         placeholder={placeholder}
+        onFocus={() => { editingRef.current = true; }}
         onChange={(e) => setLocal(e.target.value)}
-        onBlur={() => { if (local !== value) onCommit(local); }}
+        onBlur={() => { editingRef.current = false; if (local !== value) onCommit(local); }}
       />
     </span>
   );

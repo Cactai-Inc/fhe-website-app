@@ -136,10 +136,13 @@ function ClauseProse({
     if (matrix.length === 0) return;
     const cells = matrix;
     matrix = [];
+    // A cell keeps its label and value on ONE line (never wraps the value under the
+    // label). When it can't fit, the grid drops to fewer columns and the whole cell
+    // moves together — see the wider minmax() below.
     const cell = (c: { label: string; token: string }, j: number) => (
-      <div key={j} className="flex flex-wrap items-baseline gap-x-1.5 text-[13.5px] text-green-950">
+      <div key={j} className="flex items-baseline gap-x-1.5 text-[13.5px] text-green-950 min-w-0">
         <span className="font-semibold whitespace-nowrap">{c.label}:</span>
-        <span>{renderToken(c.token, `mx${bi}-${j}`, fieldByKey, valueByKey, cb)}</span>
+        <span className="min-w-0">{renderToken(c.token, `mx${bi}-${j}`, fieldByKey, valueByKey, cb)}</span>
       </div>
     );
     // A signature triple — Signature / Printed Name / Date for one party — lays out
@@ -174,7 +177,7 @@ function ClauseProse({
           g.wide ? (
             <div key={gi} className="flex flex-col gap-1">{g.items.map((c, j) => cell(c, gi * 100 + j))}</div>
           ) : (
-            <div key={gi} className="grid grid-cols-[repeat(auto-fill,minmax(13rem,1fr))] gap-x-6 gap-y-1">
+            <div key={gi} className="grid grid-cols-[repeat(auto-fill,minmax(17rem,1fr))] gap-x-6 gap-y-1">
               {g.items.map((c, j) => cell(c, gi * 100 + j))}
             </div>
           ),
@@ -270,16 +273,15 @@ export function ClauseDocument({
   return (
     <div className="flex flex-col gap-7">
       {sections.map((section) => {
-        // AUTHORING VIEW: render every clause, even gated-off ones, so nothing
-        // disappears before signing and the author can always change their mind.
-        // A gated-off clause shows muted (a "not currently included" state) with its
-        // controls still live; the FINAL composed/locked document (merged_body) is
-        // where not-applicable clauses are actually omitted. Empty-body authoring
-        // gates that are gated-off AND carry no field are the exception — nothing to
-        // show — so they're skipped.
+        // Gated-off clauses are shown (muted, toggleable) ONLY to a user who can
+        // actually edit — so the author never loses the ability to change their mind
+        // before signing. A REVIEWING party (or anyone who can't edit) sees only the
+        // active clauses, matching the final/locked document — no confusing
+        // "optional, not included" content. The composed merged_body always omits
+        // gated-off clauses.
         const clausesToShow = section.clauses.filter((c) => {
           if (clauseConditionMet(c.conditional_on, valueByKey)) return true;
-          // gated-off: still show if it has body prose or any fields to reveal.
+          if (!cb.editable) return false;   // reviewers see only active clauses
           const hasFields = (fieldsByClause.get(c.clause_key) ?? []).length > 0;
           return !!(c.body && c.body.trim()) || hasFields;
         });
