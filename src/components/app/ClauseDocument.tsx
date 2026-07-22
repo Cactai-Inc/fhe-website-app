@@ -321,10 +321,14 @@ export function ClauseDocument({
                 const orphanFields = (fieldsByClause.get(clause.clause_key) ?? [])
                   .filter((f) => !bodyTokens.has(f.field_key));
                 return (
-                  <div key={clause.clause_key} className={gatedOff ? 'opacity-55' : ''}>
+                  // A gated-off clause is a non-interactive PREVIEW: muted and
+                  // pointer-events-none so its inputs can't be edited (its content
+                  // only enters the contract once the controlling selection turns it
+                  // on). Shown only to the author (authorView) — reviewers never see it.
+                  <div key={clause.clause_key} className={gatedOff ? 'opacity-50 pointer-events-none select-none' : ''}>
                     {gatedOff && (
                       <p className="text-[10.5px] uppercase tracking-wide text-gold-700/80 mb-0.5">
-                        Optional — included in the final agreement only if selected
+                        Optional preview — appears in the agreement only if selected above
                       </p>
                     )}
                     {clause.heading && (
