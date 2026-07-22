@@ -21,6 +21,10 @@ import { InlineFieldControl, InfoDot } from './ContractCascade';
 
 type FieldCallbacks = {
   editable: boolean;
+  /** True for the document's AUTHOR (staff / owner) building it — they see gated-off
+   *  clauses (muted, toggleable) so they never lose the ability to change their
+   *  mind. A reviewing party sees only active clauses, matching the final document. */
+  authorView?: boolean;
   onSave: (key: string, value: string) => void | Promise<void>;
   onSaveStructured: (key: string, s: unknown) => void | Promise<void>;
   onSaveResponsibility: (key: string, r: unknown) => void | Promise<void>;
@@ -281,7 +285,7 @@ export function ClauseDocument({
         // gated-off clauses.
         const clausesToShow = section.clauses.filter((c) => {
           if (clauseConditionMet(c.conditional_on, valueByKey)) return true;
-          if (!cb.editable) return false;   // reviewers see only active clauses
+          if (!cb.authorView) return false;   // reviewers/parties see only active clauses
           const hasFields = (fieldsByClause.get(c.clause_key) ?? []).length > 0;
           return !!(c.body && c.body.trim()) || hasFields;
         });

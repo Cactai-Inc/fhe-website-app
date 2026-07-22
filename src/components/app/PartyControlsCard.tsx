@@ -53,7 +53,15 @@ export function PartyControlsCard({
             </span>
             <input type="checkbox" className="accent-green-700 w-4 h-4 mt-0.5 shrink-0"
               checked={value[r.key]} disabled={disabled}
-              onChange={(e) => onChange({ ...value, [r.key]: e.target.checked })} />
+              onChange={(e) => {
+                const next = { ...value, [r.key]: e.target.checked };
+                // "Can edit deal terms" and "Can suggest changes" are mutually
+                // exclusive — a party either changes the terms directly or proposes
+                // changes for review, not both.
+                if (e.target.checked && r.key === 'can_edit_deal') next.can_suggest = false;
+                if (e.target.checked && r.key === 'can_suggest') next.can_edit_deal = false;
+                onChange(next);
+              }} />
           </label>
         ))}
       </div>
