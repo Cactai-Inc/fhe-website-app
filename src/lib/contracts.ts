@@ -427,6 +427,26 @@ export async function assignHorseSection(documentId: string, role: string): Prom
   return data as number;
 }
 
+/** Staff: reassign a contract party (Lessee/Lessor) to a different contact. */
+export async function reassignDocumentParty(documentId: string, partyRole: string, contactId: string): Promise<void> {
+  const { error } = await supabase.rpc('reassign_document_party', {
+    p_document_id: documentId, p_party_role: partyRole, p_contact_id: contactId,
+  });
+  if (error) throw error;
+}
+
+export interface PartiesHorseSummary {
+  parties: { party_role: string; contact_id: string | null; name: string | null }[];
+  horse_id: string | null;
+  horse_name: string | null;
+}
+/** The parties + horse summary for the editable "Parties & Horse" card. */
+export async function documentPartiesSummary(documentId: string): Promise<PartiesHorseSummary> {
+  const { data, error } = await supabase.rpc('document_parties_summary', { p_document_id: documentId });
+  if (error) throw error;
+  return data as PartiesHorseSummary;
+}
+
 /** Send the document to a party = notify them + confirm access. */
 export async function sendContractToParty(documentId: string, partyRole: string): Promise<void> {
   const { error } = await supabase.rpc('send_contract_to_party', { p_document_id: documentId, p_party_role: partyRole });

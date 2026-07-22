@@ -8,7 +8,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import {
   contractDocumentDetail, setContractField,
   resolveChangeRequest, advanceWorkflow, sendForReview, lockAndSign, confirmHorseSection,
-  reopenHorseSection, setRecipientEditing,
+  reopenHorseSection,
   setPartyControls, contractSigningSet,
   contractRedlineState, resolveFieldEdit, withdrawFieldEdit, proposeFieldEdit,
   resolveClause, withdrawClause, attachHorseToDocument,
@@ -24,6 +24,7 @@ import { AddElementButton } from '../../components/app/AddElementModal';
 import { PartyControlsCard, type PartyControlValues } from '../../components/app/PartyControlsCard';
 import { TrackChangesPanel } from '../../components/app/TrackChangesPanel';
 import { ContractComments } from '../../components/app/ContractComments';
+import { PartiesHorseCard } from '../../components/app/PartiesHorseCard';
 import { ClauseDocument } from '../../components/app/ClauseDocument';
 import { contractTemplateStructure, type TemplateStructure } from '../../lib/contracts';
 
@@ -588,7 +589,15 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         </div>
       )}
 
-      {/* Owner-side: per-party document controls + invite.
+      {/* Parties & Horse summary — who the lease is between and for which horse.
+          Staff can reassign a party or the horse in place. Shown on the standalone
+          contract page (the creation page already collects these). */}
+      {id && !embedded && (
+        <PartiesHorseCard documentId={id} canEdit={isStaff && editablePhase}
+          onChanged={() => { void load(); }} />
+      )}
+
+      {/* Owner-side: per-party document controls.
           Hidden when embedded on the creation page — that page already collected
           controls; restating them here (with a 4th option) confused the flow. */}
       {isOwnerSide && editablePhase && !embedded && (
@@ -612,19 +621,11 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                 );
               })}
           </div>
-          {/* Recipient editing (M-5): let the counterparty edit DEAL terms/body
-              directly while negotiating. Distinct from can_edit_deal per-party —
-              this is the document-wide switch the field-write RPCs check. */}
-          <label className="inline-flex items-center gap-2 text-[12.5px] text-secondary mb-3">
-            <input type="checkbox" className="accent-green-700"
-              checked={doc?.recipient_editing ?? false}
-              onChange={(e) => void act(() => setRecipientEditing(id!, e.target.checked),
-                e.target.checked ? 'Counterparty may now edit the deal terms.' : 'Counterparty edit access turned off.')} />
-            Let the other party edit deal terms while negotiating
-          </label>
-          {/* No manual email-invite box: the parties are already assigned at
-              creation. They're notified — in-app and by email — when you click
-              "Send for review" (or "Send to <party>") below. */}
+          {/* The redundant document-wide "let the other party edit" checkbox was
+              removed — deal-term editing is driven by each party's "Edit deal
+              terms" control above (the single source of truth). Invites go out on
+              "Send for review" below (email + in-app); parties are assigned at
+              creation, so no manual invite box here. */}
         </div>
       )}
 
