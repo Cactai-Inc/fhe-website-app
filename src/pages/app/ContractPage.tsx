@@ -215,6 +215,9 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [signName, setSignName] = useState('');
+  // Staff signing on a party's behalf (barn-office wet-signing): one typed-name
+  // draft per party role. Keyed by role so multiple parties can be signed here.
+  const [behalfNames, setBehalfNames] = useState<Record<string, string>>({});
   // Document body is visible by default (DocuSign principle: you sign what you
   // see). Parties can collapse it while filling fields, but it no longer hides.
   const [showBody, setShowBody] = useState(true);
@@ -299,6 +302,11 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   const iSigned = (detail?.signatures ?? []).some(
     (s) => s.signed_at && myRoles.includes(s.party_role));
   const counterpartySigned = (detail?.signatures ?? []).some((s) => s.signed_at);
+  // Signer seats still awaiting a signature — used by the staff/owner "sign on a
+  // party's behalf" flow so the barn can wet-sign in the office.
+  const pendingSignerRoles = Array.from(new Set((detail?.signatures ?? [])
+    .filter((s) => !s.signed_at && s.party_role !== 'FHE' && s.party_role !== 'COMPANY')
+    .map((s) => s.party_role)));
   const partyControls: PartyControls[] = detail?.party_controls ?? [];
   // the seats an outside party can be invited into (not mine, not the company's)
   const invitableRoles = Array.from(new Set((detail?.signatures ?? [])
@@ -917,6 +925,42 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
             <p className="text-sm text-green-700 inline-flex items-center gap-1.5">
               <CheckCircle2 size={15} /> You've signed — awaiting the remaining signature.
             </p>
+          )}
+
+          {/* Staff / owner signing on a party's behalf (barn-office wet-signing).
+              Staff hold no party role of their own, so without this there is no way
+              to execute a signature from this screen. Each pending seat that isn't
+              one of my own roles gets its own name box. */}
+          {isOwnerSide && state === 'locked'
+            && pendingSignerRoles.filter((r) => !myRoles.includes(r)).length > 0 && (
+            <div className="border-t border-green-800/10 pt-4">
+              <p className="text-sm text-secondary mb-1">Sign on a party's behalf</p>
+              <p className="form-hint mb-3">
+                For in-person signing. Type the party's full legal name exactly as it should
+                appear — this seals their signature and is recorded in the audit trail.
+              </p>
+              <div className="flex flex-col gap-2.5">
+                {pendingSignerRoles.filter((r) => !myRoles.includes(r)).map((r) => {
+                  const rl = r.charAt(0) + r.slice(1).toLowerCase();
+                  const name = behalfNames[r] ?? '';
+                  return (
+                    <div key={r} className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm text-green-900 w-20 shrink-0">{rl}</span>
+                      <input value={name}
+                        onChange={(e) => setBehalfNames((m) => ({ ...m, [r]: e.target.value }))}
+                        placeholder={`${rl}'s full legal name`}
+                        className="px-3 py-2 rounded-lg border border-green-800/15 text-sm focus-ring w-64" />
+                      <button type="button" className="btn-primary text-sm" disabled={!name.trim()}
+                        onClick={() => void act(
+                          () => lockAndSign(id!, r, name.trim()),
+                          `Signed as ${rl}.`)}>
+                        <PenLine size={14} /> Sign as {rl}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           )}
 
           {/* signature status */}

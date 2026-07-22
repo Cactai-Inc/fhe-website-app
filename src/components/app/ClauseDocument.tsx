@@ -45,8 +45,10 @@ const TOKEN_RE = /\{\{([A-Z0-9_.]+)\}\}/g;
 const AUTOFILL_HINT: Record<string, string> = {
   'LESSOR.FULL_NAME': 'Lessor name on file', 'LESSOR.ADDRESS': 'Lessor address on file',
   'LESSOR.PRINTED_NAME': 'Lessor name on file',
+  'LESSOR.PHONE': 'Lessor phone on file', 'LESSOR.EMAIL': 'Lessor email on file',
   'LESSEE.FULL_NAME': 'Lessee name on file', 'LESSEE.ADDRESS': 'Lessee address on file',
   'LESSEE.PRINTED_NAME': 'Lessee name on file',
+  'LESSEE.PHONE': 'Lessee phone on file', 'LESSEE.EMAIL': 'Lessee email on file',
 };
 
 /** An auto-fill / signature token (no editable field) → its current value or a hint. */
