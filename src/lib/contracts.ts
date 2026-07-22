@@ -323,7 +323,7 @@ export async function redeemContractInvitation(token: string): Promise<string> {
  *  token, and sends the branded email. */
 export async function inviteCounterparty(
   documentId: string, partyRole: string, email?: string,
-): Promise<void> {
+): Promise<{ emailed: boolean; reason?: string }> {
   const { data: sess } = await supabase.auth.getSession();
   const bearer = sess?.session?.access_token;
   if (!bearer) throw new Error('You need to be signed in.');
@@ -333,17 +333,26 @@ export async function inviteCounterparty(
     // email is optional — the server derives it from the assigned party contact.
     body: JSON.stringify(email ? { documentId, partyRole, email } : { documentId, partyRole }),
   });
-  const json = (await res.json().catch(() => ({}))) as { error?: string };
+  const json = (await res.json().catch(() => ({}))) as { error?: string; emailed?: boolean; reason?: string };
   if (!res.ok) throw new Error(json.error || 'Could not send the invitation.');
+  return { emailed: json.emailed !== false, reason: json.reason };
 }
 
-/** Send for review: advance the workflow (in-app notifications fire server-side)
- *  AND email each of the given party roles (their email is derived from the
- *  assigned contact). Email failures are swallowed so one bad address doesn't
- *  block the workflow advance — the in-app notification still reaches them. */
-export async function sendForReview(documentId: string, partyRoles: string[]): Promise<void> {
+/** Send for review: advance the workflow (in-app notifications fire server-side
+ *  for parties with an app account) AND email each party role (email derived from
+ *  the assigned contact). Returns a summary of how many were emailed vs skipped, so
+ *  the caller can surface delivery problems instead of failing silently. Email
+ *  errors don't block the workflow advance. */
+export async function sendForReview(
+  documentId: string, partyRoles: string[],
+): Promise<{ emailed: number; skipped: number }> {
   await advanceWorkflow(documentId, 'in_review');
-  await Promise.allSettled(partyRoles.map((r) => inviteCounterparty(documentId, r)));
+  const results = await Promise.allSettled(partyRoles.map((r) => inviteCounterparty(documentId, r)));
+  let emailed = 0; let skipped = 0;
+  for (const r of results) {
+    if (r.status === 'fulfilled' && r.value.emailed) emailed += 1; else skipped += 1;
+  }
+  return { emailed, skipped };
 }
 
 // (composeCostPhrase removed 2026-07-20, audit m-1: superseded — cost prose is

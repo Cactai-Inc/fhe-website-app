@@ -826,9 +826,12 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
             {isOwnerSide && editablePhase && (
               <>
                 <button type="button" className="btn-secondary text-xs"
-                  onClick={() => void act(
-                    () => sendForReview(id!, invitableRoles),
-                    'Sent for review — the parties were notified by email and in-app.')}>
+                  onClick={() => void act(async () => {
+                    const r = await sendForReview(id!, invitableRoles);
+                    setNote(r.skipped > 0
+                      ? `Sent for review. Emailed ${r.emailed} of ${r.emailed + r.skipped} part${r.emailed + r.skipped === 1 ? 'y' : 'ies'}; ${r.skipped} could not be emailed (no email on file or email delivery not configured). In-app notifications were sent to parties with an account.`
+                      : `Sent for review — all parties were notified by email and in-app.`);
+                  })}>
                   <Send size={13} /> Send for review
                 </button>
                 <button type="button" className="btn-outline-gold text-xs"

@@ -108,9 +108,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         `<p style="color:#666;font-size:12px">This link is personal to ${email} and expires in 14 days.<br/>${link}</p>` +
         (identity.footer ? `<hr/><p style="color:#666;font-size:12px;white-space:pre-line">${identity.footer}</p>` : ''),
     });
-    if (!sent.ok) return res.status(502).json({ error: 'could not send the invitation email' });
+    // The token was issued regardless; report whether the email actually sent so
+    // the caller can tell the user if delivery (provider config) failed.
+    if (!sent.ok) return res.status(200).json({ ok: true, emailed: false, reason: 'email provider not configured or send failed' });
 
-    return res.status(200).json({ ok: true });
+    return res.status(200).json({ ok: true, emailed: true });
   } catch (err) {
     console.error('contract-invite error', err);
     return res.status(500).json({ error: 'could not send the invitation' });
