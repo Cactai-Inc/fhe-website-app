@@ -48,8 +48,10 @@ const AUTOFILL_HINT: Record<string, string> = {
 /** An auto-fill / signature token (no editable field) → its current value or a hint. */
 function TokenValue({ token, value }: { token: string; value: string }) {
   if (token.startsWith('SIG.')) {
-    // signature ceremony token — a marker, filled at signing
-    return <span className="text-muted italic">［signature］</span>;
+    // signature-ceremony tokens — placeholders filled at signing. A *.DATE token
+    // is the date the party signs; everything else is the signature itself.
+    const marker = token.endsWith('.DATE') ? '［date signed］' : '［signature］';
+    return <span className="text-muted italic">{marker}</span>;
   }
   if (value.trim()) return <span className="font-medium text-green-900">{value}</span>;
   // party/horse imports show a muted "on file" hint instead of a fillable blank —
