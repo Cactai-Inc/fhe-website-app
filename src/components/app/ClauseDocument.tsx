@@ -118,21 +118,52 @@ function ClauseProse({
   let matrix: { label: string; token: string }[] = [];
   let bi = 0;
 
+  // A "wide" cell holds an editable control that needs room (a dropdown/select,
+  // party/responsibility picker, or other structured control). Those get their own
+  // full row so they never collide. Compact cells (short text values, read-only
+  // record imports like the Horse block) pack into a responsive grid.
+  const isWideCell = (token: string) => {
+    const f = fieldByKey.get(token);
+    if (!f) return false;                         // read-only import → compact
+    if (f.field_key.startsWith('HORSE.')) return false;  // horse-record import → compact
+    const fmt = f.format_type ?? '';
+    const kind = f.input_kind ?? 'text';
+    return kind === 'select' || kind === 'buttons' || kind === 'responsibility'
+      || ['party', 'contact', 'person', 'address', 'location', 'pair', 'fee_schedule', 'med_schedule', 'reveal_text'].includes(fmt);
+  };
+
   const flushMatrix = () => {
     if (matrix.length === 0) return;
     const cells = matrix;
     matrix = [];
-    // one label:value per line — a select or long value in a side-by-side grid
-    // overflowed its column and overlapped the neighbouring cell. A single column
-    // is collision-proof and reads cleanly; short values still sit compactly.
+    const cell = (c: { label: string; token: string }, j: number) => (
+      <div key={j} className="flex flex-wrap items-baseline gap-x-1.5 text-[13.5px] text-green-950">
+        <span className="font-semibold whitespace-nowrap">{c.label}:</span>
+        <span>{renderToken(c.token, `mx${bi}-${j}`, fieldByKey, valueByKey, cb)}</span>
+      </div>
+    );
+    // group consecutive compact cells into a packed grid; wide cells break out to
+    // their own full-width row. This keeps the Horse identity grid AND avoids the
+    // Farrier/Vet dropdown collision.
+    const groups: { wide: boolean; items: { label: string; token: string }[] }[] = [];
+    for (const c of cells) {
+      const wide = isWideCell(c.token);
+      const last = groups[groups.length - 1];
+      if (last && last.wide === wide && !wide) last.items.push(c);
+      else groups.push({ wide, items: [c] });
+    }
+    const key = bi++;
     blocks.push(
-      <div key={`mx${bi++}`} className="flex flex-col gap-1 my-1">
-        {cells.map((c, j) => (
-          <div key={j} className="flex flex-wrap items-baseline gap-x-1.5 text-[13.5px] text-green-950">
-            <span className="font-semibold whitespace-nowrap">{c.label}:</span>
-            <span>{renderToken(c.token, `mx${bi}-${j}`, fieldByKey, valueByKey, cb)}</span>
-          </div>
-        ))}
+      <div key={`mx${key}`} className="flex flex-col gap-1 my-1">
+        {groups.map((g, gi) =>
+          g.wide ? (
+            <div key={gi} className="flex flex-col gap-1">{g.items.map((c, j) => cell(c, gi * 100 + j))}</div>
+          ) : (
+            <div key={gi} className="grid grid-cols-[repeat(auto-fill,minmax(13rem,1fr))] gap-x-6 gap-y-1">
+              {g.items.map((c, j) => cell(c, gi * 100 + j))}
+            </div>
+          ),
+        )}
       </div>,
     );
   };
