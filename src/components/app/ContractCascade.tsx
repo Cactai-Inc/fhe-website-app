@@ -727,7 +727,7 @@ function FieldControl({
     return <ResponsibilityControl f={f} onSaveResponsibility={onSaveResponsibility} disabled={disabled} />;
   }
   if (kind === 'week_grid') {
-    return <WeekGrid f={f} onSave={onSave} disabled={disabled} />;
+    return <WeekGrid f={f} onSaveStructured={onSaveStructured} disabled={disabled} />;
   }
   if (kind === 'select') {
     return <SelectWithOther f={f} onSave={onSave} disabled={disabled} />;
@@ -1079,14 +1079,23 @@ type WeekState = {
   timeframes?: boolean;
   windows?: { start: string; end: string }[];  // default two 6h windows
 };
-function parseWeek(v?: string | null): WeekState {
-  if (v) { try { const p = JSON.parse(v); if (p && p.days) return p; } catch { /* fall through */ } }
-  return { parties: ['Lessee', 'Lessor'], days: { Lessee: [], Lessor: [] },
-    timeframes: false, windows: [{ start: '06:00', end: '12:00' }, { start: '12:00', end: '18:00' }] };
+const DEFAULT_WEEK: WeekState = {
+  parties: ['Lessee', 'Lessor'], days: { Lessee: [], Lessor: [] },
+  timeframes: false, windows: [{ start: '06:00', end: '12:00' }, { start: '12:00', end: '18:00' }],
+};
+/** Read the week state from `structured` (new home). Falls back to parsing legacy
+ *  JSON out of `value` for any field not yet migrated. */
+function readWeek(f: ContractField): WeekState {
+  const s = f.structured as WeekState | undefined;
+  if (s && s.days) return s;
+  if (f.value) { try { const p = JSON.parse(f.value); if (p && p.days) return p; } catch { /* fall through */ } }
+  return DEFAULT_WEEK;
 }
-function WeekGrid({ f, onSave, disabled }: { f: ContractField; onSave: SaveFn; disabled: boolean }) {
-  const [w, setW] = useState<WeekState>(() => parseWeek(f.value));
-  const commit = (next: WeekState) => { setW(next); void onSave(f.field_key, JSON.stringify(next)); };
+function WeekGrid({ f, onSaveStructured, disabled }: { f: ContractField; onSaveStructured: SaveStructFn; disabled: boolean }) {
+  const [w, setW] = useState<WeekState>(() => readWeek(f));
+  // Store the grid in `structured` (like every other structured builder); the
+  // composer renders it to prose from there. Never write raw JSON into `value`.
+  const commit = (next: WeekState) => { setW(next); void onSaveStructured(f.field_key, next as unknown as FieldStructured); };
   const toggleDay = (party: string, day: string) => {
     if (disabled) return;
     const cur = w.days[party] ?? [];
