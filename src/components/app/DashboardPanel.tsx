@@ -279,10 +279,11 @@ export function DashboardPanel() {
   return (
     <div className="rounded-2xl border border-green-800/10 shadow-[0_14px_34px_-14px_rgba(13,33,24,0.22)] bg-gradient-to-br from-white to-cream-100 mb-6 sm:mb-7 p-5 sm:p-6">
       {allCaughtUp && (
-        <p className="body-text text-green-900 text-sm sm:text-base">
-          Hi{firstName ? ` ${firstName}` : ''}! Looks like you’re all caught up, nothing new to report.
-          Enjoy your {timeOfDayWord()}!
-        </p>
+        <div className="body-text text-green-900 text-sm sm:text-base flex flex-col gap-1">
+          <p>Hi{firstName ? ` ${firstName}` : ''}!</p>
+          <p>Looks like you’re all caught up, nothing new to report.</p>
+          <p>Enjoy your {timeOfDayWord()}!</p>
+        </div>
       )}
       {hasAttention && (
         <>
