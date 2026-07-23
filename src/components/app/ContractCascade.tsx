@@ -262,6 +262,14 @@ export function ContractBody({
 const OTHER_VALUE = '__other__';
 /** Uniform empty-state prompt for every dropdown. */
 const SELECT_PLACEHOLDER = 'MAKE A SELECTION';
+
+/** Toggle a value in a multi-select, with "NONE" as an EXCLUSIVE choice: picking
+ *  NONE clears every real option; picking any real option clears NONE. */
+function nextMultiSelect(selected: string[], val: string): string[] {
+  if (val === 'NONE') return selected.includes('NONE') ? [] : ['NONE'];
+  const base = selected.filter((s) => s !== 'NONE');
+  return base.includes(val) ? base.filter((s) => s !== val) : [...base, val];
+}
 function SelectWithOther({ f, onSave, disabled }: { f: ContractField; onSave: SaveFn; disabled: boolean }) {
   const opts = f.options ?? [];
   // Use the field's own "Other" option when it defines one; only synthesize a
@@ -413,15 +421,15 @@ function useStructuredDraft(
   };
 }
 
-/** CONTACTS LIST — repeatable Name + Phone rows. Structured { coOwners:[{name,
- *  phone}] }. Used for co-owners (§7): capture each other owner's name and phone.
- *  "+ Add another" appends a row; each row is removable. */
+/** CONTACTS LIST — repeatable First / Last / Phone / Email rows. Structured
+ *  { coOwners:[{first,last,phone,email}] }. Used for co-owners (§7): the button
+ *  adds a row directly below it. Each row is removable. */
 function ContactsList({
   f, onSaveStructured, disabled, addLabel = 'Add another',
 }: { f: ContractField; onSaveStructured: SaveStructFn; disabled: boolean; addLabel?: string }) {
   const { draft, setLocal, commit, beginEdit, flush } = useStructuredDraft(f, onSaveStructured);
   const rows = draft.coOwners ?? [];
-  const add = () => commit({ ...draft, coOwners: [...rows, { name: '', phone: '' }] });
+  const add = () => commit({ ...draft, coOwners: [...rows, { first: '', last: '', phone: '', email: '' }] });
   const editLocal = (i: number, patch: Partial<NonNullable<FieldStructured['coOwners']>[number]>) =>
     setLocal({ ...draft, coOwners: rows.map((r, j) => (j === i ? { ...r, ...patch } : r)) });
   const remove = (i: number) => commit({ ...draft, coOwners: rows.filter((_, j) => j !== i) });
@@ -429,11 +437,15 @@ function ContactsList({
   return (
     <div className="flex flex-col gap-2 w-full max-w-2xl">
       {rows.map((r, i) => (
-        <div key={i} className="flex items-center gap-2">
-          <input className={`${cell} flex-1 min-w-0`} disabled={disabled} placeholder="Name"
-            value={r.name ?? ''} onFocus={beginEdit} onBlur={flush} onChange={(e) => editLocal(i, { name: e.target.value })} />
-          <input type="tel" className={`${cell} w-40`} disabled={disabled} placeholder="Phone"
+        <div key={i} className="grid grid-cols-[1fr_1fr_9rem_1fr_auto] gap-2 items-center">
+          <input className={cell} disabled={disabled} placeholder="First name"
+            value={r.first ?? ''} onFocus={beginEdit} onBlur={flush} onChange={(e) => editLocal(i, { first: e.target.value })} />
+          <input className={cell} disabled={disabled} placeholder="Last name"
+            value={r.last ?? ''} onFocus={beginEdit} onBlur={flush} onChange={(e) => editLocal(i, { last: e.target.value })} />
+          <input type="tel" className={cell} disabled={disabled} placeholder="Phone"
             value={r.phone ?? ''} onFocus={beginEdit} onBlur={flush} onChange={(e) => editLocal(i, { phone: e.target.value })} />
+          <input type="email" className={cell} disabled={disabled} placeholder="Email"
+            value={r.email ?? ''} onFocus={beginEdit} onBlur={flush} onChange={(e) => editLocal(i, { email: e.target.value })} />
           {!disabled && (
             <button type="button" className="text-muted hover:text-red-700 text-xs shrink-0"
               onClick={() => remove(i)} title="Remove">✕</button>
@@ -774,10 +786,11 @@ function FieldControl({
     return <SelectWithOther f={f} onSave={onSave} disabled={disabled} />;
   }
   if (kind === 'buttons') {
+    const single = f.value_type === 'select';
     const selected = (f.value ?? '').split(',').map((s) => s.trim()).filter(Boolean);
     const toggle = (val: string) => {
-      const next = selected.includes(val) ? selected.filter((s) => s !== val) : [...selected, val];
-      void onSave(f.field_key, next.join(','));
+      if (single) { void onSave(f.field_key, selected.includes(val) ? '' : val); return; }
+      void onSave(f.field_key, nextMultiSelect(selected, val).join(','));
     };
     return (
       <div className="flex flex-wrap gap-1.5">
@@ -951,12 +964,15 @@ function InlineYesNo({ f, disabled, onSave }: { f: ContractField; disabled: bool
   );
 }
 
-/** Inline multi-select chips (buttons kind not in a dropdown) — rendered inline. */
+/** Inline chips (buttons kind not in a dropdown) — rendered inline. Single-select
+ *  when value_type is 'select' (pick one; click again to clear); multi-select
+ *  (comma-joined) otherwise. */
 function InlineChips({ f, disabled, onSave }: { f: ContractField; disabled: boolean; onSave: SaveFn }) {
+  const single = f.value_type === 'select';
   const selected = (f.value ?? '').split(',').map((s) => s.trim()).filter(Boolean);
   const toggle = (val: string) => {
-    const next = selected.includes(val) ? selected.filter((s) => s !== val) : [...selected, val];
-    void onSave(f.field_key, next.join(','));
+    if (single) { void onSave(f.field_key, selected.includes(val) ? '' : val); return; }
+    void onSave(f.field_key, nextMultiSelect(selected, val).join(','));
   };
   return (
     <span className="inline-flex flex-wrap items-baseline gap-1 align-baseline mx-0.5">
