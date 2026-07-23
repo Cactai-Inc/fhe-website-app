@@ -301,11 +301,12 @@ function ClauseProse({
     // group consecutive compact cells into a packed grid; wide cells break out to
     // their own full-width row. This keeps the Horse identity grid AND avoids the
     // Farrier/Vet dropdown collision. A party-contact cell (Name / Address / Phone
-    // / Email in the Notice block) is ALSO forced to its own full-width row so a
-    // long address can never run under the next field's label, and each field sits
-    // on its own line on narrow/mobile screens (the value wraps within its own row
-    // rather than pushing the next field to the end of the wrapped text).
-    const forceOwnRow = (token: string) => isWideCell(token) || !!PARTY_CONTACT_TOKENS[token];
+    // / Email in the Notice block) and an editable horse-record cell (Farrier /
+    // Farrier phone / Veterinarian / Practice / Address / Phone in Care) are ALSO
+    // forced to their own full-width row so each field sits on its own line and a
+    // long value wraps within its own row rather than running under the next field.
+    const forceOwnRow = (token: string) =>
+      isWideCell(token) || !!PARTY_CONTACT_TOKENS[token] || !!HORSE_RECORD_TOKENS[token];
     const groups: { wide: boolean; items: { label: string; token: string }[] }[] = [];
     for (const c of cells) {
       const wide = forceOwnRow(c.token);
