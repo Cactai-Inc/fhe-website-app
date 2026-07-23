@@ -79,7 +79,8 @@ function PostForm({ type, onClose }: { type: PostType; onClose: () => void }) {
   const [location, setLocation] = useState('');
   // operator extras
   const [visibility, setVisibility] = useState<FeedVisibility>('members');
-  const [asCompany, setAsCompany] = useState(false);
+  // Admins default to posting as the business; they can switch to "Myself" per post.
+  const [asCompany, setAsCompany] = useState(isAdmin);
   const [publishAt, setPublishAt] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -277,10 +278,14 @@ function PostForm({ type, onClose }: { type: PostType; onClose: () => void }) {
       {isStaff && (type === 'social' || type === 'for_sale') && (
         <div className="grid sm:grid-cols-3 gap-3.5 border-t border-green-800/10 pt-3.5">
           {isAdmin && (
-            <label className="inline-flex items-center gap-2 text-[12.5px] text-secondary self-end pb-2.5">
-              <input type="checkbox" className="accent-green-700" checked={asCompany} onChange={(e) => setAsCompany(e.target.checked)} />
-              Post as French Heritage
-            </label>
+            <div>
+              <FieldLabel>Post as</FieldLabel>
+              <select className={inputCls} value={asCompany ? 'company' : 'self'}
+                onChange={(e) => setAsCompany(e.target.value === 'company')}>
+                <option value="company">French Heritage Equestrian</option>
+                <option value="self">Myself</option>
+              </select>
+            </div>
           )}
           <div>
             <FieldLabel>Visibility</FieldLabel>

@@ -32,7 +32,8 @@ export function FeedComposer({ onPosted }: { onPosted: () => void }) {
   const [postType, setPostType] = useState<FeedPostType>('rider_post');
   const [body, setBody] = useState('');
   const [link, setLink] = useState('');
-  const [asCompany, setAsCompany] = useState(false);
+  // Admins default to posting as the business; they can switch to "Myself" per post.
+  const [asCompany, setAsCompany] = useState(isAdmin);
   const [visibility, setVisibility] = useState<FeedVisibility>('members');
   const [publishAt, setPublishAt] = useState('');   // staged/delayed (optional)
   const [busy, setBusy] = useState(false);
@@ -153,12 +154,18 @@ export function FeedComposer({ onPosted }: { onPosted: () => void }) {
 
       {isStaff && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-green-800/10 pt-4">
-          {/* Company voice is admin-only (matches the server as_company gate). */}
+          {/* Company voice is admin-only (matches the server as_company gate).
+              Admins choose per post: as French Heritage Equestrian, or as themselves. */}
           {isAdmin && (
-            <label className="inline-flex items-center gap-2 text-sm text-secondary">
-              <input type="checkbox" checked={asCompany} onChange={(e) => setAsCompany(e.target.checked)} />
-              Post as the company
-            </label>
+            <div className="sm:col-span-1">
+              <label className="form-label" htmlFor="fc-byline">Post as</label>
+              <select id="fc-byline" className="form-input"
+                value={asCompany ? 'company' : 'self'}
+                onChange={(e) => setAsCompany(e.target.value === 'company')}>
+                <option value="company">French Heritage Equestrian</option>
+                <option value="self">Myself</option>
+              </select>
+            </div>
           )}
           <div>
             <label className="form-label" htmlFor="fc-vis">Visibility</label>
