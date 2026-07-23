@@ -335,6 +335,40 @@ function RevealText({
   );
 }
 
+/** ADD-TEXT — a button (labeled by the field, e.g. "Add Restrictions") that
+ *  reveals a free-text input. The plain field value IS the text; empty = collapsed
+ *  to the button. Once text exists it stays open (with a way to clear it). */
+function AddText({ f, onSave, disabled }: { f: ContractField; onSave: SaveFn; disabled: boolean }) {
+  const has = (f.value ?? '').trim() !== '';
+  const [open, setOpen] = useState(has);
+  const [text, setText] = useState(f.value ?? '');
+  const editingRef = useRef(false);
+  useEffect(() => { if (!editingRef.current) { setText(f.value ?? ''); setOpen((f.value ?? '').trim() !== '' || open); } }, [f.value]); // eslint-disable-line react-hooks/exhaustive-deps
+  const commit = (v: string) => { editingRef.current = false; if (v !== (f.value ?? '')) void onSave(f.field_key, v); };
+
+  if (!open) {
+    return (
+      <button type="button" disabled={disabled}
+        className="inline-flex items-center gap-1.5 text-[13px] text-green-800 border border-green-800/25 rounded-lg px-3 py-1.5 hover:bg-green-50 focus-ring"
+        onClick={() => setOpen(true)}>
+        + {f.label ?? 'Add'}
+      </button>
+    );
+  }
+  return (
+    <span className="inline-flex items-baseline gap-1.5 w-full">
+      <span className="text-[13.5px] text-green-950 whitespace-nowrap">{f.guidance ?? f.label}:</span>
+      <input className="flex-1 min-w-[8rem] px-1 text-[13.5px] text-green-900 bg-gold-50/70 border-b border-gold-400/70 focus:outline-none focus:border-gold-600 rounded-sm"
+        disabled={disabled} value={text} placeholder="list any restrictions"
+        onFocus={() => { editingRef.current = true; }}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={() => commit(text)} />
+      <button type="button" disabled={disabled} className="text-[12px] text-muted hover:text-red-700 focus-ring rounded"
+        title="Remove" onClick={() => { setText(''); setOpen(false); commit(''); }}>✕</button>
+    </span>
+  );
+}
+
 const MED_PARTY_OPTS = [
   { value: 'LESSOR', label: 'Lessor' },
   { value: 'LESSEE', label: 'Lessee' },
@@ -616,6 +650,9 @@ function FieldControl({
         <span className="text-[13px] text-green-900 leading-relaxed">{f.label}</span>
       </label>
     );
+  }
+  if (fmt === 'add_text') {
+    return <AddText f={f} onSave={onSave} disabled={disabled} />;
   }
   if (fmt === 'person') {
     const s = f.structured ?? {};
@@ -917,12 +954,12 @@ export function InlineFieldControl({
 
   // Structured / multi-part formats can't collapse to a single inline token —
   // render the block control, but inline-block and compact so it stays in flow.
-  const isStructured = ['party', 'contact', 'person', 'address', 'location', 'pair', 'fee_schedule', 'med_schedule', 'reveal_text', 'certify'].includes(fmt)
+  const isStructured = ['party', 'contact', 'person', 'address', 'location', 'pair', 'fee_schedule', 'med_schedule', 'reveal_text', 'certify', 'add_text'].includes(fmt)
     || kind === 'responsibility' || kind === 'week_grid';
   if (isStructured) {
-    // reveal_text and certify self-label (the control shows its own question /
-    // certification statement), so render inline with no extra label above.
-    if (fmt === 'reveal_text' || fmt === 'certify') {
+    // reveal_text, certify, and add_text self-label (the control shows its own
+    // question / statement / button), so render as a block with no label above.
+    if (fmt === 'reveal_text' || fmt === 'certify' || fmt === 'add_text') {
       return (
         <span className="block my-1">
           <FieldControl f={f} onSave={onSave} onSaveResponsibility={onSaveResponsibility}
