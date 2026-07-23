@@ -115,6 +115,20 @@ export function PublicIntakeForm({
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Age attestation — only for lesson/jumping inquiries. A rider indicates whether
+  // they're 18+ or under 18; an under-18 declares their age and their parent/
+  // guardian's approval. Mutually exclusive. Folds into details for the inbox.
+  const showAgeBlock = category === 'lessons';
+  const [ageBracket, setAgeBracket] = useState<'adult' | 'minor' | null>(null);
+  const [minorAge, setMinorAge] = useState('');
+  const MINOR_ATTESTATION =
+    'I am under 18 and my parent or legal guardian has approved of my participation in horseback riding activities and agreed to complete the signup paperwork prior to my first ride.';
+  // Reset the age answers whenever we leave the lessons category so a stale
+  // selection can't travel with a different inquiry type.
+  useEffect(() => {
+    if (category !== 'lessons') { setAgeBracket(null); setMinorAge(''); }
+  }, [category]);
+
   const toggle = (list: string[], set: (v: string[]) => void, v: string) =>
     set(list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
 
@@ -143,18 +157,29 @@ export function PublicIntakeForm({
   }, [channel]);
   const needs = (field: string) => req[field] === true;
 
+  // For lessons/jumping, an age must be indicated; an under-18 must also state
+  // their age (which enters them into the guardian-approval attestation).
+  const ageReady = !showAgeBlock
+    || (ageBracket === 'adult')
+    || (ageBracket === 'minor' && minorAge.trim() !== '');
+
   const ready =
     firstName.trim() !== '' &&
     lastName.trim() !== '' &&
     email.trim() !== '' &&
     (!needs('phone') || phone.trim() !== '') &&
     (!needs('source') || source !== '') &&
-    (!needs('message') || message.trim() !== '');
+    (!needs('message') || message.trim() !== '') &&
+    ageReady;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!ready) {
-      setError('Please fill in every required field (marked *).');
+      setError(showAgeBlock && !ageReady
+        ? (ageBracket === null
+            ? 'Please let us know whether the rider is 18 or older, or under 18.'
+            : 'Please enter the rider’s age.')
+        : 'Please fill in every required field (marked *).');
       return;
     }
     if (message.length > MESSAGE_MAX) {
@@ -169,6 +194,15 @@ export function PublicIntakeForm({
       for (const f of categoryFields) {
         const v = details[f.key]?.trim();
         if (v) cleanDetails[f.key] = v;
+      }
+      // Age attestation (lessons/jumping): record the bracket, and for a minor the
+      // declared age + the guardian-approval acknowledgment they agreed to.
+      if (showAgeBlock && ageBracket === 'adult') {
+        cleanDetails.age_bracket = '18 or older';
+      } else if (showAgeBlock && ageBracket === 'minor') {
+        cleanDetails.age_bracket = 'Under 18';
+        cleanDetails.rider_declared_age = minorAge.trim();
+        cleanDetails.guardian_approval_acknowledged = 'Yes — ' + MINOR_ATTESTATION;
       }
       const { requestId } = await submitRequest(
         {
@@ -264,6 +298,54 @@ export function PublicIntakeForm({
             )}
           </div>
         ))}
+
+        {/* Age attestation — lessons/jumping only. 18+ vs under-18 are mutually
+            exclusive; under-18 reveals an age field and the guardian-approval note. */}
+        {showAgeBlock && (
+          <fieldset className="sm:col-span-2 border border-green-800/10 rounded-lg p-4">
+            <legend className="form-label px-1">Rider’s age *</legend>
+            <div className="flex flex-col gap-2.5">
+              <label className="flex items-start gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="accent-green-700 w-4 h-4 mt-0.5 shrink-0"
+                  checked={ageBracket === 'adult'}
+                  onChange={(e) => setAgeBracket(e.target.checked ? 'adult' : null)}
+                />
+                <span className="text-sm text-green-900">I am 18 or older.</span>
+              </label>
+
+              <label className="flex items-start gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="accent-green-700 w-4 h-4 mt-0.5 shrink-0"
+                  checked={ageBracket === 'minor'}
+                  onChange={(e) => setAgeBracket(e.target.checked ? 'minor' : null)}
+                />
+                <span className="text-sm text-green-900">I am under 18.</span>
+              </label>
+
+              {ageBracket === 'minor' && (
+                <div className="ml-6 flex flex-col gap-2.5 border-l-2 border-green-800/10 pl-3">
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-green-900" htmlFor="pi-minor-age">My age:</label>
+                    <input
+                      id="pi-minor-age"
+                      type="number"
+                      min={1}
+                      max={17}
+                      inputMode="numeric"
+                      className="form-input w-20"
+                      value={minorAge}
+                      onChange={(e) => setMinorAge(e.target.value)}
+                    />
+                  </div>
+                  <p className="text-xs text-muted leading-relaxed">{MINOR_ATTESTATION}</p>
+                </div>
+              )}
+            </div>
+          </fieldset>
+        )}
 
         <div>
           <label className="form-label" htmlFor="pi-first">

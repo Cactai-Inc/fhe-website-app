@@ -272,6 +272,18 @@ export async function markNotificationRead(id: string): Promise<void> {
   if (error) throw error;
 }
 
+/**
+ * CONSUME one of my notifications — permanently delete it (per-user), leaving only
+ * an audit-log record. Called when the owner CLOSES a dashboard alert or OPENS its
+ * target: the item is gone for good from THIS user's dashboard (the other owner's
+ * copy is untouched). For items the system CAN know are resolved (e.g. a contract
+ * gets signed), the server clears every recipient's copy automatically instead.
+ */
+export async function consumeNotification(id: string): Promise<void> {
+  const { error } = await supabase.rpc('consume_notification', { p_id: id });
+  if (error) throw error;
+}
+
 /** Unread-notification count for the bell badge. */
 export async function myUnreadCount(): Promise<number> {
   const { data, error } = await supabase.rpc('my_unread_count');
@@ -831,21 +843,6 @@ export async function listIntake(): Promise<IntakeRequest[]> {
   return (data ?? []) as IntakeRequest[];
 }
 
-/**
- * Count of NEW (untriaged) inbound inquiries in the Request Inbox. Drives the
- * persistent "N new inquiries need a response" dashboard tile for staff. Unlike a
- * notification (which vanishes once read), this reflects the inbox's real state,
- * so it lingers until each request is actually triaged off 'new'. RLS scopes it
- * to the caller's org and returns 0 for non-staff.
- */
-export async function countNewRequests(): Promise<number> {
-  const { count, error } = await supabase
-    .from('requests')
-    .select('*', { count: 'exact', head: true })
-    .eq('status', 'new');
-  if (error) return 0; // non-staff / RLS: keep the dashboard quiet
-  return count ?? 0;
-}
 
 // ─── Count helpers (dashboard KPI tiles) ──────────────────────────────────
 // head:true + count:'exact' returns the count without transferring rows; RLS

@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, Hand } from 'lucide-react';
-import { myNotifications, markNotificationRead, countNewRequests, type AppNotification } from '../../lib/api';
+import { myNotifications, consumeNotification, type AppNotification } from '../../lib/api';
 import { sayHiBack } from '../../lib/communityFeed';
-import { countOpenSupportRequests } from '../../lib/support';
 import { timeOfDayWord } from '../../lib/formatDateTime';
 import { useAuth } from '../../contexts/AuthContext';
 import { myLessonSessions, type MemberLessonSession } from '../../lib/ops/api-member';
@@ -39,7 +38,12 @@ interface Tile {
   dismissOnView?: boolean;
 }
 
-function TileCard({ tile, onDismiss }: { tile: Tile; onDismiss?: (opts?: { silent?: boolean }) => void }) {
+function TileCard({ tile, onDismiss, onOpen }: {
+  tile: Tile;
+  onDismiss?: (opts?: { silent?: boolean }) => void;
+  /** fires when the CTA is used to open the target (for consume-on-visit) */
+  onOpen?: () => void;
+}) {
   const navigate = useNavigate();
   const ref = useRef<HTMLDivElement | null>(null);
   const [saidHiBack, setSaidHiBack] = useState(false);
@@ -94,7 +98,7 @@ function TileCard({ tile, onDismiss }: { tile: Tile; onDismiss?: (opts?: { silen
       ) : (
         <button
           type="button"
-          onClick={() => navigate(tile.to)}
+          onClick={() => { onOpen?.(); navigate(tile.to); }}
           className="inline-flex mt-3 text-[10.5px] tracking-wide uppercase text-white bg-green-800 px-3.5 py-2 rounded-lg font-medium hover:bg-green-700 focus-ring"
         >
           {tile.cta} →
@@ -151,24 +155,15 @@ export function DashboardPanel() {
   const [suggestBooking, setSuggestBooking] = useState(false);
   const [pendingChanges, setPendingChanges] = useState(0);
   const [horse, setHorse] = useState<HorseOnboardingState | null>(null);
-  // Staff-only: counts of untriaged inbound inquiries + open support requests. RLS
-  // returns 0 for non-staff, and we further gate the support tile on isStaff so a
-  // member's own open ticket never links them to the staff-only support page.
-  const [newRequests, setNewRequests] = useState(0);
-  const [openSupport, setOpenSupport] = useState(0);
-  const { isStaff, profile } = useAuth();
+  const { profile } = useAuth();
   const firstName = profile?.first_name || profile?.display_name || null;
+  // Session hide for the member's own live "pending changes" tile (not backed by a
+  // notification). Notification tiles are CONSUMED (deleted + logged) instead.
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const hide = (id: string) => setHidden((prev) => new Set(prev).add(id));
 
   useEffect(() => {
     let active = true;
-    countNewRequests()
-      .then((n) => active && setNewRequests(n))
-      .catch(() => {});
-    if (isStaff) {
-      countOpenSupportRequests()
-        .then((n) => active && setOpenSupport(n))
-        .catch(() => {});
-    }
     fetchMyPendingChanges()
       .then((r) => active && setPendingChanges(r.length))
       .catch(() => {});
@@ -233,7 +228,7 @@ export function DashboardPanel() {
       setComingUp(up.slice(0, 3));
     });
     return () => { active = false; };
-  }, [isStaff]);
+  }, []);
 
   // The horse documents are their own persistent item — shown until they're
   // signed (or until a horse is added, when one is needed). The "your service
@@ -258,16 +253,25 @@ export function DashboardPanel() {
       }
     : null;
 
-  // Dismiss a notification tile. `silent` (auto-dismiss-on-view for greetings) marks
-  // it read server-side but KEEPS it on screen this session, so the user can still act
-  // on it — it just won't return on reload. The manual × removes it from view too.
+  // Close a notification tile. A manual close CONSUMES it — deletes the
+  // notification (per-user) and leaves an audit-log entry — so it's gone for good
+  // and never returns on this user's dashboard (matching the phone-handled case;
+  // the other owner's copy is untouched). `silent` is the greetings' auto-on-view
+  // path: mark read only, keep on screen this session (a one-time hello).
   function dismiss(notificationId: string, opts?: { silent?: boolean }) {
-    markNotificationRead(notificationId).catch(() => {});
-    if (!opts?.silent) setAttention((prev) => prev.filter((t) => t.notificationId !== notificationId));
+    if (opts?.silent) {
+      markNotificationRead(notificationId).catch(() => {});
+      return;
+    }
+    consumeNotification(notificationId).catch(() => {});
+    setAttention((prev) => prev.filter((t) => t.notificationId !== notificationId));
   }
 
+  // pending-changes is the member's own live state; still session-hideable.
+  const showPending = pendingChanges > 0 && !hidden.has('pending-changes');
+
   const hasAttention = attention.length > 0 || checklist.length > 0 || suggestBooking
-    || pendingChanges > 0 || !!horseTile || newRequests > 0 || (isStaff && openSupport > 0);
+    || showPending || !!horseTile;
   // Empty state: nothing needs attention and nothing's coming up → a warm all-clear
   // greeting (owner directive) instead of hiding the panel entirely.
   const allCaughtUp = !hasAttention && comingUp.length === 0;
@@ -284,38 +288,20 @@ export function DashboardPanel() {
         <>
           <p className="text-[10px] tracking-widest uppercase text-gold-800 font-semibold mb-3">Needs your attention</p>
           <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
-            {/* Staff-only, persistent until the inbox is triaged: new website inquiries.
-                Shown first so a new inquiry can't be pushed off by other tiles. */}
-            {newRequests > 0 && (
-              <TileCard tile={{
-                id: 'new-inquiries', kind: 'inbox', gold: true,
-                title: `${newRequests} new ${newRequests === 1 ? 'inquiry' : 'inquiries'} to review`,
-                sub: newRequests === 1
-                  ? 'A website visitor is waiting to hear back.'
-                  : 'Website visitors are waiting to hear back.',
-                cta: 'Open the Request Inbox', to: '/app/ops/intake',
-              }} />
-            )}
-            {/* Staff-only, persistent until triaged: open support requests. */}
-            {isStaff && openSupport > 0 && (
-              <TileCard tile={{
-                id: 'open-support', kind: 'support', gold: true,
-                title: `${openSupport} open support request${openSupport === 1 ? '' : 's'}`,
-                sub: openSupport === 1
-                  ? 'A member is waiting on a reply.'
-                  : 'Members are waiting on a reply.',
-                cta: 'Open Support', to: '/app/ops/support',
-              }} />
-            )}
+            {/* New inbound inquiries and support requests surface here as individual,
+                per-user notifications (request_new / support_new). Each is CONSUMED —
+                deleted, leaving only an audit log — when the owner closes it OR opens
+                its target. So a phone-handled item can just be closed, and dismissing
+                on one owner's dashboard never touches the other's. */}
             {horseTile && <TileCard tile={horseTile} />}
             {checklist.length > 0 && <ChecklistCard rows={checklist} />}
-            {pendingChanges > 0 && (
+            {showPending && (
               <TileCard tile={{
                 id: 'pending-changes', kind: 'suggestion',
                 title: `${pendingChanges} pending request${pendingChanges > 1 ? 's' : ''}`,
                 sub: 'Awaiting confirmation from our team.',
                 cta: 'View on calendar', to: '/app/calendar',
-              }} />
+              }} onDismiss={() => hide('pending-changes')} />
             )}
             {suggestBooking && (
               <TileCard tile={{
@@ -325,7 +311,15 @@ export function DashboardPanel() {
                 cta: 'Book a lesson', to: '/app/calendar',
               }} />
             )}
-            {attention.map((t) => <TileCard key={t.id} tile={t} onDismiss={t.notificationId ? (opts) => dismiss(t.notificationId!, opts) : undefined} />)}
+            {attention.map((t) => (
+              <TileCard key={t.id} tile={t}
+                onDismiss={t.notificationId ? (opts) => dismiss(t.notificationId!, opts) : undefined}
+                // Opening the target consumes it too — but not greetings (they use
+                // "say hi back", and their consume-on-view is handled separately).
+                onOpen={t.notificationId && !t.greeterUserId
+                  ? () => { consumeNotification(t.notificationId!).catch(() => {}); }
+                  : undefined} />
+            ))}
           </div>
         </>
       )}

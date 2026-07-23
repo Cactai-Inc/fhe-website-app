@@ -42,20 +42,6 @@ export async function setSupportStatus(id: string, status: SupportStatus): Promi
   if (error) throw error;
 }
 
-/**
- * Count of OPEN (untriaged) support requests, for the persistent staff dashboard
- * tile. Reflects the real inbox state (lingers until each is progressed/resolved),
- * unlike a notification that vanishes once read. RLS returns 0 for non-staff, and
- * a member only ever sees their own rows — so this tile is effectively staff-only.
- */
-export async function countOpenSupportRequests(): Promise<number> {
-  const { count, error } = await supabase
-    .from('support_requests')
-    .select('*', { count: 'exact', head: true })
-    .eq('status', 'open');
-  if (error) return 0;
-  return count ?? 0;
-}
 
 // ─── Oversight (Slice 5) ─────────────────────────────────────────────────────
 

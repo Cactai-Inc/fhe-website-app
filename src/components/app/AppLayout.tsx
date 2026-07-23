@@ -11,8 +11,22 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { useViewSurfaces } from '../../lib/surfaces';
 import { fetchMyGrantKeys } from '../../lib/grants';
-import { useNotificationsBell } from './NotificationsBell';
+import { myUnreadCount } from '../../lib/api';
 import { CreateModal } from './CreateModal';
+
+/** Unread-notification count for the Dashboard nav badge. Refreshes on mount and
+ *  on every route change (the notifications themselves live on the dashboard now —
+ *  there is no bell). */
+function useUnreadCount(): number {
+  const location = useLocation();
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    let active = true;
+    myUnreadCount().then((n) => active && setCount(n)).catch(() => { /* stay quiet */ });
+    return () => { active = false; };
+  }, [location.pathname]);
+  return count;
+}
 
 /**
  * APP SHELL — role-adaptive.
@@ -362,7 +376,7 @@ export default function AppLayout() {
   const dmCount = useDmUnread();
   useViewSurfaces();
   const navigate = useNavigate();
-  const bell = useNotificationsBell();
+  const unreadCount = useUnreadCount();
   const [menuOpen, setMenuOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -457,7 +471,7 @@ export default function AppLayout() {
                       <button type="button" onClick={() => { closeMenu(); navigate('/app/dashboard'); }}
                         className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">
                         <LayoutDashboard size={17} /> Dashboard
-                        {bell.count > 0 && <span className="ml-auto min-w-[1.25rem] h-5 px-1.5 text-[11px] leading-5 text-center rounded-full bg-gold-600 text-white">{bell.count > 9 ? '9+' : bell.count}</span>}
+                        {unreadCount > 0 && <span className="ml-auto min-w-[1.25rem] h-5 px-1.5 text-[11px] leading-5 text-center rounded-full bg-gold-600 text-white">{unreadCount > 9 ? '9+' : unreadCount}</span>}
                       </button>
                       <button type="button" onClick={() => { closeMenu(); navigate('/app/catalog'); }}
                         className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">
@@ -471,7 +485,7 @@ export default function AppLayout() {
                       <div className="mt-1 border-t border-green-800/10 pt-2 px-4 pb-1 text-xs uppercase tracking-wide text-secondary/60">Quick access</div>
                       <div className="px-1"><CommunityNav onNavigate={closeMenu} indentClass="pl-9" /></div>
                       {QUICK.map((q) => {
-                        const raw = q.badge === 'notifications' ? bell.count : q.badge === 'messages' ? dmCount : 0;
+                        const raw = q.badge === 'notifications' ? unreadCount : q.badge === 'messages' ? dmCount : 0;
                         const badge = raw > 0 ? raw : 0;
                         return (
                           <button key={q.label} type="button"
@@ -509,7 +523,7 @@ export default function AppLayout() {
 
       <div className="w-full max-w-[120rem] mx-auto flex">
         {/* Members (non-staff) get a collapsible quick-access rail on desktop. */}
-        {!showRail && !isSuperAdmin && <ClientRail bellCount={bell.count} dmCount={dmCount} />}
+        {!showRail && !isSuperAdmin && <ClientRail bellCount={unreadCount} dmCount={dmCount} />}
         {showRail && (
           <aside className="hidden lg:block w-60 xl:w-64 shrink-0 border-r border-green-800/10 bg-cream-100/40">
             <nav className="p-3 sticky top-14 h-[calc(100dvh-3.5rem)] overflow-y-auto">
@@ -519,7 +533,7 @@ export default function AppLayout() {
               {!isSuperAdmin && (
                 <div className="mb-1 flex flex-col gap-0.5">
                   <CommunityNav indentClass="pl-9" />
-                  <RailLink to="/app/dashboard" label="Dashboard" icon={HomeIcon} badge={bell.count} />
+                  <RailLink to="/app/dashboard" label="Dashboard" icon={HomeIcon} badge={unreadCount} />
                   <RailLink to="/app/calendar" label="Calendar" icon={CalendarDays} />
                 </div>
               )}

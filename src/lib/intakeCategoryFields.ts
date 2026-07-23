@@ -48,6 +48,14 @@ export const CATEGORY_FIELDS: Partial<Record<RequestCategory, IntakeCategoryFiel
   ],
 };
 
+/** Labels for detail keys that aren't part of CATEGORY_FIELDS (e.g. the lessons
+ *  age attestation, which is rendered by a bespoke block, not the generic list). */
+const EXTRA_DETAIL_LABELS: Record<string, string> = {
+  age_bracket: 'Age',
+  rider_declared_age: 'Declared age',
+  guardian_approval_acknowledged: 'Guardian approval',
+};
+
 /** Human label for a stored detail key (for the staff inbox). Falls back to a
  *  humanized key if the field config no longer defines it. */
 export function categoryFieldLabel(key: string): string {
@@ -55,5 +63,6 @@ export function categoryFieldLabel(key: string): string {
     const f = fields?.find((x) => x.key === key);
     if (f) return f.label;
   }
+  if (EXTRA_DETAIL_LABELS[key]) return EXTRA_DETAIL_LABELS[key];
   return key.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
 }
