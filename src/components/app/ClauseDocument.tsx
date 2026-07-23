@@ -257,11 +257,13 @@ function ClauseProse({
     matrix = [];
     // A cell keeps its label and value on ONE line (never wraps the value under the
     // label). When it can't fit, the grid drops to fewer columns and the whole cell
-    // moves together — see the wider minmax() below.
+    // moves together — see the wider minmax() below. A long value wraps within the
+    // value span (break-words) and pushes the cell taller rather than overflowing
+    // sideways onto a neighbouring cell/label.
     const cell = (c: { label: string; token: string }, j: number) => (
       <div key={j} className="flex items-baseline gap-x-1.5 text-[13.5px] text-green-950 min-w-0">
         <span className="font-semibold whitespace-nowrap">{c.label}:</span>
-        <span className="min-w-0">{renderToken(c.token, `mx${bi}-${j}`, fieldByKey, valueByKey, cb)}</span>
+        <span className="min-w-0 break-words">{renderToken(c.token, `mx${bi}-${j}`, fieldByKey, valueByKey, cb)}</span>
       </div>
     );
     // A signature triple — Signature / Printed Name / Date for one party — lays out
@@ -281,10 +283,15 @@ function ClauseProse({
     }
     // group consecutive compact cells into a packed grid; wide cells break out to
     // their own full-width row. This keeps the Horse identity grid AND avoids the
-    // Farrier/Vet dropdown collision.
+    // Farrier/Vet dropdown collision. A party-contact cell (Name / Address / Phone
+    // / Email in the Notice block) is ALSO forced to its own full-width row so a
+    // long address can never run under the next field's label, and each field sits
+    // on its own line on narrow/mobile screens (the value wraps within its own row
+    // rather than pushing the next field to the end of the wrapped text).
+    const forceOwnRow = (token: string) => isWideCell(token) || !!PARTY_CONTACT_TOKENS[token];
     const groups: { wide: boolean; items: { label: string; token: string }[] }[] = [];
     for (const c of cells) {
-      const wide = isWideCell(c.token);
+      const wide = forceOwnRow(c.token);
       const last = groups[groups.length - 1];
       if (last && last.wide === wide && !wide) last.items.push(c);
       else groups.push({ wide, items: [c] });
