@@ -544,6 +544,14 @@ export async function captureHorseRecord(
   if (mergeErr) throw mergeErr;
 }
 
+/** Explicit save: re-compose the document from its clauses/fields and persist the
+ *  merged body. Fields already autosave on blur; this is the reassuring "Save"
+ *  action that re-persists the current composed state on demand. */
+export async function saveContract(documentId: string): Promise<void> {
+  const { error } = await supabase.rpc('remerge_contract_from_clauses', { p_document_id: documentId });
+  if (error) throw error;
+}
+
 /** Send the document to a party = notify them + confirm access. */
 export async function sendContractToParty(documentId: string, partyRole: string): Promise<void> {
   const { error } = await supabase.rpc('send_contract_to_party', { p_document_id: documentId, p_party_role: partyRole });

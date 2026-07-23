@@ -15,6 +15,7 @@ import {
   sendContractToParty, cancelContract, archiveContract, hardDeleteContract,
   setFieldResponsibility, setFieldIncluded, setFieldNa, setFieldControlOverride, setFieldStructured,
   postContractComment, documentPartiesSummary, captureContactInfo, captureHorseRecord,
+  saveContract, inviteCounterparty,
   type ContractDetail, type ContractField, type PartyControls,
   type SigningSetDoc, type RedlineState, type PartiesHorseSummary, type PartySummary,
 } from '../../lib/contracts';
@@ -241,6 +242,11 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   // capture modal shown when locking with gaps.
   const [partiesSummary, setPartiesSummary] = useState<PartiesHorseSummary | null>(null);
   const [captureParty, setCaptureParty] = useState<PartySummary | null>(null);
+  // Extra recipient emails typed into the Send-for-review card (beyond the emails
+  // already on file for each party). The draft is the in-progress input.
+  const [extraEmails, setExtraEmails] = useState<string[]>([]);
+  const [extraEmailDraft, setExtraEmailDraft] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -378,6 +384,49 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
     void act(() => advanceWorkflow(id!, 'locked'), 'Locked — the final document is ready to sign.');
   }
 
+  // Explicit Save — fields already autosave on blur; this re-persists the composed
+  // document on demand and confirms, so the creator knows their work is stored.
+  async function saveNow() {
+    setError(null); setNote(null); setSaving(true);
+    try { await saveContract(id!); await load(); setNote('Saved.'); }
+    catch (e) { setError(e instanceof Error ? e.message : 'Could not save.'); }
+    finally { setSaving(false); }
+  }
+
+  // Cancel — before the document has ever been sent, cancelling makes it as if it
+  // never existed: a silent hard delete, no one notified. Once it has been sent,
+  // Cancel cancels the live document and notifies all parties.
+  function cancelDocument() {
+    if (!isSent) {
+      if (window.confirm('Cancel this document? It has not been sent to anyone, so it will be removed entirely — as if it never existed. No one is notified.')) {
+        void act(async () => { await hardDeleteContract(id!); navigate('/app/ops/documents'); });
+      }
+      return;
+    }
+    if (window.confirm('Cancel this document? All parties will be notified and the barn will archive or remove it.')) {
+      void act(() => cancelContract(id!), 'Document cancelled — all parties notified.');
+    }
+  }
+
+  // Send for review to every counterparty on file, plus any extra emails typed in.
+  function sendReview() {
+    void act(async () => {
+      const r = await sendForReview(id!, invitableRoles);
+      // extra ad-hoc recipients: invite the first counterparty role at each address
+      const extraRole = invitableRoles[0];
+      let extraSent = 0;
+      if (extraRole && extraEmails.length) {
+        const rs = await Promise.allSettled(extraEmails.map((e) => inviteCounterparty(id!, extraRole, e)));
+        extraSent = rs.filter((x) => x.status === 'fulfilled' && x.value.emailed).length;
+      }
+      const extraNote = extraSent ? ` Also emailed ${extraSent} additional recipient${extraSent === 1 ? '' : 's'}.` : '';
+      setExtraEmails([]); setExtraEmailDraft('');
+      setNote(r.skipped > 0
+        ? `Sent for review. Emailed ${r.emailed} of ${r.emailed + r.skipped} part${r.emailed + r.skipped === 1 ? 'y' : 'ies'}; ${r.skipped} could not be emailed (no email on file or email delivery not configured). In-app notifications were sent to parties with an account.${extraNote}`
+        : `Sent for review — all parties were notified by email and in-app.${extraNote}`);
+    });
+  }
+
   const saveField = useCallback(async (key: string, value: string) => {
     try {
       await setContractField(id!, key, value);
@@ -511,6 +560,114 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           ) : !thisExecuted ? (
             <p className="form-hint mt-3">Sign this document to continue to the next.</p>
           ) : null}
+        </div>
+      )}
+
+      {/* ── Action deck (above the title): one card with three stacked panels —
+          Manage, Send for review, and Change History, in that order. Buttons are
+          generously sized and spaced so they're hard to mis-tap on mobile. Only on
+          the standalone page during the pre-execution phase for the owner side. ── */}
+      {!embedded && isOwnerSide && state !== 'executed' && state !== 'void' && (
+        <div className="bg-white border border-green-800/10 rounded-xl mb-5 divide-y divide-green-800/10">
+          {/* Manage — Save / Cancel / Archive / Delete. */}
+          <div className="p-5 sm:p-6">
+            <p className="text-[11px] uppercase tracking-wide text-muted mb-3">Manage</p>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <button type="button" disabled={saving}
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-green-800/20 px-4 py-3 text-sm font-medium text-green-900 hover:bg-green-800/5 focus-ring disabled:opacity-60"
+                onClick={() => void saveNow()}>
+                {saving ? 'Saving…' : 'Save'}
+              </button>
+              <button type="button"
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-green-800/20 px-4 py-3 text-sm font-medium text-secondary hover:bg-green-800/5 focus-ring"
+                onClick={cancelDocument}>
+                Cancel
+              </button>
+              <button type="button" disabled={!isStaff}
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-green-800/20 px-4 py-3 text-sm font-medium text-secondary hover:bg-green-800/5 focus-ring disabled:opacity-40 disabled:hover:bg-transparent"
+                onClick={() => void act(() => archiveContract(id!, !isArchived), isArchived ? 'Unarchived.' : 'Archived — findable and resumable.')}>
+                {isArchived ? 'Unarchive' : 'Archive'}
+              </button>
+              <button type="button" disabled={!isStaff}
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-300 px-4 py-3 text-sm font-medium text-red-700 hover:bg-red-50 focus-ring disabled:opacity-40 disabled:hover:bg-transparent"
+                onClick={() => { if (window.confirm('Delete this document entirely? This is a hard delete — as if it never existed. This cannot be undone.')) void act(async () => { await hardDeleteContract(id!); navigate('/app/ops/documents'); }); }}>
+                Delete
+              </button>
+            </div>
+          </div>
+
+          {/* Send for review — primary action, with the recipient email(s) and the
+              option to add more. Lock for signing sits below it. */}
+          {editablePhase && (
+            <div className="p-5 sm:p-6">
+              <p className="text-[11px] uppercase tracking-wide text-muted mb-3">Send</p>
+              <button type="button" className="btn-primary w-full sm:w-auto justify-center py-3"
+                onClick={sendReview}>
+                <Send size={15} /> Send for review
+              </button>
+              <div className="mt-4">
+                <p className="text-[11px] uppercase tracking-wide text-muted mb-1.5">Sending to</p>
+                <ul className="flex flex-col gap-1">
+                  {(partiesSummary?.parties ?? [])
+                    .filter((p) => invitableRoles.includes(p.party_role))
+                    .map((p) => {
+                      const rl = p.party_role.charAt(0) + p.party_role.slice(1).toLowerCase();
+                      return (
+                        <li key={p.party_role} className="text-[13px] text-green-950 flex items-baseline gap-2 flex-wrap">
+                          <span className="font-semibold">{rl}:</span>
+                          {p.email
+                            ? <span className="break-all">{p.email}</span>
+                            : <span className="text-red-700 italic">no email on file — add one below</span>}
+                        </li>
+                      );
+                    })}
+                  {extraEmails.map((e, i) => (
+                    <li key={`extra-${i}`} className="text-[13px] text-green-950 flex items-baseline gap-2">
+                      <span className="font-semibold">Also:</span>
+                      <span className="break-all">{e}</span>
+                      <button type="button" className="text-red-700 text-xs underline shrink-0"
+                        onClick={() => setExtraEmails((xs) => xs.filter((_, j) => j !== i))}>remove</button>
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-2.5 flex flex-col sm:flex-row sm:items-center gap-2">
+                  <input type="email" value={extraEmailDraft}
+                    onChange={(e) => setExtraEmailDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const v = extraEmailDraft.trim();
+                        if (v && !extraEmails.includes(v)) { setExtraEmails((xs) => [...xs, v]); setExtraEmailDraft(''); }
+                      }
+                    }}
+                    placeholder="Add another email address"
+                    className="px-3 py-2 rounded-lg border border-green-800/15 text-sm focus-ring w-full sm:w-72" />
+                  <button type="button" className="btn-secondary text-sm justify-center py-2"
+                    disabled={!extraEmailDraft.trim()}
+                    onClick={() => {
+                      const v = extraEmailDraft.trim();
+                      if (v && !extraEmails.includes(v)) { setExtraEmails((xs) => [...xs, v]); setExtraEmailDraft(''); }
+                    }}>
+                    Add email
+                  </button>
+                </div>
+              </div>
+              <div className="mt-5">
+                <button type="button" className="btn-outline-gold text-sm w-full sm:w-auto justify-center py-3"
+                  onClick={lockForSigning}>
+                  <Lock size={14} /> Lock for signing
+                </button>
+                <p className="text-[11px] text-muted mt-1.5">Locks the final document for signature — do this once every party has reviewed.</p>
+              </div>
+            </div>
+          )}
+
+          {/* Change History — moved to the top, its own panel. */}
+          {id && (
+            <div className="p-5 sm:p-6">
+              <TrackChangesPanel documentId={id} refreshKey={changeKey} />
+            </div>
+          )}
         </div>
       )}
 
@@ -910,28 +1067,16 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         </section>
       )}
 
-      {/* workflow + signing */}
+      {/* workflow + signing — the primary Send / Lock / Manage actions now live in
+          the action deck above the title. This section carries the post-send
+          workflow steps (review round-trip, send-to-party) and the signing UI. */}
       {state !== 'executed' && state !== 'void' && (
         <section id="contract-signatures" className="bg-white border border-green-800/10 rounded-xl p-6 scroll-mt-16 mt-6">
-          <h2 className="font-serif text-lg text-green-800 mb-4">Next steps</h2>
+          {(
+            (isOwnerSide && (state === 'in_review' || (state === 'locked' && !counterpartySigned)))
+            || (isOwnerSide && (state === 'in_review' || state === 'locked') && sendableRoles.length > 0)
+          ) && (
           <div className="flex flex-wrap items-center gap-2.5 mb-5">
-            {isOwnerSide && editablePhase && (
-              <>
-                <button type="button" className="btn-secondary text-xs"
-                  onClick={() => void act(async () => {
-                    const r = await sendForReview(id!, invitableRoles);
-                    setNote(r.skipped > 0
-                      ? `Sent for review. Emailed ${r.emailed} of ${r.emailed + r.skipped} part${r.emailed + r.skipped === 1 ? 'y' : 'ies'}; ${r.skipped} could not be emailed (no email on file or email delivery not configured). In-app notifications were sent to parties with an account.`
-                      : `Sent for review — all parties were notified by email and in-app.`);
-                  })}>
-                  <Send size={13} /> Send for review
-                </button>
-                <button type="button" className="btn-outline-gold text-xs"
-                  onClick={lockForSigning}>
-                  <Lock size={13} /> Lock for signing
-                </button>
-              </>
-            )}
             {isOwnerSide && state === 'in_review' && (
               <>
                 <button type="button" className="btn-secondary text-xs"
@@ -960,30 +1105,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
               </button>
             ))}
           </div>
-
-          {/* Manage row: Cancel (any party) / Archive + Delete (staff) — separated
-              from the primary workflow actions for a cleaner, less cramped layout. */}
-          <div className="flex flex-wrap items-center gap-1 border-t border-green-800/10 pt-4 mt-1">
-            <span className="text-[11px] uppercase tracking-wide text-muted mr-2">Manage</span>
-            {!isCancelled && (
-              <button type="button" className="text-xs text-red-700 hover:bg-red-50 rounded-lg px-3 py-1.5 focus-ring"
-                onClick={() => { if (window.confirm('Cancel this document? All parties will be notified and the barn will archive or remove it.')) void act(() => cancelContract(id!), 'Document cancelled — all parties notified.'); }}>
-                Cancel document
-              </button>
-            )}
-            {isStaff && (
-              <button type="button" className="text-xs text-secondary hover:bg-green-800/5 rounded-lg px-3 py-1.5 focus-ring"
-                onClick={() => void act(() => archiveContract(id!, !isArchived), isArchived ? 'Unarchived.' : 'Archived — findable and resumable.')}>
-                {isArchived ? 'Unarchive' : 'Archive'}
-              </button>
-            )}
-            {isStaff && (
-              <button type="button" className="text-xs text-red-700 hover:bg-red-50 rounded-lg px-3 py-1.5 focus-ring ml-auto"
-                onClick={() => { if (window.confirm('Delete this document entirely? This is a hard delete — as if it never existed. This cannot be undone.')) void act(async () => { await hardDeleteContract(id!); navigate('/app/ops/documents'); }); }}>
-                Delete entirely
-              </button>
-            )}
-          </div>
+          )}
 
           {/* signing: counterparty first when they owe input; owner reviews + signs last */}
           {state === 'locked' && myRoles.length > 0 && !iSigned && (
@@ -1072,8 +1194,10 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       )}
 
       {/* Change history / track changes (always-on) — what each party changed,
-          and the human face of the retained audit trail. */}
-      {id && (
+          and the human face of the retained audit trail. Shown here only when it's
+          NOT already in the action deck above the title (owner-side, pre-execution):
+          i.e. for executed/void documents and for the reviewing party. */}
+      {id && !(!embedded && isOwnerSide && state !== 'executed' && state !== 'void') && (
         <div className="mt-5">
           <TrackChangesPanel documentId={id} refreshKey={changeKey} />
         </div>

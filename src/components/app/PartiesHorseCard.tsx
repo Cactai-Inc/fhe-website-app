@@ -40,6 +40,10 @@ export function PartiesHorseCard({
   if (!summary) return null;
   const roleLabel = (r: string) => r === 'LESSEE' ? 'Lessee' : r === 'LESSOR' ? 'Lessor'
     : r === 'BUYER' ? 'Buyer' : r === 'SELLER' ? 'Seller' : r;
+  // Display order: the owner side (Lessor / Seller) first, then the counterparty
+  // (Lessee / Buyer), then anything else. The horse block renders after all parties.
+  const roleRank = (r: string) => r === 'LESSOR' || r === 'SELLER' ? 0
+    : r === 'LESSEE' || r === 'BUYER' ? 1 : 2;
 
   async function reassign(role: string, contactId: string) {
     setBusy(true); setErr(null);
@@ -69,7 +73,11 @@ export function PartiesHorseCard({
       {err && <p role="alert" className="form-error mb-2">{err}</p>}
 
       <dl className="grid sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
-        {summary.parties.map((p) => (
+        {/* Owner-first ordering: Lessor / Seller before Lessee / Buyer, then the
+            horse block below. (The summary comes back alphabetically by role.) */}
+        {[...summary.parties]
+          .sort((a, b) => roleRank(a.party_role) - roleRank(b.party_role))
+          .map((p) => (
           <div key={p.party_role}>
             <dt className="text-[11px] uppercase tracking-wide text-muted">{roleLabel(p.party_role)}</dt>
             {editing && canEdit ? (
