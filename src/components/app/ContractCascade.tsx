@@ -346,18 +346,21 @@ function AddText({ f, onSave, disabled }: { f: ContractField; onSave: SaveFn; di
   useEffect(() => { if (!editingRef.current) { setText(f.value ?? ''); setOpen((f.value ?? '').trim() !== '' || open); } }, [f.value]); // eslint-disable-line react-hooks/exhaustive-deps
   const commit = (v: string) => { editingRef.current = false; if (v !== (f.value ?? '')) void onSave(f.field_key, v); };
 
+  // Collapsed: a compact "+ <label>" button. The label is the field's label
+  // (e.g. "Add Restrictions"); the clause line it sits on provides any lead-in.
   if (!open) {
     return (
       <button type="button" disabled={disabled}
-        className="inline-flex items-center gap-1.5 text-[13px] text-green-800 border border-green-800/25 rounded-lg px-3 py-1.5 hover:bg-green-50 focus-ring"
+        className="inline-flex items-center gap-1.5 text-[13px] text-green-800 border border-green-800/25 rounded-lg px-3 py-1.5 hover:bg-green-50 focus-ring align-baseline"
         onClick={() => setOpen(true)}>
         + {f.label ?? 'Add'}
       </button>
     );
   }
+  // Open: just the input (the clause line already labels it, e.g. "Restrictions:")
+  // plus a way to clear/remove it.
   return (
-    <span className="inline-flex items-baseline gap-1.5 w-full">
-      <span className="text-[13.5px] text-green-950 whitespace-nowrap">{f.guidance ?? f.label}:</span>
+    <span className="inline-flex items-baseline gap-1.5 flex-1 min-w-0 align-baseline">
       <input className="flex-1 min-w-[8rem] px-1 text-[13.5px] text-green-900 bg-gold-50/70 border-b border-gold-400/70 focus:outline-none focus:border-gold-600 rounded-sm"
         disabled={disabled} value={text} placeholder="list any restrictions"
         onFocus={() => { editingRef.current = true; }}

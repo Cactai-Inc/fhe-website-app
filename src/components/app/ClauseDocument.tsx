@@ -192,9 +192,18 @@ function ClauseProse({
     );
   };
 
+  // Self-labeling block controls (a button that reveals a field, a Yes/No that
+  // reveals text, a certification checkbox) can't render inside a compact matrix
+  // cell — they need their own full-width line and carry their own label, so a
+  // "Label: {{token}}" line pointing at one is NOT treated as a matrix cell.
+  const isSelfLabelBlock = (token: string) => {
+    const fmt = fieldByKey.get(token)?.format_type ?? '';
+    return fmt === 'add_text' || fmt === 'reveal_text' || fmt === 'certify';
+  };
+
   for (const line of lines) {
     const mm = line.match(MATRIX_LINE);
-    if (mm) { matrix.push({ label: mm[1].trim(), token: mm[2] }); continue; }
+    if (mm && !isSelfLabelBlock(mm[2])) { matrix.push({ label: mm[1].trim(), token: mm[2] }); continue; }
     flushMatrix();
     if (line.trim() === '') { continue; }
     // prose line: interleave text and inline tokens
