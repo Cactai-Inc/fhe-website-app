@@ -319,6 +319,10 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   // staff and I'm not the requester (staff always may act, e.g. to record consent).
   const iRequestedTermination = !!doc?.termination_requested_by
     && !!partiesSummary?.parties.some((p) => p.contact_id === doc?.termination_requested_by && myRoles.includes(p.party_role));
+  // The top-of-page action deck carries Change History. It renders for any party or
+  // the owner on a standalone, non-void document. When it renders, the duplicate
+  // Change History at the bottom of the page is suppressed (single source of truth).
+  const showDeck = !embedded && (isOwnerSide || myRoles.length > 0) && state !== 'void';
 
   // Receiving-party rendering (§C): a party who has fields to fill sees the doc
   // with THEIR empty fields highlighted and locked fields lightened; a party with
@@ -631,7 +635,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           until the contract is executed; after execution it becomes Terminate +
           (once inactive) per-party Archive + Change History. Buttons are large and
           well-spaced so they're hard to mis-tap on mobile. ── */}
-      {!embedded && (isOwnerSide || myRoles.length > 0) && state !== 'void' && (
+      {showDeck && (
         <div className="bg-white border border-green-800/10 rounded-xl mb-5 divide-y divide-green-800/10">
           {/* MANAGE — pre-execution only. Save (owner), Cancel (any party), Delete
               (staff, hard delete before execution), and per-party Archive once the
@@ -1209,8 +1213,12 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
 
       {/* workflow + signing — the primary Send / Lock / Manage actions now live in
           the action deck above the title. This section carries the post-send
-          workflow steps (review round-trip, send-to-party) and the signing UI. */}
-      {state !== 'executed' && state !== 'void' && state !== 'terminated' && (
+          workflow steps (review round-trip, send-to-party) and the signing UI. It
+          only appears once there is something to show (a review/locked action, the
+          signing UI, or captured signatures) — in the plain editable phase there is
+          nothing here, so the whole card is omitted (no empty white box). */}
+      {state !== 'executed' && state !== 'void' && state !== 'terminated'
+        && (state === 'in_review' || state === 'locked' || (detail?.signatures.length ?? 0) > 0) && (
         <section id="contract-signatures" className="bg-white border border-green-800/10 rounded-xl p-6 scroll-mt-16 mt-6">
           {(
             (isOwnerSide && (state === 'in_review' || (state === 'locked' && !counterpartySigned)))
@@ -1341,7 +1349,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           NOT already in the action deck above the title. The deck shows for any
           party (or owner) on a non-void document, so this bottom copy is only for
           void documents and the embedded creation view. */}
-      {id && !(!embedded && (isOwnerSide || myRoles.length > 0) && state !== 'void') && (
+      {id && !showDeck && (
         <div className="mt-5">
           <TrackChangesPanel documentId={id} refreshKey={changeKey} />
         </div>

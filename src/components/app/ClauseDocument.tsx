@@ -141,6 +141,23 @@ function optionLabel(f: ContractField): string {
   return v;
 }
 
+/** Every field_key referenced anywhere in a gate (including composite all/any).
+ *  Used so a clause's own controlling toggle stays interactive even when the
+ *  clause is gated off — otherwise you could never turn it on (chicken-and-egg). */
+function gateTriggerKeys(
+  cond: import('../../lib/contracts').FieldConditional | null | undefined,
+): Set<string> {
+  const keys = new Set<string>();
+  const walk = (c: typeof cond) => {
+    if (!c) return;
+    if (c.field_key) keys.add(c.field_key);
+    c.all?.forEach(walk);
+    c.any?.forEach(walk);
+  };
+  walk(cond);
+  return keys;
+}
+
 /** Map a raw gate value to its human label using the trigger field's options. */
 function gateValueLabel(f: ContractField | undefined, raw: string): string {
   const opt = f?.options?.find((o) => o.value === raw);
@@ -467,16 +484,31 @@ export function ClauseDocument({
                 // not hidden here.)
                 const orphanFields = (fieldsByClause.get(clause.clause_key) ?? [])
                   .filter((f) => !bodyTokens.has(f.field_key));
+                // A clause can be gated by a field that lives ON the clause itself
+                // (a self-enabling toggle, e.g. "Include 3rd party exercise"). That
+                // control MUST stay clickable when the clause is gated off — freezing
+                // it would make the clause impossible to turn on. Split it out.
+                const triggerKeys = gateTriggerKeys(clause.conditional_on);
+                const gateControls = orphanFields.filter((f) => triggerKeys.has(f.field_key));
+                const previewFields = orphanFields.filter((f) => !triggerKeys.has(f.field_key));
+                // certify / add_text / reveal_text controls render their own label
+                // (the checkbox statement / button text), so we must NOT also print
+                // a prefix label — otherwise it shows twice.
+                const renderOrphan = (f: ContractField) => {
+                  const selfLabels = f.format_type === 'certify'
+                    || f.format_type === 'add_text' || f.format_type === 'reveal_text';
+                  return (
+                    <span key={f.field_key} className="inline-flex items-baseline gap-1.5">
+                      {!selfLabels && <span>{f.label ?? f.field_key}</span>}
+                      <InlineFieldControl f={f} editable={cb.editable}
+                        onSave={cb.onSave} onSaveStructured={cb.onSaveStructured as never}
+                        onSaveResponsibility={cb.onSaveResponsibility as never}
+                        onCommentField={cb.onCommentField} onSuggestEdit={cb.onSuggestEdit} canSuggest={cb.canSuggest} />
+                    </span>
+                  );
+                };
                 return (
-                  // A gated-off clause is a non-interactive PREVIEW: muted and
-                  // pointer-events-none so its inputs can't be edited (its content
-                  // only enters the contract once the controlling selection turns it
-                  // on). Shown only to the author (authorView) — reviewers never see it.
-                  <div key={clause.clause_key} className={
-                    gatedOff
-                      ? `pointer-events-none select-none${sectionAllOptional ? '' : ' opacity-50'}`
-                      : ''
-                  }>
+                  <div key={clause.clause_key}>
                     {/* A per-clause "optional" note appears only for a clause that's
                         individually gated off within an OTHERWISE-ACTIVE section. When
                         the WHOLE section is optional, the greyed section title carries
@@ -486,32 +518,40 @@ export function ClauseDocument({
                         {describeGate(clause.conditional_on, fieldByKey)}
                       </p>
                     )}
-                    {clause.heading && (
-                      <p className="text-[13px] font-semibold text-green-900 mb-1 flex items-center gap-1.5">
-                        {num && <span className="text-muted tabular-nums">{num}</span>}{clause.heading}
-                        {clause.guidance && <InfoDot text={clause.guidance} />}
-                      </p>
-                    )}
-                    {clause.body
-                      ? <ClauseProse body={clause.body} fieldByKey={fieldByKey} valueByKey={valueByKey} cb={cb} />
-                      : null}
-                    {orphanFields.length > 0 && (
-                      // Fields attached to the clause but not placed by a {{token}}
-                      // in its prose — e.g. a yes/no authoring gate ("Any exceptions
-                      // to note? [Yes] [No]"). Rendered at the same size/colour as the
-                      // clause prose so the section reads uniformly.
-                      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 mt-1 text-[13.5px] text-green-950 leading-[1.9]">
-                        {orphanFields.map((f) => (
-                          <span key={f.field_key} className="inline-flex items-baseline gap-1.5">
-                            <span>{f.label ?? f.field_key}</span>
-                            <InlineFieldControl f={f} editable={cb.editable}
-                              onSave={cb.onSave} onSaveStructured={cb.onSaveStructured as never}
-                              onSaveResponsibility={cb.onSaveResponsibility as never}
-                              onCommentField={cb.onCommentField} onSuggestEdit={cb.onSuggestEdit} canSuggest={cb.canSuggest} />
-                          </span>
-                        ))}
+                    {/* The clause's own enabling control(s) — ALWAYS interactive, even
+                        when the clause is gated off, so it can be turned on. Rendered
+                        above the (possibly frozen) preview. */}
+                    {gatedOff && gateControls.length > 0 && (
+                      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 mb-1.5 text-[13.5px] text-green-950 leading-[1.9]">
+                        {gateControls.map(renderOrphan)}
                       </div>
                     )}
+                    {/* A gated-off clause is a non-interactive PREVIEW: muted and
+                        pointer-events-none so its inputs can't be edited (its content
+                        only enters the contract once the controlling selection turns
+                        it on). Shown only to the author — reviewers never see it. */}
+                    <div className={
+                      gatedOff
+                        ? `pointer-events-none select-none${sectionAllOptional ? '' : ' opacity-50'}`
+                        : ''
+                    }>
+                      {clause.heading && (
+                        <p className="text-[13px] font-semibold text-green-900 mb-1 flex items-center gap-1.5">
+                          {num && <span className="text-muted tabular-nums">{num}</span>}{clause.heading}
+                          {clause.guidance && <InfoDot text={clause.guidance} />}
+                        </p>
+                      )}
+                      {clause.body
+                        ? <ClauseProse body={clause.body} fieldByKey={fieldByKey} valueByKey={valueByKey} cb={cb} />
+                        : null}
+                      {/* Non-gate orphan fields. When the clause is active, its gate
+                          control (if any) renders here too so it stays in place. */}
+                      {(gatedOff ? previewFields : orphanFields).length > 0 && (
+                        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 mt-1 text-[13.5px] text-green-950 leading-[1.9]">
+                          {(gatedOff ? previewFields : orphanFields).map(renderOrphan)}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
               })}
