@@ -185,14 +185,18 @@ export default function NewContractPage() {
 
       <section className="bg-white border border-green-800/10 rounded-xl p-4 mb-4">
         <h2 className="font-serif text-green-800 text-base mb-3">Parties</h2>
+        {/* Owner side first (Lessor / Seller = roleB / partyB), then the
+            counterparty (Lessee / Buyer = roleA / partyA) — matching the Parties &
+            Horse card order. The partyA/partyB variable meanings are unchanged; only
+            the display order is swapped. */}
         <div className="grid sm:grid-cols-2 gap-4">
-          <div>
-            <span className="form-label">{roleLabel(roleA)}</span>
-            {partySelect(partyA, setPartyA, roleLabel(roleA))}
-          </div>
           <div>
             <span className="form-label">{roleLabel(roleB)}</span>
             {partySelect(partyB, setPartyB, roleLabel(roleB))}
+          </div>
+          <div>
+            <span className="form-label">{roleLabel(roleA)}</span>
+            {partySelect(partyA, setPartyA, roleLabel(roleA))}
           </div>
         </div>
         {type === 'lease' && (

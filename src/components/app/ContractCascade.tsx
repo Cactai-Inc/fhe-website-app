@@ -1137,7 +1137,9 @@ type WeekState = {
   windows?: { start: string; end: string }[];  // default two 6h windows
 };
 const DEFAULT_WEEK: WeekState = {
-  parties: ['Lessee', 'Lessor'], days: { Lessee: [], Lessor: [] },
+  // Owner side (Lessor) first, then Lessee — matches the party order used across
+  // the rest of the contract UI. The composer renders rows in this array order.
+  parties: ['Lessor', 'Lessee'], days: { Lessor: [], Lessee: [] },
   timeframes: false, windows: [{ start: '06:00', end: '12:00' }, { start: '12:00', end: '18:00' }],
 };
 /** Read the week state from `structured` (new home). Falls back to parsing legacy

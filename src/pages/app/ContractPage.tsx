@@ -344,6 +344,11 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   ].filter((r) => r && !myRoles.includes(r) && r !== 'FHE' && r !== 'COMPANY')));
   const sendableRoles = counterpartyRoles;
   const invitableRoles = counterpartyRoles;
+  // Owner-side first (Lessor / Seller), then the counterparty (Lessee / Buyer),
+  // then anything else — the consistent display order across every party list.
+  const roleRank = (r: string) => r === 'LESSOR' || r === 'SELLER' ? 0
+    : r === 'LESSEE' || r === 'BUYER' ? 1 : 2;
+  const byRoleRank = <T,>(get: (x: T) => string) => (a: T, b: T) => roleRank(get(a)) - roleRank(get(b));
   const iSigned = (detail?.signatures ?? []).some(
     (s) => s.signed_at && myRoles.includes(s.party_role));
   const counterpartySigned = (detail?.signatures ?? []).some((s) => s.signed_at);
@@ -702,6 +707,8 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                 <ul className="flex flex-col gap-1">
                   {(partiesSummary?.parties ?? [])
                     .filter((p) => invitableRoles.includes(p.party_role))
+                    .slice()
+                    .sort(byRoleRank((p) => p.party_role))
                     .map((p) => {
                       const rl = p.party_role.charAt(0) + p.party_role.slice(1).toLowerCase();
                       return (
@@ -1006,6 +1013,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           <div className="grid sm:grid-cols-2 gap-3 mb-3">
             {invitableRoles.concat(partyControls.map((c) => c.party_role))
               .filter((r, i, a) => a.indexOf(r) === i && r !== 'FHE' && r !== 'COMPANY')
+              .sort(byRoleRank((r) => r))
               .map((role) => {
                 const c = partyControls.find((x) => x.party_role === role)
                   ?? { party_role: role, can_fill: true, can_edit_deal: false, can_suggest: false, can_add_clause: false };
