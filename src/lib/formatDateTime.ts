@@ -13,6 +13,23 @@ const DATE_OPTS: Intl.DateTimeFormatOptions = {
   day: 'numeric',
   year: 'numeric',
 };
+
+/**
+ * The time-of-day word for a friendly sign-off ("Enjoy your <word>!"), by the
+ * VIEWER'S LOCAL TIME (owner directive 2026-07-22). Buckets:
+ *   morning   04:00–11:59
+ *   afternoon 12:00–15:59
+ *   evening   16:00–20:59
+ *   night     21:00–03:59
+ * `now` is injectable for tests; defaults to the current local time.
+ */
+export function timeOfDayWord(now: Date = new Date()): 'morning' | 'afternoon' | 'evening' | 'night' {
+  const h = now.getHours(); // local hour, viewer's timezone
+  if (h >= 4 && h < 12) return 'morning';
+  if (h >= 12 && h < 16) return 'afternoon';
+  if (h >= 16 && h < 21) return 'evening';
+  return 'night'; // 21:00–03:59
+}
 const TIME_OPTS: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit' };
 const ZONE_OPTS: Intl.DateTimeFormatOptions = { timeZoneName: 'short' };
 

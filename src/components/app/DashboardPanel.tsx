@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { X, Hand } from 'lucide-react';
 import { myNotifications, markNotificationRead, countNewRequests, type AppNotification } from '../../lib/api';
 import { sayHiBack } from '../../lib/communityFeed';
+import { countOpenSupportRequests } from '../../lib/support';
+import { timeOfDayWord } from '../../lib/formatDateTime';
+import { useAuth } from '../../contexts/AuthContext';
 import { myLessonSessions, type MemberLessonSession } from '../../lib/ops/api-member';
 import { fetchMyPendingChanges } from '../../lib/ops/api-calendar';
 import { fetchHorseOnboardingState, type HorseOnboardingState } from '../../lib/horses';
@@ -148,15 +151,24 @@ export function DashboardPanel() {
   const [suggestBooking, setSuggestBooking] = useState(false);
   const [pendingChanges, setPendingChanges] = useState(0);
   const [horse, setHorse] = useState<HorseOnboardingState | null>(null);
-  // Staff-only: count of new inbound inquiries in the Request Inbox. RLS returns 0
-  // for non-staff, so this tile only ever appears for owners/staff.
+  // Staff-only: counts of untriaged inbound inquiries + open support requests. RLS
+  // returns 0 for non-staff, and we further gate the support tile on isStaff so a
+  // member's own open ticket never links them to the staff-only support page.
   const [newRequests, setNewRequests] = useState(0);
+  const [openSupport, setOpenSupport] = useState(0);
+  const { isStaff, profile } = useAuth();
+  const firstName = profile?.first_name || profile?.display_name || null;
 
   useEffect(() => {
     let active = true;
     countNewRequests()
       .then((n) => active && setNewRequests(n))
       .catch(() => {});
+    if (isStaff) {
+      countOpenSupportRequests()
+        .then((n) => active && setOpenSupport(n))
+        .catch(() => {});
+    }
     fetchMyPendingChanges()
       .then((r) => active && setPendingChanges(r.length))
       .catch(() => {});
@@ -221,7 +233,7 @@ export function DashboardPanel() {
       setComingUp(up.slice(0, 3));
     });
     return () => { active = false; };
-  }, []);
+  }, [isStaff]);
 
   // The horse documents are their own persistent item — shown until they're
   // signed (or until a horse is added, when one is needed). The "your service
@@ -254,11 +266,21 @@ export function DashboardPanel() {
     if (!opts?.silent) setAttention((prev) => prev.filter((t) => t.notificationId !== notificationId));
   }
 
-  if (attention.length === 0 && comingUp.length === 0 && checklist.length === 0 && !suggestBooking && pendingChanges === 0 && !horseTile && newRequests === 0) return null;
+  const hasAttention = attention.length > 0 || checklist.length > 0 || suggestBooking
+    || pendingChanges > 0 || !!horseTile || newRequests > 0 || (isStaff && openSupport > 0);
+  // Empty state: nothing needs attention and nothing's coming up → a warm all-clear
+  // greeting (owner directive) instead of hiding the panel entirely.
+  const allCaughtUp = !hasAttention && comingUp.length === 0;
 
   return (
     <div className="rounded-2xl border border-green-800/10 shadow-[0_14px_34px_-14px_rgba(13,33,24,0.22)] bg-gradient-to-br from-white to-cream-100 mb-6 sm:mb-7 p-5 sm:p-6">
-      {(attention.length > 0 || checklist.length > 0 || suggestBooking || pendingChanges > 0 || horseTile || newRequests > 0) && (
+      {allCaughtUp && (
+        <p className="body-text text-green-900 text-sm sm:text-base">
+          Hi{firstName ? ` ${firstName}` : ''}! Looks like you’re all caught up, nothing new to report.
+          Enjoy your {timeOfDayWord()}!
+        </p>
+      )}
+      {hasAttention && (
         <>
           <p className="text-[10px] tracking-widest uppercase text-gold-800 font-semibold mb-3">Needs your attention</p>
           <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
@@ -272,6 +294,17 @@ export function DashboardPanel() {
                   ? 'A website visitor is waiting to hear back.'
                   : 'Website visitors are waiting to hear back.',
                 cta: 'Open the Request Inbox', to: '/app/ops/intake',
+              }} />
+            )}
+            {/* Staff-only, persistent until triaged: open support requests. */}
+            {isStaff && openSupport > 0 && (
+              <TileCard tile={{
+                id: 'open-support', kind: 'support', gold: true,
+                title: `${openSupport} open support request${openSupport === 1 ? '' : 's'}`,
+                sub: openSupport === 1
+                  ? 'A member is waiting on a reply.'
+                  : 'Members are waiting on a reply.',
+                cta: 'Open Support', to: '/app/ops/support',
               }} />
             )}
             {horseTile && <TileCard tile={horseTile} />}
@@ -298,7 +331,7 @@ export function DashboardPanel() {
       )}
       {comingUp.length > 0 && (
         <>
-          <p className={`text-[10px] tracking-widest uppercase text-muted font-semibold mb-3 ${attention.length > 0 ? 'mt-5' : ''}`}>Coming up</p>
+          <p className={`text-[10px] tracking-widest uppercase text-muted font-semibold mb-3 ${hasAttention ? 'mt-5' : ''}`}>Coming up</p>
           <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
             {comingUp.map((t) => <TileCard key={t.id} tile={t} />)}
           </div>
