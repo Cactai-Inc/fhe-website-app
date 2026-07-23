@@ -92,6 +92,8 @@ export interface FieldStructured {
     order_party?: string; order_note?: string;
     cost_party?: string; cost_note?: string;
   }[];
+  // contacts_list (§7 co-owners: repeatable name + phone rows)
+  coOwners?: { name?: string; phone?: string }[];
   // reveal_text (§11.6 tack yes/no → input)
   enabled?: boolean;
 }

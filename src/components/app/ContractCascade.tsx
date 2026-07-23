@@ -413,6 +413,43 @@ function useStructuredDraft(
   };
 }
 
+/** CONTACTS LIST — repeatable Name + Phone rows. Structured { coOwners:[{name,
+ *  phone}] }. Used for co-owners (§7): capture each other owner's name and phone.
+ *  "+ Add another" appends a row; each row is removable. */
+function ContactsList({
+  f, onSaveStructured, disabled, addLabel = 'Add another',
+}: { f: ContractField; onSaveStructured: SaveStructFn; disabled: boolean; addLabel?: string }) {
+  const { draft, setLocal, commit, beginEdit, flush } = useStructuredDraft(f, onSaveStructured);
+  const rows = draft.coOwners ?? [];
+  const add = () => commit({ ...draft, coOwners: [...rows, { name: '', phone: '' }] });
+  const editLocal = (i: number, patch: Partial<NonNullable<FieldStructured['coOwners']>[number]>) =>
+    setLocal({ ...draft, coOwners: rows.map((r, j) => (j === i ? { ...r, ...patch } : r)) });
+  const remove = (i: number) => commit({ ...draft, coOwners: rows.filter((_, j) => j !== i) });
+  const cell = 'px-2 py-1 rounded border border-green-800/15 text-sm text-green-900 placeholder:text-muted focus-ring bg-white disabled:bg-cream-100';
+  return (
+    <div className="flex flex-col gap-2 w-full max-w-2xl">
+      {rows.map((r, i) => (
+        <div key={i} className="flex items-center gap-2">
+          <input className={`${cell} flex-1 min-w-0`} disabled={disabled} placeholder="Name"
+            value={r.name ?? ''} onFocus={beginEdit} onBlur={flush} onChange={(e) => editLocal(i, { name: e.target.value })} />
+          <input type="tel" className={`${cell} w-40`} disabled={disabled} placeholder="Phone"
+            value={r.phone ?? ''} onFocus={beginEdit} onBlur={flush} onChange={(e) => editLocal(i, { phone: e.target.value })} />
+          {!disabled && (
+            <button type="button" className="text-muted hover:text-red-700 text-xs shrink-0"
+              onClick={() => remove(i)} title="Remove">✕</button>
+          )}
+        </div>
+      ))}
+      {!disabled && (
+        <button type="button" onClick={add}
+          className="self-start text-sm text-gold-800 border border-dashed border-gold-400 rounded-lg px-3 py-1.5 hover:bg-gold-50 focus-ring">
+          ＋ {addLabel}
+        </button>
+      )}
+    </div>
+  );
+}
+
 /** §11 MEDICATIONS & SUPPLEMENTS builder. Structured { medItems:[{name,dose,
  *  schedule,party,party_note}] }. A single "add a medication or supplement" button
  *  appends a formatted block: Name / Dose / Schedule (free text) + a responsible-
@@ -610,6 +647,10 @@ function FieldControl({
   }
   if (fmt === 'med_schedule') {
     return <MedicationBuilder f={f} onSaveStructured={onSaveStructured} disabled={disabled} />;
+  }
+  if (fmt === 'contacts_list') {
+    return <ContactsList f={f} onSaveStructured={onSaveStructured} disabled={disabled}
+      addLabel={f.guidance ?? 'Add another'} />;
   }
   if (fmt === 'fee_schedule') {
     return <LeaseFeeBuilder f={f} onSaveStructured={onSaveStructured} disabled={disabled} />;
@@ -978,7 +1019,7 @@ export function InlineFieldControl({
 
   // Structured / multi-part formats can't collapse to a single inline token —
   // render the block control, but inline-block and compact so it stays in flow.
-  const isStructured = ['party', 'contact', 'person', 'address', 'location', 'pair', 'fee_schedule', 'med_schedule', 'reveal_text', 'certify', 'add_text'].includes(fmt)
+  const isStructured = ['party', 'contact', 'person', 'address', 'location', 'pair', 'fee_schedule', 'med_schedule', 'contacts_list', 'reveal_text', 'certify', 'add_text'].includes(fmt)
     || kind === 'responsibility' || kind === 'week_grid';
   if (isStructured) {
     // reveal_text, certify, and add_text self-label (the control shows its own
