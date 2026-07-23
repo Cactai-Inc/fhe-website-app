@@ -5,6 +5,7 @@ import {
   uploadFeedMedia, feedPostCreate,
   type FeedPostType, type FeedVisibility, type FeedMediaKind,
 } from '../../lib/feed';
+import { needsTranscode, transcodeToMp4 } from '../../lib/transcode';
 
 /**
  * FEED COMPOSER (Slice 3) — upload ONE media + a description + an optional plain
@@ -37,6 +38,8 @@ export function FeedComposer({ onPosted }: { onPosted: () => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formatNote, setFormatNote] = useState<string | null>(null);
+  // Transcode progress (0..1) while converting a non-mp4 video to mp4; null = idle.
+  const [convertPct, setConvertPct] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   function pick(f: File | null) {
@@ -47,10 +50,10 @@ export function FeedComposer({ onPosted }: { onPosted: () => void }) {
     if (f) {
       setKind(f.type.startsWith('video/') ? 'video' : 'image');
       setPreview(URL.createObjectURL(f));
-      // .mov / QuickTime plays in Safari but usually NOT in Chrome or Firefox —
-      // warn so the poster can pick an .mp4 that everyone can watch.
-      if (f.type === 'video/quicktime' || /\.mov$/i.test(f.name)) {
-        setFormatNote('Heads up: .mov videos don’t play in every browser (Chrome/Firefox often can’t). An .mp4 is the safest choice so everyone can watch.');
+      // A non-mp4 video will be auto-converted to mp4 on post so it plays for
+      // everyone — let the poster know it'll take a moment.
+      if (needsTranscode(f)) {
+        setFormatNote('This video will be converted to a universal format (.mp4) when you post, so everyone can watch. That takes a few moments.');
       }
     } else {
       setPreview(null);
@@ -63,7 +66,24 @@ export function FeedComposer({ onPosted }: { onPosted: () => void }) {
     setBusy(true);
     setError(null);
     try {
-      const { url, kind: mk } = await uploadFeedMedia(file);
+      // A non-mp4 video is converted to a universal mp4 IN THE BROWSER before
+      // upload, so it plays for everyone (a .mov can't play in Chrome/Firefox).
+      // Do it before the size check — transcoding usually shrinks the file.
+      let toUpload = file;
+      if (needsTranscode(file)) {
+        setConvertPct(0);
+        try {
+          toUpload = await transcodeToMp4(file, (r) => setConvertPct(r));
+        } catch {
+          setConvertPct(null);
+          setError('That video couldn’t be converted. Please try an .mp4 file.');
+          setBusy(false);
+          return;
+        }
+        setConvertPct(null);
+      }
+
+      const { url, kind: mk } = await uploadFeedMedia(toUpload);
       await feedPostCreate({
         post_type: postType,
         media_url: url,
@@ -75,8 +95,8 @@ export function FeedComposer({ onPosted }: { onPosted: () => void }) {
         publish_at: publishAt ? new Date(publishAt).toISOString() : null,
       });
       onPosted();
-    } catch {
-      setError('Could not post. Please try again.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not post. Please try again.');
     } finally {
       setBusy(false);
     }
@@ -156,12 +176,29 @@ export function FeedComposer({ onPosted }: { onPosted: () => void }) {
         </div>
       )}
 
-      {formatNote && (
+      {formatNote && convertPct === null && (
         <p className="text-[12px] text-gold-800 bg-gold-50 border border-gold-200 rounded-lg px-3 py-2">{formatNote}</p>
+      )}
+      {/* Transcode progress — the wasm core lazy-loads first (progress sits at 0),
+          then the bar advances as the video converts. */}
+      {convertPct !== null && (
+        <div className="rounded-lg bg-green-800/5 border border-green-800/10 px-3 py-2.5">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[12px] text-green-900 font-medium">
+              {convertPct === 0 ? 'Preparing the video converter…' : 'Converting your video to a universal format…'}
+            </span>
+            <span className="text-[11px] text-muted tabular-nums">{Math.round(convertPct * 100)}%</span>
+          </div>
+          <div className="h-1.5 rounded-full bg-green-800/10 overflow-hidden">
+            <div className="h-full bg-green-700 transition-[width] duration-200"
+              style={{ width: `${Math.max(3, convertPct * 100)}%` }} />
+          </div>
+        </div>
       )}
       {error && <p role="alert" className="form-error">{error}</p>}
       <button type="submit" disabled={!file || busy} className="btn-primary justify-center">
-        {busy ? 'Posting…' : 'Post'}{!busy && <ArrowRight size={16} />}
+        {convertPct !== null ? 'Converting…' : busy ? 'Posting…' : 'Post'}
+        {!busy && <ArrowRight size={16} />}
       </button>
     </form>
   );

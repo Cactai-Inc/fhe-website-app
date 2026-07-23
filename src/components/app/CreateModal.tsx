@@ -6,6 +6,7 @@ import {
   FileText, UserPlus, Megaphone,
 } from 'lucide-react';
 import { feedPostCreate, uploadFeedMedia, type FeedPostType, type FeedVisibility } from '../../lib/feed';
+import { needsTranscode, transcodeToMp4 } from '../../lib/transcode';
 import { createThread, proposeEvent } from '../../lib/community';
 import { listListableHorses, type ListableHorse } from '../../lib/stable';
 import { useAuth } from '../../contexts/AuthContext';
@@ -82,6 +83,7 @@ function PostForm({ type, onClose }: { type: PostType; onClose: () => void }) {
   const [publishAt, setPublishAt] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [convertPct, setConvertPct] = useState<number | null>(null);
 
   const needsMedia = type === 'social' || type === 'for_sale';
 
@@ -120,7 +122,22 @@ function PostForm({ type, onClose }: { type: PostType; onClose: () => void }) {
     setBusy(true);
     try {
       if (type === 'social' || type === 'for_sale') {
-        const media = await uploadFeedMedia(file!);
+        // Convert a non-mp4 video to a universal mp4 in-browser before upload so
+        // it plays everywhere (a .mov can't play in Chrome/Firefox).
+        let toUpload = file!;
+        if (needsTranscode(file!)) {
+          setConvertPct(0);
+          try {
+            toUpload = await transcodeToMp4(file!, (r) => setConvertPct(r));
+          } catch {
+            setConvertPct(null);
+            setErr('That video couldn’t be converted. Please try an .mp4 file.');
+            setBusy(false);
+            return;
+          }
+          setConvertPct(null);
+        }
+        const media = await uploadFeedMedia(toUpload);
         const postType: FeedPostType = type === 'social' ? 'rider_post'
           : saleKind === 'horse' ? 'horse' : 'gear';
         const bodyText = type === 'for_sale'
@@ -280,11 +297,25 @@ function PostForm({ type, onClose }: { type: PostType; onClose: () => void }) {
         </div>
       )}
 
+      {convertPct !== null && (
+        <div className="rounded-lg bg-green-800/5 border border-green-800/10 px-3 py-2.5">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[12px] text-green-900 font-medium">
+              {convertPct === 0 ? 'Preparing the video converter…' : 'Converting your video to a universal format…'}
+            </span>
+            <span className="text-[11px] text-muted tabular-nums">{Math.round(convertPct * 100)}%</span>
+          </div>
+          <div className="h-1.5 rounded-full bg-green-800/10 overflow-hidden">
+            <div className="h-full bg-green-700 transition-[width] duration-200"
+              style={{ width: `${Math.max(3, convertPct * 100)}%` }} />
+          </div>
+        </div>
+      )}
       {err && <p className="form-error text-sm text-red-700">{err}</p>}
       <button type="button" onClick={submit} disabled={busy}
         className="w-full py-2.5 rounded-lg bg-green-800 text-white text-sm font-medium hover:bg-green-700 focus-ring inline-flex items-center justify-center gap-2 disabled:opacity-60">
         {busy && <Loader2 size={16} className="animate-spin" />}
-        {type === 'event' ? 'Propose event' : 'Post to community'}
+        {convertPct !== null ? 'Converting…' : type === 'event' ? 'Propose event' : 'Post to community'}
       </button>
       {type === 'event' && <p className="text-[11px] text-muted -mt-1">Proposed events are reviewed before they appear.</p>}
     </div>
