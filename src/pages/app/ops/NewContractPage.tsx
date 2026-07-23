@@ -1,5 +1,5 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2, UserPlus } from 'lucide-react';
 import { useDocumentTitle } from '../../../lib/hooks';
 import { startLeaseContract, startPurchaseContract } from '../../../lib/api';
@@ -7,7 +7,6 @@ import {
   claimDocumentOrigination, setPartyControls, assignHorseSection,
 } from '../../../lib/contracts';
 import { staffHorseRecords, contractPartyOptions, createHorseRecord, type StaffHorseRecord, type PartyOption } from '../../../lib/horses';
-import ContractPage from '../ContractPage';
 import {
   PartyControlsCard, DEFAULT_PARTY_CONTROLS, roleLabel,
   type PartyControlValues,
@@ -66,24 +65,14 @@ export default function NewContractPage() {
   // instead of losing it: the document is already persisted server-side; only the
   // "which doc am I showing" state needs to survive the reload. We read it back
   // on mount and write it with replace (no history entry, no navigation).
-  const [params, setParams] = useSearchParams();
-  const [createdDocId, setCreatedDocId] = useState<string | null>(params.get('doc'));
-  // The viewport must NOT jump when the contract reveals: revealing the (tall)
-  // document under the button would otherwise shift the scroll position. We
-  // capture scrollY at click time and pin it back before the browser paints the
-  // new layout, so the author stays exactly where they clicked "Get started".
-  const scrollAnchor = useRef<number | null>(null);
-  useLayoutEffect(() => {
-    if (createdDocId && scrollAnchor.current !== null) {
-      window.scrollTo(0, scrollAnchor.current);
-      scrollAnchor.current = null;
-    }
-  }, [createdDocId]);
-  // On a fresh load that restores a doc from ?doc=, pin the viewport to the top so
-  // the page doesn't land mid-document (a deep field grabbing focus, or the
-  // browser's scroll restoration, would otherwise jump us down).
-  useLayoutEffect(() => {
-    if (params.get('doc')) window.scrollTo(0, 0);
+  const [params] = useSearchParams();
+  const navigate = useNavigate();
+  // Legacy support: an older version revealed the contract inline via ?doc=. Now
+  // creation opens the standalone contract page instead, so if we land here with a
+  // ?doc= (an old link, a back-nav), redirect to that contract page.
+  useEffect(() => {
+    const legacyDoc = params.get('doc');
+    if (legacyDoc) navigate(`/app/contracts/${legacyDoc}`, { replace: true });
     // run once on mount only
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -132,13 +121,13 @@ export default function NewContractPage() {
       if (horseMode === 'party' && horseParty) {
         await assignHorseSection(docId, horseParty);
       }
-      // Stay on this page — reveal the full contract inline below the config,
-      // pinning the scroll position so the viewport doesn't jump (see the
-      // useLayoutEffect above). Mirror the id into the URL so a refresh re-opens
-      // this same contract inline (replace: no history entry, no navigation).
-      scrollAnchor.current = window.scrollY;
-      setParams((p) => { p.set('doc', docId); return p; }, { replace: true });
-      setCreatedDocId(docId);
+      // Open the full standalone contract page. Navigating (rather than embedding
+      // the contract inline under the config) gives the author the real contract
+      // view: the top-of-page action deck, the document header, and the Parties &
+      // Horse card showing the chosen parties' DATA — not the picker menus from
+      // this config card. It also guarantees a fresh mount so nothing is stale.
+      navigate(`/app/contracts/${docId}`);
+      return;
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Could not start the contract.');
     } finally {
@@ -303,25 +292,17 @@ export default function NewContractPage() {
 
       {err && <p role="alert" className="form-error mb-3">{err}</p>}
 
-      {/* Before creation: the Get started button (enabled once parties + horse set).
-          After creation: the full contract renders INLINE below, on this same page. */}
-      {!createdDocId ? (
-        <>
-          <button type="button" onClick={() => void create()} disabled={busy || !ready}
-            className="w-full py-2.5 rounded-lg bg-green-800 text-white text-sm font-medium hover:bg-green-700 focus-ring inline-flex items-center justify-center gap-2 disabled:opacity-60">
-            {busy && <Loader2 size={16} className="animate-spin" />}
-            Get started
-          </button>
-          <p className="text-[11px] text-muted mt-2">
-            Add the parties and the horse above, then Get started — the full contract
-            opens right here on this page for you to fill.
-          </p>
-        </>
-      ) : (
-        <section className="mt-6 pt-6 border-t border-green-800/15">
-          <ContractPage documentId={createdDocId} embedded />
-        </section>
-      )}
+      {/* Get started (enabled once parties + horse are set). Creating the contract
+          opens the full standalone contract page. */}
+      <button type="button" onClick={() => void create()} disabled={busy || !ready}
+        className="w-full py-2.5 rounded-lg bg-green-800 text-white text-sm font-medium hover:bg-green-700 focus-ring inline-flex items-center justify-center gap-2 disabled:opacity-60">
+        {busy && <Loader2 size={16} className="animate-spin" />}
+        Get started
+      </button>
+      <p className="text-[11px] text-muted mt-2">
+        Add the parties and the horse above, then Get started — the full contract
+        opens for you to fill.
+      </p>
     </div>
   );
 }
