@@ -22,6 +22,9 @@ export interface FeedPost {
   /** author's display name + avatar (from feed_get's profile join) */
   author_name: string | null;
   author_avatar: string | null;
+  /** true when the author is staff/owner (or an as_company post): byline is the
+   *  business name + brand mark, not a personal name/avatar. */
+  author_is_company?: boolean;
   seen: boolean;
   shared_by: string | null;
 }
@@ -85,6 +88,50 @@ export async function feedPostCreate(input: FeedPostInput): Promise<string> {
 
 export async function feedMarkSeen(postId: string): Promise<void> {
   const { error } = await supabase.rpc('feed_mark_seen', { p_post_id: postId });
+  if (error) throw error;
+}
+
+/** One of the caller's own posts, for the My Posts management page. */
+export interface MyFeedPost {
+  id: string;
+  post_type: FeedPostType;
+  media_url: string | null;
+  media_kind: FeedMediaKind | null;
+  body: string | null;
+  source_link: string | null;
+  visibility: FeedVisibility;
+  as_company: boolean;
+  published: boolean;
+  publish_at: string | null;
+  pulled_down: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/** The caller's own posts (any state), newest first. */
+export async function feedMyPosts(): Promise<MyFeedPost[]> {
+  const { data, error } = await supabase.rpc('feed_my_posts');
+  if (error) throw error;
+  return (data ?? []) as MyFeedPost[];
+}
+
+/** Edit a post's text, link, and/or visibility (author or admin only). */
+export async function feedPostUpdate(
+  id: string,
+  patch: { body?: string | null; source_link?: string | null; visibility?: FeedVisibility },
+): Promise<void> {
+  const { error } = await supabase.rpc('feed_post_update', {
+    p_id: id,
+    p_body: patch.body ?? null,
+    p_source_link: patch.source_link ?? null,
+    p_visibility: patch.visibility ?? null,
+  });
+  if (error) throw error;
+}
+
+/** Delete a post (author or admin only). */
+export async function feedPostDelete(id: string): Promise<void> {
+  const { error } = await supabase.rpc('feed_post_delete', { p_id: id });
   if (error) throw error;
 }
 

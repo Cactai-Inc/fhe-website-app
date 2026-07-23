@@ -44,6 +44,7 @@ import OrderDetail from './pages/OrderDetail';
 import Home from './pages/app/Home';
 import DashboardHome from './pages/app/DashboardHome';
 import Profile from './pages/app/Profile';
+import MyPosts from './pages/app/MyPosts';
 import Schedule from './pages/app/Schedule';
 import CalendarPage from './pages/app/CalendarPage';
 import Orders from './pages/app/Orders';
@@ -216,6 +217,7 @@ export function AppRoutes() {
               <Route path="profile" element={<Profile />} />
               <Route path="support" element={<Support />} />
               <Route path="account" element={<AccountHub />} />
+              <Route path="my-posts" element={<MyPosts />} />
               {/* Purpose-built client homes (surface model: care / deal) */}
               <Route path="care" element={<CareHome />} />
               <Route path="deal" element={<DealHome />} />

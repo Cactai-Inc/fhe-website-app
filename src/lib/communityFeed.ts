@@ -94,9 +94,11 @@ function ago(iso: string): string {
 // ── Normalizers ────────────────────────────────────────────────
 function fromFeedPost(p: FeedPost): FeedCard {
   const isSale = p.post_type === 'horse' || p.post_type === 'gear';
-  // Company posts show as French Heritage; member posts use the author's real
-  // name + avatar (from feed_get's profile join).
-  const author = p.as_company ? 'French Heritage' : (p.author_name || 'Member');
+  // feed_get resolves author_name to the business name for any staff/owner author
+  // (or an as_company post) and to the member's real name otherwise — so we just
+  // trust author_name. author_is_company drives the brand mark vs personal avatar.
+  const isCompany = p.author_is_company ?? p.as_company;
+  const author = p.author_name || (isCompany ? 'French Heritage Equestrian' : 'Member');
   return {
     id: p.id,
     view: isSale ? 'for_sale' : 'social',
@@ -105,8 +107,8 @@ function fromFeedPost(p: FeedPost): FeedCard {
     mediaUrl: p.media_url ?? undefined,
     mediaKind: p.media_kind ?? undefined,
     author,
-    authorInitials: p.as_company ? 'FH' : initials(author, 'M'),
-    authorAvatar: p.as_company ? null : (p.author_avatar ?? null),
+    authorInitials: isCompany ? 'FH' : initials(author, 'M'),
+    authorAvatar: isCompany ? null : (p.author_avatar ?? null),
     when: ago(p.publish_at),
     ts: new Date(p.publish_at).getTime(),
     seen: p.seen,
@@ -127,7 +129,7 @@ function fromEvent(e: CommunityEvent): FeedCard {
   return {
     id: e.id, view: 'events', kind: 'event',
     title: e.title, body: e.description ?? undefined,
-    author: 'French Heritage', authorInitials: 'FH',
+    author: 'French Heritage Equestrian', authorInitials: 'FH',
     when: new Date(e.starts_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
     ts: new Date(e.starts_at).getTime(),
     startsAt: e.starts_at, endsAt: e.ends_at, location: e.location,
@@ -137,7 +139,7 @@ function fromArticle(a: ContentPost): FeedCard {
   return {
     id: a.id, view: 'articles', kind: 'article', slug: a.slug,
     title: a.title, body: a.excerpt ?? undefined, coverUrl: a.cover_url,
-    author: 'French Heritage', authorInitials: 'FH',
+    author: 'French Heritage Equestrian', authorInitials: 'FH',
     when: ago(a.created_at), ts: new Date(a.created_at).getTime(),
     readMins: Math.max(2, Math.round((a.body?.length ?? 600) / 900)),
   };

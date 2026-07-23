@@ -368,7 +368,7 @@ export default function AccountHub() {
       <div className="grid lg:grid-cols-2 gap-3">
         <Row icon={UserRound} title="Profile &amp; preferences" sub={`${realName} · contact, socials, notifications`} onClick={() => toggle('profile')} open={open === 'profile'} />
         {open === 'profile' && <div className="lg:col-span-2"><ProfileSection /></div>}
-        <Row icon={Grid3x3} title="My posts" sub="Your posts & listings" />
+        <Row icon={Grid3x3} title="My posts" sub="Your posts & listings" onClick={() => navigate('/app/my-posts')} />
         <Row icon={Boxes} title="My lessons" sub="Credits, schedule & your progress" onClick={() => navigate('/app/lessons')} />
         <Row icon={Bookmark} title="Saved items" sub="Articles, listings, and links you kept" onClick={() => toggle('saved')} open={open === 'saved'} />
         {open === 'saved' && <div className="lg:col-span-2"><SavedPanel /></div>}
