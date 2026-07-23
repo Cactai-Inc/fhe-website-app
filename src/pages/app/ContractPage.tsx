@@ -249,6 +249,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   const [extraEmails, setExtraEmails] = useState<string[]>([]);
   const [extraEmailDraft, setExtraEmailDraft] = useState('');
   const [saving, setSaving] = useState(false);
+  const [notifying, setNotifying] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -479,11 +480,21 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
     }
   }
 
-  // Send for review to every counterparty on file, plus any extra emails typed in.
-  function sendReview() {
-    void act(async () => {
+  // Notify each counterparty (and any extra emails) to review + sign. Guarded so a
+  // second click can't fire while a send is in flight (that previously sent
+  // duplicate emails), and it asks for confirmation first, then reports the result.
+  async function sendReview() {
+    if (notifying) return;
+    const recipients = (partiesSummary?.parties ?? [])
+      .filter((p) => invitableRoles.includes(p.party_role) && p.email)
+      .map((p) => p.email as string)
+      .concat(extraEmails);
+    const list = recipients.length ? recipients.join(', ') : 'the assigned parties';
+    if (!window.confirm(`Notify ${list} to review and sign this contract?`)) return;
+    setNotifying(true);
+    setError(null); setNote(null);
+    try {
       const r = await sendForReview(id!, invitableRoles);
-      // extra ad-hoc recipients: invite the first counterparty role at each address
       const extraRole = invitableRoles[0];
       let extraSent = 0;
       if (extraRole && extraEmails.length) {
@@ -493,9 +504,15 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       const extraNote = extraSent ? ` Also emailed ${extraSent} additional recipient${extraSent === 1 ? '' : 's'}.` : '';
       setExtraEmails([]); setExtraEmailDraft('');
       setNote(r.skipped > 0
-        ? `Sent for review. Emailed ${r.emailed} of ${r.emailed + r.skipped} part${r.emailed + r.skipped === 1 ? 'y' : 'ies'}; ${r.skipped} could not be emailed (no email on file or email delivery not configured). In-app notifications were sent to parties with an account.${extraNote}`
-        : `Sent for review — all parties were notified by email and in-app.${extraNote}`);
-    });
+        ? `Notified. Emailed ${r.emailed} of ${r.emailed + r.skipped} part${r.emailed + r.skipped === 1 ? 'y' : 'ies'}; ${r.skipped} could not be emailed (no email on file or email delivery not configured). In-app notifications were sent to parties with an account.${extraNote}`
+        : `Notified — all parties were notified by email and in-app.${extraNote}`);
+      await load();
+      setChangeKey((k) => k + 1);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not notify the parties.');
+    } finally {
+      setNotifying(false);
+    }
   }
 
   const saveField = useCallback(async (key: string, value: string) => {
@@ -697,10 +714,15 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           {isOwnerSide && editablePhase && (
             <div className="p-5 sm:p-6">
               <p className="text-[11px] uppercase tracking-wide text-muted mb-3">Notify</p>
-              <button type="button" className="btn-primary w-full sm:w-auto justify-center py-3"
-                onClick={sendReview}>
-                <Send size={15} /> Notify for review
+              <button type="button" className="btn-primary w-full sm:w-auto justify-center py-3 disabled:opacity-60"
+                disabled={notifying} onClick={() => void sendReview()}>
+                <Send size={15} /> {notifying ? 'Notifying…' : 'Notify for review'}
               </button>
+              {/* Inline result RIGHT HERE so feedback appears where the button is
+                  (the page-level note/error render below the title, out of view). */}
+              {notifying && <p className="text-[12px] text-green-800 mt-2">Sending notifications…</p>}
+              {!notifying && note && <p className="text-[12px] text-green-800 mt-2 rounded bg-green-50 px-3 py-1.5">{note}</p>}
+              {!notifying && error && <p role="alert" className="text-[12px] text-red-700 mt-2">{error}</p>}
               <p className="text-[11px] text-muted mt-1.5">Notifies each party to review and sign. The signed copy is emailed to everyone automatically once the contract is fully signed.</p>
               <div className="mt-4">
                 <p className="text-[11px] uppercase tracking-wide text-muted mb-1.5">Notifying</p>
