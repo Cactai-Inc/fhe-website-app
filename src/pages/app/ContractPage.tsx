@@ -16,6 +16,8 @@ import {
   setFieldResponsibility, setFieldIncluded, setFieldNa, setFieldControlOverride, setFieldStructured,
   postContractComment, documentPartiesSummary, captureContactInfo, captureHorseRecord,
   saveContract, inviteCounterparty,
+  requestContractTermination, approveContractTermination, declineContractTermination,
+  setDocumentPartyArchived, deleteContractWithCopy,
   type ContractDetail, type ContractField, type PartyControls,
   type SigningSetDoc, type RedlineState, type PartiesHorseSummary, type PartySummary,
 } from '../../lib/contracts';
@@ -278,15 +280,22 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   // idempotent per (document, recipient), so viewing an already-delivered doc
   // re-checks but never re-sends.
   const deliveredRef = useRef(false);
+  // Belt-and-suspenders executed-copy delivery. The endpoint is idempotent per
+  // (document, recipient), so calling it more than once never double-sends. We
+  // trigger it (a) on viewing an executed doc AND (b) immediately after a final
+  // signature (see deliverExecutedCopy below), so the PDF reaches both parties as
+  // soon as the contract is executed even if no one re-opens the page.
+  const deliverExecutedCopy = useCallback(() => {
+    if (!id) return;
+    deliveredRef.current = true;
+    fetch('/api/deliver-documents', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ documentIds: [id] }),
+    }).catch(() => {});
+  }, [id]);
   useEffect(() => {
-    if (doc?.status === 'EXECUTED' && id && !deliveredRef.current) {
-      deliveredRef.current = true;
-      fetch('/api/deliver-documents', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ documentIds: [id] }),
-      }).catch(() => {});
-    }
-  }, [doc?.status, id]);
+    if (doc?.status === 'EXECUTED' && id && !deliveredRef.current) deliverExecutedCopy();
+  }, [doc?.status, id, deliverExecutedCopy]);
   const myRoles = detail?.my_roles ?? [];
   const isOwnerSide = isStaff || (doc?.is_originator ?? false);
   const isLessor = myRoles.includes('LESSOR');
@@ -299,6 +308,17 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   const isSent = !!doc?.sent_at;
   const isArchived = !!doc?.archived_at;
   const isCancelled = !!doc?.cancelled_at;
+  const isExecuted = state === 'executed';
+  const isTerminated = state === 'terminated';
+  const terminationRequested = !!doc?.termination_requested_at && !isTerminated;
+  // A dead/inactive contract (terminated / cancelled / void) is the only time the
+  // per-party Archive control is offered — you archive to clear it from your list.
+  const isInactive = isTerminated || isCancelled || state === 'void';
+  // The counterparty must approve a termination request; the requester waits. We
+  // don't have per-request approver identity, so "I can act on it" = I'm a party or
+  // staff and I'm not the requester (staff always may act, e.g. to record consent).
+  const iRequestedTermination = !!doc?.termination_requested_by
+    && !!partiesSummary?.parties.some((p) => p.contact_id === doc?.termination_requested_by && myRoles.includes(p.party_role));
 
   // Receiving-party rendering (§C): a party who has fields to fill sees the doc
   // with THEIR empty fields highlighted and locked fields lightened; a party with
@@ -394,8 +414,10 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   }
 
   // Cancel — before the document has ever been sent, cancelling makes it as if it
-  // never existed: a silent hard delete, no one notified. Once it has been sent,
-  // Cancel cancels the live document and notifies all parties.
+  // never existed: a silent hard delete, no one notified. Once it has been sent (but
+  // not yet executed), Cancel stops it being worked on and notifies all parties; it
+  // stays visible. (An executed contract is never cancelled — it's TERMINATED, which
+  // is a separate mutual-agreement flow below.)
   function cancelDocument() {
     if (!isSent) {
       if (window.confirm('Cancel this document? It has not been sent to anyone, so it will be removed entirely — as if it never existed. No one is notified.')) {
@@ -403,8 +425,48 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       }
       return;
     }
-    if (window.confirm('Cancel this document? All parties will be notified and the barn will archive or remove it.')) {
+    if (window.confirm('Cancel this document? All parties will be notified. It stays on file so it can still be viewed.')) {
       void act(() => cancelContract(id!), 'Document cancelled — all parties notified.');
+    }
+  }
+
+  // Terminate (executed contracts only) — mutual agreement. A party's request goes
+  // to the other party to approve/decline; staff's request goes to both parties. The
+  // contract stays in force until approved.
+  function requestTermination() {
+    const who = isStaff
+      ? 'Both parties will be asked to agree to terminate this contract.'
+      : 'The other party will be asked to approve terminating this contract.';
+    if (window.confirm(`Request to terminate this contract? ${who} It remains in force until agreed.`)) {
+      void act(() => requestContractTermination(id!), 'Termination requested — awaiting agreement.');
+    }
+  }
+  function approveTermination() {
+    if (window.confirm('Approve terminating this contract? It will be marked Terminated and kept on file as a record.')) {
+      void act(() => approveContractTermination(id!), 'Contract terminated — kept on file as a record.');
+    }
+  }
+  function declineTermination() {
+    void act(() => declineContractTermination(id!), 'Termination declined — the contract remains in force.');
+  }
+
+  // Per-party archive — hide/unhide this contract from MY own document list only.
+  function toggleMyArchive() {
+    void act(() => setDocumentPartyArchived(id!, !isArchived),
+      isArchived ? 'Unarchived.' : 'Archived — removed from your document list.');
+  }
+
+  // Staff hard delete. If any party has already been notified/seen the doc, the
+  // server emails them a PDF copy for their records BEFORE the delete; then it's
+  // hard-deleted for everyone.
+  async function deleteEntirely() {
+    if (!window.confirm('Delete this document entirely? Any party who has seen it is emailed a PDF copy for their records, then it is permanently removed for everyone. This cannot be undone.')) return;
+    setError(null); setNote(null);
+    try {
+      await deleteContractWithCopy(id!);
+      navigate('/app/ops/documents');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not delete the document.');
     }
   }
 
@@ -507,6 +569,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   const STATE_LABEL: Record<string, string> = {
     editable: 'In progress', editing: 'Being edited', in_review: 'In review',
     locked: 'Ready to sign', executed: 'Executed', void: 'Void',
+    terminated: 'Terminated',
   };
 
   // ── segmented signing set (lease → vet auth → care release) ──
@@ -563,50 +626,67 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         </div>
       )}
 
-      {/* ── Action deck (above the title): one card with three stacked panels —
-          Manage, Send for review, and Change History, in that order. Buttons are
-          generously sized and spaced so they're hard to mis-tap on mobile. Only on
-          the standalone page during the pre-execution phase for the owner side. ── */}
-      {!embedded && isOwnerSide && state !== 'executed' && state !== 'void' && (
+      {/* ── Action deck (above the title): one card, stacked panels — Manage,
+          Notify, Change History. Available to ALL parties (not just the owner)
+          until the contract is executed; after execution it becomes Terminate +
+          (once inactive) per-party Archive + Change History. Buttons are large and
+          well-spaced so they're hard to mis-tap on mobile. ── */}
+      {!embedded && (isOwnerSide || myRoles.length > 0) && state !== 'void' && (
         <div className="bg-white border border-green-800/10 rounded-xl mb-5 divide-y divide-green-800/10">
-          {/* Manage — Save / Cancel / Archive / Delete. */}
+          {/* MANAGE — pre-execution only. Save (owner), Cancel (any party), Delete
+              (staff, hard delete before execution), and per-party Archive once the
+              contract is inactive (terminated/cancelled). */}
+          {!isExecuted && (
           <div className="p-5 sm:p-6">
             <p className="text-[11px] uppercase tracking-wide text-muted mb-3">Manage</p>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              <button type="button" disabled={saving}
-                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-green-800/20 px-4 py-3 text-sm font-medium text-green-900 hover:bg-green-800/5 focus-ring disabled:opacity-60"
-                onClick={() => void saveNow()}>
-                {saving ? 'Saving…' : 'Save'}
-              </button>
-              <button type="button"
-                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-green-800/20 px-4 py-3 text-sm font-medium text-secondary hover:bg-green-800/5 focus-ring"
-                onClick={cancelDocument}>
-                Cancel
-              </button>
-              <button type="button" disabled={!isStaff}
-                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-green-800/20 px-4 py-3 text-sm font-medium text-secondary hover:bg-green-800/5 focus-ring disabled:opacity-40 disabled:hover:bg-transparent"
-                onClick={() => void act(() => archiveContract(id!, !isArchived), isArchived ? 'Unarchived.' : 'Archived — findable and resumable.')}>
-                {isArchived ? 'Unarchive' : 'Archive'}
-              </button>
-              <button type="button" disabled={!isStaff}
-                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-300 px-4 py-3 text-sm font-medium text-red-700 hover:bg-red-50 focus-ring disabled:opacity-40 disabled:hover:bg-transparent"
-                onClick={() => { if (window.confirm('Delete this document entirely? This is a hard delete — as if it never existed. This cannot be undone.')) void act(async () => { await hardDeleteContract(id!); navigate('/app/ops/documents'); }); }}>
-                Delete
-              </button>
+              {isOwnerSide && (
+                <button type="button" disabled={saving}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-green-800/20 px-4 py-3 text-sm font-medium text-green-900 hover:bg-green-800/5 focus-ring disabled:opacity-60"
+                  onClick={() => void saveNow()}>
+                  {saving ? 'Saving…' : 'Save'}
+                </button>
+              )}
+              {!isCancelled && (
+                <button type="button"
+                  className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-green-800/20 px-4 py-3 text-sm font-medium text-secondary hover:bg-green-800/5 focus-ring"
+                  onClick={cancelDocument}>
+                  Cancel
+                </button>
+              )}
+              {/* per-party Archive appears once the contract is inactive */}
+              {isInactive && (
+                <button type="button"
+                  className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-green-800/20 px-4 py-3 text-sm font-medium text-secondary hover:bg-green-800/5 focus-ring"
+                  onClick={toggleMyArchive}>
+                  {isArchived ? 'Unarchive' : 'Archive'}
+                </button>
+              )}
+              {isStaff && (
+                <button type="button"
+                  className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-300 px-4 py-3 text-sm font-medium text-red-700 hover:bg-red-50 focus-ring"
+                  onClick={() => void deleteEntirely()}>
+                  Delete
+                </button>
+              )}
             </div>
           </div>
+          )}
 
-          {/* Send for review — primary action, with the recipient email(s) and the
-              option to add more. Lock for signing sits below it. */}
-          {editablePhase && (
+          {/* NOTIFY — pre-execution, owner side. No copy is sent until the contract
+              is signed (that happens automatically on execution); this just notifies
+              the parties to review + sign. Lists the recipient email(s) with the
+              option to add more. Lock for signing is admin-only. */}
+          {isOwnerSide && editablePhase && (
             <div className="p-5 sm:p-6">
-              <p className="text-[11px] uppercase tracking-wide text-muted mb-3">Send</p>
+              <p className="text-[11px] uppercase tracking-wide text-muted mb-3">Notify</p>
               <button type="button" className="btn-primary w-full sm:w-auto justify-center py-3"
                 onClick={sendReview}>
-                <Send size={15} /> Send for review
+                <Send size={15} /> Notify for review
               </button>
+              <p className="text-[11px] text-muted mt-1.5">Notifies each party to review and sign. The signed copy is emailed to everyone automatically once the contract is fully signed.</p>
               <div className="mt-4">
-                <p className="text-[11px] uppercase tracking-wide text-muted mb-1.5">Sending to</p>
+                <p className="text-[11px] uppercase tracking-wide text-muted mb-1.5">Notifying</p>
                 <ul className="flex flex-col gap-1">
                   {(partiesSummary?.parties ?? [])
                     .filter((p) => invitableRoles.includes(p.party_role))
@@ -652,17 +732,67 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                   </button>
                 </div>
               </div>
-              <div className="mt-5">
-                <button type="button" className="btn-outline-gold text-sm w-full sm:w-auto justify-center py-3"
-                  onClick={lockForSigning}>
-                  <Lock size={14} /> Lock for signing
-                </button>
-                <p className="text-[11px] text-muted mt-1.5">Locks the final document for signature — do this once every party has reviewed.</p>
-              </div>
+              {/* Lock for signing is ADMIN-ONLY — the manual gate for "terms are
+                  final, just sign". Recipients never see it; they simply open and
+                  sign, and signing notifies the other party. */}
+              {isStaff && (
+                <div className="mt-5">
+                  <button type="button" className="btn-outline-gold text-sm w-full sm:w-auto justify-center py-3"
+                    onClick={lockForSigning}>
+                    <Lock size={14} /> Lock for signing
+                  </button>
+                  <p className="text-[11px] text-muted mt-1.5">Admin only — locks the final document so the parties can only review and sign (use when the terms are final).</p>
+                </div>
+              )}
             </div>
           )}
 
-          {/* Change History — moved to the top, its own panel. */}
+          {/* TERMINATE — executed contracts only, mutual agreement. Plus per-party
+              Archive once the contract is terminated. */}
+          {isExecuted && (
+            <div className="p-5 sm:p-6">
+              <p className="text-[11px] uppercase tracking-wide text-muted mb-3">Manage</p>
+              {terminationRequested ? (
+                iRequestedTermination ? (
+                  <p className="text-[13px] text-gold-800">Termination requested — awaiting the other party's agreement.</p>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <p className="text-[13px] text-green-950">
+                      {isStaff ? 'The barn has' : 'The other party has'} requested to terminate this contract.
+                      {doc?.termination_request_reason ? ` Reason: ${doc.termination_request_reason}` : ''}
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-2.5">
+                      <button type="button" className="btn-primary text-sm justify-center py-3 sm:w-auto"
+                        onClick={approveTermination}>Approve termination</button>
+                      <button type="button"
+                        className="inline-flex items-center justify-center rounded-lg border border-green-800/20 px-4 py-3 text-sm font-medium text-secondary hover:bg-green-800/5 focus-ring"
+                        onClick={declineTermination}>Decline</button>
+                    </div>
+                  </div>
+                )
+              ) : (
+                <button type="button"
+                  className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-300 px-4 py-3 text-sm font-medium text-red-700 hover:bg-red-50 focus-ring w-full sm:w-auto"
+                  onClick={requestTermination}>
+                  Terminate
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Post-termination / inactive: per-party Archive (hide from my list). */}
+          {isTerminated && (
+            <div className="p-5 sm:p-6">
+              <p className="text-[11px] uppercase tracking-wide text-muted mb-3">Manage</p>
+              <button type="button"
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-green-800/20 px-4 py-3 text-sm font-medium text-secondary hover:bg-green-800/5 focus-ring w-full sm:w-auto"
+                onClick={toggleMyArchive}>
+                {isArchived ? 'Unarchive' : 'Archive (remove from my list)'}
+              </button>
+            </div>
+          )}
+
+          {/* CHANGE HISTORY — always in the deck. */}
           {id && (
             <div className="p-5 sm:p-6">
               <TrackChangesPanel documentId={id} refreshKey={changeKey} />
@@ -671,17 +801,27 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         </div>
       )}
 
-      <div className="flex items-start justify-between gap-3 mb-1">
+      <div className={`flex items-start justify-between gap-3 mb-1 ${isInactive ? 'opacity-60' : ''}`}>
         <h1 className="font-serif text-2xl text-green-900 flex items-center gap-2">
           <FileText size={22} className="text-gold-ink" /> {doc.title}
         </h1>
         <span className={`text-xs font-sans px-2.5 py-1 rounded-full whitespace-nowrap ${
-          state === 'executed' ? 'bg-green-800 text-white'
+          isTerminated || isCancelled ? 'bg-red-100 text-red-800'
+          : state === 'executed' ? 'bg-green-800 text-white'
           : state === 'locked' ? 'bg-gold-50 text-gold-ink' : 'bg-green-800/10 text-green-800'
         }`}>
-          {STATE_LABEL[state] ?? state}
+          {isTerminated
+            ? `Terminated${doc?.terminated_at ? ` · ${new Date(doc.terminated_at).toLocaleDateString()}` : ''}`
+            : isCancelled
+              ? `Cancelled${doc?.cancelled_at ? ` · ${new Date(doc.cancelled_at).toLocaleDateString()}` : ''}`
+              : (STATE_LABEL[state] ?? state)}
         </span>
       </div>
+      {terminationRequested && !iRequestedTermination && (
+        <div className="mb-3 rounded-lg border border-gold-400/50 bg-gold-50 px-4 py-2.5 text-sm text-gold-900">
+          A termination request is pending your response — see Manage above.
+        </div>
+      )}
 
       {/* Sticky action sub-header (minimal height): Add a Comment · Add a Section,
           Item, or Field · View/Hide Comments · Proceed to Signatures. Present for
@@ -1070,7 +1210,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       {/* workflow + signing — the primary Send / Lock / Manage actions now live in
           the action deck above the title. This section carries the post-send
           workflow steps (review round-trip, send-to-party) and the signing UI. */}
-      {state !== 'executed' && state !== 'void' && (
+      {state !== 'executed' && state !== 'void' && state !== 'terminated' && (
         <section id="contract-signatures" className="bg-white border border-green-800/10 rounded-xl p-6 scroll-mt-16 mt-6">
           {(
             (isOwnerSide && (state === 'in_review' || (state === 'locked' && !counterpartySigned)))
@@ -1118,7 +1258,10 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                   placeholder="Full legal name"
                   className="px-3 py-2 rounded-lg border border-green-800/15 text-sm focus-ring w-64" />
                 <button type="button" className="btn-primary text-sm" disabled={!signName.trim()}
-                  onClick={() => void act(() => lockAndSign(id!, myRoles[0], signName.trim()), 'Signed.')}>
+                  onClick={() => void act(async () => {
+                    await lockAndSign(id!, myRoles[0], signName.trim());
+                    deliverExecutedCopy();   // no-op unless this signature executed the doc; idempotent
+                  }, 'Signed.')}>
                   <PenLine size={14} /> Sign
                 </button>
               </div>
@@ -1155,7 +1298,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                         className="px-3 py-2 rounded-lg border border-green-800/15 text-sm focus-ring w-64" />
                       <button type="button" className="btn-primary text-sm" disabled={!name.trim()}
                         onClick={() => void act(
-                          () => lockAndSign(id!, r, name.trim()),
+                          async () => { await lockAndSign(id!, r, name.trim()); deliverExecutedCopy(); },
                           `Signed as ${rl}.`)}>
                         <PenLine size={14} /> Sign as {rl}
                       </button>
@@ -1195,9 +1338,10 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
 
       {/* Change history / track changes (always-on) — what each party changed,
           and the human face of the retained audit trail. Shown here only when it's
-          NOT already in the action deck above the title (owner-side, pre-execution):
-          i.e. for executed/void documents and for the reviewing party. */}
-      {id && !(!embedded && isOwnerSide && state !== 'executed' && state !== 'void') && (
+          NOT already in the action deck above the title. The deck shows for any
+          party (or owner) on a non-void document, so this bottom copy is only for
+          void documents and the embedded creation view. */}
+      {id && !(!embedded && (isOwnerSide || myRoles.length > 0) && state !== 'void') && (
         <div className="mt-5">
           <TrackChangesPanel documentId={id} refreshKey={changeKey} />
         </div>

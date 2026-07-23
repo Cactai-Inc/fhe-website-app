@@ -137,7 +137,7 @@ export interface ContractDetail {
     template_key?: string | null;   // for clause-model documents (Section›Clause›Field)
     title: string;
     status: string;
-    workflow_state: 'editable' | 'editing' | 'in_review' | 'locked' | 'executed' | 'void';
+    workflow_state: 'editable' | 'editing' | 'in_review' | 'locked' | 'executed' | 'void' | 'terminated';
     recipient_editing: boolean;
     execution_hash: string | null;
     merged_body: string | null;
@@ -148,6 +148,12 @@ export interface ContractDetail {
     archived_at: string | null;
     cancelled_at: string | null;
     horse_id: string | null;
+    // termination lifecycle (executed → termination requested → terminated)
+    terminated_at?: string | null;
+    termination_requested_at?: string | null;
+    termination_requested_by?: string | null;
+    termination_request_reason?: string | null;
+    effective_date?: string | null;
   };
   my_roles: string[];
   fields: ContractField[];
@@ -573,6 +579,47 @@ export async function archiveContract(documentId: string, archive = true): Promi
 /** Staff: hard-delete the document, as if it never existed (not for executed docs). */
 export async function hardDeleteContract(documentId: string): Promise<void> {
   const { error } = await supabase.rpc('hard_delete_contract', { p_document_id: documentId });
+  if (error) throw error;
+}
+
+/** Staff: hard-delete a non-executed document, but first email a PDF copy to any
+ *  party who has already seen it (so a reviewer keeps a record), then remove it for
+ *  everyone. Returns how many copies were sent. */
+export async function deleteContractWithCopy(documentId: string): Promise<{ copiesSent: number }> {
+  const { data: sess } = await supabase.auth.getSession();
+  const bearer = sess?.session?.access_token;
+  if (!bearer) throw new Error('You need to be signed in.');
+  const res = await fetch('/api/delete-document-with-copy', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${bearer}` },
+    body: JSON.stringify({ documentId }),
+  });
+  const json = (await res.json().catch(() => ({}))) as { error?: string; copiesSent?: number };
+  if (!res.ok) throw new Error(json.error || 'Could not delete the document.');
+  return { copiesSent: json.copiesSent ?? 0 };
+}
+
+/** Propose terminating an executed contract. A party's request goes to the other
+ *  party for approval; staff's request goes to both parties. Contract stays in
+ *  force ('executed') with a pending-request flag until approved. */
+export async function requestContractTermination(documentId: string, reason?: string): Promise<void> {
+  const { error } = await supabase.rpc('request_contract_termination', { p_document_id: documentId, p_reason: reason ?? null });
+  if (error) throw error;
+}
+/** Agree to a pending termination request — the contract becomes 'terminated'. */
+export async function approveContractTermination(documentId: string): Promise<void> {
+  const { error } = await supabase.rpc('approve_contract_termination', { p_document_id: documentId });
+  if (error) throw error;
+}
+/** Decline a pending termination request — the contract remains in force. */
+export async function declineContractTermination(documentId: string): Promise<void> {
+  const { error } = await supabase.rpc('decline_contract_termination', { p_document_id: documentId });
+  if (error) throw error;
+}
+/** Per-party archive: hide/unhide the document from THIS party's own list only
+ *  (the global staff archive is separate). */
+export async function setDocumentPartyArchived(documentId: string, archive = true): Promise<void> {
+  const { error } = await supabase.rpc('set_document_party_archived', { p_document_id: documentId, p_archive: archive });
   if (error) throw error;
 }
 
