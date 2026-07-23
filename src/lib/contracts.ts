@@ -521,6 +521,29 @@ export async function captureContactInfo(
   if (mergeErr) throw mergeErr;
 }
 
+/**
+ * Write missing/updated farrier & vet details to the HORSE record from within the
+ * contract, then re-materialize the HORSE.* tokens and re-merge so the change shows
+ * immediately. Same "capture once, reuse everywhere" pattern as captureContactInfo:
+ * the value lands on the horse record (reused by every document), not just here.
+ * A non-owner party may write; owner confirmation of such edits happens at review.
+ */
+export async function captureHorseRecord(
+  documentId: string,
+  patch: {
+    farrier_name?: string; farrier_phone?: string;
+    vet_name?: string; vet_phone?: string; vet_business_name?: string;
+    vet_address_line1?: string; vet_city?: string; vet_state?: string; vet_postal?: string;
+  },
+): Promise<void> {
+  const { error: capErr } = await supabase.rpc('capture_horse_record_info', {
+    p_document_id: documentId, p_patch: patch,
+  });
+  if (capErr) throw capErr;
+  const { error: mergeErr } = await supabase.rpc('remerge_contract_from_clauses', { p_document_id: documentId });
+  if (mergeErr) throw mergeErr;
+}
+
 /** Send the document to a party = notify them + confirm access. */
 export async function sendContractToParty(documentId: string, partyRole: string): Promise<void> {
   const { error } = await supabase.rpc('send_contract_to_party', { p_document_id: documentId, p_party_role: partyRole });

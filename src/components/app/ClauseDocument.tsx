@@ -39,6 +39,9 @@ type FieldCallbacks = {
    *  PHONE / EMAIL / FULL_NAME) — writes to that party's contact record. Absent =
    *  the tokens render read-only (reviewer without edit rights). */
   onEditPartyContact?: (token: string, value: string) => void | Promise<void>;
+  /** Commit a typed value for an editable HORSE-record token (farrier / vet
+   *  details) — writes to the horse record. Absent = read-only. */
+  onEditHorseRecord?: (token: string, value: string) => void | Promise<void>;
 };
 
 /** Party CONTACT tokens editable in the Notice/Contact block. Map token → the
@@ -48,6 +51,15 @@ const PARTY_CONTACT_TOKENS: Record<string, string> = {
   'LESSOR.PHONE': 'Lessor phone', 'LESSOR.EMAIL': 'Lessor email',
   'LESSEE.FULL_NAME': 'Lessee name', 'LESSEE.ADDRESS': 'Lessee address',
   'LESSEE.PHONE': 'Lessee phone', 'LESSEE.EMAIL': 'Lessee email',
+};
+
+/** HORSE-record tokens that are editable inline in the Care section. An empty one
+ *  renders as a fillable blank (not a "from horse record" hint); the typed value is
+ *  written back to the horse record. Map token → the human field name. */
+const HORSE_RECORD_TOKENS: Record<string, string> = {
+  'HORSE.FARRIER_NAME': 'Farrier', 'HORSE.FARRIER_PHONE': 'Farrier phone',
+  'HORSE.VET_NAME': 'Veterinarian', 'HORSE.VET_PHONE': 'Veterinarian phone',
+  'HORSE.VET_BUSINESS': 'Practice', 'HORSE.VET_ADDRESS': 'Practice address',
 };
 
 const TOKEN_RE = /\{\{([A-Z0-9_.]+)\}\}/g;
@@ -84,17 +96,18 @@ function TokenValue({ token, value }: { token: string; value: string }) {
   );
 }
 
-/** A party CONTACT token (LESSOR/LESSEE . ADDRESS/PHONE/EMAIL/FULL_NAME). Unlike
- *  a false "on file" hint, an empty one is a real editable input the contract
- *  creator can fill; the value is written to that party's contact record. When
- *  not editable it renders the value (or a muted "not provided").  */
-function PartyContactToken({
-  token, value, editable, onCommit,
-}: { token: string; value: string; editable: boolean; onCommit: (v: string) => void }) {
+/** An editable RECORD token — a party CONTACT token (LESSOR/LESSEE . ADDRESS /
+ *  PHONE / EMAIL / FULL_NAME) or a HORSE-record token (farrier / vet details).
+ *  Unlike a false "on file" / "from horse record" hint, an empty one is a real
+ *  editable input the contract creator can fill; the value is written back to the
+ *  underlying record (contact or horse). When not editable it renders the value
+ *  (or a muted "not provided"). */
+function EditableRecordToken({
+  token, value, editable, placeholder, onCommit,
+}: { token: string; value: string; editable: boolean; placeholder: string; onCommit: (v: string) => void }) {
   const [local, setLocal] = useState(value);
   const editingRef = useRef(false);
   useEffect(() => { if (!editingRef.current) setLocal(value); }, [value]);
-  const placeholder = PARTY_CONTACT_TOKENS[token] ?? 'contact detail';
   const kind = token.endsWith('.EMAIL') ? 'email' : token.endsWith('.PHONE') ? 'tel' : 'text';
 
   if (!editable) {
@@ -185,9 +198,19 @@ function renderToken(
   // not a false "on file" hint. Only when a handler is provided (author/editor).
   if (PARTY_CONTACT_TOKENS[token] && cb.onEditPartyContact) {
     return (
-      <PartyContactToken key={key} token={token} value={valueByKey[token] ?? ''}
-        editable={cb.editable}
+      <EditableRecordToken key={key} token={token} value={valueByKey[token] ?? ''}
+        editable={cb.editable} placeholder={PARTY_CONTACT_TOKENS[token]}
         onCommit={(v) => { void cb.onEditPartyContact!(token, v); }} />
+    );
+  }
+  // Editable horse-record tokens (farrier / vet details): fillable blanks that write
+  // back to the horse record, not a "from horse record" hint. Only when a handler is
+  // provided (author/editor); otherwise they fall through to the read-only value.
+  if (HORSE_RECORD_TOKENS[token] && cb.onEditHorseRecord) {
+    return (
+      <EditableRecordToken key={key} token={token} value={valueByKey[token] ?? ''}
+        editable={cb.editable} placeholder={HORSE_RECORD_TOKENS[token]}
+        onCommit={(v) => { void cb.onEditHorseRecord!(token, v); }} />
     );
   }
   const display = field ? optionLabel(field) : (valueByKey[token] ?? '');

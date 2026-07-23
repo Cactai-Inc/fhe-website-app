@@ -14,7 +14,7 @@ import {
   resolveClause, withdrawClause, attachHorseToDocument,
   sendContractToParty, cancelContract, archiveContract, hardDeleteContract,
   setFieldResponsibility, setFieldIncluded, setFieldNa, setFieldControlOverride, setFieldStructured,
-  postContractComment, documentPartiesSummary, captureContactInfo,
+  postContractComment, documentPartiesSummary, captureContactInfo, captureHorseRecord,
   type ContractDetail, type ContractField, type PartyControls,
   type SigningSetDoc, type RedlineState, type PartiesHorseSummary, type PartySummary,
 } from '../../lib/contracts';
@@ -415,6 +415,30 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
     }
   }, [id, load, partiesSummary]);
 
+  // Fill/edit a farrier or vet detail directly in the Care section → writes back to
+  // the horse record (reused by every document), then re-materializes + re-merges.
+  const editHorseRecord = useCallback(async (token: string, value: string) => {
+    if (!doc?.horse_id) { setError('No horse on this document to save to.'); return; }
+    const v = value.trim();
+    const patch: Parameters<typeof captureHorseRecord>[1] = {};
+    switch (token) {
+      case 'HORSE.FARRIER_NAME':  patch.farrier_name = v; break;
+      case 'HORSE.FARRIER_PHONE': patch.farrier_phone = v; break;
+      case 'HORSE.VET_NAME':      patch.vet_name = v; break;
+      case 'HORSE.VET_PHONE':     patch.vet_phone = v; break;
+      case 'HORSE.VET_BUSINESS':  patch.vet_business_name = v; break;
+      case 'HORSE.VET_ADDRESS':   patch.vet_address_line1 = v; break;  // full string in line1
+      default: return;
+    }
+    try {
+      await captureHorseRecord(id!, patch);
+      await load();
+      setChangeKey((k) => k + 1);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not save that horse-record detail.');
+    }
+  }, [id, load, doc?.horse_id]);
+
   // Comment anchored to a specific field — opens the Add-a-Comment modal straight
   // at the write step, pre-anchored to that field.
   const commentOnField = useCallback((f: ContractField) => {
@@ -719,6 +743,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
             onSuggestEdit: suggestFieldEdit,
             onCommentField: commentOnField,
             onEditPartyContact: editPartyContact,
+            onEditHorseRecord: editHorseRecord,
           }}
         />
       )}
