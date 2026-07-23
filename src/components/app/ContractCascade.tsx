@@ -446,17 +446,38 @@ function MedicationBuilder({
             <label className="flex flex-col gap-0.5 text-[11px] text-muted">Schedule
               <input className={cell} disabled={disabled} value={it.schedule ?? ''} onFocus={beginEdit} onBlur={flush} onChange={(e) => editLocal(i, { schedule: e.target.value })} /></label>
           </div>
-          <label className="flex flex-col gap-0.5 text-[11px] text-muted mt-2">
-            Party responsible for ordering, administering, and cost
-            <select className={cell} disabled={disabled} value={it.party ?? ''} onChange={(e) => editNow(i, { party: e.target.value })}>
-              <option value="">{SELECT_PLACEHOLDER}</option>
-              {MED_PARTY_OPTS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
-          </label>
-          {it.party === 'OTHER' && (
-            <input className={`${cell} mt-1.5`} disabled={disabled} placeholder="Specify the responsible party"
-              value={it.party_note ?? ''} onFocus={beginEdit} onBlur={flush} onChange={(e) => editLocal(i, { party_note: e.target.value })} />
-          )}
+          {/* Three separate responsible-party selections — administering, ordering,
+              and cost — because they aren't always the same party (e.g. a vet may
+              administer but rarely bears the cost). Same options for all three.
+              Falls back to the legacy single `party` value for older items. */}
+          <div className="grid sm:grid-cols-3 gap-2 mt-2">
+            {([
+              ['administer', 'Party responsible for administering'],
+              ['order', 'Party responsible for ordering'],
+              ['cost', 'Party responsible for cost'],
+            ] as const).map(([key, label]) => {
+              const pKey = `${key}_party` as const;
+              const nKey = `${key}_note` as const;
+              // legacy fallback: an old item's single `party` seeds all three
+              const cur = (it[pKey] ?? it.party ?? '') as string;
+              const note = (it[nKey] ?? (it.party ? it.party_note : '') ?? '') as string;
+              return (
+                <label key={key} className="flex flex-col gap-0.5 text-[11px] text-muted">
+                  {label}
+                  <select className={cell} disabled={disabled} value={cur}
+                    onChange={(e) => editNow(i, { [pKey]: e.target.value })}>
+                    <option value="">{SELECT_PLACEHOLDER}</option>
+                    {MED_PARTY_OPTS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                  {cur === 'OTHER' && (
+                    <input className={`${cell} mt-1`} disabled={disabled} placeholder="Specify"
+                      value={note} onFocus={beginEdit} onBlur={flush}
+                      onChange={(e) => editLocal(i, { [nKey]: e.target.value })} />
+                  )}
+                </label>
+              );
+            })}
+          </div>
         </div>
       ))}
       {!disabled && (

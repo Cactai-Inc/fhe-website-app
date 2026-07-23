@@ -80,7 +80,16 @@ export interface FieldStructured {
   options?: { amount?: string; notes?: string }[];
   selected?: number | null;
   // med_schedule (§11 medications & supplements builder)
-  medItems?: { name?: string; dose?: string; schedule?: string; party?: string; party_note?: string }[];
+  medItems?: {
+    name?: string; dose?: string; schedule?: string;
+    // per-item responsible party, now split three ways (each with its own OTHER
+    // note). `party`/`party_note` are the legacy single-party fields, kept for
+    // back-compat with items created before the split.
+    party?: string; party_note?: string;
+    administer_party?: string; administer_note?: string;
+    order_party?: string; order_note?: string;
+    cost_party?: string; cost_note?: string;
+  }[];
   // reveal_text (§11.6 tack yes/no → input)
   enabled?: boolean;
 }
