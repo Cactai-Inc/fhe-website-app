@@ -643,36 +643,44 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           {!isExecuted && (
           <div className="p-5 sm:p-6">
             <p className="text-[11px] uppercase tracking-wide text-muted mb-3">Manage</p>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              {isOwnerSide && (
-                <button type="button" disabled={saving}
-                  className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-green-800/20 px-4 py-3 text-sm font-medium text-green-900 hover:bg-green-800/5 focus-ring disabled:opacity-60"
-                  onClick={() => void saveNow()}>
-                  {saving ? 'Saving…' : 'Save'}
-                </button>
-              )}
-              {!isCancelled && (
-                <button type="button"
-                  className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-green-800/20 px-4 py-3 text-sm font-medium text-secondary hover:bg-green-800/5 focus-ring"
-                  onClick={cancelDocument}>
-                  Cancel
-                </button>
-              )}
-              {/* per-party Archive appears once the contract is inactive */}
-              {isInactive && (
-                <button type="button"
-                  className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-green-800/20 px-4 py-3 text-sm font-medium text-secondary hover:bg-green-800/5 focus-ring"
-                  onClick={toggleMyArchive}>
-                  {isArchived ? 'Unarchive' : 'Archive'}
-                </button>
-              )}
-              {isStaff && (
-                <button type="button"
-                  className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-300 px-4 py-3 text-sm font-medium text-red-700 hover:bg-red-50 focus-ring"
-                  onClick={() => void deleteEntirely()}>
-                  Delete
-                </button>
-              )}
+            {/* Preserving actions (Save / Archive) sit on the LEFT; destructive
+                actions (Cancel / Delete) are pushed to the RIGHT so there's clear
+                space between the buttons that keep a document and the ones that kill
+                it — no accidental taps. On mobile they stack (preserve then destroy). */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
+                {isOwnerSide && (
+                  <button type="button" disabled={saving}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-green-800/20 px-4 py-3 text-sm font-medium text-green-900 hover:bg-green-800/5 focus-ring disabled:opacity-60"
+                    onClick={() => void saveNow()}>
+                    {saving ? 'Saving…' : 'Save'}
+                  </button>
+                )}
+                {/* per-party Archive (preserves) appears once the contract is inactive */}
+                {isInactive && (
+                  <button type="button"
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-green-800/20 px-4 py-3 text-sm font-medium text-secondary hover:bg-green-800/5 focus-ring"
+                    onClick={toggleMyArchive}>
+                    {isArchived ? 'Unarchive' : 'Archive'}
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 sm:ml-auto">
+                {!isCancelled && (
+                  <button type="button"
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-green-800/20 px-4 py-3 text-sm font-medium text-secondary hover:bg-green-800/5 focus-ring"
+                    onClick={cancelDocument}>
+                    Cancel
+                  </button>
+                )}
+                {isStaff && (
+                  <button type="button"
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-300 px-4 py-3 text-sm font-medium text-red-700 hover:bg-red-50 focus-ring"
+                    onClick={() => void deleteEntirely()}>
+                    Delete
+                  </button>
+                )}
+              </div>
             </div>
           </div>
           )}
