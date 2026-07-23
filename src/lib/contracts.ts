@@ -14,6 +14,8 @@ export interface FieldConditional {
   field_key?: string; equals?: string[]; contains?: string[];
   /** composite AND — every sub-condition must hold (mirrors clause_condition_met). */
   all?: FieldConditional[];
+  /** composite OR — any sub-condition holding is enough. */
+  any?: FieldConditional[];
 }
 
 export interface ContractField {
@@ -217,6 +219,8 @@ export function clauseConditionMet(
   if (!cond) return true;
   // composite AND: every sub-condition must hold
   if (cond.all) return cond.all.every((c) => clauseConditionMet(c, fieldValues));
+  // composite OR: any sub-condition holding is enough
+  if (cond.any) return cond.any.some((c) => clauseConditionMet(c, fieldValues));
   if (!cond.field_key) return true;
   const raw = fieldValues[cond.field_key] ?? '';
   if (cond.equals && cond.equals.includes(raw)) return true;
