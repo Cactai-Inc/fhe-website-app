@@ -8,6 +8,7 @@ import {
   contactActions, type ContactInfo, type ContactMethod,
 } from '../../lib/contact';
 import { PostModal } from './PostModal';
+import { FeedVideo } from './FeedVideo';
 
 /**
  * COMMUNITY FEED (adaptive, live) — fetches the active view's real source(s) via
@@ -18,12 +19,14 @@ import { PostModal } from './PostModal';
  * layered over real rows.
  */
 
-function MediaBlock({ url, label }: { url?: string; label?: string }) {
+function MediaBlock({ url, label, kind }: { url?: string; label?: string; kind?: 'image' | 'video' }) {
   return (
     <div className="relative aspect-[16/10] bg-gradient-to-br from-green-50 to-gold-50 overflow-hidden">
-      {url && <img src={url} alt="" loading="lazy" className="w-full h-full object-cover" />}
+      {url && (kind === 'video'
+        ? <FeedVideo src={url} mode="card" className="w-full h-full" />
+        : <img src={url} alt="" loading="lazy" className="w-full h-full object-cover" />)}
       {label && (
-        <span className="absolute top-3 left-3 bg-cream/90 text-[9px] tracking-wide uppercase px-2.5 py-1 rounded-full text-green-800 font-semibold">
+        <span className="absolute top-3 left-3 bg-cream/90 text-[9px] tracking-wide uppercase px-2.5 py-1 rounded-full text-green-800 font-semibold pointer-events-none">
           {label}
         </span>
       )}
@@ -139,9 +142,11 @@ function Card({ c, myId, greeted, onOpen }: { c: FeedCard; myId?: string; greete
       <article ref={ref} onClick={open}
         className={`rounded-xl overflow-hidden border border-green-800/10 bg-white ${clickable}`}>
         <div className="relative aspect-square bg-gradient-to-br from-green-50 to-gold-50 overflow-hidden">
-          {c.mediaUrl && <img src={c.mediaUrl} alt="" loading="lazy" className="w-full h-full object-cover" />}
-          {c.saleTag && <span className="absolute top-2.5 left-2.5 bg-cream/90 text-[9px] tracking-wide uppercase px-2 py-1 rounded-full text-green-800 font-semibold">{c.saleTag}</span>}
-          {c.price && <span className="absolute bottom-2.5 right-2.5 bg-green-800 text-gold-200 font-serif text-sm px-2.5 py-0.5 rounded-lg">{c.price}</span>}
+          {c.mediaUrl && (c.mediaKind === 'video'
+            ? <FeedVideo src={c.mediaUrl} mode="card" className="w-full h-full" />
+            : <img src={c.mediaUrl} alt="" loading="lazy" className="w-full h-full object-cover" />)}
+          {c.saleTag && <span className="absolute top-2.5 left-2.5 bg-cream/90 text-[9px] tracking-wide uppercase px-2 py-1 rounded-full text-green-800 font-semibold pointer-events-none">{c.saleTag}</span>}
+          {c.price && <span className="absolute bottom-2.5 right-2.5 bg-green-800 text-gold-200 font-serif text-sm px-2.5 py-0.5 rounded-lg pointer-events-none">{c.price}</span>}
         </div>
         <div className="px-4 py-3">
           <p className="font-serif text-green-900 text-[15px] font-semibold leading-snug">{c.title || c.body}</p>
@@ -189,7 +194,7 @@ function Card({ c, myId, greeted, onOpen }: { c: FeedCard; myId?: string; greete
           ? 'border-2 border-gold-600/70 bg-gradient-to-br from-gold-50 to-white'
           : 'border border-green-800/10 bg-white'
       } ${clickable}`}>
-      {c.mediaUrl && <MediaBlock url={c.mediaUrl} label={c.kind === 'social' ? 'Social' : undefined} />}
+      {c.mediaUrl && <MediaBlock url={c.mediaUrl} kind={c.mediaKind} label={c.kind === 'social' ? 'Social' : undefined} />}
       <div className="px-4 py-3">
         <div className="flex items-center gap-2 mb-1.5">
           {!isAnnouncement && <Avatar initials={c.authorInitials} src={c.authorAvatar} />}

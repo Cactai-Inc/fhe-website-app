@@ -36,15 +36,22 @@ export function FeedComposer({ onPosted }: { onPosted: () => void }) {
   const [publishAt, setPublishAt] = useState('');   // staged/delayed (optional)
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [formatNote, setFormatNote] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   function pick(f: File | null) {
     setFile(f);
     setError(null);
+    setFormatNote(null);
     if (preview) URL.revokeObjectURL(preview);
     if (f) {
       setKind(f.type.startsWith('video/') ? 'video' : 'image');
       setPreview(URL.createObjectURL(f));
+      // .mov / QuickTime plays in Safari but usually NOT in Chrome or Firefox —
+      // warn so the poster can pick an .mp4 that everyone can watch.
+      if (f.type === 'video/quicktime' || /\.mov$/i.test(f.name)) {
+        setFormatNote('Heads up: .mov videos don’t play in every browser (Chrome/Firefox often can’t). An .mp4 is the safest choice so everyone can watch.');
+      }
     } else {
       setPreview(null);
     }
@@ -149,6 +156,9 @@ export function FeedComposer({ onPosted }: { onPosted: () => void }) {
         </div>
       )}
 
+      {formatNote && (
+        <p className="text-[12px] text-gold-800 bg-gold-50 border border-gold-200 rounded-lg px-3 py-2">{formatNote}</p>
+      )}
       {error && <p role="alert" className="form-error">{error}</p>}
       <button type="submit" disabled={!file || busy} className="btn-primary justify-center">
         {busy ? 'Posting…' : 'Post'}{!busy && <ArrowRight size={16} />}

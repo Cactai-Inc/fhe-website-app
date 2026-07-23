@@ -10,6 +10,7 @@ import {
 } from '../../lib/community';
 import { sayHi, myGreetedUserIds, type FeedCard } from '../../lib/communityFeed';
 import { contactActions, preferredContactLabel, type PreferredContact } from '../../lib/contact';
+import { FeedVideo } from './FeedVideo';
 import type { ThreadPost, ContentPost, MemberHorse, RsvpStatus } from '../../lib/community-types';
 
 /**
@@ -311,8 +312,10 @@ function PostBody({ card }: { card: FeedCard }) {
     <div>
       {card.mediaUrl && (
         <div className="relative rounded-lg overflow-hidden mb-4 bg-gradient-to-br from-green-50 to-gold-50">
-          <img src={card.mediaUrl} alt="" className="w-full max-h-[60vh] object-contain" />
-          {card.price && <span className="absolute bottom-3 right-3 bg-green-800 text-gold-200 font-serif text-base px-3 py-1 rounded-lg">{card.price}</span>}
+          {card.mediaKind === 'video'
+            ? <FeedVideo src={card.mediaUrl} mode="modal" className="w-full rounded-lg" />
+            : <img src={card.mediaUrl} alt="" className="w-full max-h-[60vh] object-contain" />}
+          {card.price && <span className="absolute bottom-3 right-3 bg-green-800 text-gold-200 font-serif text-base px-3 py-1 rounded-lg pointer-events-none">{card.price}</span>}
         </div>
       )}
       <div className="flex items-center gap-2 mb-2 text-xs text-muted">
