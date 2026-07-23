@@ -20,19 +20,24 @@ const CORE_BASE = '/ffmpeg';
 
 let ffmpegPromise: Promise<FFmpeg> | null = null;
 
-/** Lazy singleton — dynamically load the wrapper, then the wasm core once. */
+/** Lazy singleton — load the wrapper + the self-hosted ESM core once.
+ *
+ *  Key detail (this is what broke conversions before): the @ffmpeg/ffmpeg wrapper
+ *  spawns its worker as a MODULE worker (`type: "module"`), where `importScripts`
+ *  is unavailable. Its worker tries importScripts first, then falls back to a
+ *  dynamic `import(coreURL)` — which requires the ESM core (a module with a
+ *  `default` export), NOT the UMD core. We self-host the ESM core + wasm under
+ *  /public/ffmpeg (same dir, so the core's `new URL('ffmpeg-core.wasm',
+ *  import.meta.url)` finds the wasm) and let Vite bundle the wrapper's worker
+ *  (which resolves its own sibling imports). Direct same-origin URLs, no blobs. */
 async function getFFmpeg(): Promise<FFmpeg> {
   if (!ffmpegPromise) {
     ffmpegPromise = (async () => {
-      const [{ FFmpeg }, { toBlobURL }] = await Promise.all([
-        import('@ffmpeg/ffmpeg'),
-        import('@ffmpeg/util'),
-      ]);
+      const { FFmpeg } = await import('@ffmpeg/ffmpeg');
       const ff = new FFmpeg();
-      // Load core + wasm as same-origin blob URLs (self-hosted; never a CDN).
       await ff.load({
-        coreURL: await toBlobURL(`${CORE_BASE}/ffmpeg-core.js`, 'text/javascript'),
-        wasmURL: await toBlobURL(`${CORE_BASE}/ffmpeg-core.wasm`, 'application/wasm'),
+        coreURL: `${CORE_BASE}/ffmpeg-core.js`,
+        wasmURL: `${CORE_BASE}/ffmpeg-core.wasm`,
       });
       return ff;
     })().catch((e) => { ffmpegPromise = null; throw e; });

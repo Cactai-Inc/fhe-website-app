@@ -131,10 +131,8 @@ function PostForm({ type, onClose }: { type: PostType; onClose: () => void }) {
           try {
             toUpload = await transcodeToMp4(file!, (r) => setConvertPct(r));
           } catch {
-            setConvertPct(null);
-            setErr('That video couldn’t be converted. Please try an .mp4 file.');
-            setBusy(false);
-            return;
+            // Conversion failed → post the original rather than blocking it.
+            toUpload = file!;
           }
           setConvertPct(null);
         }

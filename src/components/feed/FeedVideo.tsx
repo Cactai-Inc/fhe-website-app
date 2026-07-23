@@ -1,5 +1,5 @@
 import { useRef, useState, useCallback } from 'react';
-import { Play, Pause, VideoOff } from 'lucide-react';
+import { Play, Pause, VideoOff, Volume2, VolumeX } from 'lucide-react';
 
 /**
  * FEED VIDEO — community post video with deliberate, no-surprise playback.
@@ -26,10 +26,21 @@ export function FeedVideo({
 }) {
   const ref = useRef<HTMLVideoElement | null>(null);
   const [playing, setPlaying] = useState(false);
+  // Videos start MUTED (so a card can play without blaring audio); the viewer
+  // unmutes with the speaker toggle if they want sound.
+  const [muted, setMuted] = useState(true);
   // A format the browser can't decode (e.g. a .mov / QuickTime clip in Chrome or
   // Firefox) fires <video>'s error event — surface a clear message rather than a
   // silent black box (which is what the broken <img> render looked like before).
   const [failed, setFailed] = useState(false);
+
+  const toggleMute = (e: React.MouseEvent) => {
+    e.stopPropagation(); // never open the card / toggle playback
+    const v = ref.current;
+    const next = !muted;
+    setMuted(next);
+    if (v) v.muted = next;
+  };
 
   const play = useCallback(() => {
     const v = ref.current;
@@ -67,9 +78,10 @@ export function FeedVideo({
       <video
         ref={ref}
         src={src}
-        // no autoplay, no loop; keep the first frame visible before play
+        // no autoplay, no loop; starts muted, first frame visible before play
         preload="metadata"
         playsInline
+        muted={muted}
         onClick={onFrame}
         onEnded={() => setPlaying(false)}
         onPause={() => setPlaying(false)}
@@ -79,6 +91,17 @@ export function FeedVideo({
           mode === 'modal' ? 'cursor-pointer' : ''
         }`}
       />
+
+      {/* Speaker toggle — top-right, revealed on hover. Videos start muted; this
+          unmutes (or re-mutes) without opening the card or toggling playback. */}
+      <button
+        type="button"
+        aria-label={muted ? 'Unmute' : 'Mute'}
+        onClick={toggleMute}
+        className="absolute top-2 right-2 z-10 grid place-items-center w-9 h-9 rounded-full bg-black/50 text-white backdrop-blur-sm opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity hover:bg-black/70"
+      >
+        {muted ? <VolumeX size={17} /> : <Volume2 size={17} />}
+      </button>
 
       {/* Large play button — shown whenever the video isn't playing. In card mode
           it plays in place (stops propagation); in modal mode it just plays. */}

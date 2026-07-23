@@ -76,10 +76,10 @@ export function FeedComposer({ onPosted }: { onPosted: () => void }) {
         try {
           toUpload = await transcodeToMp4(file, (r) => setConvertPct(r));
         } catch {
-          setConvertPct(null);
-          setError('That video couldn’t be converted. Please try an .mp4 file.');
-          setBusy(false);
-          return;
+          // Conversion failed → don't block the post. Upload the original; it
+          // plays in Safari and shows a friendly "can't play here" note in other
+          // browsers, rather than losing the post entirely.
+          toUpload = file;
         }
         setConvertPct(null);
       }
