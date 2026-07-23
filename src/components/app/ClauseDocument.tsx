@@ -82,6 +82,41 @@ function optionLabel(f: ContractField): string {
   return v;
 }
 
+/** Map a raw gate value to its human label using the trigger field's options. */
+function gateValueLabel(f: ContractField | undefined, raw: string): string {
+  const opt = f?.options?.find((o) => o.value === raw);
+  return opt?.label ?? raw;
+}
+
+/** A plain-English description of a clause/section's gate for authors, e.g.
+ *  "This is included when the Lease type is Partial lease." Resolves the trigger
+ *  field's label and the expected option's label from the field defs. Falls back
+ *  to a generic phrase when the gate is composite or the field isn't found. */
+function describeGate(
+  cond: import('../../lib/contracts').FieldConditional | null | undefined,
+  fieldByKey: Map<string, ContractField>,
+): string {
+  const generic = 'This is included when the option above is selected.';
+  if (!cond) return generic;
+  // composite (all/any) → too complex to phrase simply; keep it generic
+  if (cond.all || cond.any || !cond.field_key) return generic;
+  const f = fieldByKey.get(cond.field_key);
+  const fieldName = f?.label ?? 'selection above';
+  if (cond.equals && cond.equals.length) {
+    const vals = cond.equals.map((v) => gateValueLabel(f, v));
+    // a Yes gate reads better as "is enabled"
+    if (vals.length === 1 && vals[0].toLowerCase() === 'yes') {
+      return `This is included when ${fieldName} is enabled.`;
+    }
+    return `This is included when ${fieldName} is ${vals.join(' or ')}.`;
+  }
+  if (cond.contains && cond.contains.length) {
+    const vals = cond.contains.map((v) => gateValueLabel(f, v));
+    return `This is included when ${fieldName} includes ${vals.join(' or ')}.`;
+  }
+  return generic;
+}
+
 /** Render a single {{token}} → an inline editable control, or a read-only value
  *  (horse-record imports, auto-fill, signatures). */
 function renderToken(
@@ -305,21 +340,37 @@ export function ClauseDocument({
         sectionNo += 1;
         const secNum = sectionNo;
         let clauseNo = 0;
+        // A section is ENTIRELY OPTIONAL (a preview block) when every clause it
+        // would show is gated off — i.e. the whole section shares one trigger and
+        // none of it is active. Then the section reads as a single optional unit:
+        // the title is greyed and carries ONE "optional" note (not repeated per
+        // clause), and it keeps its number so it looks like a real section-3 that
+        // simply isn't included yet.
+        const sectionAllOptional = clausesToShow.length > 0
+          && sectionCustom.length === 0
+          && clausesToShow.every((c) => !clauseConditionMet(c.conditional_on, valueByKey));
         return (
-          <section key={section.section_key}>
-            <h2 className="font-serif text-green-900 text-2xl mb-3 flex items-baseline gap-2 border-b border-green-800/10 pb-1.5">
+          <section key={section.section_key} className={sectionAllOptional ? 'opacity-50' : ''}>
+            <h2 className="font-serif text-green-900 text-2xl mb-3 flex items-baseline flex-wrap gap-x-2 gap-y-1 border-b border-green-800/10 pb-1.5">
               <span className="text-gold-ink tabular-nums">{secNum}.</span>
               {section.heading}
               {section.guidance && <InfoDot text={section.guidance} />}
+              {sectionAllOptional && (
+                <span className="text-[11px] text-gold-700/90 font-sans font-medium self-center normal-case tracking-normal">
+                  {describeGate(clausesToShow[0]?.conditional_on, fieldByKey)}
+                </span>
+              )}
             </h2>
             <div className="flex flex-col gap-4">
               {clausesToShow.map((clause) => {
                 const gatedOff = !clauseConditionMet(clause.conditional_on, valueByKey);
                 // Only clauses that WILL appear in the final document consume a
                 // number, so the visible numbering matches the executed form. A
-                // gated-off clause shows without a number, muted.
-                if (!gatedOff) clauseNo += 1;
-                const num = gatedOff ? '' : `${secNum}.${clauseNo}`;
+                // gated-off clause shows without a number, muted — EXCEPT in a
+                // wholly-optional section, where the whole block reads as one
+                // numbered-but-optional section (3.1, 3.2 …) under a greyed title.
+                if (!gatedOff || sectionAllOptional) clauseNo += 1;
+                const num = (gatedOff && !sectionAllOptional) ? '' : `${secNum}.${clauseNo}`;
                 const bodyTokens = new Set(
                   [...(clause.body ?? '').matchAll(TOKEN_RE)].map((mm) => mm[1]),
                 );
@@ -336,10 +387,18 @@ export function ClauseDocument({
                   // pointer-events-none so its inputs can't be edited (its content
                   // only enters the contract once the controlling selection turns it
                   // on). Shown only to the author (authorView) — reviewers never see it.
-                  <div key={clause.clause_key} className={gatedOff ? 'opacity-50 pointer-events-none select-none' : ''}>
-                    {gatedOff && (
-                      <p className="text-[10.5px] uppercase tracking-wide text-gold-700/80 mb-0.5">
-                        Optional preview — appears in the agreement only if selected above
+                  <div key={clause.clause_key} className={
+                    gatedOff
+                      ? `pointer-events-none select-none${sectionAllOptional ? '' : ' opacity-50'}`
+                      : ''
+                  }>
+                    {/* A per-clause "optional" note appears only for a clause that's
+                        individually gated off within an OTHERWISE-ACTIVE section. When
+                        the WHOLE section is optional, the greyed section title carries
+                        the single note instead (no per-clause repetition). */}
+                    {gatedOff && !sectionAllOptional && (
+                      <p className="text-[11px] text-gold-700/90 mb-0.5">
+                        {describeGate(clause.conditional_on, fieldByKey)}
                       </p>
                     )}
                     {clause.heading && (
