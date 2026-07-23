@@ -42,19 +42,6 @@ export const FEED_VIEW_META: Record<FeedView, { title: string; navLabel: string;
   members:     { title: 'Members',        navLabel: 'Members',     description: 'Meet the community — say hi, or send a message.' },
 };
 
-/** Sort options are dependent on the active view. Each view names its own set; the
- *  first entry is the default. `all` sorts by recency/activity. */
-export const SORT_OPTIONS: Record<FeedView, string[]> = {
-  all: ['Latest activity', 'Chronological'],
-  social: ['Latest', 'Most liked'],
-  discussions: ['Latest activity', 'Newest', 'My discussions'],
-  for_sale: ['All', 'Horses', 'Gear', 'Free'],
-  events: ['Upcoming', 'Newest'],
-  articles: ['All audiences', 'General', 'New riders', 'Advanced riders', 'Competition riders', 'Trail riders', 'Horse owners'],
-  resources: ['All', 'Vets', 'Farriers', 'Suppliers'],
-  members: ['A → Z', 'Z → A', 'Recently joined'],
-};
-
 // ─── Feed items ─────────────────────────────────────────────────
 export type SeedCardKind =
   | 'social' | 'discussion' | 'for_sale' | 'event' | 'article' | 'resource'

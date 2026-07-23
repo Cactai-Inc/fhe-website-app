@@ -1,11 +1,9 @@
-import { useState, useEffect } from 'react';
 import { Navigate, useSearchParams } from 'react-router-dom';
 import { useDocumentTitle } from '../../lib/hooks';
 import { useViewSurfaces } from '../../lib/surfaces';
 import { useAuth } from '../../contexts/AuthContext';
-import { FeedControls } from '../../components/feed/FeedControls';
 import { CommunityFeed } from '../../components/feed/CommunityFeed';
-import { SORT_OPTIONS, FEED_VIEW_META, FEED_VIEWS, type FeedView } from '../../lib/seed';
+import { FEED_VIEW_META, FEED_VIEWS, type FeedView } from '../../lib/seed';
 
 /**
  * COMMUNITY FEED (/app index) — the front door on sign-in. ONE stream of
@@ -28,10 +26,6 @@ export default function Home() {
   const meta = FEED_VIEW_META[view];
   useDocumentTitle(view === 'all' ? 'Community Feed' : `${meta.title} · Community`);
 
-  const [sort, setSort] = useState<string>((SORT_OPTIONS[view] ?? SORT_OPTIONS.all)[0]);
-  // Reset sort to the view's default whenever the view changes.
-  useEffect(() => { setSort((SORT_OPTIONS[view] ?? SORT_OPTIONS.all)[0]); }, [view]);
-
   const hasFeed = surfaces.has_feed;
 
   // The PLATFORM operator belongs to no tenant — land on Organizations.
@@ -51,8 +45,6 @@ export default function Home() {
         <h1 className="font-serif text-green-800 text-3xl font-semibold mt-0.5">{meta.title}</h1>
         <p className="body-text text-secondary text-sm mt-1.5 max-w-2xl">{meta.description}</p>
       </header>
-
-      <FeedControls view={view} sort={sort} onSort={setSort} />
 
       <CommunityFeed view={view} />
     </div>

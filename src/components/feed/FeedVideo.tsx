@@ -26,6 +26,14 @@ export function FeedVideo({
 }) {
   const ref = useRef<HTMLVideoElement | null>(null);
   const [playing, setPlaying] = useState(false);
+  // Show the video's real first frame (not a black box) before play. The #t=0.1
+  // media fragment makes most browsers paint that frame as the poster; the
+  // onLoadedMetadata seek is a fallback for those that ignore the fragment.
+  const posterSrc = src.includes('#') ? src : `${src}#t=0.1`;
+  const primeFirstFrame = () => {
+    const v = ref.current;
+    if (v && v.currentTime === 0) { try { v.currentTime = 0.1; } catch { /* ignore */ } }
+  };
   // Videos start MUTED (so a card can play without blaring audio); the viewer
   // unmutes with the speaker toggle if they want sound.
   const [muted, setMuted] = useState(true);
@@ -77,12 +85,15 @@ export function FeedVideo({
     <div className={`group relative overflow-hidden bg-black ${className}`}>
       <video
         ref={ref}
-        src={src}
-        // no autoplay, no loop; starts muted, first frame visible before play
-        preload="metadata"
+        src={posterSrc}
+        // no autoplay, no loop; starts muted. Card grid uses "metadata" + the
+        // #t=0.1 fragment to paint the first frame cheaply (many cards on screen);
+        // the single modal video can afford "auto".
+        preload={mode === 'modal' ? 'auto' : 'metadata'}
         playsInline
         muted={muted}
         onClick={onFrame}
+        onLoadedMetadata={primeFirstFrame}
         onEnded={() => setPlaying(false)}
         onPause={() => setPlaying(false)}
         onPlay={() => setPlaying(true)}
