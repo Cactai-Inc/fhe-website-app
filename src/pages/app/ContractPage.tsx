@@ -14,7 +14,7 @@ import {
   resolveClause, withdrawClause, attachHorseToDocument,
   sendContractToParty, cancelContract, archiveContract, hardDeleteContract,
   setFieldResponsibility, setFieldIncluded, setFieldNa, setFieldControlOverride, setFieldStructured,
-  postContractComment, documentPartiesSummary,
+  postContractComment, documentPartiesSummary, captureContactInfo,
   type ContractDetail, type ContractField, type PartyControls,
   type SigningSetDoc, type RedlineState, type PartiesHorseSummary, type PartySummary,
 } from '../../lib/contracts';
@@ -388,6 +388,33 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
     }
   }, [id, load]);
 
+  // Commit a party CONTACT token (LESSOR/LESSEE . ADDRESS/PHONE/EMAIL/FULL_NAME):
+  // writes to that party's contact record, then refills + re-merges the doc so the
+  // token reflects it. The value is captured now and confirmed by the party at
+  // review (see the confirmation modal).
+  const editPartyContact = useCallback(async (token: string, value: string) => {
+    const [role, field] = token.split('.');
+    const party = partiesSummary?.parties.find((p) => p.party_role === role);
+    if (!party?.contact_id) { setError(`No ${role.toLowerCase()} on this document to save to.`); return; }
+    const v = value.trim();
+    const patch: Parameters<typeof captureContactInfo>[2] = {};
+    if (field === 'EMAIL') patch.email = v;
+    else if (field === 'PHONE') patch.phone = v;
+    else if (field === 'ADDRESS') patch.address_line1 = v;   // full string in line1
+    else if (field === 'FULL_NAME') {
+      const parts = v.split(/\s+/);
+      patch.first_name = parts.shift() ?? '';
+      patch.last_name = parts.join(' ');
+    }
+    try {
+      await captureContactInfo(id!, party.contact_id, patch);
+      await load();
+      setChangeKey((k) => k + 1);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not save that contact detail.');
+    }
+  }, [id, load, partiesSummary]);
+
   // Comment anchored to a specific field — opens the Add-a-Comment modal straight
   // at the write step, pre-anchored to that field.
   const commentOnField = useCallback((f: ContractField) => {
@@ -691,6 +718,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
             canSuggest: redline?.can_suggest ?? false,
             onSuggestEdit: suggestFieldEdit,
             onCommentField: commentOnField,
+            onEditPartyContact: editPartyContact,
           }}
         />
       )}

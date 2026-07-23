@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from 'react';
+import { useMemo, useState, useEffect, useRef, type ReactNode } from 'react';
 import {
   clauseConditionMet,
   type ContractField, type SectionDef, type ClauseDef,
@@ -35,6 +35,19 @@ type FieldCallbacks = {
   canSuggest: boolean;
   onSuggestEdit?: (f: ContractField) => void;
   onCommentField?: (f: ContractField) => void;
+  /** Commit a typed value for a party CONTACT token (LESSOR/LESSEE . ADDRESS /
+   *  PHONE / EMAIL / FULL_NAME) — writes to that party's contact record. Absent =
+   *  the tokens render read-only (reviewer without edit rights). */
+  onEditPartyContact?: (token: string, value: string) => void | Promise<void>;
+};
+
+/** Party CONTACT tokens editable in the Notice/Contact block. Map token → the
+ *  human field name (for placeholder/aria). */
+const PARTY_CONTACT_TOKENS: Record<string, string> = {
+  'LESSOR.FULL_NAME': 'Lessor name', 'LESSOR.ADDRESS': 'Lessor address',
+  'LESSOR.PHONE': 'Lessor phone', 'LESSOR.EMAIL': 'Lessor email',
+  'LESSEE.FULL_NAME': 'Lessee name', 'LESSEE.ADDRESS': 'Lessee address',
+  'LESSEE.PHONE': 'Lessee phone', 'LESSEE.EMAIL': 'Lessee email',
 };
 
 const TOKEN_RE = /\{\{([A-Z0-9_.]+)\}\}/g;
@@ -68,6 +81,39 @@ function TokenValue({ token, value }: { token: string; value: string }) {
     <mark className="bg-gold-100 text-gold-900 rounded px-1.5 border border-gold-400/60 border-dashed text-[13px]">
       ____
     </mark>
+  );
+}
+
+/** A party CONTACT token (LESSOR/LESSEE . ADDRESS/PHONE/EMAIL/FULL_NAME). Unlike
+ *  a false "on file" hint, an empty one is a real editable input the contract
+ *  creator can fill; the value is written to that party's contact record. When
+ *  not editable it renders the value (or a muted "not provided").  */
+function PartyContactToken({
+  token, value, editable, onCommit,
+}: { token: string; value: string; editable: boolean; onCommit: (v: string) => void }) {
+  const [local, setLocal] = useState(value);
+  const editingRef = useRef(false);
+  useEffect(() => { if (!editingRef.current) setLocal(value); }, [value]);
+  const placeholder = PARTY_CONTACT_TOKENS[token] ?? 'contact detail';
+  const kind = token.endsWith('.EMAIL') ? 'email' : token.endsWith('.PHONE') ? 'tel' : 'text';
+
+  if (!editable) {
+    return value.trim()
+      ? <span className="font-medium text-green-900">{value}</span>
+      : <span className="text-muted italic text-[12.5px]">not provided</span>;
+  }
+  const commit = () => { editingRef.current = false; if (local !== value) onCommit(local); };
+  return (
+    <input
+      type={kind}
+      className="align-baseline min-w-[8rem] max-w-full px-1 text-[13.5px] text-green-900 bg-gold-50/70 border-b border-gold-400/70 focus:outline-none focus:border-gold-600 rounded-sm"
+      value={local}
+      placeholder={placeholder}
+      aria-label={placeholder}
+      onFocus={() => { editingRef.current = true; }}
+      onChange={(e) => setLocal(e.target.value)}
+      onBlur={commit}
+    />
   );
 }
 
@@ -133,6 +179,15 @@ function renderToken(
         onSave={cb.onSave} onSaveStructured={cb.onSaveStructured as never}
         onSaveResponsibility={cb.onSaveResponsibility as never}
         onCommentField={cb.onCommentField} onSuggestEdit={cb.onSuggestEdit} canSuggest={cb.canSuggest} />
+    );
+  }
+  // Party contact tokens: editable inputs (write to the party's contact record),
+  // not a false "on file" hint. Only when a handler is provided (author/editor).
+  if (PARTY_CONTACT_TOKENS[token] && cb.onEditPartyContact) {
+    return (
+      <PartyContactToken key={key} token={token} value={valueByKey[token] ?? ''}
+        editable={cb.editable}
+        onCommit={(v) => { void cb.onEditPartyContact!(token, v); }} />
     );
   }
   const display = field ? optionLabel(field) : (valueByKey[token] ?? '');
