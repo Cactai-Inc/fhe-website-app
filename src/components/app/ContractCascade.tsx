@@ -605,6 +605,18 @@ function FieldControl({
       </div>
     );
   }
+  if (fmt === 'certify') {
+    // A single must-check certification. Stores YES when checked, NO/'' otherwise;
+    // the label is the certification statement itself.
+    const checked = (f.value ?? '').toUpperCase() === 'YES';
+    return (
+      <label className="flex items-start gap-2.5 cursor-pointer">
+        <input type="checkbox" className="accent-green-700 w-4 h-4 mt-0.5 shrink-0" disabled={disabled}
+          checked={checked} onChange={(e) => void onSave(f.field_key, e.target.checked ? 'YES' : 'NO')} />
+        <span className="text-[13px] text-green-900 leading-relaxed">{f.label}</span>
+      </label>
+    );
+  }
   if (fmt === 'person') {
     const s = f.structured ?? {};
     const set = (patch: Partial<FieldStructured>) => void onSaveStructured(f.field_key, { ...s, ...patch });
@@ -905,14 +917,14 @@ export function InlineFieldControl({
 
   // Structured / multi-part formats can't collapse to a single inline token —
   // render the block control, but inline-block and compact so it stays in flow.
-  const isStructured = ['party', 'contact', 'person', 'address', 'location', 'pair', 'fee_schedule', 'med_schedule', 'reveal_text'].includes(fmt)
+  const isStructured = ['party', 'contact', 'person', 'address', 'location', 'pair', 'fee_schedule', 'med_schedule', 'reveal_text', 'certify'].includes(fmt)
     || kind === 'responsibility' || kind === 'week_grid';
   if (isStructured) {
-    // reveal_text self-labels (it shows its own question), so render it inline
-    // in the prose flow with no extra label above it.
-    if (fmt === 'reveal_text') {
+    // reveal_text and certify self-label (the control shows its own question /
+    // certification statement), so render inline with no extra label above.
+    if (fmt === 'reveal_text' || fmt === 'certify') {
       return (
-        <span className="align-baseline">
+        <span className="block my-1">
           <FieldControl f={f} onSave={onSave} onSaveResponsibility={onSaveResponsibility}
             onSaveStructured={onSaveStructured} disabled={disabled} />{marks}
         </span>
