@@ -831,6 +831,22 @@ export async function listIntake(): Promise<IntakeRequest[]> {
   return (data ?? []) as IntakeRequest[];
 }
 
+/**
+ * Count of NEW (untriaged) inbound inquiries in the Request Inbox. Drives the
+ * persistent "N new inquiries need a response" dashboard tile for staff. Unlike a
+ * notification (which vanishes once read), this reflects the inbox's real state,
+ * so it lingers until each request is actually triaged off 'new'. RLS scopes it
+ * to the caller's org and returns 0 for non-staff.
+ */
+export async function countNewRequests(): Promise<number> {
+  const { count, error } = await supabase
+    .from('requests')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'new');
+  if (error) return 0; // non-staff / RLS: keep the dashboard quiet
+  return count ?? 0;
+}
+
 // ─── Count helpers (dashboard KPI tiles) ──────────────────────────────────
 // head:true + count:'exact' returns the count without transferring rows; RLS
 // still scopes the count to the caller's tenant/ownership.

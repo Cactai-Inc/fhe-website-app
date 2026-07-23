@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, Hand } from 'lucide-react';
-import { myNotifications, markNotificationRead, type AppNotification } from '../../lib/api';
+import { myNotifications, markNotificationRead, countNewRequests, type AppNotification } from '../../lib/api';
 import { sayHiBack } from '../../lib/communityFeed';
 import { myLessonSessions, type MemberLessonSession } from '../../lib/ops/api-member';
 import { fetchMyPendingChanges } from '../../lib/ops/api-calendar';
@@ -148,9 +148,15 @@ export function DashboardPanel() {
   const [suggestBooking, setSuggestBooking] = useState(false);
   const [pendingChanges, setPendingChanges] = useState(0);
   const [horse, setHorse] = useState<HorseOnboardingState | null>(null);
+  // Staff-only: count of new inbound inquiries in the Request Inbox. RLS returns 0
+  // for non-staff, so this tile only ever appears for owners/staff.
+  const [newRequests, setNewRequests] = useState(0);
 
   useEffect(() => {
     let active = true;
+    countNewRequests()
+      .then((n) => active && setNewRequests(n))
+      .catch(() => {});
     fetchMyPendingChanges()
       .then((r) => active && setPendingChanges(r.length))
       .catch(() => {});
@@ -248,14 +254,26 @@ export function DashboardPanel() {
     if (!opts?.silent) setAttention((prev) => prev.filter((t) => t.notificationId !== notificationId));
   }
 
-  if (attention.length === 0 && comingUp.length === 0 && checklist.length === 0 && !suggestBooking && pendingChanges === 0 && !horseTile) return null;
+  if (attention.length === 0 && comingUp.length === 0 && checklist.length === 0 && !suggestBooking && pendingChanges === 0 && !horseTile && newRequests === 0) return null;
 
   return (
     <div className="rounded-2xl border border-green-800/10 shadow-[0_14px_34px_-14px_rgba(13,33,24,0.22)] bg-gradient-to-br from-white to-cream-100 mb-6 sm:mb-7 p-5 sm:p-6">
-      {(attention.length > 0 || checklist.length > 0 || suggestBooking || pendingChanges > 0 || horseTile) && (
+      {(attention.length > 0 || checklist.length > 0 || suggestBooking || pendingChanges > 0 || horseTile || newRequests > 0) && (
         <>
           <p className="text-[10px] tracking-widest uppercase text-gold-800 font-semibold mb-3">Needs your attention</p>
           <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+            {/* Staff-only, persistent until the inbox is triaged: new website inquiries.
+                Shown first so a new inquiry can't be pushed off by other tiles. */}
+            {newRequests > 0 && (
+              <TileCard tile={{
+                id: 'new-inquiries', kind: 'inbox', gold: true,
+                title: `${newRequests} new ${newRequests === 1 ? 'inquiry' : 'inquiries'} to review`,
+                sub: newRequests === 1
+                  ? 'A website visitor is waiting to hear back.'
+                  : 'Website visitors are waiting to hear back.',
+                cta: 'Open the Request Inbox', to: '/app/ops/intake',
+              }} />
+            )}
             {horseTile && <TileCard tile={horseTile} />}
             {checklist.length > 0 && <ChecklistCard rows={checklist} />}
             {pendingChanges > 0 && (
