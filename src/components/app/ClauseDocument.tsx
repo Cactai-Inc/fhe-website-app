@@ -55,11 +55,13 @@ const PARTY_CONTACT_TOKENS: Record<string, string> = {
 
 /** HORSE-record tokens that are editable inline in the Care section. An empty one
  *  renders as a fillable blank (not a "from horse record" hint); the typed value is
- *  written back to the horse record. Map token → the human field name. */
+ *  written back to the horse record. Map token → the input PLACEHOLDER — descriptive
+ *  of what to type, NOT a restatement of the field label already shown on the line
+ *  (so "Farrier:" gets a "name" placeholder, not "Farrier"). */
 const HORSE_RECORD_TOKENS: Record<string, string> = {
-  'HORSE.FARRIER_NAME': 'Farrier', 'HORSE.FARRIER_PHONE': 'Farrier phone',
-  'HORSE.VET_NAME': 'Veterinarian', 'HORSE.VET_PHONE': 'Veterinarian phone',
-  'HORSE.VET_BUSINESS': 'Practice', 'HORSE.VET_ADDRESS': 'Practice address',
+  'HORSE.FARRIER_NAME': 'name', 'HORSE.FARRIER_PHONE': 'phone number',
+  'HORSE.VET_NAME': 'name', 'HORSE.VET_PHONE': 'phone number',
+  'HORSE.VET_BUSINESS': 'name', 'HORSE.VET_ADDRESS': 'street, city, state, ZIP',
 };
 
 const TOKEN_RE = /\{\{([A-Z0-9_.]+)\}\}/g;
