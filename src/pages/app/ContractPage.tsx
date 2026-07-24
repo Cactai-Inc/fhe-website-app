@@ -1210,9 +1210,11 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
 
       {/* Clause-model documents (Section›Clause›Field): numbered structure with
           live gating. Hidden when the doc should render read-only (review-only,
-          locked, terminated) — that renders as the merged-body frame below, which
-          shows the actual captured signatures instead of SIG.* placeholders. */}
-      {!readOnlyDoc && !showHorseGate && structure && (
+          locked, terminated, EXECUTED) — those render as the merged-body frame,
+          which shows the actual captured signatures instead of SIG.* placeholders.
+          (Executed has readOnlyDoc=false by design — it uses its own sealed frame —
+          so exclude it explicitly here too.) */}
+      {state !== 'executed' && !readOnlyDoc && !showHorseGate && structure && (
         <ClauseDocument
           sections={structure.sections}
           fields={detail.fields}

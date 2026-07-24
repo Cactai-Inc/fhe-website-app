@@ -62,9 +62,9 @@ function wrap(text: string, font: PDFFont, size: number, maxWidth: number): stri
   return lines;
 }
 
-/** Render one document body to PDF bytes. The body already carries the title;
- *  the title param is kept for signature parity with the server twin. */
-export async function renderDocumentPdf(_title: string, body: string): Promise<Uint8Array> {
+/** Render one document body to PDF bytes, with the document title as a centered
+ *  heading at the top (the composed body does not include the title). */
+export async function renderDocumentPdf(title: string, body: string): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.TimesRoman);
   const bold = await pdf.embedFont(StandardFonts.TimesRomanBold);
@@ -73,6 +73,18 @@ export async function renderDocumentPdf(_title: string, body: string): Promise<U
 
   let page = pdf.addPage([PAGE_W, PAGE_H]);
   let y = PAGE_H - MARGIN;
+
+  // Document title — centered heading at the very top, then a little gap.
+  const titleText = (title || 'Document').trim();
+  if (titleText) {
+    const TITLE_SIZE = 16;
+    const tw = bold.widthOfTextAtSize(titleText, TITLE_SIZE);
+    page.drawText(titleText, {
+      x: Math.max(MARGIN, (PAGE_W - tw) / 2),
+      y, size: TITLE_SIZE, font: bold, color: rgb(0.1, 0.12, 0.1),
+    });
+    y -= TITLE_SIZE + 10;
+  }
 
   const newlineIfNeeded = () => {
     if (y < MARGIN + LINE_H) {
