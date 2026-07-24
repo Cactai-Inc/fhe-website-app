@@ -429,6 +429,23 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   // stays visible. (An executed contract is never cancelled — it's TERMINATED, which
   // is a separate mutual-agreement flow below.)
   function cancelDocument() {
+    // A RECIPIENT (non-owner party) sees this as "Decline" — declining VOIDS the
+    // contract, so the modal warns them and points to the softer options first
+    // (suggest a change, or message the Lessor). Declining is only for when they no
+    // longer wish to lease at all.
+    if (!isOwnerSide) {
+      const ok = window.confirm(
+        'Decline this contract?\n\n'
+        + 'This CANCELS the contract entirely — it is only for when you no longer wish to lease from the Lessor.\n\n'
+        + 'If you just want a change instead, close this and either:\n'
+        + '  • use "Suggest a change" on the specific term (click the item in the document, then Suggest a change), or\n'
+        + '  • message the Lessor directly to request the change.\n\n'
+        + 'Are you sure you want to decline and cancel this contract?');
+      if (ok) void act(() => cancelContract(id!), 'You declined — the contract was cancelled and the Lessor notified.');
+      return;
+    }
+    // Owner side. Before it has been sent, cancelling removes it entirely (no one
+    // notified). Once sent, it notifies all parties and stays on file.
     if (!isSent) {
       if (window.confirm('Cancel this document? It has not been sent to anyone, so it will be removed entirely — as if it never existed. No one is notified.')) {
         void act(async () => { await hardDeleteContract(id!); navigate('/app/ops/documents'); });
@@ -690,9 +707,12 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
               <div className="flex flex-col sm:flex-row gap-3 sm:ml-auto">
                 {!isCancelled && (
                   <button type="button"
-                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-green-800/20 px-4 py-3 text-sm font-medium text-secondary hover:bg-green-800/5 focus-ring"
+                    className={`inline-flex items-center justify-center gap-1.5 rounded-lg border px-4 py-3 text-sm font-medium focus-ring ${
+                      isOwnerSide
+                        ? 'border-green-800/20 text-secondary hover:bg-green-800/5'
+                        : 'border-red-300 text-red-700 hover:bg-red-50'}`}
                     onClick={cancelDocument}>
-                    Cancel
+                    {isOwnerSide ? 'Cancel' : 'Decline'}
                   </button>
                 )}
                 {isStaff && (
