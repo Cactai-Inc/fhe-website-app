@@ -757,13 +757,18 @@ export default function Admin() {
             {ov && tab === 'documents' && (
               <RpcListTab userId={selected.user_id!} rpc="admin_client_documents" empty="No documents."
                 create={{ label: 'New contract', onClick: () => navigate('/app/ops/contracts/new') }}
-                map={(r) => ({
-                  key: String(r.id),
-                  main: String(r.title ?? 'Document'),
-                  sub: fmtTs(r.created_at as string),
-                  badge: String(r.workflow_state ?? r.status),
-                  href: `/app/ops/documents/${String(r.id)}`,
-                })} />
+                map={(r) => {
+                  // NOT_STARTED = a required doc with no generated instance yet (assigned
+                  // but the member hasn't onboarded). No real document to open → no href.
+                  const notStarted = String(r.status) === 'NOT_STARTED';
+                  return {
+                    key: String(r.id),
+                    main: String(r.title ?? 'Document'),
+                    sub: notStarted ? 'Assigned — not started' : fmtTs(r.created_at as string),
+                    badge: notStarted ? 'Not started' : String(r.workflow_state ?? r.status),
+                    href: notStarted ? undefined : `/app/ops/documents/${String(r.id)}`,
+                  };
+                }} />
             )}
             {ov && tab === 'orders' && (
               <QueryListTab fetcher={fetchOrders} empty="No orders." />
