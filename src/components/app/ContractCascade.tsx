@@ -197,6 +197,9 @@ const inputCls = 'w-full px-3 py-2 rounded-lg border border-green-800/15 text-sm
  *  little preceding context to disambiguate) so a pinned span-comment can be
  *  anchored to it. This is the single body renderer used across the app (m-5). */
 const NEEDS_RE = /⟦NEEDS:(.*?)⟧(.*?)⟧/g;
+// A signature line: "Signature: Jane Doe" / "By (signature): Jane Doe". Matched per
+// line (no /g). The label passes through; the typed name gets the script face.
+const SIGNATURE_LINE_RE = /^(Signature|By \(signature\)):\s*(.+)$/m;
 export function ContractBody({
   body, onSelectSpan,
 }: {
@@ -225,8 +228,28 @@ export function ContractBody({
   const nodes: ReactNode[] = [];
   let last = 0; let m: RegExpExecArray | null; let i = 0;
   NEEDS_RE.lastIndex = 0;
+  // Plain-string segments (between NEEDS marks) get signature styling applied to
+  // any "Signature: <name>" / "By (signature): <name>" line — the typed name shows
+  // in a cursive script face, matching the emailed PDF. Non-signature text passes
+  // through untouched (whitespace preserved by the pre-line container).
+  const pushText = (text: string) => {
+    if (!text) return;
+    if (!SIGNATURE_LINE_RE.test(text)) { nodes.push(text); return; }
+    const lines = text.split('\n');
+    lines.forEach((line, li) => {
+      const sm = SIGNATURE_LINE_RE.exec(line);
+      if (sm) {
+        nodes.push(
+          <span key={`s${i++}`}>{sm[1]}: <span className="signature-script">{sm[2]}</span></span>,
+        );
+      } else {
+        nodes.push(line);
+      }
+      if (li < lines.length - 1) nodes.push('\n');
+    });
+  };
   while ((m = NEEDS_RE.exec(body))) {
-    if (m.index > last) nodes.push(body.slice(last, m.index));
+    if (m.index > last) pushText(body.slice(last, m.index));
     nodes.push(
       <mark key={`n${i++}`} title={`Needs: ${m[1]}`}
         className="bg-gold-100 text-gold-900 rounded px-1 border border-gold-400/60 border-dashed">
@@ -235,7 +258,7 @@ export function ContractBody({
     );
     last = m.index + m[0].length;
   }
-  if (last < body.length) nodes.push(body.slice(last));
+  if (last < body.length) pushText(body.slice(last));
 
   if (!onSelectSpan) return <>{nodes}</>;
 

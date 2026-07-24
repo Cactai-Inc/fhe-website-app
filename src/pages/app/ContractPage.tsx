@@ -1156,7 +1156,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           <p className="inline-flex items-center gap-2 text-green-800 font-medium text-sm mb-3">
             <CheckCircle2 size={16} /> Executed{doc.execution_hash ? ` · ${doc.execution_hash.slice(0, 12)}…` : ''}
           </p>
-          <div className="prose-sm max-h-[70vh] overflow-y-auto whitespace-pre-line text-[13px] leading-relaxed text-green-950 bg-cream-100/50 border border-green-800/10 rounded p-5">
+          <div className="prose-sm whitespace-pre-line text-[13px] leading-relaxed text-green-950 bg-cream-100/50 border border-green-800/10 rounded p-5">
             <ContractBody body={doc.merged_body} />
           </div>
         </div>
@@ -1381,7 +1381,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                   ? 'The document is final and locked for signing. Review it below, then sign at the bottom of the page.'
                   : 'Review the full document below. It will be locked for signing once both sides are ready. To request a change, use “Suggest a change” on the item or message the other party.'}
           </p>
-          <div className="max-h-[70vh] overflow-y-auto whitespace-pre-line text-[13.5px] leading-relaxed text-green-950 bg-cream-100/50 border border-green-800/10 rounded p-6">
+          <div className="whitespace-pre-line text-[13.5px] leading-relaxed text-green-950 bg-cream-100/50 border border-green-800/10 rounded p-6">
             <ContractBody body={doc.merged_body} />
           </div>
         </section>
@@ -1400,7 +1400,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
             {showBody ? 'Hide' : 'Review'} the document text
           </button>
           {showBody && (
-            <div className="mt-3 max-h-[60vh] overflow-y-auto whitespace-pre-line text-[13px] leading-relaxed text-green-950 bg-cream-100/50 border border-green-800/10 rounded p-5">
+            <div className="mt-3 whitespace-pre-line text-[13px] leading-relaxed text-green-950 bg-cream-100/50 border border-green-800/10 rounded p-5">
               <ContractBody body={doc.merged_body} />
             </div>
           )}
