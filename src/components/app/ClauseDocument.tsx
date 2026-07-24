@@ -86,6 +86,12 @@ function TokenValue({ token, value }: { token: string; value: string }) {
     const marker = token.endsWith('.DATE') ? '［date signed］' : '［signature］';
     return <span className="text-muted italic">{marker}</span>;
   }
+  // The effective date is inserted automatically when the contract is signed — it is
+  // never hand-filled, so show a clear placeholder, not an empty fillable blank
+  // (which looked like it needed input and blocked nothing).
+  if (token === 'DOC.EFFECTIVE_DATE' && !value.trim()) {
+    return <span className="text-muted italic">［date of signing］</span>;
+  }
   if (value.trim()) return <span className="font-medium text-green-900">{value}</span>;
   // party/horse imports show a muted "on file" hint instead of a fillable blank —
   // they're changed on the contact / horse record, not typed into the contract.

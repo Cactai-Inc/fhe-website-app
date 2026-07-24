@@ -17,7 +17,7 @@ import {
   postContractComment, documentPartiesSummary, captureContactInfo, captureHorseRecord,
   saveContract, inviteCounterparty,
   requestContractTermination, approveContractTermination, declineContractTermination,
-  setDocumentPartyArchived, deleteContractWithCopy,
+  setDocumentPartyArchived, deleteContractWithCopy, clauseConditionMet,
   type ContractDetail, type ContractField, type PartyControls,
   type SigningSetDoc, type RedlineState, type PartiesHorseSummary, type PartySummary,
 } from '../../lib/contracts';
@@ -327,10 +327,24 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
 
   // Receiving-party rendering (§C): a party who has fields to fill sees the doc
   // with THEIR empty fields highlighted and locked fields lightened; a party with
-  // NOTHING to fill (review-for-signature only) sees the whole document as
+  // NOTHING left to fill (review-for-signature only) sees the whole document as
   // uneditable rich text — the same as the post-lock review view.
+  //
+  // "Left to fill" = a field that is editable by me, empty, REQUIRED, and ACTIVE
+  // (its gate is met). Optional fields (Additional terms, Co-owners, exception
+  // notes, restriction toggles, etc.) and gated-off fields must NOT count — leaving
+  // them blank is valid, and counting them wrongly kept a party stuck on "fill the
+  // highlighted fields" with nothing they could actually fill.
+  const valueMap = useMemo(() => {
+    const m: Record<string, string> = {};
+    for (const f of detail?.fields ?? []) m[f.field_key] = f.responsibility?.party ?? f.value ?? '';
+    return m;
+  }, [detail?.fields]);
   const myFillableEmpty = (detail?.fields ?? []).filter(
-    (f) => f.can_edit && !(f.value ?? '').trim(),
+    (f) => f.can_edit
+      && !(f.value ?? '').trim()
+      && f.required && !(f.is_optional ?? false)
+      && clauseConditionMet(f.conditional_on, valueMap),
   );
   const reviewOnly = !isOwnerSide && editablePhase && myFillableEmpty.length === 0;
   const partyControls: PartyControls[] = detail?.party_controls ?? [];
