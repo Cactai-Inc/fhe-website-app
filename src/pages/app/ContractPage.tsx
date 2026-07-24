@@ -32,6 +32,23 @@ import { PartiesHorseCard } from '../../components/app/PartiesHorseCard';
 import { ClauseDocument } from '../../components/app/ClauseDocument';
 import { contractTemplateStructure, type TemplateStructure } from '../../lib/contracts';
 
+/** Pull a human message out of any thrown value. Supabase/PostgREST errors are
+ *  plain objects with a `.message` (and often `.details`/`.hint`), NOT Error
+ *  instances — so `e instanceof Error` misses them and the UI showed a useless
+ *  "That action failed." This surfaces the real reason (e.g. the lock RPC's
+ *  "cannot lock: 1 required field(s) still empty"). */
+function errMessage(e: unknown, fallback = 'That action failed.'): string {
+  if (e instanceof Error && e.message) return e.message;
+  if (e && typeof e === 'object') {
+    const o = e as { message?: unknown; error?: unknown; details?: unknown; hint?: unknown };
+    const msg = [o.message, o.details, o.hint].filter((x) => typeof x === 'string' && x).join(' — ');
+    if (msg) return msg;
+    if (typeof o.error === 'string' && o.error) return o.error;
+  }
+  if (typeof e === 'string' && e) return e;
+  return fallback;
+}
+
 /**
  * CONTRACT (/app/contracts/:id) — the negotiated-contract surface (Update A).
  * One page, two postures decided by the caller's relationship to the document:
@@ -61,7 +78,7 @@ function HorseGate({ documentId, onAttached }: { documentId: string; onAttached:
   async function attach(horseId: string) {
     setBusy(horseId); setErr(null);
     try { await attachHorseToDocument(documentId, horseId); onAttached(); }
-    catch (e) { setErr(e instanceof Error ? e.message : 'Could not attach that horse.'); setBusy(null); }
+    catch (e) { setErr(errMessage(e, 'Could not attach that horse.')); setBusy(null); }
   }
 
   return (
@@ -117,7 +134,7 @@ function RedlineSection({
   async function run(fn: () => Promise<void>, reset?: () => void) {
     setBusy(true); setErr(null);
     try { await fn(); reset?.(); onChanged(); }
-    catch (e) { setErr(e instanceof Error ? e.message : 'That action failed.'); }
+    catch (e) { setErr(errMessage(e, 'That action failed.')); }
     finally { setBusy(false); }
   }
 
@@ -264,7 +281,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       documentPartiesSummary(id).then(setPartiesSummary).catch(() => setPartiesSummary(null));
       setError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not load the contract.');
+      setError(errMessage(e, 'Could not load the contract.'));
     }
   }, [id]);
   useEffect(() => { void load(); }, [load]);
@@ -434,7 +451,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       await load();
       setChangeKey((k) => k + 1);   // refresh track-changes / comments
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'That action failed.');
+      setError(errMessage(e));
     }
   }
 
@@ -453,6 +470,23 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       setError('This lease needs a horse selected and identified before it can be locked for signature.');
       return;
     }
+    // Any required, ACTIVE field still empty blocks the lock — name them so the
+    // author knows exactly what to fill (the RPC would otherwise just say "N empty").
+    const missingRequired = (detail?.fields ?? []).filter(
+      (f) => f.required && !(f.is_optional ?? false)
+        && !(f.value ?? '').trim()
+        && clauseConditionMet(f.conditional_on, valueMap),
+    );
+    if (missingRequired.length > 0) {
+      setError(`Fill these required field(s) before locking: ${missingRequired.map((f) => f.label ?? f.field_key).join(', ')}.`);
+      return;
+    }
+    // The horse info must be confirmed by the Lessor before locking.
+    if (!doc?.horse_section_confirmed_at
+        && (detail?.fields ?? []).some((f) => f.owner_role === 'LESSOR' && f.field_key.startsWith('HORSE.'))) {
+      setError('The Lessor must confirm the horse information before the contract can be locked for signing (use the horse-confirm control in the Horse section).');
+      return;
+    }
     void act(() => advanceWorkflow(id!, 'locked'), 'Locked — the final document is ready to sign.');
   }
 
@@ -461,7 +495,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   async function saveNow() {
     setError(null); setNote(null); setSaving(true);
     try { await saveContract(id!); await load(); setNote('Saved.'); }
-    catch (e) { setError(e instanceof Error ? e.message : 'Could not save.'); }
+    catch (e) { setError(errMessage(e, 'Could not save.')); }
     finally { setSaving(false); }
   }
 
@@ -535,7 +569,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       await deleteContractWithCopy(id!);
       navigate('/app/ops/documents');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not delete the document.');
+      setError(errMessage(e, 'Could not delete the document.'));
     }
   }
 
@@ -568,7 +602,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       await load();
       setChangeKey((k) => k + 1);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not notify the parties.');
+      setError(errMessage(e, 'Could not notify the parties.'));
     } finally {
       setNotifying(false);
     }
@@ -580,7 +614,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       await load();
       setChangeKey((k) => k + 1);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not save that field.');
+      setError(errMessage(e, 'Could not save that field.'));
     }
   }, [id, load]);
 
@@ -607,7 +641,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       await load();
       setChangeKey((k) => k + 1);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not save that contact detail.');
+      setError(errMessage(e, 'Could not save that contact detail.'));
     }
   }, [id, load, partiesSummary]);
 
@@ -631,7 +665,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       await load();
       setChangeKey((k) => k + 1);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not save that horse-record detail.');
+      setError(errMessage(e, 'Could not save that horse-record detail.'));
     }
   }, [id, load, doc?.horse_id]);
 
@@ -1048,7 +1082,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                         setCommentModal(null); setCommentDraft(''); setCommentsOpen(true);
                         setChangeKey((k) => k + 1);
                       } catch (e) {
-                        setNote(e instanceof Error ? e.message : 'Could not post the comment.');
+                        setNote(errMessage(e, 'Could not post the comment.'));
                       } finally { setCommentPosting(false); }
                     }}>
                     {commentPosting ? 'Posting…' : 'Post comment'}
