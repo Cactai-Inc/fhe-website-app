@@ -250,6 +250,10 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   const [extraEmailDraft, setExtraEmailDraft] = useState('');
   const [saving, setSaving] = useState(false);
   const [notifying, setNotifying] = useState(false);
+  // For a staff member who is also a party: their explicit view choice, or
+  // undefined to use the natural default for the current state (edit while
+  // editable/in-review; read-only signer view once locked). Set by the toggle.
+  const [viewChoice, setViewChoice] = useState<'signer' | 'author' | undefined>(undefined);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -298,12 +302,27 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
     if (doc?.status === 'EXECUTED' && id && !deliveredRef.current) deliverExecutedCopy();
   }, [doc?.status, id, deliverExecutedCopy]);
   const myRoles = detail?.my_roles ?? [];
-  const isOwnerSide = isStaff || (doc?.is_originator ?? false);
-  const isLessor = myRoles.includes('LESSOR');
   const state = doc?.workflow_state ?? 'editable';
+  // A staff member can ALSO be a party on the contract (e.g. a barn admin who is
+  // the Lessee, signing on the company's behalf). They wear two hats:
+  //  • while the doc is editable/in review → author/edit it (default), OR preview it
+  //    read-only as the signer to see exactly what they'll sign;
+  //  • once it's LOCKED for signing (read-only, awaiting signatures) → they can
+  //    temporarily re-enable editing to fix a term before signing.
+  // `viewAsSigner` = they've chosen the read-only signer view instead of editing.
+  const staffIsParty = isStaff && myRoles.length > 0;
+  // Natural default: read-only signer view once locked; author/edit before that.
+  const defaultAsSigner = state === 'locked';
+  const viewAsSigner = staffIsParty
+    ? (viewChoice === undefined ? defaultAsSigner : viewChoice === 'signer')
+    : false;
+  const isOwnerSide = (isStaff || (doc?.is_originator ?? false)) && !viewAsSigner;
+  const isLessor = myRoles.includes('LESSOR');
   // Editing is allowed in review too — the parties' per-party controls (can_fill /
   // can_edit_deal) decide what each may actually change; a party with neither just
-  // sees a read-only document. Locked/executed stay read-only.
+  // sees a read-only document. Locked/executed stay read-only (fields are DB-read-
+  // only once locked). To edit a locked doc, the admin UNLOCKS it back to review
+  // (see the "Unlock to edit" toggle) — there's no in-place locked editing.
   const editablePhase = state === 'editable' || state === 'editing' || state === 'in_review';
   const horseConfirmed = !!doc?.horse_section_confirmed_at;
   const isSent = !!doc?.sent_at;
@@ -906,6 +925,42 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           A termination request is pending your response — see Manage above.
         </div>
       )}
+      {/* A staff member who is ALSO a party wears two hats. While editable/in review
+          they can edit (author) or preview read-only as the signer. Once LOCKED, the
+          doc is frozen for signing — but they can temporarily re-enable editing to
+          fix a term before anyone signs. The toggle controls which mode they're in. */}
+      {staffIsParty && !isExecuted && !isInactive && (
+        <div className="mb-4 flex flex-wrap items-center gap-2 text-[12px]">
+          <span className="text-muted">
+            {state === 'locked'
+              ? 'Locked for signing.'
+              : `You’re staff and a party (${myRoles.join(', ')}).`} Mode:
+          </span>
+          <div className="inline-flex rounded-lg border border-green-800/20 overflow-hidden">
+            <button type="button"
+              className={`px-3 py-1.5 ${viewAsSigner ? 'bg-green-800 text-white' : 'text-secondary hover:bg-green-800/5'}`}
+              onClick={() => setViewChoice('signer')}>
+              {state === 'locked' ? 'Read-only (sign)' : `Signer preview (${myRoles[0]})`}
+            </button>
+            <button type="button"
+              className={`px-3 py-1.5 border-l border-green-800/20 ${!viewAsSigner ? 'bg-green-800 text-white' : 'text-secondary hover:bg-green-800/5'}`}
+              onClick={() => {
+                if (state === 'locked') {
+                  // Editing a locked doc means UNLOCKING it (fields are DB-read-only
+                  // while locked). Confirm, then move back to review to edit.
+                  if (window.confirm('Unlock this document to fix a term? It returns to review and must be locked again before signing. No signatures exist yet.')) {
+                    setViewChoice('author');
+                    void act(() => advanceWorkflow(id!, 'in_review'), 'Unlocked for editing — lock it again when done.');
+                  }
+                } else {
+                  setViewChoice('author');
+                }
+              }}>
+              {state === 'locked' ? 'Unlock to edit' : 'Author / manage'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Sticky action sub-header (minimal height): Add a Comment · Add a Section,
           Item, or Field · View/Hide Comments · Proceed to Signatures. Present for
@@ -1010,12 +1065,14 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       {!embedded && (
         <p className="text-sm text-muted mb-5">
           {isOwnerSide
-            ? 'Fill any side\u2019s fields \u2014 acting on behalf of a party where needed \u2014 set the controls, then notify the parties to sign.'
+            ? 'Fill any side\u2019s fields \u2014 acting on behalf of a party where needed \u2014 set the controls, then lock it for signing.'
             : iSigned
               ? 'You\u2019ve signed. The contract executes once the other party signs.'
-              : reviewOnly
-                ? 'Review the document below, then sign at the bottom of the page.'
-                : 'Complete the highlighted fields, then sign at the bottom of the page.'}
+              : state === 'locked'
+                ? 'The document is final and locked for signing. Review it below, then sign at the bottom of the page.'
+                : reviewOnly
+                  ? 'Review the document below. It will be locked for signing once both sides are ready; you\u2019ll sign then.'
+                  : 'Complete the highlighted fields. The document is locked for signing once both sides are ready.'}
         </p>
       )}
 
@@ -1270,7 +1327,9 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           <p className="text-sm text-muted mb-3">
             {iSigned
               ? 'You’ve signed. The contract executes once the other party signs.'
-              : 'Review the full document below, then sign at the bottom of the page. To request a change instead, use “Suggest a change” on the item or message the other party.'}
+              : state === 'locked'
+                ? 'The document is final and locked for signing. Review it below, then sign at the bottom of the page.'
+                : 'Review the full document below. It will be locked for signing once both sides are ready. To request a change, use “Suggest a change” on the item or message the other party.'}
           </p>
           <div className="max-h-[70vh] overflow-y-auto whitespace-pre-line text-[13.5px] leading-relaxed text-green-950 bg-cream-100/50 border border-green-800/10 rounded p-6">
             <ContractBody body={doc.merged_body} />
@@ -1342,9 +1401,9 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           </div>
           )}
 
-          {/* signing: signature is left OPEN — a party can sign once the contract is
-              in review (Notified) or locked, without a separate lock step. */}
-          {(state === 'in_review' || state === 'locked') && myRoles.length > 0 && !iSigned && (
+          {/* signing: only once LOCKED (read-only). The document is frozen for
+              signature — you sign what you see. */}
+          {state === 'locked' && myRoles.length > 0 && !iSigned && (
             <div className="border-t border-green-800/10 pt-4">
               <p className="text-sm text-secondary mb-2">
                 Sign as <strong>{myRoles[0]}</strong> — typing your full legal name is your signature.
@@ -1373,7 +1432,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
               Staff hold no party role of their own, so without this there is no way
               to execute a signature from this screen. Each pending seat that isn't
               one of my own roles gets its own name box. */}
-          {isOwnerSide && (state === 'in_review' || state === 'locked')
+          {isOwnerSide && state === 'locked'
             && pendingSignerRoles.filter((r) => !myRoles.includes(r)).length > 0 && (
             <div className="border-t border-green-800/10 pt-4">
               <p className="text-sm text-secondary mb-1">Sign on a party's behalf</p>
