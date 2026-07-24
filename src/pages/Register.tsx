@@ -49,6 +49,15 @@ export default function Register() {
   const pwMatch = password.length > 0 && password === password2;
   const pwReady = pwLongEnough && pwMatch;
 
+  // Offer Google ONLY when the invited address is actually Google-hosted. Otherwise
+  // (hotmail, outlook, yahoo, a work domain…) Google sign-in would let the invitee
+  // authenticate with a DIFFERENT Google identity than the one invited, creating an
+  // orphaned account that never links to their provisioning. Password is the only
+  // path that guarantees the account matches the invited email.
+  const invitedEmail = (invitation?.email ?? '').trim().toLowerCase();
+  const isGoogleHosted = /@(gmail\.com|googlemail\.com)$/.test(invitedEmail);
+  const showGoogle = Boolean(OAUTH_PROVIDERS.google) && isGoogleHosted;
+
   useEffect(() => {
     let active = true;
     if (!token) {
@@ -194,7 +203,7 @@ export default function Register() {
           </p>
         </div>
 
-        {OAUTH_PROVIDERS.google && (
+        {showGoogle && (
           <div className="mb-5">
             <button type="button" onClick={continueWithGoogle} className="btn-outline-gold w-full justify-center">
               Continue with Google
