@@ -369,9 +369,18 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   const counterpartySigned = (detail?.signatures ?? []).some((s) => s.signed_at);
   // Signer seats still awaiting a signature — used by the staff/owner "sign on a
   // party's behalf" flow so the barn can wet-sign in the office.
-  const pendingSignerRoles = Array.from(new Set((detail?.signatures ?? [])
+  // Seats still awaiting a signature. Signature rows only exist once a doc is
+  // locked; before that (in_review) fall back to the party roster so staff can
+  // wet-sign on a party's behalf directly from review (signature left open).
+  const signedRoles = new Set((detail?.signatures ?? []).filter((s) => s.signed_at).map((s) => s.party_role));
+  const pendingFromSignatures = (detail?.signatures ?? [])
     .filter((s) => !s.signed_at && s.party_role !== 'FHE' && s.party_role !== 'COMPANY')
-    .map((s) => s.party_role)));
+    .map((s) => s.party_role);
+  const pendingFromParties = (detail?.party_controls ?? [])
+    .map((c) => c.party_role)
+    .filter((r) => r && r !== 'FHE' && r !== 'COMPANY' && !signedRoles.has(r));
+  const pendingSignerRoles = Array.from(new Set(
+    pendingFromSignatures.length > 0 ? pendingFromSignatures : pendingFromParties));
 
   const sections = useMemo(() => {
     const by = new Map<string, ContractField[]>();
@@ -1001,10 +1010,12 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       {!embedded && (
         <p className="text-sm text-muted mb-5">
           {isOwnerSide
-            ? 'Fill any side\u2019s fields \u2014 acting on behalf of a party where needed \u2014 set the controls, lock, then invite.'
-            : reviewOnly
-              ? 'Review the document below and sign \u2014 or respond to the other party.'
-              : 'The highlighted fields need your input. Anything shown lighter is locked while you complete your part.'}
+            ? 'Fill any side\u2019s fields \u2014 acting on behalf of a party where needed \u2014 set the controls, then notify the parties to sign.'
+            : iSigned
+              ? 'You\u2019ve signed. The contract executes once the other party signs.'
+              : reviewOnly
+                ? 'Review the document below, then sign at the bottom of the page.'
+                : 'Complete the highlighted fields, then sign at the bottom of the page.'}
         </p>
       )}
 
@@ -1256,7 +1267,11 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           uneditable rich text, shown expanded (same as the post-lock review view). */}
       {state !== 'executed' && reviewOnly && doc.merged_body && (
         <section className="bg-white border border-green-800/10 rounded-lg p-5 mb-4">
-          <p className="text-sm text-muted mb-3">Please review the document below and sign, or respond to the other party.</p>
+          <p className="text-sm text-muted mb-3">
+            {iSigned
+              ? 'You’ve signed. The contract executes once the other party signs.'
+              : 'Review the full document below, then sign at the bottom of the page. To request a change instead, use “Suggest a change” on the item or message the other party.'}
+          </p>
           <div className="max-h-[70vh] overflow-y-auto whitespace-pre-line text-[13.5px] leading-relaxed text-green-950 bg-cream-100/50 border border-green-800/10 rounded p-6">
             <ContractBody body={doc.merged_body} />
           </div>
@@ -1327,8 +1342,9 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           </div>
           )}
 
-          {/* signing: counterparty first when they owe input; owner reviews + signs last */}
-          {state === 'locked' && myRoles.length > 0 && !iSigned && (
+          {/* signing: signature is left OPEN — a party can sign once the contract is
+              in review (Notified) or locked, without a separate lock step. */}
+          {(state === 'in_review' || state === 'locked') && myRoles.length > 0 && !iSigned && (
             <div className="border-t border-green-800/10 pt-4">
               <p className="text-sm text-secondary mb-2">
                 Sign as <strong>{myRoles[0]}</strong> — typing your full legal name is your signature.
@@ -1357,7 +1373,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
               Staff hold no party role of their own, so without this there is no way
               to execute a signature from this screen. Each pending seat that isn't
               one of my own roles gets its own name box. */}
-          {isOwnerSide && state === 'locked'
+          {isOwnerSide && (state === 'in_review' || state === 'locked')
             && pendingSignerRoles.filter((r) => !myRoles.includes(r)).length > 0 && (
             <div className="border-t border-green-800/10 pt-4">
               <p className="text-sm text-secondary mb-1">Sign on a party's behalf</p>
