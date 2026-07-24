@@ -383,6 +383,16 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       && clauseConditionMet(f.conditional_on, valueMap),
   );
   const reviewOnly = !isOwnerSide && editablePhase && myFillableEmpty.length === 0;
+  // When the document should render as the READ-ONLY merged-body frame (with the
+  // real signature/date substitutions) rather than the editable authoring surface:
+  //  • a review-only party (nothing to fill), OR
+  //  • any LOCKED or TERMINATED document. Locked is frozen for signing; the
+  //    authoring surface shows unsubstituted SIG.* placeholders, so a signer would
+  //    never see their captured signature there. (Editing a locked doc means
+  //    unlocking it back to in_review, so nobody edits in-place while locked.)
+  // Executed has its own sealed view below.
+  const readOnlyDoc = (state !== 'executed')
+    && (reviewOnly || state === 'locked' || state === 'terminated');
   const partyControls: PartyControls[] = detail?.party_controls ?? [];
   // Counterparty seats = every party on the document that isn't one of my own
   // roles or the company. Derived from party_controls (a row per party, always
@@ -1199,8 +1209,10 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       )}
 
       {/* Clause-model documents (Section›Clause›Field): numbered structure with
-          live gating. Falls through to the legacy flat grouping when no structure. */}
-      {state !== 'executed' && !showHorseGate && !reviewOnly && structure && (
+          live gating. Hidden when the doc should render read-only (review-only,
+          locked, terminated) — that renders as the merged-body frame below, which
+          shows the actual captured signatures instead of SIG.* placeholders. */}
+      {!readOnlyDoc && !showHorseGate && structure && (
         <ClauseDocument
           sections={structure.sections}
           fields={detail.fields}
@@ -1226,7 +1238,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       {/* Field sections (legacy flat grouping) — hidden until a horse is chosen when
           the gate applies, hidden for a review-only party, and skipped entirely for
           clause-model documents (rendered above). */}
-      {state !== 'executed' && !showHorseGate && !reviewOnly && !structure && sections.map(([section, fields]) => {
+      {state !== 'executed' && !showHorseGate && !readOnlyDoc && !structure && sections.map(([section, fields]) => {
         const isHorse = section === 'Horse';
         const anyEditable = fields.some((f) => f.can_edit);
         // counterparty intake: show only sections with something for them (or filled)
@@ -1354,16 +1366,20 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         </section>
       )}
 
-      {/* review-only party (§C): nothing for them to fill → the whole document as
-          uneditable rich text, shown expanded (same as the post-lock review view). */}
-      {state !== 'executed' && reviewOnly && doc.merged_body && (
+      {/* Read-only document frame: the whole document as uneditable rich text, from
+          the composed merged_body — so it shows the ACTUAL captured signatures and
+          dates (not SIG.* placeholders). Used for a review-only party, and for any
+          locked/terminated document. */}
+      {readOnlyDoc && doc.merged_body && (
         <section className="bg-white border border-green-800/10 rounded-lg p-5 mb-4">
           <p className="text-sm text-muted mb-3">
             {iSigned
               ? 'You’ve signed. The contract executes once the other party signs.'
-              : state === 'locked'
-                ? 'The document is final and locked for signing. Review it below, then sign at the bottom of the page.'
-                : 'Review the full document below. It will be locked for signing once both sides are ready. To request a change, use “Suggest a change” on the item or message the other party.'}
+              : state === 'terminated'
+                ? 'This contract has been terminated. It is kept on file as a record.'
+                : state === 'locked'
+                  ? 'The document is final and locked for signing. Review it below, then sign at the bottom of the page.'
+                  : 'Review the full document below. It will be locked for signing once both sides are ready. To request a change, use “Suggest a change” on the item or message the other party.'}
           </p>
           <div className="max-h-[70vh] overflow-y-auto whitespace-pre-line text-[13.5px] leading-relaxed text-green-950 bg-cream-100/50 border border-green-800/10 rounded p-6">
             <ContractBody body={doc.merged_body} />
