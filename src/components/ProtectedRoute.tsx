@@ -56,12 +56,19 @@ export default function ProtectedRoute({
       let healed = false;
       try { healed = await redeemMyPendingInvitation(); } catch { /* fall through */ }
       if (!healed) { try { healed = await ensureMyMembership(); } catch { /* fall through */ } }
-      if (healed) await refreshProfile().catch(() => {});
-      // Whether or not it worked, re-fetch once so isMember reflects reality.
-      else await refreshProfile().catch(() => {});
+      // Whether or not the heal RPCs reported success, ALWAYS re-fetch so isMember
+      // reflects the real (possibly already-active) membership — the common case is a
+      // freshly-activated account whose membership just hadn't loaded into context yet.
+      await refreshProfile().catch(() => {});
       setHealState('exhausted');
     })();
   }, [needsHeal, healState, refreshProfile]);
+
+  // If a membership arrives (heal worked, or it simply finished loading), clear any
+  // exhausted heal state so a now-valid member is never stranded on the dead-end.
+  useEffect(() => {
+    if (isMember && healState !== 'idle') setHealState('idle');
+  }, [isMember, healState]);
 
   if (loading) {
     return (
@@ -131,7 +138,9 @@ export default function ProtectedRoute({
             whoever invited you to re-send it.
           </p>
           <div className="flex items-center justify-center gap-3">
-            <button type="button" onClick={() => { setHealState('idle'); }} className="btn-primary">Try again</button>
+            <button type="button"
+              onClick={() => { void refreshProfile().catch(() => {}).finally(() => setHealState('idle')); }}
+              className="btn-primary">Try again</button>
             <button type="button" onClick={() => { void signOut(); }} className="btn-secondary">Sign out</button>
           </div>
         </div>
