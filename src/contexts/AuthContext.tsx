@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setModules([]);
       return;
     }
-    let [{ data: prof }, { data: mem }] = await Promise.all([
+    const [{ data: prof }, { data: mem }] = await Promise.all([
       supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle(),
       supabase.from('memberships').select('*').eq('user_id', userId).maybeSingle(),
     ]);

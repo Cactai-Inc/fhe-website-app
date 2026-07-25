@@ -60,7 +60,9 @@ const COST_PARTY_OPTS = [
  *  Care Provider → discrete contact fields; Shared → per-party % rows + a note.
  *  Everything writes into one PartyChoice object (structured, reusable). */
 function PartyPicker({
-  value, placeholder, opts, onChange, disabled, allowProvider = true,
+  // placeholder is part of the API (callers pass it) but this variant renders a
+  // labelled select, so it isn't shown — accept and ignore it.
+  value, placeholder: _placeholder, opts, onChange, disabled, allowProvider = true,
 }: {
   value: PartyChoice;
   placeholder: string;

@@ -1,23 +1,29 @@
 /* POST /api/admin-send-invitation
- * Admin-only. Creates an invitation token and emails the registration link.
- * Body: { email, requestId?, expiresInDays?,
- *         firstName?, lastName?, offeringId?, markPaid?, paymentMethod?, notes? }
- * Header: Authorization: Bearer <supabase access token of an admin>
+ * Admin-only. Creates an invitation token and emails the activation link.
+ * Body: { email, requestId?, expiresInDays?, role?,
+ *         firstName?, lastName?, title?,
+ *         categories?, offeringIds?, offeringId?, templateKeys?,
+ *         paymentStatus? ('paid'|'partial'|'unpaid'), partialAmount?, markPaid?,
+ *         paymentMethod?, notes?, scheduledFor? }
+ * Header: Authorization: Bearer <supabase access token of a staff member>
  *
  * Two paths:
- *  - PLAIN INVITE (no offeringId): the legacy behavior, unchanged — insert an
- *    invitations row and email the register link.
- *  - PROVISIONED INVITE (offeringId present): the client already paid offline for
- *    a riding-lesson offering. The provision_lesson_invitation RPC (service-role)
- *    creates contact + client + engagement + paid transaction + invitation in
- *    one transaction and returns the token we email; NO legacy insert happens.
- *    firstName/lastName are required on this path (they seed the contact and
- *    the printed name on the onboarding contracts). When `requestId` is
- *    provided (the staff Request Inbox), it is passed through as p_request_id —
- *    the RPC stamps invitations.request_id and flips the request to 'invited'.
+ *  - PLAIN / STAFF INVITE (no categories, no offerings): insert an invitations
+ *    row and email the activation link. `role` (USER/MANAGER/ADMIN) provisions a
+ *    staff account (admin-only) with an optional `title`.
+ *  - PROVISIONED CLIENT INVITE (categories and/or offerings present): the
+ *    canonical spine RPC provision_client_invitation (service-role) creates the
+ *    contact (canonical email) + client + standing categories (Guest/Rider/
+ *    Horse Owner) + onboarding documents + 0..N offering purchase + invitation
+ *    in one transaction and returns the token we email; NO plain insert happens.
+ *    Names are OPTIONAL (email-only invites) — captured at first-login intake.
+ *    `paymentStatus` = paid | partial | unpaid; 'partial' carries `partialAmount`
+ *    that reduces the balance on the payer's modal. When `requestId` is present
+ *    (Request Inbox conversion), the RPC stamps invitations.request_id and flips
+ *    the request to 'invited'.
  *
  * Email delivery uses the shared transport; otherwise the function still
- * creates the invitation and returns the register URL so the admin can copy it.
+ * creates the invitation and returns the activation URL so the admin can copy it.
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
@@ -30,13 +36,15 @@ function makeToken(): string {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-/** provision_lesson_invitation() jsonb result. */
+/** provision_client_invitation() jsonb result. */
 interface ProvisionResult {
   invitation_id: string;
   token: string;
-  purchase_id: string;
-  tier_label: string;
+  contact_id: string;
+  purchase_id: string | null;
+  categories: string[];
   amount: number;
+  labels: string[];
 }
 
 /** Invitation email via the shared transport (Google SMTP first, Resend dormant),
@@ -101,20 +109,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const email = ((body.email as string) || '').trim();
   if (!email) return res.status(400).json({ error: 'email required' });
 
-  // Provisioned invite (client already paid offline for a lesson offering).
-  const offeringId = typeof body.offeringId === 'string' ? body.offeringId.trim() : '';
+  // Provisioned client invite: standing category(ies) + optional offering(s).
+  // Names are OPTIONAL (email-only invites per spec) — captured at first-login
+  // intake. The canonical spine RPC provision_client_invitation writes standing
+  // contact_roles + onboarding docs + 0..N offering purchase in one transaction.
+  const toStrArray = (v: unknown): string[] =>
+    Array.isArray(v) ? v.map((x) => String(x).trim()).filter(Boolean) : [];
+  const categories = toStrArray(body.categories);
+  const offeringIds = toStrArray(body.offeringIds);
+  // Back-compat: a single offeringId folds into offeringIds.
+  const singleOffering = typeof body.offeringId === 'string' ? body.offeringId.trim() : '';
+  if (singleOffering && !offeringIds.includes(singleOffering)) offeringIds.push(singleOffering);
+  const templateKeys = toStrArray(body.templateKeys);
   const firstName = ((body.firstName as string) || '').trim();
   const lastName = ((body.lastName as string) || '').trim();
   const title = ((body.title as string) || '').trim();
-  if (offeringId && (!firstName || !lastName)) {
-    return res.status(400).json({ error: 'firstName and lastName required when provisioning a purchase' });
-  }
+  // Payment status → RPC params. 'partial' carries an amount that reduces the
+  // balance shown on the payer's modal (purchases.amount_paid).
+  const paymentStatus =
+    ['paid', 'partial', 'unpaid'].includes(body.paymentStatus as string)
+      ? (body.paymentStatus as string)
+      : (body.markPaid === true ? 'paid' : 'unpaid');
+  const partialAmount = paymentStatus === 'partial' ? Number(body.partialAmount) || 0 : 0;
+  const provisioning = categories.length > 0 || offeringIds.length > 0;
   // Optional role for the account being provisioned (New account flow).
   const invitedRole =
     typeof body.role === 'string' && ['USER', 'MANAGER', 'ADMIN'].includes(body.role)
       ? (body.role as string) : 'USER';
-  if (invitedRole !== 'USER' && offeringId) {
-    return res.status(400).json({ error: 'staff invitations cannot carry a purchase' });
+  if (invitedRole !== 'USER' && (offeringIds.length > 0 || categories.length > 0)) {
+    return res.status(400).json({ error: 'staff invitations cannot carry a category or purchase' });
   }
   // Optional booking-request linkage (staff Request Inbox).
   const requestId =
@@ -141,28 +164,41 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const origin = req.headers.origin || `https://${req.headers.host}`;
 
-    if (offeringId) {
-      // One transaction server-side: contact + client + engagement + paid
-      // transaction + invitation. The RPC returns the token we email — the
-      // legacy invitations insert below must NOT also run.
-      const { data, error: rpcErr } = await db.rpc('provision_lesson_invitation', {
+    if (provisioning) {
+      // One transaction server-side via the canonical spine: contact (canonical
+      // email) + client + standing categories + onboarding docs + 0..N offering
+      // purchase + invitation. The RPC returns the token we email — the plain
+      // invitations insert below must NOT also run. org_id is stamped from the
+      // admin's profile (a service-role call has no current_org()).
+      const { data, error: rpcErr } = await db.rpc('provision_client_invitation', {
         p_email: email,
-        p_first_name: firstName,
-        p_last_name: lastName,
-        p_offering_id: offeringId,
-        p_mark_paid: body.markPaid === true,
+        p_first_name: firstName || null,
+        p_last_name: lastName || null,
+        p_categories: categories,
+        p_offering_ids: offeringIds,
+        p_template_keys: templateKeys.length > 0 ? templateKeys : null,
+        p_mark_paid: paymentStatus === 'paid',
         p_payment_method: ((body.paymentMethod as string) || '').trim() || null,
         p_notes: ((body.notes as string) || '').trim() || null,
-        // Only sent when present so callers without a request keep the exact
-        // legacy payload (the defaulted 8th param covers the omission).
-        ...(requestId ? { p_request_id: requestId } : {}),
+        p_request_id: requestId,
+        p_org_id: profile.org_id ?? null,
+        p_partial_amount: partialAmount,
       });
       if (rpcErr) throw rpcErr;
       const out = (Array.isArray(data) ? data[0] : data) as ProvisionResult;
 
       const registerUrl = `${origin}/activate?token=${out.token}`;
-      const emailed = await sendEmail(db, profile.org_id ?? null, email, registerUrl, out.tier_label);
-      return res.status(200).json({ registerUrl, emailed, offeringLabel: out.tier_label });
+      // "your purchase is ready" line only when an offering was purchased.
+      const offeringLabel = (out.labels && out.labels.length > 0) ? out.labels.join(', ') : null;
+      const emailed = await sendEmail(db, profile.org_id ?? null, email, registerUrl, offeringLabel);
+      return res.status(200).json({
+        registerUrl, emailed,
+        contactId: out.contact_id,
+        categories: out.categories,
+        purchaseId: out.purchase_id,
+        amount: out.amount,
+        offeringLabel,
+      });
     }
 
     // Plain invite. A scheduled date means terms were agreed in person —

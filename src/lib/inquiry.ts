@@ -21,11 +21,10 @@ export type InquiryCategory = 'lessons' | 'horse' | 'acquisition';
  *  which surface built them — both vocabularies map here. */
 function categoryForServiceType(serviceType: string | null): InquiryCategory {
   switch (serviceType) {
-    // DB service_type enums
+    // DB service_type enums + display-catalog ids (src/lib/services.ts)
     case 'RIDING_LESSON':
     case 'JUMPER_TRAINING':
     case 'HORSEMANSHIP_TRAINING':
-    // display-catalog ids (src/lib/services.ts)
     case 'riding-lesson':
     case 'hunter-jumper':
     case 'horsemanship':

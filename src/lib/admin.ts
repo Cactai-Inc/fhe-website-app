@@ -260,23 +260,37 @@ export async function adminListResources(): Promise<ContentResource[]> {
 export interface AdminInviteResult {
   registerUrl: string;
   emailed: boolean;
-  /** Present when the invite provisioned a purchase (offeringId was sent). */
-  offeringLabel?: string;
+  /** Present when the invite provisioned a client (categories/offerings sent). */
+  offeringLabel?: string | null;
+  contactId?: string;
+  categories?: string[];
+  purchaseId?: string | null;
+  amount?: number;
 }
 
 /**
- * Create an invitation and send the registration email via the serverless
- * function (which holds the email-provider key). Returns the register URL so the
- * admin can copy it as a fallback if email delivery is not yet configured.
+ * Create an invitation and send the activation email via the serverless function
+ * (which holds the email-provider key). Returns the activation URL so the admin
+ * can copy it as a fallback if email delivery is not yet configured.
  *
- * When `offeringId` is present the server provisions the offline purchase
- * (provision_lesson_invitation: contact + client + engagement + paid
- * transaction + invitation) — firstName/lastName are required on that path.
+ * When `categories` and/or `offeringIds` are present the server provisions the
+ * client via the canonical spine (provision_client_invitation: contact + client
+ * + standing categories + onboarding docs + 0..N offering purchase + invitation).
+ * Names are OPTIONAL (email-only invites) — captured at first-login intake.
+ * `paymentStatus` = paid | partial | unpaid; 'partial' carries `partialAmount`.
  */
 export async function adminSendInvitation(
   input: {
     email: string; requestId?: string; expiresInDays?: number;
-    firstName?: string; lastName?: string; title?: string; offeringId?: string;
+    firstName?: string; lastName?: string; title?: string;
+    /** Standing account categories: GUEST / RIDER / HORSE_OWNER (stackable). */
+    categories?: string[];
+    /** Offering ids to purchase (child-offering ids). `offeringId` = 1-item shorthand. */
+    offeringIds?: string[]; offeringId?: string;
+    /** Explicit onboarding doc set (template_keys); omit to derive from categories. */
+    templateKeys?: string[];
+    /** Payment status; 'partial' reduces the balance shown to the invitee by `partialAmount`. */
+    paymentStatus?: 'paid' | 'partial' | 'unpaid'; partialAmount?: number;
     markPaid?: boolean; paymentMethod?: string; notes?: string;
     /** Account type to provision — 'MANAGER' (instructor) / 'ADMIN' need admin caller. */
     role?: 'USER' | 'MANAGER' | 'ADMIN';
@@ -374,9 +388,37 @@ export async function adminUpdateOffering(id: string, patch: Partial<OfferingInp
 // ─── Provision-first client accounts ─────────────────────────────────────────
 /** The categories a client can be designated as at creation (multi-select).
  *  Stored as contact tags — visible on the directory and account views. */
-export const CLIENT_CATEGORIES = [
-  'Rider', 'Horse owner', 'Lessee', 'Lessor', 'Buyer', 'Seller',
-] as const;
+/** The ONLY account-category options (stackable). Lessee/Lessor/Buyer/Seller
+ *  are contextual record-roles (lease/sale contracts), never account categories. */
+export const CLIENT_CATEGORIES = ['Guest', 'Rider', 'Horse owner'] as const;
+
+/** Display category → standing role token (what the provisioning RPCs accept). */
+export const CATEGORY_TOKEN: Record<string, string> = {
+  Guest: 'GUEST', Rider: 'RIDER', 'Horse owner': 'HORSE_OWNER',
+};
+
+/** Attach offering(s) to an EXISTING client account (purchase + credits only —
+ *  no category/document/invitation side effects). Uses the same spine helper as
+ *  provisioning via the attach_offerings_to_client RPC. */
+export async function adminAttachOfferings(
+  contactId: string,
+  offeringIds: string[],
+  opts?: { markPaid?: boolean; paymentMethod?: string; partialAmount?: number; notes?: string },
+): Promise<{ purchaseId: string | null; amount: number; labels: string[] }> {
+  const { data, error } = await supabase.rpc('attach_offerings_to_client', {
+    p_contact_id: contactId,
+    p_offering_ids: offeringIds,
+    p_mark_paid: opts?.markPaid ?? false,
+    p_payment_method: opts?.paymentMethod ?? null,
+    p_notes: opts?.notes ?? null,
+    p_partial_amount: opts?.partialAmount ?? 0,
+  });
+  if (error) throw error;
+  const out = (Array.isArray(data) ? data[0] : data) as {
+    purchase_id: string | null; amount: number; labels: string[];
+  };
+  return { purchaseId: out.purchase_id, amount: out.amount, labels: out.labels ?? [] };
+}
 
 export interface ClientAccountRow {
   kind: 'account' | 'pending';

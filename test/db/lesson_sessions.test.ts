@@ -28,7 +28,7 @@ let admin: string;
 let employee: string;
 let member: string;
 let memberClient: string;
-let member2: string;
+let _member2: string;
 let member2Client: string;
 let punchTierId: string;
 let weeklyTierId: string;
@@ -91,7 +91,7 @@ beforeAll(async () => {
   member = c1.uid;
   memberClient = c1.clientId;
   const c2 = await makeClient('Nova', 'Nocredits', 'nova@rider.test');
-  member2 = c2.uid;
+  _member2 = c2.uid;
   member2Client = c2.clientId;
 
   const [punch] = await h.q<{ id: string }>(

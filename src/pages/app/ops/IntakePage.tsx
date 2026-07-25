@@ -182,25 +182,53 @@ function AvailabilitySection({ request }: { request: BookingRequest }) {
   );
 }
 
+/** Account-category options for the conversion form (standing categories). */
+const INTAKE_CATEGORY_OPTIONS: { token: string; label: string }[] = [
+  { token: 'GUEST', label: 'Guest' },
+  { token: 'RIDER', label: 'Rider' },
+  { token: 'HORSE_OWNER', label: 'Horse Owner' },
+];
+/** Category token → offering segments it may purchase (union when stacked). */
+const INTAKE_SEGMENTS: Record<string, ('rider' | 'horse' | 'acquisition')[]> = {
+  GUEST: ['acquisition'],
+  RIDER: ['rider', 'acquisition'],
+  HORSE_OWNER: ['horse', 'acquisition'],
+};
+
 interface InviteFormState {
   firstName: string;
   lastName: string;
   email: string;
-  offeringId: string;
+  /** Standing account category tokens (GUEST/RIDER/HORSE_OWNER), stackable. */
+  categories: string[];
+  /** Offering (child) ids to purchase — seeded from the submission's selections. */
+  offeringIds: string[];
   markPaid: boolean;
   paymentMethod: string;
   notes: string;
 }
 
+/** Map the submission's intake category to the standing account category. */
+function standingCategoryForIntake(category: string | null): string {
+  switch (category) {
+    case 'lessons':    return 'RIDER';
+    case 'horse_care': return 'HORSE_OWNER';
+    default:           return 'GUEST'; // general / acquisition / media / partnership
+  }
+}
+
 function inviteFormFor(r: BookingRequest): InviteFormState {
   // The unified intake stores first/last directly; fall back to the legacy
-  // first-space split only for older rows that predate the split.
+  // first-space split only for older rows that predate the split. Name flows to
+  // the created account (entry b keeps the submission's name).
   const split = splitContactName(r.contact_name);
   return {
     firstName: r.contact_first_name?.trim() || split.firstName,
     lastName: r.contact_last_name?.trim() || split.lastName,
     email: r.contact_email,
-    offeringId: '',
+    categories: [standingCategoryForIntake(r.category)],
+    // Pre-check the offerings the visitor selected (already resolved to ids).
+    offeringIds: (r.request_selections ?? []).map((s) => s.offering_id).filter((x): x is string => Boolean(x)),
     markPaid: false,
     paymentMethod: 'Zelle',
     notes: r.notes?.trim() ?? '',
@@ -250,7 +278,7 @@ function RequestInbox({ openId }: { openId?: string } = {}) {
   // Flat riding-lesson offerings for the provisioning select (mirrors Admin InviteTab).
   useEffect(() => {
     fetchOfferings()
-      .then((all) => setOfferings(all.filter((o) => o.horse_included !== null)))
+      .then(setOfferings)
       .catch(() => setOfferings([]));
     listScheduleHorses()
       .then(setHorses)
@@ -331,10 +359,12 @@ function RequestInbox({ openId }: { openId?: string } = {}) {
       const r = await send.run({
         email: invite.email.trim(),
         requestId: selected.id,
-        firstName: invite.firstName.trim(),
-        lastName: invite.lastName.trim(),
-        offeringId: invite.offeringId,
-        markPaid: invite.markPaid,
+        // Submission conversion keeps the visitor's captured name.
+        ...(invite.firstName.trim() ? { firstName: invite.firstName.trim() } : {}),
+        ...(invite.lastName.trim() ? { lastName: invite.lastName.trim() } : {}),
+        categories: invite.categories,
+        ...(invite.offeringIds.length ? { offeringIds: invite.offeringIds } : {}),
+        paymentStatus: invite.markPaid ? 'paid' : 'unpaid',
         ...(invite.markPaid ? { paymentMethod: invite.paymentMethod } : {}),
         ...(invite.notes.trim() ? { notes: invite.notes.trim() } : {}),
       });
@@ -369,20 +399,17 @@ function RequestInbox({ openId }: { openId?: string } = {}) {
     if (!openId || autoOpened === openId) return;
     const row = rows.find((r) => r.id === openId);
     if (row) { setAutoOpened(openId); openRequest(row); }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openId, rows, autoOpened]);
 
   const busy = addNote.isPending || contact.isPending || send.isPending;
   const allChecked = LESSON_FIT_CHECKLIST.every((item) => checklist[item.key] === true);
-  // An offering is OPTIONAL: leaving it blank sends a plain account-activation
-  // invite (the server's PLAIN INVITE path). This is what lets kiosk submitters
-  // — who carry no purchase selection — still be invited. First/last/email are
-  // always required (the unified intake guarantees them).
+  // Offerings are OPTIONAL (a category-only invite still provisions the account).
+  // Email + at least one standing category are required; name is carried from the
+  // submission when present but not required (captured at first-login intake).
   const inviteReady =
     invite !== null &&
     invite.email.trim() !== '' &&
-    invite.firstName.trim() !== '' &&
-    invite.lastName.trim() !== '';
+    invite.categories.length > 0;
   const own = selected ? visitorNotes(selected.notes) : null;
 
   return (
@@ -682,22 +709,61 @@ function RequestInbox({ openId }: { openId?: string } = {}) {
                     />
                   )}
                 </FormField>
-                <FormField label="What did they buy?">
-                  {({ id }) => (
-                    <select
-                      id={id}
-                      className="form-input"
-                      value={invite.offeringId}
-                      onChange={(e) => setInvite({ ...invite, offeringId: e.target.value })}
-                    >
-                      <option value="">No purchase — account activation only</option>
-                      {offerings.map((o) => (
-                        <option key={o.id} value={o.id}>
-                          {o.name} — {formatTierPrice(o.price_amount)}
-                        </option>
-                      ))}
-                    </select>
+                <FormField label="Account category">
+                  {() => (
+                    <div className="flex flex-wrap gap-2">
+                      {INTAKE_CATEGORY_OPTIONS.map((c) => {
+                        const on = invite.categories.includes(c.token);
+                        return (
+                          <button type="button" key={c.token}
+                            onClick={() => setInvite({
+                              ...invite,
+                              categories: on ? invite.categories.filter((x) => x !== c.token) : [...invite.categories, c.token],
+                            })}
+                            aria-pressed={on}
+                            className={`px-3 py-1.5 text-sm border rounded-full transition ${
+                              on ? 'bg-green-800 text-white border-green-800' : 'bg-white text-secondary border-green-800/30 hover:border-green-800'
+                            }`}>
+                            {c.label}
+                          </button>
+                        );
+                      })}
+                    </div>
                   )}
+                </FormField>
+                <FormField label="Offerings (optional)">
+                  {() => {
+                    const segs = new Set(invite.categories.flatMap((t) => INTAKE_SEGMENTS[t] ?? []));
+                    const visible = offerings.filter((o) => segs.has(o.segment) && (o.tiers?.length ?? 0) > 0);
+                    if (visible.length === 0) {
+                      return <p className="text-sm text-muted">No purchasable offerings for this category.</p>;
+                    }
+                    return (
+                      <div className="space-y-3 max-h-60 overflow-y-auto border border-green-800/15 rounded-lg p-3">
+                        {visible.map((o) => (
+                          <div key={o.id}>
+                            <p className="text-xs uppercase tracking-wide text-secondary/70 mb-1">{o.name}</p>
+                            <div className="space-y-1">
+                              {(o.tiers ?? []).map((t) => (
+                                <label key={t.id} className="flex items-center gap-2 text-sm text-secondary">
+                                  <input type="checkbox" className="accent-green-800"
+                                    checked={invite.offeringIds.includes(t.id)}
+                                    onChange={() => setInvite({
+                                      ...invite,
+                                      offeringIds: invite.offeringIds.includes(t.id)
+                                        ? invite.offeringIds.filter((x) => x !== t.id)
+                                        : [...invite.offeringIds, t.id],
+                                    })} />
+                                  <span className="flex-1">{t.label}</span>
+                                  <span className="whitespace-nowrap">{formatTierPrice(t.price_amount)}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }}
                 </FormField>
                 <label className="flex items-center gap-2 mb-4 text-sm text-secondary">
                   <input

@@ -12,7 +12,7 @@ import {
   setPartyControls, contractSigningSet,
   contractRedlineState, resolveFieldEdit, withdrawFieldEdit,
   resolveClause, withdrawClause, attachHorseToDocument,
-  sendContractToParty, cancelContract, archiveContract, hardDeleteContract,
+  sendContractToParty, cancelContract, hardDeleteContract,
   setFieldResponsibility, setFieldIncluded, setFieldNa, setFieldControlOverride, setFieldStructured,
   postContractComment, documentPartiesSummary, captureContactInfo, captureHorseRecord,
   saveContract, inviteCounterparty,

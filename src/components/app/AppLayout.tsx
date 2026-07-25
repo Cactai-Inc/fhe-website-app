@@ -11,7 +11,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { useViewSurfaces } from '../../lib/surfaces';
 import { fetchMyGrantKeys } from '../../lib/grants';
-import { myUnreadCount } from '../../lib/api';
+import { myUnreadCount, fetchMyCategories, type StandingCategory } from '../../lib/api';
 import { CreateModal } from './CreateModal';
 
 /** Unread-notification count for the Dashboard nav badge. Refreshes on mount and
@@ -307,11 +307,17 @@ function useDmUnread(): number {
  *  almost no delay, and a pin/toggle that keeps it open. Holds the same quick-access
  *  destinations the avatar menu carries. Members only (staff get the management rail).
  */
-function ClientRail({ bellCount, dmCount }: { bellCount: number; dmCount: number }) {
+/** Quick-nav destinations a GUEST-only client may see (owner spec 2026-07-25):
+ *  dashboard (notifications) + catalog. NO community, calendar, or messages. */
+const GUEST_QUICK_PATHS: ReadonlySet<string> = new Set(['/app/dashboard', '/app/catalog']);
+
+function ClientRail({ bellCount, dmCount, guestOnly = false }: { bellCount: number; dmCount: number; guestOnly?: boolean }) {
   const [pinned, setPinned] = useState(() => localStorage.getItem('clientRail.pinned') === '1');
   const [hovered, setHovered] = useState(false);
   useEffect(() => { localStorage.setItem('clientRail.pinned', pinned ? '1' : '0'); }, [pinned]);
   const open = pinned || hovered;
+  // Guests get a restricted quick list and no community feed.
+  const quick = guestOnly ? QUICK.filter((q) => GUEST_QUICK_PATHS.has(q.to)) : QUICK;
 
   // The <aside> RESERVES the width: 56px normally, 240px when PINNED (page sits
   // beside it). The <nav> is sticky (scroll-follows) and grows to 240px on HOVER —
@@ -335,9 +341,10 @@ function ClientRail({ bellCount, dmCount }: { bellCount: number; dmCount: number
         </button>
 
         <div className="flex flex-col gap-0.5">
-          {/* Community Feed (position 1) with its views nested underneath */}
-          <CommunityNav open={open} indentClass={open ? 'pl-9' : 'pl-3'} />
-          {QUICK.map((q) => {
+          {/* Community Feed (position 1) with its views nested underneath.
+              Hidden for guest-only clients (no community access). */}
+          {!guestOnly && <CommunityNav open={open} indentClass={open ? 'pl-9' : 'pl-3'} />}
+          {quick.map((q) => {
             const raw = q.badge === 'notifications' ? bellCount : q.badge === 'messages' ? dmCount : 0;
             const badge = raw > 0 ? raw : 0;
             return (
@@ -386,6 +393,19 @@ export default function AppLayout() {
 
   const showRail = isStaff;
   const isTrainer = isStaff && !isAdmin;
+  // Standing categories gate the member surface: a GUEST-only client (Guest, and
+  // neither Rider nor Horse Owner) has no community access and a limited account
+  // area. Empty for staff (restriction inert). Loaded once.
+  const [categories, setCategories] = useState<StandingCategory[]>([]);
+  useEffect(() => {
+    if (isStaff) return; // staff aren't category-gated
+    let active = true;
+    fetchMyCategories().then((c) => active && setCategories(c)).catch(() => {});
+    return () => { active = false; };
+  }, [isStaff]);
+  const isGuestOnly = !isStaff
+    && categories.includes('GUEST')
+    && !categories.includes('RIDER') && !categories.includes('HORSE_OWNER');
   const [grantKeys, setGrantKeys] = useState<string[]>([]);
   useEffect(() => {
     if (!isTrainer) return;
@@ -483,8 +503,9 @@ export default function AppLayout() {
                   {!isAdmin && !isSuperAdmin && (
                     <>
                       <div className="mt-1 border-t border-green-800/10 pt-2 px-4 pb-1 text-xs uppercase tracking-wide text-secondary/60">Quick access</div>
-                      <div className="px-1"><CommunityNav onNavigate={closeMenu} indentClass="pl-9" /></div>
-                      {QUICK.map((q) => {
+                      {/* Guests have no community access. */}
+                      {!isGuestOnly && <div className="px-1"><CommunityNav onNavigate={closeMenu} indentClass="pl-9" /></div>}
+                      {(isGuestOnly ? QUICK.filter((q) => GUEST_QUICK_PATHS.has(q.to)) : QUICK).map((q) => {
                         const raw = q.badge === 'notifications' ? unreadCount : q.badge === 'messages' ? dmCount : 0;
                         const badge = raw > 0 ? raw : 0;
                         return (
@@ -523,7 +544,7 @@ export default function AppLayout() {
 
       <div className="w-full max-w-[120rem] mx-auto flex">
         {/* Members (non-staff) get a collapsible quick-access rail on desktop. */}
-        {!showRail && !isSuperAdmin && <ClientRail bellCount={unreadCount} dmCount={dmCount} />}
+        {!showRail && !isSuperAdmin && <ClientRail bellCount={unreadCount} dmCount={dmCount} guestOnly={isGuestOnly} />}
         {showRail && (
           <aside className="hidden lg:block w-60 xl:w-64 shrink-0 border-r border-green-800/10 bg-cream-100/40">
             <nav className="p-3 sticky top-14 h-[calc(100dvh-3.5rem)] overflow-y-auto">

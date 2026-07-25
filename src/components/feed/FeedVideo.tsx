@@ -59,7 +59,7 @@ export function FeedVideo({
     ref.current?.pause();
     setPlaying(false);
   }, []);
-  const toggle = useCallback(() => { playing ? pause() : play(); }, [playing, play, pause]);
+  const toggle = useCallback(() => { if (playing) pause(); else play(); }, [playing, play, pause]);
 
   // In card mode the play control must NOT bubble to the card's open handler.
   const onPlayButton = (e: React.MouseEvent) => { e.stopPropagation(); play(); };

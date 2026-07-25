@@ -91,6 +91,17 @@ const BOOTSTRAP = /* sql */ `
 
   grant all on storage.buckets, storage.objects to anon, authenticated, service_role;
   alter table storage.objects enable row level security;
+
+  -- Supabase Storage helper used by bucket RLS policies (splits an object path
+  -- into its folder segments). PGlite has no Storage extension, so shim it to
+  -- match Supabase's implementation: storage.foldername('a/b/c.png') -> {a,b}.
+  create or replace function storage.foldername(name text)
+    returns text[] language sql immutable as $fn$
+    select case
+      when name is null or position('/' in name) = 0 then '{}'::text[]
+      else (string_to_array(name, '/'))[1:array_length(string_to_array(name, '/'), 1) - 1]
+    end;
+  $fn$;
 `;
 
 export interface TestDb {

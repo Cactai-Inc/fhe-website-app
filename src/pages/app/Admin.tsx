@@ -9,8 +9,11 @@ import {
   adminSetSuspended, adminClientAccounts, adminClientItems, adminSendInvitation,
   adminExpireInvitation, adminDeleteInvitation, adminAccountAction, adminHardDeleteClient,
   categoryDocumentDefaults, getContactRequiredDocuments, setContactRequiredDocuments,
+  adminAttachOfferings,
   type ClientAccountRow, type ClientItems, type CategoryDocDefault,
 } from '../../lib/admin';
+import { fetchOfferings } from '../../lib/api';
+import type { Offering } from '../../lib/types';
 
 /**
  * CLIENTS (/app/admin) — the account-centric surface (owner rework). CLIENT
@@ -103,6 +106,87 @@ function TabCreate({ label, onClick }: { label: string; onClick: () => void }) {
       className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-green-800 text-white text-xs font-medium hover:bg-green-700 focus-ring mb-3">
       <Plus size={13} /> {label}
     </button>
+  );
+}
+
+/** Orders tab action: attach offering(s) to this existing client account via the
+ *  canonical spine (attach_offerings_to_client → _provision_purchase_for_offerings). */
+function AttachOfferingPanel({ contactId, onAttached }: { contactId: string; onAttached: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [offerings, setOfferings] = useState<Offering[]>([]);
+  const [picked, setPicked] = useState<string[]>([]);
+  const [payStatus, setPayStatus] = useState<'unpaid' | 'partial' | 'paid'>('unpaid');
+  const [partial, setPartial] = useState('');
+  const [method, setMethod] = useState('Zelle');
+  const [working, setWorking] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => { if (open) fetchOfferings().then(setOfferings).catch(() => setOfferings([])); }, [open]);
+
+  const total = offerings.flatMap((o) => o.tiers ?? []).filter((t) => picked.includes(t.id))
+    .reduce((s, t) => s + t.price_amount, 0);
+  const toggle = (id: string) => setPicked((p) => p.includes(id) ? p.filter((x) => x !== id) : [...p, id]);
+
+  async function submit() {
+    if (picked.length === 0) return;
+    setWorking(true); setErr(null);
+    try {
+      await adminAttachOfferings(contactId, picked, {
+        markPaid: payStatus === 'paid',
+        ...(payStatus !== 'unpaid' ? { paymentMethod: method } : {}),
+        ...(payStatus === 'partial' ? { partialAmount: Number(partial) || 0 } : {}),
+      });
+      setOpen(false); setPicked([]); setPayStatus('unpaid'); setPartial('');
+      onAttached();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Could not attach offering.');
+    } finally { setWorking(false); }
+  }
+
+  if (!open) return <TabCreate label="Attach offering" onClick={() => setOpen(true)} />;
+  return (
+    <div className="border border-green-800/15 rounded-lg p-4 mb-3">
+      <p className="text-sm font-medium text-green-900 mb-2">Attach offering(s)</p>
+      <div className="space-y-2 max-h-56 overflow-y-auto mb-3">
+        {offerings.filter((o) => (o.tiers?.length ?? 0) > 0).map((o) => (
+          <div key={o.id}>
+            <p className="text-[11px] uppercase tracking-wide text-secondary/70">{o.name}</p>
+            {(o.tiers ?? []).map((t) => (
+              <label key={t.id} className="flex items-center gap-2 text-sm text-secondary py-0.5">
+                <input type="checkbox" className="accent-green-800" checked={picked.includes(t.id)} onChange={() => toggle(t.id)} />
+                <span className="flex-1">{t.label}</span>
+                <span>${Number(t.price_amount).toFixed(2)}</span>
+              </label>
+            ))}
+          </div>
+        ))}
+      </div>
+      {picked.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 mb-3 text-sm">
+          <span className="text-muted">Total ${total.toFixed(2)} ·</span>
+          {(['unpaid', 'partial', 'paid'] as const).map((s) => (
+            <button type="button" key={s} onClick={() => setPayStatus(s)}
+              className={`px-2.5 py-1 rounded border capitalize text-xs ${payStatus === s ? 'border-green-700 bg-green-50 text-green-900' : 'border-green-800/20 text-secondary'}`}>{s}</button>
+          ))}
+          {payStatus === 'partial' && (
+            <input type="number" min={0} max={total} step="0.01" value={partial} onChange={(e) => setPartial(e.target.value)}
+              placeholder="paid" className="form-input w-24 py-1 text-sm" />
+          )}
+          {payStatus !== 'unpaid' && (
+            <select value={method} onChange={(e) => setMethod(e.target.value)} className="form-input w-28 py-1 text-sm">
+              {['Zelle', 'Cash', 'Check', 'Card', 'Other'].map((m) => <option key={m}>{m}</option>)}
+            </select>
+          )}
+        </div>
+      )}
+      {err && <p className="form-error text-xs mb-2">{err}</p>}
+      <div className="flex gap-2">
+        <button type="button" disabled={working || picked.length === 0} onClick={submit} className="btn-primary text-xs py-1.5 px-3">
+          {working ? 'Attaching…' : 'Attach'}
+        </button>
+        <button type="button" onClick={() => setOpen(false)} className="text-xs text-muted px-2">Cancel</button>
+      </div>
+    </div>
   );
 }
 
@@ -416,6 +500,7 @@ export default function Admin() {
   const [ov, setOv] = useState<Overview | null>(null);
   const [tab, setTab] = useState<TabId>('overview');
   const [tabPage, setTabPage] = useState(0);
+  const [ordersKey, setOrdersKey] = useState(0); // bump to refetch the Orders list after an attach
   const [dangerOpen, setDangerOpen] = useState(false);
   const [hardConfirm, setHardConfirm] = useState('');
 
@@ -496,21 +581,33 @@ export default function Admin() {
   }
 
   // ── stable fetchers for query tabs ──
+  // Purchases are keyed by buyer_contact_id (always set by provisioning) and, once
+  // the account logs in, buyer_user_id. Match on whichever identifiers we have so
+  // provisioned pre-login accounts show their orders too.
+  const buyerFilter = useCallback(() => {
+    const parts: string[] = [];
+    if (selected?.contact_id) parts.push(`buyer_contact_id.eq.${selected.contact_id}`);
+    if (selected?.user_id) parts.push(`buyer_user_id.eq.${selected.user_id}`);
+    return parts.join(',');
+  }, [selectedId]); // eslint-disable-line react-hooks/exhaustive-deps
   const fetchOrders = useCallback(async () => {
+    const filter = buyerFilter();
+    if (!filter) return [];
     const { data } = await supabase.from('purchases')
-      .select('id, status, amount, created_at').eq('buyer_user_id', selected!.user_id!).order('created_at', { ascending: false });
+      .select('id, status, amount, amount_paid, created_at').or(filter).order('created_at', { ascending: false });
     return (data ?? []).map((o) => ({
       key: o.id as string,
       main: `$${Number(o.amount ?? 0).toFixed(2)}`,
       sub: fmtTs(o.created_at as string), badge: String(o.status),
     }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId]);
+  }, [buyerFilter]);
   const fetchPayments = useCallback(async () => {
     // Payment lives inline on the purchase row now; list the buyer's paid purchases.
+    const filter = buyerFilter();
+    if (!filter) return [];
     const { data } = await supabase.from('purchases')
       .select('id, payment_method, amount, payment_status, payment_reference, created_at')
-      .eq('buyer_user_id', selected!.user_id!)
+      .or(filter)
       .eq('payment_status', 'paid')
       .order('created_at', { ascending: false });
     return (data ?? []).map((p) => ({
@@ -518,7 +615,7 @@ export default function Admin() {
       main: `$${Number(p.amount).toFixed(2)} · ${p.payment_method}${p.payment_reference ? ` · ${p.payment_reference}` : ''}`,
       sub: fmtTs(p.created_at as string), badge: String(p.payment_status),
     }));
-  }, [selectedId]);
+  }, [buyerFilter]);
   const fetchActivity = useCallback(async () => {
     const { data } = await supabase.from('audit_logs')
       .select('id, occurred_at, action, table_name')
@@ -771,7 +868,13 @@ export default function Admin() {
                 }} />
             )}
             {ov && tab === 'orders' && (
-              <QueryListTab fetcher={fetchOrders} empty="No orders." />
+              <div>
+                {selected?.contact_id && (
+                  <AttachOfferingPanel contactId={selected.contact_id}
+                    onAttached={() => setOrdersKey((k) => k + 1)} />
+                )}
+                <QueryListTab key={ordersKey} fetcher={fetchOrders} empty="No orders." />
+              </div>
             )}
             {ov && tab === 'payments' && (
               <QueryListTab fetcher={fetchPayments} empty="No payments." />

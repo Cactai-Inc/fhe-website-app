@@ -23,6 +23,7 @@ import {
   PREFERRED_CONTACT_OPTIONS,
 } from '../../lib/contact';
 import { startGoogleChange, startPasswordChange } from '../../lib/emailChange';
+import { fetchMyCategories, type StandingCategory } from '../../lib/api';
 import { useNavigate, Link } from 'react-router-dom';
 
 /**
@@ -349,7 +350,7 @@ function StableSection() {
 }
 
 export default function AccountHub() {
-  const { profile } = useAuth();
+  const { profile, isStaff } = useAuth();
   const navigate = useNavigate();
   const realName = profile?.display_name
     || [profile?.first_name, profile?.last_name].filter(Boolean).join(' ')
@@ -357,6 +358,17 @@ export default function AccountHub() {
   useDocumentTitle('Account');
   const [open, setOpen] = useState<Section>(null);
   const toggle = (s: Section) => setOpen((cur) => (cur === s ? null : s));
+
+  // A guest-only client sees a restricted account surface: Profile & preferences,
+  // Documents, Orders, Gifts (no community posts, lessons, saved, or stable).
+  const [categories, setCategories] = useState<StandingCategory[]>([]);
+  useEffect(() => {
+    if (isStaff) return;
+    fetchMyCategories().then(setCategories).catch(() => {});
+  }, [isStaff]);
+  const guestOnly = !isStaff
+    && categories.includes('GUEST')
+    && !categories.includes('RIDER') && !categories.includes('HORSE_OWNER');
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -368,14 +380,15 @@ export default function AccountHub() {
       <div className="grid lg:grid-cols-2 gap-3">
         <Row icon={UserRound} title="Profile &amp; preferences" sub={`${realName} · contact, socials, notifications`} onClick={() => toggle('profile')} open={open === 'profile'} />
         {open === 'profile' && <div className="lg:col-span-2"><ProfileSection /></div>}
-        <Row icon={Grid3x3} title="My posts" sub="Your posts & listings" onClick={() => navigate('/app/my-posts')} />
-        <Row icon={Boxes} title="My lessons" sub="Credits, schedule & your progress" onClick={() => navigate('/app/lessons')} />
-        <Row icon={Bookmark} title="Saved items" sub="Articles, listings, and links you kept" onClick={() => toggle('saved')} open={open === 'saved'} />
-        {open === 'saved' && <div className="lg:col-span-2"><SavedPanel /></div>}
+        {/* Community/lessons/stable rows are for standing clients — hidden from guests. */}
+        {!guestOnly && <Row icon={Grid3x3} title="My posts" sub="Your posts & listings" onClick={() => navigate('/app/my-posts')} />}
+        {!guestOnly && <Row icon={Boxes} title="My lessons" sub="Credits, schedule & your progress" onClick={() => navigate('/app/lessons')} />}
+        {!guestOnly && <Row icon={Bookmark} title="Saved items" sub="Articles, listings, and links you kept" onClick={() => toggle('saved')} open={open === 'saved'} />}
+        {!guestOnly && open === 'saved' && <div className="lg:col-span-2"><SavedPanel /></div>}
         <Row icon={FileText} title="Documents" sub="Signed agreements & releases" onClick={() => toggle('documents')} open={open === 'documents'} />
         {open === 'documents' && <div className="lg:col-span-2"><DocumentsPanel /></div>}
-        <Row icon={Boxes} title="My Stable" sub="Your horses, gear, and supplies" onClick={() => toggle('stable')} open={open === 'stable'} />
-        {open === 'stable' && <div className="lg:col-span-2"><StableSection /></div>}
+        {!guestOnly && <Row icon={Boxes} title="My Stable" sub="Your horses, gear, and supplies" onClick={() => toggle('stable')} open={open === 'stable'} />}
+        {!guestOnly && open === 'stable' && <div className="lg:col-span-2"><StableSection /></div>}
         <Row icon={ShoppingBag} title="Orders" sub="Your purchases" onClick={() => navigate('/app/orders')} />
         <Row icon={Gift} title="Gifts" sub="Gifts you can use" onClick={() => navigate('/app/gifts')} />
       </div>

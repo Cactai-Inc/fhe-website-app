@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect, useRef, type ReactNode } from 'react';
 import {
   clauseConditionMet,
-  type ContractField, type SectionDef, type ClauseDef,
+  type ContractField, type SectionDef,
 } from '../../lib/contracts';
 import { InlineFieldControl, InfoDot } from './ContractCascade';
 

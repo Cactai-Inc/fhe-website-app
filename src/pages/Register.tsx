@@ -5,6 +5,7 @@ import { validateInvitation, redeemInvitation, myOnboardingState } from '../lib/
 import { redeemContractInvitation } from '../lib/contracts';
 import { signInWithGoogle } from '../lib/auth';
 import { OAUTH_PROVIDERS } from '../lib/authConfig';
+import { authMethodForEmail } from '../lib/emailAuthMethod';
 import { supabase } from '../lib/supabase';
 import { useDocumentTitle } from '../lib/hooks';
 import { useAuth } from '../contexts/AuthContext';
@@ -54,9 +55,13 @@ export default function Register() {
   // authenticate with a DIFFERENT Google identity than the one invited, creating an
   // orphaned account that never links to their provisioning. Password is the only
   // path that guarantees the account matches the invited email.
+  // Domain-based method gating (owner spec): gmail → Google only; a known
+  // non-Google mailbox → password only; an ambiguous custom domain → both, with
+  // a short explainer so a Google Workspace user knows to use Google.
   const invitedEmail = (invitation?.email ?? '').trim().toLowerCase();
-  const isGoogleHosted = /@(gmail\.com|googlemail\.com)$/.test(invitedEmail);
-  const showGoogle = Boolean(OAUTH_PROVIDERS.google) && isGoogleHosted;
+  const authMethod = authMethodForEmail(invitedEmail);
+  const showGoogle = Boolean(OAUTH_PROVIDERS.google) && authMethod !== 'password';
+  const showPassword = authMethod !== 'google';
 
   useEffect(() => {
     let active = true;
@@ -203,20 +208,30 @@ export default function Register() {
           </p>
         </div>
 
+        {/* Ambiguous custom domain: both methods shown — tell them how to choose. */}
+        {showGoogle && showPassword && authMethod === 'both' && (
+          <p className="body-text text-xs text-muted text-center mb-4">
+            If <span className="font-medium">{invitation?.email}</span> is a Google
+            Workspace address, use “Continue with Google.” Otherwise, set a password below.
+          </p>
+        )}
+
         {showGoogle && (
           <div className="mb-5">
             <button type="button" onClick={continueWithGoogle} className="btn-outline-gold w-full justify-center">
               Continue with Google
             </button>
-            <div className="flex items-center gap-3 my-5 text-muted">
-              <span className="h-px flex-1 bg-green-800/10" />
-              <span className="text-xs font-sans uppercase tracking-wide">or set a password</span>
-              <span className="h-px flex-1 bg-green-800/10" />
-            </div>
+            {showPassword && (
+              <div className="flex items-center gap-3 my-5 text-muted">
+                <span className="h-px flex-1 bg-green-800/10" />
+                <span className="text-xs font-sans uppercase tracking-wide">or set a password</span>
+                <span className="h-px flex-1 bg-green-800/10" />
+              </div>
+            )}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} noValidate className="bg-white border border-green-800/10 p-8">
+        <form onSubmit={handleSubmit} noValidate hidden={!showPassword} className="bg-white border border-green-800/10 p-8">
           <div className="mb-4">
             <label className="form-label" htmlFor="password">Create a password</label>
             <input

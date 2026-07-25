@@ -198,6 +198,10 @@ export async function myOnboardingState(): Promise<OnboardingState> {
 
 /** update_my_onboarding_profile payload — all strings, all optional. */
 export interface OnboardingProfileInput {
+  /** The account holder's legal name — collected here for email-only invites
+   *  (which arrive nameless). Fills the contact/profile when currently blank. */
+  first_name?: string;
+  last_name?: string;
   phone?: string;
   /** YYYY-MM-DD */
   date_of_birth?: string;
@@ -289,6 +293,26 @@ export async function myUnreadCount(): Promise<number> {
   const { data, error } = await supabase.rpc('my_unread_count');
   if (error) throw error;
   return Number(data ?? 0);
+}
+
+// ─── My standing categories (Guest / Rider / Horse Owner) ────────────────────
+
+/** A standing account category the signed-in person holds. */
+export type StandingCategory = 'GUEST' | 'RIDER' | 'HORSE_OWNER';
+
+/** The signed-in person's standing categories from contact_roles. Drives nav
+ *  gating (a guest-only client sees a restricted surface — no community). Reads
+ *  under the contact_roles RLS (contact_id = current_contact_id()). Returns []
+ *  for accounts with no contact/roles (e.g. pure staff — restriction inert). */
+export async function fetchMyCategories(): Promise<StandingCategory[]> {
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) return [];
+  const { data, error } = await supabase.from('contact_roles').select('role_type');
+  if (error) return [];
+  const standing: StandingCategory[] = ['GUEST', 'RIDER', 'HORSE_OWNER'];
+  return ((data ?? []) as { role_type: string }[])
+    .map((r) => r.role_type as StandingCategory)
+    .filter((r) => standing.includes(r));
 }
 
 // ─── Profiles ───────────────────────────────────────────────────────────────

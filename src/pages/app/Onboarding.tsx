@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Check, Circle, FileText } from 'lucide-react';
 import {
   getMyProfile,
@@ -10,9 +10,12 @@ import {
   getOrder,
   getOrderPayment,
   attachPurchaseHorse,
+  fetchMyCategories,
+  myUnreadCount,
   type OnboardingProfileInput,
   type OnboardingPurchase,
   type OnboardingState,
+  type StandingCategory,
 } from '../../lib/api';
 import OrderPayment from '../../components/order/OrderPayment';
 import type { Order, OrderItem, Payment } from '../../lib/types';
@@ -21,6 +24,7 @@ import { BodyWithSignatures } from '../../components/ops/documents/MergedBodyVie
 import { toErrorMessage } from '../../lib/ops/errors';
 import { useDocumentTitle } from '../../lib/hooks';
 import { HorseIntakeForm } from '../../components/app/HorseIntakeForm';
+import { AppOverviewModal } from '../../components/app/AppOverviewModal';
 import type { Profile } from '../../lib/types';
 
 /**
@@ -141,9 +145,15 @@ function Steps({ current, showHorse }: { current: Step; showHorse: boolean }) {
 
 export default function Onboarding() {
   useDocumentTitle('Welcome Aboard');
+  const navigate = useNavigate();
   const [state, setState] = useState<OnboardingState | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [categories, setCategories] = useState<StandingCategory[]>([]);
   const [step, setStep] = useState<Step>('details');
+  // App-overview welcome tour, shown once at the end of onboarding. Closing it
+  // lands the member on their home: dashboard when they have notifications, else
+  // the community feed (guests always land on the dashboard).
+  const [showOverview, setShowOverview] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -151,6 +161,11 @@ export default function Onboarding() {
   const [form, setForm] = useState<Required<ProfileFormFields>>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  // Name: email-only invites arrive nameless — collect it here. Prefilled from
+  // the profile when already known (Google/named invites), otherwise required.
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const needsName = !((profile?.first_name ?? '').trim() && (profile?.last_name ?? '').trim());
 
   // Step 1 — minor rider toggle. `hadMinor` tracks the SERVER's state (from
   // my_onboarding_state().minor) so an explicit toggle-off sends
@@ -205,6 +220,7 @@ export default function Onboarding() {
 
   useEffect(() => {
     let active = true;
+    fetchMyCategories().then((c) => active && setCategories(c)).catch(() => {});
     Promise.all([myOnboardingState(), getMyProfile().catch(() => null)])
       .then(([s, p]) => {
         if (!active) return;
@@ -220,6 +236,8 @@ export default function Onboarding() {
         }
         // Prefill the details form from what we already know about them.
         if (p) {
+          setFirstName(p.first_name ?? '');
+          setLastName(p.last_name ?? '');
           setForm((prev) => ({
             ...prev,
             phone: p.phone ?? '',
@@ -255,6 +273,18 @@ export default function Onboarding() {
     return () => { active = false; };
   }, [step, currentDoc?.document_id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Close the overview tour and land on the member's home: dashboard when they
+  // have notifications, else the community feed. Guests have no community, so
+  // they always land on the dashboard.
+  async function enterApp() {
+    setShowOverview(false);
+    const isGuestOnly = categories.includes('GUEST')
+      && !categories.includes('RIDER') && !categories.includes('HORSE_OWNER');
+    let unread = 0;
+    try { unread = await myUnreadCount(); } catch { /* default to community */ }
+    navigate(unread > 0 || isGuestOnly ? '/app/dashboard' : '/app', { replace: true });
+  }
+
   const upd = (key: keyof ProfileFormFields) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       setForm((prev) => ({ ...prev, [key]: e.target.value }));
@@ -269,6 +299,10 @@ export default function Onboarding() {
       // detach). Untouched, no minor key is sent and the server leaves the
       // minor state alone.
       const payload: OnboardingProfileInput = { ...form };
+      // Name rides along when we collected it (email-only invites); the RPC fills
+      // it only when the contact/profile name is currently blank.
+      if (firstName.trim()) payload.first_name = firstName.trim();
+      if (lastName.trim()) payload.last_name = lastName.trim();
       if (hasMinor) {
         payload.has_minor = true;
         payload.minor_first_name = minorFirst;
@@ -280,8 +314,12 @@ export default function Onboarding() {
       await updateMyOnboardingProfile(payload);
       // Regenerate the unsigned docs so the fresh details merge into the text.
       await generateMyOnboardingDocuments();
-      const next = await myOnboardingState();
+      const [next, freshProfile] = await Promise.all([
+        myOnboardingState(),
+        getMyProfile().catch(() => profile),
+      ]);
       setState(next);
+      setProfile(freshProfile); // refreshes expectedName so type-to-sign works
       setHadMinor(Boolean(next.minor));
       setStep(next.horse_needed ? 'horse' : 'sign');
     } catch (err) {
@@ -390,6 +428,25 @@ export default function Onboarding() {
           <p className="text-sm text-muted mb-6">
             These fill in your lesson paperwork — you'll review and sign it next.
           </p>
+
+          {needsName && (
+            <>
+              <h3 className="form-label mb-3">Your name</h3>
+              <p className="text-sm text-muted mb-3">This is the name that appears on your documents.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                <div>
+                  <label className="form-label" htmlFor="ob-first">First name</label>
+                  <input id="ob-first" required className="form-input" value={firstName}
+                    autoComplete="given-name" onChange={(e) => setFirstName(e.target.value)} />
+                </div>
+                <div>
+                  <label className="form-label" htmlFor="ob-last">Last name</label>
+                  <input id="ob-last" required className="form-input" value={lastName}
+                    autoComplete="family-name" onChange={(e) => setLastName(e.target.value)} />
+                </div>
+              </div>
+            </>
+          )}
 
           <h3 className="form-label mb-3">Rider</h3>
           <label className="flex items-start gap-3 mb-4 cursor-pointer">
@@ -500,7 +557,9 @@ export default function Onboarding() {
           </div>
 
           {saveError && <p role="alert" className="form-error mb-4">{saveError}</p>}
-          <button type="submit" disabled={saving} className="btn-primary">
+          <button type="submit"
+            disabled={saving || (needsName && (!firstName.trim() || !lastName.trim()))}
+            className="btn-primary">
             {saving ? 'Saving…' : 'Save & continue to documents'}
             {!saving && <ArrowRight size={16} />}
           </button>
@@ -664,18 +723,17 @@ export default function Onboarding() {
           )}
 
           <div className="flex flex-wrap gap-4">
-            <Link to="/app/calendar" className="btn-primary">
-              Book your first lesson <ArrowRight size={16} />
-            </Link>
-            <Link to="/app" className="btn-outline-gold">
-              Go to your dashboard
-            </Link>
+            <button type="button" className="btn-primary" onClick={() => setShowOverview(true)}>
+              Continue <ArrowRight size={16} />
+            </button>
             <Link to="/app/documents" className="btn-outline-gold">
               See your documents
             </Link>
           </div>
         </section>
       )}
+
+      <AppOverviewModal open={showOverview} onClose={enterApp} categories={categories} />
     </div>
   );
 }

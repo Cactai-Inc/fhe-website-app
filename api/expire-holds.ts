@@ -64,7 +64,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (reapErr) throw reapErr;
 
     // Email each affected client (best-effort; grouped by email).
-    const origin = req.headers.origin || `https://${req.headers.host}`;
     const byEmail = new Map<string, { name: string | null; org: string | null; items: string[] }>();
     for (const row of lapsing) {
       const email = row.requests?.contact_email;

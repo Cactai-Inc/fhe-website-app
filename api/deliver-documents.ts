@@ -160,6 +160,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!sent.ok) continue; // no orphan delivery rows without a successful send
 
       // Record a delivery row per document for this recipient (idempotent set).
+      // A unique index on (document_id, recipient_contact_id, channel) is the
+      // hard guard against duplicate sends; if a concurrent request already
+      // recorded the delivery (23505), treat it as already-delivered, not an error.
       for (const d of pending) {
         const { error: insErr } = await db.from('document_deliveries').insert({
           document_id: d.id,
@@ -168,7 +171,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           copy_url: `/portal/documents/${d.id}`,
           org_id: orgId,
         });
-        if (insErr) throw insErr;
+        if (insErr && insErr.code !== '23505') throw insErr;
         deliveredSet.add(`${d.id}:${party.contact_id}`);
       }
       delivered.push({ email, count: pending.length });
