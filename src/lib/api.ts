@@ -362,6 +362,22 @@ export async function upsertMyProfile(patch: Partial<Profile>): Promise<void> {
 
 // ─── Orders (authenticated purchase flow) ───────────────────────────────────
 
+/** The captured INTENT for a scheduled/recurring order line (Phase 4).
+ *
+ *  Both scheduled and recurring SKUs grant a POOL of session credits that the
+ *  client books FREELY against calendar availability (any days, any distribution
+ *  — recurring is not a fixed weekday/time and not literally N×/week; the SKU's
+ *  weekly_frequency only SIZES the monthly pool and reflects the recurring
+ *  discount). So there is no weekday/time to capture here — actual scheduling is
+ *  the existing calendar booking flow (book_open_slot). This line config carries
+ *  only what the calendar doesn't: off-site address + any notes/constraints. */
+export interface OfferingLineConfig {
+  /** off-site services (training/exercise): address when the horse isn't at CCR. */
+  address?: string;
+  /** free-text constraints / preferences carried to staff scheduling. */
+  notes?: string;
+}
+
 export interface DraftOrderInput {
   items: Array<{
     offering_id?: string;
@@ -369,8 +385,14 @@ export interface DraftOrderInput {
     label: string;
     price_amount: number;
     price_unit: OrderItem['price_unit'];
+    /** Phase 4: per-line scheduling/config intent → purchase_items.config. */
+    config?: OfferingLineConfig;
   }>;
   subtotal: number;
+  /** Staff/self mark-paid at order creation (any origin). Defaults to unpaid draft. */
+  markPaid?: boolean;
+  amountPaid?: number;
+  paymentMethod?: string;
 }
 
 export async function createDraftOrder(input: DraftOrderInput): Promise<{ orderId: string }> {
@@ -388,12 +410,23 @@ export async function createDraftOrder(input: DraftOrderInput): Promise<{ orderI
     for (const o of offerings ?? []) slugToId.set(o.slug, o.id);
   }
 
+  // Purchase unification (Phase 2/3): always stamp buyer_contact_id, add
+  // buyer_user_id for the authenticated buyer. Mark-paid is first-class on every
+  // order-creation path (Phase 4).
+  const { data: contactId } = await supabase.rpc('current_contact_id');
+  const paid = input.markPaid === true;
+  const amountPaid = paid ? input.subtotal : (input.amountPaid ?? 0);
   const { data: order, error } = await supabase
     .from('purchases')
     .insert({
       buyer_user_id: auth.user.id,
-      status: 'draft',
+      buyer_contact_id: (contactId as string | null) ?? null,
+      status: paid ? 'paid' : 'draft',
       amount: input.subtotal,
+      amount_paid: amountPaid,
+      payment_status: paid ? 'paid' : amountPaid > 0 ? 'pending' : 'unpaid',
+      ...(input.paymentMethod ? { payment_method: input.paymentMethod } : {}),
+      ...(paid ? { paid_at: new Date().toISOString() } : {}),
     })
     .select('id')
     .single();
@@ -406,6 +439,7 @@ export async function createDraftOrder(input: DraftOrderInput): Promise<{ orderI
       label: i.label,
       price_amount: i.price_amount,
       price_unit: i.price_unit,
+      config: i.config ?? {},
     }));
     const { error: itemErr } = await supabase.from('purchase_items').insert(rows);
     if (itemErr) throw itemErr;

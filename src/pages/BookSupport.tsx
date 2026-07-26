@@ -1,15 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Check, ArrowRight, ArrowLeft } from 'lucide-react';
-import {
-  SUPPORT_SERVICES,
-  HORSE_TRAINING,
-  RIDING_TURNOUT,
-  HAIR_CLIPPING,
-  formatPrice,
-} from '../lib/services';
+import { formatPrice } from '../lib/pricing';
+import { fetchPublicCatalog, type ServiceGroup } from '../lib/publicCatalog';
 import { useCart } from '../contexts/CartContext';
 import ServiceSelector from '../components/ServiceSelector';
+
+// Horse-care service_type codes used to gate the horse-care cross-sell note.
+const HORSE_CARE_CODES = ['HORSE_TRAINING', 'HORSE_EXERCISE', 'HORSE_CLIPPING'];
 import QualifierGroup from '../components/QualifierGroup';
 import Seo from '../components/Seo';
 import { seoForPath } from '../lib/seo';
@@ -26,18 +24,19 @@ export default function BookSupport() {
   const [step, setStep] = useState(0);
   const { state, setFunnel, itemCount } = useCart();
   const navigate = useNavigate();
+  const [groups, setGroups] = useState<ServiceGroup[]>([]);
 
   useEffect(() => {
     setFunnel('support');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [setFunnel]);
+  useEffect(() => { fetchPublicCatalog('acquisition').then(setGroups).catch(() => setGroups([])); }, []);
 
   const experience   = state.qualifierAnswers['experience'];
   const wantsLessons = state.qualifierAnswers['wants_lessons'];
 
-  const trainingSelected = state.items.some((i) => i.serviceType === HORSE_TRAINING.id);
-  const turnoutSelected  = state.items.some((i) => i.serviceType === RIDING_TURNOUT.id);
-  const clippingSelected = state.items.some((i) => i.serviceType === HAIR_CLIPPING.id);
+  const anyHorseCareSelected = state.items.some(
+    (i) => i.serviceType && HORSE_CARE_CODES.includes(i.serviceType));
 
   const canProceedStep0 = itemCount > 0;
   const canProceedStep1 = !!experience;
@@ -100,8 +99,8 @@ export default function BookSupport() {
               Finding the right horse is one of the most significant decisions in an equestrian's life. Our support services provide expert guidance at each stage — from the first search to the final handshake.
             </p>
             <div className="flex flex-col gap-8">
-              {SUPPORT_SERVICES.map((svc) => (
-                <ServiceSelector key={svc.id} service={svc} category="Acquisition Support" />
+              {groups.map((g) => (
+                <ServiceSelector key={g.code} group={g} category="Acquisition Support" />
               ))}
             </div>
           </div>
@@ -195,7 +194,7 @@ export default function BookSupport() {
               shown here — they belong post-acquisition, not in this booking flow.
               The only in-funnel guidance is the natural search→evaluation→brokering path.
             */}
-            {!trainingSelected && !turnoutSelected && !clippingSelected && experience && (
+            {!anyHorseCareSelected && experience && (
               <div className="mb-6 bg-white border border-green-800/10 p-6">
                 <p className="text-xs font-sans font-medium tracking-wide uppercase text-gold-ink mb-3">
                   What happens after you reach out

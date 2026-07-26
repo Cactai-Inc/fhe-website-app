@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, ArrowRight, ArrowLeft } from 'lucide-react';
-import { HORSE_SERVICES, formatPrice } from '../lib/services';
+import { formatPrice } from '../lib/pricing';
+import { fetchPublicCatalog, type ServiceGroup } from '../lib/publicCatalog';
 import { useCart } from '../contexts/CartContext';
 import ServiceSelector from '../components/ServiceSelector';
 import QualifierGroup from '../components/QualifierGroup';
@@ -20,11 +21,13 @@ export default function BookHorse() {
   const [step, setStep] = useState(0);
   const { state, setFunnel, itemCount } = useCart();
   const navigate = useNavigate();
+  const [groups, setGroups] = useState<ServiceGroup[]>([]);
 
   useEffect(() => {
     setFunnel('horse');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [setFunnel]);
+  useEffect(() => { fetchPublicCatalog('horse').then(setGroups).catch(() => setGroups([])); }, []);
 
   const reason = state.qualifierAnswers['horse_reason'];
 
@@ -89,8 +92,8 @@ export default function BookHorse() {
               Select the services you need for your horse. Each option can be combined — we will tailor further recommendations once we understand your situation.
             </p>
             <div className="flex flex-col gap-8">
-              {HORSE_SERVICES.map((svc) => (
-                <ServiceSelector key={svc.id} service={svc} category="Horse Care Services" />
+              {groups.map((g) => (
+                <ServiceSelector key={g.code} group={g} category="Horse Care Services" />
               ))}
             </div>
           </div>

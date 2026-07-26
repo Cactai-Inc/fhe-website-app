@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, Check, X } from 'lucide-react';
 import { fetchOfferings, fetchServiceCategories, type ServiceCategory } from '../lib/api';
-import { formatPrice } from '../lib/services';
+import { formatPrice } from '../lib/pricing';
 import { useCart } from '../contexts/CartContext';
 import type { Offering, PriceUnitDb } from '../lib/types';
 
@@ -81,7 +81,11 @@ export function OfferingCatalog({ onCheckout, actionLabel = 'Add' }: { onCheckou
   [categories, byType]);
 
   const add = (o: Offering) => {
-    addItem({ offeringId: o.id, offeringName: o.name, serviceType: o.service_type, price: o.price_amount ?? 0, unit: (o.price_unit ?? 'flat') });
+    addItem({
+      offeringId: o.id, offeringName: o.name, serviceType: o.service_type,
+      price: o.price_amount ?? 0, unit: (o.price_unit ?? 'flat'),
+      configKind: o.config_kind, weeklyFrequency: o.weekly_frequency, unitCount: o.unit_count,
+    });
   };
 
   if (error) return <p role="alert" className="form-error">{error}</p>;

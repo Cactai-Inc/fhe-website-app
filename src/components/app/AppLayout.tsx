@@ -123,6 +123,7 @@ const BUSINESS_GROUP: NavItem[] = [
 ];
 const COMMUNITY_GROUP: NavItem[] = [
   { to: '/app/ops/activity', label: 'Activity', icon: Activity },
+  { to: '/app/ops/evaluations', label: 'Evaluations', icon: FileText },
   { to: '/app/ops/moderation', label: 'Moderation', icon: Shield },
   { to: '/app/ops/lookups', label: 'Field options', icon: ListChecks },
   { to: '/app/ops/content', label: 'Content store', icon: BookOpen },

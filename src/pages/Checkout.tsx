@@ -9,7 +9,7 @@ import { ensureHorseDocuments } from '../lib/horses';
 import { HorseCareSelect } from '../components/app/HorseCareSelect';
 import { fetchIntakeRequirements } from '../lib/ops/api-public';
 import type { RequestCategory } from '../lib/types';
-import { formatPrice } from '../lib/services';
+import { formatPrice } from '../lib/pricing';
 import { inquiryLabel } from '../lib/inquiry';
 import {
   EXPERIENCE_OPTIONS,
@@ -53,7 +53,7 @@ const usd = (n: number) =>
 
 export default function Checkout() {
   useDocumentTitle('Send an Inquiry');
-  const { state, removeItem, subtotal, clearCart, inquirySummary } = useCart();
+  const { state, removeItem, subtotal, clearCart, inquirySummary, setItemConfig } = useCart();
   // Warm, category-aware label for the submit action + heading, personalized to
   // what the visitor actually chose (never "cart"/"selection"). See lib/inquiry.
   const inquiryCta = inquiryLabel(state.items);
@@ -145,11 +145,15 @@ export default function Checkout() {
       }
       const { orderId } = await createDraftOrder({
         items: state.items.map((i) => ({
-          offering_slug: i.offeringId,
+          // cart.offeringId IS the offering UUID (catalog sets it from o.id) — pass
+          // it as offering_id so the line links to the real offering (previously it
+          // was sent as offering_slug and the slug→id lookup silently dropped it).
+          offering_id: i.offeringId,
           label: i.offeringName,
           price_amount: i.price,
           // 'lesson' is a UI-only unit; the purchase_items check constraint knows 'session'.
           price_unit: i.unit === 'lesson' ? 'session' : i.unit,
+          ...(i.config && (i.config.address || i.config.notes) ? { config: i.config } : {}),
         })),
         subtotal,
       });
@@ -573,6 +577,27 @@ export default function Checkout() {
                               </button>
                             </div>
                           </div>
+                        ))}
+                        {/* Per-line config: off-site services (horse training/exercise)
+                            can be performed away from Carmel Creek Ranch — capture the
+                            address + any notes. Actual session times are booked on the
+                            calendar afterward (any days, any distribution). */}
+                        {user && isHorseCare && group.items.map((item) => (
+                          (item.configKind === 'scheduled' || item.configKind === 'recurring') && (
+                            <div key={`${item.offeringId}-cfg`} className="mt-1.5 ml-1 pl-3 border-l-2 border-green-800/10">
+                              <label className="block text-[11px] font-sans text-muted mb-1">
+                                {item.offeringName} — service address (leave blank if at Carmel Creek Ranch)
+                              </label>
+                              <input type="text" className="form-input text-sm mb-1.5"
+                                placeholder="Barn / property address"
+                                value={item.config?.address ?? ''}
+                                onChange={(e) => setItemConfig(item.offeringId, { ...item.config, address: e.target.value })} />
+                              <input type="text" className="form-input text-sm"
+                                placeholder="Notes / horse availability constraints (optional)"
+                                value={item.config?.notes ?? ''}
+                                onChange={(e) => setItemConfig(item.offeringId, { ...item.config, notes: e.target.value })} />
+                            </div>
+                          )
                         ))}
                       </div>
                       {/* Per-cadence subtotal (not summed across cadences) */}

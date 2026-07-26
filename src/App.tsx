@@ -63,6 +63,9 @@ import Support from './pages/app/Support';
 import ContractPage from './pages/app/ContractPage';
 import AccountHub from './pages/app/AccountHub';
 import HorseIntakePage from './pages/app/HorseIntakePage';
+import AcquisitionIntakePage from './pages/app/AcquisitionIntakePage';
+import EvaluationsPage from './pages/app/EvaluationsPage';
+import EvaluationReportsPage from './pages/app/ops/EvaluationReportsPage';
 import HorsePage from './pages/app/HorsePage';
 import CareHome from './pages/app/CareHome';
 import DealHome from './pages/app/DealHome';
@@ -224,6 +227,10 @@ export function AppRoutes() {
               <Route path="deal" element={<DealHome />} />
               {/* A4 — client horse-intake opened from a staff request; ?booking=<id> attaches the horse */}
               <Route path="horse-intake" element={<HorseIntakePage />} />
+              {/* Phase 4 — acquisition intake (Find-a-Horse criteria / Evaluation facts) a purchase unlocks */}
+              <Route path="acquisition-intake" element={<AcquisitionIntakePage />} />
+              {/* Phase 4 — the client's delivered horse-evaluation reports (read / download / email / share) */}
+              <Route path="evaluations" element={<EvaluationsPage />} />
               <Route path="horses/:horseId" element={<ProtectedRoute><HorsePage /></ProtectedRoute>} />
               {/* Negotiated contracts (Update A): owner authoring + counterparty
                   intake→review→sign. Notification links target this route. */}
@@ -254,6 +261,7 @@ export function AppRoutes() {
               <Route path="ops/support" element={<ProtectedRoute requireStaff><SupportPage /></ProtectedRoute>} />
               <Route path="ops/oversight" element={<ProtectedRoute requireStaff><OversightPage /></ProtectedRoute>} />
               <Route path="ops/activity" element={<ProtectedRoute requireStaff><ActivityPage /></ProtectedRoute>} />
+              <Route path="ops/evaluations" element={<ProtectedRoute requireStaff><EvaluationReportsPage /></ProtectedRoute>} />
               <Route path="ops/content" element={<ProtectedRoute requireStaff><ContentStorePage /></ProtectedRoute>} />
               <Route path="ops/payments/review" element={<ProtectedRoute requireStaff><PaymentReviewPage /></ProtectedRoute>} />
               {/* Wave-7: module hubs + module pages (module-gated inside via ModuleGate) */}

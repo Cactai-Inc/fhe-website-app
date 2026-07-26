@@ -4,7 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import { getOrder, getOrderPayment } from '../lib/api';
 import { useDocumentTitle } from '../lib/hooks';
 import type { Order, OrderItem, Payment } from '../lib/types';
-import { formatPrice } from '../lib/services';
+import { formatPrice } from '../lib/pricing';
 import OrderPayment from '../components/order/OrderPayment';
 
 const STATUS_COPY: Record<string, { title: string; body: string }> = {

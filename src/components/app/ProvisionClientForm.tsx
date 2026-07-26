@@ -113,13 +113,18 @@ export function ProvisionClientForm({
     for (const c of categories) (CATEGORY_SEGMENTS[c] ?? []).forEach((seg) => s.add(seg));
     return s;
   }, [categories]);
+  // Flat SKUs: a purchasable offering is one in the allowed segment that isn't an
+  // inquire-only / parent grouping row (config_kind='inquire' or no price). The
+  // tier layer was removed 2026-07-08 — each offering IS the purchasable item.
   const visibleOfferings = offerings.filter(
-    (o) => allowedSegments.has(o.segment) && (o.tiers?.length ?? 0) > 0);
+    (o) => allowedSegments.has(o.segment)
+      && o.config_kind !== 'inquire'
+      && o.price_amount != null);
 
   const offeringTotal = useMemo(() => {
     let t = 0;
-    for (const o of offerings) for (const tier of o.tiers ?? [])
-      if (offeringIds.includes(tier.id)) t += tier.price_amount;
+    for (const o of offerings)
+      if (offeringIds.includes(o.id)) t += o.price_amount ?? 0;
     return t;
   }, [offerings, offeringIds]);
 
@@ -130,7 +135,7 @@ export function ProvisionClientForm({
       const segs = new Set<Segment>();
       for (const cat of next) (CATEGORY_SEGMENTS[cat] ?? []).forEach((s) => segs.add(s));
       setOfferingIds((ids) => ids.filter((id) => {
-        const seg = offerings.find((o) => o.tiers?.some((t) => t.id === id))?.segment;
+        const seg = offerings.find((o) => o.id === id)?.segment;
         return seg ? segs.has(seg) : false;
       }));
       return next;
@@ -247,24 +252,45 @@ export function ProvisionClientForm({
 
             <div className="mb-6">
               <span className="form-label">Offerings (optional)</span>
-              <p className="text-sm text-muted mb-2.5">What they're purchasing — shown for the chosen category.</p>
+              <p className="text-sm text-muted mb-2.5">
+                What they're purchasing — their first order. Each is its own item; the
+                mechanics (single, pack, or recurring) are shown per line.
+              </p>
               {visibleOfferings.length === 0 ? (
-                <p className="text-sm text-muted">No purchasable offerings for this category.</p>
+                <p className="text-sm text-muted">
+                  {categories.length === 0
+                    ? 'Choose a category above to see its offerings.'
+                    : 'No purchasable offerings for this category.'}
+                </p>
               ) : (
                 <div className="space-y-4 max-h-72 overflow-y-auto border border-green-800/15 rounded-lg p-4">
-                  {visibleOfferings.map((o) => (
-                    <div key={o.id}>
-                      <p className="text-xs uppercase tracking-wide text-secondary/70 mb-1.5">{o.name}</p>
+                  {Object.entries(
+                    visibleOfferings.reduce<Record<string, Offering[]>>((acc, o) => {
+                      const k = o.service_type ?? 'Other';
+                      (acc[k] ??= []).push(o); return acc;
+                    }, {}),
+                  ).map(([svc, items]) => (
+                    <div key={svc}>
+                      <p className="text-xs uppercase tracking-wide text-secondary/70 mb-1.5">
+                        {svc.replace(/_/g, ' ').toLowerCase()}
+                      </p>
                       <div className="grid sm:grid-cols-2 gap-2">
-                        {(o.tiers ?? []).map((t) => (
-                          <label key={t.id}
+                        {items.map((o) => (
+                          <label key={o.id}
                             className={`flex items-center gap-2.5 px-3 py-2 rounded-lg border cursor-pointer text-sm ${
-                              offeringIds.includes(t.id) ? 'border-green-700 bg-green-50 text-green-900'
+                              offeringIds.includes(o.id) ? 'border-green-700 bg-green-50 text-green-900'
                                 : 'border-green-800/15 text-secondary hover:bg-green-50/50'}`}>
                             <input type="checkbox" className="accent-green-700 w-[17px] h-[17px]"
-                              checked={offeringIds.includes(t.id)} onChange={() => toggleOffering(t.id)} />
-                            <span className="min-w-0 flex-1">{t.label}</span>
-                            <span className="text-green-900 whitespace-nowrap">{money(t.price_amount)}</span>
+                              checked={offeringIds.includes(o.id)} onChange={() => toggleOffering(o.id)} />
+                            <span className="min-w-0 flex-1">
+                              {o.name}
+                              {o.config_kind === 'recurring' && o.weekly_frequency
+                                ? <span className="text-xs text-muted"> · {o.weekly_frequency}×/wk monthly</span>
+                                : o.config_kind === 'scheduled' && (o.unit_count ?? 1) > 1
+                                  ? <span className="text-xs text-muted"> · {o.unit_count} sessions</span>
+                                  : null}
+                            </span>
+                            <span className="text-green-900 whitespace-nowrap">{money(o.price_amount ?? 0)}</span>
                           </label>
                         ))}
                       </div>

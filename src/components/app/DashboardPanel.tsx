@@ -8,6 +8,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { myLessonSessions, type MemberLessonSession } from '../../lib/ops/api-member';
 import { fetchMyPendingChanges } from '../../lib/ops/api-calendar';
 import { fetchHorseOnboardingState, type HorseOnboardingState } from '../../lib/horses';
+import { fetchAcquisitionIntakeState, type AcquisitionIntakeState } from '../../lib/acquisition';
 import { fetchEvents } from '../../lib/community';
 import type { CommunityEvent } from '../../lib/community-types';
 import { supabase } from '../../lib/supabase';
@@ -155,6 +156,7 @@ export function DashboardPanel() {
   const [suggestBooking, setSuggestBooking] = useState(false);
   const [pendingChanges, setPendingChanges] = useState(0);
   const [horse, setHorse] = useState<HorseOnboardingState | null>(null);
+  const [acqIntake, setAcqIntake] = useState<AcquisitionIntakeState | null>(null);
   const { profile } = useAuth();
   const firstName = profile?.first_name || profile?.display_name || null;
   // Session hide for the member's own live "pending changes" tile (not backed by a
@@ -169,6 +171,9 @@ export function DashboardPanel() {
       .catch(() => {});
     fetchHorseOnboardingState()
       .then((h) => active && setHorse(h))
+      .catch(() => {});
+    fetchAcquisitionIntakeState()
+      .then((a) => active && setAcqIntake(a))
       .catch(() => {});
     Promise.all([
       myNotifications().catch(() => [] as AppNotification[]),
@@ -253,6 +258,23 @@ export function DashboardPanel() {
       }
     : null;
 
+  // Acquisition intake — a Find-a-Horse / Evaluation purchase awaiting the form
+  // that tells us what to do (criteria / owner facts).
+  const acqPending = acqIntake?.pending?.[0] ?? null;
+  const acqTile: Tile | null = acqPending
+    ? {
+        id: 'acquisition-intake',
+        kind: 'acquisition intake',
+        gold: true,
+        title: acqPending.config_kind === 'intake_finder'
+          ? 'Tell us what horse to find'
+          : 'Tell us about the horse to evaluate',
+        sub: `Complete the intake for your ${acqPending.label} so we can get started.`,
+        cta: 'Complete intake',
+        to: `/app/acquisition-intake?item=${acqPending.purchase_item_id}`,
+      }
+    : null;
+
   // Close a notification tile. A manual close CONSUMES it — deletes the
   // notification (per-user) and leaves an audit-log entry — so it's gone for good
   // and never returns on this user's dashboard (matching the phone-handled case;
@@ -271,7 +293,7 @@ export function DashboardPanel() {
   const showPending = pendingChanges > 0 && !hidden.has('pending-changes');
 
   const hasAttention = attention.length > 0 || checklist.length > 0 || suggestBooking
-    || showPending || !!horseTile;
+    || showPending || !!horseTile || !!acqTile;
   // Empty state: nothing needs attention and nothing's coming up → a warm all-clear
   // greeting (owner directive) instead of hiding the panel entirely.
   const allCaughtUp = !hasAttention && comingUp.length === 0;
@@ -295,6 +317,7 @@ export function DashboardPanel() {
                 its target. So a phone-handled item can just be closed, and dismissing
                 on one owner's dashboard never touches the other's. */}
             {horseTile && <TileCard tile={horseTile} />}
+            {acqTile && <TileCard tile={acqTile} />}
             {checklist.length > 0 && <ChecklistCard rows={checklist} />}
             {showPending && (
               <TileCard tile={{

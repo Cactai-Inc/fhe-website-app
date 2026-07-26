@@ -1,32 +1,52 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Check, Gift } from 'lucide-react';
 import { usePrefersReducedMotion } from '../lib/hooks';
 import { useCart } from '../contexts/CartContext';
-import { LESSON_PACKS } from '../lib/catalog';
+import { fetchPublicCatalog, type ServiceGroup } from '../lib/publicCatalog';
+import type { Offering } from '../lib/types';
 import Seo from '../components/Seo';
 import { seoForPath } from '../lib/seo';
 
 const LESSON_POSTER = '/reference-images/Hero_A.png';
 const usd = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(n);
 
+// The SKU's mechanics, shown under the price (replaces the hardcoded perLesson copy).
+function mechanics(o: Offering): string {
+  if (o.config_kind === 'recurring' && o.weekly_frequency) return `${o.weekly_frequency}× weekly · monthly`;
+  if (o.config_kind === 'scheduled' && (o.unit_count ?? 1) > 1) {
+    const each = o.price_amount != null ? o.price_amount / (o.unit_count as number) : null;
+    return each != null ? `${o.unit_count} lessons · ${usd(each)} each` : `${o.unit_count} lessons`;
+  }
+  return o.tagline ?? '';
+}
+
 export default function Lessons() {
   const seo = seoForPath('/lessons');
   const reducedMotion = usePrefersReducedMotion();
   const { toggleItem, isSelected, itemCount, setFunnel } = useCart();
   const navigate = useNavigate();
+  const [packs, setPacks] = useState<Offering[]>([]);
 
   // This is the rider path — keeps the booking-request page's back link honest.
   useEffect(() => {
     setFunnel('rider');
   }, [setFunnel]);
+  // Riding-lesson SKUs from the live catalog (was the hardcoded LESSON_PACKS).
+  useEffect(() => {
+    fetchPublicCatalog('rider')
+      .then((groups: ServiceGroup[]) => setPacks(groups.find((g) => g.code === 'RIDING_LESSON')?.offerings ?? []))
+      .catch(() => setPacks([]));
+  }, []);
 
-  function selectPack(p: typeof LESSON_PACKS[number]) {
+  function selectPack(o: Offering) {
     toggleItem({
-      offeringId: `riding-lesson-${p.id}`,
-      offeringName: `Riding Lessons — ${p.label}`,
-      serviceType: 'riding-lesson',
-      price: p.price, unit: p.unit,
+      offeringId: o.id,
+      offeringName: o.name,
+      serviceType: o.service_type,
+      price: o.price_amount ?? 0,
+      unit: (o.price_unit ?? 'flat'),
+      configKind: o.config_kind, weeklyFrequency: o.weekly_frequency, unitCount: o.unit_count,
     });
   }
 
@@ -74,27 +94,28 @@ export default function Lessons() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {LESSON_PACKS.map((p) => {
-              const selected = isSelected(`riding-lesson-${p.id}`);
+            {packs.map((o) => {
+              const selected = isSelected(o.id);
+              const hint = mechanics(o);
               return (
                 <button
-                  key={p.id}
+                  key={o.id}
                   type="button"
-                  onClick={() => selectPack(p)}
+                  onClick={() => selectPack(o)}
                   aria-pressed={selected}
                   className={`relative text-left p-7 border transition-all duration-200 focus-ring bg-white ${
                     selected ? 'border-green-800 ring-1 ring-green-800/20' : 'border-green-800/15 hover:border-green-800/40'
                   }`}
                 >
-                  {p.popular && (
+                  {o.is_popular && (
                     <span className="absolute top-4 right-4 text-[9px] font-sans font-medium tracking-wider uppercase bg-gold-600 text-green-900 px-2 py-0.5">
                       Popular
                     </span>
                   )}
-                  <h3 className="heading-card text-green-800 mb-1">{p.label}</h3>
-                  <p className="text-xs text-muted mb-5">{p.description}</p>
-                  <p className="font-serif text-4xl text-green-800 mb-1">{usd(p.price)}</p>
-                  {p.perLesson && <p className="text-xs text-gold-ink">{p.perLesson}</p>}
+                  <h3 className="heading-card text-green-800 mb-1">{o.name}</h3>
+                  {o.tagline && <p className="text-xs text-muted mb-5">{o.tagline}</p>}
+                  <p className="font-serif text-4xl text-green-800 mb-1">{usd(o.price_amount ?? 0)}</p>
+                  {hint && <p className="text-xs text-gold-ink">{hint}</p>}
                   <span className={`inline-flex items-center gap-1.5 mt-5 text-xs font-sans uppercase tracking-wide ${selected ? 'text-green-800 font-medium' : 'text-muted'}`}>
                     {selected ? <><Check size={13} /> Selected</> : 'Select'}
                   </span>

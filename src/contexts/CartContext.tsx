@@ -18,6 +18,7 @@ type CartAction =
   | { type: 'ADD_ITEM'; item: CartItem }
   | { type: 'REMOVE_ITEM'; offeringId: string }
   | { type: 'TOGGLE_ITEM'; item: CartItem }
+  | { type: 'SET_ITEM_CONFIG'; offeringId: string; config: CartItem['config'] }
   | { type: 'SET_QUALIFIER'; key: string; value: string }
   | { type: 'CLEAR_CART' };
 
@@ -27,6 +28,7 @@ interface CartContextValue {
   addItem: (item: CartItem) => void;
   removeItem: (offeringId: string) => void;
   toggleItem: (item: CartItem) => void;
+  setItemConfig: (offeringId: string, config: CartItem['config']) => void;
   setQualifier: (key: string, value: string) => void;
   clearCart: () => void;
   isSelected: (offeringId: string) => boolean;
@@ -95,6 +97,13 @@ function cartReducer(state: CartState, action: CartAction): CartState {
       return { ...state, items: [...state.items, action.item] };
     }
 
+    case 'SET_ITEM_CONFIG':
+      return {
+        ...state,
+        items: state.items.map((i) =>
+          i.offeringId === action.offeringId ? { ...i, config: action.config } : i),
+      };
+
     case 'SET_QUALIFIER':
       return {
         ...state,
@@ -141,6 +150,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'TOGGLE_ITEM', item });
   }, []);
 
+  const setItemConfig = useCallback((offeringId: string, config: CartItem['config']) => {
+    dispatch({ type: 'SET_ITEM_CONFIG', offeringId, config });
+  }, []);
+
   const setQualifier = useCallback((key: string, value: string) => {
     dispatch({ type: 'SET_QUALIFIER', key, value });
   }, []);
@@ -177,6 +190,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         addItem,
         removeItem,
         toggleItem,
+        setItemConfig,
         setQualifier,
         clearCart,
         isSelected,

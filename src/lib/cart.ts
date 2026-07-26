@@ -1,4 +1,6 @@
-import type { PriceUnit } from './services';
+import type { PriceUnit } from './pricing';
+import type { OfferingConfigKind } from './types';
+import type { OfferingLineConfig } from './api';
 
 // ─── Cart item ──────────────────────────────────────────────────────────────
 
@@ -10,6 +12,14 @@ export interface CartItem {
   serviceType: string | null;
   price: number;
   unit: PriceUnit;
+  /** Phase 4: the SKU's mechanics bucket — drives the checkout config panel. */
+  configKind?: OfferingConfigKind | null;
+  /** Recurring SKUs: sessions/week (1/2/3), for the config panel copy. */
+  weeklyFrequency?: number | null;
+  /** Scheduled SKUs: # of sessions granted, for the config panel copy. */
+  unitCount?: number | null;
+  /** Captured per-line scheduling/config intent (carried to purchase_items.config). */
+  config?: OfferingLineConfig;
 }
 
 // ─── Inquiry summary (group by billing cadence) ───────────────────────────

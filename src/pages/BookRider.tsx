@@ -1,18 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Check, ArrowRight, ArrowLeft } from 'lucide-react';
-import {
-  RIDER_SERVICES,
-  RIDING_LESSON,
-  HUNTER_JUMPER,
-  HORSEMANSHIP,
-  formatPrice,
-} from '../lib/services';
+import { formatPrice } from '../lib/pricing';
+import { fetchPublicCatalog, type ServiceGroup } from '../lib/publicCatalog';
 import { useCart } from '../contexts/CartContext';
 import ServiceSelector from '../components/ServiceSelector';
 import QualifierGroup from '../components/QualifierGroup';
 import Seo from '../components/Seo';
 import { seoForPath } from '../lib/seo';
+
+// Service_type codes this funnel keys its cross-sell logic on (was the hardcoded
+// Service.id constants). Horsemanship is the within-pillar add-on.
+const HORSEMANSHIP_CODE = 'HORSEMANSHIP_TRAINING';
+const RIDER_LESSON_CODES = ['RIDING_LESSON', 'JUMPER_TRAINING'];
 
 const STEPS = [
   { label: 'Select Services' },
@@ -26,18 +26,21 @@ export default function BookRider() {
   const [step, setStep] = useState(0);
   const { state, setFunnel, itemCount } = useCart();
   const navigate = useNavigate();
+  const [groups, setGroups] = useState<ServiceGroup[]>([]);
 
   useEffect(() => {
     setFunnel('rider');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [setFunnel]);
+  useEffect(() => { fetchPublicCatalog('rider').then(setGroups).catch(() => setGroups([])); }, []);
+
+  const horsemanship = groups.find((g) => g.code === HORSEMANSHIP_CODE);
+  const bookingGroups = groups.filter((g) => g.code !== HORSEMANSHIP_CODE);
 
   const ownsHorse = state.qualifierAnswers['owns_horse'];
   const boarding = state.qualifierAnswers['boarding'];
   const wantsHorse = state.qualifierAnswers['wants_horse'];
-  const lessonSelected = state.items.some((i) => i.serviceType === RIDING_LESSON.id);
-  const hjSelected = state.items.some((i) => i.serviceType === HUNTER_JUMPER.id);
-  const hasAnyRider = lessonSelected || hjSelected;
+  const hasAnyRider = state.items.some((i) => i.serviceType && RIDER_LESSON_CODES.includes(i.serviceType));
 
   const canProceedStep0 = itemCount > 0;
   const canProceedStep1 = !!ownsHorse;
@@ -100,8 +103,8 @@ export default function BookRider() {
               Select the service(s) and pricing option that best fits your schedule and goals. You may combine multiple services — we will tailor any add-on recommendations to match.
             </p>
             <div className="flex flex-col gap-8">
-              {RIDER_SERVICES.map((svc) => (
-                <ServiceSelector key={svc.id} service={svc} category="Rider Services" />
+              {bookingGroups.map((g) => (
+                <ServiceSelector key={g.code} group={g} category="Rider Services" />
               ))}
             </div>
           </div>
@@ -196,7 +199,7 @@ export default function BookRider() {
             </div>
 
             {/* Within-pillar add-on: Horsemanship complements lessons. Always appropriate. */}
-            {!state.items.some((i) => i.serviceType === HORSEMANSHIP.id) && hasAnyRider && (
+            {horsemanship && !state.items.some((i) => i.serviceType === HORSEMANSHIP_CODE) && hasAnyRider && (
               <div className="mb-6">
                 <div className="bg-gold-50 border border-gold-200 p-5 mb-4">
                   <p className="text-xs font-sans font-medium tracking-wide uppercase text-gold-ink mb-1">Suggested Add-On</p>
@@ -204,7 +207,7 @@ export default function BookRider() {
                     Riders who combine lessons with horsemanship classes consistently develop faster and build a more intuitive connection with their horse.
                   </p>
                 </div>
-                <ServiceSelector service={HORSEMANSHIP} compact />
+                <ServiceSelector group={horsemanship} compact />
               </div>
             )}
 
