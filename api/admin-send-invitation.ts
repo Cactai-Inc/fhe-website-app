@@ -60,6 +60,7 @@ async function sendEmail(
   registerUrl: string,
   offeringLabel?: string | null,
   checklist?: ChecklistRow[],
+  expiresAt?: string | null,
 ): Promise<boolean> {
   if (!orgId) return false;
   const identity = await resolveTenantEmailIdentity(db, orgId);
@@ -88,7 +89,9 @@ async function sendEmail(
       <p>Create your account here to join the community. You can sign up with Google
       or set a password — your choice on the next page:</p>
       <p><a href="${registerUrl}">${registerUrl}</a></p>
-      <p>This link expires soon. If it does, just reach out and we'll send a fresh one.</p>
+      <p>${expiresAt
+        ? `This link is valid until <strong>${new Date(expiresAt).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</strong>. If it expires, just reach out and we'll send a fresh one.`
+        : `This link expires soon. If it does, just reach out and we'll send a fresh one.`}</p>
       <hr/><pre style="font-family:inherit">${identity.footer}</pre>`,
   });
   return out.ok;
@@ -206,20 +209,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const scheduledFor =
       typeof body.scheduledFor === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.scheduledFor)
         ? body.scheduledFor : null;
-    const days = Number(body.expiresInDays) > 0 ? Number(body.expiresInDays) : 7;
+    // Expiry window: a scheduled date (terms agreed in person) tightens the
+    // claim-and-pay window to 48h; otherwise the org's configured default
+    // (INVITATIONS/EXPIRY_DAYS, fallback 7) drives it. Client-supplied
+    // expiresInDays still wins if explicitly passed.
+    let days = Number(body.expiresInDays) > 0 ? Number(body.expiresInDays) : 0;
+    if (!days) {
+      const { data: cfgDays } = await db.rpc('invitation_expiry_days', { p_org: profile.org_id ?? null });
+      days = Number(cfgDays) > 0 ? Number(cfgDays) : 7;
+    }
     const expiresAt = scheduledFor
       ? new Date(Date.now() + 48 * 3600000).toISOString()
       : new Date(Date.now() + days * 86400000).toISOString();
     const inviteToken = makeToken();
 
-    // Only the newest link should ever be live. Retire any prior pending invite
-    // for this email in the org so a stale one can't validate alongside this one
-    // (re-inviting a deleted/failed account otherwise leaves a pile of `sent`
-    // rows, and the wrong one can win).
-    await db.from('invitations').update({ status: 'revoked' })
-      .eq('org_id', profile.org_id ?? '').ilike('email', email).eq('status', 'sent');
-
-    const { error: insErr } = await db.from('invitations').insert({
+    // Insert the new live link first, then supersede any prior pending invite
+    // for this email (status='superseded', linked via superseded_by/resend_of)
+    // so the client page can show the live link above the grayed-out prior one —
+    // instead of a bare revoke that discards the lifecycle trail.
+    const { data: insRow, error: insErr } = await db.from('invitations').insert({
       org_id: profile.org_id ?? null, // service-role insert has no current_org(); stamp the admin's org
       request_id: requestId,
       email,
@@ -232,8 +240,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       first_name: firstName || null,
       last_name: lastName || null,
       title: title || null,
-    });
+    }).select('id').single();
     if (insErr) throw insErr;
+
+    await db.rpc('supersede_invitations', {
+      p_org: profile.org_id ?? null, p_email: email, p_new_invitation_id: insRow.id,
+    });
 
     const registerUrl = `${origin}/activate?token=${inviteToken}`;
 
@@ -249,7 +261,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     } catch { /* checklist is best-effort — the invite still goes out */ }
 
-    const emailed = await sendEmail(db, profile.org_id ?? null, email, registerUrl, null, checklist);
+    const emailed = await sendEmail(db, profile.org_id ?? null, email, registerUrl, null, checklist, expiresAt);
     return res.status(200).json({ registerUrl, emailed });
   } catch (err) {
     console.error('invite error', err);

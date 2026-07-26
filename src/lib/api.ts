@@ -94,10 +94,16 @@ export async function submitRequest(
 // ─── Invitations ────────────────────────────────────────────────────────────
 
 /** Redeem the invitation for the SIGNED-IN user: grants the community
- *  membership and consumes the token (email must match — server-enforced). */
+ *  membership and consumes the token (email must match — server-enforced).
+ *  On failure we record the unsuccessful attempt (redeemed_unsuccessful +
+ *  reason, staff notified) in a SEPARATE call — redeem itself raises, so it
+ *  cannot durably log its own failure. Best-effort; never masks the throw. */
 export async function redeemInvitation(token: string): Promise<void> {
   const { error } = await supabase.rpc('redeem_invitation', { p_token: token });
-  if (error) throw error;
+  if (error) {
+    await supabase.rpc('record_invitation_failure', { p_token: token }).catch(() => {});
+    throw error;
+  }
 }
 
 /** Self-heal for provisioned clients whose invitation token was lost/consumed:
@@ -1786,7 +1792,18 @@ export async function startPurchaseContract(
 
 // (startBrokerContract removed 2026-07-20, audit m-1: the broker/retainer type
 //  was never wired into any creation UI. Re-add alongside a NewContractPage
-//  broker mode if/when brokerage contracts ship.)
+//  broker mode if/when brokerage contracts ship. The DB function was dropped
+//  2026-07-26 (Phase 3) — zero callers.)
+
+/** Link a contract back to the purchase it was started from (traceable
+ *  purchase↔contract chain). Contract creation stays manual; this just records
+ *  the origin + stamps the originator from the purchase's buyer when absent. */
+export async function linkContractToPurchase(contractId: string, purchaseId: string): Promise<void> {
+  const { error } = await supabase.rpc('link_contract_to_purchase', {
+    p_contract_id: contractId, p_purchase_id: purchaseId,
+  });
+  if (error) throw error;
+}
 
 // ─── Contact directory (staff) ───────────────────────────────────────────────
 /** A directory row: the contact plus the relationship signals its visible

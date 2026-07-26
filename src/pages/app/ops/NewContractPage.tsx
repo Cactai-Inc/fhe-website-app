@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2, UserPlus } from 'lucide-react';
 import { useDocumentTitle } from '../../../lib/hooks';
-import { startLeaseContract, startPurchaseContract } from '../../../lib/api';
+import { startLeaseContract, startPurchaseContract, linkContractToPurchase } from '../../../lib/api';
 import {
   claimDocumentOrigination, setPartyControls, assignHorseSection,
 } from '../../../lib/contracts';
@@ -112,6 +112,13 @@ export default function NewContractPage() {
             deposit ? Number(deposit.replace(/[$,]/g, '')) : undefined,
           );
       const docId = result.document_id;
+      // Started from a purchase context (?purchase=<id>) → record the traceable
+      // purchase↔contract link. Best-effort: never blocks contract creation.
+      const originPurchase = params.get('purchase');
+      if (originPurchase && result.contract_id) {
+        try { await linkContractToPurchase(result.contract_id, originPurchase); }
+        catch { /* the contract exists either way; staff can link it later */ }
+      }
       // The company originates — never a party by assumption.
       await claimDocumentOrigination(docId);
       // Per-party document controls, set at this stage.

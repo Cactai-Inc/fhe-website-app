@@ -20,6 +20,9 @@ export type { MoneyProps } from '../../components/ops/kit/Money';
 export { StatusBadge, toneForStatus } from '../../components/ops/kit/StatusBadge';
 export type { StatusBadgeProps, BadgeTone } from '../../components/ops/kit/StatusBadge';
 
+export { StatusLog } from '../../components/ops/kit/StatusLog';
+export type { StatusLogProps } from '../../components/ops/kit/StatusLog';
+
 export { ModuleGate } from '../../components/ops/kit/ModuleGate';
 export type { ModuleGateProps, ModuleMap } from '../../components/ops/kit/ModuleGate';
 

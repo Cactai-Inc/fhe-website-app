@@ -6,7 +6,7 @@ import {
   CalendarDays, Users, FileText, UserRound, ReceiptText, Shield, LogOut,
   GraduationCap, Handshake, Home as HomeIcon, Boxes, Contact, LayoutDashboard,
   Mail, ChevronDown, Plus, LifeBuoy, ShoppingBag, MessageSquare, BookOpen, ListChecks,
-  PanelLeft, PanelLeftClose,
+  PanelLeft, PanelLeftClose, Activity,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useViewSurfaces } from '../../lib/surfaces';
@@ -122,6 +122,7 @@ const BUSINESS_GROUP: NavItem[] = [
   { to: '/app/ops/payments/review', label: 'Payment review', icon: ReceiptText },
 ];
 const COMMUNITY_GROUP: NavItem[] = [
+  { to: '/app/ops/activity', label: 'Activity', icon: Activity },
   { to: '/app/ops/moderation', label: 'Moderation', icon: Shield },
   { to: '/app/ops/lookups', label: 'Field options', icon: ListChecks },
   { to: '/app/ops/content', label: 'Content store', icon: BookOpen },

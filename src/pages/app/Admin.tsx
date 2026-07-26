@@ -15,6 +15,8 @@ import {
 import { fetchOfferings } from '../../lib/api';
 import { docDisplayLabel } from '../../lib/documentStatus';
 import { ProvisionClientForm } from '../../components/app/ProvisionClientForm';
+import { StatusLog } from '../../lib/ops';
+import { entityStatusLog, type StatusLogEntry } from '../../lib/ops/api-status';
 import type { Offering } from '../../lib/types';
 
 /**
@@ -292,11 +294,20 @@ function InvitePanel({ row, onSent }: { row: ClientAccountRow; onSent: () => voi
   const [result, setResult] = useState<{ url: string; emailed: boolean } | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [log, setLog] = useState<StatusLogEntry[]>([]);
 
   const sent = row.invite_status === 'sent';
   const expired = sent && row.invite_expires_at ? new Date(row.invite_expires_at) < new Date() : false;
   // Never invited → provision this existing contact via the shared form.
   const neverInvited = !row.invite_id && !row.invite_status;
+
+  // Pull the invitation's lifecycle timeline (sent → resent → redeemed /
+  // redeemed-unsuccessful+reason / superseded). Surfaced below the controls so
+  // the live link reads above the grayed-out prior attempts.
+  useEffect(() => {
+    if (!row.invite_id) { setLog([]); return; }
+    entityStatusLog('account', row.invite_id).then(setLog).catch(() => setLog([]));
+  }, [row.invite_id]);
 
   if (neverInvited && row.contact_id) {
     return (
@@ -365,6 +376,12 @@ function InvitePanel({ row, onSent }: { row: ClientAccountRow; onSent: () => voi
             Invitation {result.emailed ? 'sent by email.' : 'created — email not configured; copy the link:'}
           </p>
           <code className="block break-all text-xs text-green-900 bg-white border border-green-200 p-2">{result.url}</code>
+        </div>
+      )}
+      {log.length > 0 && (
+        <div className="mt-4 pt-3 border-t border-gold-600/20">
+          <p className="text-[11px] uppercase tracking-wide text-green-800/50 mb-2">Invitation history</p>
+          <StatusLog entries={log} compact />
         </div>
       )}
     </section>
