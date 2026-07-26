@@ -22,7 +22,8 @@ import { getBookingReport, type BookingReport, type BookingNote } from '../../li
 import { fetchOfferings, createDraftOrder } from '../../lib/api';
 import type { Offering } from '../../lib/types';
 import { toErrorMessage } from '../../lib/ops/errors';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { listStableHorses, type StableHorse } from '../../lib/stable';
 import { ClipboardList } from 'lucide-react';
 import { formatSessionWhen, formatTimeRange } from '../../lib/formatDateTime';
 import { CalendarItemPanel } from './CalendarItemPanel';
@@ -535,8 +536,18 @@ function DetailPanel({ item, onClose, onChanged, onBuy }: { item: CalendarItem; 
   const [fee, setFee] = useState(0);
   const [payShown, setPayShown] = useState(false); // fee payment screen surfaced before submit
   const [done, setDone] = useState<string | null>(null);
+  // care bookings pick the horse being cared for, and are gated behind that
+  // horse's two signed releases (RELEASE_HORSE_CARE + HORSE_EMERGENCY_VET).
+  const isCare = item.kind === 'care';
+  const [horses, setHorses] = useState<StableHorse[]>([]);
+  const [horseId, setHorseId] = useState('');
+  const [docsGate, setDocsGate] = useState<string[] | null>(null);
 
   useEffect(() => { fetchRescheduleFee().then(setFee).catch(() => setFee(0)); }, []);
+  useEffect(() => {
+    if (!isCare) return;
+    listStableHorses().then(setHorses).catch(() => setHorses([]));
+  }, [isCare]);
 
   const isAvailable = item.status === 'available';
   const isMine = !!item.is_mine;
@@ -547,14 +558,18 @@ function DetailPanel({ item, onClose, onChanged, onBuy }: { item: CalendarItem; 
   const durationMs = item.ends_at ? new Date(item.ends_at).getTime() - new Date(item.starts_at).getTime() : 3_600_000;
 
   async function book() {
-    setBusy(true); setError(null); setNoCredits(false);
+    setBusy(true); setError(null); setNoCredits(false); setDocsGate(null);
     try {
-      await bookOpenSlot(item.id);
+      await bookOpenSlot(item.id, isCare ? horseId || null : null);
       onChanged();
     } catch (e) {
       const msg = e instanceof Error ? e.message : '';
       if (msg.includes('NO_CREDITS')) setNoCredits(true);
-      else setError(toErrorMessage(e, 'Could not book that time.'));
+      else if (msg.includes('HORSE_CARE_DOCS_REQUIRED')) {
+        // backend generated whatever was missing for this horse; surface the list.
+        const m = msg.match(/\[(.*)\]/);
+        setDocsGate(m ? m[1].split(',').map((s) => s.replace(/["\s]/g, '')).filter(Boolean) : []);
+      } else setError(toErrorMessage(e, 'Could not book that time.'));
     } finally { setBusy(false); }
   }
 
@@ -614,14 +629,36 @@ function DetailPanel({ item, onClose, onChanged, onBuy }: { item: CalendarItem; 
         {done && <p className="bg-green-50 border border-green-200 text-green-800 text-sm p-3 rounded mb-3">{done}</p>}
 
         {!done && isAvailable && (
-          <div>
-            {noCredits ? (
+          <div className="flex flex-col gap-3">
+            {isCare && (
+              <label className="text-sm">
+                <span className="form-label">Which horse is this for?</span>
+                <select className="form-input" value={horseId} onChange={(e) => { setHorseId(e.target.value); setDocsGate(null); }}>
+                  <option value="">Select a horse…</option>
+                  {horses.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
+                </select>
+                {horses.length === 0 && (
+                  <span className="block text-xs text-muted mt-1">
+                    No horses on file yet. <Link to="/app/stable" className="text-green-800 underline">Add your horse</Link> first.
+                  </span>
+                )}
+              </label>
+            )}
+            {docsGate ? (
               <div className="bg-gold-50 border border-gold-200 p-3 rounded text-sm">
-                <p className="text-green-900 mb-2">You don’t have any lesson credits.</p>
-                <button type="button" className="btn-primary text-sm justify-center w-full" onClick={onBuy}>Buy lessons</button>
+                <p className="text-green-900 mb-2">
+                  Before this horse’s first care session we need two signed releases. We’ve prepared them for you.
+                </p>
+                <Link to="/app/contracts" className="btn-primary text-sm justify-center w-full">Review &amp; sign paperwork</Link>
+              </div>
+            ) : noCredits ? (
+              <div className="bg-gold-50 border border-gold-200 p-3 rounded text-sm">
+                <p className="text-green-900 mb-2">You don’t have any {isCare ? 'service' : 'lesson'} credits.</p>
+                <button type="button" className="btn-primary text-sm justify-center w-full" onClick={onBuy}>Buy {isCare ? 'sessions' : 'lessons'}</button>
               </div>
             ) : (
-              <button type="button" className="btn-primary w-full justify-center" disabled={busy} onClick={() => void book()}>
+              <button type="button" className="btn-primary w-full justify-center"
+                disabled={busy || (isCare && !horseId)} onClick={() => void book()}>
                 {busy ? 'Booking…' : 'Book this time'}
               </button>
             )}
