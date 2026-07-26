@@ -397,6 +397,20 @@ export const CATEGORY_TOKEN: Record<string, string> = {
   Guest: 'GUEST', Rider: 'RIDER', 'Horse owner': 'HORSE_OWNER',
 };
 
+/** Signed-contact detection: the account category implied by a contact's already
+ *  EXECUTED documents (kiosk walk-in), plus which templates they've signed — so
+ *  the provision form preselects the category and shows signed docs as complete. */
+export async function suggestedCategoryForContact(
+  contactId: string,
+): Promise<{ suggested: string; executed_templates: string[] }> {
+  const { data, error } = await supabase.rpc('suggested_category_for_contact', {
+    p_contact_id: contactId,
+  });
+  if (error) throw error;
+  const out = (data ?? {}) as { suggested?: string; executed_templates?: string[] };
+  return { suggested: out.suggested ?? 'GUEST', executed_templates: out.executed_templates ?? [] };
+}
+
 /** Attach offering(s) to an EXISTING client account (purchase + credits only —
  *  no category/document/invitation side effects). Uses the same spine helper as
  *  provisioning via the attach_offerings_to_client RPC. */

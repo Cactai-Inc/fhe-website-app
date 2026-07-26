@@ -13,6 +13,8 @@ import {
   type ClientAccountRow, type ClientItems, type CategoryDocDefault,
 } from '../../lib/admin';
 import { fetchOfferings } from '../../lib/api';
+import { docDisplayLabel } from '../../lib/documentStatus';
+import { ProvisionClientForm } from '../../components/app/ProvisionClientForm';
 import type { Offering } from '../../lib/types';
 
 /**
@@ -283,31 +285,30 @@ function LoginTab({ ov }: { ov: Overview }) {
 }
 
 // ── provisioned-client view (no login yet): items + billing + the invite ─────
+// Two states: NOT-yet-provisioned (no invitation) → the shared ProvisionClientForm
+// (assign category/offerings/paperwork + send, on THIS existing contact); already
+// invited → resend / expire / delete controls.
 function InvitePanel({ row, onSent }: { row: ClientAccountRow; onSent: () => void }) {
-  const [scheduled, setScheduled] = useState(row.invite_scheduled_for ?? '');
-  const [days, setDays] = useState('7');
   const [result, setResult] = useState<{ url: string; emailed: boolean } | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const sent = row.invite_status === 'sent';
   const expired = sent && row.invite_expires_at ? new Date(row.invite_expires_at) < new Date() : false;
+  // Never invited → provision this existing contact via the shared form.
+  const neverInvited = !row.invite_id && !row.invite_status;
 
-  async function send() {
-    setBusy(true); setErr(null); setResult(null);
-    try {
-      const r = await adminSendInvitation({
-        email: row.email!,
-        expiresInDays: Number(days) || 7,
-        ...(scheduled ? { scheduledFor: scheduled } : {}),
-      });
-      setResult({ url: r.registerUrl, emailed: r.emailed });
-      onSent();
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not send the invitation.');
-    } finally {
-      setBusy(false);
-    }
+  if (neverInvited && row.contact_id) {
+    return (
+      <section className="bg-white border border-gold-600/40 rounded-xl p-4 mt-4">
+        <h3 className="font-serif text-green-800 text-base mb-1">Provision & invite</h3>
+        <p className="text-[12px] text-muted mb-4">
+          Assign their category, paperwork, and any offerings, then send the activation invite.
+        </p>
+        <ProvisionClientForm source="contact" contactId={row.contact_id} email={row.email ?? undefined}
+          onProvisioned={onSent} />
+      </section>
+    );
   }
 
   return (
@@ -316,27 +317,19 @@ function InvitePanel({ row, onSent }: { row: ClientAccountRow; onSent: () => voi
       <p className="text-[12px] text-muted mb-3">
         {sent
           ? `Last invite ${expired ? 'EXPIRED' : 'expires'} ${row.invite_expires_at ? new Date(row.invite_expires_at).toLocaleString() : ''} — resend any time.`
-          : 'Everything attached? Send the registration invite.'}
+          : 'Send the registration invite.'}
       </p>
-      <div className="grid sm:grid-cols-3 gap-3 mb-3">
-        <div>
-          <span className="form-label">Agreed start date (optional)</span>
-          <input type="date" className="form-input" value={scheduled} onChange={(e) => setScheduled(e.target.value)} />
-        </div>
-        {!scheduled && (
-          <div>
-            <span className="form-label">Expires in (days)</span>
-            <input type="number" min={1} className="form-input" value={days} onChange={(e) => setDays(e.target.value)} />
-          </div>
-        )}
-        {scheduled && (
-          <p className="text-[11.5px] text-gold-800 self-end pb-2.5 sm:col-span-2">
-            A set date puts this on the 48-hour claim &amp; pay window.
-          </p>
-        )}
-      </div>
       <div className="flex flex-wrap items-center gap-2">
-        <button type="button" disabled={busy || !row.email} onClick={() => void send()}
+        <button type="button" disabled={busy || !row.email}
+          onClick={() => void (async () => {
+            setBusy(true); setErr(null); setResult(null);
+            try {
+              const r = await adminSendInvitation({ email: row.email! });
+              setResult({ url: r.registerUrl, emailed: r.emailed });
+              onSent();
+            } catch (e) { setErr(e instanceof Error ? e.message : 'Could not send the invitation.'); }
+            finally { setBusy(false); }
+          })()}
           className="btn-primary text-xs">
           {busy ? 'Sending…' : sent ? 'Resend invitation' : 'Send invitation'}
         </button>
@@ -473,7 +466,7 @@ function PendingClientView({ row, onChanged }: { row: ClientAccountRow; onChange
           <button key={d.id} type="button" onClick={() => navigate(`/app/ops/documents/${d.id}`)}
             className="w-full flex items-center justify-between gap-3 border-b border-green-800/[0.06] py-2 text-left hover:bg-cream-100/50">
             <span className="text-sm text-green-900">{d.title ?? 'Document'}</span>
-            <span className="text-xs text-muted">{d.workflow_state ?? d.status}</span>
+            <span className="text-xs text-muted">{docDisplayLabel(d.status, d.workflow_state)}</span>
           </button>
         ))}
       </section>
@@ -862,7 +855,7 @@ export default function Admin() {
                     key: String(r.id),
                     main: String(r.title ?? 'Document'),
                     sub: notStarted ? 'Assigned — not started' : fmtTs(r.created_at as string),
-                    badge: notStarted ? 'Not started' : String(r.workflow_state ?? r.status),
+                    badge: notStarted ? 'Not started' : docDisplayLabel(r.status as string, r.workflow_state as string),
                     href: notStarted ? undefined : `/app/ops/documents/${String(r.id)}`,
                   };
                 }} />

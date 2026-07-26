@@ -15,7 +15,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { toErrorMessage } from '../../../lib/ops/errors';
-import { DataTable, FormField, Modal, StatusBadge, useAsync, useToast } from '../../../lib/ops';
+import { DataTable, Modal, StatusBadge, useAsync, useToast } from '../../../lib/ops';
 import type { Column } from '../../../lib/ops';
 import { useDocumentTitle } from '../../../lib/hooks';
 import {
@@ -39,11 +39,10 @@ import type {
   BookingRequest,
   BookingRequestStatus,
 } from '../../../lib/ops/api-intake';
-import { fetchOfferings } from '../../../lib/api';
-import { adminSendInvitation } from '../../../lib/admin';
+import { ProvisionClientForm } from '../../../components/app/ProvisionClientForm';
 import { listSupportRequests, setSupportStatus, type SupportRequest } from '../../../lib/support';
 import { BookingFieldsSettings } from './BookingFieldsSettings';
-import type { Offering, ProposedTime } from '../../../lib/types';
+import type { ProposedTime } from '../../../lib/types';
 
 // ════════════════════════════════════════════════════════════════════════════
 // Booking requests — the Request Inbox (Flow A step 2)
@@ -74,17 +73,6 @@ export const LESSON_FIT_CHECKLIST: { key: string; label: string }[] = [
 const CONTACT_METHOD_LABEL: Record<string, string> = {
   text: 'Text', call: 'Call', email: 'Email',
 };
-
-const PAYMENT_METHODS = ['Zelle', 'Cash', 'Card', 'Other'];
-
-/** "$500" / "$587.50" for the offering select labels (mirrors Admin InviteTab). */
-function formatTierPrice(amount: number | null): string {
-  if (amount == null) return '';
-  return `$${Number(amount).toLocaleString('en-US', {
-    minimumFractionDigits: Number.isInteger(Number(amount)) ? 0 : 2,
-    maximumFractionDigits: 2,
-  })}`;
-}
 
 /** The visitor's own words: everything before the appended availability block. */
 const AVAILABILITY_MARKER = '— Availability & experience —';
@@ -182,56 +170,22 @@ function AvailabilitySection({ request }: { request: BookingRequest }) {
   );
 }
 
-/** Account-category options for the conversion form (standing categories). */
-const INTAKE_CATEGORY_OPTIONS: { token: string; label: string }[] = [
-  { token: 'GUEST', label: 'Guest' },
-  { token: 'RIDER', label: 'Rider' },
-  { token: 'HORSE_OWNER', label: 'Horse Owner' },
-];
-/** Category token → offering segments it may purchase (union when stacked). */
-const INTAKE_SEGMENTS: Record<string, ('rider' | 'horse' | 'acquisition')[]> = {
-  GUEST: ['acquisition'],
-  RIDER: ['rider', 'acquisition'],
-  HORSE_OWNER: ['horse', 'acquisition'],
-};
-
+/** Name + email pre-fill carried from a submission into the shared provision
+ *  form (category/offerings/paperwork/payment are handled in ProvisionClientForm). */
 interface InviteFormState {
   firstName: string;
   lastName: string;
   email: string;
-  /** Standing account category tokens (GUEST/RIDER/HORSE_OWNER), stackable. */
-  categories: string[];
-  /** Offering (child) ids to purchase — seeded from the submission's selections. */
-  offeringIds: string[];
-  markPaid: boolean;
-  paymentMethod: string;
-  notes: string;
-}
-
-/** Map the submission's intake category to the standing account category. */
-function standingCategoryForIntake(category: string | null): string {
-  switch (category) {
-    case 'lessons':    return 'RIDER';
-    case 'horse_care': return 'HORSE_OWNER';
-    default:           return 'GUEST'; // general / acquisition / media / partnership
-  }
 }
 
 function inviteFormFor(r: BookingRequest): InviteFormState {
   // The unified intake stores first/last directly; fall back to the legacy
-  // first-space split only for older rows that predate the split. Name flows to
-  // the created account (entry b keeps the submission's name).
+  // first-space split only for older rows that predate the split.
   const split = splitContactName(r.contact_name);
   return {
     firstName: r.contact_first_name?.trim() || split.firstName,
     lastName: r.contact_last_name?.trim() || split.lastName,
     email: r.contact_email,
-    categories: [standingCategoryForIntake(r.category)],
-    // Pre-check the offerings the visitor selected (already resolved to ids).
-    offeringIds: (r.request_selections ?? []).map((s) => s.offering_id).filter((x): x is string => Boolean(x)),
-    markPaid: false,
-    paymentMethod: 'Zelle',
-    notes: r.notes?.trim() ?? '',
   };
 }
 
@@ -249,7 +203,6 @@ function RequestInbox({ openId }: { openId?: string } = {}) {
   const [inviteResult, setInviteResult] = useState<{
     url: string; emailed: boolean; offeringLabel?: string;
   } | null>(null);
-  const [offerings, setOfferings] = useState<Offering[]>([]);
   const [horses, setHorses] = useState<ScheduleHorseOption[]>([]);
   // Schedule-lesson section (invited/converted requests): the provisioned
   // client resolved via request → invitation → email → contact → client, plus
@@ -275,11 +228,7 @@ function RequestInbox({ openId }: { openId?: string } = {}) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter]);
 
-  // Flat riding-lesson offerings for the provisioning select (mirrors Admin InviteTab).
   useEffect(() => {
-    fetchOfferings()
-      .then(setOfferings)
-      .catch(() => setOfferings([]));
     listScheduleHorses()
       .then(setHorses)
       .catch(() => setHorses([]));
@@ -350,35 +299,6 @@ function RequestInbox({ openId }: { openId?: string } = {}) {
     }
   };
 
-  const send = useAsync(adminSendInvitation);
-  const handleSendInvite = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selected || !invite) return;
-    setActionError(null);
-    try {
-      const r = await send.run({
-        email: invite.email.trim(),
-        requestId: selected.id,
-        // Submission conversion keeps the visitor's captured name.
-        ...(invite.firstName.trim() ? { firstName: invite.firstName.trim() } : {}),
-        ...(invite.lastName.trim() ? { lastName: invite.lastName.trim() } : {}),
-        categories: invite.categories,
-        ...(invite.offeringIds.length ? { offeringIds: invite.offeringIds } : {}),
-        paymentStatus: invite.markPaid ? 'paid' : 'unpaid',
-        ...(invite.markPaid ? { paymentMethod: invite.paymentMethod } : {}),
-        ...(invite.notes.trim() ? { notes: invite.notes.trim() } : {}),
-      });
-      setInviteResult({ url: r.registerUrl, emailed: r.emailed, offeringLabel: r.offeringLabel });
-      // The RPC flipped the request server-side; mirror it locally + refresh.
-      setSelected((prev) => (prev ? { ...prev, status: 'invited' } : prev));
-      setInviteOpen(false);
-      toast.success('Confirmation sent — invitation created.');
-      await refresh(statusFilter);
-    } catch (err) {
-      setActionError(toErrorMessage(err, 'Could not send the invitation.'));
-    }
-  };
-
   const scheduleSession = useAsync(scheduleLessonSession);
   const handleScheduleLesson = async (values: ScheduleSessionFormValues) => {
     if (!selected) return;
@@ -401,15 +321,8 @@ function RequestInbox({ openId }: { openId?: string } = {}) {
     if (row) { setAutoOpened(openId); openRequest(row); }
   }, [openId, rows, autoOpened]);
 
-  const busy = addNote.isPending || contact.isPending || send.isPending;
+  const busy = addNote.isPending || contact.isPending;
   const allChecked = LESSON_FIT_CHECKLIST.every((item) => checklist[item.key] === true);
-  // Offerings are OPTIONAL (a category-only invite still provisions the account).
-  // Email + at least one standing category are required; name is carried from the
-  // submission when present but not required (captured at first-login intake).
-  const inviteReady =
-    invite !== null &&
-    invite.email.trim() !== '' &&
-    invite.categories.length > 0;
   const own = selected ? visitorNotes(selected.notes) : null;
 
   return (
@@ -664,164 +577,32 @@ function RequestInbox({ openId }: { openId?: string } = {}) {
             )}
 
             {inviteOpen && !inviteResult && invite && (
-              <form
-                onSubmit={handleSendInvite}
-                aria-label="Send confirmation & invite"
-                className="border-t border-green-800/10 pt-4"
-              >
+              <div className="border-t border-green-800/10 pt-4">
                 <p className="body-text text-sm mb-4">
                   Provision what they bought and email the registration invitation — their account
                   opens straight into onboarding with the paperwork ready to sign.
                 </p>
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField label="First name" required>
-                    {({ id }) => (
-                      <input
-                        id={id}
-                        className="form-input"
-                        required
-                        value={invite.firstName}
-                        onChange={(e) => setInvite({ ...invite, firstName: e.target.value })}
-                      />
-                    )}
-                  </FormField>
-                  <FormField label="Last name" required>
-                    {({ id }) => (
-                      <input
-                        id={id}
-                        className="form-input"
-                        required
-                        value={invite.lastName}
-                        onChange={(e) => setInvite({ ...invite, lastName: e.target.value })}
-                      />
-                    )}
-                  </FormField>
-                </div>
-                <FormField label="Email" required>
-                  {({ id }) => (
-                    <input
-                      id={id}
-                      type="email"
-                      className="form-input"
-                      required
-                      value={invite.email}
-                      onChange={(e) => setInvite({ ...invite, email: e.target.value })}
-                    />
-                  )}
-                </FormField>
-                <FormField label="Account category">
-                  {() => (
-                    <div className="flex flex-wrap gap-2">
-                      {INTAKE_CATEGORY_OPTIONS.map((c) => {
-                        const on = invite.categories.includes(c.token);
-                        return (
-                          <button type="button" key={c.token}
-                            onClick={() => setInvite({
-                              ...invite,
-                              categories: on ? invite.categories.filter((x) => x !== c.token) : [...invite.categories, c.token],
-                            })}
-                            aria-pressed={on}
-                            className={`px-3 py-1.5 text-sm border rounded-full transition ${
-                              on ? 'bg-green-800 text-white border-green-800' : 'bg-white text-secondary border-green-800/30 hover:border-green-800'
-                            }`}>
-                            {c.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </FormField>
-                <FormField label="Offerings (optional)">
-                  {() => {
-                    const segs = new Set(invite.categories.flatMap((t) => INTAKE_SEGMENTS[t] ?? []));
-                    const visible = offerings.filter((o) => segs.has(o.segment) && (o.tiers?.length ?? 0) > 0);
-                    if (visible.length === 0) {
-                      return <p className="text-sm text-muted">No purchasable offerings for this category.</p>;
-                    }
-                    return (
-                      <div className="space-y-3 max-h-60 overflow-y-auto border border-green-800/15 rounded-lg p-3">
-                        {visible.map((o) => (
-                          <div key={o.id}>
-                            <p className="text-xs uppercase tracking-wide text-secondary/70 mb-1">{o.name}</p>
-                            <div className="space-y-1">
-                              {(o.tiers ?? []).map((t) => (
-                                <label key={t.id} className="flex items-center gap-2 text-sm text-secondary">
-                                  <input type="checkbox" className="accent-green-800"
-                                    checked={invite.offeringIds.includes(t.id)}
-                                    onChange={() => setInvite({
-                                      ...invite,
-                                      offeringIds: invite.offeringIds.includes(t.id)
-                                        ? invite.offeringIds.filter((x) => x !== t.id)
-                                        : [...invite.offeringIds, t.id],
-                                    })} />
-                                  <span className="flex-1">{t.label}</span>
-                                  <span className="whitespace-nowrap">{formatTierPrice(t.price_amount)}</span>
-                                </label>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    );
+                {/* The ONE shared provision form (source='submission'): carries the
+                    request id (links + flips to invited) and the visitor's name. */}
+                <ProvisionClientForm
+                  source="submission"
+                  requestId={selected.id}
+                  email={invite.email}
+                  firstName={invite.firstName}
+                  lastName={invite.lastName}
+                  onProvisioned={(r) => {
+                    setInviteResult({ url: r.registerUrl, emailed: r.emailed, offeringLabel: r.offeringLabel });
+                    setSelected((prev) => (prev ? { ...prev, status: 'invited' } : prev));
+                    void refresh(statusFilter);
+                    toast.success('Confirmation sent — invitation created.');
                   }}
-                </FormField>
-                <label className="flex items-center gap-2 mb-4 text-sm text-secondary">
-                  <input
-                    type="checkbox"
-                    checked={invite.markPaid}
-                    onChange={(e) => setInvite({ ...invite, markPaid: e.target.checked })}
-                    className="accent-green-800"
-                  />
-                  Already paid
-                </label>
-                {invite.markPaid && (
-                  <FormField label="Payment method">
-                    {({ id }) => (
-                      <select
-                        id={id}
-                        className="form-input"
-                        value={invite.paymentMethod}
-                        onChange={(e) => setInvite({ ...invite, paymentMethod: e.target.value })}
-                      >
-                        {PAYMENT_METHODS.map((m) => (
-                          <option key={m} value={m}>
-                            {m}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                  </FormField>
-                )}
-                <FormField label="Notes (optional)">
-                  {({ id }) => (
-                    <textarea
-                      id={id}
-                      rows={3}
-                      className="form-input resize-none"
-                      value={invite.notes}
-                      onChange={(e) => setInvite({ ...invite, notes: e.target.value })}
-                    />
-                  )}
-                </FormField>
-                <div className="flex justify-end gap-3">
-                  <button
-                    type="button"
-                    className="btn-outline-gold text-sm"
-                    disabled={send.isPending}
-                    onClick={() => setInviteOpen(false)}
-                  >
+                />
+                <div className="flex justify-end mt-3">
+                  <button type="button" className="btn-outline-gold text-sm" onClick={() => setInviteOpen(false)}>
                     Back
                   </button>
-                  <button
-                    type="submit"
-                    className="btn-primary text-sm"
-                    disabled={send.isPending || !inviteReady}
-                    aria-busy={send.isPending}
-                  >
-                    {send.isPending ? 'Sending…' : 'Send invitation'}
-                  </button>
                 </div>
-              </form>
+              </div>
             )}
           </div>
         )}
