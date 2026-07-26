@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { fetchMyGrantKeys } from '../lib/grants';
-import { redeemMyPendingInvitation, ensureMyMembership } from '../lib/api';
+import { redeemMyPendingInvitation, ensureMyMemberAccess } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 
 /** Gates a route behind authentication. Redirects unauthenticated visitors to
@@ -55,7 +55,7 @@ export default function ProtectedRoute({
     (async () => {
       let healed = false;
       try { healed = await redeemMyPendingInvitation(); } catch { /* fall through */ }
-      if (!healed) { try { healed = await ensureMyMembership(); } catch { /* fall through */ } }
+      if (!healed) { try { healed = await ensureMyMemberAccess(); } catch { /* fall through */ } }
       // Whether or not the heal RPCs reported success, ALWAYS re-fetch so isMember
       // reflects the real (possibly already-active) membership — the common case is a
       // freshly-activated account whose membership just hadn't loaded into context yet.

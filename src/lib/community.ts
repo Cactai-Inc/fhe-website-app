@@ -3,7 +3,7 @@
  */
 import { supabase } from './supabase';
 import type {
-  Membership, MemberDirectoryEntry, MemberHorse, Announcement, Channel, ChannelMessage,
+  Member, MemberDirectoryEntry, MemberHorse, Announcement, Channel, ChannelMessage,
   Thread, ThreadPost, DirectMessage, DmConversation, ContentPost, ContentResource,
   CommunityEvent, EventRsvp, RsvpStatus,
 } from './community-types';
@@ -14,11 +14,11 @@ async function uid(): Promise<string> {
   return data.user.id;
 }
 
-// ─── Membership ──────────────────────────────────────────────────────────────
-export async function getMyMembership(): Promise<Membership | null> {
-  const { data, error } = await supabase.from('memberships').select('*').maybeSingle();
+// ─── Member ──────────────────────────────────────────────────────────────
+export async function getMyMember(): Promise<Member | null> {
+  const { data, error } = await supabase.from('members').select('*').maybeSingle();
   if (error) throw error;
-  return (data as Membership) ?? null;
+  return (data as Member) ?? null;
 }
 
 // ─── Directory ───────────────────────────────────────────────────────────────

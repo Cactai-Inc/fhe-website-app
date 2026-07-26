@@ -45,7 +45,7 @@ interface Overview {
     providers: string[]; last_sign_in_at: string | null;
     created_at: string; email_confirmed_at: string | null;
   } | null;
-  membership: { tier: string | null; status: string | null; started_at: string | null } | null;
+  member: { tier: string | null; status: string | null; started_at: string | null } | null;
   counts: { orders: number; posts: number; documents: number; bookings: number };
 }
 
@@ -202,7 +202,7 @@ function OverviewTab({ ov }: { ov: Overview }) {
     ['Email', p.email], ['Phone', p.phone ?? '—'], ['Mobile', p.mobile ?? '—'],
     ['WhatsApp', p.whatsapp ?? '—'], ['Riding level', p.riding_level ?? '—'],
     ['Joined', fmt(p.created_at)],
-    ['Membership', ov.membership ? `${ov.membership.tier ?? 'member'} · ${ov.membership.status ?? '—'}` : 'None'],
+    ['Member', ov.member ? `${ov.member.tier ?? 'member'} · ${ov.member.status ?? '—'}` : 'None'],
   ];
   return (
     <div>
@@ -554,7 +554,7 @@ export default function Admin() {
       || (m.email ?? '').toLowerCase().includes(needle));
     return [...filtered].sort((a, b) => {
       if (sortKey === 'name') return memberName(a).localeCompare(memberName(b));
-      if (sortKey === 'status') return Number(b.membership_status === 'active') - Number(a.membership_status === 'active');
+      if (sortKey === 'status') return Number(b.member_status === 'active') - Number(a.member_status === 'active');
       return new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime();
     });
   }, [members, q, sortKey]);
@@ -705,8 +705,8 @@ export default function Admin() {
                         : m.invite_status === 'accepted' ? 'Claimed' : 'Not invited'}
                     </span>
                   ) : (
-                    <span className={`block text-[10.5px] font-sans uppercase ${m.membership_status === 'active' ? 'text-green-700' : 'text-muted'}`}>
-                      {m.membership_status === 'active' ? 'Active' : 'Inactive'}
+                    <span className={`block text-[10.5px] font-sans uppercase ${m.member_status === 'active' ? 'text-green-700' : 'text-muted'}`}>
+                      {m.member_status === 'active' ? 'Active' : 'Inactive'}
                       {m.is_suspended ? ' · suspended' : ''}
                     </span>
                   )}

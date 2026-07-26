@@ -110,8 +110,8 @@ export async function redeemInvitation(token: string): Promise<void> {
  *  grants the community membership redeem_invitation would have granted when
  *  the signed-in account's contact is a provisioned client. Returns whether an
  *  active membership now exists. */
-export async function ensureMyMembership(): Promise<boolean> {
-  const { data, error } = await supabase.rpc('ensure_my_membership');
+export async function ensureMyMemberAccess(): Promise<boolean> {
+  const { data, error } = await supabase.rpc('ensure_my_member_access');
   if (error) throw error;
   return Boolean(data);
 }

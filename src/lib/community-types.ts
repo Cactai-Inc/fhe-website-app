@@ -3,16 +3,16 @@
  */
 import type { PreferredContact } from './contact';
 
-export type MembershipTier = 'community' | 'rider' | 'full';
-export type MembershipStatus = 'active' | 'paused' | 'cancelled';
+export type MemberTier = 'community' | 'rider' | 'full';
+export type MemberStatus = 'active' | 'paused' | 'cancelled';
 export type ResourceKind = 'file' | 'video' | 'link';
 export type RsvpStatus = 'going' | 'maybe' | 'declined';
 
-export interface Membership {
+export interface Member {
   id: string;
   user_id: string;
-  tier: MembershipTier;
-  status: MembershipStatus;
+  tier: MemberTier;
+  status: MemberStatus;
   started_at: string;
   renews_at: string | null;
 }

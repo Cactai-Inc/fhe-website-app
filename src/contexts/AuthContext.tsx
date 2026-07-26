@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import * as auth from '../lib/auth';
 import { myModules } from '../lib/api';
 import type { Profile } from '../lib/types';
-import type { Membership } from '../lib/community-types';
+import type { Member } from '../lib/community-types';
 
 export type AppRole = 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'EMPLOYEE' | 'USER';
 
@@ -12,7 +12,7 @@ interface AuthContextValue {
   session: Session | null;
   user: User | null;
   profile: Profile | null;
-  membership: Membership | null;
+  member: Member | null;
   loading: boolean;
   isAdmin: boolean;
   // Two-operator model (Slice 5): isStaff = any operator (matches has_staff_access()
@@ -45,38 +45,38 @@ type ProfileRow = Profile & { role?: AppRole | null; org_id?: string | null };
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<ProfileRow | null>(null);
-  const [membership, setMembership] = useState<Membership | null>(null);
+  const [member, setMember] = useState<Member | null>(null);
   const [modules, setModules] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadProfile = useCallback(async (userId: string | undefined) => {
     if (!userId) {
       setProfile(null);
-      setMembership(null);
+      setMember(null);
       setModules([]);
       return;
     }
     const [{ data: prof }, { data: mem }] = await Promise.all([
       supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle(),
-      supabase.from('memberships').select('*').eq('user_id', userId).maybeSingle(),
+      supabase.from('members').select('*').eq('user_id', userId).maybeSingle(),
     ]);
-    // Membership self-heal: a provisioned client whose invitation token was
+    // Member self-heal: a provisioned client whose invitation token was
     // lost/consumed signs in with no membership and would dead-end at the
     // member gate. ensure_my_membership grants what redeem_invitation would
     // have; a failure (e.g. RPC not yet deployed) must NOT block sign-in.
-    if (prof && (mem as Membership | null)?.status !== 'active') {
+    if (prof && (mem as Member | null)?.status !== 'active') {
       try {
-        const { data: healed } = await supabase.rpc('ensure_my_membership');
+        const { data: healed } = await supabase.rpc('ensure_my_member_access');
         if (healed) {
           ({ data: mem } = await supabase
-            .from('memberships').select('*').eq('user_id', userId).maybeSingle());
+            .from('members').select('*').eq('user_id', userId).maybeSingle());
         }
       } catch {
         // gate stays closed on error — same posture as myModules below
       }
     }
     setProfile((prof as ProfileRow) ?? null);
-    setMembership((mem as Membership) ?? null);
+    setMember((mem as Member) ?? null);
     // Resolve the tenant module set for nav/route gating. A failure (e.g. the RPC
     // not yet deployed) must NOT block sign-in — gate closed (empty) on error.
     try {
@@ -127,7 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = useCallback(async () => {
     await auth.signOut();
     setProfile(null);
-    setMembership(null);
+    setMember(null);
     setModules([]);
   }, []);
 
@@ -154,12 +154,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         session,
         user: session?.user ?? null,
         profile,
-        membership,
+        member,
         loading,
         isAdmin,
         isStaff,
         isTrainer,
-        isMember: (!profile?.is_suspended) && (isStaff || membership?.status === 'active'),
+        isMember: (!profile?.is_suspended) && (isStaff || member?.status === 'active'),
         isSuperAdmin,
         role,
         orgId: profile?.org_id ?? null,
