@@ -37,15 +37,15 @@ Lease type: {{TXN.LEASE_TYPE}}.
 
 ### Clauses
 
-**[SCHEDULE.MAIN]** — Schedule for Lessee's Usage _(shown when: JSON.stringify(c.conditional_on))_
+**[SCHEDULE.MAIN]** — Schedule for Lessee's Usage _(shown when: {"equals":["PARTIAL"],"field_key":"TXN.LEASE_TYPE"})_
 
 Days of the week reserved for Lessee's use: {{TXN.DAYS_USED}}
 
-**[SCHEDULE.OTHER]** _(optional)_ _(shown when: JSON.stringify(c.conditional_on))_
+**[SCHEDULE.OTHER]** _(shown when: {"equals":["PARTIAL"],"field_key":"TXN.LEASE_TYPE"})_
 
 Additional or custom schedule terms: {{TXN.SCHEDULE_TERMS}}
 
-**[SCHEDULE.CHANGES]** — Schedule Changes _(shown when: JSON.stringify(c.conditional_on))_
+**[SCHEDULE.CHANGES]** — Schedule Changes _(shown when: {"equals":["PARTIAL"],"field_key":"TXN.LEASE_TYPE"})_
 
 Any changes to the agreed upon schedule must be made and accepted in writing.
 
@@ -63,7 +63,7 @@ Any changes to the agreed upon schedule must be made and accepted in writing.
 
 ### Fields
 - **[TXN.LEASE_FEE]** Lease fee — _fee_schedule/text_, owner: LESSOR
-- **[TXN.MONTHLY_START]** First monthly payment date — _date/date_, owner: DEAL · when: JSON.stringify(f.conditional_on)
+- **[TXN.MONTHLY_START]** First monthly payment date — _date/date_, owner: DEAL · shown when: {"equals":["FEE"],"field_key":"TXN.LEASE_FEE_TYPE"}
 
 ## [PAYMENT_TERMS] Payment Terms
 
@@ -82,7 +82,6 @@ A party seeking reimbursement for an expense paid on behalf of the other party s
 All payments are due on their due date or within 5 business days of notification of the amount owed. Payments will be deemed late if they remain unpaid on the 6th business day. Late payments are considered a breach of the contract terms and may be grounds for termination of the Agreement unless the party from whom the payment is owed has communicated in writing the date by which payment will be made. Payments exceeding 1 calendar month in past-due status shall void the Agreement unless prior written acceptance of the delay is provided by the party to whom the payment is owed.
 
 ## [PAYMENT_METHOD] Payment Method
-> How the Lessee may pay amounts owed under this Agreement.
 
 ### Clauses
 
@@ -90,7 +89,7 @@ All payments are due on their due date or within 5 business days of notification
 
 The Lessee may pay amounts owed under this Agreement by the following method(s): {{TXN.PAYMENT_METHODS}}.
 
-**[PAYMENT_METHOD.CARD]** _(optional)_ _(shown when: JSON.stringify(c.conditional_on))_
+**[PAYMENT_METHOD.CARD]** _(shown when: {"contains":["CREDIT_CARD"],"field_key":"TXN.PAYMENT_METHODS"})_
 
 Credit card payments are processed as follows: {{TXN.CARD_PROCESSOR}}.
 
@@ -98,7 +97,7 @@ Credit card payments are processed as follows: {{TXN.CARD_PROCESSOR}}.
 
 The Lessor may pay amounts owed under this Agreement by the following method(s): {{TXN.LESSOR_PAYMENT_METHODS}}.
 
-**[PAYMENT_METHOD.CARD_LESSOR]** _(shown when: JSON.stringify(c.conditional_on))_
+**[PAYMENT_METHOD.CARD_LESSOR]** _(shown when: {"contains":["CREDIT_CARD"],"field_key":"TXN.LESSOR_PAYMENT_METHODS"})_
 
 Credit card payments are processed as follows: {{TXN.LESSOR_CARD_PROCESSOR}}.
 
@@ -137,7 +136,7 @@ Co-owners: {{TXN.CO_OWNERS}}
 
 Are there any ownership related leasing restrictions? {{TXN.HAS_OWNERSHIP_LIMITS}}
 
-**[HORSE.OWNERSHIP_LIMITS]** _(optional)_ _(shown when: JSON.stringify(c.conditional_on))_
+**[HORSE.OWNERSHIP_LIMITS]** _(shown when: {"equals":["YES"],"field_key":"TXN.HAS_OWNERSHIP_LIMITS"})_
 
 Ownership related leasing restrictions: {{TXN.OWNERSHIP_LIMITATIONS}}
 
@@ -145,7 +144,7 @@ Ownership related leasing restrictions: {{TXN.OWNERSHIP_LIMITATIONS}}
 
 The Lessor warrants that the Horse has no history of dangerous or vicious behavior as of the Effective Date of this Agreement.
 
-**[HORSE.BEHAVIOR_EXC]** _(optional)_ _(shown when: JSON.stringify(c.conditional_on))_
+**[HORSE.BEHAVIOR_EXC]** _(shown when: {"equals":["YES"],"field_key":"TXN.BEHAVIOR_HAS_EXCEPTIONS"})_
 
 The Lessor notes the following known exceptions to the behavior of the Horse: {{TXN.BEHAVIOR_EXCEPTIONS}}.
 
@@ -153,7 +152,7 @@ The Lessor notes the following known exceptions to the behavior of the Horse: {{
 
 The Lessor warrants that the Horse is sound and in good physical condition as of the Effective Date of this Agreement.
 
-**[HORSE.CONDITION_EXC]** _(optional)_ _(shown when: JSON.stringify(c.conditional_on))_
+**[HORSE.CONDITION_EXC]** _(shown when: {"equals":["YES"],"field_key":"TXN.CONDITION_HAS_EXCEPTIONS"})_
 
 The Lessor notes the following known exceptions to the physical condition of the Horse: {{TXN.CONDITION_EXCEPTIONS}}.
 
@@ -197,7 +196,7 @@ Location of the Horse: {{HORSE.CURRENT_LOCATION}}.
 
 **[LOCATION.MOVE_CHOICE]**
 
-**[LOCATION.NEW]** _(optional)_ _(shown when: JSON.stringify(c.conditional_on))_
+**[LOCATION.NEW]** _(shown when: {"equals":["YES"],"field_key":"TXN.HORSE_MOVES"})_
 
 Location during lease term: {{TXN.NEW_LOCATION}}.
 
@@ -216,7 +215,7 @@ Lessor may inspect the Horse at any time. If Lessor determines that the Horse is
 
 **[EVALUATION.CHOICE]**
 
-**[EVALUATION.DATES]** — Evaluation Period _(optional)_ _(shown when: JSON.stringify(c.conditional_on))_
+**[EVALUATION.DATES]** — Evaluation Period _(shown when: {"contains":["REQUESTED","REQUIRED"],"field_key":"TXN.EVALUATION_ENABLED"})_
 
 Lessee shall have an evaluation period of {{TXN.EVALUATION_LENGTH}} {{TXN.EVALUATION_UNIT}} beginning on the date this Agreement is fully signed by both parties, during which time either party may terminate the Agreement and all payments must be returned upon notification of termination.
 
@@ -233,11 +232,11 @@ Lessee shall have an evaluation period of {{TXN.EVALUATION_LENGTH}} {{TXN.EVALUA
 
 Term of this Agreement: {{TXN.LEASE_TERM_TYPE}}. This Agreement begins on {{TXN.LEASE_START}}.
 
-**[TERM.FIXED_END]** _(shown when: JSON.stringify(c.conditional_on))_
+**[TERM.FIXED_END]** _(shown when: {"equals":["FIXED"],"field_key":"TXN.LEASE_TERM_TYPE"})_
 
 This Agreement continues until {{TXN.LEASE_END}}.
 
-**[TERM.RENEWAL]** — Renewal Terms _(shown when: JSON.stringify(c.conditional_on))_
+**[TERM.RENEWAL]** — Renewal Terms _(shown when: {"equals":["YES"],"field_key":"TXN.RENEWAL_INCLUDE"})_
 
 Renewal terms: {{TXN.RENEWAL_TERMS}}
 
@@ -266,7 +265,7 @@ Notwithstanding the term stated above, this Agreement may be terminated earlier 
 Lessor grants Lessee the right to use the Horse for the following purpose(s): {{TXN.PERMITTED_ACTIVITIES}}
 Lessee shall not use the Horse for any other purpose without Lessor's prior written consent.
 
-**[PERMITTED_USE.TRAINER]** _(shown when: JSON.stringify(c.conditional_on))_
+**[PERMITTED_USE.TRAINER]** _(shown when: {"contains":["LESSONS","JUMPING","COMPETITIONS"],"field_key":"TXN.PERMITTED_ACTIVITIES"})_
 
 Riding Lessons, Jumping, and Competitions may take place only while a French Heritage Equestrian Approved Trainer or Instructor is present.
 
@@ -279,44 +278,44 @@ Lessons shall be conducted only by a French Heritage Equestrian Approved Instruc
 
 Any professional training of the Horse under this Agreement, including groundwork, schooling, and under-saddle training, shall be conducted only by a French Heritage Equestrian Approved Trainer.
 
-**[COMPETITIONS.INTRO]** — Competitions _(shown when: JSON.stringify(c.conditional_on))_
+**[COMPETITIONS.INTRO]** — Competitions _(shown when: {"contains":["COMPETITIONS"],"field_key":"TXN.PERMITTED_ACTIVITIES"})_
 
 Expenses of competition (entry fees, transportation, and the like) are: {{TXN.COMPETITION_EXPENSES}}.
 Any prize money or winnings earned in competition shall belong to: {{TXN.COMPETITION_WINNINGS}}.
 
-**[RESTRICT.JUMP_TITLE]** — Jumping Restrictions _(shown when: JSON.stringify(c.conditional_on))_
+**[RESTRICT.JUMP_TITLE]** — Jumping Restrictions _(shown when: {"contains":["JUMPING"],"field_key":"TXN.PERMITTED_ACTIVITIES"})_
 
 {{TXN.JUMP_OMIT}}
 
-**[RESTRICT.JUMP_ON]** _(shown when: JSON.stringify(c.conditional_on))_
+**[RESTRICT.JUMP_ON]** _(shown when: {"all":[{"contains":["JUMPING"],"field_key":"TXN.PERMITTED_ACTIVITIES"},{"equals":["NO"],"field_key":"TXN.JUMP_OMIT"}]})_
 
 Jumping is restricted as follows: maximum height {{TXN.JUMP_MAX_HEIGHT}}; no more than {{TXN.JUMP_DAYS_PER_WEEK}} days per week; under trainer supervision only: {{TXN.JUMP_SUPERVISION}}.
 
-**[RESTRICT.JUMP_OFF]** _(shown when: JSON.stringify(c.conditional_on))_
+**[RESTRICT.JUMP_OFF]** _(shown when: {"all":[{"contains":["JUMPING"],"field_key":"TXN.PERMITTED_ACTIVITIES"},{"equals":["YES"],"field_key":"TXN.JUMP_OMIT"}]})_
 
 Lessor does not restrict jumping.
 
-**[RESTRICT.COMP_TITLE]** — Competition Restrictions _(shown when: JSON.stringify(c.conditional_on))_
+**[RESTRICT.COMP_TITLE]** — Competition Restrictions _(shown when: {"contains":["COMPETITIONS"],"field_key":"TXN.PERMITTED_ACTIVITIES"})_
 
 {{TXN.COMP_OMIT}}
 
-**[RESTRICT.COMP_ON]** _(shown when: JSON.stringify(c.conditional_on))_
+**[RESTRICT.COMP_ON]** _(shown when: {"all":[{"contains":["COMPETITIONS"],"field_key":"TXN.PERMITTED_ACTIVITIES"},{"equals":["NO"],"field_key":"TXN.COMP_OMIT"}]})_
 
 Competitions are restricted as follows: {{TXN.COMP_RESTRICTION}}.
 
-**[RESTRICT.COMP_OFF]** _(shown when: JSON.stringify(c.conditional_on))_
+**[RESTRICT.COMP_OFF]** _(shown when: {"all":[{"contains":["COMPETITIONS"],"field_key":"TXN.PERMITTED_ACTIVITIES"},{"equals":["YES"],"field_key":"TXN.COMP_OMIT"}]})_
 
 Lessor does not restrict competitions.
 
-**[RESTRICT.TRAIL_TITLE]** — Trail-Riding Restrictions _(shown when: JSON.stringify(c.conditional_on))_
+**[RESTRICT.TRAIL_TITLE]** — Trail-Riding Restrictions _(shown when: {"contains":["TRAIL"],"field_key":"TXN.PERMITTED_ACTIVITIES"})_
 
 {{TXN.TRAIL_OMIT}}
 
-**[RESTRICT.TRAIL_ON]** _(shown when: JSON.stringify(c.conditional_on))_
+**[RESTRICT.TRAIL_ON]** _(shown when: {"all":[{"contains":["TRAIL"],"field_key":"TXN.PERMITTED_ACTIVITIES"},{"equals":["NO"],"field_key":"TXN.TRAIL_OMIT"}]})_
 
 Trail riding is restricted as follows: {{TXN.TRAIL_RESTRICTION}}.
 
-**[RESTRICT.TRAIL_OFF]** _(shown when: JSON.stringify(c.conditional_on))_
+**[RESTRICT.TRAIL_OFF]** _(shown when: {"all":[{"contains":["TRAIL"],"field_key":"TXN.PERMITTED_ACTIVITIES"},{"equals":["YES"],"field_key":"TXN.TRAIL_OMIT"}]})_
 
 Lessor does not restrict trail riding.
 
@@ -324,24 +323,24 @@ Lessor does not restrict trail riding.
 
 Additional restrictions: {{TXN.PERMITTED_RESTRICTIONS}}
 
-**[PROHIBITED.OTHER]** — Other Allowed Activities _(optional)_
+**[PROHIBITED.OTHER]** — Other Allowed Activities
 
 Lessee is permitted to engage in the following activities with the Horse: {{TXN.OTHER_PROHIBITED}}.
 
-**[PROHIBITED.OTHER_NOTE]** _(optional)_ _(shown when: JSON.stringify(c.conditional_on))_
+**[PROHIBITED.OTHER_NOTE]** _(shown when: {"contains":["OTHER"],"field_key":"TXN.OTHER_PROHIBITED"})_
 
 Other allowed activity: {{TXN.OTHER_PROHIBITED_NOTE}}.
 
-**[PROHIBITED.OTHERS]** — Allowing Others to Ride _(optional)_
+**[PROHIBITED.OTHERS]** — Allowing Others to Ride
 
 The following additional persons may ride or handle the Horse without Lessor's prior permission: {{TXN.OTHERS_ALLOWED}}.
 Only persons listed as parties to this contract and shown above shall be permitted to ride or handle the Horse without Lessor's written permission.
 
-**[PROHIBITED.OTHERS_OTHER]** _(shown when: JSON.stringify(c.conditional_on))_
+**[PROHIBITED.OTHERS_OTHER]** _(shown when: {"contains":["OTHER"],"field_key":"TXN.OTHERS_ALLOWED"})_
 
 Other persons allowed to ride or handle the Horse: {{TXN.OTHERS_ALLOWED_OTHER}}.
 
-**[PERMITTED_USE.TRANSPORT]** — Transport of the Horse _(optional)_
+**[PERMITTED_USE.TRANSPORT]** — Transport of the Horse
 
 Transport of the Horse to offsite locations (other than for medical care, which is always permitted): {{TXN.OFFSITE_TRANSPORT}}
 For clarity, riding trails attached to the location at which the Horse is kept under this Agreement are not offsite locations.
@@ -350,7 +349,7 @@ For clarity, riding trails attached to the location at which the Horse is kept u
 - **[TXN.TRAIL_RESTRICTION]** Trail-riding restriction — _text/text_, owner: LESSOR
 - **[TXN.JUMP_OMIT]** No jumping restrictions — _certify/checkbox_, owner: LESSOR
 - **[TXN.COMP_OMIT]** No competition restrictions — _certify/checkbox_, owner: LESSOR
-- **[TXN.OTHERS_ALLOWED_OTHER]** Other persons allowed — _text/text_, owner: LESSOR · when: JSON.stringify(f.conditional_on)
+- **[TXN.OTHERS_ALLOWED_OTHER]** Other persons allowed — _text/text_, owner: LESSOR · shown when: {"contains":["OTHER"],"field_key":"TXN.OTHERS_ALLOWED"}
 - **[TXN.TRAIL_OMIT]** No trail-riding restrictions — _certify/checkbox_, owner: LESSOR
 - **[TXN.COMP_RESTRICTION]** Competition restriction — _text/text_, owner: LESSOR
 - **[TXN.LESSONS_REQUIRED]** Lessee required to take lessons? — _yesno/select_, owner: DEAL
@@ -370,11 +369,11 @@ For clarity, riding trails attached to the location at which the Horse is kept u
 
 ### Clauses
 
-**[SCHEDULE.CARE_DUTY]** — Lessee's Responsibility for Care and Exercise _(shown when: JSON.stringify(c.conditional_on))_
+**[SCHEDULE.CARE_DUTY]** — Lessee's Responsibility for Care and Exercise _(shown when: {"equals":["YES"],"field_key":"TXN.EXERCISE_INCLUDE"})_
 
 Lessee's use of the Horse is a responsibility as well as a right: regular, consistent exercise and attention are important to the Horse's health and wellbeing. Lessee is required to maintain regular use and exercise for the Horse on their allowed days, unless Lessee has discussed with and received mutual agreement from the Lessor in writing that one of those days will be used as a rest day for the Horse. If Lessee regularly fails to use and care for the Horse, Lessor may terminate this Agreement.
 
-**[SCHEDULE.TRAINER_CARE]** — 3rd Party Exercise _(shown when: JSON.stringify(c.conditional_on))_
+**[SCHEDULE.TRAINER_CARE]** — 3rd Party Exercise _(shown when: {"equals":["YES"],"field_key":"TXN.TRAINER_CARE_INCLUDE"})_
 
 Lessee is permitted to engage an approved 3rd party to exercise the Horse. All 3rd party exercise shall be conducted only by a French Heritage Equestrian Approved Trainer. Other 3rd parties must be approved in writing by the Lessor.
 Party responsible for arranging: {{TXN.TRAINER_EXERCISE_ARRANGE}}
@@ -385,18 +384,18 @@ Lessee's share of the cost: {{TXN.TRAINER_EXERCISE_SPLIT_PCT}}
 
 Horse care and expenses shall be managed and paid for by the responsible party as listed below.
 
-**[CARE.SUPPLEMENTS]** _(optional)_
+**[CARE.SUPPLEMENTS]**
 
 {{TXN.MEDICATIONS}}
 
-**[CARE.FARRIER]** — Farrier Care _(optional)_
+**[CARE.FARRIER]** — Farrier Care
 
 Party responsible for arranging: {{TXN.FARRIER_ARRANGE}}
 Party responsible for costs: {{TXN.FARRIER_COST_PARTY}}
 Farrier: {{HORSE.FARRIER_NAME}}
 Farrier phone: {{HORSE.FARRIER_PHONE}}
 
-**[CARE.ROUTINE_VET]** — Veterinary Care _(optional)_
+**[CARE.ROUTINE_VET]** — Veterinary Care
 
 Party responsible for arranging: {{TXN.VET_ARRANGE}}
 Party responsible for costs: {{TXN.VET_COST_PARTY}}
@@ -409,7 +408,7 @@ Veterinarian phone: {{HORSE.VET_PHONE}}
 
 Horse must wear protective equipment: {{TXN.PROTECTIVE_REQUIRED}}
 
-**[CARE.PROTECTIVE_EQUIP]** _(optional)_ _(shown when: JSON.stringify(c.conditional_on))_
+**[CARE.PROTECTIVE_EQUIP]** _(shown when: {"equals":["YES"],"field_key":"TXN.PROTECTIVE_REQUIRED"})_
 
 Lessor will provide the following equipment for the Horse: {{TXN.PROTECTIVE_EQUIPMENT}}
 Lessee must ensure equipment is used and properly secured to the Horse prior to all activities.
@@ -419,32 +418,32 @@ Lessee must ensure equipment is used and properly secured to the Horse prior to 
 When riding and handling the Horse, Lessee shall use only tack in good condition that is properly fitted to the Horse.
 {{TXN.TACK_PROHIBITED}}
 
-**[CARE.RIDER_AIDS]** — Rider Aids _(optional)_
+**[CARE.RIDER_AIDS]** — Rider Aids
 
 The following rider aids are prohibited: {{TXN.RIDER_AIDS}}.
 
-**[CARE.RIDER_AIDS_OTHER]** _(optional)_ _(shown when: JSON.stringify(c.conditional_on))_
+**[CARE.RIDER_AIDS_OTHER]** _(shown when: {"contains":["OTHER"],"field_key":"TXN.RIDER_AIDS"})_
 
 Other prohibited rider aid: {{TXN.RIDER_AIDS_OTHER}}.
 
 ### Fields
 - **[TXN.TRAINER_CARE_INCLUDE]** Include 3rd party exercise — _certify/checkbox_, owner: LESSOR
 - **[TXN.EXERCISE_INCLUDE]** Include Lessee care & exercise responsibility — _certify/checkbox_, owner: LESSOR
-- **[TXN.TRAINER_EXERCISE_ARRANGE]** Party responsible for arranging — _select/select_, owner: LESSOR · options: [{"label":"Lessee","value":"LESSEE"},{"label":"Lessor","value":"LESSOR"},{"label":"Shared","value":"SHARED"}] · when: JSON.stringify(f.conditional_on)
+- **[TXN.TRAINER_EXERCISE_ARRANGE]** Party responsible for arranging — _select/select_, owner: LESSOR · shown when: {"equals":["YES"],"field_key":"TXN.TRAINER_CARE_INCLUDE"} · options: [{"label":"Lessee","value":"LESSEE"},{"label":"Lessor","value":"LESSOR"},{"label":"Shared","value":"SHARED"}]
 - **[TXN.MEDICATIONS]** Medications and supplements — _med_schedule/text_, owner: LESSOR
 - **[TXN.RIDER_AIDS]** Prohibited rider aids — _buttons/checkbox_, owner: DEAL · options: [{"label":"Crop or bat","value":"CROP"},{"label":"Longe whip","value":"LONGE_WHIP"},{"label":"Dressage whip","value":"DRESSAGE_WHIP"},{"label":"Other","value":"OTHER"}]
 - **[TXN.VET_ARRANGE]** Party responsible for arranging — _select/select_, owner: LESSOR · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Trainer/Instructor","value":"TRAINER"},{"label":"Boarding Staff","value":"BOARDING"},{"label":"Other","value":"OTHER"}]
 - **[TXN.FARRIER_ARRANGE]** Party responsible for arranging — _select/select_, owner: LESSOR · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Trainer/Instructor","value":"TRAINER"},{"label":"Boarding Staff","value":"BOARDING"},{"label":"Other","value":"OTHER"}]
-- **[TXN.TRAINER_EXERCISE_COST]** Party responsible for costs — _select/select_, owner: LESSOR · options: [{"label":"Lessee","value":"LESSEE"},{"label":"Lessor","value":"LESSOR"},{"label":"Shared","value":"SHARED"}] · when: JSON.stringify(f.conditional_on)
-- **[TXN.TRAINER_EXERCISE_SPLIT_PCT]** Lessee's share of the cost — _percent/number_, owner: LESSOR · when: JSON.stringify(f.conditional_on)
-- **[HORSE.VET_NAME]** Veterinarian — _text/text_, owner: LESSOR · when: JSON.stringify(f.conditional_on)
-- **[HORSE.FARRIER_NAME]** Farrier — _text/text_, owner: LESSOR · when: JSON.stringify(f.conditional_on)
+- **[TXN.TRAINER_EXERCISE_COST]** Party responsible for costs — _select/select_, owner: LESSOR · shown when: {"equals":["YES"],"field_key":"TXN.TRAINER_CARE_INCLUDE"} · options: [{"label":"Lessee","value":"LESSEE"},{"label":"Lessor","value":"LESSOR"},{"label":"Shared","value":"SHARED"}]
+- **[TXN.TRAINER_EXERCISE_SPLIT_PCT]** Lessee's share of the cost — _percent/number_, owner: LESSOR · shown when: {"all":[{"equals":["YES"],"field_key":"TXN.TRAINER_CARE_INCLUDE"},{"equals":["SHARED"],"field_key":"TXN.TRAINER_EXERCISE_COST"}]}
+- **[HORSE.VET_NAME]** Veterinarian — _text/text_, owner: LESSOR · shown when: {"equals":["LESSEE"],"field_key":"TXN.VET_ARRANGE"}
+- **[HORSE.FARRIER_NAME]** Farrier — _text/text_, owner: LESSOR · shown when: {"equals":["LESSEE"],"field_key":"TXN.FARRIER_ARRANGE"}
 - **[TXN.FARRIER_COST_PARTY]** Party responsible for costs — _select/select_, owner: LESSOR · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Trainer/Instructor","value":"TRAINER"},{"label":"Boarding Staff","value":"BOARDING"},{"label":"Other","value":"OTHER"}]
 - **[TXN.VET_COST_PARTY]** Party responsible for costs — _select/select_, owner: LESSOR · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Trainer/Instructor","value":"TRAINER"},{"label":"Boarding Staff","value":"BOARDING"},{"label":"Other","value":"OTHER"}]
-- **[HORSE.FARRIER_PHONE]** Farrier phone — _text/text_, owner: LESSOR · when: JSON.stringify(f.conditional_on)
-- **[HORSE.VET_BUSINESS]** Practice — _text/text_, owner: LESSOR · when: JSON.stringify(f.conditional_on)
-- **[HORSE.VET_ADDRESS]** Address — _text/text_, owner: LESSOR · when: JSON.stringify(f.conditional_on)
-- **[HORSE.VET_PHONE]** Veterinarian phone — _text/text_, owner: LESSOR · when: JSON.stringify(f.conditional_on)
+- **[HORSE.FARRIER_PHONE]** Farrier phone — _text/text_, owner: LESSOR · shown when: {"equals":["LESSEE"],"field_key":"TXN.FARRIER_ARRANGE"}
+- **[HORSE.VET_BUSINESS]** Practice — _text/text_, owner: LESSOR · shown when: {"equals":["LESSEE"],"field_key":"TXN.VET_ARRANGE"}
+- **[HORSE.VET_ADDRESS]** Address — _text/text_, owner: LESSOR · shown when: {"equals":["LESSEE"],"field_key":"TXN.VET_ARRANGE"}
+- **[HORSE.VET_PHONE]** Veterinarian phone — _text/text_, owner: LESSOR · shown when: {"equals":["LESSEE"],"field_key":"TXN.VET_ARRANGE"}
 - **[TXN.PROTECTIVE_REQUIRED]** Horse must wear protective equipment — _yesno/text_, owner: LESSOR
 - **[TXN.PROTECTIVE_EQUIPMENT]** Protective equipment — _buttons/checkbox_, owner: DEAL · options: [{"label":"Front boots / wraps","value":"FRONT_BOOTS"},{"label":"Hind boots / wraps","value":"HIND_BOOTS"},{"label":"Other","value":"OTHER"}]
 - **[TXN.TACK_PROHIBITED]** Is Lessee prohibited from using certain tack or equipment? — _reveal_text/text_, owner: LESSOR
@@ -453,6 +452,10 @@ Other prohibited rider aid: {{TXN.RIDER_AIDS_OTHER}}.
 ## [INSURANCE_RISK] Insurance, Risk of Loss, and Indemnification
 
 ### Clauses
+
+**[INSURANCE_RISK.DEFINITIONS]** — Definitions; Binding Effect; Third-Party Beneficiaries
+
+"Lessor Parties" means Lessor and, as applicable, Lessor's owners, principals, proprietors, partners, employees, trainers, instructors, agents, contractors, and family members of any of the foregoing, and each of their respective heirs and assigns. "Lessee Parties" means Lessee and Lessee's heirs, next of kin, estate, executors, administrators, legal representatives, and assigns. Lessee enters into this Agreement on behalf of Lessee and all Lessee Parties, and all releases, waivers, assumptions of risk, and covenants made by Lessee under this Agreement are made on behalf of all Lessee Parties and bind each of them to the same extent as Lessee. Each Lessor Party and each Lessee Party is an intended third-party beneficiary of the releases, waivers, assumptions of risk, and limitations of liability in this Agreement and may enforce them directly.
 
 **[INSURANCE_RISK.INSURANCE]** — Insurance Requirements
 
@@ -485,54 +488,62 @@ Lessor assumes all risk of loss or injury to the Horse during the term of this A
 
 **[INSURANCE_RISK.ASSUMPTION_INHERENT]** — Assumption of Inherent Risks
 
-Lessee understands that horseback riding and handling horses are inherently dangerous activities. Lessee acknowledges that horses are unpredictable by nature and may buck, rear, bite, kick, spook, stumble, or otherwise react unpredictably to their environment, which can result in severe injury, paralysis, or death. Lessee acknowledges the California common law doctrine of "Primary Assumption of Risk," as established by the California Supreme Court in Knight v. Jewett (1992) 3 Cal.4th 296 and subsequent equine-specific case law (e.g., Levinson v. Owens (2009) 176 Cal.App.4th 1534). Pursuant to this binding legal precedent, Lessee expressly and voluntarily assumes all inherent risks associated with riding or handling the Horse, and acknowledges that Lessor owes no duty to protect Lessee from these inherent risks.
+Lessee understands that horseback riding and handling horses are inherently dangerous activities. Lessee acknowledges that horses are unpredictable by nature and may buck, rear, bite, kick, spook, stumble, or otherwise react unpredictably to their environment, which can result in severe injury, paralysis, or death. Lessee acknowledges the California common law doctrine of "Primary Assumption of Risk," as established by the California Supreme Court in Knight v. Jewett (1992) 3 Cal.4th 296 and subsequent equine-specific case law (e.g., Levinson v. Owens (2009) 176 Cal.App.4th 1534). Pursuant to this binding legal precedent, Lessee, on behalf of all Lessee Parties, expressly and voluntarily assumes all inherent risks associated with riding or handling the Horse, and acknowledges that no Lessor Party owes a duty to protect Lessee from these inherent risks.
 
 **[INSURANCE_RISK.RELEASE]** — Release of Liability
 
-In consideration for being permitted to handle or ride the Horse, Lessee completely releases, forever discharges, and agrees to hold harmless Lessor from any and all claims, demands, causes of action, liabilities, or damages for personal injury, property damage, or wrongful death arising out of Lessee's use, handling, or riding of the Horse, whether caused by the ordinary negligence of Lessor or otherwise.
+In consideration for being permitted to handle or ride the Horse, Lessee, on behalf of Lessee and all Lessee Parties, completely releases, forever discharges, and agrees to hold harmless the Lessor Parties from any and all claims, demands, causes of action, liabilities, or damages for personal injury, property damage, or wrongful death arising out of Lessee's use, handling, or riding of the Horse, whether caused by the ordinary negligence of any Lessor Party or otherwise. This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
 
 **[INSURANCE_RISK.SAFETY_ATTIRE]** — Required Protective Attire
 
-Lessee is strictly required to wear an appropriately fitted and securely fastened ASTM/SEI-certified equestrian helmet at all times while mounted on the Horse, together with heeled boots and long pants; gloves and long sleeves are highly recommended. Lessee shall provide Lessee's own helmet, boots, and pants meeting these requirements. Lessee assumes all increased risk of injury or death resulting from any failure to wear the required attire. Any refusal or failure to wear an approved helmet or the other required attire immediately revokes Lessee's permission to ride or handle the Horse, constitutes a material breach of this Agreement, and voids Lessee's rights under this Agreement without recourse. Any injury arising from the failure to wear the required helmet, boots, or pants shall be deemed rider negligence and is the sole responsibility of the rider, and no claim may be brought against any party listed herein for any reason related to such injury.
+Lessee is strictly required to wear an appropriately fitted and securely fastened ASTM/SEI-certified equestrian helmet at all times while mounted on the Horse, together with heeled boots and long pants; gloves and long sleeves are highly recommended. Lessee shall provide Lessee's own helmet, boots, and pants meeting these requirements. Lessee, on behalf of all Lessee Parties, assumes all increased risk of injury or death resulting from any failure to wear the required attire. Any refusal or failure to wear an approved helmet or the other required attire immediately revokes Lessee's permission to ride or handle the Horse and constitutes a material breach of this Agreement.
 
-**[INSURANCE_RISK.TRAIL_RIDING]** — Trail Riding Risks _(shown when: JSON.stringify(c.conditional_on))_
+**[INSURANCE_RISK.TRAIL_RIDING]** — Trail Riding Risks _(shown when: {"contains":["TRAIL"],"field_key":"TXN.PERMITTED_ACTIVITIES"})_
 
 Lessee acknowledges that riding outside an enclosed arena, including trail riding, exposes Lessee and the Horse to additional risks, including uneven terrain, traffic, wildlife, water crossings, and other conditions that may cause the Horse to spook or behave unpredictably. Lessee voluntarily assumes these and any other unforeseen or unspecified additional risks related to this activity.
 
-**[INSURANCE_RISK.JUMPING_RISKS]** — Jumping Risks _(shown when: JSON.stringify(c.conditional_on))_
+**[INSURANCE_RISK.JUMPING_RISKS]** — Jumping Risks _(shown when: {"contains":["JUMPING"],"field_key":"TXN.PERMITTED_ACTIVITIES"})_
 
 Lessee acknowledges that jumping the Horse exposes Lessee and the Horse to additional risks beyond flat riding, including refusals, run-outs, awkward or missed distances, falls, unseating, and the Horse landing, stopping, or twisting unpredictably. Lessee voluntarily assumes these and any other unforeseen or unspecified additional risks related to this activity.
 
-**[INSURANCE_RISK.COMPETITION_RISKS]** — Competition Risks _(shown when: JSON.stringify(c.conditional_on))_
+**[INSURANCE_RISK.COMPETITION_RISKS]** — Competition Risks _(shown when: {"contains":["COMPETITIONS"],"field_key":"TXN.PERMITTED_ACTIVITIES"})_
 
 Lessee acknowledges that competing with the Horse exposes Lessee and the Horse to additional risks, including unfamiliar and crowded show grounds, proximity to other horses and riders, loudspeakers, banners, and other stimuli that may cause the Horse to spook or behave unpredictably, as well as the physical demands and pressures of competition. Lessee voluntarily assumes these and any other unforeseen or unspecified additional risks related to this activity.
 
-**[INSURANCE_RISK.SHARED_ARENA_RISKS]** — Shared Arena Riding Risks _(shown when: JSON.stringify(c.conditional_on))_
+**[INSURANCE_RISK.SHARED_ARENA_RISKS]** — Shared Arena Riding Risks _(shown when: {"contains":["ARENA_GROUP"],"field_key":"TXN.PERMITTED_ACTIVITIES"})_
 
 Lessee acknowledges that riding in an arena at the same time as other riders exposes Lessee and the Horse to additional risks, including collisions, crowding, sudden movements or loss of control by other horses or riders, and the Horse reacting to other horses. Lessee agrees to ride with awareness of others, to follow standard arena etiquette and right-of-way rules and any directions of Lessor or an instructor, and voluntarily assumes these and any other unforeseen or unspecified additional risks related to this activity.
 
 **[INSURANCE_RISK.WAIVER_UNKNOWN]** — Waiver of Unknown Claims
 
-Each party expressly waives any and all claims against the other that the waiving party does not know or suspect to exist at the time of this Agreement, and acknowledges that this waiver is a material term of this Agreement. Each party assumes the risk that claims presently unknown to it may later be discovered.
+Each party, on behalf of itself and, respectively, the Lessor Parties or the Lessee Parties, expressly waives any and all claims against the other party and its respective party group that the waiving party does not know or suspect to exist at the time of this Agreement, and acknowledges that this waiver is a material term of this Agreement. Each party assumes the risk that claims presently unknown to it may later be discovered.
 
 **[INSURANCE_RISK.INDEMNIFICATION]** — Mutual Indemnification
 
-Each party shall indemnify, defend, and hold harmless the other party from and against any and all claims, damages, losses, liabilities, costs, and expenses arising out of the indemnifying party's use, handling, care, or possession of the Horse, except to the extent caused by the gross negligence or willful misconduct of the other.
+Each party shall indemnify, defend, and hold harmless the other party and, respectively, the Lessor Parties or the Lessee Parties, from and against any and all claims, damages, losses, liabilities, costs, and expenses arising out of the indemnifying party's use, handling, care, or possession of the Horse, except to the extent caused by the gross negligence, reckless conduct, or intentional misconduct of an indemnified party.
+
+**[INSURANCE_RISK.LIMITATION_MORTALITY]** — Limitation of Liability _(shown when: {"equals":["YES"],"field_key":"TXN.MORTALITY_INSURANCE_REQ"})_
+
+Under no circumstances shall either party be liable to the other for any special, consequential, incidental, or punitive damages arising out of or relating to this Agreement. The total aggregate liability of either party (including, respectively, the Lessor Parties and the Lessee Parties) to the other under this Agreement shall not exceed the mortality insurance minimum limit of {{TXN.MORTALITY_MIN_LIMIT}}. Any amount owed by one party to the other under this Agreement shall be reduced by the amount of any insurance proceeds actually received by the party owed with respect to the same loss. This limitation does not apply to gross negligence, reckless conduct, or intentional misconduct.
+
+**[INSURANCE_RISK.LIMITATION_FMV]** — Limitation of Liability _(shown when: {"equals":["NO",""],"field_key":"TXN.MORTALITY_INSURANCE_REQ"})_
+
+Under no circumstances shall either party be liable to the other for any special, consequential, incidental, or punitive damages arising out of or relating to this Agreement. The total aggregate liability of either party (including, respectively, the Lessor Parties and the Lessee Parties) to the other under this Agreement shall not exceed the Horse's current fair market value of {{HORSE.FAIR_MARKET_VALUE}}. Any amount owed by one party to the other under this Agreement shall be reduced by the amount of any insurance proceeds actually received by the party owed with respect to the same loss. This limitation does not apply to gross negligence, reckless conduct, or intentional misconduct.
 
 ### Fields
 - **[TXN.GL_INSURANCE_REQ]** Require general liability insurance? — _yesno/select_, owner: DEAL
 - **[TXN.MAJOR_MEDICAL_INSURANCE_REQ]** Require major medical insurance? — _yesno/select_, owner: DEAL
 - **[TXN.MORTALITY_INSURANCE_REQ]** Require mortality insurance? — _yesno/select_, owner: DEAL
-- **[TXN.GL_REQUIRED_BY]** Required by — _select/select_, owner: DEAL · options: [{"label":"Lessee","value":"LESSEE"},{"label":"Lessor","value":"LESSOR"},{"label":"Both Parties","value":"BOTH"}] · when: JSON.stringify(f.conditional_on)
-- **[TXN.GL_PROTECTION]** For whose protection — _select/select_, owner: DEAL · options: [{"label":"Lessee","value":"LESSEE"},{"label":"Lessor","value":"LESSOR"},{"label":"Mutual","value":"MUTUAL"}] · when: JSON.stringify(f.conditional_on)
-- **[TXN.GL_COST_PARTY]** Party responsible for the cost — _select/select_, owner: LESSOR · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Shared","value":"SHARED"}] · when: JSON.stringify(f.conditional_on)
-- **[TXN.GL_OBTAIN_PARTY]** Party responsible for obtaining the policy — _select/select_, owner: LESSOR · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Shared","value":"SHARED"}] · when: JSON.stringify(f.conditional_on)
-- **[TXN.MORTALITY_MIN_LIMIT]** Minimum limit — _currency/currency_, owner: LESSOR · when: JSON.stringify(f.conditional_on)
-- **[TXN.MORTALITY_COST_PARTY]** Party responsible for the cost — _select/select_, owner: LESSOR · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Shared","value":"SHARED"}] · when: JSON.stringify(f.conditional_on)
-- **[TXN.MORTALITY_OBTAIN_PARTY]** Party responsible for obtaining the policy — _select/select_, owner: LESSOR · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Shared","value":"SHARED"}] · when: JSON.stringify(f.conditional_on)
-- **[TXN.MAJOR_MEDICAL_MIN_LIMIT]** Minimum limit — _currency/currency_, owner: LESSOR · when: JSON.stringify(f.conditional_on)
-- **[TXN.MAJOR_MEDICAL_COST_PARTY]** Party responsible for the cost — _select/select_, owner: LESSOR · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Shared","value":"SHARED"}] · when: JSON.stringify(f.conditional_on)
-- **[TXN.MAJOR_MEDICAL_OBTAIN_PARTY]** Party responsible for obtaining the policy — _select/select_, owner: LESSOR · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Shared","value":"SHARED"}] · when: JSON.stringify(f.conditional_on)
+- **[TXN.GL_REQUIRED_BY]** Required by — _select/select_, owner: DEAL · shown when: {"equals":["YES"],"field_key":"TXN.GL_INSURANCE_REQ"} · options: [{"label":"Lessee","value":"LESSEE"},{"label":"Lessor","value":"LESSOR"},{"label":"Both Parties","value":"BOTH"}]
+- **[TXN.GL_PROTECTION]** For whose protection — _select/select_, owner: DEAL · shown when: {"equals":["YES"],"field_key":"TXN.GL_INSURANCE_REQ"} · options: [{"label":"Lessee","value":"LESSEE"},{"label":"Lessor","value":"LESSOR"},{"label":"Mutual","value":"MUTUAL"}]
+- **[TXN.GL_COST_PARTY]** Party responsible for the cost — _select/select_, owner: LESSOR · shown when: {"equals":["YES"],"field_key":"TXN.GL_INSURANCE_REQ"} · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Shared","value":"SHARED"}]
+- **[TXN.GL_OBTAIN_PARTY]** Party responsible for obtaining the policy — _select/select_, owner: LESSOR · shown when: {"equals":["YES"],"field_key":"TXN.GL_INSURANCE_REQ"} · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Shared","value":"SHARED"}]
+- **[TXN.MORTALITY_MIN_LIMIT]** Minimum limit — _currency/currency_, owner: LESSOR · shown when: {"equals":["YES"],"field_key":"TXN.MORTALITY_INSURANCE_REQ"}
+- **[TXN.MORTALITY_COST_PARTY]** Party responsible for the cost — _select/select_, owner: LESSOR · shown when: {"equals":["YES"],"field_key":"TXN.MORTALITY_INSURANCE_REQ"} · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Shared","value":"SHARED"}]
+- **[TXN.MORTALITY_OBTAIN_PARTY]** Party responsible for obtaining the policy — _select/select_, owner: LESSOR · shown when: {"equals":["YES"],"field_key":"TXN.MORTALITY_INSURANCE_REQ"} · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Shared","value":"SHARED"}]
+- **[TXN.MAJOR_MEDICAL_MIN_LIMIT]** Minimum limit — _currency/currency_, owner: LESSOR · shown when: {"equals":["YES"],"field_key":"TXN.MAJOR_MEDICAL_INSURANCE_REQ"}
+- **[TXN.MAJOR_MEDICAL_COST_PARTY]** Party responsible for the cost — _select/select_, owner: LESSOR · shown when: {"equals":["YES"],"field_key":"TXN.MAJOR_MEDICAL_INSURANCE_REQ"} · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Shared","value":"SHARED"}]
+- **[TXN.MAJOR_MEDICAL_OBTAIN_PARTY]** Party responsible for obtaining the policy — _select/select_, owner: LESSOR · shown when: {"equals":["YES"],"field_key":"TXN.MAJOR_MEDICAL_INSURANCE_REQ"} · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Shared","value":"SHARED"}]
 
 ## [TERMINATION] Termination
 
@@ -631,7 +642,7 @@ If any provision of this Agreement is held to be invalid or unenforceable, the r
 
 **[LESSEE_REPS.MAIN]** — Lessee's Representations
 
-Lessee represents and warrants that Lessee is at least 18 years of age and has full authority to enter into this Agreement; that Lessee has no physical or mental condition that would prevent Lessee from safely participating in the activities contemplated by this Agreement; and that Lessee has the requisite knowledge and experience to handle and ride the Horse, and will use reasonable care in doing so and follow Lessor's instructions. By signing this Agreement, Lessee acknowledges that Lessee has read this Agreement, fully understands its terms, and understands that Lessee is giving up substantial legal rights, including the right to sue Lessor.
+Lessee represents and warrants that Lessee is at least 18 years of age and has full authority to enter into this Agreement; that Lessee has no physical or mental condition that would prevent Lessee from safely participating in the activities contemplated by this Agreement; and that Lessee has the requisite knowledge and experience to handle and ride the Horse, and will use reasonable care in doing so and follow Lessor's instructions. By signing this Agreement, Lessee acknowledges that Lessee has read this Agreement, fully understands its terms, and understands that Lessee is giving up substantial legal rights on behalf of Lessee and all Lessee Parties, including the right to sue the Lessor Parties.
 
 ## [SIGNATURES] Signatures
 
@@ -650,3 +661,4 @@ LESSOR (OWNER)
 Signature: {{SIG.LESSOR.NAME}}
 Printed Name: {{LESSOR.PRINTED_NAME}}
 Date: {{SIG.LESSOR.DATE}}
+
