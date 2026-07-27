@@ -3055,10 +3055,10 @@
                     "responsibility": null
                 },
                 {
-                    "label": "Deductible (enter N/A if none)",
+                    "label": "Deductible (enter a $ amount or N/A)",
                     "options": null,
-                    "guidance": null,
-                    "required": false,
+                    "guidance": "Required. Enter the policy's deductible as a dollar amount, or N/A if there is none. $1 or less (or N/A): no deductible-responsibility assignment is needed.",
+                    "required": true,
                     "field_key": "TXN.GL_DEDUCTIBLE",
                     "clause_key": "INSURANCE_RISK.GENERAL_LIABILITY",
                     "input_kind": "text",
@@ -3076,10 +3076,10 @@
                     "responsibility": null
                 },
                 {
-                    "label": "Deductible (enter N/A if none)",
+                    "label": "Deductible (enter a $ amount or N/A)",
                     "options": null,
-                    "guidance": null,
-                    "required": false,
+                    "guidance": "Required. Enter the policy's deductible as a dollar amount, or N/A if there is none. $1 or less (or N/A): no deductible-responsibility assignment is needed.",
+                    "required": true,
                     "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE",
                     "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL",
                     "input_kind": "text",
@@ -3097,10 +3097,10 @@
                     "responsibility": null
                 },
                 {
-                    "label": "Deductible (enter N/A if none)",
+                    "label": "Deductible (enter a $ amount or N/A)",
                     "options": null,
-                    "guidance": null,
-                    "required": false,
+                    "guidance": "Required. Enter the policy's deductible as a dollar amount, or N/A if there is none. $1 or less (or N/A): no deductible-responsibility assignment is needed.",
+                    "required": true,
                     "field_key": "TXN.MORTALITY_DEDUCTIBLE",
                     "clause_key": "INSURANCE_RISK.MORTALITY",
                     "input_kind": "text",
@@ -3244,7 +3244,7 @@
                         }
                     ],
                     "guidance": null,
-                    "required": false,
+                    "required": true,
                     "field_key": "TXN.MORTALITY_DEDUCTIBLE_PARTY",
                     "clause_key": "INSURANCE_RISK.MORTALITY",
                     "input_kind": "select",
@@ -3253,12 +3253,29 @@
                     "value_type": "select",
                     "is_optional": false,
                     "conditional_on": {
-                        "equals": [
-                            "LESSOR_HAS",
-                            "LESSOR_WILL",
-                            "LESSEE_OBTAIN"
-                        ],
-                        "field_key": "TXN.MORTALITY_ELECTION"
+                        "any": [
+                            {
+                                "all": [
+                                    {
+                                        "equals": [
+                                            "LESSOR_HAS",
+                                            "LESSOR_WILL"
+                                        ],
+                                        "field_key": "TXN.MORTALITY_ELECTION"
+                                    },
+                                    {
+                                        "gte": 2,
+                                        "field_key": "TXN.MORTALITY_DEDUCTIBLE"
+                                    }
+                                ]
+                            },
+                            {
+                                "equals": [
+                                    "LESSEE_OBTAIN"
+                                ],
+                                "field_key": "TXN.MORTALITY_ELECTION"
+                            }
+                        ]
                     },
                     "responsibility": null
                 },
@@ -3283,7 +3300,7 @@
                         }
                     ],
                     "guidance": null,
-                    "required": false,
+                    "required": true,
                     "field_key": "TXN.GL_DEDUCTIBLE_PARTY",
                     "clause_key": "INSURANCE_RISK.GENERAL_LIABILITY",
                     "input_kind": "select",
@@ -3292,12 +3309,29 @@
                     "value_type": "select",
                     "is_optional": false,
                     "conditional_on": {
-                        "equals": [
-                            "LESSOR_HAS",
-                            "LESSOR_WILL",
-                            "LESSEE_OBTAIN"
-                        ],
-                        "field_key": "TXN.GL_ELECTION"
+                        "any": [
+                            {
+                                "all": [
+                                    {
+                                        "equals": [
+                                            "LESSOR_HAS",
+                                            "LESSOR_WILL"
+                                        ],
+                                        "field_key": "TXN.GL_ELECTION"
+                                    },
+                                    {
+                                        "gte": 2,
+                                        "field_key": "TXN.GL_DEDUCTIBLE"
+                                    }
+                                ]
+                            },
+                            {
+                                "equals": [
+                                    "LESSEE_OBTAIN"
+                                ],
+                                "field_key": "TXN.GL_ELECTION"
+                            }
+                        ]
                     },
                     "responsibility": null
                 },
@@ -3322,7 +3356,7 @@
                         }
                     ],
                     "guidance": null,
-                    "required": false,
+                    "required": true,
                     "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY",
                     "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL",
                     "input_kind": "select",
@@ -3331,12 +3365,29 @@
                     "value_type": "select",
                     "is_optional": false,
                     "conditional_on": {
-                        "equals": [
-                            "LESSOR_HAS",
-                            "LESSOR_WILL",
-                            "LESSEE_OBTAIN"
-                        ],
-                        "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                        "any": [
+                            {
+                                "all": [
+                                    {
+                                        "equals": [
+                                            "LESSOR_HAS",
+                                            "LESSOR_WILL"
+                                        ],
+                                        "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                                    },
+                                    {
+                                        "gte": 2,
+                                        "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE"
+                                    }
+                                ]
+                            },
+                            {
+                                "equals": [
+                                    "LESSEE_OBTAIN"
+                                ],
+                                "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                            }
+                        ]
                     },
                     "responsibility": null
                 },
@@ -3852,12 +3903,29 @@
                     "conditional_on": {
                         "all": [
                             {
-                                "equals": [
-                                    "LESSOR_HAS",
-                                    "LESSOR_WILL",
-                                    "LESSEE_OBTAIN"
-                                ],
-                                "field_key": "TXN.GL_ELECTION"
+                                "any": [
+                                    {
+                                        "all": [
+                                            {
+                                                "equals": [
+                                                    "LESSOR_HAS",
+                                                    "LESSOR_WILL"
+                                                ],
+                                                "field_key": "TXN.GL_ELECTION"
+                                            },
+                                            {
+                                                "gte": 2,
+                                                "field_key": "TXN.GL_DEDUCTIBLE"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "equals": [
+                                            "LESSEE_OBTAIN"
+                                        ],
+                                        "field_key": "TXN.GL_ELECTION"
+                                    }
+                                ]
                             },
                             {
                                 "equals": [
@@ -3882,12 +3950,29 @@
                     "conditional_on": {
                         "all": [
                             {
-                                "equals": [
-                                    "LESSOR_HAS",
-                                    "LESSOR_WILL",
-                                    "LESSEE_OBTAIN"
-                                ],
-                                "field_key": "TXN.GL_ELECTION"
+                                "any": [
+                                    {
+                                        "all": [
+                                            {
+                                                "equals": [
+                                                    "LESSOR_HAS",
+                                                    "LESSOR_WILL"
+                                                ],
+                                                "field_key": "TXN.GL_ELECTION"
+                                            },
+                                            {
+                                                "gte": 2,
+                                                "field_key": "TXN.GL_DEDUCTIBLE"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "equals": [
+                                            "LESSEE_OBTAIN"
+                                        ],
+                                        "field_key": "TXN.GL_ELECTION"
+                                    }
+                                ]
                             },
                             {
                                 "equals": [
@@ -3911,12 +3996,29 @@
                     "conditional_on": {
                         "all": [
                             {
-                                "equals": [
-                                    "LESSOR_HAS",
-                                    "LESSOR_WILL",
-                                    "LESSEE_OBTAIN"
-                                ],
-                                "field_key": "TXN.GL_ELECTION"
+                                "any": [
+                                    {
+                                        "all": [
+                                            {
+                                                "equals": [
+                                                    "LESSOR_HAS",
+                                                    "LESSOR_WILL"
+                                                ],
+                                                "field_key": "TXN.GL_ELECTION"
+                                            },
+                                            {
+                                                "gte": 2,
+                                                "field_key": "TXN.GL_DEDUCTIBLE"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "equals": [
+                                            "LESSEE_OBTAIN"
+                                        ],
+                                        "field_key": "TXN.GL_ELECTION"
+                                    }
+                                ]
                             },
                             {
                                 "equals": [
@@ -4021,12 +4123,29 @@
                     "conditional_on": {
                         "all": [
                             {
-                                "equals": [
-                                    "LESSOR_HAS",
-                                    "LESSOR_WILL",
-                                    "LESSEE_OBTAIN"
-                                ],
-                                "field_key": "TXN.MORTALITY_ELECTION"
+                                "any": [
+                                    {
+                                        "all": [
+                                            {
+                                                "equals": [
+                                                    "LESSOR_HAS",
+                                                    "LESSOR_WILL"
+                                                ],
+                                                "field_key": "TXN.MORTALITY_ELECTION"
+                                            },
+                                            {
+                                                "gte": 2,
+                                                "field_key": "TXN.MORTALITY_DEDUCTIBLE"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "equals": [
+                                            "LESSEE_OBTAIN"
+                                        ],
+                                        "field_key": "TXN.MORTALITY_ELECTION"
+                                    }
+                                ]
                             },
                             {
                                 "equals": [
@@ -4051,12 +4170,29 @@
                     "conditional_on": {
                         "all": [
                             {
-                                "equals": [
-                                    "LESSOR_HAS",
-                                    "LESSOR_WILL",
-                                    "LESSEE_OBTAIN"
-                                ],
-                                "field_key": "TXN.MORTALITY_ELECTION"
+                                "any": [
+                                    {
+                                        "all": [
+                                            {
+                                                "equals": [
+                                                    "LESSOR_HAS",
+                                                    "LESSOR_WILL"
+                                                ],
+                                                "field_key": "TXN.MORTALITY_ELECTION"
+                                            },
+                                            {
+                                                "gte": 2,
+                                                "field_key": "TXN.MORTALITY_DEDUCTIBLE"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "equals": [
+                                            "LESSEE_OBTAIN"
+                                        ],
+                                        "field_key": "TXN.MORTALITY_ELECTION"
+                                    }
+                                ]
                             },
                             {
                                 "equals": [
@@ -4080,12 +4216,29 @@
                     "conditional_on": {
                         "all": [
                             {
-                                "equals": [
-                                    "LESSOR_HAS",
-                                    "LESSOR_WILL",
-                                    "LESSEE_OBTAIN"
-                                ],
-                                "field_key": "TXN.MORTALITY_ELECTION"
+                                "any": [
+                                    {
+                                        "all": [
+                                            {
+                                                "equals": [
+                                                    "LESSOR_HAS",
+                                                    "LESSOR_WILL"
+                                                ],
+                                                "field_key": "TXN.MORTALITY_ELECTION"
+                                            },
+                                            {
+                                                "gte": 2,
+                                                "field_key": "TXN.MORTALITY_DEDUCTIBLE"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "equals": [
+                                            "LESSEE_OBTAIN"
+                                        ],
+                                        "field_key": "TXN.MORTALITY_ELECTION"
+                                    }
+                                ]
                             },
                             {
                                 "equals": [
@@ -4190,12 +4343,29 @@
                     "conditional_on": {
                         "all": [
                             {
-                                "equals": [
-                                    "LESSOR_HAS",
-                                    "LESSOR_WILL",
-                                    "LESSEE_OBTAIN"
-                                ],
-                                "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                                "any": [
+                                    {
+                                        "all": [
+                                            {
+                                                "equals": [
+                                                    "LESSOR_HAS",
+                                                    "LESSOR_WILL"
+                                                ],
+                                                "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                                            },
+                                            {
+                                                "gte": 2,
+                                                "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "equals": [
+                                            "LESSEE_OBTAIN"
+                                        ],
+                                        "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                                    }
+                                ]
                             },
                             {
                                 "equals": [
@@ -4220,12 +4390,29 @@
                     "conditional_on": {
                         "all": [
                             {
-                                "equals": [
-                                    "LESSOR_HAS",
-                                    "LESSOR_WILL",
-                                    "LESSEE_OBTAIN"
-                                ],
-                                "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                                "any": [
+                                    {
+                                        "all": [
+                                            {
+                                                "equals": [
+                                                    "LESSOR_HAS",
+                                                    "LESSOR_WILL"
+                                                ],
+                                                "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                                            },
+                                            {
+                                                "gte": 2,
+                                                "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "equals": [
+                                            "LESSEE_OBTAIN"
+                                        ],
+                                        "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                                    }
+                                ]
                             },
                             {
                                 "equals": [
@@ -4249,12 +4436,29 @@
                     "conditional_on": {
                         "all": [
                             {
-                                "equals": [
-                                    "LESSOR_HAS",
-                                    "LESSOR_WILL",
-                                    "LESSEE_OBTAIN"
-                                ],
-                                "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                                "any": [
+                                    {
+                                        "all": [
+                                            {
+                                                "equals": [
+                                                    "LESSOR_HAS",
+                                                    "LESSOR_WILL"
+                                                ],
+                                                "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                                            },
+                                            {
+                                                "gte": 2,
+                                                "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "equals": [
+                                            "LESSEE_OBTAIN"
+                                        ],
+                                        "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                                    }
+                                ]
                             },
                             {
                                 "equals": [

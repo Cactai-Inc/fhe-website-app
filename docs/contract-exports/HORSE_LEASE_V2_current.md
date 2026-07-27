@@ -478,15 +478,15 @@ Lessor is in the process of purchasing or agrees to purchase general liability i
 
 Lessor requires Lessee to obtain and maintain general liability insurance covering the activities contemplated by this Agreement, with a policy limit of at least {{TXN.GL_MIN_LIMIT}} and an effective date no later than {{TXN.GL_EFFECTIVE_DATE}}. Lessee shall provide proof of insurance to Lessor by email and shall maintain the policy in good standing for the duration of this Agreement; failure to do so constitutes a material breach subject to the Termination for Cause provisions of this Agreement.
 
-**[INSURANCE_RISK.GL_DED_PARTY]** _(shown when: {"all":[{"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.GL_ELECTION"},{"equals":["LESSOR","LESSEE"],"field_key":"TXN.GL_DEDUCTIBLE_PARTY"}]})_
+**[INSURANCE_RISK.GL_DED_PARTY]** _(shown when: {"all":[{"any":[{"all":[{"equals":["LESSOR_HAS","LESSOR_WILL"],"field_key":"TXN.GL_ELECTION"},{"gte":2,"field_key":"TXN.GL_DEDUCTIBLE"}]},{"equals":["LESSEE_OBTAIN"],"field_key":"TXN.GL_ELECTION"}]},{"equals":["LESSOR","LESSEE"],"field_key":"TXN.GL_DEDUCTIBLE_PARTY"}]})_
 
 {{TXN.GL_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy.
 
-**[INSURANCE_RISK.GL_DED_SPLIT]** _(shown when: {"all":[{"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.GL_ELECTION"},{"equals":["SPLIT"],"field_key":"TXN.GL_DEDUCTIBLE_PARTY"}]})_
+**[INSURANCE_RISK.GL_DED_SPLIT]** _(shown when: {"all":[{"any":[{"all":[{"equals":["LESSOR_HAS","LESSOR_WILL"],"field_key":"TXN.GL_ELECTION"},{"gte":2,"field_key":"TXN.GL_DEDUCTIBLE"}]},{"equals":["LESSEE_OBTAIN"],"field_key":"TXN.GL_ELECTION"}]},{"equals":["SPLIT"],"field_key":"TXN.GL_DEDUCTIBLE_PARTY"}]})_
 
 Both parties shall split the cost of any and all deductible amounts for claims made against this insurance policy: {{TXN.GL_DEDUCTIBLE_SPLIT_LESSOR}} paid by Lessor and {{TXN.GL_DEDUCTIBLE_SPLIT_LESSEE}} paid by Lessee.
 
-**[INSURANCE_RISK.GL_DED_OTHER]** _(shown when: {"all":[{"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.GL_ELECTION"},{"equals":["OTHER"],"field_key":"TXN.GL_DEDUCTIBLE_PARTY"}]})_
+**[INSURANCE_RISK.GL_DED_OTHER]** _(shown when: {"all":[{"any":[{"all":[{"equals":["LESSOR_HAS","LESSOR_WILL"],"field_key":"TXN.GL_ELECTION"},{"gte":2,"field_key":"TXN.GL_DEDUCTIBLE"}]},{"equals":["LESSEE_OBTAIN"],"field_key":"TXN.GL_ELECTION"}]},{"equals":["OTHER"],"field_key":"TXN.GL_DEDUCTIBLE_PARTY"}]})_
 
 Responsibility for any and all deductible amounts for claims made against this insurance policy: {{TXN.GL_DEDUCTIBLE_OTHER}}.
 
@@ -508,15 +508,15 @@ Lessor is in the process of purchasing or agrees to purchase mortality insurance
 
 Lessor requires Lessee to obtain and maintain mortality insurance on the Horse with a policy limit of at least the Horse's fair market value of {{HORSE.FAIR_MARKET_VALUE}} and an effective date no later than {{TXN.MORTALITY_EFFECTIVE_DATE}}. Lessee shall provide proof of insurance to Lessor by email and shall maintain the policy in good standing for the duration of this Agreement; failure to do so constitutes a material breach subject to the Termination for Cause provisions of this Agreement.
 
-**[INSURANCE_RISK.MORTALITY_DED_PARTY]** _(shown when: {"all":[{"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.MORTALITY_ELECTION"},{"equals":["LESSOR","LESSEE"],"field_key":"TXN.MORTALITY_DEDUCTIBLE_PARTY"}]})_
+**[INSURANCE_RISK.MORTALITY_DED_PARTY]** _(shown when: {"all":[{"any":[{"all":[{"equals":["LESSOR_HAS","LESSOR_WILL"],"field_key":"TXN.MORTALITY_ELECTION"},{"gte":2,"field_key":"TXN.MORTALITY_DEDUCTIBLE"}]},{"equals":["LESSEE_OBTAIN"],"field_key":"TXN.MORTALITY_ELECTION"}]},{"equals":["LESSOR","LESSEE"],"field_key":"TXN.MORTALITY_DEDUCTIBLE_PARTY"}]})_
 
 {{TXN.MORTALITY_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy.
 
-**[INSURANCE_RISK.MORTALITY_DED_SPLIT]** _(shown when: {"all":[{"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.MORTALITY_ELECTION"},{"equals":["SPLIT"],"field_key":"TXN.MORTALITY_DEDUCTIBLE_PARTY"}]})_
+**[INSURANCE_RISK.MORTALITY_DED_SPLIT]** _(shown when: {"all":[{"any":[{"all":[{"equals":["LESSOR_HAS","LESSOR_WILL"],"field_key":"TXN.MORTALITY_ELECTION"},{"gte":2,"field_key":"TXN.MORTALITY_DEDUCTIBLE"}]},{"equals":["LESSEE_OBTAIN"],"field_key":"TXN.MORTALITY_ELECTION"}]},{"equals":["SPLIT"],"field_key":"TXN.MORTALITY_DEDUCTIBLE_PARTY"}]})_
 
 Both parties shall split the cost of any and all deductible amounts for claims made against this insurance policy: {{TXN.MORTALITY_DEDUCTIBLE_SPLIT_LESSOR}} paid by Lessor and {{TXN.MORTALITY_DEDUCTIBLE_SPLIT_LESSEE}} paid by Lessee.
 
-**[INSURANCE_RISK.MORTALITY_DED_OTHER]** _(shown when: {"all":[{"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.MORTALITY_ELECTION"},{"equals":["OTHER"],"field_key":"TXN.MORTALITY_DEDUCTIBLE_PARTY"}]})_
+**[INSURANCE_RISK.MORTALITY_DED_OTHER]** _(shown when: {"all":[{"any":[{"all":[{"equals":["LESSOR_HAS","LESSOR_WILL"],"field_key":"TXN.MORTALITY_ELECTION"},{"gte":2,"field_key":"TXN.MORTALITY_DEDUCTIBLE"}]},{"equals":["LESSEE_OBTAIN"],"field_key":"TXN.MORTALITY_ELECTION"}]},{"equals":["OTHER"],"field_key":"TXN.MORTALITY_DEDUCTIBLE_PARTY"}]})_
 
 Responsibility for any and all deductible amounts for claims made against this insurance policy: {{TXN.MORTALITY_DEDUCTIBLE_OTHER}}.
 
@@ -538,15 +538,15 @@ Lessor is in the process of purchasing or agrees to purchase major medical insur
 
 Lessor requires Lessee to obtain and maintain major medical insurance on the Horse with a policy limit of at least {{TXN.MAJOR_MEDICAL_MIN_LIMIT}} and an effective date no later than {{TXN.MAJOR_MEDICAL_EFFECTIVE_DATE}}. Lessee shall provide proof of insurance to Lessor by email and shall maintain the policy in good standing for the duration of this Agreement; failure to do so constitutes a material breach subject to the Termination for Cause provisions of this Agreement.
 
-**[INSURANCE_RISK.MAJOR_MEDICAL_DED_PARTY]** _(shown when: {"all":[{"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"},{"equals":["LESSOR","LESSEE"],"field_key":"TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY"}]})_
+**[INSURANCE_RISK.MAJOR_MEDICAL_DED_PARTY]** _(shown when: {"all":[{"any":[{"all":[{"equals":["LESSOR_HAS","LESSOR_WILL"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"},{"gte":2,"field_key":"TXN.MAJOR_MEDICAL_DEDUCTIBLE"}]},{"equals":["LESSEE_OBTAIN"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"}]},{"equals":["LESSOR","LESSEE"],"field_key":"TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY"}]})_
 
 {{TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy.
 
-**[INSURANCE_RISK.MAJOR_MEDICAL_DED_SPLIT]** _(shown when: {"all":[{"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"},{"equals":["SPLIT"],"field_key":"TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY"}]})_
+**[INSURANCE_RISK.MAJOR_MEDICAL_DED_SPLIT]** _(shown when: {"all":[{"any":[{"all":[{"equals":["LESSOR_HAS","LESSOR_WILL"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"},{"gte":2,"field_key":"TXN.MAJOR_MEDICAL_DEDUCTIBLE"}]},{"equals":["LESSEE_OBTAIN"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"}]},{"equals":["SPLIT"],"field_key":"TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY"}]})_
 
 Both parties shall split the cost of any and all deductible amounts for claims made against this insurance policy: {{TXN.MAJOR_MEDICAL_DEDUCTIBLE_SPLIT_LESSOR}} paid by Lessor and {{TXN.MAJOR_MEDICAL_DEDUCTIBLE_SPLIT_LESSEE}} paid by Lessee.
 
-**[INSURANCE_RISK.MAJOR_MEDICAL_DED_OTHER]** _(shown when: {"all":[{"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"},{"equals":["OTHER"],"field_key":"TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY"}]})_
+**[INSURANCE_RISK.MAJOR_MEDICAL_DED_OTHER]** _(shown when: {"all":[{"any":[{"all":[{"equals":["LESSOR_HAS","LESSOR_WILL"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"},{"gte":2,"field_key":"TXN.MAJOR_MEDICAL_DEDUCTIBLE"}]},{"equals":["LESSEE_OBTAIN"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"}]},{"equals":["OTHER"],"field_key":"TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY"}]})_
 
 Responsibility for any and all deductible amounts for claims made against this insurance policy: {{TXN.MAJOR_MEDICAL_DEDUCTIBLE_OTHER}}.
 
@@ -613,17 +613,17 @@ Under no circumstances shall either party be liable to the other for any special
 - **[TXN.MORTALITY_POLICY_AMOUNT]** Policy limit — _currency/currency_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL"],"field_key":"TXN.MORTALITY_ELECTION"}
 - **[TXN.MAJOR_MEDICAL_POLICY_AMOUNT]** Policy limit — _currency/currency_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"}
 - **[TXN.GL_POLICY_AMOUNT]** Policy limit — _currency/currency_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL"],"field_key":"TXN.GL_ELECTION"}
-- **[TXN.GL_DEDUCTIBLE]** Deductible (enter N/A if none) — _text/text_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL"],"field_key":"TXN.GL_ELECTION"}
-- **[TXN.MAJOR_MEDICAL_DEDUCTIBLE]** Deductible (enter N/A if none) — _text/text_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"}
-- **[TXN.MORTALITY_DEDUCTIBLE]** Deductible (enter N/A if none) — _text/text_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL"],"field_key":"TXN.MORTALITY_ELECTION"}
+- **[TXN.GL_DEDUCTIBLE]** Deductible (enter a $ amount or N/A) — _text/text_, owner: LESSOR, required · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL"],"field_key":"TXN.GL_ELECTION"}
+- **[TXN.MAJOR_MEDICAL_DEDUCTIBLE]** Deductible (enter a $ amount or N/A) — _text/text_, owner: LESSOR, required · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"}
+- **[TXN.MORTALITY_DEDUCTIBLE]** Deductible (enter a $ amount or N/A) — _text/text_, owner: LESSOR, required · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL"],"field_key":"TXN.MORTALITY_ELECTION"}
 - **[TXN.MORTALITY_EFFECTIVE_DATE]** Effective date — _date/date_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.MORTALITY_ELECTION"}
 - **[TXN.MAJOR_MEDICAL_MIN_LIMIT]** Minimum policy limit required of Lessee — _currency/currency_, owner: LESSOR · shown when: {"equals":["LESSEE_OBTAIN"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"}
 - **[TXN.GL_MIN_LIMIT]** Minimum policy limit required of Lessee — _currency/currency_, owner: LESSOR · shown when: {"equals":["LESSEE_OBTAIN"],"field_key":"TXN.GL_ELECTION"}
 - **[TXN.MAJOR_MEDICAL_EFFECTIVE_DATE]** Effective date — _date/date_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"}
 - **[TXN.GL_EFFECTIVE_DATE]** Effective date — _date/date_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.GL_ELECTION"}
-- **[TXN.MORTALITY_DEDUCTIBLE_PARTY]** Party responsible for deductibles on claims — _select/select_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.MORTALITY_ELECTION"} · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Both parties shall split the cost","value":"SPLIT"},{"label":"Other","value":"OTHER"}]
-- **[TXN.GL_DEDUCTIBLE_PARTY]** Party responsible for deductibles on claims — _select/select_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.GL_ELECTION"} · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Both parties shall split the cost","value":"SPLIT"},{"label":"Other","value":"OTHER"}]
-- **[TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY]** Party responsible for deductibles on claims — _select/select_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"} · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Both parties shall split the cost","value":"SPLIT"},{"label":"Other","value":"OTHER"}]
+- **[TXN.MORTALITY_DEDUCTIBLE_PARTY]** Party responsible for deductibles on claims — _select/select_, owner: LESSOR, required · shown when: {"any":[{"all":[{"equals":["LESSOR_HAS","LESSOR_WILL"],"field_key":"TXN.MORTALITY_ELECTION"},{"gte":2,"field_key":"TXN.MORTALITY_DEDUCTIBLE"}]},{"equals":["LESSEE_OBTAIN"],"field_key":"TXN.MORTALITY_ELECTION"}]} · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Both parties shall split the cost","value":"SPLIT"},{"label":"Other","value":"OTHER"}]
+- **[TXN.GL_DEDUCTIBLE_PARTY]** Party responsible for deductibles on claims — _select/select_, owner: LESSOR, required · shown when: {"any":[{"all":[{"equals":["LESSOR_HAS","LESSOR_WILL"],"field_key":"TXN.GL_ELECTION"},{"gte":2,"field_key":"TXN.GL_DEDUCTIBLE"}]},{"equals":["LESSEE_OBTAIN"],"field_key":"TXN.GL_ELECTION"}]} · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Both parties shall split the cost","value":"SPLIT"},{"label":"Other","value":"OTHER"}]
+- **[TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY]** Party responsible for deductibles on claims — _select/select_, owner: LESSOR, required · shown when: {"any":[{"all":[{"equals":["LESSOR_HAS","LESSOR_WILL"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"},{"gte":2,"field_key":"TXN.MAJOR_MEDICAL_DEDUCTIBLE"}]},{"equals":["LESSEE_OBTAIN"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"}]} · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Both parties shall split the cost","value":"SPLIT"},{"label":"Other","value":"OTHER"}]
 - **[TXN.GL_DEDUCTIBLE_SPLIT_MODE]** Split entered as — _select/select_, owner: LESSOR · shown when: {"all":[{"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.GL_ELECTION"},{"equals":["SPLIT"],"field_key":"TXN.GL_DEDUCTIBLE_PARTY"}]} · options: [{"label":"$ amount","value":"DOLLAR"},{"label":"% percentage","value":"PERCENT"}]
 - **[TXN.MAJOR_MEDICAL_DEDUCTIBLE_SPLIT_MODE]** Split entered as — _select/select_, owner: LESSOR · shown when: {"all":[{"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"},{"equals":["SPLIT"],"field_key":"TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY"}]} · options: [{"label":"$ amount","value":"DOLLAR"},{"label":"% percentage","value":"PERCENT"}]
 - **[TXN.MORTALITY_DEDUCTIBLE_SPLIT_MODE]** Split entered as — _select/select_, owner: LESSOR · shown when: {"all":[{"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.MORTALITY_ELECTION"},{"equals":["SPLIT"],"field_key":"TXN.MORTALITY_DEDUCTIBLE_PARTY"}]} · options: [{"label":"$ amount","value":"DOLLAR"},{"label":"% percentage","value":"PERCENT"}]
