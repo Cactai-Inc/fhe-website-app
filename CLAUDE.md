@@ -127,5 +127,36 @@ same-name contact records turned out to be different people). Query first.
   — completed or superseded planning artifacts
 - `docs/IDENTITY_MODEL_ANALYSIS.md` — its "kill these 4 empty tables" table was
   **reversed** by ECOSYSTEM_PLAN §F5 (they're empty but code-referenced — keep)
-- `docs/TOKEN_DICTIONARY.md` — still the token contract, but its `ORD.*` namespace
-  points at the retired orders spine
+- `docs/TOKEN_DICTIONARY.md` — the token contract (`ORD.*` remapped to the
+  `purchases`/`purchase_items` spine on 2026-07-27)
+
+---
+
+## Settled owner decisions D1–D7 (2026-07-27) — inherit these, do not re-ask
+
+Full text in `REMEDIATION_PLAN.md` (which wins over any other doc where they conflict).
+
+- **D1 — Identity disposition.** admin@fhequestrian.com (CJ) + hello@fhequestrian.com
+  (Claire) + the company contact (French Heritage Equestrian) are PRODUCTION FHE
+  identities. admin@cactai.io is the PLATFORM owner (Cactai Inc, super admin) — never
+  an FHE tenant identity; must hold zero FHE tenant rows. cjzigs@ / charlesjzigmund@
+  are the owner's test identities: live and untouched until the owner-run post-Stage-5
+  purge (via the 5g routine, never ad hoc). The 6 stranded executed documents ride on
+  the test identities and exit with that purge — no re-anchoring.
+- **D2 — Rename.** The affiliation table becomes `groups`.
+- **D3 — Purchaser wording.** DB stores a neutral promotion marker; display "client"
+  in staff/ops surfaces, "customer" only in gift/product-only contexts. Members must
+  see "Member" about themselves and each other — never "Client".
+- **D4 — Membership tiers DEFERRED** as a product. Strip tier-implying copy
+  (monthly/annual); billing schedules + implicit pay-as-you-go are current reality.
+  `tier` stays a reserved word.
+- **D5 — Promotion pathway.** `promote_contact_to_account` = `_ensure_client_account`
+  spine + re-anchor documents/parties/signatures + `apply_affiliations` + dissolve the
+  faceless contact. Real users only; D1's protected/test identities are never dissolved.
+- **D6 — Fulfillment = one deliverable spine.** Every `purchase_item` with a
+  `config_kind` produces fulfillment unit rows; `status_events` drives their state;
+  receipts, dunning, and delivery logging hang off the spine as provable events.
+- **D7 — Dual-identity (act-as-company) is protected behavior.** Both staff accounts
+  act as themselves or as the company (displayed AND recorded). It works via patches
+  today; consolidation only as behavior-identical change against the Stage-1 trace
+  (`docs/DUAL_IDENTITY_TRACE.md`), never blind.
