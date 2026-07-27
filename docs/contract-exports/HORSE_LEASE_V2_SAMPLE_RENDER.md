@@ -221,7 +221,7 @@ The parties agree to the insurance elections set forth below. Each policy electe
 
 13.3 General Liability Insurance
 
-13.4 Lessor carries general liability insurance covering the activities contemplated by this Agreement, with a policy limit of $1,000,000.00 and a deductible of $2,500, effective as of June 1, 2026.
+13.4 Lessor carries general liability insurance covering the activities contemplated by this Agreement, with a policy limit of $1,000,000.00 and a deductible of $2,500, effective as of June 1, 2026. Both parties shall split the cost of any and all deductible amounts for claims made against this insurance policy: 50% paid by Lessor and 50% paid by Lessee.
 
 13.5 Mortality Insurance
 
