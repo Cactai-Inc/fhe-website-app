@@ -3118,6 +3118,28 @@
                     "responsibility": null
                 },
                 {
+                    "label": "Effective date",
+                    "options": null,
+                    "guidance": "\"Lessor has\": the policy's actual effective date (today or earlier). \"Will purchase\" / \"Lessee must obtain\": the latest acceptable effective date (today or later).",
+                    "required": false,
+                    "field_key": "TXN.MORTALITY_EFFECTIVE_DATE",
+                    "clause_key": "INSURANCE_RISK.MORTALITY",
+                    "input_kind": "date",
+                    "owner_role": "LESSOR",
+                    "sort_order": 40,
+                    "value_type": "date",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "equals": [
+                            "LESSOR_HAS",
+                            "LESSOR_WILL",
+                            "LESSEE_OBTAIN"
+                        ],
+                        "field_key": "TXN.MORTALITY_ELECTION"
+                    },
+                    "responsibility": null
+                },
+                {
                     "label": "Minimum policy limit required of Lessee",
                     "options": null,
                     "guidance": null,
@@ -3162,11 +3184,11 @@
                     "options": null,
                     "guidance": "\"Lessor has\": the policy's actual effective date (today or earlier). \"Will purchase\" / \"Lessee must obtain\": the latest acceptable effective date (today or later).",
                     "required": false,
-                    "field_key": "TXN.MORTALITY_EFFECTIVE_DATE",
-                    "clause_key": "INSURANCE_RISK.MORTALITY",
+                    "field_key": "TXN.MAJOR_MEDICAL_EFFECTIVE_DATE",
+                    "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL",
                     "input_kind": "date",
                     "owner_role": "LESSOR",
-                    "sort_order": 40,
+                    "sort_order": 50,
                     "value_type": "date",
                     "is_optional": false,
                     "conditional_on": {
@@ -3175,7 +3197,29 @@
                             "LESSOR_WILL",
                             "LESSEE_OBTAIN"
                         ],
-                        "field_key": "TXN.MORTALITY_ELECTION"
+                        "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                    },
+                    "responsibility": null
+                },
+                {
+                    "label": "Effective date",
+                    "options": null,
+                    "guidance": "\"Lessor has\": the policy's actual effective date (today or earlier). \"Will purchase\" / \"Lessee must obtain\": the latest acceptable effective date (today or later).",
+                    "required": false,
+                    "field_key": "TXN.GL_EFFECTIVE_DATE",
+                    "clause_key": "INSURANCE_RISK.GENERAL_LIABILITY",
+                    "input_kind": "date",
+                    "owner_role": "LESSOR",
+                    "sort_order": 50,
+                    "value_type": "date",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "equals": [
+                            "LESSOR_HAS",
+                            "LESSOR_WILL",
+                            "LESSEE_OBTAIN"
+                        ],
+                        "field_key": "TXN.GL_ELECTION"
                     },
                     "responsibility": null
                 },
@@ -3215,50 +3259,6 @@
                             "LESSEE_OBTAIN"
                         ],
                         "field_key": "TXN.MORTALITY_ELECTION"
-                    },
-                    "responsibility": null
-                },
-                {
-                    "label": "Effective date",
-                    "options": null,
-                    "guidance": "\"Lessor has\": the policy's actual effective date (today or earlier). \"Will purchase\" / \"Lessee must obtain\": the latest acceptable effective date (today or later).",
-                    "required": false,
-                    "field_key": "TXN.GL_EFFECTIVE_DATE",
-                    "clause_key": "INSURANCE_RISK.GENERAL_LIABILITY",
-                    "input_kind": "date",
-                    "owner_role": "LESSOR",
-                    "sort_order": 50,
-                    "value_type": "date",
-                    "is_optional": false,
-                    "conditional_on": {
-                        "equals": [
-                            "LESSOR_HAS",
-                            "LESSOR_WILL",
-                            "LESSEE_OBTAIN"
-                        ],
-                        "field_key": "TXN.GL_ELECTION"
-                    },
-                    "responsibility": null
-                },
-                {
-                    "label": "Effective date",
-                    "options": null,
-                    "guidance": "\"Lessor has\": the policy's actual effective date (today or earlier). \"Will purchase\" / \"Lessee must obtain\": the latest acceptable effective date (today or later).",
-                    "required": false,
-                    "field_key": "TXN.MAJOR_MEDICAL_EFFECTIVE_DATE",
-                    "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL",
-                    "input_kind": "date",
-                    "owner_role": "LESSOR",
-                    "sort_order": 50,
-                    "value_type": "date",
-                    "is_optional": false,
-                    "conditional_on": {
-                        "equals": [
-                            "LESSOR_HAS",
-                            "LESSOR_WILL",
-                            "LESSEE_OBTAIN"
-                        ],
-                        "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
                     },
                     "responsibility": null
                 },
@@ -3341,16 +3341,25 @@
                     "responsibility": null
                 },
                 {
-                    "label": "Deductible split — paid by Lessor (enter a $ amount or %)",
-                    "options": null,
-                    "guidance": "Dollar amount or percentage, e.g. $1,250 or 50%",
+                    "label": "Split entered as",
+                    "options": [
+                        {
+                            "label": "$ amount",
+                            "value": "DOLLAR"
+                        },
+                        {
+                            "label": "% percentage",
+                            "value": "PERCENT"
+                        }
+                    ],
+                    "guidance": "Choose whether the split is stated in dollars or percentages. Changing this clears both share fields.",
                     "required": false,
-                    "field_key": "TXN.GL_DEDUCTIBLE_SPLIT_LESSOR",
+                    "field_key": "TXN.GL_DEDUCTIBLE_SPLIT_MODE",
                     "clause_key": "INSURANCE_RISK.GENERAL_LIABILITY",
-                    "input_kind": "text",
+                    "input_kind": "select",
                     "owner_role": "LESSOR",
-                    "sort_order": 70,
-                    "value_type": "text",
+                    "sort_order": 65,
+                    "value_type": "select",
                     "is_optional": false,
                     "conditional_on": {
                         "all": [
@@ -3373,9 +3382,91 @@
                     "responsibility": null
                 },
                 {
+                    "label": "Split entered as",
+                    "options": [
+                        {
+                            "label": "$ amount",
+                            "value": "DOLLAR"
+                        },
+                        {
+                            "label": "% percentage",
+                            "value": "PERCENT"
+                        }
+                    ],
+                    "guidance": "Choose whether the split is stated in dollars or percentages. Changing this clears both share fields.",
+                    "required": false,
+                    "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE_SPLIT_MODE",
+                    "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL",
+                    "input_kind": "select",
+                    "owner_role": "LESSOR",
+                    "sort_order": 65,
+                    "value_type": "select",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "all": [
+                            {
+                                "equals": [
+                                    "LESSOR_HAS",
+                                    "LESSOR_WILL",
+                                    "LESSEE_OBTAIN"
+                                ],
+                                "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                            },
+                            {
+                                "equals": [
+                                    "SPLIT"
+                                ],
+                                "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY"
+                            }
+                        ]
+                    },
+                    "responsibility": null
+                },
+                {
+                    "label": "Split entered as",
+                    "options": [
+                        {
+                            "label": "$ amount",
+                            "value": "DOLLAR"
+                        },
+                        {
+                            "label": "% percentage",
+                            "value": "PERCENT"
+                        }
+                    ],
+                    "guidance": "Choose whether the split is stated in dollars or percentages. Changing this clears both share fields.",
+                    "required": false,
+                    "field_key": "TXN.MORTALITY_DEDUCTIBLE_SPLIT_MODE",
+                    "clause_key": "INSURANCE_RISK.MORTALITY",
+                    "input_kind": "select",
+                    "owner_role": "LESSOR",
+                    "sort_order": 65,
+                    "value_type": "select",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "all": [
+                            {
+                                "equals": [
+                                    "LESSOR_HAS",
+                                    "LESSOR_WILL",
+                                    "LESSEE_OBTAIN"
+                                ],
+                                "field_key": "TXN.MORTALITY_ELECTION"
+                            },
+                            {
+                                "equals": [
+                                    "SPLIT"
+                                ],
+                                "field_key": "TXN.MORTALITY_DEDUCTIBLE_PARTY"
+                            }
+                        ]
+                    },
+                    "responsibility": null
+                },
+                {
                     "label": "Deductible split — paid by Lessor (enter a $ amount or %)",
                     "options": null,
-                    "guidance": "Dollar amount or percentage, e.g. $1,250 or 50%",
+                    "guidance": "Enter a number. $ mode: the other share auto-fills from the stated deductible (deductible minus this amount). % mode: the other share auto-fills to total 100%.",
                     "required": false,
                     "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE_SPLIT_LESSOR",
                     "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL",
@@ -3407,7 +3498,7 @@
                 {
                     "label": "Deductible split — paid by Lessor (enter a $ amount or %)",
                     "options": null,
-                    "guidance": "Dollar amount or percentage, e.g. $1,250 or 50%",
+                    "guidance": "Enter a number. $ mode: the other share auto-fills from the stated deductible (deductible minus this amount). % mode: the other share auto-fills to total 100%.",
                     "required": false,
                     "field_key": "TXN.MORTALITY_DEDUCTIBLE_SPLIT_LESSOR",
                     "clause_key": "INSURANCE_RISK.MORTALITY",
@@ -3437,9 +3528,41 @@
                     "responsibility": null
                 },
                 {
+                    "label": "Deductible split — paid by Lessor (enter a $ amount or %)",
+                    "options": null,
+                    "guidance": "Enter a number. $ mode: the other share auto-fills from the stated deductible (deductible minus this amount). % mode: the other share auto-fills to total 100%.",
+                    "required": false,
+                    "field_key": "TXN.GL_DEDUCTIBLE_SPLIT_LESSOR",
+                    "clause_key": "INSURANCE_RISK.GENERAL_LIABILITY",
+                    "input_kind": "text",
+                    "owner_role": "LESSOR",
+                    "sort_order": 70,
+                    "value_type": "text",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "all": [
+                            {
+                                "equals": [
+                                    "LESSOR_HAS",
+                                    "LESSOR_WILL",
+                                    "LESSEE_OBTAIN"
+                                ],
+                                "field_key": "TXN.GL_ELECTION"
+                            },
+                            {
+                                "equals": [
+                                    "SPLIT"
+                                ],
+                                "field_key": "TXN.GL_DEDUCTIBLE_PARTY"
+                            }
+                        ]
+                    },
+                    "responsibility": null
+                },
+                {
                     "label": "Deductible split — paid by Lessee (enter a $ amount or %)",
                     "options": null,
-                    "guidance": "Dollar amount or percentage, e.g. $1,250 or 50%",
+                    "guidance": "Enter a number. $ mode: the other share auto-fills from the stated deductible (deductible minus this amount). % mode: the other share auto-fills to total 100%.",
                     "required": false,
                     "field_key": "TXN.GL_DEDUCTIBLE_SPLIT_LESSEE",
                     "clause_key": "INSURANCE_RISK.GENERAL_LIABILITY",
@@ -3471,7 +3594,7 @@
                 {
                     "label": "Deductible split — paid by Lessee (enter a $ amount or %)",
                     "options": null,
-                    "guidance": "Dollar amount or percentage, e.g. $1,250 or 50%",
+                    "guidance": "Enter a number. $ mode: the other share auto-fills from the stated deductible (deductible minus this amount). % mode: the other share auto-fills to total 100%.",
                     "required": false,
                     "field_key": "TXN.MORTALITY_DEDUCTIBLE_SPLIT_LESSEE",
                     "clause_key": "INSURANCE_RISK.MORTALITY",
@@ -3503,7 +3626,7 @@
                 {
                     "label": "Deductible split — paid by Lessee (enter a $ amount or %)",
                     "options": null,
-                    "guidance": "Dollar amount or percentage, e.g. $1,250 or 50%",
+                    "guidance": "Enter a number. $ mode: the other share auto-fills from the stated deductible (deductible minus this amount). % mode: the other share auto-fills to total 100%.",
                     "required": false,
                     "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE_SPLIT_LESSEE",
                     "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL",
@@ -3527,6 +3650,38 @@
                                     "SPLIT"
                                 ],
                                 "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY"
+                            }
+                        ]
+                    },
+                    "responsibility": null
+                },
+                {
+                    "label": "Other deductible arrangement",
+                    "options": null,
+                    "guidance": "Free text; rendered after \"Responsibility for any and all deductible amounts …:\"",
+                    "required": false,
+                    "field_key": "TXN.MORTALITY_DEDUCTIBLE_OTHER",
+                    "clause_key": "INSURANCE_RISK.MORTALITY",
+                    "input_kind": "text",
+                    "owner_role": "LESSOR",
+                    "sort_order": 90,
+                    "value_type": "text",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "all": [
+                            {
+                                "equals": [
+                                    "LESSOR_HAS",
+                                    "LESSOR_WILL",
+                                    "LESSEE_OBTAIN"
+                                ],
+                                "field_key": "TXN.MORTALITY_ELECTION"
+                            },
+                            {
+                                "equals": [
+                                    "OTHER"
+                                ],
+                                "field_key": "TXN.MORTALITY_DEDUCTIBLE_PARTY"
                             }
                         ]
                     },
@@ -3591,38 +3746,6 @@
                                     "OTHER"
                                 ],
                                 "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY"
-                            }
-                        ]
-                    },
-                    "responsibility": null
-                },
-                {
-                    "label": "Other deductible arrangement",
-                    "options": null,
-                    "guidance": "Free text; rendered after \"Responsibility for any and all deductible amounts …:\"",
-                    "required": false,
-                    "field_key": "TXN.MORTALITY_DEDUCTIBLE_OTHER",
-                    "clause_key": "INSURANCE_RISK.MORTALITY",
-                    "input_kind": "text",
-                    "owner_role": "LESSOR",
-                    "sort_order": 90,
-                    "value_type": "text",
-                    "is_optional": false,
-                    "conditional_on": {
-                        "all": [
-                            {
-                                "equals": [
-                                    "LESSOR_HAS",
-                                    "LESSOR_WILL",
-                                    "LESSEE_OBTAIN"
-                                ],
-                                "field_key": "TXN.MORTALITY_ELECTION"
-                            },
-                            {
-                                "equals": [
-                                    "OTHER"
-                                ],
-                                "field_key": "TXN.MORTALITY_DEDUCTIBLE_PARTY"
                             }
                         ]
                     },
