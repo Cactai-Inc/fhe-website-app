@@ -11,7 +11,6 @@ Last updated: 2026-07-27.
 | Item | What's needed |
 |---|---|
 | **Ecosystem Stage 3** — re-anchor 6 stranded executed documents | A canonical-identity decision. The stranded docs sit on the owner's own multi-role test identities (CJ Z across 3 emails/accounts) + the company contact. Moving *signed* documents is destructive, so it needs an explicit call: re-anchor by email match, skip as test data, or review a full per-person map first. |
-| **Lease change request** | The redline/change list from the owner's authoring thread. The round-trip export is ready at `docs/contract-exports/HORSE_LEASE_V2_current.md` (+ `.json`). Keep the `[KEY]` identifiers so changes map back. To edit lease wording directly, see `supabase/contract_templates/HORSE_LEASE.md` (the how-to-edit pointer doc). |
 | **Two naming decisions** (block Stage 4) | (a) Affiliation table name: `groups` (recommended) vs `member_groups` vs `client_groups`. (b) Purchaser wording: `client` for all / `client`+`customer` split / `guest`+`customer`. |
 
 ---
@@ -112,3 +111,10 @@ Last updated: 2026-07-27.
   database. Pre-existing property; worth a strategy if a clean rebuild is ever needed.
 - There is no `supabase_migrations.schema_migrations` table — migrations are a
   hand-maintained journal applied via `psql`.
+
+## Done 2026-07-27
+
+- **Lease hardening applied** — the owner's 8-change list
+  (`docs/contract-exports/HORSE_LEASE_V2_HARDENING_CHANGES.md`) is live on prod via
+  `supabase/migrations/20260727120000_lease_v2_hardening.sql` (`de0122c`); exports
+  regenerated. Both limitation branches render-verified.
