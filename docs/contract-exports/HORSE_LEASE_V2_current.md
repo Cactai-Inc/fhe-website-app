@@ -160,10 +160,13 @@ The Lessor notes the following known exceptions to the physical condition of the
 
 Pre-lease veterinary examination of the Horse: {{TXN.VET_CHECK_CHOICE}}
 
+**[HORSE.TRAINER_EVAL]** — Pre-Lease Trainer Evaluation
+
+Pre-lease trainer evaluation of the Horse: {{TXN.TRAINER_EVAL_CHOICE}}
+
 **[HORSE.WARRANTY]** — Disclaimer of Warranties
 
 Except for the representations expressly stated in this Agreement, LESSOR MAKES NO WARRANTIES, EXPRESS OR IMPLIED, REGARDING THE HORSE, INCLUDING THE WARRANTY OF FITNESS FOR A PARTICULAR PURPOSE.
-{{TXN.TRAINER_EVAL_CHOICE}}
 
 ### Fields
 - **[TXN.CO_OWNERS]** Co-owner(s) — _contacts_list/text_, owner: LESSOR

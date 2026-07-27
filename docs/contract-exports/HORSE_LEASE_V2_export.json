@@ -999,7 +999,18 @@
                     "conditional_on": null
                 },
                 {
-                    "body": "Except for the representations expressly stated in this Agreement, LESSOR MAKES NO WARRANTIES, EXPRESS OR IMPLIED, REGARDING THE HORSE, INCLUDING THE WARRANTY OF FITNESS FOR A PARTICULAR PURPOSE.\n{{TXN.TRAINER_EVAL_CHOICE}}",
+                    "body": "Pre-lease trainer evaluation of the Horse: {{TXN.TRAINER_EVAL_CHOICE}}",
+                    "heading": "Pre-Lease Trainer Evaluation",
+                    "cut_name": null,
+                    "guidance": null,
+                    "clause_key": "HORSE.TRAINER_EVAL",
+                    "sort_order": 55,
+                    "clause_type": "input",
+                    "is_optional": false,
+                    "conditional_on": null
+                },
+                {
+                    "body": "Except for the representations expressly stated in this Agreement, LESSOR MAKES NO WARRANTIES, EXPRESS OR IMPLIED, REGARDING THE HORSE, INCLUDING THE WARRANTY OF FITNESS FOR A PARTICULAR PURPOSE.",
                     "heading": "Disclaimer of Warranties",
                     "cut_name": null,
                     "guidance": null,
