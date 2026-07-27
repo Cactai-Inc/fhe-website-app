@@ -221,15 +221,15 @@ The parties agree to the insurance elections set forth below. Each policy electe
 
 13.3 General Liability Insurance
 
-13.4 Lessor carries general liability insurance covering the activities contemplated by this Agreement, with a policy limit of $1,000,000.00 and a deductible of $2,500, effective as of June 1, 2026. Both parties shall split the cost of any and all deductible amounts for claims made against this insurance policy: 50% paid by Lessor and 50% paid by Lessee.
+13.4 Lessor carries general liability insurance covering the activities contemplated by this Agreement, with a policy limit of $1,000,000.00 and a deductible of , effective as of June 1, 2026.
 
 13.5 Mortality Insurance
 
-13.6 Lessor requires Lessee to obtain and maintain mortality insurance on the Horse with a policy limit of at least the Horse's fair market value of $45,000.00 and an effective date no later than August 1, 2026. Lessee shall provide proof of insurance to Lessor by email and shall maintain the policy in good standing for the duration of this Agreement; failure to do so constitutes a material breach subject to the Termination for Cause provisions of this Agreement. Lessee is responsible for any and all deductible amounts for claims made against this insurance policy.
+13.6 Lessor requires Lessee to obtain and maintain mortality insurance on the Horse with a policy limit of at least the Horse's fair market value of $45,000.00 and an effective date no later than August 1, 2026. Lessee shall provide proof of insurance to Lessor by email and shall maintain the policy in good standing for the duration of this Agreement; failure to do so constitutes a material breach subject to the Termination for Cause provisions of this Agreement.
 
 13.7 Major Medical Insurance
 
-13.8 Lessor is in the process of purchasing or agrees to purchase major medical insurance on the Horse with a policy limit of $15,000.00 and a deductible of $250, and an effective date no later than August 1, 2026. Responsibility for any and all deductible amounts for claims made against this insurance policy: Deductibles are allocated per the parties' separate boarding agreement.
+13.8 Lessor is in the process of purchasing or agrees to purchase major medical insurance on the Horse with a policy limit of $15,000.00 and a deductible of , and an effective date no later than August 1, 2026.
 
 13.9 Risk of Loss of or Injury to the Horse
 Lessor assumes all risk of loss or injury to the Horse during the term of this Agreement.

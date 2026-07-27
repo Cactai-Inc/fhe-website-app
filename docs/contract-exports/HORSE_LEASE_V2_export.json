@@ -3417,10 +3417,13 @@
                             {
                                 "equals": [
                                     "LESSOR_HAS",
-                                    "LESSOR_WILL",
-                                    "LESSEE_OBTAIN"
+                                    "LESSOR_WILL"
                                 ],
                                 "field_key": "TXN.GL_ELECTION"
+                            },
+                            {
+                                "gte": 2,
+                                "field_key": "TXN.GL_DEDUCTIBLE"
                             },
                             {
                                 "equals": [
@@ -3458,10 +3461,13 @@
                             {
                                 "equals": [
                                     "LESSOR_HAS",
-                                    "LESSOR_WILL",
-                                    "LESSEE_OBTAIN"
+                                    "LESSOR_WILL"
                                 ],
                                 "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                            },
+                            {
+                                "gte": 2,
+                                "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE"
                             },
                             {
                                 "equals": [
@@ -3499,10 +3505,13 @@
                             {
                                 "equals": [
                                     "LESSOR_HAS",
-                                    "LESSOR_WILL",
-                                    "LESSEE_OBTAIN"
+                                    "LESSOR_WILL"
                                 ],
                                 "field_key": "TXN.MORTALITY_ELECTION"
+                            },
+                            {
+                                "gte": 2,
+                                "field_key": "TXN.MORTALITY_DEDUCTIBLE"
                             },
                             {
                                 "equals": [
@@ -3515,9 +3524,9 @@
                     "responsibility": null
                 },
                 {
-                    "label": "Deductible split — paid by Lessor (enter a $ amount or %)",
+                    "label": "Deductible split — paid by Lessor",
                     "options": null,
-                    "guidance": "Enter a number. $ mode: the other share auto-fills from the stated deductible (deductible minus this amount). % mode: the other share auto-fills to total 100%.",
+                    "guidance": "Enter a number. Lessor-held policy in $ mode: the other share auto-fills from the stated deductible. % mode (and always when Lessee must obtain the policy): the other share auto-fills to total 100%.",
                     "required": false,
                     "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE_SPLIT_LESSOR",
                     "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL",
@@ -3527,29 +3536,59 @@
                     "value_type": "text",
                     "is_optional": false,
                     "conditional_on": {
-                        "all": [
+                        "any": [
                             {
-                                "equals": [
-                                    "LESSOR_HAS",
-                                    "LESSOR_WILL",
-                                    "LESSEE_OBTAIN"
-                                ],
-                                "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                                "all": [
+                                    {
+                                        "equals": [
+                                            "LESSOR_HAS",
+                                            "LESSOR_WILL"
+                                        ],
+                                        "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                                    },
+                                    {
+                                        "gte": 2,
+                                        "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE"
+                                    },
+                                    {
+                                        "equals": [
+                                            "SPLIT"
+                                        ],
+                                        "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY"
+                                    },
+                                    {
+                                        "equals": [
+                                            "DOLLAR",
+                                            "PERCENT"
+                                        ],
+                                        "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE_SPLIT_MODE"
+                                    }
+                                ]
                             },
                             {
-                                "equals": [
-                                    "SPLIT"
-                                ],
-                                "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY"
+                                "all": [
+                                    {
+                                        "equals": [
+                                            "LESSEE_OBTAIN"
+                                        ],
+                                        "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                                    },
+                                    {
+                                        "equals": [
+                                            "SPLIT"
+                                        ],
+                                        "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY"
+                                    }
+                                ]
                             }
                         ]
                     },
                     "responsibility": null
                 },
                 {
-                    "label": "Deductible split — paid by Lessor (enter a $ amount or %)",
+                    "label": "Deductible split — paid by Lessor",
                     "options": null,
-                    "guidance": "Enter a number. $ mode: the other share auto-fills from the stated deductible (deductible minus this amount). % mode: the other share auto-fills to total 100%.",
+                    "guidance": "Enter a number. Lessor-held policy in $ mode: the other share auto-fills from the stated deductible. % mode (and always when Lessee must obtain the policy): the other share auto-fills to total 100%.",
                     "required": false,
                     "field_key": "TXN.MORTALITY_DEDUCTIBLE_SPLIT_LESSOR",
                     "clause_key": "INSURANCE_RISK.MORTALITY",
@@ -3559,29 +3598,59 @@
                     "value_type": "text",
                     "is_optional": false,
                     "conditional_on": {
-                        "all": [
+                        "any": [
                             {
-                                "equals": [
-                                    "LESSOR_HAS",
-                                    "LESSOR_WILL",
-                                    "LESSEE_OBTAIN"
-                                ],
-                                "field_key": "TXN.MORTALITY_ELECTION"
+                                "all": [
+                                    {
+                                        "equals": [
+                                            "LESSOR_HAS",
+                                            "LESSOR_WILL"
+                                        ],
+                                        "field_key": "TXN.MORTALITY_ELECTION"
+                                    },
+                                    {
+                                        "gte": 2,
+                                        "field_key": "TXN.MORTALITY_DEDUCTIBLE"
+                                    },
+                                    {
+                                        "equals": [
+                                            "SPLIT"
+                                        ],
+                                        "field_key": "TXN.MORTALITY_DEDUCTIBLE_PARTY"
+                                    },
+                                    {
+                                        "equals": [
+                                            "DOLLAR",
+                                            "PERCENT"
+                                        ],
+                                        "field_key": "TXN.MORTALITY_DEDUCTIBLE_SPLIT_MODE"
+                                    }
+                                ]
                             },
                             {
-                                "equals": [
-                                    "SPLIT"
-                                ],
-                                "field_key": "TXN.MORTALITY_DEDUCTIBLE_PARTY"
+                                "all": [
+                                    {
+                                        "equals": [
+                                            "LESSEE_OBTAIN"
+                                        ],
+                                        "field_key": "TXN.MORTALITY_ELECTION"
+                                    },
+                                    {
+                                        "equals": [
+                                            "SPLIT"
+                                        ],
+                                        "field_key": "TXN.MORTALITY_DEDUCTIBLE_PARTY"
+                                    }
+                                ]
                             }
                         ]
                     },
                     "responsibility": null
                 },
                 {
-                    "label": "Deductible split — paid by Lessor (enter a $ amount or %)",
+                    "label": "Deductible split — paid by Lessor",
                     "options": null,
-                    "guidance": "Enter a number. $ mode: the other share auto-fills from the stated deductible (deductible minus this amount). % mode: the other share auto-fills to total 100%.",
+                    "guidance": "Enter a number. Lessor-held policy in $ mode: the other share auto-fills from the stated deductible. % mode (and always when Lessee must obtain the policy): the other share auto-fills to total 100%.",
                     "required": false,
                     "field_key": "TXN.GL_DEDUCTIBLE_SPLIT_LESSOR",
                     "clause_key": "INSURANCE_RISK.GENERAL_LIABILITY",
@@ -3591,29 +3660,59 @@
                     "value_type": "text",
                     "is_optional": false,
                     "conditional_on": {
-                        "all": [
+                        "any": [
                             {
-                                "equals": [
-                                    "LESSOR_HAS",
-                                    "LESSOR_WILL",
-                                    "LESSEE_OBTAIN"
-                                ],
-                                "field_key": "TXN.GL_ELECTION"
+                                "all": [
+                                    {
+                                        "equals": [
+                                            "LESSOR_HAS",
+                                            "LESSOR_WILL"
+                                        ],
+                                        "field_key": "TXN.GL_ELECTION"
+                                    },
+                                    {
+                                        "gte": 2,
+                                        "field_key": "TXN.GL_DEDUCTIBLE"
+                                    },
+                                    {
+                                        "equals": [
+                                            "SPLIT"
+                                        ],
+                                        "field_key": "TXN.GL_DEDUCTIBLE_PARTY"
+                                    },
+                                    {
+                                        "equals": [
+                                            "DOLLAR",
+                                            "PERCENT"
+                                        ],
+                                        "field_key": "TXN.GL_DEDUCTIBLE_SPLIT_MODE"
+                                    }
+                                ]
                             },
                             {
-                                "equals": [
-                                    "SPLIT"
-                                ],
-                                "field_key": "TXN.GL_DEDUCTIBLE_PARTY"
+                                "all": [
+                                    {
+                                        "equals": [
+                                            "LESSEE_OBTAIN"
+                                        ],
+                                        "field_key": "TXN.GL_ELECTION"
+                                    },
+                                    {
+                                        "equals": [
+                                            "SPLIT"
+                                        ],
+                                        "field_key": "TXN.GL_DEDUCTIBLE_PARTY"
+                                    }
+                                ]
                             }
                         ]
                     },
                     "responsibility": null
                 },
                 {
-                    "label": "Deductible split — paid by Lessee (enter a $ amount or %)",
+                    "label": "Deductible split — paid by Lessee",
                     "options": null,
-                    "guidance": "Enter a number. $ mode: the other share auto-fills from the stated deductible (deductible minus this amount). % mode: the other share auto-fills to total 100%.",
+                    "guidance": "Enter a number. Lessor-held policy in $ mode: the other share auto-fills from the stated deductible. % mode (and always when Lessee must obtain the policy): the other share auto-fills to total 100%.",
                     "required": false,
                     "field_key": "TXN.GL_DEDUCTIBLE_SPLIT_LESSEE",
                     "clause_key": "INSURANCE_RISK.GENERAL_LIABILITY",
@@ -3623,29 +3722,59 @@
                     "value_type": "text",
                     "is_optional": false,
                     "conditional_on": {
-                        "all": [
+                        "any": [
                             {
-                                "equals": [
-                                    "LESSOR_HAS",
-                                    "LESSOR_WILL",
-                                    "LESSEE_OBTAIN"
-                                ],
-                                "field_key": "TXN.GL_ELECTION"
+                                "all": [
+                                    {
+                                        "equals": [
+                                            "LESSOR_HAS",
+                                            "LESSOR_WILL"
+                                        ],
+                                        "field_key": "TXN.GL_ELECTION"
+                                    },
+                                    {
+                                        "gte": 2,
+                                        "field_key": "TXN.GL_DEDUCTIBLE"
+                                    },
+                                    {
+                                        "equals": [
+                                            "SPLIT"
+                                        ],
+                                        "field_key": "TXN.GL_DEDUCTIBLE_PARTY"
+                                    },
+                                    {
+                                        "equals": [
+                                            "DOLLAR",
+                                            "PERCENT"
+                                        ],
+                                        "field_key": "TXN.GL_DEDUCTIBLE_SPLIT_MODE"
+                                    }
+                                ]
                             },
                             {
-                                "equals": [
-                                    "SPLIT"
-                                ],
-                                "field_key": "TXN.GL_DEDUCTIBLE_PARTY"
+                                "all": [
+                                    {
+                                        "equals": [
+                                            "LESSEE_OBTAIN"
+                                        ],
+                                        "field_key": "TXN.GL_ELECTION"
+                                    },
+                                    {
+                                        "equals": [
+                                            "SPLIT"
+                                        ],
+                                        "field_key": "TXN.GL_DEDUCTIBLE_PARTY"
+                                    }
+                                ]
                             }
                         ]
                     },
                     "responsibility": null
                 },
                 {
-                    "label": "Deductible split — paid by Lessee (enter a $ amount or %)",
+                    "label": "Deductible split — paid by Lessee",
                     "options": null,
-                    "guidance": "Enter a number. $ mode: the other share auto-fills from the stated deductible (deductible minus this amount). % mode: the other share auto-fills to total 100%.",
+                    "guidance": "Enter a number. Lessor-held policy in $ mode: the other share auto-fills from the stated deductible. % mode (and always when Lessee must obtain the policy): the other share auto-fills to total 100%.",
                     "required": false,
                     "field_key": "TXN.MORTALITY_DEDUCTIBLE_SPLIT_LESSEE",
                     "clause_key": "INSURANCE_RISK.MORTALITY",
@@ -3655,29 +3784,59 @@
                     "value_type": "text",
                     "is_optional": false,
                     "conditional_on": {
-                        "all": [
+                        "any": [
                             {
-                                "equals": [
-                                    "LESSOR_HAS",
-                                    "LESSOR_WILL",
-                                    "LESSEE_OBTAIN"
-                                ],
-                                "field_key": "TXN.MORTALITY_ELECTION"
+                                "all": [
+                                    {
+                                        "equals": [
+                                            "LESSOR_HAS",
+                                            "LESSOR_WILL"
+                                        ],
+                                        "field_key": "TXN.MORTALITY_ELECTION"
+                                    },
+                                    {
+                                        "gte": 2,
+                                        "field_key": "TXN.MORTALITY_DEDUCTIBLE"
+                                    },
+                                    {
+                                        "equals": [
+                                            "SPLIT"
+                                        ],
+                                        "field_key": "TXN.MORTALITY_DEDUCTIBLE_PARTY"
+                                    },
+                                    {
+                                        "equals": [
+                                            "DOLLAR",
+                                            "PERCENT"
+                                        ],
+                                        "field_key": "TXN.MORTALITY_DEDUCTIBLE_SPLIT_MODE"
+                                    }
+                                ]
                             },
                             {
-                                "equals": [
-                                    "SPLIT"
-                                ],
-                                "field_key": "TXN.MORTALITY_DEDUCTIBLE_PARTY"
+                                "all": [
+                                    {
+                                        "equals": [
+                                            "LESSEE_OBTAIN"
+                                        ],
+                                        "field_key": "TXN.MORTALITY_ELECTION"
+                                    },
+                                    {
+                                        "equals": [
+                                            "SPLIT"
+                                        ],
+                                        "field_key": "TXN.MORTALITY_DEDUCTIBLE_PARTY"
+                                    }
+                                ]
                             }
                         ]
                     },
                     "responsibility": null
                 },
                 {
-                    "label": "Deductible split — paid by Lessee (enter a $ amount or %)",
+                    "label": "Deductible split — paid by Lessee",
                     "options": null,
-                    "guidance": "Enter a number. $ mode: the other share auto-fills from the stated deductible (deductible minus this amount). % mode: the other share auto-fills to total 100%.",
+                    "guidance": "Enter a number. Lessor-held policy in $ mode: the other share auto-fills from the stated deductible. % mode (and always when Lessee must obtain the policy): the other share auto-fills to total 100%.",
                     "required": false,
                     "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE_SPLIT_LESSEE",
                     "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL",
@@ -3687,20 +3846,50 @@
                     "value_type": "text",
                     "is_optional": false,
                     "conditional_on": {
-                        "all": [
+                        "any": [
                             {
-                                "equals": [
-                                    "LESSOR_HAS",
-                                    "LESSOR_WILL",
-                                    "LESSEE_OBTAIN"
-                                ],
-                                "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                                "all": [
+                                    {
+                                        "equals": [
+                                            "LESSOR_HAS",
+                                            "LESSOR_WILL"
+                                        ],
+                                        "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                                    },
+                                    {
+                                        "gte": 2,
+                                        "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE"
+                                    },
+                                    {
+                                        "equals": [
+                                            "SPLIT"
+                                        ],
+                                        "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY"
+                                    },
+                                    {
+                                        "equals": [
+                                            "DOLLAR",
+                                            "PERCENT"
+                                        ],
+                                        "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE_SPLIT_MODE"
+                                    }
+                                ]
                             },
                             {
-                                "equals": [
-                                    "SPLIT"
-                                ],
-                                "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY"
+                                "all": [
+                                    {
+                                        "equals": [
+                                            "LESSEE_OBTAIN"
+                                        ],
+                                        "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                                    },
+                                    {
+                                        "equals": [
+                                            "SPLIT"
+                                        ],
+                                        "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY"
+                                    }
+                                ]
                             }
                         ]
                     },
@@ -3903,29 +4092,15 @@
                     "conditional_on": {
                         "all": [
                             {
-                                "any": [
-                                    {
-                                        "all": [
-                                            {
-                                                "equals": [
-                                                    "LESSOR_HAS",
-                                                    "LESSOR_WILL"
-                                                ],
-                                                "field_key": "TXN.GL_ELECTION"
-                                            },
-                                            {
-                                                "gte": 2,
-                                                "field_key": "TXN.GL_DEDUCTIBLE"
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        "equals": [
-                                            "LESSEE_OBTAIN"
-                                        ],
-                                        "field_key": "TXN.GL_ELECTION"
-                                    }
-                                ]
+                                "equals": [
+                                    "LESSOR_HAS",
+                                    "LESSOR_WILL"
+                                ],
+                                "field_key": "TXN.GL_ELECTION"
+                            },
+                            {
+                                "gte": 2,
+                                "field_key": "TXN.GL_DEDUCTIBLE"
                             },
                             {
                                 "equals": [
@@ -3950,29 +4125,15 @@
                     "conditional_on": {
                         "all": [
                             {
-                                "any": [
-                                    {
-                                        "all": [
-                                            {
-                                                "equals": [
-                                                    "LESSOR_HAS",
-                                                    "LESSOR_WILL"
-                                                ],
-                                                "field_key": "TXN.GL_ELECTION"
-                                            },
-                                            {
-                                                "gte": 2,
-                                                "field_key": "TXN.GL_DEDUCTIBLE"
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        "equals": [
-                                            "LESSEE_OBTAIN"
-                                        ],
-                                        "field_key": "TXN.GL_ELECTION"
-                                    }
-                                ]
+                                "equals": [
+                                    "LESSOR_HAS",
+                                    "LESSOR_WILL"
+                                ],
+                                "field_key": "TXN.GL_ELECTION"
+                            },
+                            {
+                                "gte": 2,
+                                "field_key": "TXN.GL_DEDUCTIBLE"
                             },
                             {
                                 "equals": [
@@ -4023,6 +4184,61 @@
                             {
                                 "equals": [
                                     "OTHER"
+                                ],
+                                "field_key": "TXN.GL_DEDUCTIBLE_PARTY"
+                            }
+                        ]
+                    },
+                    "render_as_subitem": true
+                },
+                {
+                    "body": "Any deductible amounts for claims made against this insurance policy shall be the responsibility of {{TXN.GL_DEDUCTIBLE_PARTY}}.",
+                    "heading": null,
+                    "cut_name": null,
+                    "guidance": null,
+                    "clause_key": "INSURANCE_RISK.GL_DED_PARTY_FUTURE",
+                    "sort_order": 187,
+                    "clause_type": "input",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "all": [
+                            {
+                                "equals": [
+                                    "LESSEE_OBTAIN"
+                                ],
+                                "field_key": "TXN.GL_ELECTION"
+                            },
+                            {
+                                "equals": [
+                                    "LESSOR",
+                                    "LESSEE"
+                                ],
+                                "field_key": "TXN.GL_DEDUCTIBLE_PARTY"
+                            }
+                        ]
+                    },
+                    "render_as_subitem": true
+                },
+                {
+                    "body": "Any deductible amounts for claims made against this insurance policy shall be split between the parties: {{TXN.GL_DEDUCTIBLE_SPLIT_LESSEE}} paid by Lessee and {{TXN.GL_DEDUCTIBLE_SPLIT_LESSOR}} paid by Lessor.",
+                    "heading": null,
+                    "cut_name": null,
+                    "guidance": null,
+                    "clause_key": "INSURANCE_RISK.GL_DED_SPLIT_FUTURE",
+                    "sort_order": 188,
+                    "clause_type": "input",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "all": [
+                            {
+                                "equals": [
+                                    "LESSEE_OBTAIN"
+                                ],
+                                "field_key": "TXN.GL_ELECTION"
+                            },
+                            {
+                                "equals": [
+                                    "SPLIT"
                                 ],
                                 "field_key": "TXN.GL_DEDUCTIBLE_PARTY"
                             }
@@ -4123,29 +4339,15 @@
                     "conditional_on": {
                         "all": [
                             {
-                                "any": [
-                                    {
-                                        "all": [
-                                            {
-                                                "equals": [
-                                                    "LESSOR_HAS",
-                                                    "LESSOR_WILL"
-                                                ],
-                                                "field_key": "TXN.MORTALITY_ELECTION"
-                                            },
-                                            {
-                                                "gte": 2,
-                                                "field_key": "TXN.MORTALITY_DEDUCTIBLE"
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        "equals": [
-                                            "LESSEE_OBTAIN"
-                                        ],
-                                        "field_key": "TXN.MORTALITY_ELECTION"
-                                    }
-                                ]
+                                "equals": [
+                                    "LESSOR_HAS",
+                                    "LESSOR_WILL"
+                                ],
+                                "field_key": "TXN.MORTALITY_ELECTION"
+                            },
+                            {
+                                "gte": 2,
+                                "field_key": "TXN.MORTALITY_DEDUCTIBLE"
                             },
                             {
                                 "equals": [
@@ -4170,29 +4372,15 @@
                     "conditional_on": {
                         "all": [
                             {
-                                "any": [
-                                    {
-                                        "all": [
-                                            {
-                                                "equals": [
-                                                    "LESSOR_HAS",
-                                                    "LESSOR_WILL"
-                                                ],
-                                                "field_key": "TXN.MORTALITY_ELECTION"
-                                            },
-                                            {
-                                                "gte": 2,
-                                                "field_key": "TXN.MORTALITY_DEDUCTIBLE"
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        "equals": [
-                                            "LESSEE_OBTAIN"
-                                        ],
-                                        "field_key": "TXN.MORTALITY_ELECTION"
-                                    }
-                                ]
+                                "equals": [
+                                    "LESSOR_HAS",
+                                    "LESSOR_WILL"
+                                ],
+                                "field_key": "TXN.MORTALITY_ELECTION"
+                            },
+                            {
+                                "gte": 2,
+                                "field_key": "TXN.MORTALITY_DEDUCTIBLE"
                             },
                             {
                                 "equals": [
@@ -4243,6 +4431,61 @@
                             {
                                 "equals": [
                                     "OTHER"
+                                ],
+                                "field_key": "TXN.MORTALITY_DEDUCTIBLE_PARTY"
+                            }
+                        ]
+                    },
+                    "render_as_subitem": true
+                },
+                {
+                    "body": "Any deductible amounts for claims made against this insurance policy shall be the responsibility of {{TXN.MORTALITY_DEDUCTIBLE_PARTY}}.",
+                    "heading": null,
+                    "cut_name": null,
+                    "guidance": null,
+                    "clause_key": "INSURANCE_RISK.MORTALITY_DED_PARTY_FUTURE",
+                    "sort_order": 237,
+                    "clause_type": "input",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "all": [
+                            {
+                                "equals": [
+                                    "LESSEE_OBTAIN"
+                                ],
+                                "field_key": "TXN.MORTALITY_ELECTION"
+                            },
+                            {
+                                "equals": [
+                                    "LESSOR",
+                                    "LESSEE"
+                                ],
+                                "field_key": "TXN.MORTALITY_DEDUCTIBLE_PARTY"
+                            }
+                        ]
+                    },
+                    "render_as_subitem": true
+                },
+                {
+                    "body": "Any deductible amounts for claims made against this insurance policy shall be split between the parties: {{TXN.MORTALITY_DEDUCTIBLE_SPLIT_LESSEE}} paid by Lessee and {{TXN.MORTALITY_DEDUCTIBLE_SPLIT_LESSOR}} paid by Lessor.",
+                    "heading": null,
+                    "cut_name": null,
+                    "guidance": null,
+                    "clause_key": "INSURANCE_RISK.MORTALITY_DED_SPLIT_FUTURE",
+                    "sort_order": 238,
+                    "clause_type": "input",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "all": [
+                            {
+                                "equals": [
+                                    "LESSEE_OBTAIN"
+                                ],
+                                "field_key": "TXN.MORTALITY_ELECTION"
+                            },
+                            {
+                                "equals": [
+                                    "SPLIT"
                                 ],
                                 "field_key": "TXN.MORTALITY_DEDUCTIBLE_PARTY"
                             }
@@ -4343,29 +4586,15 @@
                     "conditional_on": {
                         "all": [
                             {
-                                "any": [
-                                    {
-                                        "all": [
-                                            {
-                                                "equals": [
-                                                    "LESSOR_HAS",
-                                                    "LESSOR_WILL"
-                                                ],
-                                                "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
-                                            },
-                                            {
-                                                "gte": 2,
-                                                "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE"
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        "equals": [
-                                            "LESSEE_OBTAIN"
-                                        ],
-                                        "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
-                                    }
-                                ]
+                                "equals": [
+                                    "LESSOR_HAS",
+                                    "LESSOR_WILL"
+                                ],
+                                "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                            },
+                            {
+                                "gte": 2,
+                                "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE"
                             },
                             {
                                 "equals": [
@@ -4390,29 +4619,15 @@
                     "conditional_on": {
                         "all": [
                             {
-                                "any": [
-                                    {
-                                        "all": [
-                                            {
-                                                "equals": [
-                                                    "LESSOR_HAS",
-                                                    "LESSOR_WILL"
-                                                ],
-                                                "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
-                                            },
-                                            {
-                                                "gte": 2,
-                                                "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE"
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        "equals": [
-                                            "LESSEE_OBTAIN"
-                                        ],
-                                        "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
-                                    }
-                                ]
+                                "equals": [
+                                    "LESSOR_HAS",
+                                    "LESSOR_WILL"
+                                ],
+                                "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                            },
+                            {
+                                "gte": 2,
+                                "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE"
                             },
                             {
                                 "equals": [
@@ -4463,6 +4678,61 @@
                             {
                                 "equals": [
                                     "OTHER"
+                                ],
+                                "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY"
+                            }
+                        ]
+                    },
+                    "render_as_subitem": true
+                },
+                {
+                    "body": "Any deductible amounts for claims made against this insurance policy shall be the responsibility of {{TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY}}.",
+                    "heading": null,
+                    "cut_name": null,
+                    "guidance": null,
+                    "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL_DED_PARTY_FUTURE",
+                    "sort_order": 337,
+                    "clause_type": "input",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "all": [
+                            {
+                                "equals": [
+                                    "LESSEE_OBTAIN"
+                                ],
+                                "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                            },
+                            {
+                                "equals": [
+                                    "LESSOR",
+                                    "LESSEE"
+                                ],
+                                "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY"
+                            }
+                        ]
+                    },
+                    "render_as_subitem": true
+                },
+                {
+                    "body": "Any deductible amounts for claims made against this insurance policy shall be split between the parties: {{TXN.MAJOR_MEDICAL_DEDUCTIBLE_SPLIT_LESSEE}} paid by Lessee and {{TXN.MAJOR_MEDICAL_DEDUCTIBLE_SPLIT_LESSOR}} paid by Lessor.",
+                    "heading": null,
+                    "cut_name": null,
+                    "guidance": null,
+                    "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL_DED_SPLIT_FUTURE",
+                    "sort_order": 338,
+                    "clause_type": "input",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "all": [
+                            {
+                                "equals": [
+                                    "LESSEE_OBTAIN"
+                                ],
+                                "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                            },
+                            {
+                                "equals": [
+                                    "SPLIT"
                                 ],
                                 "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY"
                             }
