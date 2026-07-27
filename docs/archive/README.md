@@ -5,7 +5,7 @@ instructions** — each describes an earlier state of the platform.
 
 | Doc | What it was | Why archived |
 |---|---|---|
-| `README.md` | Original project overview | Describes a marketing-brochure app; references the deleted `src/lib/services.ts` and "service tiers"; its schema section lists 2 tables |
+| `README-original.md` | Original project overview | Describes a marketing-brochure app; references the deleted `src/lib/services.ts` and "service tiers"; its schema section lists 2 tables |
 | `SETUP.md` | External service wiring | Its member-grant SQL targets the old `memberships` table and **will fail**; says "run these 5 migrations" (there are hundreds); names Resend (decision was Google Workspace SMTP) |
 | `PLATFORM_ARCHITECTURE.md` | Multi-tenant backbone spec | Good seam/RLS discipline, but its "prime directive: nothing rewrites existing schema" is no longer true, and it models `engagements` / `products` / `product_prices` (retired or never shipped) |
 | `FEATURE_BUILD_PLAN.md` | 60-unit build manifest | Units largely shipped; pinned to a branch that no longer exists |
