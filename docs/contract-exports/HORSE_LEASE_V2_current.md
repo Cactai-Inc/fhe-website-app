@@ -459,32 +459,69 @@ Other prohibited rider aid: {{TXN.RIDER_AIDS_OTHER}}.
 
 **[INSURANCE_RISK.INSURANCE]** — Insurance Requirements
 
-The parties agree that the following insurance shall be carried on the Horse during the term of this Agreement, obtained and maintained as set out below. Insurance must be obtained within 30 days of the date of signing of this Agreement.
+The parties agree to the insurance elections set forth below. Each policy elected or required below shall be maintained in effect for the duration of this Agreement.
 
 **[INSURANCE_RISK.GENERAL_LIABILITY]** — General Liability Insurance
 
-Require general liability insurance? {{TXN.GL_INSURANCE_REQ}}
-General liability insurance is required by {{TXN.GL_REQUIRED_BY}} for {{TXN.GL_PROTECTION}} protection.
-Party responsible for the cost: {{TXN.GL_COST_PARTY}}.
-Party responsible for obtaining the policy: {{TXN.GL_OBTAIN_PARTY}}.
+**[INSURANCE_RISK.GL_HAS]** _(shown when: {"equals":["LESSOR_HAS"],"field_key":"TXN.GL_ELECTION"})_
+
+Lessor carries general liability insurance covering the activities contemplated by this Agreement, with a policy limit of {{TXN.GL_POLICY_AMOUNT}} and a deductible of {{TXN.GL_DEDUCTIBLE}}, effective as of {{TXN.GL_EFFECTIVE_DATE}}. {{TXN.GL_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy.
+
+**[INSURANCE_RISK.GL_WILL]** _(shown when: {"equals":["LESSOR_WILL"],"field_key":"TXN.GL_ELECTION"})_
+
+Lessor is in the process of purchasing or agrees to purchase general liability insurance covering the activities contemplated by this Agreement, with a policy limit of {{TXN.GL_POLICY_AMOUNT}} and a deductible of {{TXN.GL_DEDUCTIBLE}}, and an effective date no later than {{TXN.GL_EFFECTIVE_DATE}}. {{TXN.GL_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy.
+
+**[INSURANCE_RISK.GL_LESSEE]** _(shown when: {"equals":["LESSEE_OBTAIN"],"field_key":"TXN.GL_ELECTION"})_
+
+Lessor requires Lessee to obtain and maintain general liability insurance covering the activities contemplated by this Agreement, with a policy limit of at least {{TXN.GL_MIN_LIMIT}} and an effective date no later than {{TXN.GL_EFFECTIVE_DATE}}. {{TXN.GL_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy. Lessee shall provide proof of insurance to Lessor by email and shall maintain the policy in good standing for the duration of this Agreement; failure to do so constitutes a material breach subject to the Termination for Cause provisions of this Agreement.
+
+**[INSURANCE_RISK.GL_NONE]** _(shown when: {"equals":["NONE",""],"field_key":"TXN.GL_ELECTION"})_
+
+No general liability insurance is required under this Agreement.
 
 **[INSURANCE_RISK.MORTALITY]** — Mortality Insurance
 
-Require mortality insurance? {{TXN.MORTALITY_INSURANCE_REQ}}
-Mortality insurance is required on the Horse with a minimum limit of {{TXN.MORTALITY_MIN_LIMIT}}.
-Party responsible for the cost: {{TXN.MORTALITY_COST_PARTY}}.
-Party responsible for obtaining the policy: {{TXN.MORTALITY_OBTAIN_PARTY}}.
+**[INSURANCE_RISK.MORTALITY_HAS]** _(shown when: {"equals":["LESSOR_HAS"],"field_key":"TXN.MORTALITY_ELECTION"})_
+
+Lessor carries mortality insurance on the Horse with a policy limit of {{TXN.MORTALITY_POLICY_AMOUNT}} and a deductible of {{TXN.MORTALITY_DEDUCTIBLE}}, effective as of {{TXN.MORTALITY_EFFECTIVE_DATE}}. {{TXN.MORTALITY_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy.
+
+**[INSURANCE_RISK.MORTALITY_WILL]** _(shown when: {"equals":["LESSOR_WILL"],"field_key":"TXN.MORTALITY_ELECTION"})_
+
+Lessor is in the process of purchasing or agrees to purchase mortality insurance on the Horse with a policy limit of {{TXN.MORTALITY_POLICY_AMOUNT}} and a deductible of {{TXN.MORTALITY_DEDUCTIBLE}}, and an effective date no later than {{TXN.MORTALITY_EFFECTIVE_DATE}}. {{TXN.MORTALITY_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy.
+
+**[INSURANCE_RISK.MORTALITY_LESSEE]** _(shown when: {"equals":["LESSEE_OBTAIN"],"field_key":"TXN.MORTALITY_ELECTION"})_
+
+Lessor requires Lessee to obtain and maintain mortality insurance on the Horse with a policy limit of at least the Horse's fair market value of {{HORSE.FAIR_MARKET_VALUE}} and an effective date no later than {{TXN.MORTALITY_EFFECTIVE_DATE}}. {{TXN.MORTALITY_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy. Lessee shall provide proof of insurance to Lessor by email and shall maintain the policy in good standing for the duration of this Agreement; failure to do so constitutes a material breach subject to the Termination for Cause provisions of this Agreement.
+
+**[INSURANCE_RISK.MORTALITY_NONE]** _(shown when: {"equals":["NONE",""],"field_key":"TXN.MORTALITY_ELECTION"})_
+
+No mortality insurance is required under this Agreement.
 
 **[INSURANCE_RISK.MAJOR_MEDICAL]** — Major Medical Insurance
 
-Require major medical insurance? {{TXN.MAJOR_MEDICAL_INSURANCE_REQ}}
-Major medical insurance is required on the Horse with a minimum limit of {{TXN.MAJOR_MEDICAL_MIN_LIMIT}}.
-Party responsible for the cost: {{TXN.MAJOR_MEDICAL_COST_PARTY}}.
-Party responsible for obtaining the policy: {{TXN.MAJOR_MEDICAL_OBTAIN_PARTY}}.
+**[INSURANCE_RISK.MAJOR_MEDICAL_HAS]** _(shown when: {"equals":["LESSOR_HAS"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"})_
+
+Lessor carries major medical insurance on the Horse with a policy limit of {{TXN.MAJOR_MEDICAL_POLICY_AMOUNT}} and a deductible of {{TXN.MAJOR_MEDICAL_DEDUCTIBLE}}, effective as of {{TXN.MAJOR_MEDICAL_EFFECTIVE_DATE}}. {{TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy.
+
+**[INSURANCE_RISK.MAJOR_MEDICAL_WILL]** _(shown when: {"equals":["LESSOR_WILL"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"})_
+
+Lessor is in the process of purchasing or agrees to purchase major medical insurance on the Horse with a policy limit of {{TXN.MAJOR_MEDICAL_POLICY_AMOUNT}} and a deductible of {{TXN.MAJOR_MEDICAL_DEDUCTIBLE}}, and an effective date no later than {{TXN.MAJOR_MEDICAL_EFFECTIVE_DATE}}. {{TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy.
+
+**[INSURANCE_RISK.MAJOR_MEDICAL_LESSEE]** _(shown when: {"equals":["LESSEE_OBTAIN"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"})_
+
+Lessor requires Lessee to obtain and maintain major medical insurance on the Horse with a policy limit of at least {{TXN.MAJOR_MEDICAL_MIN_LIMIT}} and an effective date no later than {{TXN.MAJOR_MEDICAL_EFFECTIVE_DATE}}. {{TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy. Lessee shall provide proof of insurance to Lessor by email and shall maintain the policy in good standing for the duration of this Agreement; failure to do so constitutes a material breach subject to the Termination for Cause provisions of this Agreement.
+
+**[INSURANCE_RISK.MAJOR_MEDICAL_NONE]** _(shown when: {"equals":["NONE",""],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"})_
+
+No major medical insurance is required under this Agreement.
 
 **[INSURANCE_RISK.RISK_OF_LOSS]** — Risk of Loss of or Injury to the Horse
 
 Lessor assumes all risk of loss or injury to the Horse during the term of this Agreement.
+
+**[INSURANCE_RISK.LOSS_OF_USE_ACK]** — Loss of Use
+
+Lessor acknowledges and accepts that loss of use of the Horse may result from injury to, illness of, or the death of the Horse. No loss-of-use insurance is required or provided under this Agreement.
 
 **[INSURANCE_RISK.ASSUMPTION_INHERENT]** — Assumption of Inherent Risks
 
@@ -522,28 +559,32 @@ Each party, on behalf of itself and, respectively, the Lessor Parties or the Les
 
 Each party shall indemnify, defend, and hold harmless the other party and, respectively, the Lessor Parties or the Lessee Parties, from and against any and all claims, damages, losses, liabilities, costs, and expenses arising out of the indemnifying party's use, handling, care, or possession of the Horse, except to the extent caused by the gross negligence, reckless conduct, or intentional misconduct of an indemnified party.
 
-**[INSURANCE_RISK.LIMITATION_MORTALITY]** — Limitation of Liability _(shown when: {"equals":["YES"],"field_key":"TXN.MORTALITY_INSURANCE_REQ"})_
+**[INSURANCE_RISK.LIMITATION_MORTALITY]** — Limitation of Liability _(shown when: {"equals":["LESSOR_HAS","LESSOR_WILL"],"field_key":"TXN.MORTALITY_ELECTION"})_
 
-Under no circumstances shall either party be liable to the other for any special, consequential, incidental, or punitive damages arising out of or relating to this Agreement. The total aggregate liability of either party (including, respectively, the Lessor Parties and the Lessee Parties) to the other under this Agreement shall not exceed the mortality insurance minimum limit of {{TXN.MORTALITY_MIN_LIMIT}}. Any amount owed by one party to the other under this Agreement shall be reduced by the amount of any insurance proceeds actually received by the party owed with respect to the same loss. This limitation does not apply to gross negligence, reckless conduct, or intentional misconduct.
+Under no circumstances shall either party be liable to the other for any special, consequential, incidental, or punitive damages arising out of or relating to this Agreement. The total aggregate liability of either party (including, respectively, the Lessor Parties and the Lessee Parties) to the other under this Agreement shall not exceed the mortality insurance policy limit of {{TXN.MORTALITY_POLICY_AMOUNT}}. Any amount owed by one party to the other under this Agreement shall be reduced by the amount of any insurance proceeds actually received by the party owed with respect to the same loss. This limitation does not apply to gross negligence, reckless conduct, or intentional misconduct.
 
-**[INSURANCE_RISK.LIMITATION_FMV]** — Limitation of Liability _(shown when: {"equals":["NO",""],"field_key":"TXN.MORTALITY_INSURANCE_REQ"})_
+**[INSURANCE_RISK.LIMITATION_FMV]** — Limitation of Liability _(shown when: {"equals":["LESSEE_OBTAIN","NONE",""],"field_key":"TXN.MORTALITY_ELECTION"})_
 
 Under no circumstances shall either party be liable to the other for any special, consequential, incidental, or punitive damages arising out of or relating to this Agreement. The total aggregate liability of either party (including, respectively, the Lessor Parties and the Lessee Parties) to the other under this Agreement shall not exceed the Horse's current fair market value of {{HORSE.FAIR_MARKET_VALUE}}. Any amount owed by one party to the other under this Agreement shall be reduced by the amount of any insurance proceeds actually received by the party owed with respect to the same loss. This limitation does not apply to gross negligence, reckless conduct, or intentional misconduct.
 
 ### Fields
-- **[TXN.GL_INSURANCE_REQ]** Require general liability insurance? — _yesno/select_, owner: DEAL
-- **[TXN.MAJOR_MEDICAL_INSURANCE_REQ]** Require major medical insurance? — _yesno/select_, owner: DEAL
-- **[TXN.MORTALITY_INSURANCE_REQ]** Require mortality insurance? — _yesno/select_, owner: DEAL
-- **[TXN.GL_REQUIRED_BY]** Required by — _select/select_, owner: DEAL · shown when: {"equals":["YES"],"field_key":"TXN.GL_INSURANCE_REQ"} · options: [{"label":"Lessee","value":"LESSEE"},{"label":"Lessor","value":"LESSOR"},{"label":"Both Parties","value":"BOTH"}]
-- **[TXN.GL_PROTECTION]** For whose protection — _select/select_, owner: DEAL · shown when: {"equals":["YES"],"field_key":"TXN.GL_INSURANCE_REQ"} · options: [{"label":"Lessee","value":"LESSEE"},{"label":"Lessor","value":"LESSOR"},{"label":"Mutual","value":"MUTUAL"}]
-- **[TXN.GL_COST_PARTY]** Party responsible for the cost — _select/select_, owner: LESSOR · shown when: {"equals":["YES"],"field_key":"TXN.GL_INSURANCE_REQ"} · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Shared","value":"SHARED"}]
-- **[TXN.GL_OBTAIN_PARTY]** Party responsible for obtaining the policy — _select/select_, owner: LESSOR · shown when: {"equals":["YES"],"field_key":"TXN.GL_INSURANCE_REQ"} · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Shared","value":"SHARED"}]
-- **[TXN.MORTALITY_MIN_LIMIT]** Minimum limit — _currency/currency_, owner: LESSOR · shown when: {"equals":["YES"],"field_key":"TXN.MORTALITY_INSURANCE_REQ"}
-- **[TXN.MORTALITY_COST_PARTY]** Party responsible for the cost — _select/select_, owner: LESSOR · shown when: {"equals":["YES"],"field_key":"TXN.MORTALITY_INSURANCE_REQ"} · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Shared","value":"SHARED"}]
-- **[TXN.MORTALITY_OBTAIN_PARTY]** Party responsible for obtaining the policy — _select/select_, owner: LESSOR · shown when: {"equals":["YES"],"field_key":"TXN.MORTALITY_INSURANCE_REQ"} · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Shared","value":"SHARED"}]
-- **[TXN.MAJOR_MEDICAL_MIN_LIMIT]** Minimum limit — _currency/currency_, owner: LESSOR · shown when: {"equals":["YES"],"field_key":"TXN.MAJOR_MEDICAL_INSURANCE_REQ"}
-- **[TXN.MAJOR_MEDICAL_COST_PARTY]** Party responsible for the cost — _select/select_, owner: LESSOR · shown when: {"equals":["YES"],"field_key":"TXN.MAJOR_MEDICAL_INSURANCE_REQ"} · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Shared","value":"SHARED"}]
-- **[TXN.MAJOR_MEDICAL_OBTAIN_PARTY]** Party responsible for obtaining the policy — _select/select_, owner: LESSOR · shown when: {"equals":["YES"],"field_key":"TXN.MAJOR_MEDICAL_INSURANCE_REQ"} · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Shared","value":"SHARED"}]
+- **[TXN.MAJOR_MEDICAL_ELECTION]** Major medical insurance election — _select/select_, owner: LESSOR · options: [{"label":"Lessor has this policy","value":"LESSOR_HAS"},{"label":"Lessor will purchase this policy","value":"LESSOR_WILL"},{"label":"Lessee must obtain this policy","value":"LESSEE_OBTAIN"},{"label":"Not required","value":"NONE"}]
+- **[TXN.MORTALITY_ELECTION]** Mortality insurance election — _select/select_, owner: LESSOR · options: [{"label":"Lessor has this policy","value":"LESSOR_HAS"},{"label":"Lessor will purchase this policy","value":"LESSOR_WILL"},{"label":"Lessee must obtain this policy","value":"LESSEE_OBTAIN"},{"label":"Not required","value":"NONE"}]
+- **[TXN.GL_ELECTION]** General liability insurance election — _select/select_, owner: LESSOR · options: [{"label":"Lessor has this policy","value":"LESSOR_HAS"},{"label":"Lessor will purchase this policy","value":"LESSOR_WILL"},{"label":"Lessee must obtain this policy","value":"LESSEE_OBTAIN"},{"label":"Not required","value":"NONE"}]
+- **[TXN.MAJOR_MEDICAL_POLICY_AMOUNT]** Policy limit — _currency/currency_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"}
+- **[TXN.GL_POLICY_AMOUNT]** Policy limit — _currency/currency_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL"],"field_key":"TXN.GL_ELECTION"}
+- **[TXN.MORTALITY_POLICY_AMOUNT]** Policy limit — _currency/currency_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL"],"field_key":"TXN.MORTALITY_ELECTION"}
+- **[TXN.MAJOR_MEDICAL_DEDUCTIBLE]** Deductible (enter N/A if none) — _text/text_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"}
+- **[TXN.GL_DEDUCTIBLE]** Deductible (enter N/A if none) — _text/text_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL"],"field_key":"TXN.GL_ELECTION"}
+- **[TXN.MORTALITY_DEDUCTIBLE]** Deductible (enter N/A if none) — _text/text_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL"],"field_key":"TXN.MORTALITY_ELECTION"}
+- **[TXN.MAJOR_MEDICAL_MIN_LIMIT]** Minimum policy limit required of Lessee — _currency/currency_, owner: LESSOR · shown when: {"equals":["LESSEE_OBTAIN"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"}
+- **[TXN.GL_MIN_LIMIT]** Minimum policy limit required of Lessee — _currency/currency_, owner: LESSOR · shown when: {"equals":["LESSEE_OBTAIN"],"field_key":"TXN.GL_ELECTION"}
+- **[TXN.MORTALITY_EFFECTIVE_DATE]** Effective date — _date/date_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.MORTALITY_ELECTION"}
+- **[TXN.MAJOR_MEDICAL_EFFECTIVE_DATE]** Effective date — _date/date_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"}
+- **[TXN.MORTALITY_DEDUCTIBLE_PARTY]** Party responsible for deductibles on claims — _select/select_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.MORTALITY_ELECTION"} · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"}]
+- **[TXN.GL_EFFECTIVE_DATE]** Effective date — _date/date_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.GL_ELECTION"}
+- **[TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY]** Party responsible for deductibles on claims — _select/select_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"} · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"}]
+- **[TXN.GL_DEDUCTIBLE_PARTY]** Party responsible for deductibles on claims — _select/select_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.GL_ELECTION"} · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"}]
 
 ## [TERMINATION] Termination
 
@@ -564,6 +605,10 @@ Either party may terminate this Agreement for cause (including a material breach
 **[TERMINATION.LOSS]** — Self-Termination upon Loss or Injury
 
 This Agreement shall self-terminate if the Horse is significantly injured, becomes seriously ill, or dies. Lessee is entitled to a prorated refund of Lease Fee paid for the remaining time unused at the time of self-termination. In the event Lessee is found to have caused, through gross negligence or willful misconduct, the injury, illness, or death, Lessor may retain the unused portion of the paid Lease Fee.
+
+**[TERMINATION.LOSS_OF_USE]** — Termination upon Loss of Use
+
+If the Horse becomes unusable for the purposes of this Agreement for any reason, Lessee may terminate this Agreement immediately upon written notice to Lessor. Upon such termination, Lessee is entitled to a prorated refund of any Lease Fee paid for the remaining unused time as of the date of termination.
 
 ### Fields
 - **[TXN.LESSEE_TERM_NOTICE_DAYS]** Days notice — _number/number_, owner: DEAL

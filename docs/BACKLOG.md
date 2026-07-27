@@ -118,3 +118,11 @@ Last updated: 2026-07-27.
   (`docs/contract-exports/HORSE_LEASE_V2_HARDENING_CHANGES.md`) is live on prod via
   `supabase/migrations/20260727120000_lease_v2_hardening.sql` (`de0122c`); exports
   regenerated. Both limitation branches render-verified.
+- **Insurance election redesign live** — GL / Mortality / Major Medical each now a
+  4-way Lessor election (has / will purchase / Lessee must obtain / not required)
+  rendered as prose; Lessee-obtain mortality minimum auto-imports the horse's FMV
+  (mismatch eliminated); liability cap follows the election (Lessor policy limit vs
+  FMV); loss-of-use acknowledgment + Lessee elective termination added. Migration
+  `20260727150000_lease_v2_insurance_elections.sql`. FHE $25k CCC-limit warning is
+  authoring-side guidance on the mortality election field; a hard UI flag is a
+  possible later enhancement.

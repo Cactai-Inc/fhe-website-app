@@ -2816,29 +2816,31 @@
         {
             "fields": [
                 {
-                    "label": "Require general liability insurance?",
-                    "options": null,
-                    "guidance": "Is general liability insurance required during the lease?",
+                    "label": "Major medical insurance election",
+                    "options": [
+                        {
+                            "label": "Lessor has this policy",
+                            "value": "LESSOR_HAS"
+                        },
+                        {
+                            "label": "Lessor will purchase this policy",
+                            "value": "LESSOR_WILL"
+                        },
+                        {
+                            "label": "Lessee must obtain this policy",
+                            "value": "LESSEE_OBTAIN"
+                        },
+                        {
+                            "label": "Not required",
+                            "value": "NONE"
+                        }
+                    ],
+                    "guidance": "Lessor elects how major medical coverage is handled. Select \"Not required\" (or leave unset) to omit the clause.",
                     "required": false,
-                    "field_key": "TXN.GL_INSURANCE_REQ",
-                    "clause_key": "INSURANCE_RISK.GENERAL_LIABILITY",
-                    "input_kind": "yesno",
-                    "owner_role": "DEAL",
-                    "sort_order": 5,
-                    "value_type": "select",
-                    "is_optional": false,
-                    "conditional_on": null,
-                    "responsibility": null
-                },
-                {
-                    "label": "Require major medical insurance?",
-                    "options": null,
-                    "guidance": "Is major medical insurance required on Horse during the lease?",
-                    "required": false,
-                    "field_key": "TXN.MAJOR_MEDICAL_INSURANCE_REQ",
+                    "field_key": "TXN.MAJOR_MEDICAL_ELECTION",
                     "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL",
-                    "input_kind": "yesno",
-                    "owner_role": "DEAL",
+                    "input_kind": "select",
+                    "owner_role": "LESSOR",
                     "sort_order": 10,
                     "value_type": "select",
                     "is_optional": false,
@@ -2846,14 +2848,31 @@
                     "responsibility": null
                 },
                 {
-                    "label": "Require mortality insurance?",
-                    "options": null,
-                    "guidance": "Is mortality insurance required on Horse during the lease?",
+                    "label": "Mortality insurance election",
+                    "options": [
+                        {
+                            "label": "Lessor has this policy",
+                            "value": "LESSOR_HAS"
+                        },
+                        {
+                            "label": "Lessor will purchase this policy",
+                            "value": "LESSOR_WILL"
+                        },
+                        {
+                            "label": "Lessee must obtain this policy",
+                            "value": "LESSEE_OBTAIN"
+                        },
+                        {
+                            "label": "Not required",
+                            "value": "NONE"
+                        }
+                    ],
+                    "guidance": "FHE note: our care, custody & control policy limit is $25,000. When \"Lessee must obtain\" is selected, the required minimum auto-fills from the horse's fair market value — if that FMV exceeds $25,000 and FHE is the Lessee, current coverage is insufficient; escalate before sending.",
                     "required": false,
-                    "field_key": "TXN.MORTALITY_INSURANCE_REQ",
+                    "field_key": "TXN.MORTALITY_ELECTION",
                     "clause_key": "INSURANCE_RISK.MORTALITY",
-                    "input_kind": "yesno",
-                    "owner_role": "DEAL",
+                    "input_kind": "select",
+                    "owner_role": "LESSOR",
                     "sort_order": 10,
                     "value_type": "select",
                     "is_optional": false,
@@ -2861,225 +2880,165 @@
                     "responsibility": null
                 },
                 {
-                    "label": "Required by",
+                    "label": "General liability insurance election",
                     "options": [
                         {
-                            "label": "Lessee",
-                            "value": "LESSEE"
+                            "label": "Lessor has this policy",
+                            "value": "LESSOR_HAS"
                         },
                         {
-                            "label": "Lessor",
-                            "value": "LESSOR"
+                            "label": "Lessor will purchase this policy",
+                            "value": "LESSOR_WILL"
                         },
                         {
-                            "label": "Both Parties",
-                            "value": "BOTH"
+                            "label": "Lessee must obtain this policy",
+                            "value": "LESSEE_OBTAIN"
+                        },
+                        {
+                            "label": "Not required",
+                            "value": "NONE"
                         }
                     ],
-                    "guidance": "Which party is required to carry general liability insurance.",
+                    "guidance": "Lessor elects how general liability coverage is handled. Select \"Not required\" (or leave unset) to omit the clause.",
                     "required": false,
-                    "field_key": "TXN.GL_REQUIRED_BY",
+                    "field_key": "TXN.GL_ELECTION",
                     "clause_key": "INSURANCE_RISK.GENERAL_LIABILITY",
                     "input_kind": "select",
-                    "owner_role": "DEAL",
+                    "owner_role": "LESSOR",
                     "sort_order": 10,
                     "value_type": "select",
                     "is_optional": false,
-                    "conditional_on": {
-                        "equals": [
-                            "YES"
-                        ],
-                        "field_key": "TXN.GL_INSURANCE_REQ"
-                    },
+                    "conditional_on": null,
                     "responsibility": null
                 },
                 {
-                    "label": "For whose protection",
-                    "options": [
-                        {
-                            "label": "Lessee",
-                            "value": "LESSEE"
-                        },
-                        {
-                            "label": "Lessor",
-                            "value": "LESSOR"
-                        },
-                        {
-                            "label": "Mutual",
-                            "value": "MUTUAL"
-                        }
-                    ],
-                    "guidance": "Whose protection the general liability coverage is for.",
-                    "required": false,
-                    "field_key": "TXN.GL_PROTECTION",
-                    "clause_key": "INSURANCE_RISK.GENERAL_LIABILITY",
-                    "input_kind": "select",
-                    "owner_role": "DEAL",
-                    "sort_order": 12,
-                    "value_type": "select",
-                    "is_optional": false,
-                    "conditional_on": {
-                        "equals": [
-                            "YES"
-                        ],
-                        "field_key": "TXN.GL_INSURANCE_REQ"
-                    },
-                    "responsibility": null
-                },
-                {
-                    "label": "Party responsible for the cost",
-                    "options": [
-                        {
-                            "label": "Lessor",
-                            "value": "LESSOR"
-                        },
-                        {
-                            "label": "Lessee",
-                            "value": "LESSEE"
-                        },
-                        {
-                            "label": "Shared",
-                            "value": "SHARED"
-                        }
-                    ],
-                    "guidance": "Who pays for this insurance.",
-                    "required": false,
-                    "field_key": "TXN.GL_COST_PARTY",
-                    "clause_key": "INSURANCE_RISK.GENERAL_LIABILITY",
-                    "input_kind": "select",
-                    "owner_role": "LESSOR",
-                    "sort_order": 14,
-                    "value_type": "select",
-                    "is_optional": false,
-                    "conditional_on": {
-                        "equals": [
-                            "YES"
-                        ],
-                        "field_key": "TXN.GL_INSURANCE_REQ"
-                    },
-                    "responsibility": null
-                },
-                {
-                    "label": "Party responsible for obtaining the policy",
-                    "options": [
-                        {
-                            "label": "Lessor",
-                            "value": "LESSOR"
-                        },
-                        {
-                            "label": "Lessee",
-                            "value": "LESSEE"
-                        },
-                        {
-                            "label": "Shared",
-                            "value": "SHARED"
-                        }
-                    ],
-                    "guidance": "Who obtains and maintains the policy.",
-                    "required": false,
-                    "field_key": "TXN.GL_OBTAIN_PARTY",
-                    "clause_key": "INSURANCE_RISK.GENERAL_LIABILITY",
-                    "input_kind": "select",
-                    "owner_role": "LESSOR",
-                    "sort_order": 16,
-                    "value_type": "select",
-                    "is_optional": false,
-                    "conditional_on": {
-                        "equals": [
-                            "YES"
-                        ],
-                        "field_key": "TXN.GL_INSURANCE_REQ"
-                    },
-                    "responsibility": null
-                },
-                {
-                    "label": "Minimum limit",
+                    "label": "Policy limit",
                     "options": null,
                     "guidance": null,
                     "required": false,
-                    "field_key": "TXN.MORTALITY_MIN_LIMIT",
-                    "clause_key": "INSURANCE_RISK.MORTALITY",
+                    "field_key": "TXN.MAJOR_MEDICAL_POLICY_AMOUNT",
+                    "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL",
                     "input_kind": "currency",
                     "owner_role": "LESSOR",
-                    "sort_order": 22,
+                    "sort_order": 20,
                     "value_type": "currency",
                     "is_optional": false,
                     "conditional_on": {
                         "equals": [
-                            "YES"
+                            "LESSOR_HAS",
+                            "LESSOR_WILL"
                         ],
-                        "field_key": "TXN.MORTALITY_INSURANCE_REQ"
+                        "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
                     },
                     "responsibility": null
                 },
                 {
-                    "label": "Party responsible for the cost",
-                    "options": [
-                        {
-                            "label": "Lessor",
-                            "value": "LESSOR"
-                        },
-                        {
-                            "label": "Lessee",
-                            "value": "LESSEE"
-                        },
-                        {
-                            "label": "Shared",
-                            "value": "SHARED"
-                        }
-                    ],
-                    "guidance": "Who pays for this insurance.",
+                    "label": "Policy limit",
+                    "options": null,
+                    "guidance": null,
                     "required": false,
-                    "field_key": "TXN.MORTALITY_COST_PARTY",
-                    "clause_key": "INSURANCE_RISK.MORTALITY",
-                    "input_kind": "select",
+                    "field_key": "TXN.GL_POLICY_AMOUNT",
+                    "clause_key": "INSURANCE_RISK.GENERAL_LIABILITY",
+                    "input_kind": "currency",
                     "owner_role": "LESSOR",
-                    "sort_order": 24,
-                    "value_type": "select",
+                    "sort_order": 20,
+                    "value_type": "currency",
                     "is_optional": false,
                     "conditional_on": {
                         "equals": [
-                            "YES"
+                            "LESSOR_HAS",
+                            "LESSOR_WILL"
                         ],
-                        "field_key": "TXN.MORTALITY_INSURANCE_REQ"
+                        "field_key": "TXN.GL_ELECTION"
                     },
                     "responsibility": null
                 },
                 {
-                    "label": "Party responsible for obtaining the policy",
-                    "options": [
-                        {
-                            "label": "Lessor",
-                            "value": "LESSOR"
-                        },
-                        {
-                            "label": "Lessee",
-                            "value": "LESSEE"
-                        },
-                        {
-                            "label": "Shared",
-                            "value": "SHARED"
-                        }
-                    ],
-                    "guidance": "Who obtains and maintains the policy.",
+                    "label": "Policy limit",
+                    "options": null,
+                    "guidance": null,
                     "required": false,
-                    "field_key": "TXN.MORTALITY_OBTAIN_PARTY",
+                    "field_key": "TXN.MORTALITY_POLICY_AMOUNT",
                     "clause_key": "INSURANCE_RISK.MORTALITY",
-                    "input_kind": "select",
+                    "input_kind": "currency",
                     "owner_role": "LESSOR",
-                    "sort_order": 26,
-                    "value_type": "select",
+                    "sort_order": 20,
+                    "value_type": "currency",
                     "is_optional": false,
                     "conditional_on": {
                         "equals": [
-                            "YES"
+                            "LESSOR_HAS",
+                            "LESSOR_WILL"
                         ],
-                        "field_key": "TXN.MORTALITY_INSURANCE_REQ"
+                        "field_key": "TXN.MORTALITY_ELECTION"
                     },
                     "responsibility": null
                 },
                 {
-                    "label": "Minimum limit",
+                    "label": "Deductible (enter N/A if none)",
+                    "options": null,
+                    "guidance": null,
+                    "required": false,
+                    "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE",
+                    "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL",
+                    "input_kind": "text",
+                    "owner_role": "LESSOR",
+                    "sort_order": 30,
+                    "value_type": "text",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "equals": [
+                            "LESSOR_HAS",
+                            "LESSOR_WILL"
+                        ],
+                        "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                    },
+                    "responsibility": null
+                },
+                {
+                    "label": "Deductible (enter N/A if none)",
+                    "options": null,
+                    "guidance": null,
+                    "required": false,
+                    "field_key": "TXN.GL_DEDUCTIBLE",
+                    "clause_key": "INSURANCE_RISK.GENERAL_LIABILITY",
+                    "input_kind": "text",
+                    "owner_role": "LESSOR",
+                    "sort_order": 30,
+                    "value_type": "text",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "equals": [
+                            "LESSOR_HAS",
+                            "LESSOR_WILL"
+                        ],
+                        "field_key": "TXN.GL_ELECTION"
+                    },
+                    "responsibility": null
+                },
+                {
+                    "label": "Deductible (enter N/A if none)",
+                    "options": null,
+                    "guidance": null,
+                    "required": false,
+                    "field_key": "TXN.MORTALITY_DEDUCTIBLE",
+                    "clause_key": "INSURANCE_RISK.MORTALITY",
+                    "input_kind": "text",
+                    "owner_role": "LESSOR",
+                    "sort_order": 30,
+                    "value_type": "text",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "equals": [
+                            "LESSOR_HAS",
+                            "LESSOR_WILL"
+                        ],
+                        "field_key": "TXN.MORTALITY_ELECTION"
+                    },
+                    "responsibility": null
+                },
+                {
+                    "label": "Minimum policy limit required of Lessee",
                     "options": null,
                     "guidance": null,
                     "required": false,
@@ -3087,19 +3046,83 @@
                     "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL",
                     "input_kind": "currency",
                     "owner_role": "LESSOR",
-                    "sort_order": 32,
+                    "sort_order": 40,
                     "value_type": "currency",
                     "is_optional": false,
                     "conditional_on": {
                         "equals": [
-                            "YES"
+                            "LESSEE_OBTAIN"
                         ],
-                        "field_key": "TXN.MAJOR_MEDICAL_INSURANCE_REQ"
+                        "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
                     },
                     "responsibility": null
                 },
                 {
-                    "label": "Party responsible for the cost",
+                    "label": "Minimum policy limit required of Lessee",
+                    "options": null,
+                    "guidance": null,
+                    "required": false,
+                    "field_key": "TXN.GL_MIN_LIMIT",
+                    "clause_key": "INSURANCE_RISK.GENERAL_LIABILITY",
+                    "input_kind": "currency",
+                    "owner_role": "LESSOR",
+                    "sort_order": 40,
+                    "value_type": "currency",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "equals": [
+                            "LESSEE_OBTAIN"
+                        ],
+                        "field_key": "TXN.GL_ELECTION"
+                    },
+                    "responsibility": null
+                },
+                {
+                    "label": "Effective date",
+                    "options": null,
+                    "guidance": "\"Lessor has\": the policy's actual effective date (today or earlier). \"Will purchase\" / \"Lessee must obtain\": the latest acceptable effective date (today or later).",
+                    "required": false,
+                    "field_key": "TXN.MORTALITY_EFFECTIVE_DATE",
+                    "clause_key": "INSURANCE_RISK.MORTALITY",
+                    "input_kind": "date",
+                    "owner_role": "LESSOR",
+                    "sort_order": 40,
+                    "value_type": "date",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "equals": [
+                            "LESSOR_HAS",
+                            "LESSOR_WILL",
+                            "LESSEE_OBTAIN"
+                        ],
+                        "field_key": "TXN.MORTALITY_ELECTION"
+                    },
+                    "responsibility": null
+                },
+                {
+                    "label": "Effective date",
+                    "options": null,
+                    "guidance": "\"Lessor has\": the policy's actual effective date (today or earlier). \"Will purchase\" / \"Lessee must obtain\": the latest acceptable effective date (today or later).",
+                    "required": false,
+                    "field_key": "TXN.MAJOR_MEDICAL_EFFECTIVE_DATE",
+                    "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL",
+                    "input_kind": "date",
+                    "owner_role": "LESSOR",
+                    "sort_order": 50,
+                    "value_type": "date",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "equals": [
+                            "LESSOR_HAS",
+                            "LESSOR_WILL",
+                            "LESSEE_OBTAIN"
+                        ],
+                        "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                    },
+                    "responsibility": null
+                },
+                {
+                    "label": "Party responsible for deductibles on claims",
                     "options": [
                         {
                             "label": "Lessor",
@@ -3108,31 +3131,51 @@
                         {
                             "label": "Lessee",
                             "value": "LESSEE"
-                        },
-                        {
-                            "label": "Shared",
-                            "value": "SHARED"
                         }
                     ],
-                    "guidance": "Who pays for this insurance.",
+                    "guidance": null,
                     "required": false,
-                    "field_key": "TXN.MAJOR_MEDICAL_COST_PARTY",
-                    "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL",
+                    "field_key": "TXN.MORTALITY_DEDUCTIBLE_PARTY",
+                    "clause_key": "INSURANCE_RISK.MORTALITY",
                     "input_kind": "select",
                     "owner_role": "LESSOR",
-                    "sort_order": 34,
+                    "sort_order": 50,
                     "value_type": "select",
                     "is_optional": false,
                     "conditional_on": {
                         "equals": [
-                            "YES"
+                            "LESSOR_HAS",
+                            "LESSOR_WILL",
+                            "LESSEE_OBTAIN"
                         ],
-                        "field_key": "TXN.MAJOR_MEDICAL_INSURANCE_REQ"
+                        "field_key": "TXN.MORTALITY_ELECTION"
                     },
                     "responsibility": null
                 },
                 {
-                    "label": "Party responsible for obtaining the policy",
+                    "label": "Effective date",
+                    "options": null,
+                    "guidance": "\"Lessor has\": the policy's actual effective date (today or earlier). \"Will purchase\" / \"Lessee must obtain\": the latest acceptable effective date (today or later).",
+                    "required": false,
+                    "field_key": "TXN.GL_EFFECTIVE_DATE",
+                    "clause_key": "INSURANCE_RISK.GENERAL_LIABILITY",
+                    "input_kind": "date",
+                    "owner_role": "LESSOR",
+                    "sort_order": 50,
+                    "value_type": "date",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "equals": [
+                            "LESSOR_HAS",
+                            "LESSOR_WILL",
+                            "LESSEE_OBTAIN"
+                        ],
+                        "field_key": "TXN.GL_ELECTION"
+                    },
+                    "responsibility": null
+                },
+                {
+                    "label": "Party responsible for deductibles on claims",
                     "options": [
                         {
                             "label": "Lessor",
@@ -3141,26 +3184,55 @@
                         {
                             "label": "Lessee",
                             "value": "LESSEE"
-                        },
-                        {
-                            "label": "Shared",
-                            "value": "SHARED"
                         }
                     ],
-                    "guidance": "Who obtains and maintains the policy.",
+                    "guidance": null,
                     "required": false,
-                    "field_key": "TXN.MAJOR_MEDICAL_OBTAIN_PARTY",
+                    "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY",
                     "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL",
                     "input_kind": "select",
                     "owner_role": "LESSOR",
-                    "sort_order": 36,
+                    "sort_order": 60,
                     "value_type": "select",
                     "is_optional": false,
                     "conditional_on": {
                         "equals": [
-                            "YES"
+                            "LESSOR_HAS",
+                            "LESSOR_WILL",
+                            "LESSEE_OBTAIN"
                         ],
-                        "field_key": "TXN.MAJOR_MEDICAL_INSURANCE_REQ"
+                        "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                    },
+                    "responsibility": null
+                },
+                {
+                    "label": "Party responsible for deductibles on claims",
+                    "options": [
+                        {
+                            "label": "Lessor",
+                            "value": "LESSOR"
+                        },
+                        {
+                            "label": "Lessee",
+                            "value": "LESSEE"
+                        }
+                    ],
+                    "guidance": null,
+                    "required": false,
+                    "field_key": "TXN.GL_DEDUCTIBLE_PARTY",
+                    "clause_key": "INSURANCE_RISK.GENERAL_LIABILITY",
+                    "input_kind": "select",
+                    "owner_role": "LESSOR",
+                    "sort_order": 60,
+                    "value_type": "select",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "equals": [
+                            "LESSOR_HAS",
+                            "LESSOR_WILL",
+                            "LESSEE_OBTAIN"
+                        ],
+                        "field_key": "TXN.GL_ELECTION"
                     },
                     "responsibility": null
                 }
@@ -3178,7 +3250,7 @@
                     "conditional_on": null
                 },
                 {
-                    "body": "The parties agree that the following insurance shall be carried on the Horse during the term of this Agreement, obtained and maintained as set out below. Insurance must be obtained within 30 days of the date of signing of this Agreement.",
+                    "body": "The parties agree to the insurance elections set forth below. Each policy elected or required below shall be maintained in effect for the duration of this Agreement.",
                     "heading": "Insurance Requirements",
                     "cut_name": null,
                     "guidance": null,
@@ -3189,7 +3261,7 @@
                     "conditional_on": null
                 },
                 {
-                    "body": "Require general liability insurance? {{TXN.GL_INSURANCE_REQ}}\nGeneral liability insurance is required by {{TXN.GL_REQUIRED_BY}} for {{TXN.GL_PROTECTION}} protection.\nParty responsible for the cost: {{TXN.GL_COST_PARTY}}.\nParty responsible for obtaining the policy: {{TXN.GL_OBTAIN_PARTY}}.",
+                    "body": "",
                     "heading": "General Liability Insurance",
                     "cut_name": null,
                     "guidance": null,
@@ -3200,7 +3272,72 @@
                     "conditional_on": null
                 },
                 {
-                    "body": "Require mortality insurance? {{TXN.MORTALITY_INSURANCE_REQ}}\nMortality insurance is required on the Horse with a minimum limit of {{TXN.MORTALITY_MIN_LIMIT}}.\nParty responsible for the cost: {{TXN.MORTALITY_COST_PARTY}}.\nParty responsible for obtaining the policy: {{TXN.MORTALITY_OBTAIN_PARTY}}.",
+                    "body": "Lessor carries general liability insurance covering the activities contemplated by this Agreement, with a policy limit of {{TXN.GL_POLICY_AMOUNT}} and a deductible of {{TXN.GL_DEDUCTIBLE}}, effective as of {{TXN.GL_EFFECTIVE_DATE}}. {{TXN.GL_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy.",
+                    "heading": null,
+                    "cut_name": null,
+                    "guidance": null,
+                    "clause_key": "INSURANCE_RISK.GL_HAS",
+                    "sort_order": 16,
+                    "clause_type": "input",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "equals": [
+                            "LESSOR_HAS"
+                        ],
+                        "field_key": "TXN.GL_ELECTION"
+                    }
+                },
+                {
+                    "body": "Lessor is in the process of purchasing or agrees to purchase general liability insurance covering the activities contemplated by this Agreement, with a policy limit of {{TXN.GL_POLICY_AMOUNT}} and a deductible of {{TXN.GL_DEDUCTIBLE}}, and an effective date no later than {{TXN.GL_EFFECTIVE_DATE}}. {{TXN.GL_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy.",
+                    "heading": null,
+                    "cut_name": null,
+                    "guidance": null,
+                    "clause_key": "INSURANCE_RISK.GL_WILL",
+                    "sort_order": 17,
+                    "clause_type": "input",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "equals": [
+                            "LESSOR_WILL"
+                        ],
+                        "field_key": "TXN.GL_ELECTION"
+                    }
+                },
+                {
+                    "body": "Lessor requires Lessee to obtain and maintain general liability insurance covering the activities contemplated by this Agreement, with a policy limit of at least {{TXN.GL_MIN_LIMIT}} and an effective date no later than {{TXN.GL_EFFECTIVE_DATE}}. {{TXN.GL_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy. Lessee shall provide proof of insurance to Lessor by email and shall maintain the policy in good standing for the duration of this Agreement; failure to do so constitutes a material breach subject to the Termination for Cause provisions of this Agreement.",
+                    "heading": null,
+                    "cut_name": null,
+                    "guidance": null,
+                    "clause_key": "INSURANCE_RISK.GL_LESSEE",
+                    "sort_order": 18,
+                    "clause_type": "input",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "equals": [
+                            "LESSEE_OBTAIN"
+                        ],
+                        "field_key": "TXN.GL_ELECTION"
+                    }
+                },
+                {
+                    "body": "No general liability insurance is required under this Agreement.",
+                    "heading": null,
+                    "cut_name": null,
+                    "guidance": null,
+                    "clause_key": "INSURANCE_RISK.GL_NONE",
+                    "sort_order": 19,
+                    "clause_type": "input",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "equals": [
+                            "NONE",
+                            ""
+                        ],
+                        "field_key": "TXN.GL_ELECTION"
+                    }
+                },
+                {
+                    "body": "",
                     "heading": "Mortality Insurance",
                     "cut_name": null,
                     "guidance": "Mortality insurance pays out if the Horse dies. Where required, decide who is responsible for obtaining and maintaining the policy.",
@@ -3211,7 +3348,72 @@
                     "conditional_on": null
                 },
                 {
-                    "body": "Require major medical insurance? {{TXN.MAJOR_MEDICAL_INSURANCE_REQ}}\nMajor medical insurance is required on the Horse with a minimum limit of {{TXN.MAJOR_MEDICAL_MIN_LIMIT}}.\nParty responsible for the cost: {{TXN.MAJOR_MEDICAL_COST_PARTY}}.\nParty responsible for obtaining the policy: {{TXN.MAJOR_MEDICAL_OBTAIN_PARTY}}.",
+                    "body": "Lessor carries mortality insurance on the Horse with a policy limit of {{TXN.MORTALITY_POLICY_AMOUNT}} and a deductible of {{TXN.MORTALITY_DEDUCTIBLE}}, effective as of {{TXN.MORTALITY_EFFECTIVE_DATE}}. {{TXN.MORTALITY_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy.",
+                    "heading": null,
+                    "cut_name": null,
+                    "guidance": null,
+                    "clause_key": "INSURANCE_RISK.MORTALITY_HAS",
+                    "sort_order": 21,
+                    "clause_type": "input",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "equals": [
+                            "LESSOR_HAS"
+                        ],
+                        "field_key": "TXN.MORTALITY_ELECTION"
+                    }
+                },
+                {
+                    "body": "Lessor is in the process of purchasing or agrees to purchase mortality insurance on the Horse with a policy limit of {{TXN.MORTALITY_POLICY_AMOUNT}} and a deductible of {{TXN.MORTALITY_DEDUCTIBLE}}, and an effective date no later than {{TXN.MORTALITY_EFFECTIVE_DATE}}. {{TXN.MORTALITY_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy.",
+                    "heading": null,
+                    "cut_name": null,
+                    "guidance": null,
+                    "clause_key": "INSURANCE_RISK.MORTALITY_WILL",
+                    "sort_order": 22,
+                    "clause_type": "input",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "equals": [
+                            "LESSOR_WILL"
+                        ],
+                        "field_key": "TXN.MORTALITY_ELECTION"
+                    }
+                },
+                {
+                    "body": "Lessor requires Lessee to obtain and maintain mortality insurance on the Horse with a policy limit of at least the Horse's fair market value of {{HORSE.FAIR_MARKET_VALUE}} and an effective date no later than {{TXN.MORTALITY_EFFECTIVE_DATE}}. {{TXN.MORTALITY_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy. Lessee shall provide proof of insurance to Lessor by email and shall maintain the policy in good standing for the duration of this Agreement; failure to do so constitutes a material breach subject to the Termination for Cause provisions of this Agreement.",
+                    "heading": null,
+                    "cut_name": null,
+                    "guidance": null,
+                    "clause_key": "INSURANCE_RISK.MORTALITY_LESSEE",
+                    "sort_order": 23,
+                    "clause_type": "input",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "equals": [
+                            "LESSEE_OBTAIN"
+                        ],
+                        "field_key": "TXN.MORTALITY_ELECTION"
+                    }
+                },
+                {
+                    "body": "No mortality insurance is required under this Agreement.",
+                    "heading": null,
+                    "cut_name": null,
+                    "guidance": null,
+                    "clause_key": "INSURANCE_RISK.MORTALITY_NONE",
+                    "sort_order": 24,
+                    "clause_type": "input",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "equals": [
+                            "NONE",
+                            ""
+                        ],
+                        "field_key": "TXN.MORTALITY_ELECTION"
+                    }
+                },
+                {
+                    "body": "",
                     "heading": "Major Medical Insurance",
                     "cut_name": null,
                     "guidance": "Major medical insurance covers the cost of illness and injury treatment. Where required, decide who obtains and maintains the policy.",
@@ -3222,6 +3424,71 @@
                     "conditional_on": null
                 },
                 {
+                    "body": "Lessor carries major medical insurance on the Horse with a policy limit of {{TXN.MAJOR_MEDICAL_POLICY_AMOUNT}} and a deductible of {{TXN.MAJOR_MEDICAL_DEDUCTIBLE}}, effective as of {{TXN.MAJOR_MEDICAL_EFFECTIVE_DATE}}. {{TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy.",
+                    "heading": null,
+                    "cut_name": null,
+                    "guidance": null,
+                    "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL_HAS",
+                    "sort_order": 31,
+                    "clause_type": "input",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "equals": [
+                            "LESSOR_HAS"
+                        ],
+                        "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                    }
+                },
+                {
+                    "body": "Lessor is in the process of purchasing or agrees to purchase major medical insurance on the Horse with a policy limit of {{TXN.MAJOR_MEDICAL_POLICY_AMOUNT}} and a deductible of {{TXN.MAJOR_MEDICAL_DEDUCTIBLE}}, and an effective date no later than {{TXN.MAJOR_MEDICAL_EFFECTIVE_DATE}}. {{TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy.",
+                    "heading": null,
+                    "cut_name": null,
+                    "guidance": null,
+                    "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL_WILL",
+                    "sort_order": 32,
+                    "clause_type": "input",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "equals": [
+                            "LESSOR_WILL"
+                        ],
+                        "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                    }
+                },
+                {
+                    "body": "Lessor requires Lessee to obtain and maintain major medical insurance on the Horse with a policy limit of at least {{TXN.MAJOR_MEDICAL_MIN_LIMIT}} and an effective date no later than {{TXN.MAJOR_MEDICAL_EFFECTIVE_DATE}}. {{TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy. Lessee shall provide proof of insurance to Lessor by email and shall maintain the policy in good standing for the duration of this Agreement; failure to do so constitutes a material breach subject to the Termination for Cause provisions of this Agreement.",
+                    "heading": null,
+                    "cut_name": null,
+                    "guidance": null,
+                    "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL_LESSEE",
+                    "sort_order": 33,
+                    "clause_type": "input",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "equals": [
+                            "LESSEE_OBTAIN"
+                        ],
+                        "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                    }
+                },
+                {
+                    "body": "No major medical insurance is required under this Agreement.",
+                    "heading": null,
+                    "cut_name": null,
+                    "guidance": null,
+                    "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL_NONE",
+                    "sort_order": 34,
+                    "clause_type": "input",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "equals": [
+                            "NONE",
+                            ""
+                        ],
+                        "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                    }
+                },
+                {
                     "body": "Lessor assumes all risk of loss or injury to the Horse during the term of this Agreement.",
                     "heading": "Risk of Loss of or Injury to the Horse",
                     "cut_name": null,
@@ -3229,6 +3496,17 @@
                     "clause_key": "INSURANCE_RISK.RISK_OF_LOSS",
                     "sort_order": 50,
                     "clause_type": "input",
+                    "is_optional": false,
+                    "conditional_on": null
+                },
+                {
+                    "body": "Lessor acknowledges and accepts that loss of use of the Horse may result from injury to, illness of, or the death of the Horse. No loss-of-use insurance is required or provided under this Agreement.",
+                    "heading": "Loss of Use",
+                    "cut_name": null,
+                    "guidance": null,
+                    "clause_key": "INSURANCE_RISK.LOSS_OF_USE_ACK",
+                    "sort_order": 55,
+                    "clause_type": "prose",
                     "is_optional": false,
                     "conditional_on": null
                 },
@@ -3352,7 +3630,7 @@
                     "conditional_on": null
                 },
                 {
-                    "body": "Under no circumstances shall either party be liable to the other for any special, consequential, incidental, or punitive damages arising out of or relating to this Agreement. The total aggregate liability of either party (including, respectively, the Lessor Parties and the Lessee Parties) to the other under this Agreement shall not exceed the mortality insurance minimum limit of {{TXN.MORTALITY_MIN_LIMIT}}. Any amount owed by one party to the other under this Agreement shall be reduced by the amount of any insurance proceeds actually received by the party owed with respect to the same loss. This limitation does not apply to gross negligence, reckless conduct, or intentional misconduct.",
+                    "body": "Under no circumstances shall either party be liable to the other for any special, consequential, incidental, or punitive damages arising out of or relating to this Agreement. The total aggregate liability of either party (including, respectively, the Lessor Parties and the Lessee Parties) to the other under this Agreement shall not exceed the mortality insurance policy limit of {{TXN.MORTALITY_POLICY_AMOUNT}}. Any amount owed by one party to the other under this Agreement shall be reduced by the amount of any insurance proceeds actually received by the party owed with respect to the same loss. This limitation does not apply to gross negligence, reckless conduct, or intentional misconduct.",
                     "heading": "Limitation of Liability",
                     "cut_name": null,
                     "guidance": null,
@@ -3362,9 +3640,10 @@
                     "is_optional": false,
                     "conditional_on": {
                         "equals": [
-                            "YES"
+                            "LESSOR_HAS",
+                            "LESSOR_WILL"
                         ],
-                        "field_key": "TXN.MORTALITY_INSURANCE_REQ"
+                        "field_key": "TXN.MORTALITY_ELECTION"
                     }
                 },
                 {
@@ -3378,10 +3657,11 @@
                     "is_optional": false,
                     "conditional_on": {
                         "equals": [
-                            "NO",
+                            "LESSEE_OBTAIN",
+                            "NONE",
                             ""
                         ],
-                        "field_key": "TXN.MORTALITY_INSURANCE_REQ"
+                        "field_key": "TXN.MORTALITY_ELECTION"
                     }
                 }
             ],
@@ -3481,6 +3761,17 @@
                     "guidance": null,
                     "clause_key": "TERMINATION.LOSS",
                     "sort_order": 40,
+                    "clause_type": "prose",
+                    "is_optional": false,
+                    "conditional_on": null
+                },
+                {
+                    "body": "If the Horse becomes unusable for the purposes of this Agreement for any reason, Lessee may terminate this Agreement immediately upon written notice to Lessor. Upon such termination, Lessee is entitled to a prorated refund of any Lease Fee paid for the remaining unused time as of the date of termination.",
+                    "heading": "Termination upon Loss of Use",
+                    "cut_name": null,
+                    "guidance": null,
+                    "clause_key": "TERMINATION.LOSS_OF_USE",
+                    "sort_order": 45,
                     "clause_type": "prose",
                     "is_optional": false,
                     "conditional_on": null
