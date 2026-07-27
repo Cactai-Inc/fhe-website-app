@@ -1,3 +1,9 @@
+> ⚠️ **ARCHIVED — HISTORICAL ONLY. DO NOT FOLLOW AS INSTRUCTIONS.**
+> Archived 2026-07-27. Its facts were true at the time of writing and are now
+> substantially outdated (the tier layer was removed, `memberships` became
+> `members`, engagements/orders were retired, and the catalog is DB-driven).
+> **Current state:** see `/CLAUDE.md`, `docs/STATUS_REPORT.md`, `docs/ECOSYSTEM_PLAN.md`.
+
 # Booking & Onboarding Master Plan
 
 Status: **DRAFT — owner review pending.** This is Plan 1 of 3 (who/what/how). Plan 2

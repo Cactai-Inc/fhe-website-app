@@ -1,3 +1,13 @@
+> ⚠️ **PARTIALLY SUPERSEDED (2026-07-27).** Two corrections:
+> 1. The "**KILL** these empty tables" verdicts (`lease_participants`, `horse_parties`,
+>    `document_party_archives`, `content_acknowledgments`) were **REVERSED** — each is
+>    still code-referenced and is empty only because its flow isn't reachable yet.
+>    See `docs/ECOSYSTEM_PLAN.md` §F5. **Do not drop them.**
+> 2. Row counts are a 2026-07-26 snapshot. Current live state is in
+>    `docs/STATUS_REPORT.md` (e.g. RIDER 9 · HORSE_OWNER 2 after Stage 2).
+>
+> The two-anchor analysis (contacts vs accounts) and the reasoning remain valid.
+
 # FHE Identity Model — Honest Analysis (facts from the live DB)
 
 You challenged me to justify the table complexity with real facts or make the case

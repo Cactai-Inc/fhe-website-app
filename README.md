@@ -1,157 +1,68 @@
-# French Heritage Equestrian
+# French Heritage Equestrian — website & app
 
-Welcome to French Heritage Equestrian, a family-run hunter/jumper community at Carmel Creek Ranch in coastal San Diego.
+A single React + TypeScript application serving three audiences from one codebase:
 
-A vibrant, community for horse owners and riders. This project features a full client platform: accounts, invitations, a request flow, an authenticated purchase flow, self-authored booking with slot holds, signable documents, and Zelle + Stripe payments.
+- **Public website** — marketing pages, the service catalog, booking funnels, gift
+  certificates, and the inquiry/intake flow.
+- **Client app** (`/app/**`) — the authenticated member experience: dashboard,
+  calendar & booking, orders, documents & contracts, horses/stable, evaluations, and
+  community.
+- **Staff / ops** (`/app/ops/**`) — intake and leads, contacts and team, horse records,
+  the document queue, payments, contract authoring, activity, and admin settings.
 
-> **Setup & operations:** see [SETUP.md](./SETUP.md) for the external wiring
-> (Supabase migrations, Stripe, Vercel, Google Workspace) needed to go live.
-
----
-
-## Overview
-
-French Heritage Equestrian offers three lines of service, each with its own booking funnel, smart cross-sell logic, and tailored add-on recommendations:
-
-1. **Rider Services** — Horseback riding lessons, hunter jumper training, horsemanship classes
-2. **Horse Services** — Hands-on horse training, riding & turnout, hair clipping
-3. **Rider Support** — Horse locator, pre-purchase/lease evaluations, purchase/lease brokering
+**Stack:** React · TypeScript · Vite · Tailwind · Supabase (Postgres + RLS + RPCs) ·
+Vercel serverless (`api/`) · Google Workspace SMTP for transactional email.
 
 ---
 
-## Pages
+## Getting started
 
-| Route | Page | Description |
-|---|---|---|
-| `/` | Landing | Hero, three service pillars, location/atmosphere, CTA |
-| `/about` | About | Facility overview, our story, guiding principles, philosophy |
-| `/services` | Services Overview | Choose your service path |
-| `/book/rider` | Rider Booking Funnel | Multi-step: select lessons/training → qualifier questions → smart add-ons |
-| `/book/horse` | Horse Booking Funnel | Multi-step: select horse care → reason/duration → smart add-ons |
-| `/book/support` | Support Booking Funnel | Multi-step: select acquisition services → experience/intent → smart add-ons |
-| `/checkout` | Checkout | Order review + contact form → Supabase submission |
-| `/confirmation` | Confirmation | Booking received confirmation page |
+```bash
+npm install
+npm run dev          # vite dev server
 
----
+npm run typecheck    # frontend types
+npm run typecheck:api# serverless types
+npm run lint
+npm run build        # vite build + prerender + seo files
+```
 
-## Smart Add-On Logic
-
-The purchasing funnel uses qualifier answers to present only contextually relevant add-ons:
-
-### Rider Funnel (`/book/rider`)
-- Presents: riding lessons, hunter jumper training, horsemanship classes
-- Qualifies: does user own/lease a horse?
-  - **Yes** → shows horse training cross-sell (not clipping)
-  - **No / school horses** → qualifies interest in buying/leasing → shows rider support link
-- Never shows: hair clipping
-
-### Horse Funnel (`/book/horse`)
-- Presents: horse training, riding & turnout, hair clipping
-- Qualifies: reason (traveling, injured, regular care, etc.) + duration
-  - **Traveling / injured** → adds lease brokering suggestion, clipping
-  - **Turnout only** → suggests training add-on
-- Never shows: riding lessons
-
-### Support Funnel (`/book/support`)
-- Presents: horse locator, evaluation, brokering
-- Qualifies: experience level, how many horses, interest in lessons
-  - **First horse / returning** → shows training, turnout, and clipping
-  - **Interested in lessons** → shows rider services link
-  - **Not interested in lessons** → no lessons cross-sell shown
+Database access for scripts/queries uses the connection string on the first line of
+`.env.db` (gitignored).
 
 ---
 
-## Tech Stack
+## Documentation — where to look
 
-| Layer | Technology |
+| Start here | What it is |
 |---|---|
-| Frontend | React 18 + TypeScript + Vite |
-| Styling | Tailwind CSS v3 (custom brand tokens) |
-| Routing | React Router v6 |
-| Backend / Database | Supabase (PostgreSQL) |
-| Icons | Lucide React |
-| Photography | Pexels (real equestrian photography) |
+| **`/CLAUDE.md`** | Orientation: the live data spine, what's **retired** (don't resurrect it), the migration convention, and a trust ranking for every doc |
+| **`docs/HANDOFF.md`** | Current state + suggested next moves — read this to pick up the work |
+| **`docs/BACKLOG.md`** | Standing work list: blocked, ready, and known defects with file:line |
+| **`docs/STATUS_REPORT.md`** | Point-in-time record of what shipped and what's verified |
+| **`docs/ECOSYSTEM_PLAN.md`** | The in-flight identity/taxonomy refactor (Stages 0–2 done) |
+
+Other current references: `docs/NOTIFICATIONS.md` (email nudge cron),
+`docs/GOOGLE_SMTP_SETUP.md` (transactional email wiring),
+`docs/TOKEN_DICTIONARY.md` (merge tokens),
+`supabase/contract_templates/HORSE_LEASE.md` (**how to edit the lease** — its content
+lives in the database, not in a markdown template).
+
+> ⚠️ **`docs/archive/` is historical only.** Those docs describe earlier states of the
+> platform and will actively mislead you — the tier layer was removed, `memberships`
+> became `members`, engagements/orders were retired, and the catalog is now DB-driven.
 
 ---
 
-## Brand
+## A few things worth knowing up front
 
-- **Company Font:** Big Caslon → Cormorant Garamond (web fallback)
-- **Body Font:** Inter
-- **Brand Green:** `#143321`
-- **Brand Gold:** `#BA9935`
-- **Cream Background:** `#faf8f4`
-- **Target Demographic:** Mid-career professional women; equestrian hobbyists, lifelong enthusiasts
-
----
-
-## Database Schema
-
-### `bookings`
-Stores booking requests from the purchasing funnel. No auth required — open write, no read for anon.
-
-| Column | Type | Description |
-|---|---|---|
-| `id` | uuid | Primary key |
-| `created_at` | timestamptz | Submission timestamp |
-| `first_name` | text | Customer first name |
-| `last_name` | text | Customer last name (optional) |
-| `email` | text | Contact email |
-| `phone` | text | Contact phone |
-| `funnel_type` | text | `rider` / `horse` / `support` |
-| `selected_services` | jsonb | Array of selected service tiers |
-| `qualifier_answers` | jsonb | Map of funnel qualifier answers |
-| `subtotal` | numeric | Estimated total |
-| `notes` | text | Optional customer notes |
-| `status` | text | `pending` / `confirmed` / `cancelled` |
-
-### `inquiries`
-Stores general contact form submissions.
-
-| Column | Type | Description |
-|---|---|---|
-| `id` | uuid | Primary key |
-| `first_name` / `last_name` | text | Submitter name |
-| `email` / `phone` | text | Contact details |
-| `message` | text | Free-text inquiry |
-| `replied` | boolean | Internal reply tracking flag |
-
----
-
-## Project Structure
-
-```
-src/
-├── components/
-│   └── layout/
-│       ├── Header.tsx     # Fixed nav, transparent on hero, solid on scroll
-│       ├── Footer.tsx     # Three-column footer with nav + contact
-│       └── Layout.tsx     # Outlet wrapper
-├── contexts/
-│   └── CartContext.tsx    # Cart state, funnel type, qualifier answers
-├── lib/
-│   ├── supabase.ts        # Supabase client + typed helpers
-│   └── services.ts        # Service catalog with pricing tiers
-├── pages/
-│   ├── Landing.tsx        # Landing page
-│   ├── About.tsx          # About page
-│   ├── Services.tsx       # Service path chooser
-│   ├── BookRider.tsx      # Rider booking funnel
-│   ├── BookHorse.tsx      # Horse booking funnel
-│   ├── BookSupport.tsx    # Rider support funnel
-│   ├── Checkout.tsx       # Checkout + Supabase submission
-│   └── Confirmation.tsx   # Post-submission confirmation
-├── App.tsx                # Router + CartProvider
-├── index.css              # Global styles, Tailwind, Google Fonts
-└── main.tsx               # Entry point
-```
-
----
-
-## Facility
-
-**Carmel Creek Ranch**
-San Diego, CA
-2.5 miles from Torrey Pines Beach
-
-Fully licensed and insured equestrian business. Stables situated along beautiful walking trails with direct access to San Diego's finest hiking trailheads. Soothing ocean breeze year-round.
+- **The catalog has no tiers.** Every offering is its own SKU; its mechanics are data
+  (`config_kind`, `unit_count`, `weekly_frequency`), read via the `public_offerings`
+  RPC. There is no hardcoded catalog — if you find one, it's a bug.
+- **Identity has two anchors:** `contacts` (a person record, may have no login) and
+  `profiles`↔`auth.users` (an account). `profiles` is the 1:1 bridge.
+- **Affiliation groups are derived, never hand-written** — `derive_affiliations()`
+  computes them from signed documents + horse ownership, and `apply_affiliations()` is
+  the only writer.
+- **Migrations are a hand-maintained journal** applied via `psql`, not the Supabase CLI.
+  Dry-run in a rolled-back transaction, apply, verify, commit.

@@ -1,3 +1,10 @@
+> **STATUS (2026-07-27):** Stages 0–2 are **DONE and live on prod** (`a726e4a`,
+> `1c01b32`) — `derive_affiliations` + `apply_affiliations` are the sole group writer;
+> live state RIDER 9 · HORSE_OWNER 2. **Stage 3 is owner-blocked** (moving signed docs
+> between the owner's own test identities). **Stages 4–6 not started.**
+> Note: the plan text proposes a `promote_contact_to_account` RPC; what actually
+> shipped is `_ensure_client_account` + `derive_affiliations`/`apply_affiliations`.
+
 # FHE Ecosystem Plan — make the website + app work coherently
 
 This plan is built from your corrections and from facts verified against the live

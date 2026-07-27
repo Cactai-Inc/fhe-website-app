@@ -1,3 +1,8 @@
+> ⚠️ **NEEDS UPDATE (flagged 2026-07-27).** Still the canonical merge-token contract,
+> but the **`ORD.*` (order) namespace points at the retired `orders` spine**. The live
+> commerce spine is `purchases` + `purchase_items`. Re-map `ORD.*` before wiring new
+> order tokens. Everything else (ORG/DOC/CLIENT/HORSE/…) is current.
+
 # Token Dictionary
 
 FHE DOCUMENT MERGE TOKEN DICTIONARY (owner canon, 2026-07-03 revision)

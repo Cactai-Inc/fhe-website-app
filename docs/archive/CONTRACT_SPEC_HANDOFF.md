@@ -1,3 +1,9 @@
+> ⚠️ **ARCHIVED — HISTORICAL ONLY. DO NOT FOLLOW AS INSTRUCTIONS.**
+> Archived 2026-07-27. Its facts were true at the time of writing and are now
+> substantially outdated (the tier layer was removed, `memberships` became
+> `members`, engagements/orders were retired, and the catalog is DB-driven).
+> **Current state:** see `/CLAUDE.md`, `docs/STATUS_REPORT.md`, `docs/ECOSYSTEM_PLAN.md`.
+
 # Contract System — Spec-Authoring Handoff
 
 **Purpose of this document:** You (a fresh Claude thread) are being asked to help the owner author a *specification* for the contract-building feature of this app. You are **NOT** implementing anything. Your job is to interview the owner, then produce a clear written spec that a separate implementation thread can build against.
