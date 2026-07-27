@@ -468,21 +468,6 @@
                     "responsibility": null
                 },
                 {
-                    "label": "Registered name",
-                    "options": null,
-                    "guidance": null,
-                    "required": true,
-                    "field_key": "HORSE.REGISTERED_NAME",
-                    "clause_key": "HORSE.IDENTITY",
-                    "input_kind": "text",
-                    "owner_role": "LESSOR",
-                    "sort_order": 10,
-                    "value_type": "text",
-                    "is_optional": false,
-                    "conditional_on": null,
-                    "responsibility": null
-                },
-                {
                     "label": "Ownership limitations",
                     "options": null,
                     "guidance": null,
@@ -498,33 +483,16 @@
                     "responsibility": null
                 },
                 {
-                    "label": "Professional suitability evaluation",
-                    "options": [
-                        {
-                            "label": "Lessee requested at their own expense",
-                            "value": "LESSEE_OWN"
-                        },
-                        {
-                            "label": "Lessee requested at Lessor's expense",
-                            "value": "LESSEE_AT_LESSOR"
-                        },
-                        {
-                            "label": "Lessor provided at no cost",
-                            "value": "LESSOR_FREE"
-                        },
-                        {
-                            "label": "Lessee waives the option",
-                            "value": "WAIVED"
-                        }
-                    ],
+                    "label": "Registered name",
+                    "options": null,
                     "guidance": null,
-                    "required": false,
-                    "field_key": "TXN.TRAINER_EVAL_CHOICE",
-                    "clause_key": "HORSE.WARRANTY",
-                    "input_kind": "buttons",
+                    "required": true,
+                    "field_key": "HORSE.REGISTERED_NAME",
+                    "clause_key": "HORSE.IDENTITY",
+                    "input_kind": "text",
                     "owner_role": "LESSOR",
                     "sort_order": 10,
-                    "value_type": "select",
+                    "value_type": "text",
                     "is_optional": false,
                     "conditional_on": null,
                     "responsibility": null
@@ -562,27 +530,44 @@
                     "responsibility": null
                 },
                 {
+                    "label": "Professional suitability evaluation",
+                    "options": [
+                        {
+                            "label": "Lessee requested at their own expense",
+                            "value": "LESSEE_OWN"
+                        },
+                        {
+                            "label": "Lessee requested at Lessor's expense",
+                            "value": "LESSEE_AT_LESSOR"
+                        },
+                        {
+                            "label": "Lessor provided at no cost",
+                            "value": "LESSOR_FREE"
+                        },
+                        {
+                            "label": "Lessee waives the option",
+                            "value": "WAIVED"
+                        }
+                    ],
+                    "guidance": null,
+                    "required": false,
+                    "field_key": "TXN.TRAINER_EVAL_CHOICE",
+                    "clause_key": "HORSE.WARRANTY",
+                    "input_kind": "buttons",
+                    "owner_role": "LESSOR",
+                    "sort_order": 10,
+                    "value_type": "select",
+                    "is_optional": false,
+                    "conditional_on": null,
+                    "responsibility": null
+                },
+                {
                     "label": "Known condition exceptions",
                     "options": null,
                     "guidance": "List any known illnesses, lamenesses, or physical conditions the Lessee should be aware of.",
                     "required": false,
                     "field_key": "TXN.CONDITION_EXCEPTIONS",
                     "clause_key": "HORSE.CONDITION_EXC",
-                    "input_kind": "longtext",
-                    "owner_role": "DEAL",
-                    "sort_order": 20,
-                    "value_type": "longtext",
-                    "is_optional": false,
-                    "conditional_on": null,
-                    "responsibility": null
-                },
-                {
-                    "label": "Known behavior exceptions",
-                    "options": null,
-                    "guidance": "List any known behaviors — e.g. biting, kicking, bucking, rearing, bolting, trailer-loading or farrier issues.",
-                    "required": false,
-                    "field_key": "TXN.BEHAVIOR_EXCEPTIONS",
-                    "clause_key": "HORSE.BEHAVIOR_EXC",
                     "input_kind": "longtext",
                     "owner_role": "DEAL",
                     "sort_order": 20,
@@ -647,6 +632,21 @@
                     "owner_role": "LESSOR",
                     "sort_order": 20,
                     "value_type": "select",
+                    "is_optional": false,
+                    "conditional_on": null,
+                    "responsibility": null
+                },
+                {
+                    "label": "Known behavior exceptions",
+                    "options": null,
+                    "guidance": "List any known behaviors — e.g. biting, kicking, bucking, rearing, bolting, trailer-loading or farrier issues.",
+                    "required": false,
+                    "field_key": "TXN.BEHAVIOR_EXCEPTIONS",
+                    "clause_key": "HORSE.BEHAVIOR_EXC",
+                    "input_kind": "longtext",
+                    "owner_role": "DEAL",
+                    "sort_order": 20,
+                    "value_type": "longtext",
                     "is_optional": false,
                     "conditional_on": null,
                     "responsibility": null
@@ -1282,21 +1282,6 @@
                     "responsibility": null
                 },
                 {
-                    "label": "Renewal terms",
-                    "options": null,
-                    "guidance": "Describe any renewal, extension, or other arrangement.",
-                    "required": false,
-                    "field_key": "TXN.RENEWAL_TERMS",
-                    "clause_key": "TERM.RENEWAL",
-                    "input_kind": "longtext",
-                    "owner_role": "DEAL",
-                    "sort_order": 10,
-                    "value_type": "longtext",
-                    "is_optional": false,
-                    "conditional_on": null,
-                    "responsibility": null
-                },
-                {
                     "label": "Term type",
                     "options": [
                         {
@@ -1320,6 +1305,21 @@
                     "owner_role": "DEAL",
                     "sort_order": 10,
                     "value_type": "select",
+                    "is_optional": false,
+                    "conditional_on": null,
+                    "responsibility": null
+                },
+                {
+                    "label": "Renewal terms",
+                    "options": null,
+                    "guidance": "Describe any renewal, extension, or other arrangement.",
+                    "required": false,
+                    "field_key": "TXN.RENEWAL_TERMS",
+                    "clause_key": "TERM.RENEWAL",
+                    "input_kind": "longtext",
+                    "owner_role": "DEAL",
+                    "sort_order": 10,
+                    "value_type": "longtext",
                     "is_optional": false,
                     "conditional_on": null,
                     "responsibility": null
@@ -1432,12 +1432,27 @@
         {
             "fields": [
                 {
-                    "label": "Trail-riding restriction",
+                    "label": "No competition restrictions",
                     "options": null,
                     "guidance": null,
                     "required": false,
-                    "field_key": "TXN.TRAIL_RESTRICTION",
-                    "clause_key": "RESTRICT.TRAIL_ON",
+                    "field_key": "TXN.COMP_OMIT",
+                    "clause_key": "RESTRICT.COMP_TITLE",
+                    "input_kind": "certify",
+                    "owner_role": "LESSOR",
+                    "sort_order": 1,
+                    "value_type": "checkbox",
+                    "is_optional": true,
+                    "conditional_on": null,
+                    "responsibility": null
+                },
+                {
+                    "label": "Competition restriction",
+                    "options": null,
+                    "guidance": null,
+                    "required": false,
+                    "field_key": "TXN.COMP_RESTRICTION",
+                    "clause_key": "RESTRICT.COMP_ON",
                     "input_kind": "text",
                     "owner_role": "LESSOR",
                     "sort_order": 1,
@@ -1453,21 +1468,6 @@
                     "required": false,
                     "field_key": "TXN.JUMP_OMIT",
                     "clause_key": "RESTRICT.JUMP_TITLE",
-                    "input_kind": "certify",
-                    "owner_role": "LESSOR",
-                    "sort_order": 1,
-                    "value_type": "checkbox",
-                    "is_optional": true,
-                    "conditional_on": null,
-                    "responsibility": null
-                },
-                {
-                    "label": "No competition restrictions",
-                    "options": null,
-                    "guidance": null,
-                    "required": false,
-                    "field_key": "TXN.COMP_OMIT",
-                    "clause_key": "RESTRICT.COMP_TITLE",
                     "input_kind": "certify",
                     "owner_role": "LESSOR",
                     "sort_order": 1,
@@ -1512,17 +1512,32 @@
                     "responsibility": null
                 },
                 {
-                    "label": "Competition restriction",
+                    "label": "Trail-riding restriction",
                     "options": null,
                     "guidance": null,
                     "required": false,
-                    "field_key": "TXN.COMP_RESTRICTION",
-                    "clause_key": "RESTRICT.COMP_ON",
+                    "field_key": "TXN.TRAIL_RESTRICTION",
+                    "clause_key": "RESTRICT.TRAIL_ON",
                     "input_kind": "text",
                     "owner_role": "LESSOR",
                     "sort_order": 1,
                     "value_type": "text",
                     "is_optional": true,
+                    "conditional_on": null,
+                    "responsibility": null
+                },
+                {
+                    "label": "Maximum height",
+                    "options": null,
+                    "guidance": "e.g. max feet.",
+                    "required": false,
+                    "field_key": "TXN.JUMP_MAX_HEIGHT",
+                    "clause_key": "RESTRICT.JUMP_ON",
+                    "input_kind": "text",
+                    "owner_role": "DEAL",
+                    "sort_order": 10,
+                    "value_type": "text",
+                    "is_optional": false,
                     "conditional_on": null,
                     "responsibility": null
                 },
@@ -1578,21 +1593,6 @@
                     "responsibility": null
                 },
                 {
-                    "label": "Maximum height",
-                    "options": null,
-                    "guidance": "e.g. max feet.",
-                    "required": false,
-                    "field_key": "TXN.JUMP_MAX_HEIGHT",
-                    "clause_key": "RESTRICT.JUMP_ON",
-                    "input_kind": "text",
-                    "owner_role": "DEAL",
-                    "sort_order": 10,
-                    "value_type": "text",
-                    "is_optional": false,
-                    "conditional_on": null,
-                    "responsibility": null
-                },
-                {
                     "label": "Others allowed to ride",
                     "options": [
                         {
@@ -1620,6 +1620,34 @@
                     "owner_role": "DEAL",
                     "sort_order": 10,
                     "value_type": "checkbox",
+                    "is_optional": false,
+                    "conditional_on": null,
+                    "responsibility": null
+                },
+                {
+                    "label": "Competition expenses",
+                    "options": [
+                        {
+                            "label": "Paid by Lessee",
+                            "value": "LESSEE"
+                        },
+                        {
+                            "label": "Paid by Lessor",
+                            "value": "OWNER"
+                        },
+                        {
+                            "label": "Other",
+                            "value": "OTHER"
+                        }
+                    ],
+                    "guidance": "Who pays the expenses of competing.",
+                    "required": false,
+                    "field_key": "TXN.COMPETITION_EXPENSES",
+                    "clause_key": "COMPETITIONS.INTRO",
+                    "input_kind": "select",
+                    "owner_role": "DEAL",
+                    "sort_order": 10,
+                    "value_type": "select",
                     "is_optional": false,
                     "conditional_on": null,
                     "responsibility": null
@@ -1660,34 +1688,6 @@
                     "owner_role": "DEAL",
                     "sort_order": 10,
                     "value_type": "checkbox",
-                    "is_optional": false,
-                    "conditional_on": null,
-                    "responsibility": null
-                },
-                {
-                    "label": "Competition expenses",
-                    "options": [
-                        {
-                            "label": "Paid by Lessee",
-                            "value": "LESSEE"
-                        },
-                        {
-                            "label": "Paid by Lessor",
-                            "value": "OWNER"
-                        },
-                        {
-                            "label": "Other",
-                            "value": "OTHER"
-                        }
-                    ],
-                    "guidance": "Who pays the expenses of competing.",
-                    "required": false,
-                    "field_key": "TXN.COMPETITION_EXPENSES",
-                    "clause_key": "COMPETITIONS.INTRO",
-                    "input_kind": "select",
-                    "owner_role": "DEAL",
-                    "sort_order": 10,
-                    "value_type": "select",
                     "is_optional": false,
                     "conditional_on": null,
                     "responsibility": null
@@ -1736,6 +1736,21 @@
                     "responsibility": null
                 },
                 {
+                    "label": "Only under trainer supervision?",
+                    "options": null,
+                    "guidance": null,
+                    "required": false,
+                    "field_key": "TXN.JUMP_SUPERVISION",
+                    "clause_key": "RESTRICT.JUMP_ON",
+                    "input_kind": "yesno",
+                    "owner_role": "DEAL",
+                    "sort_order": 30,
+                    "value_type": "select",
+                    "is_optional": false,
+                    "conditional_on": null,
+                    "responsibility": null
+                },
+                {
                     "label": "Offsite transport",
                     "options": [
                         {
@@ -1753,21 +1768,6 @@
                     "clause_key": "PERMITTED_USE.TRANSPORT",
                     "input_kind": "select",
                     "owner_role": "LESSOR",
-                    "sort_order": 30,
-                    "value_type": "select",
-                    "is_optional": false,
-                    "conditional_on": null,
-                    "responsibility": null
-                },
-                {
-                    "label": "Only under trainer supervision?",
-                    "options": null,
-                    "guidance": null,
-                    "required": false,
-                    "field_key": "TXN.JUMP_SUPERVISION",
-                    "clause_key": "RESTRICT.JUMP_ON",
-                    "input_kind": "yesno",
-                    "owner_role": "DEAL",
                     "sort_order": 30,
                     "value_type": "select",
                     "is_optional": false,
@@ -2197,6 +2197,42 @@
                     "label": "Party responsible for arranging",
                     "options": [
                         {
+                            "label": "Lessor",
+                            "value": "LESSOR"
+                        },
+                        {
+                            "label": "Lessee",
+                            "value": "LESSEE"
+                        },
+                        {
+                            "label": "Trainer/Instructor",
+                            "value": "TRAINER"
+                        },
+                        {
+                            "label": "Boarding Staff",
+                            "value": "BOARDING"
+                        },
+                        {
+                            "label": "Other",
+                            "value": "OTHER"
+                        }
+                    ],
+                    "guidance": null,
+                    "required": false,
+                    "field_key": "TXN.VET_ARRANGE",
+                    "clause_key": "CARE.ROUTINE_VET",
+                    "input_kind": "select",
+                    "owner_role": "LESSOR",
+                    "sort_order": 10,
+                    "value_type": "select",
+                    "is_optional": false,
+                    "conditional_on": null,
+                    "responsibility": null
+                },
+                {
+                    "label": "Party responsible for arranging",
+                    "options": [
+                        {
                             "label": "Lessee",
                             "value": "LESSEE"
                         },
@@ -2269,42 +2305,6 @@
                     "owner_role": "DEAL",
                     "sort_order": 10,
                     "value_type": "checkbox",
-                    "is_optional": false,
-                    "conditional_on": null,
-                    "responsibility": null
-                },
-                {
-                    "label": "Party responsible for arranging",
-                    "options": [
-                        {
-                            "label": "Lessor",
-                            "value": "LESSOR"
-                        },
-                        {
-                            "label": "Lessee",
-                            "value": "LESSEE"
-                        },
-                        {
-                            "label": "Trainer/Instructor",
-                            "value": "TRAINER"
-                        },
-                        {
-                            "label": "Boarding Staff",
-                            "value": "BOARDING"
-                        },
-                        {
-                            "label": "Other",
-                            "value": "OTHER"
-                        }
-                    ],
-                    "guidance": null,
-                    "required": false,
-                    "field_key": "TXN.VET_ARRANGE",
-                    "clause_key": "CARE.ROUTINE_VET",
-                    "input_kind": "select",
-                    "owner_role": "LESSOR",
-                    "sort_order": 10,
-                    "value_type": "select",
                     "is_optional": false,
                     "conditional_on": null,
                     "responsibility": null
@@ -2409,26 +2409,6 @@
                     "responsibility": null
                 },
                 {
-                    "label": "Veterinarian",
-                    "options": null,
-                    "guidance": "Veterinarian on the horse record.",
-                    "required": false,
-                    "field_key": "HORSE.VET_NAME",
-                    "clause_key": "CARE.ROUTINE_VET",
-                    "input_kind": "text",
-                    "owner_role": "LESSOR",
-                    "sort_order": 20,
-                    "value_type": "text",
-                    "is_optional": true,
-                    "conditional_on": {
-                        "equals": [
-                            "LESSEE"
-                        ],
-                        "field_key": "TXN.VET_ARRANGE"
-                    },
-                    "responsibility": null
-                },
-                {
                     "label": "Farrier",
                     "options": null,
                     "guidance": "Farrier on the horse record.",
@@ -2445,6 +2425,26 @@
                             "LESSEE"
                         ],
                         "field_key": "TXN.FARRIER_ARRANGE"
+                    },
+                    "responsibility": null
+                },
+                {
+                    "label": "Veterinarian",
+                    "options": null,
+                    "guidance": "Veterinarian on the horse record.",
+                    "required": false,
+                    "field_key": "HORSE.VET_NAME",
+                    "clause_key": "CARE.ROUTINE_VET",
+                    "input_kind": "text",
+                    "owner_role": "LESSOR",
+                    "sort_order": 20,
+                    "value_type": "text",
+                    "is_optional": true,
+                    "conditional_on": {
+                        "equals": [
+                            "LESSEE"
+                        ],
+                        "field_key": "TXN.VET_ARRANGE"
                     },
                     "responsibility": null
                 },
@@ -2521,26 +2521,6 @@
                     "responsibility": null
                 },
                 {
-                    "label": "Farrier phone",
-                    "options": null,
-                    "guidance": "Farrier phone on the horse record.",
-                    "required": false,
-                    "field_key": "HORSE.FARRIER_PHONE",
-                    "clause_key": "CARE.FARRIER",
-                    "input_kind": "text",
-                    "owner_role": "LESSOR",
-                    "sort_order": 21,
-                    "value_type": "text",
-                    "is_optional": true,
-                    "conditional_on": {
-                        "equals": [
-                            "LESSEE"
-                        ],
-                        "field_key": "TXN.FARRIER_ARRANGE"
-                    },
-                    "responsibility": null
-                },
-                {
                     "label": "Practice",
                     "options": null,
                     "guidance": "Veterinary practice on the horse record.",
@@ -2557,6 +2537,26 @@
                             "LESSEE"
                         ],
                         "field_key": "TXN.VET_ARRANGE"
+                    },
+                    "responsibility": null
+                },
+                {
+                    "label": "Farrier phone",
+                    "options": null,
+                    "guidance": "Farrier phone on the horse record.",
+                    "required": false,
+                    "field_key": "HORSE.FARRIER_PHONE",
+                    "clause_key": "CARE.FARRIER",
+                    "input_kind": "text",
+                    "owner_role": "LESSOR",
+                    "sort_order": 21,
+                    "value_type": "text",
+                    "is_optional": true,
+                    "conditional_on": {
+                        "equals": [
+                            "LESSEE"
+                        ],
+                        "field_key": "TXN.FARRIER_ARRANGE"
                     },
                     "responsibility": null
                 },
@@ -2827,7 +2827,7 @@
         {
             "fields": [
                 {
-                    "label": "Major medical insurance election",
+                    "label": "General liability insurance election",
                     "options": [
                         {
                             "label": "Lessor has this policy",
@@ -2846,10 +2846,10 @@
                             "value": "NONE"
                         }
                     ],
-                    "guidance": "Lessor elects how major medical coverage is handled. Select \"Not required\" (or leave unset) to omit the clause.",
+                    "guidance": "Lessor elects how general liability coverage is handled. Select \"Not required\" (or leave unset) to omit the clause.",
                     "required": false,
-                    "field_key": "TXN.MAJOR_MEDICAL_ELECTION",
-                    "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL",
+                    "field_key": "TXN.GL_ELECTION",
+                    "clause_key": "INSURANCE_RISK.GENERAL_LIABILITY",
                     "input_kind": "select",
                     "owner_role": "LESSOR",
                     "sort_order": 10,
@@ -2891,7 +2891,7 @@
                     "responsibility": null
                 },
                 {
-                    "label": "General liability insurance election",
+                    "label": "Major medical insurance election",
                     "options": [
                         {
                             "label": "Lessor has this policy",
@@ -2910,16 +2910,37 @@
                             "value": "NONE"
                         }
                     ],
-                    "guidance": "Lessor elects how general liability coverage is handled. Select \"Not required\" (or leave unset) to omit the clause.",
+                    "guidance": "Lessor elects how major medical coverage is handled. Select \"Not required\" (or leave unset) to omit the clause.",
                     "required": false,
-                    "field_key": "TXN.GL_ELECTION",
-                    "clause_key": "INSURANCE_RISK.GENERAL_LIABILITY",
+                    "field_key": "TXN.MAJOR_MEDICAL_ELECTION",
+                    "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL",
                     "input_kind": "select",
                     "owner_role": "LESSOR",
                     "sort_order": 10,
                     "value_type": "select",
                     "is_optional": false,
                     "conditional_on": null,
+                    "responsibility": null
+                },
+                {
+                    "label": "Policy limit",
+                    "options": null,
+                    "guidance": null,
+                    "required": false,
+                    "field_key": "TXN.MORTALITY_POLICY_AMOUNT",
+                    "clause_key": "INSURANCE_RISK.MORTALITY",
+                    "input_kind": "currency",
+                    "owner_role": "LESSOR",
+                    "sort_order": 20,
+                    "value_type": "currency",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "equals": [
+                            "LESSOR_HAS",
+                            "LESSOR_WILL"
+                        ],
+                        "field_key": "TXN.MORTALITY_ELECTION"
+                    },
                     "responsibility": null
                 },
                 {
@@ -2965,23 +2986,23 @@
                     "responsibility": null
                 },
                 {
-                    "label": "Policy limit",
+                    "label": "Deductible (enter N/A if none)",
                     "options": null,
                     "guidance": null,
                     "required": false,
-                    "field_key": "TXN.MORTALITY_POLICY_AMOUNT",
-                    "clause_key": "INSURANCE_RISK.MORTALITY",
-                    "input_kind": "currency",
+                    "field_key": "TXN.GL_DEDUCTIBLE",
+                    "clause_key": "INSURANCE_RISK.GENERAL_LIABILITY",
+                    "input_kind": "text",
                     "owner_role": "LESSOR",
-                    "sort_order": 20,
-                    "value_type": "currency",
+                    "sort_order": 30,
+                    "value_type": "text",
                     "is_optional": false,
                     "conditional_on": {
                         "equals": [
                             "LESSOR_HAS",
                             "LESSOR_WILL"
                         ],
-                        "field_key": "TXN.MORTALITY_ELECTION"
+                        "field_key": "TXN.GL_ELECTION"
                     },
                     "responsibility": null
                 },
@@ -3003,27 +3024,6 @@
                             "LESSOR_WILL"
                         ],
                         "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
-                    },
-                    "responsibility": null
-                },
-                {
-                    "label": "Deductible (enter N/A if none)",
-                    "options": null,
-                    "guidance": null,
-                    "required": false,
-                    "field_key": "TXN.GL_DEDUCTIBLE",
-                    "clause_key": "INSURANCE_RISK.GENERAL_LIABILITY",
-                    "input_kind": "text",
-                    "owner_role": "LESSOR",
-                    "sort_order": 30,
-                    "value_type": "text",
-                    "is_optional": false,
-                    "conditional_on": {
-                        "equals": [
-                            "LESSOR_HAS",
-                            "LESSOR_WILL"
-                        ],
-                        "field_key": "TXN.GL_ELECTION"
                     },
                     "responsibility": null
                 },
@@ -3111,28 +3111,6 @@
                     "responsibility": null
                 },
                 {
-                    "label": "Effective date",
-                    "options": null,
-                    "guidance": "\"Lessor has\": the policy's actual effective date (today or earlier). \"Will purchase\" / \"Lessee must obtain\": the latest acceptable effective date (today or later).",
-                    "required": false,
-                    "field_key": "TXN.MAJOR_MEDICAL_EFFECTIVE_DATE",
-                    "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL",
-                    "input_kind": "date",
-                    "owner_role": "LESSOR",
-                    "sort_order": 50,
-                    "value_type": "date",
-                    "is_optional": false,
-                    "conditional_on": {
-                        "equals": [
-                            "LESSOR_HAS",
-                            "LESSOR_WILL",
-                            "LESSEE_OBTAIN"
-                        ],
-                        "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
-                    },
-                    "responsibility": null
-                },
-                {
                     "label": "Party responsible for deductibles on claims",
                     "options": [
                         {
@@ -3142,6 +3120,14 @@
                         {
                             "label": "Lessee",
                             "value": "LESSEE"
+                        },
+                        {
+                            "label": "Both parties shall split the cost",
+                            "value": "SPLIT"
+                        },
+                        {
+                            "label": "Other",
+                            "value": "OTHER"
                         }
                     ],
                     "guidance": null,
@@ -3186,6 +3172,28 @@
                     "responsibility": null
                 },
                 {
+                    "label": "Effective date",
+                    "options": null,
+                    "guidance": "\"Lessor has\": the policy's actual effective date (today or earlier). \"Will purchase\" / \"Lessee must obtain\": the latest acceptable effective date (today or later).",
+                    "required": false,
+                    "field_key": "TXN.MAJOR_MEDICAL_EFFECTIVE_DATE",
+                    "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL",
+                    "input_kind": "date",
+                    "owner_role": "LESSOR",
+                    "sort_order": 50,
+                    "value_type": "date",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "equals": [
+                            "LESSOR_HAS",
+                            "LESSOR_WILL",
+                            "LESSEE_OBTAIN"
+                        ],
+                        "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                    },
+                    "responsibility": null
+                },
+                {
                     "label": "Party responsible for deductibles on claims",
                     "options": [
                         {
@@ -3195,6 +3203,53 @@
                         {
                             "label": "Lessee",
                             "value": "LESSEE"
+                        },
+                        {
+                            "label": "Both parties shall split the cost",
+                            "value": "SPLIT"
+                        },
+                        {
+                            "label": "Other",
+                            "value": "OTHER"
+                        }
+                    ],
+                    "guidance": null,
+                    "required": false,
+                    "field_key": "TXN.GL_DEDUCTIBLE_PARTY",
+                    "clause_key": "INSURANCE_RISK.GENERAL_LIABILITY",
+                    "input_kind": "select",
+                    "owner_role": "LESSOR",
+                    "sort_order": 60,
+                    "value_type": "select",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "equals": [
+                            "LESSOR_HAS",
+                            "LESSOR_WILL",
+                            "LESSEE_OBTAIN"
+                        ],
+                        "field_key": "TXN.GL_ELECTION"
+                    },
+                    "responsibility": null
+                },
+                {
+                    "label": "Party responsible for deductibles on claims",
+                    "options": [
+                        {
+                            "label": "Lessor",
+                            "value": "LESSOR"
+                        },
+                        {
+                            "label": "Lessee",
+                            "value": "LESSEE"
+                        },
+                        {
+                            "label": "Both parties shall split the cost",
+                            "value": "SPLIT"
+                        },
+                        {
+                            "label": "Other",
+                            "value": "OTHER"
                         }
                     ],
                     "guidance": null,
@@ -3217,33 +3272,290 @@
                     "responsibility": null
                 },
                 {
-                    "label": "Party responsible for deductibles on claims",
-                    "options": [
-                        {
-                            "label": "Lessor",
-                            "value": "LESSOR"
-                        },
-                        {
-                            "label": "Lessee",
-                            "value": "LESSEE"
-                        }
-                    ],
-                    "guidance": null,
+                    "label": "Deductible split — paid by Lessor (enter a $ amount or %)",
+                    "options": null,
+                    "guidance": "Dollar amount or percentage, e.g. $1,250 or 50%",
                     "required": false,
-                    "field_key": "TXN.GL_DEDUCTIBLE_PARTY",
+                    "field_key": "TXN.GL_DEDUCTIBLE_SPLIT_LESSOR",
                     "clause_key": "INSURANCE_RISK.GENERAL_LIABILITY",
-                    "input_kind": "select",
+                    "input_kind": "text",
                     "owner_role": "LESSOR",
-                    "sort_order": 60,
-                    "value_type": "select",
+                    "sort_order": 70,
+                    "value_type": "text",
                     "is_optional": false,
                     "conditional_on": {
-                        "equals": [
-                            "LESSOR_HAS",
-                            "LESSOR_WILL",
-                            "LESSEE_OBTAIN"
-                        ],
-                        "field_key": "TXN.GL_ELECTION"
+                        "all": [
+                            {
+                                "equals": [
+                                    "LESSOR_HAS",
+                                    "LESSOR_WILL",
+                                    "LESSEE_OBTAIN"
+                                ],
+                                "field_key": "TXN.GL_ELECTION"
+                            },
+                            {
+                                "equals": [
+                                    "SPLIT"
+                                ],
+                                "field_key": "TXN.GL_DEDUCTIBLE_PARTY"
+                            }
+                        ]
+                    },
+                    "responsibility": null
+                },
+                {
+                    "label": "Deductible split — paid by Lessor (enter a $ amount or %)",
+                    "options": null,
+                    "guidance": "Dollar amount or percentage, e.g. $1,250 or 50%",
+                    "required": false,
+                    "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE_SPLIT_LESSOR",
+                    "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL",
+                    "input_kind": "text",
+                    "owner_role": "LESSOR",
+                    "sort_order": 70,
+                    "value_type": "text",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "all": [
+                            {
+                                "equals": [
+                                    "LESSOR_HAS",
+                                    "LESSOR_WILL",
+                                    "LESSEE_OBTAIN"
+                                ],
+                                "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                            },
+                            {
+                                "equals": [
+                                    "SPLIT"
+                                ],
+                                "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY"
+                            }
+                        ]
+                    },
+                    "responsibility": null
+                },
+                {
+                    "label": "Deductible split — paid by Lessor (enter a $ amount or %)",
+                    "options": null,
+                    "guidance": "Dollar amount or percentage, e.g. $1,250 or 50%",
+                    "required": false,
+                    "field_key": "TXN.MORTALITY_DEDUCTIBLE_SPLIT_LESSOR",
+                    "clause_key": "INSURANCE_RISK.MORTALITY",
+                    "input_kind": "text",
+                    "owner_role": "LESSOR",
+                    "sort_order": 70,
+                    "value_type": "text",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "all": [
+                            {
+                                "equals": [
+                                    "LESSOR_HAS",
+                                    "LESSOR_WILL",
+                                    "LESSEE_OBTAIN"
+                                ],
+                                "field_key": "TXN.MORTALITY_ELECTION"
+                            },
+                            {
+                                "equals": [
+                                    "SPLIT"
+                                ],
+                                "field_key": "TXN.MORTALITY_DEDUCTIBLE_PARTY"
+                            }
+                        ]
+                    },
+                    "responsibility": null
+                },
+                {
+                    "label": "Deductible split — paid by Lessee (enter a $ amount or %)",
+                    "options": null,
+                    "guidance": "Dollar amount or percentage, e.g. $1,250 or 50%",
+                    "required": false,
+                    "field_key": "TXN.GL_DEDUCTIBLE_SPLIT_LESSEE",
+                    "clause_key": "INSURANCE_RISK.GENERAL_LIABILITY",
+                    "input_kind": "text",
+                    "owner_role": "LESSOR",
+                    "sort_order": 80,
+                    "value_type": "text",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "all": [
+                            {
+                                "equals": [
+                                    "LESSOR_HAS",
+                                    "LESSOR_WILL",
+                                    "LESSEE_OBTAIN"
+                                ],
+                                "field_key": "TXN.GL_ELECTION"
+                            },
+                            {
+                                "equals": [
+                                    "SPLIT"
+                                ],
+                                "field_key": "TXN.GL_DEDUCTIBLE_PARTY"
+                            }
+                        ]
+                    },
+                    "responsibility": null
+                },
+                {
+                    "label": "Deductible split — paid by Lessee (enter a $ amount or %)",
+                    "options": null,
+                    "guidance": "Dollar amount or percentage, e.g. $1,250 or 50%",
+                    "required": false,
+                    "field_key": "TXN.MORTALITY_DEDUCTIBLE_SPLIT_LESSEE",
+                    "clause_key": "INSURANCE_RISK.MORTALITY",
+                    "input_kind": "text",
+                    "owner_role": "LESSOR",
+                    "sort_order": 80,
+                    "value_type": "text",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "all": [
+                            {
+                                "equals": [
+                                    "LESSOR_HAS",
+                                    "LESSOR_WILL",
+                                    "LESSEE_OBTAIN"
+                                ],
+                                "field_key": "TXN.MORTALITY_ELECTION"
+                            },
+                            {
+                                "equals": [
+                                    "SPLIT"
+                                ],
+                                "field_key": "TXN.MORTALITY_DEDUCTIBLE_PARTY"
+                            }
+                        ]
+                    },
+                    "responsibility": null
+                },
+                {
+                    "label": "Deductible split — paid by Lessee (enter a $ amount or %)",
+                    "options": null,
+                    "guidance": "Dollar amount or percentage, e.g. $1,250 or 50%",
+                    "required": false,
+                    "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE_SPLIT_LESSEE",
+                    "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL",
+                    "input_kind": "text",
+                    "owner_role": "LESSOR",
+                    "sort_order": 80,
+                    "value_type": "text",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "all": [
+                            {
+                                "equals": [
+                                    "LESSOR_HAS",
+                                    "LESSOR_WILL",
+                                    "LESSEE_OBTAIN"
+                                ],
+                                "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                            },
+                            {
+                                "equals": [
+                                    "SPLIT"
+                                ],
+                                "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY"
+                            }
+                        ]
+                    },
+                    "responsibility": null
+                },
+                {
+                    "label": "Other deductible arrangement",
+                    "options": null,
+                    "guidance": "Free text; rendered after \"Responsibility for any and all deductible amounts …:\"",
+                    "required": false,
+                    "field_key": "TXN.GL_DEDUCTIBLE_OTHER",
+                    "clause_key": "INSURANCE_RISK.GENERAL_LIABILITY",
+                    "input_kind": "text",
+                    "owner_role": "LESSOR",
+                    "sort_order": 90,
+                    "value_type": "text",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "all": [
+                            {
+                                "equals": [
+                                    "LESSOR_HAS",
+                                    "LESSOR_WILL",
+                                    "LESSEE_OBTAIN"
+                                ],
+                                "field_key": "TXN.GL_ELECTION"
+                            },
+                            {
+                                "equals": [
+                                    "OTHER"
+                                ],
+                                "field_key": "TXN.GL_DEDUCTIBLE_PARTY"
+                            }
+                        ]
+                    },
+                    "responsibility": null
+                },
+                {
+                    "label": "Other deductible arrangement",
+                    "options": null,
+                    "guidance": "Free text; rendered after \"Responsibility for any and all deductible amounts …:\"",
+                    "required": false,
+                    "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE_OTHER",
+                    "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL",
+                    "input_kind": "text",
+                    "owner_role": "LESSOR",
+                    "sort_order": 90,
+                    "value_type": "text",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "all": [
+                            {
+                                "equals": [
+                                    "LESSOR_HAS",
+                                    "LESSOR_WILL",
+                                    "LESSEE_OBTAIN"
+                                ],
+                                "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                            },
+                            {
+                                "equals": [
+                                    "OTHER"
+                                ],
+                                "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY"
+                            }
+                        ]
+                    },
+                    "responsibility": null
+                },
+                {
+                    "label": "Other deductible arrangement",
+                    "options": null,
+                    "guidance": "Free text; rendered after \"Responsibility for any and all deductible amounts …:\"",
+                    "required": false,
+                    "field_key": "TXN.MORTALITY_DEDUCTIBLE_OTHER",
+                    "clause_key": "INSURANCE_RISK.MORTALITY",
+                    "input_kind": "text",
+                    "owner_role": "LESSOR",
+                    "sort_order": 90,
+                    "value_type": "text",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "all": [
+                            {
+                                "equals": [
+                                    "LESSOR_HAS",
+                                    "LESSOR_WILL",
+                                    "LESSEE_OBTAIN"
+                                ],
+                                "field_key": "TXN.MORTALITY_ELECTION"
+                            },
+                            {
+                                "equals": [
+                                    "OTHER"
+                                ],
+                                "field_key": "TXN.MORTALITY_DEDUCTIBLE_PARTY"
+                            }
+                        ]
                     },
                     "responsibility": null
                 }
@@ -3255,7 +3567,7 @@
                     "cut_name": null,
                     "guidance": null,
                     "clause_key": "INSURANCE_RISK.DEFINITIONS",
-                    "sort_order": 5,
+                    "sort_order": 50,
                     "clause_type": "prose",
                     "is_optional": false,
                     "conditional_on": null
@@ -3266,7 +3578,7 @@
                     "cut_name": null,
                     "guidance": null,
                     "clause_key": "INSURANCE_RISK.INSURANCE",
-                    "sort_order": 10,
+                    "sort_order": 100,
                     "clause_type": "prose",
                     "is_optional": false,
                     "conditional_on": null
@@ -3277,18 +3589,18 @@
                     "cut_name": null,
                     "guidance": null,
                     "clause_key": "INSURANCE_RISK.GENERAL_LIABILITY",
-                    "sort_order": 15,
+                    "sort_order": 150,
                     "clause_type": "input",
                     "is_optional": false,
                     "conditional_on": null
                 },
                 {
-                    "body": "Lessor carries general liability insurance covering the activities contemplated by this Agreement, with a policy limit of {{TXN.GL_POLICY_AMOUNT}} and a deductible of {{TXN.GL_DEDUCTIBLE}}, effective as of {{TXN.GL_EFFECTIVE_DATE}}. {{TXN.GL_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy.",
+                    "body": "Lessor carries general liability insurance covering the activities contemplated by this Agreement, with a policy limit of {{TXN.GL_POLICY_AMOUNT}} and a deductible of {{TXN.GL_DEDUCTIBLE}}, effective as of {{TXN.GL_EFFECTIVE_DATE}}.",
                     "heading": null,
                     "cut_name": null,
                     "guidance": null,
                     "clause_key": "INSURANCE_RISK.GL_HAS",
-                    "sort_order": 16,
+                    "sort_order": 160,
                     "clause_type": "input",
                     "is_optional": false,
                     "conditional_on": {
@@ -3299,12 +3611,12 @@
                     }
                 },
                 {
-                    "body": "Lessor is in the process of purchasing or agrees to purchase general liability insurance covering the activities contemplated by this Agreement, with a policy limit of {{TXN.GL_POLICY_AMOUNT}} and a deductible of {{TXN.GL_DEDUCTIBLE}}, and an effective date no later than {{TXN.GL_EFFECTIVE_DATE}}. {{TXN.GL_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy.",
+                    "body": "Lessor is in the process of purchasing or agrees to purchase general liability insurance covering the activities contemplated by this Agreement, with a policy limit of {{TXN.GL_POLICY_AMOUNT}} and a deductible of {{TXN.GL_DEDUCTIBLE}}, and an effective date no later than {{TXN.GL_EFFECTIVE_DATE}}.",
                     "heading": null,
                     "cut_name": null,
                     "guidance": null,
                     "clause_key": "INSURANCE_RISK.GL_WILL",
-                    "sort_order": 17,
+                    "sort_order": 170,
                     "clause_type": "input",
                     "is_optional": false,
                     "conditional_on": {
@@ -3315,12 +3627,12 @@
                     }
                 },
                 {
-                    "body": "Lessor requires Lessee to obtain and maintain general liability insurance covering the activities contemplated by this Agreement, with a policy limit of at least {{TXN.GL_MIN_LIMIT}} and an effective date no later than {{TXN.GL_EFFECTIVE_DATE}}. {{TXN.GL_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy. Lessee shall provide proof of insurance to Lessor by email and shall maintain the policy in good standing for the duration of this Agreement; failure to do so constitutes a material breach subject to the Termination for Cause provisions of this Agreement.",
+                    "body": "Lessor requires Lessee to obtain and maintain general liability insurance covering the activities contemplated by this Agreement, with a policy limit of at least {{TXN.GL_MIN_LIMIT}} and an effective date no later than {{TXN.GL_EFFECTIVE_DATE}}. Lessee shall provide proof of insurance to Lessor by email and shall maintain the policy in good standing for the duration of this Agreement; failure to do so constitutes a material breach subject to the Termination for Cause provisions of this Agreement.",
                     "heading": null,
                     "cut_name": null,
                     "guidance": null,
                     "clause_key": "INSURANCE_RISK.GL_LESSEE",
-                    "sort_order": 18,
+                    "sort_order": 180,
                     "clause_type": "input",
                     "is_optional": false,
                     "conditional_on": {
@@ -3331,12 +3643,97 @@
                     }
                 },
                 {
+                    "body": "{{TXN.GL_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy.",
+                    "heading": null,
+                    "cut_name": null,
+                    "guidance": null,
+                    "clause_key": "INSURANCE_RISK.GL_DED_PARTY",
+                    "sort_order": 182,
+                    "clause_type": "input",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "all": [
+                            {
+                                "equals": [
+                                    "LESSOR_HAS",
+                                    "LESSOR_WILL",
+                                    "LESSEE_OBTAIN"
+                                ],
+                                "field_key": "TXN.GL_ELECTION"
+                            },
+                            {
+                                "equals": [
+                                    "LESSOR",
+                                    "LESSEE"
+                                ],
+                                "field_key": "TXN.GL_DEDUCTIBLE_PARTY"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "body": "Both parties shall split the cost of any and all deductible amounts for claims made against this insurance policy: {{TXN.GL_DEDUCTIBLE_SPLIT_LESSOR}} paid by Lessor and {{TXN.GL_DEDUCTIBLE_SPLIT_LESSEE}} paid by Lessee.",
+                    "heading": null,
+                    "cut_name": null,
+                    "guidance": null,
+                    "clause_key": "INSURANCE_RISK.GL_DED_SPLIT",
+                    "sort_order": 184,
+                    "clause_type": "input",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "all": [
+                            {
+                                "equals": [
+                                    "LESSOR_HAS",
+                                    "LESSOR_WILL",
+                                    "LESSEE_OBTAIN"
+                                ],
+                                "field_key": "TXN.GL_ELECTION"
+                            },
+                            {
+                                "equals": [
+                                    "SPLIT"
+                                ],
+                                "field_key": "TXN.GL_DEDUCTIBLE_PARTY"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "body": "Responsibility for any and all deductible amounts for claims made against this insurance policy: {{TXN.GL_DEDUCTIBLE_OTHER}}.",
+                    "heading": null,
+                    "cut_name": null,
+                    "guidance": null,
+                    "clause_key": "INSURANCE_RISK.GL_DED_OTHER",
+                    "sort_order": 186,
+                    "clause_type": "input",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "all": [
+                            {
+                                "equals": [
+                                    "LESSOR_HAS",
+                                    "LESSOR_WILL",
+                                    "LESSEE_OBTAIN"
+                                ],
+                                "field_key": "TXN.GL_ELECTION"
+                            },
+                            {
+                                "equals": [
+                                    "OTHER"
+                                ],
+                                "field_key": "TXN.GL_DEDUCTIBLE_PARTY"
+                            }
+                        ]
+                    }
+                },
+                {
                     "body": "No general liability insurance is required under this Agreement.",
                     "heading": null,
                     "cut_name": null,
                     "guidance": null,
                     "clause_key": "INSURANCE_RISK.GL_NONE",
-                    "sort_order": 19,
+                    "sort_order": 190,
                     "clause_type": "input",
                     "is_optional": false,
                     "conditional_on": {
@@ -3353,18 +3750,18 @@
                     "cut_name": null,
                     "guidance": "Mortality insurance pays out if the Horse dies. Where required, decide who is responsible for obtaining and maintaining the policy.",
                     "clause_key": "INSURANCE_RISK.MORTALITY",
-                    "sort_order": 20,
+                    "sort_order": 200,
                     "clause_type": "input",
                     "is_optional": false,
                     "conditional_on": null
                 },
                 {
-                    "body": "Lessor carries mortality insurance on the Horse with a policy limit of {{TXN.MORTALITY_POLICY_AMOUNT}} and a deductible of {{TXN.MORTALITY_DEDUCTIBLE}}, effective as of {{TXN.MORTALITY_EFFECTIVE_DATE}}. {{TXN.MORTALITY_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy.",
+                    "body": "Lessor carries mortality insurance on the Horse with a policy limit of {{TXN.MORTALITY_POLICY_AMOUNT}} and a deductible of {{TXN.MORTALITY_DEDUCTIBLE}}, effective as of {{TXN.MORTALITY_EFFECTIVE_DATE}}.",
                     "heading": null,
                     "cut_name": null,
                     "guidance": null,
                     "clause_key": "INSURANCE_RISK.MORTALITY_HAS",
-                    "sort_order": 21,
+                    "sort_order": 210,
                     "clause_type": "input",
                     "is_optional": false,
                     "conditional_on": {
@@ -3375,12 +3772,12 @@
                     }
                 },
                 {
-                    "body": "Lessor is in the process of purchasing or agrees to purchase mortality insurance on the Horse with a policy limit of {{TXN.MORTALITY_POLICY_AMOUNT}} and a deductible of {{TXN.MORTALITY_DEDUCTIBLE}}, and an effective date no later than {{TXN.MORTALITY_EFFECTIVE_DATE}}. {{TXN.MORTALITY_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy.",
+                    "body": "Lessor is in the process of purchasing or agrees to purchase mortality insurance on the Horse with a policy limit of {{TXN.MORTALITY_POLICY_AMOUNT}} and a deductible of {{TXN.MORTALITY_DEDUCTIBLE}}, and an effective date no later than {{TXN.MORTALITY_EFFECTIVE_DATE}}.",
                     "heading": null,
                     "cut_name": null,
                     "guidance": null,
                     "clause_key": "INSURANCE_RISK.MORTALITY_WILL",
-                    "sort_order": 22,
+                    "sort_order": 220,
                     "clause_type": "input",
                     "is_optional": false,
                     "conditional_on": {
@@ -3391,12 +3788,12 @@
                     }
                 },
                 {
-                    "body": "Lessor requires Lessee to obtain and maintain mortality insurance on the Horse with a policy limit of at least the Horse's fair market value of {{HORSE.FAIR_MARKET_VALUE}} and an effective date no later than {{TXN.MORTALITY_EFFECTIVE_DATE}}. {{TXN.MORTALITY_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy. Lessee shall provide proof of insurance to Lessor by email and shall maintain the policy in good standing for the duration of this Agreement; failure to do so constitutes a material breach subject to the Termination for Cause provisions of this Agreement.",
+                    "body": "Lessor requires Lessee to obtain and maintain mortality insurance on the Horse with a policy limit of at least the Horse's fair market value of {{HORSE.FAIR_MARKET_VALUE}} and an effective date no later than {{TXN.MORTALITY_EFFECTIVE_DATE}}. Lessee shall provide proof of insurance to Lessor by email and shall maintain the policy in good standing for the duration of this Agreement; failure to do so constitutes a material breach subject to the Termination for Cause provisions of this Agreement.",
                     "heading": null,
                     "cut_name": null,
                     "guidance": null,
                     "clause_key": "INSURANCE_RISK.MORTALITY_LESSEE",
-                    "sort_order": 23,
+                    "sort_order": 230,
                     "clause_type": "input",
                     "is_optional": false,
                     "conditional_on": {
@@ -3407,12 +3804,97 @@
                     }
                 },
                 {
+                    "body": "{{TXN.MORTALITY_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy.",
+                    "heading": null,
+                    "cut_name": null,
+                    "guidance": null,
+                    "clause_key": "INSURANCE_RISK.MORTALITY_DED_PARTY",
+                    "sort_order": 232,
+                    "clause_type": "input",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "all": [
+                            {
+                                "equals": [
+                                    "LESSOR_HAS",
+                                    "LESSOR_WILL",
+                                    "LESSEE_OBTAIN"
+                                ],
+                                "field_key": "TXN.MORTALITY_ELECTION"
+                            },
+                            {
+                                "equals": [
+                                    "LESSOR",
+                                    "LESSEE"
+                                ],
+                                "field_key": "TXN.MORTALITY_DEDUCTIBLE_PARTY"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "body": "Both parties shall split the cost of any and all deductible amounts for claims made against this insurance policy: {{TXN.MORTALITY_DEDUCTIBLE_SPLIT_LESSOR}} paid by Lessor and {{TXN.MORTALITY_DEDUCTIBLE_SPLIT_LESSEE}} paid by Lessee.",
+                    "heading": null,
+                    "cut_name": null,
+                    "guidance": null,
+                    "clause_key": "INSURANCE_RISK.MORTALITY_DED_SPLIT",
+                    "sort_order": 234,
+                    "clause_type": "input",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "all": [
+                            {
+                                "equals": [
+                                    "LESSOR_HAS",
+                                    "LESSOR_WILL",
+                                    "LESSEE_OBTAIN"
+                                ],
+                                "field_key": "TXN.MORTALITY_ELECTION"
+                            },
+                            {
+                                "equals": [
+                                    "SPLIT"
+                                ],
+                                "field_key": "TXN.MORTALITY_DEDUCTIBLE_PARTY"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "body": "Responsibility for any and all deductible amounts for claims made against this insurance policy: {{TXN.MORTALITY_DEDUCTIBLE_OTHER}}.",
+                    "heading": null,
+                    "cut_name": null,
+                    "guidance": null,
+                    "clause_key": "INSURANCE_RISK.MORTALITY_DED_OTHER",
+                    "sort_order": 236,
+                    "clause_type": "input",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "all": [
+                            {
+                                "equals": [
+                                    "LESSOR_HAS",
+                                    "LESSOR_WILL",
+                                    "LESSEE_OBTAIN"
+                                ],
+                                "field_key": "TXN.MORTALITY_ELECTION"
+                            },
+                            {
+                                "equals": [
+                                    "OTHER"
+                                ],
+                                "field_key": "TXN.MORTALITY_DEDUCTIBLE_PARTY"
+                            }
+                        ]
+                    }
+                },
+                {
                     "body": "No mortality insurance is required under this Agreement.",
                     "heading": null,
                     "cut_name": null,
                     "guidance": null,
                     "clause_key": "INSURANCE_RISK.MORTALITY_NONE",
-                    "sort_order": 24,
+                    "sort_order": 240,
                     "clause_type": "input",
                     "is_optional": false,
                     "conditional_on": {
@@ -3429,18 +3911,18 @@
                     "cut_name": null,
                     "guidance": "Major medical insurance covers the cost of illness and injury treatment. Where required, decide who obtains and maintains the policy.",
                     "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL",
-                    "sort_order": 30,
+                    "sort_order": 300,
                     "clause_type": "input",
                     "is_optional": false,
                     "conditional_on": null
                 },
                 {
-                    "body": "Lessor carries major medical insurance on the Horse with a policy limit of {{TXN.MAJOR_MEDICAL_POLICY_AMOUNT}} and a deductible of {{TXN.MAJOR_MEDICAL_DEDUCTIBLE}}, effective as of {{TXN.MAJOR_MEDICAL_EFFECTIVE_DATE}}. {{TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy.",
+                    "body": "Lessor carries major medical insurance on the Horse with a policy limit of {{TXN.MAJOR_MEDICAL_POLICY_AMOUNT}} and a deductible of {{TXN.MAJOR_MEDICAL_DEDUCTIBLE}}, effective as of {{TXN.MAJOR_MEDICAL_EFFECTIVE_DATE}}.",
                     "heading": null,
                     "cut_name": null,
                     "guidance": null,
                     "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL_HAS",
-                    "sort_order": 31,
+                    "sort_order": 310,
                     "clause_type": "input",
                     "is_optional": false,
                     "conditional_on": {
@@ -3451,12 +3933,12 @@
                     }
                 },
                 {
-                    "body": "Lessor is in the process of purchasing or agrees to purchase major medical insurance on the Horse with a policy limit of {{TXN.MAJOR_MEDICAL_POLICY_AMOUNT}} and a deductible of {{TXN.MAJOR_MEDICAL_DEDUCTIBLE}}, and an effective date no later than {{TXN.MAJOR_MEDICAL_EFFECTIVE_DATE}}. {{TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy.",
+                    "body": "Lessor is in the process of purchasing or agrees to purchase major medical insurance on the Horse with a policy limit of {{TXN.MAJOR_MEDICAL_POLICY_AMOUNT}} and a deductible of {{TXN.MAJOR_MEDICAL_DEDUCTIBLE}}, and an effective date no later than {{TXN.MAJOR_MEDICAL_EFFECTIVE_DATE}}.",
                     "heading": null,
                     "cut_name": null,
                     "guidance": null,
                     "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL_WILL",
-                    "sort_order": 32,
+                    "sort_order": 320,
                     "clause_type": "input",
                     "is_optional": false,
                     "conditional_on": {
@@ -3467,12 +3949,12 @@
                     }
                 },
                 {
-                    "body": "Lessor requires Lessee to obtain and maintain major medical insurance on the Horse with a policy limit of at least {{TXN.MAJOR_MEDICAL_MIN_LIMIT}} and an effective date no later than {{TXN.MAJOR_MEDICAL_EFFECTIVE_DATE}}. {{TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy. Lessee shall provide proof of insurance to Lessor by email and shall maintain the policy in good standing for the duration of this Agreement; failure to do so constitutes a material breach subject to the Termination for Cause provisions of this Agreement.",
+                    "body": "Lessor requires Lessee to obtain and maintain major medical insurance on the Horse with a policy limit of at least {{TXN.MAJOR_MEDICAL_MIN_LIMIT}} and an effective date no later than {{TXN.MAJOR_MEDICAL_EFFECTIVE_DATE}}. Lessee shall provide proof of insurance to Lessor by email and shall maintain the policy in good standing for the duration of this Agreement; failure to do so constitutes a material breach subject to the Termination for Cause provisions of this Agreement.",
                     "heading": null,
                     "cut_name": null,
                     "guidance": null,
                     "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL_LESSEE",
-                    "sort_order": 33,
+                    "sort_order": 330,
                     "clause_type": "input",
                     "is_optional": false,
                     "conditional_on": {
@@ -3483,12 +3965,97 @@
                     }
                 },
                 {
+                    "body": "{{TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy.",
+                    "heading": null,
+                    "cut_name": null,
+                    "guidance": null,
+                    "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL_DED_PARTY",
+                    "sort_order": 332,
+                    "clause_type": "input",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "all": [
+                            {
+                                "equals": [
+                                    "LESSOR_HAS",
+                                    "LESSOR_WILL",
+                                    "LESSEE_OBTAIN"
+                                ],
+                                "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                            },
+                            {
+                                "equals": [
+                                    "LESSOR",
+                                    "LESSEE"
+                                ],
+                                "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "body": "Both parties shall split the cost of any and all deductible amounts for claims made against this insurance policy: {{TXN.MAJOR_MEDICAL_DEDUCTIBLE_SPLIT_LESSOR}} paid by Lessor and {{TXN.MAJOR_MEDICAL_DEDUCTIBLE_SPLIT_LESSEE}} paid by Lessee.",
+                    "heading": null,
+                    "cut_name": null,
+                    "guidance": null,
+                    "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL_DED_SPLIT",
+                    "sort_order": 334,
+                    "clause_type": "input",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "all": [
+                            {
+                                "equals": [
+                                    "LESSOR_HAS",
+                                    "LESSOR_WILL",
+                                    "LESSEE_OBTAIN"
+                                ],
+                                "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                            },
+                            {
+                                "equals": [
+                                    "SPLIT"
+                                ],
+                                "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "body": "Responsibility for any and all deductible amounts for claims made against this insurance policy: {{TXN.MAJOR_MEDICAL_DEDUCTIBLE_OTHER}}.",
+                    "heading": null,
+                    "cut_name": null,
+                    "guidance": null,
+                    "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL_DED_OTHER",
+                    "sort_order": 336,
+                    "clause_type": "input",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "all": [
+                            {
+                                "equals": [
+                                    "LESSOR_HAS",
+                                    "LESSOR_WILL",
+                                    "LESSEE_OBTAIN"
+                                ],
+                                "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                            },
+                            {
+                                "equals": [
+                                    "OTHER"
+                                ],
+                                "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY"
+                            }
+                        ]
+                    }
+                },
+                {
                     "body": "No major medical insurance is required under this Agreement.",
                     "heading": null,
                     "cut_name": null,
                     "guidance": null,
                     "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL_NONE",
-                    "sort_order": 34,
+                    "sort_order": 340,
                     "clause_type": "input",
                     "is_optional": false,
                     "conditional_on": {
@@ -3505,7 +4072,7 @@
                     "cut_name": null,
                     "guidance": "Allocates the risk if the Horse is lost, dies, is stolen, or is injured while on lease.",
                     "clause_key": "INSURANCE_RISK.RISK_OF_LOSS",
-                    "sort_order": 50,
+                    "sort_order": 500,
                     "clause_type": "input",
                     "is_optional": false,
                     "conditional_on": null
@@ -3516,7 +4083,7 @@
                     "cut_name": null,
                     "guidance": null,
                     "clause_key": "INSURANCE_RISK.LOSS_OF_USE_ACK",
-                    "sort_order": 55,
+                    "sort_order": 550,
                     "clause_type": "prose",
                     "is_optional": false,
                     "conditional_on": null
@@ -3527,7 +4094,7 @@
                     "cut_name": null,
                     "guidance": "Assumption of the inherent risks of equine activities, grounded in California case law. Under owner review — to be reevaluated.",
                     "clause_key": "INSURANCE_RISK.ASSUMPTION_INHERENT",
-                    "sort_order": 95,
+                    "sort_order": 950,
                     "clause_type": "prose",
                     "is_optional": false,
                     "conditional_on": null
@@ -3538,7 +4105,7 @@
                     "cut_name": null,
                     "guidance": "Release of Lessor from claims, including ordinary negligence. Under owner review — to be reevaluated.",
                     "clause_key": "INSURANCE_RISK.RELEASE",
-                    "sort_order": 96,
+                    "sort_order": 960,
                     "clause_type": "prose",
                     "is_optional": false,
                     "conditional_on": null
@@ -3549,7 +4116,7 @@
                     "cut_name": null,
                     "guidance": null,
                     "clause_key": "INSURANCE_RISK.SAFETY_ATTIRE",
-                    "sort_order": 110,
+                    "sort_order": 1100,
                     "clause_type": "prose",
                     "is_optional": false,
                     "conditional_on": null
@@ -3560,7 +4127,7 @@
                     "cut_name": null,
                     "guidance": null,
                     "clause_key": "INSURANCE_RISK.TRAIL_RIDING",
-                    "sort_order": 120,
+                    "sort_order": 1200,
                     "clause_type": "prose",
                     "is_optional": false,
                     "conditional_on": {
@@ -3576,7 +4143,7 @@
                     "cut_name": null,
                     "guidance": null,
                     "clause_key": "INSURANCE_RISK.JUMPING_RISKS",
-                    "sort_order": 121,
+                    "sort_order": 1210,
                     "clause_type": "input",
                     "is_optional": false,
                     "conditional_on": {
@@ -3592,7 +4159,7 @@
                     "cut_name": null,
                     "guidance": null,
                     "clause_key": "INSURANCE_RISK.COMPETITION_RISKS",
-                    "sort_order": 122,
+                    "sort_order": 1220,
                     "clause_type": "input",
                     "is_optional": false,
                     "conditional_on": {
@@ -3608,7 +4175,7 @@
                     "cut_name": null,
                     "guidance": null,
                     "clause_key": "INSURANCE_RISK.SHARED_ARENA_RISKS",
-                    "sort_order": 123,
+                    "sort_order": 1230,
                     "clause_type": "input",
                     "is_optional": false,
                     "conditional_on": {
@@ -3624,7 +4191,7 @@
                     "cut_name": null,
                     "guidance": null,
                     "clause_key": "INSURANCE_RISK.WAIVER_UNKNOWN",
-                    "sort_order": 130,
+                    "sort_order": 1300,
                     "clause_type": "prose",
                     "is_optional": false,
                     "conditional_on": null
@@ -3635,7 +4202,7 @@
                     "cut_name": null,
                     "guidance": "Which party protects the other against third-party claims arising from the lease.",
                     "clause_key": "INSURANCE_RISK.INDEMNIFICATION",
-                    "sort_order": 140,
+                    "sort_order": 1400,
                     "clause_type": "input",
                     "is_optional": false,
                     "conditional_on": null
@@ -3646,7 +4213,7 @@
                     "cut_name": null,
                     "guidance": null,
                     "clause_key": "INSURANCE_RISK.LIMITATION_MORTALITY",
-                    "sort_order": 150,
+                    "sort_order": 1500,
                     "clause_type": "prose",
                     "is_optional": false,
                     "conditional_on": {
@@ -3663,7 +4230,7 @@
                     "cut_name": null,
                     "guidance": null,
                     "clause_key": "INSURANCE_RISK.LIMITATION_FMV",
-                    "sort_order": 152,
+                    "sort_order": 1520,
                     "clause_type": "prose",
                     "is_optional": false,
                     "conditional_on": {
@@ -3688,6 +4255,21 @@
                 {
                     "label": "Days notice",
                     "options": null,
+                    "guidance": "Days of notice required to terminate for cause.",
+                    "required": false,
+                    "field_key": "TXN.CAUSE_TERM_NOTICE_DAYS",
+                    "clause_key": "TERMINATION.CAUSE",
+                    "input_kind": "number",
+                    "owner_role": "DEAL",
+                    "sort_order": 10,
+                    "value_type": "number",
+                    "is_optional": false,
+                    "conditional_on": null,
+                    "responsibility": null
+                },
+                {
+                    "label": "Days notice",
+                    "options": null,
                     "guidance": "Days of notice the Lessee must give to terminate.",
                     "required": false,
                     "field_key": "TXN.LESSEE_TERM_NOTICE_DAYS",
@@ -3707,21 +4289,6 @@
                     "required": false,
                     "field_key": "TXN.OWNER_TERM_NOTICE_DAYS",
                     "clause_key": "TERMINATION.OWNER",
-                    "input_kind": "number",
-                    "owner_role": "DEAL",
-                    "sort_order": 10,
-                    "value_type": "number",
-                    "is_optional": false,
-                    "conditional_on": null,
-                    "responsibility": null
-                },
-                {
-                    "label": "Days notice",
-                    "options": null,
-                    "guidance": "Days of notice required to terminate for cause.",
-                    "required": false,
-                    "field_key": "TXN.CAUSE_TERM_NOTICE_DAYS",
-                    "clause_key": "TERMINATION.CAUSE",
                     "input_kind": "number",
                     "owner_role": "DEAL",
                     "sort_order": 10,

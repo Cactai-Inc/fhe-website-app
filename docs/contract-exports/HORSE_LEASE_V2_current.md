@@ -171,13 +171,13 @@ Except for the representations expressly stated in this Agreement, LESSOR MAKES 
 ### Fields
 - **[TXN.CO_OWNERS]** Co-owner(s) — _contacts_list/text_, owner: LESSOR
 - **[TXN.HAS_OWNERSHIP_LIMITS]** Any limitations on ownership? — _yesno/text_, owner: LESSOR
-- **[HORSE.REGISTERED_NAME]** Registered name — _text/text_, owner: LESSOR, required
 - **[TXN.OWNERSHIP_LIMITATIONS]** Ownership limitations — _longtext/longtext_, owner: LESSOR
-- **[TXN.TRAINER_EVAL_CHOICE]** Professional suitability evaluation — _buttons/select_, owner: LESSOR · options: [{"label":"Lessee requested at their own expense","value":"LESSEE_OWN"},{"label":"Lessee requested at Lessor's expense","value":"LESSEE_AT_LESSOR"},{"label":"Lessor provided at no cost","value":"LESSOR_FREE"},{"label":"Lessee waives the option","value":"WAIVED"}]
+- **[HORSE.REGISTERED_NAME]** Registered name — _text/text_, owner: LESSOR, required
 - **[TXN.VET_CHECK_CHOICE]** Pre-lease veterinary examination — _buttons/select_, owner: LESSOR · options: [{"label":"Lessee requested at their own expense","value":"LESSEE_OWN"},{"label":"Lessee requested at Lessor's expense","value":"LESSEE_AT_LESSOR"},{"label":"Lessor provided at no cost","value":"LESSOR_FREE"},{"label":"Lessee waives the option","value":"WAIVED"}]
+- **[TXN.TRAINER_EVAL_CHOICE]** Professional suitability evaluation — _buttons/select_, owner: LESSOR · options: [{"label":"Lessee requested at their own expense","value":"LESSEE_OWN"},{"label":"Lessee requested at Lessor's expense","value":"LESSEE_AT_LESSOR"},{"label":"Lessor provided at no cost","value":"LESSOR_FREE"},{"label":"Lessee waives the option","value":"WAIVED"}]
 - **[TXN.CONDITION_EXCEPTIONS]** Known condition exceptions — _longtext/longtext_, owner: DEAL
-- **[TXN.BEHAVIOR_EXCEPTIONS]** Known behavior exceptions — _longtext/longtext_, owner: DEAL
 - **[HORSE.COLOR]** Color — _select/select_, owner: LESSOR · options: [{"label":"Bay","value":"BAY"},{"label":"Chestnut","value":"CHESTNUT"},{"label":"Gray","value":"GRAY"},{"label":"Black","value":"BLACK"},{"label":"Brown","value":"BROWN"},{"label":"Roan","value":"ROAN"},{"label":"Palomino","value":"PALOMINO"},{"label":"Pinto / Paint","value":"PINTO"},{"label":"Buckskin","value":"BUCKSKIN"},{"label":"Dun","value":"DUN"},{"label":"White / Cremello","value":"WHITE"}]
+- **[TXN.BEHAVIOR_EXCEPTIONS]** Known behavior exceptions — _longtext/longtext_, owner: DEAL
 - **[TXN.CONDITION_HAS_EXCEPTIONS]** Any exceptions to note? — _yesno/text_, owner: LESSOR
 - **[HORSE.MARKINGS]** Markings — _text/text_, owner: LESSOR
 - **[HORSE.BREED]** Breed — _select/select_, owner: LESSOR · options: [{"label":"Warmblood","value":"WARMBLOOD"},{"label":"Thoroughbred","value":"THOROUGHBRED"},{"label":"Quarter Horse","value":"QUARTER_HORSE"},{"label":"Arabian","value":"ARABIAN"},{"label":"Pony","value":"PONY"},{"label":"Draft","value":"DRAFT"},{"label":"Appaloosa","value":"APPALOOSA"},{"label":"Morgan","value":"MORGAN"},{"label":"Friesian","value":"FRIESIAN"},{"label":"Andalusian","value":"ANDALUSIAN"},{"label":"Mustang","value":"MUSTANG"},{"label":"Crossbred / Grade","value":"CROSSBRED"}]
@@ -254,8 +254,8 @@ Notwithstanding the term stated above, this Agreement may be terminated earlier 
 ### Fields
 - **[TXN.ADDITIONAL_TERMS]** Add additional terms — _add_text/text_, owner: LESSOR
 - **[TXN.RENEWAL_INCLUDE]** Include renewal terms — _certify/checkbox_, owner: LESSOR
-- **[TXN.RENEWAL_TERMS]** Renewal terms — _longtext/longtext_, owner: DEAL
 - **[TXN.LEASE_TERM_TYPE]** Term type — _select/select_, owner: DEAL, required · options: [{"label":"Fixed period","value":"FIXED"},{"label":"Open-ended","value":"OPEN_ENDED"},{"label":"Other","value":"OTHER"}]
+- **[TXN.RENEWAL_TERMS]** Renewal terms — _longtext/longtext_, owner: DEAL
 - **[TXN.LEASE_START]** Lease start date — _date/date_, owner: DEAL, required
 - **[TXN.LEASE_END]** Lease end date — _date/date_, owner: DEAL
 
@@ -349,22 +349,22 @@ Transport of the Horse to offsite locations (other than for medical care, which 
 For clarity, riding trails attached to the location at which the Horse is kept under this Agreement are not offsite locations.
 
 ### Fields
-- **[TXN.TRAIL_RESTRICTION]** Trail-riding restriction — _text/text_, owner: LESSOR
-- **[TXN.JUMP_OMIT]** No jumping restrictions — _certify/checkbox_, owner: LESSOR
 - **[TXN.COMP_OMIT]** No competition restrictions — _certify/checkbox_, owner: LESSOR
+- **[TXN.COMP_RESTRICTION]** Competition restriction — _text/text_, owner: LESSOR
+- **[TXN.JUMP_OMIT]** No jumping restrictions — _certify/checkbox_, owner: LESSOR
 - **[TXN.OTHERS_ALLOWED_OTHER]** Other persons allowed — _text/text_, owner: LESSOR · shown when: {"contains":["OTHER"],"field_key":"TXN.OTHERS_ALLOWED"}
 - **[TXN.TRAIL_OMIT]** No trail-riding restrictions — _certify/checkbox_, owner: LESSOR
-- **[TXN.COMP_RESTRICTION]** Competition restriction — _text/text_, owner: LESSOR
+- **[TXN.TRAIL_RESTRICTION]** Trail-riding restriction — _text/text_, owner: LESSOR
+- **[TXN.JUMP_MAX_HEIGHT]** Maximum height — _text/text_, owner: DEAL
 - **[TXN.LESSONS_REQUIRED]** Lessee required to take lessons? — _yesno/select_, owner: DEAL
 - **[TXN.OTHER_PROHIBITED]** Other allowed activities — _buttons/checkbox_, owner: DEAL · options: [{"label":"None","value":"NONE"},{"label":"Breeding","value":"BREEDING"},{"label":"Emotional Support Services","value":"EMOTIONAL_SUPPORT"},{"label":"Film / Television / Advertising","value":"FILM_TV_AD"},{"label":"Other","value":"OTHER"}]
-- **[TXN.JUMP_MAX_HEIGHT]** Maximum height — _text/text_, owner: DEAL
 - **[TXN.OTHERS_ALLOWED]** Others allowed to ride — _buttons/checkbox_, owner: DEAL · options: [{"label":"None","value":"NONE"},{"label":"Lessee's family members","value":"FAMILY"},{"label":"The trainer/instructor","value":"TRAINER"},{"label":"Other","value":"OTHER"}]
-- **[TXN.PERMITTED_ACTIVITIES]** Permitted activities — _buttons/checkbox_, owner: DEAL, required · options: [{"label":"Riding Lessons","value":"LESSONS"},{"label":"Solo Arena Riding","value":"ARENA_SOLO"},{"label":"Group Arena Riding","value":"ARENA_GROUP"},{"label":"Jumping","value":"JUMPING"},{"label":"Competitions","value":"COMPETITIONS"},{"label":"Trail Riding","value":"TRAIL"}]
 - **[TXN.COMPETITION_EXPENSES]** Competition expenses — _select/select_, owner: DEAL · options: [{"label":"Paid by Lessee","value":"LESSEE"},{"label":"Paid by Lessor","value":"OWNER"},{"label":"Other","value":"OTHER"}]
+- **[TXN.PERMITTED_ACTIVITIES]** Permitted activities — _buttons/checkbox_, owner: DEAL, required · options: [{"label":"Riding Lessons","value":"LESSONS"},{"label":"Solo Arena Riding","value":"ARENA_SOLO"},{"label":"Group Arena Riding","value":"ARENA_GROUP"},{"label":"Jumping","value":"JUMPING"},{"label":"Competitions","value":"COMPETITIONS"},{"label":"Trail Riding","value":"TRAIL"}]
 - **[TXN.COMPETITION_WINNINGS]** Competition winnings — _select/select_, owner: DEAL · options: [{"label":"Lessee","value":"LESSEE"},{"label":"Lessor","value":"OWNER"},{"label":"Other","value":"OTHER"}]
 - **[TXN.JUMP_DAYS_PER_WEEK]** Days per week — _number/number_, owner: DEAL
-- **[TXN.OFFSITE_TRANSPORT]** Offsite transport — _select/select_, owner: LESSOR · options: [{"label":"Lessor grants permission to transport offsite","value":"GRANTED"},{"label":"Lessor prohibits offsite transport without written consent","value":"PROHIBITED"}]
 - **[TXN.JUMP_SUPERVISION]** Only under trainer supervision? — _yesno/select_, owner: DEAL
+- **[TXN.OFFSITE_TRANSPORT]** Offsite transport — _select/select_, owner: LESSOR · options: [{"label":"Lessor grants permission to transport offsite","value":"GRANTED"},{"label":"Lessor prohibits offsite transport without written consent","value":"PROHIBITED"}]
 - **[TXN.PERMITTED_RESTRICTIONS]** Add Restrictions — _add_text/text_, owner: LESSOR
 - **[TXN.OTHER_PROHIBITED_NOTE]** Other allowed activity — _text/text_, owner: LESSOR
 
@@ -432,19 +432,19 @@ Other prohibited rider aid: {{TXN.RIDER_AIDS_OTHER}}.
 ### Fields
 - **[TXN.TRAINER_CARE_INCLUDE]** Include 3rd party exercise — _certify/checkbox_, owner: LESSOR
 - **[TXN.EXERCISE_INCLUDE]** Include Lessee care & exercise responsibility — _certify/checkbox_, owner: LESSOR
+- **[TXN.VET_ARRANGE]** Party responsible for arranging — _select/select_, owner: LESSOR · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Trainer/Instructor","value":"TRAINER"},{"label":"Boarding Staff","value":"BOARDING"},{"label":"Other","value":"OTHER"}]
 - **[TXN.TRAINER_EXERCISE_ARRANGE]** Party responsible for arranging — _select/select_, owner: LESSOR · shown when: {"equals":["YES"],"field_key":"TXN.TRAINER_CARE_INCLUDE"} · options: [{"label":"Lessee","value":"LESSEE"},{"label":"Lessor","value":"LESSOR"},{"label":"Shared","value":"SHARED"}]
 - **[TXN.MEDICATIONS]** Medications and supplements — _med_schedule/text_, owner: LESSOR
 - **[TXN.RIDER_AIDS]** Prohibited rider aids — _buttons/checkbox_, owner: DEAL · options: [{"label":"Crop or bat","value":"CROP"},{"label":"Longe whip","value":"LONGE_WHIP"},{"label":"Dressage whip","value":"DRESSAGE_WHIP"},{"label":"Other","value":"OTHER"}]
-- **[TXN.VET_ARRANGE]** Party responsible for arranging — _select/select_, owner: LESSOR · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Trainer/Instructor","value":"TRAINER"},{"label":"Boarding Staff","value":"BOARDING"},{"label":"Other","value":"OTHER"}]
 - **[TXN.FARRIER_ARRANGE]** Party responsible for arranging — _select/select_, owner: LESSOR · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Trainer/Instructor","value":"TRAINER"},{"label":"Boarding Staff","value":"BOARDING"},{"label":"Other","value":"OTHER"}]
 - **[TXN.TRAINER_EXERCISE_COST]** Party responsible for costs — _select/select_, owner: LESSOR · shown when: {"equals":["YES"],"field_key":"TXN.TRAINER_CARE_INCLUDE"} · options: [{"label":"Lessee","value":"LESSEE"},{"label":"Lessor","value":"LESSOR"},{"label":"Shared","value":"SHARED"}]
 - **[TXN.TRAINER_EXERCISE_SPLIT_PCT]** Lessee's share of the cost — _percent/number_, owner: LESSOR · shown when: {"all":[{"equals":["YES"],"field_key":"TXN.TRAINER_CARE_INCLUDE"},{"equals":["SHARED"],"field_key":"TXN.TRAINER_EXERCISE_COST"}]}
-- **[HORSE.VET_NAME]** Veterinarian — _text/text_, owner: LESSOR · shown when: {"equals":["LESSEE"],"field_key":"TXN.VET_ARRANGE"}
 - **[HORSE.FARRIER_NAME]** Farrier — _text/text_, owner: LESSOR · shown when: {"equals":["LESSEE"],"field_key":"TXN.FARRIER_ARRANGE"}
+- **[HORSE.VET_NAME]** Veterinarian — _text/text_, owner: LESSOR · shown when: {"equals":["LESSEE"],"field_key":"TXN.VET_ARRANGE"}
 - **[TXN.FARRIER_COST_PARTY]** Party responsible for costs — _select/select_, owner: LESSOR · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Trainer/Instructor","value":"TRAINER"},{"label":"Boarding Staff","value":"BOARDING"},{"label":"Other","value":"OTHER"}]
 - **[TXN.VET_COST_PARTY]** Party responsible for costs — _select/select_, owner: LESSOR · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Trainer/Instructor","value":"TRAINER"},{"label":"Boarding Staff","value":"BOARDING"},{"label":"Other","value":"OTHER"}]
-- **[HORSE.FARRIER_PHONE]** Farrier phone — _text/text_, owner: LESSOR · shown when: {"equals":["LESSEE"],"field_key":"TXN.FARRIER_ARRANGE"}
 - **[HORSE.VET_BUSINESS]** Practice — _text/text_, owner: LESSOR · shown when: {"equals":["LESSEE"],"field_key":"TXN.VET_ARRANGE"}
+- **[HORSE.FARRIER_PHONE]** Farrier phone — _text/text_, owner: LESSOR · shown when: {"equals":["LESSEE"],"field_key":"TXN.FARRIER_ARRANGE"}
 - **[HORSE.VET_ADDRESS]** Address — _text/text_, owner: LESSOR · shown when: {"equals":["LESSEE"],"field_key":"TXN.VET_ARRANGE"}
 - **[HORSE.VET_PHONE]** Veterinarian phone — _text/text_, owner: LESSOR · shown when: {"equals":["LESSEE"],"field_key":"TXN.VET_ARRANGE"}
 - **[TXN.PROTECTIVE_REQUIRED]** Horse must wear protective equipment — _yesno/text_, owner: LESSOR
@@ -468,15 +468,27 @@ The parties agree to the insurance elections set forth below. Each policy electe
 
 **[INSURANCE_RISK.GL_HAS]** _(shown when: {"equals":["LESSOR_HAS"],"field_key":"TXN.GL_ELECTION"})_
 
-Lessor carries general liability insurance covering the activities contemplated by this Agreement, with a policy limit of {{TXN.GL_POLICY_AMOUNT}} and a deductible of {{TXN.GL_DEDUCTIBLE}}, effective as of {{TXN.GL_EFFECTIVE_DATE}}. {{TXN.GL_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy.
+Lessor carries general liability insurance covering the activities contemplated by this Agreement, with a policy limit of {{TXN.GL_POLICY_AMOUNT}} and a deductible of {{TXN.GL_DEDUCTIBLE}}, effective as of {{TXN.GL_EFFECTIVE_DATE}}.
 
 **[INSURANCE_RISK.GL_WILL]** _(shown when: {"equals":["LESSOR_WILL"],"field_key":"TXN.GL_ELECTION"})_
 
-Lessor is in the process of purchasing or agrees to purchase general liability insurance covering the activities contemplated by this Agreement, with a policy limit of {{TXN.GL_POLICY_AMOUNT}} and a deductible of {{TXN.GL_DEDUCTIBLE}}, and an effective date no later than {{TXN.GL_EFFECTIVE_DATE}}. {{TXN.GL_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy.
+Lessor is in the process of purchasing or agrees to purchase general liability insurance covering the activities contemplated by this Agreement, with a policy limit of {{TXN.GL_POLICY_AMOUNT}} and a deductible of {{TXN.GL_DEDUCTIBLE}}, and an effective date no later than {{TXN.GL_EFFECTIVE_DATE}}.
 
 **[INSURANCE_RISK.GL_LESSEE]** _(shown when: {"equals":["LESSEE_OBTAIN"],"field_key":"TXN.GL_ELECTION"})_
 
-Lessor requires Lessee to obtain and maintain general liability insurance covering the activities contemplated by this Agreement, with a policy limit of at least {{TXN.GL_MIN_LIMIT}} and an effective date no later than {{TXN.GL_EFFECTIVE_DATE}}. {{TXN.GL_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy. Lessee shall provide proof of insurance to Lessor by email and shall maintain the policy in good standing for the duration of this Agreement; failure to do so constitutes a material breach subject to the Termination for Cause provisions of this Agreement.
+Lessor requires Lessee to obtain and maintain general liability insurance covering the activities contemplated by this Agreement, with a policy limit of at least {{TXN.GL_MIN_LIMIT}} and an effective date no later than {{TXN.GL_EFFECTIVE_DATE}}. Lessee shall provide proof of insurance to Lessor by email and shall maintain the policy in good standing for the duration of this Agreement; failure to do so constitutes a material breach subject to the Termination for Cause provisions of this Agreement.
+
+**[INSURANCE_RISK.GL_DED_PARTY]** _(shown when: {"all":[{"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.GL_ELECTION"},{"equals":["LESSOR","LESSEE"],"field_key":"TXN.GL_DEDUCTIBLE_PARTY"}]})_
+
+{{TXN.GL_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy.
+
+**[INSURANCE_RISK.GL_DED_SPLIT]** _(shown when: {"all":[{"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.GL_ELECTION"},{"equals":["SPLIT"],"field_key":"TXN.GL_DEDUCTIBLE_PARTY"}]})_
+
+Both parties shall split the cost of any and all deductible amounts for claims made against this insurance policy: {{TXN.GL_DEDUCTIBLE_SPLIT_LESSOR}} paid by Lessor and {{TXN.GL_DEDUCTIBLE_SPLIT_LESSEE}} paid by Lessee.
+
+**[INSURANCE_RISK.GL_DED_OTHER]** _(shown when: {"all":[{"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.GL_ELECTION"},{"equals":["OTHER"],"field_key":"TXN.GL_DEDUCTIBLE_PARTY"}]})_
+
+Responsibility for any and all deductible amounts for claims made against this insurance policy: {{TXN.GL_DEDUCTIBLE_OTHER}}.
 
 **[INSURANCE_RISK.GL_NONE]** _(shown when: {"equals":["NONE",""],"field_key":"TXN.GL_ELECTION"})_
 
@@ -486,15 +498,27 @@ No general liability insurance is required under this Agreement.
 
 **[INSURANCE_RISK.MORTALITY_HAS]** _(shown when: {"equals":["LESSOR_HAS"],"field_key":"TXN.MORTALITY_ELECTION"})_
 
-Lessor carries mortality insurance on the Horse with a policy limit of {{TXN.MORTALITY_POLICY_AMOUNT}} and a deductible of {{TXN.MORTALITY_DEDUCTIBLE}}, effective as of {{TXN.MORTALITY_EFFECTIVE_DATE}}. {{TXN.MORTALITY_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy.
+Lessor carries mortality insurance on the Horse with a policy limit of {{TXN.MORTALITY_POLICY_AMOUNT}} and a deductible of {{TXN.MORTALITY_DEDUCTIBLE}}, effective as of {{TXN.MORTALITY_EFFECTIVE_DATE}}.
 
 **[INSURANCE_RISK.MORTALITY_WILL]** _(shown when: {"equals":["LESSOR_WILL"],"field_key":"TXN.MORTALITY_ELECTION"})_
 
-Lessor is in the process of purchasing or agrees to purchase mortality insurance on the Horse with a policy limit of {{TXN.MORTALITY_POLICY_AMOUNT}} and a deductible of {{TXN.MORTALITY_DEDUCTIBLE}}, and an effective date no later than {{TXN.MORTALITY_EFFECTIVE_DATE}}. {{TXN.MORTALITY_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy.
+Lessor is in the process of purchasing or agrees to purchase mortality insurance on the Horse with a policy limit of {{TXN.MORTALITY_POLICY_AMOUNT}} and a deductible of {{TXN.MORTALITY_DEDUCTIBLE}}, and an effective date no later than {{TXN.MORTALITY_EFFECTIVE_DATE}}.
 
 **[INSURANCE_RISK.MORTALITY_LESSEE]** _(shown when: {"equals":["LESSEE_OBTAIN"],"field_key":"TXN.MORTALITY_ELECTION"})_
 
-Lessor requires Lessee to obtain and maintain mortality insurance on the Horse with a policy limit of at least the Horse's fair market value of {{HORSE.FAIR_MARKET_VALUE}} and an effective date no later than {{TXN.MORTALITY_EFFECTIVE_DATE}}. {{TXN.MORTALITY_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy. Lessee shall provide proof of insurance to Lessor by email and shall maintain the policy in good standing for the duration of this Agreement; failure to do so constitutes a material breach subject to the Termination for Cause provisions of this Agreement.
+Lessor requires Lessee to obtain and maintain mortality insurance on the Horse with a policy limit of at least the Horse's fair market value of {{HORSE.FAIR_MARKET_VALUE}} and an effective date no later than {{TXN.MORTALITY_EFFECTIVE_DATE}}. Lessee shall provide proof of insurance to Lessor by email and shall maintain the policy in good standing for the duration of this Agreement; failure to do so constitutes a material breach subject to the Termination for Cause provisions of this Agreement.
+
+**[INSURANCE_RISK.MORTALITY_DED_PARTY]** _(shown when: {"all":[{"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.MORTALITY_ELECTION"},{"equals":["LESSOR","LESSEE"],"field_key":"TXN.MORTALITY_DEDUCTIBLE_PARTY"}]})_
+
+{{TXN.MORTALITY_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy.
+
+**[INSURANCE_RISK.MORTALITY_DED_SPLIT]** _(shown when: {"all":[{"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.MORTALITY_ELECTION"},{"equals":["SPLIT"],"field_key":"TXN.MORTALITY_DEDUCTIBLE_PARTY"}]})_
+
+Both parties shall split the cost of any and all deductible amounts for claims made against this insurance policy: {{TXN.MORTALITY_DEDUCTIBLE_SPLIT_LESSOR}} paid by Lessor and {{TXN.MORTALITY_DEDUCTIBLE_SPLIT_LESSEE}} paid by Lessee.
+
+**[INSURANCE_RISK.MORTALITY_DED_OTHER]** _(shown when: {"all":[{"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.MORTALITY_ELECTION"},{"equals":["OTHER"],"field_key":"TXN.MORTALITY_DEDUCTIBLE_PARTY"}]})_
+
+Responsibility for any and all deductible amounts for claims made against this insurance policy: {{TXN.MORTALITY_DEDUCTIBLE_OTHER}}.
 
 **[INSURANCE_RISK.MORTALITY_NONE]** _(shown when: {"equals":["NONE",""],"field_key":"TXN.MORTALITY_ELECTION"})_
 
@@ -504,15 +528,27 @@ No mortality insurance is required under this Agreement.
 
 **[INSURANCE_RISK.MAJOR_MEDICAL_HAS]** _(shown when: {"equals":["LESSOR_HAS"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"})_
 
-Lessor carries major medical insurance on the Horse with a policy limit of {{TXN.MAJOR_MEDICAL_POLICY_AMOUNT}} and a deductible of {{TXN.MAJOR_MEDICAL_DEDUCTIBLE}}, effective as of {{TXN.MAJOR_MEDICAL_EFFECTIVE_DATE}}. {{TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy.
+Lessor carries major medical insurance on the Horse with a policy limit of {{TXN.MAJOR_MEDICAL_POLICY_AMOUNT}} and a deductible of {{TXN.MAJOR_MEDICAL_DEDUCTIBLE}}, effective as of {{TXN.MAJOR_MEDICAL_EFFECTIVE_DATE}}.
 
 **[INSURANCE_RISK.MAJOR_MEDICAL_WILL]** _(shown when: {"equals":["LESSOR_WILL"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"})_
 
-Lessor is in the process of purchasing or agrees to purchase major medical insurance on the Horse with a policy limit of {{TXN.MAJOR_MEDICAL_POLICY_AMOUNT}} and a deductible of {{TXN.MAJOR_MEDICAL_DEDUCTIBLE}}, and an effective date no later than {{TXN.MAJOR_MEDICAL_EFFECTIVE_DATE}}. {{TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy.
+Lessor is in the process of purchasing or agrees to purchase major medical insurance on the Horse with a policy limit of {{TXN.MAJOR_MEDICAL_POLICY_AMOUNT}} and a deductible of {{TXN.MAJOR_MEDICAL_DEDUCTIBLE}}, and an effective date no later than {{TXN.MAJOR_MEDICAL_EFFECTIVE_DATE}}.
 
 **[INSURANCE_RISK.MAJOR_MEDICAL_LESSEE]** _(shown when: {"equals":["LESSEE_OBTAIN"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"})_
 
-Lessor requires Lessee to obtain and maintain major medical insurance on the Horse with a policy limit of at least {{TXN.MAJOR_MEDICAL_MIN_LIMIT}} and an effective date no later than {{TXN.MAJOR_MEDICAL_EFFECTIVE_DATE}}. {{TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy. Lessee shall provide proof of insurance to Lessor by email and shall maintain the policy in good standing for the duration of this Agreement; failure to do so constitutes a material breach subject to the Termination for Cause provisions of this Agreement.
+Lessor requires Lessee to obtain and maintain major medical insurance on the Horse with a policy limit of at least {{TXN.MAJOR_MEDICAL_MIN_LIMIT}} and an effective date no later than {{TXN.MAJOR_MEDICAL_EFFECTIVE_DATE}}. Lessee shall provide proof of insurance to Lessor by email and shall maintain the policy in good standing for the duration of this Agreement; failure to do so constitutes a material breach subject to the Termination for Cause provisions of this Agreement.
+
+**[INSURANCE_RISK.MAJOR_MEDICAL_DED_PARTY]** _(shown when: {"all":[{"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"},{"equals":["LESSOR","LESSEE"],"field_key":"TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY"}]})_
+
+{{TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY}} is responsible for any and all deductible amounts for claims made against this insurance policy.
+
+**[INSURANCE_RISK.MAJOR_MEDICAL_DED_SPLIT]** _(shown when: {"all":[{"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"},{"equals":["SPLIT"],"field_key":"TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY"}]})_
+
+Both parties shall split the cost of any and all deductible amounts for claims made against this insurance policy: {{TXN.MAJOR_MEDICAL_DEDUCTIBLE_SPLIT_LESSOR}} paid by Lessor and {{TXN.MAJOR_MEDICAL_DEDUCTIBLE_SPLIT_LESSEE}} paid by Lessee.
+
+**[INSURANCE_RISK.MAJOR_MEDICAL_DED_OTHER]** _(shown when: {"all":[{"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"},{"equals":["OTHER"],"field_key":"TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY"}]})_
+
+Responsibility for any and all deductible amounts for claims made against this insurance policy: {{TXN.MAJOR_MEDICAL_DEDUCTIBLE_OTHER}}.
 
 **[INSURANCE_RISK.MAJOR_MEDICAL_NONE]** _(shown when: {"equals":["NONE",""],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"})_
 
@@ -571,23 +607,32 @@ Under no circumstances shall either party be liable to the other for any special
 Under no circumstances shall either party be liable to the other for any special, consequential, incidental, or punitive damages arising out of or relating to this Agreement. The total aggregate liability of either party (including, respectively, the Lessor Parties and the Lessee Parties) to the other under this Agreement shall not exceed the Horse's current fair market value of {{HORSE.FAIR_MARKET_VALUE}}. Any amount owed by one party to the other under this Agreement shall be reduced by the amount of any insurance proceeds actually received by the party owed with respect to the same loss. This limitation does not apply to gross negligence, reckless conduct, or intentional misconduct.
 
 ### Fields
-- **[TXN.MAJOR_MEDICAL_ELECTION]** Major medical insurance election — _select/select_, owner: LESSOR · options: [{"label":"Lessor has this policy","value":"LESSOR_HAS"},{"label":"Lessor will purchase this policy","value":"LESSOR_WILL"},{"label":"Lessee must obtain this policy","value":"LESSEE_OBTAIN"},{"label":"Not required","value":"NONE"}]
-- **[TXN.MORTALITY_ELECTION]** Mortality insurance election — _select/select_, owner: LESSOR · options: [{"label":"Lessor has this policy","value":"LESSOR_HAS"},{"label":"Lessor will purchase this policy","value":"LESSOR_WILL"},{"label":"Lessee must obtain this policy","value":"LESSEE_OBTAIN"},{"label":"Not required","value":"NONE"}]
 - **[TXN.GL_ELECTION]** General liability insurance election — _select/select_, owner: LESSOR · options: [{"label":"Lessor has this policy","value":"LESSOR_HAS"},{"label":"Lessor will purchase this policy","value":"LESSOR_WILL"},{"label":"Lessee must obtain this policy","value":"LESSEE_OBTAIN"},{"label":"Not required","value":"NONE"}]
+- **[TXN.MORTALITY_ELECTION]** Mortality insurance election — _select/select_, owner: LESSOR · options: [{"label":"Lessor has this policy","value":"LESSOR_HAS"},{"label":"Lessor will purchase this policy","value":"LESSOR_WILL"},{"label":"Lessee must obtain this policy","value":"LESSEE_OBTAIN"},{"label":"Not required","value":"NONE"}]
+- **[TXN.MAJOR_MEDICAL_ELECTION]** Major medical insurance election — _select/select_, owner: LESSOR · options: [{"label":"Lessor has this policy","value":"LESSOR_HAS"},{"label":"Lessor will purchase this policy","value":"LESSOR_WILL"},{"label":"Lessee must obtain this policy","value":"LESSEE_OBTAIN"},{"label":"Not required","value":"NONE"}]
+- **[TXN.MORTALITY_POLICY_AMOUNT]** Policy limit — _currency/currency_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL"],"field_key":"TXN.MORTALITY_ELECTION"}
 - **[TXN.MAJOR_MEDICAL_POLICY_AMOUNT]** Policy limit — _currency/currency_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"}
 - **[TXN.GL_POLICY_AMOUNT]** Policy limit — _currency/currency_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL"],"field_key":"TXN.GL_ELECTION"}
-- **[TXN.MORTALITY_POLICY_AMOUNT]** Policy limit — _currency/currency_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL"],"field_key":"TXN.MORTALITY_ELECTION"}
-- **[TXN.MAJOR_MEDICAL_DEDUCTIBLE]** Deductible (enter N/A if none) — _text/text_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"}
 - **[TXN.GL_DEDUCTIBLE]** Deductible (enter N/A if none) — _text/text_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL"],"field_key":"TXN.GL_ELECTION"}
+- **[TXN.MAJOR_MEDICAL_DEDUCTIBLE]** Deductible (enter N/A if none) — _text/text_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"}
 - **[TXN.MORTALITY_DEDUCTIBLE]** Deductible (enter N/A if none) — _text/text_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL"],"field_key":"TXN.MORTALITY_ELECTION"}
 - **[TXN.MAJOR_MEDICAL_MIN_LIMIT]** Minimum policy limit required of Lessee — _currency/currency_, owner: LESSOR · shown when: {"equals":["LESSEE_OBTAIN"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"}
 - **[TXN.GL_MIN_LIMIT]** Minimum policy limit required of Lessee — _currency/currency_, owner: LESSOR · shown when: {"equals":["LESSEE_OBTAIN"],"field_key":"TXN.GL_ELECTION"}
 - **[TXN.MORTALITY_EFFECTIVE_DATE]** Effective date — _date/date_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.MORTALITY_ELECTION"}
-- **[TXN.MAJOR_MEDICAL_EFFECTIVE_DATE]** Effective date — _date/date_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"}
-- **[TXN.MORTALITY_DEDUCTIBLE_PARTY]** Party responsible for deductibles on claims — _select/select_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.MORTALITY_ELECTION"} · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"}]
+- **[TXN.MORTALITY_DEDUCTIBLE_PARTY]** Party responsible for deductibles on claims — _select/select_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.MORTALITY_ELECTION"} · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Both parties shall split the cost","value":"SPLIT"},{"label":"Other","value":"OTHER"}]
 - **[TXN.GL_EFFECTIVE_DATE]** Effective date — _date/date_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.GL_ELECTION"}
-- **[TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY]** Party responsible for deductibles on claims — _select/select_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"} · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"}]
-- **[TXN.GL_DEDUCTIBLE_PARTY]** Party responsible for deductibles on claims — _select/select_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.GL_ELECTION"} · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"}]
+- **[TXN.MAJOR_MEDICAL_EFFECTIVE_DATE]** Effective date — _date/date_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"}
+- **[TXN.GL_DEDUCTIBLE_PARTY]** Party responsible for deductibles on claims — _select/select_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.GL_ELECTION"} · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Both parties shall split the cost","value":"SPLIT"},{"label":"Other","value":"OTHER"}]
+- **[TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY]** Party responsible for deductibles on claims — _select/select_, owner: LESSOR · shown when: {"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"} · options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Both parties shall split the cost","value":"SPLIT"},{"label":"Other","value":"OTHER"}]
+- **[TXN.GL_DEDUCTIBLE_SPLIT_LESSOR]** Deductible split — paid by Lessor (enter a $ amount or %) — _text/text_, owner: LESSOR · shown when: {"all":[{"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.GL_ELECTION"},{"equals":["SPLIT"],"field_key":"TXN.GL_DEDUCTIBLE_PARTY"}]}
+- **[TXN.MAJOR_MEDICAL_DEDUCTIBLE_SPLIT_LESSOR]** Deductible split — paid by Lessor (enter a $ amount or %) — _text/text_, owner: LESSOR · shown when: {"all":[{"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"},{"equals":["SPLIT"],"field_key":"TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY"}]}
+- **[TXN.MORTALITY_DEDUCTIBLE_SPLIT_LESSOR]** Deductible split — paid by Lessor (enter a $ amount or %) — _text/text_, owner: LESSOR · shown when: {"all":[{"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.MORTALITY_ELECTION"},{"equals":["SPLIT"],"field_key":"TXN.MORTALITY_DEDUCTIBLE_PARTY"}]}
+- **[TXN.GL_DEDUCTIBLE_SPLIT_LESSEE]** Deductible split — paid by Lessee (enter a $ amount or %) — _text/text_, owner: LESSOR · shown when: {"all":[{"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.GL_ELECTION"},{"equals":["SPLIT"],"field_key":"TXN.GL_DEDUCTIBLE_PARTY"}]}
+- **[TXN.MORTALITY_DEDUCTIBLE_SPLIT_LESSEE]** Deductible split — paid by Lessee (enter a $ amount or %) — _text/text_, owner: LESSOR · shown when: {"all":[{"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.MORTALITY_ELECTION"},{"equals":["SPLIT"],"field_key":"TXN.MORTALITY_DEDUCTIBLE_PARTY"}]}
+- **[TXN.MAJOR_MEDICAL_DEDUCTIBLE_SPLIT_LESSEE]** Deductible split — paid by Lessee (enter a $ amount or %) — _text/text_, owner: LESSOR · shown when: {"all":[{"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"},{"equals":["SPLIT"],"field_key":"TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY"}]}
+- **[TXN.GL_DEDUCTIBLE_OTHER]** Other deductible arrangement — _text/text_, owner: LESSOR · shown when: {"all":[{"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.GL_ELECTION"},{"equals":["OTHER"],"field_key":"TXN.GL_DEDUCTIBLE_PARTY"}]}
+- **[TXN.MAJOR_MEDICAL_DEDUCTIBLE_OTHER]** Other deductible arrangement — _text/text_, owner: LESSOR · shown when: {"all":[{"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.MAJOR_MEDICAL_ELECTION"},{"equals":["OTHER"],"field_key":"TXN.MAJOR_MEDICAL_DEDUCTIBLE_PARTY"}]}
+- **[TXN.MORTALITY_DEDUCTIBLE_OTHER]** Other deductible arrangement — _text/text_, owner: LESSOR · shown when: {"all":[{"equals":["LESSOR_HAS","LESSOR_WILL","LESSEE_OBTAIN"],"field_key":"TXN.MORTALITY_ELECTION"},{"equals":["OTHER"],"field_key":"TXN.MORTALITY_DEDUCTIBLE_PARTY"}]}
 
 ## [TERMINATION] Termination
 
@@ -614,9 +659,9 @@ This Agreement shall self-terminate if the Horse is significantly injured, becom
 If the Horse becomes unusable for the purposes of this Agreement for any reason, Lessee may terminate this Agreement immediately upon written notice to Lessor. Upon such termination, Lessee is entitled to a prorated refund of any Lease Fee paid for the remaining unused time as of the date of termination.
 
 ### Fields
+- **[TXN.CAUSE_TERM_NOTICE_DAYS]** Days notice — _number/number_, owner: DEAL
 - **[TXN.LESSEE_TERM_NOTICE_DAYS]** Days notice — _number/number_, owner: DEAL
 - **[TXN.OWNER_TERM_NOTICE_DAYS]** Days notice — _number/number_, owner: DEAL
-- **[TXN.CAUSE_TERM_NOTICE_DAYS]** Days notice — _number/number_, owner: DEAL
 
 ## [NOTICE] Notice and Contact Information
 

@@ -6,7 +6,9 @@ the Lessee (the real first-contract posture). Configuration: partial lease, all
 six permitted activities ON with restrictions, evaluation period requested,
 trainer care + exercise included, all three insurance elections represented
 (GL = Lessor has / Mortality = Lessee must obtain (FMV imported) /
-Major Medical = Lessor will purchase), horse relocation ON, renewal ON.
+Major Medical = Lessor will purchase), and all three deductible-responsibility
+shapes shown (GL = 50/50 split, Mortality = Lessee, Major Medical = other),
+horse relocation ON, renewal ON.
 SIG.* tokens are intentionally unfilled — the signing layer completes them.
 
 ---
@@ -219,50 +221,56 @@ The parties agree to the insurance elections set forth below. Each policy electe
 
 13.3 General Liability Insurance
 
-13.4 Lessor carries general liability insurance covering the activities contemplated by this Agreement, with a policy limit of $1,000,000.00 and a deductible of $2,500, effective as of June 1, 2026. Lessor is responsible for any and all deductible amounts for claims made against this insurance policy.
+13.4 Lessor carries general liability insurance covering the activities contemplated by this Agreement, with a policy limit of $1,000,000.00 and a deductible of $2,500, effective as of June 1, 2026.
 
-13.5 Mortality Insurance
+13.5 Both parties shall split the cost of any and all deductible amounts for claims made against this insurance policy: 50% paid by Lessor and 50% paid by Lessee.
 
-13.6 Lessor requires Lessee to obtain and maintain mortality insurance on the Horse with a policy limit of at least the Horse's fair market value of $45,000.00 and an effective date no later than August 1, 2026. Lessee is responsible for any and all deductible amounts for claims made against this insurance policy. Lessee shall provide proof of insurance to Lessor by email and shall maintain the policy in good standing for the duration of this Agreement; failure to do so constitutes a material breach subject to the Termination for Cause provisions of this Agreement.
+13.6 Mortality Insurance
 
-13.7 Major Medical Insurance
+13.7 Lessor requires Lessee to obtain and maintain mortality insurance on the Horse with a policy limit of at least the Horse's fair market value of $45,000.00 and an effective date no later than August 1, 2026. Lessee shall provide proof of insurance to Lessor by email and shall maintain the policy in good standing for the duration of this Agreement; failure to do so constitutes a material breach subject to the Termination for Cause provisions of this Agreement.
 
-13.8 Lessor is in the process of purchasing or agrees to purchase major medical insurance on the Horse with a policy limit of $15,000.00 and a deductible of $250, and an effective date no later than August 1, 2026. Lessor is responsible for any and all deductible amounts for claims made against this insurance policy.
+13.8 Lessee is responsible for any and all deductible amounts for claims made against this insurance policy.
 
-13.9 Risk of Loss of or Injury to the Horse
+13.9 Major Medical Insurance
+
+13.10 Lessor is in the process of purchasing or agrees to purchase major medical insurance on the Horse with a policy limit of $15,000.00 and a deductible of $250, and an effective date no later than August 1, 2026.
+
+13.11 Responsibility for any and all deductible amounts for claims made against this insurance policy: Deductibles are allocated per the parties' separate boarding agreement.
+
+13.12 Risk of Loss of or Injury to the Horse
 Lessor assumes all risk of loss or injury to the Horse during the term of this Agreement.
 
-13.10 Loss of Use
+13.13 Loss of Use
 Lessor acknowledges and accepts that loss of use of the Horse may result from injury to, illness of, or the death of the Horse. No loss-of-use insurance is required or provided under this Agreement.
 
-13.11 Assumption of Inherent Risks
+13.14 Assumption of Inherent Risks
 Lessee understands that horseback riding and handling horses are inherently dangerous activities. Lessee acknowledges that horses are unpredictable by nature and may buck, rear, bite, kick, spook, stumble, or otherwise react unpredictably to their environment, which can result in severe injury, paralysis, or death. Lessee acknowledges the California common law doctrine of "Primary Assumption of Risk," as established by the California Supreme Court in Knight v. Jewett (1992) 3 Cal.4th 296 and subsequent equine-specific case law (e.g., Levinson v. Owens (2009) 176 Cal.App.4th 1534). Pursuant to this binding legal precedent, Lessee, on behalf of all Lessee Parties, expressly and voluntarily assumes all inherent risks associated with riding or handling the Horse, and acknowledges that no Lessor Party owes a duty to protect Lessee from these inherent risks.
 
-13.12 Release of Liability
+13.15 Release of Liability
 In consideration for being permitted to handle or ride the Horse, Lessee, on behalf of Lessee and all Lessee Parties, completely releases, forever discharges, and agrees to hold harmless the Lessor Parties from any and all claims, demands, causes of action, liabilities, or damages for personal injury, property damage, or wrongful death arising out of Lessee's use, handling, or riding of the Horse, whether caused by the ordinary negligence of any Lessor Party or otherwise. This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
 
-13.13 Required Protective Attire
+13.16 Required Protective Attire
 Lessee is strictly required to wear an appropriately fitted and securely fastened ASTM/SEI-certified equestrian helmet at all times while mounted on the Horse, together with heeled boots and long pants; gloves and long sleeves are highly recommended. Lessee shall provide Lessee's own helmet, boots, and pants meeting these requirements. Lessee, on behalf of all Lessee Parties, assumes all increased risk of injury or death resulting from any failure to wear the required attire. Any refusal or failure to wear an approved helmet or the other required attire immediately revokes Lessee's permission to ride or handle the Horse and constitutes a material breach of this Agreement.
 
-13.14 Trail Riding Risks
+13.17 Trail Riding Risks
 Lessee acknowledges that riding outside an enclosed arena, including trail riding, exposes Lessee and the Horse to additional risks, including uneven terrain, traffic, wildlife, water crossings, and other conditions that may cause the Horse to spook or behave unpredictably. Lessee voluntarily assumes these and any other unforeseen or unspecified additional risks related to this activity.
 
-13.15 Jumping Risks
+13.18 Jumping Risks
 Lessee acknowledges that jumping the Horse exposes Lessee and the Horse to additional risks beyond flat riding, including refusals, run-outs, awkward or missed distances, falls, unseating, and the Horse landing, stopping, or twisting unpredictably. Lessee voluntarily assumes these and any other unforeseen or unspecified additional risks related to this activity.
 
-13.16 Competition Risks
+13.19 Competition Risks
 Lessee acknowledges that competing with the Horse exposes Lessee and the Horse to additional risks, including unfamiliar and crowded show grounds, proximity to other horses and riders, loudspeakers, banners, and other stimuli that may cause the Horse to spook or behave unpredictably, as well as the physical demands and pressures of competition. Lessee voluntarily assumes these and any other unforeseen or unspecified additional risks related to this activity.
 
-13.17 Shared Arena Riding Risks
+13.20 Shared Arena Riding Risks
 Lessee acknowledges that riding in an arena at the same time as other riders exposes Lessee and the Horse to additional risks, including collisions, crowding, sudden movements or loss of control by other horses or riders, and the Horse reacting to other horses. Lessee agrees to ride with awareness of others, to follow standard arena etiquette and right-of-way rules and any directions of Lessor or an instructor, and voluntarily assumes these and any other unforeseen or unspecified additional risks related to this activity.
 
-13.18 Waiver of Unknown Claims
+13.21 Waiver of Unknown Claims
 Each party, on behalf of itself and, respectively, the Lessor Parties or the Lessee Parties, expressly waives any and all claims against the other party and its respective party group that the waiving party does not know or suspect to exist at the time of this Agreement, and acknowledges that this waiver is a material term of this Agreement. Each party assumes the risk that claims presently unknown to it may later be discovered.
 
-13.19 Mutual Indemnification
+13.22 Mutual Indemnification
 Each party shall indemnify, defend, and hold harmless the other party and, respectively, the Lessor Parties or the Lessee Parties, from and against any and all claims, damages, losses, liabilities, costs, and expenses arising out of the indemnifying party's use, handling, care, or possession of the Horse, except to the extent caused by the gross negligence, reckless conduct, or intentional misconduct of an indemnified party.
 
-13.20 Limitation of Liability
+13.23 Limitation of Liability
 Under no circumstances shall either party be liable to the other for any special, consequential, incidental, or punitive damages arising out of or relating to this Agreement. The total aggregate liability of either party (including, respectively, the Lessor Parties and the Lessee Parties) to the other under this Agreement shall not exceed the Horse's current fair market value of $45,000.00. Any amount owed by one party to the other under this Agreement shall be reduced by the amount of any insurance proceeds actually received by the party owed with respect to the same loss. This limitation does not apply to gross negligence, reckless conduct, or intentional misconduct.
 
 14. TERMINATION
