@@ -229,7 +229,7 @@ The parties agree to the insurance elections set forth below. Each policy electe
 
 13.7 Major Medical Insurance
 
-13.8 Lessor is in the process of purchasing or agrees to purchase major medical insurance on the Horse with a policy limit of $15,000.00 and a deductible of $250, and an effective date no later than August 1, 2026. Responsibility for any and all deductible amounts for claims made against this insurance policy: Deductibles are allocated per the parties' separate boarding agreement.
+13.8 Lessor is in the process of purchasing or agrees to purchase major medical insurance on the Horse with a policy limit of $15,000.00 and an effective date no later than August 1, 2026. Responsibility for any and all deductible amounts for claims made against this insurance policy: Deductibles are allocated per the parties' separate boarding agreement.
 
 13.9 Risk of Loss of or Injury to the Horse
 Lessor assumes all risk of loss or injury to the Horse during the term of this Agreement.

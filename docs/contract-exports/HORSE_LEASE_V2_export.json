@@ -3068,8 +3068,7 @@
                     "is_optional": false,
                     "conditional_on": {
                         "equals": [
-                            "LESSOR_HAS",
-                            "LESSOR_WILL"
+                            "LESSOR_HAS"
                         ],
                         "field_key": "TXN.GL_ELECTION"
                     },
@@ -3089,8 +3088,7 @@
                     "is_optional": false,
                     "conditional_on": {
                         "equals": [
-                            "LESSOR_HAS",
-                            "LESSOR_WILL"
+                            "LESSOR_HAS"
                         ],
                         "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
                     },
@@ -3110,8 +3108,7 @@
                     "is_optional": false,
                     "conditional_on": {
                         "equals": [
-                            "LESSOR_HAS",
-                            "LESSOR_WILL"
+                            "LESSOR_HAS"
                         ],
                         "field_key": "TXN.MORTALITY_ELECTION"
                     },
@@ -3258,8 +3255,7 @@
                                 "all": [
                                     {
                                         "equals": [
-                                            "LESSOR_HAS",
-                                            "LESSOR_WILL"
+                                            "LESSOR_HAS"
                                         ],
                                         "field_key": "TXN.MORTALITY_ELECTION"
                                     },
@@ -3271,6 +3267,7 @@
                             },
                             {
                                 "equals": [
+                                    "LESSOR_WILL",
                                     "LESSEE_OBTAIN"
                                 ],
                                 "field_key": "TXN.MORTALITY_ELECTION"
@@ -3314,8 +3311,7 @@
                                 "all": [
                                     {
                                         "equals": [
-                                            "LESSOR_HAS",
-                                            "LESSOR_WILL"
+                                            "LESSOR_HAS"
                                         ],
                                         "field_key": "TXN.GL_ELECTION"
                                     },
@@ -3327,6 +3323,7 @@
                             },
                             {
                                 "equals": [
+                                    "LESSOR_WILL",
                                     "LESSEE_OBTAIN"
                                 ],
                                 "field_key": "TXN.GL_ELECTION"
@@ -3370,8 +3367,7 @@
                                 "all": [
                                     {
                                         "equals": [
-                                            "LESSOR_HAS",
-                                            "LESSOR_WILL"
+                                            "LESSOR_HAS"
                                         ],
                                         "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
                                     },
@@ -3383,6 +3379,7 @@
                             },
                             {
                                 "equals": [
+                                    "LESSOR_WILL",
                                     "LESSEE_OBTAIN"
                                 ],
                                 "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
@@ -3416,8 +3413,7 @@
                         "all": [
                             {
                                 "equals": [
-                                    "LESSOR_HAS",
-                                    "LESSOR_WILL"
+                                    "LESSOR_HAS"
                                 ],
                                 "field_key": "TXN.GL_ELECTION"
                             },
@@ -3460,8 +3456,7 @@
                         "all": [
                             {
                                 "equals": [
-                                    "LESSOR_HAS",
-                                    "LESSOR_WILL"
+                                    "LESSOR_HAS"
                                 ],
                                 "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
                             },
@@ -3504,8 +3499,7 @@
                         "all": [
                             {
                                 "equals": [
-                                    "LESSOR_HAS",
-                                    "LESSOR_WILL"
+                                    "LESSOR_HAS"
                                 ],
                                 "field_key": "TXN.MORTALITY_ELECTION"
                             },
@@ -3526,7 +3520,7 @@
                 {
                     "label": "Deductible split — paid by Lessor",
                     "options": null,
-                    "guidance": "Enter a number. Lessor-held policy in $ mode: the other share auto-fills from the stated deductible. % mode (and always when Lessee must obtain the policy): the other share auto-fills to total 100%.",
+                    "guidance": "Enter a number. Lessor-held policy in $ mode: the other share auto-fills from the stated deductible. % mode (and always for a policy not yet owned): the other share auto-fills to total 100%.",
                     "required": false,
                     "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE_SPLIT_LESSOR",
                     "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL",
@@ -3541,8 +3535,7 @@
                                 "all": [
                                     {
                                         "equals": [
-                                            "LESSOR_HAS",
-                                            "LESSOR_WILL"
+                                            "LESSOR_HAS"
                                         ],
                                         "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
                                     },
@@ -3569,6 +3562,7 @@
                                 "all": [
                                     {
                                         "equals": [
+                                            "LESSOR_WILL",
                                             "LESSEE_OBTAIN"
                                         ],
                                         "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
@@ -3588,7 +3582,7 @@
                 {
                     "label": "Deductible split — paid by Lessor",
                     "options": null,
-                    "guidance": "Enter a number. Lessor-held policy in $ mode: the other share auto-fills from the stated deductible. % mode (and always when Lessee must obtain the policy): the other share auto-fills to total 100%.",
+                    "guidance": "Enter a number. Lessor-held policy in $ mode: the other share auto-fills from the stated deductible. % mode (and always for a policy not yet owned): the other share auto-fills to total 100%.",
                     "required": false,
                     "field_key": "TXN.MORTALITY_DEDUCTIBLE_SPLIT_LESSOR",
                     "clause_key": "INSURANCE_RISK.MORTALITY",
@@ -3603,8 +3597,7 @@
                                 "all": [
                                     {
                                         "equals": [
-                                            "LESSOR_HAS",
-                                            "LESSOR_WILL"
+                                            "LESSOR_HAS"
                                         ],
                                         "field_key": "TXN.MORTALITY_ELECTION"
                                     },
@@ -3631,6 +3624,7 @@
                                 "all": [
                                     {
                                         "equals": [
+                                            "LESSOR_WILL",
                                             "LESSEE_OBTAIN"
                                         ],
                                         "field_key": "TXN.MORTALITY_ELECTION"
@@ -3650,7 +3644,7 @@
                 {
                     "label": "Deductible split — paid by Lessor",
                     "options": null,
-                    "guidance": "Enter a number. Lessor-held policy in $ mode: the other share auto-fills from the stated deductible. % mode (and always when Lessee must obtain the policy): the other share auto-fills to total 100%.",
+                    "guidance": "Enter a number. Lessor-held policy in $ mode: the other share auto-fills from the stated deductible. % mode (and always for a policy not yet owned): the other share auto-fills to total 100%.",
                     "required": false,
                     "field_key": "TXN.GL_DEDUCTIBLE_SPLIT_LESSOR",
                     "clause_key": "INSURANCE_RISK.GENERAL_LIABILITY",
@@ -3665,8 +3659,7 @@
                                 "all": [
                                     {
                                         "equals": [
-                                            "LESSOR_HAS",
-                                            "LESSOR_WILL"
+                                            "LESSOR_HAS"
                                         ],
                                         "field_key": "TXN.GL_ELECTION"
                                     },
@@ -3693,6 +3686,7 @@
                                 "all": [
                                     {
                                         "equals": [
+                                            "LESSOR_WILL",
                                             "LESSEE_OBTAIN"
                                         ],
                                         "field_key": "TXN.GL_ELECTION"
@@ -3712,7 +3706,7 @@
                 {
                     "label": "Deductible split — paid by Lessee",
                     "options": null,
-                    "guidance": "Enter a number. Lessor-held policy in $ mode: the other share auto-fills from the stated deductible. % mode (and always when Lessee must obtain the policy): the other share auto-fills to total 100%.",
+                    "guidance": "Enter a number. Lessor-held policy in $ mode: the other share auto-fills from the stated deductible. % mode (and always for a policy not yet owned): the other share auto-fills to total 100%.",
                     "required": false,
                     "field_key": "TXN.GL_DEDUCTIBLE_SPLIT_LESSEE",
                     "clause_key": "INSURANCE_RISK.GENERAL_LIABILITY",
@@ -3727,8 +3721,7 @@
                                 "all": [
                                     {
                                         "equals": [
-                                            "LESSOR_HAS",
-                                            "LESSOR_WILL"
+                                            "LESSOR_HAS"
                                         ],
                                         "field_key": "TXN.GL_ELECTION"
                                     },
@@ -3755,6 +3748,7 @@
                                 "all": [
                                     {
                                         "equals": [
+                                            "LESSOR_WILL",
                                             "LESSEE_OBTAIN"
                                         ],
                                         "field_key": "TXN.GL_ELECTION"
@@ -3774,7 +3768,7 @@
                 {
                     "label": "Deductible split — paid by Lessee",
                     "options": null,
-                    "guidance": "Enter a number. Lessor-held policy in $ mode: the other share auto-fills from the stated deductible. % mode (and always when Lessee must obtain the policy): the other share auto-fills to total 100%.",
+                    "guidance": "Enter a number. Lessor-held policy in $ mode: the other share auto-fills from the stated deductible. % mode (and always for a policy not yet owned): the other share auto-fills to total 100%.",
                     "required": false,
                     "field_key": "TXN.MORTALITY_DEDUCTIBLE_SPLIT_LESSEE",
                     "clause_key": "INSURANCE_RISK.MORTALITY",
@@ -3789,8 +3783,7 @@
                                 "all": [
                                     {
                                         "equals": [
-                                            "LESSOR_HAS",
-                                            "LESSOR_WILL"
+                                            "LESSOR_HAS"
                                         ],
                                         "field_key": "TXN.MORTALITY_ELECTION"
                                     },
@@ -3817,6 +3810,7 @@
                                 "all": [
                                     {
                                         "equals": [
+                                            "LESSOR_WILL",
                                             "LESSEE_OBTAIN"
                                         ],
                                         "field_key": "TXN.MORTALITY_ELECTION"
@@ -3836,7 +3830,7 @@
                 {
                     "label": "Deductible split — paid by Lessee",
                     "options": null,
-                    "guidance": "Enter a number. Lessor-held policy in $ mode: the other share auto-fills from the stated deductible. % mode (and always when Lessee must obtain the policy): the other share auto-fills to total 100%.",
+                    "guidance": "Enter a number. Lessor-held policy in $ mode: the other share auto-fills from the stated deductible. % mode (and always for a policy not yet owned): the other share auto-fills to total 100%.",
                     "required": false,
                     "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE_SPLIT_LESSEE",
                     "clause_key": "INSURANCE_RISK.MAJOR_MEDICAL",
@@ -3851,8 +3845,7 @@
                                 "all": [
                                     {
                                         "equals": [
-                                            "LESSOR_HAS",
-                                            "LESSOR_WILL"
+                                            "LESSOR_HAS"
                                         ],
                                         "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
                                     },
@@ -3879,6 +3872,7 @@
                                 "all": [
                                     {
                                         "equals": [
+                                            "LESSOR_WILL",
                                             "LESSEE_OBTAIN"
                                         ],
                                         "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
@@ -3910,12 +3904,29 @@
                     "conditional_on": {
                         "all": [
                             {
-                                "equals": [
-                                    "LESSOR_HAS",
-                                    "LESSOR_WILL",
-                                    "LESSEE_OBTAIN"
-                                ],
-                                "field_key": "TXN.MORTALITY_ELECTION"
+                                "any": [
+                                    {
+                                        "all": [
+                                            {
+                                                "equals": [
+                                                    "LESSOR_HAS"
+                                                ],
+                                                "field_key": "TXN.MORTALITY_ELECTION"
+                                            },
+                                            {
+                                                "gte": 2,
+                                                "field_key": "TXN.MORTALITY_DEDUCTIBLE"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "equals": [
+                                            "LESSOR_WILL",
+                                            "LESSEE_OBTAIN"
+                                        ],
+                                        "field_key": "TXN.MORTALITY_ELECTION"
+                                    }
+                                ]
                             },
                             {
                                 "equals": [
@@ -3942,12 +3953,29 @@
                     "conditional_on": {
                         "all": [
                             {
-                                "equals": [
-                                    "LESSOR_HAS",
-                                    "LESSOR_WILL",
-                                    "LESSEE_OBTAIN"
-                                ],
-                                "field_key": "TXN.GL_ELECTION"
+                                "any": [
+                                    {
+                                        "all": [
+                                            {
+                                                "equals": [
+                                                    "LESSOR_HAS"
+                                                ],
+                                                "field_key": "TXN.GL_ELECTION"
+                                            },
+                                            {
+                                                "gte": 2,
+                                                "field_key": "TXN.GL_DEDUCTIBLE"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "equals": [
+                                            "LESSOR_WILL",
+                                            "LESSEE_OBTAIN"
+                                        ],
+                                        "field_key": "TXN.GL_ELECTION"
+                                    }
+                                ]
                             },
                             {
                                 "equals": [
@@ -3974,12 +4002,29 @@
                     "conditional_on": {
                         "all": [
                             {
-                                "equals": [
-                                    "LESSOR_HAS",
-                                    "LESSOR_WILL",
-                                    "LESSEE_OBTAIN"
-                                ],
-                                "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                                "any": [
+                                    {
+                                        "all": [
+                                            {
+                                                "equals": [
+                                                    "LESSOR_HAS"
+                                                ],
+                                                "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                                            },
+                                            {
+                                                "gte": 2,
+                                                "field_key": "TXN.MAJOR_MEDICAL_DEDUCTIBLE"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "equals": [
+                                            "LESSOR_WILL",
+                                            "LESSEE_OBTAIN"
+                                        ],
+                                        "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
+                                    }
+                                ]
                             },
                             {
                                 "equals": [
@@ -4047,7 +4092,7 @@
                     "render_as_subitem": false
                 },
                 {
-                    "body": "Lessor is in the process of purchasing or agrees to purchase general liability insurance covering the activities contemplated by this Agreement, with a policy limit of {{TXN.GL_POLICY_AMOUNT}} and a deductible of {{TXN.GL_DEDUCTIBLE}}, and an effective date no later than {{TXN.GL_EFFECTIVE_DATE}}.",
+                    "body": "Lessor is in the process of purchasing or agrees to purchase general liability insurance covering the activities contemplated by this Agreement, with a policy limit of {{TXN.GL_POLICY_AMOUNT}} and an effective date no later than {{TXN.GL_EFFECTIVE_DATE}}.",
                     "heading": null,
                     "cut_name": null,
                     "guidance": null,
@@ -4093,8 +4138,7 @@
                         "all": [
                             {
                                 "equals": [
-                                    "LESSOR_HAS",
-                                    "LESSOR_WILL"
+                                    "LESSOR_HAS"
                                 ],
                                 "field_key": "TXN.GL_ELECTION"
                             },
@@ -4126,8 +4170,7 @@
                         "all": [
                             {
                                 "equals": [
-                                    "LESSOR_HAS",
-                                    "LESSOR_WILL"
+                                    "LESSOR_HAS"
                                 ],
                                 "field_key": "TXN.GL_ELECTION"
                             },
@@ -4162,8 +4205,7 @@
                                         "all": [
                                             {
                                                 "equals": [
-                                                    "LESSOR_HAS",
-                                                    "LESSOR_WILL"
+                                                    "LESSOR_HAS"
                                                 ],
                                                 "field_key": "TXN.GL_ELECTION"
                                             },
@@ -4175,6 +4217,7 @@
                                     },
                                     {
                                         "equals": [
+                                            "LESSOR_WILL",
                                             "LESSEE_OBTAIN"
                                         ],
                                         "field_key": "TXN.GL_ELECTION"
@@ -4204,6 +4247,7 @@
                         "all": [
                             {
                                 "equals": [
+                                    "LESSOR_WILL",
                                     "LESSEE_OBTAIN"
                                 ],
                                 "field_key": "TXN.GL_ELECTION"
@@ -4232,6 +4276,7 @@
                         "all": [
                             {
                                 "equals": [
+                                    "LESSOR_WILL",
                                     "LESSEE_OBTAIN"
                                 ],
                                 "field_key": "TXN.GL_ELECTION"
@@ -4294,7 +4339,7 @@
                     "render_as_subitem": false
                 },
                 {
-                    "body": "Lessor is in the process of purchasing or agrees to purchase mortality insurance on the Horse with a policy limit of {{TXN.MORTALITY_POLICY_AMOUNT}} and a deductible of {{TXN.MORTALITY_DEDUCTIBLE}}, and an effective date no later than {{TXN.MORTALITY_EFFECTIVE_DATE}}.",
+                    "body": "Lessor is in the process of purchasing or agrees to purchase mortality insurance on the Horse with a policy limit of {{TXN.MORTALITY_POLICY_AMOUNT}} and an effective date no later than {{TXN.MORTALITY_EFFECTIVE_DATE}}.",
                     "heading": null,
                     "cut_name": null,
                     "guidance": null,
@@ -4340,8 +4385,7 @@
                         "all": [
                             {
                                 "equals": [
-                                    "LESSOR_HAS",
-                                    "LESSOR_WILL"
+                                    "LESSOR_HAS"
                                 ],
                                 "field_key": "TXN.MORTALITY_ELECTION"
                             },
@@ -4373,8 +4417,7 @@
                         "all": [
                             {
                                 "equals": [
-                                    "LESSOR_HAS",
-                                    "LESSOR_WILL"
+                                    "LESSOR_HAS"
                                 ],
                                 "field_key": "TXN.MORTALITY_ELECTION"
                             },
@@ -4409,8 +4452,7 @@
                                         "all": [
                                             {
                                                 "equals": [
-                                                    "LESSOR_HAS",
-                                                    "LESSOR_WILL"
+                                                    "LESSOR_HAS"
                                                 ],
                                                 "field_key": "TXN.MORTALITY_ELECTION"
                                             },
@@ -4422,6 +4464,7 @@
                                     },
                                     {
                                         "equals": [
+                                            "LESSOR_WILL",
                                             "LESSEE_OBTAIN"
                                         ],
                                         "field_key": "TXN.MORTALITY_ELECTION"
@@ -4451,6 +4494,7 @@
                         "all": [
                             {
                                 "equals": [
+                                    "LESSOR_WILL",
                                     "LESSEE_OBTAIN"
                                 ],
                                 "field_key": "TXN.MORTALITY_ELECTION"
@@ -4479,6 +4523,7 @@
                         "all": [
                             {
                                 "equals": [
+                                    "LESSOR_WILL",
                                     "LESSEE_OBTAIN"
                                 ],
                                 "field_key": "TXN.MORTALITY_ELECTION"
@@ -4541,7 +4586,7 @@
                     "render_as_subitem": false
                 },
                 {
-                    "body": "Lessor is in the process of purchasing or agrees to purchase major medical insurance on the Horse with a policy limit of {{TXN.MAJOR_MEDICAL_POLICY_AMOUNT}} and a deductible of {{TXN.MAJOR_MEDICAL_DEDUCTIBLE}}, and an effective date no later than {{TXN.MAJOR_MEDICAL_EFFECTIVE_DATE}}.",
+                    "body": "Lessor is in the process of purchasing or agrees to purchase major medical insurance on the Horse with a policy limit of {{TXN.MAJOR_MEDICAL_POLICY_AMOUNT}} and an effective date no later than {{TXN.MAJOR_MEDICAL_EFFECTIVE_DATE}}.",
                     "heading": null,
                     "cut_name": null,
                     "guidance": null,
@@ -4587,8 +4632,7 @@
                         "all": [
                             {
                                 "equals": [
-                                    "LESSOR_HAS",
-                                    "LESSOR_WILL"
+                                    "LESSOR_HAS"
                                 ],
                                 "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
                             },
@@ -4620,8 +4664,7 @@
                         "all": [
                             {
                                 "equals": [
-                                    "LESSOR_HAS",
-                                    "LESSOR_WILL"
+                                    "LESSOR_HAS"
                                 ],
                                 "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
                             },
@@ -4656,8 +4699,7 @@
                                         "all": [
                                             {
                                                 "equals": [
-                                                    "LESSOR_HAS",
-                                                    "LESSOR_WILL"
+                                                    "LESSOR_HAS"
                                                 ],
                                                 "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
                                             },
@@ -4669,6 +4711,7 @@
                                     },
                                     {
                                         "equals": [
+                                            "LESSOR_WILL",
                                             "LESSEE_OBTAIN"
                                         ],
                                         "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
@@ -4698,6 +4741,7 @@
                         "all": [
                             {
                                 "equals": [
+                                    "LESSOR_WILL",
                                     "LESSEE_OBTAIN"
                                 ],
                                 "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
@@ -4726,6 +4770,7 @@
                         "all": [
                             {
                                 "equals": [
+                                    "LESSOR_WILL",
                                     "LESSEE_OBTAIN"
                                 ],
                                 "field_key": "TXN.MAJOR_MEDICAL_ELECTION"
