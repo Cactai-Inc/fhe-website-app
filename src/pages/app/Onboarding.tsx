@@ -52,10 +52,10 @@ import type { Profile } from '../../lib/types';
 
 type Step = 'details' | 'horse' | 'sign' | 'payment' | 'done';
 
-/** The plain profile fields (the minor toggle + fields are tracked apart). */
+/** The plain profile fields (the name, minor toggle + fields are tracked apart). */
 type ProfileFormFields = Omit<
   OnboardingProfileInput,
-  'has_minor' | 'minor_first_name' | 'minor_last_name' | 'minor_dob'
+  'first_name' | 'last_name' | 'has_minor' | 'minor_first_name' | 'minor_last_name' | 'minor_dob'
 >;
 
 const EMPTY_FORM: Required<ProfileFormFields> = {
