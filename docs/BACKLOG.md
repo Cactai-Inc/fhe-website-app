@@ -30,7 +30,11 @@ longer:
   reference document. Unchanged.
 - **Contract doc-roles** (Buyer/Lessee/Lessor/Seller) — to be split out of
   `category_document_requirements` into contract-engine ownership → remediation
-  Stage 1h.
+  Stage 1h. ✅ Done (contract_role_documents, 7f381cb).
+- **Gate-0 UI dispositions → Stage 3** (verification thread, 2026-07-28):
+  remove the synthetic "Other (specify)…" option from closed dropdown sets;
+  center the contract title; chips are ACCEPTED as the multi-select
+  implementation (no change).
 
 ## 2. Identity
 
