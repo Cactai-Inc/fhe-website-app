@@ -121,6 +121,20 @@ database (`pg_get_functiondef` / live rows) or the working tree at `53af184`.
   An action taken "as the company" is indistinguishable from a personal action
   in the status trail.
 
+## Owner disposition (2026-07-27): ACCEPTED AS INTENDED
+
+The traced behavior is the owner's requirement, not a defect: **display and
+documents show the company; recorded attribution identifies which staff account
+acted (via their personal contact).** No behavior change is authorized. The two
+hardcoded name fallbacks (feed_get literal, MyPosts.tsx:178) are noted for later
+behavior-identical streamlining only.
+
+**Standing rule (all stages): the company contact is identified by id and
+`is_company` ONLY — never by email.** All Stage 2 promotion / dissolution /
+backfill logic keys on ids, and any email-matching explicitly excludes the
+shared hello@ pair (company contact `352c3898…` vs Claire's personal contact
+`862b7936…`).
+
 ## The trace's verdict for D7 consolidation (later stages)
 
 Company voice today = **display-time resolution** (feed_get CASE, email
