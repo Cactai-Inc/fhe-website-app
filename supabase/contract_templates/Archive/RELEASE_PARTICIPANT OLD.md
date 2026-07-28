@@ -4,7 +4,7 @@ Effective from the Date of Signature until superseded by a later executed versio
 
 This Participant Liability Release, Assumption of Risk, Hold Harmless & Indemnification Agreement ("Agreement") is made effective as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned client ("CLIENT"), on CLIENT's own behalf and, where a minor participant is identified, on behalf of that minor ("PARTICIPANT"), in favor of {{ORG.LEGAL_NAME}} ("COMPANY"). By signing below, CLIENT acknowledges and agrees to the terms of this Agreement. Where no minor is identified, CLIENT is the participant and references to PARTICIPANT mean CLIENT.
 
-For purposes of this Agreement, "Released Parties" means COMPANY, its owners, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, representatives, affiliates, property owners, facility owners, licensors, lessors, lessees, hosts, landowners, the owners, lessors, and lessees of any horse used in or present during COMPANY's activities, successors, assigns, heirs, and any person acting on behalf of COMPANY at any location where it is authorized to conduct business.
+For purposes of this Agreement, "Released Parties" means COMPANY, its owners, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, representatives, affiliates, property owners, facility owners, licensors, lessors, lessees, hosts, landowners, successors, assigns, heirs, and any person acting on behalf of COMPANY at any location where it is authorized to conduct business.
 
 This Agreement applies at any ranch, barn, arena, stable, tack room, trail, private property, leased premises, event venue, show grounds, or other location where COMPANY conducts authorized business.
 
