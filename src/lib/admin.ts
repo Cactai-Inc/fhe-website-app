@@ -2,6 +2,7 @@
  * the admin UI is additionally gated by ProtectedRoute requireAdmin.
  */
 import { supabase } from './supabase';
+import { assertWrote } from './writeGuard';
 import type { Profile } from './types';
 import type {
   Announcement, ContentPost, ContentResource, CommunityEvent,
@@ -77,17 +78,19 @@ export async function adminRevokeStaffInvite(id: string): Promise<void> {
  *  them to a rider. RLS enforces that only an admin may call this. Keeps the legacy
  *  is_admin boolean in step so older checks stay consistent. */
 export async function adminSetRole(userId: string, role: MemberRole): Promise<void> {
-  const { error } = await supabase
+  const res = await supabase
     .from('profiles')
     .update({ role, is_admin: role === 'ADMIN' || role === 'SUPER_ADMIN' })
-    .eq('user_id', userId);
-  if (error) throw error;
+    .eq('user_id', userId)
+    .select('user_id');
+  assertWrote(res, 'The role change');
   await logModeration('user', userId, `set_role_${role.toLowerCase()}`);
 }
 
 export async function adminSetSuspended(userId: string, suspended: boolean): Promise<void> {
-  const { error } = await supabase.from('profiles').update({ is_suspended: suspended }).eq('user_id', userId);
-  if (error) throw error;
+  const res = await supabase.from('profiles').update({ is_suspended: suspended })
+    .eq('user_id', userId).select('user_id');
+  assertWrote(res, 'The suspension change');
   await logModeration('user', userId, suspended ? 'suspend' : 'reinstate');
 }
 
@@ -97,8 +100,10 @@ export async function adminSetSuspended(userId: string, suspended: boolean): Pro
 export type MemberProfilePatch = Partial<Pick<Profile,
   'first_name' | 'last_name' | 'display_name' | 'email' | 'phone' | 'riding_level' | 'bio'>>;
 export async function adminUpdateProfile(userId: string, patch: MemberProfilePatch): Promise<void> {
-  const { error } = await supabase.from('profiles').update(patch).eq('user_id', userId);
-  if (error) throw error;
+  // `.select()` makes the write report what it touched: an RLS-filtered UPDATE
+  // returns zero rows with NO error, which used to read as success.
+  const res = await supabase.from('profiles').update(patch).eq('user_id', userId).select('user_id');
+  assertWrote(res, 'This record');
   await logModeration('user', userId, 'edit_profile');
 }
 
@@ -120,8 +125,9 @@ export async function adminHardDeleteMember(userId: string): Promise<void> {
 }
 
 export async function adminSetAdmin(userId: string, isAdmin: boolean): Promise<void> {
-  const { error } = await supabase.from('profiles').update({ is_admin: isAdmin }).eq('user_id', userId);
-  if (error) throw error;
+  const res = await supabase.from('profiles').update({ is_admin: isAdmin })
+    .eq('user_id', userId).select('user_id');
+  assertWrote(res, 'The admin change');
 }
 
 // ─── Document assignment (Stage 3f) ─────────────────────────────────────────

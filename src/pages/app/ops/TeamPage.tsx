@@ -133,7 +133,12 @@ function TeamMemberPanel({
     setBusy(true); setError(null); setNote(null);
     try {
       await fn();
-      if (done) { setNote(done); } else { onChanged(); }
+      // A save that persisted must ALSO refresh the list — the old code showed
+      // "Saved." without re-reading, so a blocked write looked identical to a
+      // real one. The write layer now throws on a zero-row update, and the
+      // refetch proves what actually landed.
+      setNote(done ?? null);
+      onChanged();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'That action failed.');
     } finally { setBusy(false); }

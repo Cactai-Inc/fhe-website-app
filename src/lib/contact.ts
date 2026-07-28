@@ -3,6 +3,7 @@
  * own contact-prefs read/save (profiles columns, RLS own-row; the role guard keeps
  * sensitive columns admin-only, these are all self-editable). */
 import { supabase } from './supabase';
+import { assertWrote } from './writeGuard';
 
 export function telHref(number: string): string {
   return `tel:${number.replace(/[^\d+]/g, '')}`;
@@ -125,6 +126,6 @@ export async function saveMyContactPrefs(patch: Partial<Omit<MyContactPrefs, 'em
   const { data: auth } = await supabase.auth.getUser();
   const uid = auth?.user?.id;
   if (!uid) throw new Error('not signed in');
-  const { error } = await supabase.from('profiles').update(patch).eq('user_id', uid);
-  if (error) throw error;
+  const res = await supabase.from('profiles').update(patch).eq('user_id', uid).select('user_id');
+  assertWrote(res, 'Your changes');
 }

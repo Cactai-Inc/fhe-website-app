@@ -14,6 +14,7 @@
  * RCUD, employee reads own rows) server-side; these wrappers only shape calls.
  */
 import { supabase } from '../supabase';
+import { assertWrote } from '../writeGuard';
 
 // ─── Row shapes (mirror the migration; joins are the embedded selects) ───────
 
@@ -192,30 +193,32 @@ export async function listStaffProfiles(): Promise<StaffProfile[]> {
 
 /** "Create" = stamp employment fields onto the chosen profile (Stage 1j). */
 export async function createStaffProfile(input: StaffProfileInput): Promise<void> {
-  const { error } = await supabase
+  const res = await supabase
     .from('profiles')
     .update({
       title: input.title ?? null,
       pay_type: input.pay_type ?? null,
       staff_active: input.active ?? true,
     })
-    .eq('user_id', input.profile_user_id);
-  if (error) throw error;
+    .eq('user_id', input.profile_user_id)
+    .select('user_id');
+  assertWrote(res, 'The staff record');
 }
 
 export async function updateStaffProfile(
   id: string,
   input: StaffProfileInput,
 ): Promise<void> {
-  const { error } = await supabase
+  const res = await supabase
     .from('profiles')
     .update({
       title: input.title ?? null,
       pay_type: input.pay_type ?? null,
       staff_active: input.active ?? true,
     })
-    .eq('user_id', id);
-  if (error) throw error;
+    .eq('user_id', id)
+    .select('user_id');
+  assertWrote(res, 'The staff record');
 }
 
 // ─── Shifts ──────────────────────────────────────────────────────────────────
