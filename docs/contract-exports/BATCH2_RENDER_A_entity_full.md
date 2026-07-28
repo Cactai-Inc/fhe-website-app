@@ -1,19 +1,17 @@
-# HORSE_LEASE_V2 — SAMPLE RENDER (fictional data, for review only)
+# HORSE_LEASE_V2 — BATCH 2 PREVIEW (applied to prod 2026-07-27 after approval; renders generated pre-application in a rolled-back transaction)
 
-Generated 2026-07-27 from the LIVE template (Batch 2 applied) in a rolled-back
-transaction — nothing saved. Fictional lessor/horse/vendor details; FHE is the
-Lessee (entity). Configuration: partial lease, commercial-program purpose, all
-six permitted activities ON with restrictions, evaluation period (fixed $250
-nonrefundable fee), trainer care + exercise, GL maintained (open description,
-40/60 %-split fault-triggered deductible), mortality elected ($50k limit ≥ FMV,
-60/40 premium split, Lessor deductible), medical covered ($15k / $500 with
-$200-$300 auto-summed split, Lessor excess), CCC + Coordination of Coverage,
-horse relocation ON, renewal ON. SIG.* tokens are completed by the signing layer.
+**Render A** — entity Lessee (FHE), commercial-program purpose, GL maintained + %-split fault-triggered deductible, mortality elected ($50k ≥ $45k FMV), medical covered with auto-summed $-split deductible + excess responsibility, CCC + Coordination, fixed $250 evaluation fee.
+
+Validation rejections proven:
+```
+ERROR:  Mortality policy limit ($30,000) must be at least the Horse's fair market value ($45,000.00)
+ERROR:  A $ share (600) cannot exceed the stated deductible ($500.00)
+```
 
 ---
 
 1. PARTIES
-1.1 This Horse Lease Agreement (the "Agreement") is made effective as of August 1, 2026 by and between Margaux Delacroix of 4821 Saddlebrook Lane, Rancho Santa Fe, CA 92067 ("Lessor") and French Heritage Equestrian of 11500 Clews Ranch Rd Ste A, San Diego, CA 92130 ("Lessee").
+1.1 This Horse Lease Agreement (the "Agreement") is made effective as of July 24, 2026 by and between CJ Z of 752 Windmere Ct, San Diego, CA 92109 ("Lessor") and French Heritage Equestrian of 11500 Clews Ranch Rd Ste A, San Diego, CA 92130 ("Lessee").
 
 2. PURPOSE AND LEASE GRANT
 2.1 Purpose of Agreement
@@ -27,15 +25,13 @@ Lease type: Partial lease (shared or limited access).
 
 3. SCHEDULE FOR LESSEE'S USAGE
 3.1 Schedule for Lessee's Usage
-Reserved days of use: Lessor: Tue, Thu, Sun; Lessee: Mon, Wed, Fri, Sat.
+Days of the week reserved for Lessee's use: Lessor: Tue, Thu, Sun; Lessee: Mon, Wed, Fri, Sat.
 
-3.2 Additional or custom schedule terms: Lessee's scheduled days may be swapped with 24 hours' mutual written notice.
-
-3.3 Schedule Changes
+3.2 Schedule Changes
 Any changes to the agreed upon schedule must be made and accepted in writing.
 
 4. LEASE FEE
-4.1 Per-use fee of $95.00 per ride, invoiced monthly in arrears; no fixed monthly fee.
+4.1 Initial payment due: 0.
 
 5. PAYMENT TERMS
 5.1 Right of Offset
@@ -49,19 +45,15 @@ All payments are due on their due date or within 5 business days of notification
 
 6. PAYMENT METHOD
 6.1 Payments by the Lessee
-The Lessee may pay amounts owed under this Agreement by the following method(s): Cash, Zelle, Credit Card.
+The Lessee may pay amounts owed under this Agreement by the following method(s): Cash, Zelle.
 
-6.2 Credit card payments are processed as follows: Card payments processed via Square; a 3% processing surcharge applies.
-
-6.3 Payments by the Lessor
+6.2 Payments by the Lessor
 The Lessor may pay amounts owed under this Agreement by the following method(s): Cash, Zelle.
 
 7. THE HORSE
 7.1 Horse
 This Agreement applies to the following horse (the "Horse"): Beaumont de Cactai
-Color: Bay
 Markings: Star and left hind sock
-Breed: Warmblood
 Registration Number: SF-2016-04412
 Sex: Gelding
 Year foaled: April 12, 2016
@@ -72,36 +64,28 @@ Passport: FRA-2016-778110
 7.2 Ownership of the Horse
 Lessor warrants that Lessor lawfully owns the Horse — whether owned outright, financed without any restriction that prohibits or limits leasing the Horse, or owned jointly with one or more other owners — and that Lessor has all requisite rights, authority, and (where there are co-owners) permission to enter into this Agreement and lease the Horse.
 
-7.3 Are there any ownership related leasing restrictions? Yes
+7.3 Are there any ownership related leasing restrictions? No
 
-7.4 Ownership related leasing restrictions: The Horse may not be relocated outside San Diego County without Lessor's prior written consent
-
-7.5 Behavior
+7.4 Behavior
 The Lessor warrants that the Horse has no history of dangerous or vicious behavior as of the Effective Date of this Agreement.
 
-7.6 The Lessor notes the following known exceptions to the behavior of the Horse: Occasionally herd-bound when separated from pasture mates; settles within a few minutes under a confident handler.
-
-7.7 Physical Condition
+7.5 Physical Condition
 The Lessor warrants that the Horse is sound and in good physical condition as of the Effective Date of this Agreement.
 
-7.8 The Lessor notes the following known exceptions to the physical condition of the Horse: Mild seasonal allergies managed with a daily antihistamine supplement during spring months.
+7.6 Pre-Lease Veterinary Examination
+Pre-lease veterinary examination of the Horse: Lessee waives the option
 
-7.9 Pre-Lease Veterinary Examination
-Pre-lease veterinary examination of the Horse: Lessee requested at their own expense
+7.7 Pre-Lease Trainer Evaluation
+Pre-lease trainer evaluation of the Horse: Lessee waives the option
 
-7.10 Pre-Lease Trainer Evaluation
-Pre-lease trainer evaluation of the Horse: Lessor provided at no cost
-
-7.11 Disclaimer of Warranties
+7.8 Disclaimer of Warranties
 Except for the representations expressly stated in this Agreement, LESSOR MAKES NO WARRANTIES, EXPRESS OR IMPLIED, REGARDING THE HORSE, INCLUDING THE WARRANTY OF FITNESS FOR A PARTICULAR PURPOSE.
 
 8. LOCATION OF HORSE
 8.1 Location of the Horse
 Location of the Horse: FHE Main Barn Stall 12.
 
-8.2 Location during lease term: French Heritage Equestrian, 11500 Clews Ranch Rd, San Diego, CA 92130.
-
-8.3 Lessor may inspect the Horse at any time. If Lessor determines that the Horse is not being properly cared for, Lessor may take possession of the Horse.
+8.2 Lessor may inspect the Horse at any time. If Lessor determines that the Horse is not being properly cared for, Lessor may take possession of the Horse.
 
 9. EVALUATION PERIOD
 9.1 Evaluation Period
@@ -109,20 +93,13 @@ Lessee shall have an evaluation period of 2 weeks beginning on the date this Agr
 
 10. AGREEMENT TERM
 10.1 Agreement Term
-Term of this Agreement: Fixed period. This Agreement begins on August 1, 2026.
+Term of this Agreement: Open-ended. This Agreement begins on August 1, 2026.
 
-10.2 This Agreement continues until July 31, 2027.
-
-10.3 Renewal Terms
-Renewal terms: Renews for successive 12-month terms upon mutual written agreement at least 30 days before expiration.
-
-10.4 Additional terms: Lessor shall provide Lessee at least 14 days' written notice before listing the Horse for sale.
-
-10.5 Notwithstanding the term stated above, this Agreement may be terminated earlier as provided in the Termination section of this Agreement.
+10.2 Notwithstanding the term stated above, this Agreement may be terminated earlier as provided in the Termination section of this Agreement.
 
 11. PERMITTED USE(S) & RESTRICTIONS
 11.1 Permitted Use(s)
-Lessor grants Lessee the right to use the Horse for the following purpose(s): Riding Lessons, Solo Arena Riding, Group Arena Riding, Jumping, Competitions, Trail Riding
+Lessor grants Lessee the right to use the Horse for the following purpose(s): Riding Lessons
 Lessee shall not use the Horse for any other purpose without Lessor's prior written consent.
 
 11.2 Riding Lessons, Jumping, and Competitions may take place only while a French Heritage Equestrian Approved Trainer or Instructor is present.
@@ -134,41 +111,20 @@ Lessons shall be conducted only by a French Heritage Equestrian Approved Instruc
 11.4 Training
 Any professional training of the Horse under this Agreement, including groundwork, schooling, and under-saddle training, shall be conducted only by a French Heritage Equestrian Approved Trainer.
 
-11.5 Competitions
-Expenses of competition (entry fees, transportation, and the like) are: Paid by Lessee.
-Any prize money or winnings earned in competition shall belong to: Lessee.
+11.5 Additional Restrictions
 
-11.6 Jumping Restrictions
+11.6 Other Allowed Activities
+Lessee is permitted to engage in the following activities with the Horse: None.
 
-11.7 Jumping is restricted as follows: maximum height 0.80 m (2 ft 7 in); no more than 2 days per week; under trainer supervision only: Yes.
-
-11.8 Competition Restrictions
-
-11.9 Competitions are restricted as follows: Schooling shows within San Diego County only.
-
-11.10 Trail-Riding Restrictions
-
-11.11 Trail riding is restricted as follows: Marked trails on the boarding facility property only, at walk and trot.
-
-11.12 Additional Restrictions
-Additional restrictions: No riding during scheduled facility maintenance hours.
-
-11.13 Other Allowed Activities
-Lessee is permitted to engage in the following activities with the Horse: Breeding, Film / Television / Advertising, Other.
-
-11.14 Other allowed activity: No overnight offsite stabling.
-
-11.15 Allowing Others to Ride
-The following additional persons may ride or handle the Horse without Lessor's prior permission: Lessee's family members, The trainer/instructor, Other.
+11.7 Allowing Others to Ride
+The following additional persons may ride or handle the Horse without Lessor's prior permission: Other.
 Only the persons identified above shall be permitted to ride or handle the Horse without Lessor's written permission.
 
-11.16 Other persons allowed to ride or handle the Horse: Visiting clinician riders approved by Lessor in writing.
-
-11.17 Releases Required for Authorized Riders
+11.8 Releases Required for Authorized Riders
 No person other than Lessee may ride or handle the Horse under this Agreement unless that person (or, if a minor, that person's parent or legal guardian) has first executed a liability release in favor of the Lessor Parties in a form reasonably acceptable to Lessor. Lessee is responsible for ensuring this requirement is satisfied before permitting any authorized person to ride or handle the Horse.
 
-11.18 Transport of the Horse
-Transport of the Horse to offsite locations (other than for medical care, which is always permitted): Lessor grants permission to transport offsite
+11.9 Transport of the Horse
+Transport of the Horse to offsite locations (other than for medical care, which is always permitted): Lessor prohibits offsite transport without written consent
 For clarity, riding trails attached to the location at which the Horse is kept under this Agreement are not offsite locations.
 
 12. HORSE CARE AND EXPENSES
@@ -177,42 +133,22 @@ Lessee's use of the Horse is a responsibility as well as a right: regular, consi
 
 12.2 3rd Party Exercise
 Lessee is permitted to engage an approved 3rd party to exercise the Horse. All 3rd party exercise shall be conducted only by a French Heritage Equestrian Approved Trainer. Other 3rd parties must be approved in writing by the Lessor.
-Party responsible for arranging: Shared
-Party responsible for costs: Shared
-Lessee's share of the cost: 50%
 
 12.3 Horse care and expenses shall be managed and paid for by the responsible party as listed below.
 
-12.4 Daily joint supplement (1 scoop AM), provided by Lessor and administered by barn staff.
+12.4 Farrier Care
+Party responsible for arranging: Lessor
+Party responsible for costs: Lessor
 
-12.5 Farrier Care
-Party responsible for arranging: Lessee
-Party responsible for costs: Lessee
-Farrier: Daniel Herrera
-Farrier phone: (619) 555-0177
+12.5 Veterinary Care
+Party responsible for arranging: Lessor
+Party responsible for costs: Lessor
 
-12.6 Veterinary Care
-Party responsible for arranging: Lessee
-Party responsible for costs: Lessee
-Veterinarian: Dr. Amelia Hartwell
-Practice: Coastal Equine Veterinary Group
-Address: 2450 Del Mar Heights Rd, Del Mar, CA 92014
-Veterinarian phone: (858) 555-0163
+12.6 Protective Equipment
+Horse must wear protective equipment: No
 
-12.7 Protective Equipment
-Horse must wear protective equipment: Yes
-
-12.8 Lessor will provide the following equipment for the Horse: Front boots / wraps, Hind boots / wraps
-Lessee must ensure equipment is used and properly secured to the Horse prior to all activities.
-
-12.9 Tack
+12.7 Tack
 When riding and handling the Horse, Lessee shall use only tack in good condition that is properly fitted to the Horse.
-Draw reins and any gadget training aids are prohibited.
-
-12.10 Rider Aids
-The following rider aids are prohibited: Crop or bat, Other.
-
-12.11 Other prohibited rider aid: Spurs only with instructor approval.
 
 13. INSURANCE, RISK OF LOSS, AND INDEMNIFICATION
 13.1 Definitions; Binding Effect; Third-Party Beneficiaries
@@ -255,25 +191,13 @@ In consideration for being permitted to handle or ride the Horse, Lessee, on beh
 13.15 Required Protective Attire
 Lessee shall wear, and shall ensure that any other person riding the Horse under Lessee's authorization wears, an appropriately fitted and securely fastened ASTM/SEI-certified equestrian helmet at all times while mounted on the Horse, together with heeled boots and long pants; gloves and long sleeves are highly recommended. Riders shall provide their own helmet, boots, and pants meeting these requirements unless otherwise agreed in writing. Lessee, on behalf of all Lessee Parties, assumes all increased risk of injury or death resulting from any failure to wear the required attire. Any refusal or failure to wear an approved helmet or the other required attire immediately revokes permission to ride or handle the Horse and constitutes a material breach of this Agreement.
 
-13.16 Trail Riding Risks
-Lessee acknowledges that riding outside an enclosed arena, including trail riding, exposes Lessee and the Horse to additional risks, including uneven terrain, traffic, wildlife, water crossings, and other conditions that may cause the Horse to spook or behave unpredictably. Lessee voluntarily assumes these and any other unforeseen or unspecified additional risks related to this activity.
-
-13.17 Jumping Risks
-Lessee acknowledges that jumping the Horse exposes Lessee and the Horse to additional risks beyond flat riding, including refusals, run-outs, awkward or missed distances, falls, unseating, and the Horse landing, stopping, or twisting unpredictably. Lessee voluntarily assumes these and any other unforeseen or unspecified additional risks related to this activity.
-
-13.18 Competition Risks
-Lessee acknowledges that competing with the Horse exposes Lessee and the Horse to additional risks, including unfamiliar and crowded show grounds, proximity to other horses and riders, loudspeakers, banners, and other stimuli that may cause the Horse to spook or behave unpredictably, as well as the physical demands and pressures of competition. Lessee voluntarily assumes these and any other unforeseen or unspecified additional risks related to this activity.
-
-13.19 Shared Arena Riding Risks
-Lessee acknowledges that riding in an arena at the same time as other riders exposes Lessee and the Horse to additional risks, including collisions, crowding, sudden movements or loss of control by other horses or riders, and the Horse reacting to other horses. Lessee agrees to ride with awareness of others, to follow standard arena etiquette and right-of-way rules and any directions of Lessor or an instructor, and voluntarily assumes these and any other unforeseen or unspecified additional risks related to this activity.
-
-13.20 Waiver of Unknown Claims
+13.16 Waiver of Unknown Claims
 Each party, on behalf of itself and, respectively, the Lessor Parties or the Lessee Parties, expressly waives any and all claims against the other party and its respective party group that the waiving party does not know or suspect to exist at the time of this Agreement, and acknowledges that this waiver is a material term of this Agreement. Each party assumes the risk that claims presently unknown to it may later be discovered.
 
-13.21 Mutual Indemnification
+13.17 Mutual Indemnification
 Each party shall indemnify, defend, and hold harmless the other party and, respectively, the Lessor Parties or the Lessee Parties, from and against any and all claims, damages, losses, liabilities, costs, and expenses arising out of the indemnifying party's use, handling, care, or possession of the Horse, except to the extent caused by the gross negligence, reckless conduct, or intentional misconduct of an indemnified party.
 
-13.22 Limitation of Liability
+13.18 Limitation of Liability
 Under no circumstances shall either party be liable to the other for any special, consequential, incidental, or punitive damages arising out of or relating to this Agreement. The total aggregate liability of either party (including, respectively, the Lessor Parties and the Lessee Parties) to the other under this Agreement shall not exceed the Horse's current fair market value of $45,000.00. Any amount owed by one party to the other under this Agreement shall be reduced by the amount of any insurance proceeds actually received by the party owed with respect to the same loss. This limitation does not apply to gross negligence, reckless conduct, or intentional misconduct.
 
 14. TERMINATION
@@ -306,10 +230,10 @@ Phone: (858) 439-3614
 Email: hello@fhequestrian.com
 
 15.3 Lessor
-Name: Margaux Delacroix
-Address: 4821 Saddlebrook Lane, Rancho Santa Fe, CA 92067
-Phone: (760) 555-0142
-Email: margaux.delacroix@example.com
+Name: CJ Z
+Address: 752 Windmere Ct, San Diego, CA 92109
+Phone: 6178384183
+Email: cjzigs@icloud.com
 
 15.4 Changes in Contact Information
 Each party shall promptly notify the other party in writing of any change in the party's address or contact information.
@@ -349,5 +273,5 @@ Date: {{SIG.LESSEE.DATE}}
 
 LESSOR (OWNER)
 Signature: {{SIG.LESSOR.NAME}}
-Printed Name: Margaux Delacroix
+Printed Name: CJ Z
 Date: {{SIG.LESSOR.DATE}}

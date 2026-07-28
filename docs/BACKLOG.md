@@ -211,3 +211,11 @@ audit 1b, horse-table evidence 1c, wording inventory 1d, reader/writer enumerati
   `20260727150000_lease_v2_insurance_elections.sql`. FHE $25k CCC-limit warning is
   authoring-side guidance on the mortality election field; a hard UI flag is a
   possible later enhancement.
+- **Lease Batch 2 applied + pushed** — full insurance rebuild (GL open format /
+  Lessor-held mortality with ≥FMV validation / Medical / entity-only CCC /
+  Coordination of Coverage), entity/individual representations pair driven by
+  derived `LESSEE.PARTY_TYPE`, authorized-rider release precondition, single
+  FMV Limitation, termination hardening + Survival, purpose + evaluation-fee
+  restructure. Lock gates: unset elections and party-type/contact contradictions
+  cannot lock or execute. Migrations `20260727235000` + `20260728000500`;
+  verification renders + lock-gate proof in `docs/contract-exports/BATCH2_*`.
