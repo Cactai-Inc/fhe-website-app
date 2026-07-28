@@ -228,7 +228,7 @@ export default function Release() {
           {blocked ? (
             <div className="bg-white border border-green-800/10 p-8">
               <p className="body-text text-secondary mb-6 max-w-2xl">
-                This document is signed in your client account — sign in or use
+                This document is signed in your account — sign in or use
                 your invitation link.
               </p>
               <div className="flex flex-wrap gap-4">
