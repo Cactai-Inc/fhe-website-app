@@ -59,7 +59,7 @@ export interface StableItem {
 
 // ── Horses ─────────────────────────────────────────────────────
 // REPOINTED (HANDOFF-horse-records.md): horses live on the EXISTING horse-records
-// table (`horses` + `horse_parties`), owned by the agreements thread. These functions
+// table (`horses` + `horse_relationships`), owned by the agreements thread. These functions
 // keep the UI's stable surface but resolve to member-scoped SECURITY DEFINER RPCs
 // (my_stable_horses / my_stable_add_horse / …). "My stable" = horses where the member
 // is the current owner contact or holds an active party row. Fields the record

@@ -1054,18 +1054,9 @@ export interface LessonCreditInput {
   credits_total: number; credits_remaining?: number;
 }
 
-// Records (mod.horserecords)
-export type HorsePartyRole = 'owner' | 'lessee' | 'trainer' | 'caretaker' | 'boarder';
-export interface HorseParty {
-  id: string; org_id: string; horse_id: string; contact_id: string;
-  role: HorsePartyRole; share_pct: number | null;
-  effective_from: string | null; effective_to: string | null; notes: string | null;
-  created_at: string; updated_at: string;
-}
-export interface HorsePartyInput {
-  horse_id: string; contact_id: string; role: HorsePartyRole; share_pct?: number | null;
-  effective_from?: string | null; effective_to?: string | null; notes?: string | null;
-}
+// Records (mod.horserecords) — the ownership/rights ledger lives in
+// src/lib/ops/api-records.ts on the horse_relationships survivor (Stage 1i);
+// the duplicate helper pair that lived here was deleted with the old table.
 
 export interface HealthEvent {
   id: string; org_id: string; horse_id: string; event_type: string; occurred_at: string;
@@ -1442,36 +1433,8 @@ export async function createLessonCredit(input: LessonCreditInput): Promise<Less
   return data as LessonCredit;
 }
 
-// ─── Records (mod.horserecords) ─────────────────────────────────────────────
-
-export async function listHorseParties(horseId?: string): Promise<HorseParty[]> {
-  let query = supabase
-    .from('horse_parties')
-    .select('*')
-    .is('deleted_at', null);
-  if (horseId) query = query.eq('horse_id', horseId);
-  const { data, error } = await query.order('effective_from', { ascending: false, nullsFirst: false });
-  if (error) throw error;
-  return (data ?? []) as HorseParty[];
-}
-
-export async function createHorseParty(input: HorsePartyInput): Promise<HorseParty> {
-  const { data, error } = await supabase
-    .from('horse_parties')
-    .insert({
-      horse_id: input.horse_id,
-      contact_id: input.contact_id,
-      role: input.role,
-      share_pct: input.share_pct ?? null,
-      effective_from: input.effective_from ?? null,
-      effective_to: input.effective_to ?? null,
-      notes: input.notes ?? null,
-    })
-    .select('*')
-    .single();
-  if (error) throw error;
-  return data as HorseParty;
-}
+// ─── Records (mod.horserecords) ──────────────────────────────────────────────
+// Ledger helpers live in src/lib/ops/api-records.ts (horse_relationships).
 
 export async function listHealthEvents(horseId?: string): Promise<HealthEvent[]> {
   let query = supabase

@@ -4,7 +4,7 @@ FHE DOCUMENT MERGE TOKEN DICTIONARY (owner canon, 2026-07-03 revision)
 
 Format: {{NAMESPACE.FIELD}}. Namespaces: ORG (company), DOC (document instance), ORD (purchase instance — resolves from the live `purchases` + `purchase_items` spine; the retired `orders` table is NOT the source), REQ (request inputs submitted with a purchase), CLIENT (authenticated person profile), PARTICIPANT (minor receiving services, from linked dependent record), HORSE (horse record), SIG (signature/acknowledgment events), TXN (transaction/fee terms), ENG (engagement scope inputs), DIR (transaction direction terms resolved by role), SELLER/BUYER/LESSOR/LESSEE (third-party transaction parties, not necessarily clients).
 
-Data sources: CLIENT.* autofills from the profiles table for the authenticated user. PARTICIPANT.* autofills from the dependents/minors link. HORSE.* autofills from the horses table plus horse_records; CLIENT.HORSE_CAPACITY resolves from horse_parties.role at signing. ORD.* resolves from the purchases row (and its purchase_items lines); REQ.* is captured per purchase (per-line intent lives in purchase_items.config jsonb). TXN.*/ENG.*/DIR.* are set per document at approval. SIG.* are captured at the acknowledgment event. SELLER/BUYER/LESSOR/LESSEE are entered per transaction document.
+Data sources: CLIENT.* autofills from the profiles table for the authenticated user. PARTICIPANT.* autofills from the dependents/minors link. HORSE.* autofills from the horses table plus horse_records; CLIENT.HORSE_CAPACITY resolves at signing inside generate_document from horses.current_owner_contact_id / horses.lessee_contact_id matched against the signer via document_parties (corrected 2026-07-27 — the old horse_parties.role claim was never the live logic). ORD.* resolves from the purchases row (and its purchase_items lines); REQ.* is captured per purchase (per-line intent lives in purchase_items.config jsonb). TXN.*/ENG.*/DIR.* are set per document at approval. SIG.* are captured at the acknowledgment event. SELLER/BUYER/LESSOR/LESSEE are entered per transaction document.
 
 ORG NAMESPACE
 ORG.LEGAL_NAME - Company legal/DBA name as rendered on all documents. Resolves to the DBA entity, never an individual's name. Used in all 18 documents.
@@ -30,7 +30,7 @@ CLIENT.DOB - Date of birth. Medical auth only.
 CLIENT.ADDRESS - Mailing address. Medical auth, vet auth, search retainer, transaction representation.
 CLIENT.PHONE - Phone. All signed documents.
 CLIENT.EMAIL - Email. All signed documents.
-CLIENT.HORSE_CAPACITY - Capacity as to the horse (owner, co-owner, lessee, authorized agent), resolved from horse_parties.role at signing. Equine services release, vet auth.
+CLIENT.HORSE_CAPACITY - Capacity as to the horse (owns / leases / is an authorized agent of), resolved at signing inside generate_document from horses.current_owner_contact_id and horses.lessee_contact_id matched against the signer via document_parties. Equine services release, vet auth.
 CLIENT.RIDING_EXPERIENCE_YEARS - Years of riding experience attested. Participant release, jumper addendum.
 CLIENT.JUMP_EXPERIENCE - Prior jumping experience and maximum height schooled. Participant release, jumper addendum.
 CLIENT.RIDING_BACKGROUND - Prior instruction, showing, or competition experience. Participant release, jumper addendum.

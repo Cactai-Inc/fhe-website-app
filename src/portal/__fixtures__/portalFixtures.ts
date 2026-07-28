@@ -8,7 +8,7 @@
  * Column shapes verified against the backbone migrations:
  *   - engagements                 20260629030000_engagements_horses_backbone.sql
  *   - documents (merged_body)     20260629050000… + generate_document
- *   - horse_parties               20260630080000_mod_horserecords.sql
+ *   - horse_relationships         20260728060000_stage1i (survivor ledger)
  *   - billable_lines              20260630040000_products_billing.sql
  *   - org_public_config (jsonb)   20260630020000_value_registry.sql
  */
@@ -52,7 +52,7 @@ export const documentFixture: DocumentRow = {
   updated_at: '2026-06-17T11:30:00.000Z',
 };
 
-// ─── horse_parties row ───────────────────────────────────────────────────────
+// ─── horse_relationships row (UI view shape used by the ledger page) ─────────
 export type HorsePartyRole =
   | 'owner'
   | 'lessee'
@@ -60,7 +60,8 @@ export type HorsePartyRole =
   | 'caretaker'
   | 'boarder';
 
-/** Mirrors public.horse_parties (20260630080000_mod_horserecords.sql). */
+/** Mirrors the ledger page's UI view of public.horse_relationships
+ *  (Stage 1i survivor; see src/lib/ops/api-records.ts toHorseParty). */
 export interface HorseParty {
   id: string;
   org_id: string;

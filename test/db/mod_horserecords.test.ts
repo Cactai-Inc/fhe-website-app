@@ -3,20 +3,21 @@
  * module mod.horserecords.
  *
  * Real-path data tests (Wiring & Verification Contract §15.1(1)): every assertion
- * exercises the ACTUAL tables/predicate the app uses (horse_parties,
- * horse_health_events, caller_owns_horse) as the CORRECT RLS role, and asserts
- * rows land in the right table with the right columns and read back.
+ * exercises the ACTUAL tables/predicate the app uses (horse_relationships —
+ * the Stage 1i survivor — horse_health_events, caller_owns_horse) as the
+ * CORRECT RLS role, and asserts rows land with the right columns and read back.
  *
- * Covers, per the U9 spec:
- *  - org_boundary + module_gate: a records-OFF org (org B) sees ZERO rows and
- *    cannot INSERT even as ADMIN; an org with the module ON (org A) works.
- *  - org_id defaults to the caller's tenant on insert (seam 1).
- *  - an OWNER contact reads its own horse_parties and horse_health_events.
+ * Contract under test (Stage 1i):
+ *  - horse_health_events keeps org_boundary + module_gate (records-OFF org B
+ *    sees ZERO rows and cannot INSERT even as ADMIN).
+ *  - horse_relationships is core intake infrastructure — NOT module-gated:
+ *    org isolation only (each org's staff read/write ONLY their own rows;
+ *    org_id is explicit and WITH CHECK pins it to current_org()).
+ *  - a party contact reads its own horse_relationships row.
  *  - caller_owns_horse() resolves via owner-of-record OR an owned engagement.
- *  - horse_parties rejects a hard DELETE (REVOKE DELETE); soft-delete only.
- *  - payers (horse_parties) resolve only within current_org() — no cross-org
- *    contact leakage (org A staff never see org B's parties, and a shared-role
- *    contact does not bridge tenants).
+ *  - horse_relationships rejects a hard DELETE (REVOKE DELETE); rows END
+ *    (active=false, ended_at) and stay as history.
+ *  - payers resolve only within current_org() — no cross-org contact leakage.
  */
 import { beforeAll, afterAll, describe, expect, it } from 'vitest';
 import { createTestDb, type TestDb } from './harness';
@@ -100,12 +101,12 @@ beforeAll(async () => {
   await h.q(`select set_config('app.current_org',$1,false)`, [orgA]);
   bHorse = await seedHorse(orgB, 'RivalHorse', bContact);
 
-  // Seed horse_parties + horse_health_events in each org as that org's ADMIN,
-  // via the REAL RLS path (not superuser), so boundary + gate are exercised.
+  // Seed horse_relationships + horse_health_events in each org as that org's
+  // ADMIN, via the REAL RLS path (not superuser), so the boundaries are exercised.
   await h.asUser(aAdmin);
   await h.q(
-    `insert into horse_parties (horse_id, contact_id, role, share_pct, effective_from)
-       values ($1,$2,'owner',100,'2026-01-01')`, [aHorseOwned, aOwnerContact]);
+    `insert into horse_relationships (org_id, horse_id, party_contact_id, relationship, share_pct, term_start)
+       values ($1,$2,$3,'OWNER',100,'2026-01-01')`, [orgA, aHorseOwned, aOwnerContact]);
   await h.q(
     `insert into horse_health_events (horse_id, event_type, occurred_at, next_due, notes)
        values ($1,'vaccination', now(), '2027-01-01','EWT/WNV')`, [aHorseOwned]);
@@ -113,24 +114,24 @@ beforeAll(async () => {
     `insert into horse_health_events (horse_id, event_type, notes)
        values ($1,'farrier','trim + shoes')`, [aHorseEng]);
 
-  // org B ADMIN seeds a party on its own horse. This MUST fail on the module gate
-  // (org B lacks mod.horserecords) — asserted below; seed it as SUPERUSER instead
-  // so the cross-org-leakage probe has a real org-B row to (not) leak.
+  // org B's row for the cross-org-leakage probe (seeded as superuser; org B's
+  // own staff-write ability is asserted below — the survivor is not module-gated).
   await h.asSuperuser();
   await h.q(`select set_config('app.current_org',$1,false)`, [orgB]);
   await h.q(
-    `insert into horse_parties (org_id, horse_id, contact_id, role, share_pct)
-       values ($1,$2,$3,'owner',100)`, [orgB, bHorse, bContact]);
+    `insert into horse_relationships (org_id, horse_id, party_contact_id, relationship, share_pct)
+       values ($1,$2,$3,'OWNER',100)`, [orgB, bHorse, bContact]);
   await h.q(`select set_config('app.current_org',$1,false)`, [orgA]);
 });
 
 afterAll(async () => { await h?.close(); });
 
-describe('module gate — a records-OFF org (org B) sees/writes nothing', () => {
-  it('org B ADMIN sees ZERO horse_parties (module gate ANDs to false)', async () => {
+describe('module gate (health) + org isolation (relationships)', () => {
+  it('org B ADMIN sees ONLY its own org\'s horse_relationships (org isolation, no module gate)', async () => {
     await h.asUser(bAdmin);
-    const rows = await h.q(`select id from horse_parties`);
-    expect(rows).toHaveLength(0);
+    const rows = await h.q<{ org_id: string }>(`select org_id from horse_relationships`);
+    expect(rows.length).toBeGreaterThanOrEqual(1);
+    expect(rows.every((r) => r.org_id === orgB)).toBe(true);
   });
 
   it('org B ADMIN sees ZERO horse_health_events', async () => {
@@ -139,11 +140,14 @@ describe('module gate — a records-OFF org (org B) sees/writes nothing', () => 
     expect(rows).toHaveLength(0);
   });
 
-  it('org B ADMIN cannot INSERT a horse_party (module gate WITH CHECK denies)', async () => {
+  it('org B ADMIN CAN write its own org\'s relationship rows (not module-gated), but only its own org', async () => {
     await h.asUser(bAdmin);
+    await h.q(
+      `insert into horse_relationships (org_id, horse_id, party_contact_id, relationship) values ($1,$2,$3,'CARETAKER')`,
+      [orgB, bHorse, bContact]);
     await expect(
-      h.q(`insert into horse_parties (horse_id, contact_id, role) values ($1,$2,'owner')`,
-        [bHorse, bContact]),
+      h.q(`insert into horse_relationships (org_id, horse_id, party_contact_id, relationship) values ($1,$2,$3,'CARETAKER')`,
+        [orgA, bHorse, bContact]),
     ).rejects.toThrow();
   });
 
@@ -165,13 +169,13 @@ describe('module gate — a records-OFF org (org B) sees/writes nothing', () => 
 });
 
 describe('real-path insert — org A ADMIN, right table/columns, reads back', () => {
-  it('org A ADMIN reads back the seeded party with its columns', async () => {
+  it('org A ADMIN reads back the seeded relationship with its columns', async () => {
     await h.asUser(aAdmin);
-    const [row] = await h.q<{ role: string; share_pct: string; org_id: string; horse_id: string }>(
-      `select role, share_pct, org_id, horse_id from horse_parties where horse_id=$1`, [aHorseOwned]);
-    expect(row.role).toBe('owner');
+    const [row] = await h.q<{ relationship: string; share_pct: string; org_id: string; horse_id: string }>(
+      `select relationship, share_pct, org_id, horse_id from horse_relationships where horse_id=$1`, [aHorseOwned]);
+    expect(row.relationship).toBe('OWNER');
     expect(Number(row.share_pct)).toBe(100);
-    expect(row.org_id).toBe(orgA);     // seam 1: org_id defaulted to caller's tenant
+    expect(row.org_id).toBe(orgA);
     expect(row.horse_id).toBe(aHorseOwned);
   });
 
@@ -185,22 +189,22 @@ describe('real-path insert — org A ADMIN, right table/columns, reads back', ()
     expect(row.org_id).toBe(orgA);
   });
 
-  it('org_id defaults to the caller\'s tenant even when omitted from the INSERT', async () => {
+  it('org_id is explicit on the survivor and WITH CHECK pins it to the caller\'s tenant', async () => {
     await h.asUser(aAdmin);
     await h.q(
-      `insert into horse_parties (horse_id, contact_id, role) values ($1,$2,'trainer')`,
-      [aHorseEng, aOwnerContact]);
+      `insert into horse_relationships (org_id, horse_id, party_contact_id, relationship) values ($1,$2,$3,'TRAINER')`,
+      [orgA, aHorseEng, aOwnerContact]);
     const [row] = await h.q<{ org_id: string }>(
-      `select org_id from horse_parties where horse_id=$1 and role='trainer'`, [aHorseEng]);
+      `select org_id from horse_relationships where horse_id=$1 and relationship='TRAINER'`, [aHorseEng]);
     expect(row.org_id).toBe(orgA);
   });
 });
 
-describe('owner-contact client reads own horse_parties + health', () => {
-  it('the owner-of-record contact reads its own horse_parties row', async () => {
+describe('owner-contact client reads own horse_relationships + health', () => {
+  it('the owner-of-record contact reads its own horse_relationships row', async () => {
     await h.asUser(aOwnerUser);
-    const rows = await h.q<{ contact_id: string; horse_id: string }>(
-      `select contact_id, horse_id from horse_parties`);
+    const rows = await h.q<{ party_contact_id: string; horse_id: string }>(
+      `select party_contact_id, horse_id from horse_relationships`);
     // sees the party where it is the contact AND/OR owns the horse; all rows readable
     // to it must belong to a horse it owns or a party it is on.
     expect(rows.length).toBeGreaterThanOrEqual(1);
@@ -216,7 +220,7 @@ describe('owner-contact client reads own horse_parties + health', () => {
 
   it('a stranger client (owns nothing) sees NO parties and NO health events', async () => {
     await h.asUser(aStranger);
-    expect(await h.q(`select id from horse_parties`)).toHaveLength(0);
+    expect(await h.q(`select id from horse_relationships`)).toHaveLength(0);
     expect(await h.q(`select id from horse_health_events`)).toHaveLength(0);
   });
 });
@@ -249,33 +253,37 @@ describe('caller_owns_horse() — resolves via ownership OR owned engagement', (
   });
 });
 
-describe('horse_parties is NEVER hard-deletable (REVOKE DELETE)', () => {
+describe('horse_relationships is NEVER hard-deletable (REVOKE DELETE)', () => {
   it('an ADMIN hard DELETE is rejected (permission denied)', async () => {
     await h.asUser(aAdmin);
     await expect(
-      h.q(`delete from horse_parties where horse_id=$1`, [aHorseOwned]),
+      h.q(`delete from horse_relationships where horse_id=$1`, [aHorseOwned]),
     ).rejects.toThrow();
   });
 
-  it('soft-delete (deleted_at) is the only removal, and hides the row from clients', async () => {
+  it('rows END (active=false, ended_at) and stay as readable history', async () => {
     await h.asUser(aAdmin);
-    // seed a throwaway party to soft-delete
+    // seed a throwaway relationship to end
     await h.q(
-      `insert into horse_parties (horse_id, contact_id, role) values ($1,$2,'caretaker')`,
-      [aHorseOwned, aOwnerContact]);
+      `insert into horse_relationships (org_id, horse_id, party_contact_id, relationship) values ($1,$2,$3,'CARETAKER')`,
+      [orgA, aHorseOwned, aOwnerContact]);
     await h.q(
-      `update horse_parties set deleted_at=now() where horse_id=$1 and role='caretaker'`, [aHorseOwned]);
-    // the owner client no longer sees the soft-deleted caretaker row
+      `update horse_relationships set active=false, ended_at=now() where horse_id=$1 and relationship='CARETAKER'`,
+      [aHorseOwned]);
+    // the ended row is history: inactive, never deleted (app lists filter active)
     await h.asUser(aOwnerUser);
-    const rows = await h.q<{ role: string }>(`select role from horse_parties where horse_id=$1`, [aHorseOwned]);
-    expect(rows.some((r) => r.role === 'caretaker')).toBe(false);
+    const rows = await h.q<{ relationship: string; active: boolean }>(
+      `select relationship, active from horse_relationships where horse_id=$1`, [aHorseOwned]);
+    const caretaker = rows.filter((r) => r.relationship === 'CARETAKER');
+    expect(caretaker.length).toBeGreaterThanOrEqual(1);
+    expect(caretaker.every((r) => r.active === false)).toBe(true);
   });
 });
 
 describe('payers resolve only within current_org() — no cross-org leakage', () => {
-  it('org A staff never see org B\'s horse_parties (boundary ANDs across tenants)', async () => {
+  it('org A staff never see org B\'s horse_relationships (boundary ANDs across tenants)', async () => {
     await h.asUser(aAdmin);
-    const rows = await h.q<{ org_id: string }>(`select org_id from horse_parties`);
+    const rows = await h.q<{ org_id: string }>(`select org_id from horse_relationships`);
     expect(rows.length).toBeGreaterThanOrEqual(1);
     expect(rows.every((r) => r.org_id === orgA)).toBe(true);
     expect(rows.some((r) => r.org_id === orgB)).toBe(false);
@@ -286,14 +294,14 @@ describe('payers resolve only within current_org() — no cross-org leakage', ()
     // The org-B party row exists (seeded as superuser) but is invisible to org A,
     // so org A can never attribute cost to org B's contact.
     const rows = await h.q<{ id: string }>(
-      `select id from horse_parties where contact_id=$1`, [bContact]);
+      `select id from horse_relationships where party_contact_id=$1`, [bContact]);
     expect(rows).toHaveLength(0);
   });
 
   it('org A ADMIN cannot INSERT a party stamped with org B (WITH CHECK denies)', async () => {
     await h.asUser(aAdmin);
     await expect(
-      h.q(`insert into horse_parties (org_id, horse_id, contact_id, role) values ($1,$2,$3,'owner')`,
+      h.q(`insert into horse_relationships (org_id, horse_id, party_contact_id, relationship) values ($1,$2,$3,'OWNER')`,
         [orgB, aHorseOwned, aOwnerContact]),
     ).rejects.toThrow();
   });

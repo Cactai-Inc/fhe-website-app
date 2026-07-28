@@ -12,7 +12,7 @@ import { listRecordHorses, type HorseRecord } from '../../../../lib/ops/api-reco
  * ModuleGate('mod.horserecords'). Lists the tenant's horses (listRecordHorses
  * — includes the vet/farrier columns) with, per row, real links into the two
  * record surfaces:
- *   Ownership → /app/ops/records/horses/:id/parties  (horse_parties ledger)
+ *   Ownership → /app/ops/records/horses/:id/parties  (horse_relationships ledger)
  *   Health    → /app/ops/records/horses/:id/health   (health log + care team)
  * A load failure renders an inline error branch; no horses renders the empty
  * state. No dead links: both targets are lane routes registered with the hub.
