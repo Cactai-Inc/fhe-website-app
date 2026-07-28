@@ -207,6 +207,29 @@ vocabulary all stand.
 - There is no `supabase_migrations.schema_migrations` table — migrations are a
   hand-maintained journal applied via `psql`.
 
+## Done 2026-07-27 (remediation Stage 1 — identity taxonomy, all live on prod)
+
+- **Platform separation purge** — admin@cactai.io's FHE rows removed (doc chain
+  first, then groups/members/clients/contact; profiles.contact_id severed, login
+  kept; audit_logs + moderation_actions kept as history). Post-purge sweep: zero
+  FHE identity rows.
+- **1f** `contact_roles` → `groups` (RIDER/HORSE_OWNER/PARENT_GUARDIAN only,
+  CHECK-enforced; apply_affiliations sole writer; clients row = the promotion
+  marker; guest = active client with no group via `my_standing_categories()`;
+  `contacts.contact_type` added; GUEST-default trigger retired).
+- **1g** `members.tier` dropped (gate def byte-identical; memberships view
+  recreated; Admin.tsx:205 tier string fixed per F5).
+- **1h** `category_document_requirements` split → `contract_role_documents`
+  (BUYER/LESSEE/LESSOR/SELLER, contract-engine ownership); onboarding table
+  CHECK-locked to Guest/Rider/Horse owner.
+- **1i** `horse_parties` dropped; `horse_relationships` survivor (share_pct +
+  notes + ledger roles ported; billing precedence-2, stable/booking gates,
+  ledger RPC path, audit trigger, REVOKE DELETE; CLIENT.HORSE_CAPACITY token
+  source corrected; attach_booking_horse F2 wording fixed).
+- **1j** `staff_profiles` merged into `profiles` (title/pay_type/staff_active;
+  shifts/time_entries re-keyed to staff_user_id; employment fields made
+  admin-only via the role guard; D7 lanes proven byte-identical by md5).
+
 ## Done 2026-07-27
 
 - **Lease hardening applied** — the owner's 8-change list
