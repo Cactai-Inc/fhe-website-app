@@ -13,12 +13,20 @@ field defs; pg_proc string-literal sweep for DB-generated UI text.
 
 ## ⚑ FLAGS — member-facing "Client" (D3 violations, for owner disposition)
 
-| # | Location | Text | Note |
+**Owner dispositions 2026-07-27** (fixes fold into stages; audience checks F3/F4
+completed same day — see per-row status):
+
+| # | Location | Text | Status / disposition |
 |---|---|---|---|
-| F1 | `src/pages/Release.tsx:231` | "This document is signed in your **client** account — sign in or use your invitation link." | Kiosk screen addressed TO the person about their own account. Clear violation. |
-| F2 | DB fn exception strings surfaced as member error toasts: `attach_booking_horse`, `book_open_slot`, `request_open_time` → "no **client** profile"; `request_horse_intake` → "this booking has no client account to notify" | Member-reachable error paths (booking/requesting are member actions). | Violation on the error path. |
-| F3 | `src/pages/app/CalendarPage.tsx:271,908` | fallback name literal `'Client'` on roster/pending rows | Shared member+staff surface; the fallback can render for members. Verify context when Stage 3/4 touches the calendar; safest fix is 'Member'. |
-| F4 | `src/components/app/HorseIntakeForm.tsx:622,627` | "Select the **client** account…" / "…owned by the selected client." | Renders only in the staff-assign branch, but the form itself is member-used — keep the strings inside the staff-only branch when touched. Borderline. |
+| F1 | `src/pages/Release.tsx:231` | "This document is signed in your **client** account — sign in or use your invitation link." | Kiosk screen addressed TO the person. **Fix "client account" → "account" with Stage 3 surfaces.** |
+| F2 | DB fn exception strings surfaced as member error toasts: `attach_booking_horse`, `book_open_slot`, `request_open_time` → "no **client** profile" (`request_horse_intake` "no client account to notify" is staff-triggered) | Member-reachable error paths. | **→ "no member profile"; fold into whichever Stage 1/2 migration next touches each function, else Stage 3.** |
+| F3 | `src/pages/app/CalendarPage.tsx:271,908` | fallback name literal `'Client'` | **AUDIENCE-CHECKED: staff-only, NO FIX.** :271 is inside the `{isStaff && rosterOpen && …}` credits-roster block (:265); :908 is inside `RequestsBar`, whose only mount is `:279` behind `{isStaff && …}`. |
+| F4 | `src/components/app/HorseIntakeForm.tsx:622,627` | "Select the **client** account…" / "…owned by the selected client." | **AUDIENCE-CHECKED: staff-only, NO FIX.** Both strings sit inside the `{isStaff && (…)}` assign block (`:614`); `isStaff` comes from `useAuth()` (`:411`), the accounts list loads only for staff (`:456`), and non-staff callers always bind the record to themselves (`:584`). |
+| F5 | `src/pages/app/Admin.tsx:205` | account grid row "Member · `{tier ?? 'member'}` · status" | Ops surface, but **reads `members.tier` — fix the string as part of Stage 1g's column drop** so the drop doesn't break it. |
+
+Also settled 2026-07-27: contract CLIENT defined-term usage stands; public-site
+client language stands (PublicIntakeForm/BookSupport); ops "client" vocabulary
+stands.
 
 **Public-page borderline (owner tone call, not a D3 violation):**
 `PublicIntakeForm.tsx:42` "I'm a returning client"; `BookSupport.tsx:148` "Many

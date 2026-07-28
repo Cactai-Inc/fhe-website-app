@@ -37,6 +37,16 @@ longer:
 → remediation Stage 1 (verify-first: dual-identity trace 1a, platform-separation
 audit 1b, horse-table evidence 1c, wording inventory 1d, reader/writer enumeration 1e).
 
+**D3 wording dispositions (owner, 2026-07-27; details in
+`docs/WORDING_SURFACES.md` flags table):** Release.tsx:231 "client account" →
+"account" rides with Stage 3; the "no client profile" exception strings in
+`attach_booking_horse`/`book_open_slot`/`request_open_time` → "no member
+profile", folded into whichever Stage 1/2 migration next touches each function
+(else Stage 3); Admin.tsx:205 tier string fixed as part of Stage 1g's
+`members.tier` drop; CalendarPage + HorseIntakeForm flags audience-checked
+staff-only — no fix. Contract CLIENT term, public-site client language, and ops
+vocabulary all stand.
+
 - **Taxonomy rename** `contact_roles` → `groups` (affiliations only; CLIENT → neutral
   promotion marker; GUEST leaves the table; `contact_type` on the faceless side) →
   Stage 1f.
