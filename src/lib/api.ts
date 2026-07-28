@@ -1795,3 +1795,29 @@ export async function fetchPublicOfferings(slug?: string): Promise<PublicOfferin
   if (error) throw error;
   return (data ?? []) as PublicOffering[];
 }
+
+// ─── Payments: method + responsibility (Stage 4d) ────────────────────────────
+
+/** Update the payment method recorded on an unpaid/partially-paid purchase. */
+export async function updatePurchasePaymentMethod(purchaseId: string, method: string): Promise<void> {
+  const { error } = await supabase.rpc('update_purchase_payment_method', {
+    p_purchase_id: purchaseId, p_method: method,
+  });
+  if (error) throw error;
+}
+
+/** Hand payment responsibility for a purchase to another account holder. */
+export async function transferPaymentResponsibility(purchaseId: string, newPayerContactId: string): Promise<void> {
+  const { error } = await supabase.rpc('transfer_payment_responsibility', {
+    p_purchase_id: purchaseId, p_new_payer_contact_id: newPayerContactId,
+  });
+  if (error) throw error;
+}
+
+/** Account holders a balance may be transferred to (4d picker). */
+export interface PayerCandidate { contact_id: string; name: string }
+export async function payerCandidates(): Promise<PayerCandidate[]> {
+  const { data, error } = await supabase.rpc('payer_candidates');
+  if (error) return [];
+  return (data ?? []) as PayerCandidate[];
+}

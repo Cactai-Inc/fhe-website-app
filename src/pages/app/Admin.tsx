@@ -205,8 +205,13 @@ function AttachOfferingPanel({ contactId, onAttached }: { contactId: string; onA
 
   useEffect(() => { if (open) fetchOfferings().then(setOfferings).catch(() => setOfferings([])); }, [open]);
 
-  const total = offerings.flatMap((o) => o.tiers ?? []).filter((t) => picked.includes(t.id))
-    .reduce((s, t) => s + t.price_amount, 0);
+  // 4a: flat SKUs — an offering IS the purchasable item (the tier layer was
+  // removed 2026-07-08). Same fix pattern as ProvisionClientForm.
+  const purchasable = offerings.filter(
+    (o) => o.config_kind !== 'inquire' && o.price_amount != null);
+  const total = purchasable
+    .filter((o) => picked.includes(o.id))
+    .reduce((s, o) => s + (o.price_amount ?? 0), 0);
   const toggle = (id: string) => setPicked((p) => p.includes(id) ? p.filter((x) => x !== id) : [...p, id]);
 
   async function submit() {
@@ -230,17 +235,12 @@ function AttachOfferingPanel({ contactId, onAttached }: { contactId: string; onA
     <div className="border border-green-800/15 rounded-lg p-4 mb-3">
       <p className="text-sm font-medium text-green-900 mb-2">Attach offering(s)</p>
       <div className="space-y-2 max-h-56 overflow-y-auto mb-3">
-        {offerings.filter((o) => (o.tiers?.length ?? 0) > 0).map((o) => (
-          <div key={o.id}>
-            <p className="text-[11px] uppercase tracking-wide text-secondary/70">{o.name}</p>
-            {(o.tiers ?? []).map((t) => (
-              <label key={t.id} className="flex items-center gap-2 text-sm text-secondary py-0.5">
-                <input type="checkbox" className="accent-green-800" checked={picked.includes(t.id)} onChange={() => toggle(t.id)} />
-                <span className="flex-1">{t.label}</span>
-                <span>${Number(t.price_amount).toFixed(2)}</span>
-              </label>
-            ))}
-          </div>
+        {purchasable.map((o) => (
+          <label key={o.id} className="flex items-center gap-2 text-sm text-secondary py-0.5">
+            <input type="checkbox" className="accent-green-800" checked={picked.includes(o.id)} onChange={() => toggle(o.id)} />
+            <span className="flex-1">{o.name}</span>
+            <span>${Number(o.price_amount ?? 0).toFixed(2)}</span>
+          </label>
         ))}
       </div>
       {picked.length > 0 && (
