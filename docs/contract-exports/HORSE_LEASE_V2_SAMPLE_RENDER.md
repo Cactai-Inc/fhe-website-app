@@ -154,9 +154,9 @@ Any prize money or winnings earned in competition shall belong to: Lessee.
 Additional restrictions: No riding during scheduled facility maintenance hours.
 
 11.13 Other Allowed Activities
-Lessee is permitted to engage in the following activities with the Horse: Breeding, Film / Television / Advertising, Other.
+Lessee is permitted to engage in the following additional activities with the Horse: Breeding, Film / Television / Advertising, Other.
 
-11.14 Other allowed activity: No overnight offsite stabling.
+11.14 Other additional permitted activity: Therapeutic riding demonstrations at Lessor-approved events.
 
 11.15 Allowing Others to Ride
 The following additional persons may ride or handle the Horse without Lessor's prior permission: Lessee's family members, The trainer/instructor, Other.

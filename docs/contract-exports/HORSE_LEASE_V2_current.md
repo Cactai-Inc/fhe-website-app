@@ -340,13 +340,17 @@ Lessor does not restrict trail riding.
 
 Additional restrictions: {{TXN.PERMITTED_RESTRICTIONS}}
 
-**[PROHIBITED.OTHER]** — Other Allowed Activities
+**[PROHIBITED.OTHER]** — Other Allowed Activities _(shown when: {"contains":["BREEDING","EMOTIONAL_SUPPORT","FILM_TV_AD","OTHER"],"field_key":"TXN.ADDITIONAL_ACTIVITIES"})_
 
-Lessee is permitted to engage in the following activities with the Horse: {{TXN.OTHER_PROHIBITED}}.
+Lessee is permitted to engage in the following additional activities with the Horse: {{TXN.ADDITIONAL_ACTIVITIES}}.
 
-**[PROHIBITED.OTHER_NOTE]** _(shown when: {"contains":["OTHER"],"field_key":"TXN.OTHER_PROHIBITED"})_
+**[PROHIBITED.OTHER_NONE]** — Other Allowed Activities _(shown when: {"equals":["","NONE"],"field_key":"TXN.ADDITIONAL_ACTIVITIES"})_
 
-Other allowed activity: {{TXN.OTHER_PROHIBITED_NOTE}}.
+Lessee is not permitted to engage in any activities with the Horse beyond the permitted uses stated above.
+
+**[PROHIBITED.OTHER_NOTE]** _(shown when: {"contains":["OTHER"],"field_key":"TXN.ADDITIONAL_ACTIVITIES"})_
+
+Other additional permitted activity: {{TXN.ADDITIONAL_ACTIVITIES_OTHER}}.
 
 **[PROHIBITED.OTHERS]** — Allowing Others to Ride
 
@@ -367,24 +371,24 @@ Transport of the Horse to offsite locations (other than for medical care, which 
 For clarity, riding trails attached to the location at which the Horse is kept under this Agreement are not offsite locations.
 
 ### Fields
-- **[TXN.COMP_OMIT]** No competition restrictions — _certify/checkbox_, owner: LESSOR
-- **[TXN.COMP_RESTRICTION]** Competition restriction — _text/text_, owner: LESSOR
-- **[TXN.JUMP_OMIT]** No jumping restrictions — _certify/checkbox_, owner: LESSOR
 - **[TXN.OTHERS_ALLOWED_OTHER]** Other persons allowed — _text/text_, owner: LESSOR · shown when: {"contains":["OTHER"],"field_key":"TXN.OTHERS_ALLOWED"}
-- **[TXN.TRAIL_OMIT]** No trail-riding restrictions — _certify/checkbox_, owner: LESSOR
+- **[TXN.COMP_OMIT]** No competition restrictions — _certify/checkbox_, owner: LESSOR
+- **[TXN.JUMP_OMIT]** No jumping restrictions — _certify/checkbox_, owner: LESSOR
+- **[TXN.COMP_RESTRICTION]** Competition restriction — _text/text_, owner: LESSOR
 - **[TXN.TRAIL_RESTRICTION]** Trail-riding restriction — _text/text_, owner: LESSOR
+- **[TXN.TRAIL_OMIT]** No trail-riding restrictions — _certify/checkbox_, owner: LESSOR
+- **[TXN.ADDITIONAL_ACTIVITIES]** Additional permitted activities — _buttons/checkbox_, owner: DEAL · options: [{"label":"None \u2014 no additional activities","value":"NONE"},{"label":"Breeding","value":"BREEDING"},{"label":"Emotional Support Services","value":"EMOTIONAL_SUPPORT"},{"label":"Film / Television / Advertising","value":"FILM_TV_AD"},{"label":"Other","value":"OTHER"}]
+- **[TXN.COMPETITION_EXPENSES]** Competition expenses — _select/select_, owner: DEAL · options: [{"label":"Paid by Lessee","value":"LESSEE"},{"label":"Paid by Lessor","value":"OWNER"},{"label":"Other","value":"OTHER"}]
 - **[TXN.JUMP_MAX_HEIGHT]** Maximum height — _text/text_, owner: DEAL
 - **[TXN.LESSONS_REQUIRED]** Lessee required to take lessons? — _yesno/select_, owner: DEAL
-- **[TXN.OTHER_PROHIBITED]** Other allowed activities — _buttons/checkbox_, owner: DEAL · options: [{"label":"None","value":"NONE"},{"label":"Breeding","value":"BREEDING"},{"label":"Emotional Support Services","value":"EMOTIONAL_SUPPORT"},{"label":"Film / Television / Advertising","value":"FILM_TV_AD"},{"label":"Other","value":"OTHER"}]
 - **[TXN.OTHERS_ALLOWED]** Others allowed to ride — _buttons/checkbox_, owner: DEAL · options: [{"label":"None","value":"NONE"},{"label":"Lessee's family members","value":"FAMILY"},{"label":"The trainer/instructor","value":"TRAINER"},{"label":"Other","value":"OTHER"}]
-- **[TXN.COMPETITION_EXPENSES]** Competition expenses — _select/select_, owner: DEAL · options: [{"label":"Paid by Lessee","value":"LESSEE"},{"label":"Paid by Lessor","value":"OWNER"},{"label":"Other","value":"OTHER"}]
 - **[TXN.PERMITTED_ACTIVITIES]** Permitted activities — _buttons/checkbox_, owner: DEAL, required · options: [{"label":"Riding Lessons","value":"LESSONS"},{"label":"Solo Arena Riding","value":"ARENA_SOLO"},{"label":"Group Arena Riding","value":"ARENA_GROUP"},{"label":"Jumping","value":"JUMPING"},{"label":"Competitions","value":"COMPETITIONS"},{"label":"Trail Riding","value":"TRAIL"}]
 - **[TXN.COMPETITION_WINNINGS]** Competition winnings — _select/select_, owner: DEAL · options: [{"label":"Lessee","value":"LESSEE"},{"label":"Lessor","value":"OWNER"},{"label":"Other","value":"OTHER"}]
 - **[TXN.JUMP_DAYS_PER_WEEK]** Days per week — _number/number_, owner: DEAL
 - **[TXN.JUMP_SUPERVISION]** Only under trainer supervision? — _yesno/select_, owner: DEAL
 - **[TXN.OFFSITE_TRANSPORT]** Offsite transport — _select/select_, owner: LESSOR · options: [{"label":"Lessor grants permission to transport offsite","value":"GRANTED"},{"label":"Lessor prohibits offsite transport without written consent","value":"PROHIBITED"}]
 - **[TXN.PERMITTED_RESTRICTIONS]** Add Restrictions — _add_text/text_, owner: LESSOR
-- **[TXN.OTHER_PROHIBITED_NOTE]** Other allowed activity — _text/text_, owner: LESSOR
+- **[TXN.ADDITIONAL_ACTIVITIES_OTHER]** Other additional permitted activity — _text/text_, owner: LESSOR · shown when: {"contains":["OTHER"],"field_key":"TXN.ADDITIONAL_ACTIVITIES"}
 
 ## [CARE] Horse Care and Expenses
 

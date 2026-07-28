@@ -1652,12 +1652,47 @@
         {
             "fields": [
                 {
+                    "label": "Other persons allowed",
+                    "options": null,
+                    "guidance": "Name the other person(s) allowed to ride or handle the Horse.",
+                    "required": false,
+                    "field_key": "TXN.OTHERS_ALLOWED_OTHER",
+                    "clause_key": "PROHIBITED.OTHERS_OTHER",
+                    "input_kind": "text",
+                    "owner_role": "LESSOR",
+                    "sort_order": 1,
+                    "value_type": "text",
+                    "is_optional": true,
+                    "conditional_on": {
+                        "contains": [
+                            "OTHER"
+                        ],
+                        "field_key": "TXN.OTHERS_ALLOWED"
+                    },
+                    "responsibility": null
+                },
+                {
                     "label": "No competition restrictions",
                     "options": null,
                     "guidance": null,
                     "required": false,
                     "field_key": "TXN.COMP_OMIT",
                     "clause_key": "RESTRICT.COMP_TITLE",
+                    "input_kind": "certify",
+                    "owner_role": "LESSOR",
+                    "sort_order": 1,
+                    "value_type": "checkbox",
+                    "is_optional": true,
+                    "conditional_on": null,
+                    "responsibility": null
+                },
+                {
+                    "label": "No jumping restrictions",
+                    "options": null,
+                    "guidance": null,
+                    "required": false,
+                    "field_key": "TXN.JUMP_OMIT",
+                    "clause_key": "RESTRICT.JUMP_TITLE",
                     "input_kind": "certify",
                     "owner_role": "LESSOR",
                     "sort_order": 1,
@@ -1682,38 +1717,18 @@
                     "responsibility": null
                 },
                 {
-                    "label": "No jumping restrictions",
+                    "label": "Trail-riding restriction",
                     "options": null,
                     "guidance": null,
                     "required": false,
-                    "field_key": "TXN.JUMP_OMIT",
-                    "clause_key": "RESTRICT.JUMP_TITLE",
-                    "input_kind": "certify",
-                    "owner_role": "LESSOR",
-                    "sort_order": 1,
-                    "value_type": "checkbox",
-                    "is_optional": true,
-                    "conditional_on": null,
-                    "responsibility": null
-                },
-                {
-                    "label": "Other persons allowed",
-                    "options": null,
-                    "guidance": "Name the other person(s) allowed to ride or handle the Horse.",
-                    "required": false,
-                    "field_key": "TXN.OTHERS_ALLOWED_OTHER",
-                    "clause_key": "PROHIBITED.OTHERS_OTHER",
+                    "field_key": "TXN.TRAIL_RESTRICTION",
+                    "clause_key": "RESTRICT.TRAIL_ON",
                     "input_kind": "text",
                     "owner_role": "LESSOR",
                     "sort_order": 1,
                     "value_type": "text",
                     "is_optional": true,
-                    "conditional_on": {
-                        "contains": [
-                            "OTHER"
-                        ],
-                        "field_key": "TXN.OTHERS_ALLOWED"
-                    },
+                    "conditional_on": null,
                     "responsibility": null
                 },
                 {
@@ -1732,17 +1747,66 @@
                     "responsibility": null
                 },
                 {
-                    "label": "Trail-riding restriction",
-                    "options": null,
-                    "guidance": null,
+                    "label": "Additional permitted activities",
+                    "options": [
+                        {
+                            "label": "None — no additional activities",
+                            "value": "NONE"
+                        },
+                        {
+                            "label": "Breeding",
+                            "value": "BREEDING"
+                        },
+                        {
+                            "label": "Emotional Support Services",
+                            "value": "EMOTIONAL_SUPPORT"
+                        },
+                        {
+                            "label": "Film / Television / Advertising",
+                            "value": "FILM_TV_AD"
+                        },
+                        {
+                            "label": "Other",
+                            "value": "OTHER"
+                        }
+                    ],
+                    "guidance": "Additional activities GRANTED to Lessee beyond the permitted uses in the Permitted Use(s) clause. Anything not granted remains prohibited by the catch-all. Unset or None renders the no-additional-activities statement.",
                     "required": false,
-                    "field_key": "TXN.TRAIL_RESTRICTION",
-                    "clause_key": "RESTRICT.TRAIL_ON",
-                    "input_kind": "text",
-                    "owner_role": "LESSOR",
-                    "sort_order": 1,
-                    "value_type": "text",
-                    "is_optional": true,
+                    "field_key": "TXN.ADDITIONAL_ACTIVITIES",
+                    "clause_key": "PROHIBITED.OTHER",
+                    "input_kind": "buttons",
+                    "owner_role": "DEAL",
+                    "sort_order": 10,
+                    "value_type": "checkbox",
+                    "is_optional": false,
+                    "conditional_on": null,
+                    "responsibility": null
+                },
+                {
+                    "label": "Competition expenses",
+                    "options": [
+                        {
+                            "label": "Paid by Lessee",
+                            "value": "LESSEE"
+                        },
+                        {
+                            "label": "Paid by Lessor",
+                            "value": "OWNER"
+                        },
+                        {
+                            "label": "Other",
+                            "value": "OTHER"
+                        }
+                    ],
+                    "guidance": "Who pays the expenses of competing.",
+                    "required": false,
+                    "field_key": "TXN.COMPETITION_EXPENSES",
+                    "clause_key": "COMPETITIONS.INTRO",
+                    "input_kind": "select",
+                    "owner_role": "DEAL",
+                    "sort_order": 10,
+                    "value_type": "select",
+                    "is_optional": false,
                     "conditional_on": null,
                     "responsibility": null
                 },
@@ -1777,42 +1841,6 @@
                     "responsibility": null
                 },
                 {
-                    "label": "Other allowed activities",
-                    "options": [
-                        {
-                            "label": "None",
-                            "value": "NONE"
-                        },
-                        {
-                            "label": "Breeding",
-                            "value": "BREEDING"
-                        },
-                        {
-                            "label": "Emotional Support Services",
-                            "value": "EMOTIONAL_SUPPORT"
-                        },
-                        {
-                            "label": "Film / Television / Advertising",
-                            "value": "FILM_TV_AD"
-                        },
-                        {
-                            "label": "Other",
-                            "value": "OTHER"
-                        }
-                    ],
-                    "guidance": "Select any additional activities the Lessee is permitted to engage in with the Horse.",
-                    "required": false,
-                    "field_key": "TXN.OTHER_PROHIBITED",
-                    "clause_key": "PROHIBITED.OTHER",
-                    "input_kind": "buttons",
-                    "owner_role": "DEAL",
-                    "sort_order": 10,
-                    "value_type": "checkbox",
-                    "is_optional": false,
-                    "conditional_on": null,
-                    "responsibility": null
-                },
-                {
                     "label": "Others allowed to ride",
                     "options": [
                         {
@@ -1840,34 +1868,6 @@
                     "owner_role": "DEAL",
                     "sort_order": 10,
                     "value_type": "checkbox",
-                    "is_optional": false,
-                    "conditional_on": null,
-                    "responsibility": null
-                },
-                {
-                    "label": "Competition expenses",
-                    "options": [
-                        {
-                            "label": "Paid by Lessee",
-                            "value": "LESSEE"
-                        },
-                        {
-                            "label": "Paid by Lessor",
-                            "value": "OWNER"
-                        },
-                        {
-                            "label": "Other",
-                            "value": "OTHER"
-                        }
-                    ],
-                    "guidance": "Who pays the expenses of competing.",
-                    "required": false,
-                    "field_key": "TXN.COMPETITION_EXPENSES",
-                    "clause_key": "COMPETITIONS.INTRO",
-                    "input_kind": "select",
-                    "owner_role": "DEAL",
-                    "sort_order": 10,
-                    "value_type": "select",
                     "is_optional": false,
                     "conditional_on": null,
                     "responsibility": null
@@ -2010,18 +2010,23 @@
                     "responsibility": null
                 },
                 {
-                    "label": "Other allowed activity",
+                    "label": "Other additional permitted activity",
                     "options": null,
-                    "guidance": "Describe the other prohibited activity.",
+                    "guidance": "An additional activity Lessee is permitted to engage in; restrictions belong in Additional Restrictions.",
                     "required": false,
-                    "field_key": "TXN.OTHER_PROHIBITED_NOTE",
+                    "field_key": "TXN.ADDITIONAL_ACTIVITIES_OTHER",
                     "clause_key": "PROHIBITED.OTHER_NOTE",
                     "input_kind": "text",
                     "owner_role": "LESSOR",
                     "sort_order": 72,
                     "value_type": "text",
                     "is_optional": false,
-                    "conditional_on": null,
+                    "conditional_on": {
+                        "contains": [
+                            "OTHER"
+                        ],
+                        "field_key": "TXN.ADDITIONAL_ACTIVITIES"
+                    },
                     "responsibility": null
                 }
             ],
@@ -2324,7 +2329,7 @@
                     "render_as_subitem": false
                 },
                 {
-                    "body": "Lessee is permitted to engage in the following activities with the Horse: {{TXN.OTHER_PROHIBITED}}.",
+                    "body": "Lessee is permitted to engage in the following additional activities with the Horse: {{TXN.ADDITIONAL_ACTIVITIES}}.",
                     "heading": "Other Allowed Activities",
                     "cut_name": null,
                     "guidance": "Any additional activities the Owner wishes to prohibit.",
@@ -2332,11 +2337,37 @@
                     "sort_order": 450,
                     "clause_type": "input",
                     "is_optional": true,
-                    "conditional_on": null,
+                    "conditional_on": {
+                        "contains": [
+                            "BREEDING",
+                            "EMOTIONAL_SUPPORT",
+                            "FILM_TV_AD",
+                            "OTHER"
+                        ],
+                        "field_key": "TXN.ADDITIONAL_ACTIVITIES"
+                    },
                     "render_as_subitem": false
                 },
                 {
-                    "body": "Other allowed activity: {{TXN.OTHER_PROHIBITED_NOTE}}.",
+                    "body": "Lessee is not permitted to engage in any activities with the Horse beyond the permitted uses stated above.",
+                    "heading": "Other Allowed Activities",
+                    "cut_name": null,
+                    "guidance": null,
+                    "clause_key": "PROHIBITED.OTHER_NONE",
+                    "sort_order": 455,
+                    "clause_type": "input",
+                    "is_optional": false,
+                    "conditional_on": {
+                        "equals": [
+                            "",
+                            "NONE"
+                        ],
+                        "field_key": "TXN.ADDITIONAL_ACTIVITIES"
+                    },
+                    "render_as_subitem": false
+                },
+                {
+                    "body": "Other additional permitted activity: {{TXN.ADDITIONAL_ACTIVITIES_OTHER}}.",
                     "heading": null,
                     "cut_name": null,
                     "guidance": null,
@@ -2348,7 +2379,7 @@
                         "contains": [
                             "OTHER"
                         ],
-                        "field_key": "TXN.OTHER_PROHIBITED"
+                        "field_key": "TXN.ADDITIONAL_ACTIVITIES"
                     },
                     "render_as_subitem": false
                 },
