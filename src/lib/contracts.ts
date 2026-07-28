@@ -41,6 +41,8 @@ export interface ContractField {
   input_kind?: FieldInputKind | null;
   options?: FieldOption[] | null;
   conditional_on?: FieldConditional | null;
+  /** Gate-0: a CLOSED option set — the UI appends no synthetic Other. */
+  closed?: boolean;
   guidance?: string | null;
   is_optional?: boolean | null;
   included?: boolean | null;

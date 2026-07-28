@@ -511,8 +511,36 @@ export async function fetchOrderDocuments(_orderId: string): Promise<OrderDocume
 }
 
 /** Retired surface — returns nothing (order_documents removed). */
-export async function fetchMyDocuments(): Promise<(OrderDocument & { order_created_at?: string })[]> {
-  return [];
+/** Stage 3a/3f: the person's one chronological document list — pending and
+ *  assigned first, then executed in signing order (superseded stay
+ *  retrievable as evidence). Account-anchored via the Stage 2 linkage. */
+export interface MyDocumentRow {
+  document_id: string | null;
+  template_key: string;
+  title: string;
+  kind: 'pending' | 'assigned' | 'executed';
+  signed_at: string | null;
+  current_status: string | null;
+  superseded: boolean;
+  created_at: string;
+}
+export async function myDocuments(): Promise<MyDocumentRow[]> {
+  const { data, error } = await supabase.rpc('my_documents');
+  if (error) throw error;
+  return (data ?? []) as MyDocumentRow[];
+}
+
+/** Stage 3f: the signing-wall state for the signed-in person. */
+export interface WallState {
+  pending: number;
+  wall: boolean;
+  staff_banner?: boolean;
+  staff: boolean;
+}
+export async function myWallState(): Promise<WallState> {
+  const { data, error } = await supabase.rpc('my_wall_state');
+  if (error) return { pending: 0, wall: false, staff: false };
+  return data as WallState;
 }
 
 export async function signOrderDocument(

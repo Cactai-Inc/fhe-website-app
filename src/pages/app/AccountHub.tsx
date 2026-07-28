@@ -23,7 +23,7 @@ import {
   PREFERRED_CONTACT_OPTIONS,
 } from '../../lib/contact';
 import { startGoogleChange, startPasswordChange } from '../../lib/emailChange';
-import { fetchMyCategories, type StandingCategory } from '../../lib/api';
+import { updatePassword, linkOAuthIdentity } from '../../lib/auth';
 import { useNavigate, Link } from 'react-router-dom';
 
 /**
@@ -34,6 +34,65 @@ import { useNavigate, Link } from 'react-router-dom';
  * so the structure is visible on the preview. The email-change/auth state machine
  * and full My Stable editing land in the follow-up passes.
  */
+
+/** 3c: switch this account to Google sign-in via the existing linkIdentity
+ *  seam — redirects to Google and back to the account page. */
+async function linkGoogleIdentity(): Promise<void> {
+  const { error } = await linkOAuthIdentity('google', '/app/account');
+  if (error) window.alert(`Could not start Google linking: ${error}`);
+}
+
+/** 3c: standalone change-password (auth-level update on the live session —
+ *  distinct from the email-change flow's password seam). */
+function ChangePasswordModal({ onClose }: { onClose: () => void }) {
+  const [pw, setPw] = useState('');
+  const [pw2, setPw2] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setErr(null);
+    if (pw.length < 8) { setErr('Use at least 8 characters.'); return; }
+    if (pw !== pw2) { setErr('The passwords do not match.'); return; }
+    setBusy(true);
+    const { error } = await updatePassword(pw);
+    setBusy(false);
+    if (error) { setErr(error); return; }
+    setDone(true);
+  }
+
+  return (
+    <div className="fixed inset-0 z-[80] bg-green-950/40 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+        <h2 className="font-serif text-xl text-green-900 mb-1">Change password</h2>
+        {done ? (
+          <div>
+            <p className="body-text text-sm text-green-800 mt-2">Your password is updated.</p>
+            <div className="mt-4 flex justify-end">
+              <button type="button" className="btn-primary" onClick={onClose}>Done</button>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={submit} className="flex flex-col gap-3 mt-3">
+            <label className="text-xs text-muted" htmlFor="np">New password</label>
+            <input id="np" type="password" autoComplete="new-password" className="border border-green-800/20 rounded-lg px-3 py-2 text-sm focus-ring"
+              value={pw} onChange={(e) => setPw(e.target.value)} />
+            <label className="text-xs text-muted" htmlFor="np2">Repeat new password</label>
+            <input id="np2" type="password" autoComplete="new-password" className="border border-green-800/20 rounded-lg px-3 py-2 text-sm focus-ring"
+              value={pw2} onChange={(e) => setPw2(e.target.value)} />
+            {err && <p role="alert" className="text-sm text-red-700">{err}</p>}
+            <div className="mt-1 flex justify-end gap-2">
+              <button type="button" className="btn-outline-gold" onClick={onClose}>Cancel</button>
+              <button type="submit" className="btn-primary" disabled={busy}>{busy ? 'Saving…' : 'Save password'}</button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
 
 type Section = 'profile' | 'stable' | 'saved' | 'documents' | null;
 
@@ -140,6 +199,7 @@ function SocialField({
 function ProfileSection() {
   const { user } = useAuth();
   const [emailOpen, setEmailOpen] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
   const [prefs, setPrefs] = useState<MyContactPrefs | null>(null);
 
   useEffect(() => {
@@ -220,10 +280,12 @@ function ProfileSection() {
       <SectionLabel>Login &amp; security</SectionLabel>
       <div className="flex flex-col gap-2">
         <Row icon={UserRound} title="Change email address" sub="Verified before it takes effect" onClick={() => setEmailOpen(true)} />
-        <Row icon={BadgeCheck} title="Password" sub="Set or change your password" />
+        <Row icon={BadgeCheck} title="Password" sub="Set or change your password" onClick={() => setPasswordOpen(true)} />
+        <Row icon={UserRound} title="Sign in with Google" sub="Switch this account to Google sign-in" onClick={() => { void linkGoogleIdentity(); }} />
         <Row icon={UserRound} title="Name, photo & bio" sub="Edit your public identity" onClick={() => { window.location.assign('/app/profile'); }} />
       </div>
 
+      {passwordOpen && <ChangePasswordModal onClose={() => setPasswordOpen(false)} />}
       {emailOpen && (
         <EmailChangeModal
           currentEmail={p?.email ?? user?.email ?? ''}
@@ -350,7 +412,7 @@ function StableSection() {
 }
 
 export default function AccountHub() {
-  const { profile, isStaff } = useAuth();
+  const { profile } = useAuth();
   const navigate = useNavigate();
   const realName = profile?.display_name
     || [profile?.first_name, profile?.last_name].filter(Boolean).join(' ')
@@ -359,16 +421,8 @@ export default function AccountHub() {
   const [open, setOpen] = useState<Section>(null);
   const toggle = (s: Section) => setOpen((cur) => (cur === s ? null : s));
 
-  // A guest-only client sees a restricted account surface: Profile & preferences,
-  // Documents, Orders, Gifts (no community posts, lessons, saved, or stable).
-  const [categories, setCategories] = useState<StandingCategory[]>([]);
-  useEffect(() => {
-    if (isStaff) return;
-    fetchMyCategories().then(setCategories).catch(() => {});
-  }, [isStaff]);
-  const guestOnly = !isStaff
-    && categories.includes('GUEST')
-    && !categories.includes('RIDER') && !categories.includes('HORSE_OWNER');
+  // D8: every account holder sees the full account surface — "guest" is
+  // display copy only, never a gate.
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -380,15 +434,14 @@ export default function AccountHub() {
       <div className="grid lg:grid-cols-2 gap-3">
         <Row icon={UserRound} title="Profile &amp; preferences" sub={`${realName} · contact, socials, notifications`} onClick={() => toggle('profile')} open={open === 'profile'} />
         {open === 'profile' && <div className="lg:col-span-2"><ProfileSection /></div>}
-        {/* Community/lessons/stable rows are for standing clients — hidden from guests. */}
-        {!guestOnly && <Row icon={Grid3x3} title="My posts" sub="Your posts & listings" onClick={() => navigate('/app/my-posts')} />}
-        {!guestOnly && <Row icon={Boxes} title="My lessons" sub="Credits, schedule & your progress" onClick={() => navigate('/app/lessons')} />}
-        {!guestOnly && <Row icon={Bookmark} title="Saved items" sub="Articles, listings, and links you kept" onClick={() => toggle('saved')} open={open === 'saved'} />}
-        {!guestOnly && open === 'saved' && <div className="lg:col-span-2"><SavedPanel /></div>}
+        <Row icon={Grid3x3} title="My posts" sub="Your posts & listings" onClick={() => navigate('/app/my-posts')} />
+        <Row icon={Boxes} title="My lessons" sub="Credits, schedule & your progress" onClick={() => navigate('/app/lessons')} />
+        <Row icon={Bookmark} title="Saved items" sub="Articles, listings, and links you kept" onClick={() => toggle('saved')} open={open === 'saved'} />
+        {open === 'saved' && <div className="lg:col-span-2"><SavedPanel /></div>}
         <Row icon={FileText} title="Documents" sub="Signed agreements & releases" onClick={() => toggle('documents')} open={open === 'documents'} />
         {open === 'documents' && <div className="lg:col-span-2"><DocumentsPanel /></div>}
-        {!guestOnly && <Row icon={Boxes} title="My Stable" sub="Your horses, gear, and supplies" onClick={() => toggle('stable')} open={open === 'stable'} />}
-        {!guestOnly && open === 'stable' && <div className="lg:col-span-2"><StableSection /></div>}
+        <Row icon={Boxes} title="My Stable" sub="Your horses, gear, and supplies" onClick={() => toggle('stable')} open={open === 'stable'} />
+        {open === 'stable' && <div className="lg:col-span-2"><StableSection /></div>}
         <Row icon={ShoppingBag} title="Orders" sub="Your purchases" onClick={() => navigate('/app/orders')} />
         <Row icon={Gift} title="Gifts" sub="Gifts you can use" onClick={() => navigate('/app/gifts')} />
       </div>

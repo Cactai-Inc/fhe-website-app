@@ -319,7 +319,7 @@ function SelectWithOther({ f, onSave, disabled }: { f: ContractField; onSave: Sa
         }}>
         <option value="">{SELECT_PLACEHOLDER}</option>
         {opts.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-        {!ownOther && <option value={OTHER_VALUE}>Other (specify)…</option>}
+        {!ownOther && !f.closed && <option value={OTHER_VALUE}>Other (specify)…</option>}
       </select>
       {otherMode && (
         <input className={inputCls} disabled={disabled} placeholder="Enter a custom value"
@@ -962,7 +962,7 @@ function InlineSelect({ f, disabled, onSave }: { f: ContractField; disabled: boo
           <option value="">{placeholder}</option>
           {opts.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           {/* only add a synthetic Other when the field doesn't define its own */}
-          {!ownOther && <option value={OTHER_VALUE}>Other (specify)…</option>}
+          {!ownOther && !f.closed && <option value={OTHER_VALUE}>Other (specify)…</option>}
         </select>
       </span>
       {otherMode && (

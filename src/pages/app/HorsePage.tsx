@@ -52,7 +52,13 @@ export default function HorsePage() {
   const load = useCallback(async () => {
     if (!horseId) return;
     try { setDetail(await horsePageDetail(horseId)); setError(null); }
-    catch (e) { setError(e instanceof Error ? e.message : 'Could not load this horse.'); }
+    catch (e) {
+      const raw = e instanceof Error ? e.message : '';
+      // 3d: never surface raw database denial text — a friendly state instead.
+      setError(/not authorized|unknown horse/i.test(raw)
+        ? "This horse record isn't available on your account. If you believe it should be, ask the barn to add you as a party on the record."
+        : 'Could not load this horse.');
+    }
   }, [horseId]);
   useEffect(() => { void load(); }, [load]);
 

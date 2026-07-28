@@ -124,6 +124,35 @@ export async function adminSetAdmin(userId: string, isAdmin: boolean): Promise<v
   if (error) throw error;
 }
 
+// ─── Document assignment (Stage 3f) ─────────────────────────────────────────
+
+export interface AssignableTemplate {
+  template_key: string;
+  title: string;
+  version: number;
+  wall_gating: boolean;
+  on_file_status: 'none' | 'executed' | 'superseded';
+  on_file_date: string | null;
+  on_file_version: number | null;
+}
+
+/** The flat sign-only template family with per-person on-file status. Only the
+ *  current version of a family is returned (older versions never assignable). */
+export async function staffAssignableTemplates(contactId: string): Promise<AssignableTemplate[]> {
+  const { data, error } = await supabase.rpc('staff_assignable_templates', { p_contact_id: contactId });
+  if (error) throw error;
+  return (data ?? []) as AssignableTemplate[];
+}
+
+/** Append the selected templates to the person's pending set (3f: no batch
+ *  entity — assignment is rows in contact_required_documents). */
+export async function staffAssignDocuments(contactId: string, templateKeys: string[]): Promise<void> {
+  const { error } = await supabase.rpc('staff_assign_documents', {
+    p_contact_id: contactId, p_template_keys: templateKeys,
+  });
+  if (error) throw error;
+}
+
 // ─── Moderation ──────────────────────────────────────────────────────────────
 export async function logModeration(
   targetType: string,

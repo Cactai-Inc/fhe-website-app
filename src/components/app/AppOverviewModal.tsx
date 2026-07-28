@@ -46,17 +46,16 @@ export function AppOverviewModal({
   onClose: () => void;
   categories: StandingCategory[];
 }) {
-  const isStandingClient = categories.includes('RIDER') || categories.includes('HORSE_OWNER');
   const isOwner = categories.includes('HORSE_OWNER');
-  const guestOnly = categories.includes('GUEST') && !isStandingClient;
 
+  // D8: community access follows the ACCOUNT — every member sees the full
+  // tour (the ownerOnly gate for My Stable is a separate, real ownership gate).
   const sections = useMemo(
     () => SECTIONS.filter((s) => {
-      if (s.membersOnly && guestOnly) return false;
       if (s.ownerOnly && !isOwner) return false;
       return true;
     }),
-    [guestOnly, isOwner],
+    [isOwner],
   );
 
   return (

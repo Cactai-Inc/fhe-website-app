@@ -204,6 +204,11 @@ vocabulary all stand.
 - **Payment / Zelle receipt-validation live testing** — audit-only was agreed;
   live execution needs real credentials. (Owner ask.)
 
+- **Org-config streamlining candidates** (noted Stage 3, verification
+  disposition): `src/lib/stable.ts` hardcodes the `'Carmel Creek Ranch'`
+  location fallback and nulls discipline/markings/photo_url — fold into the
+  org-level-config pass (Stage 5d neighborhood), not Stage 3.
+
 ---
 
 ## Housekeeping / standing notes
