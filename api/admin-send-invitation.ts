@@ -236,7 +236,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       status: 'sent',
       invited_role: invitedRole,
       scheduled_for: scheduledFor,
-      // carried onto the account at redemption (name → profile, title → staff_profiles)
+      // carried onto the account at redemption (name → profile, title → profile employment fields)
       first_name: firstName || null,
       last_name: lastName || null,
       title: title || null,

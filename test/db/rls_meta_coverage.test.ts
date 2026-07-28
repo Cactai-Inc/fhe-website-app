@@ -48,7 +48,7 @@ const BUSINESS_TABLES = [
   'horse_health_events',
   'facilities', 'stalls', 'board_agreements', 'board_charges',
   'resources', 'resource_lots', 'consumption_events', 'cost_allocation_rules',
-  'staff_profiles', 'shifts', 'time_entries', 'service_assignments',
+  'shifts', 'time_entries', 'service_assignments',
 ] as const;
 
 // The module-owned tables that MUST carry a RESTRICTIVE <t>_module_gate (seam 2).
@@ -61,7 +61,7 @@ const MODULE_TABLES = [
   'horse_health_events',
   'facilities', 'stalls', 'board_agreements', 'board_charges',
   'resources', 'resource_lots', 'consumption_events', 'cost_allocation_rules',
-  'staff_profiles', 'shifts', 'time_entries', 'service_assignments',
+  'shifts', 'time_entries', 'service_assignments',
 ] as const;
 
 // The entitlement/registry substrate the module gate itself reads — carries the

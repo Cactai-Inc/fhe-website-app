@@ -29,7 +29,7 @@ export function SchedulePage() {
   const staff = useAsync(listStaffProfiles);
 
   const [shiftModal, setShiftModal] = useState(false);
-  const [shiftForm, setShiftForm] = useState({ staff_profile_id: '', starts_at: '', ends_at: '', role: '' });
+  const [shiftForm, setShiftForm] = useState({ staff_user_id: '', starts_at: '', ends_at: '', role: '' });
   const [shiftError, setShiftError] = useState<string | null>(null);
 
   const [entriesFor, setEntriesFor] = useState<Shift | null>(null);
@@ -57,20 +57,20 @@ export function SchedulePage() {
 
   async function submitShift() {
     setShiftError(null);
-    if (!shiftForm.staff_profile_id || !shiftForm.starts_at) {
+    if (!shiftForm.staff_user_id || !shiftForm.starts_at) {
       setShiftError('Staff member and start time are required.');
       return;
     }
     try {
       await createShift({
-        staff_profile_id: shiftForm.staff_profile_id,
+        staff_user_id: shiftForm.staff_user_id,
         starts_at: new Date(shiftForm.starts_at).toISOString(),
         ends_at: shiftForm.ends_at ? new Date(shiftForm.ends_at).toISOString() : null,
         role: shiftForm.role || null,
       });
       toast.success('Shift created');
       setShiftModal(false);
-      setShiftForm({ staff_profile_id: '', starts_at: '', ends_at: '', role: '' });
+      setShiftForm({ staff_user_id: '', starts_at: '', ends_at: '', role: '' });
       await shifts.run();
     } catch (err) {
       setShiftError(toErrorMessage(err, 'Could not create the shift.'));
@@ -87,7 +87,7 @@ export function SchedulePage() {
     }
     try {
       await createTimeEntry({
-        staff_profile_id: entriesFor.staff_profile_id,
+        staff_user_id: entriesFor.staff_user_id,
         shift_id: entriesFor.id,
         clock_in: new Date(entryForm.clock_in).toISOString(),
         clock_out: entryForm.clock_out ? new Date(entryForm.clock_out).toISOString() : null,
@@ -135,7 +135,7 @@ export function SchedulePage() {
         </div>
         <DataTable<Shift>
           columns={[
-            { key: 'staff', header: 'Staff', render: (r) => staffDisplayName(r.staff?.profile ?? null, r.staff?.title ?? '—') },
+            { key: 'staff', header: 'Staff', render: (r) => staffDisplayName(r.staff ?? null, r.staff?.title ?? '—') },
             { key: 'starts', header: 'Starts', render: (r) => fmt(r.starts_at) },
             { key: 'ends', header: 'Ends', render: (r) => fmt(r.ends_at) },
             { key: 'role', header: 'Role', render: (r) => r.role ?? '—' },
@@ -164,8 +164,8 @@ export function SchedulePage() {
               <select
                 id={id}
                 className={`form-input ${errorClass}`}
-                value={shiftForm.staff_profile_id}
-                onChange={(e) => setShiftForm((f) => ({ ...f, staff_profile_id: e.target.value }))}
+                value={shiftForm.staff_user_id}
+                onChange={(e) => setShiftForm((f) => ({ ...f, staff_user_id: e.target.value }))}
               >
                 <option value="">Select…</option>
                 {(staff.data ?? []).map((s) => (
@@ -197,7 +197,7 @@ export function SchedulePage() {
         <Modal
           open={entriesFor !== null}
           onClose={() => setEntriesFor(null)}
-          title={entriesFor ? `Time entries — ${staffDisplayName(entriesFor.staff?.profile ?? null, 'shift')}` : ''}
+          title={entriesFor ? `Time entries — ${staffDisplayName(entriesFor.staff ?? null, 'shift')}` : ''}
           footer={
             <AsyncButton className="btn-primary" onClick={submitEntry} pendingLabel="Recording…">
               Record entry

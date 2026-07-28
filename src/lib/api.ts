@@ -1069,35 +1069,10 @@ export interface HealthEventInput {
   notes?: string | null; document_id?: string | null;
 }
 
-// Employees (mod.employees)
-export interface StaffProfile {
-  id: string; org_id: string; profile_user_id: string; contact_id: string | null;
-  title: string | null; pay_type: string | null; active: boolean;
-  created_at: string; updated_at: string;
-}
-export interface StaffProfileInput {
-  profile_user_id: string; contact_id?: string | null;
-  title?: string | null; pay_type?: string | null;
-}
-
-export interface Shift {
-  id: string; org_id: string; staff_profile_id: string; starts_at: string;
-  ends_at: string | null; role: string | null; created_at: string; updated_at: string;
-}
-export interface ShiftInput {
-  staff_profile_id: string; starts_at: string; ends_at?: string | null; role?: string | null;
-}
-
-export interface TimeEntry {
-  id: string; org_id: string; staff_profile_id: string; clock_in: string;
-  clock_out: string | null; minutes: number | null;
-  source_kind: string | null; source_id: string | null;
-  created_at: string; updated_at: string;
-}
-export interface TimeEntryInput {
-  staff_profile_id: string; clock_in: string; clock_out?: string | null;
-  minutes?: number | null; source_kind?: string | null; source_id?: string | null;
-}
+// Employees (mod.employees) — the live wrappers are src/lib/ops/api-employees.ts
+// (profiles employment columns + shifts/time_entries keyed by staff_user_id
+// since Stage 1j); the duplicate suite that lived here was deleted with the
+// old staff table.
 
 // Admin: entitlements, registry, branding, products
 export interface ModuleCatalogRow {
@@ -1465,86 +1440,8 @@ export async function createHealthEvent(input: HealthEventInput): Promise<Health
   return data as HealthEvent;
 }
 
-// ─── Employees (mod.employees) ──────────────────────────────────────────────
-
-export async function listStaff(): Promise<StaffProfile[]> {
-  const { data, error } = await supabase
-    .from('staff_profiles')
-    .select('*')
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false });
-  if (error) throw error;
-  return (data ?? []) as StaffProfile[];
-}
-
-export async function createStaff(input: StaffProfileInput): Promise<StaffProfile> {
-  const { data, error } = await supabase
-    .from('staff_profiles')
-    .insert({
-      profile_user_id: input.profile_user_id,
-      contact_id: input.contact_id ?? null,
-      title: input.title ?? null,
-      pay_type: input.pay_type ?? null,
-    })
-    .select('*')
-    .single();
-  if (error) throw error;
-  return data as StaffProfile;
-}
-
-export async function listShifts(staffProfileId?: string): Promise<Shift[]> {
-  let query = supabase
-    .from('shifts')
-    .select('*')
-    .is('deleted_at', null);
-  if (staffProfileId) query = query.eq('staff_profile_id', staffProfileId);
-  const { data, error } = await query.order('starts_at', { ascending: false });
-  if (error) throw error;
-  return (data ?? []) as Shift[];
-}
-
-export async function createShift(input: ShiftInput): Promise<Shift> {
-  const { data, error } = await supabase
-    .from('shifts')
-    .insert({
-      staff_profile_id: input.staff_profile_id,
-      starts_at: input.starts_at,
-      ends_at: input.ends_at ?? null,
-      role: input.role ?? null,
-    })
-    .select('*')
-    .single();
-  if (error) throw error;
-  return data as Shift;
-}
-
-export async function listTimeEntries(staffProfileId?: string): Promise<TimeEntry[]> {
-  let query = supabase
-    .from('time_entries')
-    .select('*')
-    .is('deleted_at', null);
-  if (staffProfileId) query = query.eq('staff_profile_id', staffProfileId);
-  const { data, error } = await query.order('clock_in', { ascending: false });
-  if (error) throw error;
-  return (data ?? []) as TimeEntry[];
-}
-
-export async function createTimeEntry(input: TimeEntryInput): Promise<TimeEntry> {
-  const { data, error } = await supabase
-    .from('time_entries')
-    .insert({
-      staff_profile_id: input.staff_profile_id,
-      clock_in: input.clock_in,
-      clock_out: input.clock_out ?? null,
-      minutes: input.minutes ?? null,
-      source_kind: input.source_kind ?? null,
-      source_id: input.source_id ?? null,
-    })
-    .select('*')
-    .single();
-  if (error) throw error;
-  return data as TimeEntry;
-}
+// ─── Employees (mod.employees) ───────────────────────────────────────────────
+// Live wrappers: src/lib/ops/api-employees.ts (see the type note above).
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  Tenant admin + super-admin wrappers

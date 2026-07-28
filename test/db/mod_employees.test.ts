@@ -1,24 +1,30 @@
 /**
- * Employees & Scheduling (U12, migration 20260630110000_mod_employees) — module mod.employees.
+ * Employees & Scheduling — module mod.employees, on the Stage 1j merged model.
  *
- * Real-path data tests (Wiring & Verification Contract §15.1(1)): every assertion
- * exercises the ACTUAL tables/helpers the app uses (staff_profiles, shifts,
- * time_entries, service_assignments, has_module/require_module,
- * caller_staff_profile_ids) as the CORRECT RLS role, and asserts rows land in the
- * right table with the right columns and read back.
+ * Real-path data tests (Wiring & Verification Contract §15.1(1)): every
+ * assertion exercises the ACTUAL tables/helpers the app uses (profiles
+ * employment columns title/pay_type/staff_active; shifts/time_entries keyed by
+ * staff_user_id) as the CORRECT RLS role, and asserts rows land with the right
+ * columns and read back.
  *
  * Tenants:
  *   orgA = FHE (tenant #1, tier.lesson_brokerage) — mod.employees is OFF.
  *   orgB = a provisioned tenant with mod.employees ON (source ADDON).
  *
- * Covers:
- *  - org_boundary + module_gate across all four tables: the module-OFF org (A)
- *    sees NOTHING and cannot INSERT even as ADMIN; the module-ON org (B) can.
- *  - Tenant isolation: org B admin cannot see/write org A rows and vice-versa.
- *  - An employee reads OWN staff_profile / shifts / time_entries only (not a
- *    colleague's), and cannot read them at all when the module is off.
- *  - service_assignment links an engagement to a staff_profile and reads back.
- *  - org_id DEFAULTS to the caller's tenant on insert.
+ * Contract under test (Stage 1j):
+ *  - shifts/time_entries keep org_boundary + module_gate: the module-OFF org
+ *    (A) sees NOTHING and cannot INSERT even as ADMIN; the module-ON org (B)
+ *    can. Staff identity lives on profiles (core — not module-gated).
+ *  - Employment fields on profiles are ADMIN-ONLY writes (role-guard parity
+ *    with the old staff table's admin-write RLS).
+ *  - An employee reads OWN shifts / time_entries only (not a colleague's).
+ *  - Tenant isolation: org B admin cannot write org-A-stamped rows; org B rows
+ *    stay invisible to org A even with the module granted.
+ *  - org_id DEFAULTS to the caller's tenant on shift/time-entry insert.
+ *
+ * (The old standalone staff table and the service_assignments/engagements
+ * sections were retired: those tables no longer exist — engagements teardown
+ * + Stage 1j.)
  */
 import { beforeAll, afterAll, describe, expect, it } from 'vitest';
 import { createTestDb, type TestDb } from './harness';
@@ -28,11 +34,8 @@ let orgA: string; // FHE (tenant #1) — mod.employees OFF
 let orgB: string; // provisioned tenant — mod.employees ON
 let aAdmin: string; // ADMIN of org A (module off)
 let bAdmin: string; // ADMIN of org B (module on)
-let bEmp1: string;  // EMPLOYEE of org B with a staff_profile
+let bEmp1: string;  // EMPLOYEE of org B, marked staff on their profile
 let bEmp2: string;  // another EMPLOYEE of org B (colleague, for own-only reads)
-let spEmp1: string; // bEmp1's staff_profile id
-let spEmp2: string; // bEmp2's staff_profile id
-let engB: string;   // an engagement in org B (for the service_assignment link)
 
 /** Run SQL as superuser (RLS bypassed) with app.current_org pinned to `org`. */
 async function asSuperInOrg<T = Record<string, unknown>>(org: string, sql: string, params: unknown[] = []): Promise<T[]> {
@@ -58,32 +61,21 @@ beforeAll(async () => {
   bEmp1 = await h.createAuthUser({ role: 'EMPLOYEE', org: orgB });
   bEmp2 = await h.createAuthUser({ role: 'EMPLOYEE', org: orgB });
 
-  // Seed two staff_profiles in org B (as super, pinned to B) linking the employees.
-  spEmp1 = (await asSuperInOrg<{ id: string }>(orgB,
-    `insert into staff_profiles (profile_user_id, title, pay_type, active)
-       values ($1,'Barn Hand','HOURLY',true) returning id`, [bEmp1]))[0].id;
-  spEmp2 = (await asSuperInOrg<{ id: string }>(orgB,
-    `insert into staff_profiles (profile_user_id, title, pay_type, active)
-       values ($1,'Trainer','SALARY',true) returning id`, [bEmp2]))[0].id;
-
-  // An engagement in org B to link a service_assignment to. Build the client chain.
-  const contactB = (await asSuperInOrg<{ id: string }>(orgB,
-    `insert into contacts (first_name, last_name, email) values ('Owner', 'B', 'owner@b.test') returning id`))[0].id;
-  const clientB = (await asSuperInOrg<{ id: string }>(orgB,
-    `insert into clients (contact_id) values ($1) returning id`, [contactB]))[0].id;
-  engB = (await asSuperInOrg<{ id: string }>(orgB,
-    `insert into engagements (client_id, service_type, status)
-       values ($1,'RIDING_LESSON','LEAD') returning id`, [clientB]))[0].id;
+  // Mark both employees as staff ON THEIR PROFILES (Stage 1j model), as super.
+  await asSuperInOrg(orgB,
+    `update profiles set title='Barn Hand', pay_type='HOURLY', staff_active=true where user_id=$1`, [bEmp1]);
+  await asSuperInOrg(orgB,
+    `update profiles set title='Trainer', pay_type='SALARY', staff_active=true where user_id=$1`, [bEmp2]);
 });
 
 afterAll(async () => {
   await h?.close();
 });
 
-describe('module_gate — a mod.employees-OFF org (FHE) sees/writes NOTHING', () => {
-  const tables = ['staff_profiles', 'shifts', 'time_entries', 'service_assignments'];
+describe('module_gate — a mod.employees-OFF org (FHE) sees/writes NOTHING in scheduling', () => {
+  const tables = ['shifts', 'time_entries'];
 
-  it('org A ADMIN (module off) reads zero rows from every table', async () => {
+  it('org A ADMIN (module off) reads zero rows from the scheduling tables', async () => {
     await h.asUser(aAdmin);
     for (const t of tables) {
       const rows = await h.q(`select * from ${t}`);
@@ -91,23 +83,13 @@ describe('module_gate — a mod.employees-OFF org (FHE) sees/writes NOTHING', ()
     }
   });
 
-  it('org A ADMIN (module off) cannot INSERT a staff_profile even as admin', async () => {
+  it('org A ADMIN (module off) cannot INSERT into shifts / time_entries', async () => {
     await h.asUser(aAdmin);
     await expect(
-      h.q(`insert into staff_profiles (profile_user_id, title) values ($1,'X')`, [aAdmin]),
-    ).rejects.toThrow();
-  });
-
-  it('org A ADMIN (module off) cannot INSERT into shifts / time_entries / service_assignments', async () => {
-    await h.asUser(aAdmin);
-    await expect(
-      h.q(`insert into shifts (staff_profile_id, starts_at) values ($1, now())`, [spEmp1]),
+      h.q(`insert into shifts (staff_user_id, starts_at) values ($1, now())`, [aAdmin]),
     ).rejects.toThrow();
     await expect(
-      h.q(`insert into time_entries (staff_profile_id, clock_in) values ($1, now())`, [spEmp1]),
-    ).rejects.toThrow();
-    await expect(
-      h.q(`insert into service_assignments (staff_profile_id, service_type) values ($1,'RIDING_LESSON')`, [spEmp1]),
+      h.q(`insert into time_entries (staff_user_id, clock_in) values ($1, now())`, [aAdmin]),
     ).rejects.toThrow();
   });
 
@@ -119,103 +101,84 @@ describe('module_gate — a mod.employees-OFF org (FHE) sees/writes NOTHING', ()
   });
 });
 
-describe('module ON — org B ADMIN has full RCUD', () => {
-  it('org B ADMIN reads the seeded staff_profiles and org_id defaults to org B on insert', async () => {
+describe('module ON — org B ADMIN has full RCUD on scheduling', () => {
+  it('org B ADMIN reads staff via profiles and org_id defaults on scheduling inserts', async () => {
     await h.asUser(bAdmin);
-    const staff = await h.q<{ id: string; org_id: string }>(`select id, org_id from staff_profiles`);
-    expect(staff.map((s) => s.id).sort()).toEqual([spEmp1, spEmp2].sort());
-    expect(staff.every((s) => s.org_id === orgB)).toBe(true);
+    const staff = await h.q<{ user_id: string; title: string }>(
+      `select user_id, title from profiles where staff_active`);
+    expect(staff.map((s) => s.user_id).sort()).toEqual([bEmp1, bEmp2].sort());
 
     // Insert a shift WITHOUT org_id → it must default to the caller's tenant (org B).
     const [shift] = await h.q<{ id: string; org_id: string }>(
-      `insert into shifts (staff_profile_id, starts_at, ends_at, role)
-         values ($1, now(), now() + interval '4 hours', 'MORNING') returning id, org_id`, [spEmp1]);
+      `insert into shifts (staff_user_id, starts_at, ends_at, role)
+         values ($1, now(), now() + interval '4 hours', 'MORNING') returning id, org_id`, [bEmp1]);
     expect(shift.org_id).toBe(orgB);
 
     // Insert a time_entry the same way.
     const [te] = await h.q<{ id: string; org_id: string; minutes: number }>(
-      `insert into time_entries (staff_profile_id, clock_in, clock_out, minutes)
-         values ($1, now(), now() + interval '2 hours', 120) returning id, org_id, minutes`, [spEmp1]);
+      `insert into time_entries (staff_user_id, clock_in, clock_out, minutes)
+         values ($1, now(), now() + interval '2 hours', 120) returning id, org_id, minutes`, [bEmp1]);
     expect(te.org_id).toBe(orgB);
     expect(te.minutes).toBe(120);
   });
 });
 
-describe('service_assignment links an engagement to a staff_profile', () => {
-  it('an assignment rows in the right table with the right columns and reads back', async () => {
-    await h.asUser(bAdmin);
-    const [sa] = await h.q<{ id: string; engagement_id: string; staff_profile_id: string; service_type: string; status: string; org_id: string }>(
-      `insert into service_assignments (engagement_id, staff_profile_id, service_type, scheduled_at, status)
-         values ($1, $2, 'RIDING_LESSON', now() + interval '1 day', 'SCHEDULED')
-       returning id, engagement_id, staff_profile_id, service_type, status, org_id`, [engB, spEmp2]);
-    expect(sa.engagement_id).toBe(engB);
-    expect(sa.staff_profile_id).toBe(spEmp2);
-    expect(sa.service_type).toBe('RIDING_LESSON');
-    expect(sa.status).toBe('SCHEDULED');
-    expect(sa.org_id).toBe(orgB);
+describe('employment fields on profiles are ADMIN-ONLY writes (Stage 1j guard)', () => {
+  it('an employee cannot self-set staff_active / title / pay_type', async () => {
+    const bStranger = await h.createAuthUser({ role: 'USER', org: orgB });
+    await h.asUser(bStranger);
+    await expect(
+      h.q(`update profiles set staff_active=true, title='Sneak' where user_id=$1`, [bStranger]),
+    ).rejects.toThrow();
+  });
 
-    // Reads back joined to the engagement (proves the FK wiring, not just the insert).
-    const [joined] = await h.q<{ eng: string; staff_title: string }>(
-      `select e.id as eng, sp.title as staff_title
-         from service_assignments a
-         join engagements e on e.id = a.engagement_id
-         join staff_profiles sp on sp.id = a.staff_profile_id
-        where a.id = $1`, [sa.id]);
-    expect(joined.eng).toBe(engB);
-    expect(joined.staff_title).toBe('Trainer');
+  it('an admin CAN set employment fields on a profile in their org', async () => {
+    const bNew = await h.createAuthUser({ role: 'EMPLOYEE', org: orgB });
+    await h.asUser(bAdmin);
+    await h.q(`update profiles set title='Groom', staff_active=true where user_id=$1`, [bNew]);
+    await h.asSuperuser();
+    const [row] = await h.q<{ title: string; staff_active: boolean }>(
+      `select title, staff_active from profiles where user_id=$1`, [bNew]);
+    expect(row.title).toBe('Groom');
+    expect(row.staff_active).toBe(true);
   });
 });
 
-describe('employee reads OWN staff_profile / shifts / time_entries only', () => {
+describe('employee reads OWN shifts / time_entries only', () => {
   beforeAll(async () => {
     // Seed a shift + time_entry for BOTH employees so "own only" is a real filter.
     await asSuperInOrg(orgB,
-      `insert into shifts (staff_profile_id, starts_at, role) values ($1, now(), 'A'),($2, now(), 'B')`, [spEmp1, spEmp2]);
+      `insert into shifts (org_id, staff_user_id, starts_at, role) values ($1,$2, now(), 'A'),($1,$3, now(), 'B')`,
+      [orgB, bEmp1, bEmp2]);
     await asSuperInOrg(orgB,
-      `insert into time_entries (staff_profile_id, clock_in, minutes) values ($1, now(), 30),($2, now(), 45)`, [spEmp1, spEmp2]);
-  });
-
-  it('caller_staff_profile_ids() resolves only the caller\'s staff_profile', async () => {
-    await h.asUser(bEmp1);
-    const ids = (await h.q<{ id: string }>(`select caller_staff_profile_ids() as id`)).map((r) => r.id);
-    expect(ids).toEqual([spEmp1]);
-  });
-
-  it('bEmp1 reads only their own staff_profile (not the colleague\'s)', async () => {
-    await h.asUser(bEmp1);
-    const rows = await h.q<{ id: string; profile_user_id: string }>(`select id, profile_user_id from staff_profiles`);
-    expect(rows).toHaveLength(1);
-    expect(rows[0].id).toBe(spEmp1);
-    expect(rows[0].profile_user_id).toBe(bEmp1);
+      `insert into time_entries (org_id, staff_user_id, clock_in, minutes) values ($1,$2, now(), 30),($1,$3, now(), 45)`,
+      [orgB, bEmp1, bEmp2]);
   });
 
   it('bEmp1 reads only their own shifts and time_entries (colleague\'s hidden)', async () => {
     await h.asUser(bEmp1);
-    const shifts = await h.q<{ staff_profile_id: string }>(`select staff_profile_id from shifts`);
+    const shifts = await h.q<{ staff_user_id: string }>(`select staff_user_id from shifts`);
     expect(shifts.length).toBeGreaterThan(0);
-    expect(shifts.every((s) => s.staff_profile_id === spEmp1)).toBe(true);
+    expect(shifts.every((s) => s.staff_user_id === bEmp1)).toBe(true);
 
-    const times = await h.q<{ staff_profile_id: string }>(`select staff_profile_id from time_entries`);
+    const times = await h.q<{ staff_user_id: string }>(`select staff_user_id from time_entries`);
     expect(times.length).toBeGreaterThan(0);
-    expect(times.every((t) => t.staff_profile_id === spEmp1)).toBe(true);
+    expect(times.every((t) => t.staff_user_id === bEmp1)).toBe(true);
   });
 
-  it('an employee (non-admin) cannot WRITE staff_profiles / shifts (admin-only RCUD)', async () => {
+  it('an employee (non-admin) cannot WRITE shifts (admin-only RCUD)', async () => {
     await h.asUser(bEmp1);
     await expect(
-      h.q(`insert into staff_profiles (profile_user_id, title) values ($1,'Sneak')`, [bEmp1]),
-    ).rejects.toThrow();
-    await expect(
-      h.q(`insert into shifts (staff_profile_id, starts_at) values ($1, now())`, [spEmp1]),
+      h.q(`insert into shifts (staff_user_id, starts_at) values ($1, now())`, [bEmp1]),
     ).rejects.toThrow();
   });
 });
 
 describe('tenant isolation — org B admin cannot cross into org A (and vice-versa)', () => {
-  it('org B ADMIN cannot INSERT a staff_profile stamped for org A (WITH CHECK)', async () => {
+  it('org B ADMIN cannot INSERT a shift stamped for org A (WITH CHECK)', async () => {
     await h.asUser(bAdmin);
     await expect(
-      h.q(`insert into staff_profiles (org_id, profile_user_id, title) values ($1,$2,'Cross')`, [orgA, bAdmin]),
+      h.q(`insert into shifts (org_id, staff_user_id, starts_at) values ($1,$2, now())`, [orgA, bEmp1]),
     ).rejects.toThrow();
   });
 
@@ -225,30 +188,17 @@ describe('tenant isolation — org B admin cannot cross into org A (and vice-ver
       `insert into org_modules (org_id, module_key, enabled, source) values ($1,'mod.employees',true,'GRANT')
        on conflict (org_id, module_key) do update set enabled=true`, [orgA]);
     await h.asUser(aAdmin);
-    // A now has the module, but must still see ZERO of B's staff_profiles (boundary).
-    const rows = await h.q<{ org_id: string }>(`select org_id from staff_profiles`);
+    const rows = await h.q<{ org_id: string }>(`select org_id from shifts`);
     expect(rows.some((r) => r.org_id === orgB)).toBe(false);
     // clean up: turn A back off so the earlier module-off assertions remain coherent if re-run
     await asSuperInOrg(orgA, `update org_modules set enabled=false where org_id=$1 and module_key='mod.employees'`, [orgA]);
   });
 });
 
-describe('audit + soft-delete coverage', () => {
-  it('inserting a staff_profile writes an audit_logs row', async () => {
+describe('soft-delete coverage', () => {
+  it('hard DELETE is revoked on the scheduling tables (soft-delete only)', async () => {
     await h.asUser(bAdmin);
-    const emp = await h.createAuthUser({ role: 'EMPLOYEE', org: orgB });
-    const [sp] = await h.q<{ id: string }>(
-      `insert into staff_profiles (profile_user_id, title) values ($1,'Audited') returning id`, [emp]);
-    await h.asSuperuser();
-    const [log] = await h.q<{ table_name: string; action: string }>(
-      `select table_name, action from audit_logs where record_id=$1 and table_name='staff_profiles'`, [sp.id]);
-    expect(log.table_name).toBe('staff_profiles');
-    expect(log.action).toBe('INSERT');
-  });
-
-  it('hard DELETE is revoked on all four tables (soft-delete only)', async () => {
-    await h.asUser(bAdmin);
-    for (const t of ['staff_profiles', 'shifts', 'time_entries', 'service_assignments']) {
+    for (const t of ['shifts', 'time_entries']) {
       await expect(h.q(`delete from ${t}`), `DELETE on ${t} must be revoked`).rejects.toThrow();
     }
   });

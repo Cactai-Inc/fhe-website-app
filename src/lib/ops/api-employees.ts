@@ -1,14 +1,14 @@
 /**
  * INT-API-EMPLOYEES — data wrappers for mod.employees (U12).
  *
- * Tables (supabase/migrations/20260630110000_mod_employees.sql):
- *   staff_profiles / shifts / time_entries
+ * Tables: profiles (employment columns title / pay_type / staff_active,
+ * merged from the old staff table in Stage 1j) / shifts / time_entries.
  *
- * staff_profiles is the employment record on a profiles(user_id) row (+ an
- * optional CRM contact link); shifts are scheduled work windows; time_entries
- * are clock in/out rows (a shift's entries are tied back via the generic
- * source_kind='shift' + source_id columns). (Service assignments retired with
- * the engagements teardown.)
+ * Shifts are scheduled work windows keyed by staff_user_id (the profile);
+ * time_entries are clock in/out rows (a shift's entries are tied back via the
+ * generic source_kind='shift' + source_id columns). The staff member's CRM
+ * contact link is profiles.contact_id — the identity bridge owned by the
+ * account spine, shown read-only here and never edited from this module.
  *
  * RLS enforces org boundary + module gate (mod.employees) + access (admin
  * RCUD, employee reads own rows) server-side; these wrappers only shape calls.
@@ -30,25 +30,24 @@ export interface ContactOption {
   last_name: string | null;
 }
 
+/** A staff member = a profiles row with employment columns (Stage 1j). The
+ *  legacy `id`/`profile_user_id` fields both carry user_id so the pages keep
+ *  their row-key/edit plumbing unchanged. */
 export interface StaffProfile {
-  id: string;
-  org_id: string;
-  profile_user_id: string;
+  id: string;               // = user_id
+  profile_user_id: string;  // = user_id
   contact_id: string | null;
   title: string | null;
   pay_type: string | null;
-  active: boolean;
-  created_at: string;
-  updated_at: string;
-  /** Joined identity row (listStaffProfiles). */
+  active: boolean;          // = staff_active
+  /** Identity fields off the same profiles row. */
   profile?: ProfileOption | null;
-  /** Joined optional CRM contact link. */
+  /** The identity-bridge contact (read-only in this module). */
   contact?: ContactOption | null;
 }
 
 export interface StaffProfileInput {
   profile_user_id: string;
-  contact_id?: string | null;
   title?: string | null;
   pay_type?: string | null;
   active?: boolean;
@@ -57,22 +56,23 @@ export interface StaffProfileInput {
 export interface Shift {
   id: string;
   org_id: string;
-  staff_profile_id: string;
+  staff_user_id: string;
   starts_at: string;
   ends_at: string | null;
   role: string | null;
   created_at: string;
   updated_at: string;
-  /** Joined owning staff profile (+ its identity row). */
+  /** Joined owning staff profile (identity + title on one row). */
   staff?: {
-    id: string;
+    user_id: string;
     title: string | null;
-    profile?: Pick<ProfileOption, 'user_id' | 'first_name' | 'last_name'> | null;
+    first_name: string | null;
+    last_name: string | null;
   } | null;
 }
 
 export interface ShiftInput {
-  staff_profile_id: string;
+  staff_user_id: string;
   starts_at: string;
   ends_at?: string | null;
   role?: string | null;
@@ -81,7 +81,7 @@ export interface ShiftInput {
 export interface TimeEntry {
   id: string;
   org_id: string;
-  staff_profile_id: string;
+  staff_user_id: string;
   clock_in: string;
   clock_out: string | null;
   minutes: number | null;
@@ -92,7 +92,7 @@ export interface TimeEntry {
 }
 
 export interface TimeEntryInput {
-  staff_profile_id: string;
+  staff_user_id: string;
   clock_in: string;
   clock_out?: string | null;
   minutes?: number | null;
@@ -101,17 +101,42 @@ export interface TimeEntryInput {
 }
 
 export interface EmployeesKpis {
-  /** Active (non-deleted, active=true) staff profiles. */
+  /** Profiles with staff_active = true. */
   activeStaff: number;
   /** Shifts starting inside the current Monday-anchored week. */
   shiftsThisWeek: number;
 }
 
 const STAFF_SELECT =
-  '*, profile:profiles(user_id, first_name, last_name, email), contact:contacts(id, first_name, last_name)';
+  'user_id, contact_id, title, pay_type, staff_active, first_name, last_name, email, contact:contacts(id, first_name, last_name)';
 
 const SHIFT_SELECT =
-  '*, staff:staff_profiles(id, title, profile:profiles(user_id, first_name, last_name))';
+  '*, staff:profiles!shifts_staff_user_id_fkey(user_id, title, first_name, last_name)';
+
+interface StaffRow {
+  user_id: string;
+  contact_id: string | null;
+  title: string | null;
+  pay_type: string | null;
+  staff_active: boolean;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  contact?: ContactOption | null;
+}
+
+function toStaffProfile(r: StaffRow): StaffProfile {
+  return {
+    id: r.user_id,
+    profile_user_id: r.user_id,
+    contact_id: r.contact_id,
+    title: r.title,
+    pay_type: r.pay_type,
+    active: r.staff_active,
+    profile: { user_id: r.user_id, first_name: r.first_name, last_name: r.last_name, email: r.email },
+    contact: r.contact ?? null,
+  };
+}
 
 // ─── Week helper (shared by SchedulePage + the hub KPIs + their tests) ────────
 
@@ -154,49 +179,43 @@ export async function listContactOptions(): Promise<ContactOption[]> {
 // ─── Staff profiles ──────────────────────────────────────────────────────────
 
 export async function listStaffProfiles(): Promise<StaffProfile[]> {
+  // Staff = profiles marked staff_active (plus deactivated rows that still
+  // carry employment data, mirroring the old inactive-but-visible rows).
   const { data, error } = await supabase
-    .from('staff_profiles')
+    .from('profiles')
     .select(STAFF_SELECT)
-    .is('deleted_at', null)
+    .or('staff_active.eq.true,title.not.is.null,pay_type.not.is.null')
     .order('created_at', { ascending: false });
   if (error) throw error;
-  return (data ?? []) as StaffProfile[];
+  return ((data ?? []) as unknown as StaffRow[]).map(toStaffProfile);
 }
 
-export async function createStaffProfile(input: StaffProfileInput): Promise<StaffProfile> {
-  const { data, error } = await supabase
-    .from('staff_profiles')
-    .insert({
-      profile_user_id: input.profile_user_id,
-      contact_id: input.contact_id ?? null,
+/** "Create" = stamp employment fields onto the chosen profile (Stage 1j). */
+export async function createStaffProfile(input: StaffProfileInput): Promise<void> {
+  const { error } = await supabase
+    .from('profiles')
+    .update({
       title: input.title ?? null,
       pay_type: input.pay_type ?? null,
-      active: input.active ?? true,
+      staff_active: input.active ?? true,
     })
-    .select(STAFF_SELECT)
-    .single();
+    .eq('user_id', input.profile_user_id);
   if (error) throw error;
-  return data as StaffProfile;
 }
 
 export async function updateStaffProfile(
   id: string,
   input: StaffProfileInput,
-): Promise<StaffProfile> {
-  const { data, error } = await supabase
-    .from('staff_profiles')
+): Promise<void> {
+  const { error } = await supabase
+    .from('profiles')
     .update({
-      profile_user_id: input.profile_user_id,
-      contact_id: input.contact_id ?? null,
       title: input.title ?? null,
       pay_type: input.pay_type ?? null,
-      active: input.active ?? true,
+      staff_active: input.active ?? true,
     })
-    .eq('id', id)
-    .select(STAFF_SELECT)
-    .single();
+    .eq('user_id', id);
   if (error) throw error;
-  return data as StaffProfile;
 }
 
 // ─── Shifts ──────────────────────────────────────────────────────────────────
@@ -218,7 +237,7 @@ export async function createShift(input: ShiftInput): Promise<Shift> {
   const { data, error } = await supabase
     .from('shifts')
     .insert({
-      staff_profile_id: input.staff_profile_id,
+      staff_user_id: input.staff_user_id,
       starts_at: input.starts_at,
       ends_at: input.ends_at ?? null,
       role: input.role ?? null,
@@ -233,7 +252,7 @@ export async function updateShift(id: string, input: ShiftInput): Promise<Shift>
   const { data, error } = await supabase
     .from('shifts')
     .update({
-      staff_profile_id: input.staff_profile_id,
+      staff_user_id: input.staff_user_id,
       starts_at: input.starts_at,
       ends_at: input.ends_at ?? null,
       role: input.role ?? null,
@@ -269,7 +288,7 @@ export async function createTimeEntry(input: TimeEntryInput): Promise<TimeEntry>
   const { data, error } = await supabase
     .from('time_entries')
     .insert({
-      staff_profile_id: input.staff_profile_id,
+      staff_user_id: input.staff_user_id,
       clock_in: input.clock_in,
       clock_out: input.clock_out ?? null,
       minutes,
@@ -288,10 +307,9 @@ export async function getEmployeesKpis(): Promise<EmployeesKpis> {
   const { startISO, endISO } = weekRange(new Date());
   const [staffRes, shiftsRes] = await Promise.all([
     supabase
-      .from('staff_profiles')
-      .select('id')
-      .eq('active', true)
-      .is('deleted_at', null),
+      .from('profiles')
+      .select('user_id')
+      .eq('staff_active', true),
     supabase
       .from('shifts')
       .select('id')
