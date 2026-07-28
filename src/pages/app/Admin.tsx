@@ -45,7 +45,7 @@ interface Overview {
     providers: string[]; last_sign_in_at: string | null;
     created_at: string; email_confirmed_at: string | null;
   } | null;
-  member: { tier: string | null; status: string | null; started_at: string | null } | null;
+  member: { status: string | null; started_at: string | null } | null;
   counts: { orders: number; posts: number; documents: number; bookings: number };
 }
 
@@ -202,7 +202,7 @@ function OverviewTab({ ov }: { ov: Overview }) {
     ['Email', p.email], ['Phone', p.phone ?? '—'], ['Mobile', p.mobile ?? '—'],
     ['WhatsApp', p.whatsapp ?? '—'], ['Riding level', p.riding_level ?? '—'],
     ['Joined', fmt(p.created_at)],
-    ['Member', ov.member ? `${ov.member.tier ?? 'member'} · ${ov.member.status ?? '—'}` : 'None'],
+    ['Member', ov.member ? (ov.member.status ?? '—') : 'None'],
   ];
   return (
     <div>

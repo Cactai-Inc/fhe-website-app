@@ -15,7 +15,6 @@ export type MemberRole = 'USER' | 'EMPLOYEE' | 'MANAGER' | 'ADMIN' | 'SUPER_ADMI
 
 export interface AdminMemberRow extends Profile {
   member_status?: string | null;
-  member_tier?: string | null;
   role?: MemberRole | null;
 }
 
@@ -26,12 +25,11 @@ export async function adminListMembers(): Promise<AdminMemberRow[]> {
     .order('created_at', { ascending: false });
   if (error) throw error;
 
-  const { data: members } = await supabase.from('members').select('user_id, status, tier');
+  const { data: members } = await supabase.from('members').select('user_id, status');
   const byUser = new Map((members ?? []).map((m) => [m.user_id, m]));
   return (profiles ?? []).map((p: Profile & { role?: MemberRole | null }) => ({
     ...p,
     member_status: byUser.get(p.user_id)?.status ?? null,
-    member_tier: byUser.get(p.user_id)?.tier ?? null,
     role: p.role ?? 'USER',
   }));
 }
@@ -123,17 +121,6 @@ export async function adminHardDeleteMember(userId: string): Promise<void> {
 
 export async function adminSetAdmin(userId: string, isAdmin: boolean): Promise<void> {
   const { error } = await supabase.from('profiles').update({ is_admin: isAdmin }).eq('user_id', userId);
-  if (error) throw error;
-}
-
-export async function adminUpsertMember(
-  userId: string,
-  tier: string,
-  status: string,
-): Promise<void> {
-  const { error } = await supabase
-    .from('members')
-    .upsert({ user_id: userId, tier, status }, { onConflict: 'user_id' });
   if (error) throw error;
 }
 
