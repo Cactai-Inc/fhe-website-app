@@ -263,12 +263,6 @@ function ProfileSection() {
 
       <SectionLabel>Notifications</SectionLabel>
       <div className="flex flex-col gap-2">
-        <label className="flex items-center justify-between bg-white border border-green-800/10 rounded-xl px-3.5 py-2.5">
-          <span className="text-[12.5px] text-green-900">Payment reminder 3 days before</span>
-          <input type="checkbox" checked={p?.payment_reminders ?? true}
-            onChange={(e) => set('payment_reminders', e.target.checked)}
-            className="accent-green-700 w-4 h-4" />
-        </label>
         {['Replies to my discussions', 'Event reminders', 'New member welcomes'].map((n) => (
           <label key={n} className="flex items-center justify-between bg-white border border-green-800/10 rounded-xl px-3.5 py-2.5">
             <span className="text-[12.5px] text-green-900">{n}</span>
