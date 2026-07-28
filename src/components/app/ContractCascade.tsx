@@ -1271,9 +1271,11 @@ function WeekGrid({ f, onSaveStructured, disabled }: { f: ContractField; onSaveS
 function conditionMet(f: ContractField, byKey: Map<string, ContractField>): boolean {
   const c = f.conditional_on;
   if (!c) return true;
-  const ctrl = byKey.get(c.field_key);
-  const v = ctrl?.responsibility?.party ?? ctrl?.value ?? '';
-  return clauseConditionMet(c, { [c.field_key]: v });
+  // Feed the evaluator every sibling's value so composite (all/any) gates see
+  // the same map the SQL side does — a single-key map breaks them.
+  const vals: Record<string, string> = {};
+  for (const [key, ctrl] of byKey) vals[key] = ctrl?.responsibility?.party ?? ctrl?.value ?? '';
+  return clauseConditionMet(c, vals);
 }
 
 /** One field + its cascading children. */

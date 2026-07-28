@@ -101,7 +101,7 @@ export async function submitRequest(
 export async function redeemInvitation(token: string): Promise<void> {
   const { error } = await supabase.rpc('redeem_invitation', { p_token: token });
   if (error) {
-    await supabase.rpc('record_invitation_failure', { p_token: token }).catch(() => {});
+    try { await supabase.rpc('record_invitation_failure', { p_token: token }); } catch { /* best-effort */ }
     throw error;
   }
 }

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, Hand } from 'lucide-react';
-import { myNotifications, consumeNotification, type AppNotification } from '../../lib/api';
+import { myNotifications, consumeNotification, markNotificationRead, type AppNotification } from '../../lib/api';
 import { sayHiBack } from '../../lib/communityFeed';
 import { timeOfDayWord } from '../../lib/formatDateTime';
 import { useAuth } from '../../contexts/AuthContext';

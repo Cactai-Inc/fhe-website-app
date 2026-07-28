@@ -57,6 +57,8 @@ export interface FeedCard {
   /** member cards: the member's user_id (Say-hi target) + avatar. */
   memberUserId?: string;
   memberAvatar?: string | null;
+  /** member cards: short bio shown in the profile modal. */
+  bio?: string;
   isHorseOwner?: boolean;
   preferredContact?: PreferredContact;
   socialInstagram?: string | null;
