@@ -306,19 +306,19 @@ export async function myUnreadCount(): Promise<number> {
 /** A standing account category the signed-in person holds. */
 export type StandingCategory = 'GUEST' | 'RIDER' | 'HORSE_OWNER';
 
-/** The signed-in person's standing categories from contact_roles. Drives nav
- *  gating (a guest-only client sees a restricted surface — no community). Reads
- *  under the contact_roles RLS (contact_id = current_contact_id()). Returns []
- *  for accounts with no contact/roles (e.g. pure staff — restriction inert). */
+/** The signed-in person's standing categories. Drives nav gating (a guest-only
+ *  client sees a restricted surface — no community). Resolved server-side by
+ *  my_standing_categories(): affiliation groups (RIDER / HORSE_OWNER), else
+ *  GUEST for an active client with no group. Returns [] for staff (restriction
+ *  inert) and for accounts with no contact. */
 export async function fetchMyCategories(): Promise<StandingCategory[]> {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) return [];
-  const { data, error } = await supabase.from('contact_roles').select('role_type');
+  const { data, error } = await supabase.rpc('my_standing_categories');
   if (error) return [];
   const standing: StandingCategory[] = ['GUEST', 'RIDER', 'HORSE_OWNER'];
-  return ((data ?? []) as { role_type: string }[])
-    .map((r) => r.role_type as StandingCategory)
-    .filter((r) => standing.includes(r));
+  return ((data ?? []) as string[]).filter((c): c is StandingCategory =>
+    standing.includes(c as StandingCategory));
 }
 
 // ─── Profiles ───────────────────────────────────────────────────────────────

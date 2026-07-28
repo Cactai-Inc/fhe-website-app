@@ -115,7 +115,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Provisioned client invite: standing category(ies) + optional offering(s).
   // Names are OPTIONAL (email-only invites per spec) — captured at first-login
   // intake. The canonical spine RPC provision_client_invitation writes standing
-  // contact_roles + onboarding docs + 0..N offering purchase in one transaction.
+  // clients marker + onboarding docs + 0..N offering purchase in one transaction.
   const toStrArray = (v: unknown): string[] =>
     Array.isArray(v) ? v.map((x) => String(x).trim()).filter(Boolean) : [];
   const categories = toStrArray(body.categories);
