@@ -182,11 +182,3 @@ export interface Payment {
   status: string;
 }
 
-export interface OrderDocument {
-  id: string;
-  order_id: string;
-  document_type: string;
-  signer_name: string | null;
-  agreed_at: string | null;
-  extra_fields: Record<string, unknown>;
-}

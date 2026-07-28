@@ -16,7 +16,9 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
 import { resolveTenantEmailIdentity, sendViaProvider, type TenantEmailIdentity } from './_lib/email.js';
 
-const OPS_INBOX = 'hello@fhequestrian.com';
+/** 5d: the ops inbox is org-level config (CONTACT/OPS_INBOX_FALLBACK), not a constant.
+ *  The literal below is only the last-resort fallback when config is absent. */
+const OPS_INBOX_FALLBACK = 'hello@fhequestrian.com';
 const WINDOW_START = 6;
 const WINDOW_END = 21;
 const PER_USER_CAP = 10;
@@ -116,7 +118,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         try {
           const uniq = Array.from(new Set(opsDigest));
           await sendViaProvider({
-            to: OPS_INBOX, fromName: first.fromName, fromEmail: first.fromEmail,
+            to: first.opsInbox ?? OPS_INBOX_FALLBACK, fromName: first.fromName, fromEmail: first.fromEmail,
             subject: `Upcoming sessions (${uniq.length})`,
             html: `<p>Upcoming calendar items:</p><ul>${uniq.map((t) => `<li>${t}</li>`).join('')}</ul>`,
           });

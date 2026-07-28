@@ -179,19 +179,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // 7. Company copy: the org inbox gets one email with all attachments (unless
     //    the inbox was already a party recipient). Best-effort.
+    //    5d: the mirror copy is LOGGED like a party copy — one
+    //    document_deliveries row per document, flagged is_mirror, so the
+    //    company copy is as provable as the parties'.
     let companyNotified = false;
     const partyEmails = new Set(
       Array.from(byContact.values())
         .map((p) => p.contacts?.email?.toLowerCase())
         .filter(Boolean),
     );
-    if (identity.contactEmail && !partyEmails.has(identity.contactEmail.toLowerCase()) && delivered.length > 0) {
+    const mirrorTo = identity.opsInbox ?? identity.contactEmail;
+    if (mirrorTo && !partyEmails.has(mirrorTo.toLowerCase()) && delivered.length > 0) {
       const signers = Array.from(byContact.values())
         .map((p) => [p.contacts?.first_name, p.contacts?.last_name].filter(Boolean).join(' '))
         .filter(Boolean)
         .join(', ');
       const notice = await sendViaProvider({
-        to: identity.contactEmail,
+        to: mirrorTo,
         fromName: identity.fromName,
         fromEmail: identity.fromEmail,
         subject: `Signed document set${signers ? ` — ${signers}` : ''}`,
@@ -199,6 +203,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         attachments: allAttachments,
       });
       companyNotified = notice.ok;
+      if (notice.ok) {
+        for (const d of docs) {
+          await db.rpc('log_mirror_delivery', {
+            p_document_id: d.id,
+            p_channel: CHANNEL,
+            p_copy_url: `/portal/documents/${d.id}`,
+          });
+        }
+      }
     }
 
     return res.status(200).json({ delivered, companyNotified, documents: documentIds.length });

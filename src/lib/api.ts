@@ -5,7 +5,7 @@
 import { supabase } from './supabase';
 import type {
   Offering, RequestInput, RequestSelectionInput,
-  Invitation, Order, OrderItem, OrderDocument, Payment,
+  Invitation, Order, OrderItem, Payment,
   PaymentMethod, Profile,
 } from './types';
 import type {
@@ -506,10 +506,6 @@ export async function markAwaitingPayment(orderId: string, method: PaymentMethod
 // signatures so existing callers compile, but return empty / no-op until the
 // document surface is rebuilt on the contract spine.
 
-export async function fetchOrderDocuments(_orderId: string): Promise<OrderDocument[]> {
-  return [];
-}
-
 /** Retired surface — returns nothing (order_documents removed). */
 /** Stage 3a/3f: the person's one chronological document list — pending and
  *  assigned first, then executed in signing order (superseded stay
@@ -541,14 +537,6 @@ export async function myWallState(): Promise<WallState> {
   const { data, error } = await supabase.rpc('my_wall_state');
   if (error) return { pending: 0, wall: false, staff: false };
   return data as WallState;
-}
-
-export async function signOrderDocument(
-  _documentId: string,
-  _signerName: string,
-  _extraFields: Record<string, unknown> = {},
-): Promise<void> {
-  // no-op: order_documents removed.
 }
 
 // ─── Payments (read inline off the purchase row) ────────────────────────────

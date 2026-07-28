@@ -71,7 +71,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         `<p><strong>${esc(name)}</strong> just submitted an inquiry on the website.</p>` +
         (rows.length ? `<ul style="padding-left:18px">${rows.join('')}</ul>` : '') +
         (notes ? `<p style="white-space:pre-line;border-left:3px solid #ddd;padding-left:12px;color:#333">${esc(notes)}</p>` : '') +
-        `<p><a href="https://fhequestrian.com/app/ops/intake">Open the Request Inbox</a> to reply.</p>` +
+        `<p><a href="${(identity.siteUrl ?? 'https://fhequestrian.com')}/app/ops/intake">Open the Request Inbox</a> to reply.</p>` +
         (identity.footer ? `<hr/><p style="color:#666;font-size:12px;white-space:pre-line">${esc(identity.footer)}</p>` : ''),
     });
 
