@@ -4,7 +4,7 @@ Effective from the Date of Signature until superseded by a later executed versio
 
 This Emergency Veterinary Authorization and Equine Medical Care Directive ("Agreement") is made effective as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned client ("CLIENT") in favor of {{ORG.LEGAL_NAME}} ("COMPANY"), authorizing COMPANY to act as described below with respect to the horse identified. By signing below, CLIENT acknowledges and agrees to the terms of this Agreement.
 
-For purposes of this Agreement, "Released Parties" means COMPANY, its owners, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, representatives, affiliates, property owners, facility owners, licensors, lessors, lessees, hosts, landowners, successors, assigns, heirs, and any person acting on behalf of COMPANY at any location where it is authorized to conduct business. COVERAGE EXTENSION: The authorizations, releases, and protections set forth in this document extend to and benefit COMPANY (French Heritage Equestrian) and, during any period in which a lease of the Horse is in effect, the then-current lessee of the Horse under that lease, each as an additional covered party — without the need to name that lessee.
+For purposes of this Agreement, "Released Parties" means COMPANY, its owners, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, representatives, affiliates, property owners, facility owners, licensors, lessors, lessees, hosts, landowners, successors, assigns, heirs, and any person acting on behalf of COMPANY at any location where it is authorized to conduct business.
 
 CLIENT INFORMATION
 
@@ -23,9 +23,7 @@ Breed: {{HORSE.BREED}}
 Color: {{HORSE.COLOR}}
 Sex: {{HORSE.SEX}}
 Age: {{HORSE.AGE_DOB}}
-Height: {{HORSE.HEIGHT}}
 Registration / Identification Number: {{HORSE.REGISTRATION_NUMBER}}
-Current Fair Market Value: {{HORSE.FAIR_MARKET_VALUE}}
 Current Location: {{HORSE.CURRENT_LOCATION}}
 Veterinarian: {{HORSE.VET_NAME}}
 Veterinarian Phone: {{HORSE.VET_PHONE}}
@@ -65,9 +63,7 @@ COMPANY shall not authorize non-emergency veterinary procedures without CLIENT a
 
 COMPANY may not authorize euthanasia without CLIENT approval.
 
-CLIENT must select ONE of the following (required):
-[ {{HORSE.EUTHANASIA_A}} ]  Option A — I AUTHORIZE the attending veterinarian to perform humane euthanasia if, in the veterinarian's professional judgment, it is necessary to relieve the Horse's suffering and I cannot be reached in time.
-[ {{HORSE.EUTHANASIA_B}} ]  Option B — I DO NOT AUTHORIZE euthanasia without my express consent. Every reasonable effort must be made to reach me or my emergency contact before any such decision, except where required by law.
+CLIENT Initials: {{CLIENT.EUTHANASIA_INITIALS}}
 
 8. MEDICATION AUTHORIZATION
 
@@ -86,7 +82,7 @@ Known Conditions: {{HORSE.KNOWN_CONDITIONS}}
 
 10. RELEASE OF LIABILITY
 
-CLIENT, on behalf of CLIENT and CLIENT's heirs, next of kin, estate, executors, administrators, legal representatives, successors, and assigns, releases, waives, and forever discharges the Released Parties from claims arising from good-faith actions taken under this Agreement. This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
+CLIENT releases, waives, and forever discharges the Released Parties from claims arising from good-faith actions taken under this Agreement. This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
 
 11. INDEMNIFICATION
 

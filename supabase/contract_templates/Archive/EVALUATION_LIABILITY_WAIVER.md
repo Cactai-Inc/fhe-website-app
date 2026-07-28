@@ -16,17 +16,9 @@ Where the evaluation includes CLIENT riding, handling, or being near a horse, CL
 
 4. RELEASE, HOLD HARMLESS, AND INDEMNIFICATION
 
-CLIENT, on behalf of CLIENT and CLIENT's heirs, next of kin, estate, executors, administrators, legal representatives, successors, and assigns, releases, waives, and forever discharges COMPANY, its owners, employees, instructors, trainers, independent contractors, agents, and representatives from any and all claims, demands, losses, or damages arising out of or relating to the evaluation, the opinion provided, or CLIENT's decision to purchase, lease, ride, or handle any horse — including claims that the horse was not as evaluated or represented, and including claims arising from the ordinary negligence of the released persons. This release does not apply to gross negligence, reckless conduct, or intentional misconduct. CLIENT agrees to defend, indemnify, and hold harmless COMPANY and the released persons from any such claims brought by or on behalf of CLIENT.
+To the fullest extent permitted by law, CLIENT releases, waives, and discharges COMPANY, its owners, employees, and agents from any and all claims, demands, losses, or damages arising out of or relating to the evaluation, the opinion provided, or CLIENT's decision to purchase, lease, ride, or handle any horse — including claims that the horse was not as evaluated or represented. CLIENT agrees to hold harmless and indemnify COMPANY from any such claims brought by CLIENT or any third party.
 
-5. DISPUTE RESOLUTION
-
-Any dispute arising out of or relating to this Waiver shall be resolved by binding arbitration in San Diego, California.
-
-6. GOVERNING LAW
-
-California law governs this Waiver.
-
-7. SEVERABILITY
+5. SEVERABILITY
 
 If any provision of this Waiver is held unenforceable, the remaining provisions remain in full force and effect.
 
