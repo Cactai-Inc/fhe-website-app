@@ -1,7 +1,7 @@
 # CLAUDE.md — orientation for a working session
 
-**Read this before trusting any other doc in this repo.** Several older docs describe
-an application that no longer exists (see "Doc trust ranking" at the bottom).
+**Read this first.** It describes what the system actually is: the live spine, the
+retired concepts, the migration convention, and the settled owner decisions.
 
 ---
 
@@ -37,10 +37,16 @@ are classified. Frontend read path: `src/lib/publicCatalog.ts` + `src/lib/pricin
 - `profiles` (↔ `auth.users`) = the account. ~20 tables key on `user_id`.
 - `profiles` is the 1:1 bridge. Owning a horse or being a contract party requires an
   account.
-- `members` (renamed from `memberships` on 2026-07-26) = the access gate;
-  `is_active_member()` reads it, and RLS on ~10 community tables depends on that.
-  `members.tier` is vestigial (always `'community'`) and slated for removal —
-  the word "membership" is deliberately reserved for a future real product.
+- `members` = the access gate; `is_active_member()` reads it, and RLS on ~10
+  community tables depends on that. The word "membership" is deliberately reserved
+  for a future real product (D4), so there is no tier column.
+- `groups` (contact_id, group_type) = standing affiliations, RIDER / HORSE_OWNER /
+  PARENT_GUARDIAN only. `clients.client_since` / `.customer_since` are the two D8
+  markers (service engagement vs commercial purchase) on one account.
+- **Promotion is one path:** `promote_contact_to_account(user, contact)` — the SOLE
+  writer of `profiles.contact_id`. It links or merges (evidence-based survivor),
+  re-anchors documents/parties/signatures, grants membership, and derives groups.
+  A structural denylist refuses the protected identities and any company contact.
 
 **Affiliation groups are DERIVED, never hand-written.** `derive_affiliations(contact)`
 computes them from executed documents + horse ownership; `apply_affiliations(contact)`
@@ -48,21 +54,36 @@ is the **sole writer** of RIDER / HORSE_OWNER / PARENT_GUARDIAN rows, kept live 
 triggers on document-execution and horse-ownership. If you find code writing those
 roles directly, that's a regression — route it through `apply_affiliations`.
 
+**Fulfillment:** `fulfillment_units` are generated from `purchase_items` by
+`config_kind` (scheduled→session, recurring→period, intake_*→milestone,
+document_transaction→execution, inquire→none). Bookings consume them; evaluation
+delivery satisfies milestones; `status_events` drives unit state.
+
+**Documents:** assignment is `contact_required_documents` (the "pending set" is a
+QUERY, not a table). `contract_templates.wall_gating` marks the onboarding class
+that gates a member's session — `my_wall_state()` drives the signing wall; staff are
+never hard-walled. A newer version executing marks the prior one `superseded`
+(retained as evidence). Signatures carry `signer_user_id` from Stage 2c.
+
 **Other live subsystems:** `status_events` + `status_events_vocab` (+ `current_status`
 denormalized on documents/purchases/bookings/invitations, maintained by triggers);
 `evaluation_reports` (+ `_shares`, `_access`); invitation lifecycle
 (`record_invitation_failure`, `supersede_invitations`, `invitation_expiry_days`);
-`_ensure_client_account` (the shared account-creation spine).
+`_ensure_client_account` (the contact-side account spine); `receipt_sends`
+(one row per attempt; a receipt is provable and single); `purge_account` (allowlisted
+account removal, staff-invoked only).
 
 ---
 
 ## RETIRED — do not resurrect
 
 Tables/concepts: `engagements`, `orders`, `client_purchases`, `lesson_sessions`,
-`transactions`, offering **tiers**.
-Functions: `start_broker_contract` (dropped 2026-07-26).
-Files: `src/lib/services.ts`, `src/lib/catalog.ts` (both **deleted** — the two
-hardcoded shadow catalogs; the catalog is DB-driven now).
+`transactions`, `contact_roles` (now `groups`), `horse_parties` (now
+`horse_relationships`), `staff_profiles` (merged into `profiles`), offering **tiers**,
+`members.tier`, welcome/dunning email (D9).
+Functions: `start_broker_contract`, `dunning_due`, `mark_dunning_sent`.
+Files: `src/lib/services.ts`, `src/lib/catalog.ts` (the two hardcoded shadow
+catalogs — the catalog is DB-driven), `src/components/order/OrderDocuments.tsx`.
 
 **The lease is built from DB clause content**, not a flat markdown template
 (`contract_section_defs` / `contract_clause_defs` / `contract_field_defs`, template
@@ -97,44 +118,32 @@ pre-existing property of the repo, not a per-migration bug.
 
 ## Working rule
 
-Verify against the live database/code **before** asserting. This codebase has
-repeatedly contradicted plausible-sounding assumptions (a column that looked
-load-bearing was vestigial; "empty" tables turned out to be wired and code-referenced;
-same-name contact records turned out to be different people). Query first.
+Verify against the live database/code **before** asserting, and claim only what the
+diff contains. This codebase has repeatedly contradicted plausible-sounding
+assumptions (a column that looked load-bearing was vestigial; "empty" tables turned
+out to be wired and code-referenced; same-name contact records turned out to be
+different people). Query first.
+
+**Writes must prove they landed.** Supabase returns no error when RLS filters an
+UPDATE to zero rows. Every write goes through `assertWrote()`
+(`src/lib/writeGuard.ts`) with a `.select()` so a blocked write throws instead of
+reporting success.
 
 ---
 
-## Doc trust ranking
+## The docs
 
-**Current — trust these:**
-- `docs/STATUS_REPORT.md` — point-in-time state, verified facts with row counts
-- `docs/ECOSYSTEM_PLAN.md` — the identity/taxonomy plan (Stages 0–2 are DONE and live;
-  3–6 pending)
-- `docs/NOTIFICATIONS.md`, `docs/GOOGLE_SMTP_SETUP.md` — narrow and accurate
+- `docs/BACKLOG.md` — the standing work list (the only place to look for what's next)
+- `docs/TOKEN_DICTIONARY.md` — the document merge-token contract
+- `docs/NOTIFICATIONS.md`, `docs/GOOGLE_SMTP_SETUP.md` — the email/notification setup
+- `docs/DUAL_IDENTITY_TRACE.md` — how act-as-company works (D7's behavioral contract;
+  any change to company-vs-personal attribution must be diffed against it)
 - `docs/contract-exports/` — generated from the live lease template
-
-**Historical — do NOT follow as instructions:**
-- `docs/README.md` — references deleted `src/lib/services.ts` and "service tiers";
-  its schema section lists 2 tables for a DB with hundreds of migrations
-- `docs/SETUP.md` — its member-grant SQL (`insert into memberships …`) **will fail**
-  (table is `members`); says "run these 5 migrations" (there are 466); names Resend
-  (the decision was Google Workspace SMTP)
-- `docs/PLATFORM_ARCHITECTURE.md` — good seam/RLS discipline, but its "prime directive:
-  nothing rewrites existing schema" is no longer true, and it models `engagements` /
-  `products` / `product_prices` which are retired or never shipped
-- `docs/COMPLETE-ENUMERATION.md` + `docs/GAP-ANALYSIS.md`, `docs/FEATURE_BUILD_PLAN.md`,
-  `docs/CHECKLIST.md`, `docs/CONTRACT_SPEC_HANDOFF.md`, `build_instructions_phase_2/**`
-  — completed or superseded planning artifacts
-- `docs/IDENTITY_MODEL_ANALYSIS.md` — its "kill these 4 empty tables" table was
-  **reversed** by ECOSYSTEM_PLAN §F5 (they're empty but code-referenced — keep)
-- `docs/TOKEN_DICTIONARY.md` — the token contract (`ORD.*` remapped to the
-  `purchases`/`purchase_items` spine on 2026-07-27)
+- `supabase/contract_templates/HORSE_LEASE.md` — how to edit the lease (pointer doc)
 
 ---
 
-## Settled owner decisions D1–D7 (2026-07-27) — inherit these, do not re-ask
-
-Full text in `REMEDIATION_PLAN.md` (which wins over any other doc where they conflict).
+## Settled owner decisions — inherit these, do not re-ask
 
 - **D1 — Identity disposition.** admin@fhequestrian.com (CJ) + hello@fhequestrian.com
   (Claire) + the company contact (French Heritage Equestrian) are PRODUCTION FHE
@@ -179,3 +188,9 @@ Full text in `REMEDIATION_PLAN.md` (which wins over any other doc where they con
   visibility) are recorded scope, not built: record-sharing folds into Stage 3's
   horse-visibility item; schedule-sharing is BACKLOG-deferred. The gift auto-account
   lands with Stage 4's gift work on the Stage 2 spine.
+- **D9 — The email chain ends at setup.** There is NO welcome email and NO dunning
+  email. The invitation IS the welcome; the document-flow completion email IS the
+  account-setup confirmation. Payment is prepaid-gated (no payment, no service), so
+  overdue reminders have no business function. Both producers are deleted, not
+  dormant. `profiles.payment_reminders` survives as a vestigial column with no
+  reader.
