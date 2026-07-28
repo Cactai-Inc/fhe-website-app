@@ -162,6 +162,12 @@ vocabulary all stand.
 
 ## 7. Deferred (UI-lane and owner-input items — NOT in the remediation stages)
 
+- **Linked accounts: schedule sharing** (D8.5, recorded 2026-07-27) —
+  rider-permission-gated schedule visibility between linked accounts (separate
+  logins). Deferred; the record-sharing half (shared horse record via
+  add-by-email on `horse_relationships`) folds into Stage 3d's horse-visibility
+  item instead.
+
 - **Calendar LARGE modal + week/day/list switcher** (GAP E1/E3/E4) — **partially
   superseded, verified 2026-07-27**: a week/month switcher now exists
   (`src/pages/app/CalendarPage.tsx:41,204`) with a tap-day panel; the item panel

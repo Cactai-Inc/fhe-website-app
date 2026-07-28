@@ -160,3 +160,22 @@ Full text in `REMEDIATION_PLAN.md` (which wins over any other doc where they con
   act as themselves or as the company (displayed AND recorded). It works via patches
   today; consolidation only as behavior-identical change against the Stage-1 trace
   (`docs/DUAL_IDENTITY_TRACE.md`), never blind.
+- **D8 — Access model (owner-final 2026-07-27; supersedes "guest = account with no
+  group" as a derivation).** (1) Community access is gated by ACCOUNT, not documents —
+  any account holder views and participates. Documents gate ACTIONS: RELEASE_GENERAL
+  gates physical visits (signed at visit, kiosk-style); the participant release gates
+  riding; the horse-care set gates care services. GUEST is never a derived group —
+  "guest" is display-only for an account with no service group. (2) CUSTOMER =
+  commercial marker for any purchaser incl. gift buyers; a gift purchase auto-creates
+  the account through the single spine (no manual provisioning) with order visibility,
+  repurchase, community access, and marketing eligibility. CLIENT = service-engagement
+  marker, attached at invitation with service documents. Customer→client promotion is
+  a marker change on the same account. (3) An account with assigned-but-unsigned
+  documents is PENDING: service features locked until executed, community open,
+  surfaced in ops needs-attention. (4) Mary Richardson is untouched — she is the
+  Stage 2 live acceptance case (supersede expired invite → re-invite → sign → derive
+  RIDER + HORSE_OWNER). (5) Linked accounts (separate logins, shared
+  horse_relationships-based record via add-by-email, rider-permission-gated schedule
+  visibility) are recorded scope, not built: record-sharing folds into Stage 3's
+  horse-visibility item; schedule-sharing is BACKLOG-deferred. The gift auto-account
+  lands with Stage 4's gift work on the Stage 2 spine.
