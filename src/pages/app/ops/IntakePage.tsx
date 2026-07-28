@@ -591,7 +591,7 @@ function RequestInbox({ openId }: { openId?: string } = {}) {
                   firstName={invite.firstName}
                   lastName={invite.lastName}
                   onProvisioned={(r) => {
-                    setInviteResult({ url: r.registerUrl, emailed: r.emailed, offeringLabel: r.offeringLabel });
+                    setInviteResult({ url: r.registerUrl, emailed: r.emailed, offeringLabel: r.offeringLabel ?? undefined });
                     setSelected((prev) => (prev ? { ...prev, status: 'invited' } : prev));
                     void refresh(statusFilter);
                     toast.success('Confirmation sent — invitation created.');

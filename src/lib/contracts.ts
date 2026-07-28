@@ -12,6 +12,10 @@ export interface FieldOption { value: string; label: string }
  *  `equals`, or (for a multi-select control) contains one of `contains`. */
 export interface FieldConditional {
   field_key?: string; equals?: string[]; contains?: string[];
+  /** numeric gate — met when the field's parsed numeric value (digits/decimal
+   *  stripped from e.g. "$2,500" or "40%") is >= this threshold. Unparseable
+   *  values (empty, "N/A") never meet it. */
+  gte?: number;
   /** composite AND — every sub-condition must hold (mirrors clause_condition_met). */
   all?: FieldConditional[];
   /** composite OR — any sub-condition holding is enough. */
@@ -37,6 +41,8 @@ export interface ContractField {
   input_kind?: FieldInputKind | null;
   options?: FieldOption[] | null;
   conditional_on?: FieldConditional | null;
+  /** Gate-0: a CLOSED option set — the UI appends no synthetic Other. */
+  closed?: boolean;
   guidance?: string | null;
   is_optional?: boolean | null;
   included?: boolean | null;
@@ -236,9 +242,13 @@ export function clauseConditionMet(
     const have = raw.split(',').map((s) => s.trim()).filter(Boolean);
     if (cond.contains.some((v) => have.includes(v))) return true;
   }
-  // if only one operator was given and it didn't match, it's not met; if NEITHER
+  if (cond.gte !== undefined) {
+    const n = parseFloat(raw.replace(/[^0-9.]/g, ''));
+    if (!Number.isNaN(n) && n >= cond.gte) return true;
+  }
+  // if only one operator was given and it didn't match, it's not met; if NO
   // operator is present, treat as ungated (shown)
-  if (!cond.equals && !cond.contains) return true;
+  if (!cond.equals && !cond.contains && cond.gte === undefined) return true;
   return false;
 }
 

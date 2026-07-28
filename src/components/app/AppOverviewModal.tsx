@@ -7,36 +7,37 @@ import { Modal } from '../ops/kit/Modal';
 import type { StandingCategory } from '../../lib/api';
 
 /**
- * APP OVERVIEW — the welcome tour shown once, right after a client finishes
- * onboarding (documents signed, payment handled). Lists the app's sections with
- * their purpose so the new member knows where everything is. Category-aware:
- * a guest-only client sees the restricted surface (no community); Riders/Horse
- * Owners see the full set. Closing it lands them on their home (dashboard when
- * they have notifications, else the community feed).
+ * APP OVERVIEW — the tour of the member surface. Shown once on the first login
+ * after activation (at the end of onboarding), and reachable afterwards so a
+ * member can re-read it any time.
+ *
+ * Post-D8 content: community access follows the ACCOUNT, so every account
+ * holder sees every card here. The one real gate left is ownership — My Stable
+ * is for people who actually have a horse on their record. Documents mentions
+ * re-signing, because an updated version of an agreement can appear for
+ * signature later and members should not be surprised by it.
  */
 
 interface Section {
   icon: typeof LayoutDashboard;
   label: string;
   desc: string;
-  /** Hidden from a guest-only client (no community/service surfaces). */
-  membersOnly?: boolean;
-  /** Shown only to Horse Owners. */
+  /** Shown only to Horse Owners — a real ownership gate, not an access tier. */
   ownerOnly?: boolean;
 }
 
 const SECTIONS: Section[] = [
-  { icon: LayoutDashboard, label: 'Dashboard', desc: 'Your notifications and anything that needs your attention.' },
-  { icon: Users, label: 'Community', desc: 'The member feed — announcements, events, and posts from the barn.', membersOnly: true },
-  { icon: ShoppingBag, label: 'Catalog', desc: 'Browse our services and book or purchase what you need.' },
-  { icon: CalendarDays, label: 'Calendar', desc: 'Your scheduled lessons and sessions; book open times.', membersOnly: true },
-  { icon: GraduationCap, label: 'My Lessons', desc: 'Your lesson credits, upcoming sessions, and history.', membersOnly: true },
-  { icon: Boxes, label: 'My Stable', desc: 'Your horse’s details, health, and care records.', ownerOnly: true },
-  { icon: FileText, label: 'Documents', desc: 'Every agreement you’ve signed — always available to download.' },
-  { icon: ReceiptText, label: 'Orders', desc: 'What you’ve purchased and each order’s payment status.' },
-  { icon: Gift, label: 'Gifts', desc: 'Purchase and redeem gift certificates.' },
-  { icon: MessageSquare, label: 'Messages', desc: 'Direct messages with the barn and other members.', membersOnly: true },
-  { icon: UserRound, label: 'Profile & Preferences', desc: 'Your contact details, emergency contacts, and settings.' },
+  { icon: LayoutDashboard, label: 'Dashboard', desc: 'Where you land: what needs your attention, and what’s coming up next.' },
+  { icon: Users, label: 'Community', desc: 'The member feed — announcements, events, and posts from the barn and other members. Post your own, or list something for sale.' },
+  { icon: CalendarDays, label: 'Calendar', desc: 'Your lessons and sessions, plus payments due and anything awaiting confirmation. Book open times straight from the grid.' },
+  { icon: MessageSquare, label: 'Messages', desc: 'Direct messages with the barn and with other members.' },
+  { icon: FileText, label: 'Documents', desc: 'Every agreement you’ve signed, always available to download. If we update one, the new version appears here for your signature — we’ll walk you to it when you next sign in.' },
+  { icon: GraduationCap, label: 'My Lessons', desc: 'Your lesson credits, upcoming sessions, and the history of what you’ve ridden.' },
+  { icon: Boxes, label: 'My Stable', desc: 'Your horse’s record — details, health and care history, and the paperwork tied to them.', ownerOnly: true },
+  { icon: ShoppingBag, label: 'Catalog', desc: 'Everything we offer. Browse, book, and pay in one place.' },
+  { icon: ReceiptText, label: 'Orders', desc: 'What you’ve purchased, what each one covers, and how it was paid — including changing the payment method on anything still open.' },
+  { icon: Gift, label: 'Gifts', desc: 'Gift certificates you’ve been given or bought for someone else. Redeem yours here; resend, reschedule, or transfer one you gave.' },
+  { icon: UserRound, label: 'Account & settings', desc: 'Your contact details, emergency contacts, notification preferences, and how you sign in.' },
 ];
 
 export function AppOverviewModal({
@@ -46,17 +47,16 @@ export function AppOverviewModal({
   onClose: () => void;
   categories: StandingCategory[];
 }) {
-  const isStandingClient = categories.includes('RIDER') || categories.includes('HORSE_OWNER');
   const isOwner = categories.includes('HORSE_OWNER');
-  const guestOnly = categories.includes('GUEST') && !isStandingClient;
 
+  // D8: community access follows the ACCOUNT — every member sees the full
+  // tour (the ownerOnly gate for My Stable is a separate, real ownership gate).
   const sections = useMemo(
     () => SECTIONS.filter((s) => {
-      if (s.membersOnly && guestOnly) return false;
       if (s.ownerOnly && !isOwner) return false;
       return true;
     }),
-    [guestOnly, isOwner],
+    [isOwner],
   );
 
   return (
@@ -71,8 +71,8 @@ export function AppOverviewModal({
       }
     >
       <p className="body-text text-sm text-secondary mb-5">
-        You’re all set up. Here’s a quick tour of where everything lives — you can
-        always come back to any of these from the menu.
+        Here’s where everything lives. You can reopen this tour any time from the
+        menu under your avatar.
       </p>
       <ul className="space-y-3">
         {sections.map((s) => (

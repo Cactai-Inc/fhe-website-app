@@ -12,6 +12,8 @@ import {
   attachPurchaseHorse,
   fetchMyCategories,
   myUnreadCount,
+  myDocuments,
+  markTourSeen,
   type OnboardingProfileInput,
   type OnboardingPurchase,
   type OnboardingState,
@@ -52,10 +54,10 @@ import type { Profile } from '../../lib/types';
 
 type Step = 'details' | 'horse' | 'sign' | 'payment' | 'done';
 
-/** The plain profile fields (the minor toggle + fields are tracked apart). */
+/** The plain profile fields (the name, minor toggle + fields are tracked apart). */
 type ProfileFormFields = Omit<
   OnboardingProfileInput,
-  'has_minor' | 'minor_first_name' | 'minor_last_name' | 'minor_dob'
+  'first_name' | 'last_name' | 'has_minor' | 'minor_first_name' | 'minor_last_name' | 'minor_dob'
 >;
 
 const EMPTY_FORM: Required<ProfileFormFields> = {
@@ -184,6 +186,19 @@ export default function Onboarding() {
   // sign button; the flag rides to record_signature, which logs a separate
   // esign_consents row. Checked once, it covers the whole signing session.
   const [esignConsent, setEsignConsent] = useState(false);
+  // 3f re-signer pointer: template_key → the date of the version already on
+  // file (executed or superseded), so returning signers see the replace copy.
+  const [priorSigned, setPriorSigned] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (step !== 'sign') return;
+    myDocuments().then((rows) => {
+      const m: Record<string, string> = {};
+      for (const r of rows) {
+        if (r.kind === 'executed' && r.signed_at) m[r.template_key] = r.signed_at;
+      }
+      setPriorSigned(m);
+    }).catch(() => {});
+  }, [step]);
   const [signing, setSigning] = useState(false);
   const [signError, setSignError] = useState<string | null>(null);
 
@@ -248,8 +263,10 @@ export default function Onboarding() {
           }));
         }
         if (!s.needed) setStep('done');
-        else if (!s.profile_complete) setStep('details');
-        else setStep(s.horse_needed ? 'horse' : 'sign');
+        // 3f: the input form ALWAYS renders, prefilled, even when nothing is
+        // missing — the person confirms or corrects, then advances.
+        // Re-attestation is part of what the new signature means; no skip.
+        else setStep('details');
       })
       .catch((err) => active && setLoadError(toErrorMessage(err, 'Could not load your onboarding.')))
       .finally(() => active && setLoading(false));
@@ -274,15 +291,16 @@ export default function Onboarding() {
   }, [step, currentDoc?.document_id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Close the overview tour and land on the member's home: dashboard when they
-  // have notifications, else the community feed. Guests have no community, so
-  // they always land on the dashboard.
+  // have notifications, else the community feed (D8: community for every
+  // account holder — no guest branch).
   async function enterApp() {
     setShowOverview(false);
-    const isGuestOnly = categories.includes('GUEST')
-      && !categories.includes('RIDER') && !categories.includes('HORSE_OWNER');
+    // A3: a fresh activation has now seen the tour — stamp it so AppLayout's
+    // first-login auto-open does not show it a second time.
+    try { await markTourSeen(); } catch { /* presentational marker only */ }
     let unread = 0;
     try { unread = await myUnreadCount(); } catch { /* default to community */ }
-    navigate(unread > 0 || isGuestOnly ? '/app/dashboard' : '/app', { replace: true });
+    navigate(unread > 0 ? '/app/dashboard' : '/app', { replace: true });
   }
 
   const upd = (key: keyof ProfileFormFields) =>
@@ -647,6 +665,17 @@ export default function Onboarding() {
                 </span>
               </label>
 
+              {/* 3f re-signer pointer: anchored to the signature box, never
+                  obscuring or intercepting the document; does not dismiss
+                  until this document's signature completes. */}
+              <div className="pointer-events-none flex items-center gap-2 mb-1 text-gold-900" data-testid="sign-pointer">
+                <span aria-hidden="true" className="animate-bounce text-lg leading-none">↓</span>
+                <span className="text-sm font-medium">
+                  {currentDoc && priorSigned[currentDoc.template_key]
+                    ? `Review and sign — this version replaces the one you signed on ${new Date(priorSigned[currentDoc.template_key]).toLocaleDateString()}`
+                    : 'Review and sign'}
+                </span>
+              </div>
               {/* Type-to-sign: must match the printed name EXACTLY (server-enforced). */}
               <form onSubmit={signCurrent} className="flex flex-wrap items-end gap-3">
                 <div>

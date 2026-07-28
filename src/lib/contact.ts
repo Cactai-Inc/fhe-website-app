@@ -3,6 +3,7 @@
  * own contact-prefs read/save (profiles columns, RLS own-row; the role guard keeps
  * sensitive columns admin-only, these are all self-editable). */
 import { supabase } from './supabase';
+import { assertWrote } from './writeGuard';
 
 export function telHref(number: string): string {
   return `tel:${number.replace(/[^\d+]/g, '')}`;
@@ -101,13 +102,12 @@ export interface MyContactPrefs {
   social_facebook: string | null;
   social_linkedin: string | null;
   preferred_contact: PreferredContact;
-  payment_reminders: boolean;
 }
 
 const PREF_COLS =
   'email, mobile, whatsapp, allow_sms, allow_call, allow_whatsapp, allow_whatsapp_call, ' +
   'hide_email, hide_mobile, hide_whatsapp, ' +
-  'social_tiktok, social_instagram, social_facebook, social_linkedin, preferred_contact, payment_reminders';
+  'social_tiktok, social_instagram, social_facebook, social_linkedin, preferred_contact';
 
 /** Load the signed-in member's contact prefs (own profiles row). */
 export async function getMyContactPrefs(): Promise<MyContactPrefs | null> {
@@ -126,6 +126,6 @@ export async function saveMyContactPrefs(patch: Partial<Omit<MyContactPrefs, 'em
   const { data: auth } = await supabase.auth.getUser();
   const uid = auth?.user?.id;
   if (!uid) throw new Error('not signed in');
-  const { error } = await supabase.from('profiles').update(patch).eq('user_id', uid);
-  if (error) throw error;
+  const res = await supabase.from('profiles').update(patch).eq('user_id', uid).select('user_id');
+  assertWrote(res, 'Your changes');
 }

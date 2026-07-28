@@ -11,7 +11,7 @@
  *
  * Tenants:
  *   orgON  = a tenant with mod.barnops + mod.horserecords ON (source ADDON). The
- *            ledger needs horse_parties (mod.horserecords) as its payer source.
+ *            ledger needs horse_relationships as its payer source (Stage 1i survivor).
  *   orgA   = FHE (tenant #1, tier.lesson_brokerage) — mod.barnops is OFF.
  *
  * Covers, per the U11 spec:
@@ -22,7 +22,7 @@
  *    lines), splits an event owner/lessee/barn per rules into billable_lines, the
  *    shares sum to 100 or route the remainder to the barn/default payer, and NEVER
  *    silently drops an uncovered event.
- *  - the explicit cost_allocation_rules override wins over the horse_parties split.
+ *  - the explicit cost_allocation_rules override wins over the horse_relationships split.
  *  - tenant isolation: orgON's lines never leak to orgA and vice-versa.
  */
 import { beforeAll, afterAll, describe, expect, it } from 'vitest';
@@ -38,10 +38,10 @@ let aAdmin: string;  // ADMIN of orgA (module off)
 // orgON domain rows.
 let feedRes: string;      // a 'feed' resource
 let feedLot: string;      // a purchased lot of it (unit_cost 2.00)
-let splitHorse: string;   // horse split owner 60 / lessee 40 via horse_parties
+let splitHorse: string;   // horse split owner 60 / lessee 40 via horse_relationships
 let overrideHorse: string;// horse whose split is overridden to trainer 100%
-let shortHorse: string;   // horse whose horse_parties shares sum to 60 → 40 to barn
-let noPartyHorse: string; // horse with NO horse_parties rows → 100% to barn
+let shortHorse: string;   // horse whose horse_relationships shares sum to 60 → 40 to barn
+let noPartyHorse: string; // horse with NO horse_relationships rows → 100% to barn
 
 let ownerContact: string;   // owner of splitHorse (60%)
 let lesseeContact: string;  // lessee of splitHorse (40%)
@@ -94,21 +94,21 @@ beforeAll(async () => {
   noPartyHorse = (await asSuperInOrg<{ id: string }>(orgON,
     `insert into horses (barn_name) values ('Orphan') returning id`))[0].id;
 
-  // ---- horse_parties shares (the single source of truth for the split) ----
+  // ---- horse_relationships shares (the single source of truth for the split) ----
   // splitHorse: owner 60 / lessee 40 → sums to 100.
   await asSuperInOrg(orgON,
-    `insert into horse_parties (org_id, horse_id, contact_id, role, share_pct, effective_from)
-       values ($1,$2,$3,'owner',60,'2026-01-01'), ($1,$2,$4,'lessee',40,'2026-01-01')`,
+    `insert into horse_relationships (org_id, horse_id, party_contact_id, relationship, share_pct, term_start)
+       values ($1,$2,$3,'OWNER',60,'2026-01-01'), ($1,$2,$4,'LESSEE',40,'2026-01-01')`,
     [orgON, splitHorse, ownerContact, lesseeContact]);
-  // overrideHorse: horse_parties says owner 100, but an override will redirect to trainer.
+  // overrideHorse: horse_relationships says OWNER 100, but an override will redirect to trainer.
   await asSuperInOrg(orgON,
-    `insert into horse_parties (org_id, horse_id, contact_id, role, share_pct, effective_from)
-       values ($1,$2,$3,'owner',100,'2026-01-01')`, [orgON, overrideHorse, ownerContact]);
+    `insert into horse_relationships (org_id, horse_id, party_contact_id, relationship, share_pct, term_start)
+       values ($1,$2,$3,'OWNER',100,'2026-01-01')`, [orgON, overrideHorse, ownerContact]);
   // shortHorse: owner 60 only → 40 remainder must route to the barn/default payer.
   await asSuperInOrg(orgON,
-    `insert into horse_parties (org_id, horse_id, contact_id, role, share_pct, effective_from)
-       values ($1,$2,$3,'owner',60,'2026-01-01')`, [orgON, shortHorse, ownerContact]);
-  // noPartyHorse: intentionally NO horse_parties rows.
+    `insert into horse_relationships (org_id, horse_id, party_contact_id, relationship, share_pct, term_start)
+       values ($1,$2,$3,'OWNER',60,'2026-01-01')`, [orgON, shortHorse, ownerContact]);
+  // noPartyHorse: intentionally NO horse_relationships rows.
 
   // ---- default/barn payer + the explicit override rule ----
   await asSuperInOrg(orgON,
@@ -260,9 +260,9 @@ describe('resolve_consumption_billing — splits, sums-to-100, remainder→barn,
     expect(Number(owner[0].amount) + Number(lessee[0].amount)).toBe(20.0);
   });
 
-  it('overrideHorse: the explicit cost_allocation_rules override WINS over horse_parties', async () => {
+  it('overrideHorse: the explicit cost_allocation_rules override WINS over horse_relationships', async () => {
     await h.asUser(onAdmin);
-    // trainer gets 100% (10.00); the owner (horse_parties) gets NOTHING for this horse.
+    // trainer gets 100% (10.00); the owner (horse_relationships) gets NOTHING for this horse.
     const trainer = await h.q<{ amount: string }>(
       `select amount from billable_lines where source_kind='consumption' and horse_id=$1 and payer_contact_id=$2`,
       [overrideHorse, trainerContact]);

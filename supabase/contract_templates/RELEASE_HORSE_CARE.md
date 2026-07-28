@@ -4,7 +4,7 @@ Effective from the Date of Signature until superseded by a later executed versio
 
 This Equine Services Authorization, Liability Release, Assumption of Risk, Hold Harmless & Indemnification Agreement ("Agreement") is made effective as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned client ("CLIENT") in favor of {{ORG.LEGAL_NAME}} ("COMPANY"), as a condition of COMPANY providing equine services for the horse described below. By signing below, CLIENT acknowledges and agrees to the terms of this Agreement.
 
-For purposes of this Agreement, "Released Parties" means COMPANY, its owners, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, representatives, affiliates, property owners, facility owners, licensors, lessors, lessees, hosts, landowners, successors, assigns, heirs, and any person acting on behalf of COMPANY at any location where it is authorized to conduct business.
+For purposes of this Agreement, "Released Parties" means COMPANY, its owners, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, representatives, affiliates, property owners, facility owners, licensors, lessors, lessees, hosts, landowners, successors, assigns, heirs, and any person acting on behalf of COMPANY at any location where it is authorized to conduct business. COVERAGE EXTENSION: The authorizations, releases, and protections set forth in this document extend to and benefit COMPANY (French Heritage Equestrian) and, during any period in which a lease of the Horse is in effect, the then-current lessee of the Horse under that lease, each as an additional covered party — without the need to name that lessee.
 
 This Agreement applies at any ranch, barn, arena, stable, tack room, trail, leased premises, private property, competition venue, or other location where COMPANY conducts authorized business.
 
@@ -19,6 +19,7 @@ Sex: {{HORSE.SEX}}
 Age: {{HORSE.AGE_DOB}}
 Height: {{HORSE.HEIGHT}}
 Registration Number: {{HORSE.REGISTRATION_NUMBER}}
+Current Fair Market Value: {{HORSE.FAIR_MARKET_VALUE}}
 Current Location: {{HORSE.CURRENT_LOCATION}}
 Veterinarian: {{HORSE.VET_NAME}}, {{HORSE.VET_PHONE}}
 Farrier: {{HORSE.FARRIER_NAME}}, {{HORSE.FARRIER_PHONE}}
@@ -56,7 +57,7 @@ CLIENT knowingly and voluntarily assumes all inherent and ordinary risks associa
 
 7. RELEASE OF LIABILITY
 
-CLIENT releases, waives, and forever discharges the Released Parties from any and all claims, demands, causes of action, liabilities, damages, losses, expenses, costs, or judgments arising out of or relating to: Handling the Horse; Riding, exercising, schooling, or training the Horse; Providing instruction involving the Horse; Grooming, clipping, and husbandry activities; Authorized routine care described in this Agreement; Temporary emergency stabilization; Decisions made in good faith regarding the Horse's care within the scope of this authorization; and Any injury, illness, death, escape, or property damage involving the Horse or persons interacting with the Horse, including claims arising from the ordinary negligence of the Released Parties. This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
+CLIENT, on behalf of CLIENT and CLIENT's heirs, next of kin, estate, executors, administrators, legal representatives, successors, and assigns, releases, waives, and forever discharges the Released Parties from any and all claims, demands, causes of action, liabilities, damages, losses, expenses, costs, or judgments arising out of or relating to: Handling the Horse; Riding, exercising, schooling, or training the Horse; Providing instruction involving the Horse; Grooming, clipping, and husbandry activities; Authorized routine care described in this Agreement; Temporary emergency stabilization; Decisions made in good faith regarding the Horse's care within the scope of this authorization; and Any injury, illness, death, escape, or property damage involving the Horse or persons interacting with the Horse, including claims arising from the ordinary negligence of the Released Parties. This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
 
 8. HOLD HARMLESS & INDEMNIFICATION
 

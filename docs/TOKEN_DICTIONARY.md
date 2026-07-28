@@ -1,15 +1,10 @@
-> ⚠️ **NEEDS UPDATE (flagged 2026-07-27).** Still the canonical merge-token contract,
-> but the **`ORD.*` (order) namespace points at the retired `orders` spine**. The live
-> commerce spine is `purchases` + `purchase_items`. Re-map `ORD.*` before wiring new
-> order tokens. Everything else (ORG/DOC/CLIENT/HORSE/…) is current.
-
 # Token Dictionary
 
 FHE DOCUMENT MERGE TOKEN DICTIONARY (owner canon, 2026-07-03 revision)
 
-Format: {{NAMESPACE.FIELD}}. Namespaces: ORG (company), DOC (document instance), ORD (order instance), REQ (request inputs submitted with an order), CLIENT (authenticated person profile), PARTICIPANT (minor receiving services, from linked dependent record), HORSE (horse record), SIG (signature/acknowledgment events), TXN (transaction/fee terms), ENG (engagement scope inputs), DIR (transaction direction terms resolved by role), SELLER/BUYER/LESSOR/LESSEE (third-party transaction parties, not necessarily clients).
+Format: {{NAMESPACE.FIELD}}. Namespaces: ORG (company), DOC (document instance), ORD (purchase instance — resolves from the live `purchases` + `purchase_items` spine; the retired `orders` table is NOT the source), REQ (request inputs submitted with a purchase), CLIENT (authenticated person profile), PARTICIPANT (minor receiving services, from linked dependent record), HORSE (horse record), SIG (signature/acknowledgment events), TXN (transaction/fee terms), ENG (engagement scope inputs), DIR (transaction direction terms resolved by role), SELLER/BUYER/LESSOR/LESSEE (third-party transaction parties, not necessarily clients).
 
-Data sources: CLIENT.* autofills from the profiles table for the authenticated user. PARTICIPANT.* autofills from the dependents/minors link. HORSE.* autofills from the horses table plus horse_records; CLIENT.HORSE_CAPACITY resolves from horse_parties.role at signing. ORD.*/REQ.* are captured per order. TXN.*/ENG.*/DIR.* are set per engagement at approval. SIG.* are captured at the acknowledgment event. SELLER/BUYER/LESSOR/LESSEE are entered per transaction document.
+Data sources: CLIENT.* autofills from the profiles table for the authenticated user. PARTICIPANT.* autofills from the dependents/minors link. HORSE.* autofills from the horses table plus horse_records; CLIENT.HORSE_CAPACITY resolves at signing inside generate_document from horses.current_owner_contact_id / horses.lessee_contact_id matched against the signer via document_parties (corrected 2026-07-27 — the old horse_parties.role claim was never the live logic). ORD.* resolves from the purchases row (and its purchase_items lines); REQ.* is captured per purchase (per-line intent lives in purchase_items.config jsonb). TXN.*/ENG.*/DIR.* are set per document at approval. SIG.* are captured at the acknowledgment event. SELLER/BUYER/LESSOR/LESSEE are entered per transaction document.
 
 ORG NAMESPACE
 ORG.LEGAL_NAME - Company legal/DBA name as rendered on all documents. Resolves to the DBA entity, never an individual's name. Used in all 18 documents.
@@ -18,9 +13,9 @@ ORG.EMAIL - Company contact email for notices and media-consent revocation. Used
 DOC NAMESPACE
 DOC.EFFECTIVE_DATE - Execution/effective date of the document instance. Used in all documents.
 
-ORD NAMESPACE
-ORD.UUID - Unique identifier of the order copy; joins order, approval, payment memo, and receipt. Used in the five order forms.
-ORD.SERVICE_SELECTION - The specific service(s) selected from the offering list for this order. Used in lesson, training, and exercise order forms.
+ORD NAMESPACE (purchases + purchase_items spine)
+ORD.UUID - Unique identifier of the purchase; resolves from purchases.id. The human-facing order number is purchases.display_code (format PUR-000001, assigned by the purchases_assign_code trigger); joins purchase, approval, payment memo (purchases.payment_reference / unique_amount), and receipt. Used in the five order forms.
+ORD.SERVICE_SELECTION - The specific service(s) selected from the offering catalog for this purchase; resolves from the purchase's purchase_items lines (offering_id + label, per-line intent in config jsonb). Used in lesson, training, and exercise order forms.
 
 REQ NAMESPACE
 REQ.PREFERRED_SCHEDULE - Client-submitted preferred dates and times for scheduling. All five order forms.
@@ -35,7 +30,7 @@ CLIENT.DOB - Date of birth. Medical auth only.
 CLIENT.ADDRESS - Mailing address. Medical auth, vet auth, search retainer, transaction representation.
 CLIENT.PHONE - Phone. All signed documents.
 CLIENT.EMAIL - Email. All signed documents.
-CLIENT.HORSE_CAPACITY - Capacity as to the horse (owner, co-owner, lessee, authorized agent), resolved from horse_parties.role at signing. Equine services release, vet auth.
+CLIENT.HORSE_CAPACITY - Capacity as to the horse (owns / leases / is an authorized agent of), resolved at signing inside generate_document from horses.current_owner_contact_id and horses.lessee_contact_id matched against the signer via document_parties. Equine services release, vet auth.
 CLIENT.RIDING_EXPERIENCE_YEARS - Years of riding experience attested. Participant release, jumper addendum.
 CLIENT.JUMP_EXPERIENCE - Prior jumping experience and maximum height schooled. Participant release, jumper addendum.
 CLIENT.RIDING_BACKGROUND - Prior instruction, showing, or competition experience. Participant release, jumper addendum.

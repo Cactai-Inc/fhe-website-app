@@ -59,3 +59,34 @@ export async function requestGift(input: GiftPurchaseInput): Promise<void> {
   });
   if (error) throw error;
 }
+
+// ── Gift actions (Stage 4c) ──────────────────────────────────────────────────
+
+/** The recipient-facing claim link for a gift (buyer or staff). */
+export async function giftClaimLink(giftId: string): Promise<string> {
+  const { data, error } = await supabase.rpc('gift_claim_link', { p_gift_id: giftId });
+  if (error) throw error;
+  return data as string;
+}
+
+/** Move the delivery date of an unredeemed gift. */
+export async function giftReschedule(giftId: string, deliverOn: string): Promise<void> {
+  const { error } = await supabase.rpc('gift_reschedule', { p_gift_id: giftId, p_deliver_on: deliverOn });
+  if (error) throw error;
+}
+
+/** Send an unredeemed gift to a different recipient. */
+export async function giftTransfer(giftId: string, recipientName: string, recipientEmail?: string): Promise<void> {
+  const { error } = await supabase.rpc('gift_transfer', {
+    p_gift_id: giftId,
+    p_recipient_name: recipientName,
+    p_recipient_email: recipientEmail ?? null,
+  });
+  if (error) throw error;
+}
+
+/** Record a (re)send of the gift's reveal link. */
+export async function giftMarkSent(giftId: string): Promise<void> {
+  const { error } = await supabase.rpc('gift_mark_sent', { p_gift_id: giftId });
+  if (error) throw error;
+}

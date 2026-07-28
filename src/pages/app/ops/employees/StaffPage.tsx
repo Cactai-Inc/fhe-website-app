@@ -5,7 +5,7 @@ import { useModules } from '../../../../lib/ops/useModules';
 import { contactName } from '../../../../lib/ops/types';
 import {
   listStaffProfiles, createStaffProfile, updateStaffProfile,
-  listProfileOptions, listContactOptions, staffDisplayName,
+  listProfileOptions, staffDisplayName,
   type StaffProfile, type StaffProfileInput,
 } from '../../../../lib/ops/api-employees';
 
@@ -13,13 +13,14 @@ import {
  * OPS-EMP-STAFF — staff profiles (module mod.employees).
  *
  * Gated by ModuleGate('mod.employees'); with the module off nothing fetches.
- * Staff table: create (link to an auth profile, optional CRM contact, title,
- * pay type) and edit via row click. All writes go through the real
- * api-employees wrappers. (Service assignments retired with the engagements
- * teardown — staffing is scheduled via shifts.)
+ * Staff table: mark an account as staff (title, pay type) and edit via row
+ * click — employment fields live ON the profile since Stage 1j; the CRM
+ * contact link is the account spine's identity bridge and is not edited here.
+ * (Service assignments retired with the engagements teardown — staffing is
+ * scheduled via shifts.)
  */
 
-const EMPTY_FORM: StaffProfileInput = { profile_user_id: '', contact_id: null, title: '', pay_type: '' };
+const EMPTY_FORM: StaffProfileInput = { profile_user_id: '', title: '', pay_type: '' };
 
 export function StaffPage() {
   const modules = useModules();
@@ -28,7 +29,6 @@ export function StaffPage() {
 
   const staff = useAsync(listStaffProfiles);
   const profileOpts = useAsync(listProfileOptions);
-  const contactOpts = useAsync(listContactOptions);
 
   const [modal, setModal] = useState<null | { mode: 'create' } | { mode: 'edit'; row: StaffProfile }>(null);
   const [form, setForm] = useState<StaffProfileInput>(EMPTY_FORM);
@@ -36,7 +36,7 @@ export function StaffPage() {
 
   useEffect(() => {
     if (!on) return;
-    for (const l of [staff, profileOpts, contactOpts]) {
+    for (const l of [staff, profileOpts]) {
       l.run().catch(() => { /* inline error branches */ });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -50,7 +50,6 @@ export function StaffPage() {
   function openEdit(row: StaffProfile) {
     setForm({
       profile_user_id: row.profile_user_id,
-      contact_id: row.contact_id,
       title: row.title ?? '',
       pay_type: row.pay_type ?? '',
       active: row.active,
@@ -139,21 +138,6 @@ export function StaffPage() {
                   <option key={p.user_id} value={p.user_id}>
                     {[p.first_name, p.last_name].filter(Boolean).join(' ') || p.email}
                   </option>
-                ))}
-              </select>
-            )}
-          </FormField>
-          <FormField label="CRM contact (optional)">
-            {({ id, errorClass }) => (
-              <select
-                id={id}
-                className={`form-input ${errorClass}`}
-                value={form.contact_id ?? ''}
-                onChange={(e) => setForm((f) => ({ ...f, contact_id: e.target.value || null }))}
-              >
-                <option value="">None</option>
-                {(contactOpts.data ?? []).map((c) => (
-                  <option key={c.id} value={c.id}>{contactName(c)}</option>
                 ))}
               </select>
             )}

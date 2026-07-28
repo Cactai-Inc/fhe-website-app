@@ -5,7 +5,7 @@
 import { supabase } from './supabase';
 import type {
   Offering, RequestInput, RequestSelectionInput,
-  Invitation, Order, OrderItem, OrderDocument, Payment,
+  Invitation, Order, OrderItem, Payment,
   PaymentMethod, Profile,
 } from './types';
 import type {
@@ -101,7 +101,7 @@ export async function submitRequest(
 export async function redeemInvitation(token: string): Promise<void> {
   const { error } = await supabase.rpc('redeem_invitation', { p_token: token });
   if (error) {
-    await supabase.rpc('record_invitation_failure', { p_token: token }).catch(() => {});
+    try { await supabase.rpc('record_invitation_failure', { p_token: token }); } catch { /* best-effort */ }
     throw error;
   }
 }
@@ -306,19 +306,19 @@ export async function myUnreadCount(): Promise<number> {
 /** A standing account category the signed-in person holds. */
 export type StandingCategory = 'GUEST' | 'RIDER' | 'HORSE_OWNER';
 
-/** The signed-in person's standing categories from contact_roles. Drives nav
- *  gating (a guest-only client sees a restricted surface — no community). Reads
- *  under the contact_roles RLS (contact_id = current_contact_id()). Returns []
- *  for accounts with no contact/roles (e.g. pure staff — restriction inert). */
+/** The signed-in person's standing categories. Drives nav gating (a guest-only
+ *  client sees a restricted surface — no community). Resolved server-side by
+ *  my_standing_categories(): affiliation groups (RIDER / HORSE_OWNER), else
+ *  GUEST for an active client with no group. Returns [] for staff (restriction
+ *  inert) and for accounts with no contact. */
 export async function fetchMyCategories(): Promise<StandingCategory[]> {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) return [];
-  const { data, error } = await supabase.from('contact_roles').select('role_type');
+  const { data, error } = await supabase.rpc('my_standing_categories');
   if (error) return [];
   const standing: StandingCategory[] = ['GUEST', 'RIDER', 'HORSE_OWNER'];
-  return ((data ?? []) as { role_type: string }[])
-    .map((r) => r.role_type as StandingCategory)
-    .filter((r) => standing.includes(r));
+  return ((data ?? []) as string[]).filter((c): c is StandingCategory =>
+    standing.includes(c as StandingCategory));
 }
 
 // ─── Profiles ───────────────────────────────────────────────────────────────
@@ -506,21 +506,37 @@ export async function markAwaitingPayment(orderId: string, method: PaymentMethod
 // signatures so existing callers compile, but return empty / no-op until the
 // document surface is rebuilt on the contract spine.
 
-export async function fetchOrderDocuments(_orderId: string): Promise<OrderDocument[]> {
-  return [];
-}
-
 /** Retired surface — returns nothing (order_documents removed). */
-export async function fetchMyDocuments(): Promise<(OrderDocument & { order_created_at?: string })[]> {
-  return [];
+/** Stage 3a/3f: the person's one chronological document list — pending and
+ *  assigned first, then executed in signing order (superseded stay
+ *  retrievable as evidence). Account-anchored via the Stage 2 linkage. */
+export interface MyDocumentRow {
+  document_id: string | null;
+  template_key: string;
+  title: string;
+  kind: 'pending' | 'assigned' | 'executed';
+  signed_at: string | null;
+  current_status: string | null;
+  superseded: boolean;
+  created_at: string;
+}
+export async function myDocuments(): Promise<MyDocumentRow[]> {
+  const { data, error } = await supabase.rpc('my_documents');
+  if (error) throw error;
+  return (data ?? []) as MyDocumentRow[];
 }
 
-export async function signOrderDocument(
-  _documentId: string,
-  _signerName: string,
-  _extraFields: Record<string, unknown> = {},
-): Promise<void> {
-  // no-op: order_documents removed.
+/** Stage 3f: the signing-wall state for the signed-in person. */
+export interface WallState {
+  pending: number;
+  wall: boolean;
+  staff_banner?: boolean;
+  staff: boolean;
+}
+export async function myWallState(): Promise<WallState> {
+  const { data, error } = await supabase.rpc('my_wall_state');
+  if (error) return { pending: 0, wall: false, staff: false };
+  return data as WallState;
 }
 
 // ─── Payments (read inline off the purchase row) ────────────────────────────
@@ -1054,18 +1070,9 @@ export interface LessonCreditInput {
   credits_total: number; credits_remaining?: number;
 }
 
-// Records (mod.horserecords)
-export type HorsePartyRole = 'owner' | 'lessee' | 'trainer' | 'caretaker' | 'boarder';
-export interface HorseParty {
-  id: string; org_id: string; horse_id: string; contact_id: string;
-  role: HorsePartyRole; share_pct: number | null;
-  effective_from: string | null; effective_to: string | null; notes: string | null;
-  created_at: string; updated_at: string;
-}
-export interface HorsePartyInput {
-  horse_id: string; contact_id: string; role: HorsePartyRole; share_pct?: number | null;
-  effective_from?: string | null; effective_to?: string | null; notes?: string | null;
-}
+// Records (mod.horserecords) — the ownership/rights ledger lives in
+// src/lib/ops/api-records.ts on the horse_relationships survivor (Stage 1i);
+// the duplicate helper pair that lived here was deleted with the old table.
 
 export interface HealthEvent {
   id: string; org_id: string; horse_id: string; event_type: string; occurred_at: string;
@@ -1078,35 +1085,10 @@ export interface HealthEventInput {
   notes?: string | null; document_id?: string | null;
 }
 
-// Employees (mod.employees)
-export interface StaffProfile {
-  id: string; org_id: string; profile_user_id: string; contact_id: string | null;
-  title: string | null; pay_type: string | null; active: boolean;
-  created_at: string; updated_at: string;
-}
-export interface StaffProfileInput {
-  profile_user_id: string; contact_id?: string | null;
-  title?: string | null; pay_type?: string | null;
-}
-
-export interface Shift {
-  id: string; org_id: string; staff_profile_id: string; starts_at: string;
-  ends_at: string | null; role: string | null; created_at: string; updated_at: string;
-}
-export interface ShiftInput {
-  staff_profile_id: string; starts_at: string; ends_at?: string | null; role?: string | null;
-}
-
-export interface TimeEntry {
-  id: string; org_id: string; staff_profile_id: string; clock_in: string;
-  clock_out: string | null; minutes: number | null;
-  source_kind: string | null; source_id: string | null;
-  created_at: string; updated_at: string;
-}
-export interface TimeEntryInput {
-  staff_profile_id: string; clock_in: string; clock_out?: string | null;
-  minutes?: number | null; source_kind?: string | null; source_id?: string | null;
-}
+// Employees (mod.employees) — the live wrappers are src/lib/ops/api-employees.ts
+// (profiles employment columns + shifts/time_entries keyed by staff_user_id
+// since Stage 1j); the duplicate suite that lived here was deleted with the
+// old staff table.
 
 // Admin: entitlements, registry, branding, products
 export interface ModuleCatalogRow {
@@ -1442,36 +1424,8 @@ export async function createLessonCredit(input: LessonCreditInput): Promise<Less
   return data as LessonCredit;
 }
 
-// ─── Records (mod.horserecords) ─────────────────────────────────────────────
-
-export async function listHorseParties(horseId?: string): Promise<HorseParty[]> {
-  let query = supabase
-    .from('horse_parties')
-    .select('*')
-    .is('deleted_at', null);
-  if (horseId) query = query.eq('horse_id', horseId);
-  const { data, error } = await query.order('effective_from', { ascending: false, nullsFirst: false });
-  if (error) throw error;
-  return (data ?? []) as HorseParty[];
-}
-
-export async function createHorseParty(input: HorsePartyInput): Promise<HorseParty> {
-  const { data, error } = await supabase
-    .from('horse_parties')
-    .insert({
-      horse_id: input.horse_id,
-      contact_id: input.contact_id,
-      role: input.role,
-      share_pct: input.share_pct ?? null,
-      effective_from: input.effective_from ?? null,
-      effective_to: input.effective_to ?? null,
-      notes: input.notes ?? null,
-    })
-    .select('*')
-    .single();
-  if (error) throw error;
-  return data as HorseParty;
-}
+// ─── Records (mod.horserecords) ──────────────────────────────────────────────
+// Ledger helpers live in src/lib/ops/api-records.ts (horse_relationships).
 
 export async function listHealthEvents(horseId?: string): Promise<HealthEvent[]> {
   let query = supabase
@@ -1502,86 +1456,8 @@ export async function createHealthEvent(input: HealthEventInput): Promise<Health
   return data as HealthEvent;
 }
 
-// ─── Employees (mod.employees) ──────────────────────────────────────────────
-
-export async function listStaff(): Promise<StaffProfile[]> {
-  const { data, error } = await supabase
-    .from('staff_profiles')
-    .select('*')
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false });
-  if (error) throw error;
-  return (data ?? []) as StaffProfile[];
-}
-
-export async function createStaff(input: StaffProfileInput): Promise<StaffProfile> {
-  const { data, error } = await supabase
-    .from('staff_profiles')
-    .insert({
-      profile_user_id: input.profile_user_id,
-      contact_id: input.contact_id ?? null,
-      title: input.title ?? null,
-      pay_type: input.pay_type ?? null,
-    })
-    .select('*')
-    .single();
-  if (error) throw error;
-  return data as StaffProfile;
-}
-
-export async function listShifts(staffProfileId?: string): Promise<Shift[]> {
-  let query = supabase
-    .from('shifts')
-    .select('*')
-    .is('deleted_at', null);
-  if (staffProfileId) query = query.eq('staff_profile_id', staffProfileId);
-  const { data, error } = await query.order('starts_at', { ascending: false });
-  if (error) throw error;
-  return (data ?? []) as Shift[];
-}
-
-export async function createShift(input: ShiftInput): Promise<Shift> {
-  const { data, error } = await supabase
-    .from('shifts')
-    .insert({
-      staff_profile_id: input.staff_profile_id,
-      starts_at: input.starts_at,
-      ends_at: input.ends_at ?? null,
-      role: input.role ?? null,
-    })
-    .select('*')
-    .single();
-  if (error) throw error;
-  return data as Shift;
-}
-
-export async function listTimeEntries(staffProfileId?: string): Promise<TimeEntry[]> {
-  let query = supabase
-    .from('time_entries')
-    .select('*')
-    .is('deleted_at', null);
-  if (staffProfileId) query = query.eq('staff_profile_id', staffProfileId);
-  const { data, error } = await query.order('clock_in', { ascending: false });
-  if (error) throw error;
-  return (data ?? []) as TimeEntry[];
-}
-
-export async function createTimeEntry(input: TimeEntryInput): Promise<TimeEntry> {
-  const { data, error } = await supabase
-    .from('time_entries')
-    .insert({
-      staff_profile_id: input.staff_profile_id,
-      clock_in: input.clock_in,
-      clock_out: input.clock_out ?? null,
-      minutes: input.minutes ?? null,
-      source_kind: input.source_kind ?? null,
-      source_id: input.source_id ?? null,
-    })
-    .select('*')
-    .single();
-  if (error) throw error;
-  return data as TimeEntry;
-}
+// ─── Employees (mod.employees) ───────────────────────────────────────────────
+// Live wrappers: src/lib/ops/api-employees.ts (see the type note above).
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  Tenant admin + super-admin wrappers
@@ -1906,4 +1782,37 @@ export async function fetchPublicOfferings(slug?: string): Promise<PublicOfferin
   const { data, error } = await supabase.rpc('public_offerings', { p_slug: slug ?? null });
   if (error) throw error;
   return (data ?? []) as PublicOffering[];
+}
+
+// ─── Payments: method + responsibility (Stage 4d) ────────────────────────────
+
+/** Update the payment method recorded on an unpaid/partially-paid purchase. */
+export async function updatePurchasePaymentMethod(purchaseId: string, method: string): Promise<void> {
+  const { error } = await supabase.rpc('update_purchase_payment_method', {
+    p_purchase_id: purchaseId, p_method: method,
+  });
+  if (error) throw error;
+}
+
+/** Hand payment responsibility for a purchase to another account holder. */
+export async function transferPaymentResponsibility(purchaseId: string, newPayerContactId: string): Promise<void> {
+  const { error } = await supabase.rpc('transfer_payment_responsibility', {
+    p_purchase_id: purchaseId, p_new_payer_contact_id: newPayerContactId,
+  });
+  if (error) throw error;
+}
+
+/** Account holders a balance may be transferred to (4d picker). */
+export interface PayerCandidate { contact_id: string; name: string }
+export async function payerCandidates(): Promise<PayerCandidate[]> {
+  const { data, error } = await supabase.rpc('payer_candidates');
+  if (error) return [];
+  return (data ?? []) as PayerCandidate[];
+}
+
+/** A3: stamp the app-overview tour as seen for the signed-in account. The
+ *  first stamp wins — re-opening the tour from the menu never calls this. */
+export async function markTourSeen(): Promise<void> {
+  const { error } = await supabase.rpc('mark_tour_seen');
+  if (error) throw error;
 }

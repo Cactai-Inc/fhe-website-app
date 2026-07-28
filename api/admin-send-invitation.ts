@@ -115,7 +115,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Provisioned client invite: standing category(ies) + optional offering(s).
   // Names are OPTIONAL (email-only invites per spec) — captured at first-login
   // intake. The canonical spine RPC provision_client_invitation writes standing
-  // contact_roles + onboarding docs + 0..N offering purchase in one transaction.
+  // clients marker + onboarding docs + 0..N offering purchase in one transaction.
   const toStrArray = (v: unknown): string[] =>
     Array.isArray(v) ? v.map((x) => String(x).trim()).filter(Boolean) : [];
   const categories = toStrArray(body.categories);
@@ -236,7 +236,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       status: 'sent',
       invited_role: invitedRole,
       scheduled_for: scheduledFor,
-      // carried onto the account at redemption (name → profile, title → staff_profiles)
+      // carried onto the account at redemption (name → profile, title → profile employment fields)
       first_name: firstName || null,
       last_name: lastName || null,
       title: title || null,

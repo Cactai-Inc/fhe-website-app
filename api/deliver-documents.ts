@@ -132,6 +132,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       : '';
 
     const delivered: Array<{ email: string; count: number }> = [];
+    /** Logging failures collected so they surface in the response + logs
+     *  rather than vanishing (S5.4: they vanished for the table's whole life). */
+    const logFailures: string[] = [];
 
     // 6. One email per distinct signer, with ALL the PDFs attached.
     for (const party of Array.from(byContact.values())) {
@@ -164,14 +167,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // hard guard against duplicate sends; if a concurrent request already
       // recorded the delivery (23505), treat it as already-delivered, not an error.
       for (const d of pending) {
+        // document_deliveries has NO org_id column — the document carries the
+        // org. Passing one made every insert throw, which is why this table sat
+        // at zero rows.
         const { error: insErr } = await db.from('document_deliveries').insert({
           document_id: d.id,
           recipient_contact_id: party.contact_id,
           channel: CHANNEL,
           copy_url: `/portal/documents/${d.id}`,
-          org_id: orgId,
         });
-        if (insErr && insErr.code !== '23505') throw insErr;
+        if (insErr && insErr.code !== '23505') {
+          // A send that cannot be logged is not a silent success: surface it.
+          console.error('delivery logging failed (party copy)', {
+            documentId: d.id, contactId: party.contact_id, error: insErr.message,
+          });
+          logFailures.push(`party ${d.id}: ${insErr.message}`);
+        }
         deliveredSet.add(`${d.id}:${party.contact_id}`);
       }
       delivered.push({ email, count: pending.length });
@@ -179,19 +190,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // 7. Company copy: the org inbox gets one email with all attachments (unless
     //    the inbox was already a party recipient). Best-effort.
+    //    5d: the mirror copy is LOGGED like a party copy — one
+    //    document_deliveries row per document, flagged is_mirror, so the
+    //    company copy is as provable as the parties'.
     let companyNotified = false;
     const partyEmails = new Set(
       Array.from(byContact.values())
         .map((p) => p.contacts?.email?.toLowerCase())
         .filter(Boolean),
     );
-    if (identity.contactEmail && !partyEmails.has(identity.contactEmail.toLowerCase()) && delivered.length > 0) {
+    const mirrorTo = identity.opsInbox ?? identity.contactEmail;
+    if (mirrorTo && !partyEmails.has(mirrorTo.toLowerCase()) && delivered.length > 0) {
       const signers = Array.from(byContact.values())
         .map((p) => [p.contacts?.first_name, p.contacts?.last_name].filter(Boolean).join(' '))
         .filter(Boolean)
         .join(', ');
       const notice = await sendViaProvider({
-        to: identity.contactEmail,
+        to: mirrorTo,
         fromName: identity.fromName,
         fromEmail: identity.fromEmail,
         subject: `Signed document set${signers ? ` — ${signers}` : ''}`,
@@ -199,9 +214,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         attachments: allAttachments,
       });
       companyNotified = notice.ok;
+      if (notice.ok) {
+        for (const d of docs) {
+          const { error: mirrorErr } = await db.rpc('log_mirror_delivery', {
+            p_document_id: d.id,
+            p_channel: CHANNEL,
+            p_copy_url: `/portal/documents/${d.id}`,
+          });
+          if (mirrorErr) {
+            console.error('delivery logging failed (mirror copy)', {
+              documentId: d.id, error: mirrorErr.message,
+            });
+            logFailures.push(`mirror ${d.id}: ${mirrorErr.message}`);
+          }
+        }
+      }
     }
 
-    return res.status(200).json({ delivered, companyNotified, documents: documentIds.length });
+    // Logging failures ride back in the response so a caller (and the
+    // verification harness) can see them rather than inferring silence.
+    return res.status(200).json({
+      delivered, companyNotified, documents: documentIds.length,
+      ...(logFailures.length ? { logFailures } : {}),
+    });
   } catch (err) {
     console.error('deliver-documents error', err);
     return res.status(500).json({ error: 'could not deliver documents' });

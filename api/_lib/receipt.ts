@@ -5,6 +5,10 @@
  * every step is caught and the function resolves { sent: false } instead of
  * throwing. Tenant identity resolves from the ORDER's org (registry-scoped —
  * never a hardcoded brand).
+ *
+ * Stage 5b — PROVABLE AND SINGLE: every attempt writes a receipt_sends row
+ * (success or failure, with the error), and claim_receipt_send refuses a
+ * second send once one has succeeded. The Zelle path can no longer re-send.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { resolveTenantEmailIdentity, renderTemplate, sendViaProvider } from './email.js';
@@ -14,8 +18,18 @@ export interface ReceiptResult {
   reason?: string;
 }
 
-export async function sendOrderReceipt(db: SupabaseClient, orderId: string): Promise<ReceiptResult> {
+export async function sendOrderReceipt(
+  db: SupabaseClient,
+  orderId: string,
+  /** Distinguishes attempts; the same key never sends twice. */
+  idempotencyKey = `receipt:${orderId}`,
+): Promise<ReceiptResult> {
   try {
+    // 5b: claim the right to send. False = a receipt already succeeded.
+    const { data: maySend } = await db.rpc('claim_receipt_send', {
+      p_purchase_id: orderId, p_key: idempotencyKey,
+    });
+    if (maySend === false) return { sent: false, reason: 'already sent' };
     const { data: order } = await db
       .from('purchases')
       .select('id, buyer_user_id, org_id, amount')
@@ -45,8 +59,26 @@ export async function sendOrderReceipt(db: SupabaseClient, orderId: string): Pro
       subject: tpl.subject,
       html,
     });
+
+    // 5b: log the attempt either way — a receipt is provable.
+    await db.rpc('log_receipt_send', {
+      p_purchase_id: orderId,
+      p_key: idempotencyKey,
+      p_recipient: to,
+      p_succeeded: out.ok,
+      p_error: out.ok ? null : (out.error ?? 'send failed'),
+      p_message_id: out.messageId ?? null,
+    });
+
     return out.ok ? { sent: true } : { sent: false, reason: out.error };
   } catch (err) {
-    return { sent: false, reason: err instanceof Error ? err.message : 'receipt failed' };
+    const reason = err instanceof Error ? err.message : 'receipt failed';
+    try {
+      await db.rpc('log_receipt_send', {
+        p_purchase_id: orderId, p_key: idempotencyKey, p_recipient: null,
+        p_succeeded: false, p_error: reason, p_message_id: null,
+      });
+    } catch { /* logging must never mask the original failure */ }
+    return { sent: false, reason };
   }
 }

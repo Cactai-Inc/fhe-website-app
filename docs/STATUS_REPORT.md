@@ -4,6 +4,10 @@
 **Build health:** TypeScript 0 errors · ESLint 0 errors (26 pre-existing warnings)
 **Every fact below was verified against the live database and git at time of writing.**
 
+> **Amendment 2026-07-27:** the push-state claims in §1 and §7 were true at time of
+> writing but went stale the same day — see the dated amendment notes in place. The
+> original text is preserved, struck through, per the no-silent-rewrites rule.
+
 ---
 
 ## 1. Executive summary
@@ -19,8 +23,13 @@ arcs:
    was divorced from both their signed documents and their account. It is now
    **derived** from signed documents by a single authoritative function.
 
-**Not pushed.** All 8 commits are local to `work/category-report`. The DB changes are
-live on prod; the calling code is not on the remote.
+~~**Not pushed.** All 8 commits are local to `work/category-report`. The DB changes are
+live on prod; the calling code is not on the remote.~~
+**[Amended 2026-07-27]** Stale — the branch was pushed later on 2026-07-27.
+Verified against the remote: `1c01b32` (and every commit in §2) is an ancestor of
+`origin/main`, matching HANDOFF.md's drift-audited account. Commits now local-only on
+`work/category-report` belong to the separate lease-v2 authoring thread, not this
+session's work.
 
 ---
 
@@ -156,8 +165,10 @@ agreed).
    templates, gift-redeem, Landing CTA, the `o.tiers` panel bug, dead route. Each is
    small and independently shippable.
 4. **Order-document legal text** — flagged as legal risk; should not wait.
-5. **Push the branch / open a PR** — 8 commits are local-only while the DB changes are
-   already live on prod. That gap is worth closing.
+5. ~~**Push the branch / open a PR** — 8 commits are local-only while the DB changes are
+   already live on prod. That gap is worth closing.~~
+   **[Amended 2026-07-27]** Done — pushed to `origin/main` the same day (see §1
+   amendment).
 
 ---
 

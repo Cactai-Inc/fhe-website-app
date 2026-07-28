@@ -3,7 +3,6 @@
  */
 import type { PreferredContact } from './contact';
 
-export type MemberTier = 'community' | 'rider' | 'full';
 export type MemberStatus = 'active' | 'paused' | 'cancelled';
 export type ResourceKind = 'file' | 'video' | 'link';
 export type RsvpStatus = 'going' | 'maybe' | 'declined';
@@ -11,7 +10,6 @@ export type RsvpStatus = 'going' | 'maybe' | 'declined';
 export interface Member {
   id: string;
   user_id: string;
-  tier: MemberTier;
   status: MemberStatus;
   started_at: string;
   renews_at: string | null;

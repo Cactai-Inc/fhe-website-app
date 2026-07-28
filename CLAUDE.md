@@ -127,5 +127,55 @@ same-name contact records turned out to be different people). Query first.
   — completed or superseded planning artifacts
 - `docs/IDENTITY_MODEL_ANALYSIS.md` — its "kill these 4 empty tables" table was
   **reversed** by ECOSYSTEM_PLAN §F5 (they're empty but code-referenced — keep)
-- `docs/TOKEN_DICTIONARY.md` — still the token contract, but its `ORD.*` namespace
-  points at the retired orders spine
+- `docs/TOKEN_DICTIONARY.md` — the token contract (`ORD.*` remapped to the
+  `purchases`/`purchase_items` spine on 2026-07-27)
+
+---
+
+## Settled owner decisions D1–D7 (2026-07-27) — inherit these, do not re-ask
+
+Full text in `REMEDIATION_PLAN.md` (which wins over any other doc where they conflict).
+
+- **D1 — Identity disposition.** admin@fhequestrian.com (CJ) + hello@fhequestrian.com
+  (Claire) + the company contact (French Heritage Equestrian) are PRODUCTION FHE
+  identities. admin@cactai.io is the PLATFORM owner (Cactai Inc, super admin) — never
+  an FHE tenant identity; must hold zero FHE tenant rows. cjzigs@ / charlesjzigmund@
+  are the owner's test identities: live and untouched until the owner-run post-Stage-5
+  purge (via the 5g routine, never ad hoc). The 6 stranded executed documents ride on
+  the test identities and exit with that purge — no re-anchoring.
+- **D2 — Rename.** The affiliation table becomes `groups`.
+- **D3 — Purchaser wording.** DB stores a neutral promotion marker; display "client"
+  in staff/ops surfaces, "customer" only in gift/product-only contexts. Members must
+  see "Member" about themselves and each other — never "Client".
+- **D4 — Membership tiers DEFERRED** as a product. Strip tier-implying copy
+  (monthly/annual); billing schedules + implicit pay-as-you-go are current reality.
+  `tier` stays a reserved word.
+- **D5 — Promotion pathway.** `promote_contact_to_account` = `_ensure_client_account`
+  spine + re-anchor documents/parties/signatures + `apply_affiliations` + dissolve the
+  faceless contact. Real users only; D1's protected/test identities are never dissolved.
+- **D6 — Fulfillment = one deliverable spine.** Every `purchase_item` with a
+  `config_kind` produces fulfillment unit rows; `status_events` drives their state;
+  receipts, dunning, and delivery logging hang off the spine as provable events.
+- **D7 — Dual-identity (act-as-company) is protected behavior.** Both staff accounts
+  act as themselves or as the company (displayed AND recorded). It works via patches
+  today; consolidation only as behavior-identical change against the Stage-1 trace
+  (`docs/DUAL_IDENTITY_TRACE.md`), never blind.
+- **D8 — Access model (owner-final 2026-07-27; supersedes "guest = account with no
+  group" as a derivation).** (1) Community access is gated by ACCOUNT, not documents —
+  any account holder views and participates. Documents gate ACTIONS: RELEASE_GENERAL
+  gates physical visits (signed at visit, kiosk-style); the participant release gates
+  riding; the horse-care set gates care services. GUEST is never a derived group —
+  "guest" is display-only for an account with no service group. (2) CUSTOMER =
+  commercial marker for any purchaser incl. gift buyers; a gift purchase auto-creates
+  the account through the single spine (no manual provisioning) with order visibility,
+  repurchase, community access, and marketing eligibility. CLIENT = service-engagement
+  marker, attached at invitation with service documents. Customer→client promotion is
+  a marker change on the same account. (3) An account with assigned-but-unsigned
+  documents is PENDING: service features locked until executed, community open,
+  surfaced in ops needs-attention. (4) Mary Richardson is untouched — she is the
+  Stage 2 live acceptance case (supersede expired invite → re-invite → sign → derive
+  RIDER + HORSE_OWNER). (5) Linked accounts (separate logins, shared
+  horse_relationships-based record via add-by-email, rider-permission-gated schedule
+  visibility) are recorded scope, not built: record-sharing folds into Stage 3's
+  horse-visibility item; schedule-sharing is BACKLOG-deferred. The gift auto-account
+  lands with Stage 4's gift work on the Stage 2 spine.

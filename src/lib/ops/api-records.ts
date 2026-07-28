@@ -1,10 +1,12 @@
 /* LANE-RECORDS data wrappers (module mod.horserecords).
  *
  * Thin, typed Supabase calls for the horse-records UI slices:
- *   - horse_parties        (20260630080000_mod_horserecords.sql) — ownership/
+ *   - horse_relationships  (Stage 1i survivor, 20260728060000) — ownership/
  *     rights ledger: owner/lessee/trainer/caretaker/boarder + share_pct +
- *     effective dates. NEVER hard-deleted (DB REVOKEs DELETE) — archival sets
- *     deleted_at only.
+ *     term dates. NEVER hard-deleted (DB REVOKEs DELETE) — rows END
+ *     (active=false, ended_at) via the staff RPCs; writes go through
+ *     staff_assign_horse_party / staff_end_horse_relationship, never direct
+ *     table access.
  *   - horse_health_events  (same migration) — vet/farrier/vaccination/
  *     deworming/coggins log with an optional provider contact + next_due.
  *   - horses vet/farrier columns (20260701000000_company_party_and_org_tokens.sql):
@@ -29,6 +31,9 @@ export const HORSE_PARTY_ROLES: HorsePartyRole[] = [
   'boarder',
 ];
 
+/** UI view of a horse_relationships row (lowercase role, effective_* naming
+ *  kept so the ledger page reads unchanged; mapped from relationship /
+ *  term_start / term_end / ended_at). */
 export interface HorseParty {
   id: string;
   org_id: string;
@@ -136,55 +141,77 @@ export async function updateHorseCareTeam(
   return data as HorseRecord;
 }
 
-// ─── horse_parties — ownership/rights ledger ─────────────────────────────────
+// ─── horse_relationships — ownership/rights ledger (Stage 1i survivor) ───────
 
-/** Active (non-archived) party rows for one horse, oldest effective first. */
+interface HorseRelationshipRow {
+  id: string;
+  org_id: string;
+  horse_id: string;
+  relationship: string;
+  party_contact_id: string | null;
+  term_start: string | null;
+  term_end: string | null;
+  share_pct: number | null;
+  notes: string | null;
+  active: boolean;
+  created_at: string;
+  ended_at: string | null;
+}
+
+function toHorseParty(r: HorseRelationshipRow): HorseParty {
+  return {
+    id: r.id,
+    org_id: r.org_id,
+    horse_id: r.horse_id,
+    contact_id: r.party_contact_id ?? '',
+    role: r.relationship.toLowerCase() as HorsePartyRole,
+    share_pct: r.share_pct,
+    effective_from: r.term_start,
+    effective_to: r.term_end,
+    notes: r.notes,
+    created_at: r.created_at,
+    updated_at: r.created_at,
+    deleted_at: r.ended_at,
+  };
+}
+
+/** Active relationship rows for one horse, oldest term first (RLS-read). */
 export async function listHorseParties(horseId: string): Promise<HorseParty[]> {
   const { data, error } = await supabase
-    .from('horse_parties')
+    .from('horse_relationships')
     .select('*')
     .eq('horse_id', horseId)
-    .is('deleted_at', null)
-    .order('effective_from', { ascending: true, nullsFirst: true })
+    .eq('active', true)
+    .order('term_start', { ascending: true, nullsFirst: true })
     .order('created_at', { ascending: true });
   if (error) throw error;
-  return (data ?? []) as HorseParty[];
+  return ((data ?? []) as HorseRelationshipRow[]).map(toHorseParty);
 }
 
-export async function createHorseParty(input: HorsePartyInput): Promise<HorseParty> {
-  const { data, error } = await supabase
-    .from('horse_parties')
-    .insert(input)
-    .select('*')
-    .single();
+/** Writes go through the staff RPC — never direct table access. */
+export async function createHorseParty(input: HorsePartyInput): Promise<void> {
+  const { error } = await supabase.rpc('staff_assign_horse_party', {
+    p_horse_id: input.horse_id,
+    p_role: input.role.toUpperCase(),
+    p_contact_id: input.contact_id,
+    p_term_start: input.effective_from ?? null,
+    p_term_end: input.effective_to ?? null,
+    p_share_pct: input.share_pct ?? null,
+    p_notes: input.notes ?? null,
+  });
   if (error) throw error;
-  return data as HorseParty;
 }
 
-export async function updateHorseParty(
-  id: string,
-  patch: Partial<HorsePartyInput>,
-): Promise<HorseParty> {
-  const { data, error } = await supabase
-    .from('horse_parties')
-    .update(patch)
-    .eq('id', id)
-    .select('*')
-    .single();
-  if (error) throw error;
-  return data as HorseParty;
+/** Ledger edit = end the old row, record the new one (history preserved). */
+export async function updateHorseParty(id: string, patch: HorsePartyInput): Promise<void> {
+  await archiveHorseParty(id);
+  await createHorseParty(patch);
 }
 
-/** Soft-delete: the ledger is NEVER hard-deleted (DB REVOKEs DELETE). */
-export async function archiveHorseParty(id: string): Promise<HorseParty> {
-  const { data, error } = await supabase
-    .from('horse_parties')
-    .update({ deleted_at: new Date().toISOString() })
-    .eq('id', id)
-    .select('*')
-    .single();
+/** The ledger is NEVER hard-deleted — rows END (active=false, ended_at). */
+export async function archiveHorseParty(id: string): Promise<void> {
+  const { error } = await supabase.rpc('staff_end_horse_relationship', { p_id: id });
   if (error) throw error;
-  return data as HorseParty;
 }
 
 // ─── horse_health_events — health log ────────────────────────────────────────

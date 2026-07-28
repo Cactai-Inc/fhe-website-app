@@ -9,8 +9,8 @@ import {
   adminSetSuspended, adminClientAccounts, adminClientItems, adminSendInvitation,
   adminExpireInvitation, adminDeleteInvitation, adminAccountAction, adminHardDeleteClient,
   categoryDocumentDefaults, getContactRequiredDocuments, setContactRequiredDocuments,
-  adminAttachOfferings,
-  type ClientAccountRow, type ClientItems, type CategoryDocDefault,
+  adminAttachOfferings, staffAssignableTemplates, staffAssignDocuments,
+  type ClientAccountRow, type ClientItems, type CategoryDocDefault, type AssignableTemplate,
 } from '../../lib/admin';
 import { fetchOfferings } from '../../lib/api';
 import { docDisplayLabel } from '../../lib/documentStatus';
@@ -45,7 +45,7 @@ interface Overview {
     providers: string[]; last_sign_in_at: string | null;
     created_at: string; email_confirmed_at: string | null;
   } | null;
-  member: { tier: string | null; status: string | null; started_at: string | null } | null;
+  member: { status: string | null; started_at: string | null } | null;
   counts: { orders: number; posts: number; documents: number; bookings: number };
 }
 
@@ -113,6 +113,84 @@ function TabCreate({ label, onClick }: { label: string; onClick: () => void }) {
   );
 }
 
+/** 3f: the assignment picker — CONTRACTS (the clause-engine path, unchanged)
+ *  and DOCUMENTS (the flat sign-only family). Selected documents APPEND to the
+ *  person's pending set; assignment never gates staff operations — the wall
+ *  constrains only the person's own session. On-file never blocks selection. */
+function AssignDocumentsModal({ contactId, onClose, onAssigned }: {
+  contactId: string; onClose: () => void; onAssigned: () => void;
+}) {
+  const navigate = useNavigate();
+  const [templates, setTemplates] = useState<AssignableTemplate[]>([]);
+  const [picked, setPicked] = useState<string[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    staffAssignableTemplates(contactId).then(setTemplates).catch((e) =>
+      setErr(e instanceof Error ? e.message : 'Could not load templates.'));
+  }, [contactId]);
+
+  const toggle = (k: string) =>
+    setPicked((p) => (p.includes(k) ? p.filter((x) => x !== k) : [...p, k]));
+
+  async function assign() {
+    if (picked.length === 0) return;
+    setBusy(true); setErr(null);
+    try {
+      await staffAssignDocuments(contactId, picked);
+      onAssigned();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Could not assign.');
+    } finally { setBusy(false); }
+  }
+
+  const onFile = (t: AssignableTemplate) =>
+    t.on_file_status === 'none' ? 'None on file'
+    : t.on_file_status === 'superseded' ? 'Superseded on file'
+    : `Executed v${t.on_file_version ?? t.version}${t.on_file_date ? ` on ${new Date(t.on_file_date).toLocaleDateString()}` : ''}`;
+
+  return (
+    <div className="fixed inset-0 z-[80] bg-green-950/40 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <h2 className="font-serif text-xl text-green-900 mb-3">Assign documents</h2>
+
+        <p className="text-[11px] uppercase tracking-wide text-secondary/70 mb-1.5">Contracts</p>
+        <button type="button" className="btn-outline-gold w-full justify-center mb-4"
+          onClick={() => navigate('/app/ops/contracts/new')}>
+          New contract (lease / purchase) →
+        </button>
+
+        <p className="text-[11px] uppercase tracking-wide text-secondary/70 mb-1.5">Documents</p>
+        <div className="flex flex-col gap-1.5 mb-4">
+          {templates.map((t) => (
+            <label key={t.template_key}
+              className="flex items-start gap-2.5 border border-green-800/10 rounded-lg px-3 py-2 cursor-pointer hover:border-green-800/25">
+              <input type="checkbox" className="accent-green-700 mt-0.5"
+                checked={picked.includes(t.template_key)} onChange={() => toggle(t.template_key)} />
+              <span className="min-w-0">
+                <span className="block text-sm text-green-900">{t.title}</span>
+                <span className="block text-xs text-muted">
+                  {onFile(t)}{t.wall_gating ? ' · gates sign-in' : ''}
+                </span>
+              </span>
+            </label>
+          ))}
+          {templates.length === 0 && !err && <p className="text-sm text-muted">Loading…</p>}
+        </div>
+
+        {err && <p role="alert" className="text-sm text-red-700 mb-3">{err}</p>}
+        <div className="flex justify-end gap-2">
+          <button type="button" className="btn-outline-gold" onClick={onClose}>Cancel</button>
+          <button type="button" className="btn-primary" disabled={picked.length === 0 || busy} onClick={assign}>
+            {busy ? 'Assigning…' : `Assign ${picked.length || ''}`.trim()}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** Orders tab action: attach offering(s) to this existing client account via the
  *  canonical spine (attach_offerings_to_client → _provision_purchase_for_offerings). */
 function AttachOfferingPanel({ contactId, onAttached }: { contactId: string; onAttached: () => void }) {
@@ -127,8 +205,13 @@ function AttachOfferingPanel({ contactId, onAttached }: { contactId: string; onA
 
   useEffect(() => { if (open) fetchOfferings().then(setOfferings).catch(() => setOfferings([])); }, [open]);
 
-  const total = offerings.flatMap((o) => o.tiers ?? []).filter((t) => picked.includes(t.id))
-    .reduce((s, t) => s + t.price_amount, 0);
+  // 4a: flat SKUs — an offering IS the purchasable item (the tier layer was
+  // removed 2026-07-08). Same fix pattern as ProvisionClientForm.
+  const purchasable = offerings.filter(
+    (o) => o.config_kind !== 'inquire' && o.price_amount != null);
+  const total = purchasable
+    .filter((o) => picked.includes(o.id))
+    .reduce((s, o) => s + (o.price_amount ?? 0), 0);
   const toggle = (id: string) => setPicked((p) => p.includes(id) ? p.filter((x) => x !== id) : [...p, id]);
 
   async function submit() {
@@ -152,17 +235,12 @@ function AttachOfferingPanel({ contactId, onAttached }: { contactId: string; onA
     <div className="border border-green-800/15 rounded-lg p-4 mb-3">
       <p className="text-sm font-medium text-green-900 mb-2">Attach offering(s)</p>
       <div className="space-y-2 max-h-56 overflow-y-auto mb-3">
-        {offerings.filter((o) => (o.tiers?.length ?? 0) > 0).map((o) => (
-          <div key={o.id}>
-            <p className="text-[11px] uppercase tracking-wide text-secondary/70">{o.name}</p>
-            {(o.tiers ?? []).map((t) => (
-              <label key={t.id} className="flex items-center gap-2 text-sm text-secondary py-0.5">
-                <input type="checkbox" className="accent-green-800" checked={picked.includes(t.id)} onChange={() => toggle(t.id)} />
-                <span className="flex-1">{t.label}</span>
-                <span>${Number(t.price_amount).toFixed(2)}</span>
-              </label>
-            ))}
-          </div>
+        {purchasable.map((o) => (
+          <label key={o.id} className="flex items-center gap-2 text-sm text-secondary py-0.5">
+            <input type="checkbox" className="accent-green-800" checked={picked.includes(o.id)} onChange={() => toggle(o.id)} />
+            <span className="flex-1">{o.name}</span>
+            <span>${Number(o.price_amount ?? 0).toFixed(2)}</span>
+          </label>
         ))}
       </div>
       {picked.length > 0 && (
@@ -202,7 +280,7 @@ function OverviewTab({ ov }: { ov: Overview }) {
     ['Email', p.email], ['Phone', p.phone ?? '—'], ['Mobile', p.mobile ?? '—'],
     ['WhatsApp', p.whatsapp ?? '—'], ['Riding level', p.riding_level ?? '—'],
     ['Joined', fmt(p.created_at)],
-    ['Member', ov.member ? `${ov.member.tier ?? 'member'} · ${ov.member.status ?? '—'}` : 'None'],
+    ['Member', ov.member ? (ov.member.status ?? '—') : 'None'],
   ];
   return (
     <div>
@@ -509,6 +587,8 @@ export default function Admin() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [ov, setOv] = useState<Overview | null>(null);
   const [tab, setTab] = useState<TabId>('overview');
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [tabRefresh, setTabRefresh] = useState(0);
   const [tabPage, setTabPage] = useState(0);
   const [ordersKey, setOrdersKey] = useState(0); // bump to refetch the Orders list after an attach
   const [dangerOpen, setDangerOpen] = useState(false);
@@ -861,9 +941,14 @@ export default function Admin() {
                   sub: (r.location as string) || '—', badge: String(r.status),
                 })} />
             )}
+            {ov && tab === 'documents' && selected.contact_id && assignOpen && (
+              <AssignDocumentsModal contactId={selected.contact_id}
+                onClose={() => setAssignOpen(false)}
+                onAssigned={() => { setAssignOpen(false); setTabRefresh((n) => n + 1); }} />
+            )}
             {ov && tab === 'documents' && (
-              <RpcListTab userId={selected.user_id!} rpc="admin_client_documents" empty="No documents."
-                create={{ label: 'New contract', onClick: () => navigate('/app/ops/contracts/new') }}
+              <RpcListTab key={tabRefresh} userId={selected.user_id!} rpc="admin_client_documents" empty="No documents."
+                create={{ label: 'Assign documents', onClick: () => setAssignOpen(true) }}
                 map={(r) => {
                   // NOT_STARTED = a required doc with no generated instance yet (assigned
                   // but the member hasn't onboarded). No real document to open → no href.

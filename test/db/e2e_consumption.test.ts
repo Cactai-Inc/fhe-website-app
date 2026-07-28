@@ -19,7 +19,7 @@ let aAdmin: string;
 
 let feedRes: string;
 let feedLot: string;        // unit_cost 2.00
-let splitHorse: string;     // owner 60 / lessee 40 via horse_parties
+let splitHorse: string;     // owner 60 / lessee 40 via horse_relationships
 let orphanHorse: string;    // no parties → 100% to the barn/default payer
 
 let ownerContact: string;
@@ -63,10 +63,10 @@ beforeAll(async () => {
   orphanHorse = (await asSuperInOrg<{ id: string }>(orgON,
     `insert into horses (barn_name) values ('OrphanE2E') returning id`))[0].id;
 
-  // horse_parties: the single source of truth for the split (owner 60 / lessee 40).
+  // horse_relationships: the single source of truth for the split (owner 60 / lessee 40).
   await asSuperInOrg(orgON,
-    `insert into horse_parties (org_id, horse_id, contact_id, role, share_pct, effective_from)
-       values ($1,$2,$3,'owner',60,'2026-01-01'), ($1,$2,$4,'lessee',40,'2026-01-01')`,
+    `insert into horse_relationships (org_id, horse_id, party_contact_id, relationship, share_pct, term_start)
+       values ($1,$2,$3,'OWNER',60,'2026-01-01'), ($1,$2,$4,'LESSEE',40,'2026-01-01')`,
     [orgON, splitHorse, ownerContact, lesseeContact]);
 
   // the default/barn payer — uncovered consumption routes here, never dropped.

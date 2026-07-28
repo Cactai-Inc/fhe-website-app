@@ -948,10 +948,10 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         </div>
       )}
 
-      <div className={`flex items-start justify-between gap-3 mb-1 ${isInactive ? 'opacity-60' : ''}`}>
-        <h1 className="font-serif text-2xl text-green-900 flex items-center gap-2">
-          <FileText size={22} className="text-gold-ink" /> {doc.title}
-        </h1>
+      {/* Gate-0: the contract title is its own CENTERED element; the status
+          pill sits right-aligned in its own row above so centering is real. */}
+      <div className={`mb-1 ${isInactive ? 'opacity-60' : ''}`}>
+        <div className="flex justify-end">
         <span className={`text-xs font-sans px-2.5 py-1 rounded-full whitespace-nowrap ${
           isTerminated || isCancelled ? 'bg-red-100 text-red-800'
           : state === 'executed' ? 'bg-green-800 text-white'
@@ -963,6 +963,10 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
               ? `Cancelled${doc?.cancelled_at ? ` · ${new Date(doc.cancelled_at).toLocaleDateString()}` : ''}`
               : (STATE_LABEL[state] ?? state)}
         </span>
+        </div>
+        <h1 className="font-serif text-2xl text-green-900 flex items-center justify-center gap-2 text-center">
+          <FileText size={22} className="text-gold-ink" /> {doc.title}
+        </h1>
       </div>
       {terminationRequested && !iRequestedTermination && (
         <div className="mb-3 rounded-lg border border-gold-400/50 bg-gold-50 px-4 py-2.5 text-sm text-gold-900">

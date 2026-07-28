@@ -1,23 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Check, Download } from 'lucide-react';
-import { fetchMyDocuments } from '../../lib/api';
+import { FileText, Check, Download, History } from 'lucide-react';
+import { myDocuments, type MyDocumentRow } from '../../lib/api';
 import {
   listMySignableDocuments,
   signMyDocument,
   type SignableDocument,
 } from '../../lib/ops/api-client';
 import { useDocumentTitle } from '../../lib/hooks';
-import type { OrderDocument } from '../../lib/types';
-
-const DOC_TITLE: Record<string, string> = {
-  liability_waiver: 'Liability Waiver & Release',
-  lesson_policy: 'Lesson & Cancellation Policy',
-  training_agreement: 'Training Services Agreement',
-  care_agreement: 'Horse Care Services Agreement',
-  brokering_agreement: 'Brokering Engagement Agreement',
-};
-const titleFor = (t: string) => DOC_TITLE[t] ?? t.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
 /**
  * MEMBER self-sign row (mirrors the staff SigningPanel's SignPartyRow, but
@@ -126,33 +116,42 @@ function SelfSignRow({
 
 export default function Documents() {
   useDocumentTitle('Your Documents');
-  const [docs, setDocs] = useState<(OrderDocument & { order_created_at?: string })[]>([]);
+  const [rows, setRows] = useState<MyDocumentRow[]>([]);
   const [signables, setSignables] = useState<SignableDocument[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
     Promise.all([
-      fetchMyDocuments().catch(() => [] as (OrderDocument & { order_created_at?: string })[]),
+      myDocuments().catch(() => [] as MyDocumentRow[]),
       listMySignableDocuments().catch(() => [] as SignableDocument[]),
     ])
       .then(([d, s]) => {
         if (!active) return;
-        setDocs(d);
+        setRows(d);
         setSignables(s);
       })
       .finally(() => active && setLoading(false));
     return () => { active = false; };
   }, []);
 
-  /** Seal, then refresh the signable list so the row re-renders sealed. */
+  /** Seal, then refresh both lists so the rows re-render sealed. E-sign
+   *  consent is passed true — same contract as the onboarding flow. */
   const handleSign = useCallback(async (item: SignableDocument, typedName: string) => {
-    await signMyDocument(item.document.id, item.party_role, typedName);
-    setSignables(await listMySignableDocuments());
-  }, []);
+    await signMyDocument(item.document.id, item.party_role, typedName, true);
+    const [d, s] = await Promise.all([myDocuments().catch(() => rows), listMySignableDocuments()]);
+    setRows(d);
+    setSignables(s);
+  }, [rows]);
 
   const awaiting = signables.filter((s) => !s.signed);
   const sealed = signables.filter((s) => s.signed);
+  // The one chronological list (3f): pending/assigned first, then executed in
+  // signing order — newest first, matching the page's read order.
+  const pendingRows = rows.filter((r) => r.kind !== 'executed');
+  const executedRows = rows
+    .filter((r) => r.kind === 'executed')
+    .sort((a, b) => (b.signed_at ?? '').localeCompare(a.signed_at ?? ''));
 
   return (
     <div className="max-w-3xl">
@@ -174,27 +173,39 @@ export default function Documents() {
 
       {loading ? (
         <p className="body-text text-muted">Loading…</p>
-      ) : docs.length === 0 ? (
-        <p className="body-text text-muted text-sm">No documents yet. They'll appear here as you complete orders.</p>
+      ) : pendingRows.length === 0 && executedRows.length === 0 ? (
+        signables.length === 0 && (
+          <p className="body-text text-muted text-sm">No documents yet. They'll appear here as they're assigned or signed.</p>
+        )
       ) : (
         <div className="flex flex-col gap-3">
-          {docs.map((d) => (
-            <div key={d.id} className="bg-white border border-green-800/10 p-5 flex items-start justify-between gap-4">
+          {pendingRows.map((r) => (
+            <div key={r.document_id ?? r.template_key} className="bg-white border border-gold-600/30 p-5 flex items-start gap-3">
+              <FileText size={18} className="text-gold-ink flex-shrink-0 mt-0.5" aria-hidden="true" />
+              <div>
+                <p className="text-sm font-sans font-medium text-green-900">{r.title}</p>
+                <p className="text-xs text-gold-900 mt-1">Awaiting your signature — you'll be prompted at sign-in.</p>
+              </div>
+            </div>
+          ))}
+          {executedRows.map((r) => (
+            <div key={r.document_id ?? r.template_key} className="bg-white border border-green-800/10 p-5 flex items-start justify-between gap-4">
               <div className="flex items-start gap-3">
                 <FileText size={18} className="text-gold-ink flex-shrink-0 mt-0.5" aria-hidden="true" />
                 <div>
-                  <p className="text-sm font-sans font-medium text-green-900">{titleFor(d.document_type)}</p>
-                  {d.agreed_at ? (
-                    <p className="text-xs text-green-700 mt-1 inline-flex items-center gap-1">
-                      <Check size={12} aria-hidden="true" />
-                      Agreed by {d.signer_name} · {new Date(d.agreed_at).toLocaleDateString()}
+                  <p className="text-sm font-sans font-medium text-green-900">{r.title}</p>
+                  <p className="text-xs text-green-700 mt-1 inline-flex items-center gap-1">
+                    <Check size={12} aria-hidden="true" />
+                    Signed{r.signed_at ? ` · ${new Date(r.signed_at).toLocaleDateString()}` : ''}
+                  </p>
+                  {r.superseded && (
+                    <p className="text-xs text-muted mt-1 inline-flex items-center gap-1">
+                      <History size={12} aria-hidden="true" />
+                      Superseded — kept as a record; a newer version is in force.
                     </p>
-                  ) : (
-                    <p className="text-xs text-muted mt-1">Not yet agreed</p>
                   )}
                 </div>
               </div>
-              <Link to={`/order/${d.order_id}`} className="link-underline whitespace-nowrap">View order</Link>
             </div>
           ))}
         </div>

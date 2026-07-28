@@ -18,6 +18,10 @@ export interface TenantEmailIdentity {
   footer: string;
   /** The tenant's public contact email (CONTACT.EMAIL), if set. */
   contactEmail: string | null;
+  /** 5d: the ops/company inbox for mirror copies (CONTACT.OPS_INBOX). */
+  opsInbox: string | null;
+  /** 5d: the tenant's public site URL for in-email links (BRAND.SITE_URL). */
+  siteUrl: string | null;
 }
 
 /** Resolve a single config_values row for a tenant (org-scoped, no current_org()). */
@@ -48,11 +52,13 @@ export async function resolveTenantEmailIdentity(
   db: SupabaseClient,
   orgId: string,
 ): Promise<TenantEmailIdentity> {
-  const [brandName, contactEmail, contactPhone, contactUrl] = await Promise.all([
+  const [brandName, contactEmail, contactPhone, contactUrl, opsInbox, siteUrl] = await Promise.all([
     resolveConfigValue(db, orgId, 'BRAND', 'NAME'),
     resolveConfigValue(db, orgId, 'CONTACT', 'EMAIL'),
     resolveConfigValue(db, orgId, 'CONTACT', 'PHONE'),
     resolveConfigValue(db, orgId, 'CONTACT', 'URL'),
+    resolveConfigValue(db, orgId, 'CONTACT', 'OPS_INBOX'),
+    resolveConfigValue(db, orgId, 'BRAND', 'SITE_URL'),
   ]);
 
   // Typed legal fields live in business_config (single source of truth), scoped to org.
@@ -73,7 +79,7 @@ export async function resolveTenantEmailIdentity(
 
   const footer = buildFooter({ legalName, contactEmail, contactPhone, contactUrl });
 
-  return { fromName, fromEmail, footer, contactEmail };
+  return { fromName, fromEmail, footer, contactEmail, opsInbox, siteUrl };
 }
 
 /** Build the {{ORG.*}} legal/contact footer from the resolved registry values. */

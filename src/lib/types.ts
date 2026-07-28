@@ -47,6 +47,9 @@ export interface Profile {
   bio: string | null;
   riding_level: string | null;
   is_suspended: boolean;
+  /** A3: when this account first dismissed the app-overview tour (null = show
+   *  it on next login). Menu re-opens never stamp it. */
+  tour_seen_at?: string | null;
 }
 
 /** Flat catalog: an Offering IS the purchasable item (the tier layer was removed
@@ -182,11 +185,3 @@ export interface Payment {
   status: string;
 }
 
-export interface OrderDocument {
-  id: string;
-  order_id: string;
-  document_type: string;
-  signer_name: string | null;
-  agreed_at: string | null;
-  extra_fields: Record<string, unknown>;
-}

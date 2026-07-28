@@ -56,10 +56,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setModules([]);
       return;
     }
-    const [{ data: prof }, { data: mem }] = await Promise.all([
+    const [profRes, memRes] = await Promise.all([
       supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle(),
       supabase.from('members').select('*').eq('user_id', userId).maybeSingle(),
     ]);
+    const prof = profRes.data;
+    let mem = memRes.data;
     // Member self-heal: a provisioned client whose invitation token was
     // lost/consumed signs in with no membership and would dead-end at the
     // member gate. ensure_my_membership grants what redeem_invitation would

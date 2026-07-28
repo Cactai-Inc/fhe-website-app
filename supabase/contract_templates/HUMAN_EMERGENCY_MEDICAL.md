@@ -33,7 +33,7 @@ Phone: {{CLIENT.EMERGENCY_CONTACT_2_PHONE}}
 
 1. FIRST AID AUTHORIZATION
 
-CLIENT authorizes COMPANY and its representatives to administer reasonable first aid and stabilizing care to CLIENT or an accompanying minor PARTICIPANT in the event of an apparent injury or medical emergency, pending the arrival of emergency medical personnel or other qualified medical care. CLIENT understands that COMPANY representatives are not medical professionals, and CLIENT releases, waives, and forever discharges the Released Parties from any claims arising from first aid or stabilizing care rendered, or decisions made, in good faith in response to an apparent emergency. This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
+CLIENT authorizes COMPANY and its representatives to administer reasonable first aid and stabilizing care to CLIENT or an accompanying minor PARTICIPANT in the event of an apparent injury or medical emergency, pending the arrival of emergency medical personnel or other qualified medical care. CLIENT understands that COMPANY representatives are not medical professionals, and CLIENT, on behalf of CLIENT and CLIENT's heirs, next of kin, estate, executors, administrators, legal representatives, successors, and assigns, and on behalf of any minor PARTICIPANT and the minor's heirs, next of kin, estate, executors, administrators, legal representatives, successors, and assigns, releases, waives, and forever discharges the Released Parties from any claims arising from first aid or stabilizing care rendered, or decisions made, in good faith in response to an apparent emergency. This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
 
 2. EMERGENCY TREATMENT AUTHORIZATION
 
