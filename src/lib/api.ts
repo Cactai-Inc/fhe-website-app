@@ -1809,3 +1809,10 @@ export async function payerCandidates(): Promise<PayerCandidate[]> {
   if (error) return [];
   return (data ?? []) as PayerCandidate[];
 }
+
+/** A3: stamp the app-overview tour as seen for the signed-in account. The
+ *  first stamp wins — re-opening the tour from the menu never calls this. */
+export async function markTourSeen(): Promise<void> {
+  const { error } = await supabase.rpc('mark_tour_seen');
+  if (error) throw error;
+}

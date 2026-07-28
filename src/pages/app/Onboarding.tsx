@@ -13,6 +13,7 @@ import {
   fetchMyCategories,
   myUnreadCount,
   myDocuments,
+  markTourSeen,
   type OnboardingProfileInput,
   type OnboardingPurchase,
   type OnboardingState,
@@ -294,6 +295,9 @@ export default function Onboarding() {
   // account holder — no guest branch).
   async function enterApp() {
     setShowOverview(false);
+    // A3: a fresh activation has now seen the tour — stamp it so AppLayout's
+    // first-login auto-open does not show it a second time.
+    try { await markTourSeen(); } catch { /* presentational marker only */ }
     let unread = 0;
     try { unread = await myUnreadCount(); } catch { /* default to community */ }
     navigate(unread > 0 ? '/app/dashboard' : '/app', { replace: true });

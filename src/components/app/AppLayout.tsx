@@ -6,12 +6,16 @@ import {
   CalendarDays, Users, FileText, UserRound, ReceiptText, Shield, LogOut,
   GraduationCap, Handshake, Home as HomeIcon, Boxes, Contact, LayoutDashboard,
   Mail, ChevronDown, Plus, LifeBuoy, ShoppingBag, MessageSquare, BookOpen, ListChecks,
-  PanelLeft, PanelLeftClose, Activity,
+  PanelLeft, PanelLeftClose, Activity, Compass,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useViewSurfaces } from '../../lib/surfaces';
 import { fetchMyGrantKeys } from '../../lib/grants';
-import { myUnreadCount, myWallState, type WallState } from '../../lib/api';
+import {
+  myUnreadCount, myWallState, getMyProfile, markTourSeen, fetchMyCategories,
+  type WallState, type StandingCategory,
+} from '../../lib/api';
+import { AppOverviewModal } from './AppOverviewModal';
 import { CreateModal } from './CreateModal';
 
 /** Unread-notification count for the Dashboard nav badge. Refreshes on mount and
@@ -402,6 +406,31 @@ export default function AppLayout() {
     myWallState().then((w) => active && setWall(w)).catch(() => {});
     return () => { active = false; };
   }, [location.pathname]);
+
+  // A3: the app-overview tour. It fires ONCE per account on the first login
+  // after deployment (profiles.tour_seen_at null), and is revisitable from the
+  // avatar menu at any time. Auto-open is deliberately evaluated AFTER the
+  // signing wall below, so a member with pending gating documents clears the
+  // wall first and meets the tour once their documents are done.
+  const [tourOpen, setTourOpen] = useState(false);
+  const [tourSeen, setTourSeen] = useState<boolean | null>(null);
+  const [tourCategories, setTourCategories] = useState<StandingCategory[]>([]);
+  useEffect(() => {
+    let active = true;
+    getMyProfile()
+      .then((pr) => { if (active) setTourSeen(pr ? pr.tour_seen_at != null : true); })
+      .catch(() => active && setTourSeen(true));
+    fetchMyCategories().then((c) => active && setTourCategories(c)).catch(() => {});
+    return () => { active = false; };
+  }, []);
+
+  /** Dismissing the auto-opened tour stamps the marker; a menu re-open does not. */
+  const closeTour = (stamp: boolean) => {
+    setTourOpen(false);
+    if (!stamp) return;
+    setTourSeen(true);
+    void markTourSeen().catch(() => { /* presentational marker only */ });
+  };
   const [grantKeys, setGrantKeys] = useState<string[]>([]);
   useEffect(() => {
     if (!isTrainer) return;
@@ -436,6 +465,14 @@ export default function AppLayout() {
   // Sign-out stays reachable (the flow renders inside the layout chrome).
   if (wall?.wall && location.pathname !== '/app/onboarding') {
     return <Navigate to="/app/onboarding" replace />;
+  }
+
+  // A3 auto-open — strictly after the wall check above: an unseen tour only
+  // opens once the member is past any gating documents (the wall returns early,
+  // so this line is unreachable while a wall is pending). The onboarding route
+  // owns its own mount, so we never double-open there.
+  if (tourSeen === false && !tourOpen && location.pathname !== '/app/onboarding') {
+    setTourOpen(true);
   }
 
   return (
@@ -542,6 +579,11 @@ export default function AppLayout() {
                       ))}
                     </div>
                   )}
+                  <button type="button"
+                    onClick={() => { closeMenu(); setTourOpen(true); }}
+                    className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] border-t border-green-800/10 focus-ring">
+                    <Compass size={17} aria-hidden="true" /> App tour
+                  </button>
                   <button type="button" onClick={handleSignOut}
                     className="flex items-center gap-3 px-4 py-2.5 mt-1 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] border-t border-green-800/10 focus-ring">
                     <LogOut size={17} aria-hidden="true" /> Sign out
@@ -596,6 +638,14 @@ export default function AppLayout() {
       </div>
 
       {createOpen && <CreateModal onClose={() => setCreateOpen(false)} />}
+
+      {/* A3: the tour. Auto-opened on first login (stamps the marker on
+          dismiss) or re-opened from the avatar menu (leaves the marker be). */}
+      <AppOverviewModal
+        open={tourOpen}
+        onClose={() => closeTour(tourSeen === false)}
+        categories={tourCategories}
+      />
     </div>
   );
 }
