@@ -132,6 +132,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       : '';
 
     const delivered: Array<{ email: string; count: number }> = [];
+    /** Logging failures collected so they surface in the response + logs
+     *  rather than vanishing (S5.4: they vanished for the table's whole life). */
+    const logFailures: string[] = [];
 
     // 6. One email per distinct signer, with ALL the PDFs attached.
     for (const party of Array.from(byContact.values())) {
@@ -164,14 +167,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // hard guard against duplicate sends; if a concurrent request already
       // recorded the delivery (23505), treat it as already-delivered, not an error.
       for (const d of pending) {
+        // document_deliveries has NO org_id column — the document carries the
+        // org. Passing one made every insert throw, which is why this table sat
+        // at zero rows.
         const { error: insErr } = await db.from('document_deliveries').insert({
           document_id: d.id,
           recipient_contact_id: party.contact_id,
           channel: CHANNEL,
           copy_url: `/portal/documents/${d.id}`,
-          org_id: orgId,
         });
-        if (insErr && insErr.code !== '23505') throw insErr;
+        if (insErr && insErr.code !== '23505') {
+          // A send that cannot be logged is not a silent success: surface it.
+          console.error('delivery logging failed (party copy)', {
+            documentId: d.id, contactId: party.contact_id, error: insErr.message,
+          });
+          logFailures.push(`party ${d.id}: ${insErr.message}`);
+        }
         deliveredSet.add(`${d.id}:${party.contact_id}`);
       }
       delivered.push({ email, count: pending.length });
@@ -205,16 +216,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       companyNotified = notice.ok;
       if (notice.ok) {
         for (const d of docs) {
-          await db.rpc('log_mirror_delivery', {
+          const { error: mirrorErr } = await db.rpc('log_mirror_delivery', {
             p_document_id: d.id,
             p_channel: CHANNEL,
             p_copy_url: `/portal/documents/${d.id}`,
           });
+          if (mirrorErr) {
+            console.error('delivery logging failed (mirror copy)', {
+              documentId: d.id, error: mirrorErr.message,
+            });
+            logFailures.push(`mirror ${d.id}: ${mirrorErr.message}`);
+          }
         }
       }
     }
 
-    return res.status(200).json({ delivered, companyNotified, documents: documentIds.length });
+    // Logging failures ride back in the response so a caller (and the
+    // verification harness) can see them rather than inferring silence.
+    return res.status(200).json({
+      delivered, companyNotified, documents: documentIds.length,
+      ...(logFailures.length ? { logFailures } : {}),
+    });
   } catch (err) {
     console.error('deliver-documents error', err);
     return res.status(500).json({ error: 'could not deliver documents' });

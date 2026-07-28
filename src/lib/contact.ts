@@ -101,13 +101,12 @@ export interface MyContactPrefs {
   social_facebook: string | null;
   social_linkedin: string | null;
   preferred_contact: PreferredContact;
-  payment_reminders: boolean;
 }
 
 const PREF_COLS =
   'email, mobile, whatsapp, allow_sms, allow_call, allow_whatsapp, allow_whatsapp_call, ' +
   'hide_email, hide_mobile, hide_whatsapp, ' +
-  'social_tiktok, social_instagram, social_facebook, social_linkedin, preferred_contact, payment_reminders';
+  'social_tiktok, social_instagram, social_facebook, social_linkedin, preferred_contact';
 
 /** Load the signed-in member's contact prefs (own profiles row). */
 export async function getMyContactPrefs(): Promise<MyContactPrefs | null> {
