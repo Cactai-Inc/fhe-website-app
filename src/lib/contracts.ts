@@ -7,7 +7,14 @@ export type FieldInputKind =
   | 'text' | 'longtext' | 'select' | 'buttons' | 'responsibility'
   | 'week_grid' | 'contact' | 'currency' | 'date' | 'percent' | 'prose' | 'checkbox';
 
-export interface FieldOption { value: string; label: string }
+export interface FieldOption {
+  value: string; label: string;
+  /** Option-level availability gate (e.g. "Riding Lesson Participants" is only
+   *  offered while lessons are permitted). Evaluated by the UI against sibling
+   *  field values via clauseConditionMet; an already-SELECTED option stays
+   *  visible so it can be unselected. */
+  when?: FieldConditional | null;
+}
 /** A clause/field reveal gate: shown when the controlling field equals one of
  *  `equals`, or (for a multi-select control) contains one of `contains`. */
 export interface FieldConditional {
@@ -326,6 +333,20 @@ export async function lockAndSign(
   });
   if (error) throw error;
   return data as string;
+}
+
+/** One named lock blocker from the shared precondition evaluator. */
+export interface LockBlocker { code: string; message: string }
+/** A non-staff signing party approves the reviewed contract. The approval is
+ *  ALWAYS recorded (status_event); when every non-staff signing party has
+ *  approved and the lock preconditions pass, the document auto-advances to
+ *  locked (signature rows seeded). Otherwise the named blockers come back. */
+export async function approveContractReview(
+  documentId: string,
+): Promise<{ approved: boolean; locked: boolean; blockers: LockBlocker[] }> {
+  const { data, error } = await supabase.rpc('approve_contract_review', { p_document_id: documentId });
+  if (error) throw error;
+  return data as { approved: boolean; locked: boolean; blockers: LockBlocker[] };
 }
 
 export async function confirmHorseSection(documentId: string): Promise<void> {

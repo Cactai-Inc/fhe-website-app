@@ -170,11 +170,14 @@ function PairControl({
 const NA = 'N/A';
 const filled = (v?: string | null) => !!v && v.trim() !== '' && v.trim() !== NA;
 
-/** ⓘ info popover — click/tap to toggle. */
+/** ⓘ info popover — click/tap to toggle. The wrapper carries the GLOBAL spacing
+ *  (mx-1.5 ≈ the §Allowing-Others-to-Ride reference gap) so an info dot never
+ *  touches its neighbours anywhere in the cascade — fixed here at the shared
+ *  component, not per call site. */
 export function InfoDot({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
   return (
-    <span className="relative inline-block">
+    <span className="relative inline-block mx-1.5 align-middle">
       <button type="button" aria-label="More info" onClick={() => setOpen((v) => !v)}
         className="inline-grid place-items-center w-[18px] h-[18px] rounded-full border border-gold-500 text-gold-700 hover:bg-gold-50 focus-ring align-middle">
         <Info size={11} aria-hidden="true" />
@@ -390,17 +393,20 @@ function AddText({ f, onSave, disabled }: { f: ContractField; onSave: SaveFn; di
       </button>
     );
   }
-  // Open: just the input (the clause line already labels it, e.g. "Restrictions:")
-  // plus a way to clear/remove it.
+  // Open: the remove-✕ sits on the LEFT (with a little padding) so it never
+  // collides with the ⓘ affordances at the end of the row, and the input takes
+  // the full usable width of the line (flex-1 on this root; the parent row in
+  // InlineFieldControl is a flex container).
   return (
-    <span className="inline-flex items-baseline gap-1.5 flex-1 min-w-0 align-baseline">
-      <input className="flex-1 min-w-[8rem] px-1 text-[13.5px] text-green-900 bg-gold-50/70 border-b border-gold-400/70 focus:outline-none focus:border-gold-600 rounded-sm"
+    <span className="flex items-center gap-2 flex-1 w-full min-w-0">
+      <button type="button" disabled={disabled}
+        className="shrink-0 px-1.5 text-[12px] text-muted hover:text-red-700 focus-ring rounded"
+        title="Remove" onClick={() => { setText(''); setOpen(false); commit(''); }}>✕</button>
+      <input className="flex-1 min-w-0 px-1 py-0.5 text-[13.5px] text-green-900 bg-gold-50/70 border-b border-gold-400/70 focus:outline-none focus:border-gold-600 rounded-sm"
         disabled={disabled} value={text} placeholder="list any restrictions"
         onFocus={() => { editingRef.current = true; }}
         onChange={(e) => setText(e.target.value)}
         onBlur={() => commit(text)} />
-      <button type="button" disabled={disabled} className="text-[12px] text-muted hover:text-red-700 focus-ring rounded"
-        title="Remove" onClick={() => { setText(''); setOpen(false); commit(''); }}>✕</button>
     </span>
   );
 }
@@ -1063,13 +1069,37 @@ export function InlineFieldControl({
   const isStructured = ['party', 'contact', 'person', 'address', 'location', 'pair', 'fee_schedule', 'med_schedule', 'contacts_list', 'reveal_text', 'certify', 'add_text'].includes(fmt)
     || kind === 'responsibility' || kind === 'week_grid';
   if (isStructured) {
-    // reveal_text, certify, and add_text self-label (the control shows its own
-    // question / statement / button), so render as a block with no label above.
-    if (fmt === 'reveal_text' || fmt === 'certify' || fmt === 'add_text') {
+    // add_text renders as a FLEX row: collapsed it's the "+ Add …" button with
+    // its marks right beside it; open, the AddText root declares flex-1 so the
+    // input takes the full usable line width and the marks sit at the row end.
+    if (fmt === 'add_text') {
+      return (
+        <span className="flex flex-wrap items-center gap-1.5 my-1 w-full min-w-0">
+          <FieldControl f={f} onSave={onSave} onSaveResponsibility={onSaveResponsibility}
+            onSaveStructured={onSaveStructured} disabled={disabled} />{marks}
+        </span>
+      );
+    }
+    // reveal_text and certify self-label (the control shows its own question /
+    // statement), so render as a block with no label above.
+    if (fmt === 'reveal_text' || fmt === 'certify') {
       return (
         <span className="block my-1">
           <FieldControl f={f} onSave={onSave} onSaveResponsibility={onSaveResponsibility}
             onSaveStructured={onSaveStructured} disabled={disabled} />{marks}
+        </span>
+      );
+    }
+    // week_grid is a full-width BLOCK on its own line (with its label kept) —
+    // inside the inline-block wrapper below it was clamped to the leftover line
+    // width and the 7-day row clipped after Tuesday. No inner scrollbox: the
+    // grid itself wraps responsively on narrow screens.
+    if (kind === 'week_grid') {
+      return (
+        <span className="block my-1.5 w-full">
+          <span className="text-[11px] text-muted">{label}{marks}</span>
+          <FieldControl f={f} onSave={onSave} onSaveResponsibility={onSaveResponsibility}
+            onSaveStructured={onSaveStructured} disabled={disabled} />
         </span>
       );
     }
@@ -1204,40 +1234,38 @@ function WeekGrid({ f, onSaveStructured, disabled }: { f: ContractField; onSaveS
     const nextDays = { ...w.days }; delete nextDays[name];
     commit({ ...w, parties: w.parties.filter((_, j) => j !== i), days: nextDays });
   };
+  // FULL-WIDTH block, no scrollbox (owner mandate: no scrollable boxes inside
+  // the document). One row per party: name, then the seven day toggles as pills
+  // that WRAP on narrow screens instead of clipping.
   return (
-    <div className="overflow-x-auto">
-      <table className="text-xs border-collapse">
-        <thead>
-          <tr>
-            <th className="text-left px-2 py-1 text-muted font-semibold">Party</th>
-            {DAYS.map((d) => <th key={d} className="px-2 py-1 text-green-800 font-semibold text-center">{d}</th>)}
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {w.parties.map((p, i) => (
-            <tr key={i}>
-              <td className="px-2 py-1">
-                <input className="w-28 px-1.5 py-0.5 rounded border border-green-800/15 text-xs font-medium text-green-900 bg-white disabled:bg-cream-100"
-                  disabled={disabled} value={p} aria-label={`Party ${i + 1} name`}
-                  onChange={(e) => renameParty(i, e.target.value)} />
-              </td>
-              {DAYS.map((d) => (
-                <td key={d} className="px-2 py-1 text-center">
-                  <input type="checkbox" className="accent-green-700" disabled={disabled}
-                    checked={(w.days[p] ?? []).includes(d)} onChange={() => toggleDay(p, d)} />
-                </td>
-              ))}
-              <td className="px-1">
-                {!disabled && w.parties.length > 1 && (
-                  <button type="button" className="text-muted hover:text-red-700 text-xs"
-                    onClick={() => removeParty(i)} title="Remove this party">✕</button>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="w-full max-w-full">
+      <div className="flex flex-col gap-1.5">
+        {w.parties.map((p, i) => (
+          <div key={i} className="flex flex-wrap items-center gap-1.5">
+            <input className="w-24 shrink-0 px-1.5 py-0.5 rounded border border-green-800/15 text-xs font-medium text-green-900 bg-white disabled:bg-cream-100"
+              disabled={disabled} value={p} aria-label={`Party ${i + 1} name`}
+              onChange={(e) => renameParty(i, e.target.value)} />
+            <span className="flex flex-wrap items-center gap-1">
+              {DAYS.map((d) => {
+                const on = (w.days[p] ?? []).includes(d);
+                return (
+                  <button key={d} type="button" disabled={disabled} onClick={() => toggleDay(p, d)}
+                    aria-pressed={on}
+                    className={`text-[11px] rounded-full px-2 py-0.5 border focus-ring ${
+                      on ? 'bg-green-800 text-white border-green-800'
+                         : 'border-green-800/25 text-secondary hover:bg-green-50'} ${disabled ? 'opacity-70' : ''}`}>
+                    {d}
+                  </button>
+                );
+              })}
+            </span>
+            {!disabled && w.parties.length > 1 && (
+              <button type="button" className="text-muted hover:text-red-700 text-xs"
+                onClick={() => removeParty(i)} title="Remove this party">✕</button>
+            )}
+          </div>
+        ))}
+      </div>
       {!disabled && (
         <button type="button" onClick={addParty}
           className="mt-1.5 text-[11px] text-gold-800 border border-dashed border-gold-400 rounded px-2 py-1 hover:bg-gold-50 focus-ring">
