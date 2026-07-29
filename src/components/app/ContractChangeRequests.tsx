@@ -20,11 +20,18 @@ import { NotifyConfirmModal } from './NotifyConfirmModal';
  * so it always matches the composed document. Numbering shifts automatically
  * when a section is inserted — nothing here is hardcoded.
  *
- * INTERACTION
- *  • Sections collapsed by default. The chevron on the LEFT expands to show
- *    subsections and flips up when open; clicking it again collapses.
- *  • Clicking anywhere ELSE in the row SELECTS it and opens the request input
- *    for that exact target below it. Selecting another row moves the input.
+ * INTERACTION (owner-final — ONE CLICK, ONE RESULT)
+ *  • Every row is collapsed by default and is ONE control. Clicking anywhere on
+ *    a section row — chevron included, it is not a separate tab stop — OPENS
+ *    that row; clicking again closes it. There is no separate "select" gesture.
+ *  • An OPEN SECTION shows, in order: (a) the request input for the WHOLE
+ *    section, then (b) its subsection rows, each collapsed. The subsection list
+ *    is NEVER gated on the section's input having content.
+ *  • A SUBSECTION row opens the same way and reveals its own input. Opening one
+ *    does not collapse its parent.
+ *  • OPEN STATE IS ONE PERSISTENT SET of row keys covering sections AND
+ *    subsections, so closing a parent leaves its children exactly as they were
+ *    and reopening it restores them.
  *  • AUTOSAVE on blur (adding or removing content) — no cancel/save/send
  *    buttons. A brief transient "Saved" notice confirms each autosave.
  *
@@ -295,8 +302,14 @@ export function ContractChangeRequests({
 }) {
   const [tree, setTree] = useState<SectionTreeNode[] | null>(null);
   const [entries, setEntries] = useState<ContractChangeRequestEntry[] | null>(null);
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  const [selected, setSelected] = useState<string | null>(null);   // target section/clause key
+  /* ONE OPEN-STATE STRUCTURE for the whole tree. It holds BOTH section keys and
+     subsection clause keys, and a row's membership is independent of its
+     parent's: closing a section removes only the section's own key, so its
+     children keep theirs and come back exactly as they were on reopen. */
+  const [open, setOpen] = useState<Set<string>>(new Set());
+  /* The row the user opened LAST — the drawer's scroll/measure cue only, never a
+     styling or gating input. Cleared when that row is closed again. */
+  const [lastOpened, setLastOpened] = useState<string | null>(null);
   const [openThread, setOpenThread] = useState<string | null>(null);
   const [notifyModal, setNotifyModal] = useState(false);
   const [myContactId, setMyContactId] = useState<string | null>(null);
@@ -342,7 +355,10 @@ export function ContractChangeRequests({
         read off `seen_by`; a viewer NEVER sees their OWN authored entry as
         unseen. Expanding the row fires mark_change_request_seen, the reload
         rewrites seen_by, and the dot clears for that viewer only.
-     Selection (border-gold-400/60) is a THIRD signal and stays as it was. */
+     3. OPEN STATE (border-gold-400/60) is the THIRD signal. It used to be a
+        separate "selected" concept; now that one click both opens a row and
+        makes it the active input target, open IS selected, so the gold ring is
+        driven straight off the open set — same styling, one fewer variable. */
 
   /** Requests targeting one exact section/clause key. */
   const requestsByTarget = useMemo(() => {
@@ -406,7 +422,10 @@ export function ContractChangeRequests({
     // listing the same five highest-impact requests. Email failure must never
     // lose the notification, so it is best-effort.
     const r = await submitChangeRequests(documentId);
-    setSelected(null);
+    // The drafts just became notified threads; close the tree back to its
+    // resting state so the reader's eye goes to the Notified list above.
+    setOpen(new Set());
+    setLastOpened(null);
     setNotifyModal(false);
     try { await emailSubmittedChangeRequests(documentId); }
     catch { /* the in-app notification already landed */ }
@@ -434,8 +453,42 @@ export function ContractChangeRequests({
     markChangeRequestSeen(ids).then(() => load()).catch(() => { /* never block reading */ });
   };
 
-  const toggleExpand = (key: string) =>
-    setExpanded((s) => { const n = new Set(s); if (n.has(key)) n.delete(key); else n.add(key); return n; });
+  /* THE ONE ROW GESTURE — sections and subsections alike. It flips exactly ONE
+     key: a parent's close never touches its children's keys, which is what makes
+     reopening restore them. `lastOpened` follows the reveal so the drawer scrolls
+     to it; closing a row that was the last-opened one clears the cue. */
+  const toggleRow = (key: string) =>
+    setOpen((s) => {
+      const n = new Set(s);
+      if (n.has(key)) { n.delete(key); setLastOpened((k) => (k === key ? null : k)); }
+      else { n.add(key); setLastOpened(key); }
+      return n;
+    });
+
+  /* Opening a TREE row. `bodyKeys` are the targets whose CONTENTS this click
+     actually puts on screen.
+     SEEN stays honest: a tree row renders only the viewer's OWN draft input for
+     that target — a counterparty's entries live in the Notified drawer above and
+     are revealed there, by openThreadRow. So there is normally nothing here for
+     this viewer to have "seen", and we only call through when a genuine reveal
+     turns up an entry that is notified, authored by someone else, and not
+     already seen — the same three predicates openThreadRow applies. Closing a
+     row reveals nothing and never marks. */
+  const revealRow = (key: string, bodyKeys: string[]) => {
+    const wasOpen = open.has(key);
+    toggleRow(key);
+    if (wasOpen) return;                       // a close is not a reveal
+    const ids: string[] = [];
+    for (const k of bodyKeys) {
+      for (const r of requestsByTarget.get(k) ?? []) {
+        for (const e of [r, ...(repliesByParent.get(r.id) ?? [])]) {
+          if (isUnseenByMe(e) && !e.is_frozen) ids.push(e.id);
+        }
+      }
+    }
+    if (ids.length === 0) return;
+    markChangeRequestSeen(ids).then(() => load()).catch(() => { /* never block reading */ });
+  };
 
   if (tree === null || entries === null) {
     return <p className="text-sm text-muted">Loading…</p>;
@@ -514,15 +567,14 @@ export function ContractChangeRequests({
           <p className="text-[11px] uppercase tracking-wide text-muted mb-1.5">
             Choose what to request a change to
           </p>
-          <ContractDrawer accent="requests" openKey={selected} empty={tree.length === 0}>
+          <ContractDrawer accent="requests" openKey={lastOpened} empty={tree.length === 0}>
             {tree.length === 0 && (
               <p className="text-sm text-muted px-1 py-2">
                 This document has no section structure to target.
               </p>
             )}
             {tree.map((s) => {
-              const isOpenSection = expanded.has(s.section_key);
-              const selectedHere = selected === s.section_key;
+              const isOpenSection = open.has(s.section_key);
               const draft = draftFor.get(s.section_key);
               // ROLLUP: the section's own key PLUS every subsection key, so a
               // collapsed parent still shows what its children hold.
@@ -534,7 +586,7 @@ export function ContractChangeRequests({
                     data-has-requests={sig.has || undefined}
                     data-unseen={sig.unseen > 0 || undefined}
                     className={`rounded-lg border ${
-                      selectedHere ? 'border-gold-400/60' : 'border-green-800/12'
+                      isOpenSection ? 'border-gold-400/60' : 'border-green-800/12'
                     } ${
                       // HAS-CONTENT SHADING: empty rows sit on the darker
                       // bg-green-800/[0.04]; a row holding requests lightens to
@@ -542,86 +594,80 @@ export function ContractChangeRequests({
                       sig.has ? 'bg-white' : 'bg-green-800/[0.04]'
                     }`}
                   >
-                    <div className="flex items-stretch">
-                      {/* LEFT CHEVRON — expands/collapses subsections only. */}
-                      {s.subsections.length > 0 ? (
-                        <button
-                          type="button"
-                          aria-label={isOpenSection ? `Collapse section ${s.number}` : `Expand section ${s.number}`}
-                          aria-expanded={isOpenSection}
-                          onClick={() => toggleExpand(s.section_key)}
-                          className="shrink-0 px-2 flex items-center text-muted hover:text-green-800 focus-ring rounded-l-lg"
-                        >
-                          {isOpenSection
-                            ? <ChevronUpIcon />
-                            : <ChevronDownIcon />}
-                        </button>
-                      ) : <span className="w-8 shrink-0" aria-hidden="true" />}
+                    {/* THE WHOLE ROW IS ONE CONTROL. The chevron lives INSIDE it
+                        (aria-hidden, not a tab stop of its own), so a click on
+                        the icon and a click on the title are the same click. */}
+                    <button
+                      type="button"
+                      onClick={() => revealRow(s.section_key, [s.section_key])}
+                      aria-expanded={isOpenSection}
+                      className="w-full text-left py-2.5 pr-3 focus-ring rounded-lg hover:bg-green-800/[0.03] flex items-baseline gap-2"
+                    >
+                      <span className="shrink-0 w-8 self-center flex justify-center text-muted" aria-hidden="true">
+                        {isOpenSection ? <ChevronUpIcon /> : <ChevronDownIcon />}
+                      </span>
+                      <span className="text-[11px] font-medium tabular-nums text-gold-ink shrink-0">{s.number}</span>
+                      <span className="text-[13px] text-green-950 font-medium">{s.title}</span>
+                      <UnseenDot count={sig.unseen} />
+                      {draft && <span className="ml-auto text-[10px] text-gold-900 bg-gold-50 border border-gold-400/50 rounded px-1.5 py-0.5 shrink-0">draft</span>}
+                    </button>
 
-                      {/* THE REST OF THE ROW SELECTS this target. */}
-                      <button
-                        type="button"
-                        onClick={() => setSelected((k) => (k === s.section_key ? null : s.section_key))}
-                        aria-pressed={selectedHere}
-                        className="flex-1 text-left py-2.5 pr-3 focus-ring rounded-r-lg hover:bg-green-800/[0.03] flex items-baseline gap-2"
-                      >
-                        <span className="text-[11px] font-medium tabular-nums text-gold-ink shrink-0">{s.number}</span>
-                        <span className="text-[13px] text-green-950 font-medium">{s.title}</span>
-                        <UnseenDot count={sig.unseen} />
-                        {draft && <span className="ml-auto text-[10px] text-gold-900 bg-gold-50 border border-gold-400/50 rounded px-1.5 py-0.5 shrink-0">draft</span>}
-                      </button>
-                    </div>
-
-                    {/* the request input for THIS target, right below its row */}
-                    {selectedHere && (
-                      <div className="px-3 pb-3 border-t border-green-800/10">
-                        <RequestInput
-                          value={draft?.body ?? ''}
-                          onAutosave={autosave(s.section_key)}
-                          placeholder={`What should change in ${s.number}. ${s.title}?`}
-                        />
-                      </div>
-                    )}
-
-                    {/* SUBSECTIONS */}
+                    {/* OPEN SECTION — (a) the input for the WHOLE section, then
+                        (b) its subsections, collapsed. Both hang off the SAME
+                        `isOpenSection` flag: the subsection list is deliberately
+                        NOT gated on the input holding content. */}
                     {isOpenSection && (
-                      <div className="pl-8 pr-2 pb-2 flex flex-col gap-1">
-                        {s.subsections.map((sub) => {
-                          const selSub = selected === sub.clause_key;
-                          const subDraft = draftFor.get(sub.clause_key);
-                          const subSig = signalsFor([sub.clause_key]);
-                          return (
-                            <div key={sub.clause_key} data-row-key={sub.clause_key}>
-                              <button
-                                type="button"
-                                onClick={() => setSelected((k) => (k === sub.clause_key ? null : sub.clause_key))}
-                                aria-pressed={selSub}
-                                data-has-requests={subSig.has || undefined}
-                                data-unseen={subSig.unseen > 0 || undefined}
-                                className={`w-full text-left px-2.5 py-1.5 rounded border focus-ring flex items-baseline gap-2 ${
-                                  selSub
-                                    ? 'border-gold-400/60 bg-gold-50/40'
-                                    : subSig.has
-                                      // lighter = has requests; darker = empty.
-                                      ? 'border-transparent bg-white hover:bg-white'
-                                      : 'border-transparent bg-green-800/[0.04] hover:bg-green-800/[0.06]'}`}
-                              >
-                                <span className="text-[11px] tabular-nums text-muted shrink-0">{sub.number}</span>
-                                <span className="text-[12px] text-green-950">{sub.title}</span>
-                                <UnseenDot count={subSig.unseen} />
-                                {subDraft && <span className="ml-auto text-[10px] text-gold-900 shrink-0">draft</span>}
-                              </button>
-                              {selSub && (
-                                <RequestInput
-                                  value={subDraft?.body ?? ''}
-                                  onAutosave={autosave(sub.clause_key)}
-                                  placeholder={`What should change in ${sub.number} ${sub.title}?`}
-                                />
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
+                      <>
+                        {/* (a) the section-level target */}
+                        <div className="px-3 pb-3 border-t border-green-800/10">
+                          <RequestInput
+                            value={draft?.body ?? ''}
+                            onAutosave={autosave(s.section_key)}
+                            placeholder={`What should change in ${s.number}. ${s.title}?`}
+                          />
+                        </div>
+
+                        {/* (b) the subsections */}
+                        {s.subsections.length > 0 && (
+                          <div className="pl-8 pr-2 pb-2 flex flex-col gap-1">
+                            {s.subsections.map((sub) => {
+                              const isOpenSub = open.has(sub.clause_key);
+                              const subDraft = draftFor.get(sub.clause_key);
+                              const subSig = signalsFor([sub.clause_key]);
+                              return (
+                                <div key={sub.clause_key} data-row-key={sub.clause_key}>
+                                  <button
+                                    type="button"
+                                    onClick={() => revealRow(sub.clause_key, [sub.clause_key])}
+                                    aria-expanded={isOpenSub}
+                                    data-has-requests={subSig.has || undefined}
+                                    data-unseen={subSig.unseen > 0 || undefined}
+                                    className={`w-full text-left px-2.5 py-1.5 rounded border focus-ring flex items-baseline gap-2 ${
+                                      isOpenSub
+                                        ? 'border-gold-400/60 bg-gold-50/40'
+                                        : subSig.has
+                                          // lighter = has requests; darker = empty.
+                                          ? 'border-transparent bg-white hover:bg-white'
+                                          : 'border-transparent bg-green-800/[0.04] hover:bg-green-800/[0.06]'}`}
+                                  >
+                                    <span className="text-[11px] tabular-nums text-muted shrink-0">{sub.number}</span>
+                                    <span className="text-[12px] text-green-950">{sub.title}</span>
+                                    <UnseenDot count={subSig.unseen} />
+                                    {subDraft && <span className="ml-auto text-[10px] text-gold-900 shrink-0">draft</span>}
+                                  </button>
+                                  {isOpenSub && (
+                                    <RequestInput
+                                      value={subDraft?.body ?? ''}
+                                      onAutosave={autosave(sub.clause_key)}
+                                      placeholder={`What should change in ${sub.number} ${sub.title}?`}
+                                    />
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
