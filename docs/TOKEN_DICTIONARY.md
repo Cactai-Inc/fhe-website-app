@@ -44,6 +44,27 @@ PARTICIPANT.FULL_NAME - Minor's full name. Releases, medical auth, jumper addend
 PARTICIPANT.DOB - Minor's date of birth. Same documents.
 
 HORSE NAMESPACE (horse record autofill)
+
+MULTI-HORSE BINDING (2026-07-29). A document may name MORE THAN ONE horse. The
+ordered set lives in `document_horses` (document_id, horse_id, position);
+`documents.horse_id` is retained and always equals the position-1 row (the
+PRIMARY), kept in step by triggers in both directions, so every existing
+single-horse reader of that column is unaffected. Read the set with
+`document_horse_ids(document_id)`.
+
+Rendering: `expand_horse_blocks(body, horse_ids)` repeats each CONTIGUOUS RUN of
+HORSE.*-token lines once per bound horse before token substitution. Multi-line
+runs (the HORSE INFORMATION block, the medication block, the euthanasia
+election) get a "Horse N — <name>" caption and a blank-line separator; one-line
+runs (e.g. the signature block's "Horse Name:") repeat without a caption because
+the line already names the horse. With exactly ONE horse bound the expander is
+not called at all, so single-horse output is byte-identical to the pre-change
+merge (verified by md5 against the old substitution path).
+
+Used by HORSE_EMERGENCY_VET and RELEASE_HORSE_CARE, which merge HORSE.* straight
+into merged_body at generation time (they carry no contract_fields rows). The
+lease/contract engine remains single-horse.
+
 HORSE.REGISTERED_NAME - Registered name. All horse documents and horse order forms.
 HORSE.BARN_NAME - Barn name. Vet auth, equine services release, transaction docs, training/exercise order forms.
 HORSE.BREED - Breed. Vet auth, equine services release, evaluation, lease, purchase/sale, transfer, transaction rep.

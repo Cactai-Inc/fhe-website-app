@@ -115,6 +115,21 @@ function RequestInput({
   );
 }
 
+/** THE UNSEEN DOT — a SHAPE, not a colour alone, so the signal survives for
+ *  colour-blind and greyscale viewers; the aria-label carries it for screen
+ *  readers. Sized and toned to stay legible against the LIGHTENED (has-content)
+ *  row it always sits on. */
+function UnseenDot({ count }: { count: number }) {
+  if (count <= 0) return null;
+  return (
+    <span
+      role="status"
+      aria-label={`${count} unseen change request${count === 1 ? '' : 's'}`}
+      className="shrink-0 inline-block w-2 h-2 rounded-full bg-gold-600 ring-2 ring-gold-200"
+    />
+  );
+}
+
 /** The AUTHOR stamp (date + time + party, as of the entry's LAST EDIT) and, once
  *  a non-author has viewed it, the SEEN stamp beside it. */
 function Stamps({ e }: { e: ContractChangeRequestEntry }) {
@@ -317,6 +332,53 @@ export function ContractChangeRequests({
     return { roots, repliesByParent, draftFor };
   }, [entries, myContactId]);
 
+  /* ── THE TWO ROW SIGNALS (orthogonal — neither may mask the other) ────────
+     1. HAS-CONTENT SHADING (persistent, "where is there activity"): every row
+        renders slightly DARKER than before by default; a row that CONTAINS one
+        or more change requests LIGHTENS to stand out from the empty rows around
+        it. Independent of who has read what.
+     2. UNSEEN DOT (transient, per-viewer, "what's new"): a row holding a change
+        request THIS viewer has not seen shows a dot. Seen is per-viewer state
+        read off `seen_by`; a viewer NEVER sees their OWN authored entry as
+        unseen. Expanding the row fires mark_change_request_seen, the reload
+        rewrites seen_by, and the dot clears for that viewer only.
+     Selection (border-gold-400/60) is a THIRD signal and stays as it was. */
+
+  /** Requests targeting one exact section/clause key. */
+  const requestsByTarget = useMemo(() => {
+    const m = new Map<string, ContractChangeRequestEntry[]>();
+    for (const r of roots) {
+      const k = r.target_section ?? '';
+      const list = m.get(k) ?? [];
+      list.push(r);
+      m.set(k, list);
+    }
+    return m;
+  }, [roots]);
+
+  /** Unseen BY THIS VIEWER: notified, not mine, and no seen_by row for me.
+   *  A draft (never notified) is not "unseen" — nobody was told about it yet. */
+  const isUnseenByMe = useCallback((e: ContractChangeRequestEntry): boolean => {
+    if (!e.submitted_at) return false;
+    if (e.author_contact_id && e.author_contact_id === myContactId) return false; // never my own
+    return !(e.seen_by ?? []).some((s) => s.contact_id === myContactId);
+  }, [myContactId]);
+
+  /** Roll a target's own requests up with its subsections', so a COLLAPSED
+   *  parent still reports what its children hold. */
+  const signalsFor = useCallback((keys: string[]) => {
+    let has = false;
+    let unseen = 0;
+    for (const k of keys) {
+      for (const r of requestsByTarget.get(k) ?? []) {
+        has = true;
+        const thread = [r, ...(repliesByParent.get(r.id) ?? [])];
+        unseen += thread.filter(isUnseenByMe).length;
+      }
+    }
+    return { has, unseen };
+  }, [requestsByTarget, repliesByParent, isUnseenByMe]);
+
   // every notified thread, resolved or not — resolution is a SOFT close, so a
   // resolved thread stays visible and reopenable rather than disappearing.
   const notifiedThreads = roots.filter((r) => r.submitted_at);
@@ -462,9 +524,24 @@ export function ContractChangeRequests({
               const isOpenSection = expanded.has(s.section_key);
               const selectedHere = selected === s.section_key;
               const draft = draftFor.get(s.section_key);
+              // ROLLUP: the section's own key PLUS every subsection key, so a
+              // collapsed parent still shows what its children hold.
+              const sig = signalsFor([s.section_key, ...s.subsections.map((x) => x.clause_key)]);
               return (
                 <div key={s.section_key} data-row-key={s.section_key}>
-                  <div data-drawer-row className={`rounded-lg border ${selectedHere ? 'border-gold-400/60' : 'border-green-800/12'} bg-white`}>
+                  <div
+                    data-drawer-row
+                    data-has-requests={sig.has || undefined}
+                    data-unseen={sig.unseen > 0 || undefined}
+                    className={`rounded-lg border ${
+                      selectedHere ? 'border-gold-400/60' : 'border-green-800/12'
+                    } ${
+                      // HAS-CONTENT SHADING: empty rows sit on the darker
+                      // bg-green-800/[0.04]; a row holding requests lightens to
+                      // plain white so it reads as raised out of the list.
+                      sig.has ? 'bg-white' : 'bg-green-800/[0.04]'
+                    }`}
+                  >
                     <div className="flex items-stretch">
                       {/* LEFT CHEVRON — expands/collapses subsections only. */}
                       {s.subsections.length > 0 ? (
@@ -490,6 +567,7 @@ export function ContractChangeRequests({
                       >
                         <span className="text-[11px] font-medium tabular-nums text-gold-ink shrink-0">{s.number}</span>
                         <span className="text-[13px] text-green-950 font-medium">{s.title}</span>
+                        <UnseenDot count={sig.unseen} />
                         {draft && <span className="ml-auto text-[10px] text-gold-900 bg-gold-50 border border-gold-400/50 rounded px-1.5 py-0.5 shrink-0">draft</span>}
                       </button>
                     </div>
@@ -511,17 +589,26 @@ export function ContractChangeRequests({
                         {s.subsections.map((sub) => {
                           const selSub = selected === sub.clause_key;
                           const subDraft = draftFor.get(sub.clause_key);
+                          const subSig = signalsFor([sub.clause_key]);
                           return (
                             <div key={sub.clause_key} data-row-key={sub.clause_key}>
                               <button
                                 type="button"
                                 onClick={() => setSelected((k) => (k === sub.clause_key ? null : sub.clause_key))}
                                 aria-pressed={selSub}
+                                data-has-requests={subSig.has || undefined}
+                                data-unseen={subSig.unseen > 0 || undefined}
                                 className={`w-full text-left px-2.5 py-1.5 rounded border focus-ring flex items-baseline gap-2 ${
-                                  selSub ? 'border-gold-400/60 bg-gold-50/40' : 'border-transparent hover:bg-green-800/[0.03]'}`}
+                                  selSub
+                                    ? 'border-gold-400/60 bg-gold-50/40'
+                                    : subSig.has
+                                      // lighter = has requests; darker = empty.
+                                      ? 'border-transparent bg-white hover:bg-white'
+                                      : 'border-transparent bg-green-800/[0.04] hover:bg-green-800/[0.06]'}`}
                               >
                                 <span className="text-[11px] tabular-nums text-muted shrink-0">{sub.number}</span>
                                 <span className="text-[12px] text-green-950">{sub.title}</span>
+                                <UnseenDot count={subSig.unseen} />
                                 {subDraft && <span className="ml-auto text-[10px] text-gold-900 shrink-0">draft</span>}
                               </button>
                               {selSub && (

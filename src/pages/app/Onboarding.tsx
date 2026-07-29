@@ -10,6 +10,7 @@ import {
   getOrder,
   getOrderPayment,
   attachPurchaseHorse,
+  setMyOnboardingHorses,
   fetchMyCategories,
   myUnreadCount,
   myDocuments,
@@ -187,6 +188,22 @@ export default function Onboarding() {
   const [attachingHorseId, setAttachingHorseId] = useState<string | null>(null);
   const [reviewHorseId, setReviewHorseId] = useState<string | null>(null);
   const [showNewHorseForm, setShowNewHorseForm] = useState(false);
+
+  // ── MULTI-HORSE (owner-final) ────────────────────────────────────────────
+  // A member may own several horses. Rather than a staff-set horse count and N
+  // forced forms, THEY drive it: add a horse, then choose "add another" or
+  // "done". `chosenHorseIds` is the set they have completed this pass;
+  // `deferredHorseIds` are ones they created but set aside. Nothing about the
+  // documents is gated on a deferred horse.
+  const [chosenHorseIds, setChosenHorseIds] = useState<string[]>([]);
+  const [deferredHorseIds, setDeferredHorseIds] = useState<string[]>([]);
+  // 'collect' = the add/choose loop; 'decide' = combined-vs-split, only shown
+  // once they have more than one horse in hand.
+  const [horsePhase, setHorsePhase] = useState<'collect' | 'decide'>('collect');
+  const [bindingHorses, setBindingHorses] = useState(false);
+  const [horseError, setHorseError] = useState<string | null>(null);
+  const horseNameOf = (id: string) =>
+    stableHorses?.find((h) => h.id === id)?.name ?? 'this horse';
   useEffect(() => {
     if (step !== 'horse' || stableHorses !== null) return;
     let active = true;
@@ -379,20 +396,18 @@ export default function Onboarding() {
     }
   }
 
-  // Own-horse services: the intake creates the horse via the ONE unified
-  // create_horse_record path (owned by this member) OR the member picks one of
-  // their existing horses; either way the horse attaches to the purchase and
-  // the docs regenerate so HORSE.* tokens merge in, then they sign. Both horse
-  // releases are regenerated in the same batch, bound to this SAME horse.
-  async function horseCreated(horseId: string) {
-    const purchaseId = state?.purchase?.purchase_id;
-    try {
-      if (purchaseId) await attachPurchaseHorse(purchaseId, horseId);
-      await generateMyOnboardingDocuments();
-      const next = await myOnboardingState();
-      setState(next);
-    } catch { /* best-effort — staff can attach later */ }
-    setStep('sign');
+  // A horse's record is complete (fresh intake or reviewed existing record).
+  // It joins the chosen set; the member then decides whether to add another.
+  // NOTHING is bound to the documents yet — binding happens once, when they say
+  // they are done, so a member who adds two horses signs ONE set of documents.
+  async function horseCompleted(horseId: string) {
+    setHorseError(null);
+    setChosenHorseIds((ids) => (ids.includes(horseId) ? ids : [...ids, horseId]));
+    setDeferredHorseIds((ids) => ids.filter((i) => i !== horseId));
+    setReviewHorseId(null);
+    setShowNewHorseForm(false);
+    // refresh the stable so the newly added horse is listed by name
+    try { setStableHorses(await listStableHorses()); } catch { /* names only */ }
   }
 
   /** Existing-horse pick: same pipeline as a fresh intake, with a busy state. */
@@ -400,10 +415,60 @@ export default function Onboarding() {
     if (attachingHorseId) return;
     setAttachingHorseId(horseId);
     try {
-      await horseCreated(horseId);
+      await horseCompleted(horseId);
     } finally {
       setAttachingHorseId(null);
     }
+  }
+
+  /**
+   * Commit the horse choices and move to signing.
+   *
+   * `combined` true  → every chosen horse goes on the SAME two documents; the
+   *                    member signs once and that signature covers them all.
+   * `combined` false → SPLIT: the documents are bound to the primary horse for
+   *                    this pass and the rest are recorded as deferred, each
+   *                    getting its own quick-link action item to come back to.
+   * Deferred horses are never bound, so signing is never blocked on them.
+   */
+  async function commitHorses(combined: boolean) {
+    if (bindingHorses) return;
+    setBindingHorses(true);
+    setHorseError(null);
+    try {
+      const bind = combined ? chosenHorseIds : chosenHorseIds.slice(0, 1);
+      const defer = combined
+        ? deferredHorseIds
+        : [...chosenHorseIds.slice(1), ...deferredHorseIds];
+      if (bind.length > 0) {
+        await setMyOnboardingHorses(bind, defer);
+        const purchaseId = state?.purchase?.purchase_id;
+        if (purchaseId) {
+          try { await attachPurchaseHorse(purchaseId, bind[0]); }
+          catch { /* the RPC already points the purchase at the primary */ }
+        }
+      } else if (defer.length > 0) {
+        // skipped entirely but horses exist — still raise their reminders
+        await setMyOnboardingHorses([], defer);
+      }
+      const next = await myOnboardingState();
+      setState(next);
+      setStep('sign');
+    } catch (err) {
+      setHorseError(toErrorMessage(err, 'Could not attach your horses.'));
+    } finally {
+      setBindingHorses(false);
+    }
+  }
+
+  /** Skip the horse step entirely — consequences were spelled out beforehand. */
+  async function skipHorses() {
+    if (bindingHorses) return;
+    if (chosenHorseIds.length === 0 && deferredHorseIds.length === 0) {
+      setStep('sign');
+      return;
+    }
+    await commitHorses(false);
   }
 
   // The printed name on the contracts — the typed signature must match EXACTLY
@@ -636,20 +701,123 @@ export default function Onboarding() {
           <h2 id="ob-horse-heading" className="font-serif text-green-800 text-xl mb-1.5">Tell us about your horse.</h2>
           <p className="body-text text-sm text-muted mb-5">
             Your service is for your own horse — your paperwork and care notes stay
-            attached to their record with the barn.
+            attached to their record with the barn. If you have more than one, you
+            can add them all here and cover them with a single signature.
           </p>
+
+          {/* WHAT YOU HAVE ADDED SO FAR — the running set, so a member adding a
+              second or third horse can always see where they are. */}
+          {(chosenHorseIds.length > 0 || deferredHorseIds.length > 0) && (
+            <div className="mb-5 rounded-lg border border-green-800/15 bg-green-50/40 p-4">
+              <h3 className="form-label mb-2">Horses on this paperwork</h3>
+              <ul className="flex flex-col gap-1 mb-1">
+                {chosenHorseIds.map((id) => (
+                  <li key={id} className="flex items-center gap-2 text-sm text-green-900">
+                    <Check size={14} className="text-green-700 shrink-0" aria-hidden="true" />
+                    <span>{horseNameOf(id)}</span>
+                  </li>
+                ))}
+                {deferredHorseIds.map((id) => (
+                  <li key={id} className="flex items-center gap-2 text-sm text-muted">
+                    <Circle size={14} className="text-green-800/30 shrink-0" aria-hidden="true" />
+                    <span>{horseNameOf(id)} — set aside for later</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {horseError && <p role="alert" className="form-error mb-4">{horseError}</p>}
+
+          {/* ── THE CHOICE: add another, or continue ──────────────────────── */}
+          {horsePhase === 'collect' && chosenHorseIds.length > 0
+            && !reviewHorseId && !showNewHorseForm && (
+            <div className="mb-6 rounded-lg border border-gold-400/40 bg-gold-50/30 p-4">
+              <h3 className="form-label mb-1">
+                {chosenHorseIds.length === 1 ? 'Do you have another horse?' : 'Any more horses?'}
+              </h3>
+              <p className="text-sm text-muted mb-3">
+                Add every horse you want this paperwork to cover. A horse you don't
+                add here is not named on the horse releases and authorizations, so
+                those documents will not cover that horse until it's added and its
+                own paperwork is completed.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <button type="button" className="btn-outline-gold text-sm"
+                  disabled={bindingHorses}
+                  onClick={() => { setShowNewHorseForm(true); setReviewHorseId(null); }}>
+                  Add another horse
+                </button>
+                <button type="button" className="btn-primary text-sm"
+                  disabled={bindingHorses}
+                  onClick={() => {
+                    if (chosenHorseIds.length > 1) setHorsePhase('decide');
+                    else void commitHorses(true);
+                  }}>
+                  {bindingHorses ? 'Preparing your documents…' : "Done — continue to my documents"}
+                  {!bindingHorses && <ArrowRight size={16} />}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── COMBINED vs SPLIT — only asked when there IS a choice ─────── */}
+          {horsePhase === 'decide' && (
+            <div className="mb-6 rounded-lg border border-gold-400/60 bg-white p-5">
+              <h3 className="font-serif text-green-800 text-lg mb-1">
+                How would you like to sign for {chosenHorseIds.length} horses?
+              </h3>
+              <p className="text-sm text-muted mb-4">
+                Either works, and both are equally valid — it's about how you'd
+                rather keep your records.
+              </p>
+              <div className="flex flex-col gap-3">
+                <button type="button" disabled={bindingHorses}
+                  onClick={() => void commitHorses(true)}
+                  className="text-left rounded-lg border border-green-800/20 hover:border-gold-400/60 p-4 focus-ring">
+                  <p className="text-sm font-medium text-green-900 mb-1">
+                    One set of documents covering all {chosenHorseIds.length} horses
+                  </p>
+                  <p className="text-xs text-muted">
+                    Every horse is named on the same release and authorization, and
+                    you sign once. Recommended when the same care arrangement covers
+                    all of them.
+                  </p>
+                </button>
+                <button type="button" disabled={bindingHorses}
+                  onClick={() => void commitHorses(false)}
+                  className="text-left rounded-lg border border-green-800/20 hover:border-gold-400/60 p-4 focus-ring">
+                  <p className="text-sm font-medium text-green-900 mb-1">
+                    Separate documents for each horse
+                  </p>
+                  <p className="text-xs text-muted">
+                    You'll sign for {horseNameOf(chosenHorseIds[0])} now. The others
+                    are saved and you'll get a quick link on your dashboard to do
+                    each one whenever you're ready — nothing is blocked in the
+                    meantime.
+                  </p>
+                </button>
+              </div>
+              <button type="button" onClick={() => setHorsePhase('collect')}
+                className="mt-3 text-xs text-muted underline underline-offset-2">
+                Back — I want to change my horses
+              </button>
+            </div>
+          )}
 
           {stableHorses === null ? (
             <p className="body-text text-muted text-sm mb-4">Checking for horses already on your record…</p>
-          ) : stableHorses.length > 0 && !reviewHorseId && (
+          ) : stableHorses.filter((h) => !chosenHorseIds.includes(h.id)).length > 0
+              && !reviewHorseId && horsePhase === 'collect' && (
             <div className="mb-6">
               <h3 className="form-label mb-2">Horses already on your record</h3>
               <p className="text-sm text-muted mb-3">
-                Pick the horse this paperwork is for — you'll review what's already on
+                Pick a horse this paperwork is for — you'll review what's already on
                 file and fill in anything missing, instead of entering them again.
+                You can come back and add another after each one.
               </p>
               <div className="flex flex-col gap-2 mb-3">
-                {stableHorses.map((h) => (
+                {stableHorses.filter((h) => !chosenHorseIds.includes(h.id)).map((h) => (
                   <div key={h.id} className="flex items-center justify-between gap-3 border border-green-800/15 rounded-lg px-4 py-3">
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-green-900">{h.name}</p>
@@ -657,11 +825,25 @@ export default function Onboarding() {
                         {[h.breed, h.sex, h.color].filter(Boolean).join(' · ') || 'On file with the barn'}
                       </p>
                     </div>
-                    <button type="button" className="btn-outline-gold text-sm whitespace-nowrap"
-                      disabled={attachingHorseId !== null}
-                      onClick={() => { setShowNewHorseForm(false); setReviewHorseId(h.id); }}>
-                      Review &amp; use this horse
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button type="button" className="btn-outline-gold text-sm whitespace-nowrap"
+                        disabled={attachingHorseId !== null}
+                        onClick={() => { setShowNewHorseForm(false); setReviewHorseId(h.id); }}>
+                        Review &amp; use this horse
+                      </button>
+                      {/* PARTIAL COMPLETION: a horse the member can't finish right
+                          now (missing a vet number, say) is set aside rather than
+                          holding up the horses they CAN complete. */}
+                      {!deferredHorseIds.includes(h.id) && (
+                        <button type="button"
+                          className="text-xs text-muted underline underline-offset-2 whitespace-nowrap"
+                          disabled={attachingHorseId !== null}
+                          onClick={() => setDeferredHorseIds((ids) =>
+                            ids.includes(h.id) ? ids : [...ids, h.id])}>
+                          Not now
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -693,28 +875,50 @@ export default function Onboarding() {
             </div>
           )}
 
-          {(showNewHorseForm || (stableHorses !== null && stableHorses.length === 0)) && !reviewHorseId && (
+          {(showNewHorseForm
+            || (stableHorses !== null && stableHorses.length === 0 && chosenHorseIds.length === 0))
+            && !reviewHorseId && horsePhase === 'collect' && (
             <>
-              {stableHorses !== null && stableHorses.length > 0 && (
+              {chosenHorseIds.length > 0 ? (
+                <h3 className="form-label mb-2">Add another horse</h3>
+              ) : stableHorses !== null && stableHorses.length > 0 && (
                 <h3 className="form-label mb-2">New horse</h3>
               )}
               <p className="body-text text-sm text-muted mb-5">
                 This creates their record with the barn. Anything you don't know can
-                stay blank.
+                stay blank — you can finish the rest later without holding up the
+                horses you have ready.
               </p>
-              <HorseIntakeForm submitLabel="Save &amp; continue" onDone={(id) => void horseCreated(id)} />
+              <HorseIntakeForm submitLabel="Save &amp; continue" onDone={(id) => void horseCompleted(id)} />
+              {chosenHorseIds.length > 0 && (
+                <button type="button" onClick={() => setShowNewHorseForm(false)}
+                  className="mt-2 text-xs text-muted underline underline-offset-2">
+                  Cancel — I'm done adding horses
+                </button>
+              )}
             </>
           )}
 
-          <button type="button" onClick={() => setStep('sign')}
-            className="mt-3 block text-sm text-muted underline underline-offset-2">
-            Skip for now — I'll add my horse later
-          </button>
-          <p className="mt-1.5 text-xs text-muted">
-            Skipping doesn't skip your paperwork: any required horse releases still
-            appear in the next step — prepared without a horse named. The barn will
-            connect them to your horse once their record is added.
-          </p>
+          {/* SKIP — with the consequence stated BEFORE the choice is made. */}
+          {horsePhase === 'collect' && (
+            <>
+              <button type="button" onClick={() => void skipHorses()}
+                disabled={bindingHorses}
+                className="mt-3 block text-sm text-muted underline underline-offset-2">
+                {chosenHorseIds.length > 0
+                  ? "Skip the rest — I'll add my other horses later"
+                  : "Skip for now — I'll add my horse later"}
+              </button>
+              <p className="mt-1.5 text-xs text-muted">
+                Skipping doesn't skip your paperwork: the required horse releases
+                still appear in the next step. But a horse you don't add is
+                <strong> not named on them</strong>, so those documents don't cover
+                that horse until it's added and its own details are completed.
+                You'll get a quick link on your dashboard to finish any horse you
+                set aside — there's no deadline and nothing else is held up.
+              </p>
+            </>
+          )}
         </section>
       )}
 
