@@ -150,13 +150,25 @@ export async function staffAssignableTemplates(contactId: string): Promise<Assig
   return (data ?? []) as AssignableTemplate[];
 }
 
+/** staff_assign_documents summary: what was appended to the pending set, and
+ *  which templates had a satisfying signed copy that was superseded (kept as
+ *  evidence) so the person is asked to RE-SIGN at next sign-in. */
+export interface AssignDocumentsResult {
+  assigned: string[];
+  resign: string[];
+}
+
 /** Append the selected templates to the person's pending set (3f: no batch
- *  entity — assignment is rows in contact_required_documents). */
-export async function staffAssignDocuments(contactId: string, templateKeys: string[]): Promise<void> {
-  const { error } = await supabase.rpc('staff_assign_documents', {
+ *  entity — assignment is rows in contact_required_documents). Assigning a
+ *  template the person already signed supersedes the signed copy server-side —
+ *  the assignment ALWAYS produces a pending requirement. */
+export async function staffAssignDocuments(contactId: string, templateKeys: string[]): Promise<AssignDocumentsResult> {
+  const { data, error } = await supabase.rpc('staff_assign_documents', {
     p_contact_id: contactId, p_template_keys: templateKeys,
   });
   if (error) throw error;
+  const r = (data ?? {}) as Partial<AssignDocumentsResult>;
+  return { assigned: r.assigned ?? [], resign: r.resign ?? [] };
 }
 
 // ─── Moderation ──────────────────────────────────────────────────────────────

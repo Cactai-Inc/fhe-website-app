@@ -277,3 +277,108 @@ export async function companyContactId(): Promise<string | null> {
   if (error) throw error;
   return (data as string) ?? null;
 }
+
+// ─── Doc-derived required set + completeness (owner spec 2026-07-28) ─────────
+// The REQUIRED intake fields are exactly the HORSE.* tokens the two horse
+// onboarding documents merge (HORSE_EMERGENCY_VET + RELEASE_HORSE_CARE live
+// template bodies; see docs/TOKEN_DICTIONARY.md):
+//   REGISTERED_NAME/BARN_NAME (one real name), BREED, COLOR, SEX, AGE_DOB,
+//   HEIGHT, MICROCHIP, REGISTRATION_NUMBER, FAIR_MARKET_VALUE,
+//   CURRENT_LOCATION, VET_NAME, VET_PHONE, FARRIER_NAME, FARRIER_PHONE,
+//   KNOWN_CONDITIONS, EUTHANASIA_A/B. (MEDICATION_* is the repeatable list —
+//   an empty list is a valid "none".) "N/A" is a conscious answer, not a blank.
+export const HORSE_NA = 'N/A';
+
+/** Payload keys required because a horse onboarding document merges them. */
+export const HORSE_DOC_REQUIRED_KEYS: (keyof HorseIntakePayload)[] = [
+  'breed', 'color', 'sex', 'date_of_birth', 'height',
+  'microchip_id', 'registration_number', 'fair_market_value',
+  'vet_name', 'vet_phone', 'farrier_name', 'farrier_phone',
+  'known_conditions',
+];
+
+/** Human labels for the completeness "missing" list (ops surface). */
+export const HORSE_DOC_REQUIRED_LABELS: Record<string, string> = {
+  name: 'Name (registered or barn)',
+  breed: 'Breed', color: 'Color', sex: 'Sex', date_of_birth: 'Date of birth',
+  height: 'Height', microchip_id: 'Microchip', registration_number: 'Registration number',
+  fair_market_value: 'Fair market value', vet_name: 'Vet name', vet_phone: 'Vet phone',
+  farrier_name: 'Farrier name', farrier_phone: 'Farrier phone',
+  known_conditions: 'Known conditions', euthanasia_authorization: 'Euthanasia authorization',
+  location: 'Location',
+};
+
+export interface HorseRecordCompleteness {
+  state: 'not_started' | 'partial' | 'complete';
+  /** Labels of the still-missing required fields. */
+  missing: string[];
+  answered: number;
+  total: number;
+}
+
+/** Completeness of a RAW horses row (codes, not display names) against the
+ *  doc-derived required set. 'N/A' counts as answered. */
+export function horseRecordCompleteness(rec: Record<string, unknown>): HorseRecordCompleteness {
+  const answered = (v: unknown) => v != null && String(v).trim() !== '';
+  const missing: string[] = [];
+  let done = 0;
+  const checks: [string, boolean][] = [
+    ['name', answered(rec.nickname) || answered(rec.registered_name)],
+    ...HORSE_DOC_REQUIRED_KEYS.map((k) =>
+      [k as string, answered(rec[k as string])] as [string, boolean]),
+    ['euthanasia_authorization', rec.euthanasia_authorization === 'A' || rec.euthanasia_authorization === 'B'],
+    ['location', answered(rec.current_location) || rec.current_location_id != null || rec.home_location_id != null],
+  ];
+  for (const [key, ok] of checks) {
+    if (ok) done += 1;
+    else missing.push(HORSE_DOC_REQUIRED_LABELS[key] ?? key);
+  }
+  // "Name" alone is structural (the record can't exist without one) — a record
+  // with nothing else answered reads as not started.
+  const state: HorseRecordCompleteness['state'] =
+    missing.length === 0 ? 'complete' : done <= 1 ? 'not_started' : 'partial';
+  return { state, missing, answered: done, total: checks.length };
+}
+
+/** RAW intake columns straight off the horses row (codes, not display names) —
+ *  the shape the intake form edits. RLS: owner or staff. */
+export const HORSE_INTAKE_COLUMNS =
+  'id, nickname, registered_name, registration_number, registration_org, microchip_id, '
+  + 'passport_number, passport_country, breed, color, markings, sex, date_of_birth, height, '
+  + 'fair_market_value, current_location, current_location_id, home_location_id, '
+  + 'vet_name, vet_phone, vet_business_name, vet_address_line1, vet_city, vet_state, vet_postal, '
+  + 'farrier_name, farrier_phone, medical_history, behavioral_history, known_conditions, '
+  + 'euthanasia_authorization, training_history, competition_history, '
+  + 'lessee_name_text, lease_start, lease_end, current_owner_contact_id';
+
+export type HorseIntakeRecord = Record<string, unknown> & { id: string };
+
+/** Load the raw record for edit-mode intake (owner or staff; RLS-guarded). */
+export async function getHorseIntakeRecord(horseId: string): Promise<HorseIntakeRecord | null> {
+  const { data, error } = await supabase
+    .from('horses')
+    .select(HORSE_INTAKE_COLUMNS)
+    .eq('id', horseId)
+    .maybeSingle();
+  if (error) throw error;
+  return data as unknown as HorseIntakeRecord | null;
+}
+
+/** Staff: horses owned by a contact, raw intake columns (for the ops record card). */
+export async function contactHorseRecords(contactId: string): Promise<HorseIntakeRecord[]> {
+  const { data, error } = await supabase
+    .from('horses')
+    .select(HORSE_INTAKE_COLUMNS)
+    .eq('current_owner_contact_id', contactId)
+    .is('deleted_at', null)
+    .order('created_at');
+  if (error) throw error;
+  return (data ?? []) as unknown as HorseIntakeRecord[];
+}
+
+/** Staff: assign the finish-the-record task — an in-app notification (dashboard
+ *  alert + badge) linking the member to the intake form in edit mode. */
+export async function requestHorseRecordCompletion(horseId: string): Promise<void> {
+  const { error } = await supabase.rpc('staff_request_horse_record_completion', { p_horse_id: horseId });
+  if (error) throw error;
+}

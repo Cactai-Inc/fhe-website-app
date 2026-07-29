@@ -13,6 +13,7 @@ import { useViewSurfaces } from '../../lib/surfaces';
 import { fetchMyGrantKeys } from '../../lib/grants';
 import {
   myUnreadCount, myWallState, getMyProfile, markTourSeen, fetchMyCategories,
+  currentTourFormFactor,
   type WallState, type StandingCategory,
 } from '../../lib/api';
 import { AppOverviewModal } from './AppOverviewModal';
@@ -388,6 +389,9 @@ export default function AppLayout() {
   const unreadCount = useUnreadCount();
   const [menuOpen, setMenuOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  // Mobile left-nav drawer: the side menu, opened by the in-content button that
+  // sits at the top-left of EVERY app page (content area, not the header).
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
   const name = profile?.display_name || profile?.first_name || 'Member';
@@ -407,18 +411,25 @@ export default function AppLayout() {
     return () => { active = false; };
   }, [location.pathname]);
 
-  // A3: the app-overview tour. It fires ONCE per account on the first login
-  // after deployment (profiles.tour_seen_at null), and is revisitable from the
-  // avatar menu at any time. Auto-open is deliberately evaluated AFTER the
-  // signing wall below, so a member with pending gating documents clears the
-  // wall first and meets the tour once their documents are done.
+  // A3: the app-overview tour. The desktop and mobile tours are DIFFERENT
+  // experiences and persist independently: each keeps auto-opening on ITS form
+  // factor until dismissed there (profiles.tour_seen_desktop_at /
+  // tour_seen_mobile_at). Revisitable from the avatar menu at any time.
+  // Auto-open is deliberately evaluated AFTER the signing wall below, so a
+  // member with pending gating documents clears the wall first and meets the
+  // tour once their documents are done.
   const [tourOpen, setTourOpen] = useState(false);
   const [tourSeen, setTourSeen] = useState<boolean | null>(null);
   const [tourCategories, setTourCategories] = useState<StandingCategory[]>([]);
   useEffect(() => {
     let active = true;
     getMyProfile()
-      .then((pr) => { if (active) setTourSeen(pr ? pr.tour_seen_at != null : true); })
+      .then((pr) => {
+        if (!active) return;
+        const seenAt = currentTourFormFactor() === 'mobile'
+          ? pr?.tour_seen_mobile_at : pr?.tour_seen_desktop_at;
+        setTourSeen(pr ? seenAt != null : true);
+      })
       .catch(() => active && setTourSeen(true));
     fetchMyCategories().then((c) => active && setTourCategories(c)).catch(() => {});
     return () => { active = false; };
@@ -452,12 +463,22 @@ export default function AppLayout() {
     return () => { document.removeEventListener('mousedown', onDoc); document.removeEventListener('keydown', onKey); };
   }, [menuOpen]);
 
+  // Close the mobile drawer on Escape and on any route change.
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') setMobileNavOpen(false); }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [mobileNavOpen]);
+  useEffect(() => { setMobileNavOpen(false); }, [location.pathname]);
+
   async function handleSignOut() {
     setMenuOpen(false);
     await signOut();
     navigate('/');
   }
   const closeMenu = () => setMenuOpen(false);
+  const closeMobileNav = () => setMobileNavOpen(false);
 
   // THE SIGNING WALL (3f): pending wall-gating documents route the member to
   // the document flow on sign-in / refresh / navigation until every gating
@@ -633,9 +654,80 @@ export default function AppLayout() {
           </aside>
         )}
         <main className="flex-1 min-w-0 px-4 sm:px-8 xl:px-12 py-6 sm:py-9 pb-24">
+          {/* MOBILE NAV BUTTON — opens the left side menu. Owner spec: in the
+              CONTENT AREA (not the header), near the top-left, the SAME spot on
+              every page. It renders IN FLOW as the first element of <main>, so
+              page content starts below it — it can never obstruct nor be
+              obstructed, on any page. Desktop (lg+) has the rail instead. */}
+          <div className="lg:hidden mb-4">
+            <button
+              type="button"
+              onClick={() => setMobileNavOpen(true)}
+              aria-label="Open menu"
+              aria-expanded={mobileNavOpen}
+              className="inline-flex items-center gap-2 px-3 h-10 rounded-lg border border-green-800/15 bg-white text-green-800 shadow-sm hover:bg-cream-100 focus-ring"
+            >
+              <PanelLeft size={18} aria-hidden="true" />
+              <span className="text-[13px] font-sans">Menu</span>
+            </button>
+          </div>
           <Outlet />
         </main>
       </div>
+
+      {/* MOBILE NAV DRAWER — the left side menu as an overlay panel. Members get
+          the same quick-access set as the desktop rail (Community Feed + views,
+          Dashboard, Calendar, Catalog, Messages, Account); staff get their
+          grouped management nav. A click on any link inside closes it. */}
+      {mobileNavOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
+          <div className="absolute inset-0 bg-green-950/50" onClick={closeMobileNav} aria-hidden="true" />
+          <nav
+            className="absolute inset-y-0 left-0 w-72 max-w-[85vw] bg-cream-100 shadow-xl p-3 overflow-y-auto"
+            onClick={(e) => {
+              // any real navigation inside closes the drawer
+              if ((e.target as HTMLElement).closest('a')) closeMobileNav();
+            }}
+          >
+            <div className="flex items-center justify-between px-1 mb-2">
+              <span className="text-[10px] tracking-widest uppercase text-muted font-semibold">Menu</span>
+              <button type="button" onClick={closeMobileNav} aria-label="Close menu"
+                className="p-2 rounded-lg text-green-800 hover:bg-white focus-ring">
+                <PanelLeftClose size={18} />
+              </button>
+            </div>
+            {!isSuperAdmin && (
+              <div className="flex flex-col gap-0.5 mb-1">
+                <CommunityNav onNavigate={closeMobileNav} indentClass="pl-9" />
+                {!showRail ? (
+                  <>
+                    {QUICK.map((q) => {
+                      const raw = q.badge === 'notifications' ? unreadCount : q.badge === 'messages' ? dmCount : 0;
+                      return <RailLink key={q.to} to={q.to} label={q.label} icon={q.icon} end={q.end} badge={raw > 0 ? raw : 0} />;
+                    })}
+                    <RailLink to="/app/account" label="Account" icon={UserRound} />
+                  </>
+                ) : (
+                  <>
+                    <RailLink to="/app/dashboard" label="Dashboard" icon={HomeIcon} badge={unreadCount} />
+                    <RailLink to="/app/calendar" label="Calendar" icon={CalendarDays} />
+                  </>
+                )}
+              </div>
+            )}
+            {navGroups.map((g) => (
+              <div key={g.key}>
+                <div className="mt-2 border-t border-green-800/10 pt-2 px-3 pb-1 text-[10px] tracking-widest uppercase text-muted font-semibold">
+                  {g.label}
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  {g.items.map((it) => <RailLink key={it.to} {...it} />)}
+                </div>
+              </div>
+            ))}
+          </nav>
+        </div>
+      )}
 
       {createOpen && <CreateModal onClose={() => setCreateOpen(false)} />}
 
