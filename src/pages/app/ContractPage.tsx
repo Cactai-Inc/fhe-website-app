@@ -827,19 +827,15 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                     onClick={() => void approveReview()}>
                     <CheckCircle2 size={15} /> Accept &amp; sign
                   </button>
-                  {/* DISCLOSURE control (not an action): open-vs-closed is obvious
-                      from the filled/outlined treatment and the chevron. */}
-                  <button type="button" aria-expanded={requestsOpen}
-                    className={`inline-flex items-center justify-center gap-1.5 rounded-lg border px-4 py-3 text-sm font-medium focus-ring ${
-                      requestsOpen
-                        ? 'border-gold-400 bg-gold-50 text-gold-900 shadow-inner'
-                        : 'border-green-800/20 text-green-900 hover:bg-green-800/5'}`}
-                    onClick={() => setRequestsOpen((v) => !v)}>
-                    {requestsOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-                    Change requests
-                    {openRequestCount > 0 && (
-                      <span className="ml-0.5 rounded-full bg-gold-400/30 px-1.5 text-[11px] tabular-nums">{openRequestCount}</span>
-                    )}
+                  {/* NOTIFY sits beside Accept & sign (owner-specified split
+                      layout). The duplicate "Change requests" disclosure that used
+                      to live here was removed — the SAME requestsOpen state is
+                      driven by the disclosure control further down the card and by
+                      the persistent sticky bar, so nothing is lost. */}
+                  <button type="button"
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-green-800/20 px-4 py-3 text-sm font-medium text-green-900 hover:bg-green-800/5 focus-ring disabled:opacity-60"
+                    disabled={notifying} onClick={() => void sendReview()}>
+                    <Send size={15} /> {notifying ? 'Notifying…' : 'Notify'}
                   </button>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3 sm:ml-auto">
@@ -1077,7 +1073,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           actions are reachable at ALL times. MOBILE reduces to the two
           disclosure controls (Change requests + Change history). */}
       {showDeck && showSticky && id && (
-        <div className="sticky top-0 z-30 -mx-1 px-2 py-2 mb-3 bg-cream-100/95 backdrop-blur border-b border-green-800/15 flex items-center gap-2 overflow-x-auto">
+        <div className="sticky top-14 z-30 -mx-1 px-2 py-2 mb-3 bg-cream-100/95 backdrop-blur border-b border-green-800/15 flex items-center gap-2 overflow-x-auto">
           {/* desktop-only actions */}
           {!isOwnerSide && myRoles.length > 0 && editablePhase && !isInactive && (
             <button type="button" className="hidden sm:inline-flex btn-primary text-xs py-1.5 px-3 shrink-0"
@@ -1211,11 +1207,14 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         </div>
       )}
 
-      {/* Sticky action sub-header (minimal height): Add a Comment · Add a Section,
-          Item, or Field · View/Hide Comments · Proceed to Signatures. Present for
-          clause-model docs so the actions are always reachable. */}
+      {/* AUTHORING sub-header (NOT sticky): Add a Comment · Add a Section, Item, or
+          Field · Proceed to Signatures. These are document-authoring affordances,
+          not reviewer actions, so they scroll with the document they act on. Only
+          ONE bar persists while scrolling — the reviewer action bar above (which
+          carries Accept & sign / Change requests / Change history / Notify / Void).
+          Two competing stickies previously stacked and fought for the same offset. */}
       {structure && id && state !== 'executed' && (
-        <div className="sticky top-0 z-20 -mx-1 px-1 py-1.5 mb-3 bg-cream-100/95 backdrop-blur border-b border-green-800/10 flex flex-wrap items-center gap-2">
+        <div className="-mx-1 px-1 py-1.5 mb-3 bg-cream-100/95 border-b border-green-800/10 flex flex-wrap items-center gap-2">
           {state !== 'void' && (
             <button type="button" className="btn-outline-gold text-xs inline-flex items-center gap-1"
               onClick={() => { setCommentModal({ step: 'pick' }); setCommentDraft(''); }}>
