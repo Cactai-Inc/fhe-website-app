@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import {
   FileText, CheckCircle2, Lock, Send, PenLine, ShieldCheck, RotateCcw, MessageSquarePlus,
+  ChevronDown, ChevronUp, History,
 } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   contractDocumentDetail, setContractField,
   resolveChangeRequest, advanceWorkflow, sendForReview, lockAndSign, confirmHorseSection,
-  reopenHorseSection, approveContractReview, requestDocumentChange,
+  reopenHorseSection, approveContractReview,
   setPartyControls, contractSigningSet,
   contractRedlineState, resolveFieldEdit, withdrawFieldEdit,
   resolveClause, withdrawClause, attachHorseToDocument,
@@ -26,8 +27,9 @@ import { listStableHorses, type StableHorse } from '../../lib/stable';
 import { ContractCascade, ContractBody } from '../../components/app/ContractCascade';
 import { AddElementButton } from '../../components/app/AddElementModal';
 import { PartyControlsCard, type PartyControlValues } from '../../components/app/PartyControlsCard';
-import { TrackChangesPanel } from '../../components/app/TrackChangesPanel';
-import { ContractComments } from '../../components/app/ContractComments';
+import { ContractChangeRequests } from '../../components/app/ContractChangeRequests';
+import { ContractChangeHistory } from '../../components/app/ContractChangeHistory';
+import { VoidContractModal, VoidedKeepOrRemove } from '../../components/app/VoidContractModal';
 import { PartiesHorseCard } from '../../components/app/PartiesHorseCard';
 import { ClauseDocument } from '../../components/app/ClauseDocument';
 import { contractTemplateStructure, type TemplateStructure } from '../../lib/contracts';
@@ -228,6 +230,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   const { id: routeId } = useParams<{ id: string }>();
   const id = documentId ?? routeId;   // embedded (inline on the creation page) or routed
   const navigate = useNavigate();
+  const location = useLocation();
   useDocumentTitle('Contract');
   const { isStaff } = useAuth();
   const [detail, setDetail] = useState<ContractDetail | null>(null);
@@ -248,8 +251,6 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   const [structure, setStructure] = useState<TemplateStructure | null>(null);
   // Comments UX: visibility toggle, comment count, and the two-step Add-a-Comment
   // modal (pick a section → author the comment inline in the modal).
-  const [commentsOpen, setCommentsOpen] = useState(false);
-  const [commentCount, setCommentCount] = useState(0);
   const [commentModal, setCommentModal] = useState<
     | { step: 'pick' }
     | { step: 'write'; anchorRef: string; heading: string }
@@ -261,9 +262,21 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   // capture modal shown when locking with gaps.
   const [partiesSummary, setPartiesSummary] = useState<PartiesHorseSummary | null>(null);
   const [captureParty, setCaptureParty] = useState<PartySummary | null>(null);
-  // H3: the reviewer's Request-changes modal (target section + requested change).
-  const [crModal, setCrModal] = useState<{ section: string; text: string } | null>(null);
-  const [crPosting, setCrPosting] = useState(false);
+  // Change-requests + Change-history disclosure panels (the two sanctioned
+  // scrollable drawers). Open/closed is obvious from the button styling.
+  const [requestsOpen, setRequestsOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [openRequestCount, setOpenRequestCount] = useState(0);
+  // The three-page Void modal, and the sticky-subheader trigger.
+  const [voidModal, setVoidModal] = useState(false);
+  const [showSticky, setShowSticky] = useState(false);
+  const actionCardRef = useRef<HTMLDivElement | null>(null);
+  // Where to send a party who VOIDS and chooses "remove": the page they were on
+  // when the contract was opened. Captured once on mount (router state set by the
+  // link that brought them here, else the documents list).
+  const returnTo = useRef<string>(
+    (location.state as { from?: string } | null)?.from ?? '/app/documents',
+  ).current;
   // Extra recipient emails typed into the Send-for-review card (beyond the emails
   // already on file for each party). The draft is the in-progress input.
   const [extraEmails, setExtraEmails] = useState<string[]>([]);
@@ -288,6 +301,20 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
     }
   }, [id]);
   useEffect(() => { void load(); }, [load]);
+
+  // STICKY ACTION BAR — the action card must be reachable at ALL times. Once the
+  // full card scrolls out of view, a thinner subheader with one row of buttons
+  // takes over. (On mobile that row reduces to Change requests + Change history.)
+  useEffect(() => {
+    const el = actionCardRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => setShowSticky(!entry.isIntersecting),
+      { threshold: 0, rootMargin: '-8px 0px 0px 0px' },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  });
 
   const doc = detail?.document;
 
@@ -357,6 +384,15 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   // A dead/inactive contract (terminated / cancelled / void) is the only time the
   // per-party Archive control is offered — you archive to clear it from your list.
   const isInactive = isTerminated || isCancelled || state === 'void';
+  // ── VOID lifecycle ──
+  // `can_void` comes from the DB (can_void_document): a party who has NOT signed,
+  // on a live document. It stays true after the OTHER party signs, and goes false
+  // once the caller themselves signs.
+  const isVoid = state === 'void' || !!doc?.voided_at;
+  const canVoid = !!doc?.can_void && !isVoid;
+  // The counterparty of a void needs the same keep-or-remove choice. Show it when
+  // the doc is void, they didn't do the voiding, and they haven't chosen yet.
+  const needsVoidChoice = isVoid && !doc?.voided_by_me && !doc?.my_hidden_at && myRoles.length > 0;
   // The counterparty must approve a termination request; the requester waits. We
   // don't have per-request approver identity, so "I can act on it" = I'm a party or
   // staff and I'm not the requester (staff always may act, e.g. to record consent).
@@ -784,7 +820,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           (once inactive) per-party Archive + Change History. Buttons are large and
           well-spaced so they're hard to mis-tap on mobile. ── */}
       {showDeck && (
-        <div className="bg-white border border-green-800/10 rounded-xl mb-5 divide-y divide-green-800/10">
+        <div ref={actionCardRef} className="bg-white border border-green-800/10 rounded-xl mb-5 divide-y divide-green-800/10">
           {/* MANAGE — pre-execution only. Save (owner), Cancel (any party), Delete
               (staff, hard delete before execution), and per-party Archive once the
               contract is inactive (terminated/cancelled). */}
@@ -801,20 +837,31 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                   <button type="button"
                     className="btn-primary justify-center py-3 px-5 text-sm"
                     onClick={() => void approveReview()}>
-                    <CheckCircle2 size={15} /> Approve &amp; continue
+                    <CheckCircle2 size={15} /> Accept &amp; sign
                   </button>
-                  <button type="button"
-                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-green-800/20 px-4 py-3 text-sm font-medium text-green-900 hover:bg-green-800/5 focus-ring"
-                    onClick={() => setCrModal({ section: '', text: '' })}>
-                    Request changes
+                  {/* DISCLOSURE control (not an action): open-vs-closed is obvious
+                      from the filled/outlined treatment and the chevron. */}
+                  <button type="button" aria-expanded={requestsOpen}
+                    className={`inline-flex items-center justify-center gap-1.5 rounded-lg border px-4 py-3 text-sm font-medium focus-ring ${
+                      requestsOpen
+                        ? 'border-gold-400 bg-gold-50 text-gold-900 shadow-inner'
+                        : 'border-green-800/20 text-green-900 hover:bg-green-800/5'}`}
+                    onClick={() => setRequestsOpen((v) => !v)}>
+                    {requestsOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                    Change requests
+                    {openRequestCount > 0 && (
+                      <span className="ml-0.5 rounded-full bg-gold-400/30 px-1.5 text-[11px] tabular-nums">{openRequestCount}</span>
+                    )}
                   </button>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3 sm:ml-auto">
-                  <button type="button"
-                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-300 px-4 py-3 text-sm font-medium text-red-700 hover:bg-red-50 focus-ring"
-                    onClick={cancelDocument}>
-                    Decline
-                  </button>
+                  {canVoid && (
+                    <button type="button"
+                      className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-300 px-4 py-3 text-sm font-medium text-red-700 hover:bg-red-50 focus-ring"
+                      onClick={() => setVoidModal(true)}>
+                      Void contract
+                    </button>
+                  )}
                 </div>
               </div>
             ) : (
@@ -841,14 +888,18 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                 )}
               </div>
               <div className="flex flex-col sm:flex-row gap-3 sm:ml-auto">
-                {!isCancelled && (
+                {!isCancelled && isOwnerSide && (
                   <button type="button"
-                    className={`inline-flex items-center justify-center gap-1.5 rounded-lg border px-4 py-3 text-sm font-medium focus-ring ${
-                      isOwnerSide
-                        ? 'border-green-800/20 text-secondary hover:bg-green-800/5'
-                        : 'border-red-300 text-red-700 hover:bg-red-50'}`}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-green-800/20 px-4 py-3 text-sm font-medium text-secondary hover:bg-green-800/5 focus-ring"
                     onClick={cancelDocument}>
-                    {isOwnerSide ? 'Cancel' : 'Decline'}
+                    Cancel
+                  </button>
+                )}
+                {!isCancelled && !isOwnerSide && canVoid && (
+                  <button type="button"
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-300 px-4 py-3 text-sm font-medium text-red-700 hover:bg-red-50 focus-ring"
+                    onClick={() => setVoidModal(true)}>
+                    Void contract
                   </button>
                 )}
                 {isStaff && (
@@ -990,11 +1041,94 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
             </div>
           )}
 
-          {/* CHANGE HISTORY — always in the deck. */}
+          {/* CHANGE REQUESTS + CHANGE HISTORY — the two disclosure drawers. Their
+              buttons make open-vs-closed obvious; the panels themselves are the
+              two SANCTIONED scrollable-bounded surfaces in this codebase. */}
           {id && (
             <div className="p-5 sm:p-6">
-              <TrackChangesPanel documentId={id} refreshKey={changeKey} />
+              <div className="flex flex-wrap gap-2.5">
+                <button type="button" aria-expanded={requestsOpen}
+                  className={`inline-flex items-center gap-1.5 rounded-lg border px-4 py-2.5 text-sm font-medium focus-ring ${
+                    requestsOpen
+                      ? 'border-gold-400 bg-gold-50 text-gold-900 shadow-inner'
+                      : 'border-green-800/20 text-green-900 hover:bg-green-800/5'}`}
+                  onClick={() => setRequestsOpen((v) => !v)}>
+                  {requestsOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                  <MessageSquarePlus size={14} /> Change requests
+                  {openRequestCount > 0 && (
+                    <span className="rounded-full bg-gold-400/30 px-1.5 text-[11px] tabular-nums">{openRequestCount}</span>
+                  )}
+                </button>
+                <button type="button" aria-expanded={historyOpen}
+                  className={`inline-flex items-center gap-1.5 rounded-lg border px-4 py-2.5 text-sm font-medium focus-ring ${
+                    historyOpen
+                      ? 'border-green-700 bg-green-50 text-green-900 shadow-inner'
+                      : 'border-green-800/20 text-green-900 hover:bg-green-800/5'}`}
+                  onClick={() => setHistoryOpen((v) => !v)}>
+                  {historyOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                  <History size={14} /> Change history
+                </button>
+              </div>
+
+              {requestsOpen && (
+                <div className="mt-4 rounded-lg border-l-4 border-gold-400 border-y border-r border-green-800/10 bg-cream-100/30 p-4">
+                  <ContractChangeRequests
+                    documentId={id}
+                    canRequest={editablePhase && !isCancelled && !isVoid}
+                    refreshKey={changeKey}
+                    onCount={setOpenRequestCount}
+                    onChanged={() => { void load(); }}
+                  />
+                </div>
+              )}
+              {historyOpen && (
+                <div className="mt-4 rounded-lg border-l-4 border-green-700 border-y border-r border-green-800/10 bg-green-50/20 p-4">
+                  <ContractChangeHistory documentId={id} refreshKey={changeKey} />
+                </div>
+              )}
             </div>
+          )}
+        </div>
+      )}
+
+      {/* STICKY SUBHEADER — takes over once the action card scrolls away, so the
+          actions are reachable at ALL times. MOBILE reduces to the two
+          disclosure controls (Change requests + Change history). */}
+      {showDeck && showSticky && id && (
+        <div className="sticky top-0 z-30 -mx-1 px-2 py-2 mb-3 bg-cream-100/95 backdrop-blur border-b border-green-800/15 flex items-center gap-2 overflow-x-auto">
+          {/* desktop-only actions */}
+          {!isOwnerSide && myRoles.length > 0 && editablePhase && !isCancelled && !isInactive && (
+            <button type="button" className="hidden sm:inline-flex btn-primary text-xs py-1.5 px-3 shrink-0"
+              onClick={() => void approveReview()}>
+              <CheckCircle2 size={13} /> Accept &amp; sign
+            </button>
+          )}
+          {/* ALWAYS present, on every width */}
+          <button type="button" aria-expanded={requestsOpen}
+            className={`inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium focus-ring shrink-0 ${
+              requestsOpen ? 'border-gold-400 bg-gold-50 text-gold-900' : 'border-green-800/20 text-green-900'}`}
+            onClick={() => setRequestsOpen((v) => !v)}>
+            {requestsOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />} Change requests
+            {openRequestCount > 0 && <span className="rounded-full bg-gold-400/30 px-1 tabular-nums">{openRequestCount}</span>}
+          </button>
+          <button type="button" aria-expanded={historyOpen}
+            className={`inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium focus-ring shrink-0 ${
+              historyOpen ? 'border-green-700 bg-green-50 text-green-900' : 'border-green-800/20 text-green-900'}`}
+            onClick={() => setHistoryOpen((v) => !v)}>
+            {historyOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />} Change history
+          </button>
+          {isOwnerSide && editablePhase && (
+            <button type="button" className="hidden sm:inline-flex btn-secondary text-xs py-1.5 px-3 shrink-0"
+              disabled={notifying} onClick={() => void sendReview()}>
+              <Send size={13} /> Submit for review
+            </button>
+          )}
+          {canVoid && (
+            <button type="button"
+              className="hidden sm:inline-flex items-center gap-1 rounded-lg border border-red-300 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50 focus-ring shrink-0 ml-auto"
+              onClick={() => setVoidModal(true)}>
+              Void contract
+            </button>
           )}
         </div>
       )}
@@ -1019,6 +1153,39 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           <FileText size={22} className="text-gold-ink" /> {doc.title}
         </h1>
       </div>
+
+      {/* VOID WATERMARK — non-intrusive but obvious. The document below is greyed
+          out (isInactive already dims it); this names the state and carries the
+          voiding party's note. */}
+      {isVoid && (
+        <div className="relative mb-4 rounded-lg border-2 border-red-300/70 bg-red-50/60 px-4 py-3 overflow-hidden">
+          <span aria-hidden="true"
+            className="pointer-events-none select-none absolute inset-0 flex items-center justify-center
+                       text-red-500/15 font-serif font-bold tracking-[0.35em] text-4xl sm:text-6xl -rotate-12">
+            VOID
+          </span>
+          <div className="relative">
+            <p className="text-sm font-medium text-red-900">
+              This contract was voided{doc?.voided_at ? ` on ${new Date(doc.voided_at).toLocaleDateString()}` : ''}
+              {doc?.voided_by_me ? ' by you' : ''}.
+            </p>
+            {doc?.void_reason && (
+              <p className="text-sm text-red-800 mt-1 whitespace-pre-line">&ldquo;{doc.void_reason}&rdquo;</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* The counterparty of a void gets the SAME keep-or-remove choice, either
+          from their dashboard or here when they open the document. */}
+      {needsVoidChoice && id && (
+        <VoidedKeepOrRemove
+          documentId={id}
+          note={doc?.void_reason ?? null}
+          onChosen={() => { void load(); }}
+          onRemoved={() => navigate(returnTo)}
+        />
+      )}
       {terminationRequested && !iRequestedTermination && (
         <div className="mb-3 rounded-lg border border-gold-400/50 bg-gold-50 px-4 py-2.5 text-sm text-gold-900">
           A termination request is pending your response — see Manage above.
@@ -1079,12 +1246,6 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
               canAddClause={isOwnerSide || (redline?.can_add_clause ?? false)}
               onAdded={() => void act(async () => {})} />
           )}
-          {commentCount > 0 && (
-            <button type="button" className="text-xs text-green-800 hover:text-green-700 underline underline-offset-2"
-              onClick={() => setCommentsOpen((v) => !v)}>
-              {commentsOpen ? 'Hide Comments' : `View Comments (${commentCount})`}
-            </button>
-          )}
           <button type="button" className="ml-auto text-xs text-green-800 hover:text-green-700 underline underline-offset-2"
             onClick={() => document.getElementById('contract-signatures')?.scrollIntoView({ behavior: 'smooth' })}>
             Proceed to Signatures →
@@ -1144,7 +1305,9 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                           body: commentDraft.trim(), anchorKind: 'field',
                           anchorRef: commentModal.anchorRef,
                         });
-                        setCommentModal(null); setCommentDraft(''); setCommentsOpen(true);
+                        // comments and change requests are ONE surface now — a
+                        // posted comment lands in the change-requests drawer.
+                        setCommentModal(null); setCommentDraft(''); setRequestsOpen(true);
                         setChangeKey((k) => k + 1);
                       } catch (e) {
                         setNote(errMessage(e, 'Could not post the comment.'));
@@ -1158,53 +1321,16 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           </div>
         </div>
       )}
-      {/* H3: Request-changes modal — target section + the requested change. Logs
-          an OPEN change request (which blocks locking) and notifies the author. */}
-      {crModal && id && (
-        <div className="fixed inset-0 z-40 bg-black/30 flex items-center justify-center p-4"
-          onClick={() => setCrModal(null)}>
-          <div className="bg-white rounded-xl border border-green-800/15 p-6 max-w-xl w-full shadow-lg"
-            onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-serif text-green-900 mb-1">Request a change</h3>
-            <p className="text-sm text-muted mb-3">
-              Describe the change you&rsquo;d like. It goes to the author as an open change
-              request — the contract can&rsquo;t be locked for signing until it&rsquo;s resolved.
-            </p>
-            <label className="form-label block mb-2">
-              Where (optional)
-              <select className="form-input mt-1" value={crModal.section}
-                onChange={(e) => setCrModal({ ...crModal, section: e.target.value })}>
-                <option value="">The whole document</option>
-                {(structure
-                  ? structure.sections.map((s) => ({ key: s.section_key, label: s.heading }))
-                  : sections.map(([s]) => ({ key: s, label: s })))
-                  .map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
-              </select>
-            </label>
-            <textarea rows={4} className="form-input resize-y text-sm w-full" autoFocus
-              placeholder="What should be different? (the term you'd like changed, and to what)"
-              value={crModal.text} onChange={(e) => setCrModal({ ...crModal, text: e.target.value })} />
-            <div className="mt-3 flex justify-end gap-2">
-              <button type="button" className="btn-secondary text-xs" onClick={() => setCrModal(null)}>Cancel</button>
-              <button type="button" className="btn-primary text-xs"
-                disabled={crPosting || !crModal.text.trim()}
-                onClick={async () => {
-                  setCrPosting(true); setError(null);
-                  try {
-                    await requestDocumentChange(id, null, crModal.text.trim(), crModal.section || null);
-                    setCrModal(null);
-                    setNote('Change request sent — the author has been notified.');
-                    await load();
-                    setChangeKey((k) => k + 1);
-                  } catch (e) {
-                    setError(errMessage(e, 'Could not send the change request.'));
-                  } finally { setCrPosting(false); }
-                }}>
-                {crPosting ? 'Sending…' : 'Send request'}
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* VOID — the three-page modal replacing the old hard-void. Page 1 confirm
+          + note, page 2 keep-or-remove (PER PARTY), page 3 success. Closing via
+          the X on page 1 or 2 does NOT void. */}
+      {voidModal && id && (
+        <VoidContractModal
+          documentId={id}
+          onClose={() => setVoidModal(false)}
+          onVoided={() => { setVoidModal(false); void load(); setChangeKey((k) => k + 1); }}
+          onRemoved={() => { setVoidModal(false); navigate(returnTo); }}
+        />
       )}
 
       {/* Party-facing notes/instructions don't apply during the creation step
@@ -1666,26 +1792,24 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         </section>
       )}
 
-      {/* Pinned comments (always-on) — anchored to fields or selected passages,
-          threaded and resolvable. Select text in the document above to comment. */}
-      {id && (
-        <div className="mt-5">
-          <ContractComments documentId={id} canComment={!isCancelled && state !== 'void'}
-            onChanged={() => setChangeKey((k) => k + 1)}
-            visible={commentsOpen}
-            onCount={setCommentCount}
-            refreshKey={changeKey} />
-        </div>
-      )}
-
-      {/* Change history / track changes (always-on) — what each party changed,
-          and the human face of the retained audit trail. Shown here only when it's
-          NOT already in the action deck above the title. The deck shows for any
-          party (or owner) on a non-void document, so this bottom copy is only for
-          void documents and the embedded creation view. */}
+      {/* Change requests + Change history are ONE surface now, carried by the
+          action deck above the title. This bottom copy exists only where the deck
+          does not render (a void document, or the embedded creation view), so
+          there is still exactly one place to reach them. */}
       {id && !showDeck && (
-        <div className="mt-5">
-          <TrackChangesPanel documentId={id} refreshKey={changeKey} />
+        <div className="mt-5 flex flex-col gap-4">
+          <div className="rounded-lg border-l-4 border-gold-400 border-y border-r border-green-800/10 bg-cream-100/30 p-4">
+            <ContractChangeRequests
+              documentId={id}
+              canRequest={editablePhase && !isCancelled && !isVoid}
+              refreshKey={changeKey}
+              onCount={setOpenRequestCount}
+              onChanged={() => { void load(); }}
+            />
+          </div>
+          <div className="rounded-lg border-l-4 border-green-700 border-y border-r border-green-800/10 bg-green-50/20 p-4">
+            <ContractChangeHistory documentId={id} refreshKey={changeKey} />
+          </div>
         </div>
       )}
 

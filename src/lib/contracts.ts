@@ -160,6 +160,16 @@ export interface ContractDetail {
     sent_at: string | null;
     archived_at: string | null;
     cancelled_at: string | null;
+    // void lifecycle (party-initiated; per-party keep-or-remove)
+    voided_at?: string | null;
+    void_reason?: string | null;
+    voided_by_me?: boolean | null;
+    /** Set when the CALLER has removed this document from their own view. The
+     *  document itself is never destroyed — see document_party_hidden. */
+    my_hidden_at?: string | null;
+    /** True while the caller may still void: a party who has not yet signed.
+     *  Stays true after the OTHER party signs; false once the caller signs. */
+    can_void?: boolean | null;
     horse_id: string | null;
     // termination lifecycle (executed → termination requested → terminated)
     terminated_at?: string | null;
@@ -765,14 +775,190 @@ export async function contractChangeLog(documentId: string, limit = 200): Promis
   return (data ?? []) as ContractChange[];
 }
 
-// ─── Pinned comments (contract_comments) ─────────────────────────────────────
+// ─── The section tree (contract_section_tree) ────────────────────────────────
+/** One numbered subsection ("12.3 Lessons"). The number is DERIVED live from the
+ *  document by the same rules the composer uses, so it always matches the prose. */
+export interface SectionTreeSub {
+  clause_key: string;
+  /** "<section>.<n>", e.g. "12.3". */
+  number: string;
+  title: string;
+  guidance: string | null;
+}
+/** One numbered section ("12 Permitted Use(s) & Restrictions") plus its
+ *  subsections. Sections that compose to nothing are absent and consume no
+ *  number — exactly as `remerge_contract_from_clauses` behaves. */
+export interface SectionTreeNode {
+  section_key: string;
+  number: string;
+  title: string;
+  guidance: string | null;
+  subsections: SectionTreeSub[];
+}
+/** The live, correctly-numbered section/subsection tree for THIS document.
+ *  Never hardcode section numbers — inserting a section shifts them all. */
+export async function contractSectionTree(documentId: string): Promise<SectionTreeNode[]> {
+  const { data, error } = await supabase.rpc('contract_section_tree', { p_document_id: documentId });
+  if (error) throw error;
+  return (data ?? []) as SectionTreeNode[];
+}
+
+// ─── Change requests (contract_change_requests) ──────────────────────────────
+/* THE SINGLE CHANGE-REQUEST SURFACE. `contract_comments` was renamed to
+ * `contract_change_requests` and `document_change_requests` was retired into it,
+ * so comments and change requests are one threaded model:
+ *
+ *   ROOT row (parent_request_id === null) = a change request against a section.
+ *     submitted_at === null → a free-to-edit DRAFT. Autosaved on blur. Does NOT
+ *                             block locking (it isn't a request yet).
+ *     submitted_at !== null → submitted for review: the thread is LOCKED from
+ *                             editing and BLOCKS locking until it is agreed.
+ *   CHILD rows = thread entries either party may add after submit, each stamped
+ *     with author_role / author_label / created_at.
+ *   resolved_at / agreed_at = the explicit Agreed close.
+ */
+export interface ContractChangeRequestEntry {
+  id: string;
+  parent_request_id: string | null;
+  anchor_kind: 'field' | 'span' | 'document';
+  anchor_ref: string | null;
+  target_section: string | null;
+  /** Resolved section heading for display ("Lease Fee"), or "The whole document". */
+  section_heading: string | null;
+  /** Sequential per-document number, assigned at submit. Null while a draft. */
+  annotation_number: number | null;
+  /** Money/term/liability weight — see change_request_impact_rank in the DB. */
+  impact_rank: number;
+  is_stale: boolean;
+  needs_review: boolean;
+  body: string;
+  author_label: string | null;
+  author_role: string | null;
+  author_contact_id: string | null;
+  submitted_at: string | null;
+  agreed_at: string | null;
+  resolved_at: string | null;
+  edited_at: string | null;
+  created_at: string;
+}
+
+export async function contractChangeRequestsList(documentId: string): Promise<ContractChangeRequestEntry[]> {
+  const { data, error } = await supabase.rpc('contract_change_requests_list', { p_document_id: documentId });
+  if (error) throw error;
+  return (data ?? []) as ContractChangeRequestEntry[];
+}
+
+/** AUTOSAVE (on blur). One draft per (document, author, section). An empty body
+ *  removes the draft. Throws if the thread was already submitted, or if the
+ *  document is locked/executed/void. */
+export async function upsertChangeRequest(
+  documentId: string, targetSection: string | null, body: string,
+): Promise<{ id: string | null; removed: boolean }> {
+  const { data, error } = await supabase.rpc('upsert_change_request', {
+    p_document_id: documentId, p_target_section: targetSection, p_body: body,
+  });
+  if (error) throw error;
+  return data as { id: string | null; removed: boolean };
+}
+
+/** SUBMIT FOR REVIEW — locks every draft this caller wrote, numbers them, and
+ *  notifies the other party with the five highest-impact requests. */
+export async function submitChangeRequests(documentId: string): Promise<{
+  submitted: number;
+  top?: { annotation_number: number; target_section: string | null; heading: string; impact_rank: number; body: string }[];
+}> {
+  const { data, error } = await supabase.rpc('submit_change_requests', { p_document_id: documentId });
+  if (error) throw error;
+  return data as { submitted: number; top?: [] };
+}
+
+/** Email the other party about just-submitted requests, listing the same five
+ *  highest-impact ones the dashboard notification shows. The DB already created
+ *  the in-app notification, so a failure here is non-fatal — never lose a
+ *  submission because email is misconfigured. */
+export async function emailSubmittedChangeRequests(documentId: string): Promise<{ emailed: number }> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) return { emailed: 0 };
+  const r = await fetch('/api/contract-change-requests-submitted', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ documentId }),
+  });
+  if (!r.ok) return { emailed: 0 };
+  return (await r.json()) as { emailed: number };
+}
+
+/** Add an entry to a submitted thread (either party, until it closes). */
+export async function replyToChangeRequest(requestId: string, body: string): Promise<{ id: string }> {
+  const { data, error } = await supabase.rpc('reply_to_change_request', {
+    p_request_id: requestId, p_body: body,
+  });
+  if (error) throw error;
+  return data as { id: string };
+}
+
+/** The explicit Agreed/Accepted action that CLOSES a thread (and unblocks lock). */
+export async function agreeChangeRequest(requestId: string, agreed = true): Promise<void> {
+  const { error } = await supabase.rpc('agree_change_request', {
+    p_request_id: requestId, p_agreed: agreed,
+  });
+  if (error) throw error;
+}
+
+// ─── Void flow ───────────────────────────────────────────────────────────────
+/** Void the contract with a note explaining why. Available to a party until THEY
+ *  sign (and still available after the OTHER party signs). Notifies the
+ *  counterparty, note included. */
+export async function voidDocument(documentId: string, note: string | null): Promise<{
+  voided: boolean; notified: number; note: string | null;
+}> {
+  const { data, error } = await supabase.rpc('void_document', {
+    p_document_id: documentId, p_note: note,
+  });
+  if (error) throw error;
+  return data as { voided: boolean; notified: number; note: string | null };
+}
+
+/** Email the counterparty about a void, note included. The DB already made the
+ *  in-app notification, so a failure here is non-fatal. */
+export async function emailVoidNotice(documentId: string): Promise<{ emailed: number }> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) return { emailed: 0 };
+  const r = await fetch('/api/contract-voided', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ documentId }),
+  });
+  if (!r.ok) return { emailed: 0 };
+  return (await r.json()) as { emailed: number };
+}
+
+/** Keep-or-remove, PER PARTY. `hidden = true` removes the document from THIS
+ *  party's documents page only — the document is never destroyed and stays
+ *  visible to the other party and to staff/ops. */
+export async function setDocumentPartyHidden(documentId: string, hidden = true): Promise<{
+  hidden: boolean; document_still_exists: boolean;
+}> {
+  const { data, error } = await supabase.rpc('set_document_party_hidden', {
+    p_document_id: documentId, p_hidden: hidden,
+  });
+  if (error) throw error;
+  return data as { hidden: boolean; document_still_exists: boolean };
+}
+
+// ─── Pinned comments (legacy view onto contract_change_requests) ─────────────
 /** A comment on a contract. `anchor_kind`:
  *   'field'    → anchor_ref is a field_key (stable),
  *   'span'     → anchor_ref is a clause/section id + `quote` is the selected text
  *                (relocated by quote-match after re-merge; `is_stale` when lost),
  *   'document' → whole-document comment (and all replies).
  *  Threaded: a reply carries `parent_comment_id`; resolving the root closes the
- *  thread to further replies. */
+ *  thread to further replies.
+ *
+ *  NOTE: this now reads the SAME rows as ContractChangeRequestEntry — the tables
+ *  merged. `parent_comment_id` is mapped from `parent_request_id` below. */
 export interface ContractComment {
   id: string;
   parent_comment_id: string | null;
@@ -793,7 +979,17 @@ export interface ContractComment {
 export async function contractCommentsList(documentId: string): Promise<ContractComment[]> {
   const { data, error } = await supabase.rpc('contract_comments_list', { p_document_id: documentId });
   if (error) throw error;
-  return (data ?? []) as ContractComment[];
+  // the merged table names the thread column `parent_request_id`; keep the
+  // comment-era shape for callers that still speak it.
+  type Row = ContractChangeRequestEntry & {
+    parent_comment_id?: string | null; quote?: string | null; quote_prefix?: string | null;
+  };
+  return ((data ?? []) as Row[]).map((r): ContractComment => ({
+    ...r,
+    quote: r.quote ?? null,
+    quote_prefix: r.quote_prefix ?? null,
+    parent_comment_id: r.parent_comment_id ?? r.parent_request_id ?? null,
+  }));
 }
 export async function postContractComment(documentId: string, p: {
   body: string;
