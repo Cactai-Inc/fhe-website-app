@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
+import { fromHere } from '../../lib/linkOrigin';
 import { FileText, CalendarDays, ClipboardList, PencilLine, Trash2, ArrowLeft, Activity } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
 import { horsePageDetail, deleteStableHorse, updateHorseRecord, type HorsePageDetail } from '../../lib/horses';
@@ -41,6 +42,7 @@ function composeLocation(loc: HorsePageDetail['record']['home_location'], barn?:
 export default function HorsePage() {
   const { horseId } = useParams<{ horseId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [detail, setDetail] = useState<HorsePageDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>('record');
@@ -188,7 +190,7 @@ export default function HorsePage() {
           {tab === 'documents' && (
             <ListCard empty="No documents for this horse yet.">
               {detail.documents.map((d) => (
-                <Link key={d.id} to={`/app/contracts/${d.id}`}
+                <Link key={d.id} to={`/app/contracts/${d.id}`} state={fromHere(location)}
                   className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-cream-100/50 focus-ring">
                   <span className="min-w-0">
                     <span className="block text-sm font-medium text-green-900 truncate">{d.title}</span>

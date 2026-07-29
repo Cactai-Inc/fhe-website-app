@@ -12,6 +12,7 @@
  * select change and asserting the data fn + the narrowed rows).
  */
 import { Link } from 'react-router-dom';
+import { fromHere } from '../../../lib/linkOrigin';
 import { DataTable, StatusBadge } from '../../../lib/ops';
 import type { Column } from '../../../lib/ops';
 import type { DocumentRow } from '../../../lib/ops/types';
@@ -47,6 +48,10 @@ const COLUMNS: Column<DocumentRow>[] = [
         // Contract/deal docs open the full contract workspace (fill, send, sign,
         // archive, delete); other docs open the read-only viewer.
         to={row.contract_id ? `/app/contracts/${row.id}` : `/app/ops/documents/${row.id}`}
+        /* RETURN-TO-ORIGIN: back to the ops documents queue, not the member
+           documents list. COLUMNS is module-level so there is no hook here —
+           this surface has one fixed home, so naming it is exact, not a guess. */
+        state={fromHere('/app/ops/documents')}
         className="link-underline font-sans font-medium text-green-900"
         data-testid={`doc-link-${row.id}`}
       >

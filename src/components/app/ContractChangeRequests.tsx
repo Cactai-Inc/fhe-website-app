@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { MessageSquarePlus, Check, CornerDownRight, Send, Lock } from 'lucide-react';
+import { MessageSquarePlus, Check, CornerDownRight, Send, Eye, RotateCcw, Pencil } from 'lucide-react';
 import {
   contractChangeRequestsList, contractSectionTree, upsertChangeRequest,
   submitChangeRequests, emailSubmittedChangeRequests,
-  replyToChangeRequest, agreeChangeRequest, myCommentIdentity,
+  replyToChangeRequest, myCommentIdentity,
+  markChangeRequestSeen, editChangeRequestEntry,
+  resolveChangeRequestThread, reopenChangeRequest,
   type ContractChangeRequestEntry, type SectionTreeNode,
 } from '../../lib/contracts';
 import { ContractDrawer, DrawerRow } from './ContractDrawer';
+import { NotifyConfirmModal } from './NotifyConfirmModal';
 
 /**
  * CHANGE REQUESTS — the single change-request surface (comments and change
@@ -25,12 +28,16 @@ import { ContractDrawer, DrawerRow } from './ContractDrawer';
  *  • AUTOSAVE on blur (adding or removing content) — no cancel/save/send
  *    buttons. A brief transient "Saved" notice confirms each autosave.
  *
- * THREADS ("chat thread, locked on send")
- *  • Before submit the author freely edits their draft (autosaved).
- *  • "Submit for review" LOCKS the threads, notifies + emails the other party
- *    with the five highest-impact requests.
- *  • After submit either party adds entries, each stamped date + time + party.
- *  • A thread closes via the explicit Agreed action.
+ * THREADS — THE NOTIFY MODEL (this REPLACES the old "locked on send" behaviour)
+ *  • "Notify" numbers the drafts and notifies + emails the other party with the
+ *    five highest-impact requests. NOTIFYING FREEZES NOTHING.
+ *  • A request stays editable by its author until the OTHER PARTY SEES IT. Seen
+ *    is recorded when that party CLICKS THE ROW to expand its contents — never
+ *    on collapsed render, and never for the author viewing their own entry.
+ *  • Each entry carries an author stamp (date + time + party, as of its LAST
+ *    EDIT) and, once viewed, a "Seen" stamp (date + time + party).
+ *  • Resolving is a SOFT close: either party can Reopen, which returns the
+ *    request to the open set and blocks locking again.
  */
 
 function when(iso: string): string {
@@ -108,15 +115,93 @@ function RequestInput({
   );
 }
 
-/** A submitted thread: the request, its entries, a reply box and Agreed. */
+/** The AUTHOR stamp (date + time + party, as of the entry's LAST EDIT) and, once
+ *  a non-author has viewed it, the SEEN stamp beside it. */
+function Stamps({ e }: { e: ContractChangeRequestEntry }) {
+  const seen = e.seen_by ?? [];
+  return (
+    <p className="text-[11px] text-muted mt-1 flex items-center gap-x-2 gap-y-0.5 flex-wrap">
+      <span>
+        {partyOf(e)} · {when(e.edited_at ?? e.submitted_at ?? e.created_at)}
+        {e.edited_at && <span className="text-muted"> (edited)</span>}
+      </span>
+      {seen.length > 0 ? (
+        seen.map((s) => (
+          <span key={s.contact_id} className="inline-flex items-center gap-1 text-green-700">
+            <Eye size={10} aria-hidden="true" />
+            Seen by {s.label ?? 'the other party'}
+            {s.role ? ` (${s.role.charAt(0)}${s.role.slice(1).toLowerCase()})` : ''} · {when(s.seen_at)}
+          </span>
+        ))
+      ) : (
+        <span className="inline-flex items-center gap-1 text-gold-900">
+          <Pencil size={10} aria-hidden="true" /> Not yet seen — you can still edit
+        </span>
+      )}
+    </p>
+  );
+}
+
+/** An entry body that its author may still edit, because nobody else has seen it. */
+function EditableBody({
+  entry, onSave, busy,
+}: {
+  entry: ContractChangeRequestEntry;
+  onSave: (id: string, body: string) => Promise<void>;
+  busy: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(entry.body);
+  useEffect(() => { setText(entry.body); }, [entry.body]);
+
+  // can_edit comes from the DB: author AND not yet seen. Same rule the Notify
+  // modal's copy promises — both read the one server-side predicate.
+  if (!entry.can_edit) {
+    return <p className="text-[13px] text-green-950 whitespace-pre-line">{entry.body}</p>;
+  }
+
+  if (!editing) {
+    return (
+      <p className="text-[13px] text-green-950 whitespace-pre-line">
+        {entry.body}{' '}
+        <button type="button" onClick={() => setEditing(true)}
+          className="text-[11px] text-gold-900 underline underline-offset-2 hover:text-gold-800 focus-ring rounded">
+          Edit
+        </button>
+      </p>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <textarea rows={3} className="form-input resize-y text-sm" value={text}
+        onChange={(e) => setText(e.target.value)} />
+      <div className="flex gap-2">
+        <button type="button" className="btn-primary text-xs" disabled={busy || !text.trim()}
+          onClick={() => void onSave(entry.id, text.trim()).then(() => setEditing(false))}>
+          Save
+        </button>
+        <button type="button" className="btn-secondary text-xs" disabled={busy}
+          onClick={() => { setText(entry.body); setEditing(false); }}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** A notified thread: the request, its entries, a reply box, and the SOFT close
+ *  (Resolve / Reopen — either party, always reversible). */
 function Thread({
-  root, replies, canAct, onReply, onAgree, busy,
+  root, replies, canAct, onReply, onResolve, onReopen, onEdit, busy,
 }: {
   root: ContractChangeRequestEntry;
   replies: ContractChangeRequestEntry[];
   canAct: boolean;
   onReply: (id: string, body: string) => Promise<void>;
-  onAgree: (id: string) => Promise<void>;
+  onResolve: (id: string) => Promise<void>;
+  onReopen: (id: string) => Promise<void>;
+  onEdit: (id: string, body: string) => Promise<void>;
   busy: boolean;
 }) {
   const [text, setText] = useState('');
@@ -124,39 +209,58 @@ function Thread({
 
   return (
     <div>
-      <p className="text-[13px] text-green-950 whitespace-pre-line">{root.body}</p>
-      <p className="text-[11px] text-muted mt-1 flex items-center gap-1.5 flex-wrap">
-        <Lock size={10} aria-hidden="true" />
-        {partyOf(root)} · {when(root.submitted_at ?? root.created_at)}
-        {closed && <span className="text-green-700">· agreed {root.agreed_at ? when(root.agreed_at) : ''}</span>}
-      </p>
+      <EditableBody entry={root} onSave={onEdit} busy={busy} />
+      <Stamps e={root} />
+      {closed && (
+        <p className="text-[11px] text-green-700 mt-0.5">
+          Resolved {root.agreed_at ? when(root.agreed_at) : ''} — either party can reopen it.
+        </p>
+      )}
+      {!closed && root.reopened_at && (
+        <p className="text-[11px] text-gold-900 mt-0.5">Reopened {when(root.reopened_at)}</p>
+      )}
 
       {replies.length > 0 && (
         <div className="mt-2 ml-1 pl-3 border-l-2 border-green-800/10 flex flex-col gap-2">
           {replies.map((r) => (
             <div key={r.id}>
               <CornerDownRight size={12} className="text-muted inline mr-1 align-top mt-0.5" aria-hidden="true" />
-              <span className="text-[13px] text-green-950 whitespace-pre-line">{r.body}</span>
-              <p className="text-[11px] text-muted mt-0.5">{partyOf(r)} · {when(r.created_at)}</p>
+              <span className="text-[13px] text-green-950 whitespace-pre-line">
+                <EditableBody entry={r} onSave={onEdit} busy={busy} />
+              </span>
+              <Stamps e={r} />
             </div>
           ))}
         </div>
       )}
 
-      {!closed && canAct && (
+      {canAct && (
         <div className="mt-2.5 flex flex-col gap-1.5">
-          <textarea rows={2} className="form-input resize-y text-sm" placeholder="Add to this thread…"
-            value={text} onChange={(e) => setText(e.target.value)} />
-          <div className="flex gap-2">
-            <button type="button" className="btn-secondary text-xs" disabled={busy || !text.trim()}
-              onClick={() => void onReply(root.id, text.trim()).then(() => setText(''))}>
-              Add entry
-            </button>
-            <button type="button"
-              className="inline-flex items-center gap-1 rounded-lg border border-green-700/40 px-3 py-1.5 text-xs font-medium text-green-800 hover:bg-green-50 focus-ring"
-              disabled={busy} onClick={() => void onAgree(root.id)}>
-              <Check size={12} /> Agreed
-            </button>
+          {!closed && (
+            <textarea rows={2} className="form-input resize-y text-sm" placeholder="Add to this thread…"
+              value={text} onChange={(e) => setText(e.target.value)} />
+          )}
+          <div className="flex gap-2 flex-wrap">
+            {!closed && (
+              <>
+                <button type="button" className="btn-secondary text-xs" disabled={busy || !text.trim()}
+                  onClick={() => void onReply(root.id, text.trim()).then(() => setText(''))}>
+                  Add entry
+                </button>
+                <button type="button"
+                  className="inline-flex items-center gap-1 rounded-lg border border-green-700/40 px-3 py-1.5 text-xs font-medium text-green-800 hover:bg-green-50 focus-ring"
+                  disabled={busy} onClick={() => void onResolve(root.id)}>
+                  <Check size={12} /> Resolve
+                </button>
+              </>
+            )}
+            {closed && (
+              <button type="button"
+                className="inline-flex items-center gap-1 rounded-lg border border-gold-400/60 px-3 py-1.5 text-xs font-medium text-gold-900 hover:bg-gold-50 focus-ring"
+                disabled={busy} onClick={() => void onReopen(root.id)}>
+                <RotateCcw size={12} /> Reopen
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -179,6 +283,7 @@ export function ContractChangeRequests({
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<string | null>(null);   // target section/clause key
   const [openThread, setOpenThread] = useState<string | null>(null);
+  const [notifyModal, setNotifyModal] = useState(false);
   const [myContactId, setMyContactId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -212,6 +317,10 @@ export function ContractChangeRequests({
     return { roots, repliesByParent, draftFor };
   }, [entries, myContactId]);
 
+  // every notified thread, resolved or not — resolution is a SOFT close, so a
+  // resolved thread stays visible and reopenable rather than disappearing.
+  const notifiedThreads = roots.filter((r) => r.submitted_at);
+  // only UNRESOLVED ones block locking (contract_lock_blockers counts these)
   const openThreads = roots.filter((r) => r.submitted_at && !r.resolved_at);
   const myDrafts = roots.filter((r) => !r.submitted_at && r.author_contact_id === myContactId);
 
@@ -229,18 +338,39 @@ export function ContractChangeRequests({
     load(); onChanged?.();
   };
 
-  const submit = () => run(async () => {
+  const notify = () => run(async () => {
     // The DB creates the dashboard notification (submit_change_requests →
     // contract_notify). This endpoint sends the EMAIL half of the same event,
     // listing the same five highest-impact requests. Email failure must never
-    // lose the submission, so it is best-effort.
+    // lose the notification, so it is best-effort.
     const r = await submitChangeRequests(documentId);
     setSelected(null);
+    setNotifyModal(false);
     try { await emailSubmittedChangeRequests(documentId); }
     catch { /* the in-app notification already landed */ }
-    setNote(`Submitted ${r.submitted} request${r.submitted === 1 ? '' : 's'} — the other party has been notified.`);
-    window.setTimeout(() => setNote(null), 5000);
+    setNote(
+      `Notified — ${r.submitted} request${r.submitted === 1 ? '' : 's'} sent. `
+      + 'You can still edit each one until the other party sees it.');
+    window.setTimeout(() => setNote(null), 6000);
   });
+
+  /* THE SEEN TRIGGER — the reader CLICKED THIS ROW to expand its contents.
+     That click IS the genuine view: no scroll observation, no dwell time, and
+     nothing at all recorded while the row sits collapsed in the list. The DB
+     skips entries this caller authored, so opening your own request never
+     freezes it. Failures are swallowed — a seen stamp must never block reading. */
+  const openThreadRow = (root: ContractChangeRequestEntry) => {
+    const next = openThread === root.id ? null : root.id;
+    setOpenThread(next);
+    if (next === null) return;
+    const ids = [root.id, ...(repliesByParent.get(root.id) ?? []).map((r) => r.id)]
+      .filter((id) => {
+        const e = (entries ?? []).find((x) => x.id === id);
+        return e && e.author_contact_id !== myContactId && !e.is_frozen;
+      });
+    if (ids.length === 0) return;
+    markChangeRequestSeen(ids).then(() => load()).catch(() => { /* never block reading */ });
+  };
 
   const toggleExpand = (key: string) =>
     setExpanded((s) => { const n = new Set(s); if (n.has(key)) n.delete(key); else n.add(key); return n; });
@@ -258,29 +388,44 @@ export function ContractChangeRequests({
           {openThreads.length > 0 ? `${openThreads.length} open` : myDrafts.length > 0 ? `${myDrafts.length} draft` : 'none yet'}
         </span>
         {myDrafts.length > 0 && canRequest && (
-          <button type="button" className="btn-primary text-xs ml-auto py-1.5" disabled={busy} onClick={submit}>
-            <Send size={12} /> Submit for review
+          <button type="button" className="btn-primary text-xs ml-auto py-1.5" disabled={busy}
+            onClick={() => setNotifyModal(true)}>
+            <Send size={12} /> Notify
           </button>
         )}
       </div>
 
+      {/* The confirmation modal builds its copy from pending_notify_summary —
+          the same DB function whose predicates the write paths enforce. */}
+      {notifyModal && (
+        <NotifyConfirmModal
+          documentId={documentId}
+          busy={busy}
+          onCancel={() => setNotifyModal(false)}
+          onConfirm={notify}
+        />
+      )}
+
       {err && <p role="alert" className="form-error mb-2 text-xs">{err}</p>}
       {note && <p className="mb-2 text-[12px] rounded bg-green-50 text-green-900 px-3 py-1.5">{note}</p>}
 
-      {/* OPEN THREADS — locked on send; either party may add entries. */}
-      {openThreads.length > 0 && (
+      {/* NOTIFIED THREADS — open and resolved. Clicking a row expands it, and
+          THAT CLICK is what records "seen" for the non-author. Resolved threads
+          stay listed so either party can reopen them. */}
+      {notifiedThreads.length > 0 && (
         <div className="mb-3">
-          <p className="text-[11px] uppercase tracking-wide text-muted mb-1.5">Submitted</p>
+          <p className="text-[11px] uppercase tracking-wide text-muted mb-1.5">Notified</p>
           <ContractDrawer accent="requests" openKey={openThread}>
-            {openThreads.map((r) => (
+            {notifiedThreads.map((r) => (
               <div key={r.id} data-row-key={r.id}>
                 <DrawerRow
                   accent="requests"
                   open={openThread === r.id}
-                  onToggle={() => setOpenThread((k) => (k === r.id ? null : r.id))}
+                  onToggle={() => openThreadRow(r)}
                   number={r.annotation_number ? `#${r.annotation_number}` : null}
                   title={r.section_heading ?? 'The whole document'}
-                  subtitle={`${partyOf(r)} · ${when(r.submitted_at ?? r.created_at)}`}
+                  subtitle={`${partyOf(r)} · ${when(r.edited_at ?? r.submitted_at ?? r.created_at)}`
+                    + (r.resolved_at ? ' · resolved' : '')}
                 >
                   <Thread
                     root={r}
@@ -288,7 +433,11 @@ export function ContractChangeRequests({
                     canAct={canRequest}
                     busy={busy}
                     onReply={(id, body) => run(() => replyToChangeRequest(id, body).then(() => {}))}
-                    onAgree={(id) => run(() => agreeChangeRequest(id), 'Thread closed — agreed.')}
+                    onResolve={(id) => run(() => resolveChangeRequestThread(id).then(() => {}),
+                      'Resolved — either party can reopen it.')}
+                    onReopen={(id) => run(() => reopenChangeRequest(id).then(() => {}),
+                      'Reopened — this request is open again.')}
+                    onEdit={(id, body) => run(() => editChangeRequestEntry(id, body).then(() => {}), 'Saved.')}
                   />
                 </DrawerRow>
               </div>

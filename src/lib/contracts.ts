@@ -159,8 +159,7 @@ export interface ContractDetail {
     horse_section_confirmed_by: string | null;
     sent_at: string | null;
     archived_at: string | null;
-    cancelled_at: string | null;
-    // void lifecycle (party-initiated; per-party keep-or-remove)
+    // void lifecycle (party OR staff-initiated; per-party keep-or-remove)
     voided_at?: string | null;
     void_reason?: string | null;
     voided_by_me?: boolean | null;
@@ -605,11 +604,8 @@ export async function sendContractToParty(documentId: string, partyRole: string)
   if (error) throw error;
 }
 
-/** A party cancels the document — notifies all other parties + staff, who then archive or delete. */
-export async function cancelContract(documentId: string): Promise<void> {
-  const { error } = await supabase.rpc('cancel_contract', { p_document_id: documentId });
-  if (error) throw error;
-}
+/* Staff and parties share ONE destructive pre-execution path: the void flow
+ * (voidDocument + setDocumentPartyHidden). */
 
 /** Staff: archive (findable + resumable) or unarchive the document. */
 export async function archiveContract(documentId: string, archive = true): Promise<void> {
@@ -766,6 +762,19 @@ export interface ContractChange {
   actor_roles: string[];
   actor_is_staff: boolean;
   created_at: string;
+  /* SECTION ATTRIBUTION — resolved SERVER-SIDE by contract_change_log_list, which
+   * walks contract_fields → contract_field_defs → the SECTION.FIELD key
+   * convention → retired_field_section, then numbers the result from
+   * contract_section_tree. The client never parses field keys, so the numbers
+   * here always match the composed document. */
+  section_key: string | null;
+  clause_key: string | null;
+  /** The section's live number, e.g. "13". Changes BUNDLE under this. */
+  section_number: string | null;
+  section_title: string | null;
+  /** The finer subsection number where the row resolves that far, e.g. "13.4". */
+  clause_number: string | null;
+  clause_title: string | null;
 }
 export async function contractChangeLog(documentId: string, limit = 200): Promise<ContractChange[]> {
   const { data, error } = await supabase.rpc('contract_change_log_list', {
@@ -809,13 +818,19 @@ export async function contractSectionTree(documentId: string): Promise<SectionTr
  * so comments and change requests are one threaded model:
  *
  *   ROOT row (parent_request_id === null) = a change request against a section.
- *     submitted_at === null → a free-to-edit DRAFT. Autosaved on blur. Does NOT
- *                             block locking (it isn't a request yet).
- *     submitted_at !== null → submitted for review: the thread is LOCKED from
- *                             editing and BLOCKS locking until it is agreed.
- *   CHILD rows = thread entries either party may add after submit, each stamped
- *     with author_role / author_label / created_at.
- *   resolved_at / agreed_at = the explicit Agreed close.
+ *     submitted_at === null → a private DRAFT. Autosaved on blur. Does NOT block
+ *                             locking (it isn't a request yet).
+ *     submitted_at !== null → NOTIFIED. Blocks locking until it is resolved.
+ *   CHILD rows = thread entries either party may add, each stamped with
+ *     author_role / author_label / created_at.
+ *   resolved_at / agreed_at = the close — but a SOFT one: either party may
+ *     reopen (reopened_at / reopened_by_contact_id), which returns the request to
+ *     the open set and blocks locking again.
+ *
+ * NOTIFYING DOES NOT FREEZE ANYTHING. An entry stays editable by its author until
+ * the OTHER PARTY SEES IT (seen_by / is_frozen / can_edit, written by
+ * markChangeRequestSeen on a row click). Document CHANGES freeze on a different
+ * trigger entirely — the counterparty OPENING the document (markDocumentOpened).
  */
 export interface ContractChangeRequestEntry {
   id: string;
@@ -840,6 +855,16 @@ export interface ContractChangeRequestEntry {
   resolved_at: string | null;
   edited_at: string | null;
   created_at: string;
+  /** Set when a resolved request was REOPENED — resolution is a soft close. */
+  reopened_at?: string | null;
+  reopened_by_contact_id?: string | null;
+  /** Everyone OTHER than the author who has genuinely viewed this entry. Rendered
+   *  as the "Seen" stamp beside the author stamp. */
+  seen_by?: { contact_id: string; seen_at: string; role: string | null; label: string | null }[];
+  /** True once somebody other than the author has seen it — it is then read-only. */
+  is_frozen?: boolean;
+  /** True when the CALLER authored this entry and it has not yet been seen. */
+  can_edit?: boolean;
 }
 
 export async function contractChangeRequestsList(documentId: string): Promise<ContractChangeRequestEntry[]> {
@@ -849,8 +874,10 @@ export async function contractChangeRequestsList(documentId: string): Promise<Co
 }
 
 /** AUTOSAVE (on blur). One draft per (document, author, section). An empty body
- *  removes the draft. Throws if the thread was already submitted, or if the
- *  document is locked/executed/void. */
+ *  removes the draft (only while it is still an un-notified draft).
+ *
+ *  Throws once the OTHER PARTY HAS SEEN the request — being seen is what freezes
+ *  an entry, not notifying it. Also throws if the document is locked/executed/void. */
 export async function upsertChangeRequest(
   documentId: string, targetSection: string | null, body: string,
 ): Promise<{ id: string | null; removed: boolean }> {
@@ -861,8 +888,12 @@ export async function upsertChangeRequest(
   return data as { id: string | null; removed: boolean };
 }
 
-/** SUBMIT FOR REVIEW — locks every draft this caller wrote, numbers them, and
- *  notifies the other party with the five highest-impact requests. */
+/** NOTIFY — numbers every draft this caller wrote and notifies the other party
+ *  with the five highest-impact requests.
+ *
+ *  NOTIFYING FREEZES NOTHING. Requests stay editable by their author until the
+ *  other party SEES them (see markChangeRequestSeen); document CHANGES stay
+ *  editable until the other party OPENS the document (see markDocumentOpened). */
 export async function submitChangeRequests(documentId: string): Promise<{
   submitted: number;
   top?: { annotation_number: number; target_section: string | null; heading: string; impact_rank: number; body: string }[];
@@ -887,6 +918,89 @@ export async function emailSubmittedChangeRequests(documentId: string): Promise<
   });
   if (!r.ok) return { emailed: 0 };
   return (await r.json()) as { emailed: number };
+}
+
+// ─── THE TWO FREEZE TRIGGERS (the Notify model) ──────────────────────────────
+/* Notifying freezes nothing. Two DISTINCT genuine-view actions freeze:
+ *
+ *   REQUESTS freeze one at a time, when the counterparty CLICKS THE ROW to
+ *     expand that request's contents  → markChangeRequestSeen([id])
+ *   CHANGES  freeze in bulk, when the counterparty OPENS THE DOCUMENT
+ *                                     → markDocumentOpened(documentId)
+ *
+ * Neither ever fires for your own authorship: the DB skips self-authored entries
+ * and excludes the author's own open. Both are idempotent — first view wins, and
+ * repeat calls are cheap no-ops that never error.
+ *
+ * There is deliberately NO viewport/intersection observation on either path. A
+ * collapsed row and a document you have not opened record nothing. */
+
+/** Record a GENUINE VIEW of one or more change-request entries — call this when
+ *  the reader CLICKS A ROW to expand it, never on collapsed render. Self-authored
+ *  entries are skipped by the DB, so an author can never freeze their own work. */
+export async function markChangeRequestSeen(requestIds: string[]): Promise<{ seen: number }> {
+  if (requestIds.length === 0) return { seen: 0 };
+  const { data, error } = await supabase.rpc('mark_change_request_seen', {
+    p_request_ids: requestIds,
+  });
+  if (error) throw error;
+  return (data ?? { seen: 0 }) as { seen: number };
+}
+
+/** Record that the caller OPENED this document. Freezes the OTHER party's pending
+ *  changes (never the caller's own). Idempotent: first open wins. */
+export async function markDocumentOpened(documentId: string): Promise<{ opened: number }> {
+  const { data, error } = await supabase.rpc('mark_document_opened', { p_document_id: documentId });
+  if (error) throw error;
+  return (data ?? { opened: 0 }) as { opened: number };
+}
+
+/** What a Notify would announce right now — the SINGLE SOURCE OF TRUTH shared by
+ *  the confirmation-modal copy and the enforcement rules, so the two cannot drift.
+ *  `changes_frozen` / `requests_frozen` are the very predicates the DB tests. */
+export interface PendingNotifySummary {
+  document_id: string;
+  /** The counterparty's party_role, e.g. "LESSEE". Derived from the document. */
+  other_party_role: string | null;
+  /** Display form of that role, e.g. "Lessee". Never hardcoded. */
+  other_party_name: string;
+  changes: number;
+  requests: number;
+  has_changes: boolean;
+  has_requests: boolean;
+  anything: boolean;
+  changes_frozen: boolean;
+  requests_frozen: boolean;
+}
+export async function pendingNotifySummary(documentId: string): Promise<PendingNotifySummary> {
+  const { data, error } = await supabase.rpc('pending_notify_summary', { p_document_id: documentId });
+  if (error) throw error;
+  return data as PendingNotifySummary;
+}
+
+/** Edit any of MY entries (root or thread reply) that the other party has not yet
+ *  seen. Refused once seen — the same rule the Notify copy promises. */
+export async function editChangeRequestEntry(requestId: string, body: string): Promise<{ id: string }> {
+  const { data, error } = await supabase.rpc('edit_change_request_entry', {
+    p_request_id: requestId, p_body: body,
+  });
+  if (error) throw error;
+  return data as { id: string };
+}
+
+/** Resolve a request — a SOFT close. Either party may reopen it afterwards. */
+export async function resolveChangeRequestThread(requestId: string): Promise<{ id: string }> {
+  const { data, error } = await supabase.rpc('resolve_change_request_thread', { p_request_id: requestId });
+  if (error) throw error;
+  return data as { id: string };
+}
+
+/** Reopen a resolved request — either party. It re-enters the open set and
+ *  therefore blocks locking again via contract_lock_blockers. */
+export async function reopenChangeRequest(requestId: string): Promise<{ id: string }> {
+  const { data, error } = await supabase.rpc('reopen_change_request', { p_request_id: requestId });
+  if (error) throw error;
+  return data as { id: string };
 }
 
 /** Add an entry to a submitted thread (either party, until it closes). */
