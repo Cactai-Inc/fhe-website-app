@@ -219,6 +219,37 @@ export async function attachPurchaseHorse(purchaseId: string, horseId: string): 
   if (error) throw error;
 }
 
+/** What set_my_onboarding_horses reports back. */
+export interface OnboardingHorseBinding {
+  /** How many open horse documents were rebound. */
+  documents: number;
+  /** documents × horses — the total join rows written. */
+  bindings: number;
+  /** Soft dashboard reminders raised for horses the member deferred. */
+  deferred_reminders: number;
+}
+
+/**
+ * Bind the member's chosen horses to BOTH horse documents and raise the gentle
+ * reminder for any they deferred.
+ *
+ * COMBINED signing = pass every horse id in `horseIds` (one signature covers
+ * them all). SPLIT signing = call this once per horse. `deferredHorseIds` are
+ * horses the member has created but chosen not to finish now: they are NOT put
+ * on the documents, so document completion is never gated on them, and each one
+ * gets a dismissible dashboard action item linking straight to its intake form.
+ */
+export async function setMyOnboardingHorses(
+  horseIds: string[], deferredHorseIds: string[] = [],
+): Promise<OnboardingHorseBinding> {
+  const { data, error } = await supabase.rpc('set_my_onboarding_horses', {
+    p_horse_ids: horseIds,
+    p_deferred_horse_ids: deferredHorseIds.length > 0 ? deferredHorseIds : null,
+  });
+  if (error) throw error;
+  return data as OnboardingHorseBinding;
+}
+
 /** The signed-in member's onboarding snapshot (profile gate, signing checklist,
  *  purchase summary). Drives /app/onboarding and the dashboard plan card. */
 export async function myOnboardingState(): Promise<OnboardingState> {
