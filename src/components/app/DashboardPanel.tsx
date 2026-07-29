@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { fromHere } from '../../lib/linkOrigin';
 import { X, Hand } from 'lucide-react';
 import { myNotifications, consumeNotification, markNotificationRead, type AppNotification } from '../../lib/api';
 import { sayHiBack } from '../../lib/communityFeed';
@@ -46,6 +47,7 @@ function TileCard({ tile, onDismiss, onOpen }: {
   onOpen?: () => void;
 }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const ref = useRef<HTMLDivElement | null>(null);
   const [saidHiBack, setSaidHiBack] = useState(false);
   const isGreeting = !!tile.greeterUserId;
@@ -99,7 +101,11 @@ function TileCard({ tile, onDismiss, onOpen }: {
       ) : (
         <button
           type="button"
-          onClick={() => { onOpen?.(); navigate(tile.to); }}
+          /* RETURN-TO-ORIGIN: a contract opened from a dashboard notification
+             sends the reader back HERE after a void/close, rather than to the
+             generic documents list. ContractPage validates this and falls back
+             on its own if it is ever unusable. */
+          onClick={() => { onOpen?.(); navigate(tile.to, { state: fromHere(location) }); }}
           className="inline-flex mt-3 text-[10.5px] tracking-wide uppercase text-white bg-green-800 px-3.5 py-2 rounded-lg font-medium hover:bg-green-700 focus-ring"
         >
           {tile.cta} →

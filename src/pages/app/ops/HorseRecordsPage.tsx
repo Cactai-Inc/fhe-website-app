@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
+import { fromHere } from '../../../lib/linkOrigin';
 import { X, Plus, PencilLine, FileText, UserRound } from 'lucide-react';
 import { useDocumentTitle } from '../../../lib/hooks';
 import {
@@ -23,6 +24,7 @@ const input = 'w-full px-3 py-2 rounded-lg border border-green-800/15 text-sm te
 function EditableRecord({
   r, contacts, onSaved,
 }: { r: StaffHorseRecord; contacts: ContactOption[]; onSaved: () => void }) {
+  const location = useLocation();
   const [editing, setEditing] = useState(false);
   const [patch, setPatch] = useState<Record<string, string>>({});
   const [ownerId, setOwnerId] = useState(r.owner_contact_id ?? '');
@@ -106,7 +108,7 @@ function EditableRecord({
           {r.active_lease_doc && (
             <p className="text-xs text-green-800 mt-1">
               Active lease:{' '}
-              <Link to={`/app/contracts/${r.active_lease_doc.document_id}`} className="underline underline-offset-2 font-medium">
+              <Link to={`/app/contracts/${r.active_lease_doc.document_id}`} state={fromHere(location)} className="underline underline-offset-2 font-medium">
                 {r.active_lease_doc.display_code ?? 'View lease'}
                 {r.active_lease_doc.effective_date ? ` · ${r.active_lease_doc.effective_date}` : ''}
               </Link>

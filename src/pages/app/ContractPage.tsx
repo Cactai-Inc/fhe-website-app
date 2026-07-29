@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
+import { originFrom } from '../../lib/linkOrigin';
 import {
   FileText, CheckCircle2, Lock, Send, PenLine, ShieldCheck, RotateCcw, MessageSquarePlus,
   ChevronDown, ChevronUp, History,
@@ -13,7 +14,7 @@ import {
   setPartyControls, contractSigningSet,
   contractRedlineState, resolveFieldEdit, withdrawFieldEdit,
   resolveClause, withdrawClause, attachHorseToDocument,
-  sendContractToParty, cancelContract, hardDeleteContract,
+  sendContractToParty, markDocumentOpened,
   setFieldResponsibility, setFieldIncluded, setFieldNa, setFieldControlOverride, setFieldStructured,
   postContractComment, documentPartiesSummary, captureContactInfo, captureHorseRecord,
   saveContract, inviteCounterparty,
@@ -271,12 +272,13 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   const [voidModal, setVoidModal] = useState(false);
   const [showSticky, setShowSticky] = useState(false);
   const actionCardRef = useRef<HTMLDivElement | null>(null);
-  // Where to send a party who VOIDS and chooses "remove": the page they were on
-  // when the contract was opened. Captured once on mount (router state set by the
-  // link that brought them here, else the documents list).
-  const returnTo = useRef<string>(
-    (location.state as { from?: string } | null)?.from ?? '/app/documents',
-  ).current;
+  // RETURN-TO-ORIGIN. Where to send someone who VOIDS and chooses "remove", or
+  // who closes the document: the page they came FROM. The linking site puts it in
+  // router state (fromHere); `originFrom` validates it and falls back to
+  // /app/documents when it is missing, malformed, or not an in-app path — so a
+  // bad origin degrades quietly instead of erroring or leaving the app.
+  // Captured once on mount so later navigation can't move the target.
+  const returnTo = useRef<string>(originFrom(location.state)).current;
   // Extra recipient emails typed into the Send-for-review card (beyond the emails
   // already on file for each party). The draft is the in-progress input.
   const [extraEmails, setExtraEmails] = useState<string[]>([]);
@@ -301,6 +303,19 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
     }
   }, [id]);
   useEffect(() => { void load(); }, [load]);
+
+  /* THE CHANGES FREEZE TRIGGER — the counterparty OPENING THE DOCUMENT.
+     Once another party has opened the contract, the authoring party's pending
+     CHANGES (field edits) are locked. That is the whole test: no scroll
+     observation, no per-section viewport tracking. The DB records one row per
+     (document, contact), first-open-wins, and `document_changes_frozen`
+     deliberately ignores the caller's OWN open — you cannot lock yourself out by
+     reading your own document. Repeat opens are cheap no-ops.
+     Failures are swallowed: a stamp must never stop someone reading a contract. */
+  useEffect(() => {
+    if (!id) return;
+    markDocumentOpened(id).catch(() => { /* never block reading the document */ });
+  }, [id]);
 
   // STICKY ACTION BAR — the action card must be reachable at ALL times. Once the
   // full card scrolls out of view, a thinner subheader with one row of buttons
@@ -377,13 +392,13 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   const horseConfirmed = !!doc?.horse_section_confirmed_at;
   const isSent = !!doc?.sent_at;
   const isArchived = !!doc?.archived_at;
-  const isCancelled = !!doc?.cancelled_at;
   const isExecuted = state === 'executed';
   const isTerminated = state === 'terminated';
   const terminationRequested = !!doc?.termination_requested_at && !isTerminated;
-  // A dead/inactive contract (terminated / cancelled / void) is the only time the
-  // per-party Archive control is offered — you archive to clear it from your list.
-  const isInactive = isTerminated || isCancelled || state === 'void';
+  // A dead/inactive contract (terminated or void) is the only time the per-party
+  // Archive control is offered — you archive to clear it from your list. There is
+  // no "cancelled" state any more: staff and parties share the one VOID flow.
+  const isInactive = isTerminated || state === 'void';
   // ── VOID lifecycle ──
   // `can_void` comes from the DB (can_void_document): a party who has NOT signed,
   // on a live document. It stays true after the OTHER party signs, and goes false
@@ -551,39 +566,12 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
     finally { setSaving(false); }
   }
 
-  // Cancel — before the document has ever been sent, cancelling makes it as if it
-  // never existed: a silent hard delete, no one notified. Once it has been sent (but
-  // not yet executed), Cancel stops it being worked on and notifies all parties; it
-  // stays visible. (An executed contract is never cancelled — it's TERMINATED, which
-  // is a separate mutual-agreement flow below.)
-  function cancelDocument() {
-    // A RECIPIENT (non-owner party) sees this as "Decline" — declining VOIDS the
-    // contract, so the modal warns them and points to the softer options first
-    // (suggest a change, or message the Lessor). Declining is only for when they no
-    // longer wish to lease at all.
-    if (!isOwnerSide) {
-      const ok = window.confirm(
-        'Decline this contract?\n\n'
-        + 'This CANCELS the contract entirely — it is only for when you no longer wish to lease from the Lessor.\n\n'
-        + 'If you just want a change instead, close this and either:\n'
-        + '  • use "Suggest a change" on the specific term (click the item in the document, then Suggest a change), or\n'
-        + '  • message the Lessor directly to request the change.\n\n'
-        + 'Are you sure you want to decline and cancel this contract?');
-      if (ok) void act(() => cancelContract(id!), 'You declined — the contract was cancelled and the Lessor notified.');
-      return;
-    }
-    // Owner side. Before it has been sent, cancelling removes it entirely (no one
-    // notified). Once sent, it notifies all parties and stays on file.
-    if (!isSent) {
-      if (window.confirm('Cancel this document? It has not been sent to anyone, so it will be removed entirely — as if it never existed. No one is notified.')) {
-        void act(async () => { await hardDeleteContract(id!); navigate('/app/ops/documents'); });
-      }
-      return;
-    }
-    if (window.confirm('Cancel this document? All parties will be notified. It stays on file so it can still be viewed.')) {
-      void act(() => cancelContract(id!), 'Document cancelled — all parties notified.');
-    }
-  }
+  /* THE CANCEL PATH IS GONE (owner-final). Staff and parties now share the ONE
+     void flow — the same 3-page VoidContractModal, the same note field, the same
+     counterparty notification. `can_void_document` admits staff-in-org, so the
+     "Void contract" button below is the single destructive pre-execution action
+     for everyone. Staff additionally keep the hard Delete for a document that
+     was never sent. */
 
   // Terminate (executed contracts only) — mutual agreement. A party's request goes
   // to the other party to approve/decline; staff's request goes to both parties. The
@@ -823,11 +811,11 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         <div ref={actionCardRef} className="bg-white border border-green-800/10 rounded-xl mb-5 divide-y divide-green-800/10">
           {/* MANAGE — pre-execution only. Save (owner), Cancel (any party), Delete
               (staff, hard delete before execution), and per-party Archive once the
-              contract is inactive (terminated/cancelled). */}
+              contract is inactive (terminated/void). */}
           {!isExecuted && (
           <div className="p-5 sm:p-6">
             <p className="text-[11px] uppercase tracking-wide text-muted mb-3">Manage</p>
-            {!isOwnerSide && myRoles.length > 0 && editablePhase && !isCancelled && !isInactive ? (
+            {!isOwnerSide && myRoles.length > 0 && editablePhase && !isInactive ? (
               /* REVIEWER header row (owner-specified layout): "Approve & continue"
                  far LEFT (primary), "Request changes" a normal gap to its right,
                  and "Decline" alone on the far RIGHT (destructive; keeps the
@@ -888,14 +876,8 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                 )}
               </div>
               <div className="flex flex-col sm:flex-row gap-3 sm:ml-auto">
-                {!isCancelled && isOwnerSide && (
-                  <button type="button"
-                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-green-800/20 px-4 py-3 text-sm font-medium text-secondary hover:bg-green-800/5 focus-ring"
-                    onClick={cancelDocument}>
-                    Cancel
-                  </button>
-                )}
-                {!isCancelled && !isOwnerSide && canVoid && (
+                {/* ONE void path for everyone — staff and parties alike. */}
+                {canVoid && (
                   <button type="button"
                     className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-300 px-4 py-3 text-sm font-medium text-red-700 hover:bg-red-50 focus-ring"
                     onClick={() => setVoidModal(true)}>
@@ -1074,7 +1056,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                 <div className="mt-4 rounded-lg border-l-4 border-gold-400 border-y border-r border-green-800/10 bg-cream-100/30 p-4">
                   <ContractChangeRequests
                     documentId={id}
-                    canRequest={editablePhase && !isCancelled && !isVoid}
+                    canRequest={editablePhase && !isVoid}
                     refreshKey={changeKey}
                     onCount={setOpenRequestCount}
                     onChanged={() => { void load(); }}
@@ -1097,7 +1079,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       {showDeck && showSticky && id && (
         <div className="sticky top-0 z-30 -mx-1 px-2 py-2 mb-3 bg-cream-100/95 backdrop-blur border-b border-green-800/15 flex items-center gap-2 overflow-x-auto">
           {/* desktop-only actions */}
-          {!isOwnerSide && myRoles.length > 0 && editablePhase && !isCancelled && !isInactive && (
+          {!isOwnerSide && myRoles.length > 0 && editablePhase && !isInactive && (
             <button type="button" className="hidden sm:inline-flex btn-primary text-xs py-1.5 px-3 shrink-0"
               onClick={() => void approveReview()}>
               <CheckCircle2 size={13} /> Accept &amp; sign
@@ -1120,7 +1102,8 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           {isOwnerSide && editablePhase && (
             <button type="button" className="hidden sm:inline-flex btn-secondary text-xs py-1.5 px-3 shrink-0"
               disabled={notifying} onClick={() => void sendReview()}>
-              <Send size={13} /> Submit for review
+              {/* Same action as the Notify card above — one label for one thing. */}
+              <Send size={13} /> Notify for review
             </button>
           )}
           {canVoid && (
@@ -1138,14 +1121,14 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       <div className={`mb-1 ${isInactive ? 'opacity-60' : ''}`}>
         <div className="flex justify-end">
         <span className={`text-xs font-sans px-2.5 py-1 rounded-full whitespace-nowrap ${
-          isTerminated || isCancelled ? 'bg-red-100 text-red-800'
+          isTerminated || isVoid ? 'bg-red-100 text-red-800'
           : state === 'executed' ? 'bg-green-800 text-white'
           : state === 'locked' ? 'bg-gold-50 text-gold-ink' : 'bg-green-800/10 text-green-800'
         }`}>
           {isTerminated
             ? `Terminated${doc?.terminated_at ? ` · ${new Date(doc.terminated_at).toLocaleDateString()}` : ''}`
-            : isCancelled
-              ? `Cancelled${doc?.cancelled_at ? ` · ${new Date(doc.cancelled_at).toLocaleDateString()}` : ''}`
+            : isVoid
+              ? `Void${doc?.voided_at ? ` · ${new Date(doc.voided_at).toLocaleDateString()}` : ''}`
               : (STATE_LABEL[state] ?? state)}
         </span>
         </div>
@@ -1233,7 +1216,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           clause-model docs so the actions are always reachable. */}
       {structure && id && state !== 'executed' && (
         <div className="sticky top-0 z-20 -mx-1 px-1 py-1.5 mb-3 bg-cream-100/95 backdrop-blur border-b border-green-800/10 flex flex-wrap items-center gap-2">
-          {!isCancelled && state !== 'void' && (
+          {state !== 'void' && (
             <button type="button" className="btn-outline-gold text-xs inline-flex items-center gap-1"
               onClick={() => { setCommentModal({ step: 'pick' }); setCommentDraft(''); }}>
               <MessageSquarePlus size={13} /> Add a Comment
@@ -1353,19 +1336,15 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       {error && <p role="alert" className="form-error mb-3">{error}</p>}
       {note && <p className="mb-3 rounded px-4 py-2 text-sm bg-green-50 text-green-900">{note}</p>}
 
-      {/* lifecycle status banners */}
-      {isCancelled && (
-        <div className="mb-4 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
-          <p className="font-medium">This document was cancelled.</p>
-          {isStaff && <p className="mt-0.5">Archive it (findable &amp; resumable) or delete it entirely below.</p>}
-        </div>
-      )}
-      {isArchived && !isCancelled && (
+      {/* lifecycle status banners. (There is no cancelled banner: the cancel path
+          was removed — a dead pre-execution contract is VOID, and the void notice
+          is rendered by VoidedKeepOrRemove / the void watermark below.) */}
+      {isArchived && !isVoid && (
         <div className="mb-4 rounded-lg border border-green-800/20 bg-cream-100 px-4 py-2.5 text-sm text-secondary">
           Archived — kept on file and resumable. {isStaff && 'Unarchive it below to continue.'}
         </div>
       )}
-      {isSent && !isCancelled && !isArchived && state !== 'executed' && (
+      {isSent && !isVoid && !isArchived && state !== 'executed' && (
         <p className="mb-3 text-xs text-muted">Sent to the other party — they’ve been notified.</p>
       )}
 
@@ -1445,7 +1424,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           editing / in_review); other parties see the awaiting note ONLY while
           unconfirmed. */}
       {structure && !!doc.horse_id && horseFields.length > 0 && editablePhase
-        && !isCancelled && !showHorseGate && (
+        && !isVoid && !showHorseGate && (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 bg-white border border-green-800/10 rounded-xl px-5 py-3">
           <p className="text-sm font-medium text-green-900">Horse information</p>
           {horseConfirmed ? (
@@ -1801,7 +1780,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           <div className="rounded-lg border-l-4 border-gold-400 border-y border-r border-green-800/10 bg-cream-100/30 p-4">
             <ContractChangeRequests
               documentId={id}
-              canRequest={editablePhase && !isCancelled && !isVoid}
+              canRequest={editablePhase && !isVoid}
               refreshKey={changeKey}
               onCount={setOpenRequestCount}
               onChanged={() => { void load(); }}

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
+import { fromHere } from '../../lib/linkOrigin';
 import { FileText, Check, Download, History } from 'lucide-react';
 import { myDocuments, type MyDocumentRow } from '../../lib/api';
 import {
@@ -24,6 +25,7 @@ function SelfSignRow({
   item: SignableDocument;
   onSign: (item: SignableDocument, typedName: string) => Promise<void>;
 }) {
+  const location = useLocation();
   const [typedName, setTypedName] = useState('');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,7 +77,7 @@ function SelfSignRow({
               )}
             </div>
           ) : isContractDoc ? (
-            <Link to={`/app/contracts/${doc.id}`}
+            <Link to={`/app/contracts/${doc.id}`} state={fromHere(location)}
               className="btn-outline-gold inline-flex items-center mt-3 text-sm">
               Open to review &amp; sign →
             </Link>

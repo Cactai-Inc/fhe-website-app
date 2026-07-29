@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
+import { fromHere } from '../../lib/linkOrigin';
 import { FileSignature, FileText, CheckCircle2, MessageSquare } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
 import { useAuth } from '../../contexts/AuthContext';
@@ -13,6 +14,7 @@ import { myContractDocuments, type MyContractRow } from '../../lib/contracts';
 export default function DealHome() {
   useDocumentTitle('Acquisition');
   const { profile } = useAuth();
+  const location = useLocation();
   const [docs, setDocs] = useState<MyContractRow[] | null>(null);
 
   useEffect(() => {
@@ -38,7 +40,7 @@ export default function DealHome() {
           <ul className="flex flex-col gap-2">
             {toSign.map((d) => (
               <li key={d.document_id}>
-                <Link to={`/app/contracts/${d.document_id}`} className="flex items-center justify-between gap-3 bg-white border border-green-800/10 rounded-lg px-4 py-2.5 hover:border-green-800/30 focus-ring">
+                <Link to={`/app/contracts/${d.document_id}`} state={fromHere(location)} className="flex items-center justify-between gap-3 bg-white border border-green-800/10 rounded-lg px-4 py-2.5 hover:border-green-800/30 focus-ring">
                   <span className="inline-flex items-center gap-2 text-green-900"><FileSignature size={16} className="text-green-700" /> {d.title}</span>
                   <span className="text-xs text-gold-800 font-medium">Review &amp; sign →</span>
                 </Link>
