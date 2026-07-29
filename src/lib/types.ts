@@ -48,8 +48,13 @@ export interface Profile {
   riding_level: string | null;
   is_suspended: boolean;
   /** A3: when this account first dismissed the app-overview tour (null = show
-   *  it on next login). Menu re-opens never stamp it. */
+   *  it on next login). Menu re-opens never stamp it. Kept as the legacy
+   *  "any form factor" stamp; the split markers below are authoritative. */
   tour_seen_at?: string | null;
+  /** A3 split persistence: the desktop and mobile tours are different
+   *  experiences — each auto-shows on ITS form factor until dismissed there. */
+  tour_seen_desktop_at?: string | null;
+  tour_seen_mobile_at?: string | null;
 }
 
 /** Flat catalog: an Offering IS the purchasable item (the tier layer was removed

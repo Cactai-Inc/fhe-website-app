@@ -8,7 +8,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import {
   contractDocumentDetail, setContractField,
   resolveChangeRequest, advanceWorkflow, sendForReview, lockAndSign, confirmHorseSection,
-  reopenHorseSection,
+  reopenHorseSection, approveContractReview, requestDocumentChange,
   setPartyControls, contractSigningSet,
   contractRedlineState, resolveFieldEdit, withdrawFieldEdit,
   resolveClause, withdrawClause, attachHorseToDocument,
@@ -261,6 +261,9 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   // capture modal shown when locking with gaps.
   const [partiesSummary, setPartiesSummary] = useState<PartiesHorseSummary | null>(null);
   const [captureParty, setCaptureParty] = useState<PartySummary | null>(null);
+  // H3: the reviewer's Request-changes modal (target section + requested change).
+  const [crModal, setCrModal] = useState<{ section: string; text: string } | null>(null);
+  const [crPosting, setCrPosting] = useState(false);
   // Extra recipient emails typed into the Send-for-review card (beyond the emails
   // already on file for each party). The draft is the in-progress input.
   const [extraEmails, setExtraEmails] = useState<string[]>([]);
@@ -333,7 +336,10 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   const viewAsSigner = staffIsParty
     ? (viewChoice === undefined ? defaultAsSigner : viewChoice === 'signer')
     : false;
-  const isOwnerSide = (isStaff || (doc?.is_originator ?? false)) && !viewAsSigner;
+  // H1 originator-authority collapse: the company (staff) is always the author.
+  // A party being stamped as originator is provenance only — it no longer opens
+  // the owner-side surface.
+  const isOwnerSide = isStaff && !viewAsSigner;
   const isLessor = myRoles.includes('LESSOR');
   // Editing is allowed in review too — the parties' per-party controls (can_fill /
   // can_edit_deal) decide what each may actually change; a party with neither just
@@ -563,6 +569,23 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
     void act(() => declineContractTermination(id!), 'Termination declined — the contract remains in force.');
   }
 
+  // H2: reviewer approval — ALWAYS recorded; the document locks when every
+  // non-staff signing party has approved and the preconditions pass, otherwise
+  // the named blockers come back for display.
+  async function approveReview() {
+    setError(null); setNote(null);
+    try {
+      const r = await approveContractReview(id!);
+      setNote(r.locked
+        ? 'Approved — the contract is locked and ready to sign below.'
+        : `Your approval was recorded. Before signing can open: ${r.blockers.map((b) => b.message).join('; ')}`);
+      await load();
+      setChangeKey((k) => k + 1);
+    } catch (e) {
+      setError(errMessage(e, 'Could not record your approval.'));
+    }
+  }
+
   // Per-party archive — hide/unhide this contract from MY own document list only.
   function toggleMyArchive() {
     void act(() => setDocumentPartyArchived(id!, !isArchived),
@@ -768,10 +791,37 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           {!isExecuted && (
           <div className="p-5 sm:p-6">
             <p className="text-[11px] uppercase tracking-wide text-muted mb-3">Manage</p>
-            {/* Preserving actions (Save / Archive) sit on the LEFT; destructive
+            {!isOwnerSide && myRoles.length > 0 && editablePhase && !isCancelled && !isInactive ? (
+              /* REVIEWER header row (owner-specified layout): "Approve & continue"
+                 far LEFT (primary), "Request changes" a normal gap to its right,
+                 and "Decline" alone on the far RIGHT (destructive; keeps the
+                 hard-void confirm behavior). Generous spacing throughout. */
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button type="button"
+                    className="btn-primary justify-center py-3 px-5 text-sm"
+                    onClick={() => void approveReview()}>
+                    <CheckCircle2 size={15} /> Approve &amp; continue
+                  </button>
+                  <button type="button"
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-green-800/20 px-4 py-3 text-sm font-medium text-green-900 hover:bg-green-800/5 focus-ring"
+                    onClick={() => setCrModal({ section: '', text: '' })}>
+                    Request changes
+                  </button>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3 sm:ml-auto">
+                  <button type="button"
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-300 px-4 py-3 text-sm font-medium text-red-700 hover:bg-red-50 focus-ring"
+                    onClick={cancelDocument}>
+                    Decline
+                  </button>
+                </div>
+              </div>
+            ) : (
+            /* Preserving actions (Save / Archive) sit on the LEFT; destructive
                 actions (Cancel / Delete) are pushed to the RIGHT so there's clear
                 space between the buttons that keep a document and the ones that kill
-                it — no accidental taps. On mobile they stack (preserve then destroy). */}
+                it — no accidental taps. On mobile they stack (preserve then destroy). */
             <div className="flex flex-col sm:flex-row sm:items-center gap-3">
               <div className="flex flex-col sm:flex-row gap-3">
                 {isOwnerSide && (
@@ -810,6 +860,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                 )}
               </div>
             </div>
+            )}
           </div>
           )}
 
@@ -1107,6 +1158,55 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           </div>
         </div>
       )}
+      {/* H3: Request-changes modal — target section + the requested change. Logs
+          an OPEN change request (which blocks locking) and notifies the author. */}
+      {crModal && id && (
+        <div className="fixed inset-0 z-40 bg-black/30 flex items-center justify-center p-4"
+          onClick={() => setCrModal(null)}>
+          <div className="bg-white rounded-xl border border-green-800/15 p-6 max-w-xl w-full shadow-lg"
+            onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-serif text-green-900 mb-1">Request a change</h3>
+            <p className="text-sm text-muted mb-3">
+              Describe the change you&rsquo;d like. It goes to the author as an open change
+              request — the contract can&rsquo;t be locked for signing until it&rsquo;s resolved.
+            </p>
+            <label className="form-label block mb-2">
+              Where (optional)
+              <select className="form-input mt-1" value={crModal.section}
+                onChange={(e) => setCrModal({ ...crModal, section: e.target.value })}>
+                <option value="">The whole document</option>
+                {(structure
+                  ? structure.sections.map((s) => ({ key: s.section_key, label: s.heading }))
+                  : sections.map(([s]) => ({ key: s, label: s })))
+                  .map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+              </select>
+            </label>
+            <textarea rows={4} className="form-input resize-y text-sm w-full" autoFocus
+              placeholder="What should be different? (the term you'd like changed, and to what)"
+              value={crModal.text} onChange={(e) => setCrModal({ ...crModal, text: e.target.value })} />
+            <div className="mt-3 flex justify-end gap-2">
+              <button type="button" className="btn-secondary text-xs" onClick={() => setCrModal(null)}>Cancel</button>
+              <button type="button" className="btn-primary text-xs"
+                disabled={crPosting || !crModal.text.trim()}
+                onClick={async () => {
+                  setCrPosting(true); setError(null);
+                  try {
+                    await requestDocumentChange(id, null, crModal.text.trim(), crModal.section || null);
+                    setCrModal(null);
+                    setNote('Change request sent — the author has been notified.');
+                    await load();
+                    setChangeKey((k) => k + 1);
+                  } catch (e) {
+                    setError(errMessage(e, 'Could not send the change request.'));
+                  } finally { setCrPosting(false); }
+                }}>
+                {crPosting ? 'Sending…' : 'Send request'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Party-facing notes/instructions don't apply during the creation step
           (the embedded inline authoring view) \u2014 nothing has been sent to either
           party yet. Only show guidance on the standalone contract page. */}
@@ -1210,6 +1310,37 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       {/* Horse gate — pick/add the horse before the rest of the contract */}
       {showHorseGate && id && (
         <HorseGate documentId={id} onAttached={() => { void load(); }} />
+      )}
+
+      {/* H5: horse-confirmation control for clause-model documents (the legacy
+          flat renderer's header affordance never renders for these, so the
+          Lessor previously had NO way to confirm). Gated on RIGHTS, not phase:
+          the Lessor (or staff) sees it in every pre-lock state (editable /
+          editing / in_review); other parties see the awaiting note ONLY while
+          unconfirmed. */}
+      {structure && !!doc.horse_id && horseFields.length > 0 && editablePhase
+        && !isCancelled && !showHorseGate && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 bg-white border border-green-800/10 rounded-xl px-5 py-3">
+          <p className="text-sm font-medium text-green-900">Horse information</p>
+          {horseConfirmed ? (
+            <span className="inline-flex items-center gap-1.5 text-xs text-green-700">
+              <ShieldCheck size={14} /> Confirmed accurate
+              {(isLessor || isStaff) && (
+                <button type="button" className="underline text-muted ml-2"
+                  onClick={() => void act(() => reopenHorseSection(id!))}>
+                  <RotateCcw size={11} className="inline" /> reopen
+                </button>
+              )}
+            </span>
+          ) : (isLessor || isStaff) ? (
+            <button type="button" className="btn-outline-gold text-xs"
+              onClick={() => void act(() => confirmHorseSection(id!), 'Horse information confirmed.')}>
+              <ShieldCheck size={13} /> I reviewed the horse info — it's accurate
+            </button>
+          ) : (
+            <span className="text-xs text-muted">Awaiting Lessor confirmation</span>
+          )}
+        </div>
       )}
 
       {/* Clause-model documents (Section›Clause›Field): numbered structure with

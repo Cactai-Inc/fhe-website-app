@@ -11,7 +11,12 @@ import {
   categoryDocumentDefaults, getContactRequiredDocuments, setContactRequiredDocuments,
   adminAttachOfferings, staffAssignableTemplates, staffAssignDocuments,
   type ClientAccountRow, type ClientItems, type CategoryDocDefault, type AssignableTemplate,
+  type AssignDocumentsResult,
 } from '../../lib/admin';
+import {
+  contactHorseRecords, horseRecordCompleteness, requestHorseRecordCompletion,
+  type HorseIntakeRecord,
+} from '../../lib/horses';
 import { fetchOfferings } from '../../lib/api';
 import { docDisplayLabel } from '../../lib/documentStatus';
 import { ProvisionClientForm } from '../../components/app/ProvisionClientForm';
@@ -125,6 +130,10 @@ function AssignDocumentsModal({ contactId, onClose, onAssigned }: {
   const [picked, setPicked] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  // Explicit confirmation: the modal stays open after a successful assign and
+  // states exactly what happened (incl. which signed docs were superseded for
+  // re-signature) — no more silent close-and-nothing-changed.
+  const [result, setResult] = useState<AssignDocumentsResult | null>(null);
 
   useEffect(() => {
     staffAssignableTemplates(contactId).then(setTemplates).catch((e) =>
@@ -138,11 +147,46 @@ function AssignDocumentsModal({ contactId, onClose, onAssigned }: {
     if (picked.length === 0) return;
     setBusy(true); setErr(null);
     try {
-      await staffAssignDocuments(contactId, picked);
-      onAssigned();
+      const r = await staffAssignDocuments(contactId, picked);
+      setResult(r);
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Could not assign.');
     } finally { setBusy(false); }
+  }
+
+  if (result) {
+    const titleFor = (k: string) => templates.find((t) => t.template_key === k)?.title ?? k;
+    return (
+      <div className="fixed inset-0 z-[80] bg-green-950/40 flex items-center justify-center p-4" onClick={onAssigned}>
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6" onClick={(e) => e.stopPropagation()}>
+          <h2 className="font-serif text-xl text-green-900 mb-2">Documents assigned</h2>
+          <p className="text-sm text-green-900 mb-3">
+            {result.assigned.length} document{result.assigned.length === 1 ? '' : 's'} now
+            awaiting their signature — they'll be walled to sign at their next sign-in,
+            and the list below shows as “Awaiting signature” on this page.
+          </p>
+          <ul className="text-sm text-green-900 mb-3 flex flex-col gap-1">
+            {result.assigned.map((k) => (
+              <li key={k} className="flex items-baseline justify-between gap-3 border border-green-800/10 rounded-lg px-3 py-1.5">
+                <span>{titleFor(k)}</span>
+                {result.resign.includes(k) && (
+                  <span className="text-[11px] text-gold-800 whitespace-nowrap">replaces signed copy</span>
+                )}
+              </li>
+            ))}
+          </ul>
+          {result.resign.length > 0 && (
+            <p className="text-xs text-muted mb-4">
+              Their previously signed {result.resign.length === 1 ? 'copy is' : 'copies are'} kept
+              on file as superseded evidence.
+            </p>
+          )}
+          <div className="flex justify-end">
+            <button type="button" className="btn-primary" onClick={onAssigned}>Done</button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const onFile = (t: AssignableTemplate) =>
@@ -186,6 +230,78 @@ function AssignDocumentsModal({ contactId, onClose, onAssigned }: {
             {busy ? 'Assigning…' : `Assign ${picked.length || ''}`.trim()}
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/** DOCUMENTS-TAB HORSE CARD — the client's horse records beside their document
+ *  list: per horse, a link to the record, its completeness against the
+ *  doc-required field set (not started / partially complete / complete, with
+ *  what's missing), an admin-editable intake view (staff may contribute), and
+ *  a "send task" action that notifies the member to finish the required fields
+ *  (existing notifications machinery → their dashboard). */
+function ClientHorseRecordsCard({ contactId }: { contactId: string }) {
+  const [horses, setHorses] = useState<HorseIntakeRecord[] | null>(null);
+  const [taskSent, setTaskSent] = useState<Record<string, 'sending' | 'sent' | 'error'>>({});
+
+  useEffect(() => {
+    let active = true;
+    contactHorseRecords(contactId)
+      .then((h) => active && setHorses(h))
+      .catch(() => active && setHorses([]));
+    return () => { active = false; };
+  }, [contactId]);
+
+  async function sendTask(horseId: string) {
+    setTaskSent((p) => ({ ...p, [horseId]: 'sending' }));
+    try {
+      await requestHorseRecordCompletion(horseId);
+      setTaskSent((p) => ({ ...p, [horseId]: 'sent' }));
+    } catch {
+      setTaskSent((p) => ({ ...p, [horseId]: 'error' }));
+    }
+  }
+
+  if (horses === null || horses.length === 0) return null;
+  return (
+    <div className="mb-4 rounded-lg border border-green-800/10 bg-white p-4">
+      <p className="text-[11px] tracking-wide uppercase text-secondary/70 mb-2">Horse records</p>
+      <div className="flex flex-col gap-2">
+        {horses.map((h) => {
+          const c = horseRecordCompleteness(h);
+          const name = String(h.nickname || h.registered_name || 'Horse');
+          const badge = c.state === 'complete' ? 'Complete'
+            : c.state === 'partial' ? `Partially complete (${c.answered}/${c.total})`
+            : 'Not started';
+          const badgeCls = c.state === 'complete' ? 'bg-green-800 text-white'
+            : c.state === 'partial' ? 'bg-gold-600 text-white' : 'bg-cream-100 text-secondary';
+          const task = taskSent[h.id];
+          return (
+            <div key={h.id} className="border border-green-800/10 rounded-lg px-3 py-2.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <Link to={`/app/horses/${h.id}`} className="text-sm font-medium text-green-900 underline underline-offset-2">
+                  {name}
+                </Link>
+                <span className={`text-[10.5px] uppercase tracking-wide px-2 py-0.5 rounded-full ${badgeCls}`}>{badge}</span>
+                <span className="flex-1" />
+                <Link to={`/app/horse-intake?horse=${h.id}`}
+                  className="text-xs text-gold-800 underline underline-offset-2">Open intake form</Link>
+                {c.state !== 'complete' && (
+                  <button type="button" onClick={() => void sendTask(h.id)}
+                    disabled={task === 'sending' || task === 'sent'}
+                    className="text-xs text-green-800 border border-green-800/20 rounded-lg px-2.5 py-1 hover:bg-green-50 focus-ring disabled:opacity-60">
+                    {task === 'sending' ? 'Sending…' : task === 'sent' ? 'Task sent' : 'Ask them to finish it'}
+                  </button>
+                )}
+              </div>
+              {c.state !== 'complete' && c.missing.length > 0 && (
+                <p className="text-[11.5px] text-muted mt-1.5">Missing: {c.missing.join(', ')}</p>
+              )}
+              {task === 'error' && <p className="text-[11.5px] text-red-700 mt-1">Could not send the task.</p>}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -947,20 +1063,30 @@ export default function Admin() {
                 onAssigned={() => { setAssignOpen(false); setTabRefresh((n) => n + 1); }} />
             )}
             {ov && tab === 'documents' && (
-              <RpcListTab key={tabRefresh} userId={selected.user_id!} rpc="admin_client_documents" empty="No documents."
-                create={{ label: 'Assign documents', onClick: () => setAssignOpen(true) }}
-                map={(r) => {
-                  // NOT_STARTED = a required doc with no generated instance yet (assigned
-                  // but the member hasn't onboarded). No real document to open → no href.
-                  const notStarted = String(r.status) === 'NOT_STARTED';
-                  return {
-                    key: String(r.id),
-                    main: String(r.title ?? 'Document'),
-                    sub: notStarted ? 'Assigned — not started' : fmtTs(r.created_at as string),
-                    badge: notStarted ? 'Not started' : docDisplayLabel(r.status as string, r.workflow_state as string),
-                    href: notStarted ? undefined : `/app/ops/documents/${String(r.id)}`,
-                  };
-                }} />
+              <>
+                {selected.contact_id && <ClientHorseRecordsCard contactId={selected.contact_id} />}
+                <RpcListTab key={tabRefresh} userId={selected.user_id!} rpc="admin_client_documents" empty="No documents."
+                  create={{ label: 'Assign documents', onClick: () => setAssignOpen(true) }}
+                  map={(r) => {
+                    // Requirement rows (no real document to open → no href):
+                    //   NOT_STARTED = assigned, no history at all;
+                    //   ASSIGNED    = re-assigned — prior signed copy superseded,
+                    //                 awaiting a fresh signature.
+                    const notStarted = String(r.status) === 'NOT_STARTED';
+                    const assigned = String(r.status) === 'ASSIGNED';
+                    return {
+                      key: String(r.id),
+                      main: String(r.title ?? 'Document'),
+                      sub: notStarted ? 'Assigned — not started'
+                        : assigned ? 'Assigned — awaiting signature'
+                        : fmtTs(r.created_at as string),
+                      badge: notStarted ? 'Not started'
+                        : assigned ? 'Awaiting signature'
+                        : docDisplayLabel(r.status as string, r.workflow_state as string),
+                      href: (notStarted || assigned) ? undefined : `/app/ops/documents/${String(r.id)}`,
+                    };
+                  }} />
+              </>
             )}
             {ov && tab === 'orders' && (
               <div>

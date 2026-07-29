@@ -25,6 +25,7 @@ import { signMyDocument } from '../../lib/ops/api-client';
 import { BodyWithSignatures } from '../../components/ops/documents/MergedBodyView';
 import { toErrorMessage } from '../../lib/ops/errors';
 import { useDocumentTitle } from '../../lib/hooks';
+import { listStableHorses, type StableHorse } from '../../lib/stable';
 import { HorseIntakeForm } from '../../components/app/HorseIntakeForm';
 import { AppOverviewModal } from '../../components/app/AppOverviewModal';
 import type { Profile } from '../../lib/types';
@@ -178,6 +179,23 @@ export default function Onboarding() {
   const [minorLast, setMinorLast] = useState('');
   const [minorDob, setMinorDob] = useState('');
 
+  // Step "horse" — the member's EXISTING horses (a re-invited owner already has
+  // records): offer them for selection instead of forcing re-entry. Selecting
+  // one opens the intake form in REVIEW mode (prefilled, autosaving) so they
+  // confirm what's on file and complete the doc-required fields before signing.
+  const [stableHorses, setStableHorses] = useState<StableHorse[] | null>(null);
+  const [attachingHorseId, setAttachingHorseId] = useState<string | null>(null);
+  const [reviewHorseId, setReviewHorseId] = useState<string | null>(null);
+  const [showNewHorseForm, setShowNewHorseForm] = useState(false);
+  useEffect(() => {
+    if (step !== 'horse' || stableHorses !== null) return;
+    let active = true;
+    listStableHorses()
+      .then((h) => active && setStableHorses(h))
+      .catch(() => active && setStableHorses([]));
+    return () => { active = false; };
+  }, [step, stableHorses]);
+
   // Step 2 — review & sign
   const [body, setBody] = useState<string | null>(null);
   const [bodyLoading, setBodyLoading] = useState(false);
@@ -250,16 +268,30 @@ export default function Onboarding() {
           setMinorDob(s.minor.dob ?? '');
         }
         // Prefill the details form from what we already know about them.
-        if (p) {
-          setFirstName(p.first_name ?? '');
-          setLastName(p.last_name ?? '');
+        // The CONTACT record (s.prefill) is the person record and wins — a
+        // re-invited member arrives with phone/DOB/address/emergency contacts
+        // already on file there; the profile fills any remaining gaps.
+        const pre = s.prefill;
+        if (p || pre) {
+          setFirstName(pre?.first_name ?? p?.first_name ?? '');
+          setLastName(pre?.last_name ?? p?.last_name ?? '');
           setForm((prev) => ({
             ...prev,
-            phone: p.phone ?? '',
-            address_street: p.address_line1 ?? '',
-            address_city: p.city ?? '',
-            address_state: p.state ?? '',
-            address_zip: p.postal_code ?? '',
+            phone: pre?.phone ?? p?.phone ?? '',
+            date_of_birth: pre?.date_of_birth ?? '',
+            address_street: pre?.address_street ?? p?.address_line1 ?? '',
+            address_city: pre?.address_city ?? p?.city ?? '',
+            address_state: pre?.address_state ?? p?.state ?? '',
+            address_zip: pre?.address_zip ?? p?.postal_code ?? '',
+            emergency_contact_1_name: pre?.emergency_contact_1_name ?? '',
+            emergency_contact_1_relationship: pre?.emergency_contact_1_relationship ?? '',
+            emergency_contact_1_phone: pre?.emergency_contact_1_phone ?? '',
+            emergency_contact_2_name: pre?.emergency_contact_2_name ?? '',
+            emergency_contact_2_relationship: pre?.emergency_contact_2_relationship ?? '',
+            emergency_contact_2_phone: pre?.emergency_contact_2_phone ?? '',
+            riding_experience_years: pre?.riding_experience_years ?? '',
+            jump_experience: pre?.jump_experience ?? '',
+            riding_background: pre?.riding_background ?? '',
           }));
         }
         if (!s.needed) setStep('done');
@@ -348,8 +380,10 @@ export default function Onboarding() {
   }
 
   // Own-horse services: the intake creates the horse via the ONE unified
-  // create_horse_record path (owned by this member), attaches it to the
-  // purchase, and regenerates the docs so HORSE.* tokens merge, then signs.
+  // create_horse_record path (owned by this member) OR the member picks one of
+  // their existing horses; either way the horse attaches to the purchase and
+  // the docs regenerate so HORSE.* tokens merge in, then they sign. Both horse
+  // releases are regenerated in the same batch, bound to this SAME horse.
   async function horseCreated(horseId: string) {
     const purchaseId = state?.purchase?.purchase_id;
     try {
@@ -359,6 +393,17 @@ export default function Onboarding() {
       setState(next);
     } catch { /* best-effort — staff can attach later */ }
     setStep('sign');
+  }
+
+  /** Existing-horse pick: same pipeline as a fresh intake, with a busy state. */
+  async function attachExistingHorse(horseId: string) {
+    if (attachingHorseId) return;
+    setAttachingHorseId(horseId);
+    try {
+      await horseCreated(horseId);
+    } finally {
+      setAttachingHorseId(null);
+    }
   }
 
   // The printed name on the contracts — the typed signature must match EXACTLY
@@ -590,15 +635,86 @@ export default function Onboarding() {
           <p className="eyebrow mb-1">Your horse</p>
           <h2 id="ob-horse-heading" className="font-serif text-green-800 text-xl mb-1.5">Tell us about your horse.</h2>
           <p className="body-text text-sm text-muted mb-5">
-            Your service is for your own horse — this creates their record with the barn
-            so your paperwork and care notes stay attached to them. Anything you don't
-            know can stay blank.
+            Your service is for your own horse — your paperwork and care notes stay
+            attached to their record with the barn.
           </p>
-          <HorseIntakeForm submitLabel="Save &amp; continue" onDone={(id) => void horseCreated(id)} />
+
+          {stableHorses === null ? (
+            <p className="body-text text-muted text-sm mb-4">Checking for horses already on your record…</p>
+          ) : stableHorses.length > 0 && !reviewHorseId && (
+            <div className="mb-6">
+              <h3 className="form-label mb-2">Horses already on your record</h3>
+              <p className="text-sm text-muted mb-3">
+                Pick the horse this paperwork is for — you'll review what's already on
+                file and fill in anything missing, instead of entering them again.
+              </p>
+              <div className="flex flex-col gap-2 mb-3">
+                {stableHorses.map((h) => (
+                  <div key={h.id} className="flex items-center justify-between gap-3 border border-green-800/15 rounded-lg px-4 py-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-green-900">{h.name}</p>
+                      <p className="text-xs text-muted">
+                        {[h.breed, h.sex, h.color].filter(Boolean).join(' · ') || 'On file with the barn'}
+                      </p>
+                    </div>
+                    <button type="button" className="btn-outline-gold text-sm whitespace-nowrap"
+                      disabled={attachingHorseId !== null}
+                      onClick={() => { setShowNewHorseForm(false); setReviewHorseId(h.id); }}>
+                      Review &amp; use this horse
+                    </button>
+                  </div>
+                ))}
+              </div>
+              {!showNewHorseForm && (
+                <button type="button" onClick={() => setShowNewHorseForm(true)}
+                  className="text-sm text-gold-800 underline underline-offset-2">
+                  My horse isn't listed — add a new horse
+                </button>
+              )}
+            </div>
+          )}
+
+          {reviewHorseId && (
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="form-label">Review your horse's record</h3>
+                <button type="button" onClick={() => setReviewHorseId(null)}
+                  className="text-xs text-muted underline underline-offset-2">Choose a different horse</button>
+              </div>
+              <p className="text-sm text-muted mb-4">
+                This is what we have on file. Confirm or correct it and fill in the
+                required fields — it saves as you go, and it merges into the documents
+                you'll sign next.
+              </p>
+              <HorseIntakeForm key={reviewHorseId} horseId={reviewHorseId}
+                submitLabel="Confirm &amp; continue"
+                onDone={(id) => void attachExistingHorse(id)} />
+              {attachingHorseId && <p className="text-sm text-muted mt-2">Preparing your documents…</p>}
+            </div>
+          )}
+
+          {(showNewHorseForm || (stableHorses !== null && stableHorses.length === 0)) && !reviewHorseId && (
+            <>
+              {stableHorses !== null && stableHorses.length > 0 && (
+                <h3 className="form-label mb-2">New horse</h3>
+              )}
+              <p className="body-text text-sm text-muted mb-5">
+                This creates their record with the barn. Anything you don't know can
+                stay blank.
+              </p>
+              <HorseIntakeForm submitLabel="Save &amp; continue" onDone={(id) => void horseCreated(id)} />
+            </>
+          )}
+
           <button type="button" onClick={() => setStep('sign')}
-            className="mt-3 text-sm text-muted underline underline-offset-2">
+            className="mt-3 block text-sm text-muted underline underline-offset-2">
             Skip for now — I'll add my horse later
           </button>
+          <p className="mt-1.5 text-xs text-muted">
+            Skipping doesn't skip your paperwork: any required horse releases still
+            appear in the next step — prepared without a horse named. The barn will
+            connect them to your horse once their record is added.
+          </p>
         </section>
       )}
 

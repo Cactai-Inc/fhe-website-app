@@ -54,8 +54,8 @@ export default function NewContractPage() {
   const [controlsB, setControlsB] = useState<Controls>(DEFAULT_CONTROLS);
   const [amount, setAmount] = useState('');
   const [deposit, setDeposit] = useState('');
-  // Lease only: which party is responsible for authoring the deal terms.
-  const [responsibleRole, setResponsibleRole] = useState<'LESSEE' | 'LESSOR'>('LESSEE');
+  // (The "responsible for authoring the terms" party selector was removed — the
+  // company is ALWAYS the author (H1 originator collapse); parties review.)
 
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -105,7 +105,7 @@ export default function NewContractPage() {
         chosenHorse = out.horse_id;
       }
       const result = type === 'lease'
-        ? await startLeaseContract(partyA, partyB, chosenHorse, responsibleRole)
+        ? await startLeaseContract(partyA, partyB, chosenHorse)
         : await startPurchaseContract(
             partyA, partyB, chosenHorse,
             amount ? Number(amount.replace(/[$,]/g, '')) : undefined,
@@ -206,16 +206,8 @@ export default function NewContractPage() {
             {partySelect(partyA, setPartyA, roleLabel(roleA))}
           </div>
         </div>
-        {type === 'lease' && (
-          <div className="mt-4 max-w-xs">
-            <span className="form-label">Responsible for authoring the terms</span>
-            <select className="form-input" value={responsibleRole} onChange={(e) => setResponsibleRole(e.target.value as 'LESSEE' | 'LESSOR')}>
-              <option value="LESSEE">Lessee</option>
-              <option value="LESSOR">Lessor (owner)</option>
-            </select>
-            <p className="form-hint mt-1">This party owns the deal terms; the owner always controls horse info, subleasing, and sharing.</p>
-          </div>
-        )}
+        {/* (author/originator party dropdown removed — the company authors every
+            contract; per-party abilities are set with the controls below.) */}
       </section>
 
       <section className="bg-white border border-green-800/10 rounded-xl p-4 mb-4">

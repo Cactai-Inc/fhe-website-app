@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Loader2, ShieldQuestion } from 'lucide-react';
 import {
   createHorseRecord, setHorseLocations, setHorseMedications,
+  getHorseIntakeRecord, updateHorseRecord, horsePageDetail, listHorseMedications,
+  HORSE_DOC_REQUIRED_KEYS,
   type HorseIntakePayload, type HorseRecordOutcome, type HorseLocationDetail, type HorseMedication,
 } from '../../lib/horses';
 import {
@@ -397,8 +399,21 @@ function RepeatableMeds({
   );
 }
 
+/** Columns update_horse_record accepts as a sparse patch (autosave allowlist). */
+const PATCHABLE_KEYS: (keyof HorseIntakePayload)[] = [
+  'registered_name', 'nickname', 'breed', 'color', 'markings', 'sex',
+  'date_of_birth', 'height', 'registration_number', 'registration_org',
+  'microchip_id', 'passport_number', 'passport_country', 'fair_market_value',
+  'vet_name', 'vet_phone', 'vet_business_name', 'vet_address_line1', 'vet_city',
+  'vet_state', 'vet_postal', 'farrier_name', 'farrier_phone',
+  'medical_history', 'behavioral_history', 'known_conditions',
+  'euthanasia_authorization', 'training_history', 'competition_history',
+];
+// typed columns can't hold the 'N/A' sentinel — persist those as cleared
+const TYPED_KEYS = new Set<keyof HorseIntakePayload>(['date_of_birth', 'fair_market_value', 'sex', 'euthanasia_authorization']);
+
 export function HorseIntakeForm({
-  onDone, submitLabel = 'Add horse', ownerContactId,
+  onDone, submitLabel = 'Add horse', ownerContactId, horseId,
 }: {
   /** Fires on created OR match_found (both attach an id); pending-review shows in-form. */
   onDone: (horseId: string) => void;
@@ -407,6 +422,10 @@ export function HorseIntakeForm({
    *  client). Staff can still change it via the in-form account picker; ignored for
    *  non-staff callers (the record always binds to them). */
   ownerContactId?: string;
+  /** EDIT/REVIEW mode: load this existing record prefilled — the member reviews
+   *  what's on file, completes the required fields, and every field autosaves
+   *  on blur (partial progress survives a skip). */
+  horseId?: string;
 }) {
   const { isStaff } = useAuth();
   const [f, setF] = useState<HorseIntakePayload>({ is_leased: 'no' });
@@ -414,6 +433,14 @@ export function HorseIntakeForm({
   const [err, setErr] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [showError, setShowError] = useState(false);
+  // AUTOSAVE-ON-BLUR: once a record exists (edit mode, or right after the first
+  // successful create), leaving any field persists the changed columns via the
+  // update_horse_record sparse patch (it RAISES rather than silently no-ops, so
+  // a blocked write surfaces). lastSavedRef tracks what the server has.
+  const recordIdRef = useRef<string | null>(horseId ?? null);
+  const lastSavedRef = useRef<HorseIntakePayload>({});
+  const savingRef = useRef(false);
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [locations, setLocations] = useState<CalendarLocation[]>([]);
   // Staff-only: the account this record is assigned to. The record binds to the
   // creating account UNLESS staff assigns it to another client here. For a client
@@ -469,6 +496,103 @@ export function HorseIntakeForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assignTo]);
 
+  // EDIT/REVIEW mode: prefill from the existing record (raw codes for the
+  // selects), its locations (display detail), and its medication list.
+  const [loadingRecord, setLoadingRecord] = useState(Boolean(horseId));
+  useEffect(() => {
+    if (!horseId) return;
+    let active = true;
+    (async () => {
+      try {
+        const [raw, detail, medRows] = await Promise.all([
+          getHorseIntakeRecord(horseId),
+          horsePageDetail(horseId).catch(() => null),
+          listHorseMedications(horseId).catch(() => [] as HorseMedication[]),
+        ]);
+        if (!active || !raw) return;
+        const s = (v: unknown) => (v == null ? '' : String(v));
+        const next: HorseIntakePayload = {
+          is_leased: raw.lessee_name_text ? 'yes' : 'no',
+          nickname: s(raw.nickname), registered_name: s(raw.registered_name),
+          registration_number: s(raw.registration_number), registration_org: s(raw.registration_org),
+          microchip_id: s(raw.microchip_id), passport_number: s(raw.passport_number),
+          passport_country: s(raw.passport_country), breed: s(raw.breed), color: s(raw.color),
+          markings: s(raw.markings), sex: s(raw.sex),
+          date_of_birth: s(raw.date_of_birth).slice(0, 10), height: s(raw.height),
+          fair_market_value: raw.fair_market_value == null ? ''
+            : Number(raw.fair_market_value).toLocaleString('en-US', { style: 'currency', currency: 'USD' }),
+          vet_name: s(raw.vet_name), vet_phone: s(raw.vet_phone),
+          vet_business_name: s(raw.vet_business_name), vet_address_line1: s(raw.vet_address_line1),
+          vet_city: s(raw.vet_city), vet_state: s(raw.vet_state), vet_postal: s(raw.vet_postal),
+          farrier_name: s(raw.farrier_name), farrier_phone: s(raw.farrier_phone),
+          medical_history: s(raw.medical_history), behavioral_history: s(raw.behavioral_history),
+          known_conditions: s(raw.known_conditions),
+          euthanasia_authorization: (raw.euthanasia_authorization === 'A' || raw.euthanasia_authorization === 'B')
+            ? raw.euthanasia_authorization : undefined,
+          training_history: s(raw.training_history), competition_history: s(raw.competition_history),
+          lessee_name_text: s(raw.lessee_name_text),
+          lease_start: s(raw.lease_start).slice(0, 10), lease_end: s(raw.lease_end).slice(0, 10),
+        };
+        setF(next);
+        lastSavedRef.current = { ...next };
+        recordIdRef.current = horseId;
+        const rec = detail?.record;
+        if (rec) {
+          if (rec.home_location?.name || rec.home_barn || rec.home_stall) {
+            setHomeLoc({
+              name: rec.home_location?.name ?? '', address_line1: rec.home_location?.address_line1 ?? '',
+              city: rec.home_location?.city ?? '', state: rec.home_location?.state ?? '',
+              postal: rec.home_location?.postal ?? '',
+              barn: rec.home_barn ?? '', stall: rec.home_stall ?? '', notes: rec.home_notes ?? '',
+              trainer: rec.home_trainer ?? '', care_giver: rec.home_care_giver ?? '',
+              groom: rec.home_groom ?? '', other: rec.home_other ?? '',
+            });
+          }
+          if (rec.current_location?.name && rec.current_location.name !== rec.home_location?.name) {
+            setCurrentDiffers(true);
+            setCurrentLoc({
+              name: rec.current_location.name, address_line1: rec.current_location.address_line1 ?? '',
+              city: rec.current_location.city ?? '', state: rec.current_location.state ?? '',
+              postal: rec.current_location.postal ?? '',
+              barn: rec.current_barn ?? '', stall: rec.current_stall ?? '',
+            });
+          }
+        }
+        if (medRows.length) {
+          setMeds(medRows.filter((m) => m.kind !== 'SUPPLEMENT'));
+          setSupplements(medRows.filter((m) => m.kind === 'SUPPLEMENT'));
+        }
+      } catch { /* form stays blank; the record may not be readable */ }
+      finally { if (active) setLoadingRecord(false); }
+    })();
+    return () => { active = false; };
+  }, [horseId]);
+
+  /** AUTOSAVE (fires on every blur inside the form): sparse-patch only the
+   *  changed columns. 'N/A' on a typed column persists as cleared. */
+  async function autosave() {
+    const id = recordIdRef.current;
+    if (!id || savingRef.current) return;
+    const patch: Record<string, string> = {};
+    for (const k of PATCHABLE_KEYS) {
+      const cur = (f[k] as string | undefined) ?? '';
+      const prev = (lastSavedRef.current[k] as string | undefined) ?? '';
+      if (cur !== prev) patch[k] = (TYPED_KEYS.has(k) && cur === NA) ? '' : cur;
+    }
+    if (Object.keys(patch).length === 0) return;
+    savingRef.current = true;
+    setSaveState('saving');
+    try {
+      await updateHorseRecord(id, patch);   // raises on a blocked write — never silent
+      lastSavedRef.current = { ...f };
+      setSaveState('saved');
+    } catch {
+      setSaveState('error');
+    } finally {
+      savingRef.current = false;
+    }
+  }
+
   const toOpts = (rows: LookupCode[]) => rows.map((r) => ({ value: r.code, label: r.display_name }));
   const breedOpts = toOpts(breeds);
   const colorOpts = toOpts(colors);
@@ -499,14 +623,11 @@ export function HorseIntakeForm({
   // A person block's secondary part (phone/email) is satisfied once its name partner
   // is answered — a named contact needn't also carry a phone to complete the form.
   const secondaryOk = (name?: string, second?: string) => answered(second) || answered(name);
-  const alwaysKeys: (keyof HorseIntakePayload)[] = [
-    'microchip_id', 'breed', 'registration_number', 'registration_org',
-    'passport_number', 'passport_country', 'color', 'markings', 'sex',
-    'date_of_birth', 'height', 'fair_market_value',
-    'vet_name', 'farrier_name',
-    'medical_history', 'behavioral_history',
-    'known_conditions', 'training_history', 'competition_history',
-  ];
+  // REQUIRED = exactly the fields the two horse onboarding documents merge
+  // (HORSE_EMERGENCY_VET + RELEASE_HORSE_CARE tokens — HORSE_DOC_REQUIRED_KEYS)
+  // plus the name/euthanasia/location structural requirements below. Everything
+  // else (registration org, passport, markings, histories) is optional.
+  const alwaysKeys: (keyof HorseIntakePayload)[] = HORSE_DOC_REQUIRED_KEYS;
   // Medications & supplements are repeatable and OPTIONAL (a horse may have none);
   // they're not part of the answer-or-N/A completeness gate.
   // When leased (off-system), the lessee name + lease dates are required.
@@ -517,10 +638,9 @@ export function HorseIntakeForm({
   const nameAnswered = answered(f.registered_name) && answered(f.nickname);
   // The owner (who owns this record) always makes the emergency euthanasia authorization.
   const euthanasiaAnswered = f.euthanasia_authorization === 'A' || f.euthanasia_authorization === 'B';
-  // person-block secondaries: vet/farrier phone, lessee email
-  const secondariesOk = secondaryOk(f.vet_name, f.vet_phone)
-    && secondaryOk(f.farrier_name, f.farrier_phone)
-    && (!leased || secondaryOk(f.lessee_name_text, f.lessee_email));
+  // Vet/farrier phones are doc-merged tokens → required (covered by alwaysKeys);
+  // only the lessee's email keeps the name-satisfies-the-pair relaxation.
+  const secondariesOk = !leased || secondaryOk(f.lessee_name_text, f.lessee_email);
   // Staff must assign the record to an account before it can be created.
   const accountChosen = !isStaff || !!assignTo;
   // Home must be named. When NOT leased and "different location" is on, the alternate
@@ -552,7 +672,7 @@ export function HorseIntakeForm({
     }
     if (!complete) {
       setShowError(true);
-      setErr('Please answer every field — fill it in or mark it N/A.');
+      setErr('Please answer every required field — fill it in or mark it N/A.');
       return;
     }
     setBusy(true);
@@ -579,6 +699,24 @@ export function HorseIntakeForm({
         if (!items.length) return;
         try { await setHorseMedications(horseId, items); } catch { /* record saved */ }
       };
+      // EDIT/REVIEW mode: the record exists — flush every changed column (the
+      // same sparse patch autosave uses, but awaited and surfaced), then the
+      // locations + medications, and hand the id back.
+      const editingId = recordIdRef.current;
+      if (editingId) {
+        const patch: Record<string, string> = {};
+        for (const k of PATCHABLE_KEYS) {
+          const cur = (f[k] as string | undefined) ?? '';
+          const prev = (lastSavedRef.current[k] as string | undefined) ?? '';
+          if (cur !== prev) patch[k] = (TYPED_KEYS.has(k) && cur === NA) ? '' : cur;
+        }
+        if (Object.keys(patch).length) await updateHorseRecord(editingId, patch);
+        lastSavedRef.current = { ...f };
+        await linkLocations(editingId);
+        await linkMeds(editingId);
+        onDone(editingId);
+        return;
+      }
       // ONE path. Staff assigning to a client passes owner_contact_id; the backend
       // honors it only for staff. A client caller never sets it — the horse binds to them.
       const payload: HorseIntakePayload = isStaff && assignTo
@@ -586,7 +724,11 @@ export function HorseIntakeForm({
         : f;
       const out: HorseRecordOutcome = await createHorseRecord(payload);
       if (out.outcome === 'match_pending_review') setPending(true);
-      else { await linkLocations(out.horse_id); await linkMeds(out.horse_id); onDone(out.horse_id); }
+      else {
+        recordIdRef.current = out.horse_id;
+        lastSavedRef.current = { ...f };
+        await linkLocations(out.horse_id); await linkMeds(out.horse_id); onDone(out.horse_id);
+      }
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Could not save the horse record.');
     } finally {
@@ -607,8 +749,14 @@ export function HorseIntakeForm({
     );
   }
 
+  if (loadingRecord) {
+    return <p className="text-sm text-muted py-4">Loading the horse record…</p>;
+  }
+
   return (
-    <div className="flex flex-col gap-1">
+    // AUTOSAVE: focus leaving ANY field inside the form persists the changed
+    // columns (blur bubbles as focusout). Diff-based — no-op when unchanged.
+    <div className="flex flex-col gap-1" onBlur={() => void autosave()}>
       {/* Account-type-first: STAFF must pick the account this record belongs to; a
           CLIENT's record binds to their own account automatically (no picker). */}
       {isStaff && (
@@ -629,7 +777,11 @@ export function HorseIntakeForm({
       )}
 
       <p className="text-xs text-muted mb-1">
-        Every field is required. If something doesn’t apply to your horse, mark it <strong>N/A</strong>.
+        Fields that feed your horse’s legal documents (identity, description, value,
+        vet &amp; farrier, known conditions, euthanasia authorization, location) are
+        required — fill them in or mark them <strong>N/A</strong>. Everything else is
+        optional but welcome. Your progress saves as you go — you can leave and pick
+        this up later.
       </p>
 
       <Section title="Location">
@@ -735,10 +887,10 @@ export function HorseIntakeForm({
         <Field label="Nickname" value={f.nickname} onChange={set('nickname')} showError={showError} placeholder="Everyday name (e.g. Beau)" />
         <Field label="Registered name" value={f.registered_name} onChange={set('registered_name')} showError={showError} />
         <Field label="Registration number" value={f.registration_number} onChange={set('registration_number')} showError={showError} />
-        <SelectOrOther label="Registration organization" value={f.registration_org} onChange={set('registration_org')} showError={showError} options={toOpts(regOrgOpts)} lookupKey="horse_registration_org" placeholder="Registry name" />
+        <SelectOrOther label="Registration organization" value={f.registration_org} onChange={set('registration_org')} showError={false} options={toOpts(regOrgOpts)} lookupKey="horse_registration_org" placeholder="Registry name" />
         <Field span label="Microchip number (checked first)" value={f.microchip_id} onChange={set('microchip_id')} placeholder="e.g. 985 112233445566" showError={showError} />
-        <Field label="Passport number" value={f.passport_number} onChange={set('passport_number')} showError={showError} />
-        <SelectOrOther label="Passport country" value={f.passport_country} onChange={set('passport_country')} showError={showError} options={toOpts(passportCountryOpts)} lookupKey="horse_passport_country" placeholder="Country" />
+        <Field label="Passport number" value={f.passport_number} onChange={set('passport_number')} showError={false} />
+        <SelectOrOther label="Passport country" value={f.passport_country} onChange={set('passport_country')} showError={false} options={toOpts(passportCountryOpts)} lookupKey="horse_passport_country" placeholder="Country" />
         <Field label="Current fair market value" type="text" inputMode="numeric" value={f.fair_market_value}
           onChange={set('fair_market_value')} placeholder="$0.00" showError={showError}
           onBlurFormat={(v) => {
@@ -750,7 +902,7 @@ export function HorseIntakeForm({
       <Section title="Description">
         <SelectOrOther label="Breed" value={f.breed} onChange={set('breed')} showError={showError} options={breedOpts} lookupKey="horse_breeds" placeholder="Breed name" />
         <SelectOrOther label="Color" value={f.color} onChange={set('color')} showError={showError} options={colorOpts} lookupKey="horse_colors" placeholder="Color" />
-        <SelectOrOther label="Markings" value={f.markings} onChange={set('markings')} showError={showError} options={toOpts(markingOpts)} lookupKey="horse_markings" placeholder="Describe the markings" />
+        <SelectOrOther label="Markings" value={f.markings} onChange={set('markings')} showError={false} options={toOpts(markingOpts)} lookupKey="horse_markings" placeholder="Describe the markings" />
         <Field label="Sex" value={f.sex} onChange={set('sex')} showError={showError}
           options={[
             { value: 'MARE', label: 'Mare' }, { value: 'GELDING', label: 'Gelding' },
@@ -762,8 +914,8 @@ export function HorseIntakeForm({
       </Section>
 
       <Section title="History">
-        <Field label="Training history" value={f.training_history} onChange={set('training_history')} showError={showError} />
-        <Field label="Competition history" value={f.competition_history} onChange={set('competition_history')} showError={showError} />
+        <Field label="Training history" value={f.training_history} onChange={set('training_history')} showError={false} />
+        <Field label="Competition history" value={f.competition_history} onChange={set('competition_history')} showError={false} />
       </Section>
 
       {/* Health & history — the three narrative fields grouped together (they were
@@ -772,10 +924,10 @@ export function HorseIntakeForm({
           concerns; conditions = current or recurring issues. */}
       <Section title="Health &amp; history">
         <Field span label="Medical history (past surgeries, injuries, treatments)" textarea
-          value={f.medical_history} onChange={set('medical_history')} showError={showError}
+          value={f.medical_history} onChange={set('medical_history')} showError={false}
           placeholder="e.g. colic surgery 2022; suspensory injury, fully recovered" />
         <Field span label="Behavioral concerns (temperament, handling)" textarea
-          value={f.behavioral_history} onChange={set('behavioral_history')} showError={showError}
+          value={f.behavioral_history} onChange={set('behavioral_history')} showError={false}
           placeholder="e.g. cross-ties well; spooky in wind" />
         <Field span label="Known conditions (current or recurring)" textarea
           value={f.known_conditions} onChange={set('known_conditions')} showError={showError}
@@ -825,6 +977,13 @@ export function HorseIntakeForm({
       </div>
 
       {err && <p className="form-error text-sm text-red-700 mt-2">{err}</p>}
+      {saveState !== 'idle' && (
+        <p className={`text-[11px] mt-1 ${saveState === 'error' ? 'text-red-700' : 'text-muted'}`} aria-live="polite">
+          {saveState === 'saving' ? 'Saving…'
+            : saveState === 'saved' ? 'Progress saved.'
+            : 'Could not save your last change — it will retry when you leave the next field.'}
+        </p>
+      )}
       <button type="button" onClick={submit} disabled={busy}
         className="w-full mt-3 py-2.5 rounded-lg bg-green-800 text-white text-sm font-medium hover:bg-green-700 focus-ring inline-flex items-center justify-center gap-2 disabled:opacity-60">
         {busy && <Loader2 size={16} className="animate-spin" />}

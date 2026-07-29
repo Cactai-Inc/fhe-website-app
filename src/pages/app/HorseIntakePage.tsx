@@ -23,6 +23,10 @@ export default function HorseIntakePage() {
   const [params] = useSearchParams();
   const bookingId = params.get('booking');
   const contractId = params.get('contract');
+  // REVIEW/COMPLETE an existing record (?horse=<id>): the form loads prefilled,
+  // autosaves on blur, and the same handleDone regenerates any missing docs.
+  // This is the target of the staff "complete your horse's record" task.
+  const horseId = params.get('horse');
   const wantCare = params.get('care') === '1';
   const [done, setDone] = useState(false);
   const [docs, setDocs] = useState<GeneratedHorseDoc[]>([]);
@@ -57,9 +61,13 @@ export default function HorseIntakePage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
-      <h1 className="font-serif text-2xl text-green-900 mb-1">Tell us about your horse</h1>
+      <h1 className="font-serif text-2xl text-green-900 mb-1">
+        {horseId ? 'Review your horse’s record' : 'Tell us about your horse'}
+      </h1>
       <p className="text-sm text-muted mb-6">
-        Add your horse’s details. We’ll prepare the documents it needs for you to review and sign.
+        {horseId
+          ? 'Review what’s on file and complete anything missing — your changes save as you go, and they flow into your horse’s paperwork.'
+          : 'Add your horse’s details. We’ll prepare the documents it needs for you to review and sign.'}
       </p>
 
       {done ? (
@@ -100,7 +108,8 @@ export default function HorseIntakePage() {
         </div>
       ) : (
         <div className="bg-white border border-green-800/10 rounded-lg p-5">
-          <HorseIntakeForm onDone={handleDone} submitLabel="Save my horse" />
+          <HorseIntakeForm onDone={handleDone} horseId={horseId ?? undefined}
+            submitLabel={horseId ? 'Save & finish' : 'Save my horse'} />
         </div>
       )}
     </div>

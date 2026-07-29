@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useRef, type ReactNode } from 'react';
+import { useCallback, useMemo, useState, useEffect, useRef, type ReactNode } from 'react';
 import {
   clauseConditionMet,
   type ContractField, type SectionDef,
@@ -201,6 +201,42 @@ function describeGate(
   return generic;
 }
 
+/** The duration-unit convention: a CLOSED select whose options are exactly the
+ *  singular/plural day-week-month set. The paired number field is the one named
+ *  by its conditional_on (a gte gate), which also locks the unit until a number
+ *  is entered. */
+const DURATION_UNIT_VALUES = new Set(['DAY', 'DAYS', 'WEEK', 'WEEKS', 'MONTH', 'MONTHS']);
+function isDurationUnitField(f: ContractField): boolean {
+  const opts = f.options ?? [];
+  return (f.input_kind ?? '') === 'select' && opts.length >= 2
+    && opts.every((o) => DURATION_UNIT_VALUES.has(o.value));
+}
+
+/** Availability-filter a field's options: an option with a `when` gate is only
+ *  offered while the gate holds — EXCEPT when it's already selected (it must
+ *  stay visible so it can be unselected). Duration-unit selects additionally
+ *  narrow to singular options when the paired number is 1, plural when ≥ 2. */
+function fieldWithAvailableOptions(
+  f: ContractField, valueByKey: Record<string, string>,
+): ContractField {
+  let opts = f.options;
+  if (!opts || opts.length === 0) return f;
+  const selected = (f.value ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+  if (opts.some((o) => o.when)) {
+    opts = opts.filter((o) => !o.when || selected.includes(o.value)
+      || clauseConditionMet(o.when, valueByKey));
+  }
+  if (isDurationUnitField(f)) {
+    const lenKey = f.conditional_on?.field_key;
+    const n = lenKey ? parseFloat(valueByKey[lenKey] ?? '') : NaN;
+    if (!Number.isNaN(n)) {
+      const plural = n !== 1;
+      opts = opts.filter((o) => (o.value.endsWith('S') === plural) || selected.includes(o.value));
+    }
+  }
+  return opts === f.options ? f : { ...f, options: opts };
+}
+
 /** Render a single {{token}} → an inline editable control, or a read-only value
  *  (horse-record imports, auto-fill, signatures). */
 function renderToken(
@@ -212,8 +248,13 @@ function renderToken(
   // record is edited, not the contract. Label-resolved for display.
   const isHorseImport = token.startsWith('HORSE.');
   if (field && field.can_edit !== undefined && !isHorseImport) {
+    // A field whose OWN conditional_on is unmet is INOPERABLE — the composer
+    // drops its line, so accepting input there would be a lie. (This is also
+    // what locks a duration UNIT until its number is entered — the gte gate.)
+    const selfGateMet = clauseConditionMet(field.conditional_on, valueByKey);
     return (
-      <InlineFieldControl key={key} f={field} editable={cb.editable}
+      <InlineFieldControl key={key} f={fieldWithAvailableOptions(field, valueByKey)}
+        editable={cb.editable && selfGateMet}
         onSave={cb.onSave} onSaveStructured={cb.onSaveStructured as never}
         onSaveResponsibility={cb.onSaveResponsibility as never}
         onCommentField={cb.onCommentField} onSuggestEdit={cb.onSuggestEdit} canSuggest={cb.canSuggest} />
@@ -369,12 +410,32 @@ function ClauseProse({
 }
 
 export function ClauseDocument({
-  sections, fields, cb,
+  sections, fields, cb: cbIn,
 }: {
   sections: SectionDef[];
   fields: ContractField[];
   cb: FieldCallbacks;
 }) {
+  // Keep a duration UNIT's stored plurality in step with its paired number:
+  // saving a length also re-saves the unit as its singular/plural twin when
+  // needed, so the stored value (and the composed text) always agree ("1 month",
+  // "2 months").
+  const onSaveWithDurationSync = useCallback(async (key: string, value: string) => {
+    await cbIn.onSave(key, value);
+    const n = parseFloat(value);
+    if (Number.isNaN(n)) return;
+    for (const f of fields) {
+      if (!isDurationUnitField(f) || f.conditional_on?.field_key !== key) continue;
+      const cur = (f.value ?? '').trim();
+      if (!cur) continue;
+      const fixed = n === 1 ? cur.replace(/S$/, '') : cur.endsWith('S') ? cur : `${cur}S`;
+      if (fixed !== cur) await cbIn.onSave(f.field_key, fixed);
+    }
+  }, [cbIn, fields]);
+  const cb = useMemo<FieldCallbacks>(
+    () => ({ ...cbIn, onSave: onSaveWithDurationSync }),
+    [cbIn, onSaveWithDurationSync]);
+
   // current field values for gating + auto-fill token rendering (multi-selects
   // comma-joined) — mirrors how the SQL composer reads them.
   const valueByKey = useMemo(() => {
@@ -485,19 +546,23 @@ export function ClauseDocument({
                 const bodyTokens = new Set(
                   [...(clause.body ?? '').matchAll(TOKEN_RE)].map((mm) => mm[1]),
                 );
-                // Authoring-control fields for this clause not placed by a {{token}}
-                // in its prose — e.g. a yes/no enable gate ("Any exceptions?"), the
-                // lease-type selector, etc. These are the field's DESIGNATED clause
-                // (clause_key), so they're intentional and render below the prose as
-                // authoring controls. (Stale fields are removed at the data layer,
-                // not hidden here.)
-                const orphanFields = (fieldsByClause.get(clause.clause_key) ?? [])
-                  .filter((f) => !bodyTokens.has(f.field_key));
                 // A clause can be gated by a field that lives ON the clause itself
                 // (a self-enabling toggle, e.g. "Include 3rd party exercise"). That
                 // control MUST stay clickable when the clause is gated off — freezing
                 // it would make the clause impossible to turn on. Split it out.
                 const triggerKeys = gateTriggerKeys(clause.conditional_on);
+                // Authoring-control fields for this clause not placed by a {{token}}
+                // in its prose — e.g. a yes/no enable gate ("Any exceptions?"), the
+                // lease-type selector, etc. These are the field's DESIGNATED clause
+                // (clause_key), so they're intentional and render below the prose as
+                // authoring controls. (Stale fields are removed at the data layer,
+                // not hidden here.) A NON-trigger orphan whose OWN conditional_on is
+                // unmet is hidden + inoperable — this is what kept phantom duplicate
+                // deductible sub-fields from disappearing when Lessor was selected.
+                const orphanFields = (fieldsByClause.get(clause.clause_key) ?? [])
+                  .filter((f) => !bodyTokens.has(f.field_key))
+                  .filter((f) => triggerKeys.has(f.field_key)
+                    || clauseConditionMet(f.conditional_on, valueByKey));
                 const gateControls = orphanFields.filter((f) => triggerKeys.has(f.field_key));
                 const previewFields = orphanFields.filter((f) => !triggerKeys.has(f.field_key));
                 // certify / add_text / reveal_text controls render their own label
@@ -509,7 +574,7 @@ export function ClauseDocument({
                   return (
                     <span key={f.field_key} className="inline-flex items-baseline gap-1.5">
                       {!selfLabels && <span>{f.label ?? f.field_key}</span>}
-                      <InlineFieldControl f={f} editable={cb.editable}
+                      <InlineFieldControl f={fieldWithAvailableOptions(f, valueByKey)} editable={cb.editable}
                         onSave={cb.onSave} onSaveStructured={cb.onSaveStructured as never}
                         onSaveResponsibility={cb.onSaveResponsibility as never}
                         onCommentField={cb.onCommentField} onSuggestEdit={cb.onSuggestEdit} canSuggest={cb.canSuggest} />

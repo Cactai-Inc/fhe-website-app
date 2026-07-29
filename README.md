@@ -36,21 +36,16 @@ Database access for scripts/queries uses the connection string on the first line
 
 | Start here | What it is |
 |---|---|
-| **`/CLAUDE.md`** | Orientation: the live data spine, what's **retired** (don't resurrect it), the migration convention, and a trust ranking for every doc |
-| **`docs/HANDOFF.md`** | Current state + suggested next moves — read this to pick up the work |
-| **`docs/BACKLOG.md`** | Standing work list: blocked, ready, and known defects with file:line |
-| **`docs/STATUS_REPORT.md`** | Point-in-time record of what shipped and what's verified |
-| **`docs/ECOSYSTEM_PLAN.md`** | The in-flight identity/taxonomy refactor (Stages 0–2 done) |
+| **`/CLAUDE.md`** | Orientation: the live data spine, what's **retired** (don't resurrect it), the migration convention, and the settled owner decisions |
+| **`docs/HANDOFF.md`** | Where the system stands and what's worth doing next |
+| **`docs/BACKLOG.md`** | Standing work list: ready, known defects, deferred |
 
-Other current references: `docs/NOTIFICATIONS.md` (email nudge cron),
+Other references: `docs/NOTIFICATIONS.md` (email nudge cron),
 `docs/GOOGLE_SMTP_SETUP.md` (transactional email wiring),
 `docs/TOKEN_DICTIONARY.md` (merge tokens),
+`docs/DUAL_IDENTITY_TRACE.md` (how act-as-company works),
 `supabase/contract_templates/HORSE_LEASE.md` (**how to edit the lease** — its content
 lives in the database, not in a markdown template).
-
-> ⚠️ **`docs/archive/` is historical only.** Those docs describe earlier states of the
-> platform and will actively mislead you — the tier layer was removed, `memberships`
-> became `members`, engagements/orders were retired, and the catalog is now DB-driven.
 
 ---
 

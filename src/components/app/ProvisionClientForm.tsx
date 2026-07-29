@@ -32,6 +32,21 @@ const TOKEN_TO_DISPLAY: Record<string, string> = {
   GUEST: 'Guest', RIDER: 'Rider', HORSE_OWNER: 'Horse owner',
 };
 
+// Offerings the owner removed from INVITE selection (2026-07-28). They stay
+// active in the DB because the public catalog still lists them (zero purchases /
+// invitations to date) — filtered here, not retired, so the storefront is
+// unchanged until the owner decides otherwise.
+const INVITE_HIDDEN_OFFERING_IDS = new Set<string>([
+  '62f29124-826a-4e7b-bf8c-53d223d97854', // 3x Weekly (riding lessons)
+  '85cab901-959c-43ac-b2bf-dd3b7dec9f64', // Evaluation Lesson — the first lesson IS the evaluation now
+]);
+
+// The owner's note shown wherever lessons are offered on this page.
+const EVALUATION_LESSON_NOTE =
+  'The first lesson for anyone new to French Heritage Equestrian is an '
+  + 'evaluation lesson — plan for an extra 30 minutes total: arrive 15 minutes '
+  + 'early, and the lesson runs 15 minutes longer than normal.';
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return <div className="mb-4"><span className="form-label">{label}</span>{children}</div>;
 }
@@ -116,10 +131,28 @@ export function ProvisionClientForm({
   // Flat SKUs: a purchasable offering is one in the allowed segment that isn't an
   // inquire-only / parent grouping row (config_kind='inquire' or no price). The
   // tier layer was removed 2026-07-08 — each offering IS the purchasable item.
+  // "(With your horse)" lesson variants (RIDING_LESSON with horse_included=false —
+  // the rider brings their own horse) only make sense for horse owners, so they
+  // appear only when the Horse owner category is checked.
+  const horseOwnerChecked = categories.includes('Horse owner');
   const visibleOfferings = offerings.filter(
     (o) => allowedSegments.has(o.segment)
       && o.config_kind !== 'inquire'
-      && o.price_amount != null);
+      && o.price_amount != null
+      && !INVITE_HIDDEN_OFFERING_IDS.has(o.id)
+      && !(o.service_type === 'RIDING_LESSON' && o.horse_included === false && !horseOwnerChecked));
+
+  // If a category toggle hides an already-checked offering (e.g. unchecking
+  // Horse owner while a "(With your horse)" lesson is selected), drop it so the
+  // invitation can never carry an offering the form no longer shows.
+  useEffect(() => {
+    const visible = new Set(visibleOfferings.map((o) => o.id));
+    setOfferingIds((prev) => {
+      const next = prev.filter((id) => visible.has(id));
+      return next.length === prev.length ? prev : next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categories, offerings]);
 
   const offeringTotal = useMemo(() => {
     let t = 0;
@@ -263,17 +296,25 @@ export function ProvisionClientForm({
                     : 'No purchasable offerings for this category.'}
                 </p>
               ) : (
-                <div className="space-y-4 max-h-72 overflow-y-auto border border-green-800/15 rounded-lg p-4">
+                <div className="space-y-4 border border-green-800/15 rounded-lg p-4">
                   {Object.entries(
                     visibleOfferings.reduce<Record<string, Offering[]>>((acc, o) => {
                       const k = o.service_type ?? 'Other';
                       (acc[k] ??= []).push(o); return acc;
                     }, {}),
-                  ).map(([svc, items]) => (
+                  )
+                    // Lessons are ALWAYS the top group, whatever categories are
+                    // checked; the rest keep their catalog order.
+                    .sort(([a], [b]) =>
+                      (a === 'RIDING_LESSON' ? 0 : 1) - (b === 'RIDING_LESSON' ? 0 : 1))
+                    .map(([svc, items]) => (
                     <div key={svc}>
                       <p className="text-xs uppercase tracking-wide text-secondary/70 mb-1.5">
                         {svc.replace(/_/g, ' ').toLowerCase()}
                       </p>
+                      {svc === 'RIDING_LESSON' && (
+                        <p className="text-xs text-gold-ink mb-2 leading-relaxed">{EVALUATION_LESSON_NOTE}</p>
+                      )}
                       <div className="grid sm:grid-cols-2 gap-2">
                         {items.map((o) => (
                           <label key={o.id}

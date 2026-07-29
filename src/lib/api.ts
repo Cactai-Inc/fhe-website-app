@@ -171,6 +171,29 @@ export interface OnboardingMinor {
   dob: string | null;
 }
 
+/** Everything the CONTACT record already knows about the person — the intake
+ *  form prefills from this (re-invited members arrive with data on file). */
+export interface OnboardingPrefill {
+  first_name: string | null;
+  last_name: string | null;
+  phone: string | null;
+  /** YYYY-MM-DD */
+  date_of_birth: string | null;
+  address_street: string | null;
+  address_city: string | null;
+  address_state: string | null;
+  address_zip: string | null;
+  emergency_contact_1_name: string | null;
+  emergency_contact_1_relationship: string | null;
+  emergency_contact_1_phone: string | null;
+  emergency_contact_2_name: string | null;
+  emergency_contact_2_relationship: string | null;
+  emergency_contact_2_phone: string | null;
+  riding_experience_years: string | null;
+  jump_experience: string | null;
+  riding_background: string | null;
+}
+
 /** my_onboarding_state(): `needed` flips false once every doc is EXECUTED. */
 export interface OnboardingState {
   needed: boolean;
@@ -183,6 +206,8 @@ export interface OnboardingState {
    *  (any horse-care service, or a "(With your horse)" lesson) — show the horse
    *  intake step. */
   horse_needed: boolean;
+  /** Contact-sourced prefill for the details form (null when no contact). */
+  prefill: OnboardingPrefill | null;
 }
 
 /** Attach a created horse to the caller's purchase (own-horse services). */
@@ -1670,13 +1695,14 @@ export async function createProductPrice(input: ProductPriceInput): Promise<Prod
  *  Cut over from the legacy flat start_lease_contract on 2026-07-20. */
 export async function startLeaseContract(
   lesseeContactId: string, lessorContactId?: string, horseId?: string,
-  responsibleRole: 'LESSEE' | 'LESSOR' = 'LESSEE',
 ): Promise<{ document_id: string; contract_id: string; fields_seeded: number }> {
+  // H1 originator collapse: the company (staff caller) is ALWAYS the author —
+  // no party is designated as responsible-for-authoring anymore. The RPC keeps
+  // its p_responsible_role parameter for signature compatibility but ignores it.
   const { data, error } = await supabase.rpc('start_lease_contract_v2', {
     p_lessee_contact_id: lesseeContactId,
     p_lessor_contact_id: lessorContactId ?? null,
     p_horse_id: horseId ?? null,
-    p_responsible_role: responsibleRole,
   });
   if (error) throw error;
   return data as { document_id: string; contract_id: string; fields_seeded: number };
@@ -1810,9 +1836,19 @@ export async function payerCandidates(): Promise<PayerCandidate[]> {
   return (data ?? []) as PayerCandidate[];
 }
 
-/** A3: stamp the app-overview tour as seen for the signed-in account. The
- *  first stamp wins — re-opening the tour from the menu never calls this. */
-export async function markTourSeen(): Promise<void> {
-  const { error } = await supabase.rpc('mark_tour_seen');
+/** The tour's form-factor split: desktop and mobile tours persist
+ *  independently. lg (1024px) is the breakpoint where the desktop rail
+ *  appears, so it is also the tour's dividing line. */
+export type TourFormFactor = 'desktop' | 'mobile';
+export function currentTourFormFactor(): TourFormFactor {
+  return typeof window !== 'undefined'
+    && window.matchMedia('(min-width: 1024px)').matches ? 'desktop' : 'mobile';
+}
+
+/** A3: stamp the app-overview tour as seen for the signed-in account, PER
+ *  form factor (desktop and mobile each persist independently). The first
+ *  stamp wins — re-opening the tour from the menu never calls this. */
+export async function markTourSeen(formFactor: TourFormFactor = currentTourFormFactor()): Promise<void> {
+  const { error } = await supabase.rpc('mark_tour_seen', { p_form_factor: formFactor });
   if (error) throw error;
 }
