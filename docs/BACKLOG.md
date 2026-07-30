@@ -81,3 +81,13 @@ framework in `OpsDashboard.tsx`, the reduce-sum pattern in `api-boarding.ts`, an
   hand-maintained journal applied via `psql`.
 - **`profiles.payment_reminders` is vestigial** (D9: no dunning email exists). It has
   no reader and is not in the profile payload.
+- **`profiles.address_line1/address_line2/city/state/postal_code` are vestigial**
+  (verified 2026-07-29). Zero writers and zero readers in the DB and the frontend:
+  `update_my_onboarding_profile` mirrors only first/last name onto `profiles` and
+  writes the address to `contacts`. Live counts: `contacts` 12/16 populated,
+  `profiles` 0/7. `contacts` is the canonical home — it is what the onboarding
+  intake writes, what `compose_address()` generates `address_composed` from, and
+  what the contract party tokens (`LESSEE.ADDRESS`) resolve through. The dead
+  fallbacks that read these columns are removed; the columns themselves remain
+  until a schema-drop decision. They stay a trap for anyone who greps for an
+  address and finds the wrong table first.

@@ -68,8 +68,12 @@ export async function adminPendingStaffInvites(): Promise<PendingStaffInvite[]> 
 
 /** Revoke a pending staff invite (kills the link; admin can re-send a fresh one). */
 export async function adminRevokeStaffInvite(id: string): Promise<void> {
-  const { error } = await supabase.from('invitations').update({ status: 'revoked' }).eq('id', id);
-  if (error) throw error;
+  // Guarded: a revoke filtered to zero rows by RLS returns no error, which would
+  // report the link dead while it still redeems. A revoke must prove it landed.
+  assertWrote(
+    await supabase.from('invitations').update({ status: 'revoked' }).eq('id', id).select('id'),
+    'The revoke',
+  );
 }
 
 /** Promote/demote an activated user by writing profiles.role — the authoritative
@@ -188,21 +192,33 @@ export async function logModeration(
   });
 }
 
+/* The hides are assertWrote-guarded: RLS on these tables is
+ * `(author_id = auth.uid() OR is_admin())` AND `(org_id = current_org())`, so a
+ * hide aimed at another org's content — or at a row deleted in the meantime —
+ * matches ZERO rows and returns no error. Unguarded, that wrote a
+ * moderation_actions entry claiming content was hidden while it stayed visible:
+ * the log has to record what happened, not what was attempted. */
 export async function adminHideChannelMessage(id: string, hidden: boolean): Promise<void> {
-  const { error } = await supabase.from('channel_messages').update({ hidden }).eq('id', id);
-  if (error) throw error;
+  assertWrote(
+    await supabase.from('channel_messages').update({ hidden }).eq('id', id).select('id'),
+    hidden ? 'Hiding the message' : 'Unhiding the message',
+  );
   await logModeration('channel_message', id, hidden ? 'hide' : 'unhide');
 }
 
 export async function adminHideThread(id: string, hidden: boolean): Promise<void> {
-  const { error } = await supabase.from('threads').update({ hidden }).eq('id', id);
-  if (error) throw error;
+  assertWrote(
+    await supabase.from('threads').update({ hidden }).eq('id', id).select('id'),
+    hidden ? 'Hiding the thread' : 'Unhiding the thread',
+  );
   await logModeration('thread', id, hidden ? 'hide' : 'unhide');
 }
 
 export async function adminHideThreadPost(id: string, hidden: boolean): Promise<void> {
-  const { error } = await supabase.from('thread_posts').update({ hidden }).eq('id', id);
-  if (error) throw error;
+  assertWrote(
+    await supabase.from('thread_posts').update({ hidden }).eq('id', id).select('id'),
+    hidden ? 'Hiding the post' : 'Unhiding the post',
+  );
   await logModeration('thread_post', id, hidden ? 'hide' : 'unhide');
 }
 
