@@ -405,11 +405,20 @@ export default function AppLayout() {
   // are never hard-walled (persistent banner instead).
   const location = useLocation();
   const [wall, setWall] = useState<WallState | null>(null);
+  const [wallRetry, setWallRetry] = useState(0);
+  // FAIL CLOSED: myWallState() now throws instead of returning a permissive
+  // default, so a transient failure can no longer silently drop the wall. We
+  // hold the member at an explicit retryable state rather than letting them
+  // through unverified.
+  const [wallError, setWallError] = useState(false);
   useEffect(() => {
     let active = true;
-    myWallState().then((w) => active && setWall(w)).catch(() => {});
+    setWallError(false);
+    myWallState()
+      .then((w) => { if (active) { setWall(w); setWallError(false); } })
+      .catch(() => { if (active) { setWall(null); setWallError(true); } });
     return () => { active = false; };
-  }, [location.pathname]);
+  }, [location.pathname, wallRetry]);
 
   // A3: the app-overview tour. The desktop and mobile tours are DIFFERENT
   // experiences and persist independently: each keeps auto-opening on ITS form
@@ -431,6 +440,10 @@ export default function AppLayout() {
         setTourSeen(pr ? seenAt != null : true);
       })
       .catch(() => active && setTourSeen(true));
+    // Swallowing is CORRECT here (unlike the wall): these categories only pick
+    // which variant of the presentational tour is shown. On failure the tour
+    // falls back to its guest variant — nothing is gated, so there is nothing
+    // to fail closed on.
     fetchMyCategories().then((c) => active && setTourCategories(c)).catch(() => {});
     return () => { active = false; };
   }, []);
@@ -486,6 +499,31 @@ export default function AppLayout() {
   // Sign-out stays reachable (the flow renders inside the layout chrome).
   if (wall?.wall && location.pathname !== '/app/onboarding') {
     return <Navigate to="/app/onboarding" replace />;
+  }
+
+  // FAIL CLOSED: we could not determine whether this member is walled. Rather
+  // than assume they are clear (the old silent behaviour), hold here with a
+  // retry. The onboarding route itself stays reachable — it is where a genuinely
+  // walled member needs to go, and it re-checks on its own.
+  if (wallError && !wall && location.pathname !== '/app/onboarding') {
+    return (
+      <div className="min-h-screen bg-cream grid place-items-center px-4">
+        <div className="bg-white border border-green-800/10 rounded-xl p-6 max-w-md text-center">
+          <h1 className="font-serif text-xl text-green-800 mb-2">We couldn't check your documents</h1>
+          <p className="body-text text-sm text-muted mb-4">
+            We can't confirm whether you have documents awaiting signature, so we've
+            paused here rather than let you past. This is usually a brief connection
+            problem.
+          </p>
+          <div className="flex flex-wrap gap-3 justify-center">
+            <button type="button" className="btn-primary" onClick={() => setWallRetry((n) => n + 1)}>
+              Try again
+            </button>
+            <Link to="/app/onboarding" className="btn-outline-gold">Go to my documents</Link>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // A3 auto-open — strictly after the wall check above: an unseen tour only

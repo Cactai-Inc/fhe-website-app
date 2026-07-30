@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, Handshake, Mail, Phone, Trash2, UserPlus } from 'lucide-react';
+import { FileText, Handshake, Mail, MapPin, Phone, Trash2, UserPlus } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { toErrorMessage } from '../../../lib/ops/errors';
 import { Modal, useAsync, useToast } from '../../../lib/ops';
 import {
   createContact, updateContact, deleteContact, staffContactDirectory, type DirectoryContact,
+  contactAddress, formatAddress, type ContactAddress,
 } from '../../../lib/api';
 import { contactName } from '../../../lib/ops/types';
 import type { Contact, ContactInput } from '../../../lib/ops/types';
@@ -99,7 +100,20 @@ function ContactDirectory({ mode }: { mode: DirectoryMode }) {
   const [filter, setFilter] = useState('All');
   const [sortKey, setSortKey] = useState<SortKey>(mode === 'leads' ? 'newest' : 'name');
   const [open, setOpenRaw] = useState<DirectoryContact | null>(null);
+  // Staff address visibility: the directory RPC does not carry the address, so
+  // the dossier fetches the canonical contacts row on open. undefined = loading,
+  // null = none on file.
+  const [openAddress, setOpenAddress] = useState<ContactAddress | null | undefined>(undefined);
   const setOpen = (r: DirectoryContact | null) => { setConfirmDelete(false); setOpenRaw(r); };
+  useEffect(() => {
+    if (!open) { setOpenAddress(undefined); return; }
+    let active = true;
+    setOpenAddress(undefined);
+    contactAddress(open.id)
+      .then((a) => { if (active) setOpenAddress(a); })
+      .catch(() => { if (active) setOpenAddress(null); });
+    return () => { active = false; };
+  }, [open]);
   const [editing, setEditing] = useState<DirectoryContact | null>(null);
   const [creating, setCreating] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -114,7 +128,6 @@ function ContactDirectory({ mode }: { mode: DirectoryMode }) {
       })))
       .catch(() => setError('Could not load the directory.'));
   };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(load, [mode]);
 
   const save = useAsync(async (input: ContactInput, existing: DirectoryContact | null) => {
@@ -272,6 +285,22 @@ function ContactDirectory({ mode }: { mode: DirectoryMode }) {
                   <span className="text-muted">{k}</span><span className="text-green-900 text-right truncate">{v}</span>
                 </div>
               ))}
+            </div>
+            {/* Mailing address (staff visibility, 2026-07-29). Read from the
+                canonical `contacts` columns — the same ones the onboarding
+                intake writes and the contract party tokens compose from. Given
+                its own full-width row because an address does not survive
+                truncation in a half-width cell. Degrades cleanly: no empty
+                label, never the string "null". */}
+            <div className="flex items-start justify-between gap-3 border-b border-green-800/[0.06] py-1 text-sm mb-4">
+              <span className="text-muted inline-flex items-center gap-1.5 shrink-0">
+                <MapPin size={13} aria-hidden="true" /> Address
+              </span>
+              <span className={`text-right ${formatAddress(openAddress) ? 'text-green-900' : 'text-muted'}`}>
+                {openAddress === undefined
+                  ? 'Loading…'
+                  : (formatAddress(openAddress) ?? 'Not on file')}
+              </span>
             </div>
             <div className="grid grid-cols-3 gap-2 mb-4">
               {([
