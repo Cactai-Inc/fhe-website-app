@@ -102,30 +102,65 @@ export interface MyContactPrefs {
   social_facebook: string | null;
   social_linkedin: string | null;
   preferred_contact: PreferredContact;
+  /** The mailing address — the SAME columns the onboarding intake writes and the
+   *  contract party tokens compose from (LESSEE.ADDRESS via
+   *  fill_party_fields_from_contacts → compose_address). Surfaced here so a
+   *  member can finally see and correct what they entered during onboarding:
+   *  previously this page read `profiles`, whose look-alike address columns
+   *  nothing writes, so the field they filled in appeared to vanish. */
+  address_line1: string | null;
+  address_line2: string | null;
+  city: string | null;
+  state: string | null;
+  postal_code: string | null;
 }
 
 const PREF_COLS =
   'email, mobile, whatsapp, allow_sms, allow_call, allow_whatsapp, allow_whatsapp_call, ' +
   'hide_email, hide_mobile, hide_whatsapp, ' +
-  'social_tiktok, social_instagram, social_facebook, social_linkedin, preferred_contact';
+  'social_tiktok, social_instagram, social_facebook, social_linkedin, preferred_contact, ' +
+  'address_line1, address_line2, city, state, postal_code';
 
-/** Load the signed-in member's contact prefs (own profiles row). */
+/** Load the signed-in member's contact prefs from their CONTACT row.
+ *
+ *  Consolidation S2 (2026-07-30): these used to live on `profiles`, which is why
+ *  what a member typed here never reached their contracts — the contract party
+ *  tokens compose from `contacts`, and onboarding writes `contacts`, but this
+ *  page wrote `profiles`. Same data, three tables' worth of confusion. `contacts`
+ *  is now the single person record; `profiles` is the account only.
+ *
+ *  Reads through the profile's contact_id rather than assuming one: an account
+ *  without a contact (the platform owner, per D1) simply has no prefs. */
 export async function getMyContactPrefs(): Promise<MyContactPrefs | null> {
   const { data: auth } = await supabase.auth.getUser();
   const uid = auth?.user?.id;
   if (!uid) return null;
+  const { data: prof, error: profErr } = await supabase
+    .from('profiles').select('contact_id').eq('user_id', uid).single();
+  if (profErr) throw profErr;
+  const contactId = (prof as { contact_id: string | null } | null)?.contact_id;
+  if (!contactId) return null;
   const { data, error } = await supabase
-    .from('profiles').select(PREF_COLS).eq('user_id', uid).single();
+    .from('contacts').select(PREF_COLS).eq('id', contactId).single();
   if (error) throw error;
   return data as unknown as MyContactPrefs;
 }
 
-/** Save a partial set of contact prefs on the member's own row (email is managed
- *  by the email-change flow, never written here). */
+/** Save a partial set of contact prefs on the member's own CONTACT row (email is
+ *  managed by the email-change flow, never written here).
+ *
+ *  RLS: `contacts_update_own` allows `id = current_contact_id()`, so a member may
+ *  write their own record and no one else's. assertWrote() proves the write
+ *  landed — a policy-filtered UPDATE returns no error, just zero rows. */
 export async function saveMyContactPrefs(patch: Partial<Omit<MyContactPrefs, 'email'>>): Promise<void> {
   const { data: auth } = await supabase.auth.getUser();
   const uid = auth?.user?.id;
   if (!uid) throw new Error('not signed in');
-  const res = await supabase.from('profiles').update(patch).eq('user_id', uid).select('user_id');
+  const { data: prof, error: profErr } = await supabase
+    .from('profiles').select('contact_id').eq('user_id', uid).single();
+  if (profErr) throw profErr;
+  const contactId = (prof as { contact_id: string | null } | null)?.contact_id;
+  if (!contactId) throw new Error('Your account has no contact record to update.');
+  const res = await supabase.from('contacts').update(patch).eq('id', contactId).select('id');
   assertWrote(res, 'Your changes');
 }
