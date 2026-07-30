@@ -115,8 +115,9 @@ const FRONTDESK_GROUP: NavItem[] = [
  * (Team), and the raw contact book behind both. */
 const ACCOUNTS_GROUP: NavItem[] = [
   { to: '/app/admin', label: 'Clients', icon: Users },
+  { to: '/app/ops/contacts', label: 'Contacts', icon: Contact },
   { to: '/app/ops/team', label: 'Team', icon: Contact },
-  { to: '/app/ops/contacts', label: 'Directory', icon: Contact },
+  { to: '/app/ops/directory', label: 'Directory', icon: BookOpen },
 ];
 const SERVICING_GROUP: NavItem[] = [
   { to: '/app/ops/lessons', label: 'Lessons', icon: GraduationCap, module: 'mod.lessons' },

@@ -74,7 +74,7 @@ import { verifyWithPassword, verifyWithGoogle } from './lib/emailChange';
 import Admin from './pages/app/Admin';
 // Ops / CRM (staff/admin)
 import OpsHome from './pages/app/OpsHome';
-import ContactsPage, { LeadsPage } from './pages/app/ops/ContactsPage';
+import ContactsPage, { LeadsPage, DirectoryPage } from './pages/app/ops/ContactsPage';
 import HorsesPage from './pages/app/ops/HorsesPage';
 import HorseRecordsPage from './pages/app/ops/HorseRecordsPage';
 import DocumentsQueuePage from './pages/app/ops/DocumentsQueuePage';
@@ -242,7 +242,11 @@ export function AppRoutes() {
                   requireStaff (trainers + admins); total control = requireStaff. */}
               <Route path="ops" element={<ProtectedRoute requireStaff><OpsHome /></ProtectedRoute>} />
               {/* Servicing subset — trainers + admins */}
+              {/* The four person-pages, each defined by contacts.contact_type.
+                  /ops/contacts kept its path (the people we serve); the rolodex
+                  moves to its own /ops/directory rather than sharing one. */}
               <Route path="ops/contacts" element={<ProtectedRoute requireStaff><ContactsPage /></ProtectedRoute>} />
+              <Route path="ops/directory" element={<ProtectedRoute requireStaff><DirectoryPage /></ProtectedRoute>} />
               <Route path="ops/leads" element={<ProtectedRoute requireStaff><LeadsPage /></ProtectedRoute>} />
               <Route path="ops/horses" element={<ProtectedRoute requireStaff><HorsesPage /></ProtectedRoute>} />
               <Route path="ops/horse-records" element={<ProtectedRoute requireStaff><HorseRecordsPage /></ProtectedRoute>} />

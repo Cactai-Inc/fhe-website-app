@@ -7,6 +7,7 @@ import { Modal, useAsync, useToast } from '../../../lib/ops';
 import {
   createContact, updateContact, deleteContact, staffContactDirectory, type DirectoryContact,
   contactAddress, formatAddress, type ContactAddress,
+  setContactType, CONTACT_TYPE_LABEL, type ContactType,
 } from '../../../lib/api';
 import { contactName } from '../../../lib/ops/types';
 import type { Contact, ContactInput } from '../../../lib/ops/types';
@@ -28,7 +29,34 @@ import { ContactForm } from '../../../components/ops/contacts/ContactForm';
  * Both: filter buttons desktop / dropdown mobile, search, sort, visible tag
  * chips, and a dossier behind every card (depth counts, notes, actions).
  */
-type DirectoryMode = 'business' | 'leads';
+/* Each page is now defined by the STORED contacts.contact_type, not by a
+ * client-side leftover. The old rule was `if nothing else matched → Lead`, which
+ * made the Leads page a catch-all rather than a campaign list. See
+ * docs/PERSON_DATA_CONSOLIDATION.md. */
+type DirectoryMode = 'directory' | 'leads' | 'contacts';
+
+/** Which stored contact_type each page shows. */
+const MODE_TYPE: Record<DirectoryMode, ContactType> = {
+  directory: 'DIRECTORY', leads: 'LEAD', contacts: 'CONTACT',
+};
+
+const MODE_COPY: Record<DirectoryMode, { title: string; blurb: string; newLabel: string }> = {
+  directory: {
+    title: 'Directory',
+    blurb: 'External people and businesses that provide something — farriers, veterinarians, suppliers, service providers, event organizers.',
+    newLabel: 'New directory entry',
+  },
+  leads: {
+    title: 'Leads',
+    blurb: 'Potential future clients. People we hold information about so we can reach out or include them in a campaign.',
+    newLabel: 'New lead',
+  },
+  contacts: {
+    title: 'Contacts',
+    blurb: 'The people we serve — clients, members, horse owners and counterparties who are not part of the company.',
+    newLabel: 'New contact',
+  },
+};
 
 type Designation = 'Client' | 'Team' | 'Counterparty' | 'Horse owner' | 'Lessee' | 'Lead';
 const BUSINESS_FILTERS = ['All', 'Counterparties', 'Horse owners', 'Lessees'];
@@ -95,6 +123,7 @@ function ContactDirectory({ mode }: { mode: DirectoryMode }) {
   const { isAdmin } = useAuth();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [rows, setRows] = useState<DirectoryContact[] | null>(null);
+  const [unfiled, setUnfiled] = useState<DirectoryContact[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('All');
@@ -120,22 +149,38 @@ function ContactDirectory({ mode }: { mode: DirectoryMode }) {
 
   const load = () => {
     staffContactDirectory()
-      .then((all) => setRows(all.filter((r) => {
-        const d = designations(r);
-        // clients + team live on their own pages — never here
-        if (d.includes('Client') || d.includes('Team')) return false;
-        return mode === 'leads' ? d.includes('Lead') : !d.includes('Lead');
-      })))
+      // Filter on the STORED type. Previously this inferred membership from
+      // derived designations, so anyone the deriver could not classify landed on
+      // Leads by default. Unclassified rows (contact_type null) belong to NO
+      // page — they are surfaced in the Unfiled banner so a human files them,
+      // rather than silently padding a campaign list.
+      .then((all) => {
+        setRows(all.filter((r) => r.contact_type === MODE_TYPE[mode]));
+        setUnfiled(all.filter((r) => !r.contact_type));
+      })
       .catch(() => setError('Could not load the directory.'));
   };
+
+  /** File an unclassified contact onto one of the four pages. */
+  async function file(id: string, type: ContactType) {
+    try {
+      await setContactType(id, type);
+      toast.success(`Filed under ${CONTACT_TYPE_LABEL[type]}.`);
+      load();
+    } catch (err) {
+      toast.error(toErrorMessage(err, 'Could not file that contact.'));
+    }
+  }
   useEffect(load, [mode]);
 
   const save = useAsync(async (input: ContactInput, existing: DirectoryContact | null) => {
     return existing ? updateContact(existing.id, input) : createContact(input);
   });
 
-  // leads have one designation by definition — no filter row there
-  const filters = mode === 'business' ? BUSINESS_FILTERS : [];
+  // Only the people-we-serve page has varied relationships worth filtering
+  // (counterparty / horse owner / lessee). Leads and Directory are single-purpose
+  // lists, so a filter row there would be chrome with nothing to do.
+  const filters = mode === 'contacts' ? BUSINESS_FILTERS : [];
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -183,16 +228,44 @@ function ContactDirectory({ mode }: { mode: DirectoryMode }) {
   return (
     <div className="max-w-5xl mx-auto py-8 px-4">
       <div className="flex items-center justify-between mb-1">
-        <h1 className="font-serif text-2xl text-green-900">{mode === 'business' ? 'Directory' : 'Marketing leads'}</h1>
+        <h1 className="font-serif text-2xl text-green-900">{MODE_COPY[mode].title}</h1>
         <button type="button" className="btn-primary" onClick={() => { setFormError(null); setCreating(true); }}>
-          {mode === 'business' ? 'New contact' : 'New lead'}
+          {MODE_COPY[mode].newLabel}
         </button>
       </div>
-      <p className="text-sm text-green-800/70 mb-5">
-        {mode === 'business'
-          ? 'Everyone we do business with who isn\u2019t a client — counterparties, horse owners, lessees.'
-          : 'People who\u2019ve come in but haven\u2019t matriculated — work them toward an account.'}
-      </p>
+      <p className="text-sm text-green-800/70 mb-5">{MODE_COPY[mode].blurb}</p>
+
+      {/* Unfiled: a contact with no contact_type belongs to no page, so without
+          this it would be invisible everywhere. Shown on every person-page so it
+          cannot be missed, with one-click filing. */}
+      {unfiled.length > 0 && (
+        <div className="mb-5 rounded-xl border border-gold-600/40 bg-gold-50 p-4">
+          <p className="text-sm text-gold-900 font-medium mb-1">
+            {unfiled.length} unfiled {unfiled.length === 1 ? 'person' : 'people'}
+          </p>
+          <p className="text-[12.5px] text-gold-900/90 mb-3">
+            These are not on any list yet. File each one so it lands where you would look for it.
+          </p>
+          <div className="flex flex-col gap-1.5">
+            {unfiled.map((r) => (
+              <div key={r.id} className="flex flex-wrap items-center gap-2 text-sm">
+                <span className="text-green-900">
+                  {[r.first_name, r.last_name].filter(Boolean).join(' ') || r.email || 'Unnamed'}
+                </span>
+                {r.email && <span className="text-[11.5px] text-muted">{r.email}</span>}
+                <span className="ml-auto flex flex-wrap gap-1.5">
+                  {(['LEAD', 'CONTACT', 'DIRECTORY', 'TEAM'] as ContactType[]).map((t) => (
+                    <button key={t} type="button" onClick={() => void file(r.id, t)}
+                      className="text-[11px] px-2.5 py-1 rounded-full border border-green-800/25 text-green-800 hover:bg-green-800/10 focus-ring">
+                      {CONTACT_TYPE_LABEL[t]}
+                    </button>
+                  ))}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* filter — buttons on desktop, dropdown on mobile; sort row below */}
       <div className="hidden sm:flex flex-wrap gap-1.5 mb-2">
@@ -382,9 +455,15 @@ function ContactDirectory({ mode }: { mode: DirectoryMode }) {
   );
 }
 
-export function ContactsPage() {
-  return <ContactDirectory mode="business" />;
+/** The rolodex: external providers — farriers, vets, suppliers, event organizers. */
+export function DirectoryPage() {
+  return <ContactDirectory mode="directory" />;
 }
+/** The people we serve: clients, members, horse owners, counterparties. */
+export function ContactsPage() {
+  return <ContactDirectory mode="contacts" />;
+}
+/** Potential future clients — the campaign list. */
 export function LeadsPage() {
   return <ContactDirectory mode="leads" />;
 }

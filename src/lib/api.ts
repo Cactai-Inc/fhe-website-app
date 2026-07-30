@@ -1866,6 +1866,34 @@ export interface DirectoryContact {
   horses_leased: number;
   engagement_count: number;
   document_count: number;
+  /** THE page discriminator — an explicit stored value, not a derived leftover.
+   *  null = unclassified, surfaced for a human to file rather than defaulted. */
+  contact_type: ContactType | null;
+  is_company: boolean;
+}
+
+/** The four person-pages. One contact appears on exactly one of them.
+ *  LEAD      — a potential future client: outreach and campaign target.
+ *  CONTACT   — an internal person the business SERVES (client, member, horse
+ *              owner, counterparty) who is not part of the company.
+ *  TEAM      — the company itself: staff and internal accounts.
+ *  DIRECTORY — external people and businesses that PROVIDE something: farriers,
+ *              vets, suppliers, service providers, event organizers.
+ *  The line that separates LEAD from DIRECTORY: someone we serve who hasn't
+ *  bought yet is a LEAD; someone who sells to us is DIRECTORY. */
+export type ContactType = 'LEAD' | 'CONTACT' | 'TEAM' | 'DIRECTORY';
+
+export const CONTACT_TYPE_LABEL: Record<ContactType, string> = {
+  LEAD: 'Lead', CONTACT: 'Contact', TEAM: 'Team', DIRECTORY: 'Directory',
+};
+
+/** Move a contact between the person-pages. Staff only; the RPC validates
+ *  against the same four values the column CHECK enforces. */
+export async function setContactType(contactId: string, type: ContactType | null): Promise<void> {
+  const { error } = await supabase.rpc('set_contact_type', {
+    p_contact_id: contactId, p_type: type,
+  });
+  if (error) throw error;
 }
 
 export async function staffContactDirectory(): Promise<DirectoryContact[]> {
