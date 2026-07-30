@@ -302,10 +302,15 @@ export default function Onboarding() {
             ...prev,
             phone: pre?.phone ?? p?.phone ?? '',
             date_of_birth: pre?.date_of_birth ?? '',
-            address_street: pre?.address_street ?? p?.address_line1 ?? '',
-            address_city: pre?.address_city ?? p?.city ?? '',
-            address_state: pre?.address_state ?? p?.state ?? '',
-            address_zip: pre?.address_zip ?? p?.postal_code ?? '',
+            // Address comes from the CONTACT only. `profiles` carries a
+            // look-alike address block that NOTHING writes (0 of 7 rows
+            // populated; update_my_onboarding_profile mirrors only the name
+            // onto profiles and writes the address to contacts). Falling back
+            // to it read as a second source but could only ever yield ''.
+            address_street: pre?.address_street ?? '',
+            address_city: pre?.address_city ?? '',
+            address_state: pre?.address_state ?? '',
+            address_zip: pre?.address_zip ?? '',
             emergency_contact_1_name: pre?.emergency_contact_1_name ?? '',
             emergency_contact_1_relationship: pre?.emergency_contact_1_relationship ?? '',
             emergency_contact_1_phone: pre?.emergency_contact_1_phone ?? '',
@@ -508,7 +513,23 @@ export default function Onboarding() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ documentIds }),
         })
-          .then((r) => setEmailed(r.ok))
+          // A 200 is NOT proof of delivery. The endpoint skips a recipient with
+          // no email on file (`if (!email) continue`) and — more importantly —
+          // skips one whose provider send failed (`if (!sent.ok) continue`),
+          // still returning 200. Its `delivered` array is the real record: one
+          // entry per recipient that actually received the mail. Read that, so
+          // a total send failure cannot present as success.
+          .then(async (r) => {
+            if (!r.ok) return setEmailed(false);
+            try {
+              const body = await r.json() as { delivered?: unknown[] };
+              setEmailed(Array.isArray(body.delivered) && body.delivered.length > 0);
+            } catch {
+              // 200 but an unreadable body — we cannot prove delivery, so we
+              // do not claim it.
+              setEmailed(false);
+            }
+          })
           .catch(() => setEmailed(false));
 
         if (next.purchase && !next.purchase.paid) {
