@@ -11,7 +11,7 @@ import type {
 import type {
   Contact, ContactInput, Client, Horse, HorseInput, LookupCode,
   ContractTemplate,
-  DocumentRow, GeneratedDocument, Signature, PartyRole,
+  DocumentRow, Signature, PartyRole,
   DocumentDelivery, DeliveryInput, BillableLine,
   IntakeRequest,
 } from './ops/types';
@@ -869,21 +869,14 @@ export async function listContractTemplates(): Promise<ContractTemplate[]> {
   return (data ?? []) as ContractTemplate[];
 }
 
-/** Merge a template for an engagement via the SECURITY-DEFINER RPC. Returns the
- *  new document id + merged body. RLS/require_module + engagement ownership are
- *  enforced inside generate_document (scopes to the engagement's own org_id). */
-export async function generateDocument(
-  engagementId: string,
-  templateKey: string,
-): Promise<GeneratedDocument> {
-  const { data, error } = await supabase.rpc('generate_document', {
-    p_engagement_id: engagementId,
-    p_template_key: templateKey,
-  });
-  if (error) throw error;
-  const row = Array.isArray(data) ? data[0] : data;
-  return row as GeneratedDocument;
-}
+/* generateDocument() removed 2026-07-30. It called generate_document with
+ * `p_engagement_id`, a parameter no overload has had since `engagements` was
+ * retired — every invocation would have failed on arity. It had no callers.
+ * The live signature is
+ *   generate_document(p_contact_id, p_template_key, p_contract_id, p_horse_id,
+ *                     p_parties, p_service_type[, p_horse_ids])
+ * and the real generation paths (onboarding, the contract engine) call it
+ * through their own wrappers. */
 
 export async function getDocument(id: string): Promise<DocumentRow | null> {
   const { data, error } = await supabase
@@ -895,13 +888,19 @@ export async function getDocument(id: string): Promise<DocumentRow | null> {
   return (data as DocumentRow | null) ?? null;
 }
 
-export async function listDocuments(engagementId?: string): Promise<DocumentRow[]> {
-  let query = supabase
+/** Every non-deleted document, newest first (the staff queue).
+ *
+ *  The `engagementId` filter was removed 2026-07-30: it filtered on
+ *  `documents.engagement_id`, a column dropped with the `engagements` retirement.
+ *  The sole caller passes no argument, so the dead branch never ran — but any
+ *  future caller supplying one would have got a PostgREST error rather than a
+ *  filtered list. Scope by contact or contract instead. */
+export async function listDocuments(): Promise<DocumentRow[]> {
+  const { data, error } = await supabase
     .from('documents')
     .select('*')
-    .is('deleted_at', null);
-  if (engagementId) query = query.eq('engagement_id', engagementId);
-  const { data, error } = await query.order('generated_at', { ascending: false });
+    .is('deleted_at', null)
+    .order('generated_at', { ascending: false });
   if (error) throw error;
   return (data ?? []) as DocumentRow[];
 }

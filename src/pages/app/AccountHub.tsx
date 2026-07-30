@@ -314,7 +314,8 @@ function StableSection() {
   const showHorses = (horses && horses.length > 0)
     ? horses.map((h) => ({ id: h.id, name: h.name, barnName: h.nickname ?? undefined,
         breed: h.breed ?? '', sex: h.sex ?? '', height: h.height_hh ?? '', age: h.age_or_foaling ?? '',
-        color: h.color ?? '', discipline: h.discipline ?? '', ownership: h.ownership === 'leased' ? 'Leased' : 'Owned',
+        // no `discipline` — horses has no such column (see StableEditors)
+        color: h.color ?? '', discipline: '', ownership: h.ownership === 'leased' ? 'Leased' : 'Owned',
         location: h.location }))
     : (SEED_ENABLED ? SEED_STABLE_HORSES : []);
 

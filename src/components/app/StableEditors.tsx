@@ -86,7 +86,10 @@ export function AddHorseModal({ onClose, onDone }: { onClose: () => void; onDone
           <div><FieldLabel>Height</FieldLabel><input className={inputCls} value={f.height_hh} onChange={set('height_hh')} placeholder="16.1hh" /></div>
           <div><FieldLabel>Age / foaling</FieldLabel><input className={inputCls} value={f.age_or_foaling} onChange={set('age_or_foaling')} placeholder="11 yrs / 2015" /></div>
           <div><FieldLabel>Color</FieldLabel><input className={inputCls} value={f.color} onChange={set('color')} placeholder="Bay" /></div>
-          <div><FieldLabel>Discipline</FieldLabel><input className={inputCls} value={f.discipline} onChange={set('discipline')} placeholder="Hunter" /></div>
+          {/* Discipline removed 2026-07-30: there is no `discipline` column on
+              horses, so this input collected text that was concatenated into
+              medical_history and never read back. Reinstate it here only
+              alongside a real column. */}
         </div>
         <div>
           <FieldLabel>Ownership</FieldLabel>
