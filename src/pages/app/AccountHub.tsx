@@ -253,13 +253,7 @@ function ProfileSection() {
   return (
     <div className="mt-2.5 mb-1 p-4 bg-cream-100/60 border border-green-800/10 rounded-xl">
       <SectionLabel>Contact information</SectionLabel>
-      {/* Copy corrected 2026-07-30: this said "Choose what the community sees",
-          but the hide_* flags have no reader — there is no member directory that
-          exposes contact details, so nothing was ever hidden or shown by them.
-          Claiming a privacy control that does not exist is worse than offering
-          none. The toggles stay (the data is now on `contacts`, ready to be
-          enforced) but the promise is not made until a directory honours it. */}
-      <p className="text-[11.5px] text-muted -mt-1.5 mb-2.5">Visible to French Heritage staff.</p>
+      <p className="text-[11.5px] text-muted -mt-1.5 mb-2.5">Always visible to French Heritage. Choose what the community sees.</p>
       <div className="flex flex-col gap-2.5">
         <ContactField icon={Mail} label="Email" placeholder="claire@example.com" hideable readOnly
           value={p?.email ?? user?.email ?? ''}

@@ -67,21 +67,32 @@ Verified population counts (n=7 profiles) in brackets.
 
 ---
 
-## Visibility controls — currently decorative
+## Visibility controls — enforced (corrected)
 
-`hide_email` / `hide_mobile` / `hide_whatsapp` are settable in `AccountHub` and
-**nothing reads them**: no DB function references them, and there is no community
-member-directory surface that exposes contact details at all. Members are
-toggling switches that control nothing.
+An earlier note in this doc claimed these toggles were decorative. **That was
+wrong.** The audit searched `pg_proc` for functions reading `hide_email` and
+found none — but the enforcement lives in a **view**, `member_directory`, which
+was never checked. It has always worked correctly:
 
-Two honest options, owner to pick:
-1. **Enforce** — build the member directory the toggles imply, and gate each
-   field on its flag.
-2. **Remove** — delete the toggles until such a surface exists.
+- `hide_email` / `hide_mobile` / `hide_whatsapp` null out the field, and
+- force the corresponding `allow_sms` / `allow_call` / `allow_whatsapp` false, and
+- collapse `preferred_contact` to `'none'` when it points at a hidden or empty
+  channel — so a profile never advertises a route the member closed off.
 
-Shipping them as-is is the one thing we should not do: a privacy control that
-does nothing is worse than no control, because it implies a protection that
-isn't there.
+`/app/members/:userId` (`MemberProfile.tsx`) is the surface that renders it.
+
+**What S2 did break, and how it was fixed.** Once the account page began writing
+these preferences to `contacts`, the view still read them from `profiles` — so a
+member could tick "hide from community" and see nothing happen. Migration
+`20260730102000` re-points the view at `contacts` for person fields while keeping
+persona fields (`display_name`, `avatar_url`, `bio`, `riding_level`) on
+`profiles`. Verified: view output byte-identical before and after (6 rows, 0
+differing), and a simulated toggle correctly nulls email + mobile and forces the
+allow flags false.
+
+**The persona split is deliberate:** a member may show "CJ" to the community
+while their contracts read "Charles Zigmund". Community identity lives on
+`profiles`; legal identity lives on `contacts`.
 
 **Staff-only vs member-visible** (the owner's ask) resolves cleanly once merged:
 `contacts` = the full record, staff-visible, RLS-gated to staff.
