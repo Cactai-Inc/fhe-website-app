@@ -24,6 +24,8 @@ import {
   markRequestContacted,
   appendRequestNote,
   setRequestChecklist,
+  listInboundQueue,
+  type InboundQueueRow,
 } from '../../../lib/ops/api-intake';
 import {
   scheduleLessonSession,
@@ -641,6 +643,69 @@ const KIND_FILTERS: { id: InboundKind; label: string }[] = [
   { id: 'support', label: 'Support' },
 ];
 
+/** The queue's conscience: what has waited too long, and what is merely unclosed.
+ *  Renders nothing when the queue is clean, so a healthy inbox stays quiet. */
+function InboundAttention() {
+  const [rows, setRows] = useState<InboundQueueRow[]>([]);
+  useEffect(() => {
+    let active = true;
+    listInboundQueue()
+      .then((r) => { if (active) setRows(r); })
+      .catch(() => { /* the list below is the source of truth; stay silent */ });
+    return () => { active = false; };
+  }, []);
+
+  const overdue = rows.filter((r) => r.overdue);
+  const stale = rows.filter((r) => r.already_converted && r.status === 'new');
+  if (overdue.length === 0 && stale.length === 0) return null;
+
+  const name = (r: InboundQueueRow) =>
+    [r.contact_first_name, r.contact_last_name].filter(Boolean).join(' ')
+    || r.contact_email || 'Someone';
+
+  return (
+    <div className="mb-6 flex flex-col gap-3">
+      {overdue.length > 0 && (
+        <div className="rounded-xl border border-red-300 bg-red-50 p-4">
+          <p className="text-sm font-medium text-red-900 mb-1">
+            {overdue.length} waiting on us
+          </p>
+          <p className="text-[12.5px] text-red-900/85 mb-3">
+            No one has picked these up, and the person never became a client.
+            Oldest first.
+          </p>
+          <div className="flex flex-col gap-1.5">
+            {overdue.map((r) => (
+              <div key={r.id} className="flex flex-wrap items-baseline gap-2 text-sm">
+                <span className="text-red-950 font-medium">{name(r)}</span>
+                <span className="text-[11.5px] text-red-900/80">
+                  {r.channel === 'booking' ? 'lesson booking' : (r.channel ?? 'enquiry')}
+                  {r.contact_email ? ` · ${r.contact_email}` : ''}
+                </span>
+                <span className="ml-auto text-[11.5px] font-semibold text-red-800">
+                  {r.days_open} {r.days_open === 1 ? 'day' : 'days'}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {stale.length > 0 && (
+        <div className="rounded-xl border border-green-800/15 bg-cream-100/60 p-4">
+          <p className="text-sm font-medium text-green-900 mb-1">
+            {stale.length} already handled, still marked new
+          </p>
+          <p className="text-[12.5px] text-green-800/80">
+            These people are already clients — the work is done, the row was never
+            closed. Clearing them keeps the queue honest.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function IntakePage() {
   useDocumentTitle('Inbound');
   const [kind, setKind] = useState<InboundKind>('all');
@@ -699,8 +764,20 @@ export function IntakePage() {
       <h1 className="font-serif text-2xl text-green-900 mb-1">Inbound</h1>
       <p className="text-sm text-green-800/70 mb-5">
         Everything sent to the company — booking requests, contact/inquiry notes,
-        kiosk signers, and support — newest first.
+        kiosk signers, and support. This is a queue: it should reach zero.
       </p>
+
+      {/* NEEDS ATTENTION — the whole point of the queue. Nothing here previously
+          distinguished a request that had been sitting for ten days from one
+          that arrived this morning, which is how three lesson enquiries aged 6–10
+          days without anyone noticing.
+
+          `overdue` is deliberately narrow: still new, the person has NOT already
+          become a client, and 2+ days old. Six of the nine rows in the live
+          backlog were kiosk sign-ins whose person was already converted — work
+          genuinely done, row never closed. Those are listed separately as
+          bookkeeping so they never drown out real opportunity. */}
+      <InboundAttention />
 
       <BookingFieldsSettings />
 
