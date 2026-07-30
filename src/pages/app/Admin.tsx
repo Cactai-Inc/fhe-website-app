@@ -17,7 +17,9 @@ import {
   contactHorseRecords, horseRecordCompleteness, requestHorseRecordCompletion,
   type HorseIntakeRecord,
 } from '../../lib/horses';
-import { fetchOfferings } from '../../lib/api';
+import {
+  fetchOfferings, contactAddress, formatAddress, type ContactAddress,
+} from '../../lib/api';
 import { docDisplayLabel } from '../../lib/documentStatus';
 import { ProvisionClientForm } from '../../components/app/ProvisionClientForm';
 import { StatusLog } from '../../lib/ops';
@@ -391,6 +393,21 @@ function AttachOfferingPanel({ contactId, onAttached }: { contactId: string; onA
 // ── per-tab bodies ────────────────────────────────────────────────────────────
 function OverviewTab({ ov }: { ov: Overview }) {
   const p = ov.profile;
+  // Mailing address (staff visibility, 2026-07-29). admin_client_overview builds
+  // its profile block from `profiles`, whose look-alike address columns the
+  // onboarding intake does NOT write — so the address is fetched here from the
+  // canonical `contacts` row via the profile's contact_id. undefined = loading.
+  const contactId = p?.contact_id ?? null;
+  const [addr, setAddr] = useState<ContactAddress | null | undefined>(undefined);
+  useEffect(() => {
+    if (!contactId) { setAddr(null); return; }
+    let active = true;
+    setAddr(undefined);
+    contactAddress(contactId)
+      .then((a) => { if (active) setAddr(a); })
+      .catch(() => { if (active) setAddr(null); });
+    return () => { active = false; };
+  }, [contactId]);
   if (!p) return null;
   const pairs: [string, string][] = [
     ['Email', p.email], ['Phone', p.phone ?? '—'], ['Mobile', p.mobile ?? '—'],
@@ -406,6 +423,14 @@ function OverviewTab({ ov }: { ov: Overview }) {
             <span className="text-muted">{k}</span><span className="text-green-900 text-right truncate">{v}</span>
           </div>
         ))}
+      </div>
+      {/* Full-width so the address stays readable (a half-width cell truncates
+          it). Degrades cleanly: no empty label, never the string "null". */}
+      <div className="flex items-start justify-between gap-3 text-sm border-b border-green-800/[0.06] py-1.5 mb-4">
+        <span className="text-muted shrink-0">Address</span>
+        <span className={`text-right ${formatAddress(addr) ? 'text-green-900' : 'text-muted'}`}>
+          {addr === undefined ? 'Loading…' : (formatAddress(addr) ?? 'Not on file')}
+        </span>
       </div>
       <div className="grid grid-cols-4 gap-2">
         {Object.entries(ov.counts).map(([k, v]) => (

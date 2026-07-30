@@ -23,6 +23,7 @@ import {
   type ContractDetail, type ContractField, type PartyControls,
   type SigningSetDoc, type RedlineState, type PartiesHorseSummary, type PartySummary,
 } from '../../lib/contracts';
+import { myWallState } from '../../lib/api';
 import { CaptureInfoModal } from '../../components/app/CaptureInfoModal';
 import { listStableHorses, type StableHorse } from '../../lib/stable';
 import { ContractCascade, ContractBody } from '../../components/app/ContractCascade';
@@ -289,6 +290,23 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   // undefined to use the natural default for the current state (edit while
   // editable/in-review; read-only signer view once locked). Set by the toggle.
   const [viewChoice, setViewChoice] = useState<'signer' | 'author' | undefined>(undefined);
+
+  // DOCUMENT-BEFORE-CONTRACT: does the VIEWER still owe onboarding documents?
+  // Fails CLOSED — if we cannot tell, we gate rather than offer a signing box
+  // the server would reject anyway. Staff are never gated (they are never
+  // hard-walled, and they sign on a party's behalf from the barn office).
+  const [docGated, setDocGated] = useState(false);
+  useEffect(() => {
+    let active = true;
+    if (isStaff) { setDocGated(false); return; }
+    myWallState()
+      // `wall` is the wall_gating subset — exactly what the server-side guard
+      // (contact_document_wall_state → 'gating') tests, so the UI and the DB
+      // agree. `pending` would over-gate on non-gating assignments.
+      .then((w) => { if (active) setDocGated(Boolean(w?.wall)); })
+      .catch(() => { if (active) setDocGated(true); });
+    return () => { active = false; };
+  }, [isStaff]);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -1692,9 +1710,35 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           </div>
           )}
 
+          {/* DOCUMENT-BEFORE-CONTRACT (2026-07-29): a party with unsatisfied
+              onboarding documents cannot sign. This is the FRIENDLY half — the
+              authoritative gate is server-side in record_signature(), so a deep
+              link here changes nothing. We deliberately keep the contract
+              READABLE and show an explanatory next step instead of a bare denial:
+              a party who cannot read what they are being asked to sign has no way
+              to understand why they are blocked, and the onboarding documents are
+              a prerequisite, not a secret. */}
+          {state === 'locked' && myRoles.length > 0 && !iSigned && docGated && (
+            <div className="border-t border-green-800/10 pt-4">
+              <div className="bg-gold-50 border border-gold-600/40 rounded-lg p-4">
+                <p className="text-sm text-gold-900 font-medium mb-1">
+                  Complete your onboarding documents first
+                </p>
+                <p className="text-sm text-gold-900/90 mb-3">
+                  This agreement relies on the information those documents collect, so
+                  they have to be signed before it can be executed. You can read this
+                  contract now — signing opens as soon as they're done.
+                </p>
+                <Link to="/app/onboarding" className="btn-primary text-xs inline-flex">
+                  Go to my documents
+                </Link>
+              </div>
+            </div>
+          )}
+
           {/* signing: only once LOCKED (read-only). The document is frozen for
               signature — you sign what you see. */}
-          {state === 'locked' && myRoles.length > 0 && !iSigned && (
+          {state === 'locked' && myRoles.length > 0 && !iSigned && !docGated && (
             <div className="border-t border-green-800/10 pt-4">
               <p className="text-sm text-secondary mb-2">
                 Sign as <strong>{myRoles[0]}</strong> — typing your full legal name is your signature.

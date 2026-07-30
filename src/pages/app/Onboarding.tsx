@@ -221,6 +221,10 @@ export default function Onboarding() {
   // sign button; the flag rides to record_signature, which logs a separate
   // esign_consents row. Checked once, it covers the whole signing session.
   const [esignConsent, setEsignConsent] = useState(false);
+  // Did the completion email actually go out? null = still sending / unknown,
+  // true = delivered, false = failed. The done step reads this so it never
+  // claims a delivery that did not happen.
+  const [emailed, setEmailed] = useState<boolean | null>(null);
   // 3f re-signer pointer: template_key → the date of the version already on
   // file (executed or superseded), so returning signers see the replace copy.
   const [priorSigned, setPriorSigned] = useState<Record<string, string>>({});
@@ -270,6 +274,8 @@ export default function Onboarding() {
 
   useEffect(() => {
     let active = true;
+    // Presentational only — feeds the app-overview modal variant, gates nothing.
+    // Failing to a guest-variant tour is the right degradation.
     fetchMyCategories().then((c) => active && setCategories(c)).catch(() => {});
     Promise.all([myOnboardingState(), getMyProfile().catch(() => null)])
       .then(([s, p]) => {
@@ -296,10 +302,15 @@ export default function Onboarding() {
             ...prev,
             phone: pre?.phone ?? p?.phone ?? '',
             date_of_birth: pre?.date_of_birth ?? '',
-            address_street: pre?.address_street ?? p?.address_line1 ?? '',
-            address_city: pre?.address_city ?? p?.city ?? '',
-            address_state: pre?.address_state ?? p?.state ?? '',
-            address_zip: pre?.address_zip ?? p?.postal_code ?? '',
+            // Address comes from the CONTACT only. `profiles` carries a
+            // look-alike address block that NOTHING writes (0 of 7 rows
+            // populated; update_my_onboarding_profile mirrors only the name
+            // onto profiles and writes the address to contacts). Falling back
+            // to it read as a second source but could only ever yield ''.
+            address_street: pre?.address_street ?? '',
+            address_city: pre?.address_city ?? '',
+            address_state: pre?.address_state ?? '',
+            address_zip: pre?.address_zip ?? '',
             emergency_contact_1_name: pre?.emergency_contact_1_name ?? '',
             emergency_contact_1_relationship: pre?.emergency_contact_1_relationship ?? '',
             emergency_contact_1_phone: pre?.emergency_contact_1_phone ?? '',
@@ -492,11 +503,34 @@ export default function Onboarding() {
       // skip straight to done. Delivery is best-effort — never blocks the flow.
       if (!next.documents.some((d) => d.status !== 'EXECUTED')) {
         const documentIds = next.documents.map((d) => d.document_id).filter(Boolean);
-        fetch('/api/deliver-documents', {
+        // TRUTHFUL DELIVERY (2026-07-29): the send is still non-blocking — the
+        // documents are executed and stored regardless, and a mail failure must
+        // never trap someone in the flow. But we now RECORD the outcome so the
+        // done step can only claim delivery when it actually happened.
+        setEmailed(null);
+        void fetch('/api/deliver-documents', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ documentIds }),
-        }).catch(() => { /* the documents are safely stored either way */ });
+        })
+          // A 200 is NOT proof of delivery. The endpoint skips a recipient with
+          // no email on file (`if (!email) continue`) and — more importantly —
+          // skips one whose provider send failed (`if (!sent.ok) continue`),
+          // still returning 200. Its `delivered` array is the real record: one
+          // entry per recipient that actually received the mail. Read that, so
+          // a total send failure cannot present as success.
+          .then(async (r) => {
+            if (!r.ok) return setEmailed(false);
+            try {
+              const body = await r.json() as { delivered?: unknown[] };
+              setEmailed(Array.isArray(body.delivered) && body.delivered.length > 0);
+            } catch {
+              // 200 but an unreadable body — we cannot prove delivery, so we
+              // do not claim it.
+              setEmailed(false);
+            }
+          })
+          .catch(() => setEmailed(false));
 
         if (next.purchase && !next.purchase.paid) {
           await enterPayment();
@@ -1056,9 +1090,21 @@ export default function Onboarding() {
             <h2 id="ob-done-heading" className="font-serif text-xl text-green-800 mb-1 inline-flex items-center gap-2">
               <Check size={20} aria-hidden="true" /> You're all set.
             </h2>
+            {/* Only claim delivery when it actually succeeded. In every case the
+                signed documents are recorded and available — that part is true
+                unconditionally, so the fallback copy stays reassuring. */}
             <p className="body-text text-sm">
-              Copies of everything you signed have been emailed to you, and they're always
-              available on your Documents page.
+              {emailed === true ? (
+                <>Copies of everything you signed have been emailed to you, and they're always
+                  available on your Documents page.</>
+              ) : emailed === false ? (
+                <>Everything you signed is recorded and available on your Documents page.
+                  We couldn't email your copies just now — nothing is lost, and you can
+                  download them any time from Documents.</>
+              ) : (
+                <>Everything you signed is recorded and always available on your Documents
+                  page. Your emailed copies are on their way.</>
+              )}
             </p>
           </div>
 
