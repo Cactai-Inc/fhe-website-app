@@ -135,14 +135,6 @@ export interface PartyControls {
   can_add_clause?: boolean;
 }
 
-export interface ContractMessage {
-  id: string;
-  sender_label: string;
-  sender_user_id: string | null;
-  body: string;
-  created_at: string;
-}
-
 export interface ContractDetail {
   party_controls?: PartyControls[];
   document: {
@@ -728,19 +720,6 @@ export async function listContractFormats(): Promise<ContractFormat[]> {
 export async function attachHorseToDocument(documentId: string, horseId: string): Promise<void> {
   const { error } = await supabase.rpc('attach_horse_to_document', {
     p_document_id: documentId, p_horse_id: horseId,
-  });
-  if (error) throw error;
-}
-
-export async function contractMessagesList(documentId: string): Promise<ContractMessage[]> {
-  const { data, error } = await supabase.rpc('contract_messages_list', { p_document_id: documentId });
-  if (error) throw error;
-  return (data ?? []) as ContractMessage[];
-}
-
-export async function contractMessagePost(documentId: string, body: string): Promise<void> {
-  const { error } = await supabase.rpc('contract_message_post', {
-    p_document_id: documentId, p_body: body,
   });
   if (error) throw error;
 }
