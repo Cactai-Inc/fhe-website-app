@@ -19,7 +19,7 @@ type Mode = 'field' | 'section' | 'clause';
 
 export function AddElementButton({
   sections, documentId, disabled, onAdded,
-  canAddStructure = true, canAddClause = false,
+  canAddStructure = true, canAddClause = false, className,
 }: {
   sections: string[];
   documentId: string;
@@ -27,6 +27,11 @@ export function AddElementButton({
   onAdded: () => void;
   canAddStructure?: boolean;
   canAddClause?: boolean;
+  /** Lets a caller impose its own sizing. The subheader passes SUBHEADER_BTN so
+   *  this control matches the row: with its own hardcoded classes it had no
+   *  whitespace-nowrap, so "Add item" wrapped to two lines, and it sized itself
+   *  independently of every button beside it. */
+  className?: string;
 }) {
   const [open, setOpen] = useState(false);
   if (!canAddStructure && !canAddClause) return null;
@@ -34,7 +39,9 @@ export function AddElementButton({
   return (
     <>
       <button type="button" disabled={disabled} onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 text-xs text-gold-800 border border-gold-400/60 rounded-lg px-3 py-1.5 hover:bg-gold-50 focus-ring disabled:opacity-50">
+        className={className
+          ? `${className} border-gold-400/60 bg-white text-gold-800 hover:bg-gold-50 disabled:opacity-50`
+          : 'inline-flex items-center gap-1.5 whitespace-nowrap text-xs text-gold-800 border border-gold-400/60 rounded-lg px-3 py-1.5 hover:bg-gold-50 focus-ring disabled:opacity-50'}>
         <Plus size={13} /> {label}
       </button>
       {open && (

@@ -50,27 +50,39 @@ const MIN_HEIGHT = 160;
    scaling — it was two steps, and a fixed 8rem drawer width fought both, so the
    row still wrapped well above the intended breakpoint.
 
-   The sizes below come from the actual constraint: the rail takes ~256px, so at
-   iPad-landscape (1024px) the bar has ~740px for eight controls, and at
-   iPad-portrait (768px) it has ~490px — which is not enough, hence the wrap
-   there. clamp() interpolates smoothly between those, so nothing snaps.
+   THREE BANDS, corrected after the single-breakpoint version triggered the
+   mobile grid far too early:
 
-   MOBILE (below sm) keeps full-width grid cells: a mistaken tap here can void a
-   contract, so the target stays large. */
+     < md (768px)   phone portrait and landscape — collapsed two-across grid with
+                    full-size tap targets. Eight controls cannot be made readable
+                    on one line here, and shrinking them until they fit leaves a
+                    target too small for a button that can void a contract.
+     md .. lg       iPad portrait — a WRAPPING row. Two tidy rows, not a grid and
+                    not a crushed single line.
+     >= lg (1024px) iPad landscape and desktop — one row, held by flex-nowrap,
+                    narrowing through clamp() as the window shrinks.
+
+   The nav rail only exists from lg up, so below that the bar has the full window
+   width — the earlier sizing assumed a rail that was not there. */
 export const SUBHEADER_BTN =
   'inline-flex items-center justify-center gap-1.5 rounded-lg border font-medium '
   + 'focus-ring whitespace-nowrap w-full px-3 py-3 text-sm '
   // From sm up: auto width, shrinkable, with fluid padding and type.
-  + 'lg:w-auto lg:shrink lg:min-w-0 lg:py-2 '
-  + 'lg:[padding-inline:clamp(0.5rem,1.1vw,0.875rem)] '
-  + 'lg:[font-size:clamp(11.5px,1.05vw,14px)] '
-  + 'lg:[gap:clamp(0.25rem,0.5vw,0.375rem)]';
+  + 'md:w-auto md:shrink md:min-w-0 md:py-2 '
+  + 'md:[padding-inline:clamp(0.4rem,1.1vw,0.875rem)] '
+  + 'md:[font-size:clamp(11.5px,1.05vw,14px)] '
+  + 'md:[gap:clamp(0.25rem,0.5vw,0.375rem)]';
 
 /* Drawer buttons hold a consistent width so the row does not reflow when
    "Click to close" (wider than "Comments") replaces a label — but that width is
    now FLUID too. A fixed rem value was the main reason the bar wrapped early:
    three drawers at 8rem each claimed 24rem before anything else was measured. */
-const DRAWER_BTN_W = 'lg:[width:clamp(5.5rem,9vw,9.5rem)]';
+/* One line, deliberately: Tailwind scans source text for complete class names,
+   and a template literal broken across lines can hide a variant from the scanner
+   — which is exactly why lg:flex-nowrap never reached the stylesheet. */
+const ROW_CLS = 'grid-cols-2 gap-2 pt-2 min-w-0 md:flex md:grid-cols-none md:items-center md:pt-0 md:gap-1.5 md:flex-wrap lg:flex-nowrap lg:gap-2';
+
+const DRAWER_BTN_W = 'md:[width:clamp(5rem,9vw,9.5rem)]';
 
 export function ContractSubheader({
   drawers, leading, extras, trailing, destructive, openRequest, viewers = [],
@@ -147,13 +159,16 @@ export function ContractSubheader({
        ContractPage instead (it applies max-w-5xl to the document body rather
        than to the whole page), so this stays inside <main> and simply fills it. */
     <div className="sticky top-14 z-30 -mt-6 sm:-mt-9 mb-6 -mx-4 sm:-mx-8 xl:-mx-12">
-      <div className="bg-cream-100/95 backdrop-blur border-b border-green-800/15 px-4 sm:px-8 xl:px-12 py-2.5">
+      {/* Padding matches <main>'s so the buttons line up with the card below,
+          but stops growing past sm: the xl:px-12 was throwing away 96px of usable
+          width on each side exactly when the row needed it most. */}
+      <div className="bg-cream-100/95 backdrop-blur border-b border-green-800/15 px-4 sm:px-6 py-2.5">
         {/* MOBILE toggle. The bar stays sticky under the app header either way —
             collapsing hides the CONTROLS, not the bar, so the affordance to bring
             them back is always in the same place. */}
         <button type="button" onClick={() => setBarOpen((v) => !v)}
           aria-expanded={barOpen}
-          className="lg:hidden w-full flex items-center justify-between py-1 text-left">
+          className="md:hidden w-full flex items-center justify-between py-1 text-left">
           <span className="text-[13px] font-medium text-green-900">
             {active ? active.label : 'Contract actions'}
           </span>
@@ -189,9 +204,7 @@ export function ContractSubheader({
             wrapped in pairs and left a gap after the last item on line one — the
             exact symptom in the owner's screenshot. flex-nowrap could not win
             against a grid template that was never reset. */}
-        <div className={`${barOpen ? 'grid' : 'hidden'} grid-cols-2 gap-2 pt-2 min-w-0
-                         lg:flex lg:grid-cols-none lg:flex-nowrap lg:items-center lg:pt-0
-                         lg:gap-0 lg:[gap:clamp(0.25rem,0.6vw,0.5rem)]`}>
+        <div className={`${barOpen ? 'grid' : 'hidden'} ${ROW_CLS}`}>
           {leading}
           {drawers.map((d) => {
             const isOpen = openKey === d.key;
@@ -224,8 +237,8 @@ export function ContractSubheader({
           {/* Pinned right by ml-auto. flex-nowrap and min-w-0 so this pair
               shrinks with everything else instead of forcing the row to break. */}
           {destructive && (
-            <span className="contents lg:flex lg:ml-auto lg:flex-nowrap lg:items-center lg:min-w-0
-                             lg:[gap:clamp(0.25rem,0.6vw,0.5rem)]">
+            <span className="contents md:flex md:ml-auto md:flex-nowrap md:items-center md:min-w-0
+                             md:gap-1.5 lg:[gap:clamp(0.25rem,0.6vw,0.5rem)]">
               {destructive}
             </span>
           )}

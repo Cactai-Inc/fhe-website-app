@@ -872,14 +872,17 @@ function InlineInput({
   // user is typing, dropping characters.
   useEffect(() => { if (!editingRef.current) setLocal(value); }, [value]);
   const commit = () => { editingRef.current = false; if (local !== value) onCommit(local); };
-  // width driver: the longer of the value or placeholder, plus the prefix
-  const sizer = (prefix ?? '') + (local || placeholder);
+  /* Width driver: the longer of value or placeholder. The placeholder is CAPPED
+     because a long one ("Additional schedule terms") sized the field wider than
+     the line had left, so it wrapped and rendered as stacked words instead of a
+     single input. Once the user types, their own text drives the width again. */
+  const sizer = (prefix ?? '') + (local || placeholder.slice(0, 18));
   return (
-    <span className="inline-flex items-baseline align-baseline relative">
+    <span className="inline-flex items-baseline align-baseline relative max-w-full">
       {prefix && local && <span className="text-green-900">{prefix}</span>}
       <span className="inline-grid">
         {/* invisible sizer sets the column width; the input overlays it */}
-        <span className="col-start-1 row-start-1 invisible whitespace-pre px-1 text-[13.5px]" aria-hidden="true">
+        <span className="col-start-1 row-start-1 invisible whitespace-pre px-1 text-[13.5px] max-w-full overflow-hidden" aria-hidden="true">
           {sizer || placeholder}
         </span>
         <input
@@ -1106,9 +1109,11 @@ export function InlineFieldControl({
     if (kind === 'week_grid') {
       return (
         <span className="block clear-both w-full mt-3 mb-1.5 ml-0 pl-0">
+          {/* Label ABOVE the array (owner): as an inline lead-in it pushed the
+              whole grid right and left the pills crowded into what remained. */}
+          <span className="block text-[13.5px] text-green-950 mb-1.5">{label}{marks}</span>
           <FieldControl f={f} onSave={onSave} onSaveResponsibility={onSaveResponsibility}
             onSaveStructured={onSaveStructured} disabled={disabled} />
-          {marks}
         </span>
       );
     }
@@ -1252,24 +1257,29 @@ function WeekGrid({ f, onSaveStructured, disabled }: { f: ContractField; onSaveS
     const nextDays = { ...w.days }; delete nextDays[name];
     commit({ ...w, parties: w.parties.filter((_, j) => j !== i), days: nextDays });
   };
-  // FULL-WIDTH block, no scrollbox (owner mandate: no scrollable boxes inside
-  // the document). One row per party: name, then the seven day toggles as pills
-  // that WRAP on narrow screens instead of clipping.
+  /* FULL-WIDTH block, no scrollbox (owner mandate: no scrollable boxes inside
+     the document). One row per party: the name box hard LEFT, then the seven day
+     toggles filling the rest of the line.
+
+     The pills were fixed-width and clustered beside the name, leaving most of the
+     row empty. They now share the remaining space equally (flex-1 inside a
+     flexed span), so they grow to fill the line and stay comfortable to hit
+     rather than sitting as a tight little group. */
   return (
     <div className="w-full max-w-full">
       <div className="flex flex-col gap-1.5">
         {w.parties.map((p, i) => (
-          <div key={i} className="flex flex-wrap items-center gap-1.5">
-            <input className="w-24 shrink-0 px-1.5 py-0.5 rounded border border-green-800/15 text-xs font-medium text-green-900 bg-white disabled:bg-cream-100"
+          <div key={i} className="flex items-center gap-2 w-full">
+            <input className="w-24 shrink-0 px-1.5 py-1 rounded border border-green-800/15 text-xs font-medium text-green-900 bg-white disabled:bg-cream-100"
               disabled={disabled} value={p} aria-label={`Party ${i + 1} name`}
               onChange={(e) => renameParty(i, e.target.value)} />
-            <span className="flex flex-wrap items-center gap-1">
+            <span className="flex flex-1 min-w-0 items-center gap-1">
               {DAYS.map((d) => {
                 const on = (w.days[p] ?? []).includes(d);
                 return (
                   <button key={d} type="button" disabled={disabled} onClick={() => toggleDay(p, d)}
                     aria-pressed={on}
-                    className={`text-[11px] rounded-full px-2 py-0.5 border focus-ring ${
+                    className={`flex-1 min-w-0 text-[11px] rounded-full px-1 py-1 border focus-ring ${
                       on ? 'bg-green-800 text-white border-green-800'
                          : 'border-green-800/25 text-secondary hover:bg-green-50'} ${disabled ? 'opacity-70' : ''}`}>
                     {d}
