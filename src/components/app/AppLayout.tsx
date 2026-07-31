@@ -111,12 +111,13 @@ const FRONTDESK_GROUP: NavItem[] = [
   { to: '/app/ops/leads', label: 'Leads', icon: Contact },
   { to: '/app/ops/support', label: 'Support', icon: LifeBuoy },
 ];
-/* ACCOUNTS — who we know: customers (Clients), internal accounts (Team), and
- * the raw contact book behind both. */
+/* PEOPLE — everyone we know: the client/account roster, internal accounts
+ * (Team), and the raw contact book behind both. */
 const ACCOUNTS_GROUP: NavItem[] = [
   { to: '/app/admin', label: 'Clients', icon: Users },
+  { to: '/app/ops/contacts', label: 'Contacts', icon: Contact },
   { to: '/app/ops/team', label: 'Team', icon: Contact },
-  { to: '/app/ops/contacts', label: 'Directory', icon: Contact },
+  { to: '/app/ops/directory', label: 'Directory', icon: BookOpen },
 ];
 const SERVICING_GROUP: NavItem[] = [
   { to: '/app/ops/lessons', label: 'Lessons', icon: GraduationCap, module: 'mod.lessons' },
@@ -171,7 +172,7 @@ export function manageNavGroups(
   );
   const groups: NavGroup[] = [
     { key: 'frontdesk', label: 'Front desk', items: visible(FRONTDESK_GROUP), defaultOpen: true },
-    { key: 'accounts', label: 'Accounts', items: visible(ACCOUNTS_GROUP), defaultOpen: true },
+    { key: 'accounts', label: 'People', items: visible(ACCOUNTS_GROUP), defaultOpen: true },
     { key: 'servicing', label: 'Servicing', items: visible(SERVICING_GROUP), defaultOpen: true },
     { key: 'business', label: 'Business', items: visible(BUSINESS_GROUP) },
     { key: 'community', label: 'Community', items: visible(COMMUNITY_GROUP) },

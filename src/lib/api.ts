@@ -11,7 +11,7 @@ import type {
 import type {
   Contact, ContactInput, Client, Horse, HorseInput, LookupCode,
   ContractTemplate,
-  DocumentRow, GeneratedDocument, Signature, PartyRole,
+  DocumentRow, Signature, PartyRole,
   DocumentDelivery, DeliveryInput, BillableLine,
   IntakeRequest,
 } from './ops/types';
@@ -614,6 +614,116 @@ export async function myWallState(): Promise<WallState> {
   return data as WallState;
 }
 
+// ─── Legal name confirmation ────────────────────────────────────────────────
+/** Whether this member must state their legal name before filling a form or
+ *  signing. Set when two sources carried genuinely different surnames and we
+ *  could not safely pick one — guessing would put the wrong name on a contract. */
+export interface NameConfirmationState {
+  needs_confirmation: boolean;
+  first_name: string | null;
+  last_name: string | null;
+}
+
+/** FAILS CLOSED, for the same reason the signing wall does: if we cannot tell
+ *  whether this person's name is trustworthy, we must not let them sign with it.
+ *  The caller treats a throw as "gate them". */
+export async function myNameConfirmationState(): Promise<NameConfirmationState> {
+  const { data, error } = await supabase.rpc('my_name_confirmation_state');
+  if (error) throw error;
+  if (!data || typeof data !== 'object') throw new Error('Could not read your name status.');
+  return data as NameConfirmationState;
+}
+
+/** The member states their own legal name. The ONLY way to clear the gate —
+ *  staff cannot confirm on someone's behalf, since the point is that we could
+ *  not safely assert it ourselves. */
+export async function confirmMyLegalName(first: string, last: string): Promise<void> {
+  const { error } = await supabase.rpc('confirm_my_legal_name', {
+    p_first: first, p_last: last,
+  });
+  if (error) throw error;
+}
+
+// ─── Document versioning / re-assignment (staff) ────────────────────────────
+/* templateReassignmentCandidates() / requireDocumentFromAll() were removed
+ * 2026-07-30 before ever shipping a caller. They were a population-wide sweep
+ * built one step ahead of the owner's actual requirement, which is a PROMPT on
+ * each version bump offering all / choose-who / no-one. Keeping both would have
+ * left two controls writing contact_required_documents with different semantics
+ * — exactly the drift this consolidation exists to remove. The version-decision
+ * flow below is the single path; its RPCs remain in the DB as primitives. */
+
+/** A version bump still awaiting the re-sign decision. */
+export interface PendingVersionDecision {
+  id: string;
+  template_key: string;
+  title: string;
+  from_version: number | null;
+  to_version: number;
+  occurred_at: string;
+  past_signers: number;
+}
+
+/** Version bumps nobody has answered yet. Each one asks: should past signers
+ *  re-sign? Recorded by trigger when a template's version changes, so a wording
+ *  change cannot reach signers without someone deciding what it means for the
+ *  people who already signed the old text. */
+export async function pendingVersionDecisions(): Promise<PendingVersionDecision[]> {
+  const { data, error } = await supabase.rpc('pending_version_decisions');
+  if (error) throw error;
+  return (data ?? []) as PendingVersionDecision[];
+}
+
+/** Answer a version prompt. 'ALL' requires every past signer, 'SELECTED' the
+ *  named subset, 'NONE' records that nobody re-signs. NONE is stored rather than
+ *  dismissed — it is a real decision and should be auditable. */
+export async function resolveVersionDecision(
+  eventId: string,
+  resolution: 'ALL' | 'SELECTED' | 'NONE',
+  contactIds?: string[],
+): Promise<number> {
+  const { data, error } = await supabase.rpc('resolve_version_decision', {
+    p_event_id: eventId, p_resolution: resolution,
+    p_contact_ids: contactIds ?? null,
+  });
+  if (error) throw error;
+  return (data as number) ?? 0;
+}
+
+/* Deliberately NOT wrapped: assign_document_to_contact(). Per-person assignment
+ * already has one home — setContactRequiredDocuments(), the checkbox list on the
+ * client record, which sets the whole set at once. Adding a second single-insert
+ * path would be two controls writing the same table with different semantics
+ * (replace vs append), which is how they drift. The RPC exists in the DB as a
+ * primitive; the UI uses the existing control. */
+
+/** Who signed an older version of a template — the candidate list for a re-sign
+ *  request. Returned in signing order so the newest signers read first. */
+export interface PastSigner {
+  contact_id: string;
+  name: string;
+  email: string | null;
+  signed_version: number | null;
+  signed_at: string | null;
+  /** Already required to re-sign (an obligation row exists). */
+  already_required: boolean;
+}
+
+export async function templatePastSigners(templateKey: string): Promise<PastSigner[]> {
+  const { data, error } = await supabase.rpc('template_past_signers', {
+    p_template_key: templateKey,
+  });
+  if (error) throw error;
+  return (data ?? []) as PastSigner[];
+}
+
+/* requireResignFrom() removed 2026-07-30 before shipping a caller: the UI answers
+ * a version prompt through resolveVersionDecision(), which invokes
+ * require_resign_from SERVER-SIDE for both the ALL and SELECTED cases. A second
+ * client wrapper would be a parallel way to create the same obligations. The RPC
+ * remains in the DB as the primitive resolve_version_decision builds on. */
+
+
 // ─── Payments (read inline off the purchase row) ────────────────────────────
 
 export async function getOrderPayment(orderId: string): Promise<Payment | null> {
@@ -869,21 +979,14 @@ export async function listContractTemplates(): Promise<ContractTemplate[]> {
   return (data ?? []) as ContractTemplate[];
 }
 
-/** Merge a template for an engagement via the SECURITY-DEFINER RPC. Returns the
- *  new document id + merged body. RLS/require_module + engagement ownership are
- *  enforced inside generate_document (scopes to the engagement's own org_id). */
-export async function generateDocument(
-  engagementId: string,
-  templateKey: string,
-): Promise<GeneratedDocument> {
-  const { data, error } = await supabase.rpc('generate_document', {
-    p_engagement_id: engagementId,
-    p_template_key: templateKey,
-  });
-  if (error) throw error;
-  const row = Array.isArray(data) ? data[0] : data;
-  return row as GeneratedDocument;
-}
+/* generateDocument() removed 2026-07-30. It called generate_document with
+ * `p_engagement_id`, a parameter no overload has had since `engagements` was
+ * retired — every invocation would have failed on arity. It had no callers.
+ * The live signature is
+ *   generate_document(p_contact_id, p_template_key, p_contract_id, p_horse_id,
+ *                     p_parties, p_service_type[, p_horse_ids])
+ * and the real generation paths (onboarding, the contract engine) call it
+ * through their own wrappers. */
 
 export async function getDocument(id: string): Promise<DocumentRow | null> {
   const { data, error } = await supabase
@@ -895,13 +998,19 @@ export async function getDocument(id: string): Promise<DocumentRow | null> {
   return (data as DocumentRow | null) ?? null;
 }
 
-export async function listDocuments(engagementId?: string): Promise<DocumentRow[]> {
-  let query = supabase
+/** Every non-deleted document, newest first (the staff queue).
+ *
+ *  The `engagementId` filter was removed 2026-07-30: it filtered on
+ *  `documents.engagement_id`, a column dropped with the `engagements` retirement.
+ *  The sole caller passes no argument, so the dead branch never ran — but any
+ *  future caller supplying one would have got a PostgREST error rather than a
+ *  filtered list. Scope by contact or contract instead. */
+export async function listDocuments(): Promise<DocumentRow[]> {
+  const { data, error } = await supabase
     .from('documents')
     .select('*')
-    .is('deleted_at', null);
-  if (engagementId) query = query.eq('engagement_id', engagementId);
-  const { data, error } = await query.order('generated_at', { ascending: false });
+    .is('deleted_at', null)
+    .order('generated_at', { ascending: false });
   if (error) throw error;
   return (data ?? []) as DocumentRow[];
 }
@@ -1867,6 +1976,34 @@ export interface DirectoryContact {
   horses_leased: number;
   engagement_count: number;
   document_count: number;
+  /** THE page discriminator — an explicit stored value, not a derived leftover.
+   *  null = unclassified, surfaced for a human to file rather than defaulted. */
+  contact_type: ContactType | null;
+  is_company: boolean;
+}
+
+/** The four person-pages. One contact appears on exactly one of them.
+ *  LEAD      — a potential future client: outreach and campaign target.
+ *  CONTACT   — an internal person the business SERVES (client, member, horse
+ *              owner, counterparty) who is not part of the company.
+ *  TEAM      — the company itself: staff and internal accounts.
+ *  DIRECTORY — external people and businesses that PROVIDE something: farriers,
+ *              vets, suppliers, service providers, event organizers.
+ *  The line that separates LEAD from DIRECTORY: someone we serve who hasn't
+ *  bought yet is a LEAD; someone who sells to us is DIRECTORY. */
+export type ContactType = 'LEAD' | 'CONTACT' | 'TEAM' | 'DIRECTORY';
+
+export const CONTACT_TYPE_LABEL: Record<ContactType, string> = {
+  LEAD: 'Lead', CONTACT: 'Contact', TEAM: 'Team', DIRECTORY: 'Directory',
+};
+
+/** Move a contact between the person-pages. Staff only; the RPC validates
+ *  against the same four values the column CHECK enforces. */
+export async function setContactType(contactId: string, type: ContactType | null): Promise<void> {
+  const { error } = await supabase.rpc('set_contact_type', {
+    p_contact_id: contactId, p_type: type,
+  });
+  if (error) throw error;
 }
 
 export async function staffContactDirectory(): Promise<DirectoryContact[]> {

@@ -4,6 +4,8 @@ import { fromHere } from '../../lib/linkOrigin';
 import { FileText, CalendarDays, ClipboardList, PencilLine, Trash2, ArrowLeft, Activity } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
 import { horsePageDetail, deleteStableHorse, updateHorseRecord, type HorsePageDetail } from '../../lib/horses';
+import { listHorseBreeds, listHorseColors } from '../../lib/api';
+import type { LookupCode } from '../../lib/ops/types';
 
 /**
  * HORSE PAGE (/app/horses/:horseId) — the client-facing record for one horse, with
@@ -318,11 +320,61 @@ function RecordEditor({
   const set = (k: string) => (v: string) => setF((p) => ({ ...p, [k]: v }));
   const input = 'w-full px-3 py-2 rounded-lg border border-green-800/15 text-sm text-green-900 placeholder:text-muted focus-ring bg-white';
 
+  // breed/color are FK-constrained to horse_breeds(code) / horse_colors(code),
+  // but horse_page_detail returns their DISPLAY NAMES (it coalesces through the
+  // lookup). Free-text inputs seeded from a display name therefore wrote
+  // 'Thoroughbred' into a column that only accepts 'THOROUGHBRED', and the FK
+  // rejected the ENTIRE patch — every "Save changes" on a horse with a breed or
+  // colour set failed. Load the lookups and round-trip through codes.
+  const [breeds, setBreeds] = useState<LookupCode[]>([]);
+  const [colors, setColors] = useState<LookupCode[]>([]);
+  useEffect(() => {
+    let active = true;
+    void Promise.all([listHorseBreeds(), listHorseColors()])
+      .then(([b, c]) => { if (active) { setBreeds(b); setColors(c); } })
+      .catch(() => { /* selects fall back to the current value only */ });
+    return () => { active = false; };
+  }, []);
+
+  /** Map whatever the record gave us (a display name, or already a code) onto
+   *  the lookup's code. Unmatched values pass through so a legacy free-text
+   *  value is never silently blanked — the FK will still reject it loudly. */
+  const toCode = (opts: LookupCode[], v: string): string => {
+    if (!v) return '';
+    const hit = opts.find((o) => o.code === v)
+      ?? opts.find((o) => o.display_name.toLowerCase() === v.toLowerCase());
+    return hit?.code ?? v;
+  };
+
   async function save() {
     setBusy(true); setErr(null);
-    try { await updateHorseRecord(horseId, f); onSaved(); }
+    try {
+      await updateHorseRecord(horseId, {
+        ...f,
+        breed: toCode(breeds, f.breed),
+        color: toCode(colors, f.color),
+      });
+      onSaved();
+    }
     catch (e) { setErr(e instanceof Error ? e.message : 'Could not save changes.'); setBusy(false); }
   }
+
+  /** A lookup-backed select. Keeps an unrecognised current value as an option so
+   *  editing an unrelated field cannot silently change breed/colour. */
+  const L = ({ label, k, opts }: { label: string; k: string; opts: LookupCode[] }) => {
+    const cur = f[k];
+    const known = opts.some((o) => o.code === cur || o.display_name.toLowerCase() === cur.toLowerCase());
+    return (
+      <div>
+        <label className="block text-[10px] uppercase tracking-wide text-muted mb-1">{label}</label>
+        <select className={input} value={toCode(opts, cur)} onChange={(e) => set(k)(e.target.value)}>
+          <option value="">—</option>
+          {!known && cur && <option value={cur}>{cur} (not in list)</option>}
+          {opts.map((o) => <option key={o.code} value={o.code}>{o.display_name}</option>)}
+        </select>
+      </div>
+    );
+  };
   const T = ({ label, k, area }: { label: string; k: string; area?: boolean }) => (
     <div className={area ? 'sm:col-span-2' : ''}>
       <label className="block text-[10px] uppercase tracking-wide text-muted mb-1">{label}</label>
@@ -342,7 +394,7 @@ function RecordEditor({
       {err && <p role="alert" className="form-error mb-3">{err}</p>}
       <div className="grid sm:grid-cols-2 gap-3">
         <T label="Nickname" k="nickname" /><T label="Registered name" k="registered_name" />
-        <T label="Breed" k="breed" /><T label="Color" k="color" />
+        <L label="Breed" k="breed" opts={breeds} /><L label="Color" k="color" opts={colors} />
         <T label="Markings" k="markings" /><T label="Sex" k="sex" />
         <T label="Height" k="height" /><T label="Fair market value" k="fair_market_value" />
         <T label="Registration #" k="registration_number" /><T label="Registration org" k="registration_org" />

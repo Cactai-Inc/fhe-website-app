@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   UserRound, Grid3x3, Bookmark, FileText, Boxes, BadgeCheck,
   ShoppingBag, Gift, ChevronRight, ExternalLink, Mail, Smartphone,
-  MessageSquare, Instagram, Facebook, Linkedin, Music2, Check,
+  MessageSquare, Instagram, Facebook, Linkedin, Music2, Check, MapPin,
 } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
 import {
@@ -180,6 +180,43 @@ function ContactField({
   );
 }
 
+/** The mailing address, as one card. Writes straight to the `contacts` columns
+ *  that documents compose from, so what a member types here is what appears on
+ *  their contracts. Deliberately has no "hide from community" control: the
+ *  address is never surfaced to other members. */
+type AddressKey = 'address_line1' | 'address_line2' | 'city' | 'state' | 'postal_code';
+function AddressField({
+  value, onField,
+}: {
+  value: Record<AddressKey, string>;
+  onField: (k: AddressKey, v: string) => void;
+}) {
+  const cell = 'w-full px-3 py-2 rounded-lg border border-green-800/15 text-sm text-green-900 placeholder:text-muted focus-ring';
+  return (
+    <div className="bg-white border border-green-800/10 rounded-xl p-3.5">
+      <div className="flex items-center gap-2 mb-2">
+        <MapPin size={15} className="text-green-700" />
+        <span className="text-[12px] font-medium text-green-900">Mailing address</span>
+        <span className="ml-auto text-[10.5px] text-muted">Used on your documents</span>
+      </div>
+      <div className="flex flex-col gap-2">
+        <input className={cell} placeholder="Street address" value={value.address_line1}
+          onChange={(e) => onField('address_line1', e.target.value)} />
+        <input className={cell} placeholder="Apartment, suite (optional)" value={value.address_line2}
+          onChange={(e) => onField('address_line2', e.target.value)} />
+        <div className="grid grid-cols-2 sm:grid-cols-[2fr_1fr_1fr] gap-2">
+          <input className={cell} placeholder="City" value={value.city}
+            onChange={(e) => onField('city', e.target.value)} />
+          <input className={cell} placeholder="State" value={value.state}
+            onChange={(e) => onField('state', e.target.value)} />
+          <input className={cell} placeholder="ZIP" value={value.postal_code}
+            onChange={(e) => onField('postal_code', e.target.value)} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SocialField({
   icon: Icon, label, placeholder, value, onValue,
 }: {
@@ -235,6 +272,19 @@ function ProfileSection() {
             { label: 'Text', on: p?.allow_whatsapp ?? true, onToggle: () => set('allow_whatsapp', !(p?.allow_whatsapp ?? true)) },
             { label: 'Calls', on: p?.allow_whatsapp_call ?? true, onToggle: () => set('allow_whatsapp_call', !(p?.allow_whatsapp_call ?? true)) },
           ]} />
+        {/* Mailing address — the same `contacts` columns the onboarding intake
+            writes and the contract party tokens compose from. Until now this
+            page had no address field at all, so a member who filled it in during
+            onboarding could neither see it nor correct it, while it silently
+            appeared inside their contracts. Not hideable: it is never shown to
+            other members, only used by staff and on documents. */}
+        <AddressField
+          value={{
+            address_line1: p?.address_line1 ?? '', address_line2: p?.address_line2 ?? '',
+            city: p?.city ?? '', state: p?.state ?? '', postal_code: p?.postal_code ?? '',
+          }}
+          onField={(k, v) => set(k, v || null)}
+        />
       </div>
 
       <SectionLabel>Social accounts</SectionLabel>
@@ -314,7 +364,8 @@ function StableSection() {
   const showHorses = (horses && horses.length > 0)
     ? horses.map((h) => ({ id: h.id, name: h.name, barnName: h.nickname ?? undefined,
         breed: h.breed ?? '', sex: h.sex ?? '', height: h.height_hh ?? '', age: h.age_or_foaling ?? '',
-        color: h.color ?? '', discipline: h.discipline ?? '', ownership: h.ownership === 'leased' ? 'Leased' : 'Owned',
+        // no `discipline` — horses has no such column (see StableEditors)
+        color: h.color ?? '', discipline: '', ownership: h.ownership === 'leased' ? 'Leased' : 'Owned',
         location: h.location }))
     : (SEED_ENABLED ? SEED_STABLE_HORSES : []);
 

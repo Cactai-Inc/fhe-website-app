@@ -102,6 +102,43 @@ export async function listBookingRequests(
   return (data ?? []) as BookingRequest[];
 }
 
+/** One row of the inbound QUEUE: the request plus how long it has been sitting
+ *  and whether its person ever got captured. */
+export interface InboundQueueRow {
+  id: string;
+  status: string;
+  channel: string | null;
+  category: string | null;
+  created_at: string;
+  contact_first_name: string | null;
+  contact_last_name: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  subject: string | null;
+  notes: string | null;
+  days_open: number;
+  contact_id: string | null;
+  contact_type: string | null;
+  /** The person already became a client — the work is done, the row was just
+   *  never closed. Six of the nine rows in the live backlog were exactly this. */
+  already_converted: boolean;
+  /** Still new, NOT already converted, and 2+ days old. Deliberately narrow so
+   *  stale bookkeeping does not shout for attention it does not need. */
+  overdue: boolean;
+}
+
+/** The inbound queue, oldest first — a queue is worked from the top, so the
+ *  thing that has waited longest leads. This is the opposite of the registry
+ *  pages, which sort newest-first for browsing. */
+export async function listInboundQueue(): Promise<InboundQueueRow[]> {
+  const { data, error } = await supabase
+    .from('inbound_queue')
+    .select('*')
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as InboundQueueRow[];
+}
+
 /** Flip a request to 'contacted' (staff UPDATE policy is the fence). */
 export async function markRequestContacted(id: string): Promise<BookingRequest> {
   const { data, error } = await supabase
