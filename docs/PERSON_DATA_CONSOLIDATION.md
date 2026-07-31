@@ -187,8 +187,32 @@ Each stage: dry-run in a transaction → apply → verify with a query → commi
 - **S4** Person-pages get real server-side definitions; `contact_type` becomes
   the discriminator; nav renames land.
 - **S5** Inbound queue: auto-create contact as PROSPECT, aging/overdue, convert.
-- **S6** Drop the vestigial `profiles` columns — **last**, only after every
-  reader is proven gone.
+- **S6** ✅ **Done.** Dropped 20 duplicated person columns from `profiles`
+  (50 → 30). Reader audit first: `member_directory` re-pointed in S2,
+  `admin_client_overview` re-pointed here (it read `p.phone/p.mobile/p.whatsapp`
+  off profiles), frontend confirmed clean.
+
+  **Kept deliberately:** `first_name`/`last_name` (still read by several staff
+  surfaces, and 2 of 6 linked pairs already disagree — picking a winner is a data
+  decision, not a refactor, so it deserves its own stage) and `email` (the auth
+  mirror used by the email-change flow, not a duplicate in the same sense).
+
+---
+
+## Where it landed
+
+| | |
+|---|---|
+| Contacts filed onto a page | 18 |
+| Unfiled (surfaced, not hidden) | 1 |
+| Member directory rows | 6 |
+| Inbound genuinely overdue | 3 |
+| Contacts with an address | 12 |
+| Person columns left on `profiles` | **0** |
+
+Still open: the **name** consolidation (S7), and a click-through of the new
+Inbound and person-pages — everything above is verified at the database and type
+level, but the app has not been run.
 
 ## Known blockers
 

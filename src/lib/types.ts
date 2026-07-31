@@ -32,11 +32,11 @@ export interface Profile {
   last_name: string | null;
   email: string | null;
   phone: string | null;
-  address_line1: string | null;
-  address_line2: string | null;
-  city: string | null;
-  state: string | null;
-  postal_code: string | null;
+  // Address, mobile, WhatsApp, socials and contact preferences are NOT here:
+  // they live on `contacts`, the single person record (see
+  // docs/PERSON_DATA_CONSOLIDATION.md). The look-alike columns that used to sit
+  // on profiles had zero writers for their whole life and were dropped in S6 —
+  // they were the trap behind "I typed my address and it disappeared".
   is_admin: boolean;
   created_from_request_id: string | null;
   created_at: string;
