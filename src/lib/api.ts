@@ -644,6 +644,47 @@ export async function confirmMyLegalName(first: string, last: string): Promise<v
   if (error) throw error;
 }
 
+// ─── Document versioning / re-assignment (staff) ────────────────────────────
+/** A template whose current version some people have not signed. */
+export interface ReassignmentCandidate {
+  template_key: string;
+  title: string;
+  current_version: number;
+  /** Signed an OLDER version — they consented to different wording. */
+  people_out_of_date: number;
+  /** Hold the obligation but have never signed it at all. */
+  people_never_signed: number;
+}
+
+/** Who still owes the current version of each document. This is the answer to
+ *  "the wording changed — who needs to re-sign?", which previously had no
+ *  surface at all: the only control was assigning documents one at a time. */
+export async function templateReassignmentCandidates(): Promise<ReassignmentCandidate[]> {
+  const { data, error } = await supabase.rpc('template_reassignment_candidates');
+  if (error) throw error;
+  return (data ?? []) as ReassignmentCandidate[];
+}
+
+/** Require the current version of a template from everyone who is behind.
+ *  Idempotent — re-running assigns nothing new. Returns how many people it
+ *  applies to, so the blast radius is visible before it is relied on. */
+export async function requireDocumentFromAll(templateKey: string): Promise<number> {
+  const { data, error } = await supabase.rpc('require_document_from_all', {
+    p_template_key: templateKey,
+  });
+  if (error) throw error;
+  return (data as number) ?? 0;
+}
+
+/** Require a document from ONE person. The assignment IS the gate: the wall
+ *  picks it up and routes them through the normal signing flow. */
+export async function assignDocumentToContact(contactId: string, templateKey: string): Promise<void> {
+  const { error } = await supabase.rpc('assign_document_to_contact', {
+    p_contact_id: contactId, p_template_key: templateKey,
+  });
+  if (error) throw error;
+}
+
 // ─── Payments (read inline off the purchase row) ────────────────────────────
 
 export async function getOrderPayment(orderId: string): Promise<Payment | null> {
