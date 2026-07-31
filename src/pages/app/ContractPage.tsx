@@ -1002,6 +1002,31 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         />
       )}
 
+      {/* WHO HAS SIGNED — full-width, above the title, so both sides know where
+          the contract stands without hunting for the signature block. */}
+      {[...signedRoles].length > 0 && !isExecuted && (
+        <div className="-mx-4 sm:-mx-8 xl:-mx-12 mb-5 bg-green-800 text-white px-4 sm:px-8 xl:px-12 py-2.5">
+          <p className="text-sm">
+            <strong>{[...signedRoles]
+              .map((r) => r.charAt(0) + r.slice(1).toLowerCase())
+              .join(' and ')}</strong>
+            {[...signedRoles].length === 1 ? ' has signed' : ' have signed'} this contract.
+            {' '}Editing it now clears that signature and asks them to sign again.
+          </p>
+        </div>
+      )}
+
+      {/* A signature was cleared by an edit and the other side has not been told
+          yet — they are notified on the next Send. */}
+      {(doc as { signatures_voided_at?: string | null } | undefined)?.signatures_voided_at && !isExecuted && (
+        <div className="-mx-4 sm:-mx-8 xl:-mx-12 mb-5 bg-gold-50 border-y border-gold-400/50 px-4 sm:px-8 xl:px-12 py-2.5">
+          <p className="text-sm text-gold-900">
+            The document changed after it was signed, so the signature was cleared.
+            Use <strong>Send</strong> to ask them to review the change and sign again.
+          </p>
+        </div>
+      )}
+
       {/* mb-6: the notify card sat almost against the title. */}
       <div className={`mb-6 ${isInactive ? 'opacity-60' : ''}`}>
         <div className="flex justify-end">
@@ -1510,10 +1535,12 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           <div className="flex flex-wrap items-center gap-2.5 mb-5">
             {isOwnerSide && state === 'in_review' && (
               <>
-                <button type="button" className="btn-secondary text-xs"
-                  onClick={() => void act(() => advanceWorkflow(id!, 'editable'))}>
-                  Back to editing
-                </button>
+                {/* "Back to editing" removed 2026-07-31. It existed to escape the
+                    old freeze-on-open rule, which locked the author out as soon
+                    as a counterparty READ the draft. Edits now stay open until a
+                    signature exists, so there is nothing to go back FROM — and
+                    the button did not actually lift the freeze anyway, because
+                    the freeze was independent of workflow state. */}
                 {/* The second "Lock for signing" removed 2026-07-31 alongside the
                     one in the Notify card — same reasoning: it cannot fire until
                     the Lessor approves the horse, and the per-party controls

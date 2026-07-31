@@ -941,8 +941,20 @@ function InlineSelect({ f, disabled, onSave }: { f: ContractField; disabled: boo
   // a stored value that matches no listed option is a saved custom entry
   const storedIsCustom = stored !== '' && !opts.some((o) => o.value === stored);
   const [otherMode, setOtherMode] = useState(storedIsCustom);
+  /* THE STICKY-OTHER BUG (fixed 2026-07-31). This only ever set otherMode TRUE
+     and never cleared it. Choosing "Other" saves '' (the free-text box owns the
+     value from then on), and on the next render stored === '' — but the guard
+     `stored !== ''` meant the effect simply did not run, leaving otherMode stuck
+     on. With otherMode true, selectValue is pinned to the Other value, so
+     picking Lessor or Split changed nothing visible and never saved: the field
+     appeared frozen on Other.
+     Now it CLEARS whenever the stored value is a listed option, and sets when it
+     is a custom string. An empty value is left alone: that is the state right
+     after choosing Other, before anything has been typed, and clearing there
+     would bounce the control straight back out of Other mode. */
   useEffect(() => {
-    if (stored !== '' && !opts.some((o) => o.value === stored)) setOtherMode(true);
+    if (stored === '') return;                       // mid-Other entry — leave as is
+    setOtherMode(!opts.some((o) => o.value === stored));
   }, [stored]); // eslint-disable-line react-hooks/exhaustive-deps
   const placeholder = SELECT_PLACEHOLDER;   // "MAKE A SELECTION" in the empty state
   const selectValue = otherMode || stored === otherVal ? otherVal : stored;
