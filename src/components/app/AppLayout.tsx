@@ -102,18 +102,23 @@ const PLATFORM_NAV: NavItem[] = [
   { to: '/app/ops/admin/registry', label: 'Registry', icon: Shield },
 ];
 
-/* FRONT DESK — everything inbound that needs handling and moving to a point of
- * resolution or matriculation (client and non-client alike): booking requests,
- * form submissions, support. First section — dealing with what came in is the
- * primary job. */
-const FRONTDESK_GROUP: NavItem[] = [
+/* FRONT DESK was eliminated 2026-07-31 (owner). It mixed two different kinds of
+ * thing: WORK queues (Inbound, Support) and a list of PEOPLE (Leads). Leads
+ * belongs with the other person-lists; the queues belong with the rest of the
+ * day-to-day management surfaces. */
+const MANAGEMENT_EXTRA: NavItem[] = [
   { to: '/app/ops/intake', label: 'Inbound', icon: Mail },
-  { to: '/app/ops/leads', label: 'Leads', icon: Contact },
   { to: '/app/ops/support', label: 'Support', icon: LifeBuoy },
 ];
-/* PEOPLE — everyone we know: the client/account roster, internal accounts
- * (Team), and the raw contact book behind both. */
+/* PEOPLE — everyone we know, one list per relationship to the business:
+ *   Leads      potential future clients (the campaign list)
+ *   Clients    the paying/serviced roster
+ *   Contacts   internal people we serve who are not part of the company
+ *   Team       the company itself
+ *   Directory  external providers — farriers, vets, suppliers, organizers
+ * Leads moved here from Front desk: it is a list of PEOPLE, not a work queue. */
 const ACCOUNTS_GROUP: NavItem[] = [
+  { to: '/app/ops/leads', label: 'Leads', icon: Contact },
   { to: '/app/admin', label: 'Clients', icon: Users },
   { to: '/app/ops/contacts', label: 'Contacts', icon: Contact },
   { to: '/app/ops/team', label: 'Team', icon: Contact },
@@ -150,7 +155,7 @@ const SETTINGS_GROUP: NavItem[] = [
 
 // kept for compatibility with anything importing MANAGE_NAV
 export const MANAGE_NAV: NavItem[] = [
-  ...FRONTDESK_GROUP, ...ACCOUNTS_GROUP, ...SERVICING_GROUP, ...BUSINESS_GROUP,
+  ...MANAGEMENT_EXTRA, ...ACCOUNTS_GROUP, ...SERVICING_GROUP, ...BUSINESS_GROUP,
   ...COMMUNITY_GROUP, ...MODULES_GROUP, ...SETTINGS_GROUP,
 ];
 
@@ -171,7 +176,11 @@ export function manageNavGroups(
         && (!i.adminOnly || isAdmin || grantKeys.includes(i.to)),
   );
   const groups: NavGroup[] = [
-    { key: 'frontdesk', label: 'Front desk', items: visible(FRONTDESK_GROUP), defaultOpen: true },
+    /* MANAGEMENT leads: the two work QUEUES that must be dealt with each day.
+       They sat under a separate "Front desk" heading alongside Leads — a list of
+       people — which put a queue and a roster under one label. Front desk is
+       gone; the queues live here and Leads moved to People. */
+    { key: 'management', label: 'Management', items: visible(MANAGEMENT_EXTRA), defaultOpen: true },
     { key: 'accounts', label: 'People', items: visible(ACCOUNTS_GROUP), defaultOpen: true },
     { key: 'servicing', label: 'Servicing', items: visible(SERVICING_GROUP), defaultOpen: true },
     { key: 'business', label: 'Business', items: visible(BUSINESS_GROUP) },

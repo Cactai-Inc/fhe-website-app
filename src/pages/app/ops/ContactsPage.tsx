@@ -9,6 +9,7 @@ import {
   contactAddress, formatAddress, type ContactAddress,
   setContactType, CONTACT_TYPE_LABEL, type ContactType,
 } from '../../../lib/api';
+import { ContactDossierModal } from '../../../components/app/ContactDossierModal';
 import { contactName } from '../../../lib/ops/types';
 import type { Contact, ContactInput } from '../../../lib/ops/types';
 import { ContactForm } from '../../../components/ops/contacts/ContactForm';
@@ -143,6 +144,9 @@ function ContactDirectory({ mode }: { mode: DirectoryMode }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [rows, setRows] = useState<DirectoryContact[] | null>(null);
   const [unfiled, setUnfiled] = useState<DirectoryContact[]>([]);
+  /** The full record modal, keyed on contact so it opens for EVERYONE — the 13
+   *  of 19 contacts with no account included. */
+  const [dossier, setDossier] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('All');
@@ -276,7 +280,7 @@ function ContactDirectory({ mode }: { mode: DirectoryMode }) {
                     guardian, for instance, fits none of the four buttons that
                     used to sit here. */}
                 <span className="ml-auto flex gap-1.5">
-                  <button type="button" onClick={() => setOpen(r)}
+                  <button type="button" onClick={() => setDossier(r.id)}
                     className="text-[11px] px-3 py-1 rounded-full border border-green-800/25 text-green-800 hover:bg-green-800/10 focus-ring">
                     View
                   </button>
@@ -357,7 +361,16 @@ function ContactDirectory({ mode }: { mode: DirectoryMode }) {
         <p className="text-sm text-muted py-8 text-center">No contacts match.</p>
       )}
 
-      {/* dossier — the depth behind the card */}
+      {dossier && (
+        <ContactDossierModal
+          contactId={dossier}
+          onClose={() => setDossier(null)}
+          onChanged={load}
+        />
+      )}
+
+      {/* quick view — the summary behind a card. "Full record" opens the dossier
+          above, which is the editable, everything-in-one-place surface. */}
       <Modal open={open !== null && !editing} onClose={() => setOpen(null)}
         title={open ? (contactName(open) || open.email || 'Contact') : 'Contact'}>
         {open && (
@@ -384,6 +397,12 @@ function ContactDirectory({ mode }: { mode: DirectoryMode }) {
                 ))}
               </div>
             </div>
+            {/* The way through to the editable record. The summary below stays
+                for a fast look; anything you need to CHANGE lives in there. */}
+            <button type="button" className="btn-primary text-sm w-full justify-center mb-4"
+              onClick={() => { const id = open.id; setOpen(null); setDossier(id); }}>
+              Open full record
+            </button>
             <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm mb-4">
               {([
                 ['Email', open.email ?? '—'],

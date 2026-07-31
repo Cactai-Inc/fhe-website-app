@@ -2094,3 +2094,71 @@ export async function markTourSeen(formFactor: TourFormFactor = currentTourFormF
   const { error } = await supabase.rpc('mark_tour_seen', { p_form_factor: formFactor });
   if (error) throw error;
 }
+
+// ─── The contact dossier (staff) ────────────────────────────────────────────
+/** Everything known about one person.
+ *
+ *  Keyed on CONTACT, not account: 13 of 19 contacts have no login —
+ *  counterparties, kiosk signers, leads, and minors like a rider on a parent's
+ *  account. The old client page took a user_id and so could not open for any of
+ *  them.
+ *
+ *  `account`, `posts` and `activity` are null (not empty) when the person has no
+ *  login, so the UI can tell "nothing yet" from "does not apply". */
+export interface ContactDossier {
+  contact: Record<string, unknown>;
+  account: {
+    user_id: string; role: string | null; is_suspended: boolean;
+    display_name: string | null; bio: string | null; riding_level: string | null;
+    avatar_url: string | null; created_at: string; member_status: string | null;
+    login: {
+      providers: string[]; last_sign_in_at: string | null; email_confirmed_at: string | null;
+    } | null;
+  } | null;
+  standing: {
+    contact_type: string | null; is_client: boolean;
+    groups: string[]; party_roles: string[];
+  };
+  family: {
+    guardian: { contact_id: string; name: string; email: string | null } | null;
+    dependants: { contact_id: string; name: string; date_of_birth: string | null }[];
+  };
+  horses: { horse_id: string; name: string; relation: 'owner' | 'lessee' }[];
+  documents: {
+    document_id: string; code: string | null; title: string | null;
+    status: string; current_status: string | null; generated_at: string;
+  }[];
+  orders: {
+    purchase_id: string; code: string | null; status: string;
+    amount: number | null; amount_paid: number | null;
+    payment_status: string | null; payment_method: string | null; created_at: string;
+  }[];
+  notifications: { id: string; kind: string; title: string; created_at: string }[];
+  posts: {
+    id: string; post_type: string; body: string | null;
+    published: boolean; pulled_down: boolean; created_at: string;
+  }[] | null;
+  activity: {
+    id: string; action: string; table_name: string | null; occurred_at: string;
+  }[] | null;
+}
+
+export async function contactDossier(contactId: string): Promise<ContactDossier> {
+  const { data, error } = await supabase.rpc('contact_dossier', { p_contact_id: contactId });
+  if (error) throw error;
+  return data as ContactDossier;
+}
+
+/** Save an edit to the person record. The RPC allowlists field names and RAISES
+ *  on an unknown key, so a typo cannot look like a successful save. Returns the
+ *  fresh dossier, so the caller never guesses what landed. */
+export async function updateContactRecord(
+  contactId: string,
+  patch: Record<string, unknown>,
+): Promise<ContactDossier> {
+  const { data, error } = await supabase.rpc('update_contact_record', {
+    p_contact_id: contactId, p_patch: patch,
+  });
+  if (error) throw error;
+  return data as ContactDossier;
+}
