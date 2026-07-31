@@ -2162,3 +2162,26 @@ export async function updateContactRecord(
   if (error) throw error;
   return data as ContactDossier;
 }
+
+// ─── Required data a member still owes ──────────────────────────────────────
+/** A registry field the member has not filled in yet. */
+export interface MissingField { column: string; label: string }
+export interface MissingHorse { horse_id: string; name: string; missing: MissingField[] }
+export interface MissingRequiredData {
+  contact: MissingField[];
+  horses: MissingHorse[];
+}
+
+/** Record fields a signable document depends on and the member has not supplied.
+ *
+ *  Returns nothing unless they actually have an assigned document that needs
+ *  them — an empty field nobody is waiting on is not a problem, and nagging
+ *  about it teaches people to ignore the notice that matters.
+ *
+ *  Contact and horse gaps come back separately because they are edited on
+ *  different pages, so each dashboard card can link straight to the right one. */
+export async function myMissingRequiredData(): Promise<MissingRequiredData> {
+  const { data, error } = await supabase.rpc('my_missing_required_data');
+  if (error) throw error;
+  return (data ?? { contact: [], horses: [] }) as MissingRequiredData;
+}

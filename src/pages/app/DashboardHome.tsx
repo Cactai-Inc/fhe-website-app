@@ -3,6 +3,7 @@ import { useDocumentTitle } from '../../lib/hooks';
 import { useViewSurfaces } from '../../lib/surfaces';
 import { useAuth } from '../../contexts/AuthContext';
 import { DashboardPanel } from '../../components/app/DashboardPanel';
+import { MissingDataNotice } from '../../components/app/MissingDataNotice';
 
 /**
  * DASHBOARD (/app/dashboard) — priority actions + coming up. Split out from the
@@ -31,6 +32,9 @@ export default function DashboardHome() {
         <p className="eyebrow">Good {daypart}{firstName ? `, ${firstName}` : ''}</p>
         <h1 className="font-serif text-green-800 text-3xl font-semibold mt-0.5">Dashboard</h1>
       </header>
+      {/* Above the panel: what the paperwork is waiting on. Renders nothing
+          when nothing is missing, so a complete record never sees it. */}
+      <MissingDataNotice />
       <DashboardPanel />
     </div>
   );

@@ -148,6 +148,22 @@ function Steps({ current, showHorse }: { current: Step; showHorse: boolean }) {
   );
 }
 
+/* Mirrors document_data_requirements (subject='contact') — the same fields the
+   dashboard notice checks. Kept as a literal here because this form posts a flat
+   payload whose keys differ from the column names; the labels are identical so
+   the warning and the notice read the same. */
+const INTAKE_REQUIRED: [string, string][] = [
+  ['phone', 'Phone'],
+  ['date_of_birth', 'Date of birth'],
+  ['address_street', 'Street address'],
+  ['address_city', 'City'],
+  ['address_state', 'State'],
+  ['address_zip', 'ZIP'],
+  ['emergency_contact_1_name', 'Emergency contact name'],
+  ['emergency_contact_1_phone', 'Emergency contact phone'],
+  ['emergency_contact_1_relationship', 'Emergency contact relationship'],
+];
+
 export default function Onboarding() {
   useDocumentTitle('Welcome Aboard');
   const navigate = useNavigate();
@@ -385,6 +401,28 @@ export default function Onboarding() {
 
   async function saveDetails(e: React.FormEvent) {
     e.preventDefault();
+
+    /* WARN, NEVER BLOCK (owner spec). These fields are required because the
+       documents this person is about to sign depend on them — but someone
+       should be able to give us what they have today and finish later, so the
+       warning is acknowledgeable rather than a hard stop. The gap then follows
+       them: the dashboard raises a non-dismissable notice for exactly these
+       fields until they are filled in.
+
+       Checked against the same registry the notice reads, so the two can never
+       name a different set. */
+    const gaps = INTAKE_REQUIRED
+      .filter(([k]) => !String((form as Record<string, unknown>)[k] ?? '').trim())
+      .map(([, label]) => label);
+    if (gaps.length > 0) {
+      const ok = window.confirm(
+        `These are needed to complete your paperwork:\n\n${gaps.join('\n')}\n\n`
+        + 'You can continue without them and add them later — we will remind you '
+        + 'on your dashboard. Continue?',
+      );
+      if (!ok) return;
+    }
+
     setSaving(true);
     setSaveError(null);
     try {
