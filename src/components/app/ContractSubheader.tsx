@@ -142,6 +142,10 @@ export function ContractSubheader({
     // header on page load, not only once you have scrolled far enough for
     // `sticky` to engage. -mx cancels its side padding so the bar reaches the
     // nav on the left and the window edge on the right.
+    /* Escapes <main>'s padding via -mx. It must NOT use w-screen: that would
+       slide the bar under the nav rail. The reading-width cap is lifted by
+       ContractPage instead (it applies max-w-5xl to the document body rather
+       than to the whole page), so this stays inside <main> and simply fills it. */
     <div className="sticky top-14 z-30 -mt-6 sm:-mt-9 mb-6 -mx-4 sm:-mx-8 xl:-mx-12">
       <div className="bg-cream-100/95 backdrop-blur border-b border-green-800/15 px-4 sm:px-8 xl:px-12 py-2.5">
         {/* MOBILE toggle. The bar stays sticky under the app header either way —
@@ -179,9 +183,15 @@ export function ContractSubheader({
             lg AND UP — iPad landscape (1024px) and desktop: ONE flex row.
             clamp() in SUBHEADER_BTN narrows it with the window; `flex-nowrap`
             holds the line and `min-w-0` lets the children actually shrink. */}
-        <div className={`${barOpen ? 'grid' : 'hidden'} grid-cols-2 gap-2 pt-2
-                         lg:flex lg:flex-nowrap lg:items-center lg:pt-0 min-w-0
-                         lg:[gap:clamp(0.25rem,0.6vw,0.5rem)]`}>
+        {/* `lg:grid-cols-none` is load-bearing. Switching `grid` → `lg:flex`
+            does NOT cancel `grid-cols-2`: the element became a flex container
+            while the stale column count still forced two tracks, so the row
+            wrapped in pairs and left a gap after the last item on line one — the
+            exact symptom in the owner's screenshot. flex-nowrap could not win
+            against a grid template that was never reset. */}
+        <div className={`${barOpen ? 'grid' : 'hidden'} grid-cols-2 gap-2 pt-2 min-w-0
+                         lg:flex lg:grid-cols-none lg:flex-nowrap lg:items-center lg:pt-0
+                         lg:gap-0 lg:[gap:clamp(0.25rem,0.6vw,0.5rem)]`}>
           {leading}
           {drawers.map((d) => {
             const isOpen = openKey === d.key;

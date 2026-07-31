@@ -1113,8 +1113,17 @@ export function InlineFieldControl({
       );
     }
     return (
-      <span className="inline-block align-top mx-0.5 my-0.5 min-w-[14rem] max-w-full">
-        <span className="text-[11px] text-muted">{label}{marks}</span>
+      /* MULTI-ROW controls (address, location, contact, person, party…) render
+         as their own block. As `inline-block` they began where the prose left
+         off, so every input row sat indented under the tail of the sentence —
+         the same defect the week_grid had. `clear-both` with a left reset takes
+         them out of the run; mt-3 keeps the first input off the line above
+         instead of flush against it.
+
+         Genuinely inline formats (yesno, select, chips, plain inputs) fall
+         through below and stay in the sentence, which is where they belong. */
+      <span className="block clear-both w-full mt-3 mb-1.5 ml-0 pl-0">
+        <span className="block text-[11px] text-muted mb-1">{label}{marks}</span>
         <FieldControl f={f} onSave={onSave} onSaveResponsibility={onSaveResponsibility}
           onSaveStructured={onSaveStructured} disabled={disabled} />
       </span>

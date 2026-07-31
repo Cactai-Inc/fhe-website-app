@@ -830,8 +830,16 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   const allExecuted = inSet && signingSet.every((s) => s.executed);
   const thisExecuted = doc.status === 'EXECUTED';
 
+  /* max-w-5xl caps READING width — a contract is prose and should not run the
+     width of a 30" monitor. But it was on the PAGE, so it also capped the
+     subheader at 1024px: on a wide window the bar stopped short of the edge and,
+     worse, its buttons sized themselves against a 1024px box and kept wrapping
+     when there was obviously room.
+     The cap now sits on the document body below the bar, so the bar fills <main>
+     and the prose stays readable. */
+  const bodyWidth = embedded ? '' : 'max-w-5xl';
   return (
-    <div className={embedded ? '' : 'max-w-5xl'}>
+    <div>
       {inSet && (
         <div className="bg-white border border-green-800/10 rounded-xl p-4 mb-4">
           <p className="form-label mb-2.5">Document {curIdx + 1} of {signingSet.length} — signed in order</p>
@@ -1001,6 +1009,9 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           }
         />
       )}
+
+      {/* Everything BELOW the bar keeps the reading cap. */}
+      <div className={bodyWidth}>
 
       {/* WHO HAS SIGNED — full-width, above the title, so both sides know where
           the contract stands without hunting for the signature block. */}
@@ -1787,6 +1798,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         />
       )}
 
+      </div>
     </div>
   );
 }
