@@ -5,6 +5,9 @@ import {
   CONTACT_TYPE_LABEL, type ContactDossier, type ContactType,
 } from '../../lib/api';
 import { adminSendInvitation } from '../../lib/admin';
+import {
+  AssignDocumentsModal, ClientHorseRecordsCard, AttachOfferingPanel, PaperworkEditor,
+} from './ClientRecordActions';
 
 /**
  * THE CONTACT DOSSIER — every person, one modal.
@@ -23,7 +26,7 @@ import { adminSendInvitation } from '../../lib/admin';
  * everything editable is editable.
  */
 
-type Tab = 'record' | 'relationships' | 'documents' | 'orders' | 'account' | 'activity';
+type Tab = 'record' | 'relationships' | 'documents' | 'orders' | 'paperwork' | 'account' | 'activity';
 
 const FIELD_GROUPS: { title: string; fields: [string, string][] }[] = [
   { title: 'Name and contact', fields: [
@@ -98,6 +101,7 @@ export function ContactDossierModal({
      still has a full contact record — it simply holds less — and inviting them
      is the natural next step from the screen where you just reviewed them,
      rather than a separate hunt through another page. */
+  const [assigning, setAssigning] = useState(false);
   const [inviting, setInviting] = useState(false);
   const [invited, setInvited] = useState(false);
   async function invite() {
@@ -139,6 +143,7 @@ export function ContactDossierModal({
     ['relationships', 'Relationships', (d?.family.dependants.length ?? 0) + (d?.horses.length ?? 0)],
     ['documents', 'Documents', d?.documents.length ?? 0],
     ['orders', 'Orders', d?.orders.length ?? 0],
+    ['paperwork', 'Paperwork', null],
     ['account', 'Account', null],
     ['activity', 'Activity', null],
   ];
@@ -252,18 +257,31 @@ export function ContactDossierModal({
               )}
 
               {tab === 'documents' && (
-                <Section title="Documents">
-                  {d.documents.length === 0 ? <Empty>None.</Empty>
-                    : d.documents.map((x) => (
-                      <Row key={x.document_id} main={x.title ?? x.code ?? 'Document'}
-                        sub={new Date(x.generated_at).toLocaleDateString()}
-                        badge={x.current_status === 'superseded' ? 'superseded' : x.status} />
-                    ))}
-                </Section>
+                <div className="flex flex-col gap-5">
+                  <div>
+                    <button type="button" className="btn-secondary text-sm"
+                      onClick={() => setAssigning(true)}>
+                      Assign a document or contract
+                    </button>
+                  </div>
+                  <Section title="Documents">
+                    {d.documents.length === 0 ? <Empty>None.</Empty>
+                      : d.documents.map((x) => (
+                        <Row key={x.document_id} main={x.title ?? x.code ?? 'Document'}
+                          sub={new Date(x.generated_at).toLocaleDateString()}
+                          badge={x.current_status === 'superseded' ? 'superseded' : x.status} />
+                      ))}
+                  </Section>
+                  {/* Horse records sit beside the document list because the
+                      horse-care documents cannot be completed without them. */}
+                  <ClientHorseRecordsCard contactId={contactId} />
+                </div>
               )}
 
               {tab === 'orders' && (
-                <Section title="Orders">
+                <div className="flex flex-col gap-5">
+                  <AttachOfferingPanel contactId={contactId} onAttached={load} />
+                  <Section title="Orders">
                   {d.orders.length === 0 ? <Empty>None.</Empty>
                     : d.orders.map((o) => (
                       <Row key={o.purchase_id}
@@ -271,8 +289,11 @@ export function ContactDossierModal({
                         sub={new Date(o.created_at).toLocaleDateString()}
                         badge={o.payment_status ?? o.status} />
                     ))}
-                </Section>
+                  </Section>
+                </div>
               )}
+
+              {tab === 'paperwork' && <PaperworkEditor contactId={contactId} />}
 
               {tab === 'account' && (
                 d.account ? (
@@ -364,6 +385,14 @@ export function ContactDossierModal({
           </div>
         </div>
       </div>
+
+      {assigning && (
+        <AssignDocumentsModal
+          contactId={contactId}
+          onClose={() => setAssigning(false)}
+          onAssigned={() => { setAssigning(false); load(); onChanged?.(); }}
+        />
+      )}
     </div>
   );
 }
