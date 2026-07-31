@@ -885,6 +885,23 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
               render: () => <ContractChangeHistory documentId={id} refreshKey={changeKey} inDrawer />,
             },
           ]}
+          /* SAVE IS POSITION 1. It lived in `extras`, which renders AFTER the
+             drawer buttons — so "first in extras" still put it fourth on screen.
+             `leading` renders before them. */
+          leading={isOwnerSide && !isExecuted ? (
+            <button type="button" disabled={saving || justSaved}
+              /* Fixed width so gaining the tick and the extra character does not
+                 resize the button and shift everything beside it. */
+              className={`${SUBHEADER_BTN} sm:w-[7.5rem] disabled:opacity-100 ${
+                justSaved
+                  ? 'border-green-700 bg-green-50 text-green-800'
+                  : 'border-green-800/20 bg-white text-green-900 hover:bg-green-800/5 disabled:opacity-60'}`}
+              onClick={() => void saveNow()}>
+              {saving ? 'Saving…' : justSaved
+                ? <><Check size={15} /> Saved</>
+                : 'Save'}
+            </button>
+          ) : undefined}
           extras={
             /* The ACTUAL management actions, relocated from the card's Manage
                section (owner spec 2026-07-31). These are the originals — the
@@ -893,22 +910,6 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                match. No "Notify for review" here: it is the Notify card's own
                button and having both is what made the bar feel duplicated. */
             <>
-              {/* SAVE FIRST (owner spec): the most-used control sits in position 1
-                  so it is always in the same place, whatever else is showing. */}
-              {isOwnerSide && !isExecuted && (
-                <button type="button" disabled={saving || justSaved}
-                  /* Fixed width so gaining the tick and the extra character does
-                     not resize the button and shift everything beside it. */
-                  className={`${SUBHEADER_BTN} sm:w-[7.5rem] disabled:opacity-100 ${
-                    justSaved
-                      ? 'border-green-700 bg-green-50 text-green-800'
-                      : 'border-green-800/20 bg-white text-green-900 hover:bg-green-800/5 disabled:opacity-60'}`}
-                  onClick={() => void saveNow()}>
-                  {saving ? 'Saving…' : justSaved
-                    ? <><Check size={15} /> Saved</>
-                    : 'Save'}
-                </button>
-              )}
               {!isOwnerSide && myRoles.length > 0 && editablePhase && !isInactive && (
                 <button type="button"
                   className={`${SUBHEADER_BTN} border-green-800 bg-green-800 text-white hover:bg-green-700`}
@@ -1052,9 +1053,11 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
               {/* Result lands where the button is, not below the title off-screen. */}
               {notifying && <p className="body-text text-sm text-green-800 mt-2">Sending notifications…</p>}
               {!notifying && error && <p role="alert" className="body-text text-sm text-red-700 mt-2">{error}</p>}
-              {/* Same size as the page's other explanatory copy — it was 11px,
-                  smaller than everything around it. */}
-              <p className={`body-text text-sm text-muted mt-2 ${notifyOpen ? '' : 'hidden sm:block'}`}>
+              {/* 13px: it was 11px (too small to read), then text-sm/14px (too
+                  loud for a caption). This sits between them, and the document-
+                  controls caption below now matches it so the page's explanatory
+                  copy is one size. */}
+              <p className={`body-text text-[13px] text-muted mt-2 ${notifyOpen ? '' : 'hidden sm:block'}`}>
                 Notifies each party to review and sign. The signed copy is emailed to
                 everyone automatically once the contract is fully signed.
               </p>
@@ -1198,17 +1201,18 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       {/* Party-facing notes/instructions don't apply during the creation step
           (the embedded inline authoring view) \u2014 nothing has been sent to either
           party yet. Only show guidance on the standalone contract page. */}
-      {!embedded && (
+      {/* Owner-side guidance removed 2026-07-31: it ended "\u2026then lock it for
+          signing", describing a button deleted earlier the same day. The
+          party-facing lines below still describe what that party should do. */}
+      {!embedded && !isOwnerSide && (
         <p className="text-sm text-muted mb-5">
-          {isOwnerSide
-            ? 'Fill any side\u2019s fields \u2014 acting on behalf of a party where needed \u2014 set the controls, then lock it for signing.'
-            : iSigned
-              ? 'You\u2019ve signed. The contract executes once the other party signs.'
-              : state === 'locked'
-                ? 'The document is final and locked for signing. Review it below, then sign at the bottom of the page.'
-                : reviewOnly
-                  ? 'Review the document below. It will be locked for signing once both sides are ready; you\u2019ll sign then.'
-                  : 'Complete the highlighted fields. The document is locked for signing once both sides are ready.'}
+          {iSigned
+            ? 'You\u2019ve signed. The contract executes once the other party signs.'
+            : state === 'locked'
+              ? 'The document is final and locked for signing. Review it below, then sign at the bottom of the page.'
+              : reviewOnly
+                ? 'Review the document below. It will be locked for signing once both sides are ready; you\u2019ll sign then.'
+                : 'Complete the highlighted fields. The document is locked for signing once both sides are ready.'}
         </p>
       )}
 
@@ -1266,7 +1270,8 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           controls; restating them here (with a 4th option) confused the flow. */}
       {isOwnerSide && editablePhase && !embedded && (
         <div className="bg-white border border-green-800/10 rounded-lg p-4 mb-5">
-          <p className="text-[12px] text-muted mb-2.5">
+          {/* Matched to the notify caption above — one size for explanatory copy. */}
+          <p className="text-[13px] text-muted mb-2.5">
             Document controls — what each party may do. The invitation wording follows these.
           </p>
           <div className="grid sm:grid-cols-2 gap-3 mb-3">

@@ -59,9 +59,12 @@ export const SUBHEADER_BTN =
 const DRAWER_BTN_W = 'sm:w-[9.5rem]';
 
 export function ContractSubheader({
-  drawers, extras, openRequest, viewers = [],
+  drawers, leading, extras, openRequest, viewers = [],
 }: {
   drawers: DrawerSpec[];
+  /** Rendered BEFORE the drawer buttons — position 1 in the bar. `extras` comes
+   *  after them, so anything that must lead (Save) belongs here. */
+  leading?: ReactNode;
   /** Other people looking at this contract right now. Rendered as a quiet
    *  presence chip — the point is "they can see what you are doing", so it has
    *  to be visible without competing with the actions. */
@@ -137,6 +140,7 @@ export function ContractSubheader({
 
         <div className={`${barOpen ? 'grid' : 'hidden'} grid-cols-2 gap-2 pt-2
                          sm:flex sm:flex-wrap sm:items-center sm:gap-2 sm:pt-0`}>
+          {leading}
           {drawers.map((d) => {
             const isOpen = openKey === d.key;
             return (
