@@ -276,6 +276,10 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   // caller was Add-a-Comment, which is gone.
   const [openRequestCount, setOpenRequestCount] = useState(0);
   const [voidModal, setVoidModal] = useState(false);
+  /** Feedback for the party-controls rules, shown beside those controls. It is
+   *  cleared whenever the controls reload, so a message never outlives the state
+   *  that produced it. */
+  const [controlNote, setControlNote] = useState<string | null>(null);
   /** The Send modal: choose which parties are notified, or mail yourself a PDF. */
   const [sendOpen, setSendOpen] = useState(false);
   const [pdfBusy, setPdfBusy] = useState(false);
@@ -331,6 +335,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
     if (!id) return;
     try {
       setDetail(await contractDocumentDetail(id));
+      setControlNote(null);
       contractSigningSet(id).then(setSigningSet).catch(() => setSigningSet([]));
       contractRedlineState(id).then(setRedline).catch(() => setRedline(null));
       documentPartiesSummary(id).then(setPartiesSummary).catch(() => setPartiesSummary(null));
@@ -1211,6 +1216,13 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
              question and its answer in different places. */
           footer={isOwnerSide && editablePhase ? (
             <>
+              {/* Rule feedback lands HERE, beside the checkboxes that caused it —
+                  the page-level banner sits far below and would be missed. */}
+              {controlNote && (
+                <p className="mb-2.5 rounded px-3 py-2 text-[13px] bg-gold-50 border border-gold-400/40 text-gold-900">
+                  {controlNote}
+                </p>
+              )}
           <p className="text-[13px] text-muted mb-2.5">
             Document controls — what each party may do. The invitation wording follows these.
           </p>
@@ -1228,11 +1240,32 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                 /* The server refuses to clear the LAST deal editor. Compute the
                    same condition here so the box is disabled with a reason,
                    rather than unticking and snapping back on a failed save. */
-                const editors = partyControls.filter(
-                  (x) => x.can_edit_deal && x.party_role !== 'FHE' && x.party_role !== 'COMPANY');
+                /* Signing parties only — the company's own role is not a
+                   counterparty that could carry the edit permission. */
+                const signing = partyControls.filter(
+                  (x) => x.party_role !== 'FHE' && x.party_role !== 'COMPANY');
+                const editors = signing.filter((x) => x.can_edit_deal);
+                // Nobody can act yet: no editor anywhere and no suggester either.
+                const noOneEngaged = editors.length === 0
+                  && !signing.some((x) => x.can_suggest);
+                const otherRole = signing.map((x) => x.party_role).find((r) => r !== role);
                 return (
                   <PartyControlsCard key={role} role={role} value={value}
-                    lastDealEditor={editors.length <= 1}
+                    lastDealEditor={editors.length <= 1 && value.can_edit_deal}
+                    noOneEngaged={noOneEngaged}
+                    onBlocked={(m) => { setError(null); setControlNote(m); }}
+                    onEnableOtherEditor={() => {
+                      if (!otherRole) return;
+                      const o = signing.find((x) => x.party_role === otherRole);
+                      void act(() => setPartyControls(id!, otherRole, {
+                        can_fill: o?.can_fill ?? true,
+                        can_edit_deal: true,
+                        can_suggest: false,
+                        can_add_clause: o?.can_add_clause ?? false,
+                      }));
+                      setControlNote(`A suggestion needs someone who can act on it — `
+                        + `${otherRole.charAt(0) + otherRole.slice(1).toLowerCase()} can now edit deal terms.`);
+                    }}
                     onChange={(v) => void act(() => setPartyControls(id!, role, v))} />
                 );
               })}

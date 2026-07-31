@@ -43,16 +43,24 @@ const ROWS: { key: keyof PartyControlValues; label: string }[] = [
 
 export function PartyControlsCard({
   role, value, onChange, disabled = false, lastDealEditor = false,
+  noOneEngaged = false, onBlocked, onEnableOtherEditor,
 }: {
   role: string;
   value: PartyControlValues;
   onChange: (v: PartyControlValues) => void;
   disabled?: boolean;
   /** TRUE when this party is the ONLY one who can edit deal terms. The server
-   *  refuses to clear the last one (set_party_controls raises), but a checkbox
-   *  that visibly unticks and then silently snaps back reads as a bug — so the
-   *  box is disabled here and says why. */
+   *  refuses to clear the last one (set_party_controls raises). */
   lastDealEditor?: boolean;
+  /** TRUE when NEITHER party can edit or suggest yet — the starting state. The
+   *  first "Can suggest" then implies the other side must be able to act on it. */
+  noOneEngaged?: boolean;
+  /** Called when the owner tries something the rules forbid, so the page can say
+   *  so where they are looking. */
+  onBlocked?: (message: string) => void;
+  /** Turn on "Can edit deal terms" for the OTHER party. Used when the first
+   *  suggest-only choice would otherwise leave nobody able to act. */
+  onEnableOtherEditor?: () => void;
 }) {
   return (
     <div className="border border-green-800/10 rounded-lg p-3.5">
@@ -68,13 +76,24 @@ export function PartyControlsCard({
                 </span>
               )}
             </span>
+            {/* Deliberately NOT `disabled` for the last-editor case: a disabled
+                input fires no event, so it can only sit there looking broken. It
+                stays clickable, refuses, and SAYS why. */}
             <input type="checkbox" className="accent-green-700 w-4 h-4 shrink-0 disabled:opacity-50"
               checked={value[r.key]}
-              disabled={disabled || (r.key === 'can_edit_deal' && lastDealEditor && value.can_edit_deal)}
-              title={r.key === 'can_edit_deal' && lastDealEditor && value.can_edit_deal
-                ? 'Someone has to be able to edit the terms — turn it on for the other party first.'
-                : undefined}
+              disabled={disabled}
               onChange={(e) => {
+                const turningOff = !e.target.checked;
+
+                // Clearing the last party who can edit would leave nobody able to
+                // change a term — every edit would have to go through staff. The
+                // server refuses this too; this is the half that explains it.
+                if (turningOff && r.key === 'can_edit_deal' && lastDealEditor) {
+                  onBlocked?.('Enable "Can edit deal terms" for the other party first — '
+                    + 'one party must always be able to edit.');
+                  return;
+                }
+
                 const next = { ...value, [r.key]: e.target.checked };
                 // "Can edit deal terms" and "Can suggest changes" are mutually
                 // exclusive — a party either changes the terms directly or proposes
@@ -82,6 +101,13 @@ export function PartyControlsCard({
                 if (e.target.checked && r.key === 'can_edit_deal') next.can_suggest = false;
                 if (e.target.checked && r.key === 'can_suggest') next.can_edit_deal = false;
                 onChange(next);
+
+                // First "Can suggest" while nobody can act: a suggestion needs a
+                // recipient, so give the other party the edit permission rather
+                // than leaving a contract nobody can move.
+                if (e.target.checked && r.key === 'can_suggest' && noOneEngaged) {
+                  onEnableOtherEditor?.();
+                }
               }} />
           </label>
         ))}
