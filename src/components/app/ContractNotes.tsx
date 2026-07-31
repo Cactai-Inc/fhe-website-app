@@ -6,13 +6,13 @@ import {
 } from '../../lib/contracts';
 
 /**
- * CONTRACT NOTES — the third subheader drawer.
+ * CONTRACT COMMENTS — the third subheader drawer.
  *
- * A note is a titled conversation, not a proposed edit: no resolution lifecycle,
+ * A comment is a titled conversation, not a proposed edit: no resolution lifecycle,
  * nothing about the contract text changes. Each row collapses to its title bar
  * and expands to a plain chat thread between the parties.
  *
- * The title is a text input owned by the author — the default is "Note N" from
+ * The title is a text input owned by the author — the default is "Comment N" from
  * the DB, and renaming saves on blur so there is no separate save affordance.
  */
 export function ContractNotes({
@@ -31,7 +31,7 @@ export function ContractNotes({
   const load = useCallback(() => {
     contractNotes(documentId)
       .then(setNotes)
-      .catch(() => { setNotes([]); setErr('Could not load notes.'); });
+      .catch(() => { setNotes([]); setErr('Could not load comments.'); });
   }, [documentId]);
   useEffect(load, [load, refreshKey]);
 
@@ -45,11 +45,11 @@ export function ContractNotes({
     setBusy(true); setErr(null);
     try {
       const id = await createContractNote(documentId);
-      // A new note opens straight away — you created it to write in it.
+      // A new comment opens straight away — you created it to write in it.
       setOpen((p) => new Set(p).add(id));
       load();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not add a note.');
+      setErr(e instanceof Error ? e.message : 'Could not add a comment.');
     } finally { setBusy(false); }
   }
 
@@ -63,14 +63,18 @@ export function ContractNotes({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-3">
+      {/* Action on the LEFT in its own bordered wrapper, so it reads as a
+          defined control rather than floating at the far edge of the drawer. */}
+      <div className="mb-3">
+        <div className="inline-flex rounded-lg border border-green-800/15 bg-cream-100/50 p-1.5 mb-2">
+          <button type="button" className="btn-secondary text-xs" disabled={busy}
+            onClick={() => void addNote()}>
+            <Plus size={13} /> Add a comment
+          </button>
+        </div>
         <p className="text-sm text-secondary">
-          Notes are a place to talk about this contract. They change nothing in it.
+          Comments are a place to talk about this contract. They change nothing in it.
         </p>
-        <button type="button" className="btn-secondary text-xs shrink-0" disabled={busy}
-          onClick={() => void addNote()}>
-          <Plus size={13} /> Add a note
-        </button>
       </div>
 
       {err && <p role="alert" className="form-error mb-2">{err}</p>}
@@ -78,7 +82,7 @@ export function ContractNotes({
       {notes === null ? (
         <p className="text-sm text-muted">Loading…</p>
       ) : notes.length === 0 ? (
-        <p className="text-sm text-muted">No notes yet.</p>
+        <p className="text-sm text-muted">No comments yet.</p>
       ) : (
         <div className="flex flex-col gap-2">
           {notes.map((n) => (
@@ -154,7 +158,7 @@ function NoteRow({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           onBlur={() => void saveTitle()}
-          aria-label="Note title"
+          aria-label="Comment title"
         />
         <span className="text-[11px] text-muted ml-auto shrink-0">
           {note.messages.length} {note.messages.length === 1 ? 'message' : 'messages'}

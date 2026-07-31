@@ -309,8 +309,13 @@ function ClauseProse({
     if (f.field_key.startsWith('HORSE.')) return false;  // horse-record import → compact
     const fmt = f.format_type ?? '';
     const kind = f.input_kind ?? 'text';
-    return kind === 'select' || kind === 'buttons' || kind === 'responsibility'
-      || ['party', 'contact', 'person', 'address', 'location', 'pair', 'fee_schedule', 'med_schedule', 'reveal_text'].includes(fmt);
+    // `week_grid` added 2026-07-31: the reserved-days editor is a multi-row
+    // control (a party name plus seven day pills, per party). Treated as a
+    // COMPACT cell it sat inline beside its label, so on a phone the whole grid
+    // was pushed into a narrow indented column with the pills wrapping raggedly.
+    // A control this size needs the full width of the clause.
+    return kind === 'select' || kind === 'buttons' || kind === 'responsibility' || kind === 'week_grid'
+      || ['party', 'contact', 'person', 'address', 'location', 'pair', 'fee_schedule', 'med_schedule', 'reveal_text', 'week_grid'].includes(fmt);
   };
 
   const flushMatrix = () => {
@@ -328,16 +333,18 @@ function ClauseProse({
         <span className="min-w-0 break-words">{renderToken(c.token, `mx${bi}-${j}`, fieldByKey, valueByKey, cb)}</span>
       </div>
     );
-    // A signature triple — Signature / Printed Name / Date for one party — lays out
-    // as a fixed 3-column row (the classic signature-block look), not the packed
-    // grid, so it never wraps to one-per-line.
+    // A signature triple — Signature / Printed Name / Date for one party.
+    // DESKTOP keeps the classic 3-column signature-block row. MOBILE stacks it:
+    // three columns inside ~320px crushed each cell so a long printed name
+    // ("French Heritage Equestrian") overlapped the Date beside it. A signature
+    // block that renders unreadably is worse than one that takes three lines.
     const isSigTriple = cells.length === 3
       && cells.some((c) => c.token.startsWith('SIG.'))
       && cells.map((c) => c.label.toLowerCase()).join('|') === 'signature|printed name|date';
     if (isSigTriple) {
       const key = bi++;
       blocks.push(
-        <div key={`sig${key}`} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,0.8fr)] gap-x-6 gap-y-1 my-1 items-baseline">
+        <div key={`sig${key}`} className="grid grid-cols-1 gap-y-1.5 my-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,0.8fr)] sm:gap-x-6 sm:gap-y-1 sm:items-baseline">
           {cells.map((c, j) => cell(c, j))}
         </div>,
       );
