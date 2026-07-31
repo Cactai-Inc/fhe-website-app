@@ -43,25 +43,35 @@ export interface DrawerSpec {
 const DEFAULT_HEIGHT = 460;
 const MIN_HEIGHT = 160;
 
-/** One button size for every control in this bar — drawers and actions alike. */
-/* One button size for every control in this bar.
-   MOBILE gets bigger targets and a grid cell (w-full + centred) rather than a
-   cramped row — at most three across, most often two — because a mistaken tap
-   here can void a contract. Desktop keeps the compact inline size. */
-export const SUBHEADER_BTN =
-  'inline-flex items-center justify-center gap-1.5 rounded-lg border font-medium focus-ring whitespace-nowrap '
-  // Mobile: full-width grid cell, generous tap target.
-  + 'w-full px-3 py-3 text-sm '
-  // Tablet/desktop: scales DOWN at the tight end so eight controls still fit one
-  // line on a landscape iPad, and back up on a roomy desktop.
-  + 'sm:w-auto sm:shrink sm:min-w-0 sm:px-2.5 sm:py-1.5 sm:text-[13px] '
-  + 'lg:px-3.5 lg:py-2 lg:text-sm';
+/* ONE BUTTON SIZE for every control in this bar, scaling CONTINUOUSLY with the
+   viewport rather than jumping between two fixed sizes.
 
-/* Drawer buttons hold a FIXED width so the row never reflows. "Click to close"
-   is wider than "Comments" or "History", so a variable width shunted every
-   button to its right whenever a drawer opened and back again when it closed.
-   Sized to fit the longest label. */
-const DRAWER_BTN_W = 'sm:w-[8rem] lg:w-[9.5rem]';
+   The previous version set padding at `sm` and again at `lg` and called that
+   scaling — it was two steps, and a fixed 8rem drawer width fought both, so the
+   row still wrapped well above the intended breakpoint.
+
+   The sizes below come from the actual constraint: the rail takes ~256px, so at
+   iPad-landscape (1024px) the bar has ~740px for eight controls, and at
+   iPad-portrait (768px) it has ~490px — which is not enough, hence the wrap
+   there. clamp() interpolates smoothly between those, so nothing snaps.
+
+   MOBILE (below sm) keeps full-width grid cells: a mistaken tap here can void a
+   contract, so the target stays large. */
+export const SUBHEADER_BTN =
+  'inline-flex items-center justify-center gap-1.5 rounded-lg border font-medium '
+  + 'focus-ring whitespace-nowrap w-full px-3 py-3 text-sm '
+  // From sm up: auto width, shrinkable, with fluid padding and type.
+  + 'sm:w-auto sm:shrink sm:min-w-0 sm:py-1.5 '
+  + 'sm:[padding-inline:clamp(0.5rem,1.1vw,0.875rem)] '
+  + 'sm:[font-size:clamp(11.5px,1.05vw,14px)] '
+  + 'sm:[gap:clamp(0.25rem,0.5vw,0.375rem)] '
+  + 'lg:py-2';
+
+/* Drawer buttons hold a consistent width so the row does not reflow when
+   "Click to close" (wider than "Comments") replaces a label — but that width is
+   now FLUID too. A fixed rem value was the main reason the bar wrapped early:
+   three drawers at 8rem each claimed 24rem before anything else was measured. */
+const DRAWER_BTN_W = 'sm:[width:clamp(5.5rem,9vw,9.5rem)]';
 
 export function ContractSubheader({
   drawers, leading, extras, trailing, destructive, openRequest, viewers = [],
@@ -152,8 +162,19 @@ export function ContractSubheader({
             content down, and the shared button class scales its padding and text
             with the viewport so a standard desktop and a landscape tablet keep
             everything on one line. */}
+        {/* BELOW sm (640px) — phone portrait: a two-across grid, collapsed by
+            default, with full-size tap targets.
+
+            sm AND UP — phone landscape (~740-850px), iPad portrait (768px) and
+            iPad landscape (1024px): ONE flex row. The buttons scale fluidly via
+            clamp() in SUBHEADER_BTN, so the row narrows with the window instead
+            of wrapping. `flex-nowrap` holds that line; `min-w-0` on the row lets
+            its children actually shrink (without it, flex items refuse to go
+            below their content width and wrap anyway — which is what was
+            happening before). */}
         <div className={`${barOpen ? 'grid' : 'hidden'} grid-cols-2 gap-2 pt-2
-                         sm:flex sm:flex-wrap sm:items-center sm:gap-1.5 sm:pt-0 lg:gap-2 min-w-0`}>
+                         sm:flex sm:flex-nowrap sm:items-center sm:pt-0 min-w-0
+                         sm:[gap:clamp(0.25rem,0.6vw,0.5rem)]`}>
           {leading}
           {drawers.map((d) => {
             const isOpen = openKey === d.key;
@@ -182,10 +203,15 @@ export function ContractSubheader({
               sit left; Void and Delete are pushed right by ml-auto, so the
               destructive pair holds the right edge on EITHER row rather than
               floating into the middle of a wrap. */}
-          <div className="contents sm:contents lg:contents">
-            {trailing}
-          </div>
-          {destructive && <span className="sm:ml-auto flex flex-wrap items-center gap-1.5 lg:gap-2">{destructive}</span>}
+          {trailing}
+          {/* Pinned right by ml-auto. flex-nowrap and min-w-0 so this pair
+              shrinks with everything else instead of forcing the row to break. */}
+          {destructive && (
+            <span className="sm:ml-auto flex flex-nowrap items-center min-w-0
+                             sm:[gap:clamp(0.25rem,0.6vw,0.5rem)] gap-1.5">
+              {destructive}
+            </span>
+          )}
 
           {viewers.length > 0 && (
             <span
