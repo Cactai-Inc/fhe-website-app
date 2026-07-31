@@ -61,17 +61,16 @@ export const SUBHEADER_BTN =
   'inline-flex items-center justify-center gap-1.5 rounded-lg border font-medium '
   + 'focus-ring whitespace-nowrap w-full px-3 py-3 text-sm '
   // From sm up: auto width, shrinkable, with fluid padding and type.
-  + 'sm:w-auto sm:shrink sm:min-w-0 sm:py-1.5 '
-  + 'sm:[padding-inline:clamp(0.5rem,1.1vw,0.875rem)] '
-  + 'sm:[font-size:clamp(11.5px,1.05vw,14px)] '
-  + 'sm:[gap:clamp(0.25rem,0.5vw,0.375rem)] '
-  + 'lg:py-2';
+  + 'lg:w-auto lg:shrink lg:min-w-0 lg:py-2 '
+  + 'lg:[padding-inline:clamp(0.5rem,1.1vw,0.875rem)] '
+  + 'lg:[font-size:clamp(11.5px,1.05vw,14px)] '
+  + 'lg:[gap:clamp(0.25rem,0.5vw,0.375rem)]';
 
 /* Drawer buttons hold a consistent width so the row does not reflow when
    "Click to close" (wider than "Comments") replaces a label — but that width is
    now FLUID too. A fixed rem value was the main reason the bar wrapped early:
    three drawers at 8rem each claimed 24rem before anything else was measured. */
-const DRAWER_BTN_W = 'sm:[width:clamp(5.5rem,9vw,9.5rem)]';
+const DRAWER_BTN_W = 'lg:[width:clamp(5.5rem,9vw,9.5rem)]';
 
 export function ContractSubheader({
   drawers, leading, extras, trailing, destructive, openRequest, viewers = [],
@@ -150,7 +149,7 @@ export function ContractSubheader({
             them back is always in the same place. */}
         <button type="button" onClick={() => setBarOpen((v) => !v)}
           aria-expanded={barOpen}
-          className="sm:hidden w-full flex items-center justify-between py-1 text-left">
+          className="lg:hidden w-full flex items-center justify-between py-1 text-left">
           <span className="text-[13px] font-medium text-green-900">
             {active ? active.label : 'Contract actions'}
           </span>
@@ -162,19 +161,27 @@ export function ContractSubheader({
             content down, and the shared button class scales its padding and text
             with the viewport so a standard desktop and a landscape tablet keep
             everything on one line. */}
-        {/* BELOW sm (640px) — phone portrait: a two-across grid, collapsed by
-            default, with full-size tap targets.
+        {/* THE SWITCH IS AT lg (1024px), NOT sm.
 
-            sm AND UP — phone landscape (~740-850px), iPad portrait (768px) and
-            iPad landscape (1024px): ONE flex row. The buttons scale fluidly via
-            clamp() in SUBHEADER_BTN, so the row narrows with the window instead
-            of wrapping. `flex-nowrap` holds that line; `min-w-0` on the row lets
-            its children actually shrink (without it, flex items refuse to go
-            below their content width and wrap anyway — which is what was
-            happening before). */}
+            The side rail itself only appears at lg — below that the bar spans the
+            whole window. My earlier sizing assumed a ~256px rail was always
+            taking space, so the "roomy" calculation was wrong precisely in the
+            band where it mattered: at ~660px the bar was past sm, took the
+            desktop row, and had barely 20px of slack. That is the in-between
+            state in the owner's screenshot.
+
+            BELOW lg — phone portrait AND landscape, iPad portrait: the collapsed
+            two-across grid with full-size tap targets. Eight controls do not fit
+            one readable line under 1024px however hard they are scaled, and
+            shrinking them until they do produces targets too small for a control
+            that can void a contract.
+
+            lg AND UP — iPad landscape (1024px) and desktop: ONE flex row.
+            clamp() in SUBHEADER_BTN narrows it with the window; `flex-nowrap`
+            holds the line and `min-w-0` lets the children actually shrink. */}
         <div className={`${barOpen ? 'grid' : 'hidden'} grid-cols-2 gap-2 pt-2
-                         sm:flex sm:flex-nowrap sm:items-center sm:pt-0 min-w-0
-                         sm:[gap:clamp(0.25rem,0.6vw,0.5rem)]`}>
+                         lg:flex lg:flex-nowrap lg:items-center lg:pt-0 min-w-0
+                         lg:[gap:clamp(0.25rem,0.6vw,0.5rem)]`}>
           {leading}
           {drawers.map((d) => {
             const isOpen = openKey === d.key;
@@ -207,8 +214,8 @@ export function ContractSubheader({
           {/* Pinned right by ml-auto. flex-nowrap and min-w-0 so this pair
               shrinks with everything else instead of forcing the row to break. */}
           {destructive && (
-            <span className="sm:ml-auto flex flex-nowrap items-center min-w-0
-                             sm:[gap:clamp(0.25rem,0.6vw,0.5rem)] gap-1.5">
+            <span className="contents lg:flex lg:ml-auto lg:flex-nowrap lg:items-center lg:min-w-0
+                             lg:[gap:clamp(0.25rem,0.6vw,0.5rem)]">
               {destructive}
             </span>
           )}
