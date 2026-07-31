@@ -1081,16 +1081,22 @@ export function InlineFieldControl({
         </span>
       );
     }
-    // week_grid is a full-width BLOCK on its own line (with its label kept) —
-    // inside the inline-block wrapper below it was clamped to the leftover line
-    // width and the 7-day row clipped after Tuesday. No inner scrollbox: the
-    // grid itself wraps responsively on narrow screens.
+    /* week_grid is a full-width BLOCK on its own line. It was still rendering
+       INSIDE the clause's inline text run, so although `block` gave it its own
+       line, that line started where the prose left off — which read as an indent
+       and pushed the day pills right. `clear-both` plus a left-reset takes it out
+       of the run, and mt-3 separates it from the sentence above rather than
+       having the grid sit flush against the text.
+
+       The label is dropped here: the clause prose already introduces it
+       ("Reserved days of use:"), so repeating it above the grid was the same
+       words twice. */
     if (kind === 'week_grid') {
       return (
-        <span className="block my-1.5 w-full">
-          <span className="text-[11px] text-muted">{label}{marks}</span>
+        <span className="block clear-both w-full mt-3 mb-1.5 ml-0 pl-0">
           <FieldControl f={f} onSave={onSave} onSaveResponsibility={onSaveResponsibility}
             onSaveStructured={onSaveStructured} disabled={disabled} />
+          {marks}
         </span>
       );
     }

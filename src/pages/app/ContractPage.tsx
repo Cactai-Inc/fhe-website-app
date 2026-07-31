@@ -937,13 +937,8 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
               )}
             </>
           )}
+          /* ROW ONE beside Send/Save/drawers: the counterparty's primary action. */
           extras={
-            /* The ACTUAL management actions, relocated from the card's Manage
-               section (owner spec 2026-07-31). These are the originals — the
-               Manage block was deleted, not duplicated, so there is no chance of
-               a copy going stale. Every control uses SUBHEADER_BTN so the sizes
-               match. No "Notify for review" here: it is the Notify card's own
-               button and having both is what made the bar feel duplicated. */
             <>
               {!isOwnerSide && myRoles.length > 0 && editablePhase && !isInactive && (
                 <button type="button"
@@ -952,8 +947,11 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                   <CheckCircle2 size={15} /> Accept &amp; sign
                 </button>
               )}
-              {/* Moved up from the authoring bar: these act on the document but
-                  belong with the other always-visible controls. */}
+            </>
+          }
+          /* ROW TWO when the bar wraps: secondary document actions. */
+          trailing={
+            <>
               {structure && id && !isExecuted && (
                 <button type="button"
                   className={`${SUBHEADER_BTN} border-green-800/20 bg-white text-green-900 hover:bg-green-800/5`}
@@ -975,10 +973,14 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                   {isArchived ? 'Unarchive' : 'Archive'}
                 </button>
               )}
-              {/* Destructive actions are pushed right, away from the rest. */}
+            </>
+          }
+          /* Pinned RIGHT on whichever row they land — never adrift mid-wrap. */
+          destructive={
+            <>
               {canVoid && (
                 <button type="button"
-                  className={`${SUBHEADER_BTN} border-red-300 bg-white text-red-700 hover:bg-red-50 ml-auto`}
+                  className={`${SUBHEADER_BTN} border-red-300 bg-white text-red-700 hover:bg-red-50`}
                   onClick={() => setVoidModal(true)}>
                   Void contract
                 </button>

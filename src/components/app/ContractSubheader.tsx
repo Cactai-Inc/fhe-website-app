@@ -50,21 +50,30 @@ const MIN_HEIGHT = 160;
    here can void a contract. Desktop keeps the compact inline size. */
 export const SUBHEADER_BTN =
   'inline-flex items-center justify-center gap-1.5 rounded-lg border font-medium focus-ring whitespace-nowrap '
-  + 'w-full px-3 py-3 text-sm sm:w-auto sm:px-3.5 sm:py-2 sm:shrink-0';
+  // Mobile: full-width grid cell, generous tap target.
+  + 'w-full px-3 py-3 text-sm '
+  // Tablet/desktop: scales DOWN at the tight end so eight controls still fit one
+  // line on a landscape iPad, and back up on a roomy desktop.
+  + 'sm:w-auto sm:shrink sm:min-w-0 sm:px-2.5 sm:py-1.5 sm:text-[13px] '
+  + 'lg:px-3.5 lg:py-2 lg:text-sm';
 
 /* Drawer buttons hold a FIXED width so the row never reflows. "Click to close"
    is wider than "Comments" or "History", so a variable width shunted every
    button to its right whenever a drawer opened and back again when it closed.
    Sized to fit the longest label. */
-const DRAWER_BTN_W = 'sm:w-[9.5rem]';
+const DRAWER_BTN_W = 'sm:w-[8rem] lg:w-[9.5rem]';
 
 export function ContractSubheader({
-  drawers, leading, extras, openRequest, viewers = [],
+  drawers, leading, extras, trailing, destructive, openRequest, viewers = [],
 }: {
   drawers: DrawerSpec[];
-  /** Rendered BEFORE the drawer buttons — position 1 in the bar. `extras` comes
-   *  after them, so anything that must lead (Save) belongs here. */
+  /** Rendered BEFORE the drawer buttons — position 1 in the bar. */
   leading?: ReactNode;
+  /** Secondary actions (Scroll, Add item). They join the destructive pair on
+   *  row two once the bar wraps. */
+  trailing?: ReactNode;
+  /** Void / Delete. Always pinned to the RIGHT, on whichever row they land. */
+  destructive?: ReactNode;
   /** Other people looking at this contract right now. Rendered as a quiet
    *  presence chip — the point is "they can see what you are doing", so it has
    *  to be visible without competing with the actions. */
@@ -138,8 +147,13 @@ export function ContractSubheader({
           <ChevronDown size={16} className={`text-muted transition-transform ${barOpen ? '' : '-rotate-90'}`} />
         </button>
 
+        {/* ROW ONE: the controls you reach for constantly — Send, Save, and the
+            three drawers. `min-w-0` lets them shrink rather than push row two's
+            content down, and the shared button class scales its padding and text
+            with the viewport so a standard desktop and a landscape tablet keep
+            everything on one line. */}
         <div className={`${barOpen ? 'grid' : 'hidden'} grid-cols-2 gap-2 pt-2
-                         sm:flex sm:flex-wrap sm:items-center sm:gap-2 sm:pt-0`}>
+                         sm:flex sm:flex-wrap sm:items-center sm:gap-1.5 sm:pt-0 lg:gap-2 min-w-0`}>
           {leading}
           {drawers.map((d) => {
             const isOpen = openKey === d.key;
@@ -163,6 +177,16 @@ export function ContractSubheader({
             );
           })}
           {extras}
+
+          {/* ROW TWO on narrower screens, same row on wide ones. Scroll and Add
+              sit left; Void and Delete are pushed right by ml-auto, so the
+              destructive pair holds the right edge on EITHER row rather than
+              floating into the middle of a wrap. */}
+          <div className="contents sm:contents lg:contents">
+            {trailing}
+          </div>
+          {destructive && <span className="sm:ml-auto flex flex-wrap items-center gap-1.5 lg:gap-2">{destructive}</span>}
+
           {viewers.length > 0 && (
             <span
               className="inline-flex items-center gap-1.5 text-[12px] text-green-800 bg-green-50 border border-green-200 rounded-full px-2.5 py-1 shrink-0"
