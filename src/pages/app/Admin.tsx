@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  ArrowLeft, ChevronLeft, ChevronRight, Plus, Search, UserRound,
+  ArrowLeft, ChevronRight, Plus, Search, UserRound,
 } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
 import { supabase } from '../../lib/supabase';
@@ -71,7 +71,6 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'messages', label: 'Messages' },
   { id: 'login', label: 'Login' },
 ];
-const TAB_PAGE_SIZE = 6;
 
 const fmt = (iso: string | null | undefined) =>
   iso ? new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
@@ -730,7 +729,6 @@ export default function Admin() {
   const [tab, setTab] = useState<TabId>('overview');
   const [assignOpen, setAssignOpen] = useState(false);
   const [tabRefresh, setTabRefresh] = useState(0);
-  const [tabPage, setTabPage] = useState(0);
   const [ordersKey, setOrdersKey] = useState(0); // bump to refetch the Orders list after an attach
   const [dangerOpen, setDangerOpen] = useState(false);
   const [hardConfirm, setHardConfirm] = useState('');
@@ -757,7 +755,7 @@ export default function Admin() {
 
   // isolated-account overview (login-backed accounts only)
   useEffect(() => {
-    setOv(null); setTab('overview'); setTabPage(0); setDangerOpen(false); setHardConfirm('');
+    setOv(null); setTab('overview'); setDangerOpen(false); setHardConfirm('');
     if (!selectedId || !selected?.user_id) return;
     supabase.rpc('admin_client_overview', { p_user_id: selected.user_id })
       .then(({ data, error: e }) => {
@@ -780,7 +778,6 @@ export default function Admin() {
     });
   }, [members, q, sortKey]);
 
-  const tabPages = Math.ceil(TABS.length / TAB_PAGE_SIZE);
 
   async function toggleSuspend() {
     if (!selected?.user_id) return;
@@ -1033,38 +1030,26 @@ export default function Admin() {
             <PendingClientView row={selected} onChanged={load} />
           )}
 
-          {/* sliding tab rail: pages of tabs, more → slide, back appears left */}
+          {/* TAB RAIL — every tab visible, wrapping onto a second line when the
+              width runs out.
+
+              This replaced a paged carousel: TABS were sliced into pages of 6
+              and translated horizontally, so 3 of the 9 hid behind a small
+              "more ›" at the far right that was easy to miss entirely. There was
+              never a need — nine short pills fit comfortably, and even when they
+              do not, wrapping shows them all at once instead of hiding a third
+              of the surface behind a control nobody notices. */}
           {selected.kind === 'account' && (
-          <div className="flex items-center gap-1 mb-4">
-            {tabPage > 0 && (
-              <button type="button" aria-label="Previous tabs" onClick={() => setTabPage((p) => p - 1)}
-                className="p-1.5 rounded-md text-secondary hover:text-green-800 focus-ring shrink-0">
-                <ChevronLeft size={16} />
+          <div className="flex flex-wrap items-center gap-1.5 mb-4">
+            {TABS.map((t) => (
+              <button key={t.id} type="button" onClick={() => setTab(t.id)}
+                aria-current={tab === t.id ? 'page' : undefined}
+                className={`px-3.5 py-1.5 rounded-full text-[12.5px] font-sans whitespace-nowrap focus-ring ${
+                  tab === t.id ? 'bg-green-800 text-white' : 'bg-green-800/10 text-green-800 hover:bg-green-800/20'
+                }`}>
+                {t.label}
               </button>
-            )}
-            <div className="overflow-hidden flex-1">
-              <div className="flex gap-1.5 transition-transform duration-300 ease-out"
-                style={{ transform: `translateX(-${tabPage * 100}%)` }}>
-                {Array.from({ length: tabPages }, (_, page) => (
-                  <div key={page} className="flex gap-1.5 min-w-full">
-                    {TABS.slice(page * TAB_PAGE_SIZE, (page + 1) * TAB_PAGE_SIZE).map((t) => (
-                      <button key={t.id} type="button" onClick={() => setTab(t.id)}
-                        className={`px-3.5 py-1.5 rounded-full text-[12.5px] font-sans whitespace-nowrap focus-ring ${
-                          tab === t.id ? 'bg-green-800 text-white' : 'bg-green-800/10 text-green-800 hover:bg-green-800/20'
-                        }`}>
-                        {t.label}
-                      </button>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </div>
-            {tabPage < tabPages - 1 && (
-              <button type="button" aria-label="More tabs" onClick={() => setTabPage((p) => p + 1)}
-                className="inline-flex items-center gap-0.5 p-1.5 rounded-md text-secondary hover:text-green-800 text-xs focus-ring shrink-0">
-                more <ChevronRight size={14} />
-              </button>
-            )}
+            ))}
           </div>
           )}
 
