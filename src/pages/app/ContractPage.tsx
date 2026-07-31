@@ -875,7 +875,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
             },
             {
               key: 'requests',
-              label: 'Change requests',
+              label: 'Requests',
               icon: <MessageSquarePlus size={14} />,
               tone: 'gold',
               count: openRequestCount,
@@ -892,7 +892,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
             },
             {
               key: 'history',
-              label: 'Change history',
+              label: 'History',
               icon: <History size={14} />,
               render: () => <ContractChangeHistory documentId={id} refreshKey={changeKey} inDrawer />,
             },
@@ -905,6 +905,15 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                match. No "Notify for review" here: it is the Notify card's own
                button and having both is what made the bar feel duplicated. */
             <>
+              {/* SAVE FIRST (owner spec): the most-used control sits in position 1
+                  so it is always in the same place, whatever else is showing. */}
+              {isOwnerSide && !isExecuted && (
+                <button type="button" disabled={saving}
+                  className={`${SUBHEADER_BTN} border-green-800/20 bg-white text-green-900 hover:bg-green-800/5 disabled:opacity-60`}
+                  onClick={() => void saveNow()}>
+                  {saving ? 'Saving…' : 'Save'}
+                </button>
+              )}
               {!isOwnerSide && myRoles.length > 0 && editablePhase && !isInactive && (
                 <button type="button"
                   className={`${SUBHEADER_BTN} border-green-800 bg-green-800 text-white hover:bg-green-700`}
@@ -912,11 +921,20 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                   <CheckCircle2 size={15} /> Accept &amp; sign
                 </button>
               )}
-              {isOwnerSide && !isExecuted && (
-                <button type="button" disabled={saving}
-                  className={`${SUBHEADER_BTN} border-green-800/20 bg-white text-green-900 hover:bg-green-800/5 disabled:opacity-60`}
-                  onClick={() => void saveNow()}>
-                  {saving ? 'Saving…' : 'Save'}
+              {/* Moved up from the authoring bar: these act on the document but
+                  belong with the other always-visible controls. */}
+              {structure && id && isOwnerSide && editablePhase && (
+                <AddElementButton documentId={id} disabled={!editablePhase}
+                  sections={structure.sections.map((sec) => sec.heading)}
+                  canAddStructure={isOwnerSide}
+                  canAddClause={isOwnerSide || (redline?.can_add_clause ?? false)}
+                  onAdded={() => void act(async () => {})} />
+              )}
+              {structure && id && !isExecuted && (
+                <button type="button"
+                  className={`${SUBHEADER_BTN} border-green-800/20 bg-white text-green-900 hover:bg-green-800/5`}
+                  onClick={() => document.getElementById('contract-signatures')?.scrollIntoView({ behavior: 'smooth' })}>
+                  Scroll to Bottom
                 </button>
               )}
               {isInactive && (
@@ -1170,12 +1188,10 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         </div>
       )}
 
-      {/* AUTHORING sub-header (NOT sticky): Add a Comment · Add a Section, Item, or
-          Field · Proceed to Signatures. These are document-authoring affordances,
-          not reviewer actions, so they scroll with the document they act on. Only
-          ONE bar persists while scrolling — the reviewer action bar above (which
-          carries Notes / Change requests / Change history / Accept & sign / Notify / Void).
-          Two competing stickies previously stacked and fought for the same offset. */}
+      {/* AUTHORING bar — now just "Add a Comment". "Add item" and the jump to the
+          signature block moved into the subheader (owner spec 2026-07-31), where
+          they stay reachable without scrolling back up. Add a Comment stays here
+          because it pins to whatever section you are reading. */}
       {structure && id && state !== 'executed' && (
         <div className="-mx-1 px-1 py-1.5 mb-3 bg-cream-100/95 border-b border-green-800/10 flex flex-wrap items-center gap-2">
           {state !== 'void' && (
@@ -1184,17 +1200,6 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
               <MessageSquarePlus size={13} /> Add a Comment
             </button>
           )}
-          {isOwnerSide && editablePhase && (
-            <AddElementButton documentId={id} disabled={!editablePhase}
-              sections={structure.sections.map((s) => s.heading)}
-              canAddStructure={isOwnerSide}
-              canAddClause={isOwnerSide || (redline?.can_add_clause ?? false)}
-              onAdded={() => void act(async () => {})} />
-          )}
-          <button type="button" className="ml-auto text-xs text-green-800 hover:text-green-700 underline underline-offset-2"
-            onClick={() => document.getElementById('contract-signatures')?.scrollIntoView({ behavior: 'smooth' })}>
-            Proceed to Signatures →
-          </button>
         </div>
       )}
       {/* Add-a-Comment modal — step 1: pick the section to pin to; step 2: author

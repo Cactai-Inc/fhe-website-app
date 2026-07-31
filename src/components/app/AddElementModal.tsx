@@ -30,7 +30,7 @@ export function AddElementButton({
 }) {
   const [open, setOpen] = useState(false);
   if (!canAddStructure && !canAddClause) return null;
-  const label = canAddStructure ? 'Add section, field, or clause' : 'Propose a clause';
+  const label = canAddStructure ? 'Add item' : 'Propose a clause';
   return (
     <>
       <button type="button" disabled={disabled} onClick={() => setOpen(true)}
