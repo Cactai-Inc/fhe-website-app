@@ -23,7 +23,8 @@ import {
   type ContractDetail, type ContractField, type PartyControls,
   type SigningSetDoc, type RedlineState, type PartiesHorseSummary, type PartySummary,
 } from '../../lib/contracts';
-import { myWallState } from '../../lib/api';
+import { myWallState, myNameConfirmationState, type NameConfirmationState } from '../../lib/api';
+import { ConfirmNameModal } from '../../components/app/ConfirmNameModal';
 import { CaptureInfoModal } from '../../components/app/CaptureInfoModal';
 import { listStableHorses, type StableHorse } from '../../lib/stable';
 import { ContractCascade, ContractBody } from '../../components/app/ContractCascade';
@@ -307,6 +308,21 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       .catch(() => { if (active) setDocGated(true); });
     return () => { active = false; };
   }, [isStaff]);
+
+  // NAME-BEFORE-SIGNATURE: a party whose legal name we could not safely assert
+  // must state it before signing — otherwise the contract names the wrong
+  // person. Fails CLOSED for the same reason the document gate does, and mirrors
+  // the hard guard in record_signature() so a deep link changes nothing.
+  const [nameState, setNameState] = useState<NameConfirmationState | null>(null);
+  const [nameOpen, setNameOpen] = useState(false);
+  const reloadName = useCallback(() => {
+    if (isStaff) { setNameState(null); return; }
+    myNameConfirmationState()
+      .then(setNameState)
+      .catch(() => setNameState({ needs_confirmation: true, first_name: null, last_name: null }));
+  }, [isStaff]);
+  useEffect(reloadName, [reloadName]);
+  const nameGated = Boolean(nameState?.needs_confirmation);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -1738,7 +1754,30 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
 
           {/* signing: only once LOCKED (read-only). The document is frozen for
               signature — you sign what you see. */}
-          {state === 'locked' && myRoles.length > 0 && !iSigned && !docGated && (
+          {/* NAME-BEFORE-SIGNATURE (2026-07-30): we hold two different surnames
+              for this person and blanked rather than guess. Signing now would
+              name the wrong person on a legal document. Shown only when the
+              document gate is clear, so the member is asked for one thing at a
+              time. The contract stays readable throughout. */}
+          {state === 'locked' && myRoles.length > 0 && !iSigned && !docGated && nameGated && (
+            <div className="border-t border-green-800/10 pt-4">
+              <div className="bg-gold-50 border border-gold-600/40 rounded-lg p-4">
+                <p className="text-sm text-gold-900 font-medium mb-1">
+                  Confirm your legal name before signing
+                </p>
+                <p className="text-sm text-gold-900/90 mb-3">
+                  We want to be certain this agreement carries your name exactly as it
+                  should read. It takes a moment, and you only need to do it once.
+                </p>
+                <button type="button" className="btn-primary text-xs inline-flex"
+                  onClick={() => setNameOpen(true)}>
+                  Confirm my name
+                </button>
+              </div>
+            </div>
+          )}
+
+          {state === 'locked' && myRoles.length > 0 && !iSigned && !docGated && !nameGated && (
             <div className="border-t border-green-800/10 pt-4">
               <p className="text-sm text-secondary mb-2">
                 Sign as <strong>{myRoles[0]}</strong> — typing your full legal name is your signature.
@@ -1843,6 +1882,14 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           party={captureParty}
           onClose={() => setCaptureParty(null)}
           onSaved={() => { setCaptureParty(null); void load(); setChangeKey((k) => k + 1); }}
+        />
+      )}
+
+      {nameOpen && nameState && (
+        <ConfirmNameModal
+          state={nameState}
+          onConfirmed={() => { setNameOpen(false); reloadName(); }}
+          onDismiss={() => setNameOpen(false)}
         />
       )}
 

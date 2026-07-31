@@ -614,6 +614,36 @@ export async function myWallState(): Promise<WallState> {
   return data as WallState;
 }
 
+// ─── Legal name confirmation ────────────────────────────────────────────────
+/** Whether this member must state their legal name before filling a form or
+ *  signing. Set when two sources carried genuinely different surnames and we
+ *  could not safely pick one — guessing would put the wrong name on a contract. */
+export interface NameConfirmationState {
+  needs_confirmation: boolean;
+  first_name: string | null;
+  last_name: string | null;
+}
+
+/** FAILS CLOSED, for the same reason the signing wall does: if we cannot tell
+ *  whether this person's name is trustworthy, we must not let them sign with it.
+ *  The caller treats a throw as "gate them". */
+export async function myNameConfirmationState(): Promise<NameConfirmationState> {
+  const { data, error } = await supabase.rpc('my_name_confirmation_state');
+  if (error) throw error;
+  if (!data || typeof data !== 'object') throw new Error('Could not read your name status.');
+  return data as NameConfirmationState;
+}
+
+/** The member states their own legal name. The ONLY way to clear the gate —
+ *  staff cannot confirm on someone's behalf, since the point is that we could
+ *  not safely assert it ourselves. */
+export async function confirmMyLegalName(first: string, last: string): Promise<void> {
+  const { error } = await supabase.rpc('confirm_my_legal_name', {
+    p_first: first, p_last: last,
+  });
+  if (error) throw error;
+}
+
 // ─── Payments (read inline off the purchase row) ────────────────────────────
 
 export async function getOrderPayment(orderId: string): Promise<Payment | null> {

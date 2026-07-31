@@ -15,6 +15,7 @@ import {
   myUnreadCount,
   myDocuments,
   markTourSeen,
+  myNameConfirmationState,
   type OnboardingProfileInput,
   type OnboardingPurchase,
   type OnboardingState,
@@ -169,7 +170,22 @@ export default function Onboarding() {
   // the profile when already known (Google/named invites), otherwise required.
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const needsName = !((profile?.first_name ?? '').trim() && (profile?.last_name ?? '').trim());
+  // Ask for the name when it is missing OR when we hold two conflicting versions
+  // and blanked it rather than guess (contacts.name_needs_confirmation, S7).
+  // The blank case already covers today's data, but the flag is the explicit
+  // signal and survives someone re-entering a value we still cannot trust.
+  const [nameUnconfirmed, setNameUnconfirmed] = useState(false);
+  useEffect(() => {
+    let active = true;
+    myNameConfirmationState()
+      .then((s) => { if (active) setNameUnconfirmed(s.needs_confirmation); })
+      // Fail closed: if we cannot tell, ask. A wrong name on paperwork is the
+      // thing this exists to prevent.
+      .catch(() => { if (active) setNameUnconfirmed(true); });
+    return () => { active = false; };
+  }, []);
+  const needsName = nameUnconfirmed
+    || !((profile?.first_name ?? '').trim() && (profile?.last_name ?? '').trim());
 
   // Step 1 — minor rider toggle. `hadMinor` tracks the SERVER's state (from
   // my_onboarding_state().minor) so an explicit toggle-off sends
