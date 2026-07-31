@@ -160,9 +160,30 @@ Each stage: dry-run in a transaction → apply → verify with a query → commi
   `contacts` is null and `profiles` has a value. Non-destructive, additive only.
 - **S2** Re-point all readers/writers at `contacts`. The app profile page
   (`saveMyContactPrefs`) writes `contacts` — **this is the owner's reported bug**.
-- **S3** All three input paths verified onto one source: website form, onboarding
-  intake, app profile page. Plus the two staff paths: lead/inbound record and the
-  contact record on the Clients page.
+- **S3** ✅ **Done.** All five input paths verified onto `contacts`:
+  1. **Website form** → `submit_public_request` → `requests` → capture trigger.
+     Verified live: a submission creates a LEAD with name, email and phone.
+  2. **Onboarding intake** → `update_my_onboarding_profile` writes `contacts`
+     (address, DOB, emergency contacts, riding background). The `profiles`
+     UPDATE in the same function is names-only.
+  3. **App profile page** → `saveMyContactPrefs` writes `contacts` (S2).
+  4. **Staff lead/contact record** → `createContact` / `updateContact` on `contacts`.
+  5. **Invite-to-activate / promotion** → `_ensure_client_account`,
+     `admin_create_client`, `sign_release`, `ensure_contact_for_profile`.
+
+  Gap found and closed: of the seven functions that create contacts, only the
+  inbound trigger set `contact_type`. Everything else would have landed in the
+  Unfiled banner — turning a deliberate "someone must decide" signal into
+  permanent noise. Three triggers now file automatically
+  (`20260730130000`): a default on insert, TEAM on staff-role link, and
+  LEAD→CONTACT on becoming a client so the campaign list never advertises
+  someone who already bought. An explicit `contact_type` from the caller always
+  wins.
+
+  Correction learned here: `is_company` does **not** mean "an organisation". A
+  partial unique index (`one_company_contact_per_org`) permits exactly one per
+  org — it is the tenant's own company record, so it files under TEAM. Vendor
+  organisations are ordinary rows filed DIRECTORY by staff.
 - **S4** Person-pages get real server-side definitions; `contact_type` becomes
   the discriminator; nav renames land.
 - **S5** Inbound queue: auto-create contact as PROSPECT, aging/overdue, convert.
