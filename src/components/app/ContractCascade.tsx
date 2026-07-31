@@ -617,12 +617,28 @@ function LeaseFeeBuilder({
 
   return (
     <div className="flex flex-col gap-2 w-full max-w-2xl">
-      <label className="flex items-baseline gap-2 text-[13.5px] text-green-950">
-        <span className="whitespace-nowrap">Initial payment due:</span>
-        <input className={`${inputCls} flex-1`} disabled={locked} value={draft.initial_due ?? ''}
-          placeholder="e.g. upon signing, or a specific date"
+      {/* INITIAL PAYMENT — same shape as the fee options below it: a $-prefixed
+          amount and a terms box. It used to be ONE free-text field whose width
+          was driven by its own placeholder, which is why it rendered at an
+          arbitrary size that matched nothing around it.
+
+          `initial_due` keeps holding the amount, so existing records and the
+          composer's `s->>'initial_due'` continue to work unchanged; the terms
+          live alongside in `initial_terms`. */}
+      <label className="flex items-center gap-2 text-[13.5px] text-green-950">
+        <span className="whitespace-nowrap shrink-0">Initial payment due:</span>
+        <span className="inline-flex items-center shrink-0">
+          <span className="text-green-900 mr-0.5">$</span>
+          <input className="w-24 px-2 py-1 rounded border border-green-800/15 text-sm text-green-900 focus-ring bg-white disabled:bg-cream-100"
+            disabled={locked} value={draft.initial_due ?? ''} placeholder="amount"
+            onFocus={beginEdit} onBlur={flush}
+            onChange={(e) => setLocal({ ...draft, initial_due: e.target.value })} />
+        </span>
+        <input className="flex-1 min-w-0 px-2 py-1 rounded border border-green-800/15 text-sm text-green-900 placeholder:text-muted focus-ring bg-white disabled:bg-cream-100"
+          disabled={locked} value={(draft as { initial_terms?: string }).initial_terms ?? ''}
+          placeholder="List any special conditions/terms for the initial payment"
           onFocus={beginEdit} onBlur={flush}
-          onChange={(e) => setLocal({ ...draft, initial_due: e.target.value })} />
+          onChange={(e) => setLocal({ ...draft, initial_terms: e.target.value } as FieldStructured)} />
       </label>
 
       {options.map((o, i) => (
