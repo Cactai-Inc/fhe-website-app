@@ -717,16 +717,12 @@ export async function templatePastSigners(templateKey: string): Promise<PastSign
   return (data ?? []) as PastSigner[];
 }
 
-/** Require a re-sign from a chosen set of past signers. Passing every candidate
- *  is the "yes, everyone" case; a subset is the "let me choose" case. Returns
- *  how many obligations were actually created. */
-export async function requireResignFrom(templateKey: string, contactIds: string[]): Promise<number> {
-  const { data, error } = await supabase.rpc('require_resign_from', {
-    p_template_key: templateKey, p_contact_ids: contactIds,
-  });
-  if (error) throw error;
-  return (data as number) ?? 0;
-}
+/* requireResignFrom() removed 2026-07-30 before shipping a caller: the UI answers
+ * a version prompt through resolveVersionDecision(), which invokes
+ * require_resign_from SERVER-SIDE for both the ALL and SELECTED cases. A second
+ * client wrapper would be a parallel way to create the same obligations. The RPC
+ * remains in the DB as the primitive resolve_version_decision builds on. */
+
 
 // ─── Payments (read inline off the purchase row) ────────────────────────────
 

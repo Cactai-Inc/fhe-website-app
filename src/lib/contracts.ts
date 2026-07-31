@@ -1176,3 +1176,54 @@ export async function contractExecutionAudit(documentId: string): Promise<Contra
   if (error) throw error;
   return (data as ContractExecutionAudit | null) ?? null;
 }
+
+// ─── Contract notes (the third drawer) ──────────────────────────────────────
+/** A titled conversation thread on a contract. Distinct from a change request:
+ *  a note proposes no edit and has no resolution lifecycle — it is a contained
+ *  space for the parties to talk. */
+export interface ContractNoteMessage {
+  id: string;
+  body: string;
+  created_at: string;
+  author: string;
+  mine: boolean;
+}
+export interface ContractNote {
+  id: string;
+  title: string;
+  created_at: string;
+  mine: boolean;
+  messages: ContractNoteMessage[];
+}
+
+export async function contractNotes(documentId: string): Promise<ContractNote[]> {
+  const { data, error } = await supabase.rpc('contract_notes_for_document', {
+    p_document_id: documentId,
+  });
+  if (error) throw error;
+  return (data ?? []) as ContractNote[];
+}
+
+/** Create a thread. Omit the title and the DB assigns "Note N", N incrementing
+ *  per document (counting deleted ones, so a default title is never reused). */
+export async function createContractNote(documentId: string, title?: string): Promise<string> {
+  const { data, error } = await supabase.rpc('create_contract_note', {
+    p_document_id: documentId, p_title: title ?? null,
+  });
+  if (error) throw error;
+  return data as string;
+}
+
+export async function renameContractNote(noteId: string, title: string): Promise<void> {
+  const { error } = await supabase.rpc('rename_contract_note', {
+    p_note_id: noteId, p_title: title,
+  });
+  if (error) throw error;
+}
+
+export async function postContractNoteMessage(noteId: string, body: string): Promise<void> {
+  const { error } = await supabase.rpc('post_contract_note_message', {
+    p_note_id: noteId, p_body: body,
+  });
+  if (error) throw error;
+}

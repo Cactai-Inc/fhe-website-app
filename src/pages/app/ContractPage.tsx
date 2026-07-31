@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { originFrom } from '../../lib/linkOrigin';
 import {
   FileText, CheckCircle2, Lock, Send, PenLine, ShieldCheck, RotateCcw, MessageSquarePlus,
-  ChevronDown, ChevronUp, History,
+  History, StickyNote,
 } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
 import { useAuth } from '../../contexts/AuthContext';
@@ -24,6 +24,8 @@ import {
   type SigningSetDoc, type RedlineState, type PartiesHorseSummary, type PartySummary,
 } from '../../lib/contracts';
 import { myWallState, myNameConfirmationState, type NameConfirmationState } from '../../lib/api';
+import { ContractSubheader } from '../../components/app/ContractSubheader';
+import { ContractNotes } from '../../components/app/ContractNotes';
 import { ConfirmNameModal } from '../../components/app/ConfirmNameModal';
 import { CaptureInfoModal } from '../../components/app/CaptureInfoModal';
 import { listStableHorses, type StableHorse } from '../../lib/stable';
@@ -265,14 +267,13 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   // capture modal shown when locking with gaps.
   const [partiesSummary, setPartiesSummary] = useState<PartiesHorseSummary | null>(null);
   const [captureParty, setCaptureParty] = useState<PartySummary | null>(null);
-  // Change-requests + Change-history disclosure panels (the two sanctioned
-  // scrollable drawers). Open/closed is obvious from the button styling.
-  const [requestsOpen, setRequestsOpen] = useState(false);
-  const [historyOpen, setHistoryOpen] = useState(false);
+  // Drawer open/closed now lives in ContractSubheader — one owner, one set of
+  // buttons. The page only ever ASKS for a drawer (bump the nonce), which is how
+  // posting a comment can reveal where it landed.
+  const [drawerRequest, setDrawerRequest] = useState<{ key: string; nonce: number } | null>(null);
+  const openDrawer = (key: string) => setDrawerRequest((p) => ({ key, nonce: (p?.nonce ?? 0) + 1 }));
   const [openRequestCount, setOpenRequestCount] = useState(0);
-  // The three-page Void modal, and the sticky-subheader trigger.
   const [voidModal, setVoidModal] = useState(false);
-  const [showSticky, setShowSticky] = useState(false);
   const actionCardRef = useRef<HTMLDivElement | null>(null);
   // RETURN-TO-ORIGIN. Where to send someone who VOIDS and chooses "remove", or
   // who closes the document: the page they came FROM. The linking site puts it in
@@ -351,19 +352,8 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
     markDocumentOpened(id).catch(() => { /* never block reading the document */ });
   }, [id]);
 
-  // STICKY ACTION BAR — the action card must be reachable at ALL times. Once the
-  // full card scrolls out of view, a thinner subheader with one row of buttons
-  // takes over. (On mobile that row reduces to Change requests + Change history.)
-  useEffect(() => {
-    const el = actionCardRef.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      ([entry]) => setShowSticky(!entry.isIntersecting),
-      { threshold: 0, rootMargin: '-8px 0px 0px 0px' },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  });
+  // (The IntersectionObserver that used to reveal a sticky duplicate bar is
+  // gone: the subheader is always visible, so there is nothing to reveal.)
 
   const doc = detail?.document;
 
@@ -865,7 +855,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                       layout). The duplicate "Change requests" disclosure that used
                       to live here was removed — the SAME requestsOpen state is
                       driven by the disclosure control further down the card and by
-                      the persistent sticky bar, so nothing is lost. */}
+                      the subheader above, so nothing is lost. */}
                   <button type="button"
                     className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-green-800/20 px-4 py-3 text-sm font-medium text-green-900 hover:bg-green-800/5 focus-ring disabled:opacity-60"
                     disabled={notifying} onClick={() => void sendReview()}>
@@ -1053,97 +1043,71 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
             </div>
           )}
 
-          {/* CHANGE REQUESTS + CHANGE HISTORY — the two disclosure drawers. Their
-              buttons make open-vs-closed obvious; the panels themselves are the
-              two SANCTIONED scrollable-bounded surfaces in this codebase. */}
-          {id && (
-            <div className="p-5 sm:p-6">
-              <div className="flex flex-wrap gap-2.5">
-                <button type="button" aria-expanded={requestsOpen}
-                  className={`inline-flex items-center gap-1.5 rounded-lg border px-4 py-2.5 text-sm font-medium focus-ring ${
-                    requestsOpen
-                      ? 'border-gold-400 bg-gold-50 text-gold-900 shadow-inner'
-                      : 'border-green-800/20 text-green-900 hover:bg-green-800/5'}`}
-                  onClick={() => setRequestsOpen((v) => !v)}>
-                  {requestsOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-                  <MessageSquarePlus size={14} /> Change requests
-                  {openRequestCount > 0 && (
-                    <span className="rounded-full bg-gold-400/30 px-1.5 text-[11px] tabular-nums">{openRequestCount}</span>
-                  )}
-                </button>
-                <button type="button" aria-expanded={historyOpen}
-                  className={`inline-flex items-center gap-1.5 rounded-lg border px-4 py-2.5 text-sm font-medium focus-ring ${
-                    historyOpen
-                      ? 'border-green-700 bg-green-50 text-green-900 shadow-inner'
-                      : 'border-green-800/20 text-green-900 hover:bg-green-800/5'}`}
-                  onClick={() => setHistoryOpen((v) => !v)}>
-                  {historyOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-                  <History size={14} /> Change history
-                </button>
-              </div>
-
-              {requestsOpen && (
-                <div className="mt-4 rounded-lg border-l-4 border-gold-400 border-y border-r border-green-800/10 bg-cream-100/30 p-4">
-                  <ContractChangeRequests
-                    documentId={id}
-                    canRequest={editablePhase && !isVoid}
-                    refreshKey={changeKey}
-                    onCount={setOpenRequestCount}
-                    onChanged={() => { void load(); }}
-                  />
-                </div>
-              )}
-              {historyOpen && (
-                <div className="mt-4 rounded-lg border-l-4 border-green-700 border-y border-r border-green-800/10 bg-green-50/20 p-4">
-                  <ContractChangeHistory documentId={id} refreshKey={changeKey} />
-                </div>
-              )}
-            </div>
-          )}
         </div>
       )}
 
-      {/* STICKY SUBHEADER — takes over once the action card scrolls away, so the
-          actions are reachable at ALL times. MOBILE reduces to the two
-          disclosure controls (Change requests + Change history). */}
-      {showDeck && showSticky && id && (
-        <div className="sticky top-14 z-30 -mx-1 px-2 py-2 mb-3 bg-cream-100/95 backdrop-blur border-b border-green-800/15 flex items-center gap-2 overflow-x-auto">
-          {/* desktop-only actions */}
-          {!isOwnerSide && myRoles.length > 0 && editablePhase && !isInactive && (
-            <button type="button" className="hidden sm:inline-flex btn-primary text-xs py-1.5 px-3 shrink-0"
-              onClick={() => void approveReview()}>
-              <CheckCircle2 size={13} /> Accept &amp; sign
-            </button>
-          )}
-          {/* ALWAYS present, on every width */}
-          <button type="button" aria-expanded={requestsOpen}
-            className={`inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium focus-ring shrink-0 ${
-              requestsOpen ? 'border-gold-400 bg-gold-50 text-gold-900' : 'border-green-800/20 text-green-900'}`}
-            onClick={() => setRequestsOpen((v) => !v)}>
-            {requestsOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />} Change requests
-            {openRequestCount > 0 && <span className="rounded-full bg-gold-400/30 px-1 tabular-nums">{openRequestCount}</span>}
-          </button>
-          <button type="button" aria-expanded={historyOpen}
-            className={`inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium focus-ring shrink-0 ${
-              historyOpen ? 'border-green-700 bg-green-50 text-green-900' : 'border-green-800/20 text-green-900'}`}
-            onClick={() => setHistoryOpen((v) => !v)}>
-            {historyOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />} Change history
-          </button>
-          {isOwnerSide && editablePhase && (
-            <button type="button" className="hidden sm:inline-flex btn-secondary text-xs py-1.5 px-3 shrink-0"
-              disabled={notifying} onClick={() => void sendReview()}>
-              {/* Same action as the Notify card above — one label for one thing. */}
-              <Send size={13} /> Notify for review
-            </button>
-          )}
-          {canVoid && (
-            <button type="button"
-              className="hidden sm:inline-flex items-center gap-1 rounded-lg border border-red-300 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50 focus-ring shrink-0 ml-auto"
-              onClick={() => setVoidModal(true)}>
-              Void contract
-            </button>
-          )}
-        </div>
+      {/* CONTRACT SUBHEADER — the single home for the drawer controls. It
+          replaces BOTH the inline button pair that used to sit inside the action
+          card AND the sticky bar that duplicated them: the duplicates toggled the
+          same state, so pressing one opened a drawer back at the original
+          location, off-screen. One set of buttons, drawer opens from here. */}
+      {showDeck && id && (
+        <ContractSubheader
+          openRequest={drawerRequest ?? undefined}
+          drawers={[
+            {
+              key: 'notes',
+              label: 'Notes',
+              icon: <StickyNote size={14} />,
+              render: () => <ContractNotes documentId={id} />,
+            },
+            {
+              key: 'requests',
+              label: 'Change requests',
+              icon: <MessageSquarePlus size={14} />,
+              tone: 'gold',
+              count: openRequestCount,
+              render: () => (
+                <ContractChangeRequests
+                  documentId={id}
+                  canRequest={editablePhase && !isVoid}
+                  refreshKey={changeKey}
+                  onCount={setOpenRequestCount}
+                  onChanged={() => { void load(); }}
+                />
+              ),
+            },
+            {
+              key: 'history',
+              label: 'Change history',
+              icon: <History size={14} />,
+              render: () => <ContractChangeHistory documentId={id} refreshKey={changeKey} />,
+            },
+          ]}
+          extras={
+            <>
+              {!isOwnerSide && myRoles.length > 0 && editablePhase && !isInactive && (
+                <button type="button" className="hidden sm:inline-flex btn-primary text-xs py-1.5 px-3 shrink-0"
+                  onClick={() => void approveReview()}>
+                  <CheckCircle2 size={13} /> Accept &amp; sign
+                </button>
+              )}
+              {isOwnerSide && editablePhase && (
+                <button type="button" className="hidden sm:inline-flex btn-secondary text-xs py-1.5 px-3 shrink-0"
+                  disabled={notifying} onClick={() => void sendReview()}>
+                  <Send size={13} /> Notify for review
+                </button>
+              )}
+              {canVoid && (
+                <button type="button"
+                  className="hidden sm:inline-flex items-center gap-1 rounded-lg border border-red-300 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50 focus-ring shrink-0 ml-auto"
+                  onClick={() => setVoidModal(true)}>
+                  Void contract
+                </button>
+              )}
+            </>
+          }
+        />
       )}
 
       {/* Gate-0: the contract title is its own CENTERED element; the status
@@ -1245,7 +1209,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           Field · Proceed to Signatures. These are document-authoring affordances,
           not reviewer actions, so they scroll with the document they act on. Only
           ONE bar persists while scrolling — the reviewer action bar above (which
-          carries Accept & sign / Change requests / Change history / Notify / Void).
+          carries Notes / Change requests / Change history / Accept & sign / Notify / Void).
           Two competing stickies previously stacked and fought for the same offset. */}
       {structure && id && state !== 'executed' && (
         <div className="-mx-1 px-1 py-1.5 mb-3 bg-cream-100/95 border-b border-green-800/10 flex flex-wrap items-center gap-2">
@@ -1323,7 +1287,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                         });
                         // comments and change requests are ONE surface now — a
                         // posted comment lands in the change-requests drawer.
-                        setCommentModal(null); setCommentDraft(''); setRequestsOpen(true);
+                        setCommentModal(null); setCommentDraft(''); openDrawer('requests');
                         setChangeKey((k) => k + 1);
                       } catch (e) {
                         setNote(errMessage(e, 'Could not post the comment.'));
@@ -1853,12 +1817,15 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         </section>
       )}
 
-      {/* Change requests + Change history are ONE surface now, carried by the
-          action deck above the title. This bottom copy exists only where the deck
-          does not render (a void document, or the embedded creation view), so
-          there is still exactly one place to reach them. */}
+      {/* Notes + Change requests + Change history live in the SUBHEADER above.
+          This bottom copy renders only where the subheader does not (a void
+          document, or the embedded creation view) — the two are mutually
+          exclusive on `showDeck`, so nothing is ever shown twice. */}
       {id && !showDeck && (
         <div className="mt-5 flex flex-col gap-4">
+          <div className="rounded-lg border border-green-800/12 bg-white p-4">
+            <ContractNotes documentId={id} />
+          </div>
           <div className="rounded-lg border-l-4 border-gold-400 border-y border-r border-green-800/10 bg-cream-100/30 p-4">
             <ContractChangeRequests
               documentId={id}
