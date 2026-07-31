@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Info, MessageSquarePlus } from 'lucide-react';
 import { clauseConditionMet, type ContractField, type FieldStructured, type PartyChoice } from '../../lib/contracts';
+import { fieldSourceTip } from '../../lib/fieldSources';
 
 /**
  * CONTRACT CASCADE — the living-document field renderer.
@@ -707,7 +708,11 @@ function FieldControl({
   }
   if (fmt === 'contacts_list') {
     return <ContactsList f={f} onSaveStructured={onSaveStructured} disabled={disabled}
-      addLabel={f.guidance ?? 'Add another'} />;
+      /* Was f.guidance, which doubled as this button's LABEL rather than being
+         a help bubble. Guidance is being cleared template-wide, so the label
+         comes from the field's own name instead of borrowing a column that is
+         about to be emptied. */
+      addLabel={f.label ? `Add ${f.label.replace(/^Add /i, '')}` : 'Add another'} />;
   }
   if (fmt === 'fee_schedule') {
     return <LeaseFeeBuilder f={f} onSaveStructured={onSaveStructured} disabled={disabled} />;
@@ -723,7 +728,7 @@ function FieldControl({
       : f.responsibility_kind === 'care' ? CARE_PARTY_OPTS
       : PARTY_OPTS;
     return <PartyPicker value={val} disabled={disabled} opts={partyOpts}
-      placeholder={f.guidance ?? 'Select the responsible party'}
+      placeholder="Select the responsible party"
       onChange={(v) => void onSaveStructured(f.field_key, v as FieldStructured)} />;
   }
   if (fmt === 'contact') {
@@ -852,7 +857,9 @@ function FieldControl({
   if (kind === 'longtext' || kind === 'contact') {
     return <textarea rows={kind === 'contact' ? 3 : 2} className={`${inputCls} resize-y`} disabled={disabled}
       value={local} onFocus={() => { editingRef.current = true; }} onChange={(e) => setLocal(e.target.value)} onBlur={save}
-      placeholder={f.guidance ?? undefined} />;
+      /* Was f.guidance used as placeholder text. Guidance is cleared
+         template-wide, so the field's own label carries the hint instead. */
+      placeholder={f.label ?? undefined} />;
   }
   const type = kind === 'date' ? 'date' : kind === 'currency' || kind === 'percent' ? 'text' : 'text';
   return <input type={type} className={inputCls} disabled={disabled}
@@ -1079,10 +1086,26 @@ export function InlineFieldControl({
   // affordances — a required mark, the ⓘ guidance popover, and a suggest-edit
   // affordance for parties who can't directly edit. The per-field comment bubble
   // was removed (it cluttered the prose and its scroll-on-click was disruptive).
+  /* SOURCE TIP replaces the per-field guidance bubble. Guidance said what a
+     field MEANT; the tip says where its value comes FROM — the more useful fact,
+     and the one that answers "this is wrong, where do I fix it?". Editing an
+     imported value here would edit a copy that the next regeneration overwrites,
+     so the tip names the real home instead of offering a control that cannot
+     stick. Hover or focus, no click, so it never covers the prose. */
+  const srcTip = fieldSourceTip(f.field_key);
   const marks = (
     <>
       {f.required && <span className="text-red-700 align-super text-[9px]">*</span>}
-      {f.guidance && <InfoDot text={f.guidance} />}
+      {srcTip && (
+        <span
+          tabIndex={0}
+          title={srcTip}
+          aria-label={srcTip}
+          className="ml-1 align-super text-[9px] text-gold-700/80 cursor-help focus-ring rounded"
+        >
+          ⟲
+        </span>
+      )}
     </>
   );
 
@@ -1393,7 +1416,11 @@ function FieldNode({
       <div className="flex items-center gap-1.5 mb-1">
         <span className="text-[13.5px] font-medium text-green-900">{f.label ?? f.field_key}</span>
         {f.required && <span className="text-red-700 text-xs">*</span>}
-        {f.guidance && <InfoDot text={f.guidance} />}
+        {fieldSourceTip(f.field_key) && (
+          <span tabIndex={0} title={fieldSourceTip(f.field_key) ?? ''}
+            aria-label={fieldSourceTip(f.field_key) ?? ''}
+            className="text-[10px] text-gold-700/80 cursor-help focus-ring rounded">⟲</span>
+        )}
         {editable && (
           <label className="ml-auto flex items-center gap-1 text-[10px] text-muted cursor-pointer select-none">
             <input type="checkbox" checked={na} onChange={(e) => void onNa(f.field_key, e.target.checked)} /> N/A

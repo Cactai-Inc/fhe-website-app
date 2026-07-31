@@ -3,7 +3,7 @@ import {
   clauseConditionMet,
   type ContractField, type SectionDef,
 } from '../../lib/contracts';
-import { InlineFieldControl, InfoDot } from './ContractCascade';
+import { InlineFieldControl } from './ContractCascade';
 
 /**
  * CLAUSE DOCUMENT — the numbered Section › Clause › Field authoring surface, as a
@@ -528,7 +528,6 @@ export function ClauseDocument({
             <h2 className="font-serif text-green-900 text-2xl mb-3 flex items-baseline flex-wrap gap-x-2 gap-y-1 border-b border-green-800/10 pb-1.5">
               <span className="text-gold-ink tabular-nums">{secNum}.</span>
               {section.heading}
-              {section.guidance && <InfoDot text={section.guidance} />}
               {sectionAllOptional && (
                 <span className="text-[11px] text-gold-700/90 font-sans font-medium self-center normal-case tracking-normal">
                   {describeGate(clausesToShow[0]?.conditional_on, fieldByKey)}
@@ -613,7 +612,6 @@ export function ClauseDocument({
                       {clause.heading && (
                         <p className="text-[13px] font-semibold text-green-900 mb-1 flex items-center gap-1.5">
                           {num && <span className="text-muted tabular-nums">{num}</span>}{clause.heading}
-                          {clause.guidance && <InfoDot text={clause.guidance} />}
                         </p>
                       )}
                       {clause.body
