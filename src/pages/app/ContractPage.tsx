@@ -1225,8 +1225,14 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                   can_fill: c.can_fill, can_edit_deal: c.can_edit_deal,
                   can_suggest: c.can_suggest, can_add_clause: c.can_add_clause ?? false,
                 };
+                /* The server refuses to clear the LAST deal editor. Compute the
+                   same condition here so the box is disabled with a reason,
+                   rather than unticking and snapping back on a failed save. */
+                const editors = partyControls.filter(
+                  (x) => x.can_edit_deal && x.party_role !== 'FHE' && x.party_role !== 'COMPANY');
                 return (
                   <PartyControlsCard key={role} role={role} value={value}
+                    lastDealEditor={editors.length <= 1}
                     onChange={(v) => void act(() => setPartyControls(id!, role, v))} />
                 );
               })}

@@ -42,12 +42,17 @@ const ROWS: { key: keyof PartyControlValues; label: string }[] = [
 ];
 
 export function PartyControlsCard({
-  role, value, onChange, disabled = false,
+  role, value, onChange, disabled = false, lastDealEditor = false,
 }: {
   role: string;
   value: PartyControlValues;
   onChange: (v: PartyControlValues) => void;
   disabled?: boolean;
+  /** TRUE when this party is the ONLY one who can edit deal terms. The server
+   *  refuses to clear the last one (set_party_controls raises), but a checkbox
+   *  that visibly unticks and then silently snaps back reads as a bug — so the
+   *  box is disabled here and says why. */
+  lastDealEditor?: boolean;
 }) {
   return (
     <div className="border border-green-800/10 rounded-lg p-3.5">
@@ -55,9 +60,20 @@ export function PartyControlsCard({
       <div className="flex flex-col gap-2.5">
         {ROWS.map((r) => (
           <label key={r.key} className="flex items-center justify-between gap-3">
-            <span className="text-[13px] text-green-900 min-w-0">{r.label}</span>
-            <input type="checkbox" className="accent-green-700 w-4 h-4 shrink-0"
-              checked={value[r.key]} disabled={disabled}
+            <span className="text-[13px] text-green-900 min-w-0">
+              {r.label}
+              {r.key === 'can_edit_deal' && lastDealEditor && value.can_edit_deal && (
+                <span className="block text-[11px] text-muted">
+                  Someone has to be able to edit — turn this on for the other party first.
+                </span>
+              )}
+            </span>
+            <input type="checkbox" className="accent-green-700 w-4 h-4 shrink-0 disabled:opacity-50"
+              checked={value[r.key]}
+              disabled={disabled || (r.key === 'can_edit_deal' && lastDealEditor && value.can_edit_deal)}
+              title={r.key === 'can_edit_deal' && lastDealEditor && value.can_edit_deal
+                ? 'Someone has to be able to edit the terms — turn it on for the other party first.'
+                : undefined}
               onChange={(e) => {
                 const next = { ...value, [r.key]: e.target.checked };
                 // "Can edit deal terms" and "Can suggest changes" are mutually
