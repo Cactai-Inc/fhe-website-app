@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { originFrom } from '../../lib/linkOrigin';
 import {
   FileText, CheckCircle2, Lock, Send, PenLine, ShieldCheck, RotateCcw, MessageSquarePlus,
-  History, StickyNote, ChevronDown,
+  History, StickyNote, ChevronDown, Check,
 } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
 import { useAuth } from '../../contexts/AuthContext';
@@ -608,12 +608,21 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
 
   // Explicit Save — fields already autosave on blur; this re-persists the composed
   // document on demand and confirms, so the creator knows their work is stored.
+  /* The Save BUTTON reports the outcome now — it turns green and reads "Saved"
+     until the next change. The old setNote('Saved.') banner said the same thing
+     a second time, in a green bar further down the page, away from the control
+     that caused it. */
+  const [justSaved, setJustSaved] = useState(false);
   async function saveNow() {
     setError(null); setNote(null); setSaving(true);
-    try { await saveContract(id!); await load(); setNote('Saved.'); }
+    try { await saveContract(id!); await load(); setJustSaved(true); }
     catch (e) { setError(errMessage(e, 'Could not save.')); }
     finally { setSaving(false); }
   }
+
+  /* Any edit clears the saved state, so the button reverts to "Save" the moment
+     there is something to save again. changeKey bumps on every field write. */
+  useEffect(() => { setJustSaved(false); }, [changeKey]);
 
   /* THE CANCEL PATH IS GONE (owner-final). Staff and parties now share the ONE
      void flow — the same 3-page VoidContractModal, the same note field, the same
@@ -857,7 +866,6 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
               key: 'requests',
               label: 'Requests',
               icon: <MessageSquarePlus size={14} />,
-              tone: 'gold',
               count: openRequestCount,
               render: () => (
                 <ContractChangeRequests
@@ -888,10 +896,17 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
               {/* SAVE FIRST (owner spec): the most-used control sits in position 1
                   so it is always in the same place, whatever else is showing. */}
               {isOwnerSide && !isExecuted && (
-                <button type="button" disabled={saving}
-                  className={`${SUBHEADER_BTN} border-green-800/20 bg-white text-green-900 hover:bg-green-800/5 disabled:opacity-60`}
+                <button type="button" disabled={saving || justSaved}
+                  /* Fixed width so gaining the tick and the extra character does
+                     not resize the button and shift everything beside it. */
+                  className={`${SUBHEADER_BTN} sm:w-[7.5rem] disabled:opacity-100 ${
+                    justSaved
+                      ? 'border-green-700 bg-green-50 text-green-800'
+                      : 'border-green-800/20 bg-white text-green-900 hover:bg-green-800/5 disabled:opacity-60'}`}
                   onClick={() => void saveNow()}>
-                  {saving ? 'Saving…' : 'Save'}
+                  {saving ? 'Saving…' : justSaved
+                    ? <><Check size={15} /> Saved</>
+                    : 'Save'}
                 </button>
               )}
               {!isOwnerSide && myRoles.length > 0 && editablePhase && !isInactive && (
@@ -903,19 +918,19 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
               )}
               {/* Moved up from the authoring bar: these act on the document but
                   belong with the other always-visible controls. */}
-              {structure && id && isOwnerSide && editablePhase && (
-                <AddElementButton documentId={id} disabled={!editablePhase}
-                  sections={structure.sections.map((sec) => sec.heading)}
-                  canAddStructure={isOwnerSide}
-                  canAddClause={isOwnerSide || (redline?.can_add_clause ?? false)}
-                  onAdded={() => void act(async () => {})} />
-              )}
               {structure && id && !isExecuted && (
                 <button type="button"
                   className={`${SUBHEADER_BTN} border-green-800/20 bg-white text-green-900 hover:bg-green-800/5`}
                   onClick={() => document.getElementById('contract-signatures')?.scrollIntoView({ behavior: 'smooth' })}>
                   Scroll to Bottom
                 </button>
+              )}
+              {structure && id && isOwnerSide && editablePhase && (
+                <AddElementButton documentId={id} disabled={!editablePhase}
+                  sections={structure.sections.map((sec) => sec.heading)}
+                  canAddStructure={isOwnerSide}
+                  canAddClause={isOwnerSide || (redline?.can_add_clause ?? false)}
+                  onAdded={() => void act(async () => {})} />
               )}
               {isInactive && (
                 <button type="button"
@@ -944,7 +959,8 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         />
       )}
 
-      <div className={`mb-1 ${isInactive ? 'opacity-60' : ''}`}>
+      {/* mb-6: the notify card sat almost against the title. */}
+      <div className={`mb-6 ${isInactive ? 'opacity-60' : ''}`}>
         <div className="flex justify-end">
         <span className={`text-xs font-sans px-2.5 py-1 rounded-full whitespace-nowrap ${
           isTerminated || isVoid ? 'bg-red-100 text-red-800'
@@ -1035,7 +1051,6 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
 
               {/* Result lands where the button is, not below the title off-screen. */}
               {notifying && <p className="body-text text-sm text-green-800 mt-2">Sending notifications…</p>}
-              {!notifying && note && <p className="body-text text-sm text-green-800 mt-2 rounded bg-green-50 px-3 py-1.5">{note}</p>}
               {!notifying && error && <p role="alert" className="body-text text-sm text-red-700 mt-2">{error}</p>}
               {/* Same size as the page's other explanatory copy — it was 11px,
                   smaller than everything around it. */}
@@ -1168,11 +1183,6 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         </div>
       )}
 
-      /* AUTHORING BAR + ADD-A-COMMENT REMOVED 2026-07-31 (owner). The comment
-         feature posted into the change-requests drawer, so it was a second way
-         to say the same thing — and the drawer is now titled "Comments", which
-         is where that conversation belongs. Removing the bar also leaves exactly
-         one control surface on this page: the subheader. */
       {/* VOID — the three-page modal replacing the old hard-void. Page 1 confirm
           + note, page 2 keep-or-remove (PER PARTY), page 3 success. Closing via
           the X on page 1 or 2 does NOT void. */}
@@ -1203,6 +1213,9 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       )}
 
       {error && <p role="alert" className="form-error mb-3">{error}</p>}
+      {/* Kept for the OTHER actions that report here (notify, send for review,
+          re-fill). Save no longer sets it — its button turns green instead, so
+          the outcome appears on the control that caused it. */}
       {note && <p className="mb-3 rounded px-4 py-2 text-sm bg-green-50 text-green-900">{note}</p>}
 
       {/* lifecycle status banners. (There is no cancelled banner: the cancel path
@@ -1421,11 +1434,6 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         );
       })}
 
-      /* The legacy flat-document "Add" toolbar was removed 2026-07-31 (owner).
-         It was a second copy of the subheader's "Add item", gated on !structure —
-         and every contract template is clause-model (HORSE_LEASE_V2 has 23
-         sections), so the branch could never render. Unreachable duplicates are
-         how dead code hides; the subheader's button is the only one now. */
 
 
       {/* (change-request composer removed 2026-07-20, audit M-3: it was

@@ -38,7 +38,6 @@ export interface DrawerSpec {
   /** Rendered only while open, so closed drawers cost nothing. */
   render: () => ReactNode;
   count?: number;
-  tone?: 'gold' | 'green';
 }
 
 const DEFAULT_HEIGHT = 460;
@@ -52,6 +51,12 @@ const MIN_HEIGHT = 160;
 export const SUBHEADER_BTN =
   'inline-flex items-center justify-center gap-1.5 rounded-lg border font-medium focus-ring whitespace-nowrap '
   + 'w-full px-3 py-3 text-sm sm:w-auto sm:px-3.5 sm:py-2 sm:shrink-0';
+
+/* Drawer buttons hold a FIXED width so the row never reflows. "Click to close"
+   is wider than "Comments" or "History", so a variable width shunted every
+   button to its right whenever a drawer opened and back again when it closed.
+   Sized to fit the longest label. */
+const DRAWER_BTN_W = 'sm:w-[9.5rem]';
 
 export function ContractSubheader({
   drawers, extras, openRequest, viewers = [],
@@ -134,15 +139,15 @@ export function ContractSubheader({
                          sm:flex sm:flex-wrap sm:items-center sm:gap-2 sm:pt-0`}>
           {drawers.map((d) => {
             const isOpen = openKey === d.key;
-            const tone = d.tone ?? 'green';
             return (
               <button key={d.key} type="button" aria-expanded={isOpen}
                 onClick={() => toggle(d.key)}
-                className={`${SUBHEADER_BTN} ${
+                className={`${SUBHEADER_BTN} ${DRAWER_BTN_W} ${
                   isOpen
-                    ? (tone === 'gold'
-                        ? 'border-gold-400 bg-gold-50 text-gold-900 shadow-inner'
-                        : 'border-green-700 bg-green-50 text-green-900 shadow-inner')
+                    // ONE open-state look for every drawer (owner: match the
+                    // Requests treatment) — the open drawer is the same kind of
+                    // state whichever one it is.
+                    ? 'border-gold-400 bg-gold-50 text-gold-900 shadow-inner'
                     : 'border-green-800/20 bg-white text-green-900 hover:bg-green-800/5'}`}>
                 {/* No icon while open — see the note above on Undo2/RotateCcw. */}
                 {!isOpen && d.icon}
