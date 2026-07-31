@@ -90,12 +90,31 @@ const CHIP_TONE: Record<Designation, string> = {
 };
 
 function Chips({ r }: { r: DirectoryContact }) {
+  /* DE-DUPLICATED 2026-07-31. Two independent sources fed this: DERIVED
+     designations (computed from horses, documents and the clients row) and the
+     free-text `tags` column. They overlap — a contact tagged "Horse owner" who
+     also owns a horse rendered the chip twice, and Sarah showed
+     CLIENT · HORSE OWNER · Rider · Horse owner.
+     Derived wins: it is computed from evidence and cannot go stale, whereas a
+     tag is whatever someone typed. A tag only renders when nothing derived
+     already says the same thing, compared case- and space-insensitively so
+     "Horse owner" and "HORSE OWNER" collapse together. */
+  const derived = designations(r);
+  const norm = (v: string) => v.toLowerCase().replace(/[\s_-]+/g, '');
+  const seen = new Set(derived.map(norm));
+  const extraTags = (r.tags ?? []).filter((t) => {
+    const k = norm(t);
+    if (seen.has(k)) return false;
+    seen.add(k);          // also collapses duplicates WITHIN tags
+    return true;
+  });
+
   return (
     <span className="flex flex-wrap gap-1">
-      {designations(r).map((d) => (
+      {derived.map((d) => (
         <span key={d} className={`text-[10px] font-sans uppercase tracking-wide px-2 py-0.5 rounded-full border ${CHIP_TONE[d]}`}>{d}</span>
       ))}
-      {(r.tags ?? []).map((t) => (
+      {extraTags.map((t) => (
         <span key={t} className="text-[10px] font-sans px-2 py-0.5 rounded-full bg-cream-100 text-secondary border border-green-800/10">{t}</span>
       ))}
     </span>
@@ -240,26 +259,27 @@ function ContactDirectory({ mode }: { mode: DirectoryMode }) {
           cannot be missed, with one-click filing. */}
       {unfiled.length > 0 && (
         <div className="mb-5 rounded-xl border border-gold-600/40 bg-gold-50 p-4">
-          <p className="text-sm text-gold-900 font-medium mb-1">
-            {unfiled.length} unfiled {unfiled.length === 1 ? 'person' : 'people'}
-          </p>
-          <p className="text-[12.5px] text-gold-900/90 mb-3">
-            These are not on any list yet. File each one so it lands where you would look for it.
+          {/* Title only — the explainer was removed 2026-07-31 (owner): the card
+              says what it is, and the row's own action says what to do. */}
+          <p className="text-sm font-semibold text-gold-900 mb-2.5">
+            {unfiled.length} Unfiled {unfiled.length === 1 ? 'Person' : 'People'}
           </p>
           <div className="flex flex-col gap-1.5">
             {unfiled.map((r) => (
-              <div key={r.id} className="flex flex-wrap items-center gap-2 text-sm">
-                <span className="text-green-900">
+              <div key={r.id} className="flex flex-wrap items-center gap-2 text-sm bg-white/70 rounded-lg px-3 py-2">
+                <span className="text-green-900 font-medium">
                   {[r.first_name, r.last_name].filter(Boolean).join(' ') || r.email || 'Unnamed'}
                 </span>
                 {r.email && <span className="text-[11.5px] text-muted">{r.email}</span>}
-                <span className="ml-auto flex flex-wrap gap-1.5">
-                  {(['LEAD', 'CONTACT', 'DIRECTORY', 'TEAM'] as ContactType[]).map((t) => (
-                    <button key={t} type="button" onClick={() => void file(r.id, t)}
-                      className="text-[11px] px-2.5 py-1 rounded-full border border-green-800/25 text-green-800 hover:bg-green-800/10 focus-ring">
-                      {CONTACT_TYPE_LABEL[t]}
-                    </button>
-                  ))}
+                {/* One action, not four filing shortcuts. Filing is a decision
+                    that needs the whole record in view — a minor attached to a
+                    guardian, for instance, fits none of the four buttons that
+                    used to sit here. */}
+                <span className="ml-auto flex gap-1.5">
+                  <button type="button" onClick={() => setOpen(r)}
+                    className="text-[11px] px-3 py-1 rounded-full border border-green-800/25 text-green-800 hover:bg-green-800/10 focus-ring">
+                    View
+                  </button>
                 </span>
               </div>
             ))}
@@ -343,6 +363,27 @@ function ContactDirectory({ mode }: { mode: DirectoryMode }) {
         {open && (
           <div>
             <div className="mb-3"><Chips r={open} /></div>
+
+            {/* FILING lives here, with the record in view, rather than as four
+                shortcut buttons on the unfiled card. Deciding where someone
+                belongs needs their details — a minor attached to a guardian fits
+                none of the four buckets at a glance. */}
+            <div className="mb-4 rounded-lg border border-green-800/12 bg-cream-100/40 px-3 py-2.5">
+              <p className="text-[11px] uppercase tracking-wide text-muted mb-1.5">
+                {open.contact_type ? 'Filed under' : 'Not filed yet'}
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {(['LEAD', 'CONTACT', 'DIRECTORY', 'TEAM'] as ContactType[]).map((t) => (
+                  <button key={t} type="button" onClick={() => void file(open.id, t)}
+                    className={`text-[11px] px-2.5 py-1 rounded-full border focus-ring ${
+                      open.contact_type === t
+                        ? 'border-green-700 bg-green-50 text-green-900 font-medium'
+                        : 'border-green-800/25 text-green-800 hover:bg-green-800/10'}`}>
+                    {CONTACT_TYPE_LABEL[t]}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm mb-4">
               {([
                 ['Email', open.email ?? '—'],
