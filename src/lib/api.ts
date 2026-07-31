@@ -645,44 +645,87 @@ export async function confirmMyLegalName(first: string, last: string): Promise<v
 }
 
 // ─── Document versioning / re-assignment (staff) ────────────────────────────
-/** A template whose current version some people have not signed. */
-export interface ReassignmentCandidate {
+/* templateReassignmentCandidates() / requireDocumentFromAll() were removed
+ * 2026-07-30 before ever shipping a caller. They were a population-wide sweep
+ * built one step ahead of the owner's actual requirement, which is a PROMPT on
+ * each version bump offering all / choose-who / no-one. Keeping both would have
+ * left two controls writing contact_required_documents with different semantics
+ * — exactly the drift this consolidation exists to remove. The version-decision
+ * flow below is the single path; its RPCs remain in the DB as primitives. */
+
+/** A version bump still awaiting the re-sign decision. */
+export interface PendingVersionDecision {
+  id: string;
   template_key: string;
   title: string;
-  current_version: number;
-  /** Signed an OLDER version — they consented to different wording. */
-  people_out_of_date: number;
-  /** Hold the obligation but have never signed it at all. */
-  people_never_signed: number;
+  from_version: number | null;
+  to_version: number;
+  occurred_at: string;
+  past_signers: number;
 }
 
-/** Who still owes the current version of each document. This is the answer to
- *  "the wording changed — who needs to re-sign?", which previously had no
- *  surface at all: the only control was assigning documents one at a time. */
-export async function templateReassignmentCandidates(): Promise<ReassignmentCandidate[]> {
-  const { data, error } = await supabase.rpc('template_reassignment_candidates');
+/** Version bumps nobody has answered yet. Each one asks: should past signers
+ *  re-sign? Recorded by trigger when a template's version changes, so a wording
+ *  change cannot reach signers without someone deciding what it means for the
+ *  people who already signed the old text. */
+export async function pendingVersionDecisions(): Promise<PendingVersionDecision[]> {
+  const { data, error } = await supabase.rpc('pending_version_decisions');
   if (error) throw error;
-  return (data ?? []) as ReassignmentCandidate[];
+  return (data ?? []) as PendingVersionDecision[];
 }
 
-/** Require the current version of a template from everyone who is behind.
- *  Idempotent — re-running assigns nothing new. Returns how many people it
- *  applies to, so the blast radius is visible before it is relied on. */
-export async function requireDocumentFromAll(templateKey: string): Promise<number> {
-  const { data, error } = await supabase.rpc('require_document_from_all', {
-    p_template_key: templateKey,
+/** Answer a version prompt. 'ALL' requires every past signer, 'SELECTED' the
+ *  named subset, 'NONE' records that nobody re-signs. NONE is stored rather than
+ *  dismissed — it is a real decision and should be auditable. */
+export async function resolveVersionDecision(
+  eventId: string,
+  resolution: 'ALL' | 'SELECTED' | 'NONE',
+  contactIds?: string[],
+): Promise<number> {
+  const { data, error } = await supabase.rpc('resolve_version_decision', {
+    p_event_id: eventId, p_resolution: resolution,
+    p_contact_ids: contactIds ?? null,
   });
   if (error) throw error;
   return (data as number) ?? 0;
 }
 
-/** Require a document from ONE person. The assignment IS the gate: the wall
- *  picks it up and routes them through the normal signing flow. */
-export async function assignDocumentToContact(contactId: string, templateKey: string): Promise<void> {
-  const { error } = await supabase.rpc('assign_document_to_contact', {
-    p_contact_id: contactId, p_template_key: templateKey,
+/* Deliberately NOT wrapped: assign_document_to_contact(). Per-person assignment
+ * already has one home — setContactRequiredDocuments(), the checkbox list on the
+ * client record, which sets the whole set at once. Adding a second single-insert
+ * path would be two controls writing the same table with different semantics
+ * (replace vs append), which is how they drift. The RPC exists in the DB as a
+ * primitive; the UI uses the existing control. */
+
+/** Who signed an older version of a template — the candidate list for a re-sign
+ *  request. Returned in signing order so the newest signers read first. */
+export interface PastSigner {
+  contact_id: string;
+  name: string;
+  email: string | null;
+  signed_version: number | null;
+  signed_at: string | null;
+  /** Already required to re-sign (an obligation row exists). */
+  already_required: boolean;
+}
+
+export async function templatePastSigners(templateKey: string): Promise<PastSigner[]> {
+  const { data, error } = await supabase.rpc('template_past_signers', {
+    p_template_key: templateKey,
   });
   if (error) throw error;
+  return (data ?? []) as PastSigner[];
+}
+
+/** Require a re-sign from a chosen set of past signers. Passing every candidate
+ *  is the "yes, everyone" case; a subset is the "let me choose" case. Returns
+ *  how many obligations were actually created. */
+export async function requireResignFrom(templateKey: string, contactIds: string[]): Promise<number> {
+  const { data, error } = await supabase.rpc('require_resign_from', {
+    p_template_key: templateKey, p_contact_ids: contactIds,
+  });
+  if (error) throw error;
+  return (data as number) ?? 0;
 }
 
 // ─── Payments (read inline off the purchase row) ────────────────────────────

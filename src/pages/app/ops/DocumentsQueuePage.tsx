@@ -17,8 +17,9 @@ import { toErrorMessage } from '../../../lib/ops/errors';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import {
-  listDocuments, templateReassignmentCandidates, requireDocumentFromAll,
-  type ReassignmentCandidate,
+  listDocuments,
+  pendingVersionDecisions, resolveVersionDecision, templatePastSigners,
+  type PendingVersionDecision, type PastSigner,
 } from '../../../lib/api';
 import type { DocumentRow } from '../../../lib/ops/types';
 import { EmptyState } from '../../../lib/ops';
@@ -34,80 +35,164 @@ function filterByStatus(documents: DocumentRow[], status: QueueStatusFilter): Do
 }
 
 /**
- * WHO OWES THE CURRENT VERSION.
+ * VERSION-BUMP DECISION.
  *
- * When a document's wording changes, everyone who signed the old text has
- * consented to something different. Until now the only control was assigning
- * documents to one person at a time from their client page — there was no way to
- * see, let alone act on, "the wording changed, who needs to re-sign?".
+ * When a template's version changes, the people who already signed consented to
+ * DIFFERENT wording. A trigger records each bump as an unresolved event, and this
+ * is where it gets answered — the owner's three choices:
  *
- * Requiring a document does NOT email anyone or interrupt them mid-task: it
- * becomes a gating obligation, so the next time they sign in they are routed
- * through the normal flow — intake pre-filled from what we hold, edit or
- * continue, sign, into the app.
+ *   Everyone      every past signer must re-sign
+ *   Choose who    pick the subset (e.g. exclude someone mid-onboarding)
+ *   No one        recorded, not merely dismissed — deciding nobody re-signs is a
+ *                 real decision and should be auditable
+ *
+ * Requiring does not email or interrupt anyone. It adds a gating obligation, so
+ * at their next sign-in they are routed through the normal flow: intake
+ * pre-filled from what we hold, edit or continue, sign, into the app.
  */
-function ReassignmentPanel() {
-  const [rows, setRows] = useState<ReassignmentCandidate[] | null>(null);
-  const [busy, setBusy] = useState<string | null>(null);
-  const [done, setDone] = useState<Record<string, number>>({});
+function VersionDecisions() {
+  const [rows, setRows] = useState<PendingVersionDecision[] | null>(null);
+  const [picking, setPicking] = useState<PendingVersionDecision | null>(null);
+  const [signers, setSigners] = useState<PastSigner[] | null>(null);
+  const [chosen, setChosen] = useState<Set<string>>(new Set());
+  const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   const load = useCallback(() => {
-    templateReassignmentCandidates()
-      .then(setRows)
-      .catch(() => setRows([]));
+    pendingVersionDecisions().then(setRows).catch(() => setRows([]));
   }, []);
   useEffect(load, [load]);
 
-  if (!rows || rows.length === 0) return null;
-
-  async function requireAll(key: string) {
-    setBusy(key); setErr(null);
+  async function answer(ev: PendingVersionDecision, res: 'ALL' | 'NONE') {
+    setBusy(true); setErr(null);
     try {
-      const n = await requireDocumentFromAll(key);
-      setDone((d) => ({ ...d, [key]: n }));
+      await resolveVersionDecision(ev.id, res);
+      setPicking(null);
       load();
     } catch (e) {
-      setErr(toErrorMessage(e, 'Could not require that document.'));
-    } finally {
-      setBusy(null);
+      setErr(toErrorMessage(e, 'Could not record that decision.'));
+    } finally { setBusy(false); }
+  }
+
+  async function openPicker(ev: PendingVersionDecision) {
+    setPicking(ev); setSigners(null); setErr(null);
+    try {
+      const list = await templatePastSigners(ev.template_key);
+      setSigners(list);
+      // Default to everyone selected: the common case is "all but one".
+      setChosen(new Set(list.map((s) => s.contact_id)));
+    } catch (e) {
+      setErr(toErrorMessage(e, 'Could not load past signers.'));
+      setSigners([]);
     }
   }
 
+  async function confirmSelected() {
+    if (!picking) return;
+    setBusy(true); setErr(null);
+    try {
+      await resolveVersionDecision(picking.id, 'SELECTED', Array.from(chosen));
+      setPicking(null);
+      load();
+    } catch (e) {
+      setErr(toErrorMessage(e, 'Could not record that decision.'));
+    } finally { setBusy(false); }
+  }
+
+  if (!rows || rows.length === 0) return null;
+
   return (
     <div className="mb-8 rounded-xl border border-gold-600/40 bg-gold-50 p-4">
-      <p className="text-sm font-medium text-gold-900 mb-1">Documents people still owe</p>
+      <p className="text-sm font-medium text-gold-900 mb-1">
+        {rows.length} document {rows.length === 1 ? 'version needs' : 'versions need'} a decision
+      </p>
       <p className="text-[12.5px] text-gold-900/85 mb-3">
-        These have people who signed an older version, or never signed at all.
-        Requiring one gates those accounts until they re-sign — they are taken
-        through the normal flow with their details already filled in.
+        The wording changed. Anyone who signed the previous version agreed to
+        different text — choose who should sign again.
       </p>
       {err && <p role="alert" className="form-error mb-2">{err}</p>}
-      <div className="flex flex-col gap-1.5">
+
+      <div className="flex flex-col gap-2">
         {rows.map((r) => (
-          <div key={r.template_key} className="flex flex-wrap items-center gap-2 text-sm">
-            <span className="text-green-900">{r.title}</span>
-            <span className="text-[11.5px] text-muted">
-              v{r.current_version}
-              {r.people_out_of_date > 0 && ` · ${r.people_out_of_date} on an older version`}
-              {r.people_never_signed > 0 && ` · ${r.people_never_signed} never signed`}
-            </span>
-            <span className="ml-auto">
-              {done[r.template_key] !== undefined ? (
-                <span className="text-[11.5px] text-green-800 font-medium">
-                  Required from {done[r.template_key]}
-                </span>
-              ) : (
-                <button type="button" disabled={busy === r.template_key}
-                  onClick={() => void requireAll(r.template_key)}
-                  className="text-[11px] px-2.5 py-1 rounded-full border border-green-800/25 text-green-800 hover:bg-green-800/10 focus-ring disabled:opacity-50">
-                  {busy === r.template_key ? 'Requiring…' : 'Require from everyone'}
-                </button>
-              )}
-            </span>
+          <div key={r.id} className="bg-white/70 rounded-lg px-3 py-2.5">
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="text-green-900 font-medium">{r.title}</span>
+              <span className="text-[11.5px] text-muted">
+                v{r.from_version ?? 0} → v{r.to_version}
+                {` · ${r.past_signers} signed the older version`}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              <button type="button" disabled={busy || r.past_signers === 0}
+                onClick={() => void answer(r, 'ALL')}
+                className="text-[11px] px-2.5 py-1 rounded-full bg-green-800 text-white hover:bg-green-700 focus-ring disabled:opacity-40">
+                Everyone re-signs
+              </button>
+              <button type="button" disabled={busy || r.past_signers === 0}
+                onClick={() => void openPicker(r)}
+                className="text-[11px] px-2.5 py-1 rounded-full border border-green-800/25 text-green-800 hover:bg-green-800/10 focus-ring disabled:opacity-40">
+                Choose who
+              </button>
+              <button type="button" disabled={busy}
+                onClick={() => void answer(r, 'NONE')}
+                className="text-[11px] px-2.5 py-1 rounded-full border border-green-800/20 text-muted hover:bg-green-800/5 focus-ring disabled:opacity-40">
+                No one
+              </button>
+            </div>
           </div>
         ))}
       </div>
+
+      {picking && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-green-950/40 px-4"
+          role="dialog" aria-modal="true" aria-labelledby="vd-heading">
+          <div className="bg-white rounded-2xl border border-green-800/10 p-6 max-w-md w-full max-h-[80vh] overflow-y-auto">
+            <h2 id="vd-heading" className="font-serif text-lg text-green-800 mb-1">
+              Who should re-sign {picking.title}?
+            </h2>
+            <p className="text-[12.5px] text-muted mb-4">
+              Everyone below signed v{picking.from_version ?? 0} or earlier. Unticking
+              someone leaves their existing signature in place.
+            </p>
+            {signers === null ? (
+              <p className="text-sm text-muted">Loading…</p>
+            ) : signers.length === 0 ? (
+              <p className="text-sm text-muted">Nobody has signed an older version.</p>
+            ) : (
+              <div className="flex flex-col gap-1.5 mb-4">
+                {signers.map((s) => (
+                  <label key={s.contact_id}
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-lg border border-green-800/12 cursor-pointer hover:bg-green-50/50">
+                    <input type="checkbox" className="accent-green-700 w-[17px] h-[17px]"
+                      checked={chosen.has(s.contact_id)}
+                      onChange={() => setChosen((prev) => {
+                        const n = new Set(prev);
+                        if (n.has(s.contact_id)) n.delete(s.contact_id); else n.add(s.contact_id);
+                        return n;
+                      })} />
+                    <span className="min-w-0">
+                      <span className="block text-sm text-green-900">{s.name}</span>
+                      <span className="block text-[11px] text-muted">
+                        signed v{s.signed_version ?? 0}
+                        {s.already_required && ' · already required'}
+                      </span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            )}
+            <div className="flex justify-end gap-2">
+              <button type="button" className="btn-secondary text-sm" disabled={busy}
+                onClick={() => setPicking(null)}>Cancel</button>
+              <button type="button" className="btn-primary text-sm"
+                disabled={busy || chosen.size === 0}
+                onClick={() => void confirmSelected()}>
+                {busy ? 'Saving…' : `Require from ${chosen.size}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -155,7 +240,7 @@ export default function DocumentsQueuePage() {
         </Link>
       </div>
 
-      <ReassignmentPanel />
+      <VersionDecisions />
 
       {error ? (
         <div role="alert" className="py-8">
