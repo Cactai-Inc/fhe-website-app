@@ -101,7 +101,11 @@ export function ContractSubheader({
 
   return (
     // -mx cancels <main>'s px so the bar reaches the nav and the window edge.
-    <div className="sticky top-14 z-30 -mt-6 sm:-mt-9 mb-5 -mx-4 sm:-mx-8 xl:-mx-12">
+    // -mt cancels <main>'s TOP padding so the bar begins flush against the app
+    // header on page load, not only once you have scrolled far enough for
+    // `sticky` to engage. -mx cancels its side padding so the bar reaches the
+    // nav on the left and the window edge on the right.
+    <div className="sticky top-14 z-30 -mt-6 sm:-mt-9 mb-6 -mx-4 sm:-mx-8 xl:-mx-12">
       <div className="bg-cream-100/95 backdrop-blur border-b border-green-800/15 px-4 sm:px-8 xl:px-12 py-2.5">
         <div className="flex flex-wrap items-center gap-2">
           {drawers.map((d) => {

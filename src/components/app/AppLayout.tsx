@@ -106,9 +106,17 @@ const PLATFORM_NAV: NavItem[] = [
  * thing: WORK queues (Inbound, Support) and a list of PEOPLE (Leads). Leads
  * belongs with the other person-lists; the queues belong with the rest of the
  * day-to-day management surfaces. */
-const MANAGEMENT_EXTRA: NavItem[] = [
+const MANAGEMENT_GROUP: NavItem[] = [
   { to: '/app/ops/intake', label: 'Inbound', icon: Mail },
   { to: '/app/ops/support', label: 'Support', icon: LifeBuoy },
+  // Servicing folded in 2026-07-31: three links did not justify a heading of
+  // their own, and they are day-to-day management like the queues above.
+  { to: '/app/ops/lessons', label: 'Lessons', icon: GraduationCap, module: 'mod.lessons' },
+  { to: '/app/ops/horse-records', label: 'Horses', icon: Boxes },
+  { to: '/app/ops/documents', label: 'Documents', icon: FileText },
+  // Payment review is a management task; Business is hidden until the reporting
+  // and business-ops surfaces that belong there actually exist.
+  { to: '/app/ops/payments/review', label: 'Payment review', icon: ReceiptText },
 ];
 /* PEOPLE — everyone we know, one list per relationship to the business:
  *   Leads      potential future clients (the campaign list)
@@ -124,14 +132,9 @@ const ACCOUNTS_GROUP: NavItem[] = [
   { to: '/app/ops/team', label: 'Team', icon: Contact },
   { to: '/app/ops/directory', label: 'Directory', icon: BookOpen },
 ];
-const SERVICING_GROUP: NavItem[] = [
-  { to: '/app/ops/lessons', label: 'Lessons', icon: GraduationCap, module: 'mod.lessons' },
-  { to: '/app/ops/horse-records', label: 'Horses', icon: Boxes },
-  { to: '/app/ops/documents', label: 'Documents', icon: FileText },
-];
-const BUSINESS_GROUP: NavItem[] = [
-  { to: '/app/ops/payments/review', label: 'Payment review', icon: ReceiptText },
-];
+/* SERVICING and BUSINESS were folded into Management 2026-07-31 (owner): the
+ * goal is fewer headings, not more. Their items live in MANAGEMENT_GROUP above.
+ * BUSINESS_GROUP returns when there is more in it than a single link. */
 const COMMUNITY_GROUP: NavItem[] = [
   { to: '/app/ops/activity', label: 'Activity', icon: Activity },
   { to: '/app/ops/evaluations', label: 'Evaluations', icon: FileText },
@@ -155,7 +158,7 @@ const SETTINGS_GROUP: NavItem[] = [
 
 // kept for compatibility with anything importing MANAGE_NAV
 export const MANAGE_NAV: NavItem[] = [
-  ...MANAGEMENT_EXTRA, ...ACCOUNTS_GROUP, ...SERVICING_GROUP, ...BUSINESS_GROUP,
+  ...MANAGEMENT_GROUP, ...ACCOUNTS_GROUP,
   ...COMMUNITY_GROUP, ...MODULES_GROUP, ...SETTINGS_GROUP,
 ];
 
@@ -180,10 +183,8 @@ export function manageNavGroups(
        They sat under a separate "Front desk" heading alongside Leads — a list of
        people — which put a queue and a roster under one label. Front desk is
        gone; the queues live here and Leads moved to People. */
-    { key: 'management', label: 'Management', items: visible(MANAGEMENT_EXTRA), defaultOpen: true },
+    { key: 'management', label: 'Management', items: visible(MANAGEMENT_GROUP), defaultOpen: true },
     { key: 'accounts', label: 'People', items: visible(ACCOUNTS_GROUP), defaultOpen: true },
-    { key: 'servicing', label: 'Servicing', items: visible(SERVICING_GROUP), defaultOpen: true },
-    { key: 'business', label: 'Business', items: visible(BUSINESS_GROUP) },
     { key: 'community', label: 'Community', items: visible(COMMUNITY_GROUP) },
     { key: 'modules', label: 'Modules', items: visible(MODULES_GROUP) },
     { key: 'settings', label: 'Settings', items: visible(SETTINGS_GROUP) },
@@ -670,9 +671,15 @@ export default function AppLayout() {
         {showRail && (
           <aside className="hidden lg:block w-60 xl:w-64 shrink-0 border-r border-green-800/10 bg-cream-100/40">
             <nav className="p-3 sticky top-14 h-[calc(100dvh-3.5rem)] overflow-y-auto">
-              <p className="px-3 pt-1 pb-2 text-[10px] tracking-widest uppercase text-muted font-semibold">
-                {isSuperAdmin ? 'Platform' : isAdmin ? 'Management' : 'Servicing'}
-              </p>
+              {/* The static heading here used to read "Management", duplicating
+                  the Management GROUP below it — two identical labels in one nav.
+                  Platform still gets one because it is the super-admin's only
+                  section; a tenant's rail is self-describing. */}
+              {isSuperAdmin && (
+                <p className="px-3 pt-1 pb-2 text-[10px] tracking-widest uppercase text-muted font-semibold">
+                  Platform
+                </p>
+              )}
               {!isSuperAdmin && (
                 <div className="mb-1 flex flex-col gap-0.5">
                   <CommunityNav indentClass="pl-9" />
