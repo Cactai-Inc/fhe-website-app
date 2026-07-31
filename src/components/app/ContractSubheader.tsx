@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { ChevronDown } from 'lucide-react';
 
 /**
  * CONTRACT SUBHEADER — the contract workspace's own toolbar.
@@ -44,8 +45,13 @@ const DEFAULT_HEIGHT = 460;
 const MIN_HEIGHT = 160;
 
 /** One button size for every control in this bar — drawers and actions alike. */
+/* One button size for every control in this bar.
+   MOBILE gets bigger targets and a grid cell (w-full + centred) rather than a
+   cramped row — at most three across, most often two — because a mistaken tap
+   here can void a contract. Desktop keeps the compact inline size. */
 export const SUBHEADER_BTN =
-  'inline-flex items-center gap-1.5 rounded-lg border px-3.5 py-2 text-sm font-medium focus-ring shrink-0 whitespace-nowrap';
+  'inline-flex items-center justify-center gap-1.5 rounded-lg border font-medium focus-ring whitespace-nowrap '
+  + 'w-full px-3 py-3 text-sm sm:w-auto sm:px-3.5 sm:py-2 sm:shrink-0';
 
 export function ContractSubheader({
   drawers, extras, openRequest, viewers = [],
@@ -63,6 +69,7 @@ export function ContractSubheader({
   openRequest?: { key: string; nonce: number };
 }) {
   const [openKey, setOpenKey] = useState<string | null>(null);
+  const [barOpen, setBarOpen] = useState(false);
   const [height, setHeight] = useState(DEFAULT_HEIGHT);
   const dragRef = useRef<{ startY: number; startH: number } | null>(null);
 
@@ -75,6 +82,7 @@ export function ContractSubheader({
   }, [requestedKey, nonce]);
 
   const toggle = useCallback((key: string) => {
+    setBarOpen(true);
     setOpenKey((cur) => {
       const next = cur === key ? null : key;
       setHeight(DEFAULT_HEIGHT);   // resized state is dropped on every close
@@ -98,6 +106,9 @@ export function ContractSubheader({
   });
 
   const active = drawers.find((d) => d.key === openKey) ?? null;
+  // Collapsed by default on MOBILE only: the bar is worth its space on a wide
+  // screen, but on a phone it would push the document off the first screen.
+  // Opening a drawer reveals the controls, so the state can never strand you.
 
   return (
     // -mx cancels <main>'s px so the bar reaches the nav and the window edge.
@@ -107,7 +118,20 @@ export function ContractSubheader({
     // nav on the left and the window edge on the right.
     <div className="sticky top-14 z-30 -mt-6 sm:-mt-9 mb-6 -mx-4 sm:-mx-8 xl:-mx-12">
       <div className="bg-cream-100/95 backdrop-blur border-b border-green-800/15 px-4 sm:px-8 xl:px-12 py-2.5">
-        <div className="flex flex-wrap items-center gap-2">
+        {/* MOBILE toggle. The bar stays sticky under the app header either way —
+            collapsing hides the CONTROLS, not the bar, so the affordance to bring
+            them back is always in the same place. */}
+        <button type="button" onClick={() => setBarOpen((v) => !v)}
+          aria-expanded={barOpen}
+          className="sm:hidden w-full flex items-center justify-between py-1 text-left">
+          <span className="text-[13px] font-medium text-green-900">
+            {active ? active.label : 'Contract actions'}
+          </span>
+          <ChevronDown size={16} className={`text-muted transition-transform ${barOpen ? '' : '-rotate-90'}`} />
+        </button>
+
+        <div className={`${barOpen ? 'grid' : 'hidden'} grid-cols-2 gap-2 pt-2
+                         sm:flex sm:flex-wrap sm:items-center sm:gap-2 sm:pt-0`}>
           {drawers.map((d) => {
             const isOpen = openKey === d.key;
             const tone = d.tone ?? 'green';

@@ -24,9 +24,7 @@ type IncludeFn = (fieldKey: string, included: boolean) => void | Promise<void>;
 type NaFn = (fieldKey: string, isNa: boolean) => void | Promise<void>;
 type ControlFn = (fieldKey: string, override: ContractField['control_override']) => void | Promise<void>;
 /** A party proposes an edit to a field they can't directly change (redline). */
-type SuggestFn = (field: ContractField) => void;
 /** Open a comment anchored to a specific field. */
-type CommentFn = (field: ContractField) => void;
 
 /** Party options. The manage side offers Care Provider; the cost side offers a
  *  "same as responsible party" default plus specific parties / shared split. */
@@ -1033,7 +1031,7 @@ function fieldDisplayValue(f: ContractField): string {
  *  (party / contact / pair / location) fall back to the block FieldControl inside
  *  a compact inline-block wrapper, since they can't collapse to a single word. */
 export function InlineFieldControl({
-  f, editable, onSave, onSaveResponsibility, onSaveStructured, onSuggestEdit, canSuggest = false,
+  f, editable, onSave, onSaveResponsibility, onSaveStructured,
 }: {
   f: ContractField;
   editable: boolean;
@@ -1041,9 +1039,6 @@ export function InlineFieldControl({
   onSaveResponsibility: SaveRespFn;
   onSaveStructured: SaveStructFn;
   /** Accepted for call-site compatibility; the inline comment bubble was removed. */
-  onCommentField?: (f: ContractField) => void;
-  onSuggestEdit?: (f: ContractField) => void;
-  canSuggest?: boolean;
 }) {
   const disabled = !editable || !f.can_edit;
   const fmt = f.format_type ?? '';
@@ -1057,10 +1052,6 @@ export function InlineFieldControl({
     <>
       {f.required && <span className="text-red-700 align-super text-[9px]">*</span>}
       {f.guidance && <InfoDot text={f.guidance} />}
-      {onSuggestEdit && !f.can_edit && canSuggest && (
-        <button type="button" className="text-gold-700 hover:text-gold-900 underline align-super text-[10px]"
-          title="Suggest a change" onClick={() => onSuggestEdit(f)}>✎</button>
-      )}
     </>
   );
 
@@ -1309,7 +1300,6 @@ function conditionMet(f: ContractField, byKey: Map<string, ContractField>): bool
 /** One field + its cascading children. */
 function FieldNode({
   f, childrenByParent, byKey, onSave, onSaveResponsibility, onSaveStructured, onInclude, onNa, onControl, canSetControl, editable,
-  onSuggestEdit, onCommentField, canSuggest,
 }: {
   f: ContractField;
   childrenByParent: Map<string, ContractField[]>;
@@ -1317,7 +1307,6 @@ function FieldNode({
   onSave: SaveFn; onSaveResponsibility: SaveRespFn; onSaveStructured: SaveStructFn; onInclude: IncludeFn; onNa: NaFn; onControl: ControlFn;
   canSetControl: boolean;
   editable: boolean;
-  onSuggestEdit?: SuggestFn; onCommentField?: CommentFn; canSuggest?: boolean;
 }) {
   // A pair COST child is rendered inside its manage field's mini-block, never as its
   // own row — hide it here.
@@ -1363,14 +1352,6 @@ function FieldNode({
         )}
         {/* Always-on comment affordance; suggest-a-change appears when the field
             isn't directly editable by the caller but suggestions are allowed. */}
-        {onCommentField && (
-          <button type="button" className={`text-[10px] text-muted hover:text-green-800 ${f.is_optional && included && editable ? '' : 'ml-auto'}`}
-            onClick={() => onCommentField(f)} title="Comment on this field">💬</button>
-        )}
-        {onSuggestEdit && !f.can_edit && canSuggest && (
-          <button type="button" className="text-[10px] text-gold-700 hover:text-gold-900 underline"
-            onClick={() => onSuggestEdit(f)} title="Suggest a change to this field">suggest</button>
-        )}
       </div>
       {!na && <FieldControl f={f} onSave={onSave} onSaveResponsibility={onSaveResponsibility} onSaveStructured={onSaveStructured} disabled={!editable || !f.can_edit} />}
       {na && <p className="text-xs text-muted italic">Marked not applicable.</p>}
@@ -1393,8 +1374,7 @@ function FieldNode({
           {kids.filter((k) => conditionMet(k, byKey)).map((k) => (
             <FieldNode key={k.field_key} f={k} childrenByParent={childrenByParent} byKey={byKey}
               onSave={onSave} onSaveResponsibility={onSaveResponsibility} onSaveStructured={onSaveStructured} onInclude={onInclude} onNa={onNa}
-              onControl={onControl} canSetControl={canSetControl} editable={editable}
-              onSuggestEdit={onSuggestEdit} onCommentField={onCommentField} canSuggest={canSuggest} />
+              onControl={onControl} canSetControl={canSetControl} editable={editable} />
           ))}
         </div>
       )}
@@ -1405,7 +1385,6 @@ function FieldNode({
 /** Renders one subject-section's cascading fields. */
 export function ContractCascade({
   fields, onSave, onSaveResponsibility, onSaveStructured, onInclude, onNa, onControl, canSetControl = false, editable,
-  onSuggestEdit, onCommentField, canSuggest = false,
 }: {
   fields: ContractField[];
   onSave: SaveFn;
@@ -1416,9 +1395,6 @@ export function ContractCascade({
   onControl: ControlFn;
   canSetControl?: boolean;
   editable: boolean;
-  onSuggestEdit?: SuggestFn;
-  onCommentField?: CommentFn;
-  canSuggest?: boolean;
 }) {
   const { roots, childrenByParent, byKey } = useMemo(() => {
     const byKey = new Map(fields.map((f) => [f.field_key, f]));
@@ -1437,8 +1413,7 @@ export function ContractCascade({
       {roots.filter((f) => conditionMet(f, byKey)).map((f) => (
         <FieldNode key={f.field_key} f={f} childrenByParent={childrenByParent} byKey={byKey}
           onSave={onSave} onSaveResponsibility={onSaveResponsibility} onSaveStructured={onSaveStructured} onInclude={onInclude} onNa={onNa}
-          onControl={onControl} canSetControl={canSetControl} editable={editable}
-          onSuggestEdit={onSuggestEdit} onCommentField={onCommentField} canSuggest={canSuggest} />
+          onControl={onControl} canSetControl={canSetControl} editable={editable} />
       ))}
     </div>
   );

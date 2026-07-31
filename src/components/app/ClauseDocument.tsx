@@ -32,9 +32,6 @@ type FieldCallbacks = {
   onNa: (key: string, na: boolean) => void | Promise<void>;
   onControl: (key: string, ov: unknown) => void | Promise<void>;
   canSetControl: boolean;
-  canSuggest: boolean;
-  onSuggestEdit?: (f: ContractField) => void;
-  onCommentField?: (f: ContractField) => void;
   /** Commit a typed value for a party CONTACT token (LESSOR/LESSEE . ADDRESS /
    *  PHONE / EMAIL / FULL_NAME) — writes to that party's contact record. Absent =
    *  the tokens render read-only (reviewer without edit rights). */
@@ -256,8 +253,7 @@ function renderToken(
       <InlineFieldControl key={key} f={fieldWithAvailableOptions(field, valueByKey)}
         editable={cb.editable && selfGateMet}
         onSave={cb.onSave} onSaveStructured={cb.onSaveStructured as never}
-        onSaveResponsibility={cb.onSaveResponsibility as never}
-        onCommentField={cb.onCommentField} onSuggestEdit={cb.onSuggestEdit} canSuggest={cb.canSuggest} />
+        onSaveResponsibility={cb.onSaveResponsibility as never} />
     );
   }
   // Party contact tokens: editable inputs (write to the party's contact record),
@@ -486,8 +482,7 @@ export function ClauseDocument({
       <span className="text-[13.5px] font-semibold text-green-900">{f.label ?? f.field_key}:</span>
       <InlineFieldControl f={f} editable={cb.editable}
         onSave={cb.onSave} onSaveStructured={cb.onSaveStructured as never}
-        onSaveResponsibility={cb.onSaveResponsibility as never}
-        onCommentField={cb.onCommentField} onSuggestEdit={cb.onSuggestEdit} canSuggest={cb.canSuggest} />
+        onSaveResponsibility={cb.onSaveResponsibility as never} />
     </div>
   );
 
@@ -576,8 +571,7 @@ export function ClauseDocument({
                       {!selfLabels && <span>{f.label ?? f.field_key}</span>}
                       <InlineFieldControl f={fieldWithAvailableOptions(f, valueByKey)} editable={cb.editable}
                         onSave={cb.onSave} onSaveStructured={cb.onSaveStructured as never}
-                        onSaveResponsibility={cb.onSaveResponsibility as never}
-                        onCommentField={cb.onCommentField} onSuggestEdit={cb.onSuggestEdit} canSuggest={cb.canSuggest} />
+                        onSaveResponsibility={cb.onSaveResponsibility as never} />
                     </span>
                   );
                 };

@@ -16,7 +16,7 @@ import {
   resolveClause, withdrawClause, attachHorseToDocument,
   sendContractToParty, markDocumentOpened,
   setFieldResponsibility, setFieldIncluded, setFieldNa, setFieldControlOverride, setFieldStructured,
-  postContractComment, documentPartiesSummary, captureContactInfo, captureHorseRecord,
+  documentPartiesSummary, captureContactInfo, captureHorseRecord,
   saveContract, inviteCounterparty,
   requestContractTermination, approveContractTermination, declineContractTermination,
   setDocumentPartyArchived, deleteContractWithCopy, clauseConditionMet,
@@ -266,24 +266,13 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   const [changeKey, setChangeKey] = useState(0);
   // Clause structure for clause-model (Section›Clause›Field) documents.
   const [structure, setStructure] = useState<TemplateStructure | null>(null);
-  // Comments UX: visibility toggle, comment count, and the two-step Add-a-Comment
-  // modal (pick a section → author the comment inline in the modal).
-  const [commentModal, setCommentModal] = useState<
-    | { step: 'pick' }
-    | { step: 'write'; anchorRef: string; heading: string }
-    | null
-  >(null);
-  const [commentDraft, setCommentDraft] = useState('');
-  const [commentPosting, setCommentPosting] = useState(false);
   // Parties/horse summary drives the "required info missing" gate on lock, and the
   // capture modal shown when locking with gaps.
   const [partiesSummary, setPartiesSummary] = useState<PartiesHorseSummary | null>(null);
   const [captureParty, setCaptureParty] = useState<PartySummary | null>(null);
-  // Drawer open/closed now lives in ContractSubheader — one owner, one set of
-  // buttons. The page only ever ASKS for a drawer (bump the nonce), which is how
-  // posting a comment can reveal where it landed.
-  const [drawerRequest, setDrawerRequest] = useState<{ key: string; nonce: number } | null>(null);
-  const openDrawer = (key: string) => setDrawerRequest((p) => ({ key, nonce: (p?.nonce ?? 0) + 1 }));
+  // Drawer open/closed lives entirely in ContractSubheader — one owner, one set
+  // of buttons. The page no longer asks for a drawer programmatically: the only
+  // caller was Add-a-Comment, which is gone.
   const [openRequestCount, setOpenRequestCount] = useState(0);
   const [voidModal, setVoidModal] = useState(false);
   /** Mobile-only collapse for the Notify card; desktop always shows it. */
@@ -786,18 +775,10 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
     }
   }, [id, load, doc?.horse_id]);
 
-  // Comment anchored to a specific field — opens the Add-a-Comment modal straight
-  // at the write step, pre-anchored to that field.
-  const commentOnField = useCallback((f: ContractField) => {
-    setCommentDraft('');
-    setCommentModal({ step: 'write', anchorRef: f.field_key, heading: f.label ?? f.field_key });
-  }, []);
-
-  // Suggesting a change to a field a party can't directly edit now flows through
-  // COMMENTS: the ✎ opens the comment modal pinned to that field, so the suggestion
-  // is a pinned comment at that location for the others to review (replacing the
-  // separate redline field-proposal path).
-  const suggestFieldEdit = commentOnField;
+  /* The per-field ✎ "suggest a change" marker and its comment path were removed
+     2026-07-31 (owner). The Requests drawer replaces them: a counterparty opens
+     it, picks the item, and writes the request there — one place for that
+     conversation instead of a superscript icon buried in the prose. */
 
   if (error && !detail) return <p role="alert" className="form-error">{error}</p>;
   if (!detail || !doc) return <p className="body-text text-muted text-sm">Loading the contract…</p>;
@@ -865,11 +846,10 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       {showDeck && id && !isExecuted && (
         <ContractSubheader
           viewers={viewers}
-          openRequest={drawerRequest ?? undefined}
           drawers={[
             {
               key: 'notes',
-              label: 'Notes',
+              label: 'Comments',
               icon: <StickyNote size={14} />,
               render: () => <ContractNotes documentId={id} refreshKey={changeKey} />,
             },
@@ -1188,89 +1168,11 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         </div>
       )}
 
-      {/* AUTHORING bar — now just "Add a Comment". "Add item" and the jump to the
-          signature block moved into the subheader (owner spec 2026-07-31), where
-          they stay reachable without scrolling back up. Add a Comment stays here
-          because it pins to whatever section you are reading. */}
-      {structure && id && state !== 'executed' && (
-        <div className="-mx-1 px-1 py-1.5 mb-3 bg-cream-100/95 border-b border-green-800/10 flex flex-wrap items-center gap-2">
-          {state !== 'void' && (
-            <button type="button" className="btn-outline-gold text-xs inline-flex items-center gap-1"
-              onClick={() => { setCommentModal({ step: 'pick' }); setCommentDraft(''); }}>
-              <MessageSquarePlus size={13} /> Add a Comment
-            </button>
-          )}
-        </div>
-      )}
-      {/* Add-a-Comment modal — step 1: pick the section to pin to; step 2: author
-          the comment inline and post. Everything happens in the modal. */}
-      {commentModal && structure && id && (
-        <div className="fixed inset-0 z-40 bg-black/30 flex items-center justify-center p-4"
-          onClick={() => { setCommentModal(null); setCommentDraft(''); }}>
-          <div className="bg-white rounded-xl border border-green-800/15 p-6 max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-lg"
-            onClick={(e) => e.stopPropagation()}>
-            {commentModal.step === 'pick' ? (
-              <>
-                <h3 className="font-serif text-green-900 mb-1">Add a comment</h3>
-                <p className="text-sm text-muted mb-3">
-                  Choose the section you want to comment on. To comment on a specific
-                  item or field instead, close this window and click the comment
-                  affordance on that item.
-                </p>
-                <div className="max-h-[50vh] overflow-y-auto flex flex-col gap-1">
-                  {structure.sections.map((s) => (
-                    <button key={s.section_key} type="button"
-                      className="text-left text-sm px-3 py-2 rounded-lg hover:bg-cream-100 focus-ring"
-                      onClick={() => setCommentModal({ step: 'write', anchorRef: s.section_key, heading: s.heading })}>
-                      {s.heading}
-                    </button>
-                  ))}
-                </div>
-                <div className="mt-3 text-right">
-                  <button type="button" className="btn-secondary text-xs"
-                    onClick={() => { setCommentModal(null); setCommentDraft(''); }}>Cancel</button>
-                </div>
-              </>
-            ) : (
-              <>
-                <h3 className="font-serif text-green-900 mb-1">Comment</h3>
-                <p className="text-[11px] text-muted mb-2">
-                  On <span className="text-green-900">{commentModal.heading}</span>
-                  <button type="button" className="underline ml-2"
-                    onClick={() => setCommentModal({ step: 'pick' })}>change</button>
-                </p>
-                <textarea rows={4} className="form-input resize-y text-sm w-full" autoFocus
-                  placeholder="Write a comment or a question…"
-                  value={commentDraft} onChange={(e) => setCommentDraft(e.target.value)} />
-                <div className="mt-3 flex justify-end gap-2">
-                  <button type="button" className="btn-secondary text-xs"
-                    onClick={() => { setCommentModal(null); setCommentDraft(''); }}>Cancel</button>
-                  <button type="button" className="btn-primary text-xs"
-                    disabled={commentPosting || !commentDraft.trim()}
-                    onClick={async () => {
-                      if (commentModal.step !== 'write') return;
-                      setCommentPosting(true);
-                      try {
-                        await postContractComment(id, {
-                          body: commentDraft.trim(), anchorKind: 'field',
-                          anchorRef: commentModal.anchorRef,
-                        });
-                        // comments and change requests are ONE surface now — a
-                        // posted comment lands in the change-requests drawer.
-                        setCommentModal(null); setCommentDraft(''); openDrawer('requests');
-                        setChangeKey((k) => k + 1);
-                      } catch (e) {
-                        setNote(errMessage(e, 'Could not post the comment.'));
-                      } finally { setCommentPosting(false); }
-                    }}>
-                    {commentPosting ? 'Posting…' : 'Post comment'}
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+      /* AUTHORING BAR + ADD-A-COMMENT REMOVED 2026-07-31 (owner). The comment
+         feature posted into the change-requests drawer, so it was a second way
+         to say the same thing — and the drawer is now titled "Comments", which
+         is where that conversation belongs. Removing the bar also leaves exactly
+         one control surface on this page: the subheader. */
       {/* VOID — the three-page modal replacing the old hard-void. Page 1 confirm
           + note, page 2 keep-or-remove (PER PARTY), page 3 success. Closing via
           the X on page 1 or 2 does NOT void. */}
@@ -1435,9 +1337,6 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
             onNa: (k, na) => void act(() => setFieldNa(id!, k, na)),
             onControl: (k, ov) => void act(() => setFieldControlOverride(id!, k, ov as never)),
             canSetControl: isOwnerSide,
-            canSuggest: redline?.can_suggest ?? false,
-            onSuggestEdit: suggestFieldEdit,
-            onCommentField: commentOnField,
             onEditPartyContact: editPartyContact,
             onEditHorseRecord: editHorseRecord,
           }}
@@ -1517,26 +1416,16 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
               onNa={(k, na) => void act(() => setFieldNa(id!, k, na))}
               onControl={(k, ov) => void act(() => setFieldControlOverride(id!, k, ov))}
               canSetControl={isOwnerSide}
-              onCommentField={commentOnField}
-              onSuggestEdit={suggestFieldEdit}
-              canSuggest={redline?.can_suggest ?? false}
             />
           </section>
         );
       })}
 
-      {/* Unified "Add" toolbar (M-2): one button for field / section / clause.
-          For clause-model docs the sticky sub-header above provides this, so it's
-          only shown here for legacy flat documents. */}
-      {editablePhase && !showHorseGate && !structure && id && (
-        <div className="mb-5">
-          <AddElementButton documentId={id} disabled={!editablePhase}
-            sections={sections.map(([s]) => s)}
-            canAddStructure={isOwnerSide}
-            canAddClause={isOwnerSide || (redline?.can_add_clause ?? false)}
-            onAdded={() => void act(async () => {})} />
-        </div>
-      )}
+      /* The legacy flat-document "Add" toolbar was removed 2026-07-31 (owner).
+         It was a second copy of the subheader's "Add item", gated on !structure —
+         and every contract template is clause-model (HORSE_LEASE_V2 has 23
+         sections), so the branch could never render. Unreachable duplicates are
+         how dead code hides; the subheader's button is the only one now. */
 
 
       {/* (change-request composer removed 2026-07-20, audit M-3: it was
