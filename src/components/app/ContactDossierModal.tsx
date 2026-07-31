@@ -28,7 +28,10 @@ type Tab = 'record' | 'relationships' | 'documents' | 'orders' | 'account' | 'ac
 const FIELD_GROUPS: { title: string; fields: [string, string][] }[] = [
   { title: 'Name and contact', fields: [
     ['first_name', 'First name'], ['last_name', 'Last name'],
-    ['email', 'Email'], ['phone', 'Phone'], ['mobile', 'Mobile'], ['whatsapp', 'WhatsApp'],
+    ['email', 'Email'],
+    ['phone', 'Phone'], ['phone_ext', 'Phone ext.'],
+    ['mobile', 'Mobile'], ['mobile_ext', 'Mobile ext.'],
+    ['whatsapp', 'WhatsApp'],
     ['date_of_birth', 'Date of birth'],
   ]},
   { title: 'Mailing address', fields: [
