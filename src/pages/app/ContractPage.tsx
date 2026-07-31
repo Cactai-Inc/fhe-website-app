@@ -26,6 +26,7 @@ import {
 import { myWallState, myNameConfirmationState, type NameConfirmationState } from '../../lib/api';
 import { ContractSubheader, SUBHEADER_BTN } from '../../components/app/ContractSubheader';
 import { ContractNotes } from '../../components/app/ContractNotes';
+import { subscribeToContract, useContractPresence } from '../../lib/contractRealtime';
 import { ConfirmNameModal } from '../../components/app/ConfirmNameModal';
 import { CaptureInfoModal } from '../../components/app/CaptureInfoModal';
 import { listStableHorses, type StableHorse } from '../../lib/stable';
@@ -237,7 +238,18 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   const navigate = useNavigate();
   const location = useLocation();
   useDocumentTitle('Contract');
-  const { isStaff } = useAuth();
+  const { isStaff, user, profile } = useAuth();
+
+  /* WHO ELSE IS HERE. Presence uses the same channel pattern as the DM page.
+     The display name is the community persona, falling back to the legal first
+     name — this is a "Claire is here" affordance, not an identity assertion. */
+  const presenceMe = useMemo(
+    () => (user?.id
+      ? { key: user.id, name: profile?.display_name || profile?.first_name || 'Someone' }
+      : null),
+    [user?.id, profile?.display_name, profile?.first_name],
+  );
+  const viewers = useContractPresence(id, presenceMe);
   const [detail, setDetail] = useState<ContractDetail | null>(null);
   const [signingSet, setSigningSet] = useState<SigningSetDoc[]>([]);
   const [redline, setRedline] = useState<RedlineState | null>(null);
@@ -338,6 +350,50 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
     }
   }, [id]);
   useEffect(() => { void load(); }, [load]);
+
+  /* LIVE UPDATES (2026-07-31). Everything on this page persisted immediately but
+     was invisible to the other party until they refreshed — two people reviewing
+     together, likely on a call, each read a stale copy. Sequencing (one party at
+     a time) was rejected: it serialises a naturally simultaneous conversation.
+
+     Append-only surfaces (notes / requests / history) just bump changeKey, which
+     the drawers already watch.
+
+     FIELDS are the careful case: a remote save must not overwrite what you are
+     typing. We reload the document ONLY when no field input is focused; if one
+     is, we mark the page stale and reload the moment focus leaves. Losing
+     someone's half-typed sentence to a background refresh would be a far worse
+     bug than a one-keystroke delay in seeing their edit. */
+  const [remoteStale, setRemoteStale] = useState(false);
+  useEffect(() => {
+    if (!id) return;
+    return subscribeToContract(id, (evt) => {
+      if (evt === 'notes' || evt === 'requests' || evt === 'history') {
+        setChangeKey((k) => k + 1);
+        return;
+      }
+      const el = document.activeElement;
+      const typing = el instanceof HTMLInputElement
+        || el instanceof HTMLTextAreaElement
+        || (el instanceof HTMLElement && el.isContentEditable);
+      if (typing) { setRemoteStale(true); return; }
+      void load();
+    });
+  }, [id, load]);
+
+  // Focus left an input and a remote change is waiting — apply it now.
+  useEffect(() => {
+    if (!remoteStale) return;
+    const onFocusOut = () => {
+      const el = document.activeElement;
+      const stillTyping = el instanceof HTMLInputElement
+        || el instanceof HTMLTextAreaElement
+        || (el instanceof HTMLElement && el.isContentEditable);
+      if (!stillTyping) { setRemoteStale(false); void load(); }
+    };
+    document.addEventListener('focusout', onFocusOut);
+    return () => document.removeEventListener('focusout', onFocusOut);
+  }, [remoteStale, load]);
 
   /* THE CHANGES FREEZE TRIGGER — the counterparty OPENING THE DOCUMENT.
      Once another party has opened the contract, the authoring party's pending
@@ -953,13 +1009,14 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           drawers stay reachable through the bottom fallback below. */}
       {showDeck && id && !isExecuted && (
         <ContractSubheader
+          viewers={viewers}
           openRequest={drawerRequest ?? undefined}
           drawers={[
             {
               key: 'notes',
               label: 'Notes',
               icon: <StickyNote size={14} />,
-              render: () => <ContractNotes documentId={id} />,
+              render: () => <ContractNotes documentId={id} refreshKey={changeKey} />,
             },
             {
               key: 'requests',
@@ -1751,7 +1808,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       {id && !(showDeck && !isExecuted) && (
         <div className="mt-5 flex flex-col gap-4">
           <div className="rounded-lg border border-green-800/12 bg-white p-4">
-            <ContractNotes documentId={id} />
+            <ContractNotes documentId={id} refreshKey={changeKey} />
           </div>
           <div className="rounded-lg border-l-4 border-gold-400 border-y border-r border-green-800/10 bg-cream-100/30 p-4">
             <ContractChangeRequests

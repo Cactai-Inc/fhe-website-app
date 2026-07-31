@@ -48,9 +48,13 @@ export const SUBHEADER_BTN =
   'inline-flex items-center gap-1.5 rounded-lg border px-3.5 py-2 text-sm font-medium focus-ring shrink-0 whitespace-nowrap';
 
 export function ContractSubheader({
-  drawers, extras, openRequest,
+  drawers, extras, openRequest, viewers = [],
 }: {
   drawers: DrawerSpec[];
+  /** Other people looking at this contract right now. Rendered as a quiet
+   *  presence chip — the point is "they can see what you are doing", so it has
+   *  to be visible without competing with the actions. */
+  viewers?: { key: string; name: string }[];
   /** Non-drawer actions. Rendered inside the same bar at the same button size. */
   extras?: ReactNode;
   /** Lets the page open a drawer programmatically — e.g. posting a comment opens
@@ -122,6 +126,17 @@ export function ContractSubheader({
             );
           })}
           {extras}
+          {viewers.length > 0 && (
+            <span
+              className="inline-flex items-center gap-1.5 text-[12px] text-green-800 bg-green-50 border border-green-200 rounded-full px-2.5 py-1 shrink-0"
+              title={viewers.map((v) => v.name).join(', ')}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-green-600 animate-pulse" aria-hidden="true" />
+              {viewers.length === 1
+                ? `${viewers[0].name} is viewing`
+                : `${viewers.length} others viewing`}
+            </span>
+          )}
         </div>
       </div>
 

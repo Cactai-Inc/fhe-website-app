@@ -15,7 +15,14 @@ import {
  * The title is a text input owned by the author — the default is "Note N" from
  * the DB, and renaming saves on blur so there is no separate save affordance.
  */
-export function ContractNotes({ documentId }: { documentId: string }) {
+export function ContractNotes({
+  documentId, refreshKey = 0,
+}: {
+  documentId: string;
+  /** Bumped by the page when a realtime event says notes changed, so the other
+   *  party's message appears without a refresh. */
+  refreshKey?: number;
+}) {
   const [notes, setNotes] = useState<ContractNote[] | null>(null);
   const [open, setOpen] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
@@ -26,21 +33,13 @@ export function ContractNotes({ documentId }: { documentId: string }) {
       .then(setNotes)
       .catch(() => { setNotes([]); setErr('Could not load notes.'); });
   }, [documentId]);
-  useEffect(load, [load]);
+  useEffect(load, [load, refreshKey]);
 
-  // SEED THE FIRST NOTE (owner spec 2026-07-31). An empty drawer taught nobody
-  // what this is for; one real note demonstrates both gestures at once — its
-  // title says to click the text to rename and the header to open.
-  // Guarded on `seeding` so a slow round-trip cannot create two.
-  const [seeding, setSeeding] = useState(false);
-  useEffect(() => {
-    if (notes === null || notes.length > 0 || seeding) return;
-    setSeeding(true);
-    createContractNote(documentId, 'Click to edit to rename, then click anywhere on this header to open')
-      .then(() => load())
-      .catch(() => { /* an empty drawer is a fine fallback */ })
-      .finally(() => setSeeding(false));
-  }, [notes, seeding, documentId, load]);
+  /* The starter note is created SERVER-SIDE by the seed_contract_note trigger on
+     document insert (20260731100000). It used to be seeded here, by whichever
+     browser first opened an empty drawer — with realtime on, two parties opening
+     a fresh contract together would both see an empty list and both seed. The
+     trigger removes the race instead of guarding against it. */
 
   async function addNote() {
     setBusy(true); setErr(null);
