@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { originFrom } from '../../lib/linkOrigin';
+import { supabase } from '../../lib/supabase';
 import {
   FileText, CheckCircle2, Lock, Send, PenLine, ShieldCheck, RotateCcw, MessageSquarePlus,
-  History, StickyNote, ChevronDown, Check,
+  History, StickyNote, Check,
 } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
 import { useAuth } from '../../contexts/AuthContext';
@@ -17,7 +18,7 @@ import {
   sendContractToParty, markDocumentOpened,
   setFieldResponsibility, setFieldIncluded, setFieldNa, setFieldControlOverride, setFieldStructured,
   documentPartiesSummary, captureContactInfo, captureHorseRecord,
-  saveContract, inviteCounterparty,
+  saveContract,
   requestContractTermination, approveContractTermination, declineContractTermination,
   setDocumentPartyArchived, deleteContractWithCopy, clauseConditionMet,
   type ContractDetail, type ContractField, type PartyControls,
@@ -275,11 +276,9 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   // caller was Add-a-Comment, which is gone.
   const [openRequestCount, setOpenRequestCount] = useState(0);
   const [voidModal, setVoidModal] = useState(false);
-  /** Mobile-only collapse for the Notify card; desktop always shows it. */
-  const [notifyOpen, setNotifyOpen] = useState(false);
-  /** The "notify someone else" mini-modal. */
-  const [alsoOpen, setAlsoOpen] = useState(false);
-  const actionCardRef = useRef<HTMLDivElement | null>(null);
+  /** The Send modal: choose which parties are notified, or mail yourself a PDF. */
+  const [sendOpen, setSendOpen] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(false);
   // RETURN-TO-ORIGIN. Where to send someone who VOIDS and chooses "remove", or
   // who closes the document: the page they came FROM. The linking site puts it in
   // router state (fromHere); `originFrom` validates it and falls back to
@@ -289,8 +288,6 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   const returnTo = useRef<string>(originFrom(location.state)).current;
   // Extra recipient emails typed into the Send-for-review card (beyond the emails
   // already on file for each party). The draft is the in-progress input.
-  const [extraEmails, setExtraEmails] = useState<string[]>([]);
-  const [extraEmailDraft, setExtraEmailDraft] = useState('');
   const [saving, setSaving] = useState(false);
   const [notifying, setNotifying] = useState(false);
   // For a staff member who is also a party: their explicit view choice, or
@@ -691,26 +688,45 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   // Notify each counterparty (and any extra emails) to review + sign. Guarded so a
   // second click can't fire while a send is in flight (that previously sent
   // duplicate emails), and it asks for confirmation first, then reports the result.
-  async function sendReview() {
+  /* SEND — to the listed parties only (owner 2026-07-31). The free-text "notify
+     anyone" path is gone: a contract is between its parties, and emailing a
+     non-party a review request implied a standing they do not have. Someone who
+     needs to READ it gets the PDF option below instead. */
+  /* Mail the caller a PDF of the contract AS IT STANDS. Deliberately sends only
+     to the person asking — the endpoint takes no recipient — so an unexecuted
+     contract cannot be pushed to a third party as though it were finished. The
+     point is to hand an adviser the open choices, not to distribute the deal. */
+  async function emailWorkingCopy() {
+    if (pdfBusy || !id) return;
+    setPdfBusy(true); setError(null); setNote(null);
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const token = sess.session?.access_token;
+      const r = await fetch('/api/contract-working-copy', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ documentId: id }),
+      });
+      const payload = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(payload.error || 'Could not send the copy.');
+      setNote(`A working copy is on its way to ${payload.to}.`);
+      setSendOpen(false);
+    } catch (e) {
+      setError(errMessage(e, 'Could not send the working copy.'));
+    } finally { setPdfBusy(false); }
+  }
+
+  async function sendReview(roles: string[] = invitableRoles) {
     if (notifying) return;
-    const recipients = (partiesSummary?.parties ?? [])
-      .filter((p) => invitableRoles.includes(p.party_role) && p.email)
-      .map((p) => p.email as string)
-      .concat(extraEmails);
-    const list = recipients.length ? recipients.join(', ') : 'the assigned parties';
-    if (!window.confirm(`Notify ${list} to review and sign this contract?`)) return;
+    setSendOpen(false);
     setNotifying(true);
     setError(null); setNote(null);
     try {
-      const r = await sendForReview(id!, invitableRoles);
-      const extraRole = invitableRoles[0];
-      let extraSent = 0;
-      if (extraRole && extraEmails.length) {
-        const rs = await Promise.allSettled(extraEmails.map((e) => inviteCounterparty(id!, extraRole, e)));
-        extraSent = rs.filter((x) => x.status === 'fulfilled' && x.value.emailed).length;
-      }
-      const extraNote = extraSent ? ` Also emailed ${extraSent} additional recipient${extraSent === 1 ? '' : 's'}.` : '';
-      setExtraEmails([]); setExtraEmailDraft('');
+      const r = await sendForReview(id!, roles);
+      const extraNote = '';
       setNote(r.skipped > 0
         ? `Notified. Emailed ${r.emailed} of ${r.emailed + r.skipped} part${r.emailed + r.skipped === 1 ? 'y' : 'ies'}; ${r.skipped} could not be emailed (no email on file or email delivery not configured). In-app notifications were sent to parties with an account.${extraNote}`
         : `Notified — all parties were notified by email and in-app.${extraNote}`);
@@ -888,7 +904,24 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           /* SAVE IS POSITION 1. It lived in `extras`, which renders AFTER the
              drawer buttons — so "first in extras" still put it fourth on screen.
              `leading` renders before them. */
-          leading={isOwnerSide && !isExecuted ? (
+          leading={(
+            <>
+              {isOwnerSide && editablePhase && (
+                <button type="button" disabled={notifying}
+                  className={`${SUBHEADER_BTN} sm:w-[7.5rem] border-green-800 bg-green-800 text-white hover:bg-green-700 disabled:opacity-60`}
+                  onClick={() => setSendOpen(true)}>
+                  <Send size={15} /> {notifying ? 'Sending…' : 'Send'}
+                </button>
+              )}
+              {/* Every party can mail THEMSELVES the current state as a PDF. */}
+              {!isOwnerSide && myRoles.length > 0 && !isExecuted && (
+                <button type="button" disabled={pdfBusy}
+                  className={`${SUBHEADER_BTN} border-green-800/20 bg-white text-green-900 hover:bg-green-800/5 disabled:opacity-60`}
+                  onClick={() => void emailWorkingCopy()}>
+                  {pdfBusy ? 'Sending…' : 'Email me a PDF'}
+                </button>
+              )}
+              {isOwnerSide && !isExecuted && (
             <button type="button" disabled={saving || justSaved}
               /* Fixed width so gaining the tick and the extra character does not
                  resize the button and shift everything beside it. */
@@ -901,7 +934,9 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                 ? <><Check size={15} /> Saved</>
                 : 'Save'}
             </button>
-          ) : undefined}
+              )}
+            </>
+          )}
           extras={
             /* The ACTUAL management actions, relocated from the card's Manage
                section (owner spec 2026-07-31). These are the originals — the
@@ -980,137 +1015,6 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         </h1>
       </div>
 
-      {/* ── Action deck (above the title): one card, stacked panels — Manage,
-          Notify, Change History. Available to ALL parties (not just the owner)
-          until the contract is executed; after execution it becomes Terminate +
-          (once inactive) per-party Archive + Change History. Buttons are large and
-          well-spaced so they're hard to mis-tap on mobile. ── */}
-      {showDeck && (
-        <div ref={actionCardRef} className="bg-white border border-green-800/10 rounded-xl mb-5 divide-y divide-green-800/10">
-          {/* MANAGE removed 2026-07-31 (owner spec): Save / Void / Delete /
-              Archive and the reviewer's Accept & sign / Notify now live in the
-              contract subheader, which is always visible. Keeping a second copy
-              here is what produced the duplicate-button problem in the first
-              place. The card is now Notify only, pre-execution. */}
-
-          {/* NOTIFY — one short, wide row on desktop (owner spec 2026-07-31):
-              the button, then who will receive it, then "Notify someone else".
-              It used to stack vertically and consume most of the first screen.
-
-              On MOBILE it stacks and gains a "Send Notification" header that
-              collapses it — on desktop the button already says what the card is,
-              so a title would be redundant chrome. */}
-          {isOwnerSide && editablePhase && (
-            <div className="p-4 sm:p-5">
-              <button type="button"
-                onClick={() => setNotifyOpen((v) => !v)}
-                aria-expanded={notifyOpen}
-                className="sm:hidden w-full flex items-center justify-between text-left mb-2">
-                <span className="font-serif text-base text-green-900">Send Notification</span>
-                <ChevronDown size={16} className={`text-muted transition-transform ${notifyOpen ? '' : '-rotate-90'}`} />
-              </button>
-
-              <div className={`${notifyOpen ? 'flex' : 'hidden'} sm:flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5`}>
-                <button type="button"
-                  className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-green-800/20 bg-white px-3.5 py-2 text-sm font-medium text-green-900 hover:bg-green-800/5 focus-ring disabled:opacity-60 shrink-0"
-                  disabled={notifying} onClick={() => void sendReview()}>
-                  <Send size={15} /> {notifying ? 'Notifying…' : 'Notify for review'}
-                </button>
-
-                {/* Who it goes to, inline rather than as its own labelled block. */}
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 min-w-0 flex-1">
-                  {(partiesSummary?.parties ?? [])
-                    .filter((p) => invitableRoles.includes(p.party_role))
-                    .slice()
-                    .sort(byRoleRank((p) => p.party_role))
-                    .map((p) => {
-                      const rl = p.party_role.charAt(0) + p.party_role.slice(1).toLowerCase();
-                      return (
-                        <span key={p.party_role} className="text-sm text-green-950 flex items-baseline gap-1.5 min-w-0">
-                          <span className="font-semibold shrink-0">{rl}:</span>
-                          {p.email
-                            ? <span className="truncate">{p.email}</span>
-                            : <span className="text-red-700 italic">no email on file</span>}
-                        </span>
-                      );
-                    })}
-                  {extraEmails.map((e, i) => (
-                    <span key={`extra-${i}`} className="text-sm text-green-950 flex items-baseline gap-1.5">
-                      <span className="font-semibold">Also:</span>
-                      <span className="truncate">{e}</span>
-                      <button type="button" className="text-red-700 text-xs underline shrink-0"
-                        onClick={() => setExtraEmails((xs) => xs.filter((_, j) => j !== i))}>remove</button>
-                    </span>
-                  ))}
-                </div>
-
-                <button type="button" onClick={() => setAlsoOpen(true)}
-                  className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-green-800/20 bg-white px-3.5 py-2 text-sm font-medium text-green-900 hover:bg-green-800/5 focus-ring shrink-0">
-                  Notify someone else
-                </button>
-              </div>
-
-              {/* Result lands where the button is, not below the title off-screen. */}
-              {notifying && <p className="body-text text-sm text-green-800 mt-2">Sending notifications…</p>}
-              {!notifying && error && <p role="alert" className="body-text text-sm text-red-700 mt-2">{error}</p>}
-              {/* 13px: it was 11px (too small to read), then text-sm/14px (too
-                  loud for a caption). This sits between them, and the document-
-                  controls caption below now matches it so the page's explanatory
-                  copy is one size. */}
-              <p className={`body-text text-[13px] text-muted mt-2 ${notifyOpen ? '' : 'hidden sm:block'}`}>
-                Notifies each party to review and sign. The signed copy is emailed to
-                everyone automatically once the contract is fully signed.
-              </p>
-            </div>
-          )}
-
-          {/* TERMINATE — executed contracts only, mutual agreement. Plus per-party
-              Archive once the contract is terminated. */}
-          {isExecuted && (
-            <div className="p-5 sm:p-6">
-              <p className="text-[11px] uppercase tracking-wide text-muted mb-3">Manage</p>
-              {terminationRequested ? (
-                iRequestedTermination ? (
-                  <p className="text-[13px] text-gold-800">Termination requested — awaiting the other party's agreement.</p>
-                ) : (
-                  <div className="flex flex-col gap-2">
-                    <p className="text-[13px] text-green-950">
-                      {isStaff ? 'The barn has' : 'The other party has'} requested to terminate this contract.
-                      {doc?.termination_request_reason ? ` Reason: ${doc.termination_request_reason}` : ''}
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-2.5">
-                      <button type="button" className="btn-primary text-sm justify-center py-3 sm:w-auto"
-                        onClick={approveTermination}>Approve termination</button>
-                      <button type="button"
-                        className="inline-flex items-center justify-center rounded-lg border border-green-800/20 px-4 py-3 text-sm font-medium text-secondary hover:bg-green-800/5 focus-ring"
-                        onClick={declineTermination}>Decline</button>
-                    </div>
-                  </div>
-                )
-              ) : (
-                <button type="button"
-                  className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-300 px-4 py-3 text-sm font-medium text-red-700 hover:bg-red-50 focus-ring w-full sm:w-auto"
-                  onClick={requestTermination}>
-                  Terminate
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Post-termination / inactive: per-party Archive (hide from my list). */}
-          {isTerminated && (
-            <div className="p-5 sm:p-6">
-              <p className="text-[11px] uppercase tracking-wide text-muted mb-3">Manage</p>
-              <button type="button"
-                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-green-800/20 px-4 py-3 text-sm font-medium text-secondary hover:bg-green-800/5 focus-ring w-full sm:w-auto"
-                onClick={toggleMyArchive}>
-                {isArchived ? 'Unarchive' : 'Archive (remove from my list)'}
-              </button>
-            </div>
-          )}
-
-        </div>
-      )}
 
       {/* VOID WATERMARK — non-intrusive but obvious. The document below is greyed
           out (isInactive already dims it); this names the state and carries the
@@ -1257,20 +1161,54 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         </div>
       )}
 
+      {/* TERMINATE — executed contracts only. This survived the removal of the
+          notify card, which shared its wrapper: terminating an executed contract
+          is unrelated to notifying parties about a draft, and losing it with the
+          card would have removed the only mutual-termination path. */}
+      {isExecuted && (
+        <div className="bg-white border border-green-800/10 rounded-xl p-5 sm:p-6 mb-5">
+          <div className="p-5 sm:p-6">
+            <p className="text-[11px] uppercase tracking-wide text-muted mb-3">Manage</p>
+            {terminationRequested ? (
+              iRequestedTermination ? (
+                <p className="text-[13px] text-gold-800">Termination requested — awaiting the other party's agreement.</p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <p className="text-[13px] text-green-950">
+                    {isStaff ? 'The barn has' : 'The other party has'} requested to terminate this contract.
+                    {doc?.termination_request_reason ? ` Reason: ${doc.termination_request_reason}` : ''}
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-2.5">
+                    <button type="button" className="btn-primary text-sm justify-center py-3 sm:w-auto"
+                    onClick={approveTermination}>Approve termination</button>
+                    <button type="button"
+                    className="inline-flex items-center justify-center rounded-lg border border-green-800/20 px-4 py-3 text-sm font-medium text-secondary hover:bg-green-800/5 focus-ring"
+                    onClick={declineTermination}>Decline</button>
+                  </div>
+                </div>
+              )
+            ) : (
+              <button type="button"
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-300 px-4 py-3 text-sm font-medium text-red-700 hover:bg-red-50 focus-ring w-full sm:w-auto"
+                onClick={requestTermination}>
+                Terminate
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Parties & Horse summary — who the lease is between and for which horse.
           Staff can reassign a party or the horse in place. Shown on the standalone
           contract page (the creation page already collects these). */}
       {id && !embedded && (
         <PartiesHorseCard documentId={id} canEdit={isStaff && editablePhase}
-          onChanged={() => { void load(); }} />
-      )}
-
-      {/* Owner-side: per-party document controls.
-          Hidden when embedded on the creation page — that page already collected
-          controls; restating them here (with a 4th option) confused the flow. */}
-      {isOwnerSide && editablePhase && !embedded && (
-        <div className="bg-white border border-green-800/10 rounded-lg p-4 mb-5">
-          {/* Matched to the notify caption above — one size for explanatory copy. */}
+          onChanged={() => { void load(); }}
+          /* The document controls render INSIDE this card (owner 2026-07-31):
+             they govern what these same parties may do, so two cards put the
+             question and its answer in different places. */
+          footer={isOwnerSide && editablePhase ? (
+            <>
           <p className="text-[13px] text-muted mb-2.5">
             Document controls — what each party may do. The invitation wording follows these.
           </p>
@@ -1291,12 +1229,9 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                 );
               })}
           </div>
-          {/* The redundant document-wide "let the other party edit" checkbox was
-              removed — deal-term editing is driven by each party's "Edit deal
-              terms" control above (the single source of truth). Invites go out on
-              "Send for review" below (email + in-app); parties are assigned at
-              creation, so no manual invite box here. */}
-        </div>
+            </>
+          ) : undefined}
+        />
       )}
 
       {/* Horse gate — pick/add the horse before the rest of the contract */}
@@ -1727,46 +1662,50 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         />
       )}
 
-      {/* NOTIFY SOMEONE ELSE — a small modal rather than a permanent input row,
-          which is what made the card tall. Accepts a typed address or one of the
-          contacts already on this document. */}
-      {alsoOpen && (
+      {/* SEND — pick who is notified, or mail yourself the current state.
+          The old free-text "notify someone else" field is gone (owner): a review
+          request implies a standing in the agreement that a non-party does not
+          have. Someone who merely needs to READ it gets the PDF option. */}
+      {sendOpen && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-green-950/40 px-4"
-          role="dialog" aria-modal="true" aria-labelledby="also-heading"
-          onClick={() => setAlsoOpen(false)}>
+          role="dialog" aria-modal="true" aria-labelledby="send-heading"
+          onClick={() => setSendOpen(false)}>
           <div className="bg-white rounded-2xl border border-green-800/10 p-5 max-w-sm w-full"
             onClick={(e) => e.stopPropagation()}>
-            <h2 id="also-heading" className="font-serif text-lg text-green-800 mb-1">Notify someone else</h2>
-            <p className="body-text text-sm text-muted mb-3">
-              They receive the same review request. This does not make them a party
-              to the contract.
+            <h2 id="send-heading" className="font-serif text-lg text-green-800 mb-1">Send this contract</h2>
+            <p className="text-[13px] text-muted mb-4">
+              Notifying a party asks them to review and sign. You stay on the contract.
             </p>
-            <input type="email" value={extraEmailDraft} autoFocus
-              onChange={(e) => setExtraEmailDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  const v = extraEmailDraft.trim();
-                  if (v && !extraEmails.includes(v)) {
-                    setExtraEmails((xs) => [...xs, v]); setExtraEmailDraft(''); setAlsoOpen(false);
-                  }
-                }
-              }}
-              placeholder="name@example.com"
-              className="w-full px-3 py-2 rounded-lg border border-green-800/15 text-sm focus-ring mb-3" />
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-col gap-2">
+              {invitableRoles.length > 1 && (
+                <button type="button" className="btn-primary text-sm justify-center"
+                  disabled={notifying} onClick={() => void sendReview(invitableRoles)}>
+                  Send to both parties
+                </button>
+              )}
+              {invitableRoles.map((r) => (
+                <button key={r} type="button"
+                  className="btn-secondary text-sm justify-center"
+                  disabled={notifying} onClick={() => void sendReview([r])}>
+                  Send to {r.charAt(0) + r.slice(1).toLowerCase()} only
+                </button>
+              ))}
+              {/* Separated: this one does not notify anybody. */}
+              <div className="border-t border-green-800/10 mt-1 pt-3">
+                <button type="button"
+                  className="btn-secondary text-sm justify-center w-full"
+                  disabled={pdfBusy} onClick={() => void emailWorkingCopy()}>
+                  {pdfBusy ? 'Sending…' : 'Send myself a PDF copy'}
+                </button>
+                <p className="text-[12px] text-muted mt-1.5">
+                  A copy of the contract exactly as it stands, including options not
+                  yet chosen — useful for an adviser reviewing it with you.
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end mt-4">
               <button type="button" className="btn-secondary text-sm"
-                onClick={() => setAlsoOpen(false)}>Cancel</button>
-              <button type="button" className="btn-primary text-sm"
-                disabled={!extraEmailDraft.trim()}
-                onClick={() => {
-                  const v = extraEmailDraft.trim();
-                  if (v && !extraEmails.includes(v)) {
-                    setExtraEmails((xs) => [...xs, v]); setExtraEmailDraft(''); setAlsoOpen(false);
-                  }
-                }}>
-                Add
-              </button>
+                onClick={() => setSendOpen(false)}>Cancel</button>
             </div>
           </div>
         </div>

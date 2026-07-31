@@ -14,11 +14,16 @@ import { CaptureInfoModal } from './CaptureInfoModal';
  * the contract; reassigning refreshes the party auto-fill fields and re-merges.
  */
 export function PartiesHorseCard({
-  documentId, canEdit, onChanged,
+  documentId, canEdit, onChanged, footer,
 }: {
   documentId: string;
   canEdit: boolean;      // staff, on an editable document
   onChanged: () => void; // reload the contract after a reassignment
+  /** Rendered inside this card, below the parties. The document controls live
+   *  here (owner 2026-07-31) rather than in a second card of their own: they
+   *  describe what those same parties may do, so splitting them across two cards
+   *  put the question and its answer in different places. */
+  footer?: React.ReactNode;
 }) {
   const [summary, setSummary] = useState<PartiesHorseSummary | null>(null);
   const [editing, setEditing] = useState(false);
@@ -134,6 +139,10 @@ export function PartiesHorseCard({
           onClose={() => setCapture(null)}
           onSaved={() => { setCapture(null); load(); onChanged(); }}
         />
+      )}
+
+      {footer && (
+        <div className="mt-4 pt-4 border-t border-green-800/10">{footer}</div>
       )}
     </div>
   );
