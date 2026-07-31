@@ -28,6 +28,20 @@ export function ContractNotes({ documentId }: { documentId: string }) {
   }, [documentId]);
   useEffect(load, [load]);
 
+  // SEED THE FIRST NOTE (owner spec 2026-07-31). An empty drawer taught nobody
+  // what this is for; one real note demonstrates both gestures at once — its
+  // title says to click the text to rename and the header to open.
+  // Guarded on `seeding` so a slow round-trip cannot create two.
+  const [seeding, setSeeding] = useState(false);
+  useEffect(() => {
+    if (notes === null || notes.length > 0 || seeding) return;
+    setSeeding(true);
+    createContractNote(documentId, 'Click to edit to rename, then click anywhere on this header to open')
+      .then(() => load())
+      .catch(() => { /* an empty drawer is a fine fallback */ })
+      .finally(() => setSeeding(false));
+  }, [notes, seeding, documentId, load]);
+
   async function addNote() {
     setBusy(true); setErr(null);
     try {
@@ -109,22 +123,41 @@ function NoteRow({
 
   return (
     <div className="rounded-lg border border-green-800/12 bg-white overflow-hidden">
-      {/* Header: click the row to collapse/expand; the title itself stays an
-          editable input, so clicking into it does not toggle the row. */}
-      <div className="flex items-center gap-2 px-3 py-2 bg-cream-100/40">
-        <button type="button" aria-expanded={expanded} aria-label={expanded ? 'Collapse note' : 'Expand note'}
-          className="text-green-800 shrink-0 focus-ring rounded" onClick={onToggle}>
+      {/* HEADER (rebuilt 2026-07-31). Previously the title input spanned the whole
+          header, leaving only a tiny chevron to open the thread — so the obvious
+          gesture (click the row) did nothing, and the discoverable one was a
+          14px arrow.
+          Now: the title is a SELF-SIZING input that is only as wide as its text,
+          so clicking the words edits the name; everything else in the header —
+          including the empty space beside it — opens the thread. */}
+      <div
+        role="button"
+        tabIndex={0}
+        aria-expanded={expanded}
+        onClick={onToggle}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(); } }}
+        className="flex items-center gap-2 px-3 py-2 bg-cream-100/40 cursor-pointer hover:bg-cream-100/70 focus-ring"
+      >
+        <span className="text-green-800 shrink-0" aria-hidden="true">
           {expanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
-        </button>
+        </span>
         <input
-          className="flex-1 min-w-0 bg-transparent text-sm font-medium text-green-900 px-1 py-0.5 rounded focus-ring"
+          // stopPropagation: clicking the TEXT edits it rather than toggling.
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => {
+            e.stopPropagation();
+            if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+          }}
+          // Width tracks the content so the field never spans the header and
+          // never clips the name.
+          size={Math.max(8, Math.min(title.length + 1, 44))}
+          className="bg-transparent text-sm font-medium text-green-900 px-1.5 py-0.5 rounded border border-transparent hover:border-green-800/15 focus:border-green-800/30 focus-ring"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           onBlur={() => void saveTitle()}
-          onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
           aria-label="Note title"
         />
-        <span className="text-[11px] text-muted shrink-0">
+        <span className="text-[11px] text-muted ml-auto shrink-0">
           {note.messages.length} {note.messages.length === 1 ? 'message' : 'messages'}
         </span>
       </div>

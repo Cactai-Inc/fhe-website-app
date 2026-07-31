@@ -291,7 +291,7 @@ function Thread({
 }
 
 export function ContractChangeRequests({
-  documentId, canRequest, onChanged, onCount, refreshKey,
+  documentId, canRequest, onChanged, onCount, refreshKey, inDrawer = false,
 }: {
   documentId: string;
   /** False once the document is locked/executed/void — the DB refuses anyway. */
@@ -299,6 +299,8 @@ export function ContractChangeRequests({
   onChanged?: () => void;
   onCount?: (openThreads: number) => void;
   refreshKey?: number;
+  /** Rendered inside the contract subheader's drawer, which already scrolls. */
+  inDrawer?: boolean;
 }) {
   const [tree, setTree] = useState<SectionTreeNode[] | null>(null);
   const [entries, setEntries] = useState<ContractChangeRequestEntry[] | null>(null);
@@ -530,7 +532,7 @@ export function ContractChangeRequests({
       {notifiedThreads.length > 0 && (
         <div className="mb-3">
           <p className="text-[11px] uppercase tracking-wide text-muted mb-1.5">Notified</p>
-          <ContractDrawer accent="requests" openKey={openThread}>
+          <ContractDrawer accent="requests" openKey={openThread} unbounded={inDrawer}>
             {notifiedThreads.map((r) => (
               <div key={r.id} data-row-key={r.id}>
                 <DrawerRow
@@ -567,7 +569,7 @@ export function ContractChangeRequests({
           <p className="text-[11px] uppercase tracking-wide text-muted mb-1.5">
             Choose what to request a change to
           </p>
-          <ContractDrawer accent="requests" openKey={lastOpened} empty={tree.length === 0}>
+          <ContractDrawer accent="requests" openKey={lastOpened} empty={tree.length === 0} unbounded={inDrawer}>
             {tree.length === 0 && (
               <p className="text-sm text-muted px-1 py-2">
                 This document has no section structure to target.
@@ -585,83 +587,78 @@ export function ContractChangeRequests({
                     data-drawer-row
                     data-has-requests={sig.has || undefined}
                     data-unseen={sig.unseen > 0 || undefined}
-                    className={`rounded-lg border ${
-                      isOpenSection ? 'border-gold-400/60' : 'border-green-800/12'
-                    } ${
-                      // HAS-CONTENT SHADING: empty rows sit on the darker
-                      // bg-green-800/[0.04]; a row holding requests lightens to
-                      // plain white so it reads as raised out of the list.
-                      sig.has ? 'bg-white' : 'bg-green-800/[0.04]'
-                    }`}
                   >
-                    {/* THE WHOLE ROW IS ONE CONTROL. The chevron lives INSIDE it
-                        (aria-hidden, not a tab stop of its own), so a click on
-                        the icon and a click on the title are the same click. */}
+                    {/* SECTION HEADER — a disclosure and nothing more (owner spec
+                        2026-07-31): no input of its own. Styled after the Change-
+                        history group header: the number, the title, and a count,
+                        with no tile chrome, so the numbered ITEM rows beneath are
+                        what stand out. */}
                     <button
                       type="button"
                       onClick={() => revealRow(s.section_key, [s.section_key])}
                       aria-expanded={isOpenSection}
-                      className="w-full text-left py-2.5 pr-3 focus-ring rounded-lg hover:bg-green-800/[0.03] flex items-baseline gap-2"
+                      className="w-full text-left py-1 pr-2 focus-ring rounded flex items-baseline gap-2"
                     >
-                      <span className="shrink-0 w-8 self-center flex justify-center text-muted" aria-hidden="true">
+                      <span className="shrink-0 w-4 self-center flex justify-center text-muted" aria-hidden="true">
                         {isOpenSection ? <ChevronUpIcon /> : <ChevronDownIcon />}
                       </span>
-                      <span className="text-[11px] font-medium tabular-nums text-gold-ink shrink-0">{s.number}</span>
-                      <span className="text-[13px] text-green-950 font-medium">{s.title}</span>
+                      <span className="text-[12px] tabular-nums font-semibold text-gold-ink shrink-0">{s.number}.</span>
+                      <span className="text-[12px] text-green-900 font-medium">{s.title}</span>
+                      <span className="text-[11px] text-muted">
+                        {s.subsections.length} item{s.subsections.length === 1 ? '' : 's'}
+                      </span>
                       <UnseenDot count={sig.unseen} />
-                      {draft && <span className="ml-auto text-[10px] text-gold-900 bg-gold-50 border border-gold-400/50 rounded px-1.5 py-0.5 shrink-0">draft</span>}
+                      {draft && <span className="ml-auto text-[10px] text-gold-900 shrink-0">draft</span>}
                     </button>
 
-                    {/* OPEN SECTION — (a) the input for the WHOLE section, then
-                        (b) its subsections, collapsed. Both hang off the SAME
-                        `isOpenSection` flag: the subsection list is deliberately
-                        NOT gated on the input holding content. */}
+                    {/* OPEN SECTION — its numbered items, and nothing else.
+                        A section header is a DISCLOSURE ONLY (owner spec
+                        2026-07-31): it carries no input of its own. Requests
+                        belong to the numbered items (1.1, 2.4, 12.12 …), which is
+                        where a reader looks for them. The old section-level box
+                        sat above a collapsed 1.1 and was the worst case when a
+                        section held a single item — an empty field with the real
+                        target hidden beneath it.
+                        The items are NOT indented: mirroring the contract's own
+                        outline bought nothing here and only narrowed the input. */}
                     {isOpenSection && (
                       <>
-                        {/* (a) the section-level target */}
-                        <div className="px-3 pb-3 border-t border-green-800/10">
-                          <RequestInput
-                            value={draft?.body ?? ''}
-                            onAutosave={autosave(s.section_key)}
-                            placeholder={`What should change in ${s.number}. ${s.title}?`}
-                          />
-                        </div>
-
-                        {/* (b) the subsections */}
                         {s.subsections.length > 0 && (
-                          <div className="pl-8 pr-2 pb-2 flex flex-col gap-1">
+                          <div className="px-2 pb-2 pt-1.5 border-t border-green-800/10 flex flex-col gap-1.5">
                             {s.subsections.map((sub) => {
                               const isOpenSub = open.has(sub.clause_key);
                               const subDraft = draftFor.get(sub.clause_key);
                               const subSig = signalsFor([sub.clause_key]);
                               return (
-                                <div key={sub.clause_key} data-row-key={sub.clause_key}>
-                                  <button
-                                    type="button"
-                                    onClick={() => revealRow(sub.clause_key, [sub.clause_key])}
-                                    aria-expanded={isOpenSub}
-                                    data-has-requests={subSig.has || undefined}
-                                    data-unseen={subSig.unseen > 0 || undefined}
-                                    className={`w-full text-left px-2.5 py-1.5 rounded border focus-ring flex items-baseline gap-2 ${
-                                      isOpenSub
-                                        ? 'border-gold-400/60 bg-gold-50/40'
-                                        : subSig.has
-                                          // lighter = has requests; darker = empty.
-                                          ? 'border-transparent bg-white hover:bg-white'
-                                          : 'border-transparent bg-green-800/[0.04] hover:bg-green-800/[0.06]'}`}
+                                <div key={sub.clause_key} data-row-key={sub.clause_key}
+                                  data-has-requests={subSig.has || undefined}
+                                  data-unseen={subSig.unseen > 0 || undefined}>
+                                  {/* Restyled 2026-07-31 to the Change-history row
+                                      design (owner preference): numbered chip,
+                                      title, chevron, content beneath. Same
+                                      primitive, so the two drawers now read as one
+                                      system rather than two dialects. */}
+                                  <DrawerRow
+                                    accent="requests"
+                                    open={isOpenSub}
+                                    onToggle={() => revealRow(sub.clause_key, [sub.clause_key])}
+                                    number={sub.number}
+                                    title={sub.title}
+                                    subtitle={
+                                      subSig.has || subDraft ? (
+                                        <span className="inline-flex items-center gap-2">
+                                          {subSig.has && <span>{subSig.unseen > 0 ? `${subSig.unseen} unseen` : 'has requests'}</span>}
+                                          {subDraft && <span className="text-gold-900">draft saved</span>}
+                                        </span>
+                                      ) : undefined
+                                    }
                                   >
-                                    <span className="text-[11px] tabular-nums text-muted shrink-0">{sub.number}</span>
-                                    <span className="text-[12px] text-green-950">{sub.title}</span>
-                                    <UnseenDot count={subSig.unseen} />
-                                    {subDraft && <span className="ml-auto text-[10px] text-gold-900 shrink-0">draft</span>}
-                                  </button>
-                                  {isOpenSub && (
                                     <RequestInput
                                       value={subDraft?.body ?? ''}
                                       onAutosave={autosave(sub.clause_key)}
                                       placeholder={`What should change in ${sub.number} ${sub.title}?`}
                                     />
-                                  )}
+                                  </DrawerRow>
                                 </div>
                               );
                             })}

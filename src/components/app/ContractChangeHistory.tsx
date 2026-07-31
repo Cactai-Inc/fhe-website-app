@@ -99,8 +99,14 @@ function Diff({ oldValue, newValue }: { oldValue: string | null; newValue: strin
 }
 
 export function ContractChangeHistory({
-  documentId, refreshKey = 0,
-}: { documentId: string; refreshKey?: number }) {
+  documentId, refreshKey = 0, inDrawer = false,
+}: {
+  documentId: string;
+  refreshKey?: number;
+  /** Rendered inside the contract subheader's drawer, which already scrolls.
+   *  Passes through so the row list does not open a second scroll box. */
+  inDrawer?: boolean;
+}) {
   const [changes, setChanges] = useState<ContractChange[] | null>(null);
   const [open, setOpen] = useState<string | null>(null);
 
@@ -171,7 +177,7 @@ export function ContractChangeHistory({
                   {g.rows.length} change{g.rows.length === 1 ? '' : 's'}
                 </span>
               </p>
-              <ContractDrawer accent="history" openKey={open}>
+              <ContractDrawer accent="history" openKey={open} unbounded={inDrawer}>
                 {g.rows.map(({ c, n }) => {
                   const kind = KIND_LABEL[c.change_kind] ?? c.change_kind;
                   const title = c.field_label ?? c.field_key ?? kind;
