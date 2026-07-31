@@ -24,7 +24,7 @@ import {
   type SigningSetDoc, type RedlineState, type PartiesHorseSummary, type PartySummary,
 } from '../../lib/contracts';
 import { myWallState, myNameConfirmationState, type NameConfirmationState } from '../../lib/api';
-import { ContractSubheader } from '../../components/app/ContractSubheader';
+import { ContractSubheader, SUBHEADER_BTN } from '../../components/app/ContractSubheader';
 import { ContractNotes } from '../../components/app/ContractNotes';
 import { ConfirmNameModal } from '../../components/app/ConfirmNameModal';
 import { CaptureInfoModal } from '../../components/app/CaptureInfoModal';
@@ -549,37 +549,13 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   // Lock-for-signing gate: a party missing required info (name/address/email/phone)
   // can't be locked for signature — open the reusable capture modal on the first
   // incomplete party instead. The horse must also be attached and identified.
-  function lockForSigning() {
-    setError(null); setNote(null);
-    const incomplete = (partiesSummary?.parties ?? []).find((p) => p.missing.length > 0);
-    if (incomplete) {
-      setCaptureParty(incomplete);
-      setNote(`${incomplete.party_role.charAt(0) + incomplete.party_role.slice(1).toLowerCase()} is missing required contact information. Add it to continue.`);
-      return;
-    }
-    if ((partiesSummary?.horse_missing ?? []).length > 0) {
-      setError('This lease needs a horse selected and identified before it can be locked for signature.');
-      return;
-    }
-    // Any required, ACTIVE field still empty blocks the lock — name them so the
-    // author knows exactly what to fill (the RPC would otherwise just say "N empty").
-    const missingRequired = (detail?.fields ?? []).filter(
-      (f) => f.required && !(f.is_optional ?? false)
-        && !(f.value ?? '').trim()
-        && clauseConditionMet(f.conditional_on, valueMap),
-    );
-    if (missingRequired.length > 0) {
-      setError(`Fill these required field(s) before locking: ${missingRequired.map((f) => f.label ?? f.field_key).join(', ')}.`);
-      return;
-    }
-    // The horse info must be confirmed by the Lessor before locking.
-    if (!doc?.horse_section_confirmed_at
-        && (detail?.fields ?? []).some((f) => f.owner_role === 'LESSOR' && f.field_key.startsWith('HORSE.'))) {
-      setError('The Lessor must confirm the horse information before the contract can be locked for signing (use the horse-confirm control in the Horse section).');
-      return;
-    }
-    void act(() => advanceWorkflow(id!, 'locked'), 'Locked — the final document is ready to sign.');
-  }
+  /* lockForSigning() removed 2026-07-31 with both of its buttons. The manual
+     "terms are final, just sign" gate is gone: it could not fire until the
+     Lessor approved the horse, and the per-party controls already decide whether
+     a side may edit or only request changes.
+     The 'locked' workflow state itself is UNCHANGED and still reached through
+     lock_and_sign_contract() on the approve-and-sign path — only the manual
+     button is retired. */
 
   // Explicit Save — fields already autosave on blur; this re-persists the composed
   // document on demand and confirms, so the creator knows their work is stored.
@@ -833,89 +809,11 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           well-spaced so they're hard to mis-tap on mobile. ── */}
       {showDeck && (
         <div ref={actionCardRef} className="bg-white border border-green-800/10 rounded-xl mb-5 divide-y divide-green-800/10">
-          {/* MANAGE — pre-execution only. Save (owner), Cancel (any party), Delete
-              (staff, hard delete before execution), and per-party Archive once the
-              contract is inactive (terminated/void). */}
-          {!isExecuted && (
-          <div className="p-5 sm:p-6">
-            <p className="text-[11px] uppercase tracking-wide text-muted mb-3">Manage</p>
-            {!isOwnerSide && myRoles.length > 0 && editablePhase && !isInactive ? (
-              /* REVIEWER header row (owner-specified layout): "Approve & continue"
-                 far LEFT (primary), "Request changes" a normal gap to its right,
-                 and "Decline" alone on the far RIGHT (destructive; keeps the
-                 hard-void confirm behavior). Generous spacing throughout. */
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <button type="button"
-                    className="btn-primary justify-center py-3 px-5 text-sm"
-                    onClick={() => void approveReview()}>
-                    <CheckCircle2 size={15} /> Accept &amp; sign
-                  </button>
-                  {/* NOTIFY sits beside Accept & sign (owner-specified split
-                      layout). The duplicate "Change requests" disclosure that used
-                      to live here was removed — the SAME requestsOpen state is
-                      driven by the disclosure control further down the card and by
-                      the subheader above, so nothing is lost. */}
-                  <button type="button"
-                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-green-800/20 px-4 py-3 text-sm font-medium text-green-900 hover:bg-green-800/5 focus-ring disabled:opacity-60"
-                    disabled={notifying} onClick={() => void sendReview()}>
-                    <Send size={15} /> {notifying ? 'Notifying…' : 'Notify'}
-                  </button>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-3 sm:ml-auto">
-                  {canVoid && (
-                    <button type="button"
-                      className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-300 px-4 py-3 text-sm font-medium text-red-700 hover:bg-red-50 focus-ring"
-                      onClick={() => setVoidModal(true)}>
-                      Void contract
-                    </button>
-                  )}
-                </div>
-              </div>
-            ) : (
-            /* Preserving actions (Save / Archive) sit on the LEFT; destructive
-                actions (Cancel / Delete) are pushed to the RIGHT so there's clear
-                space between the buttons that keep a document and the ones that kill
-                it — no accidental taps. On mobile they stack (preserve then destroy). */
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-              <div className="flex flex-col sm:flex-row gap-3">
-                {isOwnerSide && (
-                  <button type="button" disabled={saving}
-                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-green-800/20 px-4 py-3 text-sm font-medium text-green-900 hover:bg-green-800/5 focus-ring disabled:opacity-60"
-                    onClick={() => void saveNow()}>
-                    {saving ? 'Saving…' : 'Save'}
-                  </button>
-                )}
-                {/* per-party Archive (preserves) appears once the contract is inactive */}
-                {isInactive && (
-                  <button type="button"
-                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-green-800/20 px-4 py-3 text-sm font-medium text-secondary hover:bg-green-800/5 focus-ring"
-                    onClick={toggleMyArchive}>
-                    {isArchived ? 'Unarchive' : 'Archive'}
-                  </button>
-                )}
-              </div>
-              <div className="flex flex-col sm:flex-row gap-3 sm:ml-auto">
-                {/* ONE void path for everyone — staff and parties alike. */}
-                {canVoid && (
-                  <button type="button"
-                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-300 px-4 py-3 text-sm font-medium text-red-700 hover:bg-red-50 focus-ring"
-                    onClick={() => setVoidModal(true)}>
-                    Void contract
-                  </button>
-                )}
-                {isStaff && (
-                  <button type="button"
-                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-300 px-4 py-3 text-sm font-medium text-red-700 hover:bg-red-50 focus-ring"
-                    onClick={() => void deleteEntirely()}>
-                    Delete
-                  </button>
-                )}
-              </div>
-            </div>
-            )}
-          </div>
-          )}
+          {/* MANAGE removed 2026-07-31 (owner spec): Save / Void / Delete /
+              Archive and the reviewer's Accept & sign / Notify now live in the
+              contract subheader, which is always visible. Keeping a second copy
+              here is what produced the duplicate-button problem in the first
+              place. The card is now Notify only, pre-execution. */}
 
           {/* NOTIFY — pre-execution, owner side. No copy is sent until the contract
               is signed (that happens automatically on execution); this just notifies
@@ -923,8 +821,13 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
               option to add more. Lock for signing is admin-only. */}
           {isOwnerSide && editablePhase && (
             <div className="p-5 sm:p-6">
-              <p className="text-[11px] uppercase tracking-wide text-muted mb-3">Notify</p>
-              <button type="button" className="btn-primary w-full sm:w-auto justify-center py-3 disabled:opacity-60"
+              {/* A real section title, not a micro-label — this is the card's
+                  only section now that Manage has moved to the subheader. */}
+              <h2 className="font-serif text-lg text-green-900 mb-3">Notify</h2>
+              {/* Sized to match every other button on the page rather than
+                  dominating the card. */}
+              <button type="button"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-green-800/20 bg-white px-3.5 py-2 text-sm font-medium text-green-900 hover:bg-green-800/5 focus-ring disabled:opacity-60"
                 disabled={notifying} onClick={() => void sendReview()}>
                 <Send size={15} /> {notifying ? 'Notifying…' : 'Notify for review'}
               </button>
@@ -983,18 +886,12 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                   </button>
                 </div>
               </div>
-              {/* Lock for signing is ADMIN-ONLY — the manual gate for "terms are
-                  final, just sign". Recipients never see it; they simply open and
-                  sign, and signing notifies the other party. */}
-              {isStaff && (
-                <div className="mt-5">
-                  <button type="button" className="btn-outline-gold text-sm w-full sm:w-auto justify-center py-3"
-                    onClick={lockForSigning}>
-                    <Lock size={14} /> Lock for signing
-                  </button>
-                  <p className="text-[11px] text-muted mt-1.5">Admin only — locks the final document so the parties can only review and sign (use when the terms are final).</p>
-                </div>
-              )}
+              {/* Lock for signing removed 2026-07-31 (owner spec): it could not
+                  fire until the Lessor had approved the horse, and its purpose —
+                  "the parties may only review and sign" — is already served by the
+                  per-party controls, which decide whether a side may edit or only
+                  request changes. A button that is usually disabled and always
+                  redundant is worse than no button. */}
             </div>
           )}
 
@@ -1051,7 +948,10 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           card AND the sticky bar that duplicated them: the duplicates toggled the
           same state, so pressing one opened a drawer back at the original
           location, off-screen. One set of buttons, drawer opens from here. */}
-      {showDeck && id && (
+      {/* Not rendered for a fully EXECUTED contract (owner spec): there is
+          nothing left to manage, request or notify — it is a record to read. The
+          drawers stay reachable through the bottom fallback below. */}
+      {showDeck && id && !isExecuted && (
         <ContractSubheader
           openRequest={drawerRequest ?? undefined}
           drawers={[
@@ -1074,6 +974,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                   refreshKey={changeKey}
                   onCount={setOpenRequestCount}
                   onChanged={() => { void load(); }}
+                  inDrawer
                 />
               ),
             },
@@ -1081,28 +982,51 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
               key: 'history',
               label: 'Change history',
               icon: <History size={14} />,
-              render: () => <ContractChangeHistory documentId={id} refreshKey={changeKey} />,
+              render: () => <ContractChangeHistory documentId={id} refreshKey={changeKey} inDrawer />,
             },
           ]}
           extras={
+            /* The ACTUAL management actions, relocated from the card's Manage
+               section (owner spec 2026-07-31). These are the originals — the
+               Manage block was deleted, not duplicated, so there is no chance of
+               a copy going stale. Every control uses SUBHEADER_BTN so the sizes
+               match. No "Notify for review" here: it is the Notify card's own
+               button and having both is what made the bar feel duplicated. */
             <>
               {!isOwnerSide && myRoles.length > 0 && editablePhase && !isInactive && (
-                <button type="button" className="hidden sm:inline-flex btn-primary text-xs py-1.5 px-3 shrink-0"
+                <button type="button"
+                  className={`${SUBHEADER_BTN} border-green-800 bg-green-800 text-white hover:bg-green-700`}
                   onClick={() => void approveReview()}>
-                  <CheckCircle2 size={13} /> Accept &amp; sign
+                  <CheckCircle2 size={15} /> Accept &amp; sign
                 </button>
               )}
-              {isOwnerSide && editablePhase && (
-                <button type="button" className="hidden sm:inline-flex btn-secondary text-xs py-1.5 px-3 shrink-0"
-                  disabled={notifying} onClick={() => void sendReview()}>
-                  <Send size={13} /> Notify for review
+              {isOwnerSide && !isExecuted && (
+                <button type="button" disabled={saving}
+                  className={`${SUBHEADER_BTN} border-green-800/20 bg-white text-green-900 hover:bg-green-800/5 disabled:opacity-60`}
+                  onClick={() => void saveNow()}>
+                  {saving ? 'Saving…' : 'Save'}
                 </button>
               )}
+              {isInactive && (
+                <button type="button"
+                  className={`${SUBHEADER_BTN} border-green-800/20 bg-white text-secondary hover:bg-green-800/5`}
+                  onClick={toggleMyArchive}>
+                  {isArchived ? 'Unarchive' : 'Archive'}
+                </button>
+              )}
+              {/* Destructive actions are pushed right, away from the rest. */}
               {canVoid && (
                 <button type="button"
-                  className="hidden sm:inline-flex items-center gap-1 rounded-lg border border-red-300 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50 focus-ring shrink-0 ml-auto"
+                  className={`${SUBHEADER_BTN} border-red-300 bg-white text-red-700 hover:bg-red-50 ml-auto`}
                   onClick={() => setVoidModal(true)}>
                   Void contract
+                </button>
+              )}
+              {isStaff && !isExecuted && (
+                <button type="button"
+                  className={`${SUBHEADER_BTN} border-red-300 bg-white text-red-700 hover:bg-red-50 ${canVoid ? '' : 'ml-auto'}`}
+                  onClick={() => void deleteEntirely()}>
+                  Delete
                 </button>
               )}
             </>
@@ -1666,10 +1590,10 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                   onClick={() => void act(() => advanceWorkflow(id!, 'editable'))}>
                   Back to editing
                 </button>
-                <button type="button" className="btn-outline-gold text-xs"
-                  onClick={lockForSigning}>
-                  <Lock size={13} /> Lock for signing
-                </button>
+                {/* The second "Lock for signing" removed 2026-07-31 alongside the
+                    one in the Notify card — same reasoning: it cannot fire until
+                    the Lessor approves the horse, and the per-party controls
+                    already decide who may edit versus only request changes. */}
               </>
             )}
             {isOwnerSide && state === 'locked' && !counterpartySigned && (
@@ -1821,7 +1745,10 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           This bottom copy renders only where the subheader does not (a void
           document, or the embedded creation view) — the two are mutually
           exclusive on `showDeck`, so nothing is ever shown twice. */}
-      {id && !showDeck && (
+      {/* Matches the subheader's condition exactly, so the drawers appear in
+          EXACTLY one place: inline here whenever the subheader is absent (an
+          executed contract, a void one, or the embedded creation view). */}
+      {id && !(showDeck && !isExecuted) && (
         <div className="mt-5 flex flex-col gap-4">
           <div className="rounded-lg border border-green-800/12 bg-white p-4">
             <ContractNotes documentId={id} />

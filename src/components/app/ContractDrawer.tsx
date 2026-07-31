@@ -97,13 +97,22 @@ export function DrawerRow({
  * re-measure and to magnetically bring the open row to the top.
  */
 export function ContractDrawer({
-  accent, children, openKey, empty,
+  accent, children, openKey, empty, unbounded,
 }: {
   accent: DrawerAccent;
   children: React.ReactNode;
   /** Identity of the currently-open row (null when all are closed). */
   openKey: string | null;
   empty?: boolean;
+  /** TRUE when this already sits inside a scrolling container — the contract
+   *  subheader's drawer. It then renders its rows at natural height with no
+   *  scroll box and no drag handle of its own.
+   *
+   *  Without this the two nest: the outer drawer scrolls, and so does this,
+   *  so a wheel over the list moved the INNER box while the drawer stayed put
+   *  (and once the inner box hit its end, the page moved instead). One scroll
+   *  boundary per drawer — the outer one. */
+  unbounded?: boolean;
 }) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const innerRef = useRef<HTMLDivElement | null>(null);
@@ -199,6 +208,12 @@ export function ContractDrawer({
 
   // Height: the user's drag wins; otherwise content height capped at 35%.
   const height = dragHeight ?? Math.min(autoHeight, capPx);
+
+  // Inside the subheader drawer: no scroll box, no cap, no handle. The rows
+  // render at their natural height and the drawer above does the scrolling.
+  if (unbounded) {
+    return <div className="flex flex-col gap-1.5">{children}</div>;
+  }
 
   return (
     <div>
