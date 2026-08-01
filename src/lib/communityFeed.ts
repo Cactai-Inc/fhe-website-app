@@ -66,17 +66,14 @@ export interface FeedCard {
   socialLinkedin?: string | null;
   socialTiktok?: string | null;
   // contact (members/resources)
-  email?: string | null;
-  mobile?: string | null;
-  whatsapp?: string | null;
+  communityEmail?: string | null;
+  mobileCall?: string | null;
+  mobileText?: string | null;
+  whatsappCall?: string | null;
+  whatsappText?: string | null;
   url?: string | null;
   /** click-through target (discussion/article detail) */
   to?: string;
-  // per-channel permissions (members; from the directory's shared prefs)
-  allowSms?: boolean;
-  allowCall?: boolean;
-  allowWhatsapp?: boolean;      // WhatsApp chat
-  allowWhatsappCall?: boolean;  // WhatsApp voice call
 }
 
 export function initials(name: string | null | undefined, fallback = '·'): string {
@@ -159,7 +156,7 @@ function fromVendor(v: Vendor): FeedCard {
     id: `vendor-${v.id}`, view: 'resources', kind: 'resource',
     title: v.name, body: [v.category, v.note].filter(Boolean).join(' · ') || undefined,
     ts: 0,
-    email: v.email, mobile: v.phone, url: v.url,
+    communityEmail: v.email, mobileCall: v.phone, mobileText: v.phone, url: v.url,
   };
 }
 function fromMember(m: MemberDirectoryEntry): FeedCard {
@@ -182,16 +179,14 @@ function fromMember(m: MemberDirectoryEntry): FeedCard {
     socialFacebook: m.social_facebook,
     socialLinkedin: m.social_linkedin,
     socialTiktok: m.social_tiktok,
-    // Shared contact fields straight from the widened member_directory view —
-    // hide-from-community is enforced server-side (hidden → null); the per-channel
-    // allow-flags travel with the card so the buttons honor them exactly.
-    email: m.email,
-    mobile: m.mobile,
-    whatsapp: m.whatsapp,
-    allowSms: m.allow_sms,
-    allowCall: m.allow_call,
-    allowWhatsapp: m.allow_whatsapp,
-    allowWhatsappCall: m.allow_whatsapp_call,
+    // Five channels straight from member_directory — hide-from-community is
+    // enforced server-side (hidden → null), so a present value IS an offered
+    // channel. No allow flags anymore: the split fields replaced them.
+    communityEmail: m.community_email,
+    mobileCall: m.mobile_call,
+    mobileText: m.mobile_text,
+    whatsappCall: m.whatsapp_call,
+    whatsappText: m.whatsapp_text,
   };
 }
 

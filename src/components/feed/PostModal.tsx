@@ -9,7 +9,10 @@ import {
   fetchThread, replyToThread, fetchContentPost, fetchMemberHorses, setRsvp,
 } from '../../lib/community';
 import { sayHi, myGreetedUserIds, type FeedCard } from '../../lib/communityFeed';
-import { contactActions, preferredContactLabel, type PreferredContact } from '../../lib/contact';
+import {
+  contactActions, preferredContactLabel, mailHref, telHref, smsHref, whatsappHref, whatsappCallHref,
+  type PreferredContact,
+} from '../../lib/contact';
 import { FeedVideo } from './FeedVideo';
 import type { ThreadPost, ContentPost, MemberHorse, RsvpStatus } from '../../lib/community-types';
 
@@ -57,10 +60,10 @@ function Body({ card, onClose }: { card: FeedCard; onClose: () => void }) {
 function preferredHref(card: FeedCard): string | null {
   const p = card.preferredContact as PreferredContact | undefined;
   switch (p) {
-    case 'email':     return card.email ? `mailto:${card.email}` : null;
-    case 'sms':       return card.mobile ? `sms:${card.mobile.replace(/[^\d+]/g, '')}` : null;
-    case 'call':      return card.mobile ? `tel:${card.mobile.replace(/[^\d+]/g, '')}` : null;
-    case 'whatsapp':  return card.whatsapp ? `https://wa.me/${card.whatsapp.replace(/[^\d]/g, '')}` : null;
+    case 'email':     return card.communityEmail ? mailHref(card.communityEmail) : null;
+    case 'sms':       return card.mobileText ? smsHref(card.mobileText) : null;
+    case 'call':      return card.mobileCall ? telHref(card.mobileCall) : null;
+    case 'whatsapp':  return card.whatsappText ? whatsappHref(card.whatsappText) : null;
     case 'instagram': return card.socialInstagram ?? null;
     case 'facebook':  return card.socialFacebook ?? null;
     case 'linkedin':  return card.socialLinkedin ?? null;
@@ -144,10 +147,14 @@ function MemberBody({ card, onClose }: { card: FeedCard; onClose: () => void }) 
         </div>
       )}
 
-      {(card.email || card.mobile || socials.length > 0) && (
+      {(card.communityEmail || card.mobileCall || card.mobileText
+        || card.whatsappCall || card.whatsappText || socials.length > 0) && (
         <div className="mt-6 pt-6 border-t border-green-800/10 w-full flex flex-wrap items-center justify-center gap-2">
-          {card.email && <a href={`mailto:${card.email}`} className="inline-flex items-center gap-1.5 text-xs text-green-700 border border-green-800/15 rounded-lg px-3 py-2 hover:bg-green-50"><Mail size={14} /> Email</a>}
-          {card.mobile && card.allowCall && <a href={`tel:${card.mobile}`} className="inline-flex items-center gap-1.5 text-xs text-green-700 border border-green-800/15 rounded-lg px-3 py-2 hover:bg-green-50"><Phone size={14} /> Call</a>}
+          {card.communityEmail && <a href={mailHref(card.communityEmail)} className="inline-flex items-center gap-1.5 text-xs text-green-700 border border-green-800/15 rounded-lg px-3 py-2 hover:bg-green-50"><Mail size={14} /> Email</a>}
+          {card.mobileCall && <a href={telHref(card.mobileCall)} className="inline-flex items-center gap-1.5 text-xs text-green-700 border border-green-800/15 rounded-lg px-3 py-2 hover:bg-green-50"><Phone size={14} /> Call</a>}
+          {card.mobileText && <a href={smsHref(card.mobileText)} className="inline-flex items-center gap-1.5 text-xs text-green-700 border border-green-800/15 rounded-lg px-3 py-2 hover:bg-green-50"><MessageSquare size={14} /> Text</a>}
+          {card.whatsappText && <a href={whatsappHref(card.whatsappText)} className="inline-flex items-center gap-1.5 text-xs text-green-700 border border-green-800/15 rounded-lg px-3 py-2 hover:bg-green-50"><MessageSquare size={14} /> WhatsApp</a>}
+          {card.whatsappCall && <a href={whatsappCallHref(card.whatsappCall)} className="inline-flex items-center gap-1.5 text-xs text-green-700 border border-green-800/15 rounded-lg px-3 py-2 hover:bg-green-50"><Phone size={14} /> WhatsApp Call</a>}
           {socials.map((s) => (
             <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer"
               aria-label={s.label} className="grid place-items-center w-9 h-9 text-green-700 border border-green-800/15 rounded-lg hover:bg-green-50"><s.icon size={16} /></a>
@@ -288,7 +295,9 @@ function EventBody({ card }: { card: FeedCard }) {
 
 // ── RESOURCE (title + body + contact) ───────────────────────────────────────
 function ResourceBody({ card }: { card: FeedCard }) {
-  const links = contactActions({ email: card.email, mobile: card.mobile });
+  const links = contactActions({
+    communityEmail: card.communityEmail, mobileCall: card.mobileCall, mobileText: card.mobileText,
+  });
   return (
     <div>
       <h3 className="font-serif text-green-800 text-xl font-semibold leading-snug mb-2">{card.title}</h3>

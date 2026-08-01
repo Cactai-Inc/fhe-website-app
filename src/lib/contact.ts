@@ -1,7 +1,15 @@
 /* Contact link helpers. Turn stored contact values into the right launch URL so the
  * roster / resources / profile buttons open the native client — plus the member's
- * own contact-prefs read/save (profiles columns, RLS own-row; the role guard keeps
- * sensitive columns admin-only, these are all self-editable). */
+ * own contact-prefs read/save (contacts columns, RLS own-row).
+ *
+ * FIVE-CHANNEL MODEL (2026-08-01): a member shares up to five independent
+ * community contact values — mobile_call, mobile_text, whatsapp_call,
+ * whatsapp_text, community_email — each with its own hide switch. The old
+ * one-value-plus-allow-toggles model is retired; a channel is offered exactly
+ * when its field has a value AND is not hidden (the member_directory view nulls
+ * hidden fields server-side, so by the time data reaches this module a present
+ * value IS an offered channel). The company-on-file number (contacts.phone) is
+ * separate and never edited here. */
 import { supabase } from './supabase';
 import { assertWrote } from './writeGuard';
 
@@ -33,19 +41,17 @@ export type PreferredContact =
   | 'none' | 'platform' | 'email' | 'sms' | 'call' | 'whatsapp'
   | 'instagram' | 'facebook' | 'linkedin' | 'tiktok';
 
-/** Label + the profile field a preference depends on (so the picker only offers
- *  channels the member has actually filled in). `channel` null → always available. */
+/** Label + the channel field a preference depends on (so the picker only offers
+ *  channels the member has actually filled in). `requires` null → always available. */
 export const PREFERRED_CONTACT_OPTIONS: {
   value: PreferredContact; label: string; requires: keyof MyContactPrefs | null;
 }[] = [
   { value: 'none',      label: 'No preference',        requires: null },
   { value: 'platform',  label: 'Message on French Heritage', requires: null },
-  // Email is always part of the account, so it's always selectable (the stored
-  // prefs.email can be null because it's managed by the auth/email-change flow).
-  { value: 'email',     label: 'Email',                requires: null },
-  { value: 'sms',       label: 'Text message',         requires: 'mobile' },
-  { value: 'call',      label: 'Phone call',           requires: 'mobile' },
-  { value: 'whatsapp',  label: 'WhatsApp',             requires: 'whatsapp' },
+  { value: 'email',     label: 'Email',                requires: 'community_email' },
+  { value: 'sms',       label: 'Text message',         requires: 'mobile_text' },
+  { value: 'call',      label: 'Phone call',           requires: 'mobile_call' },
+  { value: 'whatsapp',  label: 'WhatsApp',             requires: 'whatsapp_text' },
   { value: 'instagram', label: 'Instagram',            requires: 'social_instagram' },
   { value: 'facebook',  label: 'Facebook',             requires: 'social_facebook' },
   { value: 'linkedin',  label: 'LinkedIn',             requires: 'social_linkedin' },
@@ -58,45 +64,49 @@ export function preferredContactLabel(v: PreferredContact | null | undefined): s
   return PREFERRED_CONTACT_OPTIONS.find((o) => o.value === v)?.label ?? null;
 }
 
+/** The five community channels as read from member_directory (hidden fields
+ *  arrive as null — a hidden channel is indistinguishable from an empty one,
+ *  which is the point). */
 export interface ContactInfo {
-  email?: string | null;
-  mobile?: string | null;      // used for sms + call
-  whatsapp?: string | null;    // used for whatsapp text/call
-  allowSms?: boolean;
-  allowCall?: boolean;
-  allowWhatsappText?: boolean;
-  allowWhatsappCall?: boolean;
+  communityEmail?: string | null;
+  mobileCall?: string | null;
+  mobileText?: string | null;
+  whatsappCall?: string | null;
+  whatsappText?: string | null;
 }
 
-/** The concrete, launchable contact actions for a person, honoring their toggles.
- *  Returns only methods that have a value AND permission. */
+/** The concrete, launchable contact actions for a person. A channel appears
+ *  exactly when its field carries a value — visibility was already enforced
+ *  server-side by the member_directory view. */
 export function contactActions(info: ContactInfo): { method: ContactMethod; href: string; label: string }[] {
   const out: { method: ContactMethod; href: string; label: string }[] = [];
-  if (info.email) out.push({ method: 'email', href: mailHref(info.email), label: 'Email' });
-  if (info.mobile && info.allowSms !== false) out.push({ method: 'sms', href: smsHref(info.mobile), label: 'Text' });
-  if (info.mobile && info.allowCall !== false) out.push({ method: 'call', href: telHref(info.mobile), label: 'Call' });
-  if (info.whatsapp && info.allowWhatsappText !== false) {
-    out.push({ method: 'whatsapp', href: whatsappHref(info.whatsapp), label: 'WhatsApp' });
-  }
-  if (info.whatsapp && info.allowWhatsappCall !== false) {
-    out.push({ method: 'whatsapp_call', href: whatsappCallHref(info.whatsapp), label: 'WhatsApp Call' });
-  }
+  if (info.communityEmail) out.push({ method: 'email', href: mailHref(info.communityEmail), label: 'Email' });
+  if (info.mobileText) out.push({ method: 'sms', href: smsHref(info.mobileText), label: 'Text' });
+  if (info.mobileCall) out.push({ method: 'call', href: telHref(info.mobileCall), label: 'Call' });
+  if (info.whatsappText) out.push({ method: 'whatsapp', href: whatsappHref(info.whatsappText), label: 'WhatsApp' });
+  if (info.whatsappCall) out.push({ method: 'whatsapp_call', href: whatsappCallHref(info.whatsappCall), label: 'WhatsApp Call' });
   return out;
 }
 
 // ── The member's own contact prefs (Account → Profile section) ──────────────
 
 export interface MyContactPrefs {
+  /** Account/login email — read-only here (managed by the email-change flow),
+   *  shown for reference; never community-visible directly. */
   email: string | null;
-  mobile: string | null;
-  whatsapp: string | null;
-  allow_sms: boolean;
-  allow_call: boolean;
-  allow_whatsapp: boolean;
-  allow_whatsapp_call: boolean;
-  hide_email: boolean;
-  hide_mobile: boolean;
-  hide_whatsapp: boolean;
+  /** The five community channels — each fully the member's to set, each with
+   *  its own hide switch below. Seeded once from the company-on-file number
+   *  (or account email) at capture; independent ever after. */
+  community_email: string | null;
+  mobile_call: string | null;
+  mobile_text: string | null;
+  whatsapp_call: string | null;
+  whatsapp_text: string | null;
+  hide_community_email: boolean;
+  hide_mobile_call: boolean;
+  hide_mobile_text: boolean;
+  hide_whatsapp_call: boolean;
+  hide_whatsapp_text: boolean;
   social_tiktok: string | null;
   social_instagram: string | null;
   social_facebook: string | null;
@@ -104,10 +114,7 @@ export interface MyContactPrefs {
   preferred_contact: PreferredContact;
   /** The mailing address — the SAME columns the onboarding intake writes and the
    *  contract party tokens compose from (LESSEE.ADDRESS via
-   *  fill_party_fields_from_contacts → compose_address). Surfaced here so a
-   *  member can finally see and correct what they entered during onboarding:
-   *  previously this page read `profiles`, whose look-alike address columns
-   *  nothing writes, so the field they filled in appeared to vanish. */
+   *  fill_party_fields_from_contacts → compose_address). */
   address_line1: string | null;
   address_line2: string | null;
   city: string | null;
@@ -116,19 +123,12 @@ export interface MyContactPrefs {
 }
 
 const PREF_COLS =
-  'email, mobile, whatsapp, allow_sms, allow_call, allow_whatsapp, allow_whatsapp_call, ' +
-  'hide_email, hide_mobile, hide_whatsapp, ' +
+  'email, community_email, mobile_call, mobile_text, whatsapp_call, whatsapp_text, ' +
+  'hide_community_email, hide_mobile_call, hide_mobile_text, hide_whatsapp_call, hide_whatsapp_text, ' +
   'social_tiktok, social_instagram, social_facebook, social_linkedin, preferred_contact, ' +
   'address_line1, address_line2, city, state, postal_code';
 
 /** Load the signed-in member's contact prefs from their CONTACT row.
- *
- *  Consolidation S2 (2026-07-30): these used to live on `profiles`, which is why
- *  what a member typed here never reached their contracts — the contract party
- *  tokens compose from `contacts`, and onboarding writes `contacts`, but this
- *  page wrote `profiles`. Same data, three tables' worth of confusion. `contacts`
- *  is now the single person record; `profiles` is the account only.
- *
  *  Reads through the profile's contact_id rather than assuming one: an account
  *  without a contact (the platform owner, per D1) simply has no prefs. */
 export async function getMyContactPrefs(): Promise<MyContactPrefs | null> {
@@ -146,8 +146,9 @@ export async function getMyContactPrefs(): Promise<MyContactPrefs | null> {
   return data as unknown as MyContactPrefs;
 }
 
-/** Save a partial set of contact prefs on the member's own CONTACT row (email is
- *  managed by the email-change flow, never written here).
+/** Save a partial set of contact prefs on the member's own CONTACT row (the
+ *  account email is managed by the email-change flow, never written here —
+ *  community_email IS writable, that's the point of it).
  *
  *  RLS: `contacts_update_own` allows `id = current_contact_id()`, so a member may
  *  write their own record and no one else's. assertWrote() proves the write

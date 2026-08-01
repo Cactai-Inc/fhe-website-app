@@ -5,7 +5,7 @@ import { useDocumentTitle } from '../../lib/hooks';
 import { useAuth } from '../../contexts/AuthContext';
 import { fetchMemberProfile, fetchMemberHorses } from '../../lib/community';
 import { sayHi, myGreetedUserIds } from '../../lib/communityFeed';
-import { preferredContactLabel } from '../../lib/contact';
+import { preferredContactLabel, mailHref, telHref, smsHref, whatsappHref, whatsappCallHref } from '../../lib/contact';
 import type { MemberDirectoryEntry, MemberHorse } from '../../lib/community-types';
 
 /**
@@ -107,11 +107,16 @@ export default function MemberProfile() {
           </div>
         )}
 
-        {/* Shared contact + socials (hide/allow prefs already applied in the view) */}
-        {(m.email || m.mobile || socials.length > 0) && (
+        {/* Shared contact + socials. A present value IS an offered channel —
+            hide-from-community is enforced server-side by member_directory. */}
+        {(m.community_email || m.mobile_call || m.mobile_text
+          || m.whatsapp_call || m.whatsapp_text || socials.length > 0) && (
           <div className="mt-6 pt-6 border-t border-green-800/10 w-full flex flex-wrap items-center justify-center gap-2">
-            {m.email && <a href={`mailto:${m.email}`} className="inline-flex items-center gap-1.5 text-xs text-green-700 border border-green-800/15 rounded-lg px-3 py-2 hover:bg-green-50"><Mail size={14} /> Email</a>}
-            {m.mobile && m.allow_call && <a href={`tel:${m.mobile}`} className="inline-flex items-center gap-1.5 text-xs text-green-700 border border-green-800/15 rounded-lg px-3 py-2 hover:bg-green-50"><Phone size={14} /> Call</a>}
+            {m.community_email && <a href={mailHref(m.community_email)} className="inline-flex items-center gap-1.5 text-xs text-green-700 border border-green-800/15 rounded-lg px-3 py-2 hover:bg-green-50"><Mail size={14} /> Email</a>}
+            {m.mobile_call && <a href={telHref(m.mobile_call)} className="inline-flex items-center gap-1.5 text-xs text-green-700 border border-green-800/15 rounded-lg px-3 py-2 hover:bg-green-50"><Phone size={14} /> Call</a>}
+            {m.mobile_text && <a href={smsHref(m.mobile_text)} className="inline-flex items-center gap-1.5 text-xs text-green-700 border border-green-800/15 rounded-lg px-3 py-2 hover:bg-green-50"><MessageSquare size={14} /> Text</a>}
+            {m.whatsapp_text && <a href={whatsappHref(m.whatsapp_text)} className="inline-flex items-center gap-1.5 text-xs text-green-700 border border-green-800/15 rounded-lg px-3 py-2 hover:bg-green-50"><MessageSquare size={14} /> WhatsApp</a>}
+            {m.whatsapp_call && <a href={whatsappCallHref(m.whatsapp_call)} className="inline-flex items-center gap-1.5 text-xs text-green-700 border border-green-800/15 rounded-lg px-3 py-2 hover:bg-green-50"><Phone size={14} /> WhatsApp Call</a>}
             {socials.map((s) => (
               <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer"
                 aria-label={s.label} className="grid place-items-center w-9 h-9 text-green-700 border border-green-800/15 rounded-lg hover:bg-green-50"><s.icon size={16} /></a>

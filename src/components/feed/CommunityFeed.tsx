@@ -288,11 +288,12 @@ function SeedFallback({ view }: { view: FeedView }) {
                 <p className="text-[11px] uppercase tracking-wide text-gold-800 font-semibold">{m.role}</p>
               </div>
             </div>
+            {/* Seed preview carries the pre-split shape; map its one mobile and
+                one whatsapp onto both halves so the demo matches live behavior. */}
             <ContactButtons info={{
-              email: m.email, mobile: m.mobile, whatsapp: m.whatsapp,
-              allowSms: m.allowSms, allowCall: m.allowCall,
-              // seed preview has no separate call pref; mirror the chat toggle
-              allowWhatsappText: m.allowWhatsapp, allowWhatsappCall: m.allowWhatsapp,
+              communityEmail: m.email,
+              mobileCall: m.mobile, mobileText: m.mobile,
+              whatsappCall: m.whatsapp, whatsappText: m.whatsapp,
             }} />
           </div>
         ))}
@@ -307,7 +308,7 @@ function SeedFallback({ view }: { view: FeedView }) {
             <p className="text-[9px] tracking-widest uppercase text-gold-800 font-semibold mb-1">{r.category}</p>
             <p className="font-serif text-green-800 text-[17px] font-semibold leading-snug mb-1">{r.name}</p>
             <p className="text-[12px] text-muted mb-3">{r.note}</p>
-            <ContactButtons info={{ email: r.email, mobile: r.mobile }} url={r.url} />
+            <ContactButtons info={{ communityEmail: r.email, mobileCall: r.mobile, mobileText: r.mobile }} url={r.url} />
           </div>
         ))}
       </div>

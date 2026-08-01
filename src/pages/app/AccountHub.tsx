@@ -149,7 +149,7 @@ function ContactField({
 }: {
   icon: typeof Mail; label: string; placeholder: string; hideable?: boolean;
   value: string; onValue?: (v: string) => void; readOnly?: boolean;
-  hidden: boolean; onHidden: (v: boolean) => void;
+  hidden?: boolean; onHidden?: (v: boolean) => void;
   checks?: { label: string; on: boolean; onToggle: () => void }[];
 }) {
   return (
@@ -157,9 +157,9 @@ function ContactField({
       <div className="flex items-center gap-2 mb-2">
         <Icon size={15} className="text-green-700" />
         <span className="text-[12px] font-medium text-green-900">{label}</span>
-        {hideable && (
+        {hideable && onHidden && (
           <label className="ml-auto inline-flex items-center gap-1.5 text-[10.5px] text-muted">
-            <input type="checkbox" className="accent-green-700" checked={hidden}
+            <input type="checkbox" className="accent-green-700" checked={hidden ?? false}
               onChange={(e) => onHidden(e.target.checked)} /> Hide from community
           </label>
         )}
@@ -255,23 +255,28 @@ function ProfileSection() {
       <SectionLabel>Contact information</SectionLabel>
       <p className="text-[11.5px] text-muted -mt-1.5 mb-2.5">Always visible to French Heritage. Choose what the community sees.</p>
       <div className="flex flex-col gap-2.5">
-        <ContactField icon={Mail} label="Email" placeholder="claire@example.com" hideable readOnly
-          value={p?.email ?? user?.email ?? ''}
-          hidden={p?.hide_email ?? false} onHidden={(v) => set('hide_email', v)} />
-        <ContactField icon={Smartphone} label="Mobile" placeholder="(760) 555-0148"
-          value={p?.mobile ?? ''} onValue={(v) => set('mobile', v || null)}
-          hidden={p?.hide_mobile ?? false} onHidden={(v) => set('hide_mobile', v)}
-          checks={[
-            { label: 'Text', on: p?.allow_sms ?? true, onToggle: () => set('allow_sms', !(p?.allow_sms ?? true)) },
-            { label: 'Call', on: p?.allow_call ?? true, onToggle: () => set('allow_call', !(p?.allow_call ?? true)) },
-          ]} />
-        <ContactField icon={MessageSquare} label="WhatsApp" placeholder="(760) 555-0148"
-          value={p?.whatsapp ?? ''} onValue={(v) => set('whatsapp', v || null)}
-          hidden={p?.hide_whatsapp ?? false} onHidden={(v) => set('hide_whatsapp', v)}
-          checks={[
-            { label: 'Text', on: p?.allow_whatsapp ?? true, onToggle: () => set('allow_whatsapp', !(p?.allow_whatsapp ?? true)) },
-            { label: 'Calls', on: p?.allow_whatsapp_call ?? true, onToggle: () => set('allow_whatsapp_call', !(p?.allow_whatsapp_call ?? true)) },
-          ]} />
+        {/* Account email: login + FHE correspondence. Read-only here (email-change
+            flow manages it) and never shown to the community — the community sees
+            only the Community email field below. */}
+        <ContactField icon={Mail} label="Account email" placeholder="claire@example.com" readOnly
+          value={p?.email ?? user?.email ?? ''} />
+        {/* Five community channels — each its own value, each its own hide switch.
+            Seeded once from your number on file; yours to change after that. */}
+        <ContactField icon={Mail} label="Community email" placeholder="claire@example.com" hideable
+          value={p?.community_email ?? ''} onValue={(v) => set('community_email', v || null)}
+          hidden={p?.hide_community_email ?? false} onHidden={(v) => set('hide_community_email', v)} />
+        <ContactField icon={Smartphone} label="Calls" placeholder="(760) 555-0148" hideable
+          value={p?.mobile_call ?? ''} onValue={(v) => set('mobile_call', v || null)}
+          hidden={p?.hide_mobile_call ?? false} onHidden={(v) => set('hide_mobile_call', v)} />
+        <ContactField icon={Smartphone} label="Texts" placeholder="(760) 555-0148" hideable
+          value={p?.mobile_text ?? ''} onValue={(v) => set('mobile_text', v || null)}
+          hidden={p?.hide_mobile_text ?? false} onHidden={(v) => set('hide_mobile_text', v)} />
+        <ContactField icon={MessageSquare} label="WhatsApp calls" placeholder="(760) 555-0148" hideable
+          value={p?.whatsapp_call ?? ''} onValue={(v) => set('whatsapp_call', v || null)}
+          hidden={p?.hide_whatsapp_call ?? false} onHidden={(v) => set('hide_whatsapp_call', v)} />
+        <ContactField icon={MessageSquare} label="WhatsApp texts" placeholder="(760) 555-0148" hideable
+          value={p?.whatsapp_text ?? ''} onValue={(v) => set('whatsapp_text', v || null)}
+          hidden={p?.hide_whatsapp_text ?? false} onHidden={(v) => set('hide_whatsapp_text', v)} />
         {/* Mailing address — the same `contacts` columns the onboarding intake
             writes and the contract party tokens compose from. Until now this
             page had no address field at all, so a member who filled it in during
