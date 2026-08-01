@@ -81,6 +81,29 @@ framework in `OpsDashboard.tsx`, the reduce-sum pattern in `api-boarding.ts`, an
   hand-maintained journal applied via `psql`.
 - **`profiles.payment_reminders` is vestigial** (D9: no dunning email exists). It has
   no reader and is not in the profile payload.
+- **Insurance: editor auto-check when both parties report no coverage**
+  (2026-08-01, repo stream). When `TXN.{GL,MORT,MED}_LESSOR_STATUS` and the
+  matching `_LESSEE_STATUS` are both `NONE`, the editor should auto-check the
+  corresponding `TXN.{X}_NOT_REQUIRED` certify input. Note the ordering trap:
+  checking `NOT_REQUIRED` hides the two status selects (they gate on
+  `{"equals": ["NO", ""]}`), so the auto-check must not clear the values that
+  triggered it, or the state oscillates.
+
+- **Insurance: the no-coverage fallback clause is UNWRITTEN** (2026-08-01,
+  item E of `docs/clause-gate-batch-spec.md`). The plan was to widen the three
+  `INSURANCE_RISK.{GL,MORT,MED}_NONE` gates to also fire when both parties'
+  status is `NONE`. The gate logic verifies correct, but **it was not applied**:
+  all three bodies read *"Lessor has elected not to require…"*, which is a
+  statement about a waiver decision. Firing them when `NOT_REQUIRED = 'NO'`
+  would assert that Lessor elected not to require coverage it demonstrably did
+  require — a false statement of fact in an executed instrument — and would
+  hand Lessor full risk in exactly the scenario where the parties failed to
+  allocate it. In that state `INSURANCE_RISK.{X}_STATUS` also still renders,
+  so the widened clause would sit beside text contradicting its own opening
+  sentence. **This needs a separate clause with its own body**, not a reuse of
+  the waiver clause. No negation operator is needed — `NONE` is a real option
+  value, so `all[equals]` expresses it. Blocked on body language approval.
+
 - **`purchases.status = 'confirmed'` is a retiring value** (2026-08-01). Stripe's
   webhook used to overwrite `mark_purchase_paid`'s `'paid'` with `'confirmed'`, so a
   Stripe order ended in a different status than a Zelle or staff-marked order — and
