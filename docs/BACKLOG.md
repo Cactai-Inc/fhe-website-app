@@ -81,6 +81,31 @@ framework in `OpsDashboard.tsx`, the reduce-sum pattern in `api-boarding.ts`, an
   hand-maintained journal applied via `psql`.
 - **`profiles.payment_reminders` is vestigial** (D9: no dunning email exists). It has
   no reader and is not in the profile payload.
+- **`purchases.status = 'confirmed'` is a retiring value** (2026-08-01). Stripe's
+  webhook used to overwrite `mark_purchase_paid`'s `'paid'` with `'confirmed'`, so a
+  Stripe order ended in a different status than a Zelle or staff-marked order — and
+  the webhook's own duplicate guard only worked because its overwrite put it there.
+  The overwrite is removed; `mark_purchase_paid` sets `status='paid'` and `paid_at`
+  on every route. Two consumers were **widened** to accept either value rather than
+  swapped, so any historical `'confirmed'` row still renders and still guards:
+  `src/pages/OrderDetail.tsx:117` (the customer success panel) and
+  `api/stripe-create-session.ts:46` (the already-paid guard). **Deferred cleanup:**
+  once the vocabulary has been unified long enough that no `'confirmed'` rows remain,
+  drop the `|| 'confirmed'` branches in both files and the value from the
+  `purchases.status` union in `src/lib/types.ts:22`. Left in place deliberately —
+  they are not dead code yet.
+
+- **`_provision_purchase_for_offerings` still has two overloads** (2026-08-01). The
+  07-25 signature (`…, p_mark_paid boolean, p_payment_method text, …`) is the one
+  `provision_client_invitation` calls positionally — dropping it breaks invite
+  provisioning. The 07-26 signature (`…, p_payment_method text, p_mark_paid boolean,
+  …`) had its `PUBLIC`/`anon` grants revoked in
+  `20260801010000_revoke_anon_provision_overload.sql`; the **drop** still needs a
+  caller trace first, since call sites resolve positionally and parameters 5 and 6
+  are reversed between the two. Same caveat applies to `sign_release` (26-arg only
+  today) and `staff_assign_horse_party` (8-arg only) — the 14-arg and 3-arg
+  overloads named in the original audit do not exist.
+
 - **`profiles.address_line1/address_line2/city/state/postal_code` are vestigial**
   (verified 2026-07-29). Zero writers and zero readers in the DB and the frontend:
   `update_my_onboarding_profile` mirrors only first/last name onto `profiles` and
