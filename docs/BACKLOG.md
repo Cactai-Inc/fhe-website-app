@@ -81,13 +81,18 @@ framework in `OpsDashboard.tsx`, the reduce-sum pattern in `api-boarding.ts`, an
   hand-maintained journal applied via `psql`.
 - **`profiles.payment_reminders` is vestigial** (D9: no dunning email exists). It has
   no reader and is not in the profile payload.
-- **Insurance: editor auto-check when both parties report no coverage**
-  (2026-08-01, repo stream). When `TXN.{GL,MORT,MED}_LESSOR_STATUS` and the
-  matching `_LESSEE_STATUS` are both `NONE`, the editor should auto-check the
-  corresponding `TXN.{X}_NOT_REQUIRED` certify input. Note the ordering trap:
-  checking `NOT_REQUIRED` hides the two status selects (they gate on
-  `{"equals": ["NO", ""]}`), so the auto-check must not clear the values that
-  triggered it, or the state oscillates.
+- **Insurance: both parties report no coverage — SUPERSEDED by
+  `insurance-resolution-spec.md`** (owner ruling, 2026-08-01). The editor
+  auto-check design formerly described here is **withdrawn: do not implement
+  it.** Auto-checking `TXN.{X}_NOT_REQUIRED` would have made an election on
+  the Lessor's behalf — and only the party inheriting responsibility may make
+  it. The replacement treats a both-`NONE` section as UNRESOLVED: it alerts
+  both parties and blocks signing until the responsible party checks their own
+  certify (`TXN.{X}_NOT_REQUIRED` for Lessor, a new
+  `TXN.{X}_LESSEE_RESPONSIBLE` for Lessee), party-exclusively and enforced
+  server-side. Has DB and frontend parts that run as a later specified
+  workstream; the spec is authoritative and lives outside the repo — ask the
+  owner for it before starting.
 
 - **Insurance: the no-coverage fallback clause is UNWRITTEN** (2026-08-01,
   item E of `docs/clause-gate-batch-spec.md`). The plan was to widen the three
