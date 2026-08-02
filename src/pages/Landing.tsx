@@ -101,8 +101,11 @@ export default function Landing() {
                 unmistakable: a larger italic-serif label with a solid gold
                 underline and arrow, strong contrast over the hero. */}
             <div className="qs-rise qs-delay-4 mt-10 sm:mt-14 flex justify-center">
+              {/* The only CTA on the landing goes to the booking funnel
+                  (/lessons, the rider entry), not the Story page — a visitor
+                  who clicks "Come ride with us" is asking to ride. */}
               <Link
-                to="/story"
+                to="/lessons"
                 className="group inline-flex items-center gap-4 focus-ring-dark"
               >
                 <span className="font-serif italic text-3xl sm:text-4xl lg:text-[2.75rem] text-white border-b-2 border-gold-300 pb-1.5 group-hover:border-gold-200 transition-colors [text-shadow:0_2px_18px_rgba(0,0,0,0.6)]">

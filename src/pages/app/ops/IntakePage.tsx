@@ -14,6 +14,7 @@
  * stamps invitations.request_id and flips the request to 'invited'.
  */
 import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { toErrorMessage } from '../../../lib/ops/errors';
 import { DataTable, Modal, StatusBadge, useAsync, useToast } from '../../../lib/ops';
 import type { Column } from '../../../lib/ops';
@@ -712,7 +713,14 @@ export function IntakePage() {
   const [rows, setRows] = useState<InboundRow[] | null>(null);
   const [inboundError, setInboundError] = useState<string | null>(null);
   // focus = drop into the existing deep workflow for one item
-  const [focus, setFocus] = useState<{ kind: 'booking'; id: string } | null>(null);
+  // Deep-link: request_new notifications link /app/ops/intake?request=<id> —
+  // seed the focus from the param so the link opens that request's drawer
+  // instead of landing on the flat inbound list.
+  const [searchParams] = useSearchParams();
+  const linkedRequest = searchParams.get('request');
+  const [focus, setFocus] = useState<{ kind: 'booking'; id: string } | null>(
+    linkedRequest ? { kind: 'booking', id: linkedRequest } : null,
+  );
   const [supportOpen, setSupportOpen] = useState<string | null>(null);
   const [supportRows, setSupportRows] = useState<SupportRequest[]>([]);
 

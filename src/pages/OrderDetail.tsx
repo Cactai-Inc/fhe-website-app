@@ -114,7 +114,7 @@ export default function OrderDetail() {
           </p>
         )}
 
-        {(order.status === 'paid' || order.status === 'confirmed') && (
+        {order.status === 'paid' && (
           <div className="bg-green-50 border border-green-200 p-8 text-center">
             <p className="body-text text-green-800 mb-4">
               Everything is confirmed and copies are on their way to your inbox. We can’t wait to

@@ -253,17 +253,29 @@ BEGIN
       AND created_at::date BETWEEN p_from AND p_to
     GROUP BY 1) t;
 
-  -- MRR proxy: sum of amount on live recurring (subscription) purchases still active.
-  SELECT coalesce(sum(p.amount),0) INTO v_mrr
+  -- MRR: the MONTHLY value of currently-active recurring subscriptions —
+  -- per-item monthly price (recurring items are priced price_unit='month')
+  -- times quantity, over PAID recurring purchases whose last payment is
+  -- recent enough to still be live (35-day window covers a monthly cadence
+  -- with grace). The prior version summed purchases.amount over ALL
+  -- recurring purchases ever, unwindowed and unnormalised — a lifetime
+  -- total mislabelled "monthly".
+  SELECT coalesce(sum(pi.price_amount * coalesce(pi.quantity,1)),0) INTO v_mrr
     FROM purchases p JOIN purchase_items pi ON pi.purchase_id=p.id JOIN offerings o ON o.id=pi.offering_id
-   WHERE p.org_id=v_org AND p.deleted_at IS NULL AND coalesce(p.status,'')<>'void'
-     AND o.config_kind='recurring';
+   WHERE p.org_id=v_org AND p.deleted_at IS NULL AND p.status='paid'
+     AND o.config_kind='recurring'
+     AND coalesce(p.paid_at, p.created_at) >= current_date - 35;
 
   SELECT jsonb_build_object(
     'contacts_total', (SELECT count(*) FROM contacts WHERE org_id=v_org AND deleted_at IS NULL),
     'clients_total', (SELECT count(*) FROM clients WHERE org_id=v_org AND deleted_at IS NULL),
     'new_in_range', (SELECT count(*) FROM contacts WHERE org_id=v_org AND deleted_at IS NULL AND created_at::date BETWEEN p_from AND p_to),
-    'active_memberships', (SELECT count(*) FROM memberships WHERE status='active'),
+    'active_memberships', (
+      -- paying-member proxy, NOT activated accounts: non-staff members only.
+      -- The prior count included staff profiles (every activated account).
+      SELECT count(*) FROM memberships m JOIN profiles pr ON pr.user_id=m.user_id
+       WHERE m.status='active' AND coalesce(pr.role,'USER')='USER'
+         AND NOT coalesce(pr.is_admin,false)),
     'active_recurring_orders', (SELECT count(DISTINCT p.id) FROM purchases p JOIN purchase_items pi ON pi.purchase_id=p.id JOIN offerings o ON o.id=pi.offering_id WHERE p.org_id=v_org AND p.deleted_at IS NULL AND coalesce(p.status,'')<>'void' AND o.config_kind='recurring'),
     'mrr', v_mrr)
   INTO v_totals;
@@ -289,7 +301,12 @@ BEGIN
     'mtd_expenses', (SELECT coalesce(sum(amount),0) FROM expenses WHERE org_id=v_org AND deleted_at IS NULL AND incurred_on >= v_mstart),
     'outstanding', (SELECT coalesce(sum(greatest(amount-coalesce(amount_paid,0),0)),0) FROM purchases WHERE org_id=v_org AND deleted_at IS NULL AND coalesce(status,'')<>'void'),
     'mtd_new_clients', (SELECT count(*) FROM contacts WHERE org_id=v_org AND deleted_at IS NULL AND created_at::date >= v_mstart),
-    'active_memberships', (SELECT count(*) FROM memberships WHERE status='active'),
+    'active_memberships', (
+      -- paying-member proxy, NOT activated accounts: non-staff members only.
+      -- The prior count included staff profiles (every activated account).
+      SELECT count(*) FROM memberships m JOIN profiles pr ON pr.user_id=m.user_id
+       WHERE m.status='active' AND coalesce(pr.role,'USER')='USER'
+         AND NOT coalesce(pr.is_admin,false)),
     'open_orders', (SELECT count(*) FROM purchases WHERE org_id=v_org AND deleted_at IS NULL AND status IN ('draft','awaiting_payment'))
   );
 END;

@@ -4,7 +4,7 @@ import { FEED_VIEWS, FEED_VIEW_META, type FeedView } from '../../lib/seed';
 import { dmUnreadTotal } from '../../lib/community';
 import {
   CalendarDays, Users, FileText, UserRound, ReceiptText, Shield, LogOut,
-  GraduationCap, Handshake, Home as HomeIcon, Boxes, Contact, LayoutDashboard,
+  GraduationCap, Home as HomeIcon, Boxes, Contact, LayoutDashboard,
   Mail, ChevronDown, Plus, LifeBuoy, ShoppingBag, MessageSquare, BookOpen, ListChecks,
   PanelLeft, PanelLeftClose, Activity, Compass,
 } from 'lucide-react';
@@ -144,7 +144,9 @@ const COMMUNITY_GROUP: NavItem[] = [
   { to: '/app/ops/oversight', label: 'Oversight', icon: Shield },
 ];
 const MODULES_GROUP: NavItem[] = [
-  { to: '/app/ops/brokerage', label: 'Brokerage', icon: Handshake, module: 'mod.brokerage' },
+  // Brokerage has no staff hub page yet (mod.brokerage's live surfaces are the
+  // client-lane engagement reads) — the entry linked to an unregistered route
+  // and 404'd for every staff user with the module on. Re-add with the hub.
   { to: '/app/ops/boarding', label: 'Boarding', icon: HomeIcon, module: 'mod.boarding' },
   { to: '/app/ops/barnops', label: 'Barn Ops', icon: Boxes, module: 'mod.barnops' },
   { to: '/app/ops/records', label: 'Records', icon: FileText, module: 'mod.horserecords' },

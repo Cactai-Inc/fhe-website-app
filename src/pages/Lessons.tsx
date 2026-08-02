@@ -27,6 +27,7 @@ export default function Lessons() {
   const { toggleItem, isSelected, itemCount, setFunnel } = useCart();
   const navigate = useNavigate();
   const [packs, setPacks] = useState<Offering[]>([]);
+  const [packsState, setPacksState] = useState<'loading' | 'error' | 'ready'>('loading');
 
   // This is the rider path — keeps the booking-request page's back link honest.
   useEffect(() => {
@@ -35,8 +36,13 @@ export default function Lessons() {
   // Riding-lesson SKUs from the live catalog (was the hardcoded LESSON_PACKS).
   useEffect(() => {
     fetchPublicCatalog('rider')
-      .then((groups: ServiceGroup[]) => setPacks(groups.find((g) => g.code === 'RIDING_LESSON')?.offerings ?? []))
-      .catch(() => setPacks([]));
+      .then((groups: ServiceGroup[]) => {
+        setPacks(groups.find((g) => g.code === 'RIDING_LESSON')?.offerings ?? []);
+        setPacksState('ready');
+      })
+      // A fetch failure used to silently render an empty grid — the page
+      // looked like the business sells nothing. Surface it instead.
+      .catch(() => { setPacks([]); setPacksState('error'); });
   }, []);
 
   function selectPack(o: Offering) {
@@ -93,6 +99,15 @@ export default function Lessons() {
             <h2 className="heading-section text-green-800">Single, or save with a pack.</h2>
           </div>
 
+          {packsState === 'loading' && (
+            <p className="text-center text-muted body-text">Loading lesson options…</p>
+          )}
+          {packsState === 'error' && (
+            <p className="text-center text-muted body-text">
+              We couldn't load the lesson options. Please refresh the page, or{' '}
+              <Link to="/contact" className="underline">contact us</Link> and we'll get you booked.
+            </p>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {packs.map((o) => {
               const selected = isSelected(o.id);

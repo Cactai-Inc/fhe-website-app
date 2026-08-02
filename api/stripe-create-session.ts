@@ -43,9 +43,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!order || order.buyer_user_id !== userData.user.id) {
       return res.status(403).json({ error: 'forbidden' });
     }
-    // 'paid' is what mark_purchase_paid writes on every payment route;
-    // 'confirmed' is retained for orders paid before that write was unified.
-    if (order.status === 'paid' || order.status === 'confirmed') {
+    // 'paid' is what mark_purchase_paid writes on every payment route.
+    // ('confirmed' fully retired 2026-08-02: zero rows carried it.)
+    if (order.status === 'paid') {
       return res.status(409).json({ error: 'order already paid' });
     }
 
