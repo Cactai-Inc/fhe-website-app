@@ -1,13 +1,11 @@
 {
   "unit": "U2.8",
   "title": "Gate the deductible-responsibility clauses on at least one policy existing",
-  "status": "STAGED — NOT APPLIED",
+  "status": "APPLIED 2026-08-02 — migration 20260802080005_u2_8_deductible_gating.sql",
   "staged_on": "2026-08-01",
   "applies_only_on": "the contract review thread's coherence ruling (master-finishing-plan.md U2.8)",
   "template_key": "HORSE_LEASE_V2",
-
   "problem": "All six deductible clauses gate only on {X}_NOT_REQUIRED being NO or empty. NOT_REQUIRED = NO means 'the Lessor has not certified that coverage is unnecessary' — it does NOT mean a policy exists. So when both parties' status fields are NONE and nobody has certified, the contract still renders a clause allocating responsibility for a deductible on a policy that does not exist.",
-
   "verified_live_2026_08_01": {
     "clauses_found": 6,
     "gate_shape_confirmed": "each simple clause gates on {X}_NOT_REQUIRED in (NO, ''); each SPLITC clause adds {X}_DED_RESP = SPLIT",
@@ -20,20 +18,42 @@
       "TXN.MED_LESSEE_STATUS"
     ]
   },
-
   "rule": "Add one condition per clause: at least one side's status is not NONE. A policy exists when either party HAS_WILL_MAINTAIN or WILL_OBTAIN. Expressed as 'not NONE' on each side under an 'any', so a blank/unset status does not by itself suppress the clause.",
-
   "changes": [
     {
       "clause_key": "INSURANCE_RISK.GL_DED_SIMPLE",
-      "current_gate": { "equals": ["NO", ""], "field_key": "TXN.GL_NOT_REQUIRED" },
+      "current_gate": {
+        "equals": [
+          "NO",
+          ""
+        ],
+        "field_key": "TXN.GL_NOT_REQUIRED"
+      },
       "proposed_gate": {
         "all": [
-          { "equals": ["NO", ""], "field_key": "TXN.GL_NOT_REQUIRED" },
-          { "any": [
-            { "not_equals": ["NONE"], "field_key": "TXN.GL_LESSOR_STATUS" },
-            { "not_equals": ["NONE"], "field_key": "TXN.GL_LESSEE_STATUS" }
-          ] }
+          {
+            "equals": [
+              "NO",
+              ""
+            ],
+            "field_key": "TXN.GL_NOT_REQUIRED"
+          },
+          {
+            "any": [
+              {
+                "not_equals": [
+                  "NONE"
+                ],
+                "field_key": "TXN.GL_LESSOR_STATUS"
+              },
+              {
+                "not_equals": [
+                  "NONE"
+                ],
+                "field_key": "TXN.GL_LESSEE_STATUS"
+              }
+            ]
+          }
         ]
       }
     },
@@ -41,31 +61,89 @@
       "clause_key": "INSURANCE_RISK.GL_DED_SPLITC",
       "current_gate": {
         "all": [
-          { "equals": ["NO", ""], "field_key": "TXN.GL_NOT_REQUIRED" },
-          { "equals": ["SPLIT"], "field_key": "TXN.GL_DED_RESP" }
+          {
+            "equals": [
+              "NO",
+              ""
+            ],
+            "field_key": "TXN.GL_NOT_REQUIRED"
+          },
+          {
+            "equals": [
+              "SPLIT"
+            ],
+            "field_key": "TXN.GL_DED_RESP"
+          }
         ]
       },
       "proposed_gate": {
         "all": [
-          { "equals": ["NO", ""], "field_key": "TXN.GL_NOT_REQUIRED" },
-          { "equals": ["SPLIT"], "field_key": "TXN.GL_DED_RESP" },
-          { "any": [
-            { "not_equals": ["NONE"], "field_key": "TXN.GL_LESSOR_STATUS" },
-            { "not_equals": ["NONE"], "field_key": "TXN.GL_LESSEE_STATUS" }
-          ] }
+          {
+            "equals": [
+              "NO",
+              ""
+            ],
+            "field_key": "TXN.GL_NOT_REQUIRED"
+          },
+          {
+            "equals": [
+              "SPLIT"
+            ],
+            "field_key": "TXN.GL_DED_RESP"
+          },
+          {
+            "any": [
+              {
+                "not_equals": [
+                  "NONE"
+                ],
+                "field_key": "TXN.GL_LESSOR_STATUS"
+              },
+              {
+                "not_equals": [
+                  "NONE"
+                ],
+                "field_key": "TXN.GL_LESSEE_STATUS"
+              }
+            ]
+          }
         ]
       }
     },
     {
       "clause_key": "INSURANCE_RISK.MORT_DEDR_SIMPLE",
-      "current_gate": { "equals": ["NO", ""], "field_key": "TXN.MORT_NOT_REQUIRED" },
+      "current_gate": {
+        "equals": [
+          "NO",
+          ""
+        ],
+        "field_key": "TXN.MORT_NOT_REQUIRED"
+      },
       "proposed_gate": {
         "all": [
-          { "equals": ["NO", ""], "field_key": "TXN.MORT_NOT_REQUIRED" },
-          { "any": [
-            { "not_equals": ["NONE"], "field_key": "TXN.MORT_LESSOR_STATUS" },
-            { "not_equals": ["NONE"], "field_key": "TXN.MORT_LESSEE_STATUS" }
-          ] }
+          {
+            "equals": [
+              "NO",
+              ""
+            ],
+            "field_key": "TXN.MORT_NOT_REQUIRED"
+          },
+          {
+            "any": [
+              {
+                "not_equals": [
+                  "NONE"
+                ],
+                "field_key": "TXN.MORT_LESSOR_STATUS"
+              },
+              {
+                "not_equals": [
+                  "NONE"
+                ],
+                "field_key": "TXN.MORT_LESSEE_STATUS"
+              }
+            ]
+          }
         ]
       }
     },
@@ -73,31 +151,89 @@
       "clause_key": "INSURANCE_RISK.MORT_DEDR_SPLITC",
       "current_gate": {
         "all": [
-          { "equals": ["NO", ""], "field_key": "TXN.MORT_NOT_REQUIRED" },
-          { "equals": ["SPLIT"], "field_key": "TXN.MORT_DED_RESP" }
+          {
+            "equals": [
+              "NO",
+              ""
+            ],
+            "field_key": "TXN.MORT_NOT_REQUIRED"
+          },
+          {
+            "equals": [
+              "SPLIT"
+            ],
+            "field_key": "TXN.MORT_DED_RESP"
+          }
         ]
       },
       "proposed_gate": {
         "all": [
-          { "equals": ["NO", ""], "field_key": "TXN.MORT_NOT_REQUIRED" },
-          { "equals": ["SPLIT"], "field_key": "TXN.MORT_DED_RESP" },
-          { "any": [
-            { "not_equals": ["NONE"], "field_key": "TXN.MORT_LESSOR_STATUS" },
-            { "not_equals": ["NONE"], "field_key": "TXN.MORT_LESSEE_STATUS" }
-          ] }
+          {
+            "equals": [
+              "NO",
+              ""
+            ],
+            "field_key": "TXN.MORT_NOT_REQUIRED"
+          },
+          {
+            "equals": [
+              "SPLIT"
+            ],
+            "field_key": "TXN.MORT_DED_RESP"
+          },
+          {
+            "any": [
+              {
+                "not_equals": [
+                  "NONE"
+                ],
+                "field_key": "TXN.MORT_LESSOR_STATUS"
+              },
+              {
+                "not_equals": [
+                  "NONE"
+                ],
+                "field_key": "TXN.MORT_LESSEE_STATUS"
+              }
+            ]
+          }
         ]
       }
     },
     {
       "clause_key": "INSURANCE_RISK.MED_DEDR_SIMPLE",
-      "current_gate": { "equals": ["NO", ""], "field_key": "TXN.MED_NOT_REQUIRED" },
+      "current_gate": {
+        "equals": [
+          "NO",
+          ""
+        ],
+        "field_key": "TXN.MED_NOT_REQUIRED"
+      },
       "proposed_gate": {
         "all": [
-          { "equals": ["NO", ""], "field_key": "TXN.MED_NOT_REQUIRED" },
-          { "any": [
-            { "not_equals": ["NONE"], "field_key": "TXN.MED_LESSOR_STATUS" },
-            { "not_equals": ["NONE"], "field_key": "TXN.MED_LESSEE_STATUS" }
-          ] }
+          {
+            "equals": [
+              "NO",
+              ""
+            ],
+            "field_key": "TXN.MED_NOT_REQUIRED"
+          },
+          {
+            "any": [
+              {
+                "not_equals": [
+                  "NONE"
+                ],
+                "field_key": "TXN.MED_LESSOR_STATUS"
+              },
+              {
+                "not_equals": [
+                  "NONE"
+                ],
+                "field_key": "TXN.MED_LESSEE_STATUS"
+              }
+            ]
+          }
         ]
       }
     },
@@ -105,31 +241,75 @@
       "clause_key": "INSURANCE_RISK.MED_DEDR_SPLITC",
       "current_gate": {
         "all": [
-          { "equals": ["NO", ""], "field_key": "TXN.MED_NOT_REQUIRED" },
-          { "equals": ["SPLIT"], "field_key": "TXN.MED_DED_RESP" }
+          {
+            "equals": [
+              "NO",
+              ""
+            ],
+            "field_key": "TXN.MED_NOT_REQUIRED"
+          },
+          {
+            "equals": [
+              "SPLIT"
+            ],
+            "field_key": "TXN.MED_DED_RESP"
+          }
         ]
       },
       "proposed_gate": {
         "all": [
-          { "equals": ["NO", ""], "field_key": "TXN.MED_NOT_REQUIRED" },
-          { "equals": ["SPLIT"], "field_key": "TXN.MED_DED_RESP" },
-          { "any": [
-            { "not_equals": ["NONE"], "field_key": "TXN.MED_LESSOR_STATUS" },
-            { "not_equals": ["NONE"], "field_key": "TXN.MED_LESSEE_STATUS" }
-          ] }
+          {
+            "equals": [
+              "NO",
+              ""
+            ],
+            "field_key": "TXN.MED_NOT_REQUIRED"
+          },
+          {
+            "equals": [
+              "SPLIT"
+            ],
+            "field_key": "TXN.MED_DED_RESP"
+          },
+          {
+            "any": [
+              {
+                "not_equals": [
+                  "NONE"
+                ],
+                "field_key": "TXN.MED_LESSOR_STATUS"
+              },
+              {
+                "not_equals": [
+                  "NONE"
+                ],
+                "field_key": "TXN.MED_LESSEE_STATUS"
+              }
+            ]
+          }
         ]
       }
     }
   ],
-
   "open_question_for_the_review_thread": "Does the gate engine support 'not_equals' and 'any'? The live gates in this template use only 'equals' and 'all'. If 'not_equals' is unsupported, the equivalent is an 'any' of positive equals over the non-NONE status values: HAS_WILL_MAINTAIN and WILL_OBTAIN. That form is written below and is the safer choice if the engine's operator set is uncertain.",
-
   "fallback_form_if_not_equals_unsupported": {
     "any": [
-      { "equals": ["HAS_WILL_MAINTAIN", "WILL_OBTAIN"], "field_key": "TXN.{X}_LESSOR_STATUS" },
-      { "equals": ["HAS_WILL_MAINTAIN", "WILL_OBTAIN"], "field_key": "TXN.{X}_LESSEE_STATUS" }
+      {
+        "equals": [
+          "HAS_WILL_MAINTAIN",
+          "WILL_OBTAIN"
+        ],
+        "field_key": "TXN.{X}_LESSOR_STATUS"
+      },
+      {
+        "equals": [
+          "HAS_WILL_MAINTAIN",
+          "WILL_OBTAIN"
+        ],
+        "field_key": "TXN.{X}_LESSEE_STATUS"
+      }
     ]
   },
-
-  "interaction_with_U5": "insurance-resolution-spec.md D1–D5 introduce TXN.{X}_LESSEE_RESPONSIBLE and a signing gate for the all-NONE state. This gating change is complementary: U5 blocks signing while the responsibility is unresolved; U2.8 keeps the deductible clause out of the rendered body while no policy exists. Apply U2.8 after U5's field defs land so the two gate sets are authored against the same field vocabulary."
+  "interaction_with_U5": "insurance-resolution-spec.md D1–D5 introduce TXN.{X}_LESSEE_RESPONSIBLE and a signing gate for the all-NONE state. This gating change is complementary: U5 blocks signing while the responsibility is unresolved; U2.8 keeps the deductible clause out of the rendered body while no policy exists. Apply U2.8 after U5's field defs land so the two gate sets are authored against the same field vocabulary.",
+  "applied_note": "Applied in the positive any/equals form (the fallback_form below), per D12 and the owner rule: render only on positive policy-present equality (HAS_WILL_MAINTAIN/WILL_OBTAIN, either side); blank statuses render nothing — the staged not_equals intent (blank passes) was overruled by the rule."
 }
