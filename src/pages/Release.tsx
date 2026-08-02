@@ -30,10 +30,13 @@ import type { ReleasePreview, ReleaseTemplateKey, SignReleaseResult } from '../l
  *             minor, dated rules acknowledgment) rendered back, with a
  *             "Print or save this page" affordance (kiosk paper copy).
  *
- * Signing calls the sign_release RPC (20260702050000): the server creates the
- * real contact/engagement, merges the document through generate_document,
- * strips the inapplicable minor section, and records the sealed typed
- * signature. The RPC re-validates everything — the client-side checks only
+ * Signing calls POST /api/sign-release (H2 hardening, 2026-08-02), which
+ * wraps the sign_release RPC (20260702050000) server-side: the server
+ * creates the real contact/engagement, merges the document through
+ * generate_document, strips the inapplicable minor section, records the
+ * sealed typed signature, and — because this flow has no session to attach
+ * to a delivery request — emails the executed copy in-process before
+ * responding. The RPC re-validates everything — the client-side checks only
  * mirror it.
  */
 
@@ -198,13 +201,9 @@ export default function Release() {
         esign_consent: esignOk,
       });
       setResult(r);
-      // Best-effort delivery: email the executed copy to the signer and the
-      // company inbox. Never blocks the signed confirmation.
-      fetch('/api/deliver-document', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ documentId: r.document_id }),
-      }).catch(() => { /* the document is safely stored either way */ });
+      // Delivery (email the executed copy to the signer + company inbox) now
+      // happens server-side inside signRelease's POST /api/sign-release call
+      // (H2 hardening) — best-effort there too, so nothing further to do here.
     } catch {
       setError('We could not record your signature. Please try again or see a staff member.');
     } finally {

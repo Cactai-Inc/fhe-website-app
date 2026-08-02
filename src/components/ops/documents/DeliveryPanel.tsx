@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { FormField, StatusBadge, EmptyState, useAsync } from '../../../lib/ops';
 import { listDeliveries, recordDelivery } from '../../../lib/api';
 import { listDocumentPartyContacts } from '../../../lib/ops/api-documents';
+import { supabase } from '../../../lib/supabase';
 import type {
   DocumentDelivery,
   DeliveryChannel,
@@ -133,9 +134,14 @@ export function DeliveryPanel({ documentId, status }: DeliveryPanelProps) {
     setBulkError(null);
     setBulkResult(null);
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
       const res = await fetch('/api/deliver-document', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ documentId }),
       });
       const body = (await res.json()) as {

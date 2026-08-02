@@ -125,38 +125,48 @@ export interface SignReleaseResult {
   merged_body: string;
 }
 
-/** The kiosk sign call — the real engagement + document + sealed signature. */
+/** The kiosk sign call. Routed through POST /api/sign-release (H2 hardening,
+ *  2026-08-02) rather than calling the sign_release RPC directly: the kiosk
+ *  has no session, so the endpoint itself now performs the post-signature
+ *  delivery email server-side, in-process, instead of the browser firing a
+ *  second, unauthenticated request to /api/deliver-document. The RPC's
+ *  validation and signing behavior are unchanged — only where the delivery
+ *  call happens has moved. */
 export async function signRelease(input: SignReleaseInput): Promise<SignReleaseResult> {
-  const params: Record<string, unknown> = {
-    p_template_key: input.template_key,
-    p_first_name: input.first_name,
-    p_last_name: input.last_name,
-    p_email: input.email,
-    p_phone: input.phone,
-    p_typed_name: input.typed_name,
-    p_is_minor: input.is_minor,
-    p_minor_first_name: input.minor_first_name ?? null,
-    p_minor_last_name: input.minor_last_name ?? null,
-    p_minor_dob: input.minor_dob ?? null,
-    p_guardian_relationship: input.guardian_relationship ?? null,
-    p_rules_acknowledged: input.rules_acknowledged,
-    p_esign_consent: input.esign_consent ?? false,
-    // Optional medical-auth fields (participant flow) — written fill-blank server-side.
-    p_dob: input.dob ?? null,
-    p_address_line1: input.address_line1 ?? null,
-    p_address_line2: input.address_line2 ?? null,
-    p_city: input.city ?? null,
-    p_state: input.state ?? null,
-    p_postal_code: input.postal_code ?? null,
-    p_ec1_name: input.emergency_contact_1_name ?? null,
-    p_ec1_relationship: input.emergency_contact_1_relationship ?? null,
-    p_ec1_phone: input.emergency_contact_1_phone ?? null,
-    p_ec2_name: input.emergency_contact_2_name ?? null,
-    p_ec2_relationship: input.emergency_contact_2_relationship ?? null,
-    p_ec2_phone: input.emergency_contact_2_phone ?? null,
+  const body: Record<string, unknown> = {
+    template_key: input.template_key,
+    first_name: input.first_name,
+    last_name: input.last_name,
+    email: input.email,
+    phone: input.phone,
+    typed_name: input.typed_name,
+    is_minor: input.is_minor,
+    minor_first_name: input.minor_first_name ?? null,
+    minor_last_name: input.minor_last_name ?? null,
+    minor_dob: input.minor_dob ?? null,
+    guardian_relationship: input.guardian_relationship ?? null,
+    rules_acknowledged: input.rules_acknowledged,
+    esign_consent: input.esign_consent ?? false,
+    dob: input.dob ?? null,
+    address_line1: input.address_line1 ?? null,
+    address_line2: input.address_line2 ?? null,
+    city: input.city ?? null,
+    state: input.state ?? null,
+    postal_code: input.postal_code ?? null,
+    emergency_contact_1_name: input.emergency_contact_1_name ?? null,
+    emergency_contact_1_relationship: input.emergency_contact_1_relationship ?? null,
+    emergency_contact_1_phone: input.emergency_contact_1_phone ?? null,
+    emergency_contact_2_name: input.emergency_contact_2_name ?? null,
+    emergency_contact_2_relationship: input.emergency_contact_2_relationship ?? null,
+    emergency_contact_2_phone: input.emergency_contact_2_phone ?? null,
   };
-  if (input.org_id) params.p_org = input.org_id;
-  const { data, error } = await supabase.rpc('sign_release', params);
-  if (error) throw error;
-  return data as SignReleaseResult;
+  if (input.org_id) body.org_id = input.org_id;
+  const res = await fetch('/api/sign-release', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json?.error ?? `sign-release failed (HTTP ${res.status})`);
+  return json as SignReleaseResult;
 }
