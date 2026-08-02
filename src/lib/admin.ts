@@ -28,8 +28,17 @@ export async function adminListMembers(): Promise<AdminMemberRow[]> {
 
   const { data: members } = await supabase.from('members').select('user_id, status');
   const byUser = new Map((members ?? []).map((m) => [m.user_id, m]));
+  // Phone lives on the person's contact record (profiles.phone retired,
+  // D14 closure 2026-08-02) — overlay it from contacts by contact_id.
+  const contactIds = (profiles ?? []).map((p) => p.contact_id).filter(Boolean) as string[];
+  const phoneByContact = new Map<string, string | null>();
+  if (contactIds.length) {
+    const { data: contacts } = await supabase.from('contacts').select('id, phone').in('id', contactIds);
+    for (const c of contacts ?? []) phoneByContact.set(c.id as string, (c.phone as string | null) ?? null);
+  }
   return (profiles ?? []).map((p: Profile & { role?: MemberRole | null }) => ({
     ...p,
+    phone: p.contact_id ? (phoneByContact.get(p.contact_id) ?? null) : null,
     member_status: byUser.get(p.user_id)?.status ?? null,
     role: p.role ?? 'USER',
   }));
@@ -104,10 +113,26 @@ export async function adminSetSuspended(userId: string, suspended: boolean): Pro
 export type MemberProfilePatch = Partial<Pick<Profile,
   'first_name' | 'last_name' | 'display_name' | 'email' | 'phone' | 'riding_level' | 'bio'>>;
 export async function adminUpdateProfile(userId: string, patch: MemberProfilePatch): Promise<void> {
-  // `.select()` makes the write report what it touched: an RLS-filtered UPDATE
-  // returns zero rows with NO error, which used to read as success.
-  const res = await supabase.from('profiles').update(patch).eq('user_id', userId).select('user_id');
-  assertWrote(res, 'This record');
+  // Phone lives on the person's contact record, not profiles (D14 closure —
+  // same repoint as Account/Profile's updateMyContactPhone). Split it out and
+  // write it through profiles.contact_id.
+  const { phone, ...profilePatch } = patch;
+  if (phone !== undefined) {
+    const { data: prof, error: profErr } = await supabase
+      .from('profiles').select('contact_id').eq('user_id', userId).maybeSingle();
+    if (profErr) throw profErr;
+    if (!prof?.contact_id) throw new Error('This account has no contact record to hold a phone number.');
+    assertWrote(
+      await supabase.from('contacts').update({ phone: phone || null }).eq('id', prof.contact_id).select('id'),
+      'The phone change',
+    );
+  }
+  if (Object.keys(profilePatch).length) {
+    // `.select()` makes the write report what it touched: an RLS-filtered UPDATE
+    // returns zero rows with NO error, which used to read as success.
+    const res = await supabase.from('profiles').update(profilePatch).eq('user_id', userId).select('user_id');
+    assertWrote(res, 'This record');
+  }
   await logModeration('user', userId, 'edit_profile');
 }
 
