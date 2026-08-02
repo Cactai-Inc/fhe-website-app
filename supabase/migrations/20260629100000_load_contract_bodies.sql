@@ -81,6 +81,8 @@ Limitation of liability. COMPANY shall not be liable for loss of use of a horse,
 
 Termination. COMPANY may suspend or terminate services immediately for dangerous horse behavior, unsafe conditions, nonpayment, abuse directed toward personnel, or conduct addressed in the Property Rules, Safety Acknowledgment, and Equestrian Conduct Agreement. Fees for completed services remain due.
 
+Trail riding. COMPANY does not offer, sell, schedule, supervise, or provide guided trail rides or any other activity in which a client or participant rides a horse on a trail, paid or unpaid, and no order, booking, service request, or engagement shall be construed to include any such activity. This does not limit COMPANY's handling, exercise, conditioning, training, or transport of a horse by COMPANY personnel, without a client or participant riding, at locations that include trails, which services are governed by the separately executed Equine Services Authorization and Release.
+
 11. SCHEDULING ABUSE
 
 Repeated late reschedules, missed bookings, or no-shows may, at COMPANY's discretion and separate from the fees above, result in restriction or revocation of CLIENT's ability to schedule future engagements. This remedy addresses conduct and is independent of the monetary rescheduling fees.
@@ -91,7 +93,7 @@ Where services are purchased as a gift, the purchaser is the CLIENT for payment 
 
 13. DISPUTE RESOLUTION
 
-Any dispute arising out of or relating to these Policies or any order, booking, service request, or engagement between CLIENT and COMPANY, unless governed by the dispute clause of a separately executed agreement, shall be resolved by binding arbitration in San Diego, California.
+Any dispute arising out of or relating to these Policies or any order, booking, service request, or engagement between CLIENT and COMPANY, unless governed by the dispute clause of a separately executed agreement, shall be resolved by final and binding arbitration in San Diego County, California, before a single arbitrator administered by JAMS under its applicable rules, or another administrator the parties agree to in writing, with arbitrator fees and administrative costs allocated as those rules provide. Either party may bring a qualifying claim in small claims court, and either party may seek provisional or injunctive relief in a court of competent jurisdiction without waiving arbitration. Judgment on the award may be entered in any court having jurisdiction.
 
 14. ATTORNEY'S FEES
 
@@ -148,11 +150,11 @@ Where the evaluation includes CLIENT riding, handling, or being near a horse, CL
 
 4. RELEASE, HOLD HARMLESS, AND INDEMNIFICATION
 
-CLIENT, on behalf of CLIENT and CLIENT's heirs, next of kin, estate, executors, administrators, legal representatives, successors, and assigns, releases, waives, and forever discharges COMPANY, its owners, employees, instructors, trainers, independent contractors, agents, and representatives from any and all claims, demands, losses, or damages arising out of or relating to the evaluation, the opinion provided, or CLIENT's decision to purchase, lease, ride, or handle any horse — including claims that the horse was not as evaluated or represented, and including claims arising from the ordinary negligence of the released persons. This release does not apply to gross negligence, reckless conduct, or intentional misconduct. CLIENT agrees to defend, indemnify, and hold harmless COMPANY and the released persons from any such claims brought by or on behalf of CLIENT.
+CLIENT, on behalf of CLIENT and CLIENT's heirs, next of kin, estate, executors, administrators, legal representatives, successors, and assigns, releases, waives, and forever discharges COMPANY and its owners, principals, members, managers, officers, directors, employees, instructors, trainers, volunteers, independent contractors, agents, and representatives, including without limitation {{ORG.PRINCIPALS}}, from any and all claims, demands, losses, or damages arising out of or relating to the evaluation, the opinion provided, or CLIENT's decision to purchase, lease, ride, or handle any horse — including claims that the horse was not as evaluated or represented, and including claims arising from the ordinary negligence of the released persons. This release does not apply to gross negligence, reckless conduct, or intentional misconduct. CLIENT agrees to defend, indemnify, and hold harmless COMPANY and the released persons from any such claims brought by or on behalf of CLIENT.
 
 5. DISPUTE RESOLUTION
 
-Any dispute arising out of or relating to this Waiver shall be resolved by binding arbitration in San Diego, California.
+Any dispute arising out of or relating to this Waiver shall be resolved by final and binding arbitration in San Diego County, California, before a single arbitrator administered by JAMS under its applicable rules, or another administrator the parties agree to in writing, with arbitrator fees and administrative costs allocated as those rules provide. Either party may bring a qualifying claim in small claims court, and either party may seek provisional or injunctive relief in a court of competent jurisdiction without waiving arbitration. Judgment on the award may be entered in any court having jurisdiction.
 
 6. GOVERNING LAW
 
@@ -175,6 +177,8 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   SELECT id, 'DOC', 'EFFECTIVE_DATE', '{{DOC.EFFECTIVE_DATE}}', 'system', false, false FROM contract_templates WHERE template_key = 'EVALUATION_LIABILITY_WAIVER'
   UNION ALL
   SELECT id, 'ORG', 'LEGAL_NAME', '{{ORG.LEGAL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'EVALUATION_LIABILITY_WAIVER'
+  UNION ALL
+  SELECT id, 'ORG', 'PRINCIPALS', '{{ORG.PRINCIPALS}}', 'field', false, false FROM contract_templates WHERE template_key = 'EVALUATION_LIABILITY_WAIVER'
   UNION ALL
   SELECT id, 'SIG', 'CLIENT.DATE', '{{SIG.CLIENT.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'EVALUATION_LIABILITY_WAIVER'
   UNION ALL
@@ -210,7 +214,7 @@ AGREEMENT
 
 1. APPLICABILITY
 
-All sections of this Agreement apply to CLIENT, and to any accompanying minor PARTICIPANT, while present at any PROPERTY. Sections governing riding, arena use, and mounted activity apply only when and to the extent CLIENT or PARTICIPANT engages in those activities. A person present solely as a visitor, guest, or spectator remains bound by all conduct, safety, horse handling, property use, and emergency provisions.
+All sections of this Agreement apply to CLIENT, and to any accompanying minor PARTICIPANT, while present at any PROPERTY. Sections governing riding, arena use, and mounted activity apply only when and to the extent CLIENT or PARTICIPANT engages in those activities. A person present solely as a visitor, guest, or spectator remains bound by all conduct, safety, horse handling, property use, and emergency provisions. The application of this Agreement's conduct and safety provisions to a person present on a trail does not make trail riding a COMPANY service or activity.
 
 2. ACKNOWLEDGMENT OF PROPERTY LOCATION
 
@@ -403,7 +407,7 @@ Effective from the Date of Signature until superseded by a later executed versio
 
 This Emergency Veterinary Authorization and Equine Medical Care Directive ("Agreement") is made effective as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned client ("CLIENT") in favor of {{ORG.LEGAL_NAME}} ("COMPANY"), authorizing COMPANY to act as described below with respect to the horse identified. By signing below, CLIENT acknowledges and agrees to the terms of this Agreement.
 
-For purposes of this Agreement, "Released Parties" means COMPANY, its owners, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, representatives, affiliates, property owners, facility owners, licensors, lessors, lessees, hosts, landowners, successors, assigns, heirs, and any person acting on behalf of COMPANY at any location where it is authorized to conduct business. COVERAGE EXTENSION: The authorizations, releases, and protections set forth in this document extend to and benefit COMPANY (French Heritage Equestrian) and, during any period in which a lease of the Horse is in effect, the then-current lessee of the Horse under that lease, each as an additional covered party — without the need to name that lessee.
+For purposes of this Agreement, "Released Parties" means COMPANY; its owners, principals, members, managers, officers, directors, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, and representatives, including without limitation {{ORG.PRINCIPALS}}; its parent, subsidiary, and affiliated entities; the property owners, facility owners, licensors, lessors, lessees, hosts, and landowners of any location where COMPANY conducts authorized business; the owners, lessors, and lessees of any horse used in or present during COMPANY's activities; other clients of and participants in COMPANY's activities; the family members of any natural person described above when involved in COMPANY's activities; the successors, assigns, heirs, estates, and legal representatives of each of the foregoing; and any person acting on behalf of COMPANY at any location where it is authorized to conduct business. COVERAGE EXTENSION: The authorizations, releases, and protections set forth in this document extend to and benefit COMPANY (French Heritage Equestrian) and, during any period in which a lease of the Horse is in effect, the then-current lessee of the Horse under that lease, each as an additional covered party — without the need to name that lessee.
 
 CLIENT INFORMATION
 
@@ -501,7 +505,7 @@ CLIENT may revoke this authorization by written notice. Revocation shall not aff
 
 14. DISPUTE RESOLUTION
 
-Any dispute arising out of or relating to this Agreement shall be resolved by binding arbitration in San Diego, California.
+Any dispute arising out of or relating to this Agreement shall be resolved by final and binding arbitration in San Diego County, California, before a single arbitrator administered by JAMS under its applicable rules, or another administrator the parties agree to in writing, with arbitrator fees and administrative costs allocated as those rules provide. Either party may bring a qualifying claim in small claims court, and either party may seek provisional or injunctive relief in a court of competent jurisdiction without waiving arbitration. Judgment on the award may be entered in any court having jurisdiction.
 
 15. ATTORNEY'S FEES
 
@@ -538,6 +542,8 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   SELECT id, 'DOC', 'EFFECTIVE_DATE', '{{DOC.EFFECTIVE_DATE}}', 'system', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
   UNION ALL
   SELECT id, 'ORG', 'LEGAL_NAME', '{{ORG.LEGAL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
+  UNION ALL
+  SELECT id, 'ORG', 'PRINCIPALS', '{{ORG.PRINCIPALS}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
   UNION ALL
   SELECT id, 'CLIENT', 'FULL_NAME', '{{CLIENT.FULL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
   UNION ALL
@@ -1577,7 +1583,7 @@ UPDATE contract_templates SET body = $body$PARTICIPANT EMERGENCY INFORMATION AND
 
 This Emergency Information and Treatment Authorization ("Authorization") is made effective as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned client ("CLIENT"), on CLIENT's own behalf and, where a minor is identified, on behalf of that minor ("PARTICIPANT"), in favor of {{ORG.LEGAL_NAME}} ("COMPANY"). This Authorization may be used for riders, horsemanship participants, jumper training participants, visitors, contractors, volunteers, event attendees, and other individuals participating in or present for activities associated with COMPANY. By signing below, CLIENT acknowledges and agrees to the terms of this Authorization. Where no minor is identified, references to PARTICIPANT mean CLIENT.
 
-For purposes of this Authorization, "Released Parties" means COMPANY, its owners, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, representatives, affiliates, property owners, facility owners, licensors, lessors, lessees, hosts, landowners, successors, assigns, heirs, and any person acting on behalf of COMPANY at any location where it is authorized to conduct business.
+For purposes of this Authorization, "Released Parties" means COMPANY; its owners, principals, members, managers, officers, directors, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, and representatives, including without limitation {{ORG.PRINCIPALS}}; its parent, subsidiary, and affiliated entities; the property owners, facility owners, licensors, lessors, lessees, hosts, and landowners of any location where COMPANY conducts authorized business; the owners, lessors, and lessees of any horse used in or present during COMPANY's activities; other clients of and participants in COMPANY's activities; the family members of any natural person described above when involved in COMPANY's activities; the successors, assigns, heirs, estates, and legal representatives of each of the foregoing; and any person acting on behalf of COMPANY at any location where it is authorized to conduct business.
 
 PARTICIPANT INFORMATION
 
@@ -1626,7 +1632,7 @@ Where a minor PARTICIPANT is identified above, CLIENT represents and warrants th
 
 4. DISPUTE RESOLUTION
 
-Any dispute arising out of or relating to this Authorization shall be resolved by binding arbitration in San Diego, California.
+Any dispute arising out of or relating to this Authorization shall be resolved by final and binding arbitration in San Diego County, California, before a single arbitrator administered by JAMS under its applicable rules, or another administrator the parties agree to in writing, with arbitrator fees and administrative costs allocated as those rules provide. Either party may bring a qualifying claim in small claims court, and either party may seek provisional or injunctive relief in a court of competent jurisdiction without waiving arbitration. Judgment on the award may be entered in any court having jurisdiction.
 
 5. ATTORNEY'S FEES
 
@@ -1661,6 +1667,8 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   SELECT id, 'DOC', 'EFFECTIVE_DATE', '{{DOC.EFFECTIVE_DATE}}', 'system', false, false FROM contract_templates WHERE template_key = 'HUMAN_EMERGENCY_MEDICAL'
   UNION ALL
   SELECT id, 'ORG', 'LEGAL_NAME', '{{ORG.LEGAL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HUMAN_EMERGENCY_MEDICAL'
+  UNION ALL
+  SELECT id, 'ORG', 'PRINCIPALS', '{{ORG.PRINCIPALS}}', 'field', false, false FROM contract_templates WHERE template_key = 'HUMAN_EMERGENCY_MEDICAL'
   UNION ALL
   SELECT id, 'CLIENT', 'FULL_NAME', '{{CLIENT.FULL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HUMAN_EMERGENCY_MEDICAL'
   UNION ALL
@@ -1704,7 +1712,7 @@ Effective from the Date of Signature until superseded by a later executed versio
 
 This General Liability Release, Assumption of Risk, Hold Harmless & Indemnification Agreement ("Agreement") is made effective as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned client ("CLIENT"), on CLIENT's own behalf and, where a minor is identified, on behalf of that minor ("PARTICIPANT"), in favor of {{ORG.LEGAL_NAME}} ("COMPANY"). By signing below, CLIENT acknowledges and agrees to the terms of this Agreement. Where no minor is identified, references to PARTICIPANT mean CLIENT.
 
-For purposes of this Agreement, the term "Released Parties" means COMPANY, its owners, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, representatives, affiliates, property owners, facility owners, licensors, lessors, lessees, hosts, landowners, the owners, lessors, and lessees of any horse used in or present during COMPANY's activities, successors, assigns, heirs, and any person acting on behalf of COMPANY at any location where it is authorized to conduct business. This Agreement applies to any ranch, barn, arena, trail, pasture, tack room, stable, private property, leased premises, event venue, competition grounds, or other location where COMPANY conducts authorized business activities.
+For purposes of this Agreement, "Released Parties" means COMPANY; its owners, principals, members, managers, officers, directors, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, and representatives, including without limitation {{ORG.PRINCIPALS}}; its parent, subsidiary, and affiliated entities; the property owners, facility owners, licensors, lessors, lessees, hosts, and landowners of any location where COMPANY conducts authorized business; the owners, lessors, and lessees of any horse used in or present during COMPANY's activities; other clients of and participants in COMPANY's activities; the family members of any natural person described above when involved in COMPANY's activities; the successors, assigns, heirs, estates, and legal representatives of each of the foregoing; and any person acting on behalf of COMPANY at any location where it is authorized to conduct business. This Agreement applies to any ranch, barn, arena, trail, pasture, tack room, stable, private property, leased premises, event venue, competition grounds, or other location where COMPANY conducts authorized business activities.
 
 1. VISITOR ACKNOWLEDGEMENT
 
@@ -1727,51 +1735,55 @@ Emergency medical assistance may not be immediately available.
 
 CLIENT knowingly and voluntarily assumes, on CLIENT's own behalf and on behalf of any accompanying minor, all risks, whether known or unknown, foreseeable or unforeseeable, inherent or otherwise, arising from entering, remaining upon, or departing from any property where COMPANY conducts business. CLIENT accepts full personal responsibility for any injury, illness, death, property damage, or other loss that may occur.
 
-4. PERSONAL RESPONSIBILITY AND CONDITION
+4. RIDING LOCATIONS AND VENUE SELECTION
+
+CLIENT acknowledges that activities and visits may occur at various locations, each with its own conditions, hazards, management, and rules, and that no Released Party owns, controls, maintains, or is responsible for the condition of any location not owned by COMPANY. No Released Party makes any representation or warranty regarding the safety, condition, maintenance, suitability, or supervision of any location, facility, arena, or trail. COMPANY's familiarity with, presence at, suggestion of, scheduling of activities at, or actual or perceived involvement in the selection of any location where CLIENT or an accompanying minor rides, handles a horse, or is present does not constitute a representation that the location is safe or suitable, does not create any duty to inspect or warn, and does not alter the releases, assumptions of risk, and indemnities in this Agreement, which apply in full at every location.
+
+5. PERSONAL RESPONSIBILITY AND CONDITION
 
 CLIENT represents that: CLIENT, and any accompanying minor, is capable of safely being present on the property, or CLIENT has notified COMPANY of any condition, limitation, or circumstance requiring assistance or accommodation while on the property. CLIENT is not under the influence of alcohol, illegal drugs, or any medication that impairs judgment or physical ability, and will not remain on the property while so impaired. CLIENT is solely responsible for determining whether presence on the property is appropriate, for exercising care consistent with CLIENT's own condition and abilities, for remaining in designated visitor areas, and for supervising any accompanying minor at all times.
 
-5. RULES AND CONDUCT AGREEMENT
+6. RULES AND CONDUCT AGREEMENT
 
 CLIENT acknowledges receipt of the separately executed Property Rules, Safety Acknowledgment, and Equestrian Conduct Agreement. CLIENT agrees to read, understand, and comply with those rules at all times and to ensure any accompanying minor complies. CLIENT understands that failure to comply may result in immediate removal from the property without refund or compensation.
 
-6. RELEASE OF LIABILITY
+7. RELEASE OF LIABILITY
 
-CLIENT, on behalf of CLIENT and CLIENT's heirs, next of kin, estate, executors, administrators, legal representatives, successors, and assigns, and on behalf of any accompanying minor and the minor's heirs, next of kin, estate, executors, administrators, legal representatives, successors, and assigns, voluntarily releases, waives, and forever discharges the Released Parties from any and all claims, demands, causes of action, damages, losses, liabilities, costs, expenses, or judgments arising out of or related to presence on the property, including claims arising from the ordinary negligence of the Released Parties. This release applies to bodily injury, personal injury, illness, property damage, wrongful death, emotional distress, and all other losses, whether known or unknown, including claims not known or suspected to exist at the time of signing. This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
+CLIENT, on behalf of CLIENT and CLIENT's heirs, next of kin, estate, executors, administrators, legal representatives, successors, and assigns, and on behalf of any accompanying minor and the minor's heirs, next of kin, estate, executors, administrators, legal representatives, successors, and assigns, voluntarily releases, waives, and forever discharges the Released Parties from any and all claims, demands, causes of action, damages, losses, liabilities, costs, expenses, or judgments arising out of or related to presence on the property, including claims arising from the ordinary negligence of the Released Parties. This release applies to bodily injury, personal injury, illness, property damage, wrongful death, emotional distress, and all other losses, whether known or unknown, including claims not known or suspected to exist at the time of signing. CLIENT acknowledges that CLIENT is familiar with, and expressly waives the protections of, California Civil Code Section 1542, which provides: "A general release does not extend to claims that the creditor or releasing party does not know or suspect to exist in his or her favor at the time of executing the release and that, if known by him or her, would have materially affected his or her settlement with the debtor or released party." This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
 
-7. HOLD HARMLESS AND INDEMNIFICATION
+8. HOLD HARMLESS AND INDEMNIFICATION
 
 CLIENT agrees to defend, indemnify, and hold harmless the Released Parties from and against any claims, liabilities, damages, judgments, costs, expenses, or attorney's fees arising from: CLIENT's or an accompanying minor's acts or omissions; violation of this Agreement or property rules; Claims brought by or on behalf of persons accompanying CLIENT, to the extent caused by CLIENT's conduct; or Damage to property caused by CLIENT or an accompanying minor.
 
-8. PROPERTY DAMAGE
+9. PROPERTY DAMAGE
 
 CLIENT accepts responsibility for any damage caused by CLIENT or an accompanying minor to horses, equipment, facilities, vehicles, buildings, or other property and agrees to reimburse the responsible party for repair or replacement costs.
 
-9. MEDIA CONSENT
+10. MEDIA CONSENT
 
 CLIENT acknowledges that photographs, video recordings, and other media may be captured during visits to, or activities at, any location where COMPANY conducts business. CLIENT grants COMPANY a perpetual, royalty-free license to use such media, including CLIENT's or an accompanying minor's name, image, and likeness, for instructional, promotional, and other lawful business purposes, without compensation. CLIENT may revoke this consent at any time by written notice via email to {{ORG.EMAIL}}; revocation is effective prospectively as to media captured after receipt of the notice.
 
-10. DISPUTE RESOLUTION
+11. DISPUTE RESOLUTION
 
-Any dispute arising out of or relating to this Agreement or presence at any location where COMPANY conducts business shall be resolved by binding arbitration in San Diego, California.
+Any dispute arising out of or relating to this Agreement or presence at any location where COMPANY conducts business shall be resolved by final and binding arbitration in San Diego County, California, before a single arbitrator administered by JAMS under its applicable rules, or another administrator the parties agree to in writing, with arbitrator fees and administrative costs allocated as those rules provide. Either party may bring a qualifying claim in small claims court, and either party may seek provisional or injunctive relief in a court of competent jurisdiction without waiving arbitration. Judgment on the award may be entered in any court having jurisdiction.
 
-11. ATTORNEY'S FEES
+12. ATTORNEY'S FEES
 
 Each party shall be required to cover their own attorney's fees and costs.
 
-12. GOVERNING LAW
+13. GOVERNING LAW
 
 California law governs this Agreement.
 
-13. SEVERABILITY
+14. SEVERABILITY
 
 If any provision of this Agreement is held unenforceable, the remaining provisions shall remain in full force and effect.
 
-14. ENTIRE AGREEMENT
+15. ENTIRE AGREEMENT
 
 This Agreement constitutes the entire understanding between the parties concerning the subject matter herein and supersedes any prior oral or written representations regarding this subject.
 
-15. ACKNOWLEDGMENT
+16. ACKNOWLEDGMENT
 
 CLIENT acknowledges that: This Agreement is legally binding. CLIENT has carefully read the entire Agreement. CLIENT understands its contents. CLIENT has had the opportunity to ask questions before signing. CLIENT signs voluntarily and without coercion.
 
@@ -1797,6 +1809,8 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   SELECT id, 'DOC', 'EFFECTIVE_DATE', '{{DOC.EFFECTIVE_DATE}}', 'system', false, false FROM contract_templates WHERE template_key = 'RELEASE_GENERAL'
   UNION ALL
   SELECT id, 'ORG', 'LEGAL_NAME', '{{ORG.LEGAL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_GENERAL'
+  UNION ALL
+  SELECT id, 'ORG', 'PRINCIPALS', '{{ORG.PRINCIPALS}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_GENERAL'
   UNION ALL
   SELECT id, 'ORG', 'EMAIL', '{{ORG.EMAIL}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_GENERAL'
   UNION ALL
@@ -1824,7 +1838,7 @@ Effective from the Date of Signature until superseded by a later executed versio
 
 This Equine Services Authorization, Liability Release, Assumption of Risk, Hold Harmless & Indemnification Agreement ("Agreement") is made effective as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned client ("CLIENT") in favor of {{ORG.LEGAL_NAME}} ("COMPANY"), as a condition of COMPANY providing equine services for the horse described below. By signing below, CLIENT acknowledges and agrees to the terms of this Agreement.
 
-For purposes of this Agreement, "Released Parties" means COMPANY, its owners, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, representatives, affiliates, property owners, facility owners, licensors, lessors, lessees, hosts, landowners, successors, assigns, heirs, and any person acting on behalf of COMPANY at any location where it is authorized to conduct business. COVERAGE EXTENSION: The authorizations, releases, and protections set forth in this document extend to and benefit COMPANY (French Heritage Equestrian) and, during any period in which a lease of the Horse is in effect, the then-current lessee of the Horse under that lease, each as an additional covered party — without the need to name that lessee.
+For purposes of this Agreement, "Released Parties" means COMPANY; its owners, principals, members, managers, officers, directors, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, and representatives, including without limitation {{ORG.PRINCIPALS}}; its parent, subsidiary, and affiliated entities; the property owners, facility owners, licensors, lessors, lessees, hosts, and landowners of any location where COMPANY conducts authorized business; the owners, lessors, and lessees of any horse used in or present during COMPANY's activities; other clients of and participants in COMPANY's activities; the family members of any natural person described above when involved in COMPANY's activities; the successors, assigns, heirs, estates, and legal representatives of each of the foregoing; and any person acting on behalf of COMPANY at any location where it is authorized to conduct business. COVERAGE EXTENSION: The authorizations, releases, and protections set forth in this document extend to and benefit COMPANY (French Heritage Equestrian) and, during any period in which a lease of the Horse is in effect, the then-current lessee of the Horse under that lease, each as an additional covered party — without the need to name that lessee.
 
 This Agreement applies at any ranch, barn, arena, stable, tack room, trail, leased premises, private property, competition venue, or other location where COMPANY conducts authorized business.
 
@@ -1893,7 +1907,7 @@ CLIENT acknowledges that photographs, video recordings, and other media may be c
 
 11. DISPUTE RESOLUTION
 
-Any dispute arising out of or relating to this Agreement shall be resolved by binding arbitration in San Diego, California.
+Any dispute arising out of or relating to this Agreement shall be resolved by final and binding arbitration in San Diego County, California, before a single arbitrator administered by JAMS under its applicable rules, or another administrator the parties agree to in writing, with arbitrator fees and administrative costs allocated as those rules provide. Either party may bring a qualifying claim in small claims court, and either party may seek provisional or injunctive relief in a court of competent jurisdiction without waiving arbitration. Judgment on the award may be entered in any court having jurisdiction.
 
 12. ATTORNEY'S FEES
 
@@ -1930,6 +1944,8 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   SELECT id, 'DOC', 'EFFECTIVE_DATE', '{{DOC.EFFECTIVE_DATE}}', 'system', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_CARE'
   UNION ALL
   SELECT id, 'ORG', 'LEGAL_NAME', '{{ORG.LEGAL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_CARE'
+  UNION ALL
+  SELECT id, 'ORG', 'PRINCIPALS', '{{ORG.PRINCIPALS}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_CARE'
   UNION ALL
   SELECT id, 'HORSE', 'REGISTERED_NAME', '{{HORSE.REGISTERED_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_CARE'
   UNION ALL
@@ -2057,13 +2073,13 @@ Effective from the Date of Signature until superseded by a later executed versio
 
 This Participant Liability Release, Assumption of Risk, Hold Harmless & Indemnification Agreement ("Agreement") is made effective as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned client ("CLIENT"), on CLIENT's own behalf and, where a minor participant is identified, on behalf of that minor ("PARTICIPANT"), in favor of {{ORG.LEGAL_NAME}} ("COMPANY"). By signing below, CLIENT acknowledges and agrees to the terms of this Agreement. Where no minor is identified, CLIENT is the participant and references to PARTICIPANT mean CLIENT.
 
-For purposes of this Agreement, "Released Parties" means COMPANY, its owners, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, representatives, affiliates, property owners, facility owners, licensors, lessors, lessees, hosts, landowners, the owners, lessors, and lessees of any horse used in or present during COMPANY's activities, successors, assigns, heirs, and any person acting on behalf of COMPANY at any location where it is authorized to conduct business.
+For purposes of this Agreement, "Released Parties" means COMPANY; its owners, principals, members, managers, officers, directors, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, and representatives, including without limitation {{ORG.PRINCIPALS}}; its parent, subsidiary, and affiliated entities; the property owners, facility owners, licensors, lessors, lessees, hosts, and landowners of any location where COMPANY conducts authorized business; the owners, lessors, and lessees of any horse used in or present during COMPANY's activities; other clients of and participants in COMPANY's activities; the family members of any natural person described above when involved in COMPANY's activities; the successors, assigns, heirs, estates, and legal representatives of each of the foregoing; and any person acting on behalf of COMPANY at any location where it is authorized to conduct business.
 
 This Agreement applies at any ranch, barn, arena, stable, tack room, trail, private property, leased premises, event venue, show grounds, or other location where COMPANY conducts authorized business.
 
 1. PARTICIPATION
 
-PARTICIPANT voluntarily elects to engage in equestrian and related activities offered, supervised, or conducted by COMPANY, including but not limited to: Riding lessons, Mounted instruction, Unmounted instruction, Horse handling, Grooming, Tacking and untacking, Leading horses, Groundwork, Lunging, Round pen work, Arena work, Trail riding, Clinics, Camps, Horse exercise, Assisting instructors, Educational demonstrations, Walking, trotting, cantering, galloping, jumping, cavaletti, conditioning, and training, and any other equestrian activity authorized by COMPANY.
+PARTICIPANT voluntarily elects to engage in equestrian and related activities offered, supervised, or conducted by COMPANY, including but not limited to: Riding lessons, Mounted instruction, Unmounted instruction, Horse handling, Grooming, Tacking and untacking, Leading horses, Groundwork, Lunging, Round pen work, Arena work, Clinics, Camps, Horse exercise, Assisting instructors, Educational demonstrations, Walking, trotting, cantering, galloping, jumping, cavaletti, conditioning, and training, and any other equestrian activity authorized by COMPANY.
 
 2. ACKNOWLEDGMENT OF INHERENT RISKS
 
@@ -2073,51 +2089,59 @@ PARTICIPANT understands that equestrian activities are inherently dangerous and 
 
 PARTICIPANT knowingly and voluntarily assumes all inherent and ordinary risks associated with horses, equestrian activities, transportation to and from activities not provided by COMPANY, use of equipment, and participation at any facility where COMPANY conducts business. PARTICIPANT accepts full responsibility for any injury, illness, emotional distress, disability, death, property damage, or other loss arising from participation.
 
-4. HEALTH, FITNESS, AND CAPACITY
+4. TRAIL RIDING — NOT A COMPANY ACTIVITY
+
+PARTICIPANT acknowledges and agrees that trail riding is not a service offered, sold, scheduled, organized, supervised, or conducted by COMPANY, whether paid or unpaid, and is outside the scope of COMPANY's business operations, instruction programs, and insurance coverage. Any riding or presence by PARTICIPANT on any trail, mounted or unmounted, whether planned or unplanned and however it comes about — including where any owner, principal, instructor, trainer, employee, or other person associated with COMPANY is present, riding, or otherwise participating at the same time — is PARTICIPANT's own independent recreational activity, undertaken voluntarily and at PARTICIPANT's sole risk. The presence, company, participation, encouragement, awareness, or proximity of any person associated with COMPANY on or near a trail does not constitute supervision, instruction, guiding, leading, or organizing of the activity, does not create or assume any duty on the part of COMPANY or any Released Party, and any such person is present solely in their individual recreational capacity and not as a representative of COMPANY. Any statement by COMPANY or any person associated with it regarding PARTICIPANT's skill, experience, readiness, or eligibility to ride outside an enclosed arena is an opinion offered as a courtesy, not a warranty, professional assessment, or undertaking of responsibility. PARTICIPANT assumes all risks of trail riding, including those acknowledged in this Agreement, and the release, hold harmless, and indemnification provisions of this Agreement apply in full to any claim arising out of or relating to trail riding or presence on any trail, including any claim premised on the presence or perceived involvement of any person associated with COMPANY. This section addresses PARTICIPANT's own riding and presence on trails; it does not limit or characterize services COMPANY provides to a horse when PARTICIPANT is not riding, which are governed by the separately executed Equine Services Authorization and Release.
+
+5. RIDING LOCATIONS AND VENUE SELECTION
+
+PARTICIPANT acknowledges that activities may occur at various locations, each with its own conditions, hazards, management, and rules, and that no Released Party owns, controls, maintains, or is responsible for the condition of any location not owned by COMPANY. No Released Party makes any representation or warranty regarding the safety, condition, maintenance, suitability, or supervision of any location, facility, arena, or trail. COMPANY's familiarity with, presence at, suggestion of, scheduling of activities at, or actual or perceived involvement in the selection of any location where PARTICIPANT rides, handles a horse, or is present does not constitute a representation that the location is safe or suitable, does not create any duty to inspect or warn, and does not alter the releases, assumptions of risk, and indemnities in this Agreement, which apply in full at every location.
+
+6. HEALTH, FITNESS, AND CAPACITY
 
 PARTICIPANT represents and warrants that: PARTICIPANT is in good physical and mental health. PARTICIPANT is capable of safely participating in equestrian activities. PARTICIPANT is not impaired by alcohol, illegal drugs, or medication affecting judgment or coordination, and will not participate in any activity while so impaired. PARTICIPANT has no medical condition, injury, disability, or restriction that would create an unreasonable risk of harm to themselves or others. PARTICIPANT has disclosed any relevant medical conditions that could reasonably affect safe participation. PARTICIPANT accepts full responsibility for monitoring their own physical condition and will immediately stop participating if they believe continued participation would be unsafe. Where this Agreement is signed for a minor PARTICIPANT, CLIENT makes these representations to the best of CLIENT's knowledge.
 
-5. SAFETY EQUIPMENT AND INSTRUCTION
+7. SAFETY EQUIPMENT AND INSTRUCTION
 
 PARTICIPANT agrees to: Follow all instructions given by COMPANY personnel. Use required safety equipment when directed. Immediately report unsafe conditions, damaged equipment, or injuries. Exercise reasonable care while around horses and other participants. PARTICIPANT understands that wearing a riding helmet or other protective equipment reduces, but does not eliminate, the risk of injury.
 
-6. RULES AND CONDUCT AGREEMENT
+8. RULES AND CONDUCT AGREEMENT
 
 PARTICIPANT acknowledges receipt of the separately executed Property Rules, Safety Acknowledgment, and Equestrian Conduct Agreement. PARTICIPANT agrees to read, understand, comply with, and ensure any accompanying minor complies with those rules at all times. PARTICIPANT understands that failure to comply may result in suspension or termination of participation without refund.
 
-7. RELEASE OF LIABILITY
+9. RELEASE OF LIABILITY
 
-CLIENT, on CLIENT's own behalf and on behalf of CLIENT's heirs, next of kin, estate, executors, administrators, legal representatives, successors, and assigns, and on behalf of any minor PARTICIPANT and the minor's heirs, next of kin, estate, executors, administrators, legal representatives, successors, and assigns, releases, waives, and forever discharges the Released Parties from any and all claims, demands, causes of action, liabilities, damages, losses, costs, expenses, or judgments arising out of or relating to PARTICIPANT's involvement in equestrian activities, including claims arising from the ordinary negligence of the Released Parties. This release applies to claims involving bodily injury, illness, emotional distress, disability, death, property damage, loss of income, and any other damages, whether known or unknown, including claims CLIENT or PARTICIPANT does not know or suspect to exist at the time of signing. This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
+CLIENT, on CLIENT's own behalf and on behalf of CLIENT's heirs, next of kin, estate, executors, administrators, legal representatives, successors, and assigns, and on behalf of any minor PARTICIPANT and the minor's heirs, next of kin, estate, executors, administrators, legal representatives, successors, and assigns, releases, waives, and forever discharges the Released Parties from any and all claims, demands, causes of action, liabilities, damages, losses, costs, expenses, or judgments arising out of or relating to PARTICIPANT's involvement in equestrian activities, including claims arising from the ordinary negligence of the Released Parties. This release applies to claims involving bodily injury, illness, emotional distress, disability, death, property damage, loss of income, and any other damages, whether known or unknown, including claims CLIENT or PARTICIPANT does not know or suspect to exist at the time of signing. CLIENT acknowledges that CLIENT is familiar with, and expressly waives the protections of, California Civil Code Section 1542, which provides: "A general release does not extend to claims that the creditor or releasing party does not know or suspect to exist in his or her favor at the time of executing the release and that, if known by him or her, would have materially affected his or her settlement with the debtor or released party." This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
 
-8. HOLD HARMLESS & INDEMNIFICATION
+10. HOLD HARMLESS & INDEMNIFICATION
 
 CLIENT agrees to defend, indemnify, and hold harmless the Released Parties from and against any claims, liabilities, damages, judgments, costs, expenses, and reasonable attorney's fees arising from: PARTICIPANT's acts or omissions; PARTICIPANT's failure to follow instructions or facility rules; Damage caused by PARTICIPANT to horses, equipment, facilities, or property; or Claims brought by third parties resulting from PARTICIPANT's conduct.
 
-9. MEDIA CONSENT
+11. MEDIA CONSENT
 
 CLIENT acknowledges that photographs, video recordings, and other media may be captured during visits to, or activities at, any location where COMPANY conducts business. CLIENT grants COMPANY a perpetual, royalty-free license to use such media, including CLIENT's or the minor PARTICIPANT's name, image, and likeness, for instructional, promotional, and other lawful business purposes, without compensation. CLIENT may revoke this consent at any time by written notice via email to {{ORG.EMAIL}}; revocation is effective prospectively as to media captured after receipt of the notice.
 
-10. DISPUTE RESOLUTION
+12. DISPUTE RESOLUTION
 
-Any dispute arising out of or relating to this Agreement or PARTICIPANT's involvement in COMPANY activities shall be resolved by binding arbitration in San Diego, California.
+Any dispute arising out of or relating to this Agreement or PARTICIPANT's involvement in COMPANY activities shall be resolved by final and binding arbitration in San Diego County, California, before a single arbitrator administered by JAMS under its applicable rules, or another administrator the parties agree to in writing, with arbitrator fees and administrative costs allocated as those rules provide. Either party may bring a qualifying claim in small claims court, and either party may seek provisional or injunctive relief in a court of competent jurisdiction without waiving arbitration. Judgment on the award may be entered in any court having jurisdiction.
 
-11. ATTORNEY'S FEES
+13. ATTORNEY'S FEES
 
 Each party shall be required to cover their own attorney's fees and costs.
 
-12. GOVERNING LAW
+14. GOVERNING LAW
 
 California law governs this Agreement.
 
-13. SEVERABILITY
+15. SEVERABILITY
 
 If any provision of this Agreement is determined to be unenforceable, the remaining provisions shall remain in full force and effect.
 
-14. ENTIRE AGREEMENT
+16. ENTIRE AGREEMENT
 
 This Agreement constitutes the complete agreement between the parties concerning PARTICIPANT's involvement in activities conducted by COMPANY and supersedes all prior discussions or understandings regarding its subject matter.
 
-15. ACKNOWLEDGMENT
+17. ACKNOWLEDGMENT
 
 CLIENT acknowledges that: This Agreement contains important legal rights. CLIENT has carefully read and understands the entire Agreement. CLIENT has had the opportunity to ask questions before signing. CLIENT understands they are assuming substantial risks associated with equestrian activities on CLIENT's own behalf and, where applicable, on behalf of a minor PARTICIPANT. CLIENT signs voluntarily and without coercion. CLIENT intends this Agreement to be binding upon CLIENT, any minor PARTICIPANT, and their heirs, successors, assigns, and personal representatives.
 
@@ -2143,6 +2167,8 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   SELECT id, 'DOC', 'EFFECTIVE_DATE', '{{DOC.EFFECTIVE_DATE}}', 'system', false, false FROM contract_templates WHERE template_key = 'RELEASE_PARTICIPANT'
   UNION ALL
   SELECT id, 'ORG', 'LEGAL_NAME', '{{ORG.LEGAL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_PARTICIPANT'
+  UNION ALL
+  SELECT id, 'ORG', 'PRINCIPALS', '{{ORG.PRINCIPALS}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_PARTICIPANT'
   UNION ALL
   SELECT id, 'ORG', 'EMAIL', '{{ORG.EMAIL}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_PARTICIPANT'
   UNION ALL

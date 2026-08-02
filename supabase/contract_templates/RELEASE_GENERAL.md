@@ -4,7 +4,7 @@ Effective from the Date of Signature until superseded by a later executed versio
 
 This General Liability Release, Assumption of Risk, Hold Harmless & Indemnification Agreement ("Agreement") is made effective as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned client ("CLIENT"), on CLIENT's own behalf and, where a minor is identified, on behalf of that minor ("PARTICIPANT"), in favor of {{ORG.LEGAL_NAME}} ("COMPANY"). By signing below, CLIENT acknowledges and agrees to the terms of this Agreement. Where no minor is identified, references to PARTICIPANT mean CLIENT.
 
-For purposes of this Agreement, the term "Released Parties" means COMPANY, its owners, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, representatives, affiliates, property owners, facility owners, licensors, lessors, lessees, hosts, landowners, the owners, lessors, and lessees of any horse used in or present during COMPANY's activities, successors, assigns, heirs, and any person acting on behalf of COMPANY at any location where it is authorized to conduct business. This Agreement applies to any ranch, barn, arena, trail, pasture, tack room, stable, private property, leased premises, event venue, competition grounds, or other location where COMPANY conducts authorized business activities.
+For purposes of this Agreement, "Released Parties" means COMPANY; its owners, principals, members, managers, officers, directors, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, and representatives, including without limitation {{ORG.PRINCIPALS}}; its parent, subsidiary, and affiliated entities; the property owners, facility owners, licensors, lessors, lessees, hosts, and landowners of any location where COMPANY conducts authorized business; the owners, lessors, and lessees of any horse used in or present during COMPANY's activities; other clients of and participants in COMPANY's activities; the family members of any natural person described above when involved in COMPANY's activities; the successors, assigns, heirs, estates, and legal representatives of each of the foregoing; and any person acting on behalf of COMPANY at any location where it is authorized to conduct business. This Agreement applies to any ranch, barn, arena, trail, pasture, tack room, stable, private property, leased premises, event venue, competition grounds, or other location where COMPANY conducts authorized business activities.
 
 1. VISITOR ACKNOWLEDGEMENT
 
@@ -27,51 +27,55 @@ Emergency medical assistance may not be immediately available.
 
 CLIENT knowingly and voluntarily assumes, on CLIENT's own behalf and on behalf of any accompanying minor, all risks, whether known or unknown, foreseeable or unforeseeable, inherent or otherwise, arising from entering, remaining upon, or departing from any property where COMPANY conducts business. CLIENT accepts full personal responsibility for any injury, illness, death, property damage, or other loss that may occur.
 
-4. PERSONAL RESPONSIBILITY AND CONDITION
+4. RIDING LOCATIONS AND VENUE SELECTION
+
+CLIENT acknowledges that activities and visits may occur at various locations, each with its own conditions, hazards, management, and rules, and that no Released Party owns, controls, maintains, or is responsible for the condition of any location not owned by COMPANY. No Released Party makes any representation or warranty regarding the safety, condition, maintenance, suitability, or supervision of any location, facility, arena, or trail. COMPANY's familiarity with, presence at, suggestion of, scheduling of activities at, or actual or perceived involvement in the selection of any location where CLIENT or an accompanying minor rides, handles a horse, or is present does not constitute a representation that the location is safe or suitable, does not create any duty to inspect or warn, and does not alter the releases, assumptions of risk, and indemnities in this Agreement, which apply in full at every location.
+
+5. PERSONAL RESPONSIBILITY AND CONDITION
 
 CLIENT represents that: CLIENT, and any accompanying minor, is capable of safely being present on the property, or CLIENT has notified COMPANY of any condition, limitation, or circumstance requiring assistance or accommodation while on the property. CLIENT is not under the influence of alcohol, illegal drugs, or any medication that impairs judgment or physical ability, and will not remain on the property while so impaired. CLIENT is solely responsible for determining whether presence on the property is appropriate, for exercising care consistent with CLIENT's own condition and abilities, for remaining in designated visitor areas, and for supervising any accompanying minor at all times.
 
-5. RULES AND CONDUCT AGREEMENT
+6. RULES AND CONDUCT AGREEMENT
 
 CLIENT acknowledges receipt of the separately executed Property Rules, Safety Acknowledgment, and Equestrian Conduct Agreement. CLIENT agrees to read, understand, and comply with those rules at all times and to ensure any accompanying minor complies. CLIENT understands that failure to comply may result in immediate removal from the property without refund or compensation.
 
-6. RELEASE OF LIABILITY
+7. RELEASE OF LIABILITY
 
-CLIENT, on behalf of CLIENT and CLIENT's heirs, next of kin, estate, executors, administrators, legal representatives, successors, and assigns, and on behalf of any accompanying minor and the minor's heirs, next of kin, estate, executors, administrators, legal representatives, successors, and assigns, voluntarily releases, waives, and forever discharges the Released Parties from any and all claims, demands, causes of action, damages, losses, liabilities, costs, expenses, or judgments arising out of or related to presence on the property, including claims arising from the ordinary negligence of the Released Parties. This release applies to bodily injury, personal injury, illness, property damage, wrongful death, emotional distress, and all other losses, whether known or unknown, including claims not known or suspected to exist at the time of signing. This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
+CLIENT, on behalf of CLIENT and CLIENT's heirs, next of kin, estate, executors, administrators, legal representatives, successors, and assigns, and on behalf of any accompanying minor and the minor's heirs, next of kin, estate, executors, administrators, legal representatives, successors, and assigns, voluntarily releases, waives, and forever discharges the Released Parties from any and all claims, demands, causes of action, damages, losses, liabilities, costs, expenses, or judgments arising out of or related to presence on the property, including claims arising from the ordinary negligence of the Released Parties. This release applies to bodily injury, personal injury, illness, property damage, wrongful death, emotional distress, and all other losses, whether known or unknown, including claims not known or suspected to exist at the time of signing. CLIENT acknowledges that CLIENT is familiar with, and expressly waives the protections of, California Civil Code Section 1542, which provides: "A general release does not extend to claims that the creditor or releasing party does not know or suspect to exist in his or her favor at the time of executing the release and that, if known by him or her, would have materially affected his or her settlement with the debtor or released party." This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
 
-7. HOLD HARMLESS AND INDEMNIFICATION
+8. HOLD HARMLESS AND INDEMNIFICATION
 
 CLIENT agrees to defend, indemnify, and hold harmless the Released Parties from and against any claims, liabilities, damages, judgments, costs, expenses, or attorney's fees arising from: CLIENT's or an accompanying minor's acts or omissions; violation of this Agreement or property rules; Claims brought by or on behalf of persons accompanying CLIENT, to the extent caused by CLIENT's conduct; or Damage to property caused by CLIENT or an accompanying minor.
 
-8. PROPERTY DAMAGE
+9. PROPERTY DAMAGE
 
 CLIENT accepts responsibility for any damage caused by CLIENT or an accompanying minor to horses, equipment, facilities, vehicles, buildings, or other property and agrees to reimburse the responsible party for repair or replacement costs.
 
-9. MEDIA CONSENT
+10. MEDIA CONSENT
 
 CLIENT acknowledges that photographs, video recordings, and other media may be captured during visits to, or activities at, any location where COMPANY conducts business. CLIENT grants COMPANY a perpetual, royalty-free license to use such media, including CLIENT's or an accompanying minor's name, image, and likeness, for instructional, promotional, and other lawful business purposes, without compensation. CLIENT may revoke this consent at any time by written notice via email to {{ORG.EMAIL}}; revocation is effective prospectively as to media captured after receipt of the notice.
 
-10. DISPUTE RESOLUTION
+11. DISPUTE RESOLUTION
 
-Any dispute arising out of or relating to this Agreement or presence at any location where COMPANY conducts business shall be resolved by binding arbitration in San Diego, California.
+Any dispute arising out of or relating to this Agreement or presence at any location where COMPANY conducts business shall be resolved by final and binding arbitration in San Diego County, California, before a single arbitrator administered by JAMS under its applicable rules, or another administrator the parties agree to in writing, with arbitrator fees and administrative costs allocated as those rules provide. Either party may bring a qualifying claim in small claims court, and either party may seek provisional or injunctive relief in a court of competent jurisdiction without waiving arbitration. Judgment on the award may be entered in any court having jurisdiction.
 
-11. ATTORNEY'S FEES
+12. ATTORNEY'S FEES
 
 Each party shall be required to cover their own attorney's fees and costs.
 
-12. GOVERNING LAW
+13. GOVERNING LAW
 
 California law governs this Agreement.
 
-13. SEVERABILITY
+14. SEVERABILITY
 
 If any provision of this Agreement is held unenforceable, the remaining provisions shall remain in full force and effect.
 
-14. ENTIRE AGREEMENT
+15. ENTIRE AGREEMENT
 
 This Agreement constitutes the entire understanding between the parties concerning the subject matter herein and supersedes any prior oral or written representations regarding this subject.
 
-15. ACKNOWLEDGMENT
+16. ACKNOWLEDGMENT
 
 CLIENT acknowledges that: This Agreement is legally binding. CLIENT has carefully read the entire Agreement. CLIENT understands its contents. CLIENT has had the opportunity to ask questions before signing. CLIENT signs voluntarily and without coercion.
 

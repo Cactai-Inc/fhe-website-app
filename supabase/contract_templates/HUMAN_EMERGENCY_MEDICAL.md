@@ -2,7 +2,7 @@ PARTICIPANT EMERGENCY INFORMATION AND TREATMENT AUTHORIZATION
 
 This Emergency Information and Treatment Authorization ("Authorization") is made effective as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned client ("CLIENT"), on CLIENT's own behalf and, where a minor is identified, on behalf of that minor ("PARTICIPANT"), in favor of {{ORG.LEGAL_NAME}} ("COMPANY"). This Authorization may be used for riders, horsemanship participants, jumper training participants, visitors, contractors, volunteers, event attendees, and other individuals participating in or present for activities associated with COMPANY. By signing below, CLIENT acknowledges and agrees to the terms of this Authorization. Where no minor is identified, references to PARTICIPANT mean CLIENT.
 
-For purposes of this Authorization, "Released Parties" means COMPANY, its owners, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, representatives, affiliates, property owners, facility owners, licensors, lessors, lessees, hosts, landowners, successors, assigns, heirs, and any person acting on behalf of COMPANY at any location where it is authorized to conduct business.
+For purposes of this Authorization, "Released Parties" means COMPANY; its owners, principals, members, managers, officers, directors, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, and representatives, including without limitation {{ORG.PRINCIPALS}}; its parent, subsidiary, and affiliated entities; the property owners, facility owners, licensors, lessors, lessees, hosts, and landowners of any location where COMPANY conducts authorized business; the owners, lessors, and lessees of any horse used in or present during COMPANY's activities; other clients of and participants in COMPANY's activities; the family members of any natural person described above when involved in COMPANY's activities; the successors, assigns, heirs, estates, and legal representatives of each of the foregoing; and any person acting on behalf of COMPANY at any location where it is authorized to conduct business.
 
 PARTICIPANT INFORMATION
 
@@ -51,7 +51,7 @@ Where a minor PARTICIPANT is identified above, CLIENT represents and warrants th
 
 4. DISPUTE RESOLUTION
 
-Any dispute arising out of or relating to this Authorization shall be resolved by binding arbitration in San Diego, California.
+Any dispute arising out of or relating to this Authorization shall be resolved by final and binding arbitration in San Diego County, California, before a single arbitrator administered by JAMS under its applicable rules, or another administrator the parties agree to in writing, with arbitrator fees and administrative costs allocated as those rules provide. Either party may bring a qualifying claim in small claims court, and either party may seek provisional or injunctive relief in a court of competent jurisdiction without waiving arbitration. Judgment on the award may be entered in any court having jurisdiction.
 
 5. ATTORNEY'S FEES
 

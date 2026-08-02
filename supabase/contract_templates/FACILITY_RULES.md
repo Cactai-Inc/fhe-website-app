@@ -21,7 +21,7 @@ AGREEMENT
 
 1. APPLICABILITY
 
-All sections of this Agreement apply to CLIENT, and to any accompanying minor PARTICIPANT, while present at any PROPERTY. Sections governing riding, arena use, and mounted activity apply only when and to the extent CLIENT or PARTICIPANT engages in those activities. A person present solely as a visitor, guest, or spectator remains bound by all conduct, safety, horse handling, property use, and emergency provisions.
+All sections of this Agreement apply to CLIENT, and to any accompanying minor PARTICIPANT, while present at any PROPERTY. Sections governing riding, arena use, and mounted activity apply only when and to the extent CLIENT or PARTICIPANT engages in those activities. A person present solely as a visitor, guest, or spectator remains bound by all conduct, safety, horse handling, property use, and emergency provisions. The application of this Agreement's conduct and safety provisions to a person present on a trail does not make trail riding a COMPANY service or activity.
 
 2. ACKNOWLEDGMENT OF PROPERTY LOCATION
 

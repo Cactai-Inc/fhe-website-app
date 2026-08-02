@@ -61,6 +61,8 @@ Limitation of liability. COMPANY shall not be liable for loss of use of a horse,
 
 Termination. COMPANY may suspend or terminate services immediately for dangerous horse behavior, unsafe conditions, nonpayment, abuse directed toward personnel, or conduct addressed in the Property Rules, Safety Acknowledgment, and Equestrian Conduct Agreement. Fees for completed services remain due.
 
+Trail riding. COMPANY does not offer, sell, schedule, supervise, or provide guided trail rides or any other activity in which a client or participant rides a horse on a trail, paid or unpaid, and no order, booking, service request, or engagement shall be construed to include any such activity. This does not limit COMPANY's handling, exercise, conditioning, training, or transport of a horse by COMPANY personnel, without a client or participant riding, at locations that include trails, which services are governed by the separately executed Equine Services Authorization and Release.
+
 11. SCHEDULING ABUSE
 
 Repeated late reschedules, missed bookings, or no-shows may, at COMPANY's discretion and separate from the fees above, result in restriction or revocation of CLIENT's ability to schedule future engagements. This remedy addresses conduct and is independent of the monetary rescheduling fees.
@@ -71,7 +73,7 @@ Where services are purchased as a gift, the purchaser is the CLIENT for payment 
 
 13. DISPUTE RESOLUTION
 
-Any dispute arising out of or relating to these Policies or any order, booking, service request, or engagement between CLIENT and COMPANY, unless governed by the dispute clause of a separately executed agreement, shall be resolved by binding arbitration in San Diego, California.
+Any dispute arising out of or relating to these Policies or any order, booking, service request, or engagement between CLIENT and COMPANY, unless governed by the dispute clause of a separately executed agreement, shall be resolved by final and binding arbitration in San Diego County, California, before a single arbitrator administered by JAMS under its applicable rules, or another administrator the parties agree to in writing, with arbitrator fees and administrative costs allocated as those rules provide. Either party may bring a qualifying claim in small claims court, and either party may seek provisional or injunctive relief in a court of competent jurisdiction without waiving arbitration. Judgment on the award may be entered in any court having jurisdiction.
 
 14. ATTORNEY'S FEES
 

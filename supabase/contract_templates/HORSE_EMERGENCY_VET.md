@@ -4,7 +4,7 @@ Effective from the Date of Signature until superseded by a later executed versio
 
 This Emergency Veterinary Authorization and Equine Medical Care Directive ("Agreement") is made effective as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned client ("CLIENT") in favor of {{ORG.LEGAL_NAME}} ("COMPANY"), authorizing COMPANY to act as described below with respect to the horse identified. By signing below, CLIENT acknowledges and agrees to the terms of this Agreement.
 
-For purposes of this Agreement, "Released Parties" means COMPANY, its owners, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, representatives, affiliates, property owners, facility owners, licensors, lessors, lessees, hosts, landowners, successors, assigns, heirs, and any person acting on behalf of COMPANY at any location where it is authorized to conduct business. COVERAGE EXTENSION: The authorizations, releases, and protections set forth in this document extend to and benefit COMPANY (French Heritage Equestrian) and, during any period in which a lease of the Horse is in effect, the then-current lessee of the Horse under that lease, each as an additional covered party — without the need to name that lessee.
+For purposes of this Agreement, "Released Parties" means COMPANY; its owners, principals, members, managers, officers, directors, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, and representatives, including without limitation {{ORG.PRINCIPALS}}; its parent, subsidiary, and affiliated entities; the property owners, facility owners, licensors, lessors, lessees, hosts, and landowners of any location where COMPANY conducts authorized business; the owners, lessors, and lessees of any horse used in or present during COMPANY's activities; other clients of and participants in COMPANY's activities; the family members of any natural person described above when involved in COMPANY's activities; the successors, assigns, heirs, estates, and legal representatives of each of the foregoing; and any person acting on behalf of COMPANY at any location where it is authorized to conduct business. COVERAGE EXTENSION: The authorizations, releases, and protections set forth in this document extend to and benefit COMPANY (French Heritage Equestrian) and, during any period in which a lease of the Horse is in effect, the then-current lessee of the Horse under that lease, each as an additional covered party — without the need to name that lessee.
 
 CLIENT INFORMATION
 
@@ -102,7 +102,7 @@ CLIENT may revoke this authorization by written notice. Revocation shall not aff
 
 14. DISPUTE RESOLUTION
 
-Any dispute arising out of or relating to this Agreement shall be resolved by binding arbitration in San Diego, California.
+Any dispute arising out of or relating to this Agreement shall be resolved by final and binding arbitration in San Diego County, California, before a single arbitrator administered by JAMS under its applicable rules, or another administrator the parties agree to in writing, with arbitrator fees and administrative costs allocated as those rules provide. Either party may bring a qualifying claim in small claims court, and either party may seek provisional or injunctive relief in a court of competent jurisdiction without waiving arbitration. Judgment on the award may be entered in any court having jurisdiction.
 
 15. ATTORNEY'S FEES
 
