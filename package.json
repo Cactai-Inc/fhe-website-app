@@ -10,7 +10,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
-    "typecheck:api": "tsc --noEmit -p tsconfig.api.json"
+    "typecheck:api": "tsc --noEmit -p tsconfig.api.json",
+    "check:tokens": "node scripts/check-token-registry.mjs",
+    "test:db": "vitest run test/db"
   },
   "dependencies": {
     "@ffmpeg/core": "^0.12.10",
