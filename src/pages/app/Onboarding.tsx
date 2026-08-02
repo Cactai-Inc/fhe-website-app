@@ -285,7 +285,7 @@ export default function Onboarding() {
     const [o, p] = await Promise.all([getOrder(order.id), getOrderPayment(order.id)]);
     setOrder(o);
     setPayment(p);
-    if (o && (o.status === 'confirmed' || o.status === 'paid')) setStep('done');
+    if (o && o.status === 'paid') setStep('done');
   }
 
   useEffect(() => {

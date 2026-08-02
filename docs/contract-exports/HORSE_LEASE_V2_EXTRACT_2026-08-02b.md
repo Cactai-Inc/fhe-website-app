@@ -1,7 +1,7 @@
 # HORSE_LEASE_V2 — full template extract
 
-Generated 2026-08-02 11:26:32 UTC from the live database (project `lrstswfxfsezdmvkvukc`),
-reflecting migration head `20260802070000_lease_manifest_2026_08_02.sql`.
+Generated 2026-08-02 12:31:11 UTC from the live database (project `lrstswfxfsezdmvkvukc`),
+reflecting migration head `20260802080006_backlog_hardening.sql`.
 
 Every section, clause, field, option list, helper text and conditional in the
 live lease template, in render order.
@@ -41,14 +41,6 @@ Legend:
 
 > "Lessor Parties" means Lessor; Lessor's spouse and family and household members, in each case when handling, caring for, transporting, or otherwise involved with the Horse or the activities contemplated by this Agreement; and Lessor's estate, executors, administrators, legal representatives, successors, and assigns.
 
-### LESSOR_PENDING *(no heading set)*
-
-`DEFINITIONS.LESSOR_PENDING`
-
-**CONDITIONAL** — shows when: LESSOR.PARTY_TYPE = (empty)
-
-> [Pending — select whether Lessor is an individual or an entity. This placeholder is replaced by the applicable definition and blocks signing.]
-
 ### LESSOR_ENT *(no heading set)*
 
 `DEFINITIONS.LESSOR_ENT`
@@ -56,6 +48,14 @@ Legend:
 **CONDITIONAL** — shows when: (LESSOR.PARTY_TYPE = ENTITY)
 
 > "Lessor Parties" means Lessor; Lessor's parent, subsidiary, and affiliated entities; the owners, principals, proprietors, partners, members, managers, officers, directors, employees, trainers, instructors, agents, contractors, and volunteers of Lessor and of each such entity, together with the family members of any such natural person when handling, caring for, transporting, or otherwise involved with the Horse or the activities contemplated by this Agreement; and the successors and assigns of each of the foregoing.
+
+### LESSOR_PENDING *(no heading set)*
+
+`DEFINITIONS.LESSOR_PENDING`
+
+**CONDITIONAL** — shows when: LESSOR.PARTY_TYPE = (empty)
+
+> [Pending — select whether Lessor is an individual or an entity. This placeholder is replaced by the applicable definition and blocks signing.]
 
 ### LESSEE_IND *(no heading set)*
 
@@ -944,7 +944,7 @@ Legend:
 
 `INSURANCE_RISK.GL_DED_SIMPLE`
 
-**CONDITIONAL** — shows when: TXN.GL_NOT_REQUIRED = NO or (empty)
+**CONDITIONAL** — shows when: TXN.GL_NOT_REQUIRED = NO or (empty) AND (TXN.GL_LESSOR_STATUS = HAS_WILL_MAINTAIN or WILL_OBTAIN OR TXN.GL_LESSEE_STATUS = HAS_WILL_MAINTAIN or WILL_OBTAIN)
 
 > If a claim is made under any such policy arising from events for which Lessee bears responsibility, whether directly or indirectly, responsibility for any deductible shall be borne by: {{TXN.GL_DED_RESP}}.
 
@@ -956,7 +956,7 @@ Legend:
 
 `INSURANCE_RISK.GL_DED_SPLITC`
 
-**CONDITIONAL** — shows when: TXN.GL_NOT_REQUIRED = NO or (empty) AND TXN.GL_DED_RESP = SPLIT
+**CONDITIONAL** — shows when: TXN.GL_NOT_REQUIRED = NO or (empty) AND TXN.GL_DED_RESP = SPLIT AND (TXN.GL_LESSOR_STATUS = HAS_WILL_MAINTAIN or WILL_OBTAIN OR TXN.GL_LESSEE_STATUS = HAS_WILL_MAINTAIN or WILL_OBTAIN)
 
 > The deductible shall be split between the parties: {{TXN.GL_DED_RESP_SPLIT_LESSOR}} paid by Lessor and {{TXN.GL_DED_RESP_SPLIT_LESSEE}} paid by Lessee.
 
@@ -1010,7 +1010,7 @@ Legend:
 
 `INSURANCE_RISK.MORT_DEDR_SIMPLE`
 
-**CONDITIONAL** — shows when: TXN.MORT_NOT_REQUIRED = NO or (empty)
+**CONDITIONAL** — shows when: TXN.MORT_NOT_REQUIRED = NO or (empty) AND (TXN.MORT_LESSOR_STATUS = HAS_WILL_MAINTAIN or WILL_OBTAIN OR TXN.MORT_LESSEE_STATUS = HAS_WILL_MAINTAIN or WILL_OBTAIN)
 
 > If a claim is made under any such policy arising from events for which Lessee bears responsibility, whether directly or indirectly, responsibility for any deductible shall be borne by: {{TXN.MORT_DED_RESP}}.
 
@@ -1022,7 +1022,7 @@ Legend:
 
 `INSURANCE_RISK.MORT_DEDR_SPLITC`
 
-**CONDITIONAL** — shows when: TXN.MORT_NOT_REQUIRED = NO or (empty) AND TXN.MORT_DED_RESP = SPLIT
+**CONDITIONAL** — shows when: TXN.MORT_NOT_REQUIRED = NO or (empty) AND TXN.MORT_DED_RESP = SPLIT AND (TXN.MORT_LESSOR_STATUS = HAS_WILL_MAINTAIN or WILL_OBTAIN OR TXN.MORT_LESSEE_STATUS = HAS_WILL_MAINTAIN or WILL_OBTAIN)
 
 > The deductible shall be split between the parties: {{TXN.MORT_DED_RESP_SPLIT_LESSOR}} paid by Lessor and {{TXN.MORT_DED_RESP_SPLIT_LESSEE}} paid by Lessee.
 
@@ -1095,7 +1095,7 @@ Legend:
 
 `INSURANCE_RISK.MED_DEDR_SIMPLE`
 
-**CONDITIONAL** — shows when: TXN.MED_NOT_REQUIRED = NO or (empty)
+**CONDITIONAL** — shows when: TXN.MED_NOT_REQUIRED = NO or (empty) AND (TXN.MED_LESSOR_STATUS = HAS_WILL_MAINTAIN or WILL_OBTAIN OR TXN.MED_LESSEE_STATUS = HAS_WILL_MAINTAIN or WILL_OBTAIN)
 
 > If a claim is made under any such policy arising from events for which Lessee bears responsibility, whether directly or indirectly, responsibility for any deductible shall be borne by: {{TXN.MED_DED_RESP}}.
 
@@ -1107,7 +1107,7 @@ Legend:
 
 `INSURANCE_RISK.MED_DEDR_SPLITC`
 
-**CONDITIONAL** — shows when: TXN.MED_NOT_REQUIRED = NO or (empty) AND TXN.MED_DED_RESP = SPLIT
+**CONDITIONAL** — shows when: TXN.MED_NOT_REQUIRED = NO or (empty) AND TXN.MED_DED_RESP = SPLIT AND (TXN.MED_LESSOR_STATUS = HAS_WILL_MAINTAIN or WILL_OBTAIN OR TXN.MED_LESSEE_STATUS = HAS_WILL_MAINTAIN or WILL_OBTAIN)
 
 > The deductible shall be split between the parties: {{TXN.MED_DED_RESP_SPLIT_LESSOR}} paid by Lessor and {{TXN.MED_DED_RESP_SPLIT_LESSEE}} paid by Lessee.
 

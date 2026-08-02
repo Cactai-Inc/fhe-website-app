@@ -28,9 +28,11 @@ export type BookingStatus =
 
 export interface Profile {
   user_id: string;
+  contact_id: string | null;
   first_name: string | null;
   last_name: string | null;
   email: string | null;
+  /** Sourced from the linked contact record (profiles.phone dropped 2026-08-02). */
   phone: string | null;
   // Address, mobile, WhatsApp, socials and contact preferences are NOT here:
   // they live on `contacts`, the single person record (see
