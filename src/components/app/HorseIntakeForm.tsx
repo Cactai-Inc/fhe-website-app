@@ -107,7 +107,13 @@ function SelectOrOther({
   showError?: boolean;
   hint?: string;
 }) {
-  const na = value === NA;
+  // Vocabularies that define a NONE code (passport country, registration org,
+  // markings) get the code, not the 'N/A' sentinel — the backend resolves NONE
+  // to its display text ("No passport", "Not registered") while a raw 'N/A'
+  // can only ever render as the literal sentinel.
+  const hasNone = options.some((o) => o.value === 'NONE');
+  const naStored = hasNone ? 'NONE' : NA;
+  const na = value === NA || (hasNone && value === 'NONE');
   const isKnown = !!value && value !== NA && options.some((o) => o.value === value);
   const isOther = !na && !!value && value !== NA && !isKnown;
   const [otherOpen, setOtherOpen] = useState(isOther);
@@ -120,7 +126,7 @@ function SelectOrOther({
       <div className="flex items-center justify-between mb-1">
         <label className="block text-[11px] tracking-wide uppercase text-muted font-semibold">{label}</label>
         <label className="flex items-center gap-1 text-[10px] text-muted cursor-pointer select-none">
-          <input type="checkbox" checked={na} onChange={(e) => { setOtherOpen(false); onChange(e.target.checked ? NA : ''); }} /> N/A
+          <input type="checkbox" checked={na} onChange={(e) => { setOtherOpen(false); onChange(e.target.checked ? naStored : ''); }} /> N/A
         </label>
       </div>
       <select className={cls} disabled={na} value={selectValue}
