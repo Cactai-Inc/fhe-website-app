@@ -33,6 +33,36 @@ framework in `OpsDashboard.tsx`, the reduce-sum pattern in `api-boarding.ts`, an
 
 ---
 
+## Pre-launch cleanup
+
+Test-era data and follow-ups that must be disposed of before real users arrive.
+Opened by U1 (lead trust + notification integrity), 2026-08-01.
+
+- **Charles Zigmund duplicate contact pair** — `07ab7dbf-33f2-4c2c-963a-f37761d5ffd1`
+  (no email) and `d268330c-436a-4f42-bf88-9172d9b4155f` (`cjzigs@icloud.com`) are the
+  same person. **Deliberately NOT merged** during U1: `d268330c` is the live lessor on
+  the reference sample draft, and merging mid-run could disturb it. Owner decides the
+  merge direction at cleanup time. Both were typed `CONTACT` by U1's `contact_type`
+  backfill — a transitional value, not a judgement that they are distinct people.
+- **Two `Unnamed Contact` artifacts** — `bb57e418-3875-4219-90a4-31ab47fb4bde` and
+  `6ecceaf0-4a59-4ac6-83a3-3c330d5682e6`; no email, no name. Shape matches what
+  `ensure_contact_for_profile`'s fallback produces when a profile carries neither a
+  name nor an email. Dispose at cleanup; confirm the origin trace before deleting in
+  case the fallback is still reachable.
+- **Notification NULL-link hardening (prophylactic)** — U1 item 5e's anchor was absent:
+  live `select count(*) from notifications where link is null` returned **0**, so its
+  own done-check already passed and no producer was touched. `notify_staff` and
+  `notify_user` both take a link parameter today. Worth adding a NOT NULL constraint or
+  a producer-side guard so a future call site cannot write an unresolvable row —
+  deliberate hardening, not a bug fix.
+- **Intake deep-link** — `request_new` notifications link to
+  `/app/ops/intake?request=<id>`. The link is unique per request (which is what makes
+  kind-scoped resolution correct) but `IntakePage.tsx` reads no query params, so the
+  parameter is currently inert. Wire the page to read it and open that request's
+  drawer; the link then becomes a real deep-link with no notification change.
+
+---
+
 ## Known defects
 
 - **Landing's only CTA goes to `/story`, not the booking funnel** —

@@ -54,6 +54,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const to = identity.contactEmail; // the tenant's own published contact address
     if (!to) return res.status(200).json({ ok: true, emailed: false, reason: 'no contact email configured' });
 
+    // Link origin comes from the request, never a baked-in hostname — the same
+    // source notifications-nudge and calendar-reminders use, so preview and
+    // production deployments each link to themselves.
+    const origin = req.headers.origin || `https://${req.headers.host}`;
+
     const name = (body.name || '').trim() || 'A visitor';
     const rows: string[] = [];
     if (body.email) rows.push(`<li><strong>Email:</strong> ${esc(body.email)}</li>`);
@@ -71,7 +76,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         `<p><strong>${esc(name)}</strong> just submitted an inquiry on the website.</p>` +
         (rows.length ? `<ul style="padding-left:18px">${rows.join('')}</ul>` : '') +
         (notes ? `<p style="white-space:pre-line;border-left:3px solid #ddd;padding-left:12px;color:#333">${esc(notes)}</p>` : '') +
-        `<p><a href="${(identity.siteUrl ?? 'https://fhequestrian.com')}/app/ops/intake">Open the Request Inbox</a> to reply.</p>` +
+        `<p><a href="${identity.siteUrl ?? origin}/app/ops/intake">Open the Request Inbox</a> to reply.</p>` +
         (identity.footer ? `<hr/><p style="color:#666;font-size:12px;white-space:pre-line">${esc(identity.footer)}</p>` : ''),
     });
 
