@@ -91,23 +91,34 @@ framework in `OpsDashboard.tsx`, the reduce-sum pattern in `api-boarding.ts`, an
   certify (`TXN.{X}_NOT_REQUIRED` for Lessor, a new
   `TXN.{X}_LESSEE_RESPONSIBLE` for Lessee), party-exclusively and enforced
   server-side. Has DB and frontend parts that run as a later specified
-  workstream; the spec is authoritative and lives outside the repo — ask the
-  owner for it before starting.
+  workstream; the spec is authoritative and now lives in-repo at
+  `docs/insurance-resolution-spec.md`.
 
-- **Insurance: the no-coverage fallback clause is UNWRITTEN** (2026-08-01,
-  item E of `docs/clause-gate-batch-spec.md`). The plan was to widen the three
-  `INSURANCE_RISK.{GL,MORT,MED}_NONE` gates to also fire when both parties'
-  status is `NONE`. The gate logic verifies correct, but **it was not applied**:
-  all three bodies read *"Lessor has elected not to require…"*, which is a
-  statement about a waiver decision. Firing them when `NOT_REQUIRED = 'NO'`
-  would assert that Lessor elected not to require coverage it demonstrably did
-  require — a false statement of fact in an executed instrument — and would
-  hand Lessor full risk in exactly the scenario where the parties failed to
-  allocate it. In that state `INSURANCE_RISK.{X}_STATUS` also still renders,
-  so the widened clause would sit beside text contradicting its own opening
-  sentence. **This needs a separate clause with its own body**, not a reuse of
-  the waiver clause. No negation operator is needed — `NONE` is a real option
-  value, so `all[equals]` expresses it. Blocked on body language approval.
+- **Insurance: the no-coverage clause bodies are UNWRITTEN** (2026-08-01,
+  item E of `docs/clause-gate-batch-spec.md`). Only the clause *language* is
+  outstanding; the mechanism question is settled and lives in
+  `docs/insurance-resolution-spec.md`.
+  - **Gates are unchanged and stay that way.** The three
+    `INSURANCE_RISK.{GL,MORT,MED}_NONE` clauses keep their existing
+    equals-`YES` gate on `TXN.{X}_NOT_REQUIRED`. The proposed widening —
+    firing them when both parties' status is `NONE` — is **withdrawn, not
+    deferred.** Their bodies read *"Lessor has elected not to require…"*, so
+    firing them at `NOT_REQUIRED = 'NO'` would assert a waiver Lessor
+    demonstrably did not make: a false statement of fact in an executed
+    instrument, sitting beside the `{X}_STATUS` declarations that contradict
+    its own opening sentence.
+  - **Resolution is a party election, not an inference.** A both-`NONE`
+    section is UNRESOLVED and blocks signing until the party inheriting
+    responsibility checks their own box — `TXN.{X}_NOT_REQUIRED` (Lessor
+    side) or the new `TXN.{X}_LESSEE_RESPONSIBLE` (Lessee side),
+    party-exclusive and enforced server-side. Two boxes, each checkable by
+    one side only; the other renders disabled but visible. See the spec for
+    the DB unit (D1–D5), the frontend set (F1–F4), and the sequencing.
+  - **What remains here is content:** a body for the new
+    Lessee-responsible clause in all three sections, a re-read of the
+    existing `{X}_NONE` election language against every state that renders
+    it, and tooltip/notification wording. Blocked on the legal pass; do not
+    draft legal language in a DB thread.
 
 - **`purchases.status = 'confirmed'` is a retiring value** (2026-08-01). Stripe's
   webhook used to overwrite `mark_purchase_paid`'s `'paid'` with `'confirmed'`, so a
