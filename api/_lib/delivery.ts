@@ -57,14 +57,18 @@ export async function renderPartyCopyPdfBytes(doc: { title: string; merged_body:
   return renderDocumentPdf(doc.title, text);
 }
 
-/** Build a party's "here is your signed copy" email — owner spec (2026-08-02):
- *  subject "Hi {name}, here is your signed copy of the {document}", a
- *  one-line body, and a fixed sign-off/brand/phone/site signature — plus the
- *  signer-attributed PDF attachment. Shared by deliverExecutedDocument (the
- *  all-parties sender) and api/deliver-my-document.ts (the authenticated
- *  self-send) — one source of the party-copy email shape, not two.
- *  `pdfBytes` is passed in (rather than rendered inside) so a multi-recipient
- *  caller can render the content once and reuse it across every party. */
+/** Build a party's "signed and executed" email — owner spec (2026-08-02,
+ *  revised after comparing against the company-copy style): plain subject
+ *  (no personalized greeting — matches the company copy's professional
+ *  tone), one-line body, a reference-code line (a short excerpt, not the
+ *  full SHA-256 — that stays company-copy-only), and a contact block sized
+ *  for easy tapping. Only the PDF FILENAME is personalized (signer initials
+ *  + date) — the email content itself is not. Shared by
+ *  deliverExecutedDocument (the all-parties sender) and
+ *  api/deliver-my-document.ts (the authenticated self-send) — one source of
+ *  the party-copy email shape, not two. `pdfBytes` is passed in (rather than
+ *  rendered inside) so a multi-recipient caller can render the content once
+ *  and reuse it across every party. */
 export function buildPartyCopyEmail(
   doc: { title: string; execution_hash: string | null },
   executedAt: Date,
@@ -73,35 +77,30 @@ export function buildPartyCopyEmail(
   identity: { fromName: string; contactPhone: string | null; contactUrl: string | null; siteUrl: string | null },
   pdfBytes: Uint8Array | null,
 ): PartyCopyEmail {
-  const greetingName = recipientFirstName ? recipientFirstName : null;
-  const namePart = greetingName ? `Hi ${greetingName}, ` : 'Hi, ';
-  const subject = `${namePart}here is your signed copy of the ${doc.title}`;
-  const greeting = greetingName ? `Hi ${greetingName},` : 'Hi,';
+  const subject = `${doc.title} — signed and executed`;
 
   const siteLine = identity.contactUrl || identity.siteUrl;
-  const signatureLines = [
-    'Have a wonderful day!',
-    identity.fromName,
-    ...(identity.contactPhone ? [identity.contactPhone] : []),
-    ...(siteLine ? [siteLine] : []),
-  ];
+  const contactHtml =
+    `<p style="font-size:16px;margin-top:16px">` +
+    `<strong>${identity.fromName}</strong>` +
+    (identity.contactPhone ? `<br/><a href="tel:${identity.contactPhone.replace(/[^+\d]/g, '')}" style="color:inherit;text-decoration:none">${identity.contactPhone}</a>` : '') +
+    (siteLine ? `<br/><a href="https://${siteLine.replace(/^https?:\/\//, '')}" style="color:inherit">${siteLine}</a>` : '') +
+    `</p>`;
 
-  // Tamper-evidence, kept but softened: a verification note rather than a
-  // technical audit line (owner: friendlier, without losing the integrity
-  // info — the hash itself isn't sensitive, it's a one-way document
-  // fingerprint, so sharing a short excerpt of it in plain text is fine).
+  // Tamper-evidence: a short reference-code excerpt, not the full SHA-256
+  // (the full hash is company-copy-only — see companyHashHtml below).
   const executionHash = typeof doc.execution_hash === 'string' && doc.execution_hash.trim() !== ''
     ? doc.execution_hash.trim()
     : null;
-  const integrityHtml = executionHash
-    ? `<p style="color:#888;font-size:12px">This copy is verified — reference code ${executionHash.slice(0, 12)}.</p>`
+  const referenceHtml = executionHash
+    ? `<p style="color:#888;font-size:12px">Reference code: ${executionHash.slice(0, 12)}</p>`
     : '';
 
   const html =
-    `<p>${greeting}</p>` +
-    `<p>Your signed copy of the ${doc.title} is attached to this email in PDF format.</p>` +
-    `<p>${signatureLines.join('<br/>')}</p>` +
-    integrityHtml;
+    `<p>Your document <strong>${doc.title}</strong> has been signed and executed. ` +
+    `The PDF is attached.</p>` +
+    contactHtml +
+    referenceHtml;
 
   const attachments: EmailAttachment[] = [];
   if (pdfBytes) {
