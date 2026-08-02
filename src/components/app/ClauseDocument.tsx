@@ -327,12 +327,28 @@ function ClauseProse({
     // moves together — see the wider minmax() below. A long value wraps within the
     // value span (break-words) and pushes the cell taller rather than overflowing
     // sideways onto a neighbouring cell/label.
-    const cell = (c: { label: string; token: string }, j: number) => (
-      <div key={j} className="flex items-baseline gap-x-1.5 text-[13.5px] text-green-950 min-w-0">
-        <span className="font-semibold whitespace-nowrap">{c.label}:</span>
-        <span className="min-w-0 break-words">{renderToken(c.token, `mx${bi}-${j}`, fieldByKey, valueByKey, cb)}</span>
-      </div>
-    );
+    const cell = (c: { label: string; token: string }, j: number) => {
+      // week_grid: the flex row put the nowrap label first and squeezed the
+      // whole grid (per-party name boxes + seven day pills) into the width
+      // left over, so the buttons collapsed inside an indented column. The
+      // label goes on its own line and the grid takes the clause's full
+      // width, both flush with the document's left content edge.
+      const wf = fieldByKey.get(c.token);
+      if (wf && (wf.input_kind === 'week_grid' || wf.format_type === 'week_grid')) {
+        return (
+          <div key={j} className="w-full min-w-0 text-[13.5px] text-green-950">
+            <span className="block font-semibold">{c.label}:</span>
+            <div className="w-full">{renderToken(c.token, `mx${bi}-${j}`, fieldByKey, valueByKey, cb)}</div>
+          </div>
+        );
+      }
+      return (
+        <div key={j} className="flex items-baseline gap-x-1.5 text-[13.5px] text-green-950 min-w-0">
+          <span className="font-semibold whitespace-nowrap">{c.label}:</span>
+          <span className="min-w-0 break-words">{renderToken(c.token, `mx${bi}-${j}`, fieldByKey, valueByKey, cb)}</span>
+        </div>
+      );
+    };
     // A signature triple — Signature / Printed Name / Date for one party.
     // DESKTOP keeps the classic 3-column signature-block row. MOBILE stacks it:
     // three columns inside ~320px crushed each cell so a long printed name
