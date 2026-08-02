@@ -718,5 +718,8 @@ the fact — the merge commit `953d5bf` predates it, so `main`'s hash advances
 one commit past `953d5bf` once this is pushed; that final hash is confirmed
 at the very end of this section, appended after the push completes.
 
-**Absolute final hash, confirmed after this update was pushed:** see the very
-last line of this file.
+**Absolute final hash, confirmed after this update was pushed:**
+`ff4aced` — `git rev-parse main` and `git rev-parse origin/main` both return
+`ff4aceddfdb28b80f7e1db71c72881f402498c4e`, verified via `git fetch origin
+main` immediately before writing this line. The run is complete; `main`
+carries everything.
