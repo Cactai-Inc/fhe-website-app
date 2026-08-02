@@ -35,10 +35,25 @@ BEGIN;
 -- DELETE FROM public.feed_posts     WHERE seed_tag = 'demo';
 
 -- 1b. If you prefixed a text field with '[SEED]':
-DELETE FROM public.stable_horse_parties
-  WHERE horse_id IN (SELECT id FROM public.stable_horses WHERE name LIKE '[SEED]%' OR markings LIKE '[SEED]%');
+-- test/db harness repair (2026-08-02): stable_horse_parties and stable_horses
+-- were unguarded here and NEVER EXISTED in this schema (confirmed live against
+-- production — neither table is present; the naming scheme was superseded by
+-- horses / horse_relationships before this migration's tables were ever
+-- created). That made this migration fail on any fresh database build,
+-- including the PGlite test harness. stable_items and vendors DO exist and
+-- stay unguarded, matching their live presence. Folded into the same
+-- to_regclass guard pattern this file already uses below for lesson_sessions/
+-- events/threads/feed_posts, rather than inventing a new convention.
+DO $$ BEGIN
+  IF to_regclass('public.stable_horses') IS NOT NULL THEN
+    IF to_regclass('public.stable_horse_parties') IS NOT NULL THEN
+      EXECUTE $q$ DELETE FROM public.stable_horse_parties
+        WHERE horse_id IN (SELECT id FROM public.stable_horses WHERE name LIKE '[SEED]%' OR markings LIKE '[SEED]%') $q$;
+    END IF;
+    EXECUTE $q$ DELETE FROM public.stable_horses WHERE name LIKE '[SEED]%' OR markings LIKE '[SEED]%' $q$;
+  END IF;
+END $$;
 DELETE FROM public.stable_items   WHERE name LIKE '[SEED]%' OR detail LIKE '[SEED]%';
-DELETE FROM public.stable_horses  WHERE name LIKE '[SEED]%' OR markings LIKE '[SEED]%';
 DELETE FROM public.vendors        WHERE name LIKE '[SEED]%' OR note LIKE '[SEED]%';
 
 -- Guarded for tables that may not exist in every environment:

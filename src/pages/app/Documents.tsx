@@ -1,14 +1,67 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { fromHere } from '../../lib/linkOrigin';
-import { FileText, Check, Download, History } from 'lucide-react';
-import { myDocuments, type MyDocumentRow } from '../../lib/api';
+import { FileText, Check, Download, History, Mail } from 'lucide-react';
+import { myDocuments, emailMyDocumentCopy, type MyDocumentRow } from '../../lib/api';
 import {
   listMySignableDocuments,
   signMyDocument,
   type SignableDocument,
 } from '../../lib/ops/api-client';
 import { useDocumentTitle } from '../../lib/hooks';
+
+/**
+ * H4 — "Email me a copy" for an executed document.
+ *
+ * Calls the authenticated self-send endpoint (/api/deliver-my-document), which
+ * mails ONLY the caller's own copy to their own account address. Renders beside
+ * the signed-PDF download and appears on executed documents only.
+ *
+ * States are explicit and never optimistic: the button disables while the
+ * request is in flight, and success/failure render inline only AFTER the server
+ * answers. A failed send says so — it is never reported as sent.
+ */
+function EmailMeACopyButton({ documentId }: { documentId: string }) {
+  const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [message, setMessage] = useState<string | null>(null);
+
+  const send = async () => {
+    setState('sending');
+    setMessage(null);
+    try {
+      const { email } = await emailMyDocumentCopy(documentId);
+      // Success is only ever set from the server's answer.
+      setState('sent');
+      setMessage(email ? `Sent to ${email}.` : 'Sent.');
+    } catch (err) {
+      setState('error');
+      setMessage(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  return (
+    <>
+      <button
+        type="button"
+        className="inline-flex items-center gap-1.5 text-xs text-green-800 hover:text-green-700 px-2.5 py-1 rounded-lg border border-green-800/15 hover:border-green-800/30 focus-ring disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled={state === 'sending'}
+        onClick={send}
+        data-testid={`email-copy-${documentId}`}
+      >
+        <Mail size={13} aria-hidden="true" />
+        {state === 'sending' ? 'Sending…' : 'Email me a copy'}
+      </button>
+      {message && (
+        <p
+          role={state === 'error' ? 'alert' : 'status'}
+          className={`text-xs ${state === 'error' ? 'text-red-700' : 'text-green-700'}`}
+        >
+          {state === 'error' ? `Could not send: ${message}` : message}
+        </p>
+      )}
+    </>
+  );
+}
 
 /**
  * MEMBER self-sign row (mirrors the staff SigningPanel's SignPartyRow, but
@@ -75,6 +128,9 @@ function SelfSignRow({
                   <Download size={13} aria-hidden="true" /> Download signed PDF
                 </button>
               )}
+              {/* H4: executed documents can also be re-sent to the member's own
+                  account email (authenticated party-scoped self-send). */}
+              {doc.status === 'EXECUTED' && <EmailMeACopyButton documentId={doc.id} />}
             </div>
           ) : isContractDoc ? (
             <Link to={`/app/contracts/${doc.id}`} state={fromHere(location)}
@@ -205,6 +261,13 @@ export default function Documents() {
                       <History size={12} aria-hidden="true" />
                       Superseded — kept as a record; a newer version is in force.
                     </p>
+                  )}
+                  {/* H4: the member can re-send their own copy. Requires a real
+                      document row — template-only entries have no document to send. */}
+                  {r.document_id && (
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <EmailMeACopyButton documentId={r.document_id} />
+                    </div>
                   )}
                 </div>
               </div>

@@ -419,6 +419,37 @@ export async function upsertMyProfile(patch: Partial<Profile>): Promise<void> {
   if (error) throw error;
 }
 
+/** U7 Stage 5: phone lives on the person's contact record, not profiles — see
+ *  docs/PERSON_DATA_CONSOLIDATION.md. contacts_select's own-row policy
+ *  (id = current_contact_id()) permits this read directly; no RPC needed. A
+ *  caller with no linked contact yet (no account-creation flow has run) reads
+ *  as null rather than throwing — the public Account page still renders. */
+export async function myContactPhone(): Promise<string | null> {
+  const { data: contactId } = await supabase.rpc('current_contact_id');
+  if (!contactId) return null;
+  const { data, error } = await supabase
+    .from('contacts')
+    .select('phone')
+    .eq('id', contactId as string)
+    .maybeSingle();
+  if (error) throw error;
+  return (data?.phone as string | null) ?? null;
+}
+
+/** Same repoint for the write side. contacts_update_own's RLS
+ *  (id = current_contact_id()) permits this directly — no RPC needed, matching
+ *  the read. Throws if the caller has no linked contact yet: unlike the read,
+ *  a failed save should surface rather than silently do nothing. */
+export async function updateMyContactPhone(phone: string | null): Promise<void> {
+  const { data: contactId } = await supabase.rpc('current_contact_id');
+  if (!contactId) throw new Error('No contact record linked to this account yet.');
+  const { error } = await supabase
+    .from('contacts')
+    .update({ phone })
+    .eq('id', contactId as string);
+  if (error) throw error;
+}
+
 // ─── Orders (authenticated purchase flow) ───────────────────────────────────
 
 /** The captured INTENT for a scheduled/recurring order line (Phase 4).
@@ -583,6 +614,24 @@ export async function myDocuments(): Promise<MyDocumentRow[]> {
   const { data, error } = await supabase.rpc('my_documents');
   if (error) throw error;
   return (data ?? []) as MyDocumentRow[];
+}
+
+/** H3/H4 — "Email me a copy" for an EXECUTED document the caller is a party on.
+ *  Personal re-send: the server resolves the caller's contact from their own
+ *  profile and mails only THEIR copy to THEIR account address. The document id
+ *  is the only input; the destination can never be set by the caller. */
+export async function emailMyDocumentCopy(documentId: string): Promise<{ email: string }> {
+  const { data: sess } = await supabase.auth.getSession();
+  const bearer = sess?.session?.access_token;
+  if (!bearer) throw new Error('You need to be signed in.');
+  const res = await fetch('/api/deliver-my-document', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${bearer}` },
+    body: JSON.stringify({ documentId }),
+  });
+  const json = (await res.json().catch(() => ({}))) as { error?: string; email?: string };
+  if (!res.ok) throw new Error(json.error || 'Could not send the email.');
+  return { email: json.email ?? '' };
 }
 
 /** Stage 3f: the signing-wall state for the signed-in person. */

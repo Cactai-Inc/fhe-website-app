@@ -59,9 +59,24 @@ $$;
 
 -- ============================================================
 -- seed tenant #1 — the operator's own business; adopt existing data
+--
+-- FIXED ID (2026-08-02, test/db harness repair): 13 later migrations
+-- (20260709160000 onward) hardcode tenant #1's id as a literal —
+-- e656f20b-ef43-4725-9029-19e7f0190d9c — which is exactly the id this INSERT
+-- generated in production (gen_random_uuid() ran once, live, and every
+-- consumer copied the value it produced). A FRESH database generates a
+-- DIFFERENT random id here every run, so those 13 migrations' hardcoded FK
+-- inserts fail against any newly-built database — this is what made the
+-- test/db PGlite harness unable to construct a database at all
+-- (Migration failed: 20260709160000_enforce_launch_modules.sql, FK violation
+-- on org_modules_org_id_fkey). Pinning the id makes a fresh build match what
+-- production already has, which is what those 13 migrations always assumed.
+-- SAFE ON PRODUCTION: the WHERE NOT EXISTS guard means this INSERT does not
+-- fire there — the row already exists with this exact id — so re-running this
+-- migration file against lrstswfxfsezdmvkvukc is a no-op, verified below.
 -- ============================================================
-INSERT INTO organizations (name, slug)
-  SELECT 'French Heritage Equestrian', 'fhe'
+INSERT INTO organizations (id, name, slug)
+  SELECT 'e656f20b-ef43-4725-9029-19e7f0190d9c'::uuid, 'French Heritage Equestrian', 'fhe'
   WHERE NOT EXISTS (SELECT 1 FROM organizations);
 
 -- every existing user joins tenant #1
