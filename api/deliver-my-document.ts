@@ -75,14 +75,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!callerContactId) return res.status(403).json({ error: 'forbidden' });
 
     // 4. Load the document. Soft-deleted documents read as missing.
+    // NOTE: documents has no signed_at column (that lives on signatures/
+    // contracts) — created_at stands in as the execution moment.
     const { data: doc, error: docErr } = await db
       .from('documents')
-      .select('id, org_id, status, title, merged_body, execution_hash, deleted_at, signed_at, created_at')
+      .select('id, org_id, status, title, merged_body, execution_hash, deleted_at, created_at')
       .eq('id', documentId)
       .maybeSingle();
     if (docErr) throw docErr;
     if (!doc || doc.deleted_at) return res.status(404).json({ error: 'document not found' });
-    const executedAt = new Date((doc.signed_at as string | null) ?? (doc.created_at as string));
+    const executedAt = new Date(doc.created_at as string);
 
     // 5. Party check BEFORE status: a non-party learns nothing about a
     //    document's state (403 whether or not it is executed).

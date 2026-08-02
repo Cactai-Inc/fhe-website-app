@@ -137,14 +137,17 @@ export async function deliverExecutedDocument(
   documentId: string,
 ): Promise<DeliverExecutedDocumentResult> {
   // 1. Load the document (status + org + title). No delivery unless EXECUTED.
+  // NOTE: documents has no signed_at column (that's on signatures/contracts,
+  // a different table) — created_at is the execution moment for these kiosk
+  // releases, since sign_release creates + executes in one transaction.
   const { data: doc, error: docErr } = await db
     .from('documents')
-    .select('id, org_id, status, title, display_code, merged_body, execution_hash, signed_at, created_at')
+    .select('id, org_id, status, title, display_code, merged_body, execution_hash, created_at')
     .eq('id', documentId)
     .maybeSingle();
   if (docErr) throw docErr;
   if (!doc) throw new DeliveryError(404, 'document not found');
-  const executedAt = new Date((doc.signed_at as string | null) ?? (doc.created_at as string));
+  const executedAt = new Date(doc.created_at as string);
 
   if (doc.status !== 'EXECUTED') {
     throw new DeliveryError(409, `document not EXECUTED (status=${doc.status})`);
