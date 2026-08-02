@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { ArrowRight, LogOut } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { listMyOrders, upsertMyProfile } from '../lib/api';
+import { listMyOrders, upsertMyProfile, myContactPhone, updateMyContactPhone } from '../lib/api';
 import { useDocumentTitle } from '../lib/hooks';
 import { TwoFactorSettings } from '../components/auth/TwoFactorSettings';
 import type { Order } from '../lib/types';
@@ -35,7 +35,17 @@ export default function Account() {
   useEffect(() => {
     setFirstName(profile?.first_name ?? '');
     setLastName(profile?.last_name ?? '');
-    setPhone(profile?.phone ?? '');
+  }, [profile]);
+
+  // U7 Stage 5: phone is repointed from profiles.phone (retired, see below) to
+  // the person's contact record — docs/PERSON_DATA_CONSOLIDATION.md is the
+  // single source of truth for a person's phone number.
+  useEffect(() => {
+    let active = true;
+    myContactPhone()
+      .then((p) => { if (active) setPhone(p ?? ''); })
+      .catch(() => { if (active) setPhone(''); });
+    return () => { active = false; };
   }, [profile]);
 
   useEffect(() => {
@@ -63,12 +73,14 @@ export default function Account() {
     setSaving(true);
     setSaved(false);
     try {
-      await upsertMyProfile({
-        first_name: firstName.trim() || null,
-        last_name: lastName.trim() || null,
-        phone: phone.trim() || null,
-        email: user?.email ?? profile?.email ?? null,
-      });
+      await Promise.all([
+        upsertMyProfile({
+          first_name: firstName.trim() || null,
+          last_name: lastName.trim() || null,
+          email: user?.email ?? profile?.email ?? null,
+        }),
+        updateMyContactPhone(phone.trim() || null),
+      ]);
       await refreshProfile();
       setSaved(true);
     } finally {

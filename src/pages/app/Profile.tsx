@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { toErrorMessage } from '../../lib/ops/errors';
 import { useAuth } from '../../contexts/AuthContext';
-import { upsertMyProfile, uploadMyAvatar } from '../../lib/api';
+import { upsertMyProfile, uploadMyAvatar, myContactPhone, updateMyContactPhone } from '../../lib/api';
 import { listLinkedProviders, linkOAuthIdentity } from '../../lib/auth';
 import { ENABLED_OAUTH_PROVIDERS, OAUTH_LABELS } from '../../lib/authConfig';
 import { useDocumentTitle } from '../../lib/hooks';
@@ -76,10 +76,19 @@ export default function Profile() {
     setDisplayName(profile?.display_name ?? '');
     setFirstName(profile?.first_name ?? '');
     setLastName(profile?.last_name ?? '');
-    setPhone(profile?.phone ?? '');
     setBio(profile?.bio ?? '');
     setAvatarUrl(profile?.avatar_url ?? '');
     setRidingLevel(profile?.riding_level ?? '');
+  }, [profile]);
+
+  // U7 Stage 5: phone is repointed from profiles.phone (retired) to the
+  // person's contact record — docs/PERSON_DATA_CONSOLIDATION.md.
+  useEffect(() => {
+    let active = true;
+    myContactPhone()
+      .then((p) => { if (active) setPhone(p ?? ''); })
+      .catch(() => { if (active) setPhone(''); });
+    return () => { active = false; };
   }, [profile]);
 
   async function save(e: React.FormEvent) {
@@ -87,16 +96,18 @@ export default function Profile() {
     setSaving(true);
     setSaved(false);
     try {
-      await upsertMyProfile({
-        display_name: displayName.trim() || null,
-        first_name: firstName.trim() || null,
-        last_name: lastName.trim() || null,
-        phone: phone.trim() || null,
-        bio: bio.trim() || null,
-        avatar_url: avatarUrl.trim() || null,
-        riding_level: ridingLevel || null,
-        email: user?.email ?? profile?.email ?? null,
-      });
+      await Promise.all([
+        upsertMyProfile({
+          display_name: displayName.trim() || null,
+          first_name: firstName.trim() || null,
+          last_name: lastName.trim() || null,
+          bio: bio.trim() || null,
+          avatar_url: avatarUrl.trim() || null,
+          riding_level: ridingLevel || null,
+          email: user?.email ?? profile?.email ?? null,
+        }),
+        updateMyContactPhone(phone.trim() || null),
+      ]);
       await refreshProfile();
       setSaved(true);
     } finally {

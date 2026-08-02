@@ -419,6 +419,37 @@ export async function upsertMyProfile(patch: Partial<Profile>): Promise<void> {
   if (error) throw error;
 }
 
+/** U7 Stage 5: phone lives on the person's contact record, not profiles — see
+ *  docs/PERSON_DATA_CONSOLIDATION.md. contacts_select's own-row policy
+ *  (id = current_contact_id()) permits this read directly; no RPC needed. A
+ *  caller with no linked contact yet (no account-creation flow has run) reads
+ *  as null rather than throwing — the public Account page still renders. */
+export async function myContactPhone(): Promise<string | null> {
+  const { data: contactId } = await supabase.rpc('current_contact_id');
+  if (!contactId) return null;
+  const { data, error } = await supabase
+    .from('contacts')
+    .select('phone')
+    .eq('id', contactId as string)
+    .maybeSingle();
+  if (error) throw error;
+  return (data?.phone as string | null) ?? null;
+}
+
+/** Same repoint for the write side. contacts_update_own's RLS
+ *  (id = current_contact_id()) permits this directly — no RPC needed, matching
+ *  the read. Throws if the caller has no linked contact yet: unlike the read,
+ *  a failed save should surface rather than silently do nothing. */
+export async function updateMyContactPhone(phone: string | null): Promise<void> {
+  const { data: contactId } = await supabase.rpc('current_contact_id');
+  if (!contactId) throw new Error('No contact record linked to this account yet.');
+  const { error } = await supabase
+    .from('contacts')
+    .update({ phone })
+    .eq('id', contactId as string);
+  if (error) throw error;
+}
+
 // ─── Orders (authenticated purchase flow) ───────────────────────────────────
 
 /** The captured INTENT for a scheduled/recurring order line (Phase 4).
