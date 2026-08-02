@@ -1,5 +1,5 @@
 /**
- * Single-source-of-truth enforcement for the service catalog across all four
+ * Single-source-of-truth enforcement for the service catalog across all three live
  * representations:
  *   1. the SQL seed (service_types in migration 008)
  *   2. src/lib/serviceCatalog.ts (the front-end canonical list)
@@ -11,8 +11,7 @@
  */
 import { beforeAll, afterAll, describe, expect, it } from 'vitest';
 import { createTestDb, type TestDb } from './harness';
-import { SERVICE_TYPES, OFFERING_SLUG_TO_SERVICE_TYPE, isServiceCode } from '../../src/lib/serviceCatalog';
-import { ALL_SERVICES } from '../../src/lib/services';
+import { SERVICE_TYPES, OFFERING_SLUG_TO_SERVICE_TYPE } from '../../src/lib/serviceCatalog';
 
 let h: TestDb;
 beforeAll(async () => {
@@ -35,15 +34,9 @@ describe('serviceCatalog.ts ↔ DB service_types', () => {
   });
 });
 
-describe('marketing services.ts ↔ canonical catalog', () => {
-  it('every marketing offering maps to a real canonical service code', () => {
-    for (const svc of ALL_SERVICES) {
-      const code = OFFERING_SLUG_TO_SERVICE_TYPE[svc.id];
-      expect(code, `offering "${svc.id}" has a canonical mapping`).toBeTruthy();
-      expect(isServiceCode(code), `"${code}" is a valid service code`).toBe(true);
-    }
-  });
-});
+// (The former "marketing services.ts ↔ canonical catalog" block is gone with
+// services.ts itself: Phase 4 (b9bad0b) retired the hardcoded shadow catalog —
+// the public catalog is now the DB's public_offerings, covered below.)
 
 describe('DB offerings reconciliation ↔ the slug→code bridge', () => {
   it('every active offering carries the service_type the bridge assigns it', async () => {
