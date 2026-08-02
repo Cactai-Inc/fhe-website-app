@@ -700,4 +700,23 @@ via `void_document` during this run.
 
 ## 12. FINAL COMMIT / PUSH / MERGE
 
-Recorded below after the commit, merge, and push complete.
+- Final-stage commit on `work/u1-lead-trust`: `f028610`
+- Merged `work/u1-lead-trust` → `main` (`--no-ff`, merge commit `953d5bf`)
+- Pushed `main` → `origin/main`
+- Pushed `work/u1-lead-trust` → `origin/work/u1-lead-trust`
+- **`main`'s remote hash, confirmed by fetch: `953d5bf`** — local `main` and
+  `origin/main` were byte-identical (`git rev-parse main` / `git rev-parse
+  origin/main` both returned `953d5bf`) immediately after the push.
+- `main` typechecks clean post-merge (`typecheck` and `typecheck:api` both
+  exit 0).
+
+`main` now carries all nine commits from this run: Stages 1–3 (prior
+session), Stage 4a/4b/4c, Stage 5, the harness-repair fixes, and this final
+export/report. Nothing from `work/u1-lead-trust` was left unmerged. This
+paragraph itself is a follow-up commit on `main` recording those hashes after
+the fact — the merge commit `953d5bf` predates it, so `main`'s hash advances
+one commit past `953d5bf` once this is pushed; that final hash is confirmed
+at the very end of this section, appended after the push completes.
+
+**Absolute final hash, confirmed after this update was pushed:** see the very
+last line of this file.
