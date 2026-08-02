@@ -60,11 +60,37 @@ Opened by U1 (lead trust + notification integrity), 2026-08-01.
   kind-scoped resolution correct) but `IntakePage.tsx` reads no query params, so the
   parameter is currently inert. Wire the page to read it and open that request's
   drawer; the link then becomes a real deep-link with no notification change.
+- **Stages 4–5 proof-of-fix document** — `c36449f7-a29f-4b12-9313-4f9a8a0ca9a1`
+  (contract `07d84769-23cd-4c76-bf96-3a735a502c73`), lessee `d99f1472-...` ("CJ Z"),
+  lessor `352c3898-...` (FHE), horse `a8e82033-...`. Created live through
+  `start_lease_contract_v2` + `set_contract_field` to prove D1–D5 (insurance
+  resolution) end to end for `docs/reports/PROMPT_A_STAGES_4-5.md`'s final sample —
+  real RPCs, real accounts, not synthetic. Void or dispose at cleanup. A sibling
+  attempt, `4051bd91-e904-49db-a0e8-9a27a419b707`, was already voided during the same
+  run (superseded — wrong lessee identity for the proof, no linked account to
+  exercise the party-exclusive election).
 
 ---
 
 ## Known defects
 
+- **`remerge_contract_from_clauses` is missing U2.1's entire money-rendering
+  layer** (found 2026-08-02, generating the Stages 4-5 final sample).
+  `generate_document` (document CREATION) has Stage 2's `fmt_money` +
+  `fee_schedule` JSON parsing; `remerge_contract_body` →
+  `remerge_contract_from_clauses` (the re-render path used every time a party
+  edits a draft's fields — the normal, expected editing flow, not an edge
+  case) has neither. Confirmed live on draft `b7446f9e`: `HORSE.FAIR_MARKET_VALUE`
+  renders bare `45000.00` (not `$45,000.00`) and `TXN.LEASE_FEE` renders the
+  raw stored JSON `{"initial_due":"850"}` (not `Initial payment due: $850.00.`)
+  even though both fields are stored correctly per U2.1's fix. Net effect: any
+  money token U2.1 fixed reverts to its pre-fix broken rendering the moment a
+  party edits ANY field on the document, because that edit triggers a remerge
+  through the unfixed path. This makes U2.1 effectively unfixed for a
+  document's whole life after its first edit. Needs the same fmt_money /
+  fee_schedule logic ported into `remerge_contract_from_clauses` (or both
+  functions refactored to share one formatting layer — worth doing regardless,
+  since two independent implementations is how this happened).
 - **Landing's only CTA goes to `/story`, not the booking funnel** —
   `src/pages/Landing.tsx:104-105`.
 - **Dead nav route** — `src/components/app/AppLayout.tsx` links "Brokerage" to
