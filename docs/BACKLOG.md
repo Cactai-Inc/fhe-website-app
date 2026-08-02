@@ -74,23 +74,32 @@ Opened by U1 (lead trust + notification integrity), 2026-08-01.
 
 ## Known defects
 
-- **`remerge_contract_from_clauses` is missing U2.1's entire money-rendering
-  layer** (found 2026-08-02, generating the Stages 4-5 final sample).
-  `generate_document` (document CREATION) has Stage 2's `fmt_money` +
-  `fee_schedule` JSON parsing; `remerge_contract_body` →
-  `remerge_contract_from_clauses` (the re-render path used every time a party
-  edits a draft's fields — the normal, expected editing flow, not an edge
-  case) has neither. Confirmed live on draft `b7446f9e`: `HORSE.FAIR_MARKET_VALUE`
-  renders bare `45000.00` (not `$45,000.00`) and `TXN.LEASE_FEE` renders the
-  raw stored JSON `{"initial_due":"850"}` (not `Initial payment due: $850.00.`)
-  even though both fields are stored correctly per U2.1's fix. Net effect: any
-  money token U2.1 fixed reverts to its pre-fix broken rendering the moment a
-  party edits ANY field on the document, because that edit triggers a remerge
-  through the unfixed path. This makes U2.1 effectively unfixed for a
-  document's whole life after its first edit. Needs the same fmt_money /
-  fee_schedule logic ported into `remerge_contract_from_clauses` (or both
-  functions refactored to share one formatting layer — worth doing regardless,
-  since two independent implementations is how this happened).
+- ~~`remerge_contract_from_clauses` is missing U2.1's entire money-rendering
+  layer`~~ — **FIXED 2026-08-02** (`supabase/migrations/20260802050000_d15_money_rerender_fix.sql`).
+  Verified before fixing: document `c36449f7`'s `HORSE.FAIR_MARKET_VALUE`
+  rendered bare `52500.00` both before AND after a real field edit (through
+  `set_contract_field`) triggered a real re-merge — reproduced, not assumed.
+  Root cause was narrower than first suspected: `remerge_contract_from_clauses`
+  already special-cases `percent`/`certify` format_type fields but had no
+  `currency` branch, so plain numeric currency tokens (`format_type='currency'`
+  — live on `HORSE.FAIR_MARKET_VALUE` and `TXN.EVAL_FIXED_FEE`, the only two)
+  fell through to `token_display_value`, which has no money handling either.
+  Fix: one new branch calling `fmt_money` — the same function
+  `generate_document` already uses — not a second implementation.
+  **`TXN.LEASE_FEE` (`format_type='fee_schedule'`) was investigated and found
+  to be UNAFFECTED, contrary to the original note above**: `remerge_contract_from_clauses`
+  calls `recompose_document_fields` first (line 21), which already runs
+  `compose_field_prose('fee_schedule', ...)` — itself already calling
+  `fmt_money` (tagged "U2.1" in its own source) — and writes the composed
+  prose directly into `contract_fields.value` before the token substitution
+  pass ever runs. Confirmed live on two real documents (draft `5dbce25f-a1af-...`
+  and the executed `ecaecd42-0d82-...`): `TXN.LEASE_FEE` renders correctly
+  formatted (`Initial payment due: $0.00.`) after a real re-render. The
+  original note's `{"initial_due":"850"}` raw-JSON reproduction could not be
+  reproduced through the real write path — `set_contract_field` writing a raw
+  JSON string into `.value` bypasses the `.structured` jsonb column
+  `recompose_document_fields` actually reads from, so that reproduction had
+  written a shape no real UI produces. No fix needed here.
 - **Landing's only CTA goes to `/story`, not the booking funnel** —
   `src/pages/Landing.tsx:104-105`.
 - **Dead nav route** — `src/components/app/AppLayout.tsx` links "Brokerage" to
