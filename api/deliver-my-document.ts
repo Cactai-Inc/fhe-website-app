@@ -35,32 +35,10 @@
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
-import { resolveTenantEmailIdentity, sendViaProvider, renderTemplate } from './_lib/email.js';
+import { resolveTenantEmailIdentity, sendViaProvider } from './_lib/email.js';
+import { buildPartyCopyEmail, renderPartyCopyPdf } from './_lib/delivery.js';
 
 const CHANNEL = 'EMAIL';
-const TEMPLATE = 'contract_executed';
-
-/* Display-time signature styling, identical to the plural/singular senders:
- * decorate the value after a "Signature:" / "By (signature):" label. The STORED
- * merged_body is never altered — this only styles the outgoing HTML. */
-const SIGNATURE_LINE_RE = /^((?:Signature|By \(signature\)):\s*)(.+)$/gm;
-const SIGNATURE_SPAN_STYLE =
-  "font-family:'Snell Roundhand','Segoe Script','Brush Script MT',cursive;font-size:1.4em";
-function withSignatureScript(body: string): string {
-  return body.replace(
-    SIGNATURE_LINE_RE,
-    (_m, label: string, name: string) =>
-      `${label}<span style="${SIGNATURE_SPAN_STYLE}">${name}</span>`,
-  );
-}
-
-/* Party copies carry the DOCUMENT TEXT ONLY: strip the trailing FACILITY RULES
- * ACKNOWLEDGMENT block appended by the kiosk sign RPC. It stays in the stored
- * document, the company notification, and the admin/print view. */
-const FACILITY_RULES_TAIL_RE = /\n+FACILITY RULES ACKNOWLEDGMENT\n[\s\S]*$/;
-function stripFacilityRulesTail(body: string): string {
-  return body.replace(FACILITY_RULES_TAIL_RE, '\n');
-}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'method not allowed' });
@@ -131,33 +109,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // 8. Tenant-branded identity, scoped to the DOCUMENT's org.
     const identity = await resolveTenantEmailIdentity(db, doc.org_id);
 
-    const executionHash =
-      typeof doc.execution_hash === 'string' && doc.execution_hash.trim() !== ''
-        ? doc.execution_hash.trim()
-        : null;
-    const partyHashHtml = executionHash
-      ? `<p style="color:#666;font-size:12px">This document's integrity code: ${executionHash.slice(0, 16)}…</p>`
-      : '';
-    const footerHtml = identity.footer
-      ? `<hr/><p style="color:#666;font-size:12px;white-space:pre-line">${identity.footer}</p>`
-      : '';
-
-    const { subject, body: inner } = renderTemplate(
-      TEMPLATE,
-      // email greeting = casual surface -> first_name (owner name-canon rule)
-      { documentTitle: doc.title, recipientName: contact?.first_name },
-      identity.fromName,
-    );
-    const docHtml = doc.merged_body
-      ? `<hr/><pre style="font-family:inherit;white-space:pre-wrap">${withSignatureScript(stripFacilityRulesTail(doc.merged_body))}</pre>`
-      : '';
+    // Same email shape as the all-parties sender (subject with the real
+    // document title, greeting/body/signature, PDF attachment) — one source,
+    // api/_lib/delivery.ts, not a second hand-built template.
+    const attachment = await renderPartyCopyPdf(doc);
+    const partyEmail = buildPartyCopyEmail(doc, contact?.first_name, identity, attachment);
 
     const sent = await sendViaProvider({
       to: email,
       fromName: identity.fromName,
       fromEmail: identity.fromEmail,
-      subject,
-      html: `${inner}${docHtml}${partyHashHtml}${footerHtml}`,
+      subject: partyEmail.subject,
+      html: partyEmail.html,
+      attachments: partyEmail.attachments,
     });
     // No delivery row without a successful send.
     if (!sent.ok) return res.status(502).json({ error: 'could not send the email' });

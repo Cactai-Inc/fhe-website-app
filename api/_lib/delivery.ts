@@ -5,28 +5,30 @@
  * endpoint and this direct call now share one implementation — no parallel
  * sender.
  *
- * Behavior is verbatim from the pre-hardening handler: idempotent per
- * (document_id, recipient_contact_id, channel='EMAIL'), 404/409 via thrown
- * DeliveryError, org-isolated identity resolution, tamper-evidence hash lines,
- * facility-rules-tail stripping on party copies only.
+ * Idempotent per (document_id, recipient_contact_id, channel='EMAIL'); 404/409
+ * surfaced via thrown DeliveryError; identity resolution is org-isolated
+ * (§15) — a document is never delivered with another tenant's brand.
+ *
+ * Post-H2 owner-reported defects fixed here (2026-08-02), found via a real
+ * production send during H2 verification:
+ *  - document_deliveries has NO org_id column (deliver-documents.ts already
+ *    knew this — see its own comment); the insert was throwing on every call,
+ *    AFTER the email had already sent, so sends looked successful with no
+ *    delivery row ever recorded. Root cause of the "delivery never recorded"
+ *    finding — not an env/provider issue.
+ *  - the party copy inlined the raw merged_body as a <pre> block instead of
+ *    attaching a formatted PDF (deliver-documents.ts's own pattern, via
+ *    renderDocumentPdf/pdfFileName, reused here instead of a second one).
+ *  - contract_executed's subject was hardcoded ("Your contract is executed"),
+ *    never the actual document title.
+ *  - the email had no greeting/signature structure, just one inline sentence.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { resolveTenantEmailIdentity, sendViaProvider } from './email.js';
+import type { EmailAttachment } from './email.js';
+import { renderDocumentPdf, pdfFileName } from './documentPdf.js';
 
 const CHANNEL = 'EMAIL';
-const TEMPLATE = 'contract_executed';
-import { renderTemplate } from './email.js';
-
-const SIGNATURE_LINE_RE = /^((?:Signature|By \(signature\)):\s*)(.+)$/gm;
-const SIGNATURE_SPAN_STYLE =
-  "font-family:'Snell Roundhand','Segoe Script','Brush Script MT',cursive;font-size:1.4em";
-function withSignatureScript(body: string): string {
-  return body.replace(
-    SIGNATURE_LINE_RE,
-    (_m, label: string, name: string) =>
-      `${label}<span style="${SIGNATURE_SPAN_STYLE}">${name}</span>`,
-  );
-}
 
 const FACILITY_RULES_TAIL_RE = /\n+FACILITY RULES ACKNOWLEDGMENT\n[\s\S]*$/;
 function stripFacilityRulesTail(body: string): string {
@@ -36,6 +38,55 @@ function stripFacilityRulesTail(body: string): string {
 interface PartyRow {
   contact_id: string;
   contacts: { email: string | null; first_name: string | null; last_name: string | null } | null;
+}
+
+export interface PartyCopyEmail {
+  subject: string;
+  html: string;
+  attachments?: EmailAttachment[];
+}
+
+/** Render the party-copy PDF once (the facility-rules tail stripped) — shared
+ *  so a multi-recipient send (deliverExecutedDocument) renders it a single
+ *  time rather than once per party. */
+export async function renderPartyCopyPdf(doc: { title: string; merged_body: string | null }): Promise<EmailAttachment | null> {
+  const text = doc.merged_body ? stripFacilityRulesTail(doc.merged_body) : '';
+  if (!text) return null;
+  const bytes = await renderDocumentPdf(doc.title, text);
+  return { filename: pdfFileName(doc.title), content: bytes, contentType: 'application/pdf' };
+}
+
+/** Build a party's "your document is executed" email — subject (with the real
+ *  document title), greeting/body/signature, and the PDF attachment. Shared
+ *  by deliverExecutedDocument (the all-parties sender) and
+ *  api/deliver-my-document.ts (the authenticated self-send) — one source of
+ *  the party-copy email shape, not two. `attachment` is passed in (rather
+ *  than rendered inside) so a multi-recipient caller can render it once and
+ *  reuse it across every party's email. */
+export function buildPartyCopyEmail(
+  doc: { title: string; execution_hash: string | null },
+  recipientFirstName: string | null | undefined,
+  identity: { fromName: string; footer: string | null },
+  attachment: EmailAttachment | null,
+): PartyCopyEmail {
+  const executionHash = typeof doc.execution_hash === 'string' && doc.execution_hash.trim() !== ''
+    ? doc.execution_hash.trim()
+    : null;
+  const partyHashHtml = executionHash
+    ? `<p style="color:#666;font-size:12px">This document's integrity code: ${executionHash.slice(0, 16)}…</p>`
+    : '';
+  const footerHtml = identity.footer
+    ? `<hr/><p style="color:#666;font-size:12px;white-space:pre-line">${identity.footer}</p>`
+    : '';
+  const greeting = recipientFirstName ? `Hi ${recipientFirstName},` : 'Hello,';
+  const html =
+    `<p>${greeting}</p>` +
+    `<p>Your document <strong>${doc.title}</strong> has been fully executed. ` +
+    `A PDF copy is attached for your records.</p>` +
+    `<p>Thank you,<br/>${identity.fromName}</p>` +
+    partyHashHtml + footerHtml;
+
+  return { subject: `${doc.title} — signed and executed`, html, attachments: attachment ? [attachment] : [] };
 }
 
 export class DeliveryError extends Error {
@@ -98,14 +149,14 @@ export async function deliverExecutedDocument(
   const executionHash = typeof doc.execution_hash === 'string' && doc.execution_hash.trim() !== ''
     ? doc.execution_hash.trim()
     : null;
-  const partyHashHtml = executionHash
-    ? `<p style="color:#666;font-size:12px">This document's integrity code: ${executionHash.slice(0, 16)}…</p>`
-    : '';
   const companyHashHtml = executionHash
     ? `<hr/><p style="color:#666;font-size:12px">Integrity hash (SHA-256): ${executionHash}</p>`
     : '';
 
   const delivered: Array<{ recipientContactId: string; channel: string; emailed: boolean }> = [];
+
+  // The PDF is identical for every recipient — render it once, reuse it.
+  const partyAttachment = await renderPartyCopyPdf(doc);
 
   // 5. Per party: dedupe, email, then (only on a successful send) record delivery.
   for (const party of parties) {
@@ -113,25 +164,14 @@ export async function deliverExecutedDocument(
     const email = party.contacts?.email;
     if (!email) continue; // no address -> cannot email; skip (no orphan row)
 
-    const { subject, body: inner } = renderTemplate(
-      TEMPLATE,
-      { documentTitle: doc.title, recipientName: party.contacts?.first_name },
-      identity.fromName,
-    );
-    const footerHtml = identity.footer
-      ? `<hr/><p style="color:#666;font-size:12px;white-space:pre-line">${identity.footer}</p>`
-      : '';
-    const docHtml = doc.merged_body
-      ? `<hr/><pre style="font-family:inherit;white-space:pre-wrap">${withSignatureScript(stripFacilityRulesTail(doc.merged_body))}</pre>`
-      : '';
-    const html = `${inner}${docHtml}${partyHashHtml}${footerHtml}`;
-
+    const partyEmail = buildPartyCopyEmail(doc, party.contacts?.first_name, identity, partyAttachment);
     const sent = await sendViaProvider({
       to: email,
       fromName: identity.fromName,
       fromEmail: identity.fromEmail,
-      subject,
-      html,
+      subject: partyEmail.subject,
+      html: partyEmail.html,
+      attachments: partyEmail.attachments,
     });
     if (!sent.ok) continue;
 
@@ -140,7 +180,6 @@ export async function deliverExecutedDocument(
       recipient_contact_id: party.contact_id,
       channel: CHANNEL,
       copy_url: copyUrl,
-      org_id: doc.org_id,
     });
     if (insErr) throw insErr;
 
@@ -150,6 +189,8 @@ export async function deliverExecutedDocument(
 
   // 6. Company copy: notify the org's public inbox once per document (skip if
   //    the inbox already received a party copy; best-effort, never fails the call).
+  // Company copy keeps the FULL stored body (acknowledgment block included),
+  // rendered to its own PDF since it differs from the party copy's stripped text.
   let companyNotified = false;
   const partyEmails = new Set(parties.map((p) => p.contacts?.email?.toLowerCase()).filter(Boolean));
   if (identity.contactEmail && !partyEmails.has(identity.contactEmail.toLowerCase()) && delivered.length > 0) {
@@ -157,14 +198,19 @@ export async function deliverExecutedDocument(
       .map((p) => [p.contacts?.first_name, p.contacts?.last_name].filter(Boolean).join(' '))
       .filter(Boolean)
       .join(', ');
+    let companyAttachment: EmailAttachment | null = null;
+    if (doc.merged_body) {
+      const bytes = await renderDocumentPdf(doc.title, doc.merged_body);
+      companyAttachment = { filename: pdfFileName(doc.title), content: bytes, contentType: 'application/pdf' };
+    }
     const notice = await sendViaProvider({
       to: identity.contactEmail,
       fromName: identity.fromName,
       fromEmail: identity.fromEmail,
-      subject: `Signed: ${doc.title} (${doc.display_code ?? documentId.slice(0, 8)})`,
-      html: `<p>${signers || 'A signer'} executed <strong>${doc.title}</strong>.</p>`
-        + (doc.merged_body ? `<pre style="font-family:inherit;white-space:pre-wrap">${withSignatureScript(doc.merged_body)}</pre>` : '')
+      subject: `${doc.title} — signed and executed (${doc.display_code ?? documentId.slice(0, 8)})`,
+      html: `<p>${signers || 'A signer'} executed <strong>${doc.title}</strong>. The signed PDF is attached.</p>`
         + companyHashHtml,
+      attachments: companyAttachment ? [companyAttachment] : undefined,
     });
     companyNotified = notice.ok;
   }
