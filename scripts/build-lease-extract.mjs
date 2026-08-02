@@ -38,11 +38,11 @@ const sections = q(`select json_agg(t) from (
    where template_key='${TKEY}' order by sort_order) t`);
 const clauses = q(`select json_agg(t) from (
   select section_key, clause_key, heading, body, clause_type, sort_order, conditional_on
-    from contract_clause_defs where template_key='${TKEY}' order by sort_order) t`);
+    from contract_clause_defs where template_key='${TKEY}' order by sort_order, clause_key) t`);
 const fields = q(`select json_agg(t) from (
   select field_key, label, section, owner_role, input_kind, options, conditional_on,
          required, guidance, clause_key, sort_order
-    from contract_field_defs where template_key='${TKEY}' order by sort_order) t`);
+    from contract_field_defs where template_key='${TKEY}' order by sort_order, field_key) t`);
 
 /** Render a gate the way the extract legend promises. */
 function gate(c) {

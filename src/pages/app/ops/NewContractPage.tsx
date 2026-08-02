@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2, UserPlus } from 'lucide-react';
 import { useDocumentTitle } from '../../../lib/hooks';
-import { startLeaseContract, startPurchaseContract, linkContractToPurchase } from '../../../lib/api';
+import { startLeaseContract, startSaleContract, linkContractToPurchase } from '../../../lib/api';
 import {
   claimDocumentOrigination, setPartyControls, assignHorseSection,
 } from '../../../lib/contracts';
-import { staffHorseRecords, contractPartyOptions, createHorseRecord, type StaffHorseRecord, type PartyOption } from '../../../lib/horses';
+import { staffHorseRecords, contractPartyOptions, createHorseRecord, contactHorseRecords, type StaffHorseRecord, type PartyOption, type HorseIntakeRecord } from '../../../lib/horses';
+import { HorseIntakeForm } from '../../../components/app/HorseIntakeForm';
 import {
   PartyControlsCard, DEFAULT_PARTY_CONTROLS, roleLabel,
   type PartyControlValues,
@@ -31,7 +32,7 @@ type ContractType = 'lease' | 'purchase';
 
 const TYPES: { id: ContractType; label: string; hint: string; roles: [string, string] }[] = [
   { id: 'lease', label: 'Horse lease', hint: 'Lease agreement — lessee & lessor', roles: ['LESSEE', 'LESSOR'] },
-  { id: 'purchase', label: 'Purchase & sale', hint: 'Purchase agreement — buyer & seller', roles: ['BUYER', 'SELLER'] },
+  { id: 'purchase', label: 'Horse sale', hint: 'Sale and purchase agreement — buyer & seller', roles: ['BUYER', 'SELLER'] },
 ];
 
 type Controls = PartyControlValues;
@@ -54,6 +55,9 @@ export default function NewContractPage() {
   const [controlsB, setControlsB] = useState<Controls>(DEFAULT_CONTROLS);
   const [amount, setAmount] = useState('');
   const [deposit, setDeposit] = useState('');
+  // sale: the horse step is a dropdown of the SELLER's horses + add-new (modal)
+  const [sellerHorses, setSellerHorses] = useState<HorseIntakeRecord[]>([]);
+  const [intakeOpen, setIntakeOpen] = useState(false);
   // (The "responsible for authoring the terms" party selector was removed — the
   // company is ALWAYS the author (H1 originator collapse); parties review.)
 
@@ -85,16 +89,27 @@ export default function NewContractPage() {
     staffHorseRecords().then(setHorses).catch(() => setHorses([]));
   }, []);
   useEffect(() => { setHorseParty(roleB); }, [roleB]);
+  useEffect(() => {
+    // sale: the horse dropdown lists the chosen seller's horses
+    if (type === 'purchase' && partyB) {
+      contactHorseRecords(partyB).then(setSellerHorses).catch(() => setSellerHorses([]));
+    } else {
+      setSellerHorses([]);
+    }
+    setHorseId('');
+  }, [type, partyB]);
 
-  const ready = !!partyA && !!partyB && (horseMode === 'pick' ? !!horseId : horseMode === 'record' ? !!(newHorse.registered_name || newHorse.nickname) : !!horseParty);
+  const ready = !!partyA && !!partyB && (type === 'purchase'
+    ? !!horseId
+    : horseMode === 'pick' ? !!horseId : horseMode === 'record' ? !!(newHorse.registered_name || newHorse.nickname) : !!horseParty);
 
   async function create() {
     setErr(null);
     if (!ready) { setErr('Select both parties and the horse source first.'); return; }
     setBusy(true);
     try {
-      let chosenHorse = horseMode === 'pick' ? horseId : undefined;
-      if (horseMode === 'record') {
+      let chosenHorse = (type === 'purchase' || horseMode === 'pick') ? horseId : undefined;
+      if (type === 'lease' && horseMode === 'record') {
         // the horse's owner is the horse-owning party: lessor / seller = partyB.
         // Single intake path: create_horse_record honors owner_contact_id for staff.
         const out = await createHorseRecord({ ...newHorse, owner_contact_id: partyB });
@@ -106,7 +121,7 @@ export default function NewContractPage() {
       }
       const result = type === 'lease'
         ? await startLeaseContract(partyA, partyB, chosenHorse)
-        : await startPurchaseContract(
+        : await startSaleContract(
             partyA, partyB, chosenHorse,
             amount ? Number(amount.replace(/[$,]/g, '')) : undefined,
             deposit ? Number(deposit.replace(/[$,]/g, '')) : undefined,
@@ -210,6 +225,58 @@ export default function NewContractPage() {
             contract; per-party abilities are set with the controls below.) */}
       </section>
 
+      {type === 'purchase' && (
+        <section className="bg-white border border-green-800/10 rounded-xl p-4 mb-4">
+          <h2 className="font-serif text-green-800 text-base">Horse</h2>
+          <p className="text-[12px] text-muted mb-3">
+            {partyB
+              ? 'The seller’s horses. Not on file yet? Add it — the intake opens right here.'
+              : 'Choose the seller first — their horses list here.'}
+          </p>
+          <div className="flex gap-2 items-start flex-wrap">
+            <select className="form-input flex-1 min-w-52" value={horseId} disabled={!partyB}
+              onChange={(e) => setHorseId(e.target.value)} aria-label="Horse">
+              <option value="">
+                {!partyB ? 'Select the seller first…'
+                  : sellerHorses.length === 0 ? 'No horses on file for this seller'
+                  : 'Choose a horse…'}
+              </option>
+              {sellerHorses.map((h) => (
+                <option key={h.id} value={h.id}>
+                  {[String(h.nickname ?? '') || String(h.registered_name ?? ''), String(h.breed ?? '')].filter(Boolean).join(' · ') || h.id}
+                </option>
+              ))}
+            </select>
+            <button type="button" disabled={!partyB} onClick={() => setIntakeOpen(true)}
+              className="px-3.5 py-2 rounded-lg text-xs font-sans bg-green-800/10 text-green-800 hover:bg-green-800/20 focus-ring disabled:opacity-50">
+              Add a new horse
+            </button>
+          </div>
+          {intakeOpen && (
+            <div className="fixed inset-0 z-50 bg-black/40 flex items-start justify-center overflow-y-auto p-4"
+              role="dialog" aria-modal="true" aria-label="Add a new horse"
+              onClick={(e) => { if (e.target === e.currentTarget) setIntakeOpen(false); }}>
+              <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full my-8 p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-serif text-green-900 text-lg">Add a new horse</h3>
+                  <button type="button" className="text-sm text-muted hover:text-green-800 focus-ring"
+                    onClick={() => setIntakeOpen(false)}>
+                    Close
+                  </button>
+                </div>
+                <HorseIntakeForm submitLabel="Add horse" ownerContactId={partyB}
+                  onDone={(id) => {
+                    setIntakeOpen(false);
+                    setHorseId(id);
+                    if (partyB) contactHorseRecords(partyB).then(setSellerHorses).catch(() => {});
+                  }} />
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+
+      {type === 'lease' && (
       <section className="bg-white border border-green-800/10 rounded-xl p-4 mb-4">
         <h2 className="font-serif text-green-800 text-base">Horse</h2>
         <p className="text-[12px] text-muted mb-3">
@@ -263,6 +330,7 @@ export default function NewContractPage() {
           </div>
         )}
       </section>
+      )}
 
       <section className="bg-white border border-green-800/10 rounded-xl p-4 mb-4">
         <h2 className="font-serif text-green-800 text-base">Document controls</h2>

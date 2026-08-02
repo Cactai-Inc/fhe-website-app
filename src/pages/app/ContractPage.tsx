@@ -24,7 +24,8 @@ import {
   type ContractDetail, type ContractField, type PartyControls,
   type SigningSetDoc, type RedlineState, type PartiesHorseSummary, type PartySummary,
 } from '../../lib/contracts';
-import { myWallState, myNameConfirmationState, type NameConfirmationState } from '../../lib/api';
+import { myWallState, myNameConfirmationState, startBillOfSale, setDocumentCoBuyer, type NameConfirmationState } from '../../lib/api';
+import { contractPartyOptions, type PartyOption } from '../../lib/horses';
 import { ContractSubheader, SUBHEADER_BTN } from '../../components/app/ContractSubheader';
 import { ContractNotes } from '../../components/app/ContractNotes';
 import { subscribeToContract, useContractPresence } from '../../lib/contractRealtime';
@@ -298,6 +299,12 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   // undefined to use the natural default for the current state (edit while
   // editable/in-review; read-only signer view once locked). Set by the toggle.
   const [viewChoice, setViewChoice] = useState<'signer' | 'author' | undefined>(undefined);
+  // Sale contracts: bill-of-sale generation + co-buyer capture state.
+  const [bosBusy, setBosBusy] = useState(false);
+  const [coBuyerBusy, setCoBuyerBusy] = useState(false);
+  const [coBuyerPick, setCoBuyerPick] = useState('');
+  const [coBuyerEntry, setCoBuyerEntry] = useState<Record<string, string>>({});
+  const [coBuyerOptions, setCoBuyerOptions] = useState<PartyOption[]>([]);
 
   // DOCUMENT-BEFORE-CONTRACT: does the VIEWER still owe onboarding documents?
   // Fails CLOSED — if we cannot tell, we gate rather than offer a signing box
@@ -457,7 +464,8 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   // A party being stamped as originator is provenance only — it no longer opens
   // the owner-side surface.
   const isOwnerSide = isStaff && !viewAsSigner;
-  const isLessor = myRoles.includes('LESSOR');
+  // the horse-owning side: Lessor on a lease, Seller on a sale / bill of sale
+  const isLessor = myRoles.includes('LESSOR') || myRoles.includes('SELLER');
   // Editing is allowed in review too — the parties' per-party controls (can_fill /
   // can_edit_deal) decide what each may actually change; a party with neither just
   // sees a read-only document. Locked/executed stay read-only (fields are DB-read-
@@ -508,6 +516,15 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
     for (const f of detail?.fields ?? []) m[f.field_key] = f.responsibility?.party ?? f.value ?? '';
     return m;
   }, [detail?.fields]);
+  // Sale-family docs: contact options for the co-buyer picker (same list the
+  // primary parties are picked from on NewContractPage).
+  const isSaleFamily = templateKey === 'HORSE_SALE_V2' || templateKey === 'HORSE_BILL_OF_SALE';
+  useEffect(() => {
+    if (isSaleFamily && isStaff) {
+      contractPartyOptions().then(setCoBuyerOptions).catch(() => setCoBuyerOptions([]));
+    }
+  }, [isSaleFamily, isStaff]);
+
   const myFillableEmpty = (detail?.fields ?? []).filter(
     (f) => f.can_edit
       && !(f.value ?? '').trim()
@@ -760,7 +777,11 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   // review (see the confirmation modal).
   const editPartyContact = useCallback(async (token: string, value: string) => {
     const [role, field] = token.split('.');
-    const party = partiesSummary?.parties.find((p) => p.party_role === role);
+    // COBUYER is a namespace, not a party_role: the co-buyer is the SECOND
+    // BUYER party (summary rows are ordered by role then signer_order).
+    const party = role === 'COBUYER'
+      ? (partiesSummary?.parties.filter((p) => p.party_role === 'BUYER') ?? [])[1]
+      : partiesSummary?.parties.find((p) => p.party_role === role);
     if (!party?.contact_id) { setError(`No ${role.toLowerCase()} on this document to save to.`); return; }
     const v = value.trim();
     const patch: Parameters<typeof captureContactInfo>[2] = {};
@@ -810,6 +831,46 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
      it, picks the item, and writes the request there — one place for that
      conversation instead of a superscript icon buried in the prose. */
 
+  // ── sale: generate the companion bill of sale (same engagement) ──
+  const generateBillOfSale = useCallback(async () => {
+    if (!id) return;
+    setBosBusy(true);
+    try {
+      const out = await startBillOfSale(id);
+      navigate(`/app/contracts/${out.document_id}`);
+    } catch (e) {
+      setError(errMessage(e, 'Could not generate the bill of sale.'));
+    } finally {
+      setBosBusy(false);
+    }
+  }, [id, navigate]);
+
+  // ── sale: co-buyer party capture (TXN.CO_BUYER_ENABLED=YES with no second
+  //    BUYER party yet). Pick an existing account/contact exactly as the primary
+  //    parties are picked, or hand-enter — which creates a contact record. ──
+  const addCoBuyer = useCallback(async () => {
+    if (!id) return;
+    setCoBuyerBusy(true);
+    try {
+      await setDocumentCoBuyer(id, coBuyerPick
+        ? { contactId: coBuyerPick }
+        : {
+            firstName: coBuyerEntry.first_name, lastName: coBuyerEntry.last_name,
+            email: coBuyerEntry.email, phone: coBuyerEntry.phone,
+            addressLine1: coBuyerEntry.address_line1, city: coBuyerEntry.city,
+            state: coBuyerEntry.state, postalCode: coBuyerEntry.postal_code,
+          });
+      setCoBuyerEntry({});
+      setCoBuyerPick('');
+      await load();
+      setChangeKey((k) => k + 1);
+    } catch (e) {
+      setError(errMessage(e, 'Could not add the co-buyer.'));
+    } finally {
+      setCoBuyerBusy(false);
+    }
+  }, [id, coBuyerPick, coBuyerEntry, load]);
+
   if (error && !detail) return <p role="alert" className="form-error">{error}</p>;
   if (!detail || !doc) return <p className="body-text text-muted text-sm">Loading the contract…</p>;
 
@@ -821,9 +882,11 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
 
   // ── segmented signing set (lease → vet auth → care release) ──
   const stepLabel = (k: string) =>
-    k === 'HORSE_LEASE' ? 'Lease agreement'
-      : k === 'HORSE_EMERGENCY_VET' ? 'Vet authorization'
-        : k === 'RELEASE_HORSE_CARE' ? 'Care liability release' : 'Document';
+    k === 'HORSE_LEASE' || k === 'HORSE_LEASE_V2' ? 'Lease agreement'
+      : k === 'HORSE_SALE_V2' ? 'Sale agreement'
+        : k === 'HORSE_BILL_OF_SALE' ? 'Bill of sale'
+          : k === 'HORSE_EMERGENCY_VET' ? 'Vet authorization'
+            : k === 'RELEASE_HORSE_CARE' ? 'Care liability release' : 'Document';
   const inSet = signingSet.length > 1;
   const curIdx = signingSet.findIndex((s) => s.document_id === id);
   const nextInSeq = curIdx >= 0 ? signingSet.slice(curIdx + 1).find((s) => !s.executed) : undefined;
@@ -970,6 +1033,15 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                   className={`${SUBHEADER_BTN} border-green-800/20 bg-white text-green-900 hover:bg-green-800/5`}
                   onClick={() => document.getElementById('contract-signatures')?.scrollIntoView({ behavior: 'smooth' })}>
                   Scroll to Bottom
+                </button>
+              )}
+              {/* Sale contract → generate the companion Equine Bill of Sale on the
+                  same engagement (parties, horse, price and payment status carry). */}
+              {templateKey === 'HORSE_SALE_V2' && id && isStaff && !isVoid && (
+                <button type="button" disabled={bosBusy}
+                  className={`${SUBHEADER_BTN} border-green-800/20 bg-white text-green-900 hover:bg-green-800/5 disabled:opacity-60`}
+                  onClick={() => void generateBillOfSale()}>
+                  {bosBusy ? 'Generating…' : 'Generate bill of sale'}
                 </button>
               )}
               {structure && id && isOwnerSide && editablePhase && (
@@ -1199,7 +1271,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           <p className="inline-flex items-center gap-2 text-green-800 font-medium text-sm mb-3">
             <CheckCircle2 size={16} /> Executed{doc.execution_hash ? ` · ${doc.execution_hash.slice(0, 12)}…` : ''}
           </p>
-          <div className="prose-sm whitespace-pre-line text-[13px] leading-relaxed text-green-950 bg-cream-100/50 border border-green-800/10 rounded p-5">
+          <div className="document-paper prose-sm whitespace-pre-line text-[13px] leading-relaxed text-green-950">
             <ContractBody body={doc.merged_body} />
           </div>
         </div>
@@ -1343,8 +1415,53 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
               <ShieldCheck size={13} /> I reviewed the horse info — it's accurate
             </button>
           ) : (
-            <span className="text-xs text-muted">Awaiting Lessor confirmation</span>
+            <span className="text-xs text-muted">Awaiting confirmation by the horse’s owner</span>
           )}
+        </div>
+      )}
+
+      {/* Co-buyer capture: the co-buyer election is YES but no second BUYER party
+          exists yet. Pick an existing account/contact (the same list the primary
+          parties come from) or hand-enter to create a contact record. The server
+          adds the party with the next signer_order and fills COBUYER.*. */}
+      {isSaleFamily && isStaff && editablePhase && !isVoid
+        && valueMap['TXN.CO_BUYER_ENABLED'] === 'YES'
+        && (partiesSummary?.parties.filter((p) => p.party_role === 'BUYER').length ?? 0) < 2 && (
+        <div className="mb-4 bg-white border border-gold-600/40 rounded-xl px-5 py-4">
+          <p className="text-sm font-medium text-green-900 mb-1">Co-Buyer</p>
+          <p className="text-[12px] text-muted mb-3">
+            A co-buyer is elected on this contract but not yet named. Pick them from
+            your accounts and contacts — or enter their details to create a contact.
+          </p>
+          <div className="grid sm:grid-cols-2 gap-3 mb-3">
+            <div>
+              <span className="form-label">Existing account or contact</span>
+              <select className="form-input" value={coBuyerPick} aria-label="Co-Buyer"
+                onChange={(e) => setCoBuyerPick(e.target.value)}>
+                <option value="">Choose…</option>
+                {coBuyerOptions.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name || c.email || c.id}{c.email && c.name ? ` — ${c.email}` : ''}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          {!coBuyerPick && (
+            <div className="grid sm:grid-cols-2 gap-3 mb-3">
+              {([['first_name', 'First name'], ['last_name', 'Last name'], ['email', 'Email'], ['phone', 'Phone'],
+                 ['address_line1', 'Street address'], ['city', 'City'], ['state', 'State'], ['postal_code', 'ZIP']] as [string, string][]).map(([k, label]) => (
+                <div key={k}>
+                  <span className="form-label">{label}</span>
+                  <input className="form-input" value={coBuyerEntry[k] ?? ''}
+                    onChange={(e) => setCoBuyerEntry((s) => ({ ...s, [k]: e.target.value }))} />
+                </div>
+              ))}
+            </div>
+          )}
+          <button type="button" disabled={coBuyerBusy || (!coBuyerPick && !(coBuyerEntry.first_name || coBuyerEntry.last_name))}
+            className="btn-outline-gold text-xs disabled:opacity-60"
+            onClick={() => void addCoBuyer()}>
+            {coBuyerBusy ? 'Adding…' : 'Add co-buyer'}
+          </button>
         </div>
       )}
 
@@ -1433,7 +1550,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                     <ShieldCheck size={13} /> I reviewed the horse info — it's accurate
                   </button>
                 ) : (
-                  <span className="text-xs text-muted">Awaiting Lessor confirmation</span>
+                  <span className="text-xs text-muted">Awaiting confirmation by the horse’s owner</span>
                 )
               )}
             </div>
@@ -1505,7 +1622,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                   ? 'The document is final and locked for signing. Review it below, then sign at the bottom of the page.'
                   : 'Review the full document below. It will be locked for signing once both sides are ready. To request a change, use “Suggest a change” on the item or message the other party.'}
           </p>
-          <div className="whitespace-pre-line text-[13.5px] leading-relaxed text-green-950 bg-cream-100/50 border border-green-800/10 rounded p-6">
+          <div className="document-paper whitespace-pre-line text-[13.5px] leading-relaxed text-green-950">
             <ContractBody body={doc.merged_body} />
           </div>
         </section>
@@ -1524,7 +1641,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
             {showBody ? 'Hide' : 'Review'} the document text
           </button>
           {showBody && (
-            <div className="mt-3 whitespace-pre-line text-[13px] leading-relaxed text-green-950 bg-cream-100/50 border border-green-800/10 rounded p-5">
+            <div className="document-paper mt-3 whitespace-pre-line text-[13px] leading-relaxed text-green-950">
               <ContractBody body={doc.merged_body} />
             </div>
           )}

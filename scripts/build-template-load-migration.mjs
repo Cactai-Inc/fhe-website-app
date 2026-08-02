@@ -62,7 +62,7 @@ const POST_SEED_TEMPLATES = {
 // Retired templates: their .md is a pointer/note, not contract text. The lease is
 // now built from DB clause defs (HORSE_LEASE_V2), so never re-load HORSE_LEASE's
 // body from its (retired) .md file. See supabase/contract_templates/HORSE_LEASE.md.
-const RETIRED = new Set(['HORSE_LEASE']);
+const RETIRED = new Set(['HORSE_LEASE', 'HORSE_PURCHASE_SALE', 'HORSE_SALE_TRANSFER']);
 
 const files = readdirSync(BODIES)
   .filter((f) => f.endsWith('.md'))

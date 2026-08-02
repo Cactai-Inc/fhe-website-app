@@ -86,6 +86,21 @@
     @apply max-w-7xl mx-auto px-5 sm:px-8 lg:px-12;
   }
 
+  /* ── Document paper: THE shared rendered-contract surface (owner ruling
+     2026-08-02). One pure-white page, document-standard internal padding, the
+     app background showing in the flexing gutters around it. Applied to every
+     contract render — clause editor, read-only frame, executed frame, ops
+     viewer, signer view — lease, sale, and bill of sale alike. Style changes
+     here, nowhere else. */
+  .document-paper {
+    @apply bg-white border border-green-800/10 rounded shadow-sm mx-auto w-full;
+    max-width: 8.5in;
+    padding: 0.75in;
+  }
+  @media (max-width: 640px) {
+    .document-paper { padding: 1.25rem; }
+  }
+
   /* ── Semantic text tokens (replace raw opacity usage) ───────── */
   .text-primary   { @apply text-green-900; }
   .text-secondary { @apply text-green-800/[0.85]; }

@@ -48,6 +48,12 @@ const PARTY_CONTACT_TOKENS: Record<string, string> = {
   'LESSOR.PHONE': 'Lessor phone', 'LESSOR.EMAIL': 'Lessor email',
   'LESSEE.FULL_NAME': 'Lessee name', 'LESSEE.ADDRESS': 'Lessee address',
   'LESSEE.PHONE': 'Lessee phone', 'LESSEE.EMAIL': 'Lessee email',
+  'SELLER.FULL_NAME': 'Seller name', 'SELLER.ADDRESS': 'Seller address',
+  'SELLER.PHONE': 'Seller phone', 'SELLER.EMAIL': 'Seller email',
+  'BUYER.FULL_NAME': 'Buyer name', 'BUYER.ADDRESS': 'Buyer address',
+  'BUYER.PHONE': 'Buyer phone', 'BUYER.EMAIL': 'Buyer email',
+  'COBUYER.FULL_NAME': 'Co-Buyer name', 'COBUYER.ADDRESS': 'Co-Buyer address',
+  'COBUYER.PHONE': 'Co-Buyer phone', 'COBUYER.EMAIL': 'Co-Buyer email',
 };
 
 /** HORSE-record tokens that are editable inline in the Care section. An empty one
@@ -73,6 +79,15 @@ const AUTOFILL_HINT: Record<string, string> = {
   'LESSEE.FULL_NAME': 'Lessee name on file', 'LESSEE.ADDRESS': 'Lessee address on file',
   'LESSEE.PRINTED_NAME': 'Lessee name on file',
   'LESSEE.PHONE': 'Lessee phone on file', 'LESSEE.EMAIL': 'Lessee email on file',
+  'SELLER.FULL_NAME': 'Seller name on file', 'SELLER.ADDRESS': 'Seller address on file',
+  'SELLER.PRINTED_NAME': 'Seller name on file',
+  'SELLER.PHONE': 'Seller phone on file', 'SELLER.EMAIL': 'Seller email on file',
+  'BUYER.FULL_NAME': 'Buyer name on file', 'BUYER.ADDRESS': 'Buyer address on file',
+  'BUYER.PRINTED_NAME': 'Buyer name on file',
+  'BUYER.PHONE': 'Buyer phone on file', 'BUYER.EMAIL': 'Buyer email on file',
+  'COBUYER.FULL_NAME': 'Co-Buyer name on file', 'COBUYER.ADDRESS': 'Co-Buyer address on file',
+  'COBUYER.PRINTED_NAME': 'Co-Buyer name on file',
+  'COBUYER.PHONE': 'Co-Buyer phone on file', 'COBUYER.EMAIL': 'Co-Buyer email on file',
 };
 
 /** An auto-fill / signature token (no editable field) → its current value or a hint. */
@@ -511,7 +526,7 @@ export function ClauseDocument({
 
   let sectionNo = 0;
   return (
-    <div className="flex flex-col gap-7">
+    <div className="document-paper flex flex-col gap-7">
       {sections.map((section) => {
         // Gated-off clauses are shown (muted, toggleable) ONLY to a user who can
         // actually edit — so the author never loses the ability to change their mind

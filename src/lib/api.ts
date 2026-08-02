@@ -1916,14 +1916,14 @@ export async function startLeaseContract(
   return data as { document_id: string; contract_id: string; fields_seeded: number };
 }
 
-/** Start a BUYER/SELLER horse purchase & sale contract (generic engine instance).
- *  BUYER personal → BUYER; SELLER personal + all HORSE.* + disclosures → SELLER;
- *  all TXN/deal terms → DEAL; originator = buyer. */
-export async function startPurchaseContract(
+/** Start a BUYER/SELLER horse sale contract — the clause-model authoring system
+ *  (HORSE_SALE_V2). Replaced the flat start_purchase_contract on 2026-08-02.
+ *  amount/deposit seed TXN.PURCHASE_PRICE / TXN.DEPOSIT_AMOUNT (+ enable). */
+export async function startSaleContract(
   buyerContactId: string, sellerContactId?: string, horseId?: string,
   amount?: number, deposit?: number,
 ): Promise<{ document_id: string; contract_id: string; fields_seeded: number }> {
-  const { data, error } = await supabase.rpc('start_purchase_contract', {
+  const { data, error } = await supabase.rpc('start_sale_contract', {
     p_buyer_contact_id: buyerContactId,
     p_seller_contact_id: sellerContactId ?? null,
     p_horse_id: horseId ?? null,
@@ -1932,6 +1932,43 @@ export async function startPurchaseContract(
   });
   if (error) throw error;
   return data as { document_id: string; contract_id: string; fields_seeded: number };
+}
+
+/** Generate the companion Equine Bill of Sale from a sale contract document —
+ *  same engagement, parties (incl. co-buyer) and shared field values carry over;
+ *  payment status derives from the sale's installment election. */
+export async function startBillOfSale(
+  saleDocumentId: string,
+): Promise<{ document_id: string; contract_id: string }> {
+  const { data, error } = await supabase.rpc('start_bill_of_sale', {
+    p_sale_document_id: saleDocumentId,
+  });
+  if (error) throw error;
+  return data as { document_id: string; contract_id: string };
+}
+
+/** Add a co-buyer to a sale / bill-of-sale document: a second BUYER party with
+ *  the next signer_order. Pass a contactId to pick an existing account/contact,
+ *  or hand-entry fields to create a contact record (deduped on email). */
+export async function setDocumentCoBuyer(
+  documentId: string,
+  p: { contactId?: string; firstName?: string; lastName?: string; email?: string;
+       phone?: string; addressLine1?: string; city?: string; state?: string; postalCode?: string },
+): Promise<{ contact_id: string; signer_order: number }> {
+  const { data, error } = await supabase.rpc('set_document_co_buyer', {
+    p_document_id: documentId,
+    p_contact_id: p.contactId ?? null,
+    p_first_name: p.firstName ?? null,
+    p_last_name: p.lastName ?? null,
+    p_email: p.email ?? null,
+    p_phone: p.phone ?? null,
+    p_address_line1: p.addressLine1 ?? null,
+    p_city: p.city ?? null,
+    p_state: p.state ?? null,
+    p_postal_code: p.postalCode ?? null,
+  });
+  if (error) throw error;
+  return data as { contact_id: string; signer_order: number };
 }
 
 // (startBrokerContract removed 2026-07-20, audit m-1: the broker/retainer type

@@ -191,7 +191,9 @@ export default function DocumentViewerPage() {
           <h2 id="body-heading" className="font-serif text-lg text-green-900 print-hidden">
             Contract
           </h2>
-          <MergedBodyView body={document.merged_body} />
+          <div className="document-paper">
+            <MergedBodyView body={document.merged_body} />
+          </div>
         </section>
 
         {/* Executed-signature summary — signer names/roles/dates, print only. */}
