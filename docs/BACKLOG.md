@@ -1,229 +1,76 @@
 # Backlog
 
-The standing work list. Everything here is either not started or deliberately
-deferred; anything finished simply leaves the file.
+Drained 2026-08-02 under the zero-deferral closure directive: every item with
+live behavior was fixed and verified in-session (see the closure report /
+commit trail of that date). What remains falls only into the two permitted
+survivor classes: **owner-decision stops** (content or direction only the
+owner can supply) and **zero-live-behavior items** (nothing running today
+behaves differently while these wait).
 
 ---
 
-## Ready to build
+## Owner-decision stops
 
-### Business admin suite
-`supabase/migrations/20260726090000_biz_expenses_and_financials.sql` is written but
-**deliberately unapplied**. Two defects must be fixed before it ships:
-
-- **The MRR calculation is wrong** — it sums `amount` over all recurring purchases
-  with no time window and no per-month normalisation: a lifetime total mislabelled
-  "monthly", for a product that does not exist.
-- **The member KPI is misleading** — it counts activated accounts including staff,
-  not paying members.
-
-Then build: sales tracker, expense tracker, growth tracker, KPI dashboard, a PDF
-business-report generator, and a CSV financial export. All must read live data
-(`purchases.amount/amount_paid/paid_at`, `board_charges`, `contacts`, `expenses`) and
-degrade gracefully on empty periods. Existing building blocks: the `KpiSpec`/`KpiTile`
-framework in `OpsDashboard.tsx`, the reduce-sum pattern in `api-boarding.ts`, and the
-`<Money>` formatter.
-
-### Verification gaps
-- **The DB test suites have never been executed.** They are re-targeted onto the
-  current schema but need a dedicated test database. Several were stale before that.
-- **The fulfillment spine is proven only synthetically.** `purchases` is at 0 rows;
-  its first real exercise is the first real purchase.
-- **The email-change round-trip has never been run end to end.**
-
----
-
-## Pre-launch cleanup
-
-Test-era data and follow-ups that must be disposed of before real users arrive.
-Opened by U1 (lead trust + notification integrity), 2026-08-01.
-
-- **Lease-manifest sample document (2026-08-02 contract sprint)** — document
-  `e7441e97-289f-415d-8b74-7739d252c92f` (contract `899c1208-7cef-4fde-b9fe-87840057db82`)
-  and its disposable lessee contact `sample-manifest-20260802@example.invalid`
-  ('Sample ManifestApplied'). Created through the real RPC write path to prove the
-  M1–M26 manifest changes render; exported as
-  `docs/contract-exports/SAMPLE_MANIFEST_APPLIED_2026-08-02*.md`. DRAFT, safe to delete
-  at cleanup time.
 - **Charles Zigmund duplicate contact pair** — `07ab7dbf-33f2-4c2c-963a-f37761d5ffd1`
   (no email) and `d268330c-436a-4f42-bf88-9172d9b4155f` (`cjzigs@icloud.com`) are the
-  same person. **Deliberately NOT merged** during U1: `d268330c` is the live lessor on
-  the reference sample draft, and merging mid-run could disturb it. Owner decides the
-  merge direction at cleanup time. Both were typed `CONTACT` by U1's `contact_type`
-  backfill — a transitional value, not a judgement that they are distinct people.
-- **Two `Unnamed Contact` artifacts** — `bb57e418-3875-4219-90a4-31ab47fb4bde` and
-  `6ecceaf0-4a59-4ac6-83a3-3c330d5682e6`; no email, no name. Shape matches what
-  `ensure_contact_for_profile`'s fallback produces when a profile carries neither a
-  name nor an email. Dispose at cleanup; confirm the origin trace before deleting in
-  case the fallback is still reachable.
-- **Notification NULL-link hardening (prophylactic)** — U1 item 5e's anchor was absent:
-  live `select count(*) from notifications where link is null` returned **0**, so its
-  own done-check already passed and no producer was touched. `notify_staff` and
-  `notify_user` both take a link parameter today. Worth adding a NOT NULL constraint or
-  a producer-side guard so a future call site cannot write an unresolvable row —
-  deliberate hardening, not a bug fix.
-- **Intake deep-link** — `request_new` notifications link to
-  `/app/ops/intake?request=<id>`. The link is unique per request (which is what makes
-  kind-scoped resolution correct) but `IntakePage.tsx` reads no query params, so the
-  parameter is currently inert. Wire the page to read it and open that request's
-  drawer; the link then becomes a real deep-link with no notification change.
-- **Stages 4–5 proof-of-fix document** — `c36449f7-a29f-4b12-9313-4f9a8a0ca9a1`
-  (contract `07d84769-23cd-4c76-bf96-3a735a502c73`), lessee `d99f1472-...` ("CJ Z"),
-  lessor `352c3898-...` (FHE), horse `a8e82033-...`. Created live through
-  `start_lease_contract_v2` + `set_contract_field` to prove D1–D5 (insurance
-  resolution) end to end for `docs/reports/PROMPT_A_STAGES_4-5.md`'s final sample —
-  real RPCs, real accounts, not synthetic. Void or dispose at cleanup. A sibling
-  attempt, `4051bd91-e904-49db-a0e8-9a27a419b707`, was already voided during the same
-  run (superseded — wrong lessee identity for the proof, no linked account to
-  exercise the party-exclusive election).
-
----
-
-## Known defects
-
-- ~~`remerge_contract_from_clauses` is missing U2.1's entire money-rendering
-  layer`~~ — **FIXED 2026-08-02** (`supabase/migrations/20260802050000_d15_money_rerender_fix.sql`).
-  Verified before fixing: document `c36449f7`'s `HORSE.FAIR_MARKET_VALUE`
-  rendered bare `52500.00` both before AND after a real field edit (through
-  `set_contract_field`) triggered a real re-merge — reproduced, not assumed.
-  Root cause was narrower than first suspected: `remerge_contract_from_clauses`
-  already special-cases `percent`/`certify` format_type fields but had no
-  `currency` branch, so plain numeric currency tokens (`format_type='currency'`
-  — live on `HORSE.FAIR_MARKET_VALUE` and `TXN.EVAL_FIXED_FEE`, the only two)
-  fell through to `token_display_value`, which has no money handling either.
-  Fix: one new branch calling `fmt_money` — the same function
-  `generate_document` already uses — not a second implementation.
-  **`TXN.LEASE_FEE` (`format_type='fee_schedule'`) was investigated and found
-  to be UNAFFECTED, contrary to the original note above**: `remerge_contract_from_clauses`
-  calls `recompose_document_fields` first (line 21), which already runs
-  `compose_field_prose('fee_schedule', ...)` — itself already calling
-  `fmt_money` (tagged "U2.1" in its own source) — and writes the composed
-  prose directly into `contract_fields.value` before the token substitution
-  pass ever runs. Confirmed live on two real documents (draft `5dbce25f-a1af-...`
-  and the executed `ecaecd42-0d82-...`): `TXN.LEASE_FEE` renders correctly
-  formatted (`Initial payment due: $0.00.`) after a real re-render. The
-  original note's `{"initial_due":"850"}` raw-JSON reproduction could not be
-  reproduced through the real write path — `set_contract_field` writing a raw
-  JSON string into `.value` bypasses the `.structured` jsonb column
-  `recompose_document_fields` actually reads from, so that reproduction had
-  written a shape no real UI produces. No fix needed here.
-- **Landing's only CTA goes to `/story`, not the booking funnel** —
-  `src/pages/Landing.tsx:104-105`.
-- **Dead nav route** — `src/components/app/AppLayout.tsx` links "Brokerage" to
-  `/app/ops/brokerage`, which is not defined in `App.tsx`.
-- **`Lessons.tsx` has no loading or error state** (`src/pages/Lessons.tsx:36-40`); on
-  fetch failure it silently renders an empty grid.
-- **Placeholder media** — hero (`src/pages/Landing.tsx:24`), Story "SWAP" bands
-  (`Story.tsx:104,164,183,250`), offering-card `CoverPlaceholder`
-  (`OfferingCatalog.tsx:39,46`), and `src/pages/Faq.tsx:6-7` placeholder copy.
-
----
-
-## Deferred
-
-- **Linked accounts: schedule sharing** — rider-permission-gated schedule visibility
-  between linked accounts. (The record-sharing half is covered: a shared horse record
-  works through `horse_relationships` parties.)
-- **Calendar day/list view modes** — week/month exist; the item panel is still
-  compact (`CalendarItemPanel.tsx`).
-- **Stable item form fields** — `AddItemModal` is name + detail + vendor only
-  (`src/components/app/StableEditors.tsx`); category list, conditional size,
-  where-bought, price-paid and notes are not built.
-- **Mobile device pass** — needs real-device testing.
-- **Membership tiers** — settled as deferred (D4). `tier` stays a reserved word.
-- **Chat-with-us** — SMS/WhatsApp deep-link with preformatted messages, recording the
-  click and capturing the visitor as a contact.
-- **SEO** — technical SEO is implementable now; keyword/content strategy needs input.
-  `src/lib/seo.ts:18` has a TODO for the real street address, and `Contact.tsx:21` is
-  `noindex` — confirm that is intended.
-- **Hero image + page content refresh.**
-- **Payment / Zelle receipt-validation live testing** — needs real credentials.
-- **Org-config streamlining** — `src/lib/stable.ts` hardcodes a
-  `'Carmel Creek Ranch'` location fallback and nulls discipline/markings/photo_url.
+  same person. Deliberately not merged: `d268330c` is the live lessor on real lease
+  drafts. **Stop: owner picks the merge direction.**
+- **Placeholder media + copy** — hero (`Landing.tsx`), Story "SWAP" bands,
+  offering-card `CoverPlaceholder`, `Faq.tsx` placeholder copy, hero/page content
+  refresh, real street address for `src/lib/seo.ts` (TODO at :18), and whether
+  `Contact.tsx`'s `noindex` is intended. **Stop: owner supplies assets/copy.**
 - **Purchase/sale contract template** — blocked on the owner's reference document.
+- **SEO keyword/content strategy** — technical SEO is implementable; the strategy
+  needs owner input.
+- **Payment / Zelle receipt-validation live testing** — needs real payment
+  credentials only the owner can exercise.
+- **Fulfillment-spine live proof** — `purchases` has ~1 row; the spine's first real
+  exercise is the first real client purchase. Cannot be manufactured honestly.
+- **Email-change round-trip** — requires clicking the emailed links from the real
+  inboxes; not executable from a DB/repo session.
+
+## Zero-live-behavior work
+
+- **DB test-suite remediation** — the harness itself now works (snapshot
+  regenerated post-sprint; `row_security` leak fixed; smoke 6/6, golden 3/3,
+  service_catalog 2/2). First-ever full `npm run test:db` (2026-08-02):
+  **8 files green, 54 stale (88 failed / 154 passed / 428 skipped tests)** —
+  per-file expectations written against older schemas, same class as the smoke
+  test's retired-table list. Scoped remediation workstream; no live behavior.
+- **Business admin suite build** — sales tracker, expense tracker, growth tracker,
+  KPI dashboard, PDF report, CSV export. The two blocking defects in the
+  deliberately-unapplied `20260726090000_biz_expenses_and_financials.sql` are FIXED
+  in-file (MRR now windowed+normalised monthly value of paid recurring items;
+  member KPI counts non-staff members only); the migration stays unapplied until
+  the suite ships.
+- **Brokerage staff hub** — `mod.brokerage`'s staff hub page does not exist; the
+  dead nav entry (which 404'd live) was removed 2026-08-02. Build the hub, then
+  re-add the nav item.
+- **Feature work, unchanged scope**: linked-account schedule sharing; calendar
+  day/list view modes; stable item form fields; mobile device pass;
+  chat-with-us deep-link; membership tiers (deferred by owner ruling D4 — `tier`
+  stays reserved).
+- **HORSE_EMERGENCY_VET historical-migration archaeology** — ruled zero-live-behavior:
+  the `.md` body wins live (byte-verified 2026-08-02); which old migrations drifted
+  is history only.
 
 ---
 
-## Standing notes
+## Standing notes (facts, not work)
 
-- **Migrations are not rebuild-safe.** Many rewrite existing function bodies in place
-  via `pg_get_functiondef` + string-replace, which silently no-ops on a fresh
-  database. Worth a strategy if a clean rebuild is ever needed.
+- **Migrations are not rebuild-safe.** Many rewrite live function bodies via
+  `pg_get_functiondef` + string-replace, which no-ops on a fresh database. The test
+  harness sidesteps this with the schema snapshot; a production rebuild would need
+  a strategy.
 - There is no `supabase_migrations.schema_migrations` table — migrations are a
   hand-maintained journal applied via `psql`.
-- **`profiles.payment_reminders` is vestigial** (D9: no dunning email exists). It has
-  no reader and is not in the profile payload.
-- **Insurance: both parties report no coverage — SUPERSEDED by
-  `insurance-resolution-spec.md`** (owner ruling, 2026-08-01). The editor
-  auto-check design formerly described here is **withdrawn: do not implement
-  it.** Auto-checking `TXN.{X}_NOT_REQUIRED` would have made an election on
-  the Lessor's behalf — and only the party inheriting responsibility may make
-  it. The replacement treats a both-`NONE` section as UNRESOLVED: it alerts
-  both parties and blocks signing until the responsible party checks their own
-  certify (`TXN.{X}_NOT_REQUIRED` for Lessor, a new
-  `TXN.{X}_LESSEE_RESPONSIBLE` for Lessee), party-exclusively and enforced
-  server-side. Has DB and frontend parts that run as a later specified
-  workstream; the spec is authoritative and now lives in-repo at
-  `docs/insurance-resolution-spec.md`.
-
-- **Insurance: the no-coverage clause bodies are UNWRITTEN** (2026-08-01,
-  item E of `docs/clause-gate-batch-spec.md`). Only the clause *language* is
-  outstanding; the mechanism question is settled and lives in
-  `docs/insurance-resolution-spec.md`.
-  - **Gates are unchanged and stay that way.** The three
-    `INSURANCE_RISK.{GL,MORT,MED}_NONE` clauses keep their existing
-    equals-`YES` gate on `TXN.{X}_NOT_REQUIRED`. The proposed widening —
-    firing them when both parties' status is `NONE` — is **withdrawn, not
-    deferred.** Their bodies read *"Lessor has elected not to require…"*, so
-    firing them at `NOT_REQUIRED = 'NO'` would assert a waiver Lessor
-    demonstrably did not make: a false statement of fact in an executed
-    instrument, sitting beside the `{X}_STATUS` declarations that contradict
-    its own opening sentence.
-  - **Resolution is a party election, not an inference.** A both-`NONE`
-    section is UNRESOLVED and blocks signing until the party inheriting
-    responsibility checks their own box — `TXN.{X}_NOT_REQUIRED` (Lessor
-    side) or the new `TXN.{X}_LESSEE_RESPONSIBLE` (Lessee side),
-    party-exclusive and enforced server-side. Two boxes, each checkable by
-    one side only; the other renders disabled but visible. See the spec for
-    the DB unit (D1–D5), the frontend set (F1–F4), and the sequencing.
-  - **What remains here is content:** a body for the new
-    Lessee-responsible clause in all three sections, a re-read of the
-    existing `{X}_NONE` election language against every state that renders
-    it, and tooltip/notification wording. Blocked on the legal pass; do not
-    draft legal language in a DB thread.
-
-- **`purchases.status = 'confirmed'` is a retiring value** (2026-08-01). Stripe's
-  webhook used to overwrite `mark_purchase_paid`'s `'paid'` with `'confirmed'`, so a
-  Stripe order ended in a different status than a Zelle or staff-marked order — and
-  the webhook's own duplicate guard only worked because its overwrite put it there.
-  The overwrite is removed; `mark_purchase_paid` sets `status='paid'` and `paid_at`
-  on every route. Two consumers were **widened** to accept either value rather than
-  swapped, so any historical `'confirmed'` row still renders and still guards:
-  `src/pages/OrderDetail.tsx:117` (the customer success panel) and
-  `api/stripe-create-session.ts:46` (the already-paid guard). **Deferred cleanup:**
-  once the vocabulary has been unified long enough that no `'confirmed'` rows remain,
-  drop the `|| 'confirmed'` branches in both files and the value from the
-  `purchases.status` union in `src/lib/types.ts:22`. Left in place deliberately —
-  they are not dead code yet.
-
-- **`_provision_purchase_for_offerings` still has two overloads** (2026-08-01). The
-  07-25 signature (`…, p_mark_paid boolean, p_payment_method text, …`) is the one
-  `provision_client_invitation` calls positionally — dropping it breaks invite
-  provisioning. The 07-26 signature (`…, p_payment_method text, p_mark_paid boolean,
-  …`) had its `PUBLIC`/`anon` grants revoked in
-  `20260801010000_revoke_anon_provision_overload.sql`; the **drop** still needs a
-  caller trace first, since call sites resolve positionally and parameters 5 and 6
-  are reversed between the two. Same caveat applies to `sign_release` (26-arg only
-  today) and `staff_assign_horse_party` (8-arg only) — the 14-arg and 3-arg
-  overloads named in the original audit do not exist.
-
-- **`profiles.address_line1/address_line2/city/state/postal_code` are vestigial**
-  (verified 2026-07-29). Zero writers and zero readers in the DB and the frontend:
-  `update_my_onboarding_profile` mirrors only first/last name onto `profiles` and
-  writes the address to `contacts`. Live counts: `contacts` 12/16 populated,
-  `profiles` 0/7. `contacts` is the canonical home — it is what the onboarding
-  intake writes, what `compose_address()` generates `address_composed` from, and
-  what the contract party tokens (`LESSEE.ADDRESS`) resolve through. The dead
-  fallbacks that read these columns are removed; the columns themselves remain
-  until a schema-drop decision. They stay a trap for anyone who greps for an
-  address and finds the wrong table first.
+- **Insurance no-coverage mechanics** — settled by `docs/insurance-resolution-spec.md`
+  (owner ruling 2026-08-01): a both-`NONE` section is UNRESOLVED and blocks signing
+  until the responsible party's own election; the withdrawn editor auto-check must
+  not be implemented. The three `{X}_NONE` clause gates stay equals-`YES` on
+  `TXN.{X}_NOT_REQUIRED`. The C1 responsibility bodies landed 2026-08-02 (manifest
+  M22); U2.8's policy-exists deductible gating applied 2026-08-02 in positive
+  any/equals form.
+- **`ensure_contact_for_profile`'s no-name/no-email fallback** can still mint an
+  "Unnamed Contact" row for a profile with neither; the two historical artifacts it
+  produced were reference-checked (zero FKs) and deleted 2026-08-02.

@@ -93,7 +93,9 @@ function toStableHorse(r: StableHorseRow): StableHorse {
     markings: null,
     photo_url: null,
     ownership: r.is_owner ? 'owned' : 'leased',
-    location: r.current_location ?? 'Carmel Creek Ranch',
+    // No fabricated default: a record with no stored location shows a blank,
+    // not a hardcoded ranch name that may simply be wrong for the horse.
+    location: r.current_location ?? '—',
   };
 }
 
