@@ -57,7 +57,7 @@ const NEEDS = /⟦NEEDS:[^⟧]*⟧/g;
 
 describe('golden render — every active template', () => {
   it('renders every active template with no unresolved non-SIG tokens', async () => {
-    const templates = await h.sql<{ template_key: string; body: string }>(`
+    const templates = await h.q<{ template_key: string; body: string }>(`
       select template_key, body
         from contract_templates
        where active and deleted_at is null and body is not null
@@ -74,7 +74,7 @@ describe('golden render — every active template', () => {
       // mechanisms: the registry (global or template-scoped), contract_field_defs,
       // or party-namespace expansion of a PARTY.* template.
       for (const token of unresolved) {
-        const [resolvable] = await h.sql<{ ok: boolean }>(
+        const [resolvable] = await h.q<{ ok: boolean }>(
           `
           select exists (
             select 1 from template_tokens tt
@@ -101,7 +101,7 @@ describe('golden render — every active template', () => {
   });
 
   it('has no ⟦NEEDS:…⟧ residue baked into a stored template body', async () => {
-    const rows = await h.sql<{ template_key: string; body: string }>(`
+    const rows = await h.q<{ template_key: string; body: string }>(`
       select template_key, body from contract_templates
        where active and deleted_at is null and body is not null
     `);
@@ -113,7 +113,7 @@ describe('golden render — every active template', () => {
   it('money fields store canonical values (U2.1)', async () => {
     // currency stores a bare number; fee_schedule stores the structured object.
     // The $ and separators come from fmt_money at render, never from storage.
-    const bad = await h.sql<{ field_key: string; value: string; document_id: string }>(`
+    const bad = await h.q<{ field_key: string; value: string; document_id: string }>(`
       select cf.field_key, cf.value, cf.document_id
         from contract_fields cf
         join documents d on d.id = cf.document_id
