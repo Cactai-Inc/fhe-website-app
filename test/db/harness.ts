@@ -23,6 +23,30 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const MIGRATIONS_DIR = resolve(HERE, '../../supabase/migrations');
+export const SNAPSHOT_FILE = resolve(HERE, 'fixtures/schema_snapshot.sql');
+
+/** Tables the snapshot is allowed to carry rows for (Task 4 drift guard — see
+ *  fixtures/schema_snapshot.sql's header). Anything else is schema-only. */
+const SNAPSHOT_DATA_TABLES = new Set([
+  'organizations',
+  'service_types',
+  'contract_templates',
+  'contract_section_defs',
+  'contract_clause_defs',
+  'contract_field_defs',
+  'template_tokens',
+]);
+
+/** Every table an INSERT/COPY statement in the snapshot targets, in the order
+ *  first seen — used to fail loudly if the snapshot ever picks up rows for a
+ *  table outside SNAPSHOT_DATA_TABLES (see the file's own header comment). */
+function snapshotDataTargets(sql: string): string[] {
+  const targets = new Set<string>();
+  const re = /^(?:INSERT INTO|COPY)\s+public\.(\w+)/gim;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(sql)) !== null) targets.add(m[1]);
+  return [...targets];
+}
 
 /** Monotonic counter for unique synthetic emails (deterministic across a run). */
 let userSeq = 0;
@@ -128,38 +152,15 @@ export function migrationFiles(): string[] {
     .sort();
 }
 
-/**
- * Spin up a fresh database: bootstrap the Supabase runtime, then apply every
- * migration in order. Throws with the offending filename if one fails.
- */
-export async function createTestDb(opts?: { upTo?: string }): Promise<TestDb> {
-  // pgcrypto is loadable in PGlite but must be registered at create time for
-  // `CREATE EXTENSION pgcrypto` (20260703110000 — execution hashes) to work.
-  const db = await PGlite.create({ extensions: { pgcrypto } });
-  await db.exec(BOOTSTRAP);
-
-  for (const file of migrationFiles()) {
-    if (opts?.upTo && file > opts.upTo) break;
-    const sql = readFileSync(join(MIGRATIONS_DIR, file), 'utf8');
-    try {
-      await db.exec(sql);
-    } catch (err) {
-      throw new Error(`Migration failed: ${file}\n${(err as Error).message}`);
-    }
-  }
-
-  // Seed/service context: default org for superuser inserts (org_id DEFAULT
-  // current_org()). current_org() only reads this GUC when auth.uid() IS NULL.
-  try {
-    const org = await db.query<{ id: string }>(`select id from organizations order by created_at limit 1`);
-    if (org.rows[0]) await db.query(`select set_config('app.current_org', $1, false)`, [org.rows[0].id]);
-  } catch { /* organizations table not created yet (upTo before migration 24) */ }
-
+/** Build the TestDb wrapper around an already-populated PGlite instance —
+ *  shared by both setup paths (snapshot and migration-replay) so role/claim
+ *  semantics never drift between them. */
+function buildHarness(db: PGlite): TestDb {
   const setClaim = async (key: string, value: string) => {
     await db.query(`select set_config('request.jwt.claim.${key}', $1, false)`, [value]);
   };
 
-  const harness: TestDb = {
+  return {
     db,
     async asSuperuser() {
       await db.exec('reset role;');
@@ -218,7 +219,108 @@ export async function createTestDb(opts?: { upTo?: string }): Promise<TestDb> {
       await db.close();
     },
   };
+}
 
+/** Default org context + role reset shared by both setup paths. */
+async function finalizeHarness(db: PGlite): Promise<TestDb> {
+  // Seed/service context: default org for superuser inserts (org_id DEFAULT
+  // current_org()). current_org() only reads this GUC when auth.uid() IS NULL.
+  try {
+    const org = await db.query<{ id: string }>(`select id from organizations order by created_at limit 1`);
+    if (org.rows[0]) await db.query(`select set_config('app.current_org', $1, false)`, [org.rows[0].id]);
+  } catch {
+    // Migration-replay path with a low `upTo`: organizations doesn't exist yet
+    // (it's created by migration 24). NOT expected on the snapshot path — if
+    // this throws there, something is genuinely wrong with the snapshot, most
+    // likely search_path (see the SET search_path TO public; comment above).
+  }
+
+  const harness = buildHarness(db);
   await harness.asSuperuser();
   return harness;
+}
+
+/**
+ * Spin up a fresh database from the committed schema snapshot
+ * (fixtures/schema_snapshot.sql) — the DEFAULT setup path (Task 4). Sidesteps
+ * the migration chain's known break (20260709160000_enforce_launch_modules.sql)
+ * by loading the live database's actual current schema + a small, reviewed
+ * seed-data allowlist directly, instead of replaying ~590 migrations' history
+ * to reconstruct it.
+ *
+ * DRIFT GUARD: throws if the snapshot file ever carries rows for a table
+ * outside SNAPSHOT_DATA_TABLES — see that constant's comment and the
+ * snapshot file's own header for what's allowed and why.
+ */
+export async function createTestDbFromSnapshot(): Promise<TestDb> {
+  const sql = readFileSync(SNAPSHOT_FILE, 'utf8');
+
+  const targets = snapshotDataTargets(sql);
+  const unexpected = targets.filter((t) => !SNAPSHOT_DATA_TABLES.has(t));
+  if (unexpected.length > 0) {
+    throw new Error(
+      `schema_snapshot.sql carries data for table(s) not on the reviewed allowlist: ${unexpected.join(', ')}. ` +
+      `This snapshot has NOT been reviewed for PII on those tables — regenerate it scoped to exactly ` +
+      `${[...SNAPSHOT_DATA_TABLES].join(', ')}, or add the new table to SNAPSHOT_DATA_TABLES in harness.ts ` +
+      `only after an explicit PII review.`,
+    );
+  }
+
+  // pgcrypto is loadable in PGlite but must be registered at create time for
+  // `CREATE EXTENSION pgcrypto` (20260703110000 — execution hashes) to work.
+  const db = await PGlite.create({ extensions: { pgcrypto } });
+  await db.exec(BOOTSTRAP);
+  try {
+    await db.exec(sql);
+  } catch (err) {
+    throw new Error(`Snapshot load failed: fixtures/schema_snapshot.sql\n${(err as Error).message}`);
+  }
+  // Defense in depth: pg_dump's own header sets search_path to '' (empty,
+  // session-scoped) so every dumped statement can safely use unqualified
+  // names without ambiguity. The snapshot file resets it back to `public`
+  // itself, but that reset living only in generated dump content is fragile
+  // against a future regeneration silently dropping it — every unqualified
+  // query this harness or a test writes (e.g. `select ... from organizations`)
+  // would then fail with "relation does not exist" despite the table being
+  // right there in pg_class. Enforced here too so that failure mode can't
+  // come back from the data file alone.
+  await db.exec('SET search_path TO public;');
+
+  return finalizeHarness(db);
+}
+
+/**
+ * Spin up a fresh database by replaying every migration in order — the
+ * ORIGINAL setup path, kept for `upTo` truncation (a fixed-point-in-time
+ * snapshot cannot serve an arbitrary earlier cutoff) and for provenance.
+ * Throws with the offending filename if one fails — including the known
+ * break at 20260709160000_enforce_launch_modules.sql when no `upTo` limits
+ * the replay short of it.
+ */
+export async function createTestDbFromMigrations(opts?: { upTo?: string }): Promise<TestDb> {
+  const db = await PGlite.create({ extensions: { pgcrypto } });
+  await db.exec(BOOTSTRAP);
+
+  for (const file of migrationFiles()) {
+    if (opts?.upTo && file > opts.upTo) break;
+    const sql = readFileSync(join(MIGRATIONS_DIR, file), 'utf8');
+    try {
+      await db.exec(sql);
+    } catch (err) {
+      throw new Error(`Migration failed: ${file}\n${(err as Error).message}`);
+    }
+  }
+
+  return finalizeHarness(db);
+}
+
+/**
+ * Spin up a fresh test database. Defaults to the schema snapshot (fast,
+ * unblocked by the migration chain's known break). Pass `upTo` to instead
+ * replay migrations up to a specific file, for tests that need an earlier
+ * schema state than the snapshot's point in time.
+ */
+export async function createTestDb(opts?: { upTo?: string }): Promise<TestDb> {
+  if (opts?.upTo) return createTestDbFromMigrations(opts);
+  return createTestDbFromSnapshot();
 }
