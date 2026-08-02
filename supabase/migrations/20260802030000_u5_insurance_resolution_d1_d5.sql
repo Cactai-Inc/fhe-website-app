@@ -38,25 +38,29 @@ BEGIN;
 -- the status selects (10/20), so the two mutually-exclusive elections render
 -- side by side (spec F1).
 -- ---------------------------------------------------------------------------
+-- format_type='certify' is what the RENDERER keys on (ContractCascade.tsx:769
+-- and ClauseDocument.tsx:573 both branch on format_type, not input_kind). Every
+-- pre-existing certify carries both; omitting format_type would have made these
+-- three render as plain text inputs instead of checkboxes.
 INSERT INTO contract_field_defs (
   template_key, field_key, label, section, owner_role, input_kind, value_type,
-  required, is_optional, sort_order, clause_key, conditional_on)
+  format_type, required, is_optional, sort_order, clause_key, conditional_on)
 VALUES
   ('HORSE_LEASE_V2', 'TXN.GL_LESSEE_RESPONSIBLE',
    'The Lessee accepts financial responsibility for general liability insurance under this Agreement.',
-   'INSURANCE_RISK', 'LESSEE', 'certify', 'checkbox', false, true, 6,
+   'INSURANCE_RISK', 'LESSEE', 'certify', 'checkbox', 'certify', false, true, 6,
    'INSURANCE_RISK.GL_LESSEE_RESP',
    '{"all":[{"equals":["NONE"],"field_key":"TXN.GL_LESSOR_STATUS"},{"equals":["NONE"],"field_key":"TXN.GL_LESSEE_STATUS"},{"equals":["NO",""],"field_key":"TXN.GL_NOT_REQUIRED"}]}'::jsonb),
 
   ('HORSE_LEASE_V2', 'TXN.MORT_LESSEE_RESPONSIBLE',
    'The Lessee accepts financial responsibility for mortality insurance under this Agreement.',
-   'INSURANCE_RISK', 'LESSEE', 'certify', 'checkbox', false, true, 6,
+   'INSURANCE_RISK', 'LESSEE', 'certify', 'checkbox', 'certify', false, true, 6,
    'INSURANCE_RISK.MORT_LESSEE_RESP',
    '{"all":[{"equals":["NONE"],"field_key":"TXN.MORT_LESSOR_STATUS"},{"equals":["NONE"],"field_key":"TXN.MORT_LESSEE_STATUS"},{"equals":["NO",""],"field_key":"TXN.MORT_NOT_REQUIRED"}]}'::jsonb),
 
   ('HORSE_LEASE_V2', 'TXN.MED_LESSEE_RESPONSIBLE',
    'The Lessee accepts financial responsibility for medical insurance under this Agreement.',
-   'INSURANCE_RISK', 'LESSEE', 'certify', 'checkbox', false, true, 6,
+   'INSURANCE_RISK', 'LESSEE', 'certify', 'checkbox', 'certify', false, true, 6,
    'INSURANCE_RISK.MED_LESSEE_RESP',
    '{"all":[{"equals":["NONE"],"field_key":"TXN.MED_LESSOR_STATUS"},{"equals":["NONE"],"field_key":"TXN.MED_LESSEE_STATUS"},{"equals":["NO",""],"field_key":"TXN.MED_NOT_REQUIRED"}]}'::jsonb)
 ON CONFLICT (template_key, field_key) DO NOTHING;

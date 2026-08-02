@@ -3,6 +3,44 @@ import { Info, MessageSquarePlus } from 'lucide-react';
 import { clauseConditionMet, type ContractField, type FieldStructured, type PartyChoice } from '../../lib/contracts';
 import { fieldSourceTip } from '../../lib/fieldSources';
 
+/* ── U5 / F1-F2: insurance responsibility elections ────────────────────────────
+ * Each insurance section (GL / MORT / MED) resolves to exactly one end-state
+ * before signing. When BOTH parties declare NONE and neither has accepted
+ * responsibility, the section is UNRESOLVED: signing is blocked server-side
+ * (contract_lock_blockers) until one party checks their own box.
+ *
+ * Only the party inheriting responsibility may elect. The other box stays
+ * VISIBLE but disabled and labeled with whose it is — per spec, never hidden.
+ * Editability itself is authoritative from the server (`can_edit`, which
+ * mirrors set_contract_field's carve-out); this map only supplies the copy. */
+const INSURANCE_ELECTIONS: Record<string, { side: 'Lessor' | 'Lessee'; section: string }> = {
+  'TXN.GL_NOT_REQUIRED': { side: 'Lessor', section: 'GL' },
+  'TXN.GL_LESSEE_RESPONSIBLE': { side: 'Lessee', section: 'GL' },
+  'TXN.MORT_NOT_REQUIRED': { side: 'Lessor', section: 'MORT' },
+  'TXN.MORT_LESSEE_RESPONSIBLE': { side: 'Lessee', section: 'MORT' },
+  'TXN.MED_NOT_REQUIRED': { side: 'Lessor', section: 'MED' },
+  'TXN.MED_LESSEE_RESPONSIBLE': { side: 'Lessee', section: 'MED' },
+};
+
+/** Spec F2 — tooltip copy, verbatim. Also the notification body (D5). */
+const INSURANCE_TOOLTIP =
+  'Neither party currently has this coverage. The contract cannot be signed '
+  + 'until one party accepts financial responsibility for it. Only the accepting '
+  + 'party can check their box: the Lessor checks the first, the Lessee checks '
+  + 'the second. Checking a box is that party’s election and appears in the contract.';
+
+/** True when this election's section is in the UNRESOLVED state: both statuses
+ *  NONE and neither certify accepted. Mirrors the server's blocker predicate. */
+function insuranceUnresolved(fieldKey: string, byKey: Map<string, ContractField>): boolean {
+  const e = INSURANCE_ELECTIONS[fieldKey];
+  if (!e) return false;
+  const v = (k: string) => (byKey.get(`TXN.${e.section}_${k}`)?.value ?? '').trim().toUpperCase();
+  return v('LESSOR_STATUS') === 'NONE'
+    && v('LESSEE_STATUS') === 'NONE'
+    && v('NOT_REQUIRED') !== 'YES'
+    && v('LESSEE_RESPONSIBLE') !== 'YES';
+}
+
 /**
  * CONTRACT CASCADE — the living-document field renderer.
  *
@@ -1411,11 +1449,35 @@ function FieldNode({
     );
   }
 
+  // F1: an insurance election whose section is unresolved gets the highlight,
+  // the tooltip, and — when it isn't the viewer's to check — a label naming the
+  // party it belongs to. The box is never hidden.
+  const election = INSURANCE_ELECTIONS[f.field_key];
+  const electionUnresolved = !!election && insuranceUnresolved(f.field_key, byKey);
+  const notMine = !!election && !f.can_edit;
+
   return (
-    <div className="mb-3">
+    <div className={`mb-3${electionUnresolved
+      ? ' border-l-2 border-gold-500 bg-gold-50/50 pl-3 py-2 rounded-r' : ''}`}
+      data-testid={election ? `insurance-election-${f.field_key}` : undefined}>
+      {electionUnresolved && (
+        <p role="status" className="text-[11px] text-gold-900 mb-1.5 leading-relaxed">
+          {INSURANCE_TOOLTIP}
+        </p>
+      )}
       <div className="flex items-center gap-1.5 mb-1">
         <span className="text-[13.5px] font-medium text-green-900">{f.label ?? f.field_key}</span>
         {f.required && <span className="text-red-700 text-xs">*</span>}
+        {election && (
+          <span className={`text-[10px] rounded px-1.5 py-0.5 border ${
+            notMine ? 'text-muted border-green-800/15' : 'text-green-800 border-green-800/30'}`}>
+            {notMine ? `${election.side}’s election` : `Your election (${election.side})`}
+          </span>
+        )}
+        {electionUnresolved && (
+          <span tabIndex={0} title={INSURANCE_TOOLTIP} aria-label={INSURANCE_TOOLTIP}
+            className="text-[10px] text-gold-700 cursor-help focus-ring rounded">ⓘ</span>
+        )}
         {fieldSourceTip(f.field_key) && (
           <span tabIndex={0} title={fieldSourceTip(f.field_key) ?? ''}
             aria-label={fieldSourceTip(f.field_key) ?? ''}
