@@ -34,8 +34,10 @@ describe('migrations', () => {
     );
     const names = tables.map((t) => t.table_name);
     for (const expected of [
-      'profiles', 'offerings', 'offering_tiers', 'requests', 'invitations',
-      'availability_slots', 'orders', 'order_items', 'order_documents',
+      // offering_tiers retired by Phase 4 (b9bad0b, NO-tiers SKU model);
+      // availability_slots dropped by 20260714140000_calendar_cleanup.
+      'profiles', 'offerings', 'requests', 'invitations',
+      'calendar_settings', 'orders', 'order_items', 'order_documents',
       'bookings_v2', 'payments', 'payment_notifications', 'memberships', 'gifts',
     ]) {
       expect(names, `missing table: ${expected}`).toContain(expected);

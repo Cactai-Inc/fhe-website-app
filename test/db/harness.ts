@@ -285,6 +285,12 @@ export async function createTestDbFromSnapshot(): Promise<TestDb> {
   // right there in pg_class. Enforced here too so that failure mode can't
   // come back from the data file alone.
   await db.exec('SET search_path TO public;');
+  // Same class of leak: the dump header's `SET row_security = off` is
+  // session-scoped and survives the load. Under it, any non-BYPASSRLS role
+  // (asUser/asAnon) errors with "query would be affected by row-level
+  // security policy" on the first RLS-covered table it touches — RLS can
+  // only be evaluated, not disabled, for roles that don't own the bypass.
+  await db.exec('SET row_security = on;');
 
   return finalizeHarness(db);
 }
