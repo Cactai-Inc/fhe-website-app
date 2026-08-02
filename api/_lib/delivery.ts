@@ -26,7 +26,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { resolveTenantEmailIdentity, sendViaProvider } from './email.js';
 import type { EmailAttachment } from './email.js';
-import { renderDocumentPdf, pdfFileName } from './documentPdf.js';
+import { renderDocumentPdf, pdfFileName, partyPdfFileName } from './documentPdf.js';
 
 const CHANNEL = 'EMAIL';
 
@@ -46,47 +46,73 @@ export interface PartyCopyEmail {
   attachments?: EmailAttachment[];
 }
 
-/** Render the party-copy PDF once (the facility-rules tail stripped) — shared
- *  so a multi-recipient send (deliverExecutedDocument) renders it a single
- *  time rather than once per party. */
-export async function renderPartyCopyPdf(doc: { title: string; merged_body: string | null }): Promise<EmailAttachment | null> {
+/** Render the party-copy PDF bytes once (the facility-rules tail stripped) —
+ *  shared so a multi-recipient send (deliverExecutedDocument) renders the
+ *  content a single time rather than once per party. The filename is signer-
+ *  attributed (owner spec) and built separately per recipient by
+ *  buildPartyCopyEmail, since it embeds that recipient's initials. */
+export async function renderPartyCopyPdfBytes(doc: { title: string; merged_body: string | null }): Promise<Uint8Array | null> {
   const text = doc.merged_body ? stripFacilityRulesTail(doc.merged_body) : '';
   if (!text) return null;
-  const bytes = await renderDocumentPdf(doc.title, text);
-  return { filename: pdfFileName(doc.title), content: bytes, contentType: 'application/pdf' };
+  return renderDocumentPdf(doc.title, text);
 }
 
-/** Build a party's "your document is executed" email — subject (with the real
- *  document title), greeting/body/signature, and the PDF attachment. Shared
- *  by deliverExecutedDocument (the all-parties sender) and
- *  api/deliver-my-document.ts (the authenticated self-send) — one source of
- *  the party-copy email shape, not two. `attachment` is passed in (rather
- *  than rendered inside) so a multi-recipient caller can render it once and
- *  reuse it across every party's email. */
+/** Build a party's "here is your signed copy" email — owner spec (2026-08-02):
+ *  subject "Hi {name}, here is your signed copy of the {document}", a
+ *  one-line body, and a fixed sign-off/brand/phone/site signature — plus the
+ *  signer-attributed PDF attachment. Shared by deliverExecutedDocument (the
+ *  all-parties sender) and api/deliver-my-document.ts (the authenticated
+ *  self-send) — one source of the party-copy email shape, not two.
+ *  `pdfBytes` is passed in (rather than rendered inside) so a multi-recipient
+ *  caller can render the content once and reuse it across every party. */
 export function buildPartyCopyEmail(
   doc: { title: string; execution_hash: string | null },
+  executedAt: Date,
   recipientFirstName: string | null | undefined,
-  identity: { fromName: string; footer: string | null },
-  attachment: EmailAttachment | null,
+  recipientLastName: string | null | undefined,
+  identity: { fromName: string; contactPhone: string | null; contactUrl: string | null; siteUrl: string | null },
+  pdfBytes: Uint8Array | null,
 ): PartyCopyEmail {
+  const greetingName = recipientFirstName ? recipientFirstName : null;
+  const namePart = greetingName ? `Hi ${greetingName}, ` : 'Hi, ';
+  const subject = `${namePart}here is your signed copy of the ${doc.title}`;
+  const greeting = greetingName ? `Hi ${greetingName},` : 'Hi,';
+
+  const siteLine = identity.contactUrl || identity.siteUrl;
+  const signatureLines = [
+    'Have a wonderful day!',
+    identity.fromName,
+    ...(identity.contactPhone ? [identity.contactPhone] : []),
+    ...(siteLine ? [siteLine] : []),
+  ];
+
+  // Tamper-evidence, kept but softened: a verification note rather than a
+  // technical audit line (owner: friendlier, without losing the integrity
+  // info — the hash itself isn't sensitive, it's a one-way document
+  // fingerprint, so sharing a short excerpt of it in plain text is fine).
   const executionHash = typeof doc.execution_hash === 'string' && doc.execution_hash.trim() !== ''
     ? doc.execution_hash.trim()
     : null;
-  const partyHashHtml = executionHash
-    ? `<p style="color:#666;font-size:12px">This document's integrity code: ${executionHash.slice(0, 16)}…</p>`
+  const integrityHtml = executionHash
+    ? `<p style="color:#888;font-size:12px">This copy is verified — reference code ${executionHash.slice(0, 12)}.</p>`
     : '';
-  const footerHtml = identity.footer
-    ? `<hr/><p style="color:#666;font-size:12px;white-space:pre-line">${identity.footer}</p>`
-    : '';
-  const greeting = recipientFirstName ? `Hi ${recipientFirstName},` : 'Hello,';
+
   const html =
     `<p>${greeting}</p>` +
-    `<p>Your document <strong>${doc.title}</strong> has been fully executed. ` +
-    `A PDF copy is attached for your records.</p>` +
-    `<p>Thank you,<br/>${identity.fromName}</p>` +
-    partyHashHtml + footerHtml;
+    `<p>Your signed copy of the ${doc.title} is attached to this email in PDF format.</p>` +
+    `<p>${signatureLines.join('<br/>')}</p>` +
+    integrityHtml;
 
-  return { subject: `${doc.title} — signed and executed`, html, attachments: attachment ? [attachment] : [] };
+  const attachments: EmailAttachment[] = [];
+  if (pdfBytes) {
+    attachments.push({
+      filename: partyPdfFileName(doc.title, recipientFirstName, recipientLastName, executedAt),
+      content: pdfBytes,
+      contentType: 'application/pdf',
+    });
+  }
+
+  return { subject, html, attachments };
 }
 
 export class DeliveryError extends Error {
@@ -113,11 +139,12 @@ export async function deliverExecutedDocument(
   // 1. Load the document (status + org + title). No delivery unless EXECUTED.
   const { data: doc, error: docErr } = await db
     .from('documents')
-    .select('id, org_id, status, title, display_code, merged_body, execution_hash')
+    .select('id, org_id, status, title, display_code, merged_body, execution_hash, signed_at, created_at')
     .eq('id', documentId)
     .maybeSingle();
   if (docErr) throw docErr;
   if (!doc) throw new DeliveryError(404, 'document not found');
+  const executedAt = new Date((doc.signed_at as string | null) ?? (doc.created_at as string));
 
   if (doc.status !== 'EXECUTED') {
     throw new DeliveryError(409, `document not EXECUTED (status=${doc.status})`);
@@ -155,8 +182,9 @@ export async function deliverExecutedDocument(
 
   const delivered: Array<{ recipientContactId: string; channel: string; emailed: boolean }> = [];
 
-  // The PDF is identical for every recipient — render it once, reuse it.
-  const partyAttachment = await renderPartyCopyPdf(doc);
+  // The PDF content is identical for every recipient — render the bytes once;
+  // the filename (signer-attributed) is still built per party below.
+  const partyPdfBytes = await renderPartyCopyPdfBytes(doc);
 
   // 5. Per party: dedupe, email, then (only on a successful send) record delivery.
   for (const party of parties) {
@@ -164,7 +192,9 @@ export async function deliverExecutedDocument(
     const email = party.contacts?.email;
     if (!email) continue; // no address -> cannot email; skip (no orphan row)
 
-    const partyEmail = buildPartyCopyEmail(doc, party.contacts?.first_name, identity, partyAttachment);
+    const partyEmail = buildPartyCopyEmail(
+      doc, executedAt, party.contacts?.first_name, party.contacts?.last_name, identity, partyPdfBytes,
+    );
     const sent = await sendViaProvider({
       to: email,
       fromName: identity.fromName,

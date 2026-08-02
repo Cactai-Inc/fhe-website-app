@@ -18,6 +18,12 @@ export interface TenantEmailIdentity {
   footer: string;
   /** The tenant's public contact email (CONTACT.EMAIL), if set. */
   contactEmail: string | null;
+  /** The tenant's public contact phone (CONTACT.PHONE), if set — exposed
+   *  discretely (not just folded into `footer`) for templates that lay out
+   *  a structured signature block rather than a single footer paragraph. */
+  contactPhone: string | null;
+  /** The tenant's public contact URL (CONTACT.URL), if set — same reason. */
+  contactUrl: string | null;
   /** 5d: the ops/company inbox for mirror copies (CONTACT.OPS_INBOX). */
   opsInbox: string | null;
   /** 5d: the tenant's public site URL for in-email links (BRAND.SITE_URL). */
@@ -79,7 +85,7 @@ export async function resolveTenantEmailIdentity(
 
   const footer = buildFooter({ legalName, contactEmail, contactPhone, contactUrl });
 
-  return { fromName, fromEmail, footer, contactEmail, opsInbox, siteUrl };
+  return { fromName, fromEmail, footer, contactEmail, contactPhone, contactUrl, opsInbox, siteUrl };
 }
 
 /** Build the {{ORG.*}} legal/contact footer from the resolved registry values. */

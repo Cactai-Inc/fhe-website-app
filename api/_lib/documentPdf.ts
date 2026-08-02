@@ -154,3 +154,29 @@ export function pdfFileName(title: string): string {
     .slice(0, 80);
   return `${base || 'Document'}.pdf`;
 }
+
+/** The signer-attributed party-copy filename (owner spec, 2026-08-02), e.g.
+ *  "General Visitor Liability Release" + "CJ Z" + 2026-08-02 ->
+ *  "General_Visitor_Liability_Release_cjz_08_02_26.pdf". Underscored title,
+ *  lowercase signer initials, MM_DD_YY execution date — distinct from
+ *  pdfFileName (used by the multi-document/company sends, unchanged). */
+export function partyPdfFileName(
+  title: string,
+  signerFirstName: string | null | undefined,
+  signerLastName: string | null | undefined,
+  executedAt: Date,
+): string {
+  const base = (title || 'Document')
+    .replace(/[^a-zA-Z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 80) || 'Document';
+  const initials = [signerFirstName, signerLastName]
+    .map((n) => (n || '').trim().charAt(0))
+    .join('')
+    .toLowerCase();
+  const mm = String(executedAt.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(executedAt.getUTCDate()).padStart(2, '0');
+  const yy = String(executedAt.getUTCFullYear()).slice(-2);
+  const suffix = [initials, `${mm}_${dd}_${yy}`].filter(Boolean).join('_');
+  return suffix ? `${base}_${suffix}.pdf` : `${base}.pdf`;
+}

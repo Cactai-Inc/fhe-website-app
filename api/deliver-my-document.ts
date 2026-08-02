@@ -36,7 +36,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
 import { resolveTenantEmailIdentity, sendViaProvider } from './_lib/email.js';
-import { buildPartyCopyEmail, renderPartyCopyPdf } from './_lib/delivery.js';
+import { buildPartyCopyEmail, renderPartyCopyPdfBytes } from './_lib/delivery.js';
 
 const CHANNEL = 'EMAIL';
 
@@ -77,17 +77,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // 4. Load the document. Soft-deleted documents read as missing.
     const { data: doc, error: docErr } = await db
       .from('documents')
-      .select('id, org_id, status, title, merged_body, execution_hash, deleted_at')
+      .select('id, org_id, status, title, merged_body, execution_hash, deleted_at, signed_at, created_at')
       .eq('id', documentId)
       .maybeSingle();
     if (docErr) throw docErr;
     if (!doc || doc.deleted_at) return res.status(404).json({ error: 'document not found' });
+    const executedAt = new Date((doc.signed_at as string | null) ?? (doc.created_at as string));
 
     // 5. Party check BEFORE status: a non-party learns nothing about a
     //    document's state (403 whether or not it is executed).
     const { data: party, error: partyErr } = await db
       .from('document_parties')
-      .select('contact_id, contacts:contact_id (email, first_name)')
+      .select('contact_id, contacts:contact_id (email, first_name, last_name)')
       .eq('document_id', documentId)
       .eq('contact_id', callerContactId)
       .maybeSingle();
@@ -101,7 +102,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // 7. Destination = the party contact's own address, read server-side.
     const contact = (party as unknown as {
-      contacts: { email: string | null; first_name: string | null } | null;
+      contacts: { email: string | null; first_name: string | null; last_name: string | null } | null;
     }).contacts;
     const email = contact?.email;
     if (!email) return res.status(409).json({ error: 'no email address on file for your contact record' });
@@ -112,8 +113,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Same email shape as the all-parties sender (subject with the real
     // document title, greeting/body/signature, PDF attachment) — one source,
     // api/_lib/delivery.ts, not a second hand-built template.
-    const attachment = await renderPartyCopyPdf(doc);
-    const partyEmail = buildPartyCopyEmail(doc, contact?.first_name, identity, attachment);
+    const pdfBytes = await renderPartyCopyPdfBytes(doc);
+    const partyEmail = buildPartyCopyEmail(
+      doc, executedAt, contact?.first_name, contact?.last_name, identity, pdfBytes,
+    );
 
     const sent = await sendViaProvider({
       to: email,
