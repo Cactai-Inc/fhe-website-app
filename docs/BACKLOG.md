@@ -38,6 +38,13 @@ framework in `OpsDashboard.tsx`, the reduce-sum pattern in `api-boarding.ts`, an
 Test-era data and follow-ups that must be disposed of before real users arrive.
 Opened by U1 (lead trust + notification integrity), 2026-08-01.
 
+- **Lease-manifest sample document (2026-08-02 contract sprint)** — document
+  `e7441e97-289f-415d-8b74-7739d252c92f` (contract `899c1208-7cef-4fde-b9fe-87840057db82`)
+  and its disposable lessee contact `sample-manifest-20260802@example.invalid`
+  ('Sample ManifestApplied'). Created through the real RPC write path to prove the
+  M1–M26 manifest changes render; exported as
+  `docs/contract-exports/SAMPLE_MANIFEST_APPLIED_2026-08-02*.md`. DRAFT, safe to delete
+  at cleanup time.
 - **Charles Zigmund duplicate contact pair** — `07ab7dbf-33f2-4c2c-963a-f37761d5ffd1`
   (no email) and `d268330c-436a-4f42-bf88-9172d9b4155f` (`cjzigs@icloud.com`) are the
   same person. **Deliberately NOT merged** during U1: `d268330c` is the live lessor on
