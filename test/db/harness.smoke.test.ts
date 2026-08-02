@@ -34,11 +34,14 @@ describe('migrations', () => {
     );
     const names = tables.map((t) => t.table_name);
     for (const expected of [
-      // offering_tiers retired by Phase 4 (b9bad0b, NO-tiers SKU model);
-      // availability_slots dropped by 20260714140000_calendar_cleanup.
+      // List caught up 2026-08-02 to the live spine: offering_tiers retired
+      // (Phase 4, NO-tiers); availability_slots dropped (calendar cleanup);
+      // orders/order_items/order_documents retired to purchases/purchase_items
+      // (spine S22); bookings_v2 -> bookings; payments folded into the
+      // purchase spine; memberships is a VIEW now (not a base table).
       'profiles', 'offerings', 'requests', 'invitations',
-      'calendar_settings', 'orders', 'order_items', 'order_documents',
-      'bookings_v2', 'payments', 'payment_notifications', 'memberships', 'gifts',
+      'calendar_settings', 'purchases', 'purchase_items',
+      'bookings', 'payment_notifications', 'gifts', 'documents', 'contracts',
     ]) {
       expect(names, `missing table: ${expected}`).toContain(expected);
     }
