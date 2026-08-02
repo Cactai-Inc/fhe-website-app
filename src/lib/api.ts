@@ -585,6 +585,24 @@ export async function myDocuments(): Promise<MyDocumentRow[]> {
   return (data ?? []) as MyDocumentRow[];
 }
 
+/** H3/H4 — "Email me a copy" for an EXECUTED document the caller is a party on.
+ *  Personal re-send: the server resolves the caller's contact from their own
+ *  profile and mails only THEIR copy to THEIR account address. The document id
+ *  is the only input; the destination can never be set by the caller. */
+export async function emailMyDocumentCopy(documentId: string): Promise<{ email: string }> {
+  const { data: sess } = await supabase.auth.getSession();
+  const bearer = sess?.session?.access_token;
+  if (!bearer) throw new Error('You need to be signed in.');
+  const res = await fetch('/api/deliver-my-document', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${bearer}` },
+    body: JSON.stringify({ documentId }),
+  });
+  const json = (await res.json().catch(() => ({}))) as { error?: string; email?: string };
+  if (!res.ok) throw new Error(json.error || 'Could not send the email.');
+  return { email: json.email ?? '' };
+}
+
 /** Stage 3f: the signing-wall state for the signed-in person. */
 export interface WallState {
   pending: number;
