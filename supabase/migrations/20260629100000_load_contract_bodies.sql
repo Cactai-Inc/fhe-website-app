@@ -148,9 +148,17 @@ Where the evaluation includes CLIENT riding, handling, or being near a horse, CL
 
 4. RELEASE, HOLD HARMLESS, AND INDEMNIFICATION
 
-To the fullest extent permitted by law, CLIENT releases, waives, and discharges COMPANY, its owners, employees, and agents from any and all claims, demands, losses, or damages arising out of or relating to the evaluation, the opinion provided, or CLIENT's decision to purchase, lease, ride, or handle any horse — including claims that the horse was not as evaluated or represented. CLIENT agrees to hold harmless and indemnify COMPANY from any such claims brought by CLIENT or any third party.
+CLIENT, on behalf of CLIENT and CLIENT's heirs, next of kin, estate, executors, administrators, legal representatives, successors, and assigns, releases, waives, and forever discharges COMPANY, its owners, employees, instructors, trainers, independent contractors, agents, and representatives from any and all claims, demands, losses, or damages arising out of or relating to the evaluation, the opinion provided, or CLIENT's decision to purchase, lease, ride, or handle any horse — including claims that the horse was not as evaluated or represented, and including claims arising from the ordinary negligence of the released persons. This release does not apply to gross negligence, reckless conduct, or intentional misconduct. CLIENT agrees to defend, indemnify, and hold harmless COMPANY and the released persons from any such claims brought by or on behalf of CLIENT.
 
-5. SEVERABILITY
+5. DISPUTE RESOLUTION
+
+Any dispute arising out of or relating to this Waiver shall be resolved by binding arbitration in San Diego, California.
+
+6. GOVERNING LAW
+
+California law governs this Waiver.
+
+7. SEVERABILITY
 
 If any provision of this Waiver is held unenforceable, the remaining provisions remain in full force and effect.
 
@@ -391,7 +399,11 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
 -- ── HORSE_EMERGENCY_VET ─────────────────────────────────────────────
 UPDATE contract_templates SET body = $body$EMERGENCY VETERINARY AUTHORIZATION AND EQUINE MEDICAL CARE DIRECTIVE
 
+Effective from the Date of Signature until superseded by a later executed version of this Authorization
+
 This Emergency Veterinary Authorization and Equine Medical Care Directive ("Agreement") is made effective as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned client ("CLIENT") in favor of {{ORG.LEGAL_NAME}} ("COMPANY"), authorizing COMPANY to act as described below with respect to the horse identified. By signing below, CLIENT acknowledges and agrees to the terms of this Agreement.
+
+For purposes of this Agreement, "Released Parties" means COMPANY, its owners, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, representatives, affiliates, property owners, facility owners, licensors, lessors, lessees, hosts, landowners, successors, assigns, heirs, and any person acting on behalf of COMPANY at any location where it is authorized to conduct business. COVERAGE EXTENSION: The authorizations, releases, and protections set forth in this document extend to and benefit COMPANY (French Heritage Equestrian) and, during any period in which a lease of the Horse is in effect, the then-current lessee of the Horse under that lease, each as an additional covered party — without the need to name that lessee.
 
 CLIENT INFORMATION
 
@@ -404,12 +416,15 @@ CLIENT capacity as to Horse: {{CLIENT.HORSE_CAPACITY}}
 HORSE INFORMATION
 
 Horse Name: {{HORSE.REGISTERED_NAME}}
+Microchip: {{HORSE.MICROCHIP}}
 Barn Name: {{HORSE.BARN_NAME}}
 Breed: {{HORSE.BREED}}
 Color: {{HORSE.COLOR}}
 Sex: {{HORSE.SEX}}
 Age: {{HORSE.AGE_DOB}}
+Height: {{HORSE.HEIGHT}}
 Registration / Identification Number: {{HORSE.REGISTRATION_NUMBER}}
+Current Fair Market Value: {{HORSE.FAIR_MARKET_VALUE}}
 Current Location: {{HORSE.CURRENT_LOCATION}}
 Veterinarian: {{HORSE.VET_NAME}}
 Veterinarian Phone: {{HORSE.VET_PHONE}}
@@ -434,6 +449,8 @@ Primary Contact: {{CLIENT.FULL_NAME}}
 Phone: {{CLIENT.PHONE}}
 Secondary Emergency Contact: {{CLIENT.EMERGENCY_CONTACT_1_NAME}} ({{CLIENT.EMERGENCY_CONTACT_1_RELATIONSHIP}})
 Phone: {{CLIENT.EMERGENCY_CONTACT_1_PHONE}}
+Additional Emergency Contact: {{CLIENT.EMERGENCY_CONTACT_2_NAME}} ({{CLIENT.EMERGENCY_CONTACT_2_RELATIONSHIP}})
+Phone: {{CLIENT.EMERGENCY_CONTACT_2_PHONE}}
 
 5. RESPONSIBILITY FOR COSTS
 
@@ -447,7 +464,9 @@ COMPANY shall not authorize non-emergency veterinary procedures without CLIENT a
 
 COMPANY may not authorize euthanasia without CLIENT approval.
 
-CLIENT Initials: {{CLIENT.EUTHANASIA_INITIALS}}
+CLIENT must select ONE of the following (required):
+[ {{HORSE.EUTHANASIA_A}} ]  Option A — I AUTHORIZE the attending veterinarian to perform humane euthanasia if, in the veterinarian's professional judgment, it is necessary to relieve the Horse's suffering and I cannot be reached in time.
+[ {{HORSE.EUTHANASIA_B}} ]  Option B — I DO NOT AUTHORIZE euthanasia without my express consent. Every reasonable effort must be made to reach me or my emergency contact before any such decision, except where required by law.
 
 8. MEDICATION AUTHORIZATION
 
@@ -466,11 +485,11 @@ Known Conditions: {{HORSE.KNOWN_CONDITIONS}}
 
 10. RELEASE OF LIABILITY
 
-CLIENT releases COMPANY and its owners, employees, contractors, agents, representatives, and volunteers from claims arising from good-faith actions taken under this Agreement. This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
+CLIENT, on behalf of CLIENT and CLIENT's heirs, next of kin, estate, executors, administrators, legal representatives, successors, and assigns, releases, waives, and forever discharges the Released Parties from claims arising from good-faith actions taken under this Agreement. This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
 
 11. INDEMNIFICATION
 
-CLIENT agrees to indemnify and hold harmless COMPANY from claims, expenses, losses, or liabilities arising from: Veterinary expenses; Medical decisions; Horse conditions; and Information omitted by CLIENT.
+CLIENT agrees to defend, indemnify, and hold harmless the Released Parties from and against claims, expenses, losses, liabilities, and reasonable attorney's fees arising from: Veterinary expenses; Medical decisions; Horse conditions; and Information omitted by CLIENT.
 
 12. NO GUARANTEE OF OUTCOME
 
@@ -500,6 +519,10 @@ If any provision of this Agreement is determined to be invalid or unenforceable,
 
 This Agreement contains the entire agreement concerning emergency veterinary authorization and supplements, and does not supersede, any separate Equine Services Release or services contract between CLIENT and COMPANY.
 
+19. ACKNOWLEDGMENT
+
+CLIENT acknowledges that: CLIENT has carefully read this Agreement in its entirety. CLIENT understands its legal effect. CLIENT has had sufficient opportunity to ask questions before signing. CLIENT signs voluntarily and without coercion. CLIENT intends this Agreement to be legally binding upon CLIENT and CLIENT's heirs, successors, assigns, estate, and personal representatives.
+
 CLIENT
 
 Signature: {{SIG.CLIENT.NAME}}
@@ -528,6 +551,8 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   UNION ALL
   SELECT id, 'HORSE', 'REGISTERED_NAME', '{{HORSE.REGISTERED_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
   UNION ALL
+  SELECT id, 'HORSE', 'MICROCHIP', '{{HORSE.MICROCHIP}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
+  UNION ALL
   SELECT id, 'HORSE', 'BARN_NAME', '{{HORSE.BARN_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
   UNION ALL
   SELECT id, 'HORSE', 'BREED', '{{HORSE.BREED}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
@@ -538,7 +563,11 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   UNION ALL
   SELECT id, 'HORSE', 'AGE_DOB', '{{HORSE.AGE_DOB}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
   UNION ALL
+  SELECT id, 'HORSE', 'HEIGHT', '{{HORSE.HEIGHT}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
+  UNION ALL
   SELECT id, 'HORSE', 'REGISTRATION_NUMBER', '{{HORSE.REGISTRATION_NUMBER}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
+  UNION ALL
+  SELECT id, 'HORSE', 'FAIR_MARKET_VALUE', '{{HORSE.FAIR_MARKET_VALUE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
   UNION ALL
   SELECT id, 'HORSE', 'CURRENT_LOCATION', '{{HORSE.CURRENT_LOCATION}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
   UNION ALL
@@ -556,7 +585,15 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   UNION ALL
   SELECT id, 'CLIENT', 'EMERGENCY_CONTACT_1_PHONE', '{{CLIENT.EMERGENCY_CONTACT_1_PHONE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
   UNION ALL
-  SELECT id, 'CLIENT', 'EUTHANASIA_INITIALS', '{{CLIENT.EUTHANASIA_INITIALS}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
+  SELECT id, 'CLIENT', 'EMERGENCY_CONTACT_2_NAME', '{{CLIENT.EMERGENCY_CONTACT_2_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
+  UNION ALL
+  SELECT id, 'CLIENT', 'EMERGENCY_CONTACT_2_RELATIONSHIP', '{{CLIENT.EMERGENCY_CONTACT_2_RELATIONSHIP}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
+  UNION ALL
+  SELECT id, 'CLIENT', 'EMERGENCY_CONTACT_2_PHONE', '{{CLIENT.EMERGENCY_CONTACT_2_PHONE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
+  UNION ALL
+  SELECT id, 'HORSE', 'EUTHANASIA_A', '{{HORSE.EUTHANASIA_A}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
+  UNION ALL
+  SELECT id, 'HORSE', 'EUTHANASIA_B', '{{HORSE.EUTHANASIA_B}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
   UNION ALL
   SELECT id, 'HORSE', 'MEDICATION_NAME', '{{HORSE.MEDICATION_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EMERGENCY_VET'
   UNION ALL
@@ -589,6 +626,7 @@ Evaluation is advisory only. Horses are living animals and may change over time 
 HORSE TO BE EVALUATED
 
 Horse Name: {{HORSE.REGISTERED_NAME}}
+Microchip: {{HORSE.MICROCHIP}}
 Owner/Seller: {{HORSE.OWNER_NAME}}
 Location of Horse: {{HORSE.CURRENT_LOCATION}}
 Breed: {{HORSE.BREED}}
@@ -627,6 +665,8 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   SELECT id, 'ORG', 'LEGAL_NAME', '{{ORG.LEGAL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EVALUATION'
   UNION ALL
   SELECT id, 'HORSE', 'REGISTERED_NAME', '{{HORSE.REGISTERED_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EVALUATION'
+  UNION ALL
+  SELECT id, 'HORSE', 'MICROCHIP', '{{HORSE.MICROCHIP}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EVALUATION'
   UNION ALL
   SELECT id, 'HORSE', 'OWNER_NAME', '{{HORSE.OWNER_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EVALUATION'
   UNION ALL
@@ -675,6 +715,7 @@ This order is a request for horse exercise services from {{ORG.LEGAL_NAME}} ("CO
 HORSE
 
 Horse: {{HORSE.REGISTERED_NAME}} ({{HORSE.BARN_NAME}})
+Microchip: {{HORSE.MICROCHIP}}
 Location: {{HORSE.CURRENT_LOCATION}}
 Known conditions or changes since last engagement: {{REQ.CONDITION_UPDATES}}
 
@@ -706,6 +747,8 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   UNION ALL
   SELECT id, 'HORSE', 'BARN_NAME', '{{HORSE.BARN_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EXERCISE'
   UNION ALL
+  SELECT id, 'HORSE', 'MICROCHIP', '{{HORSE.MICROCHIP}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EXERCISE'
+  UNION ALL
   SELECT id, 'HORSE', 'CURRENT_LOCATION', '{{HORSE.CURRENT_LOCATION}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EXERCISE'
   UNION ALL
   SELECT id, 'REQ', 'CONDITION_UPDATES', '{{REQ.CONDITION_UPDATES}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EXERCISE'
@@ -723,419 +766,6 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   SELECT id, 'REQ', 'LOCATION_PREFERENCE', '{{REQ.LOCATION_PREFERENCE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EXERCISE'
   UNION ALL
   SELECT id, 'REQ', 'NOTES', '{{REQ.NOTES}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_EXERCISE';
-
--- ── HORSE_LEASE ─────────────────────────────────────────────
-UPDATE contract_templates SET body = $body$HORSE LEASE AGREEMENT
-
-This Horse Lease Agreement ("Agreement") is made effective as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") between the Lessor and Lessee identified below.
-
-LESSOR (HORSE OWNER)
-
-Name: {{LESSOR.FULL_NAME}}
-Address: {{LESSOR.ADDRESS}}
-Phone: {{LESSOR.PHONE}}
-Email: {{LESSOR.EMAIL}}
-
-LESSEE
-
-Name: {{LESSEE.FULL_NAME}}
-Address: {{LESSEE.ADDRESS}}
-Phone: {{LESSEE.PHONE}}
-Email: {{LESSEE.EMAIL}}
-
-HORSE INFORMATION
-
-Registered Name: {{HORSE.REGISTERED_NAME}}
-Barn Name: {{HORSE.BARN_NAME}}
-Breed: {{HORSE.BREED}}
-Color: {{HORSE.COLOR}}
-Sex: {{HORSE.SEX}}
-Age / Date of Birth: {{HORSE.AGE_DOB}}
-Registration Number: {{HORSE.REGISTRATION_NUMBER}}
-Microchip / Identification: {{HORSE.MICROCHIP}}
-Current Fair Market Value: {{HORSE.FAIR_MARKET_VALUE}}
-Current Location: {{HORSE.CURRENT_LOCATION}}
-
-1. PURPOSE AND LEASE GRANT
-
-Lessor owns, or has legal authority to lease, the Horse identified above and grants Lessee the right to use and ride the Horse during the Lease Term under the conditions of this Agreement. Lessee wishes to ride and handle the Horse and agrees to the terms of this Agreement in exchange for the consideration described herein.
-
-Lease Type: {{TXN.LEASE_TYPE}}
-Lease Term: {{TXN.LEASE_TERM}}
-Commencement Date: {{TXN.LEASE_START}}
-Expiration Date: {{TXN.LEASE_END}}
-Renewal Terms: {{TXN.RENEWAL_TERMS}}
-
-2. HORSE'S CONDITION AND OWNERSHIP
-
-To the best of Lessor's knowledge, the Horse is currently sound and in good physical condition, except as noted here: {{TXN.CONDITION_EXCEPTIONS}}. To the best of Lessor's knowledge, the Horse has no history of dangerous behavior, except as noted here: {{TXN.BEHAVIOR_EXCEPTIONS}}.
-
-Lessor recommends that Lessee obtain an independent veterinary examination of the Horse at Lessee's expense prior to entering into this Agreement. If Lessee declines to do so, Lessee accepts the risk of health or soundness issues that are not apparent.
-
-Except for the representations stated in this Agreement, Lessor makes no warranties, express or implied, regarding the Horse, including any warranty of fitness for a particular purpose.
-
-Lessor warrants that Lessor is the lawful owner of the Horse, or is authorized to lease the Horse, and has the right to enter into this Agreement. Limitations on ownership, if any: {{TXN.OWNERSHIP_LIMITATIONS}}.
-
-3. LESSEE REPRESENTATIONS
-
-Lessee represents that Lessee is at least 18 years of age and has authority to enter into this Agreement, that Lessee has no physical or mental condition that would prevent safe participation in equine activities, and that Lessee has the knowledge and experience to provide reasonable care for and safely handle and ride the Horse. Lessee agrees to use reasonable care and to follow Lessor's reasonable instructions.
-
-<!-- CUT-START: EVALUATION_PERIOD | condition: include only if an evaluation period is selected -->
-4. EVALUATION PERIOD
-
-The parties agree to an evaluation period during which they will assess the suitability of the Horse for Lessee. All terms of this Agreement apply during the evaluation period.
-
-Evaluation Period Start: {{TXN.EVALUATION_START}}
-Evaluation Period End: {{TXN.EVALUATION_END}}
-
-Either party may terminate this Agreement during the evaluation period, or elect to end the evaluation period and begin the lease term, by notice to the other party.
-<!-- CUT-END: EVALUATION_PERIOD -->
-
-5. PERMITTED USE
-
-Activities permitted by Lessor: {{TXN.PERMITTED_ACTIVITIES}}
-Restrictions on use: {{TXN.USE_RESTRICTIONS}}
-Horse may be used by: {{TXN.AUTHORIZED_USERS}}
-Use by any other person is unauthorized without Lessor's prior written permission.
-
-<!-- CUT-START: PARTIAL_LEASE | condition: include only if the lease type is a partial lease -->
-6. SHARED USE AND SCHEDULE (PARTIAL LEASE)
-
-This is a partial lease. Lessee shares use of the Horse and Lessee's use is limited to the following:
-
-Days and times reserved for Lessee: {{TXN.RESERVED_DAYS}}
-Shared with: {{TXN.SHARED_WITH}}
-
-Lessee understands that use of the Horse on the days set forth above is both a right and a responsibility to provide care and exercise. Changes to the schedule must be agreed upon in writing. If Lessee is unable to meet a scheduled day, Lessee will provide Lessor at least 24 hours' advance notice.
-<!-- CUT-END: PARTIAL_LEASE -->
-
-7. LEASE PAYMENT
-
-Lease Fee: {{TXN.LEASE_FEE}}
-Payment Schedule: {{TXN.PAYMENT_SCHEDULE}}
-Payment Terms: {{TXN.PAYMENT_TERMS}}
-Late Payment Terms: {{TXN.LATE_PAYMENT_TERMS}}
-
-8. BOARDING AND LOCATION
-
-Facility where the Horse is kept: {{HORSE.CURRENT_LOCATION}}
-Boarding responsibility: {{TXN.BOARDING_RESPONSIBILITY}}
-
-Lessee may not move the Horse from the facility set forth above without Lessor's prior written approval, except as required for a veterinary emergency, for lessons or competition permitted under this Agreement, or as otherwise permitted in writing. Lessor may, at any reasonable time, inspect the Horse and inquire of the facility, veterinarians, and farriers about the Horse's care and condition, and may take possession of the Horse if, in Lessor's reasonable discretion, the Horse is not being properly cared for.
-
-9. CARE AND EXERCISE
-
-Routine care and exercise responsibility (feeding, daily care, exercise, scheduling, and following facility rules): {{TXN.CARE_RESPONSIBILITY}}
-Medications and supplements to be administered: {{TXN.SUPPLEMENTS}}
-Party responsible for administering medications and supplements: {{TXN.SUPPLEMENTS_RESPONSIBILITY}}
-
-10. VETERINARY AND FARRIER CARE
-
-Routine veterinary care responsibility: {{TXN.ROUTINE_VET_RESPONSIBILITY}}
-Non-routine and emergency veterinary care responsibility: {{TXN.EMERGENCY_VET_RESPONSIBILITY}}
-Farrier care responsibility: {{TXN.FARRIER_RESPONSIBILITY}}
-Preferred veterinarian: {{HORSE.VET_NAME}}, {{HORSE.VET_PHONE}}
-Preferred farrier: {{HORSE.FARRIER_NAME}}, {{HORSE.FARRIER_PHONE}}
-Lessor contact for care authorization: {{TXN.VET_AUTH_CONTACT}}
-
-In the event the Horse requires non-routine or emergency veterinary care, the party arranging care shall first attempt to reach the preferred veterinarian and shall notify Lessor as soon as reasonably possible.
-
-11. TRAINING AND LESSONS
-
-Training provider and restrictions: {{TXN.TRAINING_TERMS}}
-Lesson or instruction requirements: {{TXN.LESSON_TERMS}}
-
-12. PROTECTIVE EQUIPMENT AND TACK
-
-Protective equipment required, and the activities requiring it: {{TXN.PROTECTIVE_EQUIPMENT}}
-Party providing protective equipment: {{TXN.PROTECTIVE_EQUIPMENT_PROVIDER}}
-Required or restricted tack: {{TXN.TACK_TERMS}}
-Equipment provided by Lessor: {{TXN.LESSOR_EQUIPMENT}}
-Equipment provided by Lessee: {{TXN.LESSEE_EQUIPMENT}}
-
-Lessee will use only tack that is in good condition and properly fitted to the Horse.
-
-13. COST ALLOCATION
-
-The parties allocate the costs relating to the Horse during the Lease Term as follows:
-
-Board: {{TXN.BOARD_COST}}
-Training: {{TXN.TRAINING_COST}}
-Lessons: {{TXN.LESSONS_COST}}
-Medications and supplements: {{TXN.SUPPLEMENTS_COST}}
-Farrier care: {{TXN.FARRIER_COST}}
-Routine veterinary care: {{TXN.ROUTINE_VET_COST}}
-Non-routine veterinary care: {{TXN.NON_ROUTINE_VET_COST}}
-Other care: {{TXN.OTHER_CARE_COST}}
-All other expenses relating to the Horse not otherwise provided for: {{TXN.OTHER_EXPENSES_COST}}
-
-Notwithstanding the allocations above, Lessee is solely responsible for the cost of any care or expense that becomes necessary or advisable due to the negligence or willful misconduct of Lessee or those acting on Lessee's behalf.
-
-<!-- CUT-START: INSURANCE | condition: include only if any insurance is required -->
-14. INSURANCE
-
-<!-- CUT-START: MORTALITY_INSURANCE | condition: include only if mortality insurance is required -->
-Mortality insurance is required for the Horse in an amount at least equal to its fair market value, with Lessor named as a beneficiary. Responsibility for the cost of mortality insurance: {{TXN.MORTALITY_INSURANCE_COST}}. Party obtaining coverage and providing proof: {{TXN.MORTALITY_INSURANCE_PARTY}}.
-<!-- CUT-END: MORTALITY_INSURANCE -->
-
-<!-- CUT-START: MAJOR_MEDICAL_INSURANCE | condition: include only if major medical insurance is required -->
-Major medical insurance is required for the Horse, with Lessor named as a beneficiary. Responsibility for the cost of major medical insurance: {{TXN.MAJOR_MEDICAL_INSURANCE_COST}}. Party obtaining coverage and providing proof: {{TXN.MAJOR_MEDICAL_INSURANCE_PARTY}}.
-<!-- CUT-END: MAJOR_MEDICAL_INSURANCE -->
-
-<!-- CUT-START: LOSS_OF_USE_INSURANCE | condition: include only if loss of use insurance is required -->
-Loss of use insurance is required for the Horse, with Lessor named as a beneficiary. Responsibility for the cost of loss of use insurance: {{TXN.LOSS_OF_USE_INSURANCE_COST}}. Party obtaining coverage and providing proof: {{TXN.LOSS_OF_USE_INSURANCE_PARTY}}.
-<!-- CUT-END: LOSS_OF_USE_INSURANCE -->
-
-If a claim must be made under any policy, the parties agree to cooperate in good faith. Any liability of Lessee for loss of or injury to the Horse is reduced by the amount of insurance proceeds received by Lessor.
-<!-- CUT-END: INSURANCE -->
-
-<!-- CUT-START: COMPETITION | condition: include only if competition is permitted -->
-15. COMPETITION
-
-With Lessor's advance written permission, Lessee may compete with the Horse in organized competitions.
-
-Competition permissions and conditions: {{TXN.COMPETITION_TERMS}}
-Responsibility for competition expenses: {{TXN.COMPETITION_EXPENSES}}
-Prize money and winnings earned during the Lease Term belong to: {{TXN.COMPETITION_WINNINGS}}
-<!-- CUT-END: COMPETITION -->
-
-16. HORSE CONDITION AND NOTIFICATION
-
-Lessee acknowledges that horses are living animals, that behavior may change, that injury risks exist, and that no performance outcome is guaranteed. Lessee shall immediately notify Lessor of any injury, illness, lameness, behavioral concern, or significant change in the Horse.
-
-17. RISK OF LOSS OF OR INJURY TO HORSE
-
-Risk of injury, illness, death, or loss of use of the Horse is allocated as follows: {{TXN.RISK_ALLOCATION}}.
-
-To the extent Lessee bears responsibility for loss of or injury to the Horse under the allocation above, the following apply. The parties agree that the fair market value of the Horse is as set forth above. If the Horse dies, is permanently lost, or is stolen and not recovered within 30 days, Lessee shall pay Lessor the Horse's fair market value and, in the event of death, the reasonable costs of removal and disposal. If the Horse develops, during or as a result of activities during the Lease Term, an injury or condition that significantly reduces its capacity for the uses it could perform at the start of the Lease Term, as determined by a veterinarian mutually acceptable to both parties, the Horse shall be deemed disabled; for a temporary disability, Lessee shall pay for rehabilitative care up to the Horse's fair market value, and for a permanent disability, Lessee shall pay a portion of fair market value reflecting the loss of value. If the parties cannot agree on the impact of a disability on value, they shall retain a mutually acceptable equine appraiser and split the cost of the appraisal.
-
-18. RISK OF INJURY TO OR DEATH OF THE PARTIES
-
-Each party understands that equine activities are inherently dangerous, that horses are unpredictable and may bolt, spook, buck, rear, bite, kick, or otherwise act in ways that may cause injury, and that facilities and footing may contain hazards. Each party expressly assumes all risks of engaging in equine activities under this Agreement, including the risk that the other party may be negligent, and agrees not to sue the other party or make a claim against the other party in connection with any injury to or death of themselves occurring in connection with this Agreement. This assumption of risk and covenant not to sue does not apply to gross negligence, reckless conduct, or intentional misconduct.
-
-Wearing an ASTM/SEI-certified equestrian helmet, heeled boots, gloves, long sleeves, and long pants is highly recommended while riding. A party who declines to wear such items assumes the increased risk of injury or death resulting from that choice.
-
-Each party understands that state law may limit the waiver of unknown claims, and each party waives, to the extent permitted by law, all rights they might otherwise have under such laws as to the claims released in this Agreement.
-
-19. RELEASE AND INDEMNIFICATION
-
-Lessee acknowledges that equine activities involve inherent risks and releases Lessor and those acting on Lessor's behalf from claims arising from the ordinary risks of equine activities. This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
-
-Lessee agrees to indemnify and hold harmless Lessor from claims arising from Lessee's use of the Horse, unauthorized activities, Lessee's negligence, and Lessee's breach of this Agreement. Lessor agrees to indemnify and hold harmless Lessee from claims arising from Lessor's misrepresentations, Lessor's negligence, and Lessor's breach of this Agreement. Neither party is liable to the other for special or consequential damages.
-
-20. PROHIBITED ACTIVITIES
-
-Except as expressly permitted in this Agreement, Lessee shall not remove the Horse from the facility without Lessor's prior written authorization, shall not permit any unauthorized person to ride or handle the Horse, and shall not breed the Horse. Additional prohibited activities: {{TXN.PROHIBITED_ACTIVITIES}}.
-
-21. TERMINATION AND RETURN
-
-Either party may terminate this Agreement on the following terms: {{TXN.TERMINATION_TERMS}}. Immediate termination may occur for abuse, unsafe use, nonpayment, or a material breach of this Agreement, and either party may terminate immediately if the Horse becomes injured to an extent that would reasonably be expected to significantly impair its ability to perform, or if the Horse dies. Upon termination, Lessee shall return the Horse in substantially the same condition, with the agreed equipment, subject to normal wear and tear.
-
-22. ASSIGNMENT
-
-Neither party may assign or transfer this Agreement without the prior written consent of the other party.
-
-23. NOTICE
-
-Notices under this Agreement must be in writing and delivered by a method that provides evidence of receipt. Email is effective notice only if acknowledged by the receiving party. Each party shall notify the other of any change in contact information; a notice to the last contact information provided is proper notice.
-
-24. DISPUTE RESOLUTION
-
-Any dispute arising out of or relating to this Agreement shall be resolved by binding arbitration in San Diego, California.
-
-25. ATTORNEY'S FEES
-
-Each party shall cover their own attorney's fees and costs.
-
-26. GOVERNING LAW AND SEVERABILITY
-
-California law governs this Agreement. If any provision is unenforceable, the remainder remains in effect.
-
-27. ENTIRE AGREEMENT
-
-This Agreement contains the complete agreement between Lessor and Lessee regarding the lease of the Horse. Any modification must be in writing and signed by both parties.
-
-LESSOR
-
-Signature: {{SIG.LESSOR.NAME}}
-Printed Name: {{LESSOR.PRINTED_NAME}}
-Date: {{SIG.LESSOR.DATE}}
-
-LESSEE
-
-Signature: {{SIG.LESSEE.NAME}}
-Printed Name: {{LESSEE.PRINTED_NAME}}
-Date: {{SIG.LESSEE.DATE}}
-$body$, updated_at = now()
-  WHERE template_key = 'HORSE_LEASE';
-INSERT INTO template_tokens (template_id, namespace, field, token, kind, required, party_scoped)
-  SELECT id, 'DOC', 'EFFECTIVE_DATE', '{{DOC.EFFECTIVE_DATE}}', 'system', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'LESSOR', 'FULL_NAME', '{{LESSOR.FULL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'LESSOR', 'ADDRESS', '{{LESSOR.ADDRESS}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'LESSOR', 'PHONE', '{{LESSOR.PHONE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'LESSOR', 'EMAIL', '{{LESSOR.EMAIL}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'LESSEE', 'FULL_NAME', '{{LESSEE.FULL_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'LESSEE', 'ADDRESS', '{{LESSEE.ADDRESS}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'LESSEE', 'PHONE', '{{LESSEE.PHONE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'LESSEE', 'EMAIL', '{{LESSEE.EMAIL}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'HORSE', 'REGISTERED_NAME', '{{HORSE.REGISTERED_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'HORSE', 'BARN_NAME', '{{HORSE.BARN_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'HORSE', 'BREED', '{{HORSE.BREED}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'HORSE', 'COLOR', '{{HORSE.COLOR}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'HORSE', 'SEX', '{{HORSE.SEX}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'HORSE', 'AGE_DOB', '{{HORSE.AGE_DOB}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'HORSE', 'REGISTRATION_NUMBER', '{{HORSE.REGISTRATION_NUMBER}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'HORSE', 'MICROCHIP', '{{HORSE.MICROCHIP}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'HORSE', 'FAIR_MARKET_VALUE', '{{HORSE.FAIR_MARKET_VALUE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'HORSE', 'CURRENT_LOCATION', '{{HORSE.CURRENT_LOCATION}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'LEASE_TYPE', '{{TXN.LEASE_TYPE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'LEASE_TERM', '{{TXN.LEASE_TERM}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'LEASE_START', '{{TXN.LEASE_START}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'LEASE_END', '{{TXN.LEASE_END}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'RENEWAL_TERMS', '{{TXN.RENEWAL_TERMS}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'CONDITION_EXCEPTIONS', '{{TXN.CONDITION_EXCEPTIONS}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'BEHAVIOR_EXCEPTIONS', '{{TXN.BEHAVIOR_EXCEPTIONS}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'OWNERSHIP_LIMITATIONS', '{{TXN.OWNERSHIP_LIMITATIONS}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'EVALUATION_START', '{{TXN.EVALUATION_START}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'EVALUATION_END', '{{TXN.EVALUATION_END}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'PERMITTED_ACTIVITIES', '{{TXN.PERMITTED_ACTIVITIES}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'USE_RESTRICTIONS', '{{TXN.USE_RESTRICTIONS}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'AUTHORIZED_USERS', '{{TXN.AUTHORIZED_USERS}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'RESERVED_DAYS', '{{TXN.RESERVED_DAYS}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'SHARED_WITH', '{{TXN.SHARED_WITH}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'LEASE_FEE', '{{TXN.LEASE_FEE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'PAYMENT_SCHEDULE', '{{TXN.PAYMENT_SCHEDULE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'PAYMENT_TERMS', '{{TXN.PAYMENT_TERMS}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'LATE_PAYMENT_TERMS', '{{TXN.LATE_PAYMENT_TERMS}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'BOARDING_RESPONSIBILITY', '{{TXN.BOARDING_RESPONSIBILITY}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'CARE_RESPONSIBILITY', '{{TXN.CARE_RESPONSIBILITY}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'SUPPLEMENTS', '{{TXN.SUPPLEMENTS}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'SUPPLEMENTS_RESPONSIBILITY', '{{TXN.SUPPLEMENTS_RESPONSIBILITY}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'ROUTINE_VET_RESPONSIBILITY', '{{TXN.ROUTINE_VET_RESPONSIBILITY}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'EMERGENCY_VET_RESPONSIBILITY', '{{TXN.EMERGENCY_VET_RESPONSIBILITY}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'FARRIER_RESPONSIBILITY', '{{TXN.FARRIER_RESPONSIBILITY}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'HORSE', 'VET_NAME', '{{HORSE.VET_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'HORSE', 'VET_PHONE', '{{HORSE.VET_PHONE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'HORSE', 'FARRIER_NAME', '{{HORSE.FARRIER_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'HORSE', 'FARRIER_PHONE', '{{HORSE.FARRIER_PHONE}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'VET_AUTH_CONTACT', '{{TXN.VET_AUTH_CONTACT}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'TRAINING_TERMS', '{{TXN.TRAINING_TERMS}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'LESSON_TERMS', '{{TXN.LESSON_TERMS}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'PROTECTIVE_EQUIPMENT', '{{TXN.PROTECTIVE_EQUIPMENT}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'PROTECTIVE_EQUIPMENT_PROVIDER', '{{TXN.PROTECTIVE_EQUIPMENT_PROVIDER}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'TACK_TERMS', '{{TXN.TACK_TERMS}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'LESSOR_EQUIPMENT', '{{TXN.LESSOR_EQUIPMENT}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'LESSEE_EQUIPMENT', '{{TXN.LESSEE_EQUIPMENT}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'BOARD_COST', '{{TXN.BOARD_COST}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'TRAINING_COST', '{{TXN.TRAINING_COST}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'LESSONS_COST', '{{TXN.LESSONS_COST}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'SUPPLEMENTS_COST', '{{TXN.SUPPLEMENTS_COST}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'FARRIER_COST', '{{TXN.FARRIER_COST}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'ROUTINE_VET_COST', '{{TXN.ROUTINE_VET_COST}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'NON_ROUTINE_VET_COST', '{{TXN.NON_ROUTINE_VET_COST}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'OTHER_CARE_COST', '{{TXN.OTHER_CARE_COST}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'OTHER_EXPENSES_COST', '{{TXN.OTHER_EXPENSES_COST}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'MORTALITY_INSURANCE_COST', '{{TXN.MORTALITY_INSURANCE_COST}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'MORTALITY_INSURANCE_PARTY', '{{TXN.MORTALITY_INSURANCE_PARTY}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'MAJOR_MEDICAL_INSURANCE_COST', '{{TXN.MAJOR_MEDICAL_INSURANCE_COST}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'MAJOR_MEDICAL_INSURANCE_PARTY', '{{TXN.MAJOR_MEDICAL_INSURANCE_PARTY}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'LOSS_OF_USE_INSURANCE_COST', '{{TXN.LOSS_OF_USE_INSURANCE_COST}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'LOSS_OF_USE_INSURANCE_PARTY', '{{TXN.LOSS_OF_USE_INSURANCE_PARTY}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'COMPETITION_TERMS', '{{TXN.COMPETITION_TERMS}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'COMPETITION_EXPENSES', '{{TXN.COMPETITION_EXPENSES}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'COMPETITION_WINNINGS', '{{TXN.COMPETITION_WINNINGS}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'RISK_ALLOCATION', '{{TXN.RISK_ALLOCATION}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'PROHIBITED_ACTIVITIES', '{{TXN.PROHIBITED_ACTIVITIES}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'TXN', 'TERMINATION_TERMS', '{{TXN.TERMINATION_TERMS}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'SIG', 'LESSOR.NAME', '{{SIG.LESSOR.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'LESSOR', 'PRINTED_NAME', '{{LESSOR.PRINTED_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'SIG', 'LESSOR.DATE', '{{SIG.LESSOR.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'SIG', 'LESSEE.NAME', '{{SIG.LESSEE.NAME}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'LESSEE', 'PRINTED_NAME', '{{LESSEE.PRINTED_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE'
-  UNION ALL
-  SELECT id, 'SIG', 'LESSEE.DATE', '{{SIG.LESSEE.DATE}}', 'signature', false, false FROM contract_templates WHERE template_key = 'HORSE_LEASE';
 
 -- ── HORSE_PURCHASE_SALE ─────────────────────────────────────────────
 UPDATE contract_templates SET body = $body$HORSE PURCHASE AND SALE AGREEMENT
@@ -1764,6 +1394,7 @@ This order is a request for horse training services from {{ORG.LEGAL_NAME}} ("CO
 HORSE
 
 Horse: {{HORSE.REGISTERED_NAME}} ({{HORSE.BARN_NAME}})
+Microchip: {{HORSE.MICROCHIP}}
 Location: {{HORSE.CURRENT_LOCATION}}
 Known conditions or changes since last engagement: {{REQ.CONDITION_UPDATES}}
 
@@ -1794,6 +1425,8 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   SELECT id, 'HORSE', 'REGISTERED_NAME', '{{HORSE.REGISTERED_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRAINING'
   UNION ALL
   SELECT id, 'HORSE', 'BARN_NAME', '{{HORSE.BARN_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRAINING'
+  UNION ALL
+  SELECT id, 'HORSE', 'MICROCHIP', '{{HORSE.MICROCHIP}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRAINING'
   UNION ALL
   SELECT id, 'HORSE', 'CURRENT_LOCATION', '{{HORSE.CURRENT_LOCATION}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRAINING'
   UNION ALL
@@ -1831,6 +1464,7 @@ Email: {{CLIENT.EMAIL}}
 HORSE INFORMATION (IF IDENTIFIED)
 
 Registered Name: {{HORSE.REGISTERED_NAME}}
+Microchip: {{HORSE.MICROCHIP}}
 Barn Name: {{HORSE.BARN_NAME}}
 Breed: {{HORSE.BREED}}
 Current Location: {{HORSE.CURRENT_LOCATION}}
@@ -1908,6 +1542,8 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   UNION ALL
   SELECT id, 'HORSE', 'REGISTERED_NAME', '{{HORSE.REGISTERED_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRANSACTION_REP'
   UNION ALL
+  SELECT id, 'HORSE', 'MICROCHIP', '{{HORSE.MICROCHIP}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRANSACTION_REP'
+  UNION ALL
   SELECT id, 'HORSE', 'BARN_NAME', '{{HORSE.BARN_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRANSACTION_REP'
   UNION ALL
   SELECT id, 'HORSE', 'BREED', '{{HORSE.BREED}}', 'field', false, false FROM contract_templates WHERE template_key = 'HORSE_TRANSACTION_REP'
@@ -1941,6 +1577,8 @@ UPDATE contract_templates SET body = $body$PARTICIPANT EMERGENCY INFORMATION AND
 
 This Emergency Information and Treatment Authorization ("Authorization") is made effective as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned client ("CLIENT"), on CLIENT's own behalf and, where a minor is identified, on behalf of that minor ("PARTICIPANT"), in favor of {{ORG.LEGAL_NAME}} ("COMPANY"). This Authorization may be used for riders, horsemanship participants, jumper training participants, visitors, contractors, volunteers, event attendees, and other individuals participating in or present for activities associated with COMPANY. By signing below, CLIENT acknowledges and agrees to the terms of this Authorization. Where no minor is identified, references to PARTICIPANT mean CLIENT.
 
+For purposes of this Authorization, "Released Parties" means COMPANY, its owners, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, representatives, affiliates, property owners, facility owners, licensors, lessors, lessees, hosts, landowners, successors, assigns, heirs, and any person acting on behalf of COMPANY at any location where it is authorized to conduct business.
+
 PARTICIPANT INFORMATION
 
 Name: {{CLIENT.FULL_NAME}}
@@ -1970,7 +1608,7 @@ Phone: {{CLIENT.EMERGENCY_CONTACT_2_PHONE}}
 
 1. FIRST AID AUTHORIZATION
 
-CLIENT authorizes COMPANY and its representatives to administer reasonable first aid and stabilizing care to CLIENT or an accompanying minor PARTICIPANT in the event of an apparent injury or medical emergency, pending the arrival of emergency medical personnel or other qualified medical care. CLIENT understands that COMPANY representatives are not medical professionals, and CLIENT releases COMPANY and its representatives from any claims arising from first aid or stabilizing care rendered, or decisions made, in good faith in response to an apparent emergency. This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
+CLIENT authorizes COMPANY and its representatives to administer reasonable first aid and stabilizing care to CLIENT or an accompanying minor PARTICIPANT in the event of an apparent injury or medical emergency, pending the arrival of emergency medical personnel or other qualified medical care. CLIENT understands that COMPANY representatives are not medical professionals, and CLIENT, on behalf of CLIENT and CLIENT's heirs, next of kin, estate, executors, administrators, legal representatives, successors, and assigns, and on behalf of any minor PARTICIPANT and the minor's heirs, next of kin, estate, executors, administrators, legal representatives, successors, and assigns, releases, waives, and forever discharges the Released Parties from any claims arising from first aid or stabilizing care rendered, or decisions made, in good faith in response to an apparent emergency. This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
 
 2. EMERGENCY TREATMENT AUTHORIZATION
 
@@ -1981,10 +1619,34 @@ CLIENT authorizes COMPANY, its instructors, trainers, contractors, representativ
 CLIENT understands that COMPANY is not providing medical services and is not responsible for the quality, availability, cost, or outcome of any medical treatment obtained. CLIENT agrees to be financially responsible for any medical expenses incurred on behalf of CLIENT or an accompanying minor PARTICIPANT.
 
 <!-- CUT-START: MINOR_CONSENT_TO_TREAT | condition: append only if PARTICIPANT is a minor -->
-4. CONSENT TO TREAT A MINOR
+CONSENT TO TREAT A MINOR (MINOR PARTICIPANTS ONLY)
 
 Where a minor PARTICIPANT is identified above, CLIENT represents and warrants that CLIENT is the parent or legal guardian of the minor and has authority to execute this Authorization on the minor's behalf. CLIENT authorizes the adult representatives of COMPANY into whose care the minor has been entrusted to consent, on CLIENT's behalf, to x-ray examination, anesthetic, medical, surgical, or dental diagnosis or treatment, and hospital care, to be rendered to the minor under the general or special supervision and upon the advice of a physician, surgeon, or dentist licensed in the State of California, when CLIENT cannot be reached in a timely manner or when delay would endanger the minor. This consent remains effective until revoked by CLIENT in writing or superseded by a later executed version of this Authorization.
 <!-- CUT-END: MINOR_CONSENT_TO_TREAT -->
+
+4. DISPUTE RESOLUTION
+
+Any dispute arising out of or relating to this Authorization shall be resolved by binding arbitration in San Diego, California.
+
+5. ATTORNEY'S FEES
+
+Each party shall be required to cover their own attorney's fees and costs.
+
+6. GOVERNING LAW
+
+California law governs this Authorization.
+
+7. SEVERABILITY
+
+If any provision of this Authorization is determined to be invalid or unenforceable, the remaining provisions shall remain in full force and effect.
+
+8. ENTIRE AGREEMENT
+
+This Authorization contains the entire agreement concerning emergency information and treatment authorization and supplements, and does not supersede, any separate liability release or services contract between CLIENT and COMPANY.
+
+9. ACKNOWLEDGMENT
+
+CLIENT acknowledges that: CLIENT has carefully read this Authorization in its entirety. CLIENT understands its legal effect. CLIENT has had sufficient opportunity to ask questions before signing. CLIENT signs voluntarily and without coercion. CLIENT intends this Authorization to be binding upon CLIENT, any minor PARTICIPANT identified, and their heirs, successors, assigns, and personal representatives.
 
 CLIENT
 
@@ -2042,7 +1704,7 @@ Effective from the Date of Signature until superseded by a later executed versio
 
 This General Liability Release, Assumption of Risk, Hold Harmless & Indemnification Agreement ("Agreement") is made effective as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned client ("CLIENT"), on CLIENT's own behalf and, where a minor is identified, on behalf of that minor ("PARTICIPANT"), in favor of {{ORG.LEGAL_NAME}} ("COMPANY"). By signing below, CLIENT acknowledges and agrees to the terms of this Agreement. Where no minor is identified, references to PARTICIPANT mean CLIENT.
 
-For purposes of this Agreement, the term "Released Parties" means COMPANY, its owners, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, representatives, affiliates, property owners, facility owners, licensors, lessors, lessees, hosts, landowners, successors, assigns, heirs, and any person acting on behalf of COMPANY at any location where it is authorized to conduct business. This Agreement applies to any ranch, barn, arena, trail, pasture, tack room, stable, private property, leased premises, event venue, competition grounds, or other location where COMPANY conducts authorized business activities.
+For purposes of this Agreement, the term "Released Parties" means COMPANY, its owners, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, representatives, affiliates, property owners, facility owners, licensors, lessors, lessees, hosts, landowners, the owners, lessors, and lessees of any horse used in or present during COMPANY's activities, successors, assigns, heirs, and any person acting on behalf of COMPANY at any location where it is authorized to conduct business. This Agreement applies to any ranch, barn, arena, trail, pasture, tack room, stable, private property, leased premises, event venue, competition grounds, or other location where COMPANY conducts authorized business activities.
 
 1. VISITOR ACKNOWLEDGEMENT
 
@@ -2075,7 +1737,7 @@ CLIENT acknowledges receipt of the separately executed Property Rules, Safety Ac
 
 6. RELEASE OF LIABILITY
 
-CLIENT, on behalf of CLIENT, any accompanying minor, and their heirs, representatives, successors, assigns, and personal representatives, voluntarily releases, waives, and forever discharges the Released Parties from any and all claims, demands, causes of action, damages, losses, liabilities, costs, expenses, or judgments arising out of or related to presence on the property, including claims arising from the ordinary negligence of the Released Parties. This release applies to bodily injury, personal injury, illness, property damage, wrongful death, emotional distress, and all other losses, whether known or unknown, including claims not known or suspected to exist at the time of signing. This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
+CLIENT, on behalf of CLIENT and CLIENT's heirs, next of kin, estate, executors, administrators, legal representatives, successors, and assigns, and on behalf of any accompanying minor and the minor's heirs, next of kin, estate, executors, administrators, legal representatives, successors, and assigns, voluntarily releases, waives, and forever discharges the Released Parties from any and all claims, demands, causes of action, damages, losses, liabilities, costs, expenses, or judgments arising out of or related to presence on the property, including claims arising from the ordinary negligence of the Released Parties. This release applies to bodily injury, personal injury, illness, property damage, wrongful death, emotional distress, and all other losses, whether known or unknown, including claims not known or suspected to exist at the time of signing. This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
 
 7. HOLD HARMLESS AND INDEMNIFICATION
 
@@ -2162,19 +1824,25 @@ Effective from the Date of Signature until superseded by a later executed versio
 
 This Equine Services Authorization, Liability Release, Assumption of Risk, Hold Harmless & Indemnification Agreement ("Agreement") is made effective as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned client ("CLIENT") in favor of {{ORG.LEGAL_NAME}} ("COMPANY"), as a condition of COMPANY providing equine services for the horse described below. By signing below, CLIENT acknowledges and agrees to the terms of this Agreement.
 
-For purposes of this Agreement, "Released Parties" means COMPANY, its owners, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, representatives, affiliates, property owners, facility owners, licensors, lessors, lessees, hosts, landowners, successors, assigns, heirs, and any person acting on behalf of COMPANY at any location where it is authorized to conduct business.
+For purposes of this Agreement, "Released Parties" means COMPANY, its owners, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, representatives, affiliates, property owners, facility owners, licensors, lessors, lessees, hosts, landowners, successors, assigns, heirs, and any person acting on behalf of COMPANY at any location where it is authorized to conduct business. COVERAGE EXTENSION: The authorizations, releases, and protections set forth in this document extend to and benefit COMPANY (French Heritage Equestrian) and, during any period in which a lease of the Horse is in effect, the then-current lessee of the Horse under that lease, each as an additional covered party — without the need to name that lessee.
 
 This Agreement applies at any ranch, barn, arena, stable, tack room, trail, leased premises, private property, competition venue, or other location where COMPANY conducts authorized business.
 
 1. HORSE INFORMATION
 
 Horse Name: {{HORSE.REGISTERED_NAME}}
+Microchip: {{HORSE.MICROCHIP}}
 Barn Name: {{HORSE.BARN_NAME}}
 Breed: {{HORSE.BREED}}
 Color: {{HORSE.COLOR}}
 Sex: {{HORSE.SEX}}
 Age: {{HORSE.AGE_DOB}}
+Height: {{HORSE.HEIGHT}}
+Registration Number: {{HORSE.REGISTRATION_NUMBER}}
+Current Fair Market Value: {{HORSE.FAIR_MARKET_VALUE}}
 Current Location: {{HORSE.CURRENT_LOCATION}}
+Veterinarian: {{HORSE.VET_NAME}}, {{HORSE.VET_PHONE}}
+Farrier: {{HORSE.FARRIER_NAME}}, {{HORSE.FARRIER_PHONE}}
 CLIENT capacity as to Horse: {{CLIENT.HORSE_CAPACITY}}
 
 2. AUTHORIZATION FOR EQUINE ACTIVITIES
@@ -2209,7 +1877,7 @@ CLIENT knowingly and voluntarily assumes all inherent and ordinary risks associa
 
 7. RELEASE OF LIABILITY
 
-CLIENT releases, waives, and forever discharges the Released Parties from any and all claims, demands, causes of action, liabilities, damages, losses, expenses, costs, or judgments arising out of or relating to: Handling the Horse; Riding, exercising, schooling, or training the Horse; Providing instruction involving the Horse; Grooming, clipping, and husbandry activities; Authorized routine care described in this Agreement; Temporary emergency stabilization; Decisions made in good faith regarding the Horse's care within the scope of this authorization; and Any injury, illness, death, escape, or property damage involving the Horse or persons interacting with the Horse, including claims arising from the ordinary negligence of the Released Parties. This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
+CLIENT, on behalf of CLIENT and CLIENT's heirs, next of kin, estate, executors, administrators, legal representatives, successors, and assigns, releases, waives, and forever discharges the Released Parties from any and all claims, demands, causes of action, liabilities, damages, losses, expenses, costs, or judgments arising out of or relating to: Handling the Horse; Riding, exercising, schooling, or training the Horse; Providing instruction involving the Horse; Grooming, clipping, and husbandry activities; Authorized routine care described in this Agreement; Temporary emergency stabilization; Decisions made in good faith regarding the Horse's care within the scope of this authorization; and Any injury, illness, death, escape, or property damage involving the Horse or persons interacting with the Horse, including claims arising from the ordinary negligence of the Released Parties. This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
 
 8. HOLD HARMLESS & INDEMNIFICATION
 
@@ -2265,6 +1933,8 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   UNION ALL
   SELECT id, 'HORSE', 'REGISTERED_NAME', '{{HORSE.REGISTERED_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_CARE'
   UNION ALL
+  SELECT id, 'HORSE', 'MICROCHIP', '{{HORSE.MICROCHIP}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_CARE'
+  UNION ALL
   SELECT id, 'HORSE', 'BARN_NAME', '{{HORSE.BARN_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_CARE'
   UNION ALL
   SELECT id, 'HORSE', 'BREED', '{{HORSE.BREED}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_CARE'
@@ -2275,7 +1945,21 @@ INSERT INTO template_tokens (template_id, namespace, field, token, kind, require
   UNION ALL
   SELECT id, 'HORSE', 'AGE_DOB', '{{HORSE.AGE_DOB}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_CARE'
   UNION ALL
+  SELECT id, 'HORSE', 'HEIGHT', '{{HORSE.HEIGHT}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_CARE'
+  UNION ALL
+  SELECT id, 'HORSE', 'REGISTRATION_NUMBER', '{{HORSE.REGISTRATION_NUMBER}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_CARE'
+  UNION ALL
+  SELECT id, 'HORSE', 'FAIR_MARKET_VALUE', '{{HORSE.FAIR_MARKET_VALUE}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_CARE'
+  UNION ALL
   SELECT id, 'HORSE', 'CURRENT_LOCATION', '{{HORSE.CURRENT_LOCATION}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_CARE'
+  UNION ALL
+  SELECT id, 'HORSE', 'VET_NAME', '{{HORSE.VET_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_CARE'
+  UNION ALL
+  SELECT id, 'HORSE', 'VET_PHONE', '{{HORSE.VET_PHONE}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_CARE'
+  UNION ALL
+  SELECT id, 'HORSE', 'FARRIER_NAME', '{{HORSE.FARRIER_NAME}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_CARE'
+  UNION ALL
+  SELECT id, 'HORSE', 'FARRIER_PHONE', '{{HORSE.FARRIER_PHONE}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_CARE'
   UNION ALL
   SELECT id, 'CLIENT', 'HORSE_CAPACITY', '{{CLIENT.HORSE_CAPACITY}}', 'field', false, false FROM contract_templates WHERE template_key = 'RELEASE_HORSE_CARE'
   UNION ALL
@@ -2373,7 +2057,7 @@ Effective from the Date of Signature until superseded by a later executed versio
 
 This Participant Liability Release, Assumption of Risk, Hold Harmless & Indemnification Agreement ("Agreement") is made effective as of {{DOC.EFFECTIVE_DATE}} ("Effective Date") by the undersigned client ("CLIENT"), on CLIENT's own behalf and, where a minor participant is identified, on behalf of that minor ("PARTICIPANT"), in favor of {{ORG.LEGAL_NAME}} ("COMPANY"). By signing below, CLIENT acknowledges and agrees to the terms of this Agreement. Where no minor is identified, CLIENT is the participant and references to PARTICIPANT mean CLIENT.
 
-For purposes of this Agreement, "Released Parties" means COMPANY, its owners, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, representatives, affiliates, property owners, facility owners, licensors, lessors, lessees, hosts, landowners, successors, assigns, heirs, and any person acting on behalf of COMPANY at any location where it is authorized to conduct business.
+For purposes of this Agreement, "Released Parties" means COMPANY, its owners, employees, instructors, assistant instructors, trainers, volunteers, independent contractors, agents, representatives, affiliates, property owners, facility owners, licensors, lessors, lessees, hosts, landowners, the owners, lessors, and lessees of any horse used in or present during COMPANY's activities, successors, assigns, heirs, and any person acting on behalf of COMPANY at any location where it is authorized to conduct business.
 
 This Agreement applies at any ranch, barn, arena, stable, tack room, trail, private property, leased premises, event venue, show grounds, or other location where COMPANY conducts authorized business.
 
@@ -2403,7 +2087,7 @@ PARTICIPANT acknowledges receipt of the separately executed Property Rules, Safe
 
 7. RELEASE OF LIABILITY
 
-CLIENT, on CLIENT's own behalf and on behalf of any minor PARTICIPANT, releases, waives, and forever discharges the Released Parties from any and all claims, demands, causes of action, liabilities, damages, losses, costs, expenses, or judgments arising out of or relating to PARTICIPANT's involvement in equestrian activities, including claims arising from the ordinary negligence of the Released Parties. This release applies to claims involving bodily injury, illness, emotional distress, disability, death, property damage, loss of income, and any other damages, whether known or unknown, including claims CLIENT or PARTICIPANT does not know or suspect to exist at the time of signing. This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
+CLIENT, on CLIENT's own behalf and on behalf of CLIENT's heirs, next of kin, estate, executors, administrators, legal representatives, successors, and assigns, and on behalf of any minor PARTICIPANT and the minor's heirs, next of kin, estate, executors, administrators, legal representatives, successors, and assigns, releases, waives, and forever discharges the Released Parties from any and all claims, demands, causes of action, liabilities, damages, losses, costs, expenses, or judgments arising out of or relating to PARTICIPANT's involvement in equestrian activities, including claims arising from the ordinary negligence of the Released Parties. This release applies to claims involving bodily injury, illness, emotional distress, disability, death, property damage, loss of income, and any other damages, whether known or unknown, including claims CLIENT or PARTICIPANT does not know or suspect to exist at the time of signing. This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
 
 8. HOLD HARMLESS & INDEMNIFICATION
 
