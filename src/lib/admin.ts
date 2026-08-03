@@ -571,21 +571,13 @@ export async function adminClientAccounts(): Promise<ClientAccountRow[]> {
   return (data ?? []) as ClientAccountRow[];
 }
 
-/** Create the client record (contact + categories + clients row) with NO invite —
- *  items get attached first; the invitation is sent from the account page. */
-export async function adminCreateClient(input: {
-  firstName: string; lastName: string; email: string; phone?: string; categories?: string[];
-}): Promise<{ contact_id: string; client_id: string }> {
-  const { data, error } = await supabase.rpc('admin_create_client', {
-    p_first_name: input.firstName,
-    p_last_name: input.lastName,
-    p_email: input.email,
-    p_phone: input.phone ?? null,
-    p_categories: input.categories ?? [],
-  });
-  if (error) throw error;
-  return data as { contact_id: string; client_id: string };
-}
+// (adminCreateClient removed 2026-08-03 — deal plan L11. It wrapped
+//  admin_create_client, a SECOND account-creation spine with zero component
+//  callers that diverged from the canonical one: it stored categories as contact
+//  TAGS and matched contacts by email with no is_company / profile-ownership
+//  guard, so it could bind to the tenant's own company contact. Account creation
+//  goes through ProvisionClientForm → adminSendInvitation →
+//  provision_client_invitation. The DB function was dropped in 20260803110000.)
 
 export interface ClientItems {
   documents: { id: string; title: string | null; workflow_state: string | null; status: string; created_at: string }[];

@@ -414,7 +414,7 @@ export function CreateModal({ onClose }: { onClose: () => void }) {
                 <>
                   <p className="text-[10px] tracking-widest uppercase text-muted font-semibold mt-2">For a client</p>
                   <DestButton icon={FileText} label="New contract" hint="Lease or purchase — pick the client and the horse" onClick={() => go('/app/ops/contracts/new')} />
-                  <DestButton icon={UserPlus} label="New client" hint="Create the account first — attach items, then invite" onClick={() => go('/app/ops/accounts/new')} />
+                  <DestButton icon={UserPlus} label="New client" hint="Set their category and paperwork, then send the invite" onClick={() => go('/app/ops/accounts/new')} />
                 </>
               )}
               {/* client actions — an admin's "+" is a company control, not a shopper's */}

@@ -4,10 +4,10 @@ import {
   contactDossier, updateContactRecord, setContactType,
   CONTACT_TYPE_LABEL, type ContactDossier, type ContactType,
 } from '../../lib/api';
-import { adminSendInvitation } from '../../lib/admin';
 import {
   AssignDocumentsModal, ClientHorseRecordsCard, AttachOfferingPanel, PaperworkEditor,
 } from './ClientRecordActions';
+import { ProvisionClientForm } from './ProvisionClientForm';
 
 /**
  * THE CONTACT DOSSIER — every person, one modal.
@@ -102,24 +102,7 @@ export function ContactDossierModal({
      is the natural next step from the screen where you just reviewed them,
      rather than a separate hunt through another page. */
   const [assigning, setAssigning] = useState(false);
-  const [inviting, setInviting] = useState(false);
   const [invited, setInvited] = useState(false);
-  async function invite() {
-    const email = (c.email as string | null)?.trim();
-    if (!email) { setErr('This person needs an email address before they can be invited.'); return; }
-    setInviting(true); setErr(null);
-    try {
-      await adminSendInvitation({
-        email,
-        firstName: (c.first_name as string | null) ?? undefined,
-        lastName: (c.last_name as string | null) ?? undefined,
-      });
-      setInvited(true);
-      onChanged?.();
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not send the invitation.');
-    } finally { setInviting(false); }
-  }
 
   async function file(t: ContactType) {
     setErr(null);
@@ -331,18 +314,23 @@ export function ContactDossierModal({
                       <p className="text-sm text-green-800">
                         Invitation sent to {String(c.email)}.
                       </p>
+                    ) : !c.email ? (
+                      <p className="text-[11.5px] text-muted">
+                        Add an email address on the Record tab first — then they can be
+                        provisioned and invited from here.
+                      </p>
                     ) : (
-                      <div>
-                        <button type="button" className="btn-primary text-sm"
-                          disabled={inviting || !c.email} onClick={() => void invite()}>
-                          {inviting ? 'Sending…' : 'Invite to create an account'}
-                        </button>
-                        {!c.email && (
-                          <p className="text-[11.5px] text-muted mt-1.5">
-                            Add an email address on the Record tab first.
-                          </p>
-                        )}
-                      </div>
+                      /* THE ONE shared provisioning path (deal plan L11). This modal
+                         previously called adminSendInvitation directly with just an
+                         email and name, which takes the plain-invite branch: no
+                         category, no paperwork, no offerings — so the same person got
+                         a materially different account depending on which button
+                         staff happened to use. */
+                      <ProvisionClientForm source="contact" contactId={contactId}
+                        email={(c.email as string | null) ?? undefined}
+                        firstName={(c.first_name as string | null) ?? undefined}
+                        lastName={(c.last_name as string | null) ?? undefined}
+                        onProvisioned={() => { setInvited(true); onChanged?.(); }} />
                     )}
                   </div>
                 )
