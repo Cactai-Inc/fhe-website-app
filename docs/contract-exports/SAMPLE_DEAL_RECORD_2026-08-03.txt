@@ -1,0 +1,20 @@
+DEAL RECORD — Sale
+Reference: DEA-000005
+Opened: August 3, 2026
+Status: Pending
+
+SELLER
+  ZZBase Lessor · zz-base-lessor@example.invalid
+  Gives:
+    Horse: ZZ Baseline Horse
+
+BUYER
+  ZZBase Lessee · zz-base-lessee@example.invalid
+  Gives:
+    Payment: $18,000.00 — Wire on delivery
+
+DOCUMENTS
+  Equine Bill of Sale (DOC-EVWHFDD75D) — signed by all parties, effective August 3, 2026
+
+NOTES
+  stage 5 sale e2e
