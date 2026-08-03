@@ -217,3 +217,43 @@ export function dealIsConfigured(d: DealDetail): boolean {
   const gives = (role: string) => d.consideration.some((c) => c.party_role === role);
   return has(a) && has(b) && gives(a) && gives(b);
 }
+
+// ─── Completion ──────────────────────────────────────────────────────────────
+// A deal is PENDING until its requirements are met, then COMPLETE. Completion is
+// DERIVED from the deal's own state, so it settles itself when the last required
+// document is signed by all parties — complete_deal is the manual path, and it
+// refuses while anything is outstanding.
+
+export interface DealCompletionState {
+  deal_id: string;
+  status: DealStatus;
+  completed_at: string | null;
+  can_complete: boolean;
+  /** Plain-language list of what is still missing. Empty when finished. */
+  outstanding: string[];
+}
+
+export async function dealCompletionState(dealId: string): Promise<DealCompletionState> {
+  const { data, error } = await supabase.rpc('deal_completion_state', { p_deal_id: dealId });
+  if (error) throw error;
+  return data as DealCompletionState;
+}
+
+export async function completeDeal(
+  dealId: string,
+): Promise<{ completed: boolean; completed_at?: string; message?: string }> {
+  const { data, error } = await supabase.rpc('complete_deal', { p_deal_id: dealId });
+  if (error) throw error;
+  return data as { completed: boolean; completed_at?: string; message?: string };
+}
+
+/** Reopen a settled deal. Note completion is derived: if every document is still
+ *  signed, the deal satisfies its requirements again immediately — the returned
+ *  message says so. */
+export async function reopenDeal(
+  dealId: string,
+): Promise<{ reopened: boolean; still_satisfied?: boolean; message?: string }> {
+  const { data, error } = await supabase.rpc('reopen_deal', { p_deal_id: dealId });
+  if (error) throw error;
+  return data as { reopened: boolean; still_satisfied?: boolean; message?: string };
+}

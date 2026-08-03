@@ -6,8 +6,10 @@ import {
   dealDetail, addDealMember, removeDealMember, addDealConsideration,
   removeDealConsideration, voidDeal, dealIsConfigured,
   dealDocumentStatus, addDealDocument, dealRecordExport,
+  dealCompletionState, completeDeal, reopenDeal,
   DEAL_TYPE_LABEL, ROLE_LABEL, CONSIDERATION_LABEL,
   type DealDetail, type ConsiderationKind, type DealDocumentStatus,
+  type DealCompletionState,
 } from '../../../lib/deals';
 import { contractPartyOptions, staffHorseRecords, type PartyOption, type StaffHorseRecord } from '../../../lib/horses';
 
@@ -171,6 +173,7 @@ export default function DealPage() {
   const [editing, setEditing] = useState(false);
   const [adding, setAdding] = useState(false);
   const [record, setRecord] = useState<string | null>(null);
+  const [completion, setCompletion] = useState<DealCompletionState | null>(null);
   const [err, setErr] = useState<string | null>(null);
   useDocumentTitle(deal ? `${DEAL_TYPE_LABEL[deal.deal_type]} deal` : 'Deal');
 
@@ -179,6 +182,7 @@ export default function DealPage() {
     dealDetail(dealId).then(setDeal)
       .catch((e) => setErr(e instanceof Error ? e.message : 'Could not load this deal.'));
     dealDocumentStatus(dealId).then(setDocStatus).catch(() => setDocStatus([]));
+    dealCompletionState(dealId).then(setCompletion).catch(() => setCompletion(null));
   }, [dealId]);
 
   /** Prepare a document on this deal, then open it for filling. */
@@ -313,6 +317,48 @@ export default function DealPage() {
             )}
           </div>
         )}
+      </section>
+
+      {/* completion — PENDING until the requirements are met, then COMPLETE.
+          It settles itself when the last required document is signed; this card
+          shows what is outstanding and offers the manual path. */}
+      <section className="bg-white border border-green-800/10 rounded-xl p-4 mb-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="font-serif text-green-800 text-base">
+              {deal.status === 'complete' ? 'Complete' : deal.status === 'void' ? 'Void' : 'Still to do'}
+            </h2>
+            {deal.status === 'complete' ? (
+              <p className="text-[12px] text-muted">
+                Finished{deal.completed_at ? ` on ${new Date(deal.completed_at).toLocaleDateString()}` : ''}.
+                Nothing on a complete deal can be changed.
+              </p>
+            ) : completion && completion.outstanding.length === 0 ? (
+              <p className="text-[12px] text-muted">Everything is done — this deal can be completed.</p>
+            ) : (
+              <ul className="text-[12px] text-muted mt-1 flex flex-col gap-0.5">
+                {(completion?.outstanding ?? []).map((o) => <li key={o}>• {o}</li>)}
+              </ul>
+            )}
+          </div>
+          {isPending && completion?.can_complete && (
+            <button type="button" className="btn-primary text-xs shrink-0" disabled={adding}
+              onClick={() => void completeDeal(deal.id).then(() => load())
+                .catch((e) => setErr(e instanceof Error ? e.message : 'Could not complete the deal.'))}>
+              Complete this deal
+            </button>
+          )}
+          {deal.status === 'complete' && (
+            <button type="button" className="btn-outline-gold text-xs shrink-0"
+              onClick={() => {
+                if (!window.confirm('Reopen this deal so it can be changed?')) return;
+                void reopenDeal(deal.id).then((r) => { if (r.message) setErr(r.message); load(); })
+                  .catch((e) => setErr(e instanceof Error ? e.message : 'Could not reopen the deal.'));
+              }}>
+              Reopen
+            </button>
+          )}
+        </div>
       </section>
 
       {/* the deal record — generated, never authored (L7) */}
