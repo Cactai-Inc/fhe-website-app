@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   X, PenSquare, Tag, CalendarDays, MessageSquare, GraduationCap,
   ShoppingBag, Send, ChevronLeft, ImagePlus, Loader2,
-  FileText, UserPlus, Megaphone,
+  FileText, UserPlus, Megaphone, Handshake,
 } from 'lucide-react';
 import { feedPostCreate, uploadFeedMedia, type FeedPostType, type FeedVisibility } from '../../lib/feed';
 import { needsTranscode, transcodeToMp4 } from '../../lib/transcode';
@@ -413,6 +413,7 @@ export function CreateModal({ onClose }: { onClose: () => void }) {
               {isStaff && (
                 <>
                   <p className="text-[10px] tracking-widest uppercase text-muted font-semibold mt-2">For a client</p>
+                  <DestButton icon={Handshake} label="New deal" hint="A sale or lease — the parties, what each gives, and its documents" onClick={() => go('/app/ops/deals')} />
                   <DestButton icon={FileText} label="New contract" hint="Lease or purchase — pick the client and the horse" onClick={() => go('/app/ops/contracts/new')} />
                   <DestButton icon={UserPlus} label="New client" hint="Set their category and paperwork, then send the invite" onClick={() => go('/app/ops/accounts/new')} />
                 </>

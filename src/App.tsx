@@ -90,6 +90,8 @@ import IntakePage from './pages/app/ops/IntakePage';
 import TeamPage from './pages/app/ops/TeamPage';
 import AccountInvitePage from './pages/app/ops/AccountInvitePage';
 import NewContractPage from './pages/app/ops/NewContractPage';
+import DealsPage from './pages/app/ops/DealsPage';
+import DealPage from './pages/app/ops/DealPage';
 import AdminFormsPage from './pages/app/ops/admin/AdminFormsPage';
 import PaymentReviewPage from './pages/app/ops/PaymentReviewPage';
 import BoardingHubPage from './pages/app/ops/hubs/BoardingHubPage';
@@ -257,6 +259,8 @@ export function AppRoutes() {
               {/* staff can invite clients; the page hides staff account types for non-admins */}
               <Route path="ops/accounts/new" element={<ProtectedRoute requireStaff><AccountInvitePage /></ProtectedRoute>} />
               <Route path="ops/contracts/new" element={<ProtectedRoute requireStaff><NewContractPage /></ProtectedRoute>} />
+              <Route path="ops/deals" element={<ProtectedRoute requireStaff><DealsPage /></ProtectedRoute>} />
+              <Route path="ops/deals/:dealId" element={<ProtectedRoute requireStaff><DealPage /></ProtectedRoute>} />
               {/* ops/availability retired — staff manage availability on the full calendar (Phase 6) */}
               <Route path="ops/availability" element={<Navigate to="/app/calendar" replace />} />
               {/* Total control — admins only */}
