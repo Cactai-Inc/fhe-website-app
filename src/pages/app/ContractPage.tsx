@@ -21,10 +21,13 @@ import {
   saveContract,
   requestContractTermination, approveContractTermination, declineContractTermination,
   setDocumentPartyArchived, deleteContractWithCopy, clauseConditionMet,
+  documentSignatureState, removeMySignature, requestPermissionToEdit, notifyReviewChanges,
   type ContractDetail, type ContractField, type PartyControls,
   type SigningSetDoc, type RedlineState, type PartiesHorseSummary, type PartySummary,
+  type DocumentSignatureState,
 } from '../../lib/contracts';
 import { myWallState, myNameConfirmationState, startBillOfSale, setDocumentCoBuyer, type NameConfirmationState } from '../../lib/api';
+import { ReviewChangesModal } from '../../components/app/ReviewChangesModal';
 import { contractPartyOptions, type PartyOption } from '../../lib/horses';
 import { ContractSubheader, SUBHEADER_BTN } from '../../components/app/ContractSubheader';
 import { ContractNotes } from '../../components/app/ContractNotes';
@@ -245,6 +248,10 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   /* WHO ELSE IS HERE. Presence uses the same channel pattern as the DM page.
      The display name is the community persona, falling back to the legal first
      name — this is a "Claire is here" affordance, not an identity assertion. */
+  /** How the reviewer is named in a pre-authored rejection comment (L9). */
+  const reviewerName = profile?.display_name
+    || [profile?.first_name, profile?.last_name].filter(Boolean).join(' ')
+    || 'the other party';
   const presenceMe = useMemo(
     () => (user?.id
       ? { key: user.id, name: profile?.display_name || profile?.first_name || 'Someone' }
@@ -301,6 +308,10 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   const [viewChoice, setViewChoice] = useState<'signer' | 'author' | undefined>(undefined);
   // Sale contracts: bill-of-sale generation + co-buyer capture state.
   const [bosBusy, setBosBusy] = useState(false);
+  // L9: signature state drives the read-only rule and its actions
+  const [sigState, setSigState] = useState<DocumentSignatureState | null>(null);
+  const [sigBusy, setSigBusy] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
   const [coBuyerBusy, setCoBuyerBusy] = useState(false);
   const [coBuyerPick, setCoBuyerPick] = useState('');
   const [coBuyerEntry, setCoBuyerEntry] = useState<Record<string, string>>({});
@@ -346,6 +357,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       contractSigningSet(id).then(setSigningSet).catch(() => setSigningSet([]));
       contractRedlineState(id).then(setRedline).catch(() => setRedline(null));
       documentPartiesSummary(id).then(setPartiesSummary).catch(() => setPartiesSummary(null));
+      documentSignatureState(id).then(setSigState).catch(() => setSigState(null));
       setError(null);
     } catch (e) {
       setError(errMessage(e, 'Could not load the contract.'));
@@ -1100,15 +1112,81 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         </div>
       )}
 
-      {/* A signature was cleared by an edit and the other side has not been told
-          yet — they are notified on the next Send. */}
-      {(doc as { signatures_voided_at?: string | null } | undefined)?.signatures_voided_at && !isExecuted && (
+      {/* SIGNED → READ-ONLY (deal plan L9). A signature is never cleared by an
+          edit: the edit is refused, and the signer takes their own signature off
+          when they choose to. */}
+      {sigState?.locked_by_signature && !isExecuted && (
         <div className="-mx-4 sm:-mx-8 xl:-mx-12 mb-5 bg-gold-50 border-y border-gold-400/50 px-4 sm:px-8 xl:px-12 py-2.5">
-          <p className="text-sm text-gold-900">
-            The document changed after it was signed, so the signature was cleared.
-            Use <strong>Send</strong> to ask them to review the change and sign again.
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm text-gold-900">
+              Signed by {sigState.signers.map((s) => s.name ?? s.party_role).join(', ')} —
+              this document is read-only. {sigState.i_have_signed
+                ? 'Remove your signature to make changes.'
+                : 'Ask them to remove their signature before making changes.'}
+            </p>
+            <span className="flex gap-2">
+              {sigState.i_have_signed ? (
+                <button type="button" className="btn-outline-gold text-xs" disabled={sigBusy}
+                  onClick={() => {
+                    if (!window.confirm('Remove your signature so this document can be changed?')) return;
+                    setSigBusy(true);
+                    void act(() => removeMySignature(id!), 'Your signature was removed — the document can be edited again.')
+                      .finally(() => setSigBusy(false));
+                  }}>
+                  Remove my signature
+                </button>
+              ) : (
+                <button type="button" className="btn-outline-gold text-xs" disabled={sigBusy}
+                  onClick={() => {
+                    setSigBusy(true);
+                    void act(() => requestPermissionToEdit(id!),
+                      'They have been asked to remove their signature.')
+                      .finally(() => setSigBusy(false));
+                  }}>
+                  Request permission to edit
+                </button>
+              )}
+            </span>
+          </div>
         </div>
+      )}
+
+      {/* A signature came off and there are changes for that party to review. */}
+      {!sigState?.locked_by_signature && !isExecuted
+        && (doc as { signatures_voided_at?: string | null } | undefined)?.signatures_voided_at && (
+        <div className="-mx-4 sm:-mx-8 xl:-mx-12 mb-5 bg-gold-50 border-y border-gold-400/50 px-4 sm:px-8 xl:px-12 py-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm text-gold-900">
+              A signature was removed, so this document can be edited.
+              {isOwnerSide
+                ? ' Notify the other party when your changes are ready for review.'
+                : ' Review what changed, then sign again when you are ready.'}
+            </p>
+            <span className="flex gap-2">
+              {isOwnerSide ? (
+                <button type="button" className="btn-outline-gold text-xs" disabled={sigBusy}
+                  onClick={() => {
+                    setSigBusy(true);
+                    void act(() => notifyReviewChanges(id!),
+                      'They have been asked to review the changes.')
+                      .finally(() => setSigBusy(false));
+                  }}>
+                  Notify to review
+                </button>
+              ) : (
+                <button type="button" className="btn-outline-gold text-xs"
+                  onClick={() => setReviewOpen(true)}>
+                  Review the changes
+                </button>
+              )}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {reviewOpen && id && (
+        <ReviewChangesModal documentId={id} reviewerName={reviewerName}
+          onClose={() => setReviewOpen(false)} onDone={() => { void load(); }} />
       )}
 
       {/* mb-6: the notify card sat almost against the title. */}

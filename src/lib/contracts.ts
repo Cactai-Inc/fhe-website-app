@@ -1206,3 +1206,79 @@ export async function postContractNoteMessage(noteId: string, body: string): Pro
   });
   if (error) throw error;
 }
+
+// ─── Signature / edit rules (deal plan L9) ───────────────────────────────────
+// A document signed by EITHER party is read-only. To change it, the signing
+// party removes their signature. Edits no longer void signatures silently —
+// they are refused, and a signature comes off only when its signer takes it off.
+
+export interface DocumentSignatureState {
+  signed_count: number;
+  locked_by_signature: boolean;
+  i_have_signed: boolean;
+  signers: { contact_id: string; party_role: string; name: string | null; signed_at: string }[];
+}
+
+/** Who has signed, and therefore whether the document is locked to edits. */
+export async function documentSignatureState(documentId: string): Promise<DocumentSignatureState> {
+  const { data, error } = await supabase.rpc('document_signature_state', { p_document_id: documentId });
+  if (error) throw error;
+  return data as DocumentSignatureState;
+}
+
+/** The signer withdraws their own signature, which is what unlocks editing.
+ *  Staff may act on a party's behalf. The attested state is archived first —
+ *  the record of a signature having been given is never destroyed. */
+export async function removeMySignature(
+  documentId: string, contactId?: string,
+): Promise<{ removed: number; roles?: string[]; message?: string }> {
+  const { data, error } = await supabase.rpc('remove_my_signature', {
+    p_document_id: documentId, p_contact_id: contactId ?? null,
+  });
+  if (error) throw error;
+  return data as { removed: number; roles?: string[]; message?: string };
+}
+
+/** Ask the signer(s) to remove their signature so the document can be changed. */
+export async function requestPermissionToEdit(
+  documentId: string, message?: string,
+): Promise<{ notified: number }> {
+  const { data, error } = await supabase.rpc('request_permission_to_edit', {
+    p_document_id: documentId, p_message: message ?? null,
+  });
+  if (error) throw error;
+  return data as { notified: number };
+}
+
+/** Tell the other parties there are changes to review. */
+export async function notifyReviewChanges(
+  documentId: string, message?: string,
+): Promise<{ notified: number }> {
+  const { data, error } = await supabase.rpc('notify_review_changes', {
+    p_document_id: documentId, p_message: message ?? null,
+  });
+  if (error) throw error;
+  return data as { notified: number };
+}
+
+export interface ChangeSinceSignature {
+  id: string;
+  change_kind: string;
+  field_key: string | null;
+  field_label: string | null;
+  old_value: string | null;
+  new_value: string | null;
+  actor: string | null;
+  at: string;
+}
+
+/** What changed after this party's signature came off — the review list. */
+export async function changesSinceSignature(
+  documentId: string, contactId?: string,
+): Promise<ChangeSinceSignature[]> {
+  const { data, error } = await supabase.rpc('document_changes_since_signature', {
+    p_document_id: documentId, p_contact_id: contactId ?? null,
+  });
+  if (error) throw error;
+  return (data ?? []) as ChangeSinceSignature[];
+}
