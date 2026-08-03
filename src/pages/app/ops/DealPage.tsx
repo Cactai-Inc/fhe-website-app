@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Plus, X, FileText, PencilLine } from 'lucide-react';
 import { useDocumentTitle } from '../../../lib/hooks';
 import {
   dealDetail, addDealMember, removeDealMember, addDealConsideration,
   removeDealConsideration, voidDeal, dealIsConfigured,
+  dealDocumentStatus, addDealDocument, dealRecordExport,
   DEAL_TYPE_LABEL, ROLE_LABEL, CONSIDERATION_LABEL,
-  type DealDetail, type ConsiderationKind,
+  type DealDetail, type ConsiderationKind, type DealDocumentStatus,
 } from '../../../lib/deals';
 import { contractPartyOptions, staffHorseRecords, type PartyOption, type StaffHorseRecord } from '../../../lib/horses';
 
@@ -162,10 +163,14 @@ function PartyColumn({
 
 export default function DealPage() {
   const { dealId } = useParams<{ dealId: string }>();
+  const navigate = useNavigate();
   const [deal, setDeal] = useState<DealDetail | null>(null);
+  const [docStatus, setDocStatus] = useState<DealDocumentStatus[]>([]);
   const [contacts, setContacts] = useState<PartyOption[]>([]);
   const [horses, setHorses] = useState<StaffHorseRecord[]>([]);
   const [editing, setEditing] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [record, setRecord] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   useDocumentTitle(deal ? `${DEAL_TYPE_LABEL[deal.deal_type]} deal` : 'Deal');
 
@@ -173,7 +178,21 @@ export default function DealPage() {
     if (!dealId) return;
     dealDetail(dealId).then(setDeal)
       .catch((e) => setErr(e instanceof Error ? e.message : 'Could not load this deal.'));
+    dealDocumentStatus(dealId).then(setDocStatus).catch(() => setDocStatus([]));
   }, [dealId]);
+
+  /** Prepare a document on this deal, then open it for filling. */
+  const addDoc = useCallback(async (templateKey: string, posture?: 'YES' | 'NO') => {
+    if (!dealId) return;
+    setAdding(true); setErr(null);
+    try {
+      const out = await addDealDocument(dealId, templateKey, posture);
+      navigate(`/app/contracts/${out.document_id}`);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Could not prepare that document.');
+      setAdding(false);
+    }
+  }, [dealId, navigate]);
   useEffect(load, [load]);
   useEffect(() => {
     contractPartyOptions().then(setContacts).catch(() => setContacts([]));
@@ -233,10 +252,11 @@ export default function DealPage() {
             documents can be prepared.
           </p>
         )}
+
         {deal.documents.length === 0 ? (
-          <p className="text-[12px] text-muted">No documents yet.</p>
+          <p className="text-[12px] text-muted mb-3">No documents yet.</p>
         ) : (
-          <ul className="flex flex-col gap-1.5">
+          <ul className="flex flex-col gap-1.5 mb-3">
             {deal.documents.map((d) => (
               <li key={d.document_id}>
                 <Link to={`/app/contracts/${d.document_id}`}
@@ -248,6 +268,72 @@ export default function DealPage() {
               </li>
             ))}
           </ul>
+        )}
+
+        {/* what this deal type needs, and what it has */}
+        {docStatus.length > 0 && (
+          <ul className="flex flex-col gap-1 mb-3">
+            {docStatus.map((s) => (
+              <li key={s.template_key} className="text-[11.5px] text-muted">
+                <span className={s.present ? 'text-green-800' : ''}>
+                  {s.present ? '✓' : '○'} {s.title}
+                </span>
+                {' — '}{s.required ? 'required' : 'optional'}
+                {s.executed ? ' · signed' : ''}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {isPending && configured && (
+          <div className="flex flex-wrap gap-2 items-center border-t border-green-800/10 pt-3">
+            {docStatus.filter((s) => !s.present).map((s) => (
+              s.template_key === 'HORSE_BILL_OF_SALE' ? (
+                /* the two postures (L17): the bill of sale alone IS the contract,
+                   or it accompanies the sale agreement and defers to it. */
+                <span key={s.template_key} className="flex flex-wrap gap-2">
+                  <button type="button" className="btn-outline-gold text-xs" disabled={adding}
+                    onClick={() => void addDoc(s.template_key, 'NO')}>
+                    <Plus size={13} /> Bill of sale (stands alone)
+                  </button>
+                  <button type="button" className="btn-outline-gold text-xs" disabled={adding}
+                    onClick={() => void addDoc(s.template_key, 'YES')}>
+                    <Plus size={13} /> Bill of sale + sale agreement
+                  </button>
+                </span>
+              ) : (
+                <button key={s.template_key} type="button" className="btn-outline-gold text-xs"
+                  disabled={adding} onClick={() => void addDoc(s.template_key)}>
+                  <Plus size={13} /> {s.title}
+                </button>
+              )
+            ))}
+            {docStatus.every((s) => s.present) && (
+              <p className="text-[12px] text-muted">Every document this deal needs has been prepared.</p>
+            )}
+          </div>
+        )}
+      </section>
+
+      {/* the deal record — generated, never authored (L7) */}
+      <section className="bg-white border border-green-800/10 rounded-xl p-4 mb-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="font-serif text-green-800 text-base">Deal record</h2>
+            <p className="text-[12px] text-muted">
+              A summary of this deal, produced from what it holds — nobody fills it in.
+            </p>
+          </div>
+          <button type="button" className="btn-outline-gold text-xs shrink-0"
+            onClick={() => void dealRecordExport(deal.id).then(setRecord)
+              .catch((e) => setErr(e instanceof Error ? e.message : 'Could not build the record.'))}>
+            <FileText size={13} /> {record ? 'Refresh' : 'Show'}
+          </button>
+        </div>
+        {record && (
+          <pre className="mt-3 whitespace-pre-wrap font-sans text-[12.5px] leading-relaxed text-green-950 bg-cream-100/50 border border-green-800/10 rounded p-3">
+            {record}
+          </pre>
         )}
       </section>
 

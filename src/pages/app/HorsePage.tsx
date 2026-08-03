@@ -5,6 +5,7 @@ import { FileText, CalendarDays, ClipboardList, PencilLine, Trash2, ArrowLeft, A
 import { useDocumentTitle } from '../../lib/hooks';
 import { horsePageDetail, deleteStableHorse, updateHorseRecord, type HorsePageDetail } from '../../lib/horses';
 import { listHorseBreeds, listHorseColors } from '../../lib/api';
+import { horseDeals, DEAL_TYPE_LABEL, type DealRow } from '../../lib/deals';
 import type { LookupCode } from '../../lib/ops/types';
 
 /**
@@ -46,6 +47,7 @@ export default function HorsePage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [detail, setDetail] = useState<HorsePageDetail | null>(null);
+  const [deals, setDeals] = useState<Pick<DealRow, 'id' | 'display_code' | 'deal_type' | 'status' | 'created_at'>[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>('record');
   const [editing, setEditing] = useState(false);
@@ -65,6 +67,12 @@ export default function HorsePage() {
     }
   }, [horseId]);
   useEffect(() => { void load(); }, [load]);
+  // the deals this horse is part of — reciprocal link, best-effort (a viewer
+  // without deal visibility simply sees none)
+  useEffect(() => {
+    if (!horseId) return;
+    horseDeals(horseId).then(setDeals).catch(() => setDeals([]));
+  }, [horseId]);
 
   async function onDelete() {
     if (!horseId) return;
@@ -186,6 +194,32 @@ export default function HorsePage() {
                   <Detail label="Competition history" value={r.competition_history} />
                 </Card>
               )}
+            </div>
+          )}
+
+          {tab === 'documents' && deals.length > 0 && (
+            /* reciprocal link (deal plan L8): the deals this horse is part of.
+               A deal is the envelope its documents live in, so it sits above them. */
+            <div className="mb-3">
+              <p className="text-[10.5px] tracking-wide uppercase text-muted font-semibold mb-1.5">Deals</p>
+              <ListCard empty="">
+                {deals.map((d) => (
+                  <Link key={d.id} to={`/app/ops/deals/${d.id}`} state={fromHere(location)}
+                    className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-cream-100/50 focus-ring">
+                    <span className="min-w-0">
+                      <span className="block text-sm font-medium text-green-900 truncate">
+                        {DEAL_TYPE_LABEL[d.deal_type]} deal
+                      </span>
+                      <span className="block text-[11px] text-muted">
+                        {d.display_code ? `${d.display_code} · ` : ''}{fmtDate(d.created_at)}
+                      </span>
+                    </span>
+                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-gold-50 text-gold-900 whitespace-nowrap">
+                      {titleCase(d.status)}
+                    </span>
+                  </Link>
+                ))}
+              </ListCard>
             </div>
           )}
 

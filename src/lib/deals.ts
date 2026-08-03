@@ -171,6 +171,44 @@ export async function voidDeal(dealId: string): Promise<void> {
   if (error) throw error;
 }
 
+export interface DealDocumentStatus {
+  template_key: string;
+  title: string;
+  required: boolean;
+  present: boolean;
+  executed: boolean;
+}
+
+/** Which documents this deal's TYPE requires and which it has (L5) — reported
+ *  as status, never as a gate. */
+export async function dealDocumentStatus(dealId: string): Promise<DealDocumentStatus[]> {
+  const { data, error } = await supabase.rpc('deal_document_status', { p_deal_id: dealId });
+  if (error) throw error;
+  return (data ?? []) as DealDocumentStatus[];
+}
+
+/** Generate a document onto the deal's own spine. For the bill of sale,
+ *  hasSaleAgreement sets the posture: 'NO' = the BOS is the contract (L17). */
+export async function addDealDocument(
+  dealId: string, templateKey: string, hasSaleAgreement?: 'YES' | 'NO',
+): Promise<{ document_id: string; template_key: string; fields_seeded: number }> {
+  const { data, error } = await supabase.rpc('add_deal_document', {
+    p_deal_id: dealId,
+    p_template_key: templateKey,
+    p_has_sale_agreement: hasSaleAgreement ?? null,
+  });
+  if (error) throw error;
+  return data as { document_id: string; template_key: string; fields_seeded: number };
+}
+
+/** The deal record: a generated summary of the deal, not a document anyone
+ *  fills in (L7). Composed server-side from the deal's own contents. */
+export async function dealRecordExport(dealId: string): Promise<string> {
+  const { data, error } = await supabase.rpc('deal_record_export', { p_deal_id: dealId });
+  if (error) throw error;
+  return (data ?? '') as string;
+}
+
 /** Does the deal meet the minimum threshold to author documents?
  *  One member per side and one consideration entry per side (deal plan L3). */
 export function dealIsConfigured(d: DealDetail): boolean {
