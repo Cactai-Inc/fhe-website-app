@@ -122,7 +122,19 @@ the content line stores the text with {{CUSTOM.<key>}} tokens where elements
 sit — matching how template clauses embed fields. If the existing custom-field
 storage cannot hold options/placeholder/required, extend the RPC minimally.
 
-## B3 — executed rendering rule
+## B3 — simple conditional visibility (bounded)
+A content line (or an individual chip) may be gated on ONE element from the
+SAME addition, and only when that driver is a Dropdown or Buttons element:
+- UI: in the chip popover / a per-line control: "Visible: Always | Only when…"
+  → pick driver element → pick value(s) from its configured items.
+- Storage: the existing conditional_on shape — {"equals":[...]} for dropdown,
+  {"contains":[...]} for buttons, field_key = the driver's CUSTOM key. No
+  composites, no negation, no template-field drivers. The engine
+  (clauseConditionMet / clause_condition_met) already evaluates these — write
+  the JSON, add nothing to the engine.
+- Editor + merge honor it automatically once stored; verify, don't rebuild.
+
+## B4 — executed rendering rule
 An empty element at execution renders 'N/A' in the merged/PDF output (composer:
 when a CUSTOM field is blank at execution time, substitute 'N/A'). Required
 text fields block signing via the existing required-fields lock blocker —
@@ -131,9 +143,11 @@ verify CUSTOM fields participate; if not, wire them in.
 ## B done-checks
 - Build a custom addition on the live draft 215bac09… via the new modal path
   (RPC-level is acceptable if UI cannot be driven headless): new header in an
-  existing section containing one dropdown (2 items) + one required text field;
-  remerge; paste the rendered region; then delete the custom rows and show zero
-  residue.
+  existing section containing one dropdown (2 items) + one required text field
+  + one line gated on the dropdown's second item (B3); remerge twice — driver
+  unset, then driver = item 2 — and paste both rendered regions proving the
+  gated line appears only in the second; then delete the custom rows and show
+  zero residue.
 - typecheck 0, lint 0. Commit Phase B. Push branch.
 
 ## Report
