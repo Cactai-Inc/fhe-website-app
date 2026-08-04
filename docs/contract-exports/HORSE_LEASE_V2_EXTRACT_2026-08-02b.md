@@ -1,7 +1,7 @@
 # HORSE_LEASE_V2 — full template extract
 
-Generated 2026-08-02 12:31:11 UTC from the live database (project `lrstswfxfsezdmvkvukc`),
-reflecting migration head `20260802080006_backlog_hardening.sql`.
+Generated 2026-08-04 02:46:24 UTC from the live database (project `lrstswfxfsezdmvkvukc`),
+reflecting migration head `20260804100001_deal_rpcs_container_model.sql`.
 
 Every section, clause, field, option list, helper text and conditional in the
 live lease template, in render order.
@@ -242,6 +242,36 @@ Legend:
 - **Professional suitability evaluation** — `TXN.TRAINER_EVAL_CHOICE` · input: buttons · owner: LESSOR
     - choices: Lessee requested at their own expense, Lessee requested at Lessor's expense, Lessor provided at no cost, Lessee waives the option
 
+### Location of the Horse
+
+`LOCATION.MAIN`
+
+> Location of the Horse: {{HORSE.CURRENT_LOCATION}}.
+
+- **Facility** — `HORSE.CURRENT_LOCATION` · input: location · owner: LESSOR
+
+### MOVE_CHOICE *(no heading set)*
+
+`LOCATION.MOVE_CHOICE`
+
+- **Horse will move to a new location for the Lessee** — `TXN.HORSE_MOVES` · input: yesno · owner: LESSOR
+
+### NEW *(no heading set)*
+
+`LOCATION.NEW`
+
+**CONDITIONAL** — shows when: TXN.HORSE_MOVES = YES
+
+> Location during lease term: {{TXN.NEW_LOCATION}}.
+
+- **Location during lease term** — `TXN.NEW_LOCATION` · input: location · owner: LESSOR
+
+### INSPECTION *(no heading set)*
+
+`LOCATION.INSPECTION`
+
+> Lessor may inspect the Horse at any time, subject to the reasonable access rules of the facility where the Horse is kept. If Lessor reasonably determines that the Horse is not being properly cared for, Lessor may take possession of the Horse upon written notice to Lessee.
+
 ### Disclaimer of Warranties
 
 `HORSE.WARRANTY`
@@ -395,41 +425,7 @@ Legend:
 
 - **Card processor & instructions** — `TXN.LESSOR_CARD_PROCESSOR` · input: longtext · owner: LESSEE
 
-## 9. Location of Horse
-
-`LOCATION`
-
-### Location of the Horse
-
-`LOCATION.MAIN`
-
-> Location of the Horse: {{HORSE.CURRENT_LOCATION}}.
-
-- **Facility** — `HORSE.CURRENT_LOCATION` · input: location · owner: LESSOR
-
-### MOVE_CHOICE *(no heading set)*
-
-`LOCATION.MOVE_CHOICE`
-
-- **Horse will move to a new location for the Lessee** — `TXN.HORSE_MOVES` · input: yesno · owner: LESSOR
-
-### NEW *(no heading set)*
-
-`LOCATION.NEW`
-
-**CONDITIONAL** — shows when: TXN.HORSE_MOVES = YES
-
-> Location during lease term: {{TXN.NEW_LOCATION}}.
-
-- **Location during lease term** — `TXN.NEW_LOCATION` · input: location · owner: LESSOR
-
-### INSPECTION *(no heading set)*
-
-`LOCATION.INSPECTION`
-
-> Lessor may inspect the Horse at any time, subject to the reasonable access rules of the facility where the Horse is kept. If Lessor reasonably determines that the Horse is not being properly cared for, Lessor may take possession of the Horse upon written notice to Lessee.
-
-## 10. Evaluation Period
+## 9. Evaluation Period
 
 `EVALUATION`
 
@@ -488,7 +484,7 @@ Legend:
 
 > No evaluation period applies to this Agreement. The Lessee has waived any evaluation period, and the Lease begins on the Effective Date without one.
 
-## 11. Agreement Term
+## 10. Agreement Term
 
 `TERM`
 
@@ -537,7 +533,7 @@ Legend:
 
 > Notwithstanding the term stated above, this Agreement may be terminated earlier as provided in the Termination section of this Agreement.
 
-## 12. Permitted Use(s) & Restrictions
+## 11. Permitted Use(s) & Restrictions
 
 `PERMITTED_USE`
 
@@ -769,7 +765,7 @@ Legend:
 - **Offsite transport** — `TXN.OFFSITE_TRANSPORT` · input: select · owner: LESSOR
     - choices: Lessor grants permission to transport offsite, Lessor prohibits offsite transport without written consent
 
-## 13. Horse Care and Expenses
+## 12. Horse Care and Expenses
 
 `CARE`
 
@@ -849,10 +845,10 @@ Legend:
 
 - **Party responsible for arranging** — `TXN.VET_ARRANGE` · input: select · owner: LESSOR
     - choices: Lessor, Lessee, Trainer/Instructor, Boarding Staff, Other
-- **Party responsible for costs** — `TXN.VET_COST_PARTY` · input: select · owner: LESSOR
-    - choices: Lessor, Lessee, Trainer/Instructor, Boarding Staff, Other
 - **Veterinarian** — `HORSE.VET_NAME` · input: text · owner: LESSOR
     - **CONDITIONAL** — shows when: TXN.VET_ARRANGE = LESSEE
+- **Party responsible for costs** — `TXN.VET_COST_PARTY` · input: select · owner: LESSOR
+    - choices: Lessor, Lessee, Trainer/Instructor, Boarding Staff, Other
 - **Practice** — `HORSE.VET_BUSINESS` · input: text · owner: LESSOR
     - **CONDITIONAL** — shows when: TXN.VET_ARRANGE = LESSEE
 - **Address** — `HORSE.VET_ADDRESS` · input: text · owner: LESSOR
@@ -908,7 +904,7 @@ Legend:
 
 - **Other prohibited rider aid** — `TXN.RIDER_AIDS_OTHER` · input: text · owner: LESSOR
 
-## 14. Insurance, Risk of Loss, and Indemnification
+## 13. Insurance, Risk of Loss, and Indemnification
 
 `INSURANCE_RISK`
 
@@ -1226,7 +1222,7 @@ Legend:
 
 > Under no circumstances shall either party be liable to the other for any special, consequential, incidental, or punitive damages arising out of or relating to this Agreement. The total aggregate liability of either party (including, respectively, the Lessor Parties and the Lessee Parties) to the other under this Agreement shall not exceed the Horse's current fair market value of {{HORSE.FAIR_MARKET_VALUE}}. Any amount owed by one party to the other under this Agreement shall be reduced by the amount of any insurance proceeds actually received by the party owed with respect to the same loss. This limitation does not apply to gross negligence, reckless conduct, or intentional misconduct, to either party's indemnification obligations for third-party claims for bodily injury or death, or to amounts actually covered by insurance available for the loss.
 
-## 15. Termination
+## 14. Termination
 
 `TERMINATION`
 
@@ -1272,7 +1268,7 @@ Legend:
 
 > The releases, waivers, assumptions of risk, indemnities, and limitations of liability in this Agreement, and any payment obligations accrued before termination, survive the expiration or termination of this Agreement for any reason.
 
-## 16. Notice and Contact Information
+## 15. Notice and Contact Information
 
 `NOTICE`
 
@@ -1306,7 +1302,7 @@ Legend:
 
 > Each party shall promptly notify the other party in writing of any change in the party's address or contact information.
 
-## 17. Assignment or Transfer
+## 16. Assignment or Transfer
 
 `ASSIGNMENT`
 
@@ -1316,7 +1312,7 @@ Legend:
 
 > Lessee shall not assign, sublease, or otherwise transfer this Agreement or any of Lessee's rights or obligations under it without Lessor's prior written consent, unless permitted in the sections above.
 
-## 18. Entire Agreement
+## 17. Entire Agreement
 
 `ENTIRE_AGREEMENT`
 
@@ -1326,7 +1322,7 @@ Legend:
 
 > This Agreement contains the entire agreement between the parties with respect to its subject matter and supersedes all prior discussions and understandings. Any modification of this Agreement must be in writing and signed by all parties.
 
-## 19. Governing Law and Venue
+## 18. Governing Law and Venue
 
 `GOVERNING_LAW`
 
@@ -1336,7 +1332,7 @@ Legend:
 
 > This Agreement is governed by the laws of the State of California, without regard to conflict-of-laws principles. Any dispute arising out of or relating to this Agreement or the Horse shall be resolved by final and binding arbitration in San Diego County, California, before a single arbitrator administered by JAMS under its applicable rules, or another administrator the parties agree to in writing, with arbitrator fees and administrative costs allocated as those rules provide. Either party may bring a qualifying claim in small claims court, and either party may seek provisional or injunctive relief, including recovery of possession of the Horse, in a court of competent jurisdiction without waiving arbitration. Judgment on the award may be entered in any court having jurisdiction.
 
-## 20. Attorneys' Fees
+## 19. Attorneys' Fees
 
 `ATTORNEYS_FEES`
 
@@ -1346,7 +1342,7 @@ Legend:
 
 > Each party shall cover their own attorney's fees and costs.
 
-## 21. Severability
+## 20. Severability
 
 `SEVERABILITY`
 
@@ -1356,7 +1352,7 @@ Legend:
 
 > If any provision of this Agreement is held to be invalid or unenforceable, the remaining provisions shall continue in full force and effect, and the invalid or unenforceable provision shall be deemed modified to the minimum extent necessary to make it valid and enforceable.
 
-## 22. Lessee's Representations
+## 21. Lessee's Representations
 
 `LESSEE_REPS`
 
@@ -1384,7 +1380,7 @@ Legend:
 
 > [Pending — select whether Lessee is an individual or an entity. This placeholder is replaced by the applicable representations and blocks signing.]
 
-## 23. Signatures
+## 22. Signatures
 
 `SIGNATURES`
 

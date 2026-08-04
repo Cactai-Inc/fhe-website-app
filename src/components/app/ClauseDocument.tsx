@@ -104,7 +104,10 @@ function TokenValue({ token, value }: { token: string; value: string }) {
   if (token === 'DOC.EFFECTIVE_DATE' && !value.trim()) {
     return <span className="text-muted italic">［date of signing］</span>;
   }
-  if (value.trim()) return <span className="font-medium text-green-900">{value}</span>;
+  // whitespace-pre-line: composed values can be multi-line (e.g. the horse
+  // location renders facility address + "Barn, Stall" on its own line) — the
+  // editor must show the same line break the merged document prints.
+  if (value.trim()) return <span className="font-medium text-green-900 whitespace-pre-line">{value}</span>;
   // party/horse imports show a muted "on file" hint instead of a fillable blank —
   // they're changed on the contact / horse record, not typed into the contract.
   const hint = AUTOFILL_HINT[token] ?? (token.startsWith('HORSE.') ? 'from horse record' : null);
@@ -185,32 +188,64 @@ function gateValueLabel(f: ContractField | undefined, raw: string): string {
 }
 
 /** A plain-English description of a clause/section's gate for authors, e.g.
- *  "This is included when the Lease type is Partial lease." Resolves the trigger
- *  field's label and the expected option's label from the field defs. Falls back
- *  to a generic phrase when the gate is composite or the field isn't found. */
+ *  'This is included when "Lease type" is "Partial lease".' Field labels are
+ *  quoted verbatim (many are questions or sentence fragments like "Lessor is
+ *  an" — quoting keeps the caption grammatical either way), values resolve to
+ *  their option labels, composites unwrap recursively (and/or), and an empty
+ *  expected value reads as "not yet answered" instead of a dangling "is .". */
+function describeGatePart(
+  cond: import('../../lib/contracts').FieldConditional,
+  fieldByKey: Map<string, ContractField>,
+): string | null {
+  if (cond.all?.length) {
+    const parts = cond.all.map((c) => describeGatePart(c, fieldByKey));
+    return parts.every(Boolean) ? parts.join(' and ') : null;
+  }
+  if (cond.any?.length) {
+    const parts = cond.any.map((c) => describeGatePart(c, fieldByKey));
+    if (!parts.every(Boolean)) return null;
+    return parts.length === 1 ? parts[0] : `(${parts.join(' or ')})`;
+  }
+  if (!cond.field_key) return null;
+  const f = fieldByKey.get(cond.field_key);
+  const fieldName = `“${f?.label ?? 'the selection above'}”`;
+  if (cond.equals && cond.equals.length) {
+    const answered = cond.equals.filter((v) => v !== '').map((v) => `“${gateValueLabel(f, v)}”`);
+    const acceptsBlank = cond.equals.some((v) => v === '');
+    if (!answered.length) return `${fieldName} has not been answered yet`;
+    const tail = acceptsBlank ? ' or is not yet answered' : '';
+    return `${fieldName} is ${answered.join(' or ')}${tail}`;
+  }
+  if (cond.contains && cond.contains.length) {
+    const vals = cond.contains.map((v) => `“${gateValueLabel(f, v)}”`);
+    return `${fieldName} includes ${vals.join(' or ')}`;
+  }
+  if (typeof cond.gte === 'number') return `${fieldName} is at least ${cond.gte}`;
+  return null;
+}
+
 function describeGate(
   cond: import('../../lib/contracts').FieldConditional | null | undefined,
   fieldByKey: Map<string, ContractField>,
 ): string {
   const generic = 'This is included when the option above is selected.';
   if (!cond) return generic;
-  // composite (all/any) → too complex to phrase simply; keep it generic
-  if (cond.all || cond.any || !cond.field_key) return generic;
-  const f = fieldByKey.get(cond.field_key);
-  const fieldName = f?.label ?? 'selection above';
-  if (cond.equals && cond.equals.length) {
-    const vals = cond.equals.map((v) => gateValueLabel(f, v));
-    // a Yes gate reads better as "is enabled"
-    if (vals.length === 1 && vals[0].toLowerCase() === 'yes') {
-      return `This is included when ${fieldName} is enabled.`;
-    }
-    return `This is included when ${fieldName} is ${vals.join(' or ')}.`;
-  }
-  if (cond.contains && cond.contains.length) {
-    const vals = cond.contains.map((v) => gateValueLabel(f, v));
-    return `This is included when ${fieldName} includes ${vals.join(' or ')}.`;
-  }
-  return generic;
+  const phrase = describeGatePart(cond, fieldByKey);
+  return phrase ? `This is included when ${phrase}.` : generic;
+}
+
+/** A "[Pending — …]" placeholder clause: gated to show only while its driving
+ *  question is UNANSWERED (an equals-[''] leaf somewhere in the gate). Once the
+ *  question is answered such a clause can never apply again except by clearing
+ *  the answer — previewing it muted in the author view is pure noise, so the
+ *  author view suppresses it when gated off (unlike real alternative clauses,
+ *  which stay visible so the author can change their mind). */
+function isUnansweredPlaceholder(
+  cond: import('../../lib/contracts').FieldConditional | null | undefined,
+): boolean {
+  if (!cond) return false;
+  if (cond.equals && cond.equals.length && cond.equals.every((v) => v === '')) return true;
+  return !!(cond.all?.some(isUnansweredPlaceholder) || cond.any?.some(isUnansweredPlaceholder));
 }
 
 /** The duration-unit convention: a CLOSED select whose options are exactly the
@@ -346,14 +381,15 @@ function ClauseProse({
       // week_grid: the flex row put the nowrap label first and squeezed the
       // whole grid (per-party name boxes + seven day pills) into the width
       // left over, so the buttons collapsed inside an indented column. The
-      // label goes on its own line and the grid takes the clause's full
-      // width, both flush with the document's left content edge.
+      // grid takes the clause's full width, flush with the document's left
+      // content edge. NO label here: the inline control renders its own label
+      // above the grid, and printing the clause line's label too produced the
+      // doubled "Reserved days of use" heading.
       const wf = fieldByKey.get(c.token);
       if (wf && (wf.input_kind === 'week_grid' || wf.format_type === 'week_grid')) {
         return (
           <div key={j} className="w-full min-w-0 text-[13.5px] text-green-950">
-            <span className="block font-semibold">{c.label}:</span>
-            <div className="w-full">{renderToken(c.token, `mx${bi}-${j}`, fieldByKey, valueByKey, cb)}</div>
+            {renderToken(c.token, `mx${bi}-${j}`, fieldByKey, valueByKey, cb)}
           </div>
         );
       }
@@ -537,6 +573,9 @@ export function ClauseDocument({
         const clausesToShow = section.clauses.filter((c) => {
           if (clauseConditionMet(c.conditional_on, valueByKey)) return true;
           if (!cb.authorView) return false;   // reviewers/parties see only active clauses
+          // A gated-off "[Pending — …]" placeholder is dead weight once its
+          // question is answered — never preview it muted.
+          if (isUnansweredPlaceholder(c.conditional_on)) return false;
           const hasFields = (fieldsByClause.get(c.clause_key) ?? []).length > 0;
           return !!(c.body && c.body.trim()) || hasFields;
         });

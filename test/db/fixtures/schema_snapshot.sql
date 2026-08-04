@@ -717,64 +717,6 @@ $$;
 
 
 --
--- Name: add_deal_consideration(uuid, text, text, uuid, numeric, text); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.add_deal_consideration(p_deal_id uuid, p_party_role text, p_kind text, p_horse_id uuid DEFAULT NULL::uuid, p_amount numeric DEFAULT NULL::numeric, p_detail text DEFAULT NULL::text) RETURNS uuid
-    LANGUAGE plpgsql SECURITY DEFINER
-    SET search_path TO 'public'
-    AS $$
-DECLARE
-  v_deal  deals%ROWTYPE;
-  v_roles text[];
-  v_id    uuid;
-  v_next  int;
-BEGIN
-  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'authentication required'; END IF;
-  IF NOT has_staff_access() THEN RAISE EXCEPTION 'not authorized'; END IF;
-
-  SELECT * INTO v_deal FROM deals WHERE id = p_deal_id AND deleted_at IS NULL;
-  IF NOT FOUND THEN RAISE EXCEPTION 'unknown deal: %', p_deal_id; END IF;
-  IF v_deal.status <> 'pending' THEN
-    RAISE EXCEPTION 'this deal is % and can no longer be configured', v_deal.status;
-  END IF;
-
-  v_roles := deal_party_roles(v_deal.deal_type);
-  IF NOT (p_party_role = ANY (v_roles)) THEN
-    RAISE EXCEPTION '% is not a party role on a % deal', p_party_role, v_deal.deal_type;
-  END IF;
-
-  -- L2a: a horse given as consideration must already be in the system
-  IF p_kind = 'HORSE' THEN
-    IF NOT EXISTS (SELECT 1 FROM horses
-                    WHERE id = p_horse_id AND org_id = v_deal.org_id AND deleted_at IS NULL) THEN
-      RAISE EXCEPTION 'unknown horse — add the horse to the system first';
-    END IF;
-  END IF;
-
-  SELECT coalesce(max(sort_order), 0) + 10 INTO v_next
-    FROM deal_consideration WHERE deal_id = p_deal_id AND party_role = p_party_role;
-
-  INSERT INTO deal_consideration (org_id, deal_id, party_role, kind, horse_id, amount, detail, sort_order)
-    VALUES (v_deal.org_id, p_deal_id, p_party_role, p_kind,
-            CASE WHEN p_kind = 'HORSE' THEN p_horse_id END,
-            CASE WHEN p_kind = 'HORSE' THEN NULL ELSE p_amount END,
-            nullif(btrim(coalesce(p_detail,'')),''), v_next)
-    RETURNING id INTO v_id;
-
-  -- the deal's horse: mirrored onto the spine so document generation (which is
-  -- horse-keyed) and the horse-record reciprocal link both resolve.
-  IF p_kind = 'HORSE' THEN
-    UPDATE contracts SET horse_id = coalesce(horse_id, p_horse_id)
-     WHERE id = v_deal.contract_id;
-  END IF;
-
-  RETURN v_id;
-END;
-$$;
-
-
---
 -- Name: add_deal_document(uuid, text, text); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -783,21 +725,16 @@ CREATE FUNCTION public.add_deal_document(p_deal_id uuid, p_template_key text, p_
     SET search_path TO 'public'
     AS $$
 DECLARE
-  v_deal    deals%ROWTYPE;
-  v_ctr     contracts%ROWTYPE;
-  v_anchor  uuid;
-  v_doc     uuid;
-  v_n       int;
-  v_roles   text[];
-  v_horse   horses%ROWTYPE;
+  v_deal deals%ROWTYPE; v_ctr contracts%ROWTYPE; v_anchor uuid; v_doc uuid;
+  v_n int; v_roles text[]; v_horse horses%ROWTYPE;
 BEGIN
   IF auth.uid() IS NULL THEN RAISE EXCEPTION 'authentication required'; END IF;
   IF NOT has_staff_access() THEN RAISE EXCEPTION 'not authorized to add a document'; END IF;
 
   SELECT * INTO v_deal FROM deals WHERE id = p_deal_id AND deleted_at IS NULL;
   IF NOT FOUND THEN RAISE EXCEPTION 'unknown deal: %', p_deal_id; END IF;
-  IF v_deal.status <> 'pending' THEN
-    RAISE EXCEPTION 'this deal is % — documents can only be added while it is pending', v_deal.status;
+  IF v_deal.status = 'void' THEN
+    RAISE EXCEPTION 'this deal is void — documents cannot be added';
   END IF;
 
   IF NOT EXISTS (SELECT 1 FROM deal_template_options(v_deal.deal_type) o
@@ -805,34 +742,18 @@ BEGIN
     RAISE EXCEPTION '% is not a document a % deal carries', p_template_key, v_deal.deal_type;
   END IF;
 
-  -- one live document per template per deal; supersede by voiding the old one
-  IF EXISTS (
-    SELECT 1 FROM documents d JOIN contract_templates t ON t.id = d.template_id
-     WHERE d.contract_id = v_deal.contract_id AND d.deleted_at IS NULL
-       AND d.workflow_state <> 'void' AND t.template_key = p_template_key
-  ) THEN
-    RAISE EXCEPTION 'this deal already has a %  — void it before adding another', p_template_key;
-  END IF;
-
   SELECT * INTO v_ctr FROM contracts WHERE id = v_deal.contract_id;
   v_roles := deal_party_roles(v_deal.deal_type);
 
-  -- the L3 threshold: a person and something given on each side
   IF NOT EXISTS (SELECT 1 FROM contract_parties WHERE contract_id = v_deal.contract_id AND party_role = v_roles[1])
      OR NOT EXISTS (SELECT 1 FROM contract_parties WHERE contract_id = v_deal.contract_id AND party_role = v_roles[2]) THEN
     RAISE EXCEPTION 'both sides need at least one person before a document can be prepared';
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM deal_consideration WHERE deal_id = p_deal_id AND party_role = v_roles[1])
-     OR NOT EXISTS (SELECT 1 FROM deal_consideration WHERE deal_id = p_deal_id AND party_role = v_roles[2]) THEN
-    RAISE EXCEPTION 'both sides need at least one thing given before a document can be prepared';
-  END IF;
 
-  -- the document's anchor contact: the receiving side's first member
   SELECT contact_id INTO v_anchor FROM contract_parties
    WHERE contract_id = v_deal.contract_id AND party_role = v_roles[2]
    ORDER BY signer_order NULLS LAST, id LIMIT 1;
 
-  -- SAME generator the standalone starters use — parties/horse carried from the spine
   SELECT gd.document_id INTO v_doc FROM generate_document(
     v_anchor, p_template_key, v_deal.contract_id, v_ctr.horse_id,
     (SELECT jsonb_agg(jsonb_build_object('contact_id',cp.contact_id,'role',cp.party_role,
@@ -844,40 +765,24 @@ BEGIN
                        workflow_state = 'editable', status = 'AWAITING_SIGNATURE'
    WHERE id = v_doc;
 
-  -- seed fields from the clause defs (identical to the starters' seed)
   INSERT INTO contract_fields (
     org_id, document_id, field_key, label, section, clause_key, owner_role,
     value_type, input_kind, format_type, options, conditional_on, closed, guidance,
-    required, is_optional, responsibility, sort_order, parent_field_key,
-    responsibility_kind)
+    required, is_optional, responsibility, sort_order, parent_field_key, responsibility_kind)
   SELECT v_deal.org_id, v_doc, d.field_key, d.label, d.section, d.clause_key, d.owner_role,
          d.value_type, nullif(d.input_kind,''), d.format_type, d.options, d.conditional_on,
          d.closed, d.guidance, d.required, d.is_optional, d.responsibility, d.sort_order,
          d.parent_field_key, d.responsibility_kind
-    FROM contract_field_defs d
-   WHERE d.template_key = p_template_key;
+    FROM contract_field_defs d WHERE d.template_key = p_template_key;
   GET DIAGNOSTICS v_n = ROW_COUNT;
 
-  -- the bill of sale's posture (L17): standalone vs accompanied
   IF p_template_key = 'HORSE_BILL_OF_SALE' AND p_has_sale_agreement IN ('YES','NO') THEN
     UPDATE contract_fields SET value = p_has_sale_agreement
      WHERE document_id = v_doc AND field_key = 'TXN.BOS_HAS_SALE_AGREEMENT';
   END IF;
 
-  -- seed the price from the deal's PAYMENT consideration where the template has one
-  UPDATE contract_fields cf SET value = dc.amount::text
-    FROM (SELECT amount FROM deal_consideration
-           WHERE deal_id = p_deal_id AND kind = 'PAYMENT' AND amount IS NOT NULL
-           ORDER BY sort_order LIMIT 1) dc
-   WHERE cf.document_id = v_doc AND cf.field_key = 'TXN.PURCHASE_PRICE'
-     AND coalesce(btrim(cf.value), '') = '';
-
   IF v_ctr.horse_id IS NOT NULL THEN
     PERFORM attach_horse_to_document(v_doc, v_ctr.horse_id);
-
-    -- seller-disclosure seed from the record, matching start_sale_contract:
-    -- attach_horse_to_document fills HORSE.* only, so the known-conditions
-    -- disclosure would otherwise start blank on a document that requires it.
     SELECT * INTO v_horse FROM horses WHERE id = v_ctr.horse_id;
     UPDATE contract_fields
        SET value = coalesce(horse_field_token_value(v_horse, 'KNOWN_CONDITIONS'), '')
@@ -6219,20 +6124,15 @@ $$;
 
 
 --
--- Name: create_deal(text, uuid[], uuid[], text); Type: FUNCTION; Schema: public; Owner: -
+-- Name: create_deal(text, uuid[], uuid[], text, text, uuid); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION public.create_deal(p_deal_type text, p_party_a_contact_ids uuid[] DEFAULT '{}'::uuid[], p_party_b_contact_ids uuid[] DEFAULT '{}'::uuid[], p_notes text DEFAULT NULL::text) RETURNS jsonb
+CREATE FUNCTION public.create_deal(p_deal_type text, p_party_a_contact_ids uuid[] DEFAULT '{}'::uuid[], p_party_b_contact_ids uuid[] DEFAULT '{}'::uuid[], p_notes text DEFAULT NULL::text, p_title text DEFAULT NULL::text, p_horse_id uuid DEFAULT NULL::uuid) RETURNS jsonb
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path TO 'public'
     AS $$
 DECLARE
-  v_org      uuid;
-  v_roles    text[];
-  v_contract uuid;
-  v_deal     uuid;
-  v_id       uuid;
-  v_n        int := 0;
+  v_org uuid; v_roles text[]; v_contract uuid; v_deal uuid; v_id uuid; v_n int := 0;
 BEGIN
   IF auth.uid() IS NULL THEN RAISE EXCEPTION 'authentication required'; END IF;
   IF NOT has_staff_access() THEN RAISE EXCEPTION 'not authorized to create a deal'; END IF;
@@ -6244,24 +6144,22 @@ BEGIN
 
   v_org := current_org();
 
-  -- the owned spine row. Documents attach HERE, unchanged (L12).
-  INSERT INTO contracts (org_id, segment, status, originator_contact_id, terms)
-    VALUES (v_org, 'acquisition', 'draft', current_contact_id(),
+  INSERT INTO contracts (org_id, segment, status, horse_id, originator_contact_id, terms)
+    VALUES (v_org, 'acquisition', 'draft', p_horse_id, current_contact_id(),
             jsonb_build_object('deal_kind', p_deal_type))
     RETURNING id INTO v_contract;
 
-  INSERT INTO deals (org_id, contract_id, deal_type, notes, created_by_contact_id)
-    VALUES (v_org, v_contract, p_deal_type, nullif(btrim(coalesce(p_notes,'')),''), current_contact_id())
+  INSERT INTO deals (org_id, contract_id, deal_type, title, notes, created_by_contact_id)
+    VALUES (v_org, v_contract, p_deal_type,
+            nullif(btrim(coalesce(p_title,'')),''),
+            nullif(btrim(coalesce(p_notes,'')),''), current_contact_id())
     RETURNING id INTO v_deal;
 
-  -- members: SELECTED from existing contacts only (L2a)
   FOREACH v_id IN ARRAY coalesce(p_party_a_contact_ids, '{}') LOOP
-    PERFORM add_deal_member(v_deal, v_roles[1], v_id);
-    v_n := v_n + 1;
+    PERFORM add_deal_member(v_deal, v_roles[1], v_id); v_n := v_n + 1;
   END LOOP;
   FOREACH v_id IN ARRAY coalesce(p_party_b_contact_ids, '{}') LOOP
-    PERFORM add_deal_member(v_deal, v_roles[2], v_id);
-    v_n := v_n + 1;
+    PERFORM add_deal_member(v_deal, v_roles[2], v_id); v_n := v_n + 1;
   END LOOP;
 
   RETURN jsonb_build_object('deal_id', v_deal, 'contract_id', v_contract,
@@ -6501,6 +6399,74 @@ $$;
 
 
 --
+-- Name: deal_activity(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.deal_activity(p_deal_id uuid) RETURNS jsonb
+    LANGUAGE plpgsql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE v_deal deals%ROWTYPE;
+BEGIN
+  SELECT * INTO v_deal FROM deals WHERE id = p_deal_id AND deleted_at IS NULL;
+  IF NOT FOUND THEN RAISE EXCEPTION 'unknown deal: %', p_deal_id; END IF;
+
+  IF NOT (has_staff_access() AND v_deal.org_id = current_org())
+     AND NOT EXISTS (SELECT 1 FROM contract_parties cp
+                      WHERE cp.contract_id = v_deal.contract_id
+                        AND cp.contact_id = current_contact_id()) THEN
+    RAISE EXCEPTION 'not authorized for this deal';
+  END IF;
+
+  RETURN coalesce((
+    SELECT jsonb_agg(x ORDER BY (x ->> 'at') DESC)
+    FROM (
+      -- the deal itself
+      SELECT jsonb_build_object(
+        'at', v_deal.created_at, 'who', coalesce(nullif(btrim(concat_ws(' ', c.first_name, c.last_name)), ''), 'Staff'),
+        'what', 'Deal created', 'detail', v_deal.title, 'document_id', NULL) AS x
+        FROM contacts c WHERE c.id = v_deal.created_by_contact_id
+      UNION ALL
+      -- a document was added
+      SELECT jsonb_build_object(
+        'at', d.created_at, 'who', coalesce(nullif(btrim(concat_ws(' ', c.first_name, c.last_name)), ''), 'Staff'),
+        'what', 'Document added', 'detail', coalesce(d.title, t.template_key), 'document_id', d.id)
+        FROM documents d
+        JOIN contract_templates t ON t.id = d.template_id
+        LEFT JOIN contacts c ON c.id = d.originator_contact_id
+       WHERE d.contract_id = v_deal.contract_id AND d.deleted_at IS NULL
+      UNION ALL
+      -- signatures given
+      SELECT jsonb_build_object(
+        'at', s.signed_at, 'who', s.typed_name,
+        'what', 'Signed', 'detail', coalesce(d.title, t.template_key), 'document_id', d.id)
+        FROM signatures s
+        JOIN documents d ON d.id = s.document_id
+        JOIN contract_templates t ON t.id = d.template_id
+       WHERE d.contract_id = v_deal.contract_id AND s.signed_at IS NOT NULL AND s.deleted_at IS NULL
+      UNION ALL
+      -- everything the change log already records (signature removals,
+      -- permission requests, review requests, field edits)
+      SELECT jsonb_build_object(
+        'at', l.created_at, 'who', coalesce(l.actor_label, 'Someone'),
+        'what', CASE l.change_kind
+                  WHEN 'signature_removed'          THEN 'Signature removed'
+                  WHEN 'edit_permission_requested'  THEN 'Asked to edit'
+                  WHEN 'review_requested'           THEN 'Asked for review'
+                  WHEN 'field_value'                THEN 'Changed ' || coalesce(l.field_label, l.field_key)
+                  ELSE initcap(replace(l.change_kind, '_', ' ')) END,
+        'detail', coalesce(d.title, t.template_key), 'document_id', d.id)
+        FROM contract_change_log l
+        JOIN documents d ON d.id = l.document_id
+        JOIN contract_templates t ON t.id = d.template_id
+       WHERE d.contract_id = v_deal.contract_id
+         AND l.change_kind <> 'field_value'   -- field noise stays in the document's own history
+    ) t), '[]'::jsonb);
+END;
+$$;
+
+
+--
 -- Name: deal_autocomplete_on_execution(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -6540,48 +6506,33 @@ CREATE FUNCTION public.deal_completion_state(p_deal_id uuid) RETURNS jsonb
     SET search_path TO 'public'
     AS $$
 DECLARE
-  v_deal    deals%ROWTYPE;
-  v_roles   text[];
-  v_missing text[] := '{}';
-  r         record;
+  v_deal deals%ROWTYPE; v_roles text[]; v_missing text[] := '{}'; v_badge jsonb;
 BEGIN
   SELECT * INTO v_deal FROM deals WHERE id = p_deal_id AND deleted_at IS NULL;
   IF NOT FOUND THEN RAISE EXCEPTION 'unknown deal: %', p_deal_id; END IF;
 
   v_roles := deal_party_roles(v_deal.deal_type);
+  v_badge := deal_status(p_deal_id);
 
-  -- configuration must be complete (the same L3 threshold documents need)
   IF NOT EXISTS (SELECT 1 FROM contract_parties WHERE contract_id = v_deal.contract_id AND party_role = v_roles[1]) THEN
-    v_missing := v_missing || ('No ' || lower(coalesce(initcap(v_roles[1]), v_roles[1])) || ' named');
+    v_missing := v_missing || ('No ' || lower(initcap(v_roles[1])) || ' named');
   END IF;
   IF NOT EXISTS (SELECT 1 FROM contract_parties WHERE contract_id = v_deal.contract_id AND party_role = v_roles[2]) THEN
-    v_missing := v_missing || ('No ' || lower(coalesce(initcap(v_roles[2]), v_roles[2])) || ' named');
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM deal_consideration WHERE deal_id = p_deal_id AND party_role = v_roles[1]) THEN
-    v_missing := v_missing || (initcap(v_roles[1]) || ' has given nothing');
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM deal_consideration WHERE deal_id = p_deal_id AND party_role = v_roles[2]) THEN
-    v_missing := v_missing || (initcap(v_roles[2]) || ' has given nothing');
+    v_missing := v_missing || ('No ' || lower(initcap(v_roles[2])) || ' named');
   END IF;
 
-  -- every REQUIRED document must exist and be executed; an OPTIONAL document
-  -- that is present must be executed too (a half-signed agreement beside a
-  -- signed bill of sale is not a finished deal)
-  FOR r IN SELECT * FROM jsonb_to_recordset(deal_document_status(p_deal_id))
-             AS x(template_key text, title text, required boolean, present boolean, executed boolean)
-  LOOP
-    IF r.required AND NOT r.present THEN
-      v_missing := v_missing || (r.title || ' has not been prepared');
-    ELSIF r.present AND NOT r.executed THEN
-      v_missing := v_missing || (r.title || ' is not signed by all parties');
-    END IF;
-  END LOOP;
+  -- ONLY the governing document gates completion. An optional agreement or
+  -- affidavit the parties chose not to sign is their business (owner ruling).
+  IF (v_badge ->> 'code') <> 'complete' THEN
+    v_missing := v_missing || (CASE v_deal.deal_type
+      WHEN 'SALE'  THEN 'The bill of sale is not signed by all parties'
+      WHEN 'LEASE' THEN 'The lease agreement is not signed by all parties'
+      ELSE 'The governing document is not signed' END);
+  END IF;
 
   RETURN jsonb_build_object(
-    'deal_id', p_deal_id,
-    'status', v_deal.status,
-    'completed_at', v_deal.completed_at,
-    'can_complete', (v_deal.status = 'pending' AND coalesce(array_length(v_missing, 1), 0) = 0),
+    'deal_id', p_deal_id, 'status', v_deal.status, 'completed_at', v_deal.completed_at,
+    'can_complete', (v_deal.status = 'pending' AND coalesce(array_length(v_missing,1),0) = 0),
     'outstanding', to_jsonb(v_missing));
 END;
 $$;
@@ -6600,7 +6551,6 @@ BEGIN
   SELECT * INTO v_deal FROM deals WHERE id = p_deal_id AND deleted_at IS NULL;
   IF NOT FOUND THEN RAISE EXCEPTION 'unknown deal: %', p_deal_id; END IF;
 
-  -- visibility mirrors the RLS policy: staff in-org, or a party to the deal
   IF NOT (has_staff_access() AND v_deal.org_id = current_org())
      AND NOT EXISTS (SELECT 1 FROM contract_parties cp
                       WHERE cp.contract_id = v_deal.contract_id
@@ -6613,38 +6563,38 @@ BEGIN
   RETURN jsonb_build_object(
     'id', v_deal.id,
     'display_code', v_deal.display_code,
+    'title', v_deal.title,
     'deal_type', v_deal.deal_type,
     'status', v_deal.status,
+    'badge', deal_status(v_deal.id),
     'completed_at', v_deal.completed_at,
     'notes', v_deal.notes,
     'contract_id', v_deal.contract_id,
     'created_at', v_deal.created_at,
     'roles', to_jsonb(v_roles),
+    'horse', (SELECT jsonb_build_object('id', h.id,
+                'name', coalesce(nullif(h.registered_name,''), h.nickname))
+                FROM horses h JOIN contracts ct ON ct.horse_id = h.id
+               WHERE ct.id = v_deal.contract_id),
     'parties', coalesce((
       SELECT jsonb_agg(jsonb_build_object(
-               'party_role', cp.party_role,
-               'contact_id', cp.contact_id,
+               'party_role', cp.party_role, 'contact_id', cp.contact_id,
                'name', nullif(btrim(concat_ws(' ', c.first_name, c.last_name)), ''),
-               'email', c.email,
-               'display_code', c.display_code)
+               'email', c.email, 'display_code', c.display_code)
              ORDER BY array_position(v_roles, cp.party_role), cp.signer_order, cp.id)
         FROM contract_parties cp JOIN contacts c ON c.id = cp.contact_id
        WHERE cp.contract_id = v_deal.contract_id), '[]'::jsonb),
-    'consideration', coalesce((
-      SELECT jsonb_agg(jsonb_build_object(
-               'id', dc.id, 'party_role', dc.party_role, 'kind', dc.kind,
-               'horse_id', dc.horse_id,
-               'horse_name', (SELECT coalesce(nullif(h.registered_name,''), h.nickname)
-                                FROM horses h WHERE h.id = dc.horse_id),
-               'amount', dc.amount, 'detail', dc.detail)
-             ORDER BY array_position(v_roles, dc.party_role), dc.sort_order)
-        FROM deal_consideration dc WHERE dc.deal_id = v_deal.id), '[]'::jsonb),
     'documents', coalesce((
       SELECT jsonb_agg(jsonb_build_object(
                'document_id', d.id, 'title', d.title, 'display_code', d.display_code,
                'template_key', t.template_key, 'status', d.status,
-               'workflow_state', d.workflow_state, 'created_at', d.created_at)
-             ORDER BY d.created_at)
+               'workflow_state', d.workflow_state, 'created_at', d.created_at,
+               'governing', (t.template_key = deal_governing_template(v_deal.deal_type)),
+               'signed', (SELECT count(*) FROM signatures s
+                           WHERE s.document_id = d.id AND s.signed_at IS NOT NULL AND s.deleted_at IS NULL),
+               'signers', (SELECT count(*) FROM document_parties dp
+                            WHERE dp.document_id = d.id AND dp.is_signer))
+             ORDER BY (t.template_key = deal_governing_template(v_deal.deal_type)) DESC, d.created_at)
         FROM documents d JOIN contract_templates t ON t.id = d.template_id
        WHERE d.contract_id = v_deal.contract_id AND d.deleted_at IS NULL), '[]'::jsonb)
   );
@@ -6689,6 +6639,20 @@ $$;
 
 
 --
+-- Name: deal_governing_template(text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.deal_governing_template(p_deal_type text) RETURNS text
+    LANGUAGE sql IMMUTABLE
+    AS $$
+  SELECT CASE p_deal_type
+           WHEN 'SALE'  THEN 'HORSE_BILL_OF_SALE'
+           WHEN 'LEASE' THEN 'HORSE_LEASE_V2'
+         END;
+$$;
+
+
+--
 -- Name: deal_party_roles(text); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -6719,12 +6683,8 @@ CREATE FUNCTION public.deal_record_export(p_deal_id uuid) RETURNS text
     SET search_path TO 'public'
     AS $$
 DECLARE
-  v_deal  deals%ROWTYPE;
-  v_roles text[];
-  v_out   text[] := '{}';
-  v_role  text;
-  r       record;
-  v_any   boolean;
+  v_deal deals%ROWTYPE; v_roles text[]; v_out text[] := '{}';
+  v_role text; r record; v_any boolean;
 BEGIN
   SELECT * INTO v_deal FROM deals WHERE id = p_deal_id AND deleted_at IS NULL;
   IF NOT FOUND THEN RAISE EXCEPTION 'unknown deal: %', p_deal_id; END IF;
@@ -6738,22 +6698,28 @@ BEGIN
 
   v_roles := deal_party_roles(v_deal.deal_type);
 
-  v_out := v_out || ('DEAL RECORD — ' || initcap(lower(v_deal.deal_type)));
-  v_out := v_out || ('Reference: ' || coalesce(v_deal.display_code, v_deal.id::text));
-  v_out := v_out || ('Opened: ' || to_char(v_deal.created_at, 'FMMonth FMDD, YYYY'));
-  v_out := v_out || ('Status: ' || CASE v_deal.status
-                                     WHEN 'pending'  THEN 'Pending'
-                                     WHEN 'complete' THEN 'Complete'
-                                     ELSE 'Void' END);
+  v_out := v_out || (coalesce(v_deal.title, initcap(lower(v_deal.deal_type)) || ' deal'))::text;
+  v_out := v_out || ('Reference: ' || coalesce(v_deal.display_code, v_deal.id::text))::text;
+  v_out := v_out || ('Type: ' || initcap(lower(v_deal.deal_type)))::text;
+  v_out := v_out || ('Opened: ' || to_char(v_deal.created_at, 'FMMonth FMDD, YYYY'))::text;
+  v_out := v_out || ('Status: ' || (deal_status(p_deal_id) ->> 'label'))::text;
   IF v_deal.completed_at IS NOT NULL THEN
-    v_out := v_out || ('Completed: ' || to_char(v_deal.completed_at, 'FMMonth FMDD, YYYY'));
+    v_out := v_out || ('Completed: ' || to_char(v_deal.completed_at, 'FMMonth FMDD, YYYY'))::text;
   END IF;
 
-  -- each side: who they are, and what they give
+  SELECT coalesce(nullif(h.registered_name,''), h.nickname) INTO r
+    FROM horses h JOIN contracts ct ON ct.horse_id = h.id WHERE ct.id = v_deal.contract_id;
+  IF FOUND THEN
+    v_out := v_out || ''::text;
+    v_out := v_out || 'HORSE'::text;
+    v_out := v_out || ('  ' || (SELECT coalesce(nullif(h.registered_name,''), h.nickname)
+                                  FROM horses h JOIN contracts ct ON ct.horse_id = h.id
+                                 WHERE ct.id = v_deal.contract_id))::text;
+  END IF;
+
   FOREACH v_role IN ARRAY v_roles LOOP
     v_out := v_out || ''::text;
-    v_out := v_out || (upper(coalesce(initcap(lower(v_role)), v_role)));
-
+    v_out := v_out || upper(initcap(lower(v_role)))::text;
     v_any := false;
     FOR r IN
       SELECT nullif(btrim(concat_ws(' ', c.first_name, c.last_name)), '') AS nm,
@@ -6764,68 +6730,100 @@ BEGIN
     LOOP
       v_any := true;
       v_out := v_out || ('  ' || coalesce(r.nm, r.email, 'Unnamed')
-                         || coalesce(' · ' || r.email, '')
-                         || coalesce(' · ' || r.phone, ''));
+                         || coalesce(' · ' || r.email, '') || coalesce(' · ' || r.phone, ''))::text;
       IF nullif(btrim(coalesce(r.addr,'')),'') IS NOT NULL THEN
-        v_out := v_out || ('    ' || r.addr);
+        v_out := v_out || ('    ' || r.addr)::text;
       END IF;
     END LOOP;
     IF NOT v_any THEN v_out := v_out || '  (nobody named yet)'::text; END IF;
-
-    v_out := v_out || '  Gives:'::text;
-    v_any := false;
-    FOR r IN
-      SELECT dc.kind, dc.amount, dc.detail,
-             (SELECT coalesce(nullif(h.registered_name,''), h.nickname) FROM horses h WHERE h.id = dc.horse_id) AS horse
-        FROM deal_consideration dc
-       WHERE dc.deal_id = p_deal_id AND dc.party_role = v_role
-       ORDER BY dc.sort_order
-    LOOP
-      v_any := true;
-      v_out := v_out || ('    ' || CASE r.kind
-        WHEN 'HORSE'    THEN 'Horse: ' || coalesce(r.horse, 'unnamed')
-        WHEN 'PAYMENT'  THEN 'Payment: ' || coalesce(fmt_money(r.amount), '')
-                             || coalesce(' — ' || r.detail, '')
-        WHEN 'GOODS'    THEN 'Goods: ' || coalesce(r.detail, '')
-        WHEN 'SERVICES' THEN 'Services: ' || coalesce(r.detail, '')
-        ELSE r.kind || ': ' || coalesce(r.detail, '') END);
-    END LOOP;
-    IF NOT v_any THEN v_out := v_out || '    (nothing listed yet)'::text; END IF;
   END LOOP;
 
-  -- documents and where each stands
   v_out := v_out || ''::text;
   v_out := v_out || 'DOCUMENTS'::text;
   v_any := false;
   FOR r IN
-    SELECT d.id, coalesce(d.title, t.template_key) AS title, d.display_code, d.status,
-           d.workflow_state, d.effective_date,
-           (SELECT count(*) FROM signatures s
-             WHERE s.document_id = d.id AND s.signed_at IS NOT NULL AND s.deleted_at IS NULL) AS signed,
-           (SELECT count(*) FROM document_parties dp
-             WHERE dp.document_id = d.id AND dp.is_signer) AS signers
+    SELECT coalesce(d.title, t.template_key) AS title, d.display_code, d.status,
+           d.effective_date,
+           (SELECT count(*) FROM signatures s WHERE s.document_id = d.id
+              AND s.signed_at IS NOT NULL AND s.deleted_at IS NULL) AS signed,
+           (SELECT count(*) FROM document_parties dp WHERE dp.document_id = d.id AND dp.is_signer) AS signers
       FROM documents d JOIN contract_templates t ON t.id = d.template_id
      WHERE d.contract_id = v_deal.contract_id AND d.deleted_at IS NULL
-       -- a voided document is not part of the record of the deal
-       AND coalesce(d.workflow_state, '') <> 'void'
+       AND coalesce(d.workflow_state,'') <> 'void'
      ORDER BY d.created_at
   LOOP
     v_any := true;
-    v_out := v_out || ('  ' || r.title
-                       || coalesce(' (' || r.display_code || ')', '')
-                       || ' — ' || CASE WHEN r.status = 'EXECUTED' THEN 'signed by all parties'
-                                        ELSE r.signed || ' of ' || r.signers || ' signatures' END
-                       || coalesce(', effective ' || to_char(r.effective_date, 'FMMonth FMDD, YYYY'), ''));
+    v_out := v_out || ('  ' || r.title || coalesce(' (' || r.display_code || ')', '')
+                       || ' — ' || CASE WHEN r.status = 'EXECUTED' THEN 'complete'
+                                        ELSE r.signed || '/' || r.signers || ' signatures' END
+                       || coalesce(', effective ' || to_char(r.effective_date, 'FMMonth FMDD, YYYY'), ''))::text;
   END LOOP;
   IF NOT v_any THEN v_out := v_out || '  (none yet)'::text; END IF;
 
   IF nullif(btrim(coalesce(v_deal.notes,'')),'') IS NOT NULL THEN
     v_out := v_out || ''::text;
     v_out := v_out || 'NOTES'::text;
-    v_out := v_out || ('  ' || v_deal.notes);
+    v_out := v_out || ('  ' || v_deal.notes)::text;
   END IF;
 
   RETURN array_to_string(v_out, E'\n');
+END;
+$$;
+
+
+--
+-- Name: deal_status(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.deal_status(p_deal_id uuid) RETURNS jsonb
+    LANGUAGE plpgsql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  v_deal   deals%ROWTYPE;
+  v_tmpl   text;
+  v_doc    record;
+  v_need   int;
+  v_have   int;
+BEGIN
+  SELECT * INTO v_deal FROM deals WHERE id = p_deal_id AND deleted_at IS NULL;
+  IF NOT FOUND THEN RAISE EXCEPTION 'unknown deal: %', p_deal_id; END IF;
+
+  IF v_deal.status = 'void' THEN
+    RETURN jsonb_build_object('code', 'void', 'label', 'Void');
+  END IF;
+
+  v_tmpl := deal_governing_template(v_deal.deal_type);
+
+  SELECT d.id, d.workflow_state, d.status INTO v_doc
+    FROM documents d JOIN contract_templates t ON t.id = d.template_id
+   WHERE d.contract_id = v_deal.contract_id AND d.deleted_at IS NULL
+     AND coalesce(d.workflow_state,'') <> 'void' AND t.template_key = v_tmpl
+   ORDER BY d.created_at DESC LIMIT 1;
+
+  -- no governing document yet: the deal exists, nothing has been opened
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('code', 'created', 'label', 'Created');
+  END IF;
+
+  SELECT count(*) FILTER (WHERE dp.is_signer) INTO v_need
+    FROM document_parties dp WHERE dp.document_id = v_doc.id;
+  SELECT count(*) INTO v_have
+    FROM signatures s
+   WHERE s.document_id = v_doc.id AND s.signed_at IS NOT NULL AND s.deleted_at IS NULL;
+
+  IF v_doc.workflow_state = 'executed' OR (v_need > 0 AND v_have >= v_need) THEN
+    RETURN jsonb_build_object('code', 'complete', 'label', 'Complete',
+                              'signed', v_have, 'required', v_need);
+  END IF;
+
+  IF v_have > 0 THEN
+    RETURN jsonb_build_object('code', 'signed',
+                              'label', 'Signed ' || v_have || '/' || greatest(v_need, v_have),
+                              'signed', v_have, 'required', greatest(v_need, v_have));
+  END IF;
+
+  RETURN jsonb_build_object('code', 'editable', 'label', 'Editable');
 END;
 $$;
 
@@ -9410,17 +9408,15 @@ $$;
 -- Name: horse_deals(uuid); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION public.horse_deals(p_horse_id uuid) RETURNS TABLE(id uuid, display_code text, deal_type text, status text, created_at timestamp with time zone)
+CREATE FUNCTION public.horse_deals(p_horse_id uuid) RETURNS TABLE(id uuid, display_code text, title text, deal_type text, status text, badge jsonb, created_at timestamp with time zone)
     LANGUAGE sql STABLE SECURITY DEFINER
     SET search_path TO 'public'
     AS $$
-  SELECT DISTINCT d.id, d.display_code, d.deal_type, d.status, d.created_at
+  SELECT DISTINCT d.id, d.display_code, d.title, d.deal_type, d.status,
+         deal_status(d.id), d.created_at
   FROM deals d
-  WHERE d.deleted_at IS NULL
-    AND (EXISTS (SELECT 1 FROM deal_consideration dc
-                  WHERE dc.deal_id = d.id AND dc.horse_id = p_horse_id)
-         OR EXISTS (SELECT 1 FROM contracts ct
-                     WHERE ct.id = d.contract_id AND ct.horse_id = p_horse_id))
+  JOIN contracts ct ON ct.id = d.contract_id
+  WHERE d.deleted_at IS NULL AND ct.horse_id = p_horse_id
     AND ((has_staff_access() AND d.org_id = current_org())
       OR EXISTS (SELECT 1 FROM contract_parties cp
                   WHERE cp.contract_id = d.contract_id AND cp.contact_id = current_contact_id()))
@@ -9450,12 +9446,12 @@ BEGIN
   v_markings := coalesce((SELECT display_name FROM lookup_options WHERE lookup_key='horse_markings' AND code = v_horse.markings), v_horse.markings);
   v_reg_org := coalesce((SELECT display_name FROM lookup_options WHERE lookup_key='horse_registration_org' AND code = v_horse.registration_org), v_horse.registration_org);
   v_passport_country := coalesce((SELECT display_name FROM lookup_options WHERE lookup_key='horse_passport_country' AND code = v_horse.passport_country), v_horse.passport_country);
-  v_home_loc := nullif(btrim(concat_ws(' — ',
+  v_home_loc := nullif(btrim(concat_ws(E'\n',
     (SELECT nullif(btrim(concat_ws(', ', l.name, l.address_line1, l.city, nullif(btrim(concat_ws(' ', l.state, l.postal)),''))),'') FROM locations l WHERE l.id = v_horse.home_location_id),
-    nullif(btrim(concat_ws(' ', v_horse.home_barn, v_horse.home_stall)),''))), '');
-  v_curr_loc := nullif(btrim(concat_ws(' — ',
+    nullif(btrim(concat_ws(', ', v_horse.home_barn, v_horse.home_stall)),''))), '');
+  v_curr_loc := nullif(btrim(concat_ws(E'\n',
     (SELECT nullif(btrim(concat_ws(', ', l.name, l.address_line1, l.city, nullif(btrim(concat_ws(' ', l.state, l.postal)),''))),'') FROM locations l WHERE l.id = v_horse.current_location_id),
-    nullif(btrim(concat_ws(' ', v_horse.current_barn, v_horse.current_stall)),''))), '');
+    nullif(btrim(concat_ws(', ', v_horse.current_barn, v_horse.current_stall)),''))), '');
 
   RETURN CASE p_field
     WHEN 'REGISTERED_NAME'     THEN v_horse.registered_name
@@ -10191,17 +10187,17 @@ $$;
 -- Name: list_deals(); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION public.list_deals() RETURNS TABLE(id uuid, display_code text, deal_type text, status text, created_at timestamp with time zone, party_summary text, horse_summary text, document_count bigint)
+CREATE FUNCTION public.list_deals() RETURNS TABLE(id uuid, display_code text, title text, deal_type text, status text, badge jsonb, created_at timestamp with time zone, completed_at timestamp with time zone, party_summary text, horse_summary text, document_count bigint)
     LANGUAGE sql STABLE SECURITY DEFINER
     SET search_path TO 'public'
     AS $$
-  SELECT d.id, d.display_code, d.deal_type, d.status, d.created_at,
+  SELECT d.id, d.display_code, d.title, d.deal_type, d.status,
+    deal_status(d.id), d.created_at, d.completed_at,
     (SELECT string_agg(DISTINCT coalesce(nullif(btrim(concat_ws(' ', c.first_name, c.last_name)), ''), c.email), ', ')
        FROM contract_parties cp JOIN contacts c ON c.id = cp.contact_id
       WHERE cp.contract_id = d.contract_id),
-    (SELECT string_agg(DISTINCT coalesce(nullif(h.registered_name,''), h.nickname), ', ')
-       FROM deal_consideration dc JOIN horses h ON h.id = dc.horse_id
-      WHERE dc.deal_id = d.id AND dc.kind = 'HORSE'),
+    (SELECT coalesce(nullif(h.registered_name,''), h.nickname)
+       FROM horses h JOIN contracts ct ON ct.horse_id = h.id WHERE ct.id = d.contract_id),
     (SELECT count(*) FROM documents doc
       WHERE doc.contract_id = d.contract_id AND doc.deleted_at IS NULL)
   FROM deals d
@@ -14710,41 +14706,6 @@ $$;
 --
 
 COMMENT ON FUNCTION public.remerge_contract_from_fields(p_document_id uuid) IS 'Lock-time authority for negotiated contracts: rebuilds merged_body from the ORIGINAL template + current contract_fields (idempotent), evaluates the lease''s optional-section CUT conditions from field values (INSURANCE wrapper before its children), fills every non-SIG token (DOC.EFFECTIVE_DATE from the document row), drops lines whose fillable tokens all ended empty (strip-unfilled; SIG/PRINTED_NAME lines exempt), collapses blank runs. Never rewrites an executed body. Wired into the locked transition and lock_and_sign_contract.';
-
-
---
--- Name: remove_deal_consideration(uuid); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.remove_deal_consideration(p_id uuid) RETURNS void
-    LANGUAGE plpgsql SECURITY DEFINER
-    SET search_path TO 'public'
-    AS $$
-DECLARE v_deal deals%ROWTYPE; v_row deal_consideration%ROWTYPE;
-BEGIN
-  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'authentication required'; END IF;
-  IF NOT has_staff_access() THEN RAISE EXCEPTION 'not authorized'; END IF;
-
-  SELECT * INTO v_row FROM deal_consideration WHERE id = p_id;
-  IF NOT FOUND THEN RETURN; END IF;
-  SELECT * INTO v_deal FROM deals WHERE id = v_row.deal_id AND deleted_at IS NULL;
-  IF v_deal.status <> 'pending' THEN
-    RAISE EXCEPTION 'this deal is % and can no longer be configured', v_deal.status;
-  END IF;
-
-  DELETE FROM deal_consideration WHERE id = p_id;
-
-  -- if the removed entry was the spine's horse and no other names one, clear it
-  IF v_row.kind = 'HORSE' THEN
-    UPDATE contracts SET horse_id = NULL
-     WHERE id = v_deal.contract_id AND horse_id = v_row.horse_id
-       AND NOT EXISTS (SELECT 1 FROM deal_consideration
-                        WHERE deal_id = v_deal.id AND kind = 'HORSE' AND horse_id = v_row.horse_id)
-       AND NOT EXISTS (SELECT 1 FROM documents
-                        WHERE contract_id = v_deal.contract_id AND deleted_at IS NULL);
-  END IF;
-END;
-$$;
 
 
 --
@@ -19859,10 +19820,10 @@ COMMENT ON FUNCTION public.update_contact_record(p_contact_id uuid, p_patch json
 
 
 --
--- Name: update_deal(uuid, text, text); Type: FUNCTION; Schema: public; Owner: -
+-- Name: update_deal(uuid, text, text, text); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION public.update_deal(p_deal_id uuid, p_deal_type text DEFAULT NULL::text, p_notes text DEFAULT NULL::text) RETURNS void
+CREATE FUNCTION public.update_deal(p_deal_id uuid, p_deal_type text DEFAULT NULL::text, p_notes text DEFAULT NULL::text, p_title text DEFAULT NULL::text) RETURNS void
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path TO 'public'
     AS $$
@@ -19873,17 +19834,24 @@ BEGIN
 
   SELECT * INTO v_deal FROM deals WHERE id = p_deal_id AND deleted_at IS NULL;
   IF NOT FOUND THEN RAISE EXCEPTION 'unknown deal: %', p_deal_id; END IF;
+
+  -- the title is the user's own name for the deal: always editable, including
+  -- on a finished deal (renaming changes nothing about what happened)
+  IF p_title IS NOT NULL THEN
+    UPDATE deals SET title = nullif(btrim(p_title),'') WHERE id = p_deal_id;
+  END IF;
+
   IF v_deal.status <> 'pending' THEN
-    RAISE EXCEPTION 'this deal is % and can no longer be edited', v_deal.status;
+    IF p_deal_type IS NOT NULL OR p_notes IS NOT NULL THEN
+      RAISE EXCEPTION 'this deal is % and can no longer be edited', v_deal.status;
+    END IF;
+    RETURN;
   END IF;
 
   IF p_deal_type IS NOT NULL AND p_deal_type IS DISTINCT FROM v_deal.deal_type THEN
-    -- the type labels the parties, so it cannot change once anything depends on
-    -- those labels (members, consideration, or a generated document)
     IF EXISTS (SELECT 1 FROM contract_parties WHERE contract_id = v_deal.contract_id)
-       OR EXISTS (SELECT 1 FROM deal_consideration WHERE deal_id = p_deal_id)
        OR EXISTS (SELECT 1 FROM documents WHERE contract_id = v_deal.contract_id AND deleted_at IS NULL) THEN
-      RAISE EXCEPTION 'the deal type cannot change once parties, consideration, or documents exist — void this deal and start another';
+      RAISE EXCEPTION 'the deal type cannot change once parties or documents exist — void this deal and start another';
     END IF;
     IF deal_party_roles(p_deal_type) IS NULL THEN
       RAISE EXCEPTION 'unknown deal type: %', p_deal_type;
@@ -21482,35 +21450,6 @@ CREATE SEQUENCE public.deal_code_seq
 
 
 --
--- Name: deal_consideration; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.deal_consideration (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    org_id uuid DEFAULT public.current_org() NOT NULL,
-    deal_id uuid NOT NULL,
-    party_role text NOT NULL,
-    kind text NOT NULL,
-    horse_id uuid,
-    amount numeric,
-    detail text,
-    sort_order integer DEFAULT 0 NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT deal_consideration_kind_check CHECK ((kind = ANY (ARRAY['PAYMENT'::text, 'GOODS'::text, 'SERVICES'::text, 'HORSE'::text]))),
-    CONSTRAINT deal_consideration_party_role_check CHECK ((party_role = ANY (ARRAY['SELLER'::text, 'BUYER'::text, 'LESSOR'::text, 'LESSEE'::text]))),
-    CONSTRAINT deal_consideration_shape_check CHECK ((((kind = 'HORSE'::text) AND (horse_id IS NOT NULL)) OR ((kind <> 'HORSE'::text) AND (horse_id IS NULL) AND ((NULLIF(btrim(COALESCE(detail, ''::text)), ''::text) IS NOT NULL) OR (amount IS NOT NULL)))))
-);
-
-
---
--- Name: TABLE deal_consideration; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON TABLE public.deal_consideration IS 'What each side gives: PAYMENT / GOODS / SERVICES (category + the providing party''s own description or amount) or HORSE (a horses row, selected — never typed). At least one row per party before documents can be authored.';
-
-
---
 -- Name: deals; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -21528,6 +21467,7 @@ CREATE TABLE public.deals (
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     deleted_at timestamp with time zone,
     deleted_by uuid,
+    title text,
     CONSTRAINT deals_deal_type_check CHECK ((deal_type = ANY (ARRAY['SALE'::text, 'LEASE'::text]))),
     CONSTRAINT deals_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'complete'::text, 'void'::text])))
 );
@@ -21538,6 +21478,13 @@ CREATE TABLE public.deals (
 --
 
 COMMENT ON TABLE public.deals IS 'The deal envelope — the top-level object a transaction lives in. Owns one `contracts` spine row (documents attach there); party members live in contract_parties on that spine; what each side gives lives in deal_consideration. deal_type is chosen FIRST and labels the parties (SALE → seller/buyer, LEASE → lessor/lessee).';
+
+
+--
+-- Name: COLUMN deals.title; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.deals.title IS 'The name the user gives this deal. A deal is a blank named container — what it reports comes from the documents inside it, not from fields on the deal.';
 
 
 --
@@ -24034,14 +23981,6 @@ ALTER TABLE ONLY public.cost_allocation_rules
 
 
 --
--- Name: deal_consideration deal_consideration_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.deal_consideration
-    ADD CONSTRAINT deal_consideration_pkey PRIMARY KEY (id);
-
-
---
 -- Name: deals deals_contract_unique; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -25547,20 +25486,6 @@ CREATE INDEX cost_allocation_rules_scope_idx ON public.cost_allocation_rules USI
 
 
 --
--- Name: deal_consideration_deal_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX deal_consideration_deal_idx ON public.deal_consideration USING btree (deal_id);
-
-
---
--- Name: deal_consideration_horse_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX deal_consideration_horse_idx ON public.deal_consideration USING btree (horse_id);
-
-
---
 -- Name: deals_contract_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -26835,17 +26760,10 @@ CREATE TRIGGER deal_autocomplete_trg AFTER UPDATE OF workflow_state ON public.do
 
 
 --
--- Name: deal_consideration deal_consideration_set_updated_at; Type: TRIGGER; Schema: public; Owner: -
---
-
-CREATE TRIGGER deal_consideration_set_updated_at BEFORE UPDATE ON public.deal_consideration FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
-
-
---
 -- Name: deals deals_assign_code; Type: TRIGGER; Schema: public; Owner: -
 --
 
-CREATE TRIGGER deals_assign_code BEFORE INSERT ON public.deals FOR EACH ROW EXECUTE FUNCTION public.assign_display_code('DEA-', 'deal_code_seq');
+CREATE TRIGGER deals_assign_code BEFORE INSERT ON public.deals FOR EACH ROW EXECUTE FUNCTION public.assign_display_code('FHE-', 'deal_code_seq');
 
 
 --
@@ -28051,30 +27969,6 @@ ALTER TABLE ONLY public.cost_allocation_rules
 
 ALTER TABLE ONLY public.cost_allocation_rules
     ADD CONSTRAINT cost_allocation_rules_payer_contact_id_fkey FOREIGN KEY (payer_contact_id) REFERENCES public.contacts(id) ON DELETE RESTRICT;
-
-
---
--- Name: deal_consideration deal_consideration_deal_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.deal_consideration
-    ADD CONSTRAINT deal_consideration_deal_id_fkey FOREIGN KEY (deal_id) REFERENCES public.deals(id) ON DELETE CASCADE;
-
-
---
--- Name: deal_consideration deal_consideration_horse_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.deal_consideration
-    ADD CONSTRAINT deal_consideration_horse_id_fkey FOREIGN KEY (horse_id) REFERENCES public.horses(id);
-
-
---
--- Name: deal_consideration deal_consideration_org_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.deal_consideration
-    ADD CONSTRAINT deal_consideration_org_id_fkey FOREIGN KEY (org_id) REFERENCES public.organizations(id);
 
 
 --
@@ -30679,29 +30573,6 @@ CREATE POLICY ddr_read ON public.document_data_requirements FOR SELECT TO authen
 
 
 --
--- Name: deal_consideration; Type: ROW SECURITY; Schema: public; Owner: -
---
-
-ALTER TABLE public.deal_consideration ENABLE ROW LEVEL SECURITY;
-
---
--- Name: deal_consideration deal_consideration_read; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY deal_consideration_read ON public.deal_consideration FOR SELECT TO authenticated USING (((public.has_staff_access() AND (org_id = public.current_org())) OR (EXISTS ( SELECT 1
-   FROM (public.deals d
-     JOIN public.contract_parties cp ON ((cp.contract_id = d.contract_id)))
-  WHERE ((d.id = deal_consideration.deal_id) AND (cp.contact_id = public.current_contact_id()))))));
-
-
---
--- Name: deal_consideration deal_consideration_write; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY deal_consideration_write ON public.deal_consideration TO authenticated USING ((public.has_staff_access() AND (org_id = public.current_org()))) WITH CHECK ((public.has_staff_access() AND (org_id = public.current_org())));
-
-
---
 -- Name: deals; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -32836,7 +32707,8 @@ Signing on behalf of {{LESSEE.FULL_NAME}}', 'input', 11, false, NULL, '{"equals"
 INSERT INTO public.contract_clause_defs VALUES ('e76fae5a-aa34-44de-ba46-3cf70b48c234', 'HORSE_LEASE_V2', 'SIGNATURES', 'SIGNATURES.LESSOR_CAPACITY', NULL, 'By: {{LESSOR.ENTITY_SIGNER_NAME}}
 Title: {{LESSOR.ENTITY_SIGNER_TITLE}}
 Signing on behalf of {{LESSOR.FULL_NAME}}', 'input', 12, false, NULL, '{"equals": ["ENTITY"], "field_key": "LESSOR.PARTY_TYPE"}', NULL, '2026-08-02 11:16:19.009752+00', false);
-INSERT INTO public.contract_clause_defs VALUES ('4307910c-7aae-404c-be76-bd314b009a8c', 'HORSE_LEASE_V2', 'LOCATION', 'LOCATION.MOVE_CHOICE', NULL, '', 'input', 12, false, NULL, NULL, NULL, '2026-07-21 10:46:50.122503+00', false);
+INSERT INTO public.contract_clause_defs VALUES ('4307910c-7aae-404c-be76-bd314b009a8c', 'HORSE_LEASE_V2', 'HORSE', 'LOCATION.MOVE_CHOICE', NULL, '', 'input', 57, false, NULL, NULL, NULL, '2026-07-21 10:46:50.122503+00', false);
+INSERT INTO public.contract_clause_defs VALUES ('fe0380fc-7a09-425f-860d-f03633b81e95', 'HORSE_LEASE_V2', 'HORSE', 'LOCATION.NEW', NULL, 'Location during lease term: {{TXN.NEW_LOCATION}}.', 'input', 58, true, NULL, '{"equals": ["YES"], "field_key": "TXN.HORSE_MOVES"}', NULL, '2026-07-21 10:46:50.122503+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('6480d88a-eba6-4f10-97cb-06ce092d4140', 'HORSE_LEASE_V2', 'PURPOSE', 'PURPOSE.GRANT', 'Lease Grant', 'Subject to the terms and conditions of this Agreement, Lessor agrees to lease to Lessee and Lessee agrees to lease from Lessor the horse described below.', 'prose', 15, false, NULL, NULL, NULL, '2026-07-20 21:43:51.525808+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('67b06cba-9712-49be-b8ee-7af61ffa42d0', 'HORSE_LEASE_V2', 'NOTICE', 'NOTICE.LESSOR_ADDRESS', 'Lessor', 'Name: {{LESSOR.FULL_NAME}}
 Address: {{LESSOR.ADDRESS}}
@@ -32844,7 +32716,6 @@ Phone: {{LESSOR.PHONE}}
 Email: {{LESSOR.EMAIL}}', 'prose', 30, false, NULL, NULL, NULL, '2026-07-20 21:51:03.659545+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('0de38835-39df-4fc4-95ee-85331422c17e', 'HORSE_LEASE_V2', 'SCHEDULE', 'SCHEDULE.CHANGES', 'Schedule Changes', 'Any changes to the agreed upon schedule must be made and accepted in writing.', 'prose', 15, false, NULL, '{"equals": ["PARTIAL"], "field_key": "TXN.LEASE_TYPE"}', NULL, '2026-07-20 23:52:25.2913+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('7186adae-35c0-4112-b0ca-d9f5cb04ccba', 'HORSE_LEASE_V2', 'PURPOSE', 'PURPOSE.RECREATION', 'Purpose of Agreement', 'For {{TXN.LEASE_PURPOSE}} purposes, Lessee wishes to ride and/or handle Lessor''s horse, and Lessor agrees to allow Lessee to ride and/or handle Lessor''s horse in exchange for the consideration described herein.', 'prose', 10, false, NULL, '{"equals": ["RECREATIONAL", "INSTRUCTIONAL", "COMPETITION", "COMMERCIAL"], "field_key": "TXN.LEASE_PURPOSE"}', NULL, '2026-07-20 21:43:51.525808+00', false);
-INSERT INTO public.contract_clause_defs VALUES ('fe0380fc-7a09-425f-860d-f03633b81e95', 'HORSE_LEASE_V2', 'LOCATION', 'LOCATION.NEW', NULL, 'Location during lease term: {{TXN.NEW_LOCATION}}.', 'input', 14, true, NULL, '{"equals": ["YES"], "field_key": "TXN.HORSE_MOVES"}', NULL, '2026-07-21 10:46:50.122503+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('848137bf-22dc-49fa-9acc-77115698defa', 'HORSE_LEASE_V2', 'CARE', 'CARE.INTRO', NULL, 'Horse care and expenses shall be managed and paid for by the responsible party as listed below.', 'prose', 5, false, NULL, NULL, NULL, '2026-07-21 19:04:04.492529+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('7a8a6340-0203-4597-bf75-4f2f4d428597', 'HORSE_LEASE_V2', 'INSURANCE_RISK', 'INSURANCE_RISK.GENERAL_LIABILITY', 'General Liability Insurance', '', 'input', 150, false, NULL, NULL, NULL, '2026-07-23 14:46:52.299025+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('5c205654-246e-4ef6-981e-793af4864a9e', 'HORSE_LEASE_V2', 'PAYMENT_METHOD', 'PAYMENT_METHOD.MAIN', 'Payments by the Lessee', 'The Lessee may pay amounts owed under this Agreement by the following method(s): {{TXN.PAYMENT_METHODS}}', 'input', 10, false, NULL, NULL, NULL, '2026-07-21 10:45:54.446698+00', false);
@@ -32879,8 +32750,8 @@ INSERT INTO public.contract_clause_defs VALUES ('99979696-487c-4a67-a969-820e5c2
 INSERT INTO public.contract_clause_defs VALUES ('0fb89588-54bc-4b9a-8b1a-eeac2beb2165', 'HORSE_LEASE_V2', 'HORSE', 'HORSE.CONDITION_EXC', NULL, 'The Lessor notes the following known exceptions to the physical condition of the Horse: {{TXN.CONDITION_EXCEPTIONS}}.', 'input', 42, true, NULL, '{"equals": ["YES"], "field_key": "TXN.CONDITION_HAS_EXCEPTIONS"}', NULL, '2026-07-21 04:51:08.986097+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('8e347945-c172-41aa-b9a0-5046ed4e7f28', 'HORSE_LEASE_V2', 'GOVERNING_LAW', 'GOVERNING_LAW.CHOICE', 'Governing Law and Venue', 'This Agreement is governed by the laws of the State of California, without regard to conflict-of-laws principles. Any dispute arising out of or relating to this Agreement or the Horse shall be resolved by final and binding arbitration in San Diego County, California, before a single arbitrator administered by JAMS under its applicable rules, or another administrator the parties agree to in writing, with arbitrator fees and administrative costs allocated as those rules provide. Either party may bring a qualifying claim in small claims court, and either party may seek provisional or injunctive relief, including recovery of possession of the Horse, in a court of competent jurisdiction without waiving arbitration. Judgment on the award may be entered in any court having jurisdiction.', 'input', 10, false, NULL, NULL, NULL, '2026-07-20 21:51:03.659545+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('305ecca4-0434-4ebd-945c-35e6e45ba79c', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'PROHIBITED.OTHERS_OTHER', NULL, 'Other persons allowed to ride or handle the Horse: {{TXN.OTHERS_ALLOWED_OTHER}}.', 'input', 490, false, NULL, '{"contains": ["OTHER"], "field_key": "TXN.OTHERS_ALLOWED"}', NULL, '2026-07-24 00:28:31.305973+00', false);
+INSERT INTO public.contract_clause_defs VALUES ('88123fcd-2855-4cbd-971b-9da5559bdd6a', 'HORSE_LEASE_V2', 'HORSE', 'LOCATION.INSPECTION', NULL, 'Lessor may inspect the Horse at any time, subject to the reasonable access rules of the facility where the Horse is kept. If Lessor reasonably determines that the Horse is not being properly cared for, Lessor may take possession of the Horse upon written notice to Lessee.', 'prose', 59, false, NULL, NULL, NULL, '2026-07-20 21:49:33.162432+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('c1832293-fb78-4d43-9409-85282518d646', 'HORSE_LEASE_V2', 'INSURANCE_RISK', 'INSURANCE_RISK.TRAIL_RIDING', 'Trail Riding Risks', 'Lessee acknowledges that riding outside an enclosed arena, including trail riding, exposes Lessee and the Horse to additional risks, including uneven terrain, traffic, wildlife, water crossings, and other conditions that may cause the Horse to spook or behave unpredictably. Lessee voluntarily assumes these and any other unforeseen or unspecified additional risks related to this activity.', 'prose', 1200, false, NULL, '{"contains": ["TRAIL"], "field_key": "TXN.PERMITTED_ACTIVITIES"}', NULL, '2026-07-20 21:49:33.78281+00', false);
-INSERT INTO public.contract_clause_defs VALUES ('88123fcd-2855-4cbd-971b-9da5559bdd6a', 'HORSE_LEASE_V2', 'LOCATION', 'LOCATION.INSPECTION', NULL, 'Lessor may inspect the Horse at any time, subject to the reasonable access rules of the facility where the Horse is kept. If Lessor reasonably determines that the Horse is not being properly cared for, Lessor may take possession of the Horse upon written notice to Lessee.', 'prose', 20, false, NULL, NULL, NULL, '2026-07-20 21:49:33.162432+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('01f04af2-b497-4193-8e29-37f9fdd1f80c', 'HORSE_SALE_V2', 'HORSE', 'HORSE.BEHAVIOR', 'Behavior', 'Seller warrants that, to Seller''s knowledge, the Horse has no history of dangerous or vicious behavior as of the Effective Date of this Agreement, except as disclosed in this Agreement.', 'prose', 40, false, NULL, NULL, NULL, '2026-08-02 14:03:13.281406+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('bfee3d5b-7237-4cce-abbe-08d4fd3090a6', 'HORSE_BILL_OF_SALE', 'BOS_DISCLOSURES', 'BOS_DISCLOSURES.INJURY_NONE', 'No Serious Injury History', 'Seller represents that, to Seller''s knowledge, no person or animal has suffered serious injury proximately caused by the direct actions of the Horse, including biting, kicking, striking, bucking, rearing, bolting, crushing, or throwing a rider. This representation does not extend to any incident caused primarily by a third party or an external stimulus — such as another horse or rider being at fault, a loose dog, wildlife, a vehicle, or a similar external provocation — where the Horse''s reaction was within the range of normal equine behavior.', 'prose', 30, false, NULL, '{"all": [{"equals": ["NO"], "field_key": "TXN.BOS_HAS_SALE_AGREEMENT"}, {"equals": ["NO"], "field_key": "TXN.INJURY_HISTORY"}]}', NULL, '2026-08-03 20:21:18.134383+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('1afcdd7c-3868-4b99-9b80-3bb28f39ee01', 'HORSE_LEASE_V2', 'INSURANCE_RISK', 'INSURANCE_RISK.MED_TAIL', NULL, 'Any out-of-pocket costs for deductibles or other expenses related to the needs of the Horse are to be paid by Lessor, and where Lessee is deemed to be responsible for part or all of a cost paid by Lessor, Lessee shall reimburse Lessor in accordance with the acceptable payment methods stated in this Agreement, or, if Lessee so requests prior to payment by Lessor, Lessee may make such request to pay the billing party directly using a method allowed by that party. Lessee may, with Lessor''s written permission, pay for any or all of Lessor''s portion when paying the billing party directly, and Lessor may reimburse Lessee in accordance with the terms of this Agreement. Lessor assumes and is responsible for all risks and costs not paid or covered by any policy held by either party, including in the event a policy is not in effect at the time of the incident, an incident for which a claim is made is deemed not to be covered by a policy, a payment for a claim made for an incident that is covered by a policy is less than the actual cost incurred, or a claim made to a policy is denied for any reason, except as otherwise expressly allocated in this section or elsewhere in this Agreement.', 'input', 320, false, NULL, '{"equals": ["NO", ""], "field_key": "TXN.MED_NOT_REQUIRED"}', NULL, '2026-07-28 00:36:43.221618+00', true);
@@ -32901,8 +32772,8 @@ INSERT INTO public.contract_clause_defs VALUES ('a39a4abe-3f2d-4239-bfc1-8610b9a
 Lessee: {{TXN.MED_LESSEE_STATUS}} medical insurance on the Horse.', 'input', 308, false, NULL, '{"equals": ["NO", ""], "field_key": "TXN.MED_NOT_REQUIRED"}', NULL, '2026-07-29 01:32:36.529718+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('a529c2da-13a3-4249-9bb9-b9ff9731ad60', 'HORSE_LEASE_V2', 'INSURANCE_RISK', 'INSURANCE_RISK.MED_NONE', NULL, 'Lessor has elected not to maintain medical insurance on the Horse. Lessor accepts full risk and responsibility for any and all injury to or illness of the Horse during the term of this Agreement, including all costs of veterinary care arising from such injury or illness, except as otherwise expressly allocated in the Horse Care and Expenses section of this Agreement.', 'input', 305, false, NULL, '{"equals": ["YES"], "field_key": "TXN.MED_NOT_REQUIRED"}', NULL, '2026-07-28 00:36:43.221618+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('90b308db-2f8f-49a7-b059-74b07d4bc440', 'HORSE_BILL_OF_SALE', 'BOS_RELEASE', 'BOS_RELEASE.BUYER', 'Release by Buyer', 'Buyer, on behalf of Buyer and anyone claiming by, through, or under Buyer, completely releases, forever discharges, and agrees to hold harmless Seller and Seller''s family members, employees, agents, contractors, successors, and assigns, to the fullest extent permitted by law, from any and all claims, demands, causes of action, liabilities, or damages for personal injury, property damage, or wrongful death arising out of Buyer''s examination, trial, handling, riding, or transport of the Horse before delivery, whether caused by the ordinary negligence of any released party or otherwise, and from any and all claims arising after delivery relating to the Horse''s condition, soundness, behavior, suitability, or value. This release does not apply to gross negligence, reckless conduct, intentional misconduct, fraud, or breach of the express representations stated in this Bill of Sale.', 'prose', 10, false, NULL, '{"all": [{"equals": ["NO"], "field_key": "TXN.BOS_HAS_SALE_AGREEMENT"}, {"equals": ["INCLUDED"], "field_key": "TXN.BOS_RELEASE_ELECTION"}]}', NULL, '2026-08-03 20:21:18.229071+00', false);
+INSERT INTO public.contract_clause_defs VALUES ('fde734e7-5478-4e45-86bd-23a69dcecdc3', 'HORSE_LEASE_V2', 'HORSE', 'LOCATION.MAIN', 'Location of the Horse', 'Location of the Horse: {{HORSE.CURRENT_LOCATION}}.', 'input', 56, false, NULL, NULL, NULL, '2026-07-20 21:49:33.162432+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('c2ead65e-f0a2-4417-b24d-17811a68eefb', 'HORSE_LEASE_V2', 'TERM', 'TERM.RENEWAL', 'Renewal Terms', 'Renewal terms: {{TXN.RENEWAL_TERMS}}', 'input', 19, false, NULL, '{"equals": ["YES"], "field_key": "TXN.RENEWAL_INCLUDE"}', NULL, '2026-07-20 21:49:32.565438+00', false);
-INSERT INTO public.contract_clause_defs VALUES ('fde734e7-5478-4e45-86bd-23a69dcecdc3', 'HORSE_LEASE_V2', 'LOCATION', 'LOCATION.MAIN', 'Location of the Horse', 'Location of the Horse: {{HORSE.CURRENT_LOCATION}}.', 'input', 10, false, NULL, NULL, NULL, '2026-07-20 21:49:33.162432+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('4ec115e8-aa53-4169-96e9-a5e03fe02e99', 'HORSE_LEASE_V2', 'TERM', 'TERM.MAIN', 'Agreement Term', 'Term of this Agreement: {{TXN.LEASE_TERM_TYPE}}. This Agreement begins on {{TXN.LEASE_START}}.', 'input', 10, false, NULL, NULL, NULL, '2026-07-20 21:49:32.565438+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('20805bc1-8b71-45ee-87f9-51012be40316', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'TRAINING_LESSONS.TRAINING', 'Training', 'Any professional training of the Horse under this Agreement, including groundwork, schooling, and under-saddle training, shall be conducted only by a French Heritage Equestrian Approved Trainer.', 'input', 270, false, NULL, NULL, NULL, '2026-07-20 21:49:33.162432+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('4917d710-4720-4767-acfd-83fd88d4944c', 'HORSE_LEASE_V2', 'CARE', 'CARE.SUPPLEMENTS', NULL, '{{TXN.MEDICATIONS}}', 'input', 10, true, NULL, NULL, NULL, '2026-07-20 21:49:33.162432+00', false);
@@ -33245,7 +33116,6 @@ INSERT INTO public.contract_field_defs VALUES ('fda7a532-f13f-4946-817e-030a670d
 INSERT INTO public.contract_field_defs VALUES ('409ee532-7ff3-46f2-8bac-037bd3b08068', 'HORSE_LEASE_V2', 'TXN.LESSOR_PAYMENT_METHODS', NULL, 'Accepted payment methods', 'PAYMENT_METHOD', 'LESSEE', 'buttons', 'checkbox', '[{"label": "Cash", "value": "CASH"}, {"label": "Zelle", "value": "ZELLE"}, {"label": "Credit Card", "value": "CREDIT_CARD"}]', NULL, NULL, false, false, NULL, 30, '2026-07-23 05:52:43.39427+00', 'buttons', 'PAYMENT_METHOD.MAIN_LESSOR', NULL, false);
 INSERT INTO public.contract_field_defs VALUES ('557e60f2-d954-49d4-bc5e-98b1bd48b743', 'HORSE_LEASE_V2', 'TXN.TRAINER_EXERCISE_COST', NULL, 'Party responsible for costs', 'CARE', 'LESSOR', 'select', 'select', '[{"label": "Lessee", "value": "LESSEE"}, {"label": "Lessor", "value": "LESSOR"}, {"label": "Shared", "value": "SHARED"}]', '{"equals": ["YES"], "field_key": "TXN.TRAINER_CARE_INCLUDE"}', NULL, false, false, NULL, 12, '2026-07-23 21:37:56.610045+00', 'select', 'SCHEDULE.TRAINER_CARE', NULL, false);
 INSERT INTO public.contract_field_defs VALUES ('a2c56091-98dd-495e-af9f-147da0486998', 'HORSE_BILL_OF_SALE', 'TXN.AGENT_NAME', NULL, 'Agent name', 'BOS_AGENT', 'DEAL', 'text', 'text', NULL, '{"equals": ["INCLUDED"], "field_key": "TXN.AGENT_ELECTION"}', NULL, true, false, NULL, 160, '2026-08-02 14:03:20.52636+00', 'text', 'BOS_AGENT.DISCLOSURE', NULL, false);
-INSERT INTO public.contract_field_defs VALUES ('0c7315db-8371-4ddd-b26e-30b5aa3b74e1', 'HORSE_LEASE_V2', 'HORSE.CURRENT_LOCATION', NULL, 'Facility', 'LOCATION', 'LESSOR', 'location', 'text', NULL, NULL, NULL, false, false, NULL, 20, '2026-07-20 21:49:33.162432+00', 'location', 'LOCATION.MAIN', NULL, false);
 INSERT INTO public.contract_field_defs VALUES ('4c451ded-254e-41ee-85f4-6eb5b6827ac0', 'HORSE_LEASE_V2', 'TXN.LESSONS_REQUIRED', NULL, 'Lessee required to take lessons?', 'PERMITTED_USE', 'DEAL', 'yesno', 'select', NULL, NULL, NULL, false, false, NULL, 10, '2026-07-20 21:49:33.162432+00', 'yesno', 'TRAINING_LESSONS.LESSONS', NULL, false);
 INSERT INTO public.contract_field_defs VALUES ('e30face0-9b5b-4f4d-8c4f-97c6e6d0194e', 'HORSE_LEASE_V2', 'TXN.DAYS_USED', NULL, 'Reserved days of use', 'SCHEDULE', 'DEAL', 'week_grid', 'text', NULL, NULL, NULL, false, false, NULL, 20, '2026-07-20 21:49:32.565438+00', 'week_grid', 'SCHEDULE.MAIN', NULL, false);
 INSERT INTO public.contract_field_defs VALUES ('4d331c08-1933-4d34-99bb-b0963a4e4e21', 'HORSE_BILL_OF_SALE', 'TXN.AGENT_ACTING_FOR', NULL, 'Acting on behalf of', 'BOS_AGENT', 'DEAL', 'select', 'select', '[{"label": "Seller", "value": "SELLER"}, {"label": "Buyer", "value": "BUYER"}, {"label": "Both parties", "value": "BOTH"}]', '{"equals": ["INCLUDED"], "field_key": "TXN.AGENT_ELECTION"}', NULL, true, false, NULL, 170, '2026-08-02 14:03:20.57384+00', 'select', 'BOS_AGENT.DISCLOSURE', NULL, false);
@@ -33258,6 +33128,7 @@ INSERT INTO public.contract_field_defs VALUES ('e45bea99-6fba-4c24-9b11-5537b0cb
 INSERT INTO public.contract_field_defs VALUES ('bfd081b4-9ce7-4359-b39f-f428d0b3743c', 'HORSE_BILL_OF_SALE', 'HORSE.REGISTERED_NAME', NULL, 'Registered name', 'BOS_HORSE', 'SELLER', 'text', 'text', NULL, NULL, NULL, true, false, NULL, 5010, '2026-08-02 14:03:21.1608+00', 'text', 'BOS_HORSE.IDENTITY', NULL, false);
 INSERT INTO public.contract_field_defs VALUES ('2950c3e0-3afa-4a53-8eb5-2f79f1b51bab', 'HORSE_BILL_OF_SALE', 'HORSE.COLOR', NULL, 'Color', 'BOS_HORSE', 'SELLER', 'select', 'select', '[{"label": "Bay", "value": "BAY"}, {"label": "Chestnut", "value": "CHESTNUT"}, {"label": "Gray", "value": "GRAY"}, {"label": "Black", "value": "BLACK"}, {"label": "Brown", "value": "BROWN"}, {"label": "Roan", "value": "ROAN"}, {"label": "Palomino", "value": "PALOMINO"}, {"label": "Pinto / Paint", "value": "PINTO"}, {"label": "Buckskin", "value": "BUCKSKIN"}, {"label": "Dun", "value": "DUN"}, {"label": "White / Cremello", "value": "WHITE"}]', NULL, NULL, false, false, NULL, 5020, '2026-08-02 14:03:21.1608+00', 'select', 'BOS_HORSE.IDENTITY', NULL, false);
 INSERT INTO public.contract_field_defs VALUES ('b80e4c66-c9f0-4dd2-898b-daf6e136bb5f', 'HORSE_BILL_OF_SALE', 'HORSE.MARKINGS', NULL, 'Markings', 'BOS_HORSE', 'SELLER', 'text', 'text', NULL, NULL, NULL, false, false, NULL, 5030, '2026-08-02 14:03:21.1608+00', 'text', 'BOS_HORSE.IDENTITY', NULL, false);
+INSERT INTO public.contract_field_defs VALUES ('0c7315db-8371-4ddd-b26e-30b5aa3b74e1', 'HORSE_LEASE_V2', 'HORSE.CURRENT_LOCATION', NULL, 'Facility', 'HORSE', 'LESSOR', 'location', 'text', NULL, NULL, NULL, false, false, NULL, 20, '2026-07-20 21:49:33.162432+00', 'location', 'LOCATION.MAIN', NULL, false);
 INSERT INTO public.contract_field_defs VALUES ('aaf4bb77-95e4-4a3c-94dc-de977e483a97', 'HORSE_LEASE_V2', 'TXN.EVAL_INCLUDED_UNIT', NULL, 'Unit', 'EVALUATION', 'LESSOR', 'select', 'select', '[{"label": "day", "value": "DAY"}, {"label": "week", "value": "WEEK"}, {"label": "month", "value": "MONTH"}, {"label": "days", "value": "DAYS"}, {"label": "weeks", "value": "WEEKS"}, {"label": "months", "value": "MONTHS"}]', '{"gte": 1, "field_key": "TXN.EVAL_INCLUDED_LENGTH"}', NULL, false, false, NULL, 21, '2026-07-29 01:32:35.488005+00', 'select', 'EVALUATION.DATES_INCLUDED', NULL, true);
 INSERT INTO public.contract_field_defs VALUES ('e6251800-b300-4d5f-a7dd-25aae580cee5', 'HORSE_LEASE_V2', 'TXN.EVAL_FIXED_UNIT', NULL, 'Unit', 'EVALUATION', 'LESSOR', 'select', 'select', '[{"label": "day", "value": "DAY"}, {"label": "week", "value": "WEEK"}, {"label": "month", "value": "MONTH"}, {"label": "days", "value": "DAYS"}, {"label": "weeks", "value": "WEEKS"}, {"label": "months", "value": "MONTHS"}]', '{"gte": 1, "field_key": "TXN.EVAL_FIXED_LENGTH"}', NULL, false, false, NULL, 21, '2026-07-29 01:32:35.488005+00', 'select', 'EVALUATION.DATES_FIXED', NULL, true);
 INSERT INTO public.contract_field_defs VALUES ('4173f81e-27f7-469b-a4f0-099633066ce6', 'HORSE_LEASE_V2', 'TXN.EVAL_FIXED_FEE', NULL, 'Evaluation period fee amount', 'EVALUATION', 'LESSOR', 'currency', 'currency', NULL, NULL, NULL, false, false, NULL, 30, '2026-07-29 01:32:35.488005+00', 'currency', 'EVALUATION.DATES_FIXED', NULL, false);
@@ -33327,9 +33198,9 @@ INSERT INTO public.contract_field_defs VALUES ('3f21fc2c-6644-4065-9b90-380393c5
 INSERT INTO public.contract_field_defs VALUES ('e323f60a-ddd6-407e-945d-cab74009ffe7', 'HORSE_LEASE_V2', 'HORSE.FARRIER_NAME', NULL, 'Farrier', 'CARE', 'LESSOR', 'text', 'text', NULL, '{"equals": ["LESSEE"], "field_key": "TXN.FARRIER_ARRANGE"}', NULL, false, true, NULL, 20, '2026-07-23 14:28:55.72875+00', 'text', 'CARE.FARRIER', NULL, false);
 INSERT INTO public.contract_field_defs VALUES ('c00f68b8-2b20-4733-bc55-3d1fe9b72123', 'HORSE_LEASE_V2', 'TXN.SCHEDULE_TERMS', NULL, 'Additional schedule terms', 'SCHEDULE', 'LESSOR', 'longtext', 'longtext', NULL, NULL, NULL, false, true, NULL, 5, '2026-07-21 10:45:54.446698+00', 'longtext', 'SCHEDULE.OTHER', NULL, false);
 INSERT INTO public.contract_field_defs VALUES ('7007616f-5257-4079-a93b-478d2fc6b18d', 'HORSE_LEASE_V2', 'HORSE.VET_ADDRESS', NULL, 'Address', 'CARE', 'LESSOR', 'text', 'text', NULL, '{"equals": ["LESSEE"], "field_key": "TXN.VET_ARRANGE"}', NULL, false, true, NULL, 22, '2026-07-23 14:28:55.72875+00', 'text', 'CARE.ROUTINE_VET', NULL, false);
+INSERT INTO public.contract_field_defs VALUES ('59cdb38e-832f-4663-b471-26fabbd3d9c6', 'HORSE_LEASE_V2', 'TXN.HORSE_MOVES', NULL, 'Horse will move to a new location for the Lessee', 'HORSE', 'LESSOR', 'yesno', 'text', NULL, NULL, NULL, false, false, NULL, 12, '2026-07-21 10:46:50.122503+00', 'yesno', 'LOCATION.MOVE_CHOICE', NULL, false);
+INSERT INTO public.contract_field_defs VALUES ('2a8354dc-8668-4f70-a18a-baa90ecb301b', 'HORSE_LEASE_V2', 'TXN.NEW_LOCATION', NULL, 'Location during lease term', 'HORSE', 'LESSOR', 'location', 'text', NULL, NULL, NULL, false, false, NULL, 14, '2026-07-21 10:46:50.122503+00', 'location', 'LOCATION.NEW', NULL, false);
 INSERT INTO public.contract_field_defs VALUES ('cf883460-2fda-4281-9ceb-3a0b0660fc17', 'HORSE_LEASE_V2', 'TXN.TRAINER_EVAL_CHOICE', NULL, 'Professional suitability evaluation', 'HORSE', 'LESSOR', 'buttons', 'select', '[{"label": "Lessee requested at their own expense", "value": "LESSEE_OWN"}, {"label": "Lessee requested at Lessor''s expense", "value": "LESSEE_AT_LESSOR"}, {"label": "Lessor provided at no cost", "value": "LESSOR_FREE"}, {"label": "Lessee waives the option", "value": "WAIVED"}]', NULL, NULL, false, false, NULL, 10, '2026-07-21 10:45:54.446698+00', 'buttons', 'HORSE.TRAINER_EVAL', NULL, false);
-INSERT INTO public.contract_field_defs VALUES ('59cdb38e-832f-4663-b471-26fabbd3d9c6', 'HORSE_LEASE_V2', 'TXN.HORSE_MOVES', NULL, 'Horse will move to a new location for the Lessee', 'LOCATION', 'LESSOR', 'yesno', 'text', NULL, NULL, NULL, false, false, NULL, 12, '2026-07-21 10:46:50.122503+00', 'yesno', 'LOCATION.MOVE_CHOICE', NULL, false);
-INSERT INTO public.contract_field_defs VALUES ('2a8354dc-8668-4f70-a18a-baa90ecb301b', 'HORSE_LEASE_V2', 'TXN.NEW_LOCATION', NULL, 'Location during lease term', 'LOCATION', 'LESSOR', 'location', 'text', NULL, NULL, NULL, false, false, NULL, 14, '2026-07-21 10:46:50.122503+00', 'location', 'LOCATION.NEW', NULL, false);
 INSERT INTO public.contract_field_defs VALUES ('116b8909-9909-4036-a788-e31a99b5dde8', 'HORSE_LEASE_V2', 'TXN.LEASE_FEE', NULL, 'Lease fee', 'LEASE_FEE', 'LESSOR', 'fee_schedule', 'text', NULL, NULL, NULL, false, false, NULL, 10, '2026-07-21 12:19:05.018123+00', 'fee_schedule', 'LEASE_FEE.CHOICE', NULL, false);
 INSERT INTO public.contract_field_defs VALUES ('fda52f65-3677-4811-a3cc-0ec3402a9d34', 'HORSE_LEASE_V2', 'TXN.LEASE_TYPE', NULL, 'Lease type', 'PURPOSE', 'LESSOR', 'select', 'select', '[{"label": "Full lease (full-time access)", "value": "FULL"}, {"label": "Partial lease (shared or limited access)", "value": "PARTIAL"}]', NULL, NULL, true, false, NULL, 10, '2026-07-21 10:45:54.446698+00', 'select', 'PURPOSE.LEASE_TYPE', NULL, true);
 INSERT INTO public.contract_field_defs VALUES ('f2ebebd6-69d7-4e9d-af38-0b3508825253', 'HORSE_LEASE_V2', 'TXN.MEDICATIONS', NULL, 'Medications and supplements', 'CARE', 'LESSOR', 'med_schedule', 'text', NULL, NULL, NULL, false, false, NULL, 10, '2026-07-21 19:04:04.492529+00', 'med_schedule', 'CARE.SUPPLEMENTS', NULL, false);
@@ -33454,7 +33325,6 @@ INSERT INTO public.contract_section_defs VALUES ('a1578509-9f05-406d-af94-d88bc6
 INSERT INTO public.contract_section_defs VALUES ('dcb173c8-c9e4-4955-88ba-b64cef66987b', 'HORSE_LEASE_V2', 'EVALUATION', 'Evaluation Period', 60, false, NULL, NULL, '2026-07-20 21:49:32.565438+00');
 INSERT INTO public.contract_section_defs VALUES ('e88cf0aa-71f5-4dae-99d9-78ba2cb6f565', 'HORSE_LEASE_V2', 'TERM', 'Agreement Term', 70, false, NULL, NULL, '2026-07-20 21:49:32.565438+00');
 INSERT INTO public.contract_section_defs VALUES ('e72bcd2f-77ee-4519-a183-1bffcf209cc9', 'HORSE_LEASE_V2', 'LEASE_FEE', 'Lease Fee', 30, false, NULL, NULL, '2026-07-20 21:49:33.162432+00');
-INSERT INTO public.contract_section_defs VALUES ('2788f947-6955-41be-9fb3-6ce55d80e34c', 'HORSE_LEASE_V2', 'LOCATION', 'Location of Horse', 50, false, NULL, NULL, '2026-07-20 21:49:33.162432+00');
 INSERT INTO public.contract_section_defs VALUES ('ab0f2129-8562-4244-9d4b-9e80fbca3d58', 'HORSE_LEASE_V2', 'PAYMENT_TERMS', 'Payment Terms', 35, false, NULL, NULL, '2026-07-20 21:49:33.78281+00');
 INSERT INTO public.contract_section_defs VALUES ('bf8593df-9ea3-42f6-be5f-f0c2e4db9a90', 'HORSE_LEASE_V2', 'INSURANCE_RISK', 'Insurance, Risk of Loss, and Indemnification', 140, false, NULL, NULL, '2026-07-20 21:49:33.78281+00');
 INSERT INTO public.contract_section_defs VALUES ('5d0b33e6-b152-44c9-b8ff-3a8fd1e9dfd3', 'HORSE_LEASE_V2', 'TERMINATION', 'Termination', 160, false, NULL, NULL, '2026-07-20 21:51:03.659545+00');
