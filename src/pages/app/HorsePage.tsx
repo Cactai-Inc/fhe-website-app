@@ -167,7 +167,11 @@ export default function HorsePage() {
                 <Detail label="Home" value={composeLocation(r.home_location, r.home_barn, r.home_stall)} />
                 <Detail label="Currently at" value={composeLocation(r.current_location, r.current_barn, r.current_stall)} />
                 <Detail label="Owner" value={r.owner_name} />
-                {r.lessee_name && <Detail label="Leased to" value={`${r.lessee_name}${r.lease_end ? ` (through ${fmtDate(r.lease_end)})` : ''}`} />}
+                {r.lessee_name && (
+                  detail.viewer_is_lessee
+                    ? <Detail label="Your lease" value={`You lease this horse${r.lease_end ? ` through ${fmtDate(r.lease_end)}` : ''}`} />
+                    : <Detail label="Leased to" value={`${r.lessee_name}${r.lease_end ? ` (through ${fmtDate(r.lease_end)})` : ''}`} />
+                )}
               </Card>
 
               <Card title="Care team">

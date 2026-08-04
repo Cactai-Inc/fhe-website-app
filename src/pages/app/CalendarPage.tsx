@@ -639,7 +639,7 @@ function DetailPanel({ item, onClose, onChanged, onBuy }: { item: CalendarItem; 
                 </select>
                 {horses.length === 0 && (
                   <span className="block text-xs text-muted mt-1">
-                    No horses on file yet. <Link to="/app/stable" className="text-green-800 underline">Add your horse</Link> first.
+                    No horses on file yet. <Link to="/app/account?section=stable" className="text-green-800 underline">Add your horse</Link> first.
                   </span>
                 )}
               </label>

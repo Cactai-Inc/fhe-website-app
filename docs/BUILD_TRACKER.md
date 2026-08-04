@@ -27,7 +27,7 @@ This is the critical path. Everything here must be DONE.
 | A8 | **Email fires on the completing signature**, both parties, PDF attached, signatures visible in the PDF | **NOT VERIFIED** — the single largest go-live risk |
 | A9 | Email formatting and content correct (from-name, subject, body, branding) | **NOT VERIFIED** |
 | A10 | Horse record stamped with lessee + lease dates on execution | **DONE** — verified live |
-| A11 | Horse record VISIBLE to the lessee, showing them as lessee | **NOT VERIFIED** — visibility window may not exist |
+| A11 | Horse record VISIBLE to the lessee, showing them as lessee | **PARTIAL — server-verified, browser pending** (2026-08-04): `my_stable_horses()`/`horse_page_detail()` proven via psql (simulated lessee session, rolled back) to return the lease term + a new `viewer_is_lessee` flag; stable-card "Leased through <date>" and horse-page "You lease this horse through <date>" framing coded; dead `/app/stable` link fixed. No browser click has confirmed the UI renders this — see `docs/reports/TASK-A11-REPORT.md`. |
 | A12 | Horse record shows the partial-lease schedule captured in the contract | **NOT VERIFIED** |
 | A13 | Lessee can book lessons with that horse | **NOT VERIFIED** |
 | A14 | Contract-scoped EVENT LOG visible to admin (sent, opened, signed, delivered) | **DONE** (2026-08-04) — `contract_event_log(p_document_id)` RPC (staff-gated) unifies `status_events`/`document_deliveries`/`signatures`/`document_opened`/`contract_change_log`; staff-only "Activity" card on `ContractPage.tsx`, verified live against a real executed doc (8 events incl. SENT + SIGNED). See `docs/reports/TASK-A14-REPORT.md`. |

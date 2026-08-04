@@ -35,6 +35,8 @@ export interface StableHorse {
   photo_url: string | null;
   ownership: StableOwnership;
   location: string;
+  lease_start: string | null;
+  lease_end: string | null;
 }
 
 export interface Vendor {
@@ -77,6 +79,8 @@ interface StableHorseRow {
   color: string | null;
   current_location: string | null;
   is_owner: boolean;
+  lease_start: string | null;
+  lease_end: string | null;
 }
 
 function toStableHorse(r: StableHorseRow): StableHorse {
@@ -96,6 +100,8 @@ function toStableHorse(r: StableHorseRow): StableHorse {
     // No fabricated default: a record with no stored location shows a blank,
     // not a hardcoded ranch name that may simply be wrong for the horse.
     location: r.current_location ?? '—',
+    lease_start: r.lease_start,
+    lease_end: r.lease_end,
   };
 }
 

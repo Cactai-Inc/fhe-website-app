@@ -116,6 +116,8 @@ export interface HorsePageDetail {
     training_history: string | null; competition_history: string | null; euthanasia_authorization: string | null;
     owner_name: string | null; lessee_name: string | null; lease_start: string | null; lease_end: string | null;
   };
+  /** A11: true only when the signed-in viewer IS the stamped lessee. */
+  viewer_is_lessee: boolean;
   medications: HorseMedication[];
   documents: { id: string; title: string; display_code: string | null; status: string | null; workflow_state: string | null; effective_date: string | null; created_at: string }[];
   schedule: { id: string; kind: string | null; starts_at: string | null; ends_at: string | null; status: string | null; location: string | null; notes: string | null }[];

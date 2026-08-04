@@ -24,7 +24,7 @@ import {
 } from '../../lib/contact';
 import { startGoogleChange, startPasswordChange } from '../../lib/emailChange';
 import { updatePassword, linkOAuthIdentity } from '../../lib/auth';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 
 /**
  * ACCOUNT HUB (/app/account) — the "me" surface for every user type, reached from
@@ -347,6 +347,9 @@ function ProfileSection() {
 }
 
 // ── My Stable (inline, live) ───────────────────────────────────
+const fmtDate = (s?: string | null) =>
+  s ? new Date(s).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
+
 function StableSection() {
   const [horses, setHorses] = useState<StableHorse[] | null>(null);
   const [gear, setGear] = useState<StableItem[] | null>(null);
@@ -370,7 +373,10 @@ function StableSection() {
     ? horses.map((h) => ({ id: h.id, name: h.name, barnName: h.nickname ?? undefined,
         breed: h.breed ?? '', sex: h.sex ?? '', height: h.height_hh ?? '', age: h.age_or_foaling ?? '',
         // no `discipline` — horses has no such column (see StableEditors)
-        color: h.color ?? '', discipline: '', ownership: h.ownership === 'leased' ? 'Leased' : 'Owned',
+        color: h.color ?? '', discipline: '',
+        ownership: h.ownership === 'leased'
+          ? (h.lease_end ? `Leased through ${fmtDate(h.lease_end)}` : 'Leased')
+          : 'Owned',
         location: h.location }))
     : (SEED_ENABLED ? SEED_STABLE_HORSES : []);
 
@@ -468,7 +474,11 @@ export default function AccountHub() {
     || [profile?.first_name, profile?.last_name].filter(Boolean).join(' ')
     || 'Your profile';
   useDocumentTitle('Account');
-  const [open, setOpen] = useState<Section>(null);
+  const [searchParams] = useSearchParams();
+  const [open, setOpen] = useState<Section>(() => {
+    const s = searchParams.get('section');
+    return (s === 'profile' || s === 'stable' || s === 'saved' || s === 'documents') ? s : null;
+  });
   const toggle = (s: Section) => setOpen((cur) => (cur === s ? null : s));
 
   // D8: every account holder sees the full account surface — "guest" is
