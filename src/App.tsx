@@ -23,6 +23,7 @@ import Faq from './pages/Faq';
 import Services from './pages/Services';
 import Contact from './pages/Contact';
 import Lessons from './pages/Lessons';
+import SignStart from './pages/SignStart';
 import Gift from './pages/Gift';
 import Redeem from './pages/Redeem';
 import Release from './pages/Release';
@@ -147,6 +148,10 @@ export function AppRoutes() {
               <Route path="/ride" element={<Navigate to="/lessons" replace />} />
               {/* Self-contained funnels, each its own page */}
               <Route path="/lessons" element={<Lessons />} />
+              {/* TASK C — public self-onboarding funnels (/sign/guest, /sign/rider,
+                  /sign/horse, /sign/rider+horse); ':path' also captures the
+                  percent-encoded rider%2Bhorse form. */}
+              <Route path="/sign/:path" element={<SignStart />} />
               {/* Public /membership join removed (Slice 4): membership is by
                   invitation via the app, not a public funnel. */}
               <Route path="/membership" element={<Navigate to="/lessons" replace />} />
