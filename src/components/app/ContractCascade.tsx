@@ -933,11 +933,16 @@ function InlineInput({
   // user is typing, dropping characters.
   useEffect(() => { if (!editingRef.current) setLocal(value); }, [value]);
   const commit = () => { editingRef.current = false; if (local !== value) onCommit(local); };
-  /* Width driver: the longer of value or placeholder. The placeholder is CAPPED
-     because a long one ("Additional schedule terms") sized the field wider than
-     the line had left, so it wrapped and rendered as stacked words instead of a
-     single input. Once the user types, their own text drives the width again. */
-  const sizer = (prefix ?? '') + (local || placeholder.slice(0, 18));
+  /* Width driver: the field sizes to its CONTENT — the entered value, or the
+     full placeholder while empty (owner directive 2026-08-04). The old 18-char
+     cap was the cause of the clipped placeholders ("Signing individual — nar",
+     "Lessee's share of the cost"): it sized the box to a fixed prefix of the
+     hint instead of the hint itself. A long placeholder no longer wraps into
+     stacked words because the flex row wraps at the LINE level and the input
+     keeps max-w-full — the natural end of the line, not an invented width.
+     Short values keep short boxes (a "Days notice" field stays two characters
+     wide rather than reserving room it never needs). */
+  const sizer = (prefix ?? '') + (local || placeholder);
   return (
     <span className="inline-flex items-baseline align-baseline relative max-w-full">
       {prefix && local && <span className="text-green-900">{prefix}</span>}

@@ -32,6 +32,11 @@ type FieldCallbacks = {
   onNa: (key: string, na: boolean) => void | Promise<void>;
   onControl: (key: string, ov: unknown) => void | Promise<void>;
   canSetControl: boolean;
+  /** The viewer's own party role(s) on this document — 'LESSOR', 'LESSEE',
+   *  'SELLER', 'BUYER', 'COBUYER'. Fields owned by another role render
+   *  inactive with a role-named tooltip; the viewer's own render highlighted
+   *  (owner directive 2026-08-04). Staff authoring see everything as theirs. */
+  myRoles?: string[];
   /** RETIRED 2026-08-03 (owner directive): imported party-contact and
    *  horse-record tokens are LOCKED at the document — they render read-only
    *  with a tooltip naming the source record, never as inline write-back
@@ -145,6 +150,32 @@ const ROLE_NAME: Record<string, string> = {
   LESSOR: 'the Lessor', LESSEE: 'the Lessee', SELLER: 'the Seller',
   BUYER: 'the Buyer', COBUYER: 'the Co-Buyer',
 };
+
+/** Role words as the INSTRUMENT says them — never a person or company name:
+ *  the contract's own text says "Lessor"/"Lessee", the UI should speak the
+ *  same vocabulary, and a role label stays true when a signer is reassigned
+ *  (owner directive 2026-08-04). */
+const ROLE_WORD: Record<string, string> = {
+  LESSOR: 'the Lessor', LESSEE: 'the Lessee', SELLER: 'the Seller',
+  BUYER: 'the Buyer', COBUYER: 'the Co-Buyer',
+};
+
+/** Is this field the viewer's to fill? DEAL-owned (shared) fields belong to
+ *  everyone; staff authoring (no myRoles given) own everything. */
+function fieldIsMine(f: ContractField, cb: FieldCallbacks): boolean {
+  const owner = (f.owner_role ?? '').toUpperCase();
+  if (!owner || owner === 'DEAL') return true;
+  if (!cb.myRoles || cb.myRoles.length === 0) return true;   // staff author view
+  return cb.myRoles.includes(owner);
+}
+
+/** "This selection is made by the Lessor." — shown on a field the viewer does
+ *  not own, so responsibility is legible without guessing. */
+function otherPartyTip(f: ContractField): string {
+  const owner = (f.owner_role ?? '').toUpperCase();
+  const who = ROLE_WORD[owner] ?? 'the other party';
+  return `This entry is made by ${who}.`;
+}
 
 /** The lock tooltip for an IMPORTED token (owner directive 2026-08-03): any
  *  value imported from a party's account or the horse record is locked at the
@@ -287,6 +318,26 @@ function isUnansweredPlaceholder(
   return !!(cond.all?.some(isUnansweredPlaceholder) || cond.any?.some(isUnansweredPlaceholder));
 }
 
+/** Does this gate hinge on a selection the VIEWER still has to make? True when
+ *  at least one driver field is unanswered AND owned by the viewer. Drives the
+ *  party-side preview rule: decision support for your own pending choice, and
+ *  silence about everyone else's. */
+function gateIsPendingForViewer(
+  cond: import('../../lib/contracts').FieldConditional | null | undefined,
+  fieldByKey: Map<string, ContractField>,
+  valueByKey: Record<string, string>,
+  cb: FieldCallbacks,
+): boolean {
+  const keys = gateTriggerKeys(cond);
+  for (const k of keys) {
+    const f = fieldByKey.get(k);
+    if (!f) continue;
+    const answered = (valueByKey[k] ?? '').trim() !== '';
+    if (!answered && fieldIsMine(f, cb)) return true;
+  }
+  return false;
+}
+
 /** The duration-unit convention: a CLOSED select whose options are exactly the
  *  singular/plural day-week-month set. The paired number field is the one named
  *  by its conditional_on (a gte gate), which also locks the unit until a number
@@ -338,12 +389,30 @@ function renderToken(
     // drops its line, so accepting input there would be a lie. (This is also
     // what locks a duration UNIT until its number is entered — the gte gate.)
     const selfGateMet = clauseConditionMet(field.conditional_on, valueByKey);
-    return (
+    const mine = fieldIsMine(field, cb);
+    const control = (
       <InlineFieldControl key={key} f={fieldWithAvailableOptions(field, valueByKey)}
-        editable={cb.editable && selfGateMet}
+        editable={cb.editable && selfGateMet && mine}
         onSave={cb.onSave} onSaveStructured={cb.onSaveStructured as never}
         onSaveResponsibility={cb.onSaveResponsibility as never} />
     );
+    // OWNERSHIP AFFORDANCE (2026-08-04). A field the viewer does not own reads
+    // inactive and says whose it is; a field they DO own is highlighted so a
+    // party can scan the document for their own responsibilities. Staff
+    // authoring (no myRoles) see neither treatment — everything is theirs.
+    const showOwnership = !!cb.myRoles && cb.myRoles.length > 0 && cb.editable && selfGateMet;
+    if (showOwnership && !mine) {
+      return (
+        <span key={key} className="opacity-55 cursor-help" title={otherPartyTip(field)}
+          aria-label={otherPartyTip(field)}>{control}</span>
+      );
+    }
+    if (showOwnership && mine) {
+      return (
+        <span key={key} className="rounded-sm bg-gold-100/70 ring-1 ring-gold-300/70 px-0.5">{control}</span>
+      );
+    }
+    return control;
   }
   // Imported record tokens — party contact info and horse-record details
   // (farrier / vet) — are LOCKED at the document (owner directive 2026-08-03):
@@ -420,6 +489,21 @@ function ClauseProse({
       // above the grid, and printing the clause line's label too produced the
       // doubled "Reserved days of use" heading.
       const wf = fieldByKey.get(c.token);
+      /* R4 (2026-08-04): a LONGTEXT in a compact matrix cell was squeezed into
+         whatever width the bold label left over, so its placeholder wrapped into
+         stacked words ("Additional / schedule / terms"). Identical field
+         definitions rendered fine elsewhere purely because their clause body put
+         the token on its own line. Route them to the same TWO-LINE layout the
+         week-grid uses: label on its own line, control full width beneath. */
+      const isLong = !!wf && (wf.input_kind === 'longtext' || wf.format_type === 'longtext');
+      if (isLong) {
+        return (
+          <div key={j} className="w-full min-w-0 text-[13.5px] text-green-950">
+            <span className="block font-semibold mb-0.5">{c.label}:</span>
+            <div className="w-full">{renderToken(c.token, `mx${bi}-${j}`, fieldByKey, valueByKey, cb)}</div>
+          </div>
+        );
+      }
       if (wf && (wf.input_kind === 'week_grid' || wf.format_type === 'week_grid')) {
         return (
           <div key={j} className="w-full min-w-0 text-[13.5px] text-green-950">
@@ -606,12 +690,20 @@ export function ClauseDocument({
         // gated-off clauses.
         const clausesToShow = section.clauses.filter((c) => {
           if (clauseConditionMet(c.conditional_on, valueByKey)) return true;
-          if (!cb.authorView) return false;   // reviewers/parties see only active clauses
           // A gated-off "[Pending — …]" placeholder is dead weight once its
           // question is answered — never preview it muted.
           if (isUnansweredPlaceholder(c.conditional_on)) return false;
           const hasFields = (fieldsByClause.get(c.clause_key) ?? []).length > 0;
-          return !!(c.body && c.body.trim()) || hasFields;
+          const hasContent = !!(c.body && c.body.trim()) || hasFields;
+          if (!hasContent) return false;
+          if (cb.authorView) return true;     // staff author sees every branch
+          /* PARTY DECISION SUPPORT (owner directive 2026-08-04). A gated-off
+             clause is previewed to a PARTY only while the selection that
+             controls it is still UNMADE, and only to the party who owns that
+             selection — so a reviewer sees what their own pending choice will
+             produce, and nothing about anyone else's resolved or pending
+             decisions. Once answered, the preview has done its job. */
+          return gateIsPendingForViewer(c.conditional_on, fieldByKey, valueByKey, cb);
         });
         const sectionCustom = customBySection.get(section.section_key) ?? [];
         if (clausesToShow.length === 0 && sectionCustom.length === 0) return null;
@@ -646,8 +738,14 @@ export function ClauseDocument({
                 // gated-off clause shows without a number, muted — EXCEPT in a
                 // wholly-optional section, where the whole block reads as one
                 // numbered-but-optional section (3.1, 3.2 …) under a greyed title.
-                if (!gatedOff || sectionAllOptional) clauseNo += 1;
-                const num = (gatedOff && !sectionAllOptional) ? '' : `${secNum}.${clauseNo}`;
+                /* EVERY rendered clause consumes a number (2026-08-04). The old
+                   rule skipped gated-off clauses, so the editor showed gaps
+                   (11.1 → 11.3, no 5.2, no 6.1) while the merged document
+                   numbered them — editor and instrument visibly disagreed.
+                   A clause's number is its identity whether or not it is
+                   currently included. */
+                clauseNo += 1;
+                const num = `${secNum}.${clauseNo}`;
                 const bodyTokens = new Set(
                   [...(clause.body ?? '').matchAll(TOKEN_RE)].map((mm) => mm[1]),
                 );
@@ -691,18 +789,22 @@ export function ClauseDocument({
                         individually gated off within an OTHERWISE-ACTIVE section. When
                         the WHOLE section is optional, the greyed section title carries
                         the single note instead (no per-clause repetition). */}
-                    {gatedOff && !sectionAllOptional && (
-                      <p className="text-[11px] text-gold-700/90 mb-0.5">
-                        {describeGate(clause.conditional_on, fieldByKey)}
-                      </p>
-                    )}
-                    {/* The clause's own enabling control(s) — ALWAYS interactive, even
-                        when the clause is gated off, so it can be turned on. Rendered
-                        above the (possibly frozen) preview. */}
+                    {/* R1 (2026-08-04): the QUESTION renders live and at full
+                        opacity, ABOVE the muted consequence — previously the
+                        control that answers a gate sat inside the greyed block it
+                        gated, so the author was asked to interact with something
+                        that read as disabled. The caption now introduces the muted
+                        preview below it rather than floating above the question,
+                        where it read as if the question itself were conditional. */}
                     {gatedOff && gateControls.length > 0 && (
                       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 mb-1.5 text-[13.5px] text-green-950 leading-[1.9]">
                         {gateControls.map(renderOrphan)}
                       </div>
+                    )}
+                    {gatedOff && !sectionAllOptional && (
+                      <p className="text-[11px] text-gold-700/90 mb-0.5">
+                        {describeGate(clause.conditional_on, fieldByKey)}
+                      </p>
                     )}
                     {/* A gated-off clause is a non-interactive PREVIEW: muted and
                         pointer-events-none so its inputs can't be edited (its content
@@ -713,11 +815,34 @@ export function ClauseDocument({
                         ? `pointer-events-none select-none${sectionAllOptional ? '' : ' opacity-50'}`
                         : ''
                     }>
-                      {clause.heading && (
-                        <p className="text-[13px] font-semibold text-green-900 mb-1 flex items-center gap-1.5">
-                          {num && <span className="text-muted tabular-nums">{num}</span>}{clause.heading}
-                        </p>
-                      )}
+                      {/* R7 (2026-08-04): a clause whose heading merely repeats its
+                          section heading printed the same words twice ("6. Governing
+                          Law and Venue / 6.1 Governing Law and Venue"). The NUMBER is
+                          retained — it is the clause's stable identity and a
+                          cross-reference target — only the echoed words are dropped.
+                          R6: the required marker now rides the TITLE line, so it can
+                          no longer collide with sentence punctuation mid-prose. */}
+                      {(() => {
+                        const echoesSection = !!clause.heading
+                          && clause.heading.trim().toLowerCase() === section.heading.trim().toLowerCase();
+                        const clauseRequired = (fieldsByClause.get(clause.clause_key) ?? [])
+                          .some((f) => f.required && clauseConditionMet(f.conditional_on, valueByKey)
+                                       && (f.value ?? '').trim() === '');
+                        if (!clause.heading || echoesSection) {
+                          return (
+                            <p className="text-[13px] font-semibold text-green-900 mb-1 flex items-center gap-1.5">
+                              <span className="text-muted tabular-nums">{num}</span>
+                              {clauseRequired && <span className="text-gold-700" title="Needs an answer before signing">*</span>}
+                            </p>
+                          );
+                        }
+                        return (
+                          <p className="text-[13px] font-semibold text-green-900 mb-1 flex items-center gap-1.5">
+                            <span className="text-muted tabular-nums">{num}</span>{clause.heading}
+                            {clauseRequired && <span className="text-gold-700" title="Needs an answer before signing">*</span>}
+                          </p>
+                        );
+                      })()}
                       {clause.body
                         ? <ClauseProse body={clause.body} fieldByKey={fieldByKey} valueByKey={valueByKey} cb={cb} />
                         : null}
