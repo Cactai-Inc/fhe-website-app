@@ -1,21 +1,22 @@
 import { supabase } from './supabase';
 
 /**
- * DEALS — the top-level envelope a transaction lives in.
+ * DEALS — a blank, named container.
  *
- * A deal owns one contract spine row; documents attach to that spine exactly as
- * they always have. Configuration order is fixed and enforced server-side:
- *   1. deal type   — chosen FIRST, because it labels the two sides
- *   2. members     — one or more people per side, SELECTED from existing contacts
- *   3. consideration — what each side gives; at least one entry per side
+ * A deal knows almost nothing on its own: a name the user gives it, its type,
+ * its parties, its horse, and the documents inside it. Everything it REPORTS —
+ * status, completion, activity — is derived from those documents. (The first
+ * build captured "what each side gives" on the deal itself; that was wrong and
+ * has been removed.)
  *
- * Nothing is created from a deal surface: people and horses must already exist
- * in the system and are picked, never typed.
+ * Creating one is a single modal: name, type, the people on each side, the
+ * horse, and for a sale whether the bill of sale stands alone or is accompanied
+ * by a purchase and sale agreement. Everything else happens inside documents.
  */
 
 export type DealType = 'SALE' | 'LEASE';
+/** Row status. The user-facing badge is derived separately — see DealBadge. */
 export type DealStatus = 'pending' | 'complete' | 'void';
-export type ConsiderationKind = 'PAYMENT' | 'GOODS' | 'SERVICES' | 'HORSE';
 
 /** The party designations each deal type uses — [side A, side B]. */
 export const DEAL_ROLES: Record<DealType, [string, string]> = {
@@ -32,9 +33,14 @@ export const ROLE_LABEL: Record<string, string> = {
   SELLER: 'Seller', BUYER: 'Buyer', LESSOR: 'Lessor', LESSEE: 'Lessee',
 };
 
-export const CONSIDERATION_LABEL: Record<ConsiderationKind, string> = {
-  PAYMENT: 'Payment', GOODS: 'Goods', SERVICES: 'Services', HORSE: 'Horse',
-};
+/** The derived badge. "Sent" is deliberately not a status — notifying someone
+ *  is an activity, and it belongs in the activity log. */
+export interface DealBadge {
+  code: 'created' | 'editable' | 'signed' | 'complete' | 'void';
+  label: string;
+  signed?: number;
+  required?: number;
+}
 
 export interface DealParty {
   party_role: string;
@@ -42,16 +48,6 @@ export interface DealParty {
   name: string | null;
   email: string | null;
   display_code: string | null;
-}
-
-export interface DealConsideration {
-  id: string;
-  party_role: string;
-  kind: ConsiderationKind;
-  horse_id: string | null;
-  horse_name: string | null;
-  amount: number | null;
-  detail: string | null;
 }
 
 export interface DealDocument {
@@ -62,44 +58,67 @@ export interface DealDocument {
   status: string;
   workflow_state: string | null;
   created_at: string;
+  /** The document that decides the deal's status and completion. */
+  governing: boolean;
+  signed: number;
+  signers: number;
 }
 
 export interface DealDetail {
   id: string;
   display_code: string | null;
+  title: string | null;
   deal_type: DealType;
   status: DealStatus;
+  badge: DealBadge;
   completed_at: string | null;
   notes: string | null;
   contract_id: string;
   created_at: string;
   roles: [string, string];
+  horse: { id: string; name: string | null } | null;
   parties: DealParty[];
-  consideration: DealConsideration[];
   documents: DealDocument[];
 }
 
 export interface DealRow {
   id: string;
   display_code: string | null;
+  title: string | null;
   deal_type: DealType;
   status: DealStatus;
+  badge: DealBadge;
   created_at: string;
+  completed_at: string | null;
   party_summary: string | null;
   horse_summary: string | null;
   document_count: number;
 }
 
-/** Create a deal. Type first — it labels the parties. Members optional here;
- *  they can also be added afterwards from the deal page. */
-export async function createDeal(
-  dealType: DealType, partyAContactIds: string[], partyBContactIds: string[], notes?: string,
-): Promise<{ deal_id: string; contract_id: string; deal_type: DealType; roles: string[]; members_added: number }> {
+export interface DealActivityEntry {
+  at: string;
+  who: string;
+  what: string;
+  detail: string | null;
+  document_id: string | null;
+}
+
+/** Create a deal. Everything here comes from the creation modal. */
+export async function createDeal(p: {
+  dealType: DealType;
+  title?: string;
+  partyA: string[];
+  partyB: string[];
+  horseId?: string;
+  notes?: string;
+}): Promise<{ deal_id: string; contract_id: string; deal_type: DealType; roles: string[]; members_added: number }> {
   const { data, error } = await supabase.rpc('create_deal', {
-    p_deal_type: dealType,
-    p_party_a_contact_ids: partyAContactIds,
-    p_party_b_contact_ids: partyBContactIds,
-    p_notes: notes ?? null,
+    p_deal_type: p.dealType,
+    p_party_a_contact_ids: p.partyA,
+    p_party_b_contact_ids: p.partyB,
+    p_notes: p.notes ?? null,
+    p_title: p.title ?? null,
+    p_horse_id: p.horseId ?? null,
   });
   if (error) throw error;
   return data as { deal_id: string; contract_id: string; deal_type: DealType; roles: string[]; members_added: number };
@@ -118,10 +137,19 @@ export async function listDeals(): Promise<DealRow[]> {
 }
 
 /** The deals a horse appears in — the reciprocal link from a horse record. */
-export async function horseDeals(horseId: string): Promise<Omit<DealRow, 'party_summary' | 'horse_summary' | 'document_count'>[]> {
+export async function horseDeals(horseId: string): Promise<Pick<DealRow,
+  'id' | 'display_code' | 'title' | 'deal_type' | 'status' | 'badge' | 'created_at'>[]> {
   const { data, error } = await supabase.rpc('horse_deals', { p_horse_id: horseId });
   if (error) throw error;
-  return (data ?? []) as Omit<DealRow, 'party_summary' | 'horse_summary' | 'document_count'>[];
+  return (data ?? []) as Pick<DealRow, 'id' | 'display_code' | 'title' | 'deal_type' | 'status' | 'badge' | 'created_at'>[];
+}
+
+/** Who did what, when, and to what outcome — composed from records the system
+ *  already keeps (document lifecycle, change log, signatures). */
+export async function dealActivity(dealId: string): Promise<DealActivityEntry[]> {
+  const { data, error } = await supabase.rpc('deal_activity', { p_deal_id: dealId });
+  if (error) throw error;
+  return (data ?? []) as DealActivityEntry[];
 }
 
 export async function addDealMember(dealId: string, partyRole: string, contactId: string): Promise<void> {
@@ -138,30 +166,15 @@ export async function removeDealMember(dealId: string, partyRole: string, contac
   if (error) throw error;
 }
 
-/** Add one consideration entry for a side. HORSE names an existing horse
- *  record; every other kind carries the providing party's own amount/description. */
-export async function addDealConsideration(
-  dealId: string, partyRole: string, kind: ConsiderationKind,
-  p: { horseId?: string; amount?: number; detail?: string } = {},
-): Promise<string> {
-  const { data, error } = await supabase.rpc('add_deal_consideration', {
-    p_deal_id: dealId, p_party_role: partyRole, p_kind: kind,
-    p_horse_id: p.horseId ?? null,
-    p_amount: p.amount ?? null,
-    p_detail: p.detail ?? null,
-  });
-  if (error) throw error;
-  return data as string;
-}
-
-export async function removeDealConsideration(id: string): Promise<void> {
-  const { error } = await supabase.rpc('remove_deal_consideration', { p_id: id });
-  if (error) throw error;
-}
-
-export async function updateDeal(dealId: string, p: { dealType?: DealType; notes?: string }): Promise<void> {
+/** Rename a deal, or change its notes. The title is always editable. */
+export async function updateDeal(
+  dealId: string, p: { title?: string; dealType?: DealType; notes?: string },
+): Promise<void> {
   const { error } = await supabase.rpc('update_deal', {
-    p_deal_id: dealId, p_deal_type: p.dealType ?? null, p_notes: p.notes ?? null,
+    p_deal_id: dealId,
+    p_deal_type: p.dealType ?? null,
+    p_notes: p.notes ?? null,
+    p_title: p.title ?? null,
   });
   if (error) throw error;
 }
@@ -179,16 +192,16 @@ export interface DealDocumentStatus {
   executed: boolean;
 }
 
-/** Which documents this deal's TYPE requires and which it has (L5) — reported
- *  as status, never as a gate. */
+/** Which documents this deal's type can carry, and which it has. */
 export async function dealDocumentStatus(dealId: string): Promise<DealDocumentStatus[]> {
   const { data, error } = await supabase.rpc('deal_document_status', { p_deal_id: dealId });
   if (error) throw error;
   return (data ?? []) as DealDocumentStatus[];
 }
 
-/** Generate a document onto the deal's own spine. For the bill of sale,
- *  hasSaleAgreement sets the posture: 'NO' = the BOS is the contract (L17). */
+/** Add a document to the deal. This is the same generation path the contract
+ *  creation flow uses; it returns the new document so the caller can open it.
+ *  For the bill of sale, hasSaleAgreement sets its posture. */
 export async function addDealDocument(
   dealId: string, templateKey: string, hasSaleAgreement?: 'YES' | 'NO',
 ): Promise<{ document_id: string; template_key: string; fields_seeded: number }> {
@@ -201,35 +214,18 @@ export async function addDealDocument(
   return data as { document_id: string; template_key: string; fields_seeded: number };
 }
 
-/** The deal record: a generated summary of the deal, not a document anyone
- *  fills in (L7). Composed server-side from the deal's own contents. */
+/** The deal record: a generated summary, not a document anyone fills in. */
 export async function dealRecordExport(dealId: string): Promise<string> {
   const { data, error } = await supabase.rpc('deal_record_export', { p_deal_id: dealId });
   if (error) throw error;
   return (data ?? '') as string;
 }
 
-/** Does the deal meet the minimum threshold to author documents?
- *  One member per side and one consideration entry per side (deal plan L3). */
-export function dealIsConfigured(d: DealDetail): boolean {
-  const [a, b] = d.roles;
-  const has = (role: string) => d.parties.some((p) => p.party_role === role);
-  const gives = (role: string) => d.consideration.some((c) => c.party_role === role);
-  return has(a) && has(b) && gives(a) && gives(b);
-}
-
-// ─── Completion ──────────────────────────────────────────────────────────────
-// A deal is PENDING until its requirements are met, then COMPLETE. Completion is
-// DERIVED from the deal's own state, so it settles itself when the last required
-// document is signed by all parties — complete_deal is the manual path, and it
-// refuses while anything is outstanding.
-
 export interface DealCompletionState {
   deal_id: string;
   status: DealStatus;
   completed_at: string | null;
   can_complete: boolean;
-  /** Plain-language list of what is still missing. Empty when finished. */
   outstanding: string[];
 }
 
@@ -247,13 +243,9 @@ export async function completeDeal(
   return data as { completed: boolean; completed_at?: string; message?: string };
 }
 
-/** Reopen a settled deal. Note completion is derived: if every document is still
- *  signed, the deal satisfies its requirements again immediately — the returned
- *  message says so. */
-export async function reopenDeal(
-  dealId: string,
-): Promise<{ reopened: boolean; still_satisfied?: boolean; message?: string }> {
-  const { data, error } = await supabase.rpc('reopen_deal', { p_deal_id: dealId });
-  if (error) throw error;
-  return data as { reopened: boolean; still_satisfied?: boolean; message?: string };
+/** What a deal is called when the user has not named it. */
+export function dealLabel(d: { title: string | null; deal_type: DealType; horse_summary?: string | null }): string {
+  if (d.title?.trim()) return d.title;
+  const kind = DEAL_TYPE_LABEL[d.deal_type];
+  return d.horse_summary ? `${kind} — ${d.horse_summary}` : `${kind} deal`;
 }

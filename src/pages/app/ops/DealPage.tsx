@@ -1,164 +1,96 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Plus, X, FileText, PencilLine } from 'lucide-react';
+import { ArrowLeft, Plus, FileText, PencilLine, X, Loader2, Printer, Download, Mail } from 'lucide-react';
 import { useDocumentTitle } from '../../../lib/hooks';
 import {
-  dealDetail, addDealMember, removeDealMember, addDealConsideration,
-  removeDealConsideration, voidDeal, dealIsConfigured,
-  dealDocumentStatus, addDealDocument, dealRecordExport,
-  dealCompletionState, completeDeal,
-  DEAL_TYPE_LABEL, ROLE_LABEL, CONSIDERATION_LABEL,
-  type DealDetail, type ConsiderationKind, type DealDocumentStatus,
-  type DealCompletionState,
+  dealDetail, dealDocumentStatus, addDealDocument, dealRecordExport, dealActivity,
+  updateDeal, voidDeal, dealLabel,
+  DEAL_TYPE_LABEL, ROLE_LABEL,
+  type DealDetail, type DealDocumentStatus, type DealActivityEntry,
 } from '../../../lib/deals';
-import { contractPartyOptions, staffHorseRecords, type PartyOption, type StaffHorseRecord } from '../../../lib/horses';
+import { DealBadgePill } from './DealsPage';
 
 /**
- * DEAL (/app/ops/deals/:dealId) — the envelope's own page.
+ * DEAL (/app/ops/deals/:dealId) — the container's own page.
  *
- * The three configuration categories sit at the top, each editable in place:
- * the two sides' members, and what each side is giving. Documents attach below.
- *
- * Nothing is created here (deal plan L2a): people and horses are SELECTED from
- * what is already in the system.
+ * A deal holds documents; everything it reports is derived from them. The page
+ * is therefore document-first: what is in the deal, and the button that adds
+ * another. The deal record is a MODAL, not a card — it is something you produce
+ * and send, not something you scroll past.
  */
 
-const input = 'w-full px-3 py-2 rounded-lg border border-green-800/15 text-sm text-green-900 focus-ring bg-white';
-const KINDS: ConsiderationKind[] = ['PAYMENT', 'GOODS', 'SERVICES', 'HORSE'];
-
-function money(n: number | null): string {
-  if (n === null || n === undefined) return '';
-  return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 });
+function fmtDate(iso: string | null): string {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+}
+function fmtWhen(iso: string): string {
+  return new Date(iso).toLocaleString(undefined, {
+    month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+  });
 }
 
-/** One side: its members and what it gives. */
-function PartyColumn({
-  deal, role, contacts, horses, editing, onChanged, onError,
-}: {
-  deal: DealDetail; role: string; contacts: PartyOption[]; horses: StaffHorseRecord[];
-  editing: boolean; onChanged: () => void; onError: (m: string) => void;
+/** The deal record: produced, not authored. Download / email / print live here. */
+function DealRecordModal({ dealId, name, onClose }: {
+  dealId: string; name: string; onClose: () => void;
 }) {
-  const [addingMember, setAddingMember] = useState('');
-  const [kind, setKind] = useState<ConsiderationKind>('PAYMENT');
-  const [horseId, setHorseId] = useState('');
-  const [amount, setAmount] = useState('');
-  const [detail, setDetail] = useState('');
-  const [busy, setBusy] = useState(false);
+  const [body, setBody] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
 
-  const members = deal.parties.filter((p) => p.party_role === role);
-  const gives = deal.consideration.filter((c) => c.party_role === role);
-  const taken = new Set(deal.parties.map((p) => p.contact_id));
+  useEffect(() => {
+    dealRecordExport(dealId).then(setBody)
+      .catch((e) => setErr(e instanceof Error ? e.message : 'Could not build the record.'));
+  }, [dealId]);
 
-  async function act(fn: () => Promise<unknown>) {
-    setBusy(true);
-    try { await fn(); onChanged(); }
-    catch (e) { onError(e instanceof Error ? e.message : 'That did not work.'); }
-    finally { setBusy(false); }
+  function download() {
+    if (!body) return;
+    const url = URL.createObjectURL(new Blob([body], { type: 'text/plain' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = `${name.replace(/[^\w-]+/g, '_')}_deal_record.txt`;
+    a.click(); URL.revokeObjectURL(url);
+  }
+  function print() {
+    if (!body) return;
+    const w = window.open('', '_blank');
+    if (!w) return;
+    w.document.write(`<pre style="font:13px/1.6 ui-sans-serif,system-ui;padding:2rem">${
+      body.replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c] ?? c))}</pre>`);
+    w.document.close(); w.print();
   }
 
   return (
-    <div className="bg-white border border-green-800/10 rounded-xl p-4">
-      <h3 className="font-serif text-green-800 text-base mb-2">{ROLE_LABEL[role] ?? role}</h3>
-
-      {/* members */}
-      <p className="text-[10.5px] tracking-wide uppercase text-muted font-semibold mb-1">Who</p>
-      {members.length === 0 && <p className="text-[12px] text-muted mb-1.5">Nobody yet.</p>}
-      <ul className="flex flex-col gap-1 mb-2">
-        {members.map((m) => (
-          <li key={m.contact_id} className="flex items-center gap-2 text-sm text-green-900">
-            <span className="flex-1 truncate">{m.name || m.email || m.contact_id}</span>
-            {editing && (
-              <button type="button" aria-label={`Remove ${m.name ?? 'member'}`} disabled={busy}
-                className="text-muted hover:text-red-700 focus-ring"
-                onClick={() => void act(() => removeDealMember(deal.id, role, m.contact_id))}>
-                <X size={13} />
-              </button>
-            )}
-          </li>
-        ))}
-      </ul>
-      {editing && (
-        <div className="flex gap-2 mb-3">
-          <select className={input} value={addingMember} aria-label={`Add a ${ROLE_LABEL[role] ?? role}`}
-            onChange={(e) => setAddingMember(e.target.value)}>
-            <option value="">Add someone…</option>
-            {contacts.filter((c) => !taken.has(c.id)).map((c) => (
-              <option key={c.id} value={c.id}>{c.name || c.email || c.id}</option>
-            ))}
-          </select>
-          <button type="button" className="btn-outline-gold text-xs shrink-0"
-            disabled={!addingMember || busy}
-            onClick={() => void act(async () => {
-              await addDealMember(deal.id, role, addingMember); setAddingMember('');
-            })}>
-            <Plus size={13} /> Add
-          </button>
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-start justify-center overflow-y-auto p-4"
+      role="dialog" aria-modal="true" aria-label="Deal record"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full my-8">
+        <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-green-800/10">
+          <h2 className="font-serif text-green-900 text-lg">Deal record</h2>
+          <div className="flex items-center gap-1.5">
+            <button type="button" className="btn-outline-gold text-xs" onClick={download} disabled={!body}>
+              <Download size={13} /> Download
+            </button>
+            <a className="btn-outline-gold text-xs"
+              href={`mailto:?subject=${encodeURIComponent(name)}&body=${encodeURIComponent(body ?? '')}`}>
+              <Mail size={13} /> Email
+            </a>
+            <button type="button" className="btn-outline-gold text-xs" onClick={print} disabled={!body}>
+              <Printer size={13} /> Print
+            </button>
+            <button type="button" aria-label="Close" className="text-muted hover:text-green-800 focus-ring ml-1"
+              onClick={onClose}>
+              <X size={16} />
+            </button>
+          </div>
         </div>
-      )}
-
-      {/* consideration */}
-      <p className="text-[10.5px] tracking-wide uppercase text-muted font-semibold mb-1">Gives</p>
-      {gives.length === 0 && <p className="text-[12px] text-muted mb-1.5">Nothing listed yet.</p>}
-      <ul className="flex flex-col gap-1 mb-2">
-        {gives.map((c) => (
-          <li key={c.id} className="flex items-start gap-2 text-sm text-green-900">
-            <span className="flex-1">
-              <span className="text-[11px] text-muted uppercase tracking-wide">{CONSIDERATION_LABEL[c.kind]}</span>
-              {' · '}
-              {c.kind === 'HORSE'
-                ? (c.horse_name ?? 'Horse')
-                : [c.amount !== null ? money(c.amount) : null, c.detail].filter(Boolean).join(' — ')}
-            </span>
-            {editing && (
-              <button type="button" aria-label="Remove this entry" disabled={busy}
-                className="text-muted hover:text-red-700 focus-ring mt-0.5"
-                onClick={() => void act(() => removeDealConsideration(c.id))}>
-                <X size={13} />
-              </button>
-            )}
-          </li>
-        ))}
-      </ul>
-      {editing && (
-        <div className="flex flex-col gap-2">
-          <select className={input} value={kind} aria-label="What kind"
-            onChange={(e) => setKind(e.target.value as ConsiderationKind)}>
-            {KINDS.map((k) => <option key={k} value={k}>{CONSIDERATION_LABEL[k]}</option>)}
-          </select>
-          {kind === 'HORSE' ? (
-            <select className={input} value={horseId} aria-label="Which horse"
-              onChange={(e) => setHorseId(e.target.value)}>
-              <option value="">Choose a horse…</option>
-              {horses.map((h) => (
-                <option key={h.id} value={h.id}>{h.nickname || h.registered_name}</option>
-              ))}
-            </select>
-          ) : (
-            <>
-              {kind === 'PAYMENT' && (
-                <input className={input} value={amount} placeholder="Amount"
-                  aria-label="Amount" onChange={(e) => setAmount(e.target.value)} />
-              )}
-              <input className={input} value={detail} aria-label="Description"
-                placeholder={kind === 'PAYMENT' ? 'How and when (optional)' : 'Describe what is given'}
-                onChange={(e) => setDetail(e.target.value)} />
-            </>
+        <div className="p-5">
+          {err && <p role="alert" className="form-error">{err}</p>}
+          {body === null && !err && <p className="text-sm text-muted">Building the record…</p>}
+          {body && (
+            <pre className="whitespace-pre-wrap font-sans text-[13px] leading-relaxed text-green-950">
+              {body}
+            </pre>
           )}
-          <button type="button" className="btn-outline-gold text-xs self-start" disabled={busy
-            || (kind === 'HORSE' ? !horseId : !(amount.trim() || detail.trim()))}
-            onClick={() => void act(async () => {
-              await addDealConsideration(deal.id, role, kind, {
-                horseId: kind === 'HORSE' ? horseId : undefined,
-                amount: kind === 'PAYMENT' && amount.trim()
-                  ? Number(amount.replace(/[$,]/g, '')) : undefined,
-                detail: detail.trim() || undefined,
-              });
-              setHorseId(''); setAmount(''); setDetail('');
-            })}>
-            <Plus size={13} /> Add
-          </button>
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -168,25 +100,23 @@ export default function DealPage() {
   const navigate = useNavigate();
   const [deal, setDeal] = useState<DealDetail | null>(null);
   const [docStatus, setDocStatus] = useState<DealDocumentStatus[]>([]);
-  const [contacts, setContacts] = useState<PartyOption[]>([]);
-  const [horses, setHorses] = useState<StaffHorseRecord[]>([]);
-  const [editing, setEditing] = useState(false);
+  const [activity, setActivity] = useState<DealActivityEntry[]>([]);
+  const [recordOpen, setRecordOpen] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [titleDraft, setTitleDraft] = useState('');
   const [adding, setAdding] = useState(false);
-  const [record, setRecord] = useState<string | null>(null);
-  const [completion, setCompletion] = useState<DealCompletionState | null>(null);
-  const [editIntent, setEditIntent] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  useDocumentTitle(deal ? `${DEAL_TYPE_LABEL[deal.deal_type]} deal` : 'Deal');
+  useDocumentTitle(deal ? dealLabel(deal) : 'Deal');
 
   const load = useCallback(() => {
     if (!dealId) return;
-    dealDetail(dealId).then(setDeal)
+    dealDetail(dealId).then((d) => { setDeal(d); setTitleDraft(d.title ?? ''); })
       .catch((e) => setErr(e instanceof Error ? e.message : 'Could not load this deal.'));
     dealDocumentStatus(dealId).then(setDocStatus).catch(() => setDocStatus([]));
-    dealCompletionState(dealId).then(setCompletion).catch(() => setCompletion(null));
+    dealActivity(dealId).then(setActivity).catch(() => setActivity([]));
   }, [dealId]);
+  useEffect(load, [load]);
 
-  /** Prepare a document on this deal, then open it for filling. */
   const addDoc = useCallback(async (templateKey: string, posture?: 'YES' | 'NO') => {
     if (!dealId) return;
     setAdding(true); setErr(null);
@@ -194,22 +124,24 @@ export default function DealPage() {
       const out = await addDealDocument(dealId, templateKey, posture);
       navigate(`/app/contracts/${out.document_id}`);
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not prepare that document.');
+      setErr(e instanceof Error ? e.message : 'Could not add that document.');
       setAdding(false);
     }
   }, [dealId, navigate]);
-  useEffect(load, [load]);
-  useEffect(() => {
-    contractPartyOptions().then(setContacts).catch(() => setContacts([]));
-    staffHorseRecords().then(setHorses).catch(() => setHorses([]));
-  }, []);
+
+  const rename = useCallback(() => {
+    if (!deal) return;
+    void updateDeal(deal.id, { title: titleDraft })
+      .then(() => { setRenaming(false); load(); })
+      .catch((x) => setErr(x instanceof Error ? x.message : 'Could not rename this deal.'));
+  }, [deal, titleDraft, load]);
 
   if (err && !deal) return <p role="alert" className="form-error">{err}</p>;
   if (!deal) return <p className="body-text text-muted text-sm">Loading the deal…</p>;
 
-  const [roleA, roleB] = deal.roles;
-  const configured = dealIsConfigured(deal);
-  const isPending = deal.status === 'pending';
+  const name = dealLabel(deal);
+  const canAdd = deal.status === 'pending';
+  const addable = docStatus.filter((s) => !s.present);
 
   return (
     <div className="max-w-5xl">
@@ -218,214 +150,159 @@ export default function DealPage() {
         <ArrowLeft size={14} /> Deals
       </Link>
 
-      <div className="flex items-start justify-between gap-3 mb-1">
-        <h1 className="font-serif text-2xl text-green-900">
-          {DEAL_TYPE_LABEL[deal.deal_type]} deal
-        </h1>
-        <span className="text-[11px] text-muted mt-2">{deal.display_code}</span>
+      {/* header: the name, its badges, and the record */}
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          {renaming ? (
+            <div className="flex items-center gap-2">
+              <input className="px-3 py-1.5 rounded-lg border border-green-800/15 text-lg text-green-900 focus-ring bg-white"
+                value={titleDraft} autoFocus aria-label="Deal name"
+                onChange={(e) => setTitleDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') rename();
+                  if (e.key === 'Escape') { setTitleDraft(deal.title ?? ''); setRenaming(false); }
+                }} />
+              <button type="button" className="btn-outline-gold text-xs" onClick={rename}>Save</button>
+            </div>
+          ) : (
+            <h1 className="font-serif text-2xl text-green-900 truncate flex items-center gap-2">
+              {name}
+              <button type="button" aria-label="Rename this deal"
+                className="text-muted hover:text-green-800 focus-ring"
+                onClick={() => setRenaming(true)}>
+                <PencilLine size={14} />
+              </button>
+            </h1>
+          )}
+          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+            <span className="text-[11px] px-2 py-0.5 rounded-full bg-green-800/10 text-green-800">
+              {DEAL_TYPE_LABEL[deal.deal_type]}
+            </span>
+            <DealBadgePill badge={deal.badge} />
+            <span className="text-[11.5px] text-muted">
+              Created {fmtDate(deal.created_at)}
+              {deal.completed_at ? ` · Completed ${fmtDate(deal.completed_at)}` : ''}
+            </span>
+            <span className="text-[11px] text-muted">{deal.display_code}</span>
+          </div>
+        </div>
+        <button type="button" className="btn-outline-gold text-xs shrink-0"
+          onClick={() => setRecordOpen(true)}>
+          <FileText size={13} /> Deal record
+        </button>
       </div>
-      <p className="text-sm text-green-800/70 mb-4">
-        {deal.status === 'pending' ? 'Pending — still being put together.'
-          : deal.status === 'complete' ? 'Complete.' : 'Void.'}
-      </p>
 
-      {err && <p role="alert" className="form-error mb-3">{err}</p>}
+      {err && <p role="alert" className="form-error my-3">{err}</p>}
 
-      {/* the three configuration categories, editable in place */}
-      <div className="flex items-center justify-between mb-2">
-        <h2 className="font-serif text-green-800 text-base">Who and what</h2>
-        {isPending && (
-          <button type="button" className="btn-outline-gold text-xs"
-            onClick={() => setEditing((v) => !v)}>
-            <PencilLine size={13} /> {editing ? 'Done editing' : 'Edit'}
-          </button>
-        )}
-      </div>
-      <div className="grid sm:grid-cols-2 gap-3 mb-5">
-        <PartyColumn deal={deal} role={roleA} contacts={contacts} horses={horses}
-          editing={editing && isPending} onChanged={load} onError={setErr} />
-        <PartyColumn deal={deal} role={roleB} contacts={contacts} horses={horses}
-          editing={editing && isPending} onChanged={load} onError={setErr} />
-      </div>
-
-      {/* documents */}
-      <section className="bg-white border border-green-800/10 rounded-xl p-4 mb-4">
-        <h2 className="font-serif text-green-800 text-base mb-1">Documents</h2>
-        {!configured && (
-          <p className="text-[12px] text-gold-900 bg-gold-50 border border-gold-600/40 rounded-lg px-3 py-2 mb-3">
-            Add at least one person and one thing given on each side before
-            documents can be prepared.
+      {/* who is in it */}
+      <section className="mt-5 mb-4">
+        <div className="grid sm:grid-cols-2 gap-3">
+          {deal.roles.map((role) => (
+            <div key={role} className="bg-white border border-green-800/10 rounded-xl px-4 py-3">
+              <p className="text-[10.5px] tracking-wide uppercase text-muted font-semibold mb-1">
+                {ROLE_LABEL[role] ?? role}
+              </p>
+              {deal.parties.filter((p) => p.party_role === role).length === 0 ? (
+                <p className="text-[12px] text-muted">Nobody named.</p>
+              ) : deal.parties.filter((p) => p.party_role === role).map((p) => (
+                <p key={p.contact_id} className="text-sm text-green-900 truncate">
+                  {p.name || p.email || p.contact_id}
+                </p>
+              ))}
+            </div>
+          ))}
+        </div>
+        {deal.horse && (
+          <p className="text-[12px] text-muted mt-2">
+            Horse:{' '}
+            <Link to={`/app/horses/${deal.horse.id}`} className="underline hover:text-green-800">
+              {deal.horse.name}
+            </Link>
           </p>
         )}
+      </section>
+
+      {/* the documents — the substance of the deal */}
+      <section className="bg-white border border-green-800/10 rounded-xl p-4 mb-4">
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <h2 className="font-serif text-green-800 text-base">Deal documents</h2>
+          {canAdd && addable.length > 0 && (
+            <div className="flex gap-1.5 flex-wrap justify-end">
+              {addable.map((s) => (
+                <button key={s.template_key} type="button" className="btn-outline-gold text-xs"
+                  disabled={adding}
+                  onClick={() => void addDoc(s.template_key,
+                    s.template_key === 'HORSE_BILL_OF_SALE' ? 'NO' : undefined)}>
+                  {adding ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}
+                  {' '}{s.title}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         {deal.documents.length === 0 ? (
-          <p className="text-[12px] text-muted mb-3">No documents yet.</p>
+          <p className="text-[12px] text-muted">No documents yet.</p>
         ) : (
-          <ul className="flex flex-col gap-1.5 mb-3">
+          <ul className="flex flex-col divide-y divide-green-800/10">
             {deal.documents.map((d) => (
               <li key={d.document_id}>
                 <Link to={`/app/contracts/${d.document_id}`}
-                  className="flex items-center gap-2.5 text-sm text-green-900 hover:text-green-700 focus-ring">
-                  <FileText size={14} className="text-green-700 shrink-0" />
-                  <span className="flex-1 truncate">{d.title ?? d.template_key}</span>
-                  <span className="text-[11px] text-muted">{d.status}</span>
+                  className="flex items-center gap-3 py-2.5 hover:bg-cream-100/40 focus-ring rounded">
+                  <FileText size={15} className="text-green-700 shrink-0" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm text-green-900 truncate">
+                      {d.title ?? d.template_key}
+                      {d.governing && (
+                        <span className="text-[10.5px] text-muted ml-2">decides the deal</span>
+                      )}
+                    </span>
+                    <span className="block text-[11px] text-muted">
+                      {d.display_code} · {fmtDate(d.created_at)}
+                    </span>
+                  </span>
+                  <span className="text-[11px] text-muted whitespace-nowrap">
+                    {d.status === 'EXECUTED' ? 'Complete'
+                      : d.signed > 0 ? `Signed ${d.signed}/${d.signers}` : 'Editable'}
+                  </span>
                 </Link>
               </li>
             ))}
           </ul>
         )}
-
-        {/* what this deal type needs, and what it has */}
-        {docStatus.length > 0 && (
-          <ul className="flex flex-col gap-1 mb-3">
-            {docStatus.map((s) => (
-              <li key={s.template_key} className="text-[11.5px] text-muted">
-                <span className={s.present ? 'text-green-800' : ''}>
-                  {s.present ? '✓' : '○'} {s.title}
-                </span>
-                {' — '}{s.required ? 'required' : 'optional'}
-                {s.executed ? ' · signed' : ''}
-              </li>
-            ))}
-          </ul>
-        )}
-
-        {isPending && configured && (
-          <div className="flex flex-wrap gap-2 items-center border-t border-green-800/10 pt-3">
-            {docStatus.filter((s) => !s.present).map((s) => (
-              s.template_key === 'HORSE_BILL_OF_SALE' ? (
-                /* the two postures (L17): the bill of sale alone IS the contract,
-                   or it accompanies the sale agreement and defers to it. */
-                <span key={s.template_key} className="flex flex-wrap gap-2">
-                  <button type="button" className="btn-outline-gold text-xs" disabled={adding}
-                    onClick={() => void addDoc(s.template_key, 'NO')}>
-                    <Plus size={13} /> Bill of sale (stands alone)
-                  </button>
-                  <button type="button" className="btn-outline-gold text-xs" disabled={adding}
-                    onClick={() => void addDoc(s.template_key, 'YES')}>
-                    <Plus size={13} /> Bill of sale + sale agreement
-                  </button>
-                </span>
-              ) : (
-                <button key={s.template_key} type="button" className="btn-outline-gold text-xs"
-                  disabled={adding} onClick={() => void addDoc(s.template_key)}>
-                  <Plus size={13} /> {s.title}
-                </button>
-              )
-            ))}
-            {docStatus.every((s) => s.present) && (
-              <p className="text-[12px] text-muted">Every document this deal needs has been prepared.</p>
-            )}
-          </div>
-        )}
       </section>
 
-      {/* completion — PENDING until the requirements are met, then COMPLETE.
-          It settles itself when the last required document is signed; this card
-          shows what is outstanding and offers the manual path. */}
-      <section className="bg-white border border-green-800/10 rounded-xl p-4 mb-4">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h2 className="font-serif text-green-800 text-base">
-              {deal.status === 'complete' ? 'Complete' : deal.status === 'void' ? 'Void' : 'Still to do'}
-            </h2>
-            {deal.status === 'complete' ? (
-              <p className="text-[12px] text-muted">
-                Finished{deal.completed_at ? ` on ${new Date(deal.completed_at).toLocaleDateString()}` : ''}.
-                Nothing on a complete deal can be changed.
-              </p>
-            ) : completion && completion.outstanding.length === 0 ? (
-              <p className="text-[12px] text-muted">Everything is done — this deal can be completed.</p>
-            ) : (
-              <ul className="text-[12px] text-muted mt-1 flex flex-col gap-0.5">
-                {(completion?.outstanding ?? []).map((o) => <li key={o}>• {o}</li>)}
-              </ul>
-            )}
-          </div>
-          {isPending && completion?.can_complete && (
-            <button type="button" className="btn-primary text-xs shrink-0" disabled={adding}
-              onClick={() => void completeDeal(deal.id).then(() => load())
-                .catch((e) => setErr(e instanceof Error ? e.message : 'Could not complete the deal.'))}>
-              Complete this deal
-            </button>
-          )}
-          {deal.status === 'complete' && (
-            <button type="button" className="btn-outline-gold text-xs shrink-0"
-              onClick={() => setEditIntent(true)}>
-              <PencilLine size={13} /> Edit
-            </button>
-          )}
-        </div>
-      </section>
-
-      {/* EDIT a finished deal. A deal is complete BECAUSE its documents are
-          signed, so unlocking the deal alone achieves nothing — it would satisfy
-          its requirements again immediately. The change has to happen on the
-          document, so this routes there rather than pretending otherwise. */}
-      {editIntent && deal.status === 'complete' && (
-        <section className="bg-gold-50 border border-gold-600/40 rounded-xl p-4 mb-4">
-          <div className="flex items-start justify-between gap-3 mb-2">
-            <div>
-              <h2 className="font-serif text-gold-900 text-base">Editing a finished deal</h2>
-              <p className="text-[12px] text-gold-900/80">
-                This deal is finished because the document{deal.documents.length === 1 ? '' : 's'} below
-                {deal.documents.length === 1 ? ' is' : ' are'} signed. To change anything, open the
-                document that needs correcting and either take a signature off it (to
-                edit and re-sign) or void it (to replace it). The deal reopens on its own
-                once a requirement is no longer met.
-              </p>
-            </div>
-            <button type="button" className="text-xs text-muted hover:text-green-800 focus-ring shrink-0"
-              onClick={() => setEditIntent(false)}>
-              Cancel
-            </button>
-          </div>
+      {/* activity — who did what, when */}
+      {activity.length > 0 && (
+        <section className="bg-white border border-green-800/10 rounded-xl p-4 mb-4">
+          <h2 className="font-serif text-green-800 text-base mb-2">Activity</h2>
           <ul className="flex flex-col gap-1.5">
-            {deal.documents.filter((d) => d.status === 'EXECUTED').map((d) => (
-              <li key={d.document_id}>
-                <Link to={`/app/contracts/${d.document_id}`}
-                  className="flex items-center gap-2.5 text-sm text-green-900 hover:text-green-700 focus-ring">
-                  <FileText size={14} className="text-green-700 shrink-0" />
-                  <span className="flex-1 truncate">{d.title ?? d.template_key}</span>
-                  <span className="text-[11px] text-muted">signed — open to change</span>
-                </Link>
+            {activity.map((a, i) => (
+              <li key={`${a.at}-${i}`} className="text-[12.5px] text-green-900 flex gap-2">
+                <span className="text-muted whitespace-nowrap">{fmtWhen(a.at)}</span>
+                <span className="flex-1">
+                  <span className="font-medium">{a.who}</span> — {a.what}
+                  {a.detail ? <span className="text-muted"> · {a.detail}</span> : null}
+                </span>
               </li>
             ))}
           </ul>
         </section>
       )}
 
-      {/* the deal record — generated, never authored (L7) */}
-      <section className="bg-white border border-green-800/10 rounded-xl p-4 mb-4">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h2 className="font-serif text-green-800 text-base">Deal record</h2>
-            <p className="text-[12px] text-muted">
-              A summary of this deal, produced from what it holds — nobody fills it in.
-            </p>
-          </div>
-          <button type="button" className="btn-outline-gold text-xs shrink-0"
-            onClick={() => void dealRecordExport(deal.id).then(setRecord)
-              .catch((e) => setErr(e instanceof Error ? e.message : 'Could not build the record.'))}>
-            <FileText size={13} /> {record ? 'Refresh' : 'Show'}
-          </button>
-        </div>
-        {record && (
-          <pre className="mt-3 whitespace-pre-wrap font-sans text-[12.5px] leading-relaxed text-green-950 bg-cream-100/50 border border-green-800/10 rounded p-3">
-            {record}
-          </pre>
-        )}
-      </section>
-
-      {isPending && (
+      {deal.status === 'pending' && (
         <button type="button" className="text-xs text-red-700 hover:underline focus-ring"
           onClick={() => {
-            if (!window.confirm('Void this deal? Any signed documents in it are kept.')) return;
+            if (!window.confirm('Void this deal? Signed documents inside it are kept.')) return;
             void voidDeal(deal.id).then(load)
               .catch((e) => setErr(e instanceof Error ? e.message : 'Could not void the deal.'));
           }}>
           Void this deal
         </button>
+      )}
+
+      {recordOpen && (
+        <DealRecordModal dealId={deal.id} name={name} onClose={() => setRecordOpen(false)} />
       )}
     </div>
   );
