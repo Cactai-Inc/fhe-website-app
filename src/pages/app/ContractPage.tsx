@@ -446,17 +446,18 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   // trigger it (a) on viewing an executed doc AND (b) immediately after a final
   // signature (see deliverExecutedCopy below), so the PDF reaches both parties as
   // soon as the contract is executed even if no one re-opens the page.
+  /* RETIRED 2026-08-04. Delivery used to be triggered from HERE — when a viewer
+     happened to have the page open and saw status EXECUTED. A party who signed
+     on a phone and closed the tab was emailed nothing (39 executed documents
+     had zero delivery rows). The send now fires in the DATABASE the moment the
+     completing signature executes the document
+     (documents_send_executed_email_trg -> send_executed_document_email), with
+     documents.executed_email_sent_at as the sent/not-sent state the UI reads to
+     show Send vs Resend. */
   const deliverExecutedCopy = useCallback(() => {
     if (!id) return;
     deliveredRef.current = true;
-    fetch('/api/deliver-documents', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ documentIds: [id] }),
-    }).catch(() => {});
   }, [id]);
-  useEffect(() => {
-    if (doc?.status === 'EXECUTED' && id && !deliveredRef.current) deliverExecutedCopy();
-  }, [doc?.status, id, deliverExecutedCopy]);
   const myRoles = detail?.my_roles ?? [];
   const state = doc?.workflow_state ?? 'editable';
   // A staff member can ALSO be a party on the contract (e.g. a barn admin who is
