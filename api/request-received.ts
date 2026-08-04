@@ -5,8 +5,8 @@
  * about it even when they're not in the app).
  *
  * Anonymous endpoint (the intake form has no auth). It does NOT trust the caller
- * for anything sensitive: it emails only the tenant's own configured contact
- * address (CONTACT.EMAIL, e.g. hello@fhequestrian.com), never an address from the
+ * for anything sensitive: it emails only the tenant's own configured ops inbox
+ * (CONTACT.OPS_INBOX, fallback hello@fhequestrian.com), never an address from the
  * request body. Body is used only to render the notice. Best-effort: any failure
  * returns 200 { emailed:false } so a mail hiccup never blocks the visitor's
  * submission (which already succeeded).
@@ -14,6 +14,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
 import { resolveTenantEmailIdentity, sendViaProvider } from './_lib/email.js';
+
+/* The ops inbox is org-level config (CONTACT/OPS_INBOX); the literal below is
+ * only the last-resort fallback when config is absent — same constant calendar-
+ * reminders.ts uses for the same config key. */
+const OPS_INBOX_FALLBACK = 'hello@fhequestrian.com';
 
 function esc(s: string): string {
   return s.replace(/[<>&]/g, (c) => (c === '<' ? '&lt;' : c === '>' ? '&gt;' : '&amp;'));
@@ -51,8 +56,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!orgId) return res.status(200).json({ ok: true, emailed: false, reason: 'org not resolved' });
 
     const identity = await resolveTenantEmailIdentity(db, orgId);
-    const to = identity.contactEmail; // the tenant's own published contact address
-    if (!to) return res.status(200).json({ ok: true, emailed: false, reason: 'no contact email configured' });
+    const to = identity.opsInbox || OPS_INBOX_FALLBACK; // the ops inbox, not the public contact address
+    if (!to) return res.status(200).json({ ok: true, emailed: false, reason: 'no ops inbox configured' });
 
     // Link origin comes from the request, never a baked-in hostname — the same
     // source notifications-nudge and calendar-reminders use, so preview and
