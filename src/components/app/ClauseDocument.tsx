@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, useEffect, useRef, type ReactNode } from 'react';
+import { useCallback, useMemo, type ReactNode } from 'react';
 import {
   clauseConditionMet,
   type ContractField, type SectionDef,
@@ -32,12 +32,12 @@ type FieldCallbacks = {
   onNa: (key: string, na: boolean) => void | Promise<void>;
   onControl: (key: string, ov: unknown) => void | Promise<void>;
   canSetControl: boolean;
-  /** Commit a typed value for a party CONTACT token (LESSOR/LESSEE . ADDRESS /
-   *  PHONE / EMAIL / FULL_NAME) — writes to that party's contact record. Absent =
-   *  the tokens render read-only (reviewer without edit rights). */
+  /** RETIRED 2026-08-03 (owner directive): imported party-contact and
+   *  horse-record tokens are LOCKED at the document — they render read-only
+   *  with a tooltip naming the source record, never as inline write-back
+   *  inputs. These two callbacks are accepted for caller compatibility but no
+   *  longer used. */
   onEditPartyContact?: (token: string, value: string) => void | Promise<void>;
-  /** Commit a typed value for an editable HORSE-record token (farrier / vet
-   *  details) — writes to the horse record. Absent = read-only. */
   onEditHorseRecord?: (token: string, value: string) => void | Promise<void>;
 };
 
@@ -90,8 +90,11 @@ const AUTOFILL_HINT: Record<string, string> = {
   'COBUYER.PHONE': 'Co-Buyer phone on file', 'COBUYER.EMAIL': 'Co-Buyer email on file',
 };
 
-/** An auto-fill / signature token (no editable field) → its current value or a hint. */
-function TokenValue({ token, value }: { token: string; value: string }) {
+/** An auto-fill / signature token (no editable field) → its current value or a
+ *  hint. `tip` (imported data only) is the lock tooltip naming where the value
+ *  is actually edited — every imported field carries it, per the 2026-08-03
+ *  owner directive. */
+function TokenValue({ token, value, tip }: { token: string; value: string; tip?: string }) {
   if (token.startsWith('SIG.')) {
     // signature-ceremony tokens — placeholders filled at signing. A *.DATE token
     // is the date the party signs; everything else is the signature itself.
@@ -106,12 +109,29 @@ function TokenValue({ token, value }: { token: string; value: string }) {
   }
   // whitespace-pre-line: composed values can be multi-line (e.g. the horse
   // location renders facility address + "Barn, Stall" on its own line) — the
-  // editor must show the same line break the merged document prints.
-  if (value.trim()) return <span className="font-medium text-green-900 whitespace-pre-line">{value}</span>;
+  // editor must show the same line break the merged document prints. Imported
+  // values carry the lock tooltip (dotted cue) naming where they are edited.
+  if (value.trim()) {
+    return (
+      <span
+        className={`font-medium text-green-900 whitespace-pre-line break-words${
+          tip ? ' [text-decoration:underline_dotted] decoration-gold-500/60 underline-offset-2 cursor-help' : ''}`}
+        title={tip} aria-label={tip}
+      >
+        {value}
+      </span>
+    );
+  }
   // party/horse imports show a muted "on file" hint instead of a fillable blank —
   // they're changed on the contact / horse record, not typed into the contract.
   const hint = AUTOFILL_HINT[token] ?? (token.startsWith('HORSE.') ? 'from horse record' : null);
-  if (hint) return <span className="text-muted italic text-[12.5px]">{hint}</span>;
+  if (hint) {
+    return (
+      <span className={`text-muted italic text-[12.5px]${tip ? ' cursor-help' : ''}`} title={tip} aria-label={tip}>
+        {hint}
+      </span>
+    );
+  }
   return (
     <mark className="bg-gold-100 text-gold-900 rounded px-1.5 border border-gold-400/60 border-dashed text-[13px]">
       ____
@@ -119,37 +139,56 @@ function TokenValue({ token, value }: { token: string; value: string }) {
   );
 }
 
-/** An editable RECORD token — a party CONTACT token (LESSOR/LESSEE . ADDRESS /
- *  PHONE / EMAIL / FULL_NAME) or a HORSE-record token (farrier / vet details).
- *  Unlike a false "on file" / "from horse record" hint, an empty one is a real
- *  editable input the contract creator can fill; the value is written back to the
- *  underlying record (contact or horse). When not editable it renders the value
- *  (or a muted "not provided"). */
-function EditableRecordToken({
-  token, value, editable, placeholder, onCommit,
-}: { token: string; value: string; editable: boolean; placeholder: string; onCommit: (v: string) => void }) {
-  const [local, setLocal] = useState(value);
-  const editingRef = useRef(false);
-  useEffect(() => { if (!editingRef.current) setLocal(value); }, [value]);
-  const kind = token.endsWith('.EMAIL') ? 'email' : token.endsWith('.PHONE') ? 'tel' : 'text';
+/** The human name of a party role, for the imported-data tooltip when the
+ *  party's name field is still blank. */
+const ROLE_NAME: Record<string, string> = {
+  LESSOR: 'the Lessor', LESSEE: 'the Lessee', SELLER: 'the Seller',
+  BUYER: 'the Buyer', COBUYER: 'the Co-Buyer',
+};
 
-  if (!editable) {
-    return value.trim()
-      ? <span className="font-medium text-green-900">{value}</span>
-      : <span className="text-muted italic text-[12.5px]">not provided</span>;
+/** The lock tooltip for an IMPORTED token (owner directive 2026-08-03): any
+ *  value imported from a party's account or the horse record is locked at the
+ *  document, and the tooltip names where the change is actually made. */
+function importedSourceTip(token: string, valueByKey: Record<string, string>): string {
+  const role = token.split('.')[0];
+  if (role === 'HORSE') {
+    const horse = (valueByKey['HORSE.BARN_NAME'] || valueByKey['HORSE.REGISTERED_NAME'] || '').trim();
+    const who = horse ? `${horse}'s` : "the horse's";
+    return `Changes to this information must be made on ${who} record on the Horses page.`;
   }
-  const commit = () => { editingRef.current = false; if (local !== value) onCommit(local); };
+  const name = (valueByKey[`${role}.FULL_NAME`] || '').trim() || ROLE_NAME[role] || 'the party';
+  return `Changes to this information must be made on ${name}'s account on the Contacts page.`;
+}
+
+/** A RECORD token imported from a party's contact record or the horse record —
+ *  LOCKED at the document (owner directive 2026-08-03; this replaces the
+ *  earlier inline-editable write-back inputs, whose fixed-width boxes also
+ *  truncated long values like the veterinary address). Renders the full value,
+ *  wrapping freely, with a dotted-underline lock cue and a tooltip naming
+ *  where the information is actually edited. Empty → a muted hint carrying the
+ *  same tooltip. */
+function ImportedRecordToken({
+  value, tip,
+}: { value: string; tip: string }) {
+  if (!value.trim()) {
+    return (
+      <span
+        className="text-muted italic text-[12.5px] cursor-help"
+        title={tip}
+        aria-label={tip}
+      >
+        not on file
+      </span>
+    );
+  }
   return (
-    <input
-      type={kind}
-      className="align-baseline min-w-[8rem] max-w-full px-1 text-[13.5px] text-green-900 bg-gold-50/70 border-b border-gold-400/70 focus:outline-none focus:border-gold-600 rounded-sm"
-      value={local}
-      placeholder={placeholder}
-      aria-label={placeholder}
-      onFocus={() => { editingRef.current = true; }}
-      onChange={(e) => setLocal(e.target.value)}
-      onBlur={commit}
-    />
+    <span
+      className="font-medium text-green-900 whitespace-pre-line break-words [text-decoration:underline_dotted] decoration-gold-500/60 underline-offset-2 cursor-help"
+      title={tip}
+      aria-label={tip}
+    >
+      {value}
+    </span>
   );
 }
 
@@ -306,27 +345,22 @@ function renderToken(
         onSaveResponsibility={cb.onSaveResponsibility as never} />
     );
   }
-  // Party contact tokens: editable inputs (write to the party's contact record),
-  // not a false "on file" hint. Only when a handler is provided (author/editor).
-  if (PARTY_CONTACT_TOKENS[token] && cb.onEditPartyContact) {
+  // Imported record tokens — party contact info and horse-record details
+  // (farrier / vet) — are LOCKED at the document (owner directive 2026-08-03):
+  // the contract displays them; changing them happens on the source record,
+  // and the tooltip says exactly where. This replaced the inline write-back
+  // inputs, whose fixed widths also cut off long values (vet address).
+  if (PARTY_CONTACT_TOKENS[token] || HORSE_RECORD_TOKENS[token]) {
     return (
-      <EditableRecordToken key={key} token={token} value={valueByKey[token] ?? ''}
-        editable={cb.editable} placeholder={PARTY_CONTACT_TOKENS[token]}
-        onCommit={(v) => { void cb.onEditPartyContact!(token, v); }} />
-    );
-  }
-  // Editable horse-record tokens (farrier / vet details): fillable blanks that write
-  // back to the horse record, not a "from horse record" hint. Only when a handler is
-  // provided (author/editor); otherwise they fall through to the read-only value.
-  if (HORSE_RECORD_TOKENS[token] && cb.onEditHorseRecord) {
-    return (
-      <EditableRecordToken key={key} token={token} value={valueByKey[token] ?? ''}
-        editable={cb.editable} placeholder={HORSE_RECORD_TOKENS[token]}
-        onCommit={(v) => { void cb.onEditHorseRecord!(token, v); }} />
+      <ImportedRecordToken key={key} value={valueByKey[token] ?? ''}
+        tip={importedSourceTip(token, valueByKey)} />
     );
   }
   const display = field ? optionLabel(field) : (valueByKey[token] ?? '');
-  return <TokenValue key={key} token={token} value={display} />;
+  return <TokenValue key={key} token={token} value={display} tip={
+    (AUTOFILL_HINT[token] || token.startsWith('HORSE.')) && !token.startsWith('SIG.')
+      ? importedSourceTip(token, valueByKey) : undefined
+  } />;
 }
 
 // A line that is purely "Label: {{TOKEN}}" — rendered as a matrix cell (bold
