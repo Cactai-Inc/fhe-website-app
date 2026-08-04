@@ -9,6 +9,14 @@ hadn't been placed yet). This session was handed the actual spec
 (`docs/tasks/TASK-A11-lessee-visibility.md`), copied it in, renamed the branch per the task's own
 instruction, and proceeded — no prior work was lost or overwritten.
 
+**Rebase note**: before finalizing, discovered the branch had been cut from `main` before
+`task/a14-event-log` and a `task/sqltruth` recapture merged into it — diffing against current
+`origin/main` made it look like this task's `BUILD_TRACKER.md` edit reverted A14 back to
+PARTIAL. It didn't; the branch was simply behind. Stashed the in-progress changes, rebased onto
+`origin/main` (clean, no conflicts), popped the stash (auto-merged `BUILD_TRACKER.md` cleanly —
+A14's DONE row is untouched, only the A11 row carries this task's edit). Re-ran all done-checks
+and re-verified the live DB state post-rebase; both hold (see below).
+
 The orchestrator's "verified current state" section (RLS window, route, execution-effects trigger,
 `stable.ts` field-drop, `HorsePage.tsx:170` framing, dead `/app/stable` link, zero horses with
 `lessee_contact_id` set) was independently re-checked against the code and DB before building — all
@@ -133,11 +141,16 @@ Both RPCs return correctly for the lessee: the horse appears in `my_stable_horse
 `is_owner = false` and the lease term attached, and `horse_page_detail()` carries `viewer_is_lessee =
 true` alongside the same lease term the UI reads.
 
-## Done-checks
+## Done-checks (re-run after the rebase above)
 - `npm run typecheck` — clean.
 - `npm run typecheck:api` — clean.
 - `npm run lint` — **29 warnings / 0 errors**, matching the stated baseline exactly (no new warnings
   introduced).
+- Re-queried production directly post-rebase: `pg_proc.prosrc` for `horse_page_detail` still contains
+  `viewer_is_lessee`; `horses` row `a8e82033…` still carries `lessee_contact_id =
+  352c3898…`/`lease_start = 2026-08-01`/`lease_end = NULL`; `horse_relationships` row
+  `a9fb30d0-7415-4ae0-9877-280cf34bab66` (LESSEE, term_start 2026-08-01, term_end NULL) still present
+  alongside the pre-existing, unrelated duplicated LESSEE rows for the other contact noted below.
 
 ## Honesty check against the task's own bar
 Server-side (RPC/RLS/data) behavior is proven live via the psql output above. **No browser step ran
