@@ -136,6 +136,13 @@ A condition is a SEPARATOR block in the Row-3 stack, not a per-line setting.
   visually self-evidencing — the stack reads exactly like the rendered
   template does. Multiple lines under one separator = multiple INDEPENDENT
   revealed items from one selection (e.g. 'Yes' reveals three questions).
+- GOLD TEXT: the separator carries the caption shown in the document (the gold
+  'This is included when…' line). Default: auto-generated from the condition
+  ('This is included when “<driver label>” is “<value(s)>”.') and kept in sync
+  if the condition changes. An editable text input on the separator lets the
+  author override it; an authored override is stored verbatim and no longer
+  auto-syncs. Storage: the gated lines' guidance/caption field the renderer
+  already displays for gated clauses — reuse it, do not add a parallel one.
 - VALUE PICKER RULES: a separator may select ONE OR MORE values of its driver
   ('A or B' → equals/contains list). Values already used by another separator
   stay selectable and are marked 'already used' — the same value may
