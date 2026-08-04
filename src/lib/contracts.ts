@@ -1347,3 +1347,19 @@ export async function changesSinceSignature(
   if (error) throw error;
   return (data ?? []) as ChangeSinceSignature[];
 }
+
+export interface ContractEventLogRow {
+  occurred_at: string;
+  kind: 'STATUS' | 'SENT' | 'DELIVERED' | 'SIGNED' | 'EDITS' | 'OPENED';
+  actor: string;
+  detail: string;
+}
+
+/** Staff-only unified event feed for a document: status, sends, signatures, opens, edit summaries. */
+export async function contractEventLog(documentId: string): Promise<ContractEventLogRow[]> {
+  const { data, error } = await supabase.rpc('contract_event_log', {
+    p_document_id: documentId,
+  });
+  if (error) throw error;
+  return (data ?? []) as ContractEventLogRow[];
+}
