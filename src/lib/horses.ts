@@ -118,6 +118,12 @@ export interface HorsePageDetail {
   };
   /** A11: true only when the signed-in viewer IS the stamped lessee. */
   viewer_is_lessee: boolean;
+  /** A12: schedule captured in the currently-active executed lease document, read through at display time. Null when no active lease. */
+  lease: {
+    lessee_name: string | null; lease_start: string | null; lease_end: string | null;
+    lease_type: string | null; days_used: string | null; schedule_terms: string | null;
+    source_document_id: string;
+  } | null;
   medications: HorseMedication[];
   documents: { id: string; title: string; display_code: string | null; status: string | null; workflow_state: string | null; effective_date: string | null; created_at: string }[];
   schedule: { id: string; kind: string | null; starts_at: string | null; ends_at: string | null; status: string | null; location: string | null; notes: string | null }[];

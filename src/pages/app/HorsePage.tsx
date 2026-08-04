@@ -174,6 +174,29 @@ export default function HorsePage() {
                 )}
               </Card>
 
+              {detail.lease && (
+                /* A12: schedule captured in the executed lease document, read through at
+                   display time — not stamped on the horse. Absent when no lease is active. */
+                <Card title="Lease" full>
+                  {detail.viewer_is_lessee
+                    ? <Detail label="Term" value={`You lease this horse${detail.lease.lease_end ? ` through ${fmtDate(detail.lease.lease_end)}` : ''}`} />
+                    : <Detail label="Term" value={`Leased to ${detail.lease.lessee_name}${detail.lease.lease_end ? ` (through ${fmtDate(detail.lease.lease_end)})` : ''}`} />}
+                  <Detail label="Lease type" value={titleCase(detail.lease.lease_type)} />
+                  {detail.lease.days_used && (
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wide text-muted mb-0.5">Reserved days</p>
+                      <p className="text-sm text-green-900 whitespace-pre-line">{detail.lease.days_used}</p>
+                    </div>
+                  )}
+                  {detail.lease.schedule_terms && (
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wide text-muted mb-0.5">Additional schedule terms</p>
+                      <p className="text-sm text-green-900 whitespace-pre-line">{detail.lease.schedule_terms}</p>
+                    </div>
+                  )}
+                </Card>
+              )}
+
               <Card title="Care team">
                 <Detail label="Veterinarian" value={[r.vet_name, r.vet_business_name, r.vet_phone].filter(Boolean).join(' · ')} />
                 <Detail label="Farrier" value={[r.farrier_name, r.farrier_phone].filter(Boolean).join(' · ')} />
