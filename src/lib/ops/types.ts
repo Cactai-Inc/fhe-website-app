@@ -176,6 +176,8 @@ export interface DocumentRow {
   /** Tamper-evidence hash (hex sha256), stamped at the EXECUTED flip
    *  (20260703110000). NULL on drafts and pre-hardening executions. */
   execution_hash?: string | null;
+  /** A8B: when the all-parties executed-copy email fired. NULL = not sent yet. */
+  executed_email_sent_at?: string | null;
   created_at: string;
   updated_at: string;
 }

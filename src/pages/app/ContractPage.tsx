@@ -43,6 +43,7 @@ import { ContractChangeHistory } from '../../components/app/ContractChangeHistor
 import { VoidContractModal, VoidedKeepOrRemove } from '../../components/app/VoidContractModal';
 import { PartiesHorseCard } from '../../components/app/PartiesHorseCard';
 import { ClauseDocument } from '../../components/app/ClauseDocument';
+import { SendCopiesMenu } from '../../components/app/SendCopiesMenu';
 import { contractTemplateStructure, type TemplateStructure } from '../../lib/contracts';
 
 /** Pull a human message out of any thrown value. Supabase/PostgREST errors are
@@ -1373,6 +1374,17 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         <div className="bg-white border border-green-800/10 rounded-xl p-5 sm:p-6 mb-5">
           <div className="p-5 sm:p-6">
             <p className="text-[11px] uppercase tracking-wide text-muted mb-3">Manage</p>
+            {/* A8B: staff-only targeted/all-parties re-send of the executed copy. */}
+            {isStaff && id && (
+              <div className="mb-4">
+                <SendCopiesMenu
+                  documentId={id}
+                  parties={partiesSummary?.parties ?? []}
+                  sentAt={doc?.executed_email_sent_at}
+                  onSent={() => { void load(); }}
+                />
+              </div>
+            )}
             {terminationRequested ? (
               iRequestedTermination ? (
                 <p className="text-[13px] text-gold-800">Termination requested — awaiting the other party's agreement.</p>

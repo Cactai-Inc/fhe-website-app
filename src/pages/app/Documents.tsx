@@ -11,19 +11,25 @@ import {
 import { useDocumentTitle } from '../../lib/hooks';
 
 /**
- * H4 — "Email me a copy" for an executed document.
+ * H4/A8B — Send/Resend a copy of an executed document to the caller.
  *
  * Calls the authenticated self-send endpoint (/api/deliver-my-document), which
  * mails ONLY the caller's own copy to their own account address. Renders beside
  * the signed-PDF download and appears on executed documents only.
  *
+ * Label reflects `executed_email_sent_at` — the DB-driven all-parties send
+ * stamp (documents_send_executed_email_trg), NOT this button's own click
+ * history: "Send me a copy" while that stamp is unset, "Resend me a copy"
+ * once it is.
+ *
  * States are explicit and never optimistic: the button disables while the
  * request is in flight, and success/failure render inline only AFTER the server
  * answers. A failed send says so — it is never reported as sent.
  */
-function EmailMeACopyButton({ documentId }: { documentId: string }) {
+function EmailMeACopyButton({ documentId, sentAt }: { documentId: string; sentAt?: string | null }) {
   const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [message, setMessage] = useState<string | null>(null);
+  const label = sentAt ? 'Resend me a copy' : 'Send me a copy';
 
   const send = async () => {
     setState('sending');
@@ -49,7 +55,7 @@ function EmailMeACopyButton({ documentId }: { documentId: string }) {
         data-testid={`email-copy-${documentId}`}
       >
         <Mail size={13} aria-hidden="true" />
-        {state === 'sending' ? 'Sending…' : 'Email me a copy'}
+        {state === 'sending' ? 'Sending…' : label}
       </button>
       {message && (
         <p
@@ -130,7 +136,9 @@ function SelfSignRow({
               )}
               {/* H4: executed documents can also be re-sent to the member's own
                   account email (authenticated party-scoped self-send). */}
-              {doc.status === 'EXECUTED' && <EmailMeACopyButton documentId={doc.id} />}
+              {doc.status === 'EXECUTED' && (
+                <EmailMeACopyButton documentId={doc.id} sentAt={doc.executed_email_sent_at} />
+              )}
             </div>
           ) : isContractDoc ? (
             <Link to={`/app/contracts/${doc.id}`} state={fromHere(location)}
@@ -266,7 +274,7 @@ export default function Documents() {
                       document row — template-only entries have no document to send. */}
                   {r.document_id && (
                     <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <EmailMeACopyButton documentId={r.document_id} />
+                      <EmailMeACopyButton documentId={r.document_id} sentAt={r.executed_email_sent_at} />
                     </div>
                   )}
                 </div>

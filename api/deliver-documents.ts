@@ -3,16 +3,30 @@
  * the participant flow) as ONE email with each document attached as a PDF —
  * instead of one text email per document.
  *
- * Body: { documentIds: string[] }
+ * Body: { documentIds: string[], recipientContactIds?: string[] }
  * -> 200 { delivered:[{email, count}], companyNotified } on success
  * -> 400 on a missing/empty documentIds
+ * -> 403 when a recipientContactIds entry is not an authorized recipient
  * -> 409 when any document is not EXECUTED (no premature delivery)
  * -> 404 when a document does not exist
  * -> 5xx when a read/render fails
  *
- * Recipients: the union of the documents' engagement parties, grouped by contact
- * email — each distinct signer gets ONE email with all the PDFs. A company copy
- * (org public inbox) receives the same attachments once.
+ * Recipients: by default, the union of the documents' engagement parties,
+ * grouped by contact email — each distinct signer gets ONE email with all the
+ * PDFs. A company copy (org public inbox) receives the same attachments once.
+ *
+ * TARGETING (A8B): when `recipientContactIds` is present, delivery goes ONLY to
+ * those contacts instead of the full party union. Each id must be either a
+ * party on EVERY document in `documentIds`, or a staff contact of the
+ * documents' org (the "admin sends themselves a copy" case) — anything else is
+ * a 403 listing the offending id(s). A targeted send never fires the
+ * company-inbox mirror notice (that is an execution-event notice, not
+ * something a targeted re-send should repeat) and never touches
+ * `documents.executed_email_sent_at` (that stamp means "the all-parties
+ * execution email happened" — see `resend_executed_document_email` for that
+ * path). A targeted recipient who is not a party on a given document is
+ * logged with `is_mirror = true` on that document's delivery row — it is an
+ * audit copy, not a party delivery.
  *
  * Idempotency: a (document, recipient, EMAIL) delivery row is written per
  * document after a successful send, matching /api/deliver-document. A re-invocation
@@ -28,6 +42,7 @@ import type { EmailAttachment } from './_lib/email.js';
 import { renderDocumentPdf, pdfFileName } from './_lib/documentPdf.js';
 
 const CHANNEL = 'EMAIL';
+const STAFF_ROLES = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EMPLOYEE'];
 
 // The party-copy PDF strips the trailing facility-rules acknowledgment block
 // (appended to some kiosk bodies); it stays in the stored doc + company copy.
@@ -63,6 +78,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     ? (body.documentIds.filter((d) => typeof d === 'string' && d.trim() !== '') as string[])
     : [];
   if (documentIds.length === 0) return res.status(400).json({ error: 'documentIds required' });
+  const recipientContactIds = Array.isArray(body.recipientContactIds)
+    ? (body.recipientContactIds.filter((d) => typeof d === 'string' && d.trim() !== '') as string[])
+    : [];
 
   try {
     const db = getSupabaseAdmin();
@@ -85,6 +103,48 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     const orgId = docs[0].org_id;
 
+    // 1b. Recipient targeting (A8B): validate BEFORE rendering anything, so a
+    // rejected request never pays for PDF rendering. Each requested id must be
+    // a party on EVERY document in the set, or a staff contact of the org.
+    // `partyDocsByContact` doubles as the is_mirror source of truth below: a
+    // targeted contact with zero party rows across this set is an audit copy,
+    // not a party delivery.
+    let targeted = false;
+    const partyDocsByContact = new Map<string, Set<string>>();
+    if (recipientContactIds.length > 0) {
+      targeted = true;
+      const { data: partyRows, error: partyCheckErr } = await db
+        .from('document_parties')
+        .select('document_id, contact_id')
+        .in('document_id', documentIds)
+        .in('contact_id', recipientContactIds);
+      if (partyCheckErr) throw partyCheckErr;
+      for (const r of (partyRows ?? []) as { document_id: string; contact_id: string }[]) {
+        if (!partyDocsByContact.has(r.contact_id)) partyDocsByContact.set(r.contact_id, new Set());
+        partyDocsByContact.get(r.contact_id)!.add(r.document_id);
+      }
+
+      const { data: staffRows, error: staffErr } = await db
+        .from('profiles')
+        .select('contact_id')
+        .eq('org_id', orgId)
+        .in('contact_id', recipientContactIds)
+        .in('role', STAFF_ROLES);
+      if (staffErr) throw staffErr;
+      const staffContactIds = new Set(
+        (staffRows ?? []).map((r: { contact_id: string }) => r.contact_id),
+      );
+
+      const offending = recipientContactIds.filter((cid) => {
+        const docsForContact = partyDocsByContact.get(cid);
+        const isPartyOnAll = !!docsForContact && documentIds.every((id) => docsForContact.has(id));
+        return !isPartyOnAll && !staffContactIds.has(cid);
+      });
+      if (offending.length > 0) {
+        return res.status(403).json({ error: `not authorized recipients: ${offending.join(', ')}` });
+      }
+    }
+
     // 2. Render each document to a PDF once (party version = rules-tail stripped).
     const pdfs: Array<{ docId: string; attachment: EmailAttachment }> = [];
     for (const d of docs) {
@@ -97,16 +157,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     const allAttachments = pdfs.map((p) => p.attachment);
 
-    // 3. Recipients = union of all documents' parties, grouped by contact.
-    const { data: partiesRaw, error: partyErr } = await db
-      .from('document_parties')
-      .select('contact_id, contacts:contact_id (email, first_name, last_name)')
-      .in('document_id', documentIds);
-    if (partyErr) throw partyErr;
-    const parties = (partiesRaw ?? []) as unknown as PartyRow[];
-    // dedupe by contact_id
+    // 3. Recipients: default = union of all documents' parties, grouped by
+    // contact. Targeted = only the requested contacts (resolved straight from
+    // contacts, since an admin "send to me" recipient may not be a party at all).
     const byContact = new Map<string, PartyRow>();
-    for (const p of parties) if (!byContact.has(p.contact_id)) byContact.set(p.contact_id, p);
+    if (targeted) {
+      const { data: contactRows, error: contactErr } = await db
+        .from('contacts')
+        .select('id, email, first_name, last_name')
+        .in('id', recipientContactIds);
+      if (contactErr) throw contactErr;
+      for (const c of (contactRows ?? []) as
+        { id: string; email: string | null; first_name: string | null; last_name: string | null }[]) {
+        byContact.set(c.id, {
+          contact_id: c.id,
+          contacts: { email: c.email, first_name: c.first_name, last_name: c.last_name },
+        });
+      }
+    } else {
+      const { data: partiesRaw, error: partyErr } = await db
+        .from('document_parties')
+        .select('contact_id, contacts:contact_id (email, first_name, last_name)')
+        .in('document_id', documentIds);
+      if (partyErr) throw partyErr;
+      const parties = (partiesRaw ?? []) as unknown as PartyRow[];
+      // dedupe by contact_id
+      for (const p of parties) if (!byContact.has(p.contact_id)) byContact.set(p.contact_id, p);
+    }
 
     // 4. Tenant-branded identity (once, scoped to the docs' org).
     const identity = await resolveTenantEmailIdentity(db, orgId);
@@ -143,6 +220,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Which of these documents still need a delivery row for this recipient?
       const pending = docs.filter((d) => !deliveredSet.has(`${d.id}:${party.contact_id}`));
       if (pending.length === 0) continue; // fully delivered already
+      // A targeted recipient with no party rows on this set at all (the admin
+      // "send to me" case) is an audit copy, not a party delivery.
+      const isMirrorRecipient = targeted && !partyDocsByContact.get(party.contact_id)?.size;
 
       const greeting = party.contacts?.first_name ? `Hi ${party.contacts.first_name},` : 'Hello,';
       const html =
@@ -175,6 +255,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           recipient_contact_id: party.contact_id,
           channel: CHANNEL,
           copy_url: `/portal/documents/${d.id}`,
+          ...(isMirrorRecipient ? { is_mirror: true } : {}),
         });
         if (insErr && insErr.code !== '23505') {
           // A send that cannot be logged is not a silent success: surface it.
@@ -193,6 +274,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     //    5d: the mirror copy is LOGGED like a party copy — one
     //    document_deliveries row per document, flagged is_mirror, so the
     //    company copy is as provable as the parties'.
+    //    A8B: a TARGETED send skips this — it is a staff-initiated re-send of
+    //    an already-executed set, not a new execution event, so it must not
+    //    also ping the company inbox (and must not write extra delivery rows
+    //    beyond the targeted recipient's).
     let companyNotified = false;
     const partyEmails = new Set(
       Array.from(byContact.values())
@@ -200,7 +285,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .filter(Boolean),
     );
     const mirrorTo = identity.opsInbox ?? identity.contactEmail;
-    if (mirrorTo && !partyEmails.has(mirrorTo.toLowerCase()) && delivered.length > 0) {
+    if (!targeted && mirrorTo && !partyEmails.has(mirrorTo.toLowerCase()) && delivered.length > 0) {
       const signers = Array.from(byContact.values())
         .map((p) => [p.contacts?.first_name, p.contacts?.last_name].filter(Boolean).join(' '))
         .filter(Boolean)
