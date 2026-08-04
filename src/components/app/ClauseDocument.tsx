@@ -740,19 +740,24 @@ export function ClauseDocument({
             <div className="flex flex-col gap-4">
               {clausesToShow.map((clause) => {
                 const gatedOff = !clauseConditionMet(clause.conditional_on, valueByKey);
-                // Only clauses that WILL appear in the final document consume a
-                // number, so the visible numbering matches the executed form. A
-                // gated-off clause shows without a number, muted — EXCEPT in a
-                // wholly-optional section, where the whole block reads as one
-                // numbered-but-optional section (3.1, 3.2 …) under a greyed title.
-                /* EVERY rendered clause consumes a number (2026-08-04). The old
-                   rule skipped gated-off clauses, so the editor showed gaps
-                   (11.1 → 11.3, no 5.2, no 6.1) while the merged document
-                   numbered them — editor and instrument visibly disagreed.
-                   A clause's number is its identity whether or not it is
-                   currently included. */
-                clauseNo += 1;
-                const num = `${secNum}.${clauseNo}`;
+                /* NUMBERING DERIVES FROM HEADINGS (R11, owner ruling 2026-08-04;
+                   supersedes the "every rendered clause consumes a number" rule).
+                   A number is an ENFORCEABLE cross-reference, so it may exist only
+                   where there is a titled thing to reference — a HEADER, i.e. a
+                   clause carrying its own heading — and only when that header is
+                   actually part of the instrument:
+                     • headed + gated-on      → takes the next sub-number (3.1, 3.2…)
+                     • headingless + gated-on → CONTINUATION of the item above it:
+                       no number, no increment (more prose under the same header;
+                       before the first header it is section preamble under "N.")
+                     • gated-off (muted preview) → never numbers, never increments,
+                       so the editor's numbering always equals the executed form's.
+                   Numbers are order-derived, so insertion/removal renumbers itself.
+                   The mirror of this rule lives in remerge_contract_from_clauses. */
+                const isHeader = !!(clause.heading && clause.heading.trim());
+                const numbered = isHeader && !gatedOff;
+                if (numbered) clauseNo += 1;
+                const num = numbered ? `${secNum}.${clauseNo}` : '';
                 const bodyTokens = new Set(
                   [...(clause.body ?? '').matchAll(TOKEN_RE)].map((mm) => mm[1]),
                 );
@@ -835,17 +840,18 @@ export function ClauseDocument({
                         const clauseRequired = (fieldsByClause.get(clause.clause_key) ?? [])
                           .some((f) => f.required && clauseConditionMet(f.conditional_on, valueByKey)
                                        && (f.value ?? '').trim() === '');
-                        if (!clause.heading || echoesSection) {
-                          return (
-                            <p className="text-[13px] font-semibold text-green-900 mb-1 flex items-center gap-1.5">
-                              <span className="text-muted tabular-nums">{num}</span>
-                              {clauseRequired && <span className="text-gold-700" title="Needs an answer before signing">*</span>}
-                            </p>
-                          );
-                        }
+                        /* The words are dropped when the heading merely echoes its
+                           section title (R7) — the NUMBER still stands, being the
+                           clause's stable identity. A headingless continuation has
+                           neither, so it prints no title line at all and reads as
+                           more prose under the header above it; a muted preview
+                           prints its title but never a number (R11). */
+                        const showWords = isHeader && !echoesSection;
+                        if (!num && !showWords && !clauseRequired) return null;
                         return (
                           <p className="text-[13px] font-semibold text-green-900 mb-1 flex items-center gap-1.5">
-                            <span className="text-muted tabular-nums">{num}</span>{clause.heading}
+                            {num ? <span className="text-muted tabular-nums">{num}</span> : null}
+                            {showWords ? clause.heading : null}
                             {clauseRequired && <span className="text-gold-700" title="Needs an answer before signing">*</span>}
                           </p>
                         );
