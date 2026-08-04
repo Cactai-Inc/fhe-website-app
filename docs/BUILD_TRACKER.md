@@ -1,0 +1,124 @@
+# BUILD TRACKER — lease go-live, kiosk, and booking
+
+**Rule:** an item is DONE only when its full pathway is traced — DB → RPC → API →
+UI → the actual user-visible outcome — and verified live. "The function exists"
+is not done. "It typechecks" is not done.
+
+Status vocabulary: **DONE** (traced + verified live) · **BUILT** (code exists,
+not verified end to end) · **PARTIAL** · **NOT STARTED** · **BLOCKED**.
+
+Last updated 2026-08-04.
+
+---
+
+## A. LEASE GO-LIVE — required before the owner sends real leases
+
+This is the critical path. Everything here must be DONE.
+
+| # | Item | Status |
+|---|---|---|
+| A1 | Author a lease as admin; required-field gating names what is missing | **DONE** — verified 2026-08-03 live |
+| A2 | Send to parties; each party can open it from their invite | **NOT VERIFIED** |
+| A3 | Lessor edits only lessor-owned fields; lessee-owned are inert to them | **BUILT** — server enforces (`not authorized to edit this field`); UI affordance added 2026-08-04, not browser-verified |
+| A4 | A fully preconfigured contract presents nothing demanding review to the other party | **BUILT** — gated previews now scope to unmade + owned selections; not verified as a party |
+| A5 | Approve → auto-lock when preconditions pass | **DONE** — verified live |
+| A6 | Both signatures → EXECUTED | **DONE** — verified live (company-side signing was impossible before 2026-08-03; fixed) |
+| A7 | Locked/executed contract is read-only to BOTH parties in the UI | **PARTIAL** — server blocks edits (verified); UI state not browser-verified |
+| A8 | **Email fires on the completing signature**, both parties, PDF attached, signatures visible in the PDF | **NOT VERIFIED** — the single largest go-live risk |
+| A9 | Email formatting and content correct (from-name, subject, body, branding) | **NOT VERIFIED** |
+| A10 | Horse record stamped with lessee + lease dates on execution | **DONE** — verified live |
+| A11 | Horse record VISIBLE to the lessee, showing them as lessee | **NOT VERIFIED** — visibility window may not exist |
+| A12 | Horse record shows the partial-lease schedule captured in the contract | **NOT VERIFIED** |
+| A13 | Lessee can book lessons with that horse | **NOT VERIFIED** |
+| A14 | Contract-scoped EVENT LOG visible to admin (sent, opened, signed, delivered) | **PARTIAL** — `contract_change_log` + `status_events` exist; no admin event-log surface verified |
+| A15 | **Delivery failures surfaced** — bounce/rejection raises a notification to admin | **NOT STARTED** |
+| A16 | Admin notified when a party signs (as lessee AND as admin) | **NOT VERIFIED** |
+| A17 | Documents page: party opens any document and views the final PDF | **NOT VERIFIED** |
+| A18 | Documents page: self-send a copy | **BUILT** — `/api/deliver-my-document`, matrix-passed 2026-08-02; UI path not verified |
+| A19 | Documents page: print / download | **NOT VERIFIED** |
+
+## B. LEAD / INBOUND NOTIFICATIONS
+
+| # | Item | Status |
+|---|---|---|
+| B1 | Website form submission emails hello@fhequestrian.com | **NOT VERIFIED** |
+| B2 | In-app notification on submission | **NOT VERIFIED** |
+| B3 | Persistent unread indicator on the Inbound nav button | **NOT VERIFIED** |
+
+## C. KIOSK SELF-ONBOARDING (additive — old URLs stay live)
+
+| # | Item | Status |
+|---|---|---|
+| C1 | GUEST is a real category (constraints, derivation, standing categories) | **DONE** — verified live 2026-08-04 |
+| C2 | GUEST document set (RELEASE_GENERAL, COMPANY_POLICIES, FACILITY_RULES) | **DONE** — verified live |
+| C3 | Promotion at purchase; document sets union, never strip | **DONE** — verified live (found + fixed a stripping bug) |
+| C4 | `/sign/guest` page | **NOT STARTED** |
+| C5 | `/sign/rider` page | **NOT STARTED** |
+| C6 | `/sign/horse` page | **NOT STARTED** |
+| C7 | `/sign/rider+horse` page | **NOT STARTED** |
+| C8 | Pre-submit screen: welcome copy, eligible services, email + confirm-email, deliverability guidance, vCard contact button | **NOT STARTED** |
+| C9 | Reuses the EXISTING activation email + link (no parallel sender) | **NOT STARTED** |
+| C10 | Minor downstream rules (no outreach to minors, guardian-addressed) | **NOT STARTED** — machinery verified correct 2026-08-04 |
+
+## D. ONBOARDING FLOW UPGRADES (serves invite AND kiosk paths)
+
+| # | Item | Status |
+|---|---|---|
+| D1 | Flow shows the person's orders and the offerings they contain | **NOT STARTED** |
+| D2 | Calendar shown for booking when the purchase is bookable | **NOT STARTED** |
+| D3 | Create a new order from within the flow (modal over calendar) | **NOT STARTED** |
+| D4 | Payment inside the same modal; on confirm, modal closes and calendar refreshes | **NOT STARTED** |
+| D5 | Purchased offerings appear as bookable credits | **BUILT** — credits granted on payment, verified; surfacing in-flow not started |
+
+## E. DUAL-ENTRY BOOKING (calendar-first OR catalog-first)
+
+| # | Item | Status |
+|---|---|---|
+| E1 | Cart line can carry a chosen slot | **NOT STARTED** — `CartItem` has no slot field |
+| E2 | Slot HOLD so a selected time is not sold twice before payment | **NOT STARTED** — `expire-holds` cron exists; coverage unverified |
+| E3 | Calendar-first: pick time → pick offering → checkout | **NOT STARTED** |
+| E4 | Catalog-first: pick offering → optionally attach slot → checkout | **NOT STARTED** |
+| E5 | Skip-booking path: buy now, book later from credits | **PARTIAL** — credits + `book_open_slot` work; no in-flow path |
+| E6 | Checkout shows order contents, attached bookings, prices, total | **PARTIAL** — checkout exists; no booking lines |
+
+## F. LESSON CARD & HORSE ON BOOKING
+
+| # | Item | Status |
+|---|---|---|
+| F1 | Lesson card in calendar right-side panel | **NOT STARTED** |
+| F2 | Same card on the lessons page (one record, two views) | **NOT STARTED** |
+| F3 | Rider notes / questions field | **BUILT** — `booking_notes` has phase + author_role; no UI |
+| F4 | Instructor pre-lesson notes | **BUILT** (same) |
+| F5 | Instructor post-lesson notes | **BUILT** (same) |
+| F6 | Rider selects their own horse on the booking | **BUILT** — `attach_booking_horse` verified to exist; no UI |
+| F7 | Default lesson horse for riders with one/several horses | **NOT STARTED** |
+| F8 | Retroactive attach when a horse record is created after booking | **NOT STARTED** |
+| F9 | Barn-supplied horse hidden from rider until the lesson happens | **NOT STARTED** |
+
+## G. CALENDAR DOCUMENT STATUS
+
+| # | Item | Status |
+|---|---|---|
+| G1 | Staff calendar shows whether a client's documents are complete | **NOT STARTED** |
+| G2 | Client calendar shows their own outstanding documents | **NOT STARTED** |
+| G3 | 48-hour reminder before a booking when documents are incomplete | **NOT STARTED** |
+
+## H. DEFERRED BY DECISION (do not build yet)
+
+| # | Item | Why |
+|---|---|---|
+| H1 | Order revision: swap a line, credit or bill the difference | Money model undecided; credits are sessions-only integers, no balance exists — see `CREDIT_AND_BALANCE_AUDIT.md` |
+| H2 | Horse capacity + rider matching + autonomous booking | Blocked on real horses (P1) and the skill vocabulary (P5) — see `AUTONOMOUS_BOOKING_SPEC.md` |
+| H3 | Removing the old kiosk URLs | Owner ruling 2026-08-04: additive only, nothing ripped out |
+
+---
+
+## Working order
+
+1. **A8/A9 first** — email on execution with PDFs. Highest go-live risk.
+2. **A2/A3/A4/A7 + A17–A19** — the party-side experience, browser-verified.
+3. **A11–A13** — horse record visibility, schedule, lessee booking.
+4. **A14–A16** — event log and failure notifications.
+5. **B1–B3** — lead notifications.
+6. **C4–C10** — the four kiosk pages.
+7. **D, E, F, G** — flow upgrades, dual entry, lesson card, calendar status.
