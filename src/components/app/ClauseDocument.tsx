@@ -446,7 +446,7 @@ const MATRIX_LINE = /^([^{}:]{1,40}):\s*\{\{([A-Z0-9_.]+)\}\}\s*$/;
 /** Render a clause body. Consecutive "Label: {{token}}" lines become a compact
  *  bold-label matrix (e.g. the horse identity block); other lines render as prose
  *  with controls/values inline at each token. */
-function ClauseProse({
+export function ClauseProse({
   body, fieldByKey, valueByKey, cb,
 }: {
   body: string;
@@ -657,23 +657,109 @@ export function ClauseDocument({
     return m;
   }, [fields]);
 
-  // Author-added fields (CUSTOM.*) grouped by their section value. A field whose
-  // section matches a template section renders at the end of that section; the
-  // rest (custom sections) render as their own sections after the template ones.
+  /* AUTHOR-ADDED CONTENT (R11). An addition is stored as CUSTOM.* rows carrying
+     a `custom_kind`, and it must render through THIS component — the editor's
+     real render path — not a lookalike: a header is a header, a line is prose
+     with its controls inline, and a gated line mutes and captions exactly like a
+     template clause. So authored rows are folded into the same ordered item list
+     the template clauses produce, and everything downstream (numbering, gating,
+     ownership affordances, required markers) applies to them unchanged.
+     Placement uses the x1000 insertion space the DB writes: a template row sorts
+     at sort_order*1000, an authored row at its stored sort_order, so an authored
+     item can always sit between two template ones. */
+  const customRows = useMemo(
+    () => fields.filter((f) => !!f.custom_kind), [fields]);
+  const customSectionRows = useMemo(
+    () => customRows.filter((f) => f.custom_kind === 'section'), [customRows]);
+  const customLinesByHeader = useMemo(() => {
+    const m = new Map<string, ContractField[]>();
+    for (const f of customRows) {
+      if (f.custom_kind !== 'line') continue;
+      const k = f.clause_key ?? '';
+      (m.get(k) ?? m.set(k, []).get(k)!).push(f);
+    }
+    for (const arr of m.values()) arr.sort((a, b) => a.sort_order - b.sort_order);
+    return m;
+  }, [customRows]);
+
+  /** One thing to render inside a section — a template clause or an authored
+   *  header/line. `clauseKey` is what fieldsByClause is keyed on. */
+  type RenderItem = {
+    clauseKey: string;
+    heading: string | null;
+    body: string | null;
+    conditional_on: import('../../lib/contracts').FieldConditional | null;
+    caption: string | null;      // authored gold-caption override
+    ord1: number; ord2: number;
+  };
+  const lineItems = useCallback((headerKey: string, ord1: number): RenderItem[] =>
+    (customLinesByHeader.get(headerKey) ?? []).map((l) => ({
+      clauseKey: l.field_key, heading: null, body: l.body ?? '',
+      conditional_on: l.conditional_on ?? null, caption: l.guidance ?? null,
+      ord1, ord2: l.sort_order,
+    })), [customLinesByHeader]);
+
+  // Legacy custom fields — the pre-R11 add surface produced bare "Label: value"
+  // rows with no custom_kind. They keep rendering exactly as they did.
   const sectionKeys = useMemo(() => new Set(sections.map((s) => s.section_key)), [sections]);
   const customBySection = useMemo(() => {
     const m = new Map<string, ContractField[]>();
     for (const f of fields) {
-      if (!f.field_key.startsWith('CUSTOM.')) continue;
+      if (!f.field_key.startsWith('CUSTOM.') || f.custom_kind) continue;
       const k = f.section ?? '';
       (m.get(k) ?? m.set(k, []).get(k)!).push(f);
     }
     return m;
   }, [fields]);
   const customSectionNames = useMemo(
-    () => [...customBySection.keys()].filter((k) => k && !sectionKeys.has(k)).sort(),
-    [customBySection, sectionKeys],
+    () => [...customBySection.keys()]
+      .filter((k) => k && !sectionKeys.has(k) && !customSectionRows.some((s) => s.section === k))
+      .sort(),
+    [customBySection, sectionKeys, customSectionRows],
   );
+
+  /** Template sections and authored sections in one order, each with its items. */
+  const renderSections = useMemo(() => {
+    const secs: { key: string; sectionKey: string; heading: string; ord: number; items: RenderItem[] }[] = [];
+    const headersFor = (sectionKey: string) => customRows
+      .filter((f) => f.custom_kind === 'header' && f.section === sectionKey)
+      .sort((a, b) => a.sort_order - b.sort_order);
+    for (const s of sections) {
+      const items: RenderItem[] = [];
+      for (const c of s.clauses) {
+        const ord1 = c.sort_order * 1000;
+        items.push({
+          clauseKey: c.clause_key, heading: c.heading, body: c.body,
+          conditional_on: c.conditional_on, caption: null, ord1, ord2: 0,
+        });
+        items.push(...lineItems(c.clause_key, ord1));
+      }
+      for (const h of headersFor(s.section_key)) {
+        items.push({
+          clauseKey: h.field_key, heading: h.label ?? 'Item', body: null,
+          conditional_on: null, caption: null, ord1: h.sort_order, ord2: 0,
+        });
+        items.push(...lineItems(h.field_key, h.sort_order));
+      }
+      items.sort((a, b) => a.ord1 - b.ord1 || a.ord2 - b.ord2);
+      secs.push({ key: s.section_key, sectionKey: s.section_key, heading: s.heading, ord: s.sort_order * 1000, items });
+    }
+    for (const cs of customSectionRows) {
+      const name = cs.section ?? '';
+      const items: RenderItem[] = [];
+      for (const h of headersFor(name)) {
+        items.push({
+          clauseKey: h.field_key, heading: h.label ?? 'Item', body: null,
+          conditional_on: null, caption: null, ord1: h.sort_order, ord2: 0,
+        });
+        items.push(...lineItems(h.field_key, h.sort_order));
+      }
+      items.sort((a, b) => a.ord1 - b.ord1 || a.ord2 - b.ord2);
+      secs.push({ key: `custom-section:${name}`, sectionKey: name, heading: cs.label ?? name, ord: cs.sort_order, items });
+    }
+    secs.sort((a, b) => a.ord - b.ord);
+    return secs;
+  }, [sections, customRows, customSectionRows, lineItems]);
 
   const renderCustom = (f: ContractField, num: string) => (
     <div key={f.field_key} className="flex items-baseline gap-1.5">
@@ -688,19 +774,19 @@ export function ClauseDocument({
   let sectionNo = 0;
   return (
     <div className="document-paper flex flex-col gap-7">
-      {sections.map((section) => {
+      {renderSections.map((section) => {
         // Gated-off clauses are shown (muted, toggleable) ONLY to a user who can
         // actually edit — so the author never loses the ability to change their mind
         // before signing. A REVIEWING party (or anyone who can't edit) sees only the
         // active clauses, matching the final/locked document — no confusing
         // "optional, not included" content. The composed merged_body always omits
         // gated-off clauses.
-        const clausesToShow = section.clauses.filter((c) => {
+        const clausesToShow = section.items.filter((c) => {
           if (clauseConditionMet(c.conditional_on, valueByKey)) return true;
           // A gated-off "[Pending — …]" placeholder is dead weight once its
           // question is answered — never preview it muted.
           if (isUnansweredPlaceholder(c.conditional_on)) return false;
-          const hasFields = (fieldsByClause.get(c.clause_key) ?? []).length > 0;
+          const hasFields = (fieldsByClause.get(c.clauseKey) ?? []).length > 0;
           const hasContent = !!(c.body && c.body.trim()) || hasFields;
           if (!hasContent) return false;
           if (cb.authorView) return true;     // staff author sees every branch
@@ -712,7 +798,7 @@ export function ClauseDocument({
              decisions. Once answered, the preview has done its job. */
           return gateIsPendingForViewer(c.conditional_on, fieldByKey, valueByKey, cb);
         });
-        const sectionCustom = customBySection.get(section.section_key) ?? [];
+        const sectionCustom = customBySection.get(section.sectionKey) ?? [];
         if (clausesToShow.length === 0 && sectionCustom.length === 0) return null;
         sectionNo += 1;
         const secNum = sectionNo;
@@ -727,7 +813,7 @@ export function ClauseDocument({
           && sectionCustom.length === 0
           && clausesToShow.every((c) => !clauseConditionMet(c.conditional_on, valueByKey));
         return (
-          <section key={section.section_key} className={sectionAllOptional ? 'opacity-50' : ''}>
+          <section key={section.key} className={sectionAllOptional ? 'opacity-50' : ''}>
             <h2 className="font-serif text-green-900 text-2xl mb-3 flex items-baseline flex-wrap gap-x-2 gap-y-1 border-b border-green-800/10 pb-1.5">
               <span className="text-gold-ink tabular-nums">{secNum}.</span>
               {section.heading}
@@ -774,8 +860,11 @@ export function ClauseDocument({
                 // not hidden here.) A NON-trigger orphan whose OWN conditional_on is
                 // unmet is hidden + inoperable — this is what kept phantom duplicate
                 // deductible sub-fields from disappearing when Lessor was selected.
-                const orphanFields = (fieldsByClause.get(clause.clause_key) ?? [])
-                  .filter((f) => !bodyTokens.has(f.field_key))
+                // Authored rows (headers / lines / inline elements) are NEVER orphans:
+                // an element is placed by its {{token}} inside a line, so listing it
+                // here too would print the same control twice.
+                const orphanFields = (fieldsByClause.get(clause.clauseKey) ?? [])
+                  .filter((f) => !bodyTokens.has(f.field_key) && !f.custom_kind)
                   .filter((f) => triggerKeys.has(f.field_key)
                     || clauseConditionMet(f.conditional_on, valueByKey));
                 const gateControls = orphanFields.filter((f) => triggerKeys.has(f.field_key));
@@ -796,7 +885,7 @@ export function ClauseDocument({
                   );
                 };
                 return (
-                  <div key={clause.clause_key}>
+                  <div key={clause.clauseKey}>
                     {/* A per-clause "optional" note appears only for a clause that's
                         individually gated off within an OTHERWISE-ACTIVE section. When
                         the WHOLE section is optional, the greyed section title carries
@@ -815,7 +904,7 @@ export function ClauseDocument({
                     )}
                     {gatedOff && !sectionAllOptional && (
                       <p className="text-[11px] text-gold-700/90 mb-0.5">
-                        {describeGate(clause.conditional_on, fieldByKey)}
+                        {clause.caption || describeGate(clause.conditional_on, fieldByKey)}
                       </p>
                     )}
                     {/* A gated-off clause is a non-interactive PREVIEW: muted and
@@ -837,7 +926,7 @@ export function ClauseDocument({
                       {(() => {
                         const echoesSection = !!clause.heading
                           && clause.heading.trim().toLowerCase() === section.heading.trim().toLowerCase();
-                        const clauseRequired = (fieldsByClause.get(clause.clause_key) ?? [])
+                        const clauseRequired = (fieldsByClause.get(clause.clauseKey) ?? [])
                           .some((f) => f.required && clauseConditionMet(f.conditional_on, valueByKey)
                                        && (f.value ?? '').trim() === '');
                         /* The words are dropped when the heading merely echoes its
