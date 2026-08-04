@@ -44,6 +44,7 @@ import { VoidContractModal, VoidedKeepOrRemove } from '../../components/app/Void
 import { PartiesHorseCard } from '../../components/app/PartiesHorseCard';
 import { ClauseDocument } from '../../components/app/ClauseDocument';
 import { SendCopiesMenu } from '../../components/app/SendCopiesMenu';
+import { ContractActivityCard } from '../../components/app/ContractActivityCard';
 import { contractTemplateStructure, type TemplateStructure } from '../../lib/contracts';
 
 /** Pull a human message out of any thrown value. Supabase/PostgREST errors are
@@ -1365,6 +1366,10 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           </div>
         </div>
       )}
+
+      {/* A14 — staff-only activity feed, visible at ANY status (unlike Manage,
+          which is executed-only), placed adjacent to it. */}
+      {isStaff && id && <ContractActivityCard documentId={id} />}
 
       {/* TERMINATE — executed contracts only. This survived the removal of the
           notify card, which shared its wrapper: terminating an executed contract

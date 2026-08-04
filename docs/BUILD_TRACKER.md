@@ -30,7 +30,7 @@ This is the critical path. Everything here must be DONE.
 | A11 | Horse record VISIBLE to the lessee, showing them as lessee | **NOT VERIFIED** — visibility window may not exist |
 | A12 | Horse record shows the partial-lease schedule captured in the contract | **NOT VERIFIED** |
 | A13 | Lessee can book lessons with that horse | **NOT VERIFIED** |
-| A14 | Contract-scoped EVENT LOG visible to admin (sent, opened, signed, delivered) | **PARTIAL** — `contract_change_log` + `status_events` exist; no admin event-log surface verified |
+| A14 | Contract-scoped EVENT LOG visible to admin (sent, opened, signed, delivered) | **DONE** (2026-08-04) — `contract_event_log(p_document_id)` RPC (staff-gated) unifies `status_events`/`document_deliveries`/`signatures`/`document_opened`/`contract_change_log`; staff-only "Activity" card on `ContractPage.tsx`, verified live against a real executed doc (8 events incl. SENT + SIGNED). See `docs/reports/TASK-A14-REPORT.md`. |
 | A15 | **Delivery failures surfaced** — bounce/rejection raises a notification to admin | **NOT STARTED** |
 | A16 | Admin notified when a party signs (as lessee AND as admin) | **NOT VERIFIED** |
 | A17 | Documents page: party opens any document and views the final PDF | **NOT VERIFIED** |
