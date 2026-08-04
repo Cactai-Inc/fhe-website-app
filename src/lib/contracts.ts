@@ -61,6 +61,18 @@ export interface ContractField {
   structured?: FieldStructured | null;   // canonical structured value (source of truth)
   pair_cost_key?: string | null;   // on a 'pair' manage field → its cost child's field_key
   pair_manage_key?: string | null; // on a cost child → its manage field's field_key (hidden as a row)
+  // ── author-added content (R11) ──
+  /** What an author-added row IS. NULL for template fields and for legacy custom
+   *  fields created by the pre-R11 add surface (still shown as "Label: value").
+   *   section → a whole new section (label = its title)
+   *   header  → a numbered header inside a section
+   *   line    → one content line; `body` is its prose, `clause_key` names the
+   *             header it sits under, `conditional_on` is its gate and
+   *             `guidance` the gold caption shown when that gate is unmet
+   *   element → an inline control placed by a {{token}} in some line's body */
+  custom_kind?: 'section' | 'header' | 'line' | 'element' | null;
+  /** Prose of a `line` row — same {{TOKEN}} convention as a template clause body. */
+  body?: string | null;
 }
 
 /** A party choice, with the sub-inputs revealed by CARE_PROVIDER / SHARED. */
@@ -699,6 +711,57 @@ export async function addContractElement(documentId: string, p: {
   });
   if (error) throw error;
   return data as { field_key: string; section: string };
+}
+
+// ─── Authored ADDITIONS (R11 add-item) ───────────────────────────────────────
+/** One inline element in an authored line. `id` is a LOCAL id used only inside
+ *  the spec: a line's prose references it as `{{CUSTOM.@id}}` and a gate as
+ *  `field_key: '@id'`. The RPC mints the real CUSTOM key and rewrites both, so
+ *  the client never has to predict a key. */
+export interface CompositionElement {
+  id: string;
+  kind: 'select' | 'buttons' | 'text';
+  label: string;
+  placeholder?: string | null;
+  required?: boolean;
+  options?: { value: string; label: string }[];
+}
+/** One content line. A line produced inside a CONDITION SEPARATOR carries that
+ *  separator's gate + caption; a top-level line carries neither. */
+export interface CompositionLine {
+  body: string;
+  conditional_on?: FieldConditional | null;
+  caption?: string | null;
+}
+export interface CompositionSpec {
+  /** section_key of an existing section, or the TITLE of a new one. */
+  section: string;
+  section_new?: boolean;
+  /** 1-based position among the document's sections; only when section_new. */
+  section_position?: number | null;
+  header: { clause_key?: string | null; text?: string | null; position?: number | null };
+  elements: CompositionElement[];
+  lines: CompositionLine[];
+}
+/** Write one authored addition — section (optional), header, elements and lines —
+ *  in a single transaction, then re-merge. Returns the keys it minted. */
+export async function addContractComposition(documentId: string, spec: CompositionSpec): Promise<{
+  section: string; header_key: string; element_keys: Record<string, string>; created: string[];
+}> {
+  const { data, error } = await supabase.rpc('add_contract_composition', {
+    p_document_id: documentId, p_spec: spec as unknown as Record<string, unknown>,
+  });
+  if (error) throw error;
+  return data as { section: string; header_key: string; element_keys: Record<string, string>; created: string[] };
+}
+/** Remove an authored item. A header takes its lines and elements with it; a
+ *  section takes everything the author added to it. */
+export async function removeContractComposition(documentId: string, fieldKey: string): Promise<number> {
+  const { data, error } = await supabase.rpc('remove_contract_composition', {
+    p_document_id: documentId, p_field_key: fieldKey,
+  });
+  if (error) throw error;
+  return (data ?? 0) as number;
 }
 
 /** The format registry (read-only) — powers the add-field modal's type picker and

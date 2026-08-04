@@ -1070,7 +1070,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
               {structure && id && isOwnerSide && editablePhase && (
                 <AddElementButton documentId={id} disabled={!editablePhase}
                   className={SUBHEADER_BTN}
-                  sections={structure.sections.map((sec) => sec.heading)}
+                  structure={structure} fields={detail.fields}
                   canAddStructure={isOwnerSide}
                   canAddClause={isOwnerSide || (redline?.can_add_clause ?? false)}
                   onAdded={() => void act(async () => {})} />
