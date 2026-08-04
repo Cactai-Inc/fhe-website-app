@@ -617,6 +617,9 @@ export interface MyDocumentRow {
   current_status: string | null;
   superseded: boolean;
   created_at: string;
+  /** A8B: when the all-parties executed-copy email fired (documents.executed_email_sent_at).
+   *  NULL on non-executed rows, and on executed rows the send hasn't happened yet. */
+  executed_email_sent_at: string | null;
 }
 export async function myDocuments(): Promise<MyDocumentRow[]> {
   const { data, error } = await supabase.rpc('my_documents');

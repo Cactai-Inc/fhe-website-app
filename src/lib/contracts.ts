@@ -168,6 +168,8 @@ export interface ContractDetail {
     termination_requested_by?: string | null;
     termination_request_reason?: string | null;
     effective_date?: string | null;
+    /** A8B: when the all-parties executed-copy email fired. NULL = not sent yet. */
+    executed_email_sent_at?: string | null;
   };
   my_roles: string[];
   fields: ContractField[];
