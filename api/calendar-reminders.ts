@@ -51,6 +51,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let swept: unknown = null;
     try { const { data } = await db.rpc('calendar_reminder_sweep'); swept = data; } catch (e) { console.error('reminder sweep', e); }
     try { await db.rpc('lease_reminder_sweep'); } catch (e) { console.error('lease sweep', e); }
+    // Keep 4 weeks of bookable open slots published from business hours at
+    // all times (idempotent; also republishes hours freed by cancellations
+    // within the hour). Best-effort like the sweeps above.
+    try { await db.rpc('publish_open_slots_all', { p_weeks: 4, p_slot_minutes: 60 }); } catch (e) { console.error('open-slot publish', e); }
 
     // Outside the email window: rows are written, we just skip sending.
     const hour = pacificHour();
