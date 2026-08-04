@@ -1043,7 +1043,16 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
               {structure && id && !isExecuted && (
                 <button type="button"
                   className={`${SUBHEADER_BTN} border-green-800/20 bg-white text-green-900 hover:bg-green-800/5`}
-                  onClick={() => document.getElementById('contract-signatures')?.scrollIntoView({ behavior: 'smooth' })}>
+                  /* The signatures card only exists once the document is in
+                     review/locked or has captured signatures — in the plain
+                     editable phase (where this button is most useful) the
+                     target was absent and the click did NOTHING. Fall back to
+                     the end of the page so it always scrolls. */
+                  onClick={() => {
+                    const target = document.getElementById('contract-signatures');
+                    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    else window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+                  }}>
                   Scroll to Bottom
                 </button>
               )}

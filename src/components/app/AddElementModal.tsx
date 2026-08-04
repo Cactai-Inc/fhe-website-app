@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Plus } from 'lucide-react';
 import { addContractElement, listContractFormats, proposeClause, type ContractFormat } from '../../lib/contracts';
 
@@ -142,9 +143,15 @@ function AddElementModal({
     } finally { setBusy(false); }
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-green-950/40 p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[88vh] overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
+  // PORTAL TO <body> (2026-08-04). The trigger lives in the contract subheader,
+  // which is `sticky` + `backdrop-blur` — and a backdrop-filter creates a
+  // CONTAINING BLOCK, so `fixed inset-0` resolved against that thin bar instead
+  // of the viewport: the modal rendered clipped, its header and Name field cut
+  // off above the fold with no way to scroll to them. Rendering through a
+  // portal puts it back on the viewport where `fixed` means what it says.
+  return createPortal((
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-green-950/40 p-4 overflow-y-auto" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[88vh] overflow-y-auto p-6 my-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-serif text-lg text-green-900">Add to this contract</h3>
           <button type="button" onClick={onClose} aria-label="Close" className="text-muted hover:text-green-800 focus-ring rounded"><X size={18} /></button>
@@ -247,5 +254,5 @@ function AddElementModal({
         </div>
       </div>
     </div>
-  );
+  ), document.body);
 }
