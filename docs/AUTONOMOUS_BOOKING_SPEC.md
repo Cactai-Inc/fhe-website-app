@@ -116,3 +116,107 @@ Worth keeping — these need no rework when the build starts.
   booking time, or only on the day?
 - **Fallback**: when no qualifying horse is free, does the rider see nothing, or a
   request-a-time path that reaches staff?
+
+---
+
+# Part B — the rider's horse on a booking, and the lesson card
+
+Added 2026-08-04 from the owner's description. Audit findings against live are
+marked inline.
+
+## 7. The promoted guest's document trail
+
+A visitor who becomes a rider and then a horse owner accumulates, not replaces:
+
+- **3 guest documents** — RELEASE_GENERAL, COMPANY_POLICIES, FACILITY_RULES
+- **+2 rider documents** — RELEASE_PARTICIPANT, HUMAN_EMERGENCY_MEDICAL
+  (COMPANY_POLICIES and FACILITY_RULES are already satisfied and are NOT re-signed)
+- **+2 horse-owner documents** — RELEASE_HORSE_CARE, HORSE_EMERGENCY_VET
+  (RELEASE_PARTICIPANT already satisfied)
+
+**7 documents total**, one of which (RELEASE_GENERAL) is superseded in practical
+terms by the participant release but is **archived, never deleted** — consistent
+with the standing executed-documents rule. Requirement-set union on promotion is
+built and verified (2026-08-04); the archive-not-delete behaviour on supersession
+should be re-verified against this exact path when it is exercised.
+
+## 8. The horse arrives AFTER the booking — auto-inheritance
+
+The sequence the owner described: a rider with their own horse books and pays a
+lesson, completes the horse-owner documents, creates the horse record — and the
+horse record therefore **postdates the booking**.
+
+**Question asked: can the lesson auto-inherit the horse once it is created?**
+**Answer: yes, and most of the machinery exists.**
+
+Already built:
+- `bookings.horse_id` — the attachment column.
+- `attach_booking_horse(booking, horse)` — verifies the caller owns the horse
+  (direct ownership **or** an active `horse_relationships` party row), enforces
+  the care-document gate, and attaches. A rider can therefore attach their own
+  horse to their own future booking at any time after the fact.
+- `assert_horse_care_eligible` — auto-generates the per-horse release and vet
+  authorisation and blocks fulfilment until executed.
+
+To build:
+- **B1 — default lesson horse.** A rider with one horse gets it attached
+  automatically; a rider with several sets a default ("the horse I ride in
+  lessons"). Needs a flag on the horse or the relationship — a nullable
+  `default_for_lessons` on `horse_relationships` is the natural home since the
+  relationship is already the ownership/lease truth.
+- **B2 — retroactive attach on horse creation.** When a horse record is created,
+  attach it to that owner's **future, unassigned, own-horse lesson bookings**.
+  Scope deliberately narrow: future only, empty `horse_id` only, and only where
+  the booking's offering implies the rider supplies the horse. Idempotent.
+- **B3 — the fallback the owner described.** If B2 does not fire, the rider sees
+  an empty horse field on the lesson card and sets it themselves. **This is the
+  safety net that makes B2 optional rather than load-bearing** — the manual path
+  must work first.
+
+With B1+B2 working, the owner's "take them to the calendar and tell them to
+attach their horse" step becomes unnecessary. The calendar hand-off is the
+**fallback UX**, not the primary path.
+
+## 9. The lesson card — one record, two views
+
+The owner's model: the **lesson** is the record; the calendar booking is a *view*
+of it. The same fields appear in both places and are written by whoever owns them.
+
+Fields on the card:
+| Field | Written by | Visible to rider |
+|---|---|---|
+| Rider's notes / questions for the instructor | rider | always |
+| Instructor's pre-lesson notes | instructor | per owner decision (see open questions) |
+| Instructor's post-lesson notes | instructor | after the lesson |
+| Horse — rider-supplied | rider/owner | always (their own horse) |
+| Horse — barn-supplied | staff, at or after the lesson | **not until the lesson happens** |
+
+**Horse visibility rule (owner):** a rider on a barn horse does not see the horse
+assignment until the lesson occurs — assignment is recorded for usage and history
+tracking. A rider on their **own** horse sees it always, because they set it.
+
+Audit — already built and correctly shaped:
+- `booking_notes` carries `phase` (`pre` / `post`) and `author_role`
+  (`rider` / `instructor` / `staff` / `admin`) with a body — **this is exactly the
+  structure this design needs.** No new notes table required.
+- `bookings.notes` (free text) exists separately and is the older, unstructured
+  field; the structured `booking_notes` rows are the right home.
+
+To build:
+- **B4 — the lesson card component**, rendered in both the calendar (right-side
+  panel on booking click) and the lessons page, reading/writing the same
+  `booking_notes` rows and `bookings.horse_id`.
+- **B5 — per-role write gating** on each field, matching the table above.
+- **B6 — horse-visibility rule** for barn-supplied horses (hidden until the lesson
+  date passes, or until staff mark it visible).
+
+## 10. Additional open questions
+
+- Are the **instructor's pre-lesson notes** visible to the rider before the lesson,
+  or staff-only until after?
+- Should a rider be able to **change their attached horse** after booking, and up
+  to when — any time before the lesson, or is there a cutoff?
+- If a rider's default horse is **not care-eligible** (documents incomplete for
+  that horse), does B2 attach it anyway and let the fulfilment gate catch it, or
+  skip the attach? *(Recommendation: attach, so the gap is visible on the card
+  rather than silently absent.)*
