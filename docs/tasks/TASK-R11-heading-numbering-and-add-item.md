@@ -127,15 +127,18 @@ storage cannot hold options/placeholder/required, extend the RPC minimally.
 
 ## B3 — conditional visibility via CONDITION SEPARATORS (owner model)
 A condition is a SEPARATOR block in the Row-3 stack, not a per-line setting.
-- Inserting one (via [+] → 'Add a condition') places a separator line that
-  reads like the template's own gold captions: 'Only when [driver] is
-  [value(s)]' — driver picked from the Dropdown/Buttons elements already in
-  THIS addition, value(s) picked from that element's configured items.
-- SCOPE: the separator gates every line BELOW it, until the next separator or
-  the end of the stack. Lines above any separator are unconditional. This is
-  visually self-evidencing — the stack reads exactly like the rendered
-  template does. Multiple lines under one separator = multiple INDEPENDENT
-  revealed items from one selection (e.g. 'Yes' reveals three questions).
+- Inserting one (via [+] → 'Add a condition') places a SELF-CONTAINED block
+  holding, on one element: (a) the condition config — driver picked from the
+  Dropdown/Buttons elements already in THIS addition, value(s) picked from
+  that element's configured items; (b) the gold caption (below); (c) its own
+  GATED-CONTENT ZONE — an input area with its own internal [+ line] so one
+  condition can reveal multiple independent lines (e.g. 'Yes' reveals three
+  questions).
+- SCOPE (containment, owner model): a condition block gates ONLY the lines
+  inside its own content zone. It never gates top-level lines below it. A
+  top-level line added after a condition block is independent, unconditional
+  content — no header, no number (headingless continuation under the same
+  X.Y header), just the document's normal sibling spacing.
 - GOLD TEXT: the separator carries the caption shown in the document (the gold
   'This is included when…' line). Default: auto-generated from the condition
   ('This is included when “<driver label>” is “<value(s)>”.') and kept in sync
