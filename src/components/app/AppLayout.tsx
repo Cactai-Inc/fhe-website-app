@@ -12,7 +12,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useViewSurfaces } from '../../lib/surfaces';
 import { fetchMyGrantKeys } from '../../lib/grants';
 import {
-  myUnreadCount, myWallState, getMyProfile, markTourSeen, fetchMyCategories,
+  myUnreadCount, inboundOpenCount, myWallState, getMyProfile, markTourSeen, fetchMyCategories,
   currentTourFormFactor,
   type WallState, type StandingCategory,
 } from '../../lib/api';
@@ -30,6 +30,22 @@ function useUnreadCount(): number {
     myUnreadCount().then((n) => active && setCount(n)).catch(() => { /* stay quiet */ });
     return () => { active = false; };
   }, [location.pathname]);
+  return count;
+}
+
+/** Open-inbound-work count for the Inbound nav badge (requests + support).
+ *  Refreshes on mount and on every route change, same as useUnreadCount.
+ *  Staff-only RPC — `enabled` gates the fetch so non-staff members (who never
+ *  see the Inbound nav item) don't call it at all. */
+function useInboundOpenCount(enabled: boolean): number {
+  const location = useLocation();
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (!enabled) return;
+    let active = true;
+    inboundOpenCount().then((n) => active && setCount(n)).catch(() => { /* stay quiet */ });
+    return () => { active = false; };
+  }, [location.pathname, enabled]);
   return count;
 }
 
@@ -59,6 +75,9 @@ interface NavItem {
   module?: string;
   adminOnly?: boolean;
   superAdmin?: boolean;
+  /** Unread-style count shown on this item's badge (RailLink). Not part of the
+   *  static nav tables — injected at render time (see AppLayout's navGroups). */
+  badge?: number;
 }
 
 // `badge` surfaces an unread count on that nav link: 'notifications' (Dashboard) or
@@ -404,6 +423,7 @@ export default function AppLayout() {
   useViewSurfaces();
   const navigate = useNavigate();
   const unreadCount = useUnreadCount();
+  const inboundCount = useInboundOpenCount(isStaff);
   const [menuOpen, setMenuOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   // Mobile left-nav drawer: the side menu, opened by the in-content button that
@@ -477,7 +497,15 @@ export default function AppLayout() {
     if (!isTrainer) return;
     fetchMyGrantKeys().then(setGrantKeys).catch(() => {});
   }, [isTrainer]);
-  const navGroups = showRail ? manageNavGroups(hasModule, isAdmin, isSuperAdmin, grantKeys) : [];
+  // Inbound's badge is injected here (not in the static MANAGEMENT_GROUP table)
+  // since it's a live count, mirroring how the Dashboard badge is passed as a
+  // prop rather than baked into QUICK.
+  const navGroups = showRail
+    ? manageNavGroups(hasModule, isAdmin, isSuperAdmin, grantKeys).map((g) => ({
+        ...g,
+        items: g.items.map((it) => (it.to === '/app/ops/intake' ? { ...it, badge: inboundCount } : it)),
+      }))
+    : [];
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const groupOpen = (g: NavGroup) => openGroups[g.key] ?? g.defaultOpen ?? false;
   const toggleGroup = (key: string) => setOpenGroups((p) => ({ ...p, [key]: !(p[key] ?? navGroups.find((g) => g.key === key)?.defaultOpen ?? false) }));

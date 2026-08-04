@@ -357,6 +357,14 @@ export async function myUnreadCount(): Promise<number> {
   return Number(data ?? 0);
 }
 
+/** Open inbound-work count (open requests + open support) for the Inbound nav
+ *  badge. Staff-only. */
+export async function inboundOpenCount(): Promise<number> {
+  const { data, error } = await supabase.rpc('inbound_open_count');
+  if (error) throw error;
+  return Number(data ?? 0);
+}
+
 // ─── My standing categories (Guest / Rider / Horse Owner) ────────────────────
 
 /** A standing account category the signed-in person holds. */
