@@ -254,7 +254,14 @@ function gateTriggerKeys(
 /** Map a raw gate value to its human label using the trigger field's options. */
 function gateValueLabel(f: ContractField | undefined, raw: string): string {
   const opt = f?.options?.find((o) => o.value === raw);
-  return opt?.label ?? raw;
+  if (opt?.label) return opt.label;
+  /* R8 (2026-08-04): yesno fields carry no options list, so a gate on them
+     printed the STORED CODE — 'is "YES"' / 'is "NO"'. Present the vocabulary
+     the way the control shows it. */
+  const up = raw.toUpperCase();
+  if (up === 'YES') return 'Yes';
+  if (up === 'NO') return 'No';
+  return raw;
 }
 
 /** A plain-English description of a clause/section's gate for authors, e.g.

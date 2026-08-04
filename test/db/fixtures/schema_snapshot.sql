@@ -466,6 +466,44 @@ $$;
 
 
 --
+-- Name: _publish_open_slots_for_org(uuid, integer, integer); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public._publish_open_slots_for_org(p_org uuid, p_weeks integer, p_slot_minutes integer) RETURNS integer
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  v_day date; v_bh record; v_t timestamptz; v_end timestamptz; v_n integer := 0;
+BEGIN
+  IF p_slot_minutes NOT BETWEEN 15 AND 240 THEN RAISE EXCEPTION 'slot length out of range'; END IF;
+  FOR v_day IN SELECT d::date FROM generate_series(current_date, current_date + (p_weeks * 7 - 1), interval '1 day') d LOOP
+    SELECT * INTO v_bh FROM business_hours
+     WHERE org_id = p_org AND weekday = extract(dow FROM v_day)::int AND NOT closed;
+    CONTINUE WHEN NOT FOUND;
+    v_t   := (v_day::text || ' ' || v_bh.open_time::text)::timestamp AT TIME ZONE 'America/Los_Angeles';
+    v_end := (v_day::text || ' ' || v_bh.close_time::text)::timestamp AT TIME ZONE 'America/Los_Angeles';
+    WHILE v_t + make_interval(mins => p_slot_minutes) <= v_end LOOP
+      IF v_t > now() AND NOT EXISTS (
+           SELECT 1 FROM bookings b
+            WHERE b.org_id = p_org
+              AND coalesce(b.status,'') NOT IN ('cancelled','expired')
+              AND b.starts_at < v_t + make_interval(mins => p_slot_minutes)
+              AND b.ends_at   > v_t)
+      THEN
+        INSERT INTO bookings (org_id, kind, status, is_flexible, starts_at, ends_at)
+        VALUES (p_org, 'lesson', 'available', true, v_t, v_t + make_interval(mins => p_slot_minutes));
+        v_n := v_n + 1;
+      END IF;
+      v_t := v_t + make_interval(mins => p_slot_minutes);
+    END LOOP;
+  END LOOP;
+  RETURN v_n;
+END;
+$$;
+
+
+--
 -- Name: _resolve_location(uuid, uuid, jsonb); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -1684,9 +1722,14 @@ BEGIN
 
   SELECT template_key, contract_kind INTO v_key, v_kind
     FROM contract_templates WHERE id = NEW.template_id;
+  -- coalesce is load-bearing: contract_kind is NULL for every plain template
+  -- (releases, policies, medical auth), and NULL IN (...) is NULL — which made
+  -- IF NOT(... OR NULL) skip this early return, so the horse-transfer effects
+  -- fired on EVERY executed document and broke onboarding signing outright
+  -- (horses_named violation from all-empty HORSE.* fields). 2026-08-03 e2e.
   IF NOT (is_horse_lease_template(v_key)
           OR v_key = 'HORSE_PURCHASE_SALE'
-          OR v_kind IN ('HORSE_SALE', 'HORSE_BILL_OF_SALE')) THEN
+          OR coalesce(v_kind, '') IN ('HORSE_SALE', 'HORSE_BILL_OF_SALE')) THEN
     RETURN NEW;
   END IF;
 
@@ -2785,7 +2828,17 @@ BEGIN
    WHERE id = (SELECT id FROM lesson_credits
                WHERE client_id = v_client AND org_id = v_b.org_id
                  AND deleted_at IS NULL AND credits_remaining > 0
-                 AND (offering_id = v_offering OR offering_id IS NULL)
+                 AND (
+                   -- offering-tagged slot: that offering's credits, or untagged
+                   (v_offering IS NOT NULL AND (offering_id = v_offering OR offering_id IS NULL))
+                   -- GENERIC slot (published from business hours, no offering):
+                   -- any untagged credit, or any credit whose offering is not a
+                   -- horse-care SKU — the slot is generic time; the credit says
+                   -- what was bought. Without this, every real purchase (always
+                   -- offering-tagged) was rejected by generic open slots.
+                   OR (v_offering IS NULL AND (offering_id IS NULL OR EXISTS (
+                        SELECT 1 FROM offerings oc WHERE oc.id = offering_id AND oc.segment <> 'horse')))
+                 )
                ORDER BY (offering_id = v_offering) DESC NULLS LAST, purchased_at, created_at
                LIMIT 1 FOR UPDATE)
    RETURNING id INTO v_credit;
@@ -7338,7 +7391,8 @@ BEGIN
     FROM contract_change_log l
    WHERE l.document_id = p_document_id
      AND l.change_kind = 'signature_removed'
-     AND (l.detail ->> 'by_contact_id')::uuid = v_target;
+     AND coalesce((l.detail ->> 'for_contact_id')::uuid,
+                  (l.detail ->> 'by_contact_id')::uuid) = v_target;
 
   IF v_since IS NULL THEN
     SELECT max(signed_at) INTO v_since
@@ -11917,6 +11971,28 @@ $$;
 
 
 --
+-- Name: normalise_phone_columns(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.normalise_phone_columns() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $_$
+DECLARE
+  v_col text;
+  v_val text;
+BEGIN
+  FOREACH v_col IN ARRAY TG_ARGV LOOP
+    EXECUTE format('SELECT ($1).%I::text', v_col) INTO v_val USING NEW;
+    IF v_val IS NOT NULL AND btrim(v_val) <> '' THEN
+      NEW := jsonb_populate_record(NEW, to_jsonb(NEW) || jsonb_build_object(v_col, format_phone(v_val)));
+    END IF;
+  END LOOP;
+  RETURN NEW;
+END
+$_$;
+
+
+--
 -- Name: notification_is_personal(text); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -13393,6 +13469,45 @@ $$;
 
 
 --
+-- Name: publish_open_slots(integer, integer); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.publish_open_slots(p_weeks integer DEFAULT 4, p_slot_minutes integer DEFAULT 60) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  v_org uuid := current_org(); v_n integer;
+BEGIN
+  IF NOT has_staff_access() THEN RAISE EXCEPTION 'staff access required'; END IF;
+  IF v_org IS NULL THEN RAISE EXCEPTION 'no organization in session'; END IF;
+  v_n := _publish_open_slots_for_org(v_org, p_weeks, p_slot_minutes);
+  RETURN jsonb_build_object('published', v_n, 'weeks', p_weeks, 'slot_minutes', p_slot_minutes);
+END;
+$$;
+
+
+--
+-- Name: publish_open_slots_all(integer, integer); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.publish_open_slots_all(p_weeks integer DEFAULT 4, p_slot_minutes integer DEFAULT 60) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  r record; v_total integer := 0; v_orgs integer := 0;
+BEGIN
+  FOR r IN SELECT DISTINCT org_id FROM business_hours WHERE NOT closed LOOP
+    v_total := v_total + _publish_open_slots_for_org(r.org_id, p_weeks, p_slot_minutes);
+    v_orgs := v_orgs + 1;
+  END LOOP;
+  RETURN jsonb_build_object('published', v_total, 'orgs', v_orgs, 'weeks', p_weeks);
+END;
+$$;
+
+
+--
 -- Name: purge_account(uuid, text); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -13787,7 +13902,26 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM document_parties
                   WHERE document_id = p_document_id AND contact_id = v_signer
                     AND party_role = p_party_role AND is_signer) THEN
-    RAISE EXCEPTION 'not a signer on this document in role %', p_party_role;
+    -- COMPANY-SIDE SIGNING (2026-08-03): the org's company contact is a
+    -- faceless entity with no linked account (the identity consolidation
+    -- moved every staff profile onto a personal TEAM contact), so when the
+    -- signing party IS the company contact, a staff member signs on the
+    -- company's behalf: the signature is recorded against the company
+    -- contact, the acting human is captured in signer_user_id + typed_name.
+    -- Mirrors remove_my_signature's existing staff-on-behalf allowance.
+    IF has_staff_access() AND EXISTS (
+         SELECT 1 FROM document_parties dp
+           JOIN contacts cc ON cc.id = dp.contact_id
+          WHERE dp.document_id = p_document_id AND dp.party_role = p_party_role
+            AND dp.is_signer AND cc.is_company AND cc.org_id = v_doc_org
+            AND cc.deleted_at IS NULL) THEN
+      SELECT dp.contact_id INTO v_signer
+        FROM document_parties dp JOIN contacts cc ON cc.id = dp.contact_id
+       WHERE dp.document_id = p_document_id AND dp.party_role = p_party_role
+         AND dp.is_signer AND cc.is_company LIMIT 1;
+    ELSE
+      RAISE EXCEPTION 'not a signer on this document in role %', p_party_role;
+    END IF;
   END IF;
 
   IF nullif(btrim(coalesce(p_typed_name, '')), '') IS NULL THEN
@@ -13798,9 +13932,13 @@ BEGIN
   v_ua := coalesce(nullif(trim(coalesce(p_user_agent, '')), ''), v_ua);
 
   INSERT INTO signatures (org_id, document_id, signer_contact_id, signer_user_id, party_role, typed_name, signed_at, ip_address, user_agent, method)
-    VALUES (v_doc_org, p_document_id, v_signer, (SELECT pr.user_id FROM profiles pr WHERE pr.contact_id = v_signer LIMIT 1), p_party_role, p_typed_name, now(), v_ip, v_ua, 'TYPED')
+    VALUES (v_doc_org, p_document_id, v_signer, coalesce((SELECT pr.user_id FROM profiles pr WHERE pr.contact_id = v_signer LIMIT 1), auth.uid()), p_party_role, p_typed_name, now(), v_ip, v_ua, 'TYPED')
     ON CONFLICT (document_id, signer_contact_id, party_role) DO UPDATE
       SET typed_name = EXCLUDED.typed_name,
+          -- the rows pre-seeded at lock time carry NULL signer_user_id; the
+          -- sealing update must stamp the signing account or no executed
+          -- document ever records WHO signed (found in the 2026-08-03 e2e)
+          signer_user_id = EXCLUDED.signer_user_id,
           signed_at  = EXCLUDED.signed_at,
           ip_address = EXCLUDED.ip_address,
           user_agent = EXCLUDED.user_agent,
@@ -14444,6 +14582,22 @@ BEGIN
               v_line := replace(v_line, '{{'||v_tok||'}}', fmt_money((v_fields ->> v_tok)::numeric));
             ELSE v_line := replace(v_line, '{{'||v_tok||'}}', token_display_value(v_tok, v_fields ->> v_tok, v_labels)); END IF;
           END LOOP;
+          /* R5 (2026-08-04): sentence-terminal punctuation is appended HERE,
+             not authored into the body. The clause bodies used to end
+             "…: {{TOKEN}}." which produced an orphan "." under a full-width
+             input in the editor and a doubled ".." whenever the signer typed
+             their own period. Now: if the composed line ends with a filled
+             token and lacks terminal punctuation, add one. A line whose token
+             resolved to empty gets nothing, so no orphan period survives. */
+          /* Only punctuate a line that actually SAYS something: a line whose
+             token resolved to empty ends in its lead-in colon ("are: ") and
+             must stay bare rather than becoming "are: ." — the unanswered
+             field is already flagged by the required marker. */
+          IF btrim(v_line) <> '' AND btrim(v_line) !~ '[.!?:;)"'']$' THEN
+            v_line := v_line || '.';
+          END IF;
+          v_line := regexp_replace(v_line, ':\s*\.\s*$', ':');
+          v_line := regexp_replace(v_line, '\s+([.,;])', '\1', 'g');
           v_cl_buf := array_append(v_cl_buf, v_line);
         END LOOP;
       END IF;
@@ -14902,15 +15056,24 @@ BEGIN
   UPDATE documents
      SET signatures_voided_at = now(),
          signatures_voided_roles = coalesce(signatures_voided_roles, '{}') || v_roles,
-         status = CASE WHEN status = 'EXECUTED' THEN status ELSE 'AWAITING_SIGNATURE' END,
-         -- a locked document returns to editable once a signature comes off
-         workflow_state = CASE WHEN workflow_state = 'locked' THEN 'editable' ELSE workflow_state END
+         -- A withdrawn signature REGRESSES the instrument: an EXECUTED document
+         -- with a missing signature is a false state (2026-08-03 e2e finding —
+         -- the old CASE kept EXECUTED as-is, so a fully-executed lease still
+         -- read as executed after a party withdrew).
+         status = 'AWAITING_SIGNATURE',
+         -- locked or executed, the document returns to editable — withdrawing
+         -- in order to edit is the entire point of L9's withdraw path
+         workflow_state = CASE WHEN workflow_state IN ('locked','executed') THEN 'editable' ELSE workflow_state END
    WHERE id = p_document_id;
 
   PERFORM log_contract_change(p_document_id, 'signature_removed', NULL,
                               'Signature removed', NULL, NULL, NULL,
                               jsonb_build_object('roles', to_jsonb(v_roles),
-                                                 'by_contact_id', v_me));
+                                                 'by_contact_id', v_me,
+                                                 -- the WITHDRAWN party — the anchor
+                                                 -- document_changes_since_signature needs
+                                                 -- when staff withdraw on a party's behalf
+                                                 'for_contact_id', v_target));
 
   FOR r IN
     SELECT DISTINCT pr.user_id FROM document_parties dp
@@ -14923,6 +15086,16 @@ BEGIN
               v_title || ' — a signature was removed, so it can be edited again',
               '/app/contracts/' || p_document_id::text);
   END LOOP;
+  -- The company party has no linked account by design — its withdrawal
+  -- notice goes to the staff inbox instead (2026-08-03 e2e finding: a
+  -- lessee's withdrawal on a company-side lease notified no one).
+  IF EXISTS (SELECT 1 FROM document_parties dp JOIN contacts cc ON cc.id = dp.contact_id
+              WHERE dp.document_id = p_document_id AND dp.contact_id <> v_target AND cc.is_company)
+  THEN
+    PERFORM notify_staff(v_org, 'signature_removed',
+              v_title || ' — a signature was removed, so it can be edited again',
+              '/app/ops/documents/' || p_document_id::text);
+  END IF;
 
   RETURN jsonb_build_object('removed', v_n, 'roles', to_jsonb(v_roles));
 END;
@@ -26683,6 +26856,13 @@ CREATE TRIGGER contacts_file_team_on_link_trg AFTER INSERT OR UPDATE OF role, co
 
 
 --
+-- Name: contacts contacts_normalise_ec_phone_trg; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER contacts_normalise_ec_phone_trg BEFORE INSERT OR UPDATE OF emergency_contact_1_phone, emergency_contact_2_phone ON public.contacts FOR EACH ROW EXECUTE FUNCTION public.normalise_phone_columns('emergency_contact_1_phone', 'emergency_contact_2_phone');
+
+
+--
 -- Name: contacts contacts_normalise_phone_trg; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -26844,6 +27024,13 @@ CREATE TRIGGER horse_health_events_set_updated_at BEFORE UPDATE ON public.horse_
 
 
 --
+-- Name: horse_medications horse_medications_normalise_phone_trg; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER horse_medications_normalise_phone_trg BEFORE INSERT OR UPDATE OF supplier_phone ON public.horse_medications FOR EACH ROW EXECUTE FUNCTION public.normalise_phone_columns('supplier_phone');
+
+
+--
 -- Name: horses horses_apply_affiliations; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -26855,6 +27042,13 @@ CREATE TRIGGER horses_apply_affiliations AFTER INSERT OR UPDATE OF current_owner
 --
 
 CREATE TRIGGER horses_assign_code BEFORE INSERT ON public.horses FOR EACH ROW EXECUTE FUNCTION public.assign_display_code('HOR-', 'horse_code_seq');
+
+
+--
+-- Name: horses horses_normalise_phone_trg; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER horses_normalise_phone_trg BEFORE INSERT OR UPDATE OF vet_phone, farrier_phone ON public.horses FOR EACH ROW EXECUTE FUNCTION public.normalise_phone_columns('vet_phone', 'farrier_phone');
 
 
 --
@@ -26981,6 +27175,13 @@ CREATE TRIGGER record_template_version_bump_trg AFTER UPDATE OF version ON publi
 --
 
 CREATE TRIGGER requests_capture_contact_trg AFTER INSERT ON public.requests FOR EACH ROW EXECUTE FUNCTION public.requests_capture_contact();
+
+
+--
+-- Name: requests requests_normalise_phone_trg; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER requests_normalise_phone_trg BEFORE INSERT OR UPDATE OF contact_phone ON public.requests FOR EACH ROW EXECUTE FUNCTION public.normalise_phone_columns('contact_phone');
 
 
 --
@@ -27121,6 +27322,13 @@ CREATE TRIGGER trg_sync_document_primary_horse AFTER INSERT OR DELETE OR UPDATE 
 --
 
 CREATE TRIGGER trg_sync_horse_id_to_document_horses AFTER INSERT OR UPDATE OF horse_id ON public.documents FOR EACH ROW WHEN ((new.horse_id IS NOT NULL)) EXECUTE FUNCTION public.sync_horse_id_to_document_horses();
+
+
+--
+-- Name: vendors vendors_normalise_phone_trg; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER vendors_normalise_phone_trg BEFORE INSERT OR UPDATE OF phone ON public.vendors FOR EACH ROW EXECUTE FUNCTION public.normalise_phone_columns('phone');
 
 
 --
@@ -32608,7 +32816,6 @@ SET row_security = off;
 --
 
 INSERT INTO public.contract_clause_defs VALUES ('dc1b68c5-962c-4656-997b-ed3bf4d69da2', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'RESTRICT.JUMP_TITLE', 'Jumping Restrictions', '{{TXN.JUMP_OMIT}}', 'input', 320, false, NULL, '{"contains": ["JUMPING"], "field_key": "TXN.PERMITTED_ACTIVITIES"}', NULL, '2026-07-23 08:48:54.735558+00', false);
-INSERT INTO public.contract_clause_defs VALUES ('aabcd80b-33dd-4341-8436-33814211b263', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'RESTRICT.JUMP_ON', NULL, 'Jumping is restricted as follows: maximum height {{TXN.JUMP_MAX_HEIGHT}}; no more than {{TXN.JUMP_DAYS_PER_WEEK}} days per week; under trainer supervision only: {{TXN.JUMP_SUPERVISION}}.', 'input', 330, true, NULL, '{"all": [{"contains": ["JUMPING"], "field_key": "TXN.PERMITTED_ACTIVITIES"}, {"equals": ["NO", ""], "field_key": "TXN.JUMP_OMIT"}]}', NULL, '2026-07-23 08:48:54.735558+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('31b2a1d2-f14d-4d16-afc1-db2098dfbb19', 'HORSE_LEASE_V2', 'TERMINATION', 'TERMINATION.LOSS', 'Self-Termination upon Loss or Injury', 'This Agreement shall self-terminate if the Horse is significantly injured or seriously ill as determined by a licensed veterinarian, or dies. Lessee is entitled to a prorated refund of Lease Fee paid for the remaining time unused at the time of self-termination. In the event Lessee is found to have caused, through gross negligence, reckless conduct, or intentional misconduct, the injury, illness, or death, Lessor may retain the unused portion of the paid Lease Fee.', 'prose', 40, false, NULL, NULL, NULL, '2026-07-20 21:51:03.659545+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('b10e3b12-83c7-4f90-956f-739e760cf952', 'HORSE_LEASE_V2', 'NOTICE', 'NOTICE.LESSEE_ADDRESS', 'Lessee', 'Name: {{LESSEE.FULL_NAME}}
 Address: {{LESSEE.ADDRESS}}
@@ -32631,27 +32838,25 @@ INSERT INTO public.contract_clause_defs VALUES ('9f5c57b0-5c6e-41e5-a045-38b9b14
 INSERT INTO public.contract_clause_defs VALUES ('a8bb507d-1f7e-4b78-9737-5ce2438f1892', 'HORSE_LEASE_V2', 'HORSE', 'HORSE.CONDITION', 'Physical Condition', 'The Lessor warrants that the Horse is sound and in good physical condition as of the Effective Date of this Agreement.', 'input', 40, false, NULL, NULL, NULL, '2026-07-20 21:43:51.525808+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('82432f7e-4f95-420f-b773-5f4a2505f860', 'HORSE_LEASE_V2', 'HORSE', 'HORSE.BEHAVIOR', 'Behavior', 'The Lessor warrants that the Horse has no history of dangerous or vicious behavior as of the Effective Date of this Agreement.', 'input', 30, false, NULL, NULL, NULL, '2026-07-20 21:43:51.525808+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('33fcf9a2-9080-45a0-ac43-7a90c47b4a06', 'HORSE_LEASE_V2', 'HORSE', 'HORSE.OWNERSHIP_LIMITS_Q', NULL, 'Are there any ownership related leasing restrictions? {{TXN.HAS_OWNERSHIP_LIMITS}}', 'input', 25, false, NULL, NULL, NULL, '2026-07-23 06:01:38.395078+00', false);
-INSERT INTO public.contract_clause_defs VALUES ('5ea17ad7-43b2-4e6f-81f4-c103877b7bcf', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'TRAINING_LESSONS.LESSONS', 'Lessons', 'Lessee is required to maintain continuous enrollment in weekly riding lessons: {{TXN.LESSONS_REQUIRED}}.
-Lessons shall be conducted only by a French Heritage Equestrian Approved Instructor.', 'input', 250, false, NULL, '{"all": [{"equals": ["INDIVIDUAL"], "field_key": "LESSEE.PARTY_TYPE"}, {"contains": ["LESSONS"], "field_key": "TXN.PERMITTED_ACTIVITIES"}]}', NULL, '2026-07-20 21:49:33.162432+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('56ef7a89-f61e-4263-b2d5-8d58db2282e3', 'HORSE_LEASE_V2', 'DEFINITIONS', 'DEFINITIONS.LESSOR_PENDING', NULL, '[Pending — select whether Lessor is an individual or an entity. This placeholder is replaced by the applicable definition and blocks signing.]', 'input', 11, false, NULL, '{"equals": [""], "field_key": "LESSOR.PARTY_TYPE"}', NULL, '2026-08-01 16:39:09.138085+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('0130af5c-ee51-49b8-916a-3b1c9c1a8c7b', 'HORSE_LEASE_V2', 'DEFINITIONS', 'DEFINITIONS.LESSEE_PENDING', NULL, '[Pending — select whether Lessee is an individual or an entity. This placeholder is replaced by the applicable definition and blocks signing.]', 'input', 13, false, NULL, '{"equals": [""], "field_key": "LESSEE.PARTY_TYPE"}', NULL, '2026-08-01 16:39:09.138085+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('004ea30e-86fc-41a0-85ba-12d9ae520427', 'HORSE_LEASE_V2', 'LESSEE_REPS', 'LESSEE_REPS.PENDING', 'Lessee''s Representations', '[Pending — select whether Lessee is an individual or an entity. This placeholder is replaced by the applicable representations and blocks signing.]', 'prose', 21, false, NULL, '{"equals": [""], "field_key": "LESSEE.PARTY_TYPE"}', NULL, '2026-08-01 16:39:09.138085+00', false);
-INSERT INTO public.contract_clause_defs VALUES ('1c2b98f6-2df8-4924-8b16-3c7038333392', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'TRAINING_LESSONS.PENDING', 'Lessons', '[Pending — select whether Lessee is an individual or an entity. This placeholder is replaced by the applicable lessons terms and blocks signing.]', 'input', 256, false, NULL, '{"all": [{"equals": [""], "field_key": "LESSEE.PARTY_TYPE"}, {"contains": ["LESSONS"], "field_key": "TXN.PERMITTED_ACTIVITIES"}]}', NULL, '2026-08-01 16:39:09.138085+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('68b363ed-9954-4744-9da7-e479815140d6', 'HORSE_LEASE_V2', 'HORSE', 'HORSE.WARRANTY', 'Disclaimer of Warranties', 'Except for the representations expressly stated in this Agreement, LESSOR MAKES NO WARRANTIES, EXPRESS OR IMPLIED, REGARDING THE HORSE, INCLUDING THE WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.', 'prose', 60, false, NULL, NULL, NULL, '2026-07-20 21:43:51.525808+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('cab56e2d-353a-44d0-95dd-e36601fa871d', 'HORSE_LEASE_V2', 'TERM', 'TERM.TERMINATION_XREF', NULL, 'Notwithstanding the term stated above, this Agreement may be terminated earlier as provided in the Termination section of this Agreement.', 'prose', 30, false, NULL, NULL, NULL, '2026-07-20 21:49:32.565438+00', false);
-INSERT INTO public.contract_clause_defs VALUES ('fea4e95d-de33-4877-9a7f-0c45564c1858', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'RESTRICT.TRAIL_ON', NULL, 'Trail riding is restricted as follows: {{TXN.TRAIL_RESTRICTION}}.', 'input', 390, true, NULL, '{"all": [{"contains": ["TRAIL"], "field_key": "TXN.PERMITTED_ACTIVITIES"}, {"equals": ["NO", ""], "field_key": "TXN.TRAIL_OMIT"}]}', NULL, '2026-07-23 08:48:54.735558+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('198a1ab9-1d6f-4a2e-9b0b-2960178147b5', 'HORSE_LEASE_V2', 'INSURANCE_RISK', 'INSURANCE_RISK.GL_NONE', NULL, 'Lessor has elected not to require general liability insurance under this Agreement. Lessor accepts full risk and responsibility for liability claims for bodily injury or property damage to third parties arising from the Horse or the activities contemplated by this Agreement, except as otherwise expressly allocated in this Agreement.', 'input', 168, false, NULL, '{"equals": ["YES"], "field_key": "TXN.GL_NOT_REQUIRED"}', NULL, '2026-07-28 00:38:32.692603+00', false);
+INSERT INTO public.contract_clause_defs VALUES ('627c921b-a069-47b3-b1ef-4dfa712b86a2', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'RESTRICT.TRAIL_OFF', NULL, 'Lessor does not restrict trail-riding activity in any way.', 'input', 332, false, NULL, '{"all": [{"contains": ["TRAIL"], "field_key": "TXN.PERMITTED_ACTIVITIES"}, {"equals": ["NO", ""], "field_key": "TXN.TRAIL_OMIT"}]}', NULL, '2026-07-23 08:48:54.735558+00', false);
+INSERT INTO public.contract_clause_defs VALUES ('5ea17ad7-43b2-4e6f-81f4-c103877b7bcf', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'TRAINING_LESSONS.LESSONS', 'Lessons — Continuous Enrollment', 'Lessee is required to maintain continuous enrollment in weekly riding lessons: {{TXN.LESSONS_REQUIRED}}.
+Lessons shall be conducted only by a French Heritage Equestrian Approved Instructor.', 'input', 250, false, NULL, '{"all": [{"equals": ["INDIVIDUAL"], "field_key": "LESSEE.PARTY_TYPE"}, {"contains": ["LESSONS"], "field_key": "TXN.PERMITTED_ACTIVITIES"}]}', NULL, '2026-07-20 21:49:33.162432+00', false);
+INSERT INTO public.contract_clause_defs VALUES ('1c2b98f6-2df8-4924-8b16-3c7038333392', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'TRAINING_LESSONS.PENDING', 'Lessons', '[Pending — select whether Lessee is an individual or an entity. This placeholder is replaced by the applicable lessons terms and blocks signing.]', 'input', 256, false, NULL, '{"all": [{"equals": [""], "field_key": "LESSEE.PARTY_TYPE"}, {"contains": ["LESSONS"], "field_key": "TXN.PERMITTED_ACTIVITIES"}]}', NULL, '2026-08-01 16:39:09.138085+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('21ef19b6-ca2d-4445-af50-10b56829bd6e', 'HORSE_LEASE_V2', 'EVALUATION', 'EVALUATION.CHOICE', NULL, '', 'choice', 10, false, NULL, NULL, NULL, '2026-07-20 21:49:32.565438+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('bf819b78-bfd9-4d88-8ac7-747ac207065a', 'HORSE_LEASE_V2', 'HORSE', 'HORSE.COOWNERS', NULL, 'Co-owners: {{TXN.CO_OWNERS}}', 'input', 22, false, NULL, NULL, NULL, '2026-07-23 08:19:19.771914+00', false);
-INSERT INTO public.contract_clause_defs VALUES ('627c921b-a069-47b3-b1ef-4dfa712b86a2', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'RESTRICT.TRAIL_OFF', NULL, 'Lessor does not restrict trail riding.', 'input', 400, false, NULL, '{"all": [{"contains": ["TRAIL"], "field_key": "TXN.PERMITTED_ACTIVITIES"}, {"equals": ["YES"], "field_key": "TXN.TRAIL_OMIT"}]}', NULL, '2026-07-23 08:48:54.735558+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('9df99f00-6108-40b1-b148-6dc568996b57', 'HORSE_LEASE_V2', 'HORSE', 'HORSE.TRAINER_EVAL', 'Pre-Lease Trainer Evaluation', 'Pre-lease trainer evaluation of the Horse: {{TXN.TRAINER_EVAL_CHOICE}}', 'input', 55, false, NULL, NULL, NULL, '2026-07-27 20:12:30.672304+00', false);
-INSERT INTO public.contract_clause_defs VALUES ('1342f73e-2c53-4862-a95d-1557542f4d6b', 'HORSE_LEASE_V2', 'CARE', 'CARE.RIDER_AIDS_OTHER', NULL, 'Other prohibited rider aid: {{TXN.RIDER_AIDS_OTHER}}.', 'input', 92, true, NULL, '{"contains": ["OTHER"], "field_key": "TXN.RIDER_AIDS"}', NULL, '2026-07-21 19:46:38.674225+00', false);
+INSERT INTO public.contract_clause_defs VALUES ('1342f73e-2c53-4862-a95d-1557542f4d6b', 'HORSE_LEASE_V2', 'CARE', 'CARE.RIDER_AIDS_OTHER', NULL, 'Other prohibited rider aid: {{TXN.RIDER_AIDS_OTHER}}', 'input', 92, true, NULL, '{"contains": ["OTHER"], "field_key": "TXN.RIDER_AIDS"}', NULL, '2026-07-21 19:46:38.674225+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('34e59eef-f689-4065-96ac-0e9162ef9e26', 'HORSE_LEASE_V2', 'INSURANCE_RISK', 'INSURANCE_RISK.SAFETY_ATTIRE', 'Required Protective Attire', 'Lessee shall wear, and shall ensure that any other person riding the Horse under Lessee''s authorization wears, an appropriately fitted and securely fastened ASTM/SEI-certified equestrian helmet at all times while mounted on the Horse, together with heeled boots and long pants; gloves and long sleeves are highly recommended. Riders shall provide their own helmet, boots, and pants meeting these requirements unless otherwise agreed in writing. Lessee, on behalf of Lessee and anyone claiming by, through, or under Lessee, assumes all increased risk of injury or death resulting from any failure to wear the required attire. Any refusal or failure to wear an approved helmet or the other required attire immediately revokes permission to ride or handle the Horse and constitutes a material breach of this Agreement.', 'prose', 1100, false, NULL, NULL, NULL, '2026-07-20 21:49:33.78281+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('290f5460-e710-43af-8c6e-76968e5b8674', 'HORSE_LEASE_V2', 'INSURANCE_RISK', 'INSURANCE_RISK.GL_LESSEE_RESP', 'General Liability — Lessee Responsibility', 'Lessee has elected to accept, and hereby accepts, financial responsibility for general liability insurance under this Agreement. Lessee shall obtain and maintain, at Lessee''s sole cost, general liability insurance covering the Horse and the activities contemplated by this Agreement for the duration of this Agreement, and shall provide proof of coverage to Lessor upon request. As between the parties, and except as otherwise expressly allocated in this Agreement, Lessee bears responsibility for liability claims for bodily injury or property damage to third parties arising from the Horse or the activities contemplated by this Agreement to the extent not covered by an in-force policy.', 'input', 169, false, NULL, '{"equals": ["YES"], "field_key": "TXN.GL_LESSEE_RESPONSIBLE"}', NULL, '2026-08-02 03:51:14.989194+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('4e410687-1369-4608-863c-aa97f49ed23d', 'HORSE_LEASE_V2', 'INSURANCE_RISK', 'INSURANCE_RISK.MORT_LESSEE_RESP', 'Mortality — Lessee Responsibility', 'Lessee has elected to accept, and hereby accepts, financial responsibility for mortality insurance under this Agreement. Lessee shall obtain and maintain, at Lessee''s sole cost, mortality insurance on the Horse for the duration of this Agreement in an amount not less than the Horse''s current fair market value, and shall provide proof of coverage to Lessor upon request. As between the parties, and except as otherwise expressly allocated in this Agreement, Lessee bears responsibility for the loss of the Horse''s value in the event of the Horse''s death, theft, or humane destruction to the extent not covered by an in-force policy.', 'input', 221, false, NULL, '{"equals": ["YES"], "field_key": "TXN.MORT_LESSEE_RESPONSIBLE"}', NULL, '2026-08-02 03:51:14.989194+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('f8b6a22e-a7a2-4531-9783-1792a6cedcd1', 'HORSE_LEASE_V2', 'LEASE_FEE', 'LEASE_FEE.CHOICE', NULL, '{{TXN.LEASE_FEE}}
 If no monetary lease fee is payable under this Agreement, the parties agree that Lessee''s undertakings of care, exercise, and use of the Horse and Lessee''s other obligations under this Agreement constitute good and adequate consideration for this Agreement.', 'input', 5, false, NULL, NULL, NULL, '2026-07-21 12:19:05.018123+00', false);
-INSERT INTO public.contract_clause_defs VALUES ('7f45616b-cacc-4f63-941e-3412828ad76d', 'HORSE_LEASE_V2', 'CARE', 'CARE.RIDER_AIDS', 'Rider Aids', 'The following rider aids are prohibited: {{TXN.RIDER_AIDS}}.', 'input', 90, true, NULL, NULL, NULL, '2026-07-20 21:49:33.162432+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('03b2ccff-daed-491a-befb-2533f8996aa2', 'HORSE_LEASE_V2', 'INSURANCE_RISK', 'INSURANCE_RISK.LOSS_OF_USE_ACK', 'Loss of Use', 'Lessor acknowledges and accepts that loss of use of the Horse may result from injury to, illness of, or the death of the Horse. No loss-of-use insurance is required or provided under this Agreement.', 'prose', 550, false, NULL, NULL, NULL, '2026-07-27 19:24:47.335707+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('b203e5d5-bad0-4c8b-87f6-c377f3865797', 'HORSE_LEASE_V2', 'INSURANCE_RISK', 'INSURANCE_RISK.JUMPING_RISKS', 'Jumping Risks', 'Lessee acknowledges that jumping the Horse exposes Lessee and the Horse to additional risks beyond flat riding, including refusals, run-outs, awkward or missed distances, falls, unseating, and the Horse landing, stopping, or twisting unpredictably. Lessee voluntarily assumes these and any other unforeseen or unspecified additional risks related to this activity.', 'input', 1210, false, NULL, '{"contains": ["JUMPING"], "field_key": "TXN.PERMITTED_ACTIVITIES"}', NULL, '2026-07-23 09:13:17.556063+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('3389070f-56f6-4789-aa5f-b70d5d227afe', 'HORSE_LEASE_V2', 'INSURANCE_RISK', 'INSURANCE_RISK.COMPETITION_RISKS', 'Competition Risks', 'Lessee acknowledges that competing with the Horse exposes Lessee and the Horse to additional risks, including unfamiliar and crowded show grounds, proximity to other horses and riders, loudspeakers, banners, and other stimuli that may cause the Horse to spook or behave unpredictably, as well as the physical demands and pressures of competition. Lessee voluntarily assumes these and any other unforeseen or unspecified additional risks related to this activity.', 'input', 1220, false, NULL, '{"contains": ["COMPETITIONS"], "field_key": "TXN.PERMITTED_ACTIVITIES"}', NULL, '2026-07-23 09:13:17.556063+00', false);
@@ -32676,9 +32881,8 @@ INSERT INTO public.contract_clause_defs VALUES ('87ce748d-c496-4aa0-8d27-7170744
 INSERT INTO public.contract_clause_defs VALUES ('3297bc65-483e-4f03-afd6-303b936c1c0d', 'HORSE_LEASE_V2', 'CARE', 'CARE.PROTECTIVE_EQUIP', NULL, 'Lessor will provide the following equipment for the Horse: {{TXN.PROTECTIVE_EQUIPMENT}}
 Lessee must ensure equipment is used and properly secured to the Horse prior to all activities.', 'input', 62, true, NULL, '{"equals": ["YES"], "field_key": "TXN.PROTECTIVE_REQUIRED"}', NULL, '2026-07-21 19:52:35.787525+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('6df79ded-6550-4e96-a0a7-e0a2c305b478', 'HORSE_LEASE_V2', 'LESSEE_REPS', 'LESSEE_REPS.MAIN_ENTITY', 'Lessee''s Representations', 'Lessee represents and warrants that Lessee is duly organized and in good standing, and has full authority to enter into this Agreement, and that the individual signing this Agreement does so as Lessee''s authorized representative; that each person who rides or handles the Horse under Lessee''s authorization will, before doing so, have executed the releases required under this Agreement and possess the knowledge and experience to handle and ride the Horse safely; and that Lessee will use reasonable care and follow Lessor''s instructions in all handling of the Horse. By signing this Agreement, Lessee acknowledges that Lessee has read this Agreement, fully understands its terms, and understands that Lessee is giving up substantial legal rights on behalf of Lessee and anyone claiming by, through, or under Lessee, including the right to sue the Lessor Parties.', 'prose', 20, false, NULL, '{"equals": ["ENTITY"], "field_key": "LESSEE.PARTY_TYPE"}', NULL, '2026-07-28 00:36:43.221618+00', false);
-INSERT INTO public.contract_clause_defs VALUES ('b430693c-32af-4037-82b5-c23e6127db8d', 'HORSE_LEASE_V2', 'PURPOSE', 'PURPOSE.LEASE_TYPE', 'Lease Type', 'Lease type: {{TXN.LEASE_TYPE}}.', 'input', 20, false, NULL, NULL, NULL, '2026-07-21 15:53:40.262978+00', false);
-INSERT INTO public.contract_clause_defs VALUES ('a33bad2e-93c5-45e3-b803-ad2e6c34fbae', 'HORSE_LEASE_V2', 'INSURANCE_RISK', 'INSURANCE_RISK.MORT_DEDR_SIMPLE', NULL, 'If a claim is made under any such policy arising from events for which Lessee bears responsibility, whether directly or indirectly, responsibility for any deductible shall be borne by: {{TXN.MORT_DED_RESP}}.', 'input', 214, false, NULL, '{"all": [{"equals": ["NO", ""], "field_key": "TXN.MORT_NOT_REQUIRED"}, {"any": [{"equals": ["HAS_WILL_MAINTAIN", "WILL_OBTAIN"], "field_key": "TXN.MORT_LESSOR_STATUS"}, {"equals": ["HAS_WILL_MAINTAIN", "WILL_OBTAIN"], "field_key": "TXN.MORT_LESSEE_STATUS"}]}]}', NULL, '2026-07-28 00:36:43.221618+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('b02a137f-5994-46e3-a19a-6defe782e0f3', 'HORSE_LEASE_V2', 'TERM', 'TERM.ADDITIONAL', NULL, 'Additional terms: {{TXN.ADDITIONAL_TERMS}}', 'input', 22, false, NULL, NULL, NULL, '2026-07-23 09:26:27.245016+00', false);
+INSERT INTO public.contract_clause_defs VALUES ('b430693c-32af-4037-82b5-c23e6127db8d', 'HORSE_LEASE_V2', 'PURPOSE', 'PURPOSE.LEASE_TYPE', 'Lease Type', 'Lease type: {{TXN.LEASE_TYPE}}', 'input', 20, false, NULL, NULL, NULL, '2026-07-21 15:53:40.262978+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('18db9f1b-0c0e-4109-84ee-d639485487e8', 'HORSE_LEASE_V2', 'SIGNATURES', 'SIGNATURES.BLOCK', 'Signatures', 'IN WITNESS WHEREOF, the parties have executed this Agreement as of the date first written above.
 
 LESSEE
@@ -32690,6 +32894,7 @@ LESSOR (OWNER)
 Signature: {{SIG.LESSOR.NAME}}
 Printed Name: {{LESSOR.PRINTED_NAME}}
 Date: {{SIG.LESSOR.DATE}}', 'prose', 10, false, NULL, NULL, NULL, '2026-07-20 21:51:03.659545+00', false);
+INSERT INTO public.contract_clause_defs VALUES ('a33bad2e-93c5-45e3-b803-ad2e6c34fbae', 'HORSE_LEASE_V2', 'INSURANCE_RISK', 'INSURANCE_RISK.MORT_DEDR_SIMPLE', NULL, 'If a claim is made under any such policy arising from events for which Lessee bears responsibility, whether directly or indirectly, responsibility for any deductible shall be borne by: {{TXN.MORT_DED_RESP}}', 'input', 214, false, NULL, '{"all": [{"equals": ["NO", ""], "field_key": "TXN.MORT_NOT_REQUIRED"}, {"any": [{"equals": ["HAS_WILL_MAINTAIN", "WILL_OBTAIN"], "field_key": "TXN.MORT_LESSOR_STATUS"}, {"equals": ["HAS_WILL_MAINTAIN", "WILL_OBTAIN"], "field_key": "TXN.MORT_LESSEE_STATUS"}]}]}', NULL, '2026-07-28 00:36:43.221618+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('e479b468-c881-49ab-b29f-2212c3bd930c', 'HORSE_LEASE_V2', 'INSURANCE_RISK', 'INSURANCE_RISK.MORT_DEDR_SPLITC', NULL, 'The deductible shall be split between the parties: {{TXN.MORT_DED_RESP_SPLIT_LESSOR}} paid by Lessor and {{TXN.MORT_DED_RESP_SPLIT_LESSEE}} paid by Lessee.', 'input', 215, false, NULL, '{"all": [{"equals": ["NO", ""], "field_key": "TXN.MORT_NOT_REQUIRED"}, {"equals": ["SPLIT"], "field_key": "TXN.MORT_DED_RESP"}, {"any": [{"equals": ["HAS_WILL_MAINTAIN", "WILL_OBTAIN"], "field_key": "TXN.MORT_LESSOR_STATUS"}, {"equals": ["HAS_WILL_MAINTAIN", "WILL_OBTAIN"], "field_key": "TXN.MORT_LESSEE_STATUS"}]}]}', NULL, '2026-07-28 00:36:43.221618+00', true);
 INSERT INTO public.contract_clause_defs VALUES ('0670e22d-bb44-4ef1-a772-08220b0af3bd', 'HORSE_LEASE_V2', 'INSURANCE_RISK', 'INSURANCE_RISK.MORT_NONE', NULL, 'Lessor has elected not to require mortality insurance under this Agreement. Lessor accepts full risk and responsibility for the loss of the Horse''s value in the event of the Horse''s death, theft, or humane destruction, except as otherwise expressly allocated in this Agreement.', 'input', 220, false, NULL, '{"equals": ["YES"], "field_key": "TXN.MORT_NOT_REQUIRED"}', NULL, '2026-07-28 00:36:43.221618+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('1d9d19ff-0f8c-4b7d-8722-3b53558cf9a2', 'HORSE_SALE_V2', 'PARTIES', 'PARTIES.INTRO', NULL, 'This Horse Sale and Purchase Agreement (the "Agreement") is made effective as of {{DOC.EFFECTIVE_DATE}} by and between {{SELLER.FULL_NAME}} of {{SELLER.ADDRESS}} ("Seller") and {{BUYER.FULL_NAME}} of {{BUYER.ADDRESS}} ("Buyer").', 'input', 10, false, NULL, NULL, NULL, '2026-08-02 14:03:12.539765+00', false);
@@ -32708,7 +32913,7 @@ INSERT INTO public.contract_clause_defs VALUES ('e76fae5a-aa34-44de-ba46-3cf70b4
 Title: {{LESSOR.ENTITY_SIGNER_TITLE}}
 Signing on behalf of {{LESSOR.FULL_NAME}}', 'input', 12, false, NULL, '{"equals": ["ENTITY"], "field_key": "LESSOR.PARTY_TYPE"}', NULL, '2026-08-02 11:16:19.009752+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('4307910c-7aae-404c-be76-bd314b009a8c', 'HORSE_LEASE_V2', 'HORSE', 'LOCATION.MOVE_CHOICE', NULL, '', 'input', 57, false, NULL, NULL, NULL, '2026-07-21 10:46:50.122503+00', false);
-INSERT INTO public.contract_clause_defs VALUES ('fe0380fc-7a09-425f-860d-f03633b81e95', 'HORSE_LEASE_V2', 'HORSE', 'LOCATION.NEW', NULL, 'Location during lease term: {{TXN.NEW_LOCATION}}.', 'input', 58, true, NULL, '{"equals": ["YES"], "field_key": "TXN.HORSE_MOVES"}', NULL, '2026-07-21 10:46:50.122503+00', false);
+INSERT INTO public.contract_clause_defs VALUES ('fe0380fc-7a09-425f-860d-f03633b81e95', 'HORSE_LEASE_V2', 'HORSE', 'LOCATION.NEW', NULL, 'Location during lease term: {{TXN.NEW_LOCATION}}', 'input', 58, true, NULL, '{"equals": ["YES"], "field_key": "TXN.HORSE_MOVES"}', NULL, '2026-07-21 10:46:50.122503+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('6480d88a-eba6-4f10-97cb-06ce092d4140', 'HORSE_LEASE_V2', 'PURPOSE', 'PURPOSE.GRANT', 'Lease Grant', 'Subject to the terms and conditions of this Agreement, Lessor agrees to lease to Lessee and Lessee agrees to lease from Lessor the horse described below.', 'prose', 15, false, NULL, NULL, NULL, '2026-07-20 21:43:51.525808+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('67b06cba-9712-49be-b8ee-7af61ffa42d0', 'HORSE_LEASE_V2', 'NOTICE', 'NOTICE.LESSOR_ADDRESS', 'Lessor', 'Name: {{LESSOR.FULL_NAME}}
 Address: {{LESSOR.ADDRESS}}
@@ -32719,11 +32924,9 @@ INSERT INTO public.contract_clause_defs VALUES ('7186adae-35c0-4112-b0ca-d9f5cb0
 INSERT INTO public.contract_clause_defs VALUES ('848137bf-22dc-49fa-9acc-77115698defa', 'HORSE_LEASE_V2', 'CARE', 'CARE.INTRO', NULL, 'Horse care and expenses shall be managed and paid for by the responsible party as listed below.', 'prose', 5, false, NULL, NULL, NULL, '2026-07-21 19:04:04.492529+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('7a8a6340-0203-4597-bf75-4f2f4d428597', 'HORSE_LEASE_V2', 'INSURANCE_RISK', 'INSURANCE_RISK.GENERAL_LIABILITY', 'General Liability Insurance', '', 'input', 150, false, NULL, NULL, NULL, '2026-07-23 14:46:52.299025+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('5c205654-246e-4ef6-981e-793af4864a9e', 'HORSE_LEASE_V2', 'PAYMENT_METHOD', 'PAYMENT_METHOD.MAIN', 'Payments by the Lessee', 'The Lessee may pay amounts owed under this Agreement by the following method(s): {{TXN.PAYMENT_METHODS}}', 'input', 10, false, NULL, NULL, NULL, '2026-07-21 10:45:54.446698+00', false);
-INSERT INTO public.contract_clause_defs VALUES ('10751f68-abaf-4676-88be-eb2c9952adc1', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'PROHIBITED.OTHER_NOTE', NULL, 'Other additional permitted activity: {{TXN.ADDITIONAL_ACTIVITIES_OTHER}}.', 'input', 460, true, NULL, '{"contains": ["OTHER"], "field_key": "TXN.ADDITIONAL_ACTIVITIES"}', NULL, '2026-07-21 12:52:57.478346+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('738d7264-8034-4c42-9fdf-b90d973b0c97', 'HORSE_LEASE_V2', 'DEFINITIONS', 'DEFINITIONS.LESSOR_IND', NULL, '"Lessor Parties" means Lessor; Lessor''s spouse and family and household members, in each case when handling, caring for, transporting, or otherwise involved with the Horse or the activities contemplated by this Agreement; and Lessor''s estate, executors, administrators, legal representatives, successors, and assigns.', 'input', 10, false, NULL, '{"any": [{"equals": ["INDIVIDUAL"], "field_key": "LESSOR.PARTY_TYPE"}]}', NULL, '2026-07-31 16:54:48.684074+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('fb77c780-e0ec-4ab6-b633-692b7d1a47dc', 'HORSE_LEASE_V2', 'DEFINITIONS', 'DEFINITIONS.LESSEE_IND', NULL, '"Lessee Parties" means Lessee; Lessee''s spouse and family and household members, in each case when handling, caring for, transporting, riding, or otherwise involved with the Horse or the activities contemplated by this Agreement; and Lessee''s estate, executors, administrators, legal representatives, successors, and assigns.', 'input', 12, false, NULL, '{"any": [{"equals": ["INDIVIDUAL"], "field_key": "LESSEE.PARTY_TYPE"}]}', NULL, '2026-07-31 16:54:48.684074+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('3edbbcdd-c2a1-4598-a4c4-c2a764f86c41', 'HORSE_LEASE_V2', 'SCHEDULE', 'SCHEDULE.OTHER', NULL, 'Additional or custom schedule terms: {{TXN.SCHEDULE_TERMS}}', 'input', 12, true, NULL, '{"equals": ["PARTIAL"], "field_key": "TXN.LEASE_TYPE"}', NULL, '2026-07-21 10:45:54.446698+00', false);
-INSERT INTO public.contract_clause_defs VALUES ('b5fa0150-49b4-4487-bed2-9f8f68aabc62', 'HORSE_LEASE_V2', 'TERM', 'TERM.FIXED_END', NULL, 'This Agreement continues until {{TXN.LEASE_END}}.', 'input', 12, false, NULL, '{"equals": ["FIXED"], "field_key": "TXN.LEASE_TERM_TYPE"}', NULL, '2026-07-21 10:45:54.446698+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('5efa4ddd-9335-4b60-8602-d916c0a02186', 'HORSE_LEASE_V2', 'CARE', 'SCHEDULE.TRAINER_CARE', '3rd Party Exercise', 'Lessee is permitted to engage an approved 3rd party to exercise the Horse. All 3rd party exercise shall be conducted only by a French Heritage Equestrian Approved Trainer. Other 3rd parties must be approved in writing by the Lessor.
 Party responsible for arranging: {{TXN.TRAINER_EXERCISE_ARRANGE}}
 Party responsible for costs: {{TXN.TRAINER_EXERCISE_COST}}
@@ -32732,31 +32935,31 @@ INSERT INTO public.contract_clause_defs VALUES ('127deb62-6ea9-4cb1-8454-af5b50a
 INSERT INTO public.contract_clause_defs VALUES ('1feed771-1f27-49be-8daa-1498bdf6b3f2', 'HORSE_LEASE_V2', 'PAYMENT_METHOD', 'PAYMENT_METHOD.CARD', NULL, 'Credit card payments are processed as follows: {{TXN.CARD_PROCESSOR}}', 'input', 20, true, NULL, '{"contains": ["CREDIT_CARD"], "field_key": "TXN.PAYMENT_METHODS"}', NULL, '2026-07-21 10:45:54.446698+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('24418645-501b-4d00-ac34-f378aafd5189', 'HORSE_LEASE_V2', 'PAYMENT_METHOD', 'PAYMENT_METHOD.MAIN_LESSOR', 'Payments by the Lessor', 'The Lessor may pay amounts owed under this Agreement by the following method(s): {{TXN.LESSOR_PAYMENT_METHODS}}', 'input', 30, false, NULL, NULL, NULL, '2026-07-23 05:52:43.39427+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('8e4a7044-771e-4402-b919-e667419016b9', 'HORSE_LEASE_V2', 'PAYMENT_METHOD', 'PAYMENT_METHOD.CARD_LESSOR', NULL, 'Credit card payments are processed as follows: {{TXN.LESSOR_CARD_PROCESSOR}}', 'input', 40, false, NULL, '{"contains": ["CREDIT_CARD"], "field_key": "TXN.LESSOR_PAYMENT_METHODS"}', NULL, '2026-07-23 05:52:43.39427+00', false);
+INSERT INTO public.contract_clause_defs VALUES ('10751f68-abaf-4676-88be-eb2c9952adc1', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'PROHIBITED.OTHER_NOTE', NULL, 'Other additional permitted activity: {{TXN.ADDITIONAL_ACTIVITIES_OTHER}}', 'input', 460, true, NULL, '{"contains": ["OTHER"], "field_key": "TXN.ADDITIONAL_ACTIVITIES"}', NULL, '2026-07-21 12:52:57.478346+00', false);
+INSERT INTO public.contract_clause_defs VALUES ('b5fa0150-49b4-4487-bed2-9f8f68aabc62', 'HORSE_LEASE_V2', 'TERM', 'TERM.FIXED_END', NULL, 'This Agreement continues until {{TXN.LEASE_END}}', 'input', 12, false, NULL, '{"equals": ["FIXED"], "field_key": "TXN.LEASE_TERM_TYPE"}', NULL, '2026-07-21 10:45:54.446698+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('c18d9f8f-825b-4675-a5ab-085b87f67dcc', 'HORSE_LEASE_V2', 'CARE', 'CARE.TACK', 'Tack', 'When riding and handling the Horse, Lessee shall use only tack in good condition that is properly fitted to the Horse.
 {{TXN.TACK_PROHIBITED}}', 'input', 70, false, NULL, NULL, NULL, '2026-07-20 21:49:33.162432+00', false);
-INSERT INTO public.contract_clause_defs VALUES ('65a78d5a-4a4f-42fa-a5e6-55cfb6267530', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'COMPETITIONS.INTRO', 'Competitions', 'Expenses of competition (entry fees, transportation, and the like) are: {{TXN.COMPETITION_EXPENSES}}.
-Any prize money or winnings earned in competition shall belong to: {{TXN.COMPETITION_WINNINGS}}.', 'prose', 300, false, NULL, '{"contains": ["COMPETITIONS"], "field_key": "TXN.PERMITTED_ACTIVITIES"}', NULL, '2026-07-20 21:51:03.659545+00', false);
-INSERT INTO public.contract_clause_defs VALUES ('7a60e575-b8f0-4cbf-90d6-fd7170e0ee11', 'HORSE_LEASE_V2', 'HORSE', 'HORSE.BEHAVIOR_EXC', NULL, 'The Lessor notes the following known exceptions to the behavior of the Horse: {{TXN.BEHAVIOR_EXCEPTIONS}}.', 'input', 32, true, NULL, '{"equals": ["YES"], "field_key": "TXN.BEHAVIOR_HAS_EXCEPTIONS"}', NULL, '2026-07-21 04:51:08.986097+00', false);
+INSERT INTO public.contract_clause_defs VALUES ('65a78d5a-4a4f-42fa-a5e6-55cfb6267530', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'COMPETITIONS.INTRO', 'Competition Costs and Winnings', 'Expenses of competition (entry fees, transportation, and the like) are: {{TXN.COMPETITION_EXPENSES}}.
+Any prize money or winnings earned in competition shall belong to: {{TXN.COMPETITION_WINNINGS}}', 'prose', 310, false, NULL, '{"contains": ["COMPETITIONS"], "field_key": "TXN.PERMITTED_ACTIVITIES"}', NULL, '2026-07-20 21:51:03.659545+00', false);
+INSERT INTO public.contract_clause_defs VALUES ('7a60e575-b8f0-4cbf-90d6-fd7170e0ee11', 'HORSE_LEASE_V2', 'HORSE', 'HORSE.BEHAVIOR_EXC', NULL, 'The Lessor notes the following known exceptions to the behavior of the Horse: {{TXN.BEHAVIOR_EXCEPTIONS}}', 'input', 32, true, NULL, '{"equals": ["YES"], "field_key": "TXN.BEHAVIOR_HAS_EXCEPTIONS"}', NULL, '2026-07-21 04:51:08.986097+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('6305cadc-8639-46f4-989e-e4e32b5c781a', 'HORSE_LEASE_V2', 'HORSE', 'HORSE.OWNERSHIP_LIMITS', NULL, 'Ownership related leasing restrictions: {{TXN.OWNERSHIP_LIMITATIONS}}', 'input', 26, true, NULL, '{"equals": ["YES"], "field_key": "TXN.HAS_OWNERSHIP_LIMITS"}', NULL, '2026-07-21 12:52:57.478346+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('47554dcb-7267-4d12-94f3-8e771ed7fba5', 'HORSE_BILL_OF_SALE', 'BOS_WARRANTY', 'BOS_WARRANTY.CONDITION_STANDALONE', NULL, 'Except for the warranty of title above and the representations expressly stated in this Bill of Sale, the Horse is sold AS IS, and SELLER MAKES NO WARRANTIES, EXPRESS OR IMPLIED, REGARDING THE HORSE, INCLUDING THE WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE, and no warranty is made regarding the Horse''s future soundness, health, temperament, performance, suitability for any discipline or rider, or value. This disclaimer does not limit claims arising from fraud or from breach of the express representations stated in this Bill of Sale. Buyer acknowledges the opportunity to have the Horse examined by a veterinarian of Buyer''s choosing before purchase.', 'prose', 30, false, NULL, '{"equals": ["NO"], "field_key": "TXN.BOS_HAS_SALE_AGREEMENT"}', NULL, '2026-08-03 20:21:18.086175+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('48408fbb-22b1-4404-8269-8ae3b95bcfe8', 'HORSE_LEASE_V2', 'SCHEDULE', 'SCHEDULE.MAIN', 'Schedule for Lessee''s Usage', 'Reserved days of use: {{TXN.DAYS_USED}}', 'input', 10, false, NULL, '{"equals": ["PARTIAL"], "field_key": "TXN.LEASE_TYPE"}', NULL, '2026-07-20 21:49:32.565438+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('96fcb50d-38c5-4666-abb0-e0213a6f0da6', 'HORSE_LEASE_V2', 'CARE', 'SCHEDULE.CARE_DUTY', 'Lessee''s Responsibility for Care and Exercise', 'Lessee''s use of the Horse is a responsibility as well as a right: regular, consistent exercise and attention are important to the Horse''s health and wellbeing. Lessee is required to maintain regular use and exercise for the Horse on their allowed days, unless Lessee has discussed with and received mutual agreement from the Lessor in writing that one of those days will be used as a rest day for the Horse. If Lessee regularly fails to use and care for the Horse, Lessor may terminate this Agreement.', 'prose', 1, false, NULL, '{"equals": ["YES"], "field_key": "TXN.EXERCISE_INCLUDE"}', NULL, '2026-07-20 21:49:32.565438+00', false);
-INSERT INTO public.contract_clause_defs VALUES ('2c30f7d8-4678-4a18-9b54-61341545c0d3', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'TRAINING_LESSONS.LESSONS_ENTITY', 'Lessons', 'Lessee is permitted by Lessor to provide riding lessons with the Horse: {{TXN.LESSONS_ENTITY_PERMITTED}}.', 'input', 255, false, NULL, '{"all": [{"equals": ["ENTITY"], "field_key": "LESSEE.PARTY_TYPE"}, {"contains": ["LESSONS"], "field_key": "TXN.PERMITTED_ACTIVITIES"}]}', NULL, '2026-07-29 01:32:35.488005+00', false);
+INSERT INTO public.contract_clause_defs VALUES ('0fb89588-54bc-4b9a-8b1a-eeac2beb2165', 'HORSE_LEASE_V2', 'HORSE', 'HORSE.CONDITION_EXC', NULL, 'The Lessor notes the following known exceptions to the physical condition of the Horse: {{TXN.CONDITION_EXCEPTIONS}}', 'input', 42, true, NULL, '{"equals": ["YES"], "field_key": "TXN.CONDITION_HAS_EXCEPTIONS"}', NULL, '2026-07-21 04:51:08.986097+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('e354c9f2-d6da-460a-9c2a-6a4ea31bfe6b', 'HORSE_BILL_OF_SALE', 'BOS_DISCLOSURES', 'BOS_DISCLOSURES.HEALTH', 'Health and Condition Disclosures', 'Seller has disclosed to Buyer all known material information regarding the Horse''s medical conditions, injuries, lameness history, surgeries, allergies, current and past medications, behavioral issues, vices, and prior veterinary concerns, as follows: {{TXN.KNOWN_CONDITIONS}}. Seller represents that these disclosures are true and complete to Seller''s knowledge as of the date of this Bill of Sale.', 'input', 10, false, NULL, '{"equals": ["NO"], "field_key": "TXN.BOS_HAS_SALE_AGREEMENT"}', NULL, '2026-08-03 20:21:18.134383+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('8f519e3c-ba4e-4c66-a628-b183ebef44f9', 'HORSE_LEASE_V2', 'DEFINITIONS', 'DEFINITIONS.BENEFICIARIES', NULL, 'Each Lessor Party and each Lessee Party who is not a signatory to this Agreement is an intended third-party beneficiary of the releases, waivers, assumptions of risk, indemnities, and limitations of liability in this Agreement and may enforce them directly.', 'input', 15, false, NULL, NULL, NULL, '2026-07-31 16:54:48.684074+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('531aa969-1f82-4332-8b20-9e710c5f8bbe', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'PERMITTED_USE.TRAINER', NULL, 'Riding Lessons, Jumping, and Competitions may take place only while a French Heritage Equestrian Approved Trainer or Instructor is present.', 'input', 200, false, NULL, '{"contains": ["LESSONS", "JUMPING", "COMPETITIONS"], "field_key": "TXN.PERMITTED_ACTIVITIES"}', NULL, '2026-07-21 05:47:22.63689+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('91f24969-7a8e-4ce7-b141-a4c13be023ca', 'HORSE_BILL_OF_SALE', 'BOS_DISCLOSURES', 'BOS_DISCLOSURES.BEHAVIOR', 'Behavior', 'Seller represents that, to Seller''s knowledge, the Horse has no history of dangerous or vicious behavior as of the date of this Bill of Sale, except as disclosed in this Bill of Sale.', 'prose', 20, false, NULL, '{"equals": ["NO"], "field_key": "TXN.BOS_HAS_SALE_AGREEMENT"}', NULL, '2026-08-03 20:21:18.134383+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('99979696-487c-4a67-a969-820e5c26efec', 'HORSE_LEASE_V2', 'CARE', 'CARE.PROTECTIVE', 'Protective Equipment', 'Horse must wear protective equipment: {{TXN.PROTECTIVE_REQUIRED}}', 'input', 60, false, NULL, NULL, NULL, '2026-07-20 21:49:33.162432+00', false);
-INSERT INTO public.contract_clause_defs VALUES ('0fb89588-54bc-4b9a-8b1a-eeac2beb2165', 'HORSE_LEASE_V2', 'HORSE', 'HORSE.CONDITION_EXC', NULL, 'The Lessor notes the following known exceptions to the physical condition of the Horse: {{TXN.CONDITION_EXCEPTIONS}}.', 'input', 42, true, NULL, '{"equals": ["YES"], "field_key": "TXN.CONDITION_HAS_EXCEPTIONS"}', NULL, '2026-07-21 04:51:08.986097+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('8e347945-c172-41aa-b9a0-5046ed4e7f28', 'HORSE_LEASE_V2', 'GOVERNING_LAW', 'GOVERNING_LAW.CHOICE', 'Governing Law and Venue', 'This Agreement is governed by the laws of the State of California, without regard to conflict-of-laws principles. Any dispute arising out of or relating to this Agreement or the Horse shall be resolved by final and binding arbitration in San Diego County, California, before a single arbitrator administered by JAMS under its applicable rules, or another administrator the parties agree to in writing, with arbitrator fees and administrative costs allocated as those rules provide. Either party may bring a qualifying claim in small claims court, and either party may seek provisional or injunctive relief, including recovery of possession of the Horse, in a court of competent jurisdiction without waiving arbitration. Judgment on the award may be entered in any court having jurisdiction.', 'input', 10, false, NULL, NULL, NULL, '2026-07-20 21:51:03.659545+00', false);
-INSERT INTO public.contract_clause_defs VALUES ('305ecca4-0434-4ebd-945c-35e6e45ba79c', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'PROHIBITED.OTHERS_OTHER', NULL, 'Other persons allowed to ride or handle the Horse: {{TXN.OTHERS_ALLOWED_OTHER}}.', 'input', 490, false, NULL, '{"contains": ["OTHER"], "field_key": "TXN.OTHERS_ALLOWED"}', NULL, '2026-07-24 00:28:31.305973+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('88123fcd-2855-4cbd-971b-9da5559bdd6a', 'HORSE_LEASE_V2', 'HORSE', 'LOCATION.INSPECTION', NULL, 'Lessor may inspect the Horse at any time, subject to the reasonable access rules of the facility where the Horse is kept. If Lessor reasonably determines that the Horse is not being properly cared for, Lessor may take possession of the Horse upon written notice to Lessee.', 'prose', 59, false, NULL, NULL, NULL, '2026-07-20 21:49:33.162432+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('c1832293-fb78-4d43-9409-85282518d646', 'HORSE_LEASE_V2', 'INSURANCE_RISK', 'INSURANCE_RISK.TRAIL_RIDING', 'Trail Riding Risks', 'Lessee acknowledges that riding outside an enclosed arena, including trail riding, exposes Lessee and the Horse to additional risks, including uneven terrain, traffic, wildlife, water crossings, and other conditions that may cause the Horse to spook or behave unpredictably. Lessee voluntarily assumes these and any other unforeseen or unspecified additional risks related to this activity.', 'prose', 1200, false, NULL, '{"contains": ["TRAIL"], "field_key": "TXN.PERMITTED_ACTIVITIES"}', NULL, '2026-07-20 21:49:33.78281+00', false);
+INSERT INTO public.contract_clause_defs VALUES ('305ecca4-0434-4ebd-945c-35e6e45ba79c', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'PROHIBITED.OTHERS_OTHER', NULL, 'Other persons allowed to ride or handle the Horse: {{TXN.OTHERS_ALLOWED_OTHER}}', 'input', 490, false, NULL, '{"contains": ["OTHER"], "field_key": "TXN.OTHERS_ALLOWED"}', NULL, '2026-07-24 00:28:31.305973+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('01f04af2-b497-4193-8e29-37f9fdd1f80c', 'HORSE_SALE_V2', 'HORSE', 'HORSE.BEHAVIOR', 'Behavior', 'Seller warrants that, to Seller''s knowledge, the Horse has no history of dangerous or vicious behavior as of the Effective Date of this Agreement, except as disclosed in this Agreement.', 'prose', 40, false, NULL, NULL, NULL, '2026-08-02 14:03:13.281406+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('bfee3d5b-7237-4cce-abbe-08d4fd3090a6', 'HORSE_BILL_OF_SALE', 'BOS_DISCLOSURES', 'BOS_DISCLOSURES.INJURY_NONE', 'No Serious Injury History', 'Seller represents that, to Seller''s knowledge, no person or animal has suffered serious injury proximately caused by the direct actions of the Horse, including biting, kicking, striking, bucking, rearing, bolting, crushing, or throwing a rider. This representation does not extend to any incident caused primarily by a third party or an external stimulus — such as another horse or rider being at fault, a loose dog, wildlife, a vehicle, or a similar external provocation — where the Horse''s reaction was within the range of normal equine behavior.', 'prose', 30, false, NULL, '{"all": [{"equals": ["NO"], "field_key": "TXN.BOS_HAS_SALE_AGREEMENT"}, {"equals": ["NO"], "field_key": "TXN.INJURY_HISTORY"}]}', NULL, '2026-08-03 20:21:18.134383+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('1afcdd7c-3868-4b99-9b80-3bb28f39ee01', 'HORSE_LEASE_V2', 'INSURANCE_RISK', 'INSURANCE_RISK.MED_TAIL', NULL, 'Any out-of-pocket costs for deductibles or other expenses related to the needs of the Horse are to be paid by Lessor, and where Lessee is deemed to be responsible for part or all of a cost paid by Lessor, Lessee shall reimburse Lessor in accordance with the acceptable payment methods stated in this Agreement, or, if Lessee so requests prior to payment by Lessor, Lessee may make such request to pay the billing party directly using a method allowed by that party. Lessee may, with Lessor''s written permission, pay for any or all of Lessor''s portion when paying the billing party directly, and Lessor may reimburse Lessee in accordance with the terms of this Agreement. Lessor assumes and is responsible for all risks and costs not paid or covered by any policy held by either party, including in the event a policy is not in effect at the time of the incident, an incident for which a claim is made is deemed not to be covered by a policy, a payment for a claim made for an incident that is covered by a policy is less than the actual cost incurred, or a claim made to a policy is denied for any reason, except as otherwise expressly allocated in this section or elsewhere in this Agreement.', 'input', 320, false, NULL, '{"equals": ["NO", ""], "field_key": "TXN.MED_NOT_REQUIRED"}', NULL, '2026-07-28 00:36:43.221618+00', true);
 INSERT INTO public.contract_clause_defs VALUES ('d69143be-c67a-40da-87e4-a003cc3ab73e', 'HORSE_BILL_OF_SALE', 'BOS_DISCLOSURES', 'BOS_DISCLOSURES.INJURY_DISCLOSED', 'Serious Injury History Disclosed', 'Seller discloses that one or more persons or animals have suffered serious injury involving the direct actions of the Horse, as follows, including for each incident the approximate date, the circumstances, the Horse''s actions, and the nature of the injury: {{TXN.INJURY_HISTORY_DETAILS}}. Buyer acknowledges this disclosure and proceeds with knowledge of it.', 'input', 40, false, NULL, '{"all": [{"equals": ["NO"], "field_key": "TXN.BOS_HAS_SALE_AGREEMENT"}, {"equals": ["YES"], "field_key": "TXN.INJURY_HISTORY"}]}', NULL, '2026-08-03 20:21:18.134383+00', false);
-INSERT INTO public.contract_clause_defs VALUES ('30516430-98f6-460a-b323-3aad85fc36b6', 'HORSE_LEASE_V2', 'INSURANCE_RISK', 'INSURANCE_RISK.MED_DEDR_SIMPLE', NULL, 'If a claim is made under any such policy arising from events for which Lessee bears responsibility, whether directly or indirectly, responsibility for any deductible shall be borne by: {{TXN.MED_DED_RESP}}.', 'input', 314, false, NULL, '{"all": [{"equals": ["NO", ""], "field_key": "TXN.MED_NOT_REQUIRED"}, {"any": [{"equals": ["HAS_WILL_MAINTAIN", "WILL_OBTAIN"], "field_key": "TXN.MED_LESSOR_STATUS"}, {"equals": ["HAS_WILL_MAINTAIN", "WILL_OBTAIN"], "field_key": "TXN.MED_LESSEE_STATUS"}]}]}', NULL, '2026-07-28 00:36:43.221618+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('fe645d35-c6d0-431f-b7ef-841e50146c82', 'HORSE_BILL_OF_SALE', 'BOS_DISCLOSURES', 'BOS_DISCLOSURES.INJURY_PENDING', NULL, '[Pending — state whether anyone or any animal has been seriously injured by the Horse''s direct actions. This placeholder is replaced by the applicable statement and blocks signing.]', 'prose', 50, false, NULL, '{"all": [{"equals": ["NO"], "field_key": "TXN.BOS_HAS_SALE_AGREEMENT"}, {"equals": [""], "field_key": "TXN.INJURY_HISTORY"}]}', NULL, '2026-08-03 20:21:18.134383+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('412c8124-5d2e-49ed-904d-ec0308577e5a', 'HORSE_LEASE_V2', 'INSURANCE_RISK', 'INSURANCE_RISK.MED_DEDR_SPLITC', NULL, 'The deductible shall be split between the parties: {{TXN.MED_DED_RESP_SPLIT_LESSOR}} paid by Lessor and {{TXN.MED_DED_RESP_SPLIT_LESSEE}} paid by Lessee.', 'input', 315, false, NULL, '{"all": [{"equals": ["NO", ""], "field_key": "TXN.MED_NOT_REQUIRED"}, {"equals": ["SPLIT"], "field_key": "TXN.MED_DED_RESP"}, {"any": [{"equals": ["HAS_WILL_MAINTAIN", "WILL_OBTAIN"], "field_key": "TXN.MED_LESSOR_STATUS"}, {"equals": ["HAS_WILL_MAINTAIN", "WILL_OBTAIN"], "field_key": "TXN.MED_LESSEE_STATUS"}]}]}', NULL, '2026-07-28 00:36:43.221618+00', true);
 INSERT INTO public.contract_clause_defs VALUES ('4ea00cfc-5907-48d0-9838-6deb7a0acfb6', 'HORSE_BILL_OF_SALE', 'BOS_DISCLOSURES', 'BOS_DISCLOSURES.ENCUMBRANCES', 'Disclosed Encumbrances and Interests', 'Seller discloses the following liens, leases, co-ownership interests, or other encumbrances affecting the Horse, each of which is released or satisfied at or before delivery unless expressly stated otherwise: {{TXN.DISCLOSED_ENCUMBRANCES}}', 'input', 60, false, NULL, '{"all": [{"equals": ["NO"], "field_key": "TXN.BOS_HAS_SALE_AGREEMENT"}, {"equals": ["YES"], "field_key": "TXN.HAS_ENCUMBRANCES"}]}', NULL, '2026-08-03 20:21:18.134383+00', false);
@@ -32772,10 +32975,7 @@ INSERT INTO public.contract_clause_defs VALUES ('a39a4abe-3f2d-4239-bfc1-8610b9a
 Lessee: {{TXN.MED_LESSEE_STATUS}} medical insurance on the Horse.', 'input', 308, false, NULL, '{"equals": ["NO", ""], "field_key": "TXN.MED_NOT_REQUIRED"}', NULL, '2026-07-29 01:32:36.529718+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('a529c2da-13a3-4249-9bb9-b9ff9731ad60', 'HORSE_LEASE_V2', 'INSURANCE_RISK', 'INSURANCE_RISK.MED_NONE', NULL, 'Lessor has elected not to maintain medical insurance on the Horse. Lessor accepts full risk and responsibility for any and all injury to or illness of the Horse during the term of this Agreement, including all costs of veterinary care arising from such injury or illness, except as otherwise expressly allocated in the Horse Care and Expenses section of this Agreement.', 'input', 305, false, NULL, '{"equals": ["YES"], "field_key": "TXN.MED_NOT_REQUIRED"}', NULL, '2026-07-28 00:36:43.221618+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('90b308db-2f8f-49a7-b059-74b07d4bc440', 'HORSE_BILL_OF_SALE', 'BOS_RELEASE', 'BOS_RELEASE.BUYER', 'Release by Buyer', 'Buyer, on behalf of Buyer and anyone claiming by, through, or under Buyer, completely releases, forever discharges, and agrees to hold harmless Seller and Seller''s family members, employees, agents, contractors, successors, and assigns, to the fullest extent permitted by law, from any and all claims, demands, causes of action, liabilities, or damages for personal injury, property damage, or wrongful death arising out of Buyer''s examination, trial, handling, riding, or transport of the Horse before delivery, whether caused by the ordinary negligence of any released party or otherwise, and from any and all claims arising after delivery relating to the Horse''s condition, soundness, behavior, suitability, or value. This release does not apply to gross negligence, reckless conduct, intentional misconduct, fraud, or breach of the express representations stated in this Bill of Sale.', 'prose', 10, false, NULL, '{"all": [{"equals": ["NO"], "field_key": "TXN.BOS_HAS_SALE_AGREEMENT"}, {"equals": ["INCLUDED"], "field_key": "TXN.BOS_RELEASE_ELECTION"}]}', NULL, '2026-08-03 20:21:18.229071+00', false);
-INSERT INTO public.contract_clause_defs VALUES ('fde734e7-5478-4e45-86bd-23a69dcecdc3', 'HORSE_LEASE_V2', 'HORSE', 'LOCATION.MAIN', 'Location of the Horse', 'Location of the Horse: {{HORSE.CURRENT_LOCATION}}.', 'input', 56, false, NULL, NULL, NULL, '2026-07-20 21:49:33.162432+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('c2ead65e-f0a2-4417-b24d-17811a68eefb', 'HORSE_LEASE_V2', 'TERM', 'TERM.RENEWAL', 'Renewal Terms', 'Renewal terms: {{TXN.RENEWAL_TERMS}}', 'input', 19, false, NULL, '{"equals": ["YES"], "field_key": "TXN.RENEWAL_INCLUDE"}', NULL, '2026-07-20 21:49:32.565438+00', false);
-INSERT INTO public.contract_clause_defs VALUES ('4ec115e8-aa53-4169-96e9-a5e03fe02e99', 'HORSE_LEASE_V2', 'TERM', 'TERM.MAIN', 'Agreement Term', 'Term of this Agreement: {{TXN.LEASE_TERM_TYPE}}. This Agreement begins on {{TXN.LEASE_START}}.', 'input', 10, false, NULL, NULL, NULL, '2026-07-20 21:49:32.565438+00', false);
-INSERT INTO public.contract_clause_defs VALUES ('20805bc1-8b71-45ee-87f9-51012be40316', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'TRAINING_LESSONS.TRAINING', 'Training', 'Any professional training of the Horse under this Agreement, including groundwork, schooling, and under-saddle training, shall be conducted only by a French Heritage Equestrian Approved Trainer.', 'input', 270, false, NULL, NULL, NULL, '2026-07-20 21:49:33.162432+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('4917d710-4720-4767-acfd-83fd88d4944c', 'HORSE_LEASE_V2', 'CARE', 'CARE.SUPPLEMENTS', NULL, '{{TXN.MEDICATIONS}}', 'input', 10, true, NULL, NULL, NULL, '2026-07-20 21:49:33.162432+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('6778f24b-a710-4a49-9444-e86faf65d8df', 'HORSE_LEASE_V2', 'TERMINATION', 'TERMINATION.LESSEE', 'Lessee''s Right to Terminate', 'Lessee may terminate this Agreement by giving Lessor at least {{TXN.LESSEE_TERM_NOTICE_DAYS}} days'' prior written notice.', 'input', 10, false, NULL, NULL, NULL, '2026-07-20 21:51:03.659545+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('f55e0b60-c850-453e-b704-7c0c28c11917', 'HORSE_LEASE_V2', 'TERMINATION', 'TERMINATION.OWNER', 'Owner''s Right to Terminate', 'Lessor may terminate this Agreement by giving Lessee at least {{TXN.OWNER_TERM_NOTICE_DAYS}} days'' prior written notice.', 'input', 20, false, NULL, NULL, NULL, '2026-07-20 21:51:03.659545+00', false);
@@ -32795,7 +32995,8 @@ INSERT INTO public.contract_clause_defs VALUES ('06427863-039c-45cb-9976-e36824f
 Lessee shall not use the Horse for any other purpose without Lessor''s prior written consent.', 'input', 100, false, NULL, NULL, NULL, '2026-07-20 21:49:32.565438+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('9cea2c91-dd1e-48f7-8052-842ec1842ed7', 'HORSE_LEASE_V2', 'PARTIES', 'PARTIES.INTRO', NULL, 'This Horse Lease Agreement (the "Agreement") is made effective as of {{DOC.EFFECTIVE_DATE}} by and between {{LESSOR.FULL_NAME}} of {{LESSOR.ADDRESS}} ("Lessor") and {{LESSEE.FULL_NAME}} of {{LESSEE.ADDRESS}} ("Lessee").', 'input', 10, false, NULL, NULL, NULL, '2026-07-20 21:43:51.525808+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('7e573f68-add0-4dba-8e60-06ce1da3ac75', 'HORSE_LEASE_V2', 'INSURANCE_RISK', 'INSURANCE_RISK.ASSUMPTION_INHERENT', 'Assumption of Inherent Risks', 'Lessee understands that horseback riding and handling horses are inherently dangerous activities. Lessee acknowledges that horses are unpredictable by nature and may buck, rear, bite, kick, spook, stumble, or otherwise react unpredictably to their environment, which can result in severe injury, paralysis, or death. Lessee acknowledges the California common law doctrine of "Primary Assumption of Risk," as established by the California Supreme Court in Knight v. Jewett (1992) 3 Cal.4th 296 and subsequent equine-specific case law (e.g., Levinson v. Owens (2009) 176 Cal.App.4th 1534). Consistent with this precedent, Lessee, on behalf of Lessee and anyone claiming by, through, or under Lessee, expressly and voluntarily assumes all inherent risks associated with riding or handling the Horse, and acknowledges that no Lessor Party owes a duty to protect Lessee from these inherent risks.', 'prose', 950, false, NULL, NULL, NULL, '2026-07-21 02:48:55.640351+00', false);
-INSERT INTO public.contract_clause_defs VALUES ('133368fc-ffb1-4772-8683-ad1bf770bab0', 'HORSE_LEASE_V2', 'INSURANCE_RISK', 'INSURANCE_RISK.GL_DED_SIMPLE', NULL, 'If a claim is made under any such policy arising from events for which Lessee bears responsibility, whether directly or indirectly, responsibility for any deductible shall be borne by: {{TXN.GL_DED_RESP}}.', 'input', 162, false, NULL, '{"all": [{"equals": ["NO", ""], "field_key": "TXN.GL_NOT_REQUIRED"}, {"any": [{"equals": ["HAS_WILL_MAINTAIN", "WILL_OBTAIN"], "field_key": "TXN.GL_LESSOR_STATUS"}, {"equals": ["HAS_WILL_MAINTAIN", "WILL_OBTAIN"], "field_key": "TXN.GL_LESSEE_STATUS"}]}]}', NULL, '2026-07-28 00:36:43.221618+00', false);
+INSERT INTO public.contract_clause_defs VALUES ('fde734e7-5478-4e45-86bd-23a69dcecdc3', 'HORSE_LEASE_V2', 'HORSE', 'LOCATION.MAIN', 'Location of the Horse', 'Location of the Horse: {{HORSE.CURRENT_LOCATION}}', 'input', 56, false, NULL, NULL, NULL, '2026-07-20 21:49:33.162432+00', false);
+INSERT INTO public.contract_clause_defs VALUES ('4ec115e8-aa53-4169-96e9-a5e03fe02e99', 'HORSE_LEASE_V2', 'TERM', 'TERM.MAIN', 'Agreement Term', 'Term of this Agreement: {{TXN.LEASE_TERM_TYPE}}. This Agreement begins on {{TXN.LEASE_START}}', 'input', 10, false, NULL, NULL, NULL, '2026-07-20 21:49:32.565438+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('c18ad64b-1ab2-4bba-8ca6-cfe09fc33b05', 'HORSE_LEASE_V2', 'INSURANCE_RISK', 'INSURANCE_RISK.GL_DED_SPLITC', NULL, 'The deductible shall be split between the parties: {{TXN.GL_DED_RESP_SPLIT_LESSOR}} paid by Lessor and {{TXN.GL_DED_RESP_SPLIT_LESSEE}} paid by Lessee.', 'input', 164, false, NULL, '{"all": [{"equals": ["NO", ""], "field_key": "TXN.GL_NOT_REQUIRED"}, {"equals": ["SPLIT"], "field_key": "TXN.GL_DED_RESP"}, {"any": [{"equals": ["HAS_WILL_MAINTAIN", "WILL_OBTAIN"], "field_key": "TXN.GL_LESSOR_STATUS"}, {"equals": ["HAS_WILL_MAINTAIN", "WILL_OBTAIN"], "field_key": "TXN.GL_LESSEE_STATUS"}]}]}', NULL, '2026-07-28 00:36:43.221618+00', true);
 INSERT INTO public.contract_clause_defs VALUES ('e847cfa6-2be7-4dc5-8c55-42232a112fcf', 'HORSE_BILL_OF_SALE', 'BOS_RELEASE', 'BOS_RELEASE.POST_DELIVERY', 'Post-Delivery Responsibility', 'From and after delivery, the Horse and its actions, behavior, care, and condition are the sole responsibility of Buyer, and Buyer shall indemnify, defend, and hold harmless Seller and Seller''s family members, employees, agents, contractors, successors, and assigns from and against any claim, damage, loss, liability, cost, or expense arising out of the Horse or its use, handling, care, or possession after delivery, except to the extent caused by the gross negligence, reckless conduct, intentional misconduct, or fraud of a released party or by breach of the express representations stated in this Bill of Sale.', 'prose', 20, false, NULL, '{"all": [{"equals": ["NO"], "field_key": "TXN.BOS_HAS_SALE_AGREEMENT"}, {"equals": ["INCLUDED"], "field_key": "TXN.BOS_RELEASE_ELECTION"}]}', NULL, '2026-08-03 20:21:18.229071+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('404f268d-4f92-4fe9-9bed-2b0dde16a512', 'HORSE_BILL_OF_SALE', 'BOS_RELEASE', 'BOS_RELEASE.WAIVER_UNKNOWN', 'Waiver of Unknown Claims', 'Each party, on behalf of itself and anyone claiming by, through, or under it, expressly waives any and all claims released under this Bill of Sale that the waiving party does not know or suspect to exist in its favor at the time of this Bill of Sale. Each party acknowledges that it is familiar with, and expressly waives the protections of, California Civil Code Section 1542, which provides: "A general release does not extend to claims that the creditor or releasing party does not know or suspect to exist in his or her favor at the time of executing the release and that, if known by him or her, would have materially affected his or her settlement with the debtor or released party." Each party assumes the risk that claims presently unknown to it may later be discovered, and acknowledges that this waiver is a material term of this Bill of Sale. This waiver does not apply to claims arising from fraud or from breach of the express representations stated in this Bill of Sale.', 'prose', 30, false, NULL, '{"all": [{"equals": ["NO"], "field_key": "TXN.BOS_HAS_SALE_AGREEMENT"}, {"equals": ["INCLUDED"], "field_key": "TXN.BOS_RELEASE_ELECTION"}]}', NULL, '2026-08-03 20:21:18.229071+00', false);
@@ -32803,24 +33004,31 @@ INSERT INTO public.contract_clause_defs VALUES ('381709e8-70a7-4c31-b2ae-674e9a0
 INSERT INTO public.contract_clause_defs VALUES ('4933f5cc-462d-4f20-b54a-020ec0f5c662', 'HORSE_BILL_OF_SALE', 'BOS_GOVERNING', 'BOS_GOVERNING.STANDALONE', NULL, 'This Bill of Sale is governed by the laws of the State of California, without regard to conflict-of-laws principles. Any dispute arising out of or relating to this Bill of Sale or the Horse shall be resolved by final and binding arbitration in San Diego County, California, before a single arbitrator administered by JAMS under its applicable rules, or another administrator the parties agree to in writing, with arbitrator fees and administrative costs allocated as those rules provide. Either party may bring a qualifying claim in small claims court, and either party may seek provisional or injunctive relief, including recovery of possession of the Horse, in a court of competent jurisdiction without waiving arbitration. Judgment on the award may be entered in any court having jurisdiction.', 'prose', 20, false, NULL, '{"equals": ["NO"], "field_key": "TXN.BOS_HAS_SALE_AGREEMENT"}', NULL, '2026-08-03 20:21:18.276465+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('f0dd37bf-cc51-4b7a-8206-566c8cd82fa3', 'HORSE_BILL_OF_SALE', 'BOS_GOVERNING', 'BOS_GOVERNING.PENDING', NULL, '[Pending — state whether a Horse Sale and Purchase Agreement accompanies this Bill of Sale. This placeholder is replaced by the applicable governing-law terms and blocks signing.]', 'prose', 30, false, NULL, '{"equals": [""], "field_key": "TXN.BOS_HAS_SALE_AGREEMENT"}', NULL, '2026-08-03 20:21:18.276465+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('9de4d5de-6918-413a-b493-cb097bffa508', 'HORSE_LEASE_V2', 'TERMINATION', 'TERMINATION.LOSS_OF_USE', 'Termination upon Loss of Use', 'If the Horse becomes unusable for the purposes of this Agreement for any reason, Lessee may terminate this Agreement immediately upon written notice to Lessor. Upon such termination, Lessee is entitled to a prorated refund of any Lease Fee paid for the remaining unused time as of the date of termination.', 'prose', 45, false, NULL, NULL, NULL, '2026-07-27 19:24:47.335707+00', false);
-INSERT INTO public.contract_clause_defs VALUES ('2865c6ad-bfd5-4293-abf4-b4322c90fe88', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'RESTRICT.COMP_ON', NULL, 'Competitions are restricted as follows: {{TXN.COMP_RESTRICTION}}.', 'input', 360, true, NULL, '{"all": [{"contains": ["COMPETITIONS"], "field_key": "TXN.PERMITTED_ACTIVITIES"}, {"equals": ["NO", ""], "field_key": "TXN.COMP_OMIT"}]}', NULL, '2026-07-23 08:48:54.735558+00', false);
-INSERT INTO public.contract_clause_defs VALUES ('47717c9d-5c44-4a95-8a4a-94e23048c77b', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'RESTRICT.JUMP_OFF', NULL, 'Lessor does not restrict jumping.', 'input', 340, false, NULL, '{"all": [{"contains": ["JUMPING"], "field_key": "TXN.PERMITTED_ACTIVITIES"}, {"equals": ["YES"], "field_key": "TXN.JUMP_OMIT"}]}', NULL, '2026-07-23 08:48:54.735558+00', false);
-INSERT INTO public.contract_clause_defs VALUES ('a9458556-c466-46da-b35b-52ba5b725261', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'RESTRICT.COMP_TITLE', 'Competition Restrictions', '{{TXN.COMP_OMIT}}', 'input', 350, false, NULL, '{"contains": ["COMPETITIONS"], "field_key": "TXN.PERMITTED_ACTIVITIES"}', NULL, '2026-07-23 08:48:54.735558+00', false);
-INSERT INTO public.contract_clause_defs VALUES ('16d8ef7d-d08e-42f6-8e38-5d6c7e4a24e4', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'RESTRICT.COMP_OFF', NULL, 'Lessor does not restrict competitions.', 'input', 370, false, NULL, '{"all": [{"contains": ["COMPETITIONS"], "field_key": "TXN.PERMITTED_ACTIVITIES"}, {"equals": ["YES"], "field_key": "TXN.COMP_OMIT"}]}', NULL, '2026-07-23 08:48:54.735558+00', false);
-INSERT INTO public.contract_clause_defs VALUES ('def2cd47-c954-4363-9a82-d1fc95bec550', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'RESTRICT.TRAIL_TITLE', 'Trail-Riding Restrictions', '{{TXN.TRAIL_OMIT}}', 'input', 380, false, NULL, '{"contains": ["TRAIL"], "field_key": "TXN.PERMITTED_ACTIVITIES"}', NULL, '2026-07-23 08:48:54.735558+00', false);
+INSERT INTO public.contract_clause_defs VALUES ('133368fc-ffb1-4772-8683-ad1bf770bab0', 'HORSE_LEASE_V2', 'INSURANCE_RISK', 'INSURANCE_RISK.GL_DED_SIMPLE', NULL, 'If a claim is made under any such policy arising from events for which Lessee bears responsibility, whether directly or indirectly, responsibility for any deductible shall be borne by: {{TXN.GL_DED_RESP}}', 'input', 162, false, NULL, '{"all": [{"equals": ["NO", ""], "field_key": "TXN.GL_NOT_REQUIRED"}, {"any": [{"equals": ["HAS_WILL_MAINTAIN", "WILL_OBTAIN"], "field_key": "TXN.GL_LESSOR_STATUS"}, {"equals": ["HAS_WILL_MAINTAIN", "WILL_OBTAIN"], "field_key": "TXN.GL_LESSEE_STATUS"}]}]}', NULL, '2026-07-28 00:36:43.221618+00', false);
+INSERT INTO public.contract_clause_defs VALUES ('16d8ef7d-d08e-42f6-8e38-5d6c7e4a24e4', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'RESTRICT.COMP_OFF', NULL, 'Lessor does not restrict competition activity in any way.', 'input', 314, false, NULL, '{"all": [{"contains": ["COMPETITIONS"], "field_key": "TXN.PERMITTED_ACTIVITIES"}, {"equals": ["NO", ""], "field_key": "TXN.COMP_OMIT"}]}', NULL, '2026-07-23 08:48:54.735558+00', false);
+INSERT INTO public.contract_clause_defs VALUES ('aabcd80b-33dd-4341-8436-33814211b263', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'RESTRICT.JUMP_ON', NULL, 'Jumping is restricted as follows: maximum height {{TXN.JUMP_MAX_HEIGHT}}; no more than {{TXN.JUMP_DAYS_PER_WEEK}} days per week; under trainer supervision only: {{TXN.JUMP_SUPERVISION}}', 'input', 321, true, NULL, '{"all": [{"contains": ["JUMPING"], "field_key": "TXN.PERMITTED_ACTIVITIES"}, {"equals": ["YES"], "field_key": "TXN.JUMP_OMIT"}]}', NULL, '2026-07-23 08:48:54.735558+00', false);
+INSERT INTO public.contract_clause_defs VALUES ('b8457b10-ff53-49a1-9ad3-3b953801cb43', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'PROHIBITED.OTHER', 'Other Allowed Activities', 'Lessee is permitted to engage in the following additional activities with the Horse: {{TXN.ADDITIONAL_ACTIVITIES}}', 'input', 450, true, NULL, '{"contains": ["BREEDING", "EMOTIONAL_SUPPORT", "FILM_TV_AD", "OTHER"], "field_key": "TXN.ADDITIONAL_ACTIVITIES"}', NULL, '2026-07-20 21:51:03.659545+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('53a6b89a-bf12-4e2b-ac86-ccc8b01934c3', 'HORSE_LEASE_V2', 'LESSEE_REPS', 'LESSEE_REPS.MAIN_INDIVIDUAL', 'Lessee''s Representations', 'Lessee represents and warrants that Lessee is at least 18 years of age and has full authority to enter into this Agreement; that Lessee has no physical or mental condition that would prevent Lessee from safely participating in the activities contemplated by this Agreement; and that Lessee has the requisite knowledge and experience to handle and ride the Horse, and will use reasonable care in doing so and follow Lessor''s instructions. By signing this Agreement, Lessee acknowledges that Lessee has read this Agreement, fully understands its terms, and understands that Lessee is giving up substantial legal rights on behalf of Lessee and anyone claiming by, through, or under Lessee, including the right to sue the Lessor Parties.', 'prose', 10, false, NULL, '{"equals": ["INDIVIDUAL"], "field_key": "LESSEE.PARTY_TYPE"}', NULL, '2026-07-28 00:36:43.221618+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('533775a6-8e8b-49ac-a4ac-4146c8ddb1a9', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'PERMITTED_USE.TRANSPORT', 'Transport of the Horse', 'Transport of the Horse to offsite locations (other than for medical care, which is always permitted): {{TXN.OFFSITE_TRANSPORT}}
 For clarity, riding trails attached to the location at which the Horse is kept under this Agreement are not offsite locations. Where Competitions are a permitted activity under this Agreement, transport of the Horse to and from the competition venue for that competition is deemed consented, subject to any competition restrictions stated in this Agreement.', 'input', 500, true, NULL, NULL, NULL, '2026-07-21 05:47:22.63689+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('092e03de-aaf1-483c-ad64-880279c7f7ab', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'PERMITTED_USE.RELEASES_REQUIRED', 'Releases Required for Authorized Riders', 'All persons other than Lessee must, prior to handling or riding the Horse, have executed a liability release that names the Lessor Parties and the Lessee Parties as released parties, contains an express assumption of the inherent risks of equine activities, has been reviewed and approved by Lessor, and, for any rider under 18 years of age, is signed by the rider''s parent or legal guardian. Lessee is responsible for ensuring this requirement is satisfied before permitting any authorized person to ride or handle the Horse.', 'prose', 495, false, NULL, NULL, NULL, '2026-07-28 00:36:43.221618+00', false);
-INSERT INTO public.contract_clause_defs VALUES ('b8457b10-ff53-49a1-9ad3-3b953801cb43', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'PROHIBITED.OTHER', 'Other Allowed Activities', 'Lessee is permitted to engage in the following additional activities with the Horse: {{TXN.ADDITIONAL_ACTIVITIES}}.', 'input', 450, true, NULL, '{"contains": ["BREEDING", "EMOTIONAL_SUPPORT", "FILM_TV_AD", "OTHER"], "field_key": "TXN.ADDITIONAL_ACTIVITIES"}', NULL, '2026-07-20 21:51:03.659545+00', false);
+INSERT INTO public.contract_clause_defs VALUES ('20805bc1-8b71-45ee-87f9-51012be40316', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'TRAINING_LESSONS.TRAINING', 'Training', 'Any professional training of the Horse under this Agreement, including groundwork, schooling, and under-saddle training, shall be conducted only by a French Heritage Equestrian Approved Trainer.', 'input', 270, false, NULL, '{"contains": ["TRAINING"], "field_key": "TXN.PERMITTED_ACTIVITIES"}', NULL, '2026-07-20 21:49:33.162432+00', false);
+INSERT INTO public.contract_clause_defs VALUES ('a9458556-c466-46da-b35b-52ba5b725261', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'RESTRICT.COMP_TITLE', 'Competition Restrictions', '{{TXN.COMP_OMIT}}', 'input', 312, false, NULL, '{"contains": ["COMPETITIONS"], "field_key": "TXN.PERMITTED_ACTIVITIES"}', NULL, '2026-07-23 08:48:54.735558+00', false);
+INSERT INTO public.contract_clause_defs VALUES ('47717c9d-5c44-4a95-8a4a-94e23048c77b', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'RESTRICT.JUMP_OFF', NULL, 'Lessor does not restrict jumping activity in any way.', 'input', 322, false, NULL, '{"all": [{"contains": ["JUMPING"], "field_key": "TXN.PERMITTED_ACTIVITIES"}, {"equals": ["NO", ""], "field_key": "TXN.JUMP_OMIT"}]}', NULL, '2026-07-23 08:48:54.735558+00', false);
+INSERT INTO public.contract_clause_defs VALUES ('def2cd47-c954-4363-9a82-d1fc95bec550', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'RESTRICT.TRAIL_TITLE', 'Trail-Riding Restrictions', '{{TXN.TRAIL_OMIT}}', 'input', 330, false, NULL, '{"contains": ["TRAIL"], "field_key": "TXN.PERMITTED_ACTIVITIES"}', NULL, '2026-07-23 08:48:54.735558+00', false);
+INSERT INTO public.contract_clause_defs VALUES ('7f45616b-cacc-4f63-941e-3412828ad76d', 'HORSE_LEASE_V2', 'CARE', 'CARE.RIDER_AIDS', 'Rider Aids', 'The following rider aids are prohibited: {{TXN.RIDER_AIDS}}', 'input', 90, true, NULL, NULL, NULL, '2026-07-20 21:49:33.162432+00', false);
+INSERT INTO public.contract_clause_defs VALUES ('2865c6ad-bfd5-4293-abf4-b4322c90fe88', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'RESTRICT.COMP_ON', NULL, 'Competitions are restricted as follows: {{TXN.COMP_RESTRICTION}}', 'input', 313, true, NULL, '{"all": [{"contains": ["COMPETITIONS"], "field_key": "TXN.PERMITTED_ACTIVITIES"}, {"equals": ["YES"], "field_key": "TXN.COMP_OMIT"}]}', NULL, '2026-07-23 08:48:54.735558+00', false);
+INSERT INTO public.contract_clause_defs VALUES ('fea4e95d-de33-4877-9a7f-0c45564c1858', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'RESTRICT.TRAIL_ON', NULL, 'Trail riding is restricted as follows: {{TXN.TRAIL_RESTRICTION}}', 'input', 331, true, NULL, '{"all": [{"contains": ["TRAIL"], "field_key": "TXN.PERMITTED_ACTIVITIES"}, {"equals": ["YES"], "field_key": "TXN.TRAIL_OMIT"}]}', NULL, '2026-07-23 08:48:54.735558+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('8f08d285-c336-46ac-9628-cce4d14a9af0', 'HORSE_LEASE_V2', 'TERMINATION', 'TERMINATION.SURVIVAL', 'Survival', 'The releases, waivers, assumptions of risk, indemnities, and limitations of liability in this Agreement, and any payment obligations accrued before termination, survive the expiration or termination of this Agreement for any reason.', 'prose', 50, false, NULL, NULL, NULL, '2026-07-28 00:36:43.221618+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('2444a000-84b4-42b1-a4d4-9ac81e5647e9', 'HORSE_LEASE_V2', 'INSURANCE_RISK', 'INSURANCE_RISK.LIMITATION', 'Limitation of Liability', 'Under no circumstances shall either party be liable to the other for any special, consequential, incidental, or punitive damages arising out of or relating to this Agreement. The total aggregate liability of either party (including, respectively, the Lessor Parties and the Lessee Parties) to the other under this Agreement shall not exceed the Horse''s current fair market value of {{HORSE.FAIR_MARKET_VALUE}}. Any amount owed by one party to the other under this Agreement shall be reduced by the amount of any insurance proceeds actually received by the party owed with respect to the same loss. This limitation does not apply to gross negligence, reckless conduct, or intentional misconduct, to either party''s indemnification obligations for third-party claims for bodily injury or death, or to amounts actually covered by insurance available for the loss.', 'prose', 1520, false, NULL, NULL, NULL, '2026-07-27 18:39:24.275588+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('1ad3d5af-0405-4ea2-8c96-16e69c80734e', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'PROHIBITED.OTHERS', 'Allowing Others to Ride', 'The following additional persons may ride or handle the Horse without Lessor''s prior permission: {{TXN.OTHERS_ALLOWED}}.
 Only the persons identified above shall be permitted to ride or handle the Horse without Lessor''s written permission.', 'input', 480, true, NULL, NULL, NULL, '2026-07-20 21:51:03.659545+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('367ea844-068a-4bf1-9500-80599d778099', 'HORSE_LEASE_V2', 'INSURANCE_RISK', 'INSURANCE_RISK.CCC', 'Care, Custody and Control Insurance', 'Lessee shall obtain and maintain, for the duration of this Agreement, care, custody and control insurance covering the Horse while in Lessee''s care, custody, or control, with a death benefit limit of not less than the Horse''s current fair market value of {{HORSE.FAIR_MARKET_VALUE}}, with an effective start date no later than the commencement of this Agreement. Lessee shall provide proof of coverage to Lessor upon request and shall maintain the policy in good standing for the duration of this Agreement; failure to do so constitutes a material breach subject to the Termination for Cause provisions of this Agreement.', 'prose', 400, false, NULL, '{"equals": ["ENTITY"], "field_key": "LESSEE.PARTY_TYPE"}', NULL, '2026-07-28 00:36:43.221618+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('c5579235-65b6-4d8d-b279-8165a2a20be5', 'HORSE_LEASE_V2', 'INSURANCE_RISK', 'INSURANCE_RISK.COORDINATION', 'Coordination of Coverage', 'Lessor bears responsibility for loss of, injury to, or death of the Horse, and Lessor''s mortality insurance shall be the first policy noticed and claimed against for any such covered event. Lessee''s care, custody and control insurance is secondary and shall respond only to the extent the loss was caused by Lessee''s gross negligence, reckless conduct, or intentional misconduct. Where a loss was so caused, Lessee shall bear the net cost of any applicable deductible and any uninsured portion of the loss, and the parties shall reimburse one another as necessary to give effect to this allocation regardless of the order in which the policies respond. Each party shall promptly notify its insurer of a covered event and shall cooperate in the submission and adjustment of claims. Absent a determination that Lessee so caused the loss, all deductibles and uninsured amounts remain Lessor''s responsibility.', 'prose', 450, false, NULL, '{"all": [{"equals": ["NO", ""], "field_key": "TXN.MORT_NOT_REQUIRED"}, {"equals": ["ENTITY"], "field_key": "LESSEE.PARTY_TYPE"}]}', NULL, '2026-07-28 00:36:43.221618+00', false);
+INSERT INTO public.contract_clause_defs VALUES ('2c30f7d8-4678-4a18-9b54-61341545c0d3', 'HORSE_LEASE_V2', 'PERMITTED_USE', 'TRAINING_LESSONS.LESSONS_ENTITY', 'Lessons — Lessee''s Instruction Program', 'Lessee is permitted by Lessor to provide riding lessons with the Horse: {{TXN.LESSONS_ENTITY_PERMITTED}}', 'input', 255, false, NULL, '{"all": [{"equals": ["ENTITY"], "field_key": "LESSEE.PARTY_TYPE"}, {"contains": ["LESSONS"], "field_key": "TXN.PERMITTED_ACTIVITIES"}]}', NULL, '2026-07-29 01:32:35.488005+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('ae391f86-4fa6-4d2b-8e19-ef6ce22be646', 'HORSE_LEASE_V2', 'PURPOSE', 'PURPOSE.RECREATION_DEFAULT', 'Purpose of Agreement', '[Pending — select the purpose of this lease. This placeholder is replaced by the applicable purpose language and blocks signing.]', 'input', 12, false, NULL, '{"equals": [""], "field_key": "TXN.LEASE_PURPOSE"}', NULL, '2026-07-28 00:36:43.221618+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('74d08507-6434-470b-8f15-4a119e6d04bf', 'HORSE_LEASE_V2', 'EVALUATION', 'EVALUATION.DATES_INCLUDED', 'Evaluation Period Details', 'Lessee shall have an evaluation period of {{TXN.EVAL_INCLUDED_LENGTH}} {{TXN.EVAL_INCLUDED_UNIT}} beginning on the date this Agreement is fully signed by both parties. The evaluation period fee is included at no separate charge, is earned upon commencement of the evaluation period, and is nonrefundable. Either party may terminate this Agreement during the evaluation period by written notice to the other party. Upon such termination, any per-use or lease fees for usage that occurred remain due, and neither party owes the other any further amount under this Agreement except amounts already accrued.', 'input', 20, true, NULL, '{"all": [{"equals": ["REQUESTED", "REQUIRED"], "field_key": "TXN.EVALUATION_ENABLED"}, {"equals": ["INCLUDED"], "field_key": "TXN.EVAL_PERIOD_TYPE"}, {"gte": 1, "field_key": "TXN.EVAL_INCLUDED_LENGTH"}]}', NULL, '2026-07-28 00:36:43.221618+00', false);
+INSERT INTO public.contract_clause_defs VALUES ('30516430-98f6-460a-b323-3aad85fc36b6', 'HORSE_LEASE_V2', 'INSURANCE_RISK', 'INSURANCE_RISK.MED_DEDR_SIMPLE', NULL, 'If a claim is made under any such policy arising from events for which Lessee bears responsibility, whether directly or indirectly, responsibility for any deductible shall be borne by: {{TXN.MED_DED_RESP}}', 'input', 314, false, NULL, '{"all": [{"equals": ["NO", ""], "field_key": "TXN.MED_NOT_REQUIRED"}, {"any": [{"equals": ["HAS_WILL_MAINTAIN", "WILL_OBTAIN"], "field_key": "TXN.MED_LESSOR_STATUS"}, {"equals": ["HAS_WILL_MAINTAIN", "WILL_OBTAIN"], "field_key": "TXN.MED_LESSEE_STATUS"}]}]}', NULL, '2026-07-28 00:36:43.221618+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('05c02d26-d5b2-4631-a4f0-f7119d8bd09d', 'HORSE_SALE_V2', 'PARTIES', 'PARTIES.CO_BUYER', 'Co-Buyer', '{{COBUYER.FULL_NAME}} of {{COBUYER.ADDRESS}} ("Co-Buyer") purchases the Horse jointly with Buyer. Co-Buyer is a Buyer for all purposes of this Agreement, every reference to Buyer includes Co-Buyer, and the representations, covenants, releases, waivers, and payment obligations of Buyer under this Agreement are made by Buyer and Co-Buyer jointly and severally. Buyer and Co-Buyer shall hold title to the Horse as follows: {{TXN.CO_BUYER_TITLE_FORM}}. This Agreement is effective as to Co-Buyer upon Co-Buyer''s execution of it.', 'input', 20, false, NULL, '{"equals": ["YES"], "field_key": "TXN.CO_BUYER_ENABLED"}', NULL, '2026-08-02 14:03:12.586921+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('79513f21-2be7-45d6-9183-e9e20e6ed5ef', 'HORSE_SALE_V2', 'PARTIES', 'PARTIES.CO_BUYER_PENDING', NULL, '[Pending — state whether there is a co-buyer. This placeholder is replaced by the applicable terms and blocks signing.]', 'prose', 30, false, NULL, '{"equals": [""], "field_key": "TXN.CO_BUYER_ENABLED"}', NULL, '2026-08-02 14:03:12.634378+00', false);
 INSERT INTO public.contract_clause_defs VALUES ('4cc81896-a4f5-4d91-91c2-4bc17010eb37', 'HORSE_SALE_V2', 'PARTIES', 'PARTIES.CO_BUYER_TITLE_DETAIL', NULL, 'Title detail: {{TXN.CO_BUYER_TITLE_DETAIL}}', 'input', 40, false, NULL, '{"any": [{"equals": ["TIC_STATED"], "field_key": "TXN.CO_BUYER_TITLE_FORM"}, {"equals": ["OTHER"], "field_key": "TXN.CO_BUYER_TITLE_FORM"}]}', NULL, '2026-08-02 14:03:12.678354+00', false);
@@ -33162,9 +33370,7 @@ INSERT INTO public.contract_field_defs VALUES ('86d1d298-dbb2-47aa-9292-2c30d117
 INSERT INTO public.contract_field_defs VALUES ('4eb8ead0-e587-4f02-8acd-596055e06444', 'HORSE_LEASE_V2', 'TXN.JUMP_SUPERVISION', NULL, 'Only under trainer supervision?', 'PERMITTED_USE', 'DEAL', 'yesno', 'select', NULL, NULL, NULL, false, false, NULL, 30, '2026-07-20 21:51:03.659545+00', 'yesno', 'RESTRICT.JUMP_ON', NULL, false);
 INSERT INTO public.contract_field_defs VALUES ('2815b376-02e0-48cf-870d-77a9db0ee493', 'HORSE_LEASE_V2', 'TXN.COMP_RESTRICTION', NULL, 'Competition restriction', 'PERMITTED_USE', 'LESSOR', 'text', 'text', NULL, NULL, NULL, false, true, NULL, 1, '2026-07-23 08:48:54.735558+00', 'text', 'RESTRICT.COMP_ON', NULL, false);
 INSERT INTO public.contract_field_defs VALUES ('d6a2b084-e441-4473-9b83-ef18fecf86fc', 'HORSE_LEASE_V2', 'TXN.TRAIL_RESTRICTION', NULL, 'Trail-riding restriction', 'PERMITTED_USE', 'LESSOR', 'text', 'text', NULL, NULL, NULL, false, true, NULL, 1, '2026-07-23 08:48:54.735558+00', 'text', 'RESTRICT.TRAIL_ON', NULL, false);
-INSERT INTO public.contract_field_defs VALUES ('3525f528-0044-4dc2-b5de-0f6591913828', 'HORSE_LEASE_V2', 'TXN.JUMP_OMIT', NULL, 'No jumping restrictions', 'PERMITTED_USE', 'LESSOR', 'certify', 'checkbox', NULL, NULL, NULL, false, true, NULL, 1, '2026-07-23 08:48:54.735558+00', 'certify', 'RESTRICT.JUMP_TITLE', NULL, false);
-INSERT INTO public.contract_field_defs VALUES ('78beac58-de8d-4cf7-a8a9-e88c1bb9e17c', 'HORSE_LEASE_V2', 'TXN.COMP_OMIT', NULL, 'No competition restrictions', 'PERMITTED_USE', 'LESSOR', 'certify', 'checkbox', NULL, NULL, NULL, false, true, NULL, 1, '2026-07-23 08:48:54.735558+00', 'certify', 'RESTRICT.COMP_TITLE', NULL, false);
-INSERT INTO public.contract_field_defs VALUES ('e772e867-4c15-4e6f-b299-3a2eb104791a', 'HORSE_LEASE_V2', 'TXN.TRAIL_OMIT', NULL, 'No trail-riding restrictions', 'PERMITTED_USE', 'LESSOR', 'certify', 'checkbox', NULL, NULL, NULL, false, true, NULL, 1, '2026-07-23 08:48:54.735558+00', 'certify', 'RESTRICT.TRAIL_TITLE', NULL, false);
+INSERT INTO public.contract_field_defs VALUES ('78beac58-de8d-4cf7-a8a9-e88c1bb9e17c', 'HORSE_LEASE_V2', 'TXN.COMP_OMIT', NULL, 'Check this box to include restrictions for competitions', 'PERMITTED_USE', 'LESSOR', 'certify', 'checkbox', NULL, NULL, NULL, false, true, NULL, 1, '2026-07-23 08:48:54.735558+00', 'certify', 'RESTRICT.COMP_TITLE', NULL, false);
 INSERT INTO public.contract_field_defs VALUES ('b622febd-9217-4f53-a153-bee781dad695', 'HORSE_LEASE_V2', 'TXN.MED_NOT_REQUIRED', NULL, 'Medical insurance is not required for or by either party under this Agreement.', 'INSURANCE_RISK', 'LESSOR', 'certify', 'checkbox', NULL, NULL, NULL, false, false, NULL, 5, '2026-07-29 01:32:36.529718+00', 'certify', 'INSURANCE_RISK.MEDICAL', NULL, false);
 INSERT INTO public.contract_field_defs VALUES ('23a21754-0406-4e08-8677-837781e92cf9', 'HORSE_LEASE_V2', 'TXN.MED_LESSOR_STATUS', NULL, 'Lessor', 'INSURANCE_RISK', 'LESSOR', 'select', 'select', '[{"label": "Has and will maintain", "value": "HAS_WILL_MAINTAIN"}, {"label": "Will obtain and will maintain", "value": "WILL_OBTAIN"}, {"label": "Does not have and will not obtain", "value": "NONE"}]', '{"equals": ["NO", ""], "field_key": "TXN.MED_NOT_REQUIRED"}', NULL, true, false, NULL, 10, '2026-07-29 01:32:36.529718+00', 'select', 'INSURANCE_RISK.MED_STATUS', NULL, true);
 INSERT INTO public.contract_field_defs VALUES ('63c49e7b-01a5-48ed-899b-afbf709e2f91', 'HORSE_LEASE_V2', 'TXN.MED_LESSEE_STATUS', NULL, 'Lessee', 'INSURANCE_RISK', 'LESSOR', 'select', 'select', '[{"label": "Has and will maintain", "value": "HAS_WILL_MAINTAIN"}, {"label": "Will obtain and will maintain", "value": "WILL_OBTAIN"}, {"label": "Does not have and will not obtain", "value": "NONE"}]', '{"equals": ["NO", ""], "field_key": "TXN.MED_NOT_REQUIRED"}', NULL, true, false, NULL, 20, '2026-07-29 01:32:36.529718+00', 'select', 'INSURANCE_RISK.MED_STATUS', NULL, true);
@@ -33172,6 +33378,7 @@ INSERT INTO public.contract_field_defs VALUES ('df3969ec-bb7c-4a03-955f-5cc92a53
 INSERT INTO public.contract_field_defs VALUES ('db69c953-7be2-4cdc-be83-78813935118d', 'HORSE_LEASE_V2', 'TXN.LESSEE_TERM_NOTICE_DAYS', NULL, 'Days notice', 'TERMINATION', 'DEAL', 'number', 'number', NULL, NULL, NULL, false, false, NULL, 10, '2026-07-20 21:51:03.659545+00', 'number', 'TERMINATION.LESSEE', NULL, false);
 INSERT INTO public.contract_field_defs VALUES ('aa08ec06-fa42-4271-b89e-a60b392d1730', 'HORSE_LEASE_V2', 'TXN.OWNER_TERM_NOTICE_DAYS', NULL, 'Days notice', 'TERMINATION', 'DEAL', 'number', 'number', NULL, NULL, NULL, false, false, NULL, 10, '2026-07-20 21:51:03.659545+00', 'number', 'TERMINATION.OWNER', NULL, false);
 INSERT INTO public.contract_field_defs VALUES ('1b3ce63e-adbe-4c2b-ae06-29d601fcdfcc', 'HORSE_LEASE_V2', 'TXN.CAUSE_TERM_NOTICE_DAYS', NULL, 'Days notice', 'TERMINATION', 'DEAL', 'number', 'number', NULL, NULL, NULL, false, false, NULL, 10, '2026-07-20 21:51:03.659545+00', 'number', 'TERMINATION.CAUSE', NULL, false);
+INSERT INTO public.contract_field_defs VALUES ('e772e867-4c15-4e6f-b299-3a2eb104791a', 'HORSE_LEASE_V2', 'TXN.TRAIL_OMIT', NULL, 'Check this box to include restrictions for trail riding', 'PERMITTED_USE', 'LESSOR', 'certify', 'checkbox', NULL, NULL, NULL, false, true, NULL, 1, '2026-07-23 08:48:54.735558+00', 'certify', 'RESTRICT.TRAIL_TITLE', NULL, false);
 INSERT INTO public.contract_field_defs VALUES ('f9c866d2-868b-4b74-a676-91768ea22a25', 'HORSE_LEASE_V2', 'TXN.PERMITTED_RESTRICTIONS', NULL, 'Add Restrictions', 'PERMITTED_USE', 'LESSOR', 'add_text', 'text', NULL, NULL, NULL, false, true, NULL, 40, '2026-07-23 02:32:01.860626+00', 'add_text', 'PERMITTED_USE.RESTRICTIONS', NULL, false);
 INSERT INTO public.contract_field_defs VALUES ('d83649de-a411-40db-b054-21c2c6857447', 'HORSE_LEASE_V2', 'TXN.ADDITIONAL_TERMS', NULL, 'Add additional terms', 'TERM', 'LESSOR', 'add_text', 'text', NULL, NULL, NULL, false, true, NULL, 1, '2026-07-23 09:26:27.245016+00', 'add_text', 'TERM.ADDITIONAL', NULL, false);
 INSERT INTO public.contract_field_defs VALUES ('67aa257a-10cb-4f82-a50e-bab1eb943326', 'HORSE_LEASE_V2', 'TXN.RENEWAL_INCLUDE', NULL, 'Include renewal terms', 'TERM', 'LESSOR', 'certify', 'checkbox', NULL, NULL, NULL, false, true, NULL, 1, '2026-07-23 09:26:27.245016+00', 'certify', 'TERM.RENEWAL', NULL, false);
@@ -33205,6 +33412,7 @@ INSERT INTO public.contract_field_defs VALUES ('116b8909-9909-4036-a788-e31a99b5
 INSERT INTO public.contract_field_defs VALUES ('fda52f65-3677-4811-a3cc-0ec3402a9d34', 'HORSE_LEASE_V2', 'TXN.LEASE_TYPE', NULL, 'Lease type', 'PURPOSE', 'LESSOR', 'select', 'select', '[{"label": "Full lease (full-time access)", "value": "FULL"}, {"label": "Partial lease (shared or limited access)", "value": "PARTIAL"}]', NULL, NULL, true, false, NULL, 10, '2026-07-21 10:45:54.446698+00', 'select', 'PURPOSE.LEASE_TYPE', NULL, true);
 INSERT INTO public.contract_field_defs VALUES ('f2ebebd6-69d7-4e9d-af38-0b3508825253', 'HORSE_LEASE_V2', 'TXN.MEDICATIONS', NULL, 'Medications and supplements', 'CARE', 'LESSOR', 'med_schedule', 'text', NULL, NULL, NULL, false, false, NULL, 10, '2026-07-21 19:04:04.492529+00', 'med_schedule', 'CARE.SUPPLEMENTS', NULL, false);
 INSERT INTO public.contract_field_defs VALUES ('c6e0b311-3fcb-458f-a719-f859ec6daa24', 'HORSE_LEASE_V2', 'TXN.TACK_PROHIBITED', NULL, 'Is Lessee prohibited from using certain tack or equipment?', 'CARE', 'LESSOR', 'reveal_text', 'text', NULL, NULL, NULL, false, false, NULL, 70, '2026-07-21 19:04:04.492529+00', 'reveal_text', 'CARE.TACK', NULL, false);
+INSERT INTO public.contract_field_defs VALUES ('3525f528-0044-4dc2-b5de-0f6591913828', 'HORSE_LEASE_V2', 'TXN.JUMP_OMIT', NULL, 'Check this box to include restrictions for jumping', 'PERMITTED_USE', 'LESSOR', 'certify', 'checkbox', NULL, NULL, NULL, false, true, NULL, 1, '2026-07-23 08:48:54.735558+00', 'certify', 'RESTRICT.JUMP_TITLE', NULL, false);
 INSERT INTO public.contract_field_defs VALUES ('f408f87e-4ee8-47d9-ab11-780133a4ecd7', 'HORSE_LEASE_V2', 'TXN.EXERCISE_INCLUDE', NULL, 'Include Lessee care & exercise responsibility', 'CARE', 'LESSOR', 'certify', 'checkbox', NULL, NULL, NULL, false, true, NULL, 1, '2026-07-23 02:43:24.750051+00', 'certify', 'SCHEDULE.CARE_DUTY', NULL, false);
 INSERT INTO public.contract_field_defs VALUES ('4e7ca5d1-8a97-4b38-8fa7-6a953a6fa2cf', 'HORSE_LEASE_V2', 'TXN.HAS_OWNERSHIP_LIMITS', NULL, 'Any limitations on ownership?', 'HORSE', 'LESSOR', 'yesno', 'text', NULL, NULL, NULL, false, false, NULL, 1, '2026-07-21 12:52:57.478346+00', 'yesno', 'HORSE.OWNERSHIP_LIMITS_Q', NULL, false);
 INSERT INTO public.contract_field_defs VALUES ('0800e440-04bf-413e-8f3b-ed472f1aabde', 'HORSE_LEASE_V2', 'TXN.VET_CHECK_CHOICE', NULL, 'Pre-lease veterinary examination', 'HORSE', 'LESSOR', 'buttons', 'select', '[{"label": "Lessee requested at their own expense", "value": "LESSEE_OWN"}, {"label": "Lessee requested at Lessor''s expense", "value": "LESSEE_AT_LESSOR"}, {"label": "Lessor provided at no cost", "value": "LESSOR_FREE"}, {"label": "Lessee waives the option", "value": "WAIVED"}]', NULL, NULL, false, false, NULL, 10, '2026-07-21 10:45:54.446698+00', 'buttons', 'HORSE.VET_CHECK', NULL, false);
@@ -33250,7 +33458,6 @@ INSERT INTO public.contract_field_defs VALUES ('a255ed87-ce2a-409a-8e36-07a14a37
 INSERT INTO public.contract_field_defs VALUES ('30deeb8b-1d48-4641-b277-25d5aa77946e', 'HORSE_SALE_V2', 'TXN.KNOWN_CONDITIONS', NULL, 'Known conditions and history', 'HORSE', 'SELLER', 'longtext', 'longtext', NULL, NULL, NULL, true, false, NULL, 140, '2026-08-02 14:03:18.009315+00', 'longtext', 'HORSE.DISCLOSURES', NULL, false);
 INSERT INTO public.contract_field_defs VALUES ('be7750d6-92bd-40c3-82ae-117d99e97d8e', 'HORSE_SALE_V2', 'TXN.INJURY_HISTORY', NULL, 'Has anyone been seriously injured by the Horse''s direct actions?', 'HORSE', 'SELLER', 'select', 'select', '[{"label": "Yes", "value": "YES"}, {"label": "No", "value": "NO"}]', NULL, NULL, true, false, NULL, 150, '2026-08-02 14:03:18.065363+00', 'select', 'HORSE.INJURY_HISTORY_PENDING', NULL, false);
 INSERT INTO public.contract_field_defs VALUES ('0564901b-9deb-42c2-9372-e1f0cc03ecc2', 'HORSE_LEASE_V2', 'TXN.OTHERS_ALLOWED', NULL, 'Others allowed to ride', 'PERMITTED_USE', 'DEAL', 'buttons', 'checkbox', '[{"label": "None", "value": "NONE"}, {"label": "Lessee''s family members", "value": "FAMILY"}, {"label": "The trainer/instructor", "value": "TRAINER"}, {"when": {"any": [{"contains": ["LESSONS"], "field_key": "TXN.PERMITTED_ACTIVITIES"}, {"equals": ["YES"], "field_key": "TXN.LESSONS_ENTITY_PERMITTED"}]}, "label": "Riding Lesson Participants", "value": "LESSON_PARTICIPANTS"}, {"label": "Other", "value": "OTHER"}]', NULL, NULL, false, false, NULL, 10, '2026-07-20 21:51:03.659545+00', 'buttons', 'PROHIBITED.OTHERS', NULL, false);
-INSERT INTO public.contract_field_defs VALUES ('9ec15b26-07ed-43a8-aa35-59290c5e6856', 'HORSE_LEASE_V2', 'TXN.PERMITTED_ACTIVITIES', NULL, 'Permitted activities', 'PERMITTED_USE', 'DEAL', 'buttons', 'checkbox', '[{"label": "Riding Lessons", "value": "LESSONS"}, {"label": "Solo Arena Riding", "value": "ARENA_SOLO"}, {"label": "Group Arena Riding", "value": "ARENA_GROUP"}, {"label": "Jumping", "value": "JUMPING"}, {"label": "Competitions", "value": "COMPETITIONS"}, {"label": "Trail Riding", "value": "TRAIL"}]', NULL, NULL, true, false, NULL, 10, '2026-07-20 21:49:32.565438+00', 'buttons', 'PERMITTED_USE.MAIN', NULL, false);
 INSERT INTO public.contract_field_defs VALUES ('516bf829-e50d-4b7b-b10e-c3640a6bae49', 'HORSE_LEASE_V2', 'HORSE.FARRIER_PHONE', NULL, 'Farrier phone', 'CARE', 'LESSOR', 'text', 'text', NULL, '{"equals": ["LESSEE"], "field_key": "TXN.FARRIER_ARRANGE"}', NULL, false, true, NULL, 21, '2026-07-23 14:28:55.72875+00', 'text', 'CARE.FARRIER', NULL, false);
 INSERT INTO public.contract_field_defs VALUES ('5590440a-be12-4be1-b7d2-df4be506d4ea', 'HORSE_LEASE_V2', 'HORSE.VET_NAME', NULL, 'Veterinarian', 'CARE', 'LESSOR', 'text', 'text', NULL, '{"equals": ["LESSEE"], "field_key": "TXN.VET_ARRANGE"}', NULL, false, true, NULL, 20, '2026-07-23 14:28:55.72875+00', 'text', 'CARE.ROUTINE_VET', NULL, false);
 INSERT INTO public.contract_field_defs VALUES ('43f613b8-d0dc-4a5c-9944-f4f6674bf9ac', 'HORSE_LEASE_V2', 'HORSE.VET_BUSINESS', NULL, 'Practice', 'CARE', 'LESSOR', 'text', 'text', NULL, '{"equals": ["LESSEE"], "field_key": "TXN.VET_ARRANGE"}', NULL, false, true, NULL, 21, '2026-07-23 14:28:55.72875+00', 'text', 'CARE.ROUTINE_VET', NULL, false);
@@ -33258,6 +33465,7 @@ INSERT INTO public.contract_field_defs VALUES ('ddf2e5d1-2be0-4446-ae1e-3d2a430f
 INSERT INTO public.contract_field_defs VALUES ('7573217d-6ec6-4958-b641-33a10d3589f5', 'HORSE_LEASE_V2', 'TXN.OFFSITE_TRANSPORT', NULL, 'Offsite transport', 'PERMITTED_USE', 'LESSOR', 'select', 'select', '[{"label": "Lessor grants permission to transport offsite", "value": "GRANTED"}, {"label": "Lessor prohibits offsite transport without written consent", "value": "PROHIBITED"}]', NULL, NULL, false, false, NULL, 30, '2026-07-21 05:47:22.63689+00', 'select', 'PERMITTED_USE.TRANSPORT', NULL, true);
 INSERT INTO public.contract_field_defs VALUES ('71b521a4-80b8-442b-be71-fad89020d9b3', 'HORSE_LEASE_V2', 'TXN.COMPETITION_EXPENSES', NULL, 'Competition expenses', 'PERMITTED_USE', 'DEAL', 'select', 'select', '[{"label": "Paid by Lessee", "value": "LESSEE"}, {"label": "Paid by Lessor", "value": "OWNER"}, {"label": "Other", "value": "OTHER"}]', NULL, NULL, false, false, NULL, 10, '2026-07-20 21:51:03.659545+00', 'select', 'COMPETITIONS.INTRO', NULL, true);
 INSERT INTO public.contract_field_defs VALUES ('2e0afaa4-b76c-4910-9104-3754e2cb3a95', 'HORSE_LEASE_V2', 'TXN.COMPETITION_WINNINGS', NULL, 'Competition winnings', 'PERMITTED_USE', 'DEAL', 'select', 'select', '[{"label": "Lessee", "value": "LESSEE"}, {"label": "Lessor", "value": "OWNER"}, {"label": "Other", "value": "OTHER"}]', NULL, NULL, false, false, NULL, 20, '2026-07-20 21:51:03.659545+00', 'select', 'COMPETITIONS.INTRO', NULL, true);
+INSERT INTO public.contract_field_defs VALUES ('9ec15b26-07ed-43a8-aa35-59290c5e6856', 'HORSE_LEASE_V2', 'TXN.PERMITTED_ACTIVITIES', NULL, 'Permitted activities', 'PERMITTED_USE', 'DEAL', 'buttons', 'checkbox', '[{"label": "Riding Lessons", "value": "LESSONS"}, {"label": "Solo Arena Riding", "value": "ARENA_SOLO"}, {"label": "Group Arena Riding", "value": "ARENA_GROUP"}, {"label": "Training", "value": "TRAINING"}, {"label": "Competitions", "value": "COMPETITIONS"}, {"label": "Jumping", "value": "JUMPING"}, {"label": "Trail Riding", "value": "TRAIL"}]', NULL, NULL, true, false, NULL, 10, '2026-07-20 21:49:32.565438+00', 'buttons', 'PERMITTED_USE.MAIN', NULL, false);
 INSERT INTO public.contract_field_defs VALUES ('18d2914d-0ff1-4265-aca7-0f4a90daf9c1', 'HORSE_LEASE_V2', 'LESSOR.PARTY_TYPE', NULL, 'Lessor is an', 'PARTIES', 'LESSOR', 'select', 'select', '[{"label": "Individual", "value": "INDIVIDUAL"}, {"label": "Entity / organization", "value": "ENTITY"}]', NULL, NULL, true, false, NULL, 4, '2026-07-31 16:54:48.53675+00', 'select', 'PARTIES.INTRO', NULL, false);
 INSERT INTO public.contract_field_defs VALUES ('76696268-a4a6-4722-b986-cac09b30873e', 'HORSE_SALE_V2', 'TXN.INJURY_HISTORY_DETAILS', NULL, 'Injury history details', 'HORSE', 'SELLER', 'longtext', 'longtext', NULL, '{"equals": ["YES"], "field_key": "TXN.INJURY_HISTORY"}', NULL, true, false, NULL, 160, '2026-08-02 14:03:18.117213+00', 'longtext', 'HORSE.INJURY_HISTORY_DISCLOSED', NULL, false);
 INSERT INTO public.contract_field_defs VALUES ('a4ce6339-9c1e-4bae-8b21-32cf4c38c6ae', 'HORSE_SALE_V2', 'TXN.BREEDING_ELECTION', NULL, 'Breeding warranty', 'HORSE', 'DEAL', 'select', 'select', '[{"label": "Included", "value": "INCLUDED"}, {"label": "Not included", "value": "NOT_INCLUDED"}]', NULL, NULL, true, false, NULL, 170, '2026-08-02 14:03:18.160805+00', 'select', 'HORSE.BREEDING', NULL, false);

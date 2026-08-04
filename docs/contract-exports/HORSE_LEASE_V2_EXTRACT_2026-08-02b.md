@@ -1,6 +1,6 @@
 # HORSE_LEASE_V2 — full template extract
 
-Generated 2026-08-04 02:46:24 UTC from the live database (project `lrstswfxfsezdmvkvukc`),
+Generated 2026-08-04 10:00:54 UTC from the live database (project `lrstswfxfsezdmvkvukc`),
 reflecting migration head `20260804100001_deal_rpcs_container_model.sql`.
 
 Every section, clause, field, option list, helper text and conditional in the
@@ -172,7 +172,7 @@ Legend:
 
 **CONDITIONAL** — shows when: TXN.BEHAVIOR_HAS_EXCEPTIONS = YES
 
-> The Lessor notes the following known exceptions to the behavior of the Horse: {{TXN.BEHAVIOR_EXCEPTIONS}}.
+> The Lessor notes the following known exceptions to the behavior of the Horse: {{TXN.BEHAVIOR_EXCEPTIONS}}
 
 - **Known behavior exceptions** — `TXN.BEHAVIOR_EXCEPTIONS` · input: longtext · owner: DEAL
 
@@ -190,7 +190,7 @@ Legend:
 
 **CONDITIONAL** — shows when: TXN.CONDITION_HAS_EXCEPTIONS = YES
 
-> The Lessor notes the following known exceptions to the physical condition of the Horse: {{TXN.CONDITION_EXCEPTIONS}}.
+> The Lessor notes the following known exceptions to the physical condition of the Horse: {{TXN.CONDITION_EXCEPTIONS}}
 
 - **Known condition exceptions** — `TXN.CONDITION_EXCEPTIONS` · input: longtext · owner: DEAL
 
@@ -246,7 +246,7 @@ Legend:
 
 `LOCATION.MAIN`
 
-> Location of the Horse: {{HORSE.CURRENT_LOCATION}}.
+> Location of the Horse: {{HORSE.CURRENT_LOCATION}}
 
 - **Facility** — `HORSE.CURRENT_LOCATION` · input: location · owner: LESSOR
 
@@ -262,7 +262,7 @@ Legend:
 
 **CONDITIONAL** — shows when: TXN.HORSE_MOVES = YES
 
-> Location during lease term: {{TXN.NEW_LOCATION}}.
+> Location during lease term: {{TXN.NEW_LOCATION}}
 
 - **Location during lease term** — `TXN.NEW_LOCATION` · input: location · owner: LESSOR
 
@@ -311,7 +311,7 @@ Legend:
 
 `PURPOSE.LEASE_TYPE`
 
-> Lease type: {{TXN.LEASE_TYPE}}.
+> Lease type: {{TXN.LEASE_TYPE}}
 
 - **Lease type** — `TXN.LEASE_TYPE` · input: select · required · owner: LESSOR
     - choices: Full lease (full-time access), Partial lease (shared or limited access)
@@ -492,7 +492,7 @@ Legend:
 
 `TERM.MAIN`
 
-> Term of this Agreement: {{TXN.LEASE_TERM_TYPE}}. This Agreement begins on {{TXN.LEASE_START}}.
+> Term of this Agreement: {{TXN.LEASE_TERM_TYPE}}. This Agreement begins on {{TXN.LEASE_START}}
 
 - **Term type** — `TXN.LEASE_TERM_TYPE` · input: select · required · owner: DEAL
     - choices: Fixed period, Open-ended, Other
@@ -504,7 +504,7 @@ Legend:
 
 **CONDITIONAL** — shows when: TXN.LEASE_TERM_TYPE = FIXED
 
-> This Agreement continues until {{TXN.LEASE_END}}.
+> This Agreement continues until {{TXN.LEASE_END}}
 
 - **Lease end date** — `TXN.LEASE_END` · input: date · owner: DEAL
 
@@ -545,7 +545,7 @@ Legend:
 > Lessee shall not use the Horse for any other purpose without Lessor's prior written consent.
 
 - **Permitted activities** — `TXN.PERMITTED_ACTIVITIES` · input: buttons · required · owner: DEAL
-    - choices: Riding Lessons, Solo Arena Riding, Group Arena Riding, Jumping, Competitions, Trail Riding
+    - choices: Riding Lessons, Solo Arena Riding, Group Arena Riding, Training, Competitions, Jumping, Trail Riding
 
 ### TRAINER *(no heading set)*
 
@@ -555,7 +555,7 @@ Legend:
 
 > Riding Lessons, Jumping, and Competitions may take place only while a French Heritage Equestrian Approved Trainer or Instructor is present.
 
-### Lessons
+### Lessons — Continuous Enrollment
 
 `TRAINING_LESSONS.LESSONS`
 
@@ -566,13 +566,13 @@ Legend:
 
 - **Lessee required to take lessons?** — `TXN.LESSONS_REQUIRED` · input: yesno · owner: DEAL
 
-### Lessons
+### Lessons — Lessee's Instruction Program
 
 `TRAINING_LESSONS.LESSONS_ENTITY`
 
 **CONDITIONAL** — shows when: LESSEE.PARTY_TYPE = ENTITY AND TXN.PERMITTED_ACTIVITIES contains LESSONS
 
-> Lessee is permitted by Lessor to provide riding lessons with the Horse: {{TXN.LESSONS_ENTITY_PERMITTED}}.
+> Lessee is permitted by Lessor to provide riding lessons with the Horse: {{TXN.LESSONS_ENTITY_PERMITTED}}
 
 - **Lessee permitted to provide riding lessons?** — `TXN.LESSONS_ENTITY_PERMITTED` · input: yesno · owner: DEAL
 
@@ -588,51 +588,23 @@ Legend:
 
 `TRAINING_LESSONS.TRAINING`
 
+**CONDITIONAL** — shows when: TXN.PERMITTED_ACTIVITIES contains TRAINING
+
 > Any professional training of the Horse under this Agreement, including groundwork, schooling, and under-saddle training, shall be conducted only by a French Heritage Equestrian Approved Trainer.
 
-### Competitions
+### Competition Costs and Winnings
 
 `COMPETITIONS.INTRO`
 
 **CONDITIONAL** — shows when: TXN.PERMITTED_ACTIVITIES contains COMPETITIONS
 
 > Expenses of competition (entry fees, transportation, and the like) are: {{TXN.COMPETITION_EXPENSES}}.
-> Any prize money or winnings earned in competition shall belong to: {{TXN.COMPETITION_WINNINGS}}.
+> Any prize money or winnings earned in competition shall belong to: {{TXN.COMPETITION_WINNINGS}}
 
 - **Competition expenses** — `TXN.COMPETITION_EXPENSES` · input: select · owner: DEAL
     - choices: Paid by Lessee, Paid by Lessor, Other
 - **Competition winnings** — `TXN.COMPETITION_WINNINGS` · input: select · owner: DEAL
     - choices: Lessee, Lessor, Other
-
-### Jumping Restrictions
-
-`RESTRICT.JUMP_TITLE`
-
-**CONDITIONAL** — shows when: TXN.PERMITTED_ACTIVITIES contains JUMPING
-
-> {{TXN.JUMP_OMIT}}
-
-- **No jumping restrictions** — `TXN.JUMP_OMIT` · input: certify · owner: LESSOR
-
-### JUMP_ON *(no heading set)*
-
-`RESTRICT.JUMP_ON`
-
-**CONDITIONAL** — shows when: TXN.PERMITTED_ACTIVITIES contains JUMPING AND TXN.JUMP_OMIT = NO or (empty)
-
-> Jumping is restricted as follows: maximum height {{TXN.JUMP_MAX_HEIGHT}}; no more than {{TXN.JUMP_DAYS_PER_WEEK}} days per week; under trainer supervision only: {{TXN.JUMP_SUPERVISION}}.
-
-- **Maximum height** — `TXN.JUMP_MAX_HEIGHT` · input: text · owner: DEAL
-- **Days per week** — `TXN.JUMP_DAYS_PER_WEEK` · input: number · owner: DEAL
-- **Only under trainer supervision?** — `TXN.JUMP_SUPERVISION` · input: yesno · owner: DEAL
-
-### JUMP_OFF *(no heading set)*
-
-`RESTRICT.JUMP_OFF`
-
-**CONDITIONAL** — shows when: TXN.PERMITTED_ACTIVITIES contains JUMPING AND TXN.JUMP_OMIT = YES
-
-> Lessor does not restrict jumping.
 
 ### Competition Restrictions
 
@@ -642,15 +614,15 @@ Legend:
 
 > {{TXN.COMP_OMIT}}
 
-- **No competition restrictions** — `TXN.COMP_OMIT` · input: certify · owner: LESSOR
+- **Check this box to include restrictions for competitions** — `TXN.COMP_OMIT` · input: certify · owner: LESSOR
 
 ### COMP_ON *(no heading set)*
 
 `RESTRICT.COMP_ON`
 
-**CONDITIONAL** — shows when: TXN.PERMITTED_ACTIVITIES contains COMPETITIONS AND TXN.COMP_OMIT = NO or (empty)
+**CONDITIONAL** — shows when: TXN.PERMITTED_ACTIVITIES contains COMPETITIONS AND TXN.COMP_OMIT = YES
 
-> Competitions are restricted as follows: {{TXN.COMP_RESTRICTION}}.
+> Competitions are restricted as follows: {{TXN.COMP_RESTRICTION}}
 
 - **Competition restriction** — `TXN.COMP_RESTRICTION` · input: text · owner: LESSOR
 
@@ -658,9 +630,39 @@ Legend:
 
 `RESTRICT.COMP_OFF`
 
-**CONDITIONAL** — shows when: TXN.PERMITTED_ACTIVITIES contains COMPETITIONS AND TXN.COMP_OMIT = YES
+**CONDITIONAL** — shows when: TXN.PERMITTED_ACTIVITIES contains COMPETITIONS AND TXN.COMP_OMIT = NO or (empty)
 
-> Lessor does not restrict competitions.
+> Lessor does not restrict competition activity in any way.
+
+### Jumping Restrictions
+
+`RESTRICT.JUMP_TITLE`
+
+**CONDITIONAL** — shows when: TXN.PERMITTED_ACTIVITIES contains JUMPING
+
+> {{TXN.JUMP_OMIT}}
+
+- **Check this box to include restrictions for jumping** — `TXN.JUMP_OMIT` · input: certify · owner: LESSOR
+
+### JUMP_ON *(no heading set)*
+
+`RESTRICT.JUMP_ON`
+
+**CONDITIONAL** — shows when: TXN.PERMITTED_ACTIVITIES contains JUMPING AND TXN.JUMP_OMIT = YES
+
+> Jumping is restricted as follows: maximum height {{TXN.JUMP_MAX_HEIGHT}}; no more than {{TXN.JUMP_DAYS_PER_WEEK}} days per week; under trainer supervision only: {{TXN.JUMP_SUPERVISION}}
+
+- **Maximum height** — `TXN.JUMP_MAX_HEIGHT` · input: text · owner: DEAL
+- **Days per week** — `TXN.JUMP_DAYS_PER_WEEK` · input: number · owner: DEAL
+- **Only under trainer supervision?** — `TXN.JUMP_SUPERVISION` · input: yesno · owner: DEAL
+
+### JUMP_OFF *(no heading set)*
+
+`RESTRICT.JUMP_OFF`
+
+**CONDITIONAL** — shows when: TXN.PERMITTED_ACTIVITIES contains JUMPING AND TXN.JUMP_OMIT = NO or (empty)
+
+> Lessor does not restrict jumping activity in any way.
 
 ### Trail-Riding Restrictions
 
@@ -670,15 +672,15 @@ Legend:
 
 > {{TXN.TRAIL_OMIT}}
 
-- **No trail-riding restrictions** — `TXN.TRAIL_OMIT` · input: certify · owner: LESSOR
+- **Check this box to include restrictions for trail riding** — `TXN.TRAIL_OMIT` · input: certify · owner: LESSOR
 
 ### TRAIL_ON *(no heading set)*
 
 `RESTRICT.TRAIL_ON`
 
-**CONDITIONAL** — shows when: TXN.PERMITTED_ACTIVITIES contains TRAIL AND TXN.TRAIL_OMIT = NO or (empty)
+**CONDITIONAL** — shows when: TXN.PERMITTED_ACTIVITIES contains TRAIL AND TXN.TRAIL_OMIT = YES
 
-> Trail riding is restricted as follows: {{TXN.TRAIL_RESTRICTION}}.
+> Trail riding is restricted as follows: {{TXN.TRAIL_RESTRICTION}}
 
 - **Trail-riding restriction** — `TXN.TRAIL_RESTRICTION` · input: text · owner: LESSOR
 
@@ -686,9 +688,9 @@ Legend:
 
 `RESTRICT.TRAIL_OFF`
 
-**CONDITIONAL** — shows when: TXN.PERMITTED_ACTIVITIES contains TRAIL AND TXN.TRAIL_OMIT = YES
+**CONDITIONAL** — shows when: TXN.PERMITTED_ACTIVITIES contains TRAIL AND TXN.TRAIL_OMIT = NO or (empty)
 
-> Lessor does not restrict trail riding.
+> Lessor does not restrict trail-riding activity in any way.
 
 ### Additional Restrictions
 
@@ -704,7 +706,7 @@ Legend:
 
 **CONDITIONAL** — shows when: TXN.ADDITIONAL_ACTIVITIES contains BREEDING or EMOTIONAL_SUPPORT or FILM_TV_AD or OTHER
 
-> Lessee is permitted to engage in the following additional activities with the Horse: {{TXN.ADDITIONAL_ACTIVITIES}}.
+> Lessee is permitted to engage in the following additional activities with the Horse: {{TXN.ADDITIONAL_ACTIVITIES}}
 
 - **Additional permitted activities** — `TXN.ADDITIONAL_ACTIVITIES` · input: buttons · owner: DEAL
     - choices: None — no additional activities, Breeding, Emotional Support Services, Film / Television / Advertising, Other
@@ -723,7 +725,7 @@ Legend:
 
 **CONDITIONAL** — shows when: TXN.ADDITIONAL_ACTIVITIES contains OTHER
 
-> Other additional permitted activity: {{TXN.ADDITIONAL_ACTIVITIES_OTHER}}.
+> Other additional permitted activity: {{TXN.ADDITIONAL_ACTIVITIES_OTHER}}
 
 - **Other additional permitted activity** — `TXN.ADDITIONAL_ACTIVITIES_OTHER` · input: text · owner: LESSOR
     - **CONDITIONAL** — shows when: TXN.ADDITIONAL_ACTIVITIES contains OTHER
@@ -744,7 +746,7 @@ Legend:
 
 **CONDITIONAL** — shows when: TXN.OTHERS_ALLOWED contains OTHER
 
-> Other persons allowed to ride or handle the Horse: {{TXN.OTHERS_ALLOWED_OTHER}}.
+> Other persons allowed to ride or handle the Horse: {{TXN.OTHERS_ALLOWED_OTHER}}
 
 - **Other persons allowed** — `TXN.OTHERS_ALLOWED_OTHER` · input: text · owner: LESSOR
     - **CONDITIONAL** — shows when: TXN.OTHERS_ALLOWED contains OTHER
@@ -889,7 +891,7 @@ Legend:
 
 `CARE.RIDER_AIDS`
 
-> The following rider aids are prohibited: {{TXN.RIDER_AIDS}}.
+> The following rider aids are prohibited: {{TXN.RIDER_AIDS}}
 
 - **Prohibited rider aids** — `TXN.RIDER_AIDS` · input: buttons · owner: DEAL
     - choices: Crop or bat, Longe whip, Dressage whip, Other
@@ -900,7 +902,7 @@ Legend:
 
 **CONDITIONAL** — shows when: TXN.RIDER_AIDS contains OTHER
 
-> Other prohibited rider aid: {{TXN.RIDER_AIDS_OTHER}}.
+> Other prohibited rider aid: {{TXN.RIDER_AIDS_OTHER}}
 
 - **Other prohibited rider aid** — `TXN.RIDER_AIDS_OTHER` · input: text · owner: LESSOR
 
@@ -942,7 +944,7 @@ Legend:
 
 **CONDITIONAL** — shows when: TXN.GL_NOT_REQUIRED = NO or (empty) AND (TXN.GL_LESSOR_STATUS = HAS_WILL_MAINTAIN or WILL_OBTAIN OR TXN.GL_LESSEE_STATUS = HAS_WILL_MAINTAIN or WILL_OBTAIN)
 
-> If a claim is made under any such policy arising from events for which Lessee bears responsibility, whether directly or indirectly, responsibility for any deductible shall be borne by: {{TXN.GL_DED_RESP}}.
+> If a claim is made under any such policy arising from events for which Lessee bears responsibility, whether directly or indirectly, responsibility for any deductible shall be borne by: {{TXN.GL_DED_RESP}}
 
 - **Deductible responsibility (Lessee-responsibility claims)** — `TXN.GL_DED_RESP` · input: select · required · owner: LESSOR
     - **CONDITIONAL** — shows when: TXN.GL_NOT_REQUIRED = NO or (empty)
@@ -1008,7 +1010,7 @@ Legend:
 
 **CONDITIONAL** — shows when: TXN.MORT_NOT_REQUIRED = NO or (empty) AND (TXN.MORT_LESSOR_STATUS = HAS_WILL_MAINTAIN or WILL_OBTAIN OR TXN.MORT_LESSEE_STATUS = HAS_WILL_MAINTAIN or WILL_OBTAIN)
 
-> If a claim is made under any such policy arising from events for which Lessee bears responsibility, whether directly or indirectly, responsibility for any deductible shall be borne by: {{TXN.MORT_DED_RESP}}.
+> If a claim is made under any such policy arising from events for which Lessee bears responsibility, whether directly or indirectly, responsibility for any deductible shall be borne by: {{TXN.MORT_DED_RESP}}
 
 - **Deductible responsibility** — `TXN.MORT_DED_RESP` · input: select · required · owner: LESSOR
     - **CONDITIONAL** — shows when: TXN.MORT_NOT_REQUIRED = NO or (empty)
@@ -1093,7 +1095,7 @@ Legend:
 
 **CONDITIONAL** — shows when: TXN.MED_NOT_REQUIRED = NO or (empty) AND (TXN.MED_LESSOR_STATUS = HAS_WILL_MAINTAIN or WILL_OBTAIN OR TXN.MED_LESSEE_STATUS = HAS_WILL_MAINTAIN or WILL_OBTAIN)
 
-> If a claim is made under any such policy arising from events for which Lessee bears responsibility, whether directly or indirectly, responsibility for any deductible shall be borne by: {{TXN.MED_DED_RESP}}.
+> If a claim is made under any such policy arising from events for which Lessee bears responsibility, whether directly or indirectly, responsibility for any deductible shall be borne by: {{TXN.MED_DED_RESP}}
 
 - **Deductible responsibility** — `TXN.MED_DED_RESP` · input: select · required · owner: LESSOR
     - **CONDITIONAL** — shows when: TXN.MED_NOT_REQUIRED = NO or (empty)

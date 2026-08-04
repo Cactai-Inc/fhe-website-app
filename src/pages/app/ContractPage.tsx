@@ -1565,6 +1565,12 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           cb={{
             editable: editablePhase,
             authorView: isOwnerSide && editablePhase,
+            /* Ownership affordances + party-scoped previews (2026-08-04):
+               pass the viewer's party roles ONLY when they are reviewing as a
+               party. Staff authoring (isOwnerSide) pass none, which the
+               document reads as "everything is yours" — no greying, no
+               highlighting, every branch previewed. */
+            myRoles: isOwnerSide ? [] : myRoles,
             onSave: saveField,
             onSaveStructured: (k, s) => void act(() => setFieldStructured(id!, k, s as never)),
             onSaveResponsibility: (k, r) => void act(() => setFieldResponsibility(id!, k, r as never)),
