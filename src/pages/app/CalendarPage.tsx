@@ -538,16 +538,18 @@ function DetailPanel({ item, onClose, onChanged, onBuy }: { item: CalendarItem; 
   const [done, setDone] = useState<string | null>(null);
   // care bookings pick the horse being cared for, and are gated behind that
   // horse's two signed releases (RELEASE_HORSE_CARE + HORSE_EMERGENCY_VET).
+  // lesson bookings offer the same picker, optionally — no docs gate.
   const isCare = item.kind === 'care';
+  const isLesson = item.kind === 'lesson';
   const [horses, setHorses] = useState<StableHorse[]>([]);
   const [horseId, setHorseId] = useState('');
   const [docsGate, setDocsGate] = useState<string[] | null>(null);
 
   useEffect(() => { fetchRescheduleFee().then(setFee).catch(() => setFee(0)); }, []);
   useEffect(() => {
-    if (!isCare) return;
+    if (!isCare && !isLesson) return;
     listStableHorses().then(setHorses).catch(() => setHorses([]));
-  }, [isCare]);
+  }, [isCare, isLesson]);
 
   const isAvailable = item.status === 'available';
   const isMine = !!item.is_mine;
@@ -560,7 +562,7 @@ function DetailPanel({ item, onClose, onChanged, onBuy }: { item: CalendarItem; 
   async function book() {
     setBusy(true); setError(null); setNoCredits(false); setDocsGate(null);
     try {
-      await bookOpenSlot(item.id, isCare ? horseId || null : null);
+      await bookOpenSlot(item.id, (isCare || isLesson) ? horseId || null : null);
       onChanged();
     } catch (e) {
       const msg = e instanceof Error ? e.message : '';
@@ -642,6 +644,15 @@ function DetailPanel({ item, onClose, onChanged, onBuy }: { item: CalendarItem; 
                     No horses on file yet. <Link to="/app/account?section=stable" className="text-green-800 underline">Add your horse</Link> first.
                   </span>
                 )}
+              </label>
+            )}
+            {isLesson && horses.length > 0 && (
+              <label className="text-sm">
+                <span className="form-label">Which horse? (optional)</span>
+                <select className="form-input" value={horseId} onChange={(e) => setHorseId(e.target.value)}>
+                  <option value="">Select a horse…</option>
+                  {horses.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
+                </select>
               </label>
             )}
             {docsGate ? (
