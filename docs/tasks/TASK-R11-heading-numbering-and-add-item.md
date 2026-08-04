@@ -94,8 +94,11 @@ sections shift (order-derived, so this is just sort placement).
 Row 2 HEADER: combo scoped to the chosen section — select existing header
 (number + words) OR type a new Header; position selector for new (default: end
 of section).
-Row 3 CONTENT: multiline text that becomes the content under the chosen/new
-header. Default insertion point: end of that header's content.
+Row 3 CONTENT: a STACK of independently-authored lines, not one textarea.
+Starts with one blank line. Below the stack, a [+] button offering exactly two
+choices: 'Add a line' (new blank content line) and 'Add a condition' (a
+CONDITION SEPARATOR). Lines can be reordered (up/down) and removed.
+Default insertion point of the whole addition: end of that header's content.
 
 ## B2 — inline elements (chip model)
 Above Row 3, three buttons: [Dropdown] [Buttons] [Text field]. Clicking inserts
@@ -122,16 +125,22 @@ the content line stores the text with {{CUSTOM.<key>}} tokens where elements
 sit — matching how template clauses embed fields. If the existing custom-field
 storage cannot hold options/placeholder/required, extend the RPC minimally.
 
-## B3 — simple conditional visibility (bounded)
-A content line (or an individual chip) may be gated on ONE element from the
-SAME addition, and only when that driver is a Dropdown or Buttons element:
-- UI: in the chip popover / a per-line control: "Visible: Always | Only when…"
-  → pick driver element → pick value(s) from its configured items.
-- Storage: the existing conditional_on shape — {"equals":[...]} for dropdown,
-  {"contains":[...]} for buttons, field_key = the driver's CUSTOM key. No
-  composites, no negation, no template-field drivers. The engine
-  (clauseConditionMet / clause_condition_met) already evaluates these — write
-  the JSON, add nothing to the engine.
+## B3 — conditional visibility via CONDITION SEPARATORS (owner model)
+A condition is a SEPARATOR block in the Row-3 stack, not a per-line setting.
+- Inserting one (via [+] → 'Add a condition') places a separator line that
+  reads like the template's own gold captions: 'Only when [driver] is
+  [value(s)]' — driver picked from the Dropdown/Buttons elements already in
+  THIS addition, value(s) picked from that element's configured items.
+- SCOPE: the separator gates every line BELOW it, until the next separator or
+  the end of the stack. Lines above any separator are unconditional. This is
+  visually self-evidencing — the stack reads exactly like the rendered
+  template does.
+- Storage: each gated line's conditional_on gets the separator's gate —
+  {"equals":[...]} for a dropdown driver, {"contains":[...]} for buttons,
+  field_key = the driver's CUSTOM key. No composites, no negation, no
+  template-field drivers. The engine (clauseConditionMet /
+  clause_condition_met) already evaluates these — write the JSON, add nothing
+  to the engine.
 - Editor + merge honor it automatically once stored; verify, don't rebuild.
 
 ## B4 — executed rendering rule
