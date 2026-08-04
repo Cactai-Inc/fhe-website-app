@@ -97,18 +97,25 @@ of section).
 Row 3 CONTENT: multiline text that becomes the content under the chosen/new
 header. Default insertion point: end of that header's content.
 
-## B2 — inline elements
+## B2 — inline elements (chip model)
 Above Row 3, three buttons: [Dropdown] [Buttons] [Text field]. Clicking inserts
-an element token at the cursor; the author keeps typing around it and closes
-the sentence with a period. Below Row 3, a config area appears per inserted
-element:
-- Dropdown: '+ menu item' adds an indented row (label + position number);
-  repeatable. Plus a placeholder-text input for the collapsed state.
+an ATOMIC CHIP inline at the cursor — one object, not editable text; backspace
+removes the whole chip (this is the error-proofing: element syntax can never be
+half-deleted or hand-mangled). Typing around chips is plain typing. No closing
+period required — the composer already appends terminal punctuation (R5 rule).
+Config opens in a POPOVER on the chip (click chip → panel), never a stack below
+the row, so config is unambiguous with multiple elements per line:
+- Dropdown: '+ menu item' rows (label + position), repeatable; placeholder-text
+  input for the collapsed state.
 - Buttons (multi-select): '+ button' rows, same shape, no placeholder.
-- Text field: placeholder-text input only; plus a 'Required' toggle (required
-  is only offerable when the element is a text field with no menu/buttons).
-Convention note in the UI (single muted line): to offer 'Other', add a menu
-item/button labeled Other and a Text field after the element for the details.
+- Text field: placeholder-text input; 'Required' toggle (offerable only for a
+  text field).
+'Other' assist: when a menu item/button is labeled Other (case-insensitive),
+show a one-click '+ details field for Other' that appends a Text-field chip
+after the element.
+LIVE PREVIEW below Row 3: render the line through the SAME components the
+contract editor uses (ClauseProse + inline field controls) — the preview is the
+real render path, not a simulation.
 Storage: each element becomes a CUSTOM field with input_kind select|buttons|text,
 options from the config rows, placeholder as guidance, required as flagged;
 the content line stores the text with {{CUSTOM.<key>}} tokens where elements
