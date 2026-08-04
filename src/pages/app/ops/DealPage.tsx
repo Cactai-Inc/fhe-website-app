@@ -6,7 +6,7 @@ import {
   dealDetail, addDealMember, removeDealMember, addDealConsideration,
   removeDealConsideration, voidDeal, dealIsConfigured,
   dealDocumentStatus, addDealDocument, dealRecordExport,
-  dealCompletionState, completeDeal, reopenDeal,
+  dealCompletionState, completeDeal,
   DEAL_TYPE_LABEL, ROLE_LABEL, CONSIDERATION_LABEL,
   type DealDetail, type ConsiderationKind, type DealDocumentStatus,
   type DealCompletionState,
@@ -174,6 +174,7 @@ export default function DealPage() {
   const [adding, setAdding] = useState(false);
   const [record, setRecord] = useState<string | null>(null);
   const [completion, setCompletion] = useState<DealCompletionState | null>(null);
+  const [editIntent, setEditIntent] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   useDocumentTitle(deal ? `${DEAL_TYPE_LABEL[deal.deal_type]} deal` : 'Deal');
 
@@ -350,16 +351,49 @@ export default function DealPage() {
           )}
           {deal.status === 'complete' && (
             <button type="button" className="btn-outline-gold text-xs shrink-0"
-              onClick={() => {
-                if (!window.confirm('Reopen this deal so it can be changed?')) return;
-                void reopenDeal(deal.id).then((r) => { if (r.message) setErr(r.message); load(); })
-                  .catch((e) => setErr(e instanceof Error ? e.message : 'Could not reopen the deal.'));
-              }}>
-              Reopen
+              onClick={() => setEditIntent(true)}>
+              <PencilLine size={13} /> Edit
             </button>
           )}
         </div>
       </section>
+
+      {/* EDIT a finished deal. A deal is complete BECAUSE its documents are
+          signed, so unlocking the deal alone achieves nothing — it would satisfy
+          its requirements again immediately. The change has to happen on the
+          document, so this routes there rather than pretending otherwise. */}
+      {editIntent && deal.status === 'complete' && (
+        <section className="bg-gold-50 border border-gold-600/40 rounded-xl p-4 mb-4">
+          <div className="flex items-start justify-between gap-3 mb-2">
+            <div>
+              <h2 className="font-serif text-gold-900 text-base">Editing a finished deal</h2>
+              <p className="text-[12px] text-gold-900/80">
+                This deal is finished because the document{deal.documents.length === 1 ? '' : 's'} below
+                {deal.documents.length === 1 ? ' is' : ' are'} signed. To change anything, open the
+                document that needs correcting and either take a signature off it (to
+                edit and re-sign) or void it (to replace it). The deal reopens on its own
+                once a requirement is no longer met.
+              </p>
+            </div>
+            <button type="button" className="text-xs text-muted hover:text-green-800 focus-ring shrink-0"
+              onClick={() => setEditIntent(false)}>
+              Cancel
+            </button>
+          </div>
+          <ul className="flex flex-col gap-1.5">
+            {deal.documents.filter((d) => d.status === 'EXECUTED').map((d) => (
+              <li key={d.document_id}>
+                <Link to={`/app/contracts/${d.document_id}`}
+                  className="flex items-center gap-2.5 text-sm text-green-900 hover:text-green-700 focus-ring">
+                  <FileText size={14} className="text-green-700 shrink-0" />
+                  <span className="flex-1 truncate">{d.title ?? d.template_key}</span>
+                  <span className="text-[11px] text-muted">signed — open to change</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* the deal record — generated, never authored (L7) */}
       <section className="bg-white border border-green-800/10 rounded-xl p-4 mb-4">

@@ -6,7 +6,7 @@ import {
   CalendarDays, Users, FileText, UserRound, ReceiptText, Shield, LogOut,
   GraduationCap, Home as HomeIcon, Boxes, Contact, LayoutDashboard,
   Mail, ChevronDown, Plus, LifeBuoy, ShoppingBag, MessageSquare, BookOpen, ListChecks,
-  PanelLeft, PanelLeftClose, Activity, Compass,
+  PanelLeft, PanelLeftClose, Activity, Compass, Handshake,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useViewSurfaces } from '../../lib/surfaces';
@@ -114,6 +114,10 @@ const MANAGEMENT_GROUP: NavItem[] = [
   { to: '/app/ops/lessons', label: 'Lessons', icon: GraduationCap, module: 'mod.lessons' },
   { to: '/app/ops/horse-records', label: 'Horses', icon: Boxes },
   { to: '/app/ops/documents', label: 'Documents', icon: FileText },
+  // A deal is the envelope a transaction lives in — its parties, what each side
+  // gives, and the documents that make it real. It sits beside Documents because
+  // that is what it produces.
+  { to: '/app/ops/deals', label: 'Deals', icon: Handshake },
   // Payment review is a management task; Business is hidden until the reporting
   // and business-ops surfaces that belong there actually exist.
   { to: '/app/ops/payments/review', label: 'Payment review', icon: ReceiptText },
