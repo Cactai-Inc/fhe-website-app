@@ -134,7 +134,13 @@ A condition is a SEPARATOR block in the Row-3 stack, not a per-line setting.
 - SCOPE: the separator gates every line BELOW it, until the next separator or
   the end of the stack. Lines above any separator are unconditional. This is
   visually self-evidencing — the stack reads exactly like the rendered
-  template does.
+  template does. Multiple lines under one separator = multiple INDEPENDENT
+  revealed items from one selection (e.g. 'Yes' reveals three questions).
+- VALUE PICKER RULES: a separator may select ONE OR MORE values of its driver
+  ('A or B' → equals/contains list). Values already used by another separator
+  stay selectable and are marked 'already used' — the same value may
+  legitimately gate more than one block (reading order matters); never hide
+  used values.
 - Storage: each gated line's conditional_on gets the separator's gate —
   {"equals":[...]} for a dropdown driver, {"contains":[...]} for buttons,
   field_key = the driver's CUSTOM key. No composites, no negation, no
