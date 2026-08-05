@@ -23,7 +23,7 @@ export interface ServiceTypeDef {
 export const SERVICE_TYPES: ServiceTypeDef[] = [
   { code: 'HORSE_FINDER',              label: 'Horse Finder',              segment: 'acquisition',  requiresHorse: false },
   { code: 'HORSE_EVALUATION',         label: 'Horse Evaluation',          segment: 'acquisition',  requiresHorse: true },
-  { code: 'HORSE_PURCHASE_ASSISTANCE', label: 'Transaction Assistance',    segment: 'acquisition',  requiresHorse: true },
+  { code: 'HORSE_PURCHASE_ASSISTANCE', label: 'Acquisition Assistance',    segment: 'acquisition',  requiresHorse: true },
   { code: 'HORSE_SALE_ASSISTANCE',     label: 'Horse Sale Assistance',     segment: 'acquisition',  requiresHorse: true },
   { code: 'HORSE_LEASE_IN_ASSISTANCE', label: 'Horse Lease-In Assistance', segment: 'acquisition',  requiresHorse: true },
   { code: 'HORSE_LEASE_OUT_ASSISTANCE',label: 'Horse Lease-Out Assistance',segment: 'acquisition',  requiresHorse: true },

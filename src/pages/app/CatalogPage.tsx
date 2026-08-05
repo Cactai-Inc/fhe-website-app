@@ -14,8 +14,8 @@ export default function CatalogPage() {
   return (
     <div className="w-full">
       <header className="mb-6">
-        <p className="eyebrow">Shop</p>
-        <h1 className="font-serif text-green-800 text-3xl font-semibold mt-0.5">Catalog</h1>
+        <p className="eyebrow">Catalog</p>
+        <h1 className="font-serif text-green-800 text-3xl font-semibold mt-0.5">Shop</h1>
         <p className="text-sm text-muted mt-1">Lessons, horse care, training, and acquisition services.</p>
       </header>
       <OfferingCatalog onCheckout={() => navigate('/app/checkout')} actionLabel="Book it" />

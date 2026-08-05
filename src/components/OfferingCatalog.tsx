@@ -36,15 +36,12 @@ function PriceTag({ o }: { o: Offering }) {
 }
 
 /** The deep-green textural placeholder cover, until real media is uploaded. */
-function CoverPlaceholder({ label }: { label: string }) {
+function CoverPlaceholder() {
   return (
     <>
       <div className="absolute inset-0 bg-gradient-to-br from-green-800 via-green-900 to-green-950" aria-hidden="true" />
       <div className="qs-grain absolute inset-0 opacity-[0.07]" aria-hidden="true" />
       <div className="pointer-events-none absolute inset-0 border border-gold-600/20" aria-hidden="true" />
-      <div className="absolute inset-0 flex items-end p-4">
-        <span className="text-on-dark-soft text-[10px] font-sans tracking-widest uppercase">{`SWAP · ${label.toLowerCase()} image`}</span>
-      </div>
     </>
   );
 }
@@ -103,7 +100,7 @@ export function OfferingCatalog({ onCheckout, actionLabel = 'Add' }: { onCheckou
             className="group relative overflow-hidden rounded-xl text-left focus-ring border border-green-800/10 aspect-square flex flex-col justify-end hover:brightness-105 transition-all">
             {c.cover_image_url
               ? <img src={c.cover_image_url} alt="" className="absolute inset-0 w-full h-full object-cover" />
-              : <CoverPlaceholder label={c.display_name} />}
+              : <CoverPlaceholder />}
             <div className="absolute inset-0 bg-gradient-to-t from-green-950/85 via-green-950/25 to-transparent" aria-hidden="true" />
             <div className="relative p-4 sm:p-5">
               <h3 className="font-serif text-white font-semibold leading-tight text-xl sm:text-2xl">{c.display_name}</h3>
@@ -144,7 +141,7 @@ function CategoryModal({
           <div className="relative h-72 sm:h-[26rem] overflow-hidden">
             {category.cover_image_url
               ? <img src={category.cover_image_url} alt="" className="absolute inset-0 w-full h-full object-cover" />
-              : <CoverPlaceholder label={category.display_name} />}
+              : <CoverPlaceholder />}
             <div className="absolute inset-0 bg-gradient-to-t from-green-950/80 to-transparent" aria-hidden="true" />
           </div>
           <button type="button" onClick={onClose} aria-label="Close"
