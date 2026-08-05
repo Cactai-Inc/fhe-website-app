@@ -96,3 +96,27 @@ the + carries everything.
 3. Template categories list ok? (release / policy / authorization / contract / services /
    staff-vendor)
 4. + button final list ok? Anything else you want quick-create for?
+
+---
+
+# v2 — OWNER RULINGS 2026-08-05 (supersede conflicting v1 sections)
+
+1. **No type-tabs.** The six-tab model is replaced by ONE list with multi-select filters
+   (type/category, status, party, horse, date) + sort. Views are filter presets at most, not
+   navigation.
+2. **Parties column**: the people associated with each document; the horse listed too when
+   one is involved.
+3. **FILES are not documents.** Separate table + concept. Files: attach to compatible
+   documents, LINK to incompatible ones, attach to deals. Dedicated Files page: users upload
+   to themselves or to the company; every user upload is company-visible (like documents).
+   Users get a Files page; admin gets the files LIBRARY (all files org-wide, same
+   sort/filter). Upload UI lives there, not on the documents page.
+4. **Two tabs on the documents surface: Documents (primary) | Templates.** Templates are
+   documents but never mixed into the generated-documents list.
+5. **Templates tab spec**: list all templates; version control = lock-and-use → open new
+   version → edit → lock-and-publish → prior version deactivates; on publish, option to
+   require prior signers to re-sign (all or selected); generate a sample + send via email.
+   Plus (orchestrator additions, pending owner veto): version provenance (each deactivated
+   version lists the documents signed under it), per-version changelog (powers honest
+   re-sign requests), usage/status columns (active, docs generated, last used), token health
+   check on publish (every {{TOKEN}} must resolve; dead tokens block publish).
