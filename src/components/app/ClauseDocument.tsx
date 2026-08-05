@@ -880,7 +880,8 @@ export function ClauseDocument({
                 // an element is placed by its {{token}} inside a line, so listing it
                 // here too would print the same control twice.
                 const orphanFields = (fieldsByClause.get(clause.clauseKey) ?? [])
-                  .filter((f) => !bodyTokens.has(f.field_key) && !f.custom_kind)
+                  .filter((f) => (!bodyTokens.has(f.field_key) || (gatedOff && triggerKeys.has(f.field_key)))
+                    && !f.custom_kind)
                   .filter((f) => triggerKeys.has(f.field_key)
                     || clauseConditionMet(f.conditional_on, valueByKey));
                 const gateControls = orphanFields.filter((f) => triggerKeys.has(f.field_key));
