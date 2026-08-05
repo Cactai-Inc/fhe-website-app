@@ -87,9 +87,9 @@ This is the critical path. Everything here must be DONE.
 |---|---|---|
 | F1 | Lesson card in calendar right-side panel | **NOT STARTED** |
 | F2 | Same card on the lessons page (one record, two views) | **NOT STARTED** |
-| F3 | Rider notes / questions field | **BUILT** — `booking_notes` has phase + author_role; no UI |
-| F4 | Instructor pre-lesson notes | **BUILT** (same) |
-| F5 | Instructor post-lesson notes | **BUILT** (same) |
+| F3 | Rider notes / questions field | **CODE-COMPLETE, BROWSER PENDING** — `SessionNotesView.tsx` (read+write, phase-derived pre/post, grouped thread) mounted on `CalendarPage.tsx`'s detail panel and `MyLessons.tsx`'s upcoming-lesson cards; live write proof via rolled-back psql RPC call, browser verification not yet done |
+| F4 | Instructor pre-lesson notes | **BUILT** — `booking_notes` has phase + author_role; staff UI exists: `LessonLogEditor.tsx:104` has a phase-selectable compose |
+| F5 | Instructor post-lesson notes | **BUILT** (same — `LessonLogEditor.tsx:104`) |
 | F6 | Rider selects their own horse on the booking | **BUILT** — `attach_booking_horse` verified to exist; no UI |
 | F7 | Default lesson horse for riders with one/several horses | **NOT STARTED** |
 | F8 | Retroactive attach when a horse record is created after booking | **NOT STARTED** |
