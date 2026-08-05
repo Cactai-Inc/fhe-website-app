@@ -128,6 +128,8 @@ This is the critical path. Everything here must be DONE.
 | J1 | Admin Documents page redesigned as the business's document library: preset views (tabs or equivalent) by what a barn/equestrian business of this volume actually files — design informed by RESEARCH (orchestrator-owned) into what a business document storage system should contain, not guessed | **RESEARCH IN PROGRESS** |
 | J2 | "+" button expanded to quick-create/add everything the admin routinely needs (inventory the app's existing create actions first; owner reviews the proposed list before build) | **NOT STARTED** |
 | J3 | Deal adoption: a contract created independently of a deal can be brought into a deal afterward — create-deal-from-contract in the appropriate UI location, gracefully; deal_type/parties/consideration DERIVED from the contract's existing data (and other attached docs), not manually re-entered | **NOT STARTED** |
+| J4 | Deal page post-creation editability: members/consideration/type are set once at creation and the UI offers no edit affordance afterward — everything manually set must be editable in place (owner spec 2026-08-05) | **NOT STARTED** |
+| J5 | Deal-party vs contract-party divergence model: the two CAN legitimately disagree (deal with a company whose asset is titled in the owner's personal name, or vice versa) — no forced sync; the UI must show the linkage AND the divergence explicitly (e.g. deal party: the LLC · signs as: the person), so it's a visible fact, not an accident (owner spec 2026-08-05) | **NOT STARTED — design first** |
 
 ---
 
