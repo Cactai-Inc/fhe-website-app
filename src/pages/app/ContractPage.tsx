@@ -373,7 +373,6 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
     setStructure(null);
     setControlNote(null);
     setError(null);
-    setNote(null);
     try {
       const d = await contractDocumentDetail(requestedId);
       if (idRef.current !== requestedId) return;
