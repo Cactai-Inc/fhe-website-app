@@ -73,7 +73,7 @@ export async function listLinkedProviders(): Promise<string[]> {
  * Redirects to the provider and back; requires manual linking to be enabled in
  * Supabase Auth settings.
  */
-export async function linkOAuthIdentity(provider: OAuthProvider, redirectTo = '/app/profile'): Promise<Result> {
+export async function linkOAuthIdentity(provider: OAuthProvider, redirectTo = '/app/account'): Promise<Result> {
   const { error } = await supabase.auth.linkIdentity({
     provider,
     options: { redirectTo: appUrl(redirectTo) },

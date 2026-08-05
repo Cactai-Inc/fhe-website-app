@@ -44,7 +44,6 @@ import OrderDetail from './pages/OrderDetail';
 // Member app
 import Home from './pages/app/Home';
 import DashboardHome from './pages/app/DashboardHome';
-import Profile from './pages/app/Profile';
 import MyPosts from './pages/app/MyPosts';
 import Schedule from './pages/app/Schedule';
 import CalendarPage from './pages/app/CalendarPage';
@@ -225,7 +224,10 @@ export function AppRoutes() {
               <Route path="checkout" element={<Checkout />} />
               {/* Client portal (CP-*) */}
               <Route path="lessons" element={<MyLessons />} />
-              <Route path="profile" element={<Profile />} />
+              {/* TASK-PROFILE (2026-08-05): /app/profile dissolved — its fields
+                  (name/photo/bio, riding level) and its duplicate sign-in card
+                  now live in the consolidated Profile & Preferences surface at
+                  /app/account. See docs/reports/TASK-PROFILE-REPORT.md. */}
               <Route path="support" element={<Support />} />
               <Route path="account" element={<AccountHub />} />
               <Route path="my-posts" element={<MyPosts />} />

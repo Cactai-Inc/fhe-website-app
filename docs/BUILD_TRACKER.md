@@ -132,6 +132,16 @@ This is the critical path. Everything here must be DONE.
 | J4 | Deal page post-creation editability: members/consideration/type are set once at creation and the UI offers no edit affordance afterward — everything manually set must be editable in place (owner spec 2026-08-05) | **NOT STARTED** |
 | J5 | Deal-party vs contract-party divergence model: the two CAN legitimately disagree (deal with a company whose asset is titled in the owner's personal name, or vice versa) — no forced sync; the UI must show the linkage AND the divergence explicitly (e.g. deal party: the LLC · signs as: the person), so it's a visible fact, not an accident (owner spec 2026-08-05) | **NOT STARTED — design first** |
 
+## K. PROFILE & PREFERENCES RESTRUCTURE (owner spec 2026-08-05)
+
+| # | Item | Status |
+|---|---|---|
+| K1 | Section 1 — Profile (community-visible): rendered as other members see it (real preview via `member_directory`, not a hand-rebuilt approximation), one Edit reveals every field in place; preferred-contact gains socials (already live, preserved); riding level + hide-from-community toggles moved in from the old duplicate page; badges omitted (no data model exists — see report) | **Code-complete, browser pending.** `ProfileCard.tsx`. See `TASK-PROFILE-REPORT.md`. |
+| K2 | Section 2 — Preferences: notification prefs given their own clearly-bounded section | **Code-complete, browser pending — and honest about scope.** No preferences data model exists (found during read-first: the prior 3 checkboxes were never read/saved on any account); rendered as plain informational rows rather than fake interactive toggles. `PreferencesCard.tsx`. See report. |
+| K3 | Section 3 — Account information (internal-only, staff-visible): legal name, contact/mobile/texts phones, correspondence email, mailing address (moved from section 1), Zelle ID, DOB, read-through emergency contact, staff-preferred-contact | **Code-complete, browser pending.** New `contacts` columns + RLS proven excluded from community reads (simulated other-member session) + C10 minor-guard extended to the new correspondence_email column. `AccountInfoCard.tsx`. See report. |
+| K4 | Section 4 — Login & security: login email / password / Google, all modal or inline, no inner pages | **Code-complete, browser pending.** Reused the existing `EmailChangeModal` unchanged; moved `ChangePasswordModal` and the Google-connect row out of the deleted `/app/profile`. `LoginSecurityCard.tsx`. See report. |
+| K5 | Eliminate the duplicate surfaces: `/app/profile` page (name/photo/bio + its own duplicate sign-in card) dissolved into K1/K4 | **Done.** `src/pages/app/Profile.tsx` deleted, route removed from `App.tsx`, `linkOAuthIdentity`'s dead default redirect fixed. See report for the full deleted-symbol list. |
+
 ---
 
 ## Working order

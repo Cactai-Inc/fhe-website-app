@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
-  UserRound, Grid3x3, Bookmark, FileText, Boxes, BadgeCheck,
-  ShoppingBag, Gift, ChevronRight, ExternalLink, Mail, Smartphone,
-  MessageSquare, Instagram, Facebook, Linkedin, Music2, Check, MapPin,
+  UserRound, Grid3x3, Bookmark, FileText, Boxes,
+  ShoppingBag, Gift, ChevronRight, ExternalLink, X,
 } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
 import {
@@ -14,16 +13,9 @@ import {
 } from '../../lib/stable';
 import { AddItemModal } from '../../components/app/StableEditors';
 import { HorseIntakeForm } from '../../components/app/HorseIntakeForm';
-import { X } from 'lucide-react';
-import { EmailChangeModal } from '../../components/app/EmailChangeModal';
 import { SavedPanel, DocumentsPanel } from '../../components/app/AccountPanels';
+import { ProfileAndPreferences } from '../../components/app/profile/ProfileAndPreferences';
 import { useAuth } from '../../contexts/AuthContext';
-import {
-  getMyContactPrefs, saveMyContactPrefs, type MyContactPrefs,
-  PREFERRED_CONTACT_OPTIONS,
-} from '../../lib/contact';
-import { startGoogleChange, startPasswordChange } from '../../lib/emailChange';
-import { updatePassword, linkOAuthIdentity } from '../../lib/auth';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 
 /**
@@ -34,65 +26,6 @@ import { useNavigate, Link, useSearchParams } from 'react-router-dom';
  * so the structure is visible on the preview. The email-change/auth state machine
  * and full My Stable editing land in the follow-up passes.
  */
-
-/** 3c: switch this account to Google sign-in via the existing linkIdentity
- *  seam — redirects to Google and back to the account page. */
-async function linkGoogleIdentity(): Promise<void> {
-  const { error } = await linkOAuthIdentity('google', '/app/account');
-  if (error) window.alert(`Could not start Google linking: ${error}`);
-}
-
-/** 3c: standalone change-password (auth-level update on the live session —
- *  distinct from the email-change flow's password seam). */
-function ChangePasswordModal({ onClose }: { onClose: () => void }) {
-  const [pw, setPw] = useState('');
-  const [pw2, setPw2] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-  const [done, setDone] = useState(false);
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    setErr(null);
-    if (pw.length < 8) { setErr('Use at least 8 characters.'); return; }
-    if (pw !== pw2) { setErr('The passwords do not match.'); return; }
-    setBusy(true);
-    const { error } = await updatePassword(pw);
-    setBusy(false);
-    if (error) { setErr(error); return; }
-    setDone(true);
-  }
-
-  return (
-    <div className="fixed inset-0 z-[80] bg-green-950/40 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
-        <h2 className="font-serif text-xl text-green-900 mb-1">Change password</h2>
-        {done ? (
-          <div>
-            <p className="body-text text-sm text-green-800 mt-2">Your password is updated.</p>
-            <div className="mt-4 flex justify-end">
-              <button type="button" className="btn-primary" onClick={onClose}>Done</button>
-            </div>
-          </div>
-        ) : (
-          <form onSubmit={submit} className="flex flex-col gap-3 mt-3">
-            <label className="text-xs text-muted" htmlFor="np">New password</label>
-            <input id="np" type="password" autoComplete="new-password" className="border border-green-800/20 rounded-lg px-3 py-2 text-sm focus-ring"
-              value={pw} onChange={(e) => setPw(e.target.value)} />
-            <label className="text-xs text-muted" htmlFor="np2">Repeat new password</label>
-            <input id="np2" type="password" autoComplete="new-password" className="border border-green-800/20 rounded-lg px-3 py-2 text-sm focus-ring"
-              value={pw2} onChange={(e) => setPw2(e.target.value)} />
-            {err && <p role="alert" className="text-sm text-red-700">{err}</p>}
-            <div className="mt-1 flex justify-end gap-2">
-              <button type="button" className="btn-outline-gold" onClick={onClose}>Cancel</button>
-              <button type="submit" className="btn-primary" disabled={busy}>{busy ? 'Saving…' : 'Save password'}</button>
-            </div>
-          </form>
-        )}
-      </div>
-    </div>
-  );
-}
 
 type Section = 'profile' | 'stable' | 'saved' | 'documents' | null;
 
@@ -121,229 +54,6 @@ function Row({
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return <p className="text-[10px] tracking-widest uppercase text-muted font-semibold mt-5 mb-2.5 first:mt-0">{children}</p>;
-}
-
-// ── Contact + preferences (inline form; live-wired to profiles contact prefs) ──
-function ContactCheckbox({ label, on, onToggle }: { label: string; on: boolean; onToggle: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[11.5px] font-medium ${
-        on ? 'bg-green-50 border-green-300 text-green-800' : 'border-green-800/15 text-secondary'
-      }`}
-    >
-      <span className={`w-3.5 h-3.5 rounded grid place-items-center border ${on ? 'bg-green-700 border-green-700 text-white' : 'border-green-800/30'}`}>
-        {on && <Check size={10} />}
-      </span>
-      {label}
-    </button>
-  );
-}
-
-function ContactField({
-  icon: Icon, label, placeholder, hideable = true,
-  value, onValue, readOnly,
-  hidden, onHidden,
-  checks,
-}: {
-  icon: typeof Mail; label: string; placeholder: string; hideable?: boolean;
-  value: string; onValue?: (v: string) => void; readOnly?: boolean;
-  hidden?: boolean; onHidden?: (v: boolean) => void;
-  checks?: { label: string; on: boolean; onToggle: () => void }[];
-}) {
-  return (
-    <div className="bg-white border border-green-800/10 rounded-xl p-3.5">
-      <div className="flex items-center gap-2 mb-2">
-        <Icon size={15} className="text-green-700" />
-        <span className="text-[12px] font-medium text-green-900">{label}</span>
-        {hideable && onHidden && (
-          <label className="ml-auto inline-flex items-center gap-1.5 text-[10.5px] text-muted">
-            <input type="checkbox" className="accent-green-700" checked={hidden ?? false}
-              onChange={(e) => onHidden(e.target.checked)} /> Hide from community
-          </label>
-        )}
-      </div>
-      <input
-        className="w-full px-3 py-2 rounded-lg border border-green-800/15 text-sm text-green-900 placeholder:text-muted focus-ring"
-        placeholder={placeholder}
-        value={value}
-        readOnly={readOnly}
-        onChange={onValue ? (e) => onValue(e.target.value) : undefined}
-      />
-      {checks && (
-        <div className="flex gap-2 mt-2.5">
-          {checks.map((c) => <ContactCheckbox key={c.label} label={c.label} on={c.on} onToggle={c.onToggle} />)}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/** The mailing address, as one card. Writes straight to the `contacts` columns
- *  that documents compose from, so what a member types here is what appears on
- *  their contracts. Deliberately has no "hide from community" control: the
- *  address is never surfaced to other members. */
-type AddressKey = 'address_line1' | 'address_line2' | 'city' | 'state' | 'postal_code';
-function AddressField({
-  value, onField,
-}: {
-  value: Record<AddressKey, string>;
-  onField: (k: AddressKey, v: string) => void;
-}) {
-  const cell = 'w-full px-3 py-2 rounded-lg border border-green-800/15 text-sm text-green-900 placeholder:text-muted focus-ring';
-  return (
-    <div className="bg-white border border-green-800/10 rounded-xl p-3.5">
-      <div className="flex items-center gap-2 mb-2">
-        <MapPin size={15} className="text-green-700" />
-        <span className="text-[12px] font-medium text-green-900">Mailing address</span>
-        <span className="ml-auto text-[10.5px] text-muted">Used on your documents</span>
-      </div>
-      <div className="flex flex-col gap-2">
-        <input className={cell} placeholder="Street address" value={value.address_line1}
-          onChange={(e) => onField('address_line1', e.target.value)} />
-        <input className={cell} placeholder="Apartment, suite (optional)" value={value.address_line2}
-          onChange={(e) => onField('address_line2', e.target.value)} />
-        <div className="grid grid-cols-2 sm:grid-cols-[2fr_1fr_1fr] gap-2">
-          <input className={cell} placeholder="City" value={value.city}
-            onChange={(e) => onField('city', e.target.value)} />
-          <input className={cell} placeholder="State" value={value.state}
-            onChange={(e) => onField('state', e.target.value)} />
-          <input className={cell} placeholder="ZIP" value={value.postal_code}
-            onChange={(e) => onField('postal_code', e.target.value)} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function SocialField({
-  icon: Icon, label, placeholder, value, onValue,
-}: {
-  icon: typeof Instagram; label: string; placeholder: string;
-  value: string; onValue: (v: string) => void;
-}) {
-  return (
-    <div className="flex items-center gap-2.5 bg-white border border-green-800/10 rounded-xl px-3.5 py-2.5">
-      <Icon size={16} className="text-green-700 shrink-0" />
-      <span className="text-[12px] font-medium text-green-900 w-20 shrink-0">{label}</span>
-      <input className="flex-1 min-w-0 px-2.5 py-1.5 rounded-lg border border-green-800/15 text-sm text-green-900 placeholder:text-muted focus-ring"
-        placeholder={placeholder} value={value} onChange={(e) => onValue(e.target.value)} />
-    </div>
-  );
-}
-
-function ProfileSection() {
-  const { user } = useAuth();
-  const [emailOpen, setEmailOpen] = useState(false);
-  const [passwordOpen, setPasswordOpen] = useState(false);
-  const [prefs, setPrefs] = useState<MyContactPrefs | null>(null);
-
-  useEffect(() => {
-    getMyContactPrefs().then(setPrefs).catch(() => { /* section renders empty */ });
-  }, []);
-
-  // Update local state immediately; persist the single changed field (best-effort).
-  function set<K extends keyof MyContactPrefs>(key: K, value: MyContactPrefs[K]) {
-    setPrefs((p) => (p ? { ...p, [key]: value } : p));
-    if (key !== 'email') saveMyContactPrefs({ [key]: value }).catch(() => { /* keep UI state */ });
-  }
-
-  const p = prefs;
-  return (
-    <div className="mt-2.5 mb-1 p-4 bg-cream-100/60 border border-green-800/10 rounded-xl">
-      <SectionLabel>Contact information</SectionLabel>
-      <p className="text-[11.5px] text-muted -mt-1.5 mb-2.5">Always visible to French Heritage. Choose what the community sees.</p>
-      <div className="flex flex-col gap-2.5">
-        {/* Account email: login + FHE correspondence. Read-only here (email-change
-            flow manages it) and never shown to the community — the community sees
-            only the Community email field below. */}
-        <ContactField icon={Mail} label="Account email" placeholder="claire@example.com" readOnly
-          value={p?.email ?? user?.email ?? ''} />
-        {/* Five community channels — each its own value, each its own hide switch.
-            Seeded once from your number on file; yours to change after that. */}
-        <ContactField icon={Mail} label="Community email" placeholder="claire@example.com" hideable
-          value={p?.community_email ?? ''} onValue={(v) => set('community_email', v || null)}
-          hidden={p?.hide_community_email ?? false} onHidden={(v) => set('hide_community_email', v)} />
-        <ContactField icon={Smartphone} label="Calls" placeholder="(760) 555-0148" hideable
-          value={p?.mobile_call ?? ''} onValue={(v) => set('mobile_call', v || null)}
-          hidden={p?.hide_mobile_call ?? false} onHidden={(v) => set('hide_mobile_call', v)} />
-        <ContactField icon={Smartphone} label="Texts" placeholder="(760) 555-0148" hideable
-          value={p?.mobile_text ?? ''} onValue={(v) => set('mobile_text', v || null)}
-          hidden={p?.hide_mobile_text ?? false} onHidden={(v) => set('hide_mobile_text', v)} />
-        <ContactField icon={MessageSquare} label="WhatsApp calls" placeholder="(760) 555-0148" hideable
-          value={p?.whatsapp_call ?? ''} onValue={(v) => set('whatsapp_call', v || null)}
-          hidden={p?.hide_whatsapp_call ?? false} onHidden={(v) => set('hide_whatsapp_call', v)} />
-        <ContactField icon={MessageSquare} label="WhatsApp texts" placeholder="(760) 555-0148" hideable
-          value={p?.whatsapp_text ?? ''} onValue={(v) => set('whatsapp_text', v || null)}
-          hidden={p?.hide_whatsapp_text ?? false} onHidden={(v) => set('hide_whatsapp_text', v)} />
-        {/* Mailing address — the same `contacts` columns the onboarding intake
-            writes and the contract party tokens compose from. Until now this
-            page had no address field at all, so a member who filled it in during
-            onboarding could neither see it nor correct it, while it silently
-            appeared inside their contracts. Not hideable: it is never shown to
-            other members, only used by staff and on documents. */}
-        <AddressField
-          value={{
-            address_line1: p?.address_line1 ?? '', address_line2: p?.address_line2 ?? '',
-            city: p?.city ?? '', state: p?.state ?? '', postal_code: p?.postal_code ?? '',
-          }}
-          onField={(k, v) => set(k, v || null)}
-        />
-      </div>
-
-      <SectionLabel>Social accounts</SectionLabel>
-      <div className="flex flex-col gap-2">
-        <SocialField icon={Music2} label="TikTok" placeholder="@handle"
-          value={p?.social_tiktok ?? ''} onValue={(v) => set('social_tiktok', v || null)} />
-        <SocialField icon={Instagram} label="Instagram" placeholder="@handle"
-          value={p?.social_instagram ?? ''} onValue={(v) => set('social_instagram', v || null)} />
-        <SocialField icon={Facebook} label="Facebook" placeholder="profile URL"
-          value={p?.social_facebook ?? ''} onValue={(v) => set('social_facebook', v || null)} />
-        <SocialField icon={Linkedin} label="LinkedIn" placeholder="profile URL"
-          value={p?.social_linkedin ?? ''} onValue={(v) => set('social_linkedin', v || null)} />
-      </div>
-
-      <SectionLabel>Preferred contact method</SectionLabel>
-      <p className="text-[11.5px] text-muted -mt-1.5 mb-2.5">How you'd rather be reached. Shown on your profile — all your shared channels still appear.</p>
-      <select
-        value={p?.preferred_contact ?? 'none'}
-        onChange={(e) => set('preferred_contact', e.target.value as MyContactPrefs['preferred_contact'])}
-        className="form-input w-full text-sm">
-        {PREFERRED_CONTACT_OPTIONS
-          // only offer channels the member has actually filled in (or the always-on ones)
-          .filter((o) => o.requires === null || !!(p && p[o.requires]))
-          .map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
-
-      <SectionLabel>Notifications</SectionLabel>
-      <div className="flex flex-col gap-2">
-        {['Replies to my discussions', 'Event reminders', 'New member welcomes'].map((n) => (
-          <label key={n} className="flex items-center justify-between bg-white border border-green-800/10 rounded-xl px-3.5 py-2.5">
-            <span className="text-[12.5px] text-green-900">{n}</span>
-            <input type="checkbox" defaultChecked className="accent-green-700 w-4 h-4" />
-          </label>
-        ))}
-      </div>
-
-      <SectionLabel>Login &amp; security</SectionLabel>
-      <div className="flex flex-col gap-2">
-        <Row icon={UserRound} title="Change email address" sub="Verified before it takes effect" onClick={() => setEmailOpen(true)} />
-        <Row icon={BadgeCheck} title="Password" sub="Set or change your password" onClick={() => setPasswordOpen(true)} />
-        <Row icon={UserRound} title="Sign in with Google" sub="Switch this account to Google sign-in" onClick={() => { void linkGoogleIdentity(); }} />
-        <Row icon={UserRound} title="Name, photo & bio" sub="Edit your public identity" onClick={() => { window.location.assign('/app/profile'); }} />
-      </div>
-
-      {passwordOpen && <ChangePasswordModal onClose={() => setPasswordOpen(false)} />}
-      {emailOpen && (
-        <EmailChangeModal
-          currentEmail={p?.email ?? user?.email ?? ''}
-          onClose={() => setEmailOpen(false)}
-          seams={{ startGoogleChange, startPasswordChange }}
-        />
-      )}
-    </div>
-  );
 }
 
 // ── My Stable (inline, live) ───────────────────────────────────
@@ -492,8 +202,8 @@ export default function AccountHub() {
       </header>
 
       <div className="grid lg:grid-cols-2 gap-3">
-        <Row icon={UserRound} title="Profile &amp; preferences" sub={`${realName} · contact, socials, notifications`} onClick={() => toggle('profile')} open={open === 'profile'} />
-        {open === 'profile' && <div className="lg:col-span-2"><ProfileSection /></div>}
+        <Row icon={UserRound} title="Profile &amp; preferences" sub={`${realName} · profile, account & security`} onClick={() => toggle('profile')} open={open === 'profile'} />
+        {open === 'profile' && <div className="lg:col-span-2"><ProfileAndPreferences /></div>}
         <Row icon={Grid3x3} title="My posts" sub="Your posts & listings" onClick={() => navigate('/app/my-posts')} />
         <Row icon={Boxes} title="My lessons" sub="Credits, schedule & your progress" onClick={() => navigate('/app/lessons')} />
         <Row icon={Bookmark} title="Saved items" sub="Articles, listings, and links you kept" onClick={() => toggle('saved')} open={open === 'saved'} />

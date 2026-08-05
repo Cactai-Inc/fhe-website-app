@@ -112,21 +112,20 @@ export interface MyContactPrefs {
   social_facebook: string | null;
   social_linkedin: string | null;
   preferred_contact: PreferredContact;
-  /** The mailing address — the SAME columns the onboarding intake writes and the
-   *  contract party tokens compose from (LESSEE.ADDRESS via
-   *  fill_party_fields_from_contacts → compose_address). */
-  address_line1: string | null;
-  address_line2: string | null;
-  city: string | null;
-  state: string | null;
-  postal_code: string | null;
 }
 
+// TASK-PROFILE (2026-08-05): the mailing address used to live here too — same
+// `contacts` columns the onboarding intake writes and the contract party tokens
+// compose from (LESSEE.ADDRESS via fill_party_fields_from_contacts →
+// compose_address). The owner's restructure moves it into the internal-only
+// Account Information section (MyAccountInfo below); it is the SAME columns,
+// just read/written through getMyAccountInfo/saveMyAccountInfo now — do not
+// re-add it here, that would recreate the second-editable-copy problem this
+// task eliminated.
 const PREF_COLS =
   'email, community_email, mobile_call, mobile_text, whatsapp_call, whatsapp_text, ' +
   'hide_community_email, hide_mobile_call, hide_mobile_text, hide_whatsapp_call, hide_whatsapp_text, ' +
-  'social_tiktok, social_instagram, social_facebook, social_linkedin, preferred_contact, ' +
-  'address_line1, address_line2, city, state, postal_code';
+  'social_tiktok, social_instagram, social_facebook, social_linkedin, preferred_contact';
 
 /** Load the signed-in member's contact prefs from their CONTACT row.
  *  Reads through the profile's contact_id rather than assuming one: an account
@@ -163,5 +162,147 @@ export async function saveMyContactPrefs(patch: Partial<Omit<MyContactPrefs, 'em
   const contactId = (prof as { contact_id: string | null } | null)?.contact_id;
   if (!contactId) throw new Error('Your account has no contact record to update.');
   const res = await supabase.from('contacts').update(patch).eq('id', contactId).select('id');
+  assertWrote(res, 'Your changes');
+}
+
+// ── Account information (Account → Profile & preferences → internal-only
+//    section, visible only to French Heritage staff and the member themself) ──
+
+/** Who staff should reach out to first, when it isn't obvious from context —
+ *  the internal counterpart of `PreferredContact` in section 1. Deliberately a
+ *  smaller set: staff communicate by phone/text/email, never socials. */
+export type StaffPreferredContact = 'none' | 'phone_call' | 'text' | 'email';
+
+export const STAFF_PREFERRED_CONTACT_LABELS: Record<StaffPreferredContact, string> = {
+  none: 'No preference',
+  phone_call: 'Phone call',
+  text: 'Text message',
+  email: 'Email',
+};
+
+/** contacts.emergency_contact_1/2_* — captured through the onboarding release
+ *  flow (DocsParticipantFlow / Onboarding, via sign-release.ts) and read back
+ *  here, not re-entered. These are also the source the CLIENT.EMERGENCY_CONTACT_*
+ *  merge tokens compose documents from (token_dictionary, 'contacts' table). */
+export interface EmergencyContactOnFile {
+  name: string | null;
+  relationship: string | null;
+  phone: string | null;
+}
+
+export interface MyAccountInfo {
+  first_name: string | null;
+  last_name: string | null;
+  /** "Contact phone for calls" — the pre-existing, already internal-only
+   *  `contacts.phone` (never exposed via member_directory). */
+  phone: string | null;
+  mobile_number: string | null;
+  /** Set only when the member uses a different number for texts; null means
+   *  "same as mobile_number" — there is no separate boolean column for the
+   *  checkbox, its state is simply `texts_phone !== null`. */
+  texts_phone: string | null;
+  /** May differ from the login email. Never used for password reset / login-
+   *  email-change notices / legal documents — those always go to the login
+   *  email (profiles/auth), never here. */
+  correspondence_email: string | null;
+  address_line1: string | null;
+  address_line2: string | null;
+  city: string | null;
+  state: string | null;
+  postal_code: string | null;
+  zelle_phone: string | null;
+  zelle_email: string | null;
+  /** YYYY-MM-DD. Internal-only; drives the minor-protection rules (C10). */
+  date_of_birth: string | null;
+  staff_preferred_contact: StaffPreferredContact;
+  emergency_contact_1: EmergencyContactOnFile;
+  emergency_contact_2: EmergencyContactOnFile;
+}
+
+type EditableAccountInfo = Omit<MyAccountInfo, 'emergency_contact_1' | 'emergency_contact_2'>;
+
+const ACCOUNT_INFO_COLS =
+  'first_name, last_name, phone, mobile_number, texts_phone, correspondence_email, ' +
+  'address_line1, address_line2, city, state, postal_code, zelle_phone, zelle_email, ' +
+  'date_of_birth, staff_preferred_contact, ' +
+  'emergency_contact_1_name, emergency_contact_1_relationship, emergency_contact_1_phone, ' +
+  'emergency_contact_2_name, emergency_contact_2_relationship, emergency_contact_2_phone';
+
+interface AccountInfoRow {
+  first_name: string | null; last_name: string | null; phone: string | null;
+  mobile_number: string | null; texts_phone: string | null; correspondence_email: string | null;
+  address_line1: string | null; address_line2: string | null; city: string | null;
+  state: string | null; postal_code: string | null;
+  zelle_phone: string | null; zelle_email: string | null;
+  date_of_birth: string | null; staff_preferred_contact: StaffPreferredContact;
+  emergency_contact_1_name: string | null; emergency_contact_1_relationship: string | null;
+  emergency_contact_1_phone: string | null;
+  emergency_contact_2_name: string | null; emergency_contact_2_relationship: string | null;
+  emergency_contact_2_phone: string | null;
+}
+
+function toAccountInfo(r: AccountInfoRow): MyAccountInfo {
+  return {
+    first_name: r.first_name, last_name: r.last_name, phone: r.phone,
+    mobile_number: r.mobile_number, texts_phone: r.texts_phone,
+    correspondence_email: r.correspondence_email,
+    address_line1: r.address_line1, address_line2: r.address_line2, city: r.city,
+    state: r.state, postal_code: r.postal_code,
+    zelle_phone: r.zelle_phone, zelle_email: r.zelle_email,
+    date_of_birth: r.date_of_birth, staff_preferred_contact: r.staff_preferred_contact,
+    emergency_contact_1: {
+      name: r.emergency_contact_1_name, relationship: r.emergency_contact_1_relationship,
+      phone: r.emergency_contact_1_phone,
+    },
+    emergency_contact_2: {
+      name: r.emergency_contact_2_name, relationship: r.emergency_contact_2_relationship,
+      phone: r.emergency_contact_2_phone,
+    },
+  };
+}
+
+/** Load the signed-in member's internal-only account info. Same own-row read
+ *  as getMyContactPrefs; null when the account has no linked contact. */
+export async function getMyAccountInfo(): Promise<MyAccountInfo | null> {
+  const { data: auth } = await supabase.auth.getUser();
+  const uid = auth?.user?.id;
+  if (!uid) return null;
+  const { data: prof, error: profErr } = await supabase
+    .from('profiles').select('contact_id').eq('user_id', uid).single();
+  if (profErr) throw profErr;
+  const contactId = (prof as { contact_id: string | null } | null)?.contact_id;
+  if (!contactId) return null;
+  const { data, error } = await supabase
+    .from('contacts').select(ACCOUNT_INFO_COLS).eq('id', contactId).single();
+  if (error) throw error;
+  return toAccountInfo(data as unknown as AccountInfoRow);
+}
+
+const MINOR_EMAIL_GUARD_MSG = 'a minor contact carries no direct email';
+
+/** Save a partial set of internal-only account-info fields. Emergency contacts
+ *  are read-only here by design (captured through the signed onboarding
+ *  release, not re-entered) — the type excludes them.
+ *
+ *  The C10 guard (contacts_minor_no_email_guard) rejects any email — legacy or
+ *  correspondence — on a contact on file as a minor. That's a raw Postgres
+ *  exception; map it to language a member would understand rather than
+ *  surfacing the trigger's internal wording. */
+export async function saveMyAccountInfo(patch: Partial<EditableAccountInfo>): Promise<void> {
+  const { data: auth } = await supabase.auth.getUser();
+  const uid = auth?.user?.id;
+  if (!uid) throw new Error('not signed in');
+  const { data: prof, error: profErr } = await supabase
+    .from('profiles').select('contact_id').eq('user_id', uid).single();
+  if (profErr) throw profErr;
+  const contactId = (prof as { contact_id: string | null } | null)?.contact_id;
+  if (!contactId) throw new Error('Your account has no contact record to update.');
+  const res = await supabase.from('contacts').update(patch).eq('id', contactId).select('id');
+  if (res.error?.message.includes(MINOR_EMAIL_GUARD_MSG)) {
+    throw new Error(
+      'This record is on file as a minor, so a personal email can’t be stored here — ' +
+      'correspondence for minors goes through a guardian.',
+    );
+  }
   assertWrote(res, 'Your changes');
 }
