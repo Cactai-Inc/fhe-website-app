@@ -274,9 +274,9 @@ function RailLink({ to, label, icon: Icon, end, badge = 0 }: NavItem & { badge?:
       end={end}
       className={({ isActive }) =>
         `flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13.5px] font-sans transition-colors focus-ring ${
-          // ring variant (ships): 'bg-cream-200 text-green-800 font-medium ring-1 ring-inset ring-gold-400'
+          // ring variant (ships): 'bg-cream-200 text-green-800 font-medium '
           // fill-only revert:     'bg-cream-200 text-green-800 font-medium'
-          isActive ? 'bg-cream-200 text-green-800 font-medium ring-1 ring-inset ring-gold-400' : 'text-secondary hover:bg-white'
+          isActive ? 'bg-cream-200 text-green-800 font-medium ' : 'text-secondary hover:bg-white'
         }`
       }
     >
@@ -301,7 +301,7 @@ function MenuLink({ to, label, icon: Icon, end, onNavigate }: NavItem & { onNavi
       onClick={onNavigate}
       className={({ isActive }) =>
         `flex items-center gap-3 px-4 py-2.5 text-sm font-sans transition-colors focus-ring ${
-          isActive ? 'bg-cream-200 text-green-800 font-medium ring-1 ring-inset ring-gold-400' : 'text-secondary hover:bg-green-800/[0.06]'
+          isActive ? 'bg-cream-200 text-green-800 font-medium ' : 'text-secondary hover:bg-green-800/[0.06]'
         }`
       }
     >
@@ -326,7 +326,7 @@ function PresenceLink({ to, label, icon: Icon, section, onNavigate }: {
   return (
     <Link to={to} onClick={onNavigate}
       className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans transition-colors focus-ring ${
-        isActive ? 'bg-cream-200 text-green-800 font-medium ring-1 ring-inset ring-gold-400' : 'text-secondary hover:bg-white'}`}>
+        isActive ? 'bg-cream-200 text-green-800 font-medium ' : 'text-secondary hover:bg-white'}`}>
       <Icon size={18} aria-hidden="true" className={isActive ? 'text-gold-400' : 'text-green-600'} />
       <span className="whitespace-nowrap flex-1">{label}</span>
     </Link>
@@ -377,7 +377,7 @@ function CommunityNav({ onNavigate, indentClass = 'pl-9' }: {
           it's the active view; the toggle shows/hides the sublinks. I5: down arrow +
           "show" when collapsed, up arrow + "hide" when expanded — replaces the old
           right-pointing (rotated ChevronDown) collapsed state. */}
-      <div className={`flex items-center rounded-lg pr-1 ${isAll ? 'bg-cream-200 ring-1 ring-inset ring-gold-400' : 'hover:bg-white'}`}>
+      <div className={`flex items-center rounded-lg pr-1 ${isAll ? 'bg-cream-200 ' : 'hover:bg-white'}`}>
         <Link to="/app" onClick={onNavigate}
           className={`flex items-center gap-3 flex-1 min-w-0 px-3 py-2.5 text-[13.5px] font-sans focus-ring rounded-lg ${isAll ? 'text-green-800 font-medium' : 'text-secondary'}`}>
           <Users size={18} className={`shrink-0 ${isAll ? 'text-gold-400' : 'text-green-600'}`} />
@@ -399,7 +399,7 @@ function CommunityNav({ onNavigate, indentClass = 'pl-9' }: {
             return (
               <Link key={v.key} to={communityHref(v.key)} onClick={onNavigate}
                 className={`flex items-center ${indentClass} pr-3 py-1.5 rounded-lg text-[13px] font-sans transition-colors focus-ring ${
-                  isActive ? 'bg-cream-200 text-green-800 font-medium ring-1 ring-inset ring-gold-400' : 'text-secondary hover:bg-white'}`}>
+                  isActive ? 'bg-cream-200 text-green-800 font-medium ' : 'text-secondary hover:bg-white'}`}>
                 <span className="whitespace-nowrap">{v.label}</span>
               </Link>
             );
@@ -453,7 +453,7 @@ function ClientRail({ bellCount, dmCount, presence }: { bellCount: number; dmCou
               <NavLink key={q.label} to={q.to} end={q.end}
                 className={({ isActive: active }) =>
                   `flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans transition-colors focus-ring ${
-                    active ? 'bg-cream-200 text-green-800 font-medium ring-1 ring-inset ring-gold-400' : 'text-secondary hover:bg-white'}`}>
+                    active ? 'bg-cream-200 text-green-800 font-medium ' : 'text-secondary hover:bg-white'}`}>
                 {({ isActive: active }) => (
                     <>
                       <q.icon size={18} aria-hidden="true" className={active ? 'text-gold-400' : 'text-green-600'} />
@@ -738,7 +738,7 @@ export default function AppLayout() {
                         return (
                           <Link key={l.key} to={l.to} onClick={closeMenu}
                             className={`flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans focus-ring ${
-                              isActive ? 'bg-cream-200 text-green-800 font-medium ring-1 ring-inset ring-gold-400' : 'text-secondary hover:bg-green-800/[0.06]'}`}>
+                              isActive ? 'bg-cream-200 text-green-800 font-medium ' : 'text-secondary hover:bg-green-800/[0.06]'}`}>
                             <l.icon size={17} /> {l.label}
                           </Link>
                         );
