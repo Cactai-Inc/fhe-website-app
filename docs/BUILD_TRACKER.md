@@ -121,6 +121,14 @@ This is the critical path. Everything here must be DONE.
 | I4 | Selected-page indicator: replace the dark-green fill (overpowering on the light UI, poor small-text contrast). Direction: slightly darker shade of the nav panel color, optionally a gold outline (matches gold link icons); if the darker shade alone reads clearly, drop the outline. Open-menu state on the close button uses the same dark shade | **NOT STARTED** |
 | I5 | Community-feed expandability affordance: small "expand" helper text + down arrow when collapsed; "hide" + up arrow when expanded (replaces the right arrow) | **NOT STARTED** |
 
+## J. ADMIN DOCUMENTS LIBRARY & DEALS VETTING (owner spec 2026-08-04)
+
+| # | Item | Status |
+|---|---|---|
+| J1 | Admin Documents page redesigned as the business's document library: preset views (tabs or equivalent) by what a barn/equestrian business of this volume actually files — design informed by RESEARCH (orchestrator-owned) into what a business document storage system should contain, not guessed | **RESEARCH IN PROGRESS** |
+| J2 | "+" button expanded to quick-create/add everything the admin routinely needs (inventory the app's existing create actions first; owner reviews the proposed list before build) | **NOT STARTED** |
+| J3 | Deal adoption: a contract created independently of a deal can be brought into a deal afterward — create-deal-from-contract in the appropriate UI location, gracefully; deal_type/parties/consideration DERIVED from the contract's existing data (and other attached docs), not manually re-entered | **NOT STARTED** |
+
 ---
 
 ## Working order
