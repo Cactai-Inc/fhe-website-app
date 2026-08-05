@@ -184,6 +184,12 @@ export interface ContractDetail {
     executed_email_sent_at?: string | null;
   };
   my_roles: string[];
+  /** TASK COSIGN: party roles a staff caller may sign because the role's
+   *  signer contact is the org's own company contact — mirrors
+   *  record_signature's company branch. */
+  company_signable_roles: string[];
+  /** The company contact's display name, for the "Sign as <name>" label. */
+  company_contact_name: string | null;
   fields: ContractField[];
   open_change_requests: ContractChangeRequest[];
   shares: { shared_with_contact_id: string; recipient_editing: boolean; notified_at: string | null }[];

@@ -623,6 +623,16 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
     .filter((r) => r && r !== 'FHE' && r !== 'COMPANY' && !signedRoles.has(r));
   const pendingSignerRoles = Array.from(new Set(
     pendingFromSignatures.length > 0 ? pendingFromSignatures : pendingFromParties));
+  // TASK COSIGN: of the pending seats that aren't one of my own roles, only
+  // the ones belonging to the org's own company contact are staff-signable —
+  // record_signature() rejects staff signing for any other party (tightened
+  // 20260803, after this screen's original "sign on a party's behalf" box was
+  // built for any pending seat). Restrict the affordance to match what the
+  // server will actually accept, and label it with the company's name.
+  const companySignableRoles = new Set(detail?.company_signable_roles ?? []);
+  const companyContactName = detail?.company_contact_name ?? 'the company';
+  const companyPendingRoles = pendingSignerRoles.filter(
+    (r) => !myRoles.includes(r) && companySignableRoles.has(r));
 
   const sections = useMemo(() => {
     const by = new Map<string, ContractField[]>();
@@ -1913,34 +1923,36 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
             </p>
           )}
 
-          {/* Staff / owner signing on a party's behalf (barn-office wet-signing).
-              Staff hold no party role of their own, so without this there is no way
-              to execute a signature from this screen. Each pending seat that isn't
-              one of my own roles gets its own name box. */}
-          {isOwnerSide && state === 'locked'
-            && pendingSignerRoles.filter((r) => !myRoles.includes(r)).length > 0 && (
+          {/* Staff signing ON BEHALF OF THE COMPANY (TASK COSIGN). The company
+              contact is faceless — it has no login of its own — so when the
+              org's own company is a party, staff complete its signature here.
+              record_signature()'s company branch does the same for any staff
+              of the org; this only surfaces the affordance for roles that
+              branch actually accepts (company_signable_roles), never for an
+              individual party staff doesn't represent. */}
+          {isOwnerSide && state === 'locked' && companyPendingRoles.length > 0 && (
             <div className="border-t border-green-800/10 pt-4">
-              <p className="text-sm text-secondary mb-1">Sign on a party's behalf</p>
+              <p className="text-sm text-secondary mb-1">Sign on behalf of the company</p>
               <p className="form-hint mb-3">
-                For in-person signing. Type the party's full legal name exactly as it should
-                appear — this seals their signature and is recorded in the audit trail.
+                {companyContactName} has no individual signer — as staff, you complete
+                its signature here. This seals the signature and is recorded in the audit trail.
               </p>
               <div className="flex flex-col gap-2.5">
-                {pendingSignerRoles.filter((r) => !myRoles.includes(r)).map((r) => {
+                {companyPendingRoles.map((r) => {
                   const rl = r.charAt(0) + r.slice(1).toLowerCase();
-                  const name = behalfNames[r] ?? '';
+                  const name = behalfNames[r] ?? companyContactName;
                   return (
                     <div key={r} className="flex flex-wrap items-center gap-2">
                       <span className="text-sm text-green-900 w-20 shrink-0">{rl}</span>
                       <input value={name}
                         onChange={(e) => setBehalfNames((m) => ({ ...m, [r]: e.target.value }))}
-                        placeholder={`${rl}'s full legal name`}
+                        placeholder={`${companyContactName}'s full legal name`}
                         className="px-3 py-2 rounded-lg border border-green-800/15 text-sm focus-ring w-64" />
                       <button type="button" className="btn-primary text-sm" disabled={!name.trim()}
                         onClick={() => void act(
                           async () => { await lockAndSign(id!, r, name.trim()); deliverExecutedCopy(); },
-                          `Signed as ${rl}.`)}>
-                        <PenLine size={14} /> Sign as {rl}
+                          `Signed as ${name.trim()}.`)}>
+                        <PenLine size={14} /> Sign as {name.trim() || companyContactName}
                       </button>
                     </div>
                   );
