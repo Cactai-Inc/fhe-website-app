@@ -351,17 +351,49 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   useEffect(reloadName, [reloadName]);
   const nameGated = Boolean(nameState?.needs_confirmation);
 
+  // STALE-DOCUMENT GUARD (found during A-PARTY-VERIFY-2, 2026-08-05): a previous
+  // document's fully-rendered, fully-interactive page — including its real Send
+  // button — must never remain on screen once the URL has moved to a different
+  // document. idRef always holds the latest route id; load() captures the id it
+  // was called for and checks idRef before applying each response, so a slow or
+  // out-of-order resolution from the PREVIOUS id can't overwrite the new one.
+  const idRef = useRef(id);
+  useEffect(() => { idRef.current = id; }, [id]);
+
   const load = useCallback(async () => {
     if (!id) return;
+    const requestedId = id;
+    // Clear synchronously, before any await, so nothing from the previous
+    // document can stay interactive while the new one loads.
+    setDetail(null);
+    setSigningSet([]);
+    setRedline(null);
+    setPartiesSummary(null);
+    setSigState(null);
+    setStructure(null);
+    setControlNote(null);
+    setError(null);
+    setNote(null);
     try {
-      setDetail(await contractDocumentDetail(id));
+      const d = await contractDocumentDetail(requestedId);
+      if (idRef.current !== requestedId) return;
+      setDetail(d);
       setControlNote(null);
-      contractSigningSet(id).then(setSigningSet).catch(() => setSigningSet([]));
-      contractRedlineState(id).then(setRedline).catch(() => setRedline(null));
-      documentPartiesSummary(id).then(setPartiesSummary).catch(() => setPartiesSummary(null));
-      documentSignatureState(id).then(setSigState).catch(() => setSigState(null));
+      contractSigningSet(requestedId)
+        .then((v) => { if (idRef.current === requestedId) setSigningSet(v); })
+        .catch(() => { if (idRef.current === requestedId) setSigningSet([]); });
+      contractRedlineState(requestedId)
+        .then((v) => { if (idRef.current === requestedId) setRedline(v); })
+        .catch(() => { if (idRef.current === requestedId) setRedline(null); });
+      documentPartiesSummary(requestedId)
+        .then((v) => { if (idRef.current === requestedId) setPartiesSummary(v); })
+        .catch(() => { if (idRef.current === requestedId) setPartiesSummary(null); });
+      documentSignatureState(requestedId)
+        .then((v) => { if (idRef.current === requestedId) setSigState(v); })
+        .catch(() => { if (idRef.current === requestedId) setSigState(null); });
       setError(null);
     } catch (e) {
+      if (idRef.current !== requestedId) return;
       setError(errMessage(e, 'Could not load the contract.'));
     }
   }, [id]);
