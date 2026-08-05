@@ -16,10 +16,12 @@ import {
   myDocuments,
   markTourSeen,
   myNameConfirmationState,
+  myNavPresence,
   type OnboardingProfileInput,
   type OnboardingPurchase,
   type OnboardingState,
   type StandingCategory,
+  type NavPresence,
 } from '../../lib/api';
 import OrderPayment from '../../components/order/OrderPayment';
 import type { Order, OrderItem, Payment } from '../../lib/types';
@@ -30,6 +32,7 @@ import { useDocumentTitle } from '../../lib/hooks';
 import { listStableHorses, type StableHorse } from '../../lib/stable';
 import { HorseIntakeForm } from '../../components/app/HorseIntakeForm';
 import { AppOverviewModal } from '../../components/app/AppOverviewModal';
+import { useAuth } from '../../contexts/AuthContext';
 import type { Profile } from '../../lib/types';
 
 /**
@@ -151,6 +154,14 @@ function Steps({ current, showHorse }: { current: Step; showHorse: boolean }) {
 export default function Onboarding() {
   useDocumentTitle('Welcome Aboard');
   const navigate = useNavigate();
+  const { hasModule } = useAuth();
+  // I6 — the app-overview modal's page list now mirrors AppLayout's canonical
+  // USER nav order exactly, so this instance (the FIRST tour a member sees)
+  // needs the same live presence + module gate as AppLayout threads in.
+  const lessonsOn = hasModule('mod.lessons');
+  const [presence, setPresence] = useState<NavPresence>({
+    orders: false, documents: false, stable: false, posts: false, saved: false,
+  });
   const [state, setState] = useState<OnboardingState | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [categories, setCategories] = useState<StandingCategory[]>([]);
@@ -293,6 +304,9 @@ export default function Onboarding() {
     // Presentational only — feeds the app-overview modal variant, gates nothing.
     // Failing to a guest-variant tour is the right degradation.
     fetchMyCategories().then((c) => active && setCategories(c)).catch(() => {});
+    // Same quiet-catch fallback as AppLayout's useNavPresence: a failed read
+    // just leaves every presence-gated tour line hidden.
+    myNavPresence().then((p) => active && setPresence(p)).catch(() => {});
     Promise.all([myOnboardingState(), getMyProfile().catch(() => null)])
       .then(([s, p]) => {
         if (!active) return;
@@ -1145,7 +1159,7 @@ export default function Onboarding() {
         </section>
       )}
 
-      <AppOverviewModal open={showOverview} onClose={enterApp} categories={categories} />
+      <AppOverviewModal open={showOverview} onClose={enterApp} categories={categories} presence={presence} lessonsOn={lessonsOn} />
     </div>
   );
 }

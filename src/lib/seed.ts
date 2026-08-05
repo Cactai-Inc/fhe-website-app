@@ -32,7 +32,7 @@ export const FEED_VIEWS: { key: FeedView; label: string }[] = [
  *  matching title + blurb so each filter reads like its own place. `navLabel` is
  *  what the nested nav link shows (e.g. "All posts" for the combined view). */
 export const FEED_VIEW_META: Record<FeedView, { title: string; navLabel: string; description: string }> = {
-  all:         { title: 'Community Feed', navLabel: 'All posts',   description: 'Everything from the barn and community, newest first.' },
+  all:         { title: 'Community Feed', navLabel: 'All posts',   description: 'A place to welcome new members, share your experiences or views from around the stables, and helpful links, tack, or gear you no longer use that others may need' },
   social:      { title: 'Social',         navLabel: 'Social',      description: 'Photos, updates, and moments members are sharing.' },
   discussions: { title: 'Discussions',    navLabel: 'Discussions', description: 'Questions and conversations — jump in or start your own.' },
   for_sale:    { title: 'For Sale',       navLabel: 'For Sale',    description: 'Horses and gear listed by the barn and members.' },

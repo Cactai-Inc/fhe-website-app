@@ -6,7 +6,7 @@ import {
   CalendarDays, Users, FileText, UserRound, ReceiptText, Shield, LogOut,
   GraduationCap, Home as HomeIcon, Boxes, Contact, LayoutDashboard,
   Mail, ChevronDown, ChevronUp, Plus, LifeBuoy, ShoppingBag, MessageSquare, BookOpen, ListChecks,
-  PanelLeft, PanelLeftClose, Activity, Compass, Handshake, Grid3x3, Bookmark,
+  PanelLeft, PanelLeftClose, PanelLeftOpen, Activity, Compass, Handshake, Grid3x3, Bookmark,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useViewSurfaces } from '../../lib/surfaces';
@@ -18,6 +18,18 @@ import {
 } from '../../lib/api';
 import { AppOverviewModal } from './AppOverviewModal';
 import { CreateModal } from './CreateModal';
+
+/** I7 — green-glass nav surface (mobile drawer + desktop USER rail only —
+ *  NOT the staff rail, which keeps its own `bg-cream-100/40`): a translucent
+ *  green wash over the page's cream base, blurred so content scrolling
+ *  behind reads through as glass (owner spec 2026-08-05). One shared
+ *  constant so both surfaces stay identical and reverting to the previous
+ *  solid look is a one-line swap:
+ *    glass (ships):  NAV_GLASS below
+ *    solid (revert): 'bg-cream-100'
+ *  `supports-[not(...)]` is the solid-color fallback for browsers without
+ *  backdrop-filter support. */
+const NAV_GLASS = 'bg-green-800/[0.07] backdrop-blur-md supports-[not(backdrop-filter:blur(1px))]:bg-cream-100 supports-[not(backdrop-filter:blur(1px))]:backdrop-blur-none';
 
 /** Unread-notification count for the Dashboard nav badge. Refreshes on mount and
  *  on every route change (the notifications themselves live on the dashboard now —
@@ -339,6 +351,25 @@ function PresenceLink({ to, label, icon: Icon, section, onNavigate }: {
   );
 }
 
+/** I6 — canonical-order "Account" link. Active only on the bare /app/account
+ *  view (no `?section=`), so it doesn't co-highlight with My Stable, which
+ *  shares the same pathname via `?section=stable`. Styled to match
+ *  RailLink/PresenceLink's active-state convention (I4's cream-200 + gold
+ *  icon). */
+function AccountNavLink({ onNavigate }: { onNavigate?: () => void }) {
+  const location = useLocation();
+  const accountSection = useActiveAccountSection();
+  const isActive = location.pathname === '/app/account' && accountSection == null;
+  return (
+    <Link to="/app/account" onClick={onNavigate}
+      className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans transition-colors focus-ring ${
+        isActive ? 'bg-cream-200 text-green-800 font-medium ' : 'text-secondary hover:bg-white'}`}>
+      <UserRound size={18} aria-hidden="true" className={isActive ? 'text-gold-400' : 'text-green-600'} />
+      <span className="whitespace-nowrap flex-1">Account</span>
+    </Link>
+  );
+}
+
 /** Which community-feed view the current location represents (null when not on the
  *  feed at all). On /app the active view is the `?filter=` value, or 'all'. */
 function useActiveCommunityView(): FeedView | null {
@@ -439,6 +470,43 @@ function useDmUnread(): number {
   return n;
 }
 
+/** I6 — the ONE canonical USER nav order (owner spec 2026-08-05): Community
+ *  Feed, Dashboard, Calendar, Lessons*, Orders, Catalog, Documents, Messages,
+ *  My Posts, My Stable, Account — identical across the mobile drawer, the
+ *  desktop USER rail (ClientRail, below), and the welcome/first-visit
+ *  modal's item listing (AppOverviewModal's pageLines). Presence-gated items
+ *  (Orders, Documents, My Posts, My Stable) keep their `my_nav_presence()`
+ *  gating; order holds among whatever is visible. Saved Content is
+ *  deliberately NOT part of this canonical order — it stays reachable from
+ *  the Account page only; the avatar menu's own quick-access section
+ *  (QUICK/PRESENCE_LINKS below, untouched — "avatar menu: DO NOT REORDER")
+ *  still lists it. Lessons is pending owner confirm on inclusion; it is
+ *  module-gated exactly like the staff nav's own Lessons entry
+ *  (MANAGEMENT_GROUP above) — dropping it is the one `lessonsOn &&` line.
+ *  Community Feed itself is NOT in this list — every caller renders
+ *  `<CommunityNav />` immediately before this component, matching the
+ *  existing pattern of calling it explicitly at each site. */
+function ClientNavItems({ bellCount, dmCount, presence, lessonsOn, onNavigate }: {
+  bellCount: number; dmCount: number; presence: NavPresence; lessonsOn: boolean; onNavigate?: () => void;
+}) {
+  return (
+    <>
+      <RailLink to="/app/dashboard" label="Dashboard" icon={LayoutDashboard} badge={bellCount} />
+      <RailLink to="/app/calendar" label="Calendar" icon={CalendarDays} />
+      {lessonsOn && <RailLink to="/app/lessons" label="Lessons" icon={GraduationCap} />}
+      {presence.orders && <RailLink to="/app/orders" label="Orders" icon={ReceiptText} />}
+      <RailLink to="/app/catalog" label="Catalog" icon={ShoppingBag} />
+      {presence.documents && <RailLink to="/app/documents" label="Documents" icon={FileText} />}
+      <RailLink to="/app/messages" label="Messages" icon={MessageSquare} badge={dmCount} />
+      {presence.posts && <RailLink to="/app/my-posts" label="My Posts" icon={Grid3x3} />}
+      {presence.stable && (
+        <PresenceLink to="/app/account?section=stable" label="My Stable" icon={Boxes} section="stable" onNavigate={onNavigate} />
+      )}
+      <AccountNavLink onNavigate={onNavigate} />
+    </>
+  );
+}
+
 /** CLIENT LEFT RAIL (desktop only) — the USER quick-access destinations plus
  *  Community Feed. Members only (staff get the management rail).
  *
@@ -447,43 +515,20 @@ function useDmUnread(): number {
  *  removed entirely for USER accounts — a fixed, non-collapsible sidebar,
  *  always the full 240px width. Staff's own rail (below, in AppLayout) never
  *  had an equivalent toggle either, so no account type has a sidebar-
- *  collapse control after this change. */
-function ClientRail({ bellCount, dmCount, presence }: { bellCount: number; dmCount: number; presence: NavPresence }) {
-  // D8: community access follows the ACCOUNT — every member sees the full
-  // quick list and the community feed ("guest" is display copy only).
-  const quick = QUICK;
-  // I2 — Orders, Documents, Stable, My Posts, Saved Content: only the ones
-  // my_nav_presence() confirms have ≥1 entry. While empty, all five stay
-  // reachable from the Account page only (unchanged).
-  const links = PRESENCE_LINKS.filter((l) => presence[l.key]);
-
+ *  collapse control after this change.
+ *
+ *  I7: green-glass surface (NAV_GLASS) — see its definition near the top of
+ *  this file for the one-line revert. */
+function ClientRail({ bellCount, dmCount, presence, lessonsOn }: {
+  bellCount: number; dmCount: number; presence: NavPresence; lessonsOn: boolean;
+}) {
   return (
     <aside className="hidden lg:block shrink-0 relative z-30 w-60">
-      <nav className="sticky top-14 h-[calc(100dvh-3.5rem)] border-r border-green-800/10 bg-cream-100 p-2 overflow-y-auto overflow-x-hidden flex flex-col">
+      <nav className={`sticky top-14 h-[calc(100dvh-3.5rem)] border-r border-green-800/10 ${NAV_GLASS} p-2 overflow-y-auto overflow-x-hidden flex flex-col`}>
         <div className="flex flex-col gap-0.5">
           {/* Community Feed (position 1) with its views nested underneath. */}
           <CommunityNav indentClass="pl-9" />
-          {quick.map((q) => {
-            const raw = q.badge === 'notifications' ? bellCount : q.badge === 'messages' ? dmCount : 0;
-            const badge = raw > 0 ? raw : 0;
-            return (
-              <NavLink key={q.label} to={q.to} end={q.end}
-                className={({ isActive: active }) =>
-                  `flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans transition-colors focus-ring ${
-                    active ? 'bg-cream-200 text-green-800 font-medium ' : 'text-secondary hover:bg-white'}`}>
-                {({ isActive: active }) => (
-                    <>
-                      <q.icon size={18} aria-hidden="true" className={active ? 'text-gold-400' : 'text-green-600'} />
-                      <span className="whitespace-nowrap flex-1">{q.label}</span>
-                      {badge > 0 && (
-                        <span className="min-w-[1.25rem] h-5 px-1.5 text-[11px] leading-5 text-center rounded-full bg-gold-600 text-white">{badge > 9 ? '9+' : badge}</span>
-                      )}
-                    </>
-                )}
-              </NavLink>
-            );
-          })}
-          {links.map((l) => <PresenceLink key={l.key} to={l.to} label={l.label} icon={l.icon} section={l.section} />)}
+          <ClientNavItems bellCount={bellCount} dmCount={dmCount} presence={presence} lessonsOn={lessonsOn} />
         </div>
       </nav>
     </aside>
@@ -498,6 +543,9 @@ export default function AppLayout() {
   const unreadCount = useUnreadCount();
   const inboundCount = useInboundOpenCount(isStaff);
   const presence = useNavPresence(!isStaff);
+  // I6 — Lessons' module gate for the canonical USER nav order (ClientNavItems),
+  // mirroring the staff nav's own `module: 'mod.lessons'` convention.
+  const lessonsOn = hasModule('mod.lessons');
   // I2 — the same presence-gated set the rail uses, reused by the avatar
   // dropdown and mobile drawer below (see PresenceLink for why `section`
   // needs its own active-match instead of relying on NavLink's pathname-only
@@ -680,37 +728,79 @@ export default function AppLayout() {
         </div>
       )}
       <header className="sticky top-0 z-40 bg-white border-b border-green-800/10">
-        <div className="w-full max-w-[120rem] mx-auto flex items-center justify-between px-4 sm:px-8 h-14">
-          <div className="flex items-center gap-3">
+        <div className="w-full max-w-[120rem] mx-auto grid grid-cols-[auto_1fr_auto] items-center gap-2 px-4 sm:px-8 h-14">
+          <div className="flex items-center gap-3 justify-self-start">
             {isSuperAdmin ? (
               /* the PLATFORM operator's chrome — never a tenant's brand. Placeholder
-                 wordmark until the platform product is named/branded. */
+                 wordmark until the platform product is named/branded. Never gets
+                 the I10 centered French Heritage wordmark below — there is no
+                 tenant brand to show here. */
               <Link to="/app/ops/superadmin/organizations" className="flex items-center gap-2.5" aria-label="Platform — organizations">
                 <span className="w-[34px] h-[34px] rounded-lg bg-green-950 text-gold-400 grid place-items-center font-display text-lg font-semibold shrink-0">C</span>
                 <span className="hidden sm:inline font-display text-green-900 text-lg uppercase tracking-wide">Cactai Platform</span>
               </Link>
             ) : (
-              <Link to="/app" className="flex items-center gap-2.5" aria-label="French Heritage — home">
-                <span className="w-[34px] h-[34px] rounded-lg bg-green-800 text-gold-400 grid place-items-center font-display text-lg font-semibold shrink-0">F</span>
-                <span className="hidden sm:inline font-display text-green-800 text-lg uppercase tracking-wide">French Heritage</span>
+              /* I10 — the green "F" square was never the real brand logo; this is
+                 the favicon artwork (the only logo asset in the repo) at header
+                 size. The "French Heritage" wordmark text moved OUT of this
+                 lockup — it's now the centered, debossed nameplate below, so the
+                 mark stands alone here (no redundant second "French Heritage"
+                 label next to it). */
+              <Link to="/app" className="flex items-center shrink-0" aria-label="French Heritage — home">
+                <img src="/favicon.svg" alt="" width={34} height={34} className="w-[34px] h-[34px] rounded-lg shrink-0" />
               </Link>
             )}
             {/* MOBILE NAV BUTTON — opens the left side menu. Moved into the header,
                 to the right of the logo mark, from the content area (owner spec
                 2026-08-05); the drawer itself and its Close behavior (I3) are
-                unchanged. Desktop (lg+) has the rail instead. */}
+                unchanged. Desktop (lg+) has the rail instead.
+                I9: icon-only, square, no text, no outline — same treatment as
+                the header's other icon buttons (Create, Calendar below). */}
             <button
               type="button"
               onClick={() => setMobileNavOpen(true)}
               aria-label="Open menu"
               aria-expanded={mobileNavOpen}
-              className="lg:hidden inline-flex items-center gap-2 px-3 h-9 rounded-lg border border-green-800/15 bg-white text-green-800 shadow-sm hover:bg-cream-100 focus-ring"
+              className="lg:hidden p-2 text-green-800 rounded-lg hover:bg-cream-100 focus-ring"
             >
-              <PanelLeft size={18} aria-hidden="true" />
-              <span className="text-[13px] font-sans">Menu</span>
+              <PanelLeftOpen size={20} aria-hidden="true" />
             </button>
           </div>
-          <div className="flex items-center gap-3">
+
+          {/* I10 — centered, debossed "French Heritage" wordmark. Shown for BOTH
+              USER and STAFF/ADMIN headers — they share this exact header row (the
+              staff management rail lives BELOW the header, not in it), so there
+              is no header-content collision to route around. Superadmin's
+              platform chrome (left, above) keeps its own lockup instead; this
+              slot renders empty for that case so the 3-column grid still holds
+              (right cluster stays right-aligned rather than re-centering into
+              this now-empty middle column).
+              Debossed/letterpress technique: fill color in the header surface's
+              own family (bg-white → text-white) so the shape is carried entirely
+              by the shadow pair — a dark shadow ABOVE (the recessed top edge in
+              shadow) + a light shadow BELOW (the lower lip catching a highlight)
+              reads as pressed INTO the surface rather than printed on it. Bold
+              weight of the brand display serif (Cormorant Garamond 700 — see
+              index.css/tailwind.config.js; "Big Caslon" is the macOS-only
+              progressive enhancement ahead of it) — the previous unweighted
+              (effectively thin) rendering of this same font was explicitly
+              rejected. Mark-only on mobile (hidden below `sm`), matching this
+              file's own header doc comment above ("logo mark + wordmark
+              (mark-only on mobile)"). Exact shadow/size values are a browser-
+              pending starting point — needs owner eyes on a real screen. */}
+          <div className="hidden sm:flex justify-self-center items-center">
+            {!isSuperAdmin && (
+              <Link to="/app" aria-label="French Heritage Equestrian — home" className="flex items-center">
+                <span
+                  className="font-display font-bold text-xl tracking-wide uppercase text-white [text-shadow:0_-1px_1px_rgba(13,33,24,0.45),0_1px_0_rgba(255,255,255,0.85)]"
+                >
+                  French Heritage
+                </span>
+              </Link>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3 justify-self-end">
             <button type="button" onClick={() => setCreateOpen(true)}
               className="p-2 text-green-800 rounded-lg hover:bg-cream-100 focus-ring" aria-label="Create">
               <Plus size={20} />
@@ -818,7 +908,7 @@ export default function AppLayout() {
 
       <div className="w-full max-w-[120rem] mx-auto flex">
         {/* Members (non-staff) get a fixed quick-access rail on desktop (I1). */}
-        {!showRail && !isSuperAdmin && <ClientRail bellCount={unreadCount} dmCount={dmCount} presence={presence} />}
+        {!showRail && !isSuperAdmin && <ClientRail bellCount={unreadCount} dmCount={dmCount} presence={presence} lessonsOn={lessonsOn} />}
         {showRail && (
           /* I1B — width behaves like the old ClientRail: the <aside> RESERVES
              56px normally / 240-256px when PINNED (page sits beside it); the
@@ -886,14 +976,17 @@ export default function AppLayout() {
       </div>
 
       {/* MOBILE NAV DRAWER — the left side menu as an overlay panel. Members get
-          the same quick-access set as the desktop rail (Community Feed + views,
-          Dashboard, Calendar, Catalog, Messages, Account); staff get their
-          grouped management nav. A click on any link inside closes it. */}
+          the same canonical-order quick-access set as the desktop rail
+          (I6: Community Feed, Dashboard, Calendar, Lessons*, Orders, Catalog,
+          Documents, Messages, My Posts, My Stable, Account); staff get their
+          grouped management nav. A click on any link inside closes it.
+          I7: green-glass surface (NAV_GLASS) — see its definition near the
+          top of this file for the one-line revert. */}
       {mobileNavOpen && (
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
           <div className="absolute inset-0 bg-green-950/50" onClick={closeMobileNav} aria-hidden="true" />
           <nav
-            className="absolute inset-y-0 left-0 w-72 max-w-[85vw] bg-cream-100 shadow-xl p-3 overflow-y-auto"
+            className={`absolute inset-y-0 left-0 w-72 max-w-[85vw] ${NAV_GLASS} shadow-xl p-3 overflow-y-auto`}
             onClick={(e) => {
               // any real navigation inside closes the drawer
               if ((e.target as HTMLElement).closest('a')) closeMobileNav();
@@ -915,14 +1008,7 @@ export default function AppLayout() {
               <div className="flex flex-col gap-0.5 mb-1">
                 <CommunityNav onNavigate={closeMobileNav} indentClass="pl-9" />
                 {!showRail ? (
-                  <>
-                    {QUICK.map((q) => {
-                      const raw = q.badge === 'notifications' ? unreadCount : q.badge === 'messages' ? dmCount : 0;
-                      return <RailLink key={q.to} to={q.to} label={q.label} icon={q.icon} end={q.end} badge={raw > 0 ? raw : 0} />;
-                    })}
-                    <RailLink to="/app/account" label="Account" icon={UserRound} />
-                    {navLinks.map((l) => <PresenceLink key={l.key} to={l.to} label={l.label} icon={l.icon} section={l.section} onNavigate={closeMobileNav} />)}
-                  </>
+                  <ClientNavItems bellCount={unreadCount} dmCount={dmCount} presence={presence} lessonsOn={lessonsOn} onNavigate={closeMobileNav} />
                 ) : (
                   <>
                     <RailLink to="/app/dashboard" label="Dashboard" icon={HomeIcon} badge={unreadCount} />
@@ -953,6 +1039,8 @@ export default function AppLayout() {
         open={tourOpen}
         onClose={() => closeTour(tourSeen === false)}
         categories={tourCategories}
+        presence={presence}
+        lessonsOn={lessonsOn}
       />
     </div>
   );
