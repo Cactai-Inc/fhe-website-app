@@ -518,6 +518,22 @@ export function ClauseProse({
           </div>
         );
       }
+      /* TASK LOCFIX (2026-08-05): 'location'/'address' controls already print
+         their OWN label above the widget via InlineFieldControl's structured
+         branch — printing the matrix line's bold label too doubled the text,
+         and the widget's own full-width block being a flex-sibling of that
+         label squeezed it into whatever width the label left, reading as
+         right-justified. Same shape as the week_grid fix above. HORSE.* tokens
+         are excluded: those are read-only record imports (a plain value, no
+         self-label), so the matrix label is their only label and must stay. */
+      if (wf && !wf.field_key.startsWith('HORSE.')
+          && (wf.format_type === 'location' || wf.format_type === 'address')) {
+        return (
+          <div key={j} className="w-full min-w-0 text-[13.5px] text-green-950">
+            {renderToken(c.token, `mx${bi}-${j}`, fieldByKey, valueByKey, cb)}
+          </div>
+        );
+      }
       return (
         <div key={j} className="flex items-baseline gap-x-1.5 text-[13.5px] text-green-950 min-w-0">
           <span className="font-semibold whitespace-nowrap">{c.label}:</span>
