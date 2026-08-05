@@ -1314,7 +1314,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       {/* Owner-side guidance removed 2026-07-31: it ended "\u2026then lock it for
           signing", describing a button deleted earlier the same day. The
           party-facing lines below still describe what that party should do. */}
-      {!embedded && !isOwnerSide && (
+      {!embedded && !isOwnerSide && !isExecuted && (
         <p className="text-sm text-muted mb-5">
           {iSigned
             ? 'You\u2019ve signed. The contract executes once the other party signs.'
