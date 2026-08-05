@@ -267,13 +267,14 @@ export function manageNavGroups(
  *  one-line revert if the call changes later. Applied identically at every
  *  render site that shows a selected-state nav item (this component,
  *  MenuLink, and both CommunityNav rows below). */
-function RailLink({ to, label, icon: Icon, end, badge = 0 }: NavItem & { badge?: number }) {
+function RailLink({ to, label, icon: Icon, end, badge = 0, open = true }: NavItem & { badge?: number; open?: boolean }) {
   return (
     <NavLink
       to={to}
       end={end}
+      title={open ? undefined : label}
       className={({ isActive }) =>
-        `flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13.5px] font-sans transition-colors focus-ring ${
+        `flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13.5px] font-sans transition-colors focus-ring ${open ? '' : 'justify-center'} ${
           // ring variant (ships): 'bg-cream-200 text-green-800 font-medium '
           // fill-only revert:     'bg-cream-200 text-green-800 font-medium'
           isActive ? 'bg-cream-200 text-green-800 font-medium ' : 'text-secondary hover:bg-white'
@@ -282,9 +283,14 @@ function RailLink({ to, label, icon: Icon, end, badge = 0 }: NavItem & { badge?:
     >
       {({ isActive }) => (
         <>
-          <Icon size={17} aria-hidden="true" className={isActive ? 'text-gold-400' : 'text-green-600'} />
-          <span className="flex-1">{label}</span>
-          {badge > 0 && (
+          <span className="relative shrink-0">
+            <Icon size={17} aria-hidden="true" className={isActive ? 'text-gold-400' : 'text-green-600'} />
+            {badge > 0 && !open && (
+              <span className="absolute -top-1.5 -right-1.5 min-w-[1rem] h-4 px-1 bg-gold-600 text-white text-[10px] leading-4 text-center rounded-full">{badge > 9 ? '9+' : badge}</span>
+            )}
+          </span>
+          {open && <span className="flex-1">{label}</span>}
+          {badge > 0 && open && (
             <span className="min-w-[1.25rem] h-5 px-1.5 text-[11px] leading-5 text-center rounded-full bg-gold-600 text-white">{badge > 9 ? '9+' : badge}</span>
           )}
         </>
@@ -359,17 +365,28 @@ function useActiveAccountSection(): string | null {
  *  hides the sublinks (persisted); it auto-expands while you're on the feed so the
  *  active view stays visible. `open` collapses labels in the rail strip.
  *  `onNavigate` closes the mobile menu. */
-function CommunityNav({ onNavigate, indentClass = 'pl-9' }: {
-  onNavigate?: () => void; indentClass?: string;
+function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
+  open?: boolean; onNavigate?: () => void; indentClass?: string;
 }) {
   const active = useActiveCommunityView();
   // The parent IS the "All" view: it's highlighted (solid) on the full feed, and a
   // specific-filter sublink owns the highlight when one is selected. No "All posts"
   // sublink — clicking "Community Feed" (or the browser Back) returns to the full view.
   const isAll = active === 'all';
+  const onFeed = active !== null;
   // collapse state for the sublinks (persisted, toggle-controlled). Default expanded.
   const [expanded, setExpanded] = useState(() => localStorage.getItem('communityNav.expanded') !== '0');
   useEffect(() => { localStorage.setItem('communityNav.expanded', expanded ? '1' : '0'); }, [expanded]);
+
+  if (!open) {
+    // I1B — staff rail icon strip: just the parent icon, active whenever on the feed.
+    return (
+      <Link to="/app" onClick={onNavigate} title="Community Feed"
+        className={`flex items-center justify-center rounded-lg px-3 py-2.5 focus-ring ${onFeed ? 'bg-cream-200 text-green-800' : 'text-secondary hover:bg-white'}`}>
+        <Users size={18} className={onFeed ? 'text-gold-400' : 'text-green-600'} />
+      </Link>
+    );
+  }
 
   return (
     <div>
@@ -489,10 +506,20 @@ export default function AppLayout() {
   const accountSection = useActiveAccountSection();
   const [menuOpen, setMenuOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
-  // Mobile left-nav drawer: the side menu, opened by the in-content button that
-  // sits at the top-left of EVERY app page (content area, not the header).
+  // Mobile left-nav drawer: the side menu, opened by the button in the header
+  // (moved there from the content area, owner spec 2026-08-05).
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
+
+  // I1B — staff rail collapse (recovered pattern: the old USER ClientRail's
+  // pin/hover-to-peek toggle, removed in TASK I and now rebuilt staff-only per
+  // owner ruling 2026-08-05). Pinned (default) = full 240/256px rail; unpinned
+  // collapses to a 56px icon strip that peeks open on hover, same mechanics as
+  // the old ClientRail (see git history).
+  const [staffRailPinned, setStaffRailPinned] = useState(() => localStorage.getItem('staffRail.pinned') !== '0');
+  const [staffRailHovered, setStaffRailHovered] = useState(false);
+  useEffect(() => { localStorage.setItem('staffRail.pinned', staffRailPinned ? '1' : '0'); }, [staffRailPinned]);
+  const staffRailOpen = staffRailPinned || staffRailHovered;
 
   const name = profile?.display_name || profile?.first_name || 'Member';
   const initial = (name[0] || 'M').toUpperCase();
@@ -654,19 +681,35 @@ export default function AppLayout() {
       )}
       <header className="sticky top-0 z-40 bg-white border-b border-green-800/10">
         <div className="w-full max-w-[120rem] mx-auto flex items-center justify-between px-4 sm:px-8 h-14">
-          {isSuperAdmin ? (
-            /* the PLATFORM operator's chrome — never a tenant's brand. Placeholder
-               wordmark until the platform product is named/branded. */
-            <Link to="/app/ops/superadmin/organizations" className="flex items-center gap-2.5" aria-label="Platform — organizations">
-              <span className="w-[34px] h-[34px] rounded-lg bg-green-950 text-gold-400 grid place-items-center font-display text-lg font-semibold shrink-0">C</span>
-              <span className="hidden sm:inline font-display text-green-900 text-lg uppercase tracking-wide">Cactai Platform</span>
-            </Link>
-          ) : (
-            <Link to="/app" className="flex items-center gap-2.5" aria-label="French Heritage — home">
-              <span className="w-[34px] h-[34px] rounded-lg bg-green-800 text-gold-400 grid place-items-center font-display text-lg font-semibold shrink-0">F</span>
-              <span className="hidden sm:inline font-display text-green-800 text-lg uppercase tracking-wide">French Heritage</span>
-            </Link>
-          )}
+          <div className="flex items-center gap-3">
+            {isSuperAdmin ? (
+              /* the PLATFORM operator's chrome — never a tenant's brand. Placeholder
+                 wordmark until the platform product is named/branded. */
+              <Link to="/app/ops/superadmin/organizations" className="flex items-center gap-2.5" aria-label="Platform — organizations">
+                <span className="w-[34px] h-[34px] rounded-lg bg-green-950 text-gold-400 grid place-items-center font-display text-lg font-semibold shrink-0">C</span>
+                <span className="hidden sm:inline font-display text-green-900 text-lg uppercase tracking-wide">Cactai Platform</span>
+              </Link>
+            ) : (
+              <Link to="/app" className="flex items-center gap-2.5" aria-label="French Heritage — home">
+                <span className="w-[34px] h-[34px] rounded-lg bg-green-800 text-gold-400 grid place-items-center font-display text-lg font-semibold shrink-0">F</span>
+                <span className="hidden sm:inline font-display text-green-800 text-lg uppercase tracking-wide">French Heritage</span>
+              </Link>
+            )}
+            {/* MOBILE NAV BUTTON — opens the left side menu. Moved into the header,
+                to the right of the logo mark, from the content area (owner spec
+                2026-08-05); the drawer itself and its Close behavior (I3) are
+                unchanged. Desktop (lg+) has the rail instead. */}
+            <button
+              type="button"
+              onClick={() => setMobileNavOpen(true)}
+              aria-label="Open menu"
+              aria-expanded={mobileNavOpen}
+              className="lg:hidden inline-flex items-center gap-2 px-3 h-9 rounded-lg border border-green-800/15 bg-white text-green-800 shadow-sm hover:bg-cream-100 focus-ring"
+            >
+              <PanelLeft size={18} aria-hidden="true" />
+              <span className="text-[13px] font-sans">Menu</span>
+            </button>
+          </div>
           <div className="flex items-center gap-3">
             <button type="button" onClick={() => setCreateOpen(true)}
               className="p-2 text-green-800 rounded-lg hover:bg-cream-100 focus-ring" aria-label="Create">
@@ -777,37 +820,58 @@ export default function AppLayout() {
         {/* Members (non-staff) get a fixed quick-access rail on desktop (I1). */}
         {!showRail && !isSuperAdmin && <ClientRail bellCount={unreadCount} dmCount={dmCount} presence={presence} />}
         {showRail && (
-          <aside className="hidden lg:block w-60 xl:w-64 shrink-0 border-r border-green-800/10 bg-cream-100/40">
-            <nav className="p-3 sticky top-14 h-[calc(100dvh-3.5rem)] overflow-y-auto">
+          /* I1B — width behaves like the old ClientRail: the <aside> RESERVES
+             56px normally / 240-256px when PINNED (page sits beside it); the
+             <nav> is sticky and grows to full width on HOVER, overlaying the
+             page (no layout shift) when not pinned. */
+          <aside
+            onMouseEnter={() => setStaffRailHovered(true)}
+            onMouseLeave={() => setStaffRailHovered(false)}
+            className={`hidden lg:block shrink-0 relative z-30 transition-[width] duration-100 ease-out ${staffRailPinned ? 'w-60 xl:w-64' : 'w-14'}`}
+          >
+            <nav
+              className={`p-3 sticky top-14 h-[calc(100dvh-3.5rem)] overflow-y-auto overflow-x-hidden border-r border-green-800/10 bg-cream-100/40 transition-[width] duration-100 ease-out ${staffRailOpen ? 'w-60 xl:w-64' : 'w-14'} ${staffRailHovered && !staffRailPinned ? 'shadow-[8px_0_24px_-12px_rgba(13,33,24,0.25)]' : ''}`}
+            >
+              {/* pin / collapse toggle — keeps the rail open when pinned */}
+              <button type="button" onClick={() => setStaffRailPinned((v) => !v)}
+                aria-label={staffRailPinned ? 'Collapse menu' : 'Keep menu open'} aria-pressed={staffRailPinned}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 mb-1 text-green-700 hover:bg-white focus-ring ${staffRailOpen ? '' : 'justify-center'}`}>
+                {staffRailPinned ? <PanelLeftClose size={18} className="shrink-0" /> : <PanelLeft size={18} className="shrink-0" />}
+                {staffRailOpen && <span className="text-[13.5px] font-sans text-secondary whitespace-nowrap">{staffRailPinned ? 'Collapse' : 'Keep open'}</span>}
+              </button>
               {/* The static heading here used to read "Management", duplicating
                   the Management GROUP below it — two identical labels in one nav.
                   Platform still gets one because it is the super-admin's only
                   section; a tenant's rail is self-describing. */}
-              {isSuperAdmin && (
+              {isSuperAdmin && staffRailOpen && (
                 <p className="px-3 pt-1 pb-2 text-[10px] tracking-widest uppercase text-muted font-semibold">
                   Platform
                 </p>
               )}
               {!isSuperAdmin && (
                 <div className="mb-1 flex flex-col gap-0.5">
-                  <CommunityNav indentClass="pl-9" />
-                  <RailLink to="/app/dashboard" label="Dashboard" icon={HomeIcon} badge={unreadCount} />
-                  <RailLink to="/app/calendar" label="Calendar" icon={CalendarDays} />
+                  <CommunityNav open={staffRailOpen} indentClass="pl-9" />
+                  <RailLink to="/app/dashboard" label="Dashboard" icon={HomeIcon} badge={unreadCount} open={staffRailOpen} />
+                  <RailLink to="/app/calendar" label="Calendar" icon={CalendarDays} open={staffRailOpen} />
                 </div>
               )}
               <div className="flex flex-col gap-1">
                 {navGroups.map((g) => (
                   <div key={g.key}>
-                    {navGroups.length > 1 && (
+                    {navGroups.length > 1 && staffRailOpen && (
                       <button type="button" onClick={() => toggleGroup(g.key)}
                         className="w-full flex items-center justify-between px-3 py-1.5 text-[10px] tracking-widest uppercase text-muted font-semibold hover:text-green-800 focus-ring rounded-md">
                         {g.label}
                         <ChevronDown size={12} className={`transition-transform ${groupOpen(g) ? '' : '-rotate-90'}`} />
                       </button>
                     )}
-                    {(navGroups.length === 1 || groupOpen(g)) && (
+                    {/* collapsed strip: group headings shrink to a plain separator */}
+                    {navGroups.length > 1 && !staffRailOpen && (
+                      <div className="my-1 border-t border-green-800/10" role="separator" aria-label={g.label} />
+                    )}
+                    {(navGroups.length === 1 || groupOpen(g) || !staffRailOpen) && (
                       <div className="flex flex-col gap-0.5">
-                        {g.items.map((it) => <RailLink key={it.to} {...it} />)}
+                        {g.items.map((it) => <RailLink key={it.to} {...it} open={staffRailOpen} />)}
                       </div>
                     )}
                   </div>
@@ -817,23 +881,6 @@ export default function AppLayout() {
           </aside>
         )}
         <main className="flex-1 min-w-0 px-4 sm:px-8 xl:px-12 py-6 sm:py-9 pb-24">
-          {/* MOBILE NAV BUTTON — opens the left side menu. Owner spec: in the
-              CONTENT AREA (not the header), near the top-left, the SAME spot on
-              every page. It renders IN FLOW as the first element of <main>, so
-              page content starts below it — it can never obstruct nor be
-              obstructed, on any page. Desktop (lg+) has the rail instead. */}
-          <div className="lg:hidden mb-4">
-            <button
-              type="button"
-              onClick={() => setMobileNavOpen(true)}
-              aria-label="Open menu"
-              aria-expanded={mobileNavOpen}
-              className="inline-flex items-center gap-2 px-3 h-10 rounded-lg border border-green-800/15 bg-white text-green-800 shadow-sm hover:bg-cream-100 focus-ring"
-            >
-              <PanelLeft size={18} aria-hidden="true" />
-              <span className="text-[13px] font-sans">Menu</span>
-            </button>
-          </div>
           <Outlet />
         </main>
       </div>
