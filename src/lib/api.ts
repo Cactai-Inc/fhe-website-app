@@ -674,6 +674,24 @@ export async function myWallState(): Promise<WallState> {
   return data as WallState;
 }
 
+/** I2 — which of the five dynamic USER nav destinations (Orders, Documents,
+ *  Stable, My Posts, Saved Content) have at least one entry for the caller.
+ *  One call on layout mount is enough (see AppLayout) — unlike the wall,
+ *  a stale/failed read here only means a link is momentarily missing, not a
+ *  security gate, so failures are swallowed to an all-false default. */
+export interface NavPresence {
+  orders: boolean;
+  documents: boolean;
+  stable: boolean;
+  posts: boolean;
+  saved: boolean;
+}
+export async function myNavPresence(): Promise<NavPresence> {
+  const { data, error } = await supabase.rpc('my_nav_presence');
+  if (error) throw error;
+  return data as NavPresence;
+}
+
 // ─── Legal name confirmation ────────────────────────────────────────────────
 /** Whether this member must state their legal name before filling a form or
  *  signing. Set when two sources carried genuinely different surnames and we

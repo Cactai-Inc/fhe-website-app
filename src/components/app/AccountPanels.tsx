@@ -4,7 +4,7 @@ import {
   Newspaper, Tag, ExternalLink, ChevronLeft, ChevronRight, Download,
 } from 'lucide-react';
 import {
-  SEED_SAVED,
+  SEED_ENABLED, SEED_SAVED,
   type SeedSaved, type SeedDocument,
 } from '../../lib/seed';
 import { listMySignableDocuments } from '../../lib/ops/api-client';
@@ -23,7 +23,14 @@ const SAVED_ICON: Record<SeedSaved['kind'], typeof Newspaper> = {
 };
 
 export function SavedPanel() {
-  if (SEED_SAVED.length === 0) {
+  // I2 fix (found during nav-presence verification): this unconditionally
+  // rendered SEED_SAVED regardless of SEED_ENABLED, showing the same 4 fake
+  // items to every real account — the only seed section that skipped the
+  // gate every other one (e.g. StableSection) applies. There is no real
+  // saved/bookmark data model yet (tracked separately); until there is, this
+  // always renders empty, matching my_nav_presence()'s saved=false.
+  const items = SEED_ENABLED ? SEED_SAVED : [];
+  if (items.length === 0) {
     return (
       <div className="mt-2.5 mb-1 p-8 bg-cream-100/60 border border-green-800/10 rounded-xl text-center">
         <BookmarkX size={26} className="text-muted mx-auto mb-2" />
@@ -35,7 +42,7 @@ export function SavedPanel() {
   return (
     <div className="mt-2.5 mb-1 p-4 bg-cream-100/60 border border-green-800/10 rounded-xl">
       <div className="flex flex-col gap-2">
-        {SEED_SAVED.map((s) => {
+        {items.map((s) => {
           const Icon = SAVED_ICON[s.kind];
           return (
             <div key={s.id} className="flex items-center gap-3 bg-white border border-green-800/10 rounded-xl px-3.5 py-3">
