@@ -18,7 +18,7 @@ This is the critical path. Everything here must be DONE.
 | # | Item | Status |
 |---|---|---|
 | A1 | Author a lease as admin; required-field gating names what is missing | **DONE** — verified 2026-08-03 live |
-| A2 | Send to parties; each party can open it from their invite | **NOT VERIFIED** |
+| A2 | Send to parties; each party can open it from their invite | **NOT VERIFIED** — party-controls bootstrap deadlock fixed 2026-08-04 (`TASK-PARTYCTRL`): all three contract starters now seed `document_party_controls` at creation, so the admin panel is no longer permanently empty on a fresh contract; 10 pre-existing documents backfilled. Send-to-parties itself remains unverified live — owned by the party-verify thread. See `docs/reports/TASK-PARTYCTRL-REPORT.md`. |
 | A3 | Lessor edits only lessor-owned fields; lessee-owned are inert to them | **BUILT** — server enforces (`not authorized to edit this field`); UI affordance added 2026-08-04, not browser-verified |
 | A4 | A fully preconfigured contract presents nothing demanding review to the other party | **BUILT** — gated previews now scope to unmade + owned selections; not verified as a party |
 | A5 | Approve → auto-lock when preconditions pass | **DONE** — verified live |
