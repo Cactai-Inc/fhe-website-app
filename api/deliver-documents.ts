@@ -40,6 +40,8 @@ import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
 import { resolveTenantEmailIdentity, sendViaProvider } from './_lib/email.js';
 import type { EmailAttachment } from './_lib/email.js';
 import { renderDocumentPdf, pdfFileName } from './_lib/documentPdf.js';
+import { resolveMinorRecipient, notifyMinorRecipientsSkipped } from './_lib/delivery.js';
+import type { GuardianRecipient } from './_lib/delivery.js';
 
 const CHANNEL = 'EMAIL';
 const STAFF_ROLES = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EMPLOYEE'];
@@ -212,28 +214,53 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     /** Logging failures collected so they surface in the response + logs
      *  rather than vanishing (S5.4: they vanished for the table's whole life). */
     const logFailures: string[] = [];
+    // C10: minors skipped for lack of a guardian email — one staff alert per
+    // invocation, not one per skipped party.
+    const skippedMinors: string[] = [];
 
     // 6. One email per distinct signer, with ALL the PDFs attached.
     for (const party of Array.from(byContact.values())) {
-      const email = party.contacts?.email;
-      if (!email) continue;
       // Which of these documents still need a delivery row for this recipient?
       const pending = docs.filter((d) => !deliveredSet.has(`${d.id}:${party.contact_id}`));
       if (pending.length === 0) continue; // fully delivered already
+
+      let toEmail = party.contacts?.email ?? null;
+      let guardianRecipient: GuardianRecipient | null = null;
+      const minorResolution = await resolveMinorRecipient(db, party.contact_id);
+      if (minorResolution) {
+        if (minorResolution.guardian) {
+          toEmail = minorResolution.guardian.email;
+          guardianRecipient = minorResolution.guardian;
+        } else {
+          skippedMinors.push(
+            [party.contacts?.first_name, party.contacts?.last_name].filter(Boolean).join(' ') || party.contact_id,
+          );
+          continue; // fail closed — never fall back to the minor's own address
+        }
+      }
+      if (!toEmail) continue;
+
       // A targeted recipient with no party rows on this set at all (the admin
       // "send to me" case) is an audit copy, not a party delivery.
       const isMirrorRecipient = targeted && !partyDocsByContact.get(party.contact_id)?.size;
 
-      const greeting = party.contacts?.first_name ? `Hi ${party.contacts.first_name},` : 'Hello,';
+      const greeting = guardianRecipient
+        ? (guardianRecipient.firstName ? `Hi ${guardianRecipient.firstName},` : 'Hello,')
+        : (party.contacts?.first_name ? `Hi ${party.contacts.first_name},` : 'Hello,');
+      const introHtml = guardianRecipient
+        ? `<p>The signed documents for ` +
+          `${[party.contacts?.first_name, party.contacts?.last_name].filter(Boolean).join(' ') || 'the minor named below'} ` +
+          `are attached to this email:</p>`
+        : `<p>Thank you. Your signed documents are attached to this email:</p>`;
       const html =
         `<p>${greeting}</p>` +
-        `<p>Thank you. Your signed documents are attached to this email:</p>` +
+        introHtml +
         listHtml +
         `<p>Please keep these for your records.</p>` +
         footerHtml;
 
       const sent = await sendViaProvider({
-        to: email,
+        to: toEmail,
         fromName: identity.fromName,
         fromEmail: identity.fromEmail,
         subject: `Your signed documents — ${identity.fromName}`,
@@ -266,8 +293,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
         deliveredSet.add(`${d.id}:${party.contact_id}`);
       }
-      delivered.push({ email, count: pending.length });
+      delivered.push({ email: toEmail, count: pending.length });
     }
+
+    await notifyMinorRecipientsSkipped(db, orgId, '/app/ops/contacts', skippedMinors);
 
     // 7. Company copy: the org inbox gets one email with all attachments (unless
     //    the inbox was already a party recipient). Best-effort.

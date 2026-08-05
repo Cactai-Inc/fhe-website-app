@@ -16,6 +16,8 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
 import { resolveTenantEmailIdentity, sendViaProvider } from './_lib/email.js';
 import { renderDocumentPdf, pdfFileName } from './_lib/documentPdf.js';
+import { resolveMinorRecipient, notifyMinorRecipientsSkipped } from './_lib/delivery.js';
+import type { GuardianRecipient } from './_lib/delivery.js';
 
 interface ReportRow {
   id: string;
@@ -57,13 +59,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(409).json({ error: `report not delivered (status=${report.status})` });
     }
 
-    // Resolve the recipient email.
+    // Resolve the recipient email. C10: only the internal contact-resolved
+    // path is guarded — an explicit toEmailInput is an operator/self-typed
+    // share address, not a "resolved recipient contact".
     let toEmail = toEmailInput;
+    let guardianRecipient: GuardianRecipient | null = null;
+    let minorLabel: string | null = null;
     if (!toEmail) {
       const { data: contact } = await db
-        .from('contacts').select('email, first_name')
+        .from('contacts').select('email, first_name, last_name')
         .eq('id', report.contact_id).maybeSingle();
-      toEmail = (contact?.email as string | null) ?? '';
+      const minorResolution = await resolveMinorRecipient(db, report.contact_id);
+      if (minorResolution) {
+        if (minorResolution.guardian) {
+          toEmail = minorResolution.guardian.email;
+          guardianRecipient = minorResolution.guardian;
+          minorLabel = [contact?.first_name, contact?.last_name].filter(Boolean).join(' ') || null;
+        } else {
+          const name = [contact?.first_name, contact?.last_name].filter(Boolean).join(' ') || report.contact_id;
+          await notifyMinorRecipientsSkipped(db, report.org_id, '/app/ops/contacts', [name]);
+          return res.status(400).json({ error: 'recipient is a minor with no guardian email on file' });
+        }
+      } else {
+        toEmail = (contact?.email as string | null) ?? '';
+      }
     }
     if (!toEmail) return res.status(400).json({ error: 'no recipient email' });
 
@@ -76,16 +95,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const footerHtml = identity.footer
       ? `<hr/><p style="color:#666;font-size:12px;white-space:pre-line">${identity.footer}</p>`
       : '';
-    const intro = action === 'share'
-      ? `<p>A horse evaluation report has been shared with you${report.horse_label ? ` for ${report.horse_label}` : ''}. It's attached to this email.</p>`
-      : `<p>Your horse evaluation report${report.horse_label ? ` for ${report.horse_label}` : ''} is attached to this email.</p>`;
+    const greeting = guardianRecipient
+      ? (guardianRecipient.firstName ? `Hi ${guardianRecipient.firstName},` : 'Hello,')
+      : 'Hello,';
+    const intro = guardianRecipient
+      ? `<p>A horse evaluation report${report.horse_label ? ` for ${report.horse_label}` : ''} has been prepared for ${minorLabel || 'the account holder'} and is attached to this email.</p>`
+      : action === 'share'
+        ? `<p>A horse evaluation report has been shared with you${report.horse_label ? ` for ${report.horse_label}` : ''}. It's attached to this email.</p>`
+        : `<p>Your horse evaluation report${report.horse_label ? ` for ${report.horse_label}` : ''} is attached to this email.</p>`;
 
     const sent = await sendViaProvider({
       to: toEmail,
       fromName: identity.fromName,
       fromEmail: identity.fromEmail,
       subject: `${heading} — ${identity.fromName}`,
-      html: `<p>Hello,</p>${intro}<p>Please keep it for your records.</p>${footerHtml}`,
+      html: `<p>${greeting}</p>${intro}<p>Please keep it for your records.</p>${footerHtml}`,
       attachments: [attachment],
     });
     if (!sent.ok) return res.status(502).json({ emailed: false, error: 'email send failed' });

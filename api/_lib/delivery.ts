@@ -76,6 +76,11 @@ export function buildPartyCopyEmail(
   recipientLastName: string | null | undefined,
   identity: { fromName: string; contactPhone: string | null; contactUrl: string | null; siteUrl: string | null },
   pdfBytes: Uint8Array | null,
+  // C10: when set, this copy is guardian-addressed — recipientFirstName/
+  // LastName above stay the actual SIGNER's name (the filename stays signer-
+  // attributed), while the greeting names the guardian and the body names
+  // the minor as the subject of the documents, not as addressee.
+  guardianRecipient?: GuardianRecipient | null,
 ): PartyCopyEmail {
   const subject = `${doc.title} — signed and executed`;
 
@@ -96,11 +101,15 @@ export function buildPartyCopyEmail(
     ? `<p style="color:#888;font-size:12px">Reference code: ${executionHash.slice(0, 12)}</p>`
     : '';
 
-  const html =
-    `<p>Your document <strong>${doc.title}</strong> has been signed and executed. ` +
-    `The PDF is attached.</p>` +
-    contactHtml +
-    referenceHtml;
+  const introHtml = guardianRecipient
+    ? `<p>Hi ${guardianRecipient.firstName || 'there'},</p>` +
+      `<p>The document <strong>${doc.title}</strong> for ` +
+      `${[recipientFirstName, recipientLastName].filter(Boolean).join(' ') || 'the minor named on this document'} ` +
+      `has been signed and executed. The PDF is attached.</p>`
+    : `<p>Your document <strong>${doc.title}</strong> has been signed and executed. ` +
+      `The PDF is attached.</p>`;
+
+  const html = introHtml + contactHtml + referenceHtml;
 
   const attachments: EmailAttachment[] = [];
   if (pdfBytes) {
@@ -120,6 +129,61 @@ export class DeliveryError extends Error {
     super(message);
     this.status = status;
   }
+}
+
+export interface GuardianRecipient {
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+}
+
+/** C10 — minor downstream rule: a minor recipient's own email is never used
+ *  (the DB trigger keeps it null anyway). Returns null when the contact is
+ *  not a minor (send normally, unchanged). When the contact IS a minor,
+ *  returns `{ guardian }` — either the guardian's { email, firstName,
+ *  lastName } to send there instead, or `{ guardian: null }` when there is
+ *  no guardian or the guardian has no email, meaning the caller must SKIP
+ *  the recipient entirely (no send, no delivery row) rather than fall back
+ *  to the minor's own address. */
+export async function resolveMinorRecipient(
+  db: SupabaseClient,
+  contactId: string,
+): Promise<{ guardian: GuardianRecipient | null } | null> {
+  const { data: isMinor, error: minorErr } = await db.rpc('is_minor_contact', { p_contact_id: contactId });
+  if (minorErr) throw minorErr;
+  if (!isMinor) return null;
+
+  const { data: contact, error: contactErr } = await db
+    .from('contacts').select('guardian_contact_id').eq('id', contactId).maybeSingle();
+  if (contactErr) throw contactErr;
+  const guardianId = (contact?.guardian_contact_id as string | null) ?? null;
+  if (!guardianId) return { guardian: null };
+
+  const { data: guardianRow, error: guardianErr } = await db
+    .from('contacts').select('email, first_name, last_name').eq('id', guardianId).maybeSingle();
+  if (guardianErr) throw guardianErr;
+  if (!guardianRow?.email) return { guardian: null };
+
+  return {
+    guardian: {
+      email: guardianRow.email as string,
+      firstName: (guardianRow.first_name as string | null) ?? null,
+      lastName: (guardianRow.last_name as string | null) ?? null,
+    },
+  };
+}
+
+/** Fire ONE staff alert per endpoint invocation listing every minor recipient
+ *  skipped for lack of a guardian email — fail closed, never a silent drop. */
+export async function notifyMinorRecipientsSkipped(
+  db: SupabaseClient,
+  orgId: string,
+  link: string,
+  names: string[],
+): Promise<void> {
+  if (names.length === 0) return;
+  const { error } = await db.rpc('notify_minor_delivery_skipped', { p_org: orgId, p_link: link, p_names: names });
+  if (error) console.error('notify_minor_delivery_skipped failed', { orgId, error: error.message });
 }
 
 export interface DeliverExecutedDocumentResult {
@@ -188,17 +252,36 @@ export async function deliverExecutedDocument(
   // the filename (signer-attributed) is still built per party below.
   const partyPdfBytes = await renderPartyCopyPdfBytes(doc);
 
+  // C10: minors recipients skipped for lack of a guardian email, collected so
+  // ONE staff alert fires per invocation instead of one per skipped party.
+  const skippedMinors: string[] = [];
+
   // 5. Per party: dedupe, email, then (only on a successful send) record delivery.
   for (const party of parties) {
     if (alreadyDelivered.has(party.contact_id)) continue; // idempotent — skip
-    const email = party.contacts?.email;
-    if (!email) continue; // no address -> cannot email; skip (no orphan row)
+
+    let toEmail = party.contacts?.email ?? null;
+    let guardianRecipient: GuardianRecipient | null = null;
+    const minorResolution = await resolveMinorRecipient(db, party.contact_id);
+    if (minorResolution) {
+      if (minorResolution.guardian) {
+        toEmail = minorResolution.guardian.email;
+        guardianRecipient = minorResolution.guardian;
+      } else {
+        skippedMinors.push(
+          [party.contacts?.first_name, party.contacts?.last_name].filter(Boolean).join(' ') || party.contact_id,
+        );
+        continue; // fail closed — never fall back to the minor's own address
+      }
+    }
+    if (!toEmail) continue; // no address -> cannot email; skip (no orphan row)
 
     const partyEmail = buildPartyCopyEmail(
       doc, executedAt, party.contacts?.first_name, party.contacts?.last_name, identity, partyPdfBytes,
+      guardianRecipient,
     );
     const sent = await sendViaProvider({
-      to: email,
+      to: toEmail,
       fromName: identity.fromName,
       fromEmail: identity.fromEmail,
       subject: partyEmail.subject,
@@ -218,6 +301,8 @@ export async function deliverExecutedDocument(
     alreadyDelivered.add(party.contact_id); // guard against duplicate parties in one call
     delivered.push({ recipientContactId: party.contact_id, channel: CHANNEL, emailed: true });
   }
+
+  await notifyMinorRecipientsSkipped(db, doc.org_id, '/app/ops/contacts', skippedMinors);
 
   // 6. Company copy: notify the org's public inbox once per document (skip if
   //    the inbox already received a party copy; best-effort, never fails the call).

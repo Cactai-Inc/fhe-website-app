@@ -58,7 +58,7 @@ This is the critical path. Everything here must be DONE.
 | C7 | `/sign/rider+horse` page | **NOT STARTED** |
 | C8 | Pre-submit screen: welcome copy, eligible services, email + confirm-email, deliverability guidance, vCard contact button | **NOT STARTED** |
 | C9 | Reuses the EXISTING activation email + link (no parallel sender) | **NOT STARTED** |
-| C10 | Minor downstream rules (no outreach to minors, guardian-addressed) | **NOT STARTED** — machinery verified correct 2026-08-04 |
+| C10 | Minor downstream rules (no outreach to minors, guardian-addressed) | **DONE** — built + verified live 2026-08-04, see `docs/reports/TASK-C10-REPORT.md` |
 
 ## D. ONBOARDING FLOW UPGRADES (serves invite AND kiosk paths)
 

@@ -115,6 +115,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(403).json({ error: 'only an admin can create staff accounts' });
     }
 
+    // C10: a minor cannot hold an account — reject before provisioning or
+    // sending anything (no guardian-redirect for invitations, reject only).
+    const { data: existingContact } = await db
+      .from('contacts').select('id')
+      .ilike('email', email).is('deleted_at', null).limit(1).maybeSingle();
+    if (existingContact) {
+      const { data: isMinor, error: minorErr } = await db.rpc('is_minor_contact', { p_contact_id: existingContact.id });
+      if (minorErr) throw minorErr;
+      if (isMinor) {
+        return res.status(400).json({ error: 'minors cannot be invited to hold accounts; invite the guardian' });
+      }
+    }
+
     const origin = req.headers.origin || `https://${req.headers.host}`;
 
     if (provisioning) {
