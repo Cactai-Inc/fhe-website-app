@@ -18,12 +18,12 @@ This is the critical path. Everything here must be DONE.
 | # | Item | Status |
 |---|---|---|
 | A1 | Author a lease as admin; required-field gating names what is missing | **DONE** — verified 2026-08-03 live |
-| A2 | Send to parties; each party can open it from their invite | **NOT VERIFIED** |
-| A3 | Lessor edits only lessor-owned fields; lessee-owned are inert to them | **BUILT** — server enforces (`not authorized to edit this field`); UI affordance added 2026-08-04, not browser-verified |
-| A4 | A fully preconfigured contract presents nothing demanding review to the other party | **BUILT** — gated previews now scope to unmade + owned selections; not verified as a party |
+| A2 | Send to parties; each party can open it from their invite | **BLOCKED** (2026-08-04) — `start_lease_contract_v2`/`start_sale_contract` never seed `document_party_controls`; the "Send" party list and the permissions panel both derive from that table, so a freshly authored contract has no path to ever populate it. See `docs/reports/TASK-A-PARTY-VERIFY-REPORT.md`. |
+| A3 | Lessor edits only lessor-owned fields; lessee-owned are inert to them | **BLOCKED** (2026-08-04) — same bootstrap bug as A2; never reached an in-progress invited state to test gating. See report. |
+| A4 | A fully preconfigured contract presents nothing demanding review to the other party | **BLOCKED** (2026-08-04) — same bootstrap bug as A2. See report. |
 | A5 | Approve → auto-lock when preconditions pass | **DONE** — verified live |
 | A6 | Both signatures → EXECUTED | **DONE** — verified live (company-side signing was impossible before 2026-08-03; fixed) |
-| A7 | Locked/executed contract is read-only to BOTH parties in the UI | **PARTIAL** — server blocks edits (verified); UI state not browser-verified |
+| A7 | Locked/executed contract is read-only to BOTH parties in the UI | **PARTIAL** (2026-08-04) — LESSOR verified live: PASS after fixing a stale "awaiting other party" message shown on already-executed docs (`ContractPage.tsx`, missing `!isExecuted` gate). LESSEE side BLOCKED — LESSEE is a company party; no login can ever represent it under the current model (see report finding 4; needs an admin "view-as-party" lens). |
 | A8 | **Email fires on the completing signature**, both parties, PDF attached, signatures visible in the PDF | **NOT VERIFIED** — the single largest go-live risk |
 | A9 | Email formatting and content correct (from-name, subject, body, branding) | **NOT VERIFIED** |
 | A10 | Horse record stamped with lessee + lease dates on execution | **DONE** — verified live |
@@ -33,9 +33,9 @@ This is the critical path. Everything here must be DONE.
 | A14 | Contract-scoped EVENT LOG visible to admin (sent, opened, signed, delivered) | **DONE** (2026-08-04) — `contract_event_log(p_document_id)` RPC (staff-gated) unifies `status_events`/`document_deliveries`/`signatures`/`document_opened`/`contract_change_log`; staff-only "Activity" card on `ContractPage.tsx`, verified live against a real executed doc (8 events incl. SENT + SIGNED). See `docs/reports/TASK-A14-REPORT.md`. |
 | A15 | **Delivery failures surfaced** — bounce/rejection raises a notification to admin | **NOT STARTED** |
 | A16 | Admin notified when a party signs (as lessee AND as admin) | **NOT VERIFIED** |
-| A17 | Documents page: party opens any document and views the final PDF | **NOT VERIFIED** |
-| A18 | Documents page: self-send a copy | **BUILT** — `/api/deliver-my-document`, matrix-passed 2026-08-02; UI path not verified |
-| A19 | Documents page: print / download | **NOT VERIFIED** |
+| A17 | Documents page: party opens any document and views the final PDF | **FAIL** (2026-08-04, LESSOR) — `documents.contact_id` is a single-owner column; `my_documents()` and the `documents_select` RLS policy both key off it alone, ignoring `document_parties`. A genuine LESSOR signer is invisible to their own Documents page. **Confirmed live production impact: 5 currently-EXECUTED documents today have a real signer who can't see it.** LESSEE side BLOCKED (company party, see A7). Needs an RLS + RPC fix. See report finding 3. |
+| A18 | Documents page: self-send a copy | **FAIL** (2026-08-04, LESSOR) — cascades from A17: the page never loads a row to click "Send" from. Button's own correctness unverified (unreachable, not confirmed-broken). LESSEE side BLOCKED. |
+| A19 | Documents page: print / download | **FAIL** (2026-08-04, LESSOR) — cascades from A17, same as A18. LESSEE side BLOCKED. |
 
 ## B. LEAD / INBOUND NOTIFICATIONS
 
