@@ -5,16 +5,16 @@ import { dmUnreadTotal } from '../../lib/community';
 import {
   CalendarDays, Users, FileText, UserRound, ReceiptText, Shield, LogOut,
   GraduationCap, Home as HomeIcon, Boxes, Contact, LayoutDashboard,
-  Mail, ChevronDown, Plus, LifeBuoy, ShoppingBag, MessageSquare, BookOpen, ListChecks,
-  PanelLeft, PanelLeftClose, Activity, Compass, Handshake,
+  Mail, ChevronDown, ChevronUp, Plus, LifeBuoy, ShoppingBag, MessageSquare, BookOpen, ListChecks,
+  PanelLeft, PanelLeftClose, Activity, Compass, Handshake, Grid3x3, Bookmark,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useViewSurfaces } from '../../lib/surfaces';
 import { fetchMyGrantKeys } from '../../lib/grants';
 import {
   myUnreadCount, inboundOpenCount, myWallState, getMyProfile, markTourSeen, fetchMyCategories,
-  currentTourFormFactor,
-  type WallState, type StandingCategory,
+  currentTourFormFactor, myNavPresence,
+  type WallState, type StandingCategory, type NavPresence,
 } from '../../lib/api';
 import { AppOverviewModal } from './AppOverviewModal';
 import { CreateModal } from './CreateModal';
@@ -47,6 +47,27 @@ function useInboundOpenCount(enabled: boolean): number {
     return () => { active = false; };
   }, [location.pathname, enabled]);
   return count;
+}
+
+/** I2 — per-account presence for the five dynamic USER nav destinations
+ *  (Orders, Documents, Stable, My Posts, Saved Content). One call on layout
+ *  mount is enough per the locked design ("refresh on route change is NOT
+ *  required — next mount picks it up"), unlike the two badge hooks above.
+ *  `enabled` mirrors useInboundOpenCount's staff-only gate, inverted: only
+ *  non-staff accounts ever see these links. A failed read just leaves every
+ *  link hidden (same fallback as the other quiet-catch hooks here) — these
+ *  are discoverability links, not a gate. */
+function useNavPresence(enabled: boolean): NavPresence {
+  const [presence, setPresence] = useState<NavPresence>({
+    orders: false, documents: false, stable: false, posts: false, saved: false,
+  });
+  useEffect(() => {
+    if (!enabled) return;
+    let active = true;
+    myNavPresence().then((p) => active && setPresence(p)).catch(() => { /* links just stay hidden */ });
+    return () => { active = false; };
+  }, [enabled]);
+  return presence;
 }
 
 /**
@@ -89,6 +110,22 @@ const QUICK: { label: string; icon: typeof GraduationCap; to: string; end?: bool
   // The in-app catalog: shop services & book them (real purchase flow).
   { label: 'Catalog', icon: ShoppingBag, to: '/app/catalog' },
   { label: 'Messages', icon: MessageSquare, to: '/app/messages', badge: 'messages' },
+];
+
+/** I2 — Orders, Documents, Stable, My Posts, Saved Content: each is the
+ *  page's real existing route (found in App.tsx, none invented) except
+ *  Stable and Saved, which only exist as Account-page sections — those use
+ *  the `?section=` pattern A11 added. `section` marks that case so active-
+ *  state matching (PresenceLink, below) can disambiguate two `/app/account`
+ *  links from each other, which NavLink's own pathname-only matching can't
+ *  do. Icons match what AccountHub's own Row already uses for that same
+ *  destination, for visual continuity between the nav and the Account page. */
+const PRESENCE_LINKS: { key: keyof NavPresence; label: string; icon: typeof ShoppingBag; to: string; section?: string }[] = [
+  { key: 'orders', label: 'Orders', icon: ReceiptText, to: '/app/orders' },
+  { key: 'documents', label: 'Documents', icon: FileText, to: '/app/documents' },
+  { key: 'stable', label: 'Stable', icon: Boxes, to: '/app/account?section=stable', section: 'stable' },
+  { key: 'posts', label: 'My Posts', icon: Grid3x3, to: '/app/my-posts' },
+  { key: 'saved', label: 'Saved Content', icon: Bookmark, to: '/app/account?section=saved', section: 'saved' },
 ];
 
 /** The community-feed views, as nested nav links. Each filters the one feed
@@ -217,6 +254,19 @@ export function manageNavGroups(
   return groups.filter((g) => g.items.length > 0);
 }
 
+/** I4 — selected-page indicator. The old dark-green fill (`bg-green-800
+ *  text-white`) was overpowering on the light UI and the small white text
+ *  read poorly at mobile sizes. Replacement: `bg-cream-200` (one step darker
+ *  than the cream-100 nav panels, same hue family — tailwind.config.js's
+ *  cream scale has no darker step than 200, so nothing was invented) with
+ *  dark green text (fixes the light-text-on-dark-fill complaint directly),
+ *  plus a gold ring matching the icon's existing active-state gold. Built
+ *  and shipped WITH the ring: `bg-cream-200 text-green-800 font-medium`
+ *  alone (no `ring-*`) tested too subtle against the cream-100/white
+ *  surroundings to read clearly as "selected" — that bare variant is the
+ *  one-line revert if the call changes later. Applied identically at every
+ *  render site that shows a selected-state nav item (this component,
+ *  MenuLink, and both CommunityNav rows below). */
 function RailLink({ to, label, icon: Icon, end, badge = 0 }: NavItem & { badge?: number }) {
   return (
     <NavLink
@@ -224,7 +274,9 @@ function RailLink({ to, label, icon: Icon, end, badge = 0 }: NavItem & { badge?:
       end={end}
       className={({ isActive }) =>
         `flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13.5px] font-sans transition-colors focus-ring ${
-          isActive ? 'bg-green-800 text-white' : 'text-secondary hover:bg-white'
+          // ring variant (ships): 'bg-cream-200 text-green-800 font-medium ring-1 ring-inset ring-gold-400'
+          // fill-only revert:     'bg-cream-200 text-green-800 font-medium'
+          isActive ? 'bg-cream-200 text-green-800 font-medium ring-1 ring-inset ring-gold-400' : 'text-secondary hover:bg-white'
         }`
       }
     >
@@ -233,7 +285,7 @@ function RailLink({ to, label, icon: Icon, end, badge = 0 }: NavItem & { badge?:
           <Icon size={17} aria-hidden="true" className={isActive ? 'text-gold-400' : 'text-green-600'} />
           <span className="flex-1">{label}</span>
           {badge > 0 && (
-            <span className={`min-w-[1.25rem] h-5 px-1.5 text-[11px] leading-5 text-center rounded-full ${isActive ? 'bg-white/20 text-white' : 'bg-gold-600 text-white'}`}>{badge > 9 ? '9+' : badge}</span>
+            <span className="min-w-[1.25rem] h-5 px-1.5 text-[11px] leading-5 text-center rounded-full bg-gold-600 text-white">{badge > 9 ? '9+' : badge}</span>
           )}
         </>
       )}
@@ -249,13 +301,35 @@ function MenuLink({ to, label, icon: Icon, end, onNavigate }: NavItem & { onNavi
       onClick={onNavigate}
       className={({ isActive }) =>
         `flex items-center gap-3 px-4 py-2.5 text-sm font-sans transition-colors focus-ring ${
-          isActive ? 'bg-green-800 text-white' : 'text-secondary hover:bg-green-800/[0.06]'
+          isActive ? 'bg-cream-200 text-green-800 font-medium ring-1 ring-inset ring-gold-400' : 'text-secondary hover:bg-green-800/[0.06]'
         }`
       }
     >
       <Icon size={17} aria-hidden="true" />
       {label}
     </NavLink>
+  );
+}
+
+/** I2 — renders one of PRESENCE_LINKS. Active-state matching is done here
+ *  (not delegated to NavLink) because Stable and Saved both point at
+ *  `/app/account` with a different `?section=` each — NavLink only compares
+ *  pathname, so it would show BOTH as "selected" together on that page.
+ *  `section`-less links (Orders, Documents, My Posts) are plain distinct
+ *  routes, so a pathname check is exact for them too. */
+function PresenceLink({ to, label, icon: Icon, section, onNavigate }: {
+  to: string; label: string; icon: typeof ShoppingBag; section?: string; onNavigate?: () => void;
+}) {
+  const location = useLocation();
+  const accountSection = useActiveAccountSection();
+  const isActive = section ? accountSection === section : location.pathname === to;
+  return (
+    <Link to={to} onClick={onNavigate}
+      className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans transition-colors focus-ring ${
+        isActive ? 'bg-cream-200 text-green-800 font-medium ring-1 ring-inset ring-gold-400' : 'text-secondary hover:bg-white'}`}>
+      <Icon size={18} aria-hidden="true" className={isActive ? 'text-gold-400' : 'text-green-600'} />
+      <span className="whitespace-nowrap flex-1">{label}</span>
+    </Link>
   );
 }
 
@@ -269,50 +343,52 @@ function useActiveCommunityView(): FeedView | null {
   return f && FEED_VIEWS.some((v) => v.key === f) ? (f as FeedView) : 'all';
 }
 
+/** I2 — which Account-page section (if any) the current location represents,
+ *  null off /app/account. Same shape as useActiveCommunityView's `?filter=`
+ *  matching, for the `?section=` links (see PresenceLink). */
+function useActiveAccountSection(): string | null {
+  const location = useLocation();
+  const [params] = useSearchParams();
+  if (location.pathname !== '/app/account') return null;
+  return params.get('section');
+}
+
 /** COMMUNITY FEED nav group — a parent header + its views nested as indented links.
  *  Each view filters the one feed; the SELECTED view highlights (not the parent),
  *  and the page header changes to match. The parent is COLLAPSIBLE: a chevron shows/
  *  hides the sublinks (persisted); it auto-expands while you're on the feed so the
  *  active view stays visible. `open` collapses labels in the rail strip.
  *  `onNavigate` closes the mobile menu. */
-function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
-  open?: boolean; onNavigate?: () => void; indentClass?: string;
+function CommunityNav({ onNavigate, indentClass = 'pl-9' }: {
+  onNavigate?: () => void; indentClass?: string;
 }) {
   const active = useActiveCommunityView();
-  const onFeed = active !== null;
   // The parent IS the "All" view: it's highlighted (solid) on the full feed, and a
   // specific-filter sublink owns the highlight when one is selected. No "All posts"
   // sublink — clicking "Community Feed" (or the browser Back) returns to the full view.
   const isAll = active === 'all';
-  // collapse state for the sublinks (persisted, chevron-controlled). Default expanded.
+  // collapse state for the sublinks (persisted, toggle-controlled). Default expanded.
   const [expanded, setExpanded] = useState(() => localStorage.getItem('communityNav.expanded') !== '0');
   useEffect(() => { localStorage.setItem('communityNav.expanded', expanded ? '1' : '0'); }, [expanded]);
-
-  if (!open) {
-    // collapsed rail strip: just the parent icon, active whenever on the feed
-    return (
-      <Link to="/app" onClick={onNavigate} title="Community Feed"
-        className={`flex items-center justify-center rounded-lg px-3 py-2.5 focus-ring ${onFeed ? 'bg-green-800 text-white' : 'text-secondary hover:bg-white'}`}>
-        <Users size={18} className={onFeed ? 'text-gold-400' : 'text-green-600'} />
-      </Link>
-    );
-  }
 
   return (
     <div>
       {/* parent row — the label links to the full feed (= All) and highlights when
-          it's the active view; the chevron toggles the sublinks. */}
-      <div className={`flex items-center rounded-lg pr-1 ${isAll ? 'bg-green-800' : 'hover:bg-white'}`}>
+          it's the active view; the toggle shows/hides the sublinks. I5: down arrow +
+          "show" when collapsed, up arrow + "hide" when expanded — replaces the old
+          right-pointing (rotated ChevronDown) collapsed state. */}
+      <div className={`flex items-center rounded-lg pr-1 ${isAll ? 'bg-cream-200 ring-1 ring-inset ring-gold-400' : 'hover:bg-white'}`}>
         <Link to="/app" onClick={onNavigate}
-          className={`flex items-center gap-3 flex-1 min-w-0 px-3 py-2.5 text-[13.5px] font-sans focus-ring rounded-lg ${isAll ? 'text-white font-medium' : 'text-secondary'}`}>
+          className={`flex items-center gap-3 flex-1 min-w-0 px-3 py-2.5 text-[13.5px] font-sans focus-ring rounded-lg ${isAll ? 'text-green-800 font-medium' : 'text-secondary'}`}>
           <Users size={18} className={`shrink-0 ${isAll ? 'text-gold-400' : 'text-green-600'}`} />
           <span className="whitespace-nowrap">Community Feed</span>
         </Link>
         <button type="button" onClick={() => setExpanded((v) => !v)}
           aria-label={expanded ? 'Collapse community views' : 'Expand community views'}
           aria-expanded={expanded}
-          className={`shrink-0 p-1.5 rounded-md focus-ring ${isAll ? 'text-white/90 hover:bg-white/15' : 'text-green-700 hover:bg-green-800/[0.06]'}`}>
-          <ChevronDown size={15} className={`transition-transform ${expanded ? '' : '-rotate-90'}`} />
+          className="shrink-0 flex items-center gap-1 px-1.5 py-1.5 rounded-md text-green-700 hover:bg-green-800/[0.06] focus-ring">
+          {expanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+          <span className="text-[10px] text-muted">{expanded ? 'hide' : 'show'}</span>
         </button>
       </div>
       {/* nested views (specific filters only) — the selected one highlights */}
@@ -323,7 +399,7 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
             return (
               <Link key={v.key} to={communityHref(v.key)} onClick={onNavigate}
                 className={`flex items-center ${indentClass} pr-3 py-1.5 rounded-lg text-[13px] font-sans transition-colors focus-ring ${
-                  isActive ? 'bg-green-800 text-white font-medium' : 'text-secondary hover:bg-white'}`}>
+                  isActive ? 'bg-cream-200 text-green-800 font-medium ring-1 ring-inset ring-gold-400' : 'text-secondary hover:bg-white'}`}>
                 <span className="whitespace-nowrap">{v.label}</span>
               </Link>
             );
@@ -346,71 +422,51 @@ function useDmUnread(): number {
   return n;
 }
 
-/** CLIENT LEFT RAIL (desktop only) — a thin icon strip that expands on hover with
- *  almost no delay, and a pin/toggle that keeps it open. Holds the same quick-access
- *  destinations the avatar menu carries. Members only (staff get the management rail).
- */
-function ClientRail({ bellCount, dmCount }: { bellCount: number; dmCount: number }) {
-  const [pinned, setPinned] = useState(() => localStorage.getItem('clientRail.pinned') === '1');
-  const [hovered, setHovered] = useState(false);
-  useEffect(() => { localStorage.setItem('clientRail.pinned', pinned ? '1' : '0'); }, [pinned]);
-  const open = pinned || hovered;
+/** CLIENT LEFT RAIL (desktop only) — the USER quick-access destinations plus
+ *  Community Feed. Members only (staff get the management rail).
+ *
+ *  I1 (owner spec 2026-08-04, tracker I1): this rail used to expand-on-hover
+ *  with a pin toggle to keep it open. That collapse/expand control is
+ *  removed entirely for USER accounts — a fixed, non-collapsible sidebar,
+ *  always the full 240px width. Staff's own rail (below, in AppLayout) never
+ *  had an equivalent toggle either, so no account type has a sidebar-
+ *  collapse control after this change. */
+function ClientRail({ bellCount, dmCount, presence }: { bellCount: number; dmCount: number; presence: NavPresence }) {
   // D8: community access follows the ACCOUNT — every member sees the full
   // quick list and the community feed ("guest" is display copy only).
   const quick = QUICK;
+  // I2 — Orders, Documents, Stable, My Posts, Saved Content: only the ones
+  // my_nav_presence() confirms have ≥1 entry. While empty, all five stay
+  // reachable from the Account page only (unchanged).
+  const links = PRESENCE_LINKS.filter((l) => presence[l.key]);
 
-  // The <aside> RESERVES the width: 56px normally, 240px when PINNED (page sits
-  // beside it). The <nav> is sticky (scroll-follows) and grows to 240px on HOVER —
-  // when not pinned it overflows its 56px aside to overlay the page, so hovering
-  // causes no layout shift. z-30 keeps it above main, below the sticky header (z-40).
   return (
-    <aside
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      className={`hidden lg:block shrink-0 relative z-30 transition-[width] duration-100 ease-out ${pinned ? 'w-60' : 'w-14'}`}
-    >
-      <nav
-        className={`sticky top-14 h-[calc(100dvh-3.5rem)] border-r border-green-800/10 bg-cream-100 p-2 overflow-y-auto overflow-x-hidden flex flex-col transition-[width] duration-100 ease-out ${open ? 'w-60' : 'w-14'} ${hovered && !pinned ? 'shadow-[8px_0_24px_-12px_rgba(13,33,24,0.25)]' : ''}`}
-      >
-        {/* pin / show toggle — keeps the rail open when pinned */}
-        <button type="button" onClick={() => setPinned((v) => !v)}
-          aria-label={pinned ? 'Collapse menu' : 'Keep menu open'} aria-pressed={pinned}
-          className={`flex items-center gap-3 rounded-lg px-3 py-2.5 mb-1 text-green-700 hover:bg-white focus-ring ${open ? '' : 'justify-center'}`}>
-          {pinned ? <PanelLeftClose size={18} className="shrink-0" /> : <PanelLeft size={18} className="shrink-0" />}
-          {open && <span className="text-[13.5px] font-sans text-secondary whitespace-nowrap">{pinned ? 'Collapse' : 'Keep open'}</span>}
-        </button>
-
+    <aside className="hidden lg:block shrink-0 relative z-30 w-60">
+      <nav className="sticky top-14 h-[calc(100dvh-3.5rem)] border-r border-green-800/10 bg-cream-100 p-2 overflow-y-auto overflow-x-hidden flex flex-col">
         <div className="flex flex-col gap-0.5">
           {/* Community Feed (position 1) with its views nested underneath. */}
-          <CommunityNav open={open} indentClass={open ? 'pl-9' : 'pl-3'} />
+          <CommunityNav indentClass="pl-9" />
           {quick.map((q) => {
             const raw = q.badge === 'notifications' ? bellCount : q.badge === 'messages' ? dmCount : 0;
             const badge = raw > 0 ? raw : 0;
             return (
               <NavLink key={q.label} to={q.to} end={q.end}
                 className={({ isActive: active }) =>
-                  `relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans transition-colors focus-ring ${open ? '' : 'justify-center'} ${
-                    active ? 'bg-green-800 text-white' : 'text-secondary hover:bg-white'}`}
-                title={open ? undefined : q.label}>
+                  `flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans transition-colors focus-ring ${
+                    active ? 'bg-cream-200 text-green-800 font-medium ring-1 ring-inset ring-gold-400' : 'text-secondary hover:bg-white'}`}>
                 {({ isActive: active }) => (
                     <>
-                      <span className="relative shrink-0">
-                        <q.icon size={18} aria-hidden="true" className={active ? 'text-gold-400' : 'text-green-600'} />
-                        {/* collapsed strip: badge dots the icon */}
-                        {badge > 0 && !open && (
-                          <span className="absolute -top-1.5 -right-1.5 min-w-[1rem] h-4 px-1 bg-gold-600 text-white text-[10px] leading-4 text-center rounded-full">{badge > 9 ? '9+' : badge}</span>
-                        )}
-                      </span>
-                      {open && <span className="whitespace-nowrap flex-1">{q.label}</span>}
-                      {/* expanded: badge sits at the end of the row */}
-                      {badge > 0 && open && (
-                        <span className={`min-w-[1.25rem] h-5 px-1.5 text-[11px] leading-5 text-center rounded-full ${active ? 'bg-white/20 text-white' : 'bg-gold-600 text-white'}`}>{badge > 9 ? '9+' : badge}</span>
+                      <q.icon size={18} aria-hidden="true" className={active ? 'text-gold-400' : 'text-green-600'} />
+                      <span className="whitespace-nowrap flex-1">{q.label}</span>
+                      {badge > 0 && (
+                        <span className="min-w-[1.25rem] h-5 px-1.5 text-[11px] leading-5 text-center rounded-full bg-gold-600 text-white">{badge > 9 ? '9+' : badge}</span>
                       )}
                     </>
                 )}
               </NavLink>
             );
           })}
+          {links.map((l) => <PresenceLink key={l.key} to={l.to} label={l.label} icon={l.icon} section={l.section} />)}
         </div>
       </nav>
     </aside>
@@ -424,6 +480,13 @@ export default function AppLayout() {
   const navigate = useNavigate();
   const unreadCount = useUnreadCount();
   const inboundCount = useInboundOpenCount(isStaff);
+  const presence = useNavPresence(!isStaff);
+  // I2 — the same presence-gated set the rail uses, reused by the avatar
+  // dropdown and mobile drawer below (see PresenceLink for why `section`
+  // needs its own active-match instead of relying on NavLink's pathname-only
+  // check).
+  const navLinks = PRESENCE_LINKS.filter((l) => presence[l.key]);
+  const accountSection = useActiveAccountSection();
   const [menuOpen, setMenuOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   // Mobile left-nav drawer: the side menu, opened by the in-content button that
@@ -669,6 +732,17 @@ export default function AppLayout() {
                           </button>
                         );
                       })}
+                      {/* I2 — same five presence-gated links as the rail, dropdown-shaped. */}
+                      {navLinks.map((l) => {
+                        const isActive = l.section ? accountSection === l.section : location.pathname === l.to;
+                        return (
+                          <Link key={l.key} to={l.to} onClick={closeMenu}
+                            className={`flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans focus-ring ${
+                              isActive ? 'bg-cream-200 text-green-800 font-medium ring-1 ring-inset ring-gold-400' : 'text-secondary hover:bg-green-800/[0.06]'}`}>
+                            <l.icon size={17} /> {l.label}
+                          </Link>
+                        );
+                      })}
                     </>
                   )}
                   {navGroups.length > 0 && (
@@ -700,8 +774,8 @@ export default function AppLayout() {
       </header>
 
       <div className="w-full max-w-[120rem] mx-auto flex">
-        {/* Members (non-staff) get a collapsible quick-access rail on desktop. */}
-        {!showRail && !isSuperAdmin && <ClientRail bellCount={unreadCount} dmCount={dmCount} />}
+        {/* Members (non-staff) get a fixed quick-access rail on desktop (I1). */}
+        {!showRail && !isSuperAdmin && <ClientRail bellCount={unreadCount} dmCount={dmCount} presence={presence} />}
         {showRail && (
           <aside className="hidden lg:block w-60 xl:w-64 shrink-0 border-r border-green-800/10 bg-cream-100/40">
             <nav className="p-3 sticky top-14 h-[calc(100dvh-3.5rem)] overflow-y-auto">
@@ -778,11 +852,16 @@ export default function AppLayout() {
               if ((e.target as HTMLElement).closest('a')) closeMobileNav();
             }}
           >
-            <div className="flex items-center justify-between px-1 mb-2">
+            {/* I3 — "Close" (text first, icon after), a larger hit target, and the
+                same darker-panel-shade (I4's cream-200) treatment marking the open
+                menu as the active state. More bottom padding so it clears the
+                first nav item below (was mb-2 — the highlighted Community button
+                sat right under it). */}
+            <div className="flex items-center justify-between px-1 pt-1 pb-4">
               <span className="text-[10px] tracking-widest uppercase text-muted font-semibold">Menu</span>
               <button type="button" onClick={closeMobileNav} aria-label="Close menu"
-                className="p-2 rounded-lg text-green-800 hover:bg-white focus-ring">
-                <PanelLeftClose size={18} />
+                className="flex items-center gap-1.5 pl-3 pr-3 py-2.5 rounded-lg bg-cream-200 text-green-800 font-medium text-[13px] font-sans hover:bg-cream-200/70 focus-ring">
+                Close <PanelLeftClose size={16} aria-hidden="true" />
               </button>
             </div>
             {!isSuperAdmin && (
@@ -795,6 +874,7 @@ export default function AppLayout() {
                       return <RailLink key={q.to} to={q.to} label={q.label} icon={q.icon} end={q.end} badge={raw > 0 ? raw : 0} />;
                     })}
                     <RailLink to="/app/account" label="Account" icon={UserRound} />
+                    {navLinks.map((l) => <PresenceLink key={l.key} to={l.to} label={l.label} icon={l.icon} section={l.section} onNavigate={closeMobileNav} />)}
                   </>
                 ) : (
                   <>
