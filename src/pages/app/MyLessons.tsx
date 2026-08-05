@@ -10,6 +10,7 @@ import {
 import { formatSessionWhen } from '../../lib/formatDateTime';
 import { toErrorMessage } from '../../lib/ops/errors';
 import { useDocumentTitle } from '../../lib/hooks';
+import { SessionNotesView } from '../../components/app/SessionNotesView';
 
 /**
  * CP-LESSONS — the member's Lessons page (module mod.lessons), the /app/lessons
@@ -159,26 +160,26 @@ export default function MyLessons() {
             <h2 className="font-serif font-medium text-green-800 text-xl mb-4">Upcoming lessons</h2>
             <div className="flex flex-col gap-3">
               {upcoming.map((s) => (
-                <div
-                  key={s.id}
-                  className="bg-white border border-green-800/10 p-5 flex items-center justify-between gap-4"
-                >
-                  <div className="flex items-center gap-3">
-                    <CalendarClock size={18} className="text-gold-ink flex-shrink-0" aria-hidden="true" />
-                    <div>
-                      <p className="text-sm font-sans font-medium text-green-900">
-                        {formatSessionWhen(s.starts_at, s.ends_at)}
-                      </p>
-                      {s.location && (
-                        <p className="text-xs text-muted mt-0.5 inline-flex items-center gap-1.5">
-                          <MapPin size={12} aria-hidden="true" /> {s.location}
+                <div key={s.id} className="bg-white border border-green-800/10 p-5">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <CalendarClock size={18} className="text-gold-ink flex-shrink-0" aria-hidden="true" />
+                      <div>
+                        <p className="text-sm font-sans font-medium text-green-900">
+                          {formatSessionWhen(s.starts_at, s.ends_at)}
                         </p>
-                      )}
+                        {s.location && (
+                          <p className="text-xs text-muted mt-0.5 inline-flex items-center gap-1.5">
+                            <MapPin size={12} aria-hidden="true" /> {s.location}
+                          </p>
+                        )}
+                      </div>
                     </div>
+                    <span className="bg-green-800 text-white text-xs font-sans px-2 py-0.5 tracking-wide whitespace-nowrap">
+                      SCHEDULED
+                    </span>
                   </div>
-                  <span className="bg-green-800 text-white text-xs font-sans px-2 py-0.5 tracking-wide whitespace-nowrap">
-                    SCHEDULED
-                  </span>
+                  <SessionNotesView bookingId={s.id} startsAt={s.starts_at} />
                 </div>
               ))}
             </div>
