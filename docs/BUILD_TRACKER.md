@@ -111,6 +111,16 @@ This is the critical path. Everything here must be DONE.
 | H2 | Horse capacity + rider matching + autonomous booking | Blocked on real horses (P1) and the skill vocabulary (P5) — see `AUTONOMOUS_BOOKING_SPEC.md` |
 | H3 | Removing the old kiosk URLs | Owner ruling 2026-08-04: additive only, nothing ripped out |
 
+## I. USER-ACCOUNT NAV & MOBILE UX (owner spec 2026-08-04)
+
+| # | Item | Status |
+|---|---|---|
+| I1 | Sidebar collapse/expand toggle: staff/admin only — removed entirely for USER accounts | **NOT STARTED** |
+| I2 | Dynamic USER sidebar + avatar menu: links for Orders, Documents, Stable, My Posts, Saved Content appear ONLY once that page has ≥1 entry (empty → reachable via Account page only). Purpose: discoverability without instructions (horse entries, and Documents which every account starts non-empty) | **NOT STARTED** |
+| I3 | Mobile menu close button: the word "Close" (icon may stay alongside), visually prominent, larger; more padding in the menu header so it clears the highlighted Community button | **NOT STARTED** |
+| I4 | Selected-page indicator: replace the dark-green fill (overpowering on the light UI, poor small-text contrast). Direction: slightly darker shade of the nav panel color, optionally a gold outline (matches gold link icons); if the darker shade alone reads clearly, drop the outline. Open-menu state on the close button uses the same dark shade | **NOT STARTED** |
+| I5 | Community-feed expandability affordance: small "expand" helper text + down arrow when collapsed; "hide" + up arrow when expanded (replaces the right arrow) | **NOT STARTED** |
+
 ---
 
 ## Working order
