@@ -5,7 +5,7 @@ import {
   Grid3x3, PanelLeft,
 } from 'lucide-react';
 import { Modal } from '../ops/kit/Modal';
-import { currentTourFormFactor, type StandingCategory } from '../../lib/api';
+import { currentTourFormFactor, type StandingCategory, type NavPresence } from '../../lib/api';
 
 /**
  * APP OVERVIEW — the welcome tour of the member surface, rebuilt per the owner
@@ -68,8 +68,19 @@ interface Line { icon: typeof LayoutDashboard; label: string; desc: string }
 
 /** The pages each variant actually sees (derived from AppLayout — the rail and
  *  avatar menu are the same for every member account under D8; the per-group
- *  difference is which pages carry that member's real content). */
-function pageLines(v: Variant): Line[] {
+ *  difference is which pages carry that member's real content).
+ *
+ *  I6 (owner spec 2026-08-05) — this list now follows the ONE canonical USER
+ *  nav order shared with the mobile drawer and desktop rail (see AppLayout's
+ *  ClientNavItems): Community Feed, Dashboard, Calendar, Lessons*, Orders,
+ *  Catalog, Documents, Messages, My Posts, My Stable, Account. Orders,
+ *  Documents, My Posts, and My Stable use the SAME `my_nav_presence()` gating
+ *  as the rail (`presence`, threaded in from AppLayout) instead of being
+ *  Account-page-only footnotes; Lessons uses the same module gate
+ *  (`lessonsOn`) as the rail's Lessons entry, replacing the old RIDER/BOTH
+ *  category gate so this list and the rail always agree on when Lessons is
+ *  shown. */
+function pageLines(v: Variant, presence: NavPresence, lessonsOn: boolean): Line[] {
   const lines: Line[] = [
     { icon: Users, label: 'Community Feed', desc: 'The one member feed — more on its focused views below.' },
     { icon: LayoutDashboard, label: 'Dashboard', desc: 'What needs your attention, and what’s coming up.' },
@@ -78,15 +89,29 @@ function pageLines(v: Variant): Line[] {
       : v === 'owner'
         ? 'Your horse’s scheduled services, payments due, and open times you can book.'
         : 'Your lessons and sessions, payments due, and open times you can book straight from the grid.' },
-    { icon: MessageSquare, label: 'Messages', desc: 'Direct messages with the barn and with other members.' },
   ];
-  if (v === 'rider' || v === 'both') {
-    lines.push({ icon: GraduationCap, label: 'My Lessons', desc: 'Your lesson credits, upcoming sessions, and riding history.' });
+  if (lessonsOn) {
+    lines.push({ icon: GraduationCap, label: 'Lessons', desc: 'Your lesson credits, upcoming sessions, and riding history.' });
+  }
+  if (presence.orders) {
+    lines.push({ icon: ReceiptText, label: 'Orders', desc: 'What you’ve purchased and how it was paid.' });
   }
   lines.push({ icon: ShoppingBag, label: 'Catalog', desc: v === 'owner'
     ? 'Every service we offer — including horse-care services for your horse. Browse, book, and pay in one place.'
     : 'Everything we offer. Browse, book, and pay in one place.' });
-  lines.push({ icon: UserRound, label: 'Account', desc: 'Your profile, paperwork, orders, and more — its contents are below.' });
+  if (presence.documents) {
+    lines.push({ icon: FileText, label: 'Documents', desc: 'Every agreement you’ve signed, always available to download.' });
+  }
+  lines.push({ icon: MessageSquare, label: 'Messages', desc: 'Direct messages with the barn and with other members.' });
+  if (presence.posts) {
+    lines.push({ icon: Grid3x3, label: 'My Posts', desc: 'Your community posts and listings, in one place.' });
+  }
+  if (presence.stable) {
+    lines.push({ icon: Boxes, label: 'My Stable', desc: v === 'owner' || v === 'both'
+      ? 'Your horses’ records, care history, and paperwork, plus your gear and supplies.'
+      : 'The gear and supplies you keep on file with us.' });
+  }
+  lines.push({ icon: UserRound, label: 'Account', desc: 'Your profile, paperwork, and more — its contents are below.' });
   return lines;
 }
 
@@ -143,15 +168,17 @@ function LineList({ lines }: { lines: Line[] }) {
 }
 
 export function AppOverviewModal({
-  open, onClose, categories,
+  open, onClose, categories, presence, lessonsOn,
 }: {
   open: boolean;
   onClose: () => void;
   categories: StandingCategory[];
+  presence: NavPresence;
+  lessonsOn: boolean;
 }) {
   const variant = useMemo(() => variantOf(categories), [categories]);
   const mobile = currentTourFormFactor() === 'mobile';
-  const pages = useMemo(() => pageLines(variant), [variant]);
+  const pages = useMemo(() => pageLines(variant, presence, lessonsOn), [variant, presence, lessonsOn]);
   const account = useMemo(() => accountLines(variant), [variant]);
 
   const menuPhrase = mobile

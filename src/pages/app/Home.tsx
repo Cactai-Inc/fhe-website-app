@@ -40,9 +40,14 @@ export default function Home() {
 
   return (
     <div>
+      {/* I8 — the page used to show the name twice (a small "Community Feed"
+          eyebrow above the large title, which is literally "Community Feed"
+          on the default/all view). The eyebrow is gone; the h1's own top
+          margin is now the only padding above the name, upped 35% (0.125rem
+          → 0.16875rem) so the title doesn't sit flush against the page edge
+          without the eyebrow's line above it (owner spec 2026-08-05). */}
       <header className="mb-4">
-        <p className="eyebrow">Community Feed</p>
-        <h1 className="font-serif text-green-800 text-3xl font-semibold mt-0.5">{meta.title}</h1>
+        <h1 className="font-serif text-green-800 text-3xl font-semibold mt-[0.169rem]">{meta.title}</h1>
         <p className="body-text text-secondary text-sm mt-1.5 max-w-2xl">{meta.description}</p>
       </header>
 
