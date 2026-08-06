@@ -69,7 +69,7 @@ treats them as hard blocks. B5 is statutory.
 | `LESSOR.PARTY_TYPE = ENTITY` | Lessor carries **CGL** with an Equestrian Professional Liability endorsement |
 | `LESSOR.PARTY_TYPE = ENTITY` | Lessor carries **CCC** — a program working horses it does not own must answer owner claims |
 | `OFFSITE_TRANSPORT = GRANTED` **or** `LESSEE.PARTY_TYPE = ENTITY` | Lessee carries **GL** |
-| Lessee carries GL at all | Lessor **and facility owner** named Additional Insured; COI within 5 days |
+| Lessee carries GL at all | Lessor **and facility owner** named Additional Insured; **Waiver of Subrogation** endorsement; COI within 5 days |
 | **High-Value Asset** (below) | Lessor carries **major medical** |
 | `PRIMARY_LEASE_REQUIRES_MORTALITY = yes` **or** insurable interest `= OWNER` | Lessor carries **mortality** |
 
@@ -118,7 +118,9 @@ treats them as hard blocks. B5 is statutory.
 What the parties must be able to obligate. Each is an election plus its contract text.
 
 1. **General liability** — who carries; limit; policy type (constrained by B6);
-   Additional Insured + COI where the Lessee carries.
+   Additional Insured + **Waiver of Subrogation** + COI where the Lessee carries. Without
+   the waiver the Lessee's carrier can pay its insured and then sue FHE to recover, which
+   defeats the point of being named at all.
 2. **Mortality** — who carries; carrier; agreed value; Loss Payee where the Lessee pays
    the premium on the Lessor's policy; deductible and payout-shortfall allocation.
 3. **Major medical** — who carries; limit and deductible; **who makes the initial
@@ -166,8 +168,11 @@ mechanism adversarial to the relationship the business runs on.
 
 ### Generated disclosures
 
-1. **Cal. Civ. Code § 3333.7** equine liability warning — statutory wording, bold
-   uppercase, prominent.
+1. **Cal. Civ. Code § 3333.7** equine liability warning — **verbatim statutory wording**,
+   bold uppercase, prominent. A statutory warning generally must appear in the exact
+   prescribed language for the liability limitation to attach; a paraphrase may protect
+   nothing. Counsel must supply the exact text — do not let it be generated or
+   reworded.
 2. **No shared policy** — an Additional Insured gains third-party liability protection
    but **no** first-party medical or mortality cover on the horse.
 3. **CCC negligence trigger** — plain-language statement of the above.
@@ -216,3 +221,30 @@ Counsel settled the blocks, the high-value matrix and insurable interest. Outsta
 
 Steps 1–2 are safe to start before §6 is answered. Step 3 is the architectural change and
 should be its own task.
+
+---
+
+## 8. Rejected approach — on record
+
+Counsel supplied a full code implementation (2026-08-06): a standalone
+`EquineLeaseEngine.ts` class, a bespoke Tailwind form, a vanilla-JS controller, and a
+`ContractAssembler` emitting clause text from JS template strings. **Not adopted**, for
+reasons that will recur if it is proposed again:
+
+- **Wrong architecture.** Our engine is DB-driven — fields, clauses and gates are rows,
+  authored in the authoring engine and versioned with the template. Hardcoding insurance
+  rules in application code creates a second parallel contract system: the only clauses
+  not editable by staff, not versioned, not rendered like the rest. This is the
+  shadow-catalog pattern already killed once in this codebase.
+- **Did not compile.** `export type LeaseType = 'FULL' / 'PARTIAL'` — a slash where a
+  union pipe belongs, repeated across all three type declarations.
+- **Contradicted its own legal analysis.** `evalMedicalLessor` prohibits unless interest
+  is `OWNER`, though the same author established primary-lease liability and recoupable
+  investment as valid insurable interests — it would block a lawful election in FHE's
+  most common configuration.
+- **Display bug:** the mortality block renders `mort.lessor.reason` when blocking the
+  *Lessee*.
+- **Paraphrased the statutory warning**, which must be verbatim.
+
+The *legal determinations* from that same source are sound and are incorporated above.
+It is the implementation that is unusable.
