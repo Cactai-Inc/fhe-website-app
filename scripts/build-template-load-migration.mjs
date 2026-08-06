@@ -53,10 +53,11 @@ const POST_SEED_TEMPLATES = {
   // template serves purchase/sale/lease-in/lease-out representation).
   HORSE_TRANSACTION_REP:  { title: 'Horse Transaction Representation Agreement',        parties: ['CLIENT', 'COMPANY'] },
   // Owner template revision 2026-07-03: unified CLIENT-signer doc set. COMPANY_POLICIES
-  // joins the required signing matrix for every service; RIDER_LESSON is the (unsigned)
-  // lesson order form. Both are new keys postdating the migration-11 seed.
+  // joins the required signing matrix for every service. (RIDER_LESSON, the unsigned
+  // lesson order form, was retired with the other five service contracts by SVCPURGE
+  // 2026-08-06 — its INSERT lived here and would have re-seeded the row on a fresh
+  // database, so it is removed rather than left dormant.)
   COMPANY_POLICIES:       { title: 'Company Policies',                                  parties: ['CLIENT'] },
-  RIDER_LESSON:           { title: 'Riding Lesson Order Form',                          parties: ['CLIENT'] },
 };
 
 // Retired templates: their .md is a pointer/note, not contract text. The lease is
