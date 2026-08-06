@@ -96,7 +96,14 @@ is the normal case for this program — the Lessor is very often *not* the owner
 | Lessor prohibited | **`II ≠ OWNER` AND `V2 = no` → PROHIBITED.** |
 | Shared policy | Never. Premium **cost-splitting** is permitted. |
 
-### 2.4 Care, Custody & Control — **does not exist today; must be built**
+### 2.4 Care, Custody & Control — **exists as one unconditional paragraph; actively wrong**
+
+`INSURANCE_RISK.CCC` is a static clause with no fields and no gating, reading in
+substance *"Lessee shall obtain and maintain care, custody and control insurance for the
+duration of this Agreement."* It therefore applies to **every** lease we issue —
+including every lease whose Lessee is a private individual, who cannot lawfully purchase
+CCC at all. The contract currently imposes an impossible obligation, which is
+unenforceable and a live exposure. This alone justifies the rebuild.
 
 | Question | Rule |
 |---|---|
