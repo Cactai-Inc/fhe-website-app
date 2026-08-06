@@ -3,7 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover: without it iOS letterboxes the page inside the safe
+         area in landscape, leaving pale bands beside the cardstock header where
+         the notch and home indicator live. With it the page owns the full width
+         and the CONTENT is inset instead, via env(safe-area-inset-*). -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <!-- Fallback title/description; per-page <head> is injected by react-helmet-async
          (prerendered into static HTML at build time, set on the client at runtime). -->
     <title>French Heritage Equestrian — Hunter/Jumper Lessons & Training | Coastal San Diego</title>

@@ -18,6 +18,7 @@ import {
 } from '../../lib/api';
 import { AppOverviewModal } from './AppOverviewModal';
 import { CreateModal } from './CreateModal';
+import { CardstockHeader } from './CardstockHeader';
 
 /** I7 — green-glass nav surface (mobile drawer + desktop USER rail only —
  *  NOT the staff rail, which keeps its own `bg-cream-100/40`): a translucent
@@ -717,6 +718,93 @@ export default function AppLayout() {
     setTourOpen(true);
   }
 
+  /* THE ACCOUNT DROPDOWN — hoisted out of the header markup because there are
+     now two headers (superadmin's untouched platform chrome and the tenant's
+     cardstock nameplate) and this panel is identical in both. Hoisting keeps
+     ONE copy of the MenuLink set rather than a duplicate that can drift.
+     Unchanged from its previous form: same links, same order, same handlers. */
+  const accountMenu = menuOpen ? (
+    <div className="absolute right-0 mt-1 w-60 max-w-[calc(100vw-2rem)] bg-white border border-green-800/10 shadow-md rounded-md py-1 max-h-[calc(100dvh-5rem)] overflow-y-auto z-50 pb-3">
+      <p className="px-4 py-2 text-xs text-muted border-b border-green-800/10 truncate">{name}</p>
+      <MenuLink to="/app/account" label="Account" icon={UserRound} onNavigate={closeMenu} />
+      {/* admin references — company-associable items only */}
+      {isAdmin && !isSuperAdmin && (
+        <>
+          <div className="mt-1 border-t border-green-800/10 pt-2 px-4 pb-1 text-xs uppercase tracking-wide text-secondary/60">Company</div>
+          <button type="button"
+            onClick={() => { closeMenu(); navigate('/app/ops/documents'); }}
+            className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">
+            <FileText size={17} /> Pending agreements
+          </button>
+          {/* Both operators navigate to the community + catalog to help
+              members with what they're seeing — no shopper-only links. */}
+          <div className="mt-1 border-t border-green-800/10 pt-2 px-4 pb-1 text-xs uppercase tracking-wide text-secondary/60">Quick access</div>
+          <div className="px-1"><CommunityNav onNavigate={closeMenu} indentClass="pl-9" /></div>
+          <button type="button" onClick={() => { closeMenu(); navigate('/app/dashboard'); }}
+            className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">
+            <LayoutDashboard size={17} /> Dashboard
+            {unreadCount > 0 && <span className="ml-auto min-w-[1.25rem] h-5 px-1.5 text-[11px] leading-5 text-center rounded-full bg-gold-600 text-white">{unreadCount > 9 ? '9+' : unreadCount}</span>}
+          </button>
+          <button type="button" onClick={() => { closeMenu(); navigate('/app/catalog'); }}
+            className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">
+            <ShoppingBag size={17} /> Catalog
+          </button>
+        </>
+      )}
+      {/* client quick links — an admin's menu carries company work, not shopper shortcuts */}
+      {!isAdmin && !isSuperAdmin && (
+        <>
+          <div className="mt-1 border-t border-green-800/10 pt-2 px-4 pb-1 text-xs uppercase tracking-wide text-secondary/60">Quick access</div>
+          <div className="px-1"><CommunityNav onNavigate={closeMenu} indentClass="pl-9" /></div>
+          {QUICK.map((q) => {
+            const raw = q.badge === 'notifications' ? unreadCount : q.badge === 'messages' ? dmCount : 0;
+            const badge = raw > 0 ? raw : 0;
+            return (
+              <button key={q.label} type="button"
+                onClick={() => { closeMenu(); navigate(q.to); }}
+                className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">
+                <q.icon size={17} /> {q.label}
+                {badge > 0 && <span className="ml-auto min-w-[1.25rem] h-5 px-1.5 text-[11px] leading-5 text-center rounded-full bg-gold-600 text-white">{badge > 9 ? '9+' : badge}</span>}
+              </button>
+            );
+          })}
+          {/* I2 — same five presence-gated links as the rail, dropdown-shaped. */}
+          {navLinks.map((l) => {
+            const isActive = l.section ? accountSection === l.section : location.pathname === l.to;
+            return (
+              <Link key={l.key} to={l.to} onClick={closeMenu}
+                className={`flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans focus-ring ${
+                  isActive ? 'bg-cream-200 text-green-800 font-medium ' : 'text-secondary hover:bg-green-800/[0.06]'}`}>
+                <l.icon size={17} /> {l.label}
+              </Link>
+            );
+          })}
+        </>
+      )}
+      {navGroups.length > 0 && (
+        <div className="lg:hidden">
+          {navGroups.map((g) => (
+            <div key={g.key}>
+              <div className="mt-1 border-t border-green-800/10 pt-2 px-4 pb-1 text-xs uppercase tracking-wide text-secondary/60">
+                {g.label}
+              </div>
+              {g.items.map((it) => <MenuLink key={it.to} {...it} onNavigate={closeMenu} />)}
+            </div>
+          ))}
+        </div>
+      )}
+      <button type="button"
+        onClick={() => { closeMenu(); setTourOpen(true); }}
+        className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] border-t border-green-800/10 focus-ring">
+        <Compass size={17} aria-hidden="true" /> App tour
+      </button>
+      <button type="button" onClick={handleSignOut}
+        className="flex items-center gap-3 px-4 py-2.5 mt-1 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] border-t border-green-800/10 focus-ring">
+        <LogOut size={17} aria-hidden="true" /> Sign out
+      </button>
+    </div>
+  ) : null;
+
   return (
     <div className="min-h-screen bg-cream">
       {/* Staff belt-and-suspenders: never hard-walled — a persistent banner
@@ -727,35 +815,27 @@ export default function AppLayout() {
           <Link to="/app/onboarding" className="underline font-medium">Review and sign</Link>
         </div>
       )}
+      {isSuperAdmin ? (
+      /* ── SUPERADMIN: PLATFORM CHROME, DELIBERATELY UNTOUCHED ──────────────
+         This is the platform operator's chrome, not a tenant's branding, and it
+         gets its own design later. It receives NONE of the cardstock header's
+         parts — no sheet, no wordmark, no tabs — so it also keeps the mobile nav
+         BUTTON that the drawer tab replaced everywhere else, and its avatar
+         keeps its ChevronDown. Rendered output is byte-for-byte what it was;
+         only the account dropdown moved out to `accountMenu` above, which both
+         headers now share. */
       <header className="sticky top-0 z-40 bg-white border-b border-green-800/10">
         <div className="w-full max-w-[120rem] mx-auto grid grid-cols-[auto_1fr_auto] items-center gap-2 px-4 sm:px-8 h-14">
           <div className="flex items-center gap-3 justify-self-start">
-            {isSuperAdmin ? (
-              /* the PLATFORM operator's chrome — never a tenant's brand. Placeholder
-                 wordmark until the platform product is named/branded. Never gets
-                 the I10 centered French Heritage wordmark below — there is no
-                 tenant brand to show here. */
-              <Link to="/app/ops/superadmin/organizations" className="flex items-center gap-2.5" aria-label="Platform — organizations">
-                <span className="w-[34px] h-[34px] rounded-lg bg-green-950 text-gold-400 grid place-items-center font-display text-lg font-semibold shrink-0">C</span>
-                <span className="hidden sm:inline font-display text-green-900 text-lg uppercase tracking-wide">Cactai Platform</span>
-              </Link>
-            ) : (
-              /* I10 — the green "F" square was never the real brand logo; this is
-                 the favicon artwork (the only logo asset in the repo) at header
-                 size. The "French Heritage" wordmark text moved OUT of this
-                 lockup — it's now the centered, debossed nameplate below, so the
-                 mark stands alone here (no redundant second "French Heritage"
-                 label next to it). */
-              <Link to="/app" className="flex items-center shrink-0" aria-label="French Heritage — home">
-                <img src="/favicon.svg" alt="" width={34} height={34} className="w-[34px] h-[34px] rounded-lg shrink-0" />
-              </Link>
-            )}
-            {/* MOBILE NAV BUTTON — opens the left side menu. Moved into the header,
-                to the right of the logo mark, from the content area (owner spec
-                2026-08-05); the drawer itself and its Close behavior (I3) are
-                unchanged. Desktop (lg+) has the rail instead.
-                I9: icon-only, square, no text, no outline — same treatment as
-                the header's other icon buttons (Create, Calendar below). */}
+            {/* Placeholder wordmark until the platform product is named/branded.
+                Never gets the tenant's centered wordmark — there is no tenant
+                brand to show here. */}
+            <Link to="/app/ops/superadmin/organizations" className="flex items-center gap-2.5" aria-label="Platform — organizations">
+              <span className="w-[34px] h-[34px] rounded-lg bg-green-950 text-gold-400 grid place-items-center font-display text-lg font-semibold shrink-0">C</span>
+              <span className="hidden sm:inline font-display text-green-900 text-lg uppercase tracking-wide">Cactai Platform</span>
+            </Link>
+            {/* MOBILE NAV BUTTON — kept here, and ONLY here. Desktop (lg+) has
+                the rail instead. */}
             <button
               type="button"
               onClick={() => setMobileNavOpen(true)}
@@ -767,38 +847,9 @@ export default function AppLayout() {
             </button>
           </div>
 
-          {/* I10 — centered, debossed "French Heritage" wordmark. Shown for BOTH
-              USER and STAFF/ADMIN headers — they share this exact header row (the
-              staff management rail lives BELOW the header, not in it), so there
-              is no header-content collision to route around. Superadmin's
-              platform chrome (left, above) keeps its own lockup instead; this
-              slot renders empty for that case so the 3-column grid still holds
-              (right cluster stays right-aligned rather than re-centering into
-              this now-empty middle column).
-              Debossed/letterpress technique: fill color in the header surface's
-              own family (bg-white → text-white) so the shape is carried entirely
-              by the shadow pair — a dark shadow ABOVE (the recessed top edge in
-              shadow) + a light shadow BELOW (the lower lip catching a highlight)
-              reads as pressed INTO the surface rather than printed on it. Bold
-              weight of the brand display serif (Cormorant Garamond 700 — see
-              index.css/tailwind.config.js; "Big Caslon" is the macOS-only
-              progressive enhancement ahead of it) — the previous unweighted
-              (effectively thin) rendering of this same font was explicitly
-              rejected. Mark-only on mobile (hidden below `sm`), matching this
-              file's own header doc comment above ("logo mark + wordmark
-              (mark-only on mobile)"). Exact shadow/size values are a browser-
-              pending starting point — needs owner eyes on a real screen. */}
-          <div className="hidden sm:flex justify-self-center items-center">
-            {!isSuperAdmin && (
-              <Link to="/app" aria-label="French Heritage Equestrian — home" className="flex items-center">
-                <span
-                  className="font-display font-bold text-xl tracking-wide uppercase text-white [text-shadow:0_-1px_1px_rgba(13,33,24,0.45),0_1px_0_rgba(255,255,255,0.85)]"
-                >
-                  French Heritage
-                </span>
-              </Link>
-            )}
-          </div>
+          {/* empty middle column so the 3-column grid still holds and the right
+              cluster stays right-aligned rather than re-centering into it */}
+          <div className="hidden sm:flex justify-self-center items-center" />
 
           <div className="flex items-center gap-3 justify-self-end">
             <button type="button" onClick={() => setCreateOpen(true)}
@@ -820,91 +871,33 @@ export default function AppLayout() {
                 </span>
                 <ChevronDown size={14} className="text-secondary" />
               </button>
-              {menuOpen && (
-                <div className="absolute right-0 mt-1 w-60 max-w-[calc(100vw-2rem)] bg-white border border-green-800/10 shadow-md rounded-md py-1 max-h-[calc(100dvh-5rem)] overflow-y-auto z-50 pb-3">
-                  <p className="px-4 py-2 text-xs text-muted border-b border-green-800/10 truncate">{name}</p>
-                  <MenuLink to="/app/account" label="Account" icon={UserRound} onNavigate={closeMenu} />
-                  {/* admin references — company-associable items only */}
-                  {isAdmin && !isSuperAdmin && (
-                    <>
-                      <div className="mt-1 border-t border-green-800/10 pt-2 px-4 pb-1 text-xs uppercase tracking-wide text-secondary/60">Company</div>
-                      <button type="button"
-                        onClick={() => { closeMenu(); navigate('/app/ops/documents'); }}
-                        className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">
-                        <FileText size={17} /> Pending agreements
-                      </button>
-                      {/* Both operators navigate to the community + catalog to help
-                          members with what they're seeing — no shopper-only links. */}
-                      <div className="mt-1 border-t border-green-800/10 pt-2 px-4 pb-1 text-xs uppercase tracking-wide text-secondary/60">Quick access</div>
-                      <div className="px-1"><CommunityNav onNavigate={closeMenu} indentClass="pl-9" /></div>
-                      <button type="button" onClick={() => { closeMenu(); navigate('/app/dashboard'); }}
-                        className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">
-                        <LayoutDashboard size={17} /> Dashboard
-                        {unreadCount > 0 && <span className="ml-auto min-w-[1.25rem] h-5 px-1.5 text-[11px] leading-5 text-center rounded-full bg-gold-600 text-white">{unreadCount > 9 ? '9+' : unreadCount}</span>}
-                      </button>
-                      <button type="button" onClick={() => { closeMenu(); navigate('/app/catalog'); }}
-                        className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">
-                        <ShoppingBag size={17} /> Catalog
-                      </button>
-                    </>
-                  )}
-                  {/* client quick links — an admin's menu carries company work, not shopper shortcuts */}
-                  {!isAdmin && !isSuperAdmin && (
-                    <>
-                      <div className="mt-1 border-t border-green-800/10 pt-2 px-4 pb-1 text-xs uppercase tracking-wide text-secondary/60">Quick access</div>
-                      <div className="px-1"><CommunityNav onNavigate={closeMenu} indentClass="pl-9" /></div>
-                      {QUICK.map((q) => {
-                        const raw = q.badge === 'notifications' ? unreadCount : q.badge === 'messages' ? dmCount : 0;
-                        const badge = raw > 0 ? raw : 0;
-                        return (
-                          <button key={q.label} type="button"
-                            onClick={() => { closeMenu(); navigate(q.to); }}
-                            className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">
-                            <q.icon size={17} /> {q.label}
-                            {badge > 0 && <span className="ml-auto min-w-[1.25rem] h-5 px-1.5 text-[11px] leading-5 text-center rounded-full bg-gold-600 text-white">{badge > 9 ? '9+' : badge}</span>}
-                          </button>
-                        );
-                      })}
-                      {/* I2 — same five presence-gated links as the rail, dropdown-shaped. */}
-                      {navLinks.map((l) => {
-                        const isActive = l.section ? accountSection === l.section : location.pathname === l.to;
-                        return (
-                          <Link key={l.key} to={l.to} onClick={closeMenu}
-                            className={`flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans focus-ring ${
-                              isActive ? 'bg-cream-200 text-green-800 font-medium ' : 'text-secondary hover:bg-green-800/[0.06]'}`}>
-                            <l.icon size={17} /> {l.label}
-                          </Link>
-                        );
-                      })}
-                    </>
-                  )}
-                  {navGroups.length > 0 && (
-                    <div className="lg:hidden">
-                      {navGroups.map((g) => (
-                        <div key={g.key}>
-                          <div className="mt-1 border-t border-green-800/10 pt-2 px-4 pb-1 text-xs uppercase tracking-wide text-secondary/60">
-                            {g.label}
-                          </div>
-                          {g.items.map((it) => <MenuLink key={it.to} {...it} onNavigate={closeMenu} />)}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <button type="button"
-                    onClick={() => { closeMenu(); setTourOpen(true); }}
-                    className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] border-t border-green-800/10 focus-ring">
-                    <Compass size={17} aria-hidden="true" /> App tour
-                  </button>
-                  <button type="button" onClick={handleSignOut}
-                    className="flex items-center gap-3 px-4 py-2.5 mt-1 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] border-t border-green-800/10 focus-ring">
-                    <LogOut size={17} aria-hidden="true" /> Sign out
-                  </button>
-                </div>
-              )}
+              {accountMenu}
             </div>
           </div>
         </div>
       </header>
+      ) : (
+        /* ── THE CARDSTOCK NAMEPLATE ──────────────────────────────────────────
+           The tenant header: a Racing Green cardstock sheet carrying exactly
+           three marks — embossed FH squircle, embossed wordmark, debossed
+           avatar. See CardstockHeader.tsx and header-cardstock.css; the
+           specification is docs/reference/header-mockup.html.
+
+           Gone from here on purpose: the Calendar button (already in both the
+           avatar menu and the nav), the mobile nav button (now the drawer tab
+           below) and the avatar's ChevronDown (the debossed avatar is its own
+           affordance). The Create tab is admin/staff + desktop only; a regular
+           member's create path is the page-level `+` controls (PLUSPASS). */
+        <CardstockHeader
+          initial={initial}
+          menu={accountMenu}
+          menuOpen={menuOpen}
+          onAvatarClick={() => setMenuOpen((v) => !v)}
+          menuRef={menuRef}
+          showCreateTab={isStaff}
+          onCreate={() => setCreateOpen(true)}
+        />
+      )}
 
       <div className="w-full max-w-[120rem] mx-auto flex">
         {/* Members (non-staff) get a fixed quick-access rail on desktop (I1). */}
@@ -982,6 +975,35 @@ export default function AppLayout() {
           grouped management nav. A click on any link inside closes it.
           I7: green-glass surface (NAV_GLASS) — see its definition near the
           top of this file for the one-line revert. */}
+      {/* THE DRAWER TAB — mobile only, left edge, 24px below the header. It is
+          the drawer's own green glass (NAV_GLASS), not cardstock, because it
+          belongs to the drawer rather than the header: on open it rides out
+          attached to the drawer's edge and the arrow flips to point back.
+
+          It translates by min(288px,85vw) — the drawer's OWN width formula
+          (w-72 max-w-[85vw] below) — so it lands on the drawer's edge at any
+          viewport instead of at a guessed offset.
+
+          Tab and drawer are driven from the single `mobileNavOpen` state, so
+          they cannot desync: the tab's position, its arrow, its labels and the
+          drawer are all one boolean. Every close path already routes through
+          that state — the scrim's onClick, the Escape handler and the
+          route-change effect above, and a selection inside the drawer.
+
+          Superadmin does not get it (it keeps its own mobile nav button); the
+          CSS hides it at lg+, where the rail is the nav. */}
+      {!isSuperAdmin && (
+        <button
+          type="button"
+          className={`cs-drawer-tab ${NAV_GLASS}${mobileNavOpen ? ' is-open' : ''}`}
+          onClick={() => setMobileNavOpen((v) => !v)}
+          aria-label={mobileNavOpen ? 'Close menu' : 'Open menu'}
+          aria-expanded={mobileNavOpen}
+        >
+          <span className="cs-arrow" aria-hidden="true" />
+        </button>
+      )}
+
       {mobileNavOpen && (
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
           <div className="absolute inset-0 bg-green-950/50" onClick={closeMobileNav} aria-hidden="true" />
