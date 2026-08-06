@@ -45,6 +45,18 @@ ownership tooltips shipped 2026-08-06.
 
 ## 1. The six blocks
 
+**CORRECTION (2026-08-06).** An earlier draft of this document claimed
+`INSURANCE_RISK.CCC` was unconditional and therefore obligated every individual lessee
+to buy a product they cannot purchase. **That was wrong.** The clause is gated
+`{"equals":["ENTITY"],"field_key":"LESSEE.PARTY_TYPE"}` and prints only for entity
+lessees. The error came from reading the clause body without reading its
+`conditional_on` and inferring "ungated" because no *fields* pointed at it. B3/B4 below
+are therefore already satisfied at the clause level; what is missing is the *election*
+block, not the clause gate.
+
+The template is substantially better built than that draft implied — see §1a before
+scoping any work.
+
 The complete set of illegal selections the engine must prevent. Blocking text is
 counsel's, shown verbatim.
 
@@ -59,6 +71,44 @@ counsel's, shown verbatim.
 
 B1–B4 are carrier practice rather than statute, but absolute in execution, so the engine
 treats them as hard blocks. B5 is statutory.
+
+### Already satisfied
+
+| Block | Status |
+|---|---|
+| B3 / B4 (CCC for individuals) | **Already gated** — the CCC clause prints only for `LESSEE.PARTY_TYPE = ENTITY`. Remaining gap is that no *election control* is blocked, only the clause suppressed. |
+| B1 / B2 (partial-lease mortality) | **Not implemented.** Nothing prevents it. |
+| B5 (insurable interest) | **Not implementable yet** — the driving field does not exist. |
+| B6 (commercial GL to individuals) | **Not implemented.** |
+
+---
+
+## 1a. What already works — verified against the live template
+
+Before scoping any build, note that `HORSE_LEASE_V2` carries 35 insurance clauses and
+handles the common configurations today:
+
+- **"Lessor carries everything and accepts the risk."** `INSURANCE_RISK.RISK_OF_LOSS`
+  always prints: *"Lessor assumes all risk of loss of or injury to the Horse during the
+  term of this Agreement, except to the extent caused by Lessee's gross negligence,
+  reckless conduct…"*
+- **"No insurance at all."** Each `*_NOT_REQUIRED` election prints an affirmative
+  acceptance rather than falling silent — `GL_NONE`, `MED_NONE`, `MORT_NONE` each state
+  that the Lessor accepts full risk and responsibility for that category.
+- **Mutual releases** (`RELEASE`, `RELEASE_LESSOR`, `WAIVER_UNKNOWN`) and a
+  **loss-of-use acknowledgement** always print.
+- **Activity-specific risk disclosures** gate on `TXN.PERMITTED_ACTIVITIES` — jumping,
+  competition, shared arena, trail.
+- **Out-of-pocket allocation** exists as `MED_TAIL`.
+
+### Real gaps that remain
+
+1. `MED_TAIL` — the only out-of-pocket allocation clause — is gated on
+   `MED_NOT_REQUIRED = NO`. So a lease that **waives** medical has no allocation clause
+   for out-of-pocket cost at all. That is the no-fault gap, and it bites precisely in the
+   simplest configuration.
+2. The three field defects in §3 (split percentages, `Other`, jump height).
+3. B1/B2, B5, B6 have no enforcement.
 
 ---
 
