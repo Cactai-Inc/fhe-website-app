@@ -72,3 +72,10 @@ assignable/derivable on any contact. Company+rider is odd but not invalid; nothi
   attachment picking from the directory.
 
 Ordering constraint: P1 before all; P4 after P2; P3/P5 independent after P2.
+
+## Q3 ruling detail (owner, 2026-08-05)
+Edge creation is staff/admin-only today. Members cannot self-declare a company association
+(self-declared signing power is the abuse vector). FUTURE (not built now): peer-validation —
+when a company already has a CONNECTED person, a new association request routes to them;
+their approval grants it, inaction blocks it. Primary near-term use cases: owner-operators
+(rider whose business is directory-listed) and LLCs held for horse-ownership legal purposes.
