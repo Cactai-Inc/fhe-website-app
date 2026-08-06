@@ -177,11 +177,23 @@ Evaluation order within each cell is top-to-bottom; first match wins.
 | Determination | Rule |
 |---|---|
 | **Section applies at all** | `LOR = ENTITY` **or** `LEE = ENTITY`. Otherwise the whole section is omitted. |
-| **Lessor may hold** | `LOR = ENTITY` → **MANDATORY** (a program working horses it does not own must answer owner claims) · else **PERMITTED**. Never prohibited. |
+| **Lessor may hold** | `LOR = ENTITY` **and** `II ≠ OWNER` → **MANDATORY** · `LOR = INDIVIDUAL` → **PROHIBITED** · else **PERMITTED**. See correction note below. |
 | **Lessee may hold** | `LEE = INDIVIDUAL` → **PROHIBITED** (**B4**) · `LEE = ENTITY` taking custody → **MANDATORY** · else **PERMITTED**. |
 | **Lessor may require of Lessee** | `LEE = INDIVIDUAL` → **PROHIBITED** (**B3**) · `LEE = ENTITY` → **PERMITTED / MANDATORY** per above. |
 | **Shared** | Never — a commercial business liability form. |
 | **Mandatory disclosure** | The negligence trigger and duty to cooperate (§5). CCC must never be presented as protection for the horse. |
+
+> **Correction, found by comparing against an independently generated matrix
+> (2026-08-06).** Both this document and the independent version originally marked an
+> **individual Lessor as PERMITTED** to carry CCC. That is wrong, by the same reasoning
+> used to block individual *lessees*: CCC is a commercial inland-marine liability line,
+> unavailable to consumers. Party type governs availability on **both** sides.
+>
+> Going further, party type is not really the driver. **CCC covers a horse in your care
+> that you do not own.** An individual owner leasing their own horse out has no
+> non-owned horse in custody — CCC is *inapplicable*, not merely unavailable. The
+> precise condition for the Lessor is therefore `LOR = ENTITY AND II ≠ OWNER`, which is
+> exactly FHE sub-leasing a boarder's horse.
 
 ### Cross-cutting
 
@@ -190,6 +202,75 @@ Evaluation order within each cell is top-to-bottom; first match wins.
 | **No policy is ever shareable** | Named-insured status is not coverage. Additional Insured gains third-party liability defence only — **no** first-party medical or mortality recovery on the horse. |
 | **What actually pays an owner without a fault finding** | Only the owner's **own** major-medical / mortality policy. No first-party equine bailee form exists in the market. |
 | **Fault override** | A Lessee breach allocates 100% of deductible and non-covered cost to the Lessee, superseding every allocation election. |
+
+---
+
+## 2b. How a block is expressed — in OUR grammar
+
+An independently generated version proposed gates shaped
+`{"field":…, "operator":"EQUALS", "value":…}` with `"action":"BLOCK_OPTION"` and
+`"render_message"`. **That grammar is not ours and would not evaluate.** Our expression
+language, as used throughout `HORSE_LEASE_V2`, is:
+
+```json
+{"equals": ["INDIVIDUAL"], "field_key": "LESSEE.PARTY_TYPE"}
+{"all": [ {...}, {...} ]}
+{"any": [ {...}, {...} ]}
+{"contains": ["JUMPING"], "field_key": "TXN.PERMITTED_ACTIVITIES"}
+```
+
+There is also a semantic mismatch: `conditional_on` means **"render when true."** A block
+is the opposite — the control renders, but refuses. And blocks attach to **fields**
+(elections), not clauses; clauses already gate on the resulting field values.
+
+### The minimal engine change
+
+Two columns on `contract_field_defs`, reusing the existing evaluator — no new grammar,
+no second engine:
+
+| Column | Type | Meaning |
+|---|---|---|
+| `blocked_when` | `jsonb` | Same expression grammar as `conditional_on`. When it evaluates true, the control is rendered **disabled**. |
+| `blocked_reason` | `text` | Shown on the disabled control, exactly as the ownership tooltips work today. |
+
+Reusing `cursor-help` + the tooltip treatment shipped in CHECKBOXTIP means no new UI
+pattern either — a blocked election reads like a field you don't own, because
+functionally it is one.
+
+### The six blocks, written out
+
+```json
+B1/B2  mortality, partial lease
+  blocked_when:    {"equals": ["PARTIAL"], "field_key": "TXN.LEASE_TYPE"}
+  blocked_reason:  "Prohibited: Underwriting guidelines prevent partial lessees from
+                    establishing a sole insurable interest for third-party mortality
+                    placement."
+
+B3/B4  CCC, individual lessee
+  blocked_when:    {"equals": ["INDIVIDUAL"], "field_key": "LESSEE.PARTY_TYPE"}
+  blocked_reason:  "Prohibited: Care, Custody, and Control is a commercial liability
+                    product unavailable to individual consumers."
+
+B5     mortality + medical, no insurable interest
+  blocked_when:    {"equals": ["NONE"], "field_key": "TXN.LESSOR_INSURABLE_INTEREST"}
+  blocked_reason:  "Prohibited: Without a direct pecuniary interest in the Horse
+                    (Cal. Ins. Code §§ 281–284), the Lessor cannot lawfully insure it."
+
+B5b    medical only, interest but no owner authorisation
+  blocked_when:    {"all": [
+                     {"any": [{"equals": ["PRIMARY_LEASE_LIABILITY","RECOUPABLE_INVESTMENT"],
+                               "field_key": "TXN.LESSOR_INSURABLE_INTEREST"}]},
+                     {"equals": ["NO"], "field_key": "TXN.PRIMARY_OWNER_AUTHORIZES_INSURANCE"}]}
+  blocked_reason:  "Prohibited: The primary owner has not authorised insuring this horse."
+
+B6     commercial GL offered to an individual lessee
+  — not a block; an OPTION FILTER. The select's option list is narrowed rather than the
+    control disabled, since the field itself remains legitimately selectable.
+```
+
+`B6` is deliberately different in kind: removing an unavailable option from a list is not
+the same as refusing a field, and conflating them would disable a control the Lessor is
+entitled to use.
 
 ---
 
