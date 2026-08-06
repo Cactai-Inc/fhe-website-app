@@ -169,12 +169,56 @@ function fieldIsMine(f: ContractField, cb: FieldCallbacks): boolean {
   return cb.myRoles.includes(owner);
 }
 
-/** "This selection is made by the Lessor." — shown on a field the viewer does
- *  not own, so responsibility is legible without guessing. */
+/** "This item is set by the Lessor." (owner wording 2026-08-06) — shown on a
+ *  field the viewer does not own, so responsibility is legible without
+ *  guessing. Symmetric by construction: the role word comes from the field's
+ *  own owner_role, so the Lessee reads "…by the Lessor" and the Lessor reads
+ *  "…by the Lessee" on the mirror fields. */
 function otherPartyTip(f: ContractField): string {
   const owner = (f.owner_role ?? '').toUpperCase();
   const who = ROLE_WORD[owner] ?? 'the other party';
-  return `This entry is made by ${who}.`;
+  return `This item is set by ${who}.`;
+}
+
+/** OWNERSHIP AFFORDANCE (2026-08-04; consolidated to one wrapper 2026-08-06).
+ *  A field the viewer does NOT own reads inactive and says whose it is on
+ *  hover; a field they DO own is highlighted, so a party can scan the document
+ *  for their own responsibilities. Staff authoring (no myRoles) see neither
+ *  treatment — everything is theirs. `active` is the field's own gate: an
+ *  inoperable field gets no treatment.
+ *
+ *  EVERY field control in this document routes through here — inline tokens,
+ *  authored custom rows, and orphan controls alike. Wrapping (rather than
+ *  styling each control) is what makes the tooltip zone cover the WHOLE entry,
+ *  its label text included, with no dead spot where the explanation vanishes.
+ *  `[&_*]:cursor-help` has to reach nested elements because some controls set
+ *  their own cursor — a `certify` checkbox renders a <label className=
+ *  "cursor-pointer">, which by specificity beats an inherited cursor — and an
+ *  entry the viewer cannot make must never advertise itself as clickable. */
+function OwnedField({
+  f, cb, active = true, block = false, children,
+}: {
+  f: ContractField;
+  cb: FieldCallbacks;
+  active?: boolean;
+  /** Render the wrapper as a <div> — for call sites whose content is block-level. */
+  block?: boolean;
+  children: ReactNode;
+}) {
+  const show = !!cb.myRoles && cb.myRoles.length > 0 && cb.editable && active;
+  if (!show) return <>{children}</>;
+  const Tag = block ? 'div' : 'span';
+  if (!fieldIsMine(f, cb)) {
+    const tip = otherPartyTip(f);
+    return (
+      <Tag className="opacity-55 cursor-help [&_*]:cursor-help" title={tip} aria-label={tip}>
+        {children}
+      </Tag>
+    );
+  }
+  return (
+    <Tag className="rounded-sm bg-gold-100/70 ring-1 ring-gold-300/70 px-0.5">{children}</Tag>
+  );
 }
 
 /** The lock tooltip for an IMPORTED token (owner directive 2026-08-03): any
@@ -397,29 +441,14 @@ function renderToken(
     // what locks a duration UNIT until its number is entered — the gte gate.)
     const selfGateMet = clauseConditionMet(field.conditional_on, valueByKey);
     const mine = fieldIsMine(field, cb);
-    const control = (
-      <InlineFieldControl key={key} f={fieldWithAvailableOptions(field, valueByKey)}
-        editable={cb.editable && selfGateMet && mine}
-        onSave={cb.onSave} onSaveStructured={cb.onSaveStructured as never}
-        onSaveResponsibility={cb.onSaveResponsibility as never} />
+    return (
+      <OwnedField key={key} f={field} cb={cb} active={selfGateMet}>
+        <InlineFieldControl f={fieldWithAvailableOptions(field, valueByKey)}
+          editable={cb.editable && selfGateMet && mine}
+          onSave={cb.onSave} onSaveStructured={cb.onSaveStructured as never}
+          onSaveResponsibility={cb.onSaveResponsibility as never} />
+      </OwnedField>
     );
-    // OWNERSHIP AFFORDANCE (2026-08-04). A field the viewer does not own reads
-    // inactive and says whose it is; a field they DO own is highlighted so a
-    // party can scan the document for their own responsibilities. Staff
-    // authoring (no myRoles) see neither treatment — everything is theirs.
-    const showOwnership = !!cb.myRoles && cb.myRoles.length > 0 && cb.editable && selfGateMet;
-    if (showOwnership && !mine) {
-      return (
-        <span key={key} className="opacity-55 cursor-help" title={otherPartyTip(field)}
-          aria-label={otherPartyTip(field)}>{control}</span>
-      );
-    }
-    if (showOwnership && mine) {
-      return (
-        <span key={key} className="rounded-sm bg-gold-100/70 ring-1 ring-gold-300/70 px-0.5">{control}</span>
-      );
-    }
-    return control;
   }
   // Imported record tokens — party contact info and horse-record details
   // (farrier / vet) — are LOCKED at the document (owner directive 2026-08-03):
@@ -778,13 +807,15 @@ export function ClauseDocument({
   }, [sections, customRows, customSectionRows, lineItems]);
 
   const renderCustom = (f: ContractField, num: string) => (
-    <div key={f.field_key} className="flex items-baseline gap-1.5">
-      <span className="text-muted tabular-nums text-[13px]">{num}</span>
-      <span className="text-[13.5px] font-semibold text-green-900">{f.label ?? f.field_key}:</span>
-      <InlineFieldControl f={f} editable={cb.editable}
-        onSave={cb.onSave} onSaveStructured={cb.onSaveStructured as never}
-        onSaveResponsibility={cb.onSaveResponsibility as never} />
-    </div>
+    <OwnedField key={f.field_key} f={f} cb={cb} block>
+      <div className="flex items-baseline gap-1.5">
+        <span className="text-muted tabular-nums text-[13px]">{num}</span>
+        <span className="text-[13.5px] font-semibold text-green-900">{f.label ?? f.field_key}:</span>
+        <InlineFieldControl f={f} editable={cb.editable && fieldIsMine(f, cb)}
+          onSave={cb.onSave} onSaveStructured={cb.onSaveStructured as never}
+          onSaveResponsibility={cb.onSaveResponsibility as never} />
+      </div>
+    </OwnedField>
   );
 
   let sectionNo = 0;
@@ -893,12 +924,19 @@ export function ClauseDocument({
                   const selfLabels = f.format_type === 'certify'
                     || f.format_type === 'add_text' || f.format_type === 'reveal_text';
                   return (
-                    <span key={f.field_key} className="inline-flex items-baseline gap-1.5">
-                      {!selfLabels && <span>{f.label ?? f.field_key}</span>}
-                      <InlineFieldControl f={fieldWithAvailableOptions(f, valueByKey)} editable={cb.editable}
-                        onSave={cb.onSave} onSaveStructured={cb.onSaveStructured as never}
-                        onSaveResponsibility={cb.onSaveResponsibility as never} />
-                    </span>
+                    /* The label rides INSIDE the ownership wrapper with its
+                       control, so a checkbox and the statement it belongs to
+                       are one hover target — the insurance "not required"
+                       certifications are exactly this shape. */
+                    <OwnedField key={f.field_key} f={f} cb={cb}>
+                      <span className="inline-flex items-baseline gap-1.5">
+                        {!selfLabels && <span>{f.label ?? f.field_key}</span>}
+                        <InlineFieldControl f={fieldWithAvailableOptions(f, valueByKey)}
+                          editable={cb.editable && fieldIsMine(f, cb)}
+                          onSave={cb.onSave} onSaveStructured={cb.onSaveStructured as never}
+                          onSaveResponsibility={cb.onSaveResponsibility as never} />
+                      </span>
+                    </OwnedField>
                   );
                 };
                 return (
