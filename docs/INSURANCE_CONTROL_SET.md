@@ -277,11 +277,26 @@ mechanism adversarial to the relationship the business runs on.
 
 ### Generated disclosures
 
-1. **Cal. Civ. Code § 3333.7** equine liability warning — **verbatim statutory wording**,
-   bold uppercase, prominent. A statutory warning generally must appear in the exact
-   prescribed language for the liability limitation to attach; a paraphrase may protect
-   nothing. Counsel must supply the exact text — do not let it be generated or
-   reworded.
+1. ~~Cal. Civ. Code § 3333.7 equine liability warning~~ — **STRUCK. Do not implement.**
+   Verified 2026-08-06 against the statute and against equine-law sources: **§ 3333.7
+   concerns treble damages against commercial motor-vehicle employers whose drivers were
+   under the influence.** It has nothing to do with horses. **California has no Equine
+   Activity Liability Act** — it is one of a small number of states that never enacted
+   one. Protection rests on the common-law doctrine of **primary assumption of risk**,
+   which must be established by an express, detailed written release.
+
+   **The template already does this correctly** and needs no change:
+   `ASSUMPTION_INHERENT` (always prints) recites the unpredictable-horse risks;
+   `RELEASE` / `RELEASE_LESSOR` are mutual express releases; `JUMPING_RISKS`,
+   `COMPETITION_RISKS`, `SHARED_ARENA_RISKS` and `TRAIL_RIDING` gate on
+   `TXN.PERMITTED_ACTIVITIES`; `WAIVER_UNKNOWN` carries the **Civil Code § 1542** waiver
+   of unknown claims — the real California statute here, cited in three clauses. There
+   are zero references to § 3333.7 in the template, so the bad citation was never
+   introduced.
+
+   *Lesson recorded:* this citation was supplied confidently by an AI research assistant,
+   then retracted by the same assistant. Statutory citations going into signed
+   instruments get verified independently before they are built.
 2. **No shared policy** — an Additional Insured gains third-party liability protection
    but **no** first-party medical or mortality cover on the horse.
 3. **CCC negligence trigger** — plain-language statement of the above.
