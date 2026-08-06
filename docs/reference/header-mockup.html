@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!-- viewport-fit=cover: without it iOS letterboxes the page inside the safe
+     area in landscape, leaving pale bands beside the header where the notch
+     and home indicator live. With it the page owns the full width and we
+     inset the CONTENT instead, via env(safe-area-inset-*) below. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FHE — consolidated final</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Libre Caslon Text',Georgia,serif;background:#f7f3ea;color:#1d2b23;position:relative}
+
+  .hdr{
+    /* 80px — close to 5c's 76px proportion, where the name carries a real
+       share of the header height rather than floating in empty stock. */
+    height:80px;
+    display:grid;grid-template-columns:1fr auto 1fr;align-items:center;
+    /* the stock runs edge to edge; only the marks are inset past the notch */
+    padding-left:calc(33px + env(safe-area-inset-left));
+    padding-right:calc(33px + env(safe-area-inset-right));
+    background-image:
+      radial-gradient(120% 200% at 82% -30%, rgba(255,255,255,.045) 0%, rgba(255,255,255,0) 60%),
+      radial-gradient(90% 160% at 10% 130%, rgba(0,0,0,.12) 0%, rgba(0,0,0,0) 58%),
+      url('/header-stock.jpg');
+    background-size:auto,auto,cover;
+    background-repeat:no-repeat;
+    background-position:center;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.09), inset 0 -1px 0 rgba(0,0,0,.26),
+               0 6px 18px rgba(24,38,32,.14);
+  }
+
+  /* ============ EMBOSS — logo letters + wordmark ============
+     Face is the EXACT tone of the sheet (#293a37), as in 5c. Lightening it to
+     #2e403c read as a lighter shape sitting ON the stock; when the face
+     matches the sheet, the only cues are the highlight and the shadow, which
+     is what makes it read as displaced material. Lip and occlusion stay at
+     the slightly firmer values so definition doesn't drop with the tone.
+     Sub-pixel offsets + blur always (1px/0-blur = detached slab at 3x).
+
+     Offsets are SCALED for 44px. 5c's numbers were tuned at 36px, and shadow
+     offsets are absolute pixels — they don't grow with font-size, so reusing
+     them verbatim at 44px made the relief 22% shallower and washed the name
+     out. These are 5c's values × 1.22, with the lip and occlusion pushed a
+     little further for definition at the larger size. */
+  .emboss{color:#293a37;
+    text-shadow:
+      0 -0.61px 0.73px rgba(198,214,200,.55),
+      0  0.61px 0.98px rgba(0,0,0,.78),
+      0  1.83px 3.05px rgba(0,0,0,.32)}
+
+  /* ============ THE OUTLINES — header-all6 variant 5, verbatim ============
+     THREE strokes, NO blur filters at all, offset a full 1px (not 0.5), and
+     the light stroke is a bright rgba(226,236,226,.32) against a hard
+     rgba(0,0,0,.80) dark. The blurred sub-pixel versions I drifted into are
+     what killed the crispness — this construction is deliberately hard-edged,
+     which is exactly what makes it read as a struck impression. */
+  .ring{fill:none;stroke:#293a37;stroke-width:1.8}
+  .ring-dark{fill:none;stroke:rgba(0,0,0,.80);stroke-width:1.8}
+  .ring-light{fill:none;stroke:rgba(226,236,226,.32);stroke-width:1.8}
+  /* The avatar is DEBOSSED — a sunken edge shows no bright rim. Its lower
+     stroke is only the faintest breath of light, not the logo's .32 lip.
+     Scoped to the avatar so pressing it never touches the logo's strokes. */
+  .ring-breath{fill:none;stroke:rgba(226,236,226,.08);stroke-width:1.8;
+    transition:stroke .18s cubic-bezier(.22,.61,.36,1),
+               stroke-width .18s cubic-bezier(.22,.61,.36,1)}
+
+  /* the marks and wordmark are artwork, never selectable text */
+  .mark,.wordmark{-webkit-tap-highlight-color:transparent;
+    -webkit-user-select:none;user-select:none}
+  .left{grid-column:1;display:flex;justify-content:flex-start}
+  .right{grid-column:3;display:flex;justify-content:flex-end}
+  .mark{width:40px;height:40px;flex:none;position:relative;display:flex;align-items:center;justify-content:center}
+  .mark svg{position:absolute;inset:0;width:100%;height:100%}
+  .glyph{position:relative;z-index:1;line-height:1;display:block}
+
+  /* 5c's exact tracking (.045em). The wide spacing is a real part of why it
+     reads better: each letter's shadow gets room to resolve instead of
+     crowding its neighbour's highlight. At .015em the relief muddies. */
+  .wordmark{grid-column:2;text-align:center;white-space:nowrap;
+    font-size:44px;font-weight:700;letter-spacing:.045em;line-height:1}
+  .wordmark .short{display:none}
+  /* The logo runs larger than the avatar — its own size, not .mark's.
+     Wrapper always equals the viewBox (56 logo, 50 avatar) at every
+     breakpoint, so 1 unit = 1 px and the outline never gets resampled. */
+  .logo{width:56px;height:56px}
+  /* The FH is 21px, half the wordmark — the wordmark's scaled-up offsets
+     would swamp a letter this small, so it keeps 5c's original values. */
+  .fh{font-size:21px;font-weight:700;letter-spacing:.04em;
+    text-shadow:
+      0 -0.5px 0.6px rgba(188,206,190,.46),
+      0  0.5px 0.8px rgba(0,0,0,.66),
+      0  1.5px 2.5px rgba(0,0,0,.26)}
+
+  /* THE C — one glyph, one fill, one shadow stack. No overlay, no tile, no
+     second copy. Identical construction to the FH and the name (which both
+     read perfectly), only with deboss geometry: dark edge above, light
+     breath below. The one thing every failed C had in common was layering. */
+  /* Both SVGs are now DRAWN at their render size (56 and 50), so one user
+     unit is one CSS pixel and the 1px stroke offsets land on exact device
+     pixels. Scaling them instead — 62 units into 56px — put those offsets at
+     0.903px, straddling pixel boundaries and producing the jagged, fuzzy edge.
+     No inverse-scale stroke compensation is needed at 1:1. */
+  .avatar .av{
+    color:#293a37;
+    text-shadow:
+      0 -0.6px 0.8px rgba(0,0,0,.52),
+      0  0.6px 0.6px rgba(206,220,208,.16),
+      0 -1.6px 2.4px rgba(0,0,0,.20);
+  }
+  /* The letter rides the floor of the well, so it travels with the press —
+     but its text-shadow values never change: the C sinks as one struck piece
+     rather than being re-lit.
+
+     Rest is +1px, not the -1px it started at. The deboss shadows are darker
+     above the letter and lighter below, and that asymmetry drags the eye
+     upward — the C read high even when geometrically centred. The shadows
+     move with it, being part of the same glyph. */
+  .av{font-family:'Libre Caslon Text',Georgia,serif;font-size:24px;font-weight:700;
+      letter-spacing:.045em;transform:translateY(1px);
+      /* ease-out: an overshoot would carry it past rest on the way back up */
+      transition:transform .18s cubic-bezier(.22,.61,.36,1);will-change:transform}
+
+  /* iOS Safari paints a translucent grey box over any tappable element on
+     touch, and it ignores border-radius — so it renders as a square around
+     the round avatar. Suppressed here; our own press animation is the
+     feedback. The other three properties stop the long-press callout menu
+     and the blue text selection that a tap-and-hold would otherwise trigger
+     on the C. */
+  .avatar{width:50px;height:50px;cursor:pointer;position:relative;
+    -webkit-tap-highlight-color:transparent;
+    -webkit-touch-callout:none;
+    -webkit-user-select:none;user-select:none}
+
+  /* ============ THE WELL DEEPENING ============
+     The struck rim never changes — it is a hole in the stock. The depth cue
+     is a SEPARATE blurred band (.ring-wall) living inside that rim, faint at
+     rest and reaching further inward as the button sinks. Growing the crisp
+     rim itself produced a hard black line; this layer is soft by construction.
+
+     It holds ONE opacity throughout: pressing makes it WIDER, never darker.
+     Kept narrow on purpose — a wide stroke blurred heavily near a 24px rim
+     reaches the middle and floods the face solid black. */
+  /* same duration and curve as the letter's travel, so the floor and the C
+     arrive together — a .2s wall under a .18s letter reads as the letter
+     moving first, on its own */
+  .ring-wall{fill:none;stroke:url(#wallFade);stroke-width:1.2;filter:url(#wallBlur);
+    transition:stroke-width .18s cubic-bezier(.22,.61,.36,1)}
+  /* The bottom lip fades in step with the well: as the floor sinks it turns
+     away from the light. Doing this on press but NOT on hover was what made
+     hover read as "only the letter moved" — the button's own edge sat inert
+     while the C travelled. Both states now change together. */
+  /* The letter moving alone read as "the C slides inside a fixed hole". The
+     button's own edge has to move with it: the dark wall shifts DOWN as the
+     floor sinks (its shadow follows the receding surface) and the bottom
+     breath dims, exactly as on press but at half the amount. The band alone
+     was too subtle to register against a 1px letter shift. */
+  .avatar .ring-dark{transition:transform .18s cubic-bezier(.22,.61,.36,1)}
+  @media (hover:hover){
+    .avatar:hover .ring-wall{stroke-width:2.4}
+    .avatar:hover .ring-dark{transform:translateY(0.5px)}
+    .avatar:hover .ring-breath{stroke:rgba(226,236,226,.04)}
+    .avatar:hover .av{transform:translateY(2px)}       /* +1 rest + 1 */
+  }
+  .avatar.is-pressed .ring-wall{stroke-width:4;transition-duration:.14s}
+  .avatar.is-pressed .ring-dark{transform:translateY(1.1px);transition-duration:.07s}
+  .avatar.is-pressed .ring-breath{
+    stroke:rgba(226,236,226,.02);stroke-width:1.2;transition-duration:.07s}
+  /* the letter rides the floor down with it — 2px, shadows unchanged */
+  .avatar.is-pressed .av{transform:translateY(3.25px);transition-duration:.07s}  /* +1 rest + 2.25 */
+
+  /* ===================== PAGE ===================== */
+  .page{max-width:820px;margin:0 auto;
+    padding:40px calc(28px + env(safe-area-inset-right)) 0 calc(28px + env(safe-area-inset-left))}
+  .tag{font-family:Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:.22em;
+    text-transform:uppercase;color:#9aa79a;margin-bottom:18px}
+  .eyebrow{font-family:Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:.24em;
+    text-transform:uppercase;color:#7d8a7c;margin-bottom:12px}
+  .intro{font-size:38px;font-weight:700;margin-bottom:14px;color:#1a2a20}
+  .lede{font-size:15.5px;line-height:1.75;color:#55655a;max-width:56ch;margin-bottom:34px}
+  .item{padding:22px 0;border-bottom:1px solid rgba(41,58,55,.10)}
+  .item h2{font-size:17px;font-weight:700;margin-bottom:6px}
+  .item p{font-size:14.5px;line-height:1.8;color:#4d5c51}
+  .meta{font-family:Helvetica,Arial,sans-serif;font-size:10.5px;letter-spacing:.16em;
+    text-transform:uppercase;color:#7d8a7c;margin-bottom:5px}
+  .tail{height:90vh}
+
+  /* The full name at 48px needs ~780px of line plus both marks, so it has to
+     step down before the 820px breakpoint or it collides with them. */
+  /* At 5c's .045em tracking the line runs ~658px at 44px, so the header needs
+     ~840px before the marks collide with it — these fire earlier than the
+     tight-tracking version did. */
+  @media(max-width:900px){
+    .hdr{height:86px}
+    .wordmark{font-size:40px}
+    .wordmark{text-shadow:
+      0 -0.55px 0.66px rgba(198,214,200,.55),
+      0  0.55px 0.89px rgba(0,0,0,.78),
+      0  1.66px 2.77px rgba(0,0,0,.32)}
+  }
+  @media(max-width:850px){
+    .hdr{height:83px}
+    .wordmark{font-size:34px}
+    .wordmark{text-shadow:
+      0 -0.47px 0.56px rgba(198,214,200,.55),
+      0  0.47px 0.76px rgba(0,0,0,.78),
+      0  1.41px 2.36px rgba(0,0,0,.32)}
+  }
+  @media(max-width:820px){
+    .hdr{height:76px;padding-left:calc(25px + env(safe-area-inset-left));padding-right:calc(25px + env(safe-area-inset-right))}
+    .wordmark{font-size:29px;letter-spacing:.045em}
+    .wordmark{text-shadow:
+      0 -0.40px 0.48px rgba(198,214,200,.55),
+      0  0.40px 0.65px rgba(0,0,0,.78),
+      0  1.21px 2.01px rgba(0,0,0,.32)}
+    .fh{font-size:19px} .av{font-size:25px}
+  }
+  @media(max-width:480px){
+    /* Tighter to the edges and smaller marks — at 62/54 they crowded the
+       wordmark. The SVG scales down here, which would thin the 1px stroke
+       offsets, so the strokes are widened by the inverse of the scale
+       (62/52 ≈ 1.19) to land back at the same apparent weight. */
+    .hdr{height:88px;padding-left:calc(12px + env(safe-area-inset-left));padding-right:calc(12px + env(safe-area-inset-right))}
+    .wordmark .long{display:none}
+    .wordmark .short{display:inline}
+    .wordmark{font-size:30px;letter-spacing:.045em}
+    .wordmark{text-shadow:
+      0 -0.42px 0.50px rgba(198,214,200,.55),
+      0  0.42px 0.67px rgba(0,0,0,.78),
+      0  1.25px 2.08px rgba(0,0,0,.32)}
+    /* held at drawn size (56/50) so 1 unit stays 1 px — resampling is what
+       made the outline jagged */
+    .fh{font-size:19px} .av{font-size:25px}
+    /* the press band gets the same inverse-scale treatment */
+    .ring-wall{stroke-width:1.4}
+    .avatar:hover .ring-wall{stroke-width:2.9}
+    .avatar.is-pressed .ring-wall{stroke-width:4.8}
+  }
+
+  /* ============ PHONE IN LANDSCAPE ============
+     A landscape phone is ~850px wide but only ~390px tall, so the width
+     breakpoints treat it as a small tablet: it was getting the 76-88px
+     header meant for a portrait screen, which eats a fifth of the display.
+     Keyed on height + coarse pointer so it can never catch a real tablet
+     or a narrow desktop window.
+
+     There is plenty of horizontal room here — this is the one phone
+     orientation that fits the full name, so .long is restored explicitly
+     (the 480px block that hides it is width-only and doesn't apply here,
+     but being explicit keeps it from depending on that). */
+  @media (max-height:500px) and (orientation:landscape) and (pointer:coarse){
+    .hdr{height:60px;padding-left:calc(16px + env(safe-area-inset-left));padding-right:calc(16px + env(safe-area-inset-right))}
+    .wordmark .long{display:inline}
+    .wordmark .short{display:none}
+    .wordmark{font-size:28px;letter-spacing:.045em}
+    .wordmark{text-shadow:
+      0 -0.39px 0.46px rgba(198,214,200,.55),
+      0  0.39px 0.62px rgba(0,0,0,.78),
+      0  1.16px 1.94px rgba(0,0,0,.32)}
+    .fh{font-size:16px} .av{font-size:20px}
+    .ring-wall{stroke-width:1.7}
+    .avatar.is-pressed .ring-wall{stroke-width:5.7}
+  }
+  /* ============ THE CREATE TAB ============
+     A paper index tab cut from the same stock, hanging off the header's bottom
+     edge with the chevron always visible — the tab has to be findable, so it
+     shows a shallow lip with the icon on it at rest. Hovering slides it down
+     to its full depth; moving away draws it back up. Clicking opens the modal.
+
+     It hangs between the end of the wordmark and the avatar. The tab is a
+     SIBLING of the sheet inside a sticky wrapper and ordered before it, so the
+     sheet's own background paints over the tucked portion — the tab emerges
+     from BEHIND the card rather than sliding across it. */
+  .hdrwrap{position:sticky;top:0;z-index:40}
+  .hdr{position:relative;z-index:2}
+  .tab{
+    position:absolute;top:100%;z-index:1;
+    /* halfway between the wordmark's end and the avatar: the avatar sits at
+       the padding edge (33px) and is 50px wide, so its inner edge is 83px in;
+       the tab centre sits ~46px further left. */
+    --tab-right:calc(112px + env(safe-area-inset-right));
+    right:var(--tab-right);
+    width:52px;height:44px;
+    display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px;
+    border:0;cursor:pointer;
+    /* the sheet is painted by ::after, clipped to this box — see note below */
+    overflow:hidden;
+    border-radius:0 0 9px 9px;
+    box-shadow:0 1px 0 rgba(226,236,226,.10) inset,
+               0 6px 12px rgba(16,28,22,.26);
+    /* at rest 22px of the 44 shows — enough to carry the chevron; hover
+       slides out the remaining 22 */
+    transform:translateY(-22px);
+    transition:transform .22s cubic-bezier(.22,.61,.36,1);
+    -webkit-tap-highlight-color:transparent;
+  }
+  /* THE SAME SHEET, CONTINUED — not a fresh crop.
+     The header paints the stock with `cover` over a full-viewport-width box.
+     A 52px tab doing its own `cover` samples an entirely different region of
+     the image: different grain, different tone, and it reads as a patch stuck
+     on rather than the same piece of card.
+     So the tab clips (overflow:hidden) a child sized to the FULL VIEWPORT and
+     positioned so its box coincides with the header's: same width, same
+     `cover`, same `center`. Identical inputs produce identical pixels, so the
+     grain runs straight through the seam no matter the viewport size. */
+  .tab::after{
+    content:'';position:absolute;
+    /* span the viewport, aligned to the header's box: right edge of this
+       layer sits where the header's does, and its top where the header's
+       top is (the tab hangs `height` below the header's bottom edge). */
+    width:100vw;height:80px;right:calc(-1 * var(--tab-right));top:0;
+    background-image:url('/header-stock.jpg');
+    background-size:cover;background-position:center;background-repeat:no-repeat;
+    /* MIRRORED. The header's box ends at the tab's top edge, so the card has
+       no more image below it to continue into. Flipping the layer vertically
+       makes the tab a mirror of the strip immediately above the seam: the
+       grain meets itself exactly at the join and runs on without a break —
+       the same book-matching trick used to hide the tile seam in the sheet
+       itself. */
+    transform:scaleY(-1);transform-origin:top;
+  }
+  .tab>*{position:relative;z-index:1}   /* keep the chevron above that layer */
+
+  /* a little slop around the tab so the cursor triggers it on approach */
+  .tab::before{content:'';position:absolute;left:-8px;right:-8px;top:0;bottom:-14px;z-index:2}
+  @media (hover:hover){ .tab:hover{transform:translateY(0)} }
+  .tab:focus-visible{transform:translateY(0);
+    outline:2px solid rgba(226,236,226,.5);outline-offset:2px}
+  .tab.is-out{transform:translateY(0)}    /* touch: first tap reveals */
+  /* A downward chevron — the drawer-pull icon, drawn in the stock's own
+     relief like everything else. Two strokes rotated into a V, each carrying
+     the emboss shadow pair so it reads as pressed into the card. Visible at
+     rest (it is the only thing marking the tab) and steady on hover. */
+  .tab .chev{width:15px;height:15px;position:relative}
+  .tab .chev::before,.tab .chev::after{
+    content:'';position:absolute;top:4px;width:9px;height:2px;
+    background:#293a37;border-radius:1px;
+    box-shadow:0 -0.5px 0.6px rgba(198,214,200,.5), 0 0.6px 0.9px rgba(0,0,0,.72)}
+  .tab .chev::before{left:0.6px;transform:rotate(45deg);transform-origin:left center}
+  .tab .chev::after{right:0.6px;transform:rotate(-45deg);transform-origin:right center}
+  .tab:active .chev{transform:translateY(0.75px)}
+
+  /* ============ THE DRAWER TAB (mobile only) ============
+     Left edge, 24px below the header. Uses the nav's own GREEN GLASS — not the
+     cardstock — because it belongs to the drawer, not the header: it rides out
+     WITH the drawer when it opens, staying attached to its edge, and the arrow
+     flips to point back. Tapping it again, or making a selection, closes both.
+
+     Real value from the app: NAV_GLASS =
+       bg-green-800/[0.07] + backdrop-blur-md, with a cream-100 fallback where
+       backdrop-filter is unsupported. */
+  .drawer-tab{
+    position:fixed;left:0;top:calc(80px + 24px);z-index:55;
+    width:34px;height:46px;border:0;cursor:pointer;
+    display:grid;place-items:center;
+    border-radius:0 10px 10px 0;
+    background:rgba(22,58,42,.07);
+    -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+    box-shadow:0 1px 2px rgba(16,28,22,.12), 0 6px 16px rgba(16,28,22,.14),
+               inset 0 0 0 1px rgba(255,255,255,.28);
+    transition:transform .28s cubic-bezier(.22,.61,.36,1);
+    -webkit-tap-highlight-color:transparent;
+  }
+  @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+    .drawer-tab{background:#f4efe4}
+  }
+  /* when the drawer is open the tab rides out on its edge */
+  .drawer-tab.is-open{transform:translateX(min(288px,85vw))}
+  .drawer-tab .arrow{width:9px;height:9px;position:relative;
+    transition:transform .28s cubic-bezier(.22,.61,.36,1)}
+  .drawer-tab .arrow::before,.drawer-tab .arrow::after{
+    content:'';position:absolute;left:1px;width:8px;height:1.8px;
+    background:#1f3a2c;border-radius:1px}
+  .drawer-tab .arrow::before{top:2px;transform:rotate(45deg);transform-origin:right center}
+  .drawer-tab .arrow::after{bottom:2px;transform:rotate(-45deg);transform-origin:right center}
+  .drawer-tab.is-open .arrow{transform:rotate(180deg)}
+  /* desktop has the rail instead — the tab is phone/tablet only */
+  @media(min-width:1024px){ .drawer-tab{display:none} }
+
+  /* ============ THE DRAWER (stand-in for the app's mobile nav) ========= */
+  .drawer{
+    position:fixed;inset:0 auto 0 0;width:min(288px,85vw);z-index:54;
+    background:rgba(22,58,42,.07);
+    -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+    box-shadow:0 12px 34px rgba(16,28,22,.22);
+    transform:translateX(-100%);
+    transition:transform .28s cubic-bezier(.22,.61,.36,1);
+    padding:18px 14px;overflow-y:auto;
+  }
+  @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+    .drawer{background:#f4efe4}
+  }
+  .drawer.is-open{transform:translateX(0)}
+  .drawer a{display:block;padding:11px 12px;border-radius:6px;color:#1d2b23;
+    text-decoration:none;font-size:15.5px}
+  .drawer a:hover{background:rgba(41,58,55,.07)}
+  .navscrim{position:fixed;inset:0;background:rgba(16,28,22,.42);z-index:53;
+    opacity:0;pointer-events:none;transition:opacity .28s ease}
+  .navscrim.open{opacity:1;pointer-events:auto}
+  @media(min-width:1024px){ .drawer,.navscrim{display:none} }
+
+  /* ============ CREATE MODAL (stand-in for the app's CreateModal) ======== */
+  .scrim{position:fixed;inset:0;background:rgba(16,28,22,.44);z-index:60;
+    opacity:0;pointer-events:none;transition:opacity .2s ease}
+  .scrim.open{opacity:1;pointer-events:auto}
+  .modal{position:fixed;z-index:61;left:50%;top:50%;
+    transform:translate(-50%,-48%) scale(.98);opacity:0;pointer-events:none;
+    width:min(460px,calc(100vw - 32px));background:#fbf8f1;border-radius:6px;
+    box-shadow:0 24px 60px rgba(16,28,22,.30);padding:26px 28px 22px;
+    transition:opacity .2s ease, transform .2s cubic-bezier(.22,.61,.36,1)}
+  .modal.open{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+  .modal h2{font-size:22px;font-weight:700;margin-bottom:4px}
+  .modal p{font-size:14px;color:#55655a;margin-bottom:18px}
+  .modal ul{list-style:none;display:grid;gap:2px}
+  .modal li button{width:100%;text-align:left;background:none;border:0;cursor:pointer;
+    font-family:inherit;font-size:15px;color:#1d2b23;padding:11px 12px;border-radius:4px}
+  .modal li button:hover{background:rgba(41,58,55,.06)}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute"><defs>
+  <!-- native feGaussianBlur: iOS ignores CSS filter:blur() on SVG children -->
+  <filter id="wallBlur" x="-60%" y="-60%" width="220%" height="220%">
+    <feGaussianBlur stdDeviation="1.4"/>
+  </filter>
+  <!-- keeps the blurred wall strictly inside the struck rim -->
+  <clipPath id="wellClip"><circle cx="25" cy="25" r="22.2"/></clipPath>
+  <!-- Light comes from above, so the top wall casts and the bottom barely does.
+       Kept faint on purpose: this is a diffuse shadow that gains REACH as the
+       button sinks, not a fill that switches on. A dark top stop read as a
+       bold black band appearing suddenly. -->
+  <linearGradient id="wallFade" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%"   stop-color="#000" stop-opacity=".30"/>
+    <stop offset="45%"  stop-color="#000" stop-opacity=".16"/>
+    <stop offset="75%"  stop-color="#000" stop-opacity=".06"/>
+    <stop offset="100%" stop-color="#000" stop-opacity=".02"/>
+  </linearGradient>
+</defs></svg>
+
+<div class="hdrwrap">
+<header class="hdr">
+  <div class="left"><div class="mark logo"><svg viewBox="0 0 56 56" width="56" height="56">
+    <path class="ring-light" transform="translate(0,-1)" d="M28 3.61 C 11.29 3.61, 3.61 11.29, 3.61 28 C 3.61 44.71, 11.29 52.39, 28 52.39 C 44.71 52.39, 52.39 44.71, 52.39 28 C 52.39 11.29, 44.71 3.61, 28 3.61 Z"/><path class="ring-dark" transform="translate(0,1)" d="M28 3.61 C 11.29 3.61, 3.61 11.29, 3.61 28 C 3.61 44.71, 11.29 52.39, 28 52.39 C 44.71 52.39, 52.39 44.71, 52.39 28 C 52.39 11.29, 44.71 3.61, 28 3.61 Z"/><path class="ring" d="M28 3.61 C 11.29 3.61, 3.61 11.29, 3.61 28 C 3.61 44.71, 11.29 52.39, 28 52.39 C 44.71 52.39, 52.39 44.71, 52.39 28 C 52.39 11.29, 44.71 3.61, 28 3.61 Z"/>
+    </svg><span class="glyph fh emboss">FH</span></div></div>
+
+  <div class="wordmark emboss"><span class="long">French Heritage Equestrian</span><span class="short">French Heritage</span></div>
+
+  <div class="right"><div class="mark avatar" id="avatarBtn"><svg viewBox="0 0 50 50" width="50" height="50">
+      <g clip-path="url(#wellClip)"><circle class="ring-wall" cx="25" cy="24.4" r="21.8"/></g>
+      <circle class="ring-dark" cx="25" cy="24" r="22.2"/><circle class="ring-breath" cx="25" cy="26" r="22.2"/><circle class="ring" cx="25" cy="25" r="22.2"/>
+    </svg><span class="glyph av">C</span></div></div>
+</header>
+  <button class="tab" id="createBtn" type="button" aria-label="Create" aria-haspopup="dialog">
+    <span class="chev" aria-hidden="true"></span>
+  </button>
+</div>
+
+<div class="page">
+  <div class="tag">FINAL DRAFT · variant-5 outlines · letter sinks 1px hover / 2.25px click · well band grows inward</div>
+  <div class="eyebrow">Dashboard</div>
+  <div class="intro">Good morning, CJ</div>
+  <div class="lede">Claire left notes for today's lesson. Beau is in Arena&nbsp;2 at three o'clock, and the farrier comes Thursday.</div>
+  <div class="item"><div class="meta">Today · 3:00 pm</div><h2>Lesson with Claire</h2>
+    <p>Flatwork focus — leg yield at the trot, then a short gymnastic line. Beau was stiff on the right rein last week, so give him extra time to loosen before you ask for bend.</p></div>
+  <div class="item"><div class="meta">Awaiting signature</div><h2>Horse Lease Agreement</h2>
+    <p>The purpose and schedule sections are complete. Review the insurance elections before signing.</p></div>
+  <div class="item"><div class="meta">Thursday</div><h2>Farrier</h2>
+    <p>Sign-up sheet is in the barn. Beau is due for a full set.</p></div>
+  <div class="item"><div class="meta">Saturday</div><h2>Clinic — flatwork</h2>
+    <p>Two spots left. Auditing is open to all members at no charge.</p></div>
+  <div class="item"><div class="meta">This week</div><h2>Feed change</h2>
+    <p>Evening grain moves to 5:30pm starting Monday.</p></div>
+</div><div class="tail"></div>
+
+<script>
+/* press physics — JS class so touch-drag-off and touchcancel release cleanly.
+   No radius juggling needed now: the struck rim never changes, and the well's
+   blurred wall is clipped to the rim so its growth can only go inward. */
+const btn = document.getElementById('avatarBtn');
+const press = () => btn.classList.add('is-pressed');
+const release = () => btn.classList.remove('is-pressed');
+btn.addEventListener('mousedown', press);
+btn.addEventListener('mouseup', release);
+btn.addEventListener('mouseleave', release);
+btn.addEventListener('touchstart', press, {passive:true});
+btn.addEventListener('touchend', release, {passive:true});
+btn.addEventListener('touchcancel', release, {passive:true});
+
+/* ---- create button -> modal ---- */
+const createBtn = document.getElementById('createBtn');
+const scrim = document.getElementById('scrim');
+const modal = document.getElementById('createModal');
+const openModal = () => { scrim.classList.add('open'); modal.classList.add('open'); };
+const closeModal = () => { scrim.classList.remove('open'); modal.classList.remove('open'); };
+/* No hover on touch, so the first tap reveals the tab and the second opens
+   the modal — otherwise the + would be invisible when tapped. */
+createBtn.addEventListener('click', () => {
+  const coarse = window.matchMedia('(hover: none)').matches;
+  if (coarse && !createBtn.classList.contains('is-out')) {
+    createBtn.classList.add('is-out'); return;
+  }
+  createBtn.classList.remove('is-out');
+  openModal();
+});
+addEventListener('pointerdown', e => {
+  if (!createBtn.contains(e.target)) createBtn.classList.remove('is-out');
+}, true);
+scrim.addEventListener('click', closeModal);
+addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+/* ---- mobile drawer: the tab rides out attached to the drawer's edge ---- */
+const drawerTab = document.getElementById('drawerTab');
+const drawer = document.getElementById('drawer');
+const navScrim = document.getElementById('navScrim');
+const setDrawer = (open) => {
+  drawer.classList.toggle('is-open', open);
+  drawerTab.classList.toggle('is-open', open);
+  navScrim.classList.toggle('open', open);
+  drawerTab.setAttribute('aria-expanded', String(open));
+  drawerTab.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+};
+drawerTab.addEventListener('click', () => setDrawer(!drawer.classList.contains('is-open')));
+navScrim.addEventListener('click', () => setDrawer(false));
+/* any real navigation closes it */
+drawer.addEventListener('click', e => { if (e.target.closest('a')) setDrawer(false); });
+addEventListener('keydown', e => { if (e.key === 'Escape') setDrawer(false); });
+</script>
+<button class="drawer-tab" id="drawerTab" type="button" aria-label="Open menu" aria-expanded="false">
+  <span class="arrow" aria-hidden="true"></span>
+</button>
+<div class="navscrim" id="navScrim"></div>
+<nav class="drawer" id="drawer" aria-label="Main">
+  <a href="#">Community feed</a>
+  <a href="#">Dashboard</a>
+  <a href="#">Calendar</a>
+  <a href="#">Orders</a>
+  <a href="#">Catalog</a>
+  <a href="#">Documents</a>
+  <a href="#">Messages</a>
+  <a href="#">My stable</a>
+  <a href="#">Account</a>
+</nav>
+<div class="scrim" id="scrim"></div>
+<div class="modal" id="createModal" role="dialog" aria-modal="true" aria-labelledby="cmTitle">
+  <h2 id="cmTitle">Create</h2>
+  <p>Stand-in for the app's existing CreateModal.</p>
+  <ul>
+    <li><button type="button">New booking</button></li>
+    <li><button type="button">New contract</button></li>
+    <li><button type="button">Add a horse</button></li>
+    <li><button type="button">Post to the community</button></li>
+  </ul>
+</div>
+</body></html>

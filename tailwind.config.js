@@ -38,11 +38,14 @@ export default {
         },
       },
       fontFamily: {
-        // Display + serif both resolve to the single hosted face (Cormorant Garamond).
+        // Display + serif both resolve to the single hosted face (Libre Caslon Text —
+        // owner decision, replacing Cormorant Garamond: it carries the cardstock
+        // nameplate's relief, where Cormorant's thin strokes lost the emboss).
         // Big Caslon is kept first only as a progressive-enhancement on macOS; the hosted
-        // Cormorant is the guaranteed render everywhere. Playfair was never imported — dropped.
-        display: ['"Big Caslon"', '"Cormorant Garamond"', 'Georgia', 'serif'],
-        serif: ['"Cormorant Garamond"', 'Georgia', 'serif'],
+        // Libre Caslon is the guaranteed render everywhere. Playfair was never imported — dropped.
+        // NOTE: Libre Caslon Text ships 400/700 only — no 500. See TYPEPASS.
+        display: ['"Big Caslon"', '"Libre Caslon Text"', 'Georgia', 'serif'],
+        serif: ['"Libre Caslon Text"', 'Georgia', 'serif'],
         sans: ['"Inter"', 'system-ui', 'sans-serif'],
       },
       letterSpacing: {

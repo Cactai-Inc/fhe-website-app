@@ -10,7 +10,7 @@
  *   Green Dark:    #0d2118  (deep shadow, text)
  *
  * Typography:
- *   Display/Logo:  Big Caslon (macOS only) → Cormorant Garamond (hosted, guaranteed)
+ *   Display/Logo:  Big Caslon (macOS only) → Libre Caslon Text (hosted, guaranteed)
  *   Body:          Inter
  *   Letter spacing: tracked for subheadings (0.1–0.25em)
  *
@@ -22,7 +22,7 @@
  *   on-dark set:     .text-on-dark / .text-on-dark-soft / .text-gold-accent
  */
 
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600&family=Inter:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -409,7 +409,10 @@
     left: 0;
     width: 100%;
     padding: 0;
-    font-family: 'Cormorant Garamond', 'Big Caslon', Georgia, 'Times New Roman', serif;
+    /* Follows the app-wide swap off Cormorant: this stack names its face
+       explicitly rather than going through font-serif, so it has to move with
+       it — left alone it would silently print contracts in Georgia. */
+    font-family: 'Libre Caslon Text', 'Big Caslon', Georgia, 'Times New Roman', serif;
     color: #000;
   }
 
