@@ -115,6 +115,37 @@ unenforceable and a live exposure. This alone justifies the rebuild.
 | Lessee MANDATORY | When `LEE = ENTITY` and taking custody of the horse for their own clients. |
 | Shared policy | Never |
 
+#### What CCC actually does — and why the contract must stop implying otherwise
+
+CCC is **liability** cover, not property cover. It responds only where the policyholder
+is found **legally negligent**. That produces a chain the contract must not paper over:
+
+1. A horse is injured in FHE's care.
+2. For FHE's CCC to pay the owner, **FHE must be found negligent**.
+3. The carrier has every financial incentive to dispute that finding.
+4. The only party positioned to insist FHE *was* negligent is **the horse's owner** —
+   FHE's own client — who must press a claim against FHE to be paid.
+5. Standard liability policies bar the insured from **voluntarily admitting liability**,
+   so FHE cannot concede fault to get its client paid without risking the coverage.
+
+So CCC is not a backstop for the horse. It is protection for FHE's balance sheet against
+being sued by the owner. Those are different products with different beneficiaries, and
+the present contract blurs them.
+
+**Design consequences, binding on the rebuild:**
+
+- **No clause, label, or helper text may present CCC as protection for the horse.** What
+  protects the animal is the owner's own mortality / major-medical cover. CCC protects
+  FHE *from* the owner.
+- **The likeliest real scenario is the one no policy answers**: the horse is hurt, nobody
+  was negligent, nothing pays, and the only question is who settles the vet bill. The
+  contract must allocate that **directly between the parties** rather than deferring to
+  insurance. This is arguably the single most consequential election in the section and
+  today it does not exist.
+- **A mandatory disclosure** must state the negligence trigger in plain words, alongside
+  the no-shared-policy acknowledgement in §5.
+- Non-covered-cost allocation must **never route to CCC as a fallback layer**.
+
 ---
 
 ## 3. Deductibles and non-covered costs

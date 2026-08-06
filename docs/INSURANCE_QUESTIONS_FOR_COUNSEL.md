@@ -111,6 +111,22 @@ our program authority to authorise life-saving surgery when the Lessor cannot be
 
 ---
 
+## The CCC problem we most need help with
+
+CCC responds only where the policyholder is found **legally negligent**. In practice
+that means: a horse is injured in our care; for our CCC to pay the owner, **we** must be
+found negligent; our carrier has every incentive to dispute that; and the only party
+positioned to insist we were negligent is the horse's owner — our own client — who must
+press a claim against us. Our policy also bars us from voluntarily admitting liability,
+so we cannot concede fault to get our client paid without risking the coverage.
+
+So CCC does not appear to protect the horse or the client relationship at all. It
+protects our balance sheet from the client. We need to know whether that reading is
+correct, and what actually delivers compensation to an owner whose horse is hurt in our
+care when nobody was negligent — which we expect to be the common case.
+
+---
+
 ## What we need from you
 
 1. **Validate or correct the three-state model.** Is MANDATORY / PERMITTED / PROHIBITED
@@ -139,10 +155,21 @@ our program authority to authorise life-saving surgery when the Lessor cannot be
    neither Lessor nor Lessee, do any of these obligations attach to us as the drafter, and
    what disclaimer should the document carry?
 
-7. **Anything the framework still omits** that a California equine lease should address —
+7. **CCC and the negligence trigger — the questions above, put precisely:**
+   (a) Is our reading correct that equine CCC written as liability cover pays only on a
+   negligence finding? (b) Does a first-party alternative exist — an equine **bailee**
+   or "horses in your care, custody or control" **property** form — that pays for injury
+   or death regardless of fault? If so, should we carry that instead of, or alongside,
+   the liability form? (c) Given the no-voluntary-admission clause, what is the correct
+   mechanism for an owner to be compensated where we believe we *were* at fault?
+   (d) Should the lease **require** the owner to maintain their own mortality and major
+   medical cover precisely because our CCC cannot serve that function — and is it
+   lawful for us to require it as a condition of the lease?
+
+8. **Anything the framework still omits** that a California equine lease should address —
    loss of use, agreed-value disputes, subrogation waivers, or coverage lapse mid-term.
 
-8. **Presentation question.** Where an election is prohibited, we intend to show it and
+9. **Presentation question.** Where an election is prohibited, we intend to show it and
    block it with the reason stated, rather than hiding it — so the parties understand the
    constraint. Is there any legal exposure in displaying an unavailable option alongside
    its explanation?
