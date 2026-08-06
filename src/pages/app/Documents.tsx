@@ -29,7 +29,7 @@ import { useDocumentTitle } from '../../lib/hooks';
 function EmailMeACopyButton({ documentId, sentAt }: { documentId: string; sentAt?: string | null }) {
   const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [message, setMessage] = useState<string | null>(null);
-  const label = sentAt ? 'Resend me a copy' : 'Send me a copy';
+  const label = sentAt ? 'Resend a copy to me' : 'Send a copy to me';
 
   const send = async () => {
     setState('sending');
@@ -38,7 +38,7 @@ function EmailMeACopyButton({ documentId, sentAt }: { documentId: string; sentAt
       const { email } = await emailMyDocumentCopy(documentId);
       // Success is only ever set from the server's answer.
       setState('sent');
-      setMessage(email ? `Sent to ${email}.` : 'Sent.');
+      setMessage(email ? `Sent to ${email}` : 'Sent.');
     } catch (err) {
       setState('error');
       setMessage(err instanceof Error ? err.message : String(err));
