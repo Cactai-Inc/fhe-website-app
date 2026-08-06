@@ -1,232 +1,218 @@
-# Insurance obligations — governing control set
+# Insurance obligations — build spec
 
-**Status: FOR REVIEW. Do not implement any of this yet.**
-Owner-supplied legal research (2026-08-06) translated into the condition sets the
-contract engine must enforce. Reviewed and revised before a line is built.
+**Status: SPEC. Ready to build once §6 is answered.**
+Owner's legal research (2026-08-06) plus counsel validation, translated into the
+controls the contract engine must enforce.
 
----
+**Scope bar, set by the owner:** *"We don't need to cover every edge case and potential
+event. We need sufficient controls to prevent illegal selections and sufficient clauses
+to enable the parties to obligate basics to themselves and each other."*
 
-## 0. The architectural finding — read this first
-
-The existing engine gates **visibility**: `conditional_on` decides whether a field
-renders. This control set needs something the engine does not currently have — gating
-of **legality**. Three distinct outcomes must be expressible per party per insurance
-type:
-
-| State | Meaning | Required UI behaviour |
-|---|---|---|
-| **MANDATORY** | This party must carry it; the lease cannot elect otherwise | Election forced on, not merely defaulted; cannot be unchecked |
-| **PERMITTED** | May be elected, and the Lessor may require it of the Lessee | Normal selectable control |
-| **PROHIBITED** | Cannot lawfully be elected — insurer would deny, or no insurable interest exists | Option **removed or blocked**, with the reason stated |
-
-Hiding a PROHIBITED option is not sufficient and is arguably worse: a Lessor who cannot
-see the option does not learn *why* it is unavailable, and the same Lessor on a
-different lease will see it appear with no explanation. **PROHIBITED elections must be
-visible and blocked with their reason**, in the same spirit as the ownership tooltips
-just shipped ("This item is set by the Lessor").
-
-This is the decision that determines whether the insurance sections are revised or
-rebuilt. My recommendation is **rebuild**: the current three sections encode a
-show/hide model that cannot express PROHIBITED at all.
+That yields **six blocks** and **seven clause groups**. Everything else stays freely
+selectable with sensible defaults.
 
 ---
 
-## 1. Driving variables
+## 0. Three states, not five
 
-### Already live in `HORSE_LEASE_V2`
+Counsel proposed adding *Conditionally Mandatory* and *Permitted via Endorsement*.
+Recommendation: **stay at three.** Both are already expressible, and each extra state
+multiplies the interface and the test surface.
 
-| Variable | Field | Values |
-|---|---|---|
-| Lease type | `TXN.LEASE_TYPE` | `FULL` / `PARTIAL` |
-| Lessor party type | `LESSOR.PARTY_TYPE` | `INDIVIDUAL` / `ENTITY` |
-| Lessee party type | `LESSEE.PARTY_TYPE` | `INDIVIDUAL` / `ENTITY` |
-| Off-site privileges | `TXN.OFFSITE_TRANSPORT` | `GRANTED` / … |
-| Jumping privileges | `TXN.JUMP_*` | height, days, supervision |
-| Competition | `TXN.COMPETITION_*` | expenses, winnings |
-| Purpose | `TXN.LEASE_PURPOSE` | recreational / instructional / … |
+- *Conditionally mandatory* is not a separate state. Every state here is evaluated
+  **per lease** against that lease's facts — MANDATORY never means "always", it means
+  "mandatory given this lease type, these party types, this insurable interest." Lessee
+  GL is already mandatory *when* off-site is granted or the lessee is an entity.
+- *Permitted via endorsement* is a PERMITTED election with a requirement attached — name
+  the endorsement in the clause, capture the COI. It does not prevent an illegal
+  selection, so it is not a gate.
 
-### Missing — must be added before any gate can be written
+| State | Behaviour |
+|---|---|
+| **MANDATORY** | Forced on; cannot be elected away |
+| **PERMITTED** | Normal selectable control |
+| **PROHIBITED** | **Shown and blocked, with the reason displayed** — never silently hidden |
 
-| # | Proposed field | Values | Why it is load-bearing |
+Blocked-not-hidden is deliberate: a Lessor who simply cannot see an option never learns
+why, and meets it again on the next lease with no explanation. Same principle as the
+ownership tooltips shipped 2026-08-06.
+
+**This is the architectural change.** The engine gates *visibility* today
+(`conditional_on` decides whether a field renders). PROHIBITED requires gating
+*legality* — an election that is visible, explained, and refused.
+
+---
+
+## 1. The six blocks
+
+The complete set of illegal selections the engine must prevent. Blocking text is
+counsel's, shown verbatim.
+
+| # | Condition | Blocked election | Message |
 |---|---|---|---|
-| V1 | `TXN.LESSOR_INSURABLE_INTEREST` | `OWNER` / `LEASEHOLDER` / `NONE` | **The single most important addition.** Under California insurance law a party with no ownership stake, financial investment, or primary leasehold liability *cannot* hold mortality cover. Without this the engine cannot tell a lawful election from an unlawful one. |
-| V2 | `TXN.PRIMARY_OWNER_AUTHORIZES_INSURANCE` | yes / no | When the Lessor is not the owner, medical cover requires the owner's authorisation. |
-| V3 | `TXN.HORSE_IN_LESSON_PROGRAM` | yes / no | A horse ridden by multiple students blocks a partial Lessee from holding medical cover. |
-| V4 | `TXN.PRIMARY_LEASE_REQUIRES_MORTALITY` | yes / no | If FHE's own upstream lease obliges mortality cover, it becomes MANDATORY downstream. |
-| V5 | `TXN.HORSE_AGREED_VALUE` | currency | Drives mortality limits and shortfall allocation. |
+| B1 | `LEASE_TYPE = PARTIAL` | Lessor requiring Lessee to carry **mortality** | *Prohibited: Underwriting guidelines prevent partial lessees from establishing a sole insurable interest for third-party mortality placement.* |
+| B2 | `LEASE_TYPE = PARTIAL` | Lessee **holding** mortality | as B1 |
+| B3 | `LESSEE.PARTY_TYPE = INDIVIDUAL` | Lessor requiring Lessee to carry **CCC** | *Prohibited: Care, Custody, and Control is a commercial liability product unavailable to individual consumers.* |
+| B4 | `LESSEE.PARTY_TYPE = INDIVIDUAL` | Lessee **holding** CCC | as B3 |
+| B5 | `LESSOR_INSURABLE_INTEREST = NONE` | Lessor holding **mortality _or_ medical** | *Prohibited: Without a direct pecuniary interest in the Horse (Cal. Ins. Code §§ 281–284), the Lessor cannot lawfully insure it.* |
+| B6 | `LESSEE.PARTY_TYPE = INDIVIDUAL` | **Commercial GL** offered as the required Lessee policy type | Option removed; individuals may only be required to carry Personal Horse Owner's / Private Horse Rider's liability. |
 
-Note V1 and V4 describe **FHE's own position** on horses it leases from boarders, which
-is the normal case for this program — the Lessor is very often *not* the owner.
+B1–B4 are carrier practice rather than statute, but absolute in execution, so the engine
+treats them as hard blocks. B5 is statutory.
 
 ---
 
-## 2. Control matrix
+## 2. Mandatory elections
 
-`LT` = lease type · `LOR`/`LEE` = party types · `II` = Lessor insurable interest
-
-### 2.1 General Liability
-
-| Question | Rule |
+| Condition | Becomes MANDATORY |
 |---|---|
-| Lessor may require Lessee to carry | **Always permitted.** Never prohibited. |
-| Lessee policy *type* available | `LEE = INDIVIDUAL` → **only** Personal Horse Owner's / Private Horse Rider's liability. Commercial GL must be **removed** — it is not sold to hobbyists. `LEE = ENTITY` → commercial GL. |
-| Lessee carry becomes MANDATORY | `OFFSITE = GRANTED` **or** `LEE = ENTITY` |
-| Lessor must carry | **MANDATORY when `LOR = ENTITY`** — a program offering lessons, training and lungeing must hold CGL with an Equestrian Professional Liability endorsement. |
-| Lessor prohibited | Never |
-| Shared policy | **Never possible.** Where the Lessee carries GL, naming the Lessor **and the facility owner** as Additional Insureds is MANDATORY, plus a COI within 5 days. |
+| `LESSOR.PARTY_TYPE = ENTITY` | Lessor carries **CGL** with an Equestrian Professional Liability endorsement |
+| `LESSOR.PARTY_TYPE = ENTITY` | Lessor carries **CCC** — a program working horses it does not own must answer owner claims |
+| `OFFSITE_TRANSPORT = GRANTED` **or** `LESSEE.PARTY_TYPE = ENTITY` | Lessee carries **GL** |
+| Lessee carries GL at all | Lessor **and facility owner** named Additional Insured; COI within 5 days |
+| **High-Value Asset** (below) | Lessor carries **major medical** |
+| `PRIMARY_LEASE_REQUIRES_MORTALITY = yes` **or** insurable interest `= OWNER` | Lessor carries **mortality** |
 
-### 2.2 Equine Mortality
+### High-Value Asset matrix — any single trigger
 
-| Question | Rule |
+| Trigger | Threshold |
 |---|---|
-| Lessor may require Lessee to carry | `LT = FULL` → permitted. **`LT = PARTIAL` → PROHIBITED.** A partial lessee cannot be compelled to insure an asset they do not exclusively control. |
-| Lessee may carry at all | **`LT = PARTIAL` → PROHIBITED.** Carriers deny the application outright — no sole insurable interest. |
-| Lessor must carry | MANDATORY if `V4 = yes` (upstream lease requires it) **or** `II = OWNER`. |
-| Lessor prohibited | **`II = NONE` → PROHIBITED.** No insurable interest. |
-| Shared policy | Never. Permitted alternative: Lessee **pays the premium** on the Lessor's policy, Lessor named sole **Loss Payee**. |
-| Shortfall | Deductible *and* any gap between payout and `V5` agreed value allocated per §3. |
+| Agreed value | `TXN.HORSE_AGREED_VALUE ≥ $25,000` |
+| Jumping | `TXN.JUMP_MAX_HEIGHT ≥ 0.90 m` (~3 ft) |
+| Competition | `TXN.COMPETITION_USE = true` (rated / A-circuit) |
 
-### 2.3 Major Medical / Surgical
+---
 
-| Question | Rule |
-|---|---|
-| Lessor may require Lessee to carry | `LT = FULL` → permitted. **`LT = PARTIAL` → PROHIBITED**, except requiring a **pro-rata share of the Lessor's existing premium**. |
-| Lessee may carry at all | **PROHIBITED when `LT = PARTIAL` AND `V3 = yes`** (horse used by multiple students). |
-| Lessor must carry | MANDATORY where the horse is high-value and in the advanced jumping/training program (elevated injury risk). *Threshold needs an owner ruling — see §6.* |
-| Lessor prohibited | **`II ≠ OWNER` AND `V2 = no` → PROHIBITED.** |
-| Shared policy | Never. Premium **cost-splitting** is permitted. |
+## 3. Driving variables
 
-### 2.4 Care, Custody & Control — **exists as one unconditional paragraph; actively wrong**
+### Live and usable
 
-`INSURANCE_RISK.CCC` is a static clause with no fields and no gating, reading in
-substance *"Lessee shall obtain and maintain care, custody and control insurance for the
-duration of this Agreement."* It therefore applies to **every** lease we issue —
-including every lease whose Lessee is a private individual, who cannot lawfully purchase
-CCC at all. The contract currently imposes an impossible obligation, which is
-unenforceable and a live exposure. This alone justifies the rebuild.
+`TXN.LEASE_TYPE` · `LESSOR.PARTY_TYPE` · `LESSEE.PARTY_TYPE` · `TXN.OFFSITE_TRANSPORT`
 
-| Question | Rule |
-|---|---|
-| Section applies | Toggles ON when **either** party is `ENTITY`. |
-| Lessor must carry | **MANDATORY when `LOR = ENTITY`.** A program training, lungeing and giving lessons on horses it does not own must hold commercial CCC to answer claims from the primary owners. This is FHE's normal position. |
-| Lessor prohibited | Never |
-| Lessee may be required | **Only when `LEE = ENTITY`** (outside trainer/professional). |
-| Lessee prohibited | **`LEE = INDIVIDUAL` → PROHIBITED.** CCC is a commercial product; consumers cannot buy it. |
-| Lessee MANDATORY | When `LEE = ENTITY` and taking custody of the horse for their own clients. |
-| Shared policy | Never |
+### Must be added
 
-#### What CCC actually does — and why the contract must stop implying otherwise
+| # | Field | Values | Purpose |
+|---|---|---|---|
+| V1 | `TXN.LESSOR_INSURABLE_INTEREST` | `OWNER` / `PRIMARY_LEASE_LIABILITY` / `RECOUPABLE_INVESTMENT` / `NONE` | Drives B5. Counsel's test is **direct pecuniary loss**, not a label — so the options encode the two qualifying paths: the upstream lease makes FHE financially liable for the horse's value, or FHE holds verifiable training investment that death destroys. A bare "leaseholder" does **not** qualify. |
+| V2 | `TXN.PRIMARY_LEASE_REQUIRES_MORTALITY` | yes / no | Upstream obligation flows down as MANDATORY |
+| V3 | `TXN.HORSE_AGREED_VALUE` | currency | High-value trigger; mortality shortfall |
+| V4 | `TXN.COMPETITION_USE` | yes / no | High-value trigger. **Does not exist** — the two live `COMPETITION_*` fields allocate expenses and winnings; neither states whether the horse competes. |
+| V5 | `TXN.HORSE_IN_LESSON_PROGRAM` | yes / no | Blocks a partial Lessee from holding medical where multiple students ride |
+
+### Must be repaired before the matrix can evaluate
+
+- **`TXN.JUMP_MAX_HEIGHT` is free text.** "3 feet", "90cm", "about 3'" and "3'0\"" all
+  parse differently, so `≥ 0.90 m` cannot be evaluated. Convert to **number + unit
+  select**, migrating existing values.
+- **All six deductible split-percentage fields have no `format_type` and are not
+  required** — a lease can execute electing "Split" with no split defined, and nothing
+  validates the halves total 100.
+- **`Other` on the three `DED_RESP` selects has no follow-up field**, so a contract can
+  execute saying responsibility is "Other" with nothing capturing what that means. Every
+  other `Other` in the template has a text follow-up.
+
+---
+
+## 4. The seven clause groups
+
+What the parties must be able to obligate. Each is an election plus its contract text.
+
+1. **General liability** — who carries; limit; policy type (constrained by B6);
+   Additional Insured + COI where the Lessee carries.
+2. **Mortality** — who carries; carrier; agreed value; Loss Payee where the Lessee pays
+   the premium on the Lessor's policy; deductible and payout-shortfall allocation.
+3. **Major medical** — who carries; limit and deductible; **who makes the initial
+   payment** (§5); emergency authorisation limit and who bears the non-reimbursed part.
+4. **CCC** — who carries; limits; **excluded entirely where the Lessee is an
+   individual**; never presented as protection for the horse (§5).
+5. **No-fault expense allocation** — *does not exist today, and is the most consequential
+   omission.* Horse is hurt, nobody was negligent, no policy responds, someone still owes
+   the vet. Allocated directly between the parties: 100% Lessee / 100% Lessor / percentage
+   split. Defaults: `FULL` → Lessee; `PARTIAL` → 50/50.
+6. **Fault override** — a clause, not an election. Loss caused by the Lessee's clear
+   breach (jumping above the agreed height, gate left unlatched) allocates **100% of the
+   deductible and non-covered cost to the Lessee**, overriding group 5.
+7. **Disclosures** — §5. Generated, not optional.
+
+---
+
+## 5. What CCC actually does — binding on the build
 
 CCC is **liability** cover, not property cover. It responds only where the policyholder
-is found **legally negligent**. That produces a chain the contract must not paper over:
+is found **legally negligent**:
 
 1. A horse is injured in FHE's care.
 2. For FHE's CCC to pay the owner, **FHE must be found negligent**.
-3. The carrier has every financial incentive to dispute that finding.
+3. The carrier has every incentive to dispute that finding.
 4. The only party positioned to insist FHE *was* negligent is **the horse's owner** —
    FHE's own client — who must press a claim against FHE to be paid.
-5. Standard liability policies bar the insured from **voluntarily admitting liability**,
-   so FHE cannot concede fault to get its client paid without risking the coverage.
-6. Worse: those policies also impose a **duty to cooperate** — the insured must assist
-   the carrier in investigating and **defending** the claim, and breach is grounds to
-   deny coverage. FHE is therefore contractually obliged to help defeat its own client's
-   claim. The owner sues to be made whole; FHE's policy compels FHE to work against that
-   recovery.
+5. Liability policies bar the insured from **voluntarily admitting liability**.
+6. They further impose a **duty to cooperate**: the insured must assist the carrier in
+   investigating and **defending** the claim, breach being a ground to deny coverage.
 
-So CCC is not a backstop for the horse. It is protection for FHE's balance sheet against
-being sued by the owner — and the mechanism by which it pays is **adversarial to the
-client relationship the business runs on**. Those are different products with different
-beneficiaries, and the present contract blurs them.
+So FHE is contractually obliged to help defeat its own client's claim. CCC is not a
+backstop for the horse — it protects FHE's balance sheet *from* the owner, by a
+mechanism adversarial to the relationship the business runs on.
 
-**Design consequences, binding on the rebuild:**
+**Consequences, binding:**
 
-- **No clause, label, or helper text may present CCC as protection for the horse.** What
-  protects the animal is the owner's own mortality / major-medical cover. CCC protects
-  FHE *from* the owner.
-- **The likeliest real scenario is the one no policy answers**: the horse is hurt, nobody
-  was negligent, nothing pays, and the only question is who settles the vet bill. The
-  contract must allocate that **directly between the parties** rather than deferring to
-  insurance. This is arguably the single most consequential election in the section and
-  today it does not exist.
-- **A mandatory disclosure** must state the negligence trigger in plain words, alongside
-  the no-shared-policy acknowledgement in §5.
-- **Disclose the adversarial structure to owners up front, in the lease.** An owner who
-  discovers mid-claim that FHE is helping the carrier defend against them will not
-  remain a client. Saying it plainly at signing is both fairer and safer than letting it
-  surface at the worst possible moment — and it is the argument for the owner carrying
-  their own mortality / major-medical cover, which pays them without anyone having to
-  establish fault.
-- Non-covered-cost allocation must **never route to CCC as a fallback layer**.
+- No clause, label or helper text may present CCC as protection for the horse. What
+  protects the animal is the owner's own mortality / major-medical cover.
+- Non-covered costs must **never** route to CCC as a fallback layer.
+- **Disclose the adversarial structure in the lease.** An owner who discovers mid-claim
+  that FHE is assisting the carrier against them does not stay a client. Saying it at
+  signing is fairer and safer — and it is the honest argument for the owner carrying
+  their own cover, which pays them without anyone establishing fault.
 
----
+### Generated disclosures
 
-## 3. Deductibles and non-covered costs
-
-Two layers, and they must not be conflated:
-
-1. **Fault override (a clause, not an election).** Injury or death caused by the Lessee's
-   clear breach — jumping above the agreed height, gate left unlatched — allocates
-   **100% of the deductible to the Lessee**, regardless of the no-fault selection below.
-2. **No-fault allocation (an election).** Illness or pasture accident. Selectable, with
-   defaults by lease type: `FULL` → 100% Lessee; `PARTIAL` → 50/50 or 100% Lessor.
-
-**Existing defects to fold into the rebuild** (verified in the live template):
-- All six split-percentage fields have **no `format_type`** and are **not required** — a
-  lease can execute with "Split" elected and no split defined.
-- No validation that the two percentages total 100.
-- The `Other` option on all three `DED_RESP` selects has **no follow-up field**, so a
-  contract can execute saying responsibility is "Other" with nothing capturing what that
-  means. Every other `Other` in the template has a text follow-up.
-
----
-
-## 4. Medical payment and reimbursement flow
-
-Must be stated in the contract body, not left implied:
-
-- The **named primary policyholder must make the initial payment** to the veterinary
-  hospital. Hospitals require payment at time of service and do not bill carriers.
-- The policyholder files the claim, receives reimbursement, and **then** reconciles the
-  out-of-pocket balance with the other party per the allocation elections.
-- **Emergency Medical Care Authorisation Limit** (e.g. $5,000): grants the program
-  authority to authorise life-saving surgery when the owner/Lessor cannot be reached,
-  and names who bears the non-reimbursed cost.
-
----
-
-## 5. Mandatory generated disclosures
-
-Injected on output, not optional:
-
-1. **California Civil Code § 3333.7** equine liability warning — statutory wording, bold
+1. **Cal. Civ. Code § 3333.7** equine liability warning — statutory wording, bold
    uppercase, prominent.
-2. **No-shared-policy acknowledgement** — an Additional Insured gains third-party
-   liability protection but **no** first-party medical or mortality cover on the horse.
-3. **California UCC § 10210** — true lease of personal property; risk of loss governed by
-   the elections herein, overriding default statutory allocation.
+2. **No shared policy** — an Additional Insured gains third-party liability protection
+   but **no** first-party medical or mortality cover on the horse.
+3. **CCC negligence trigger** — plain-language statement of the above.
+4. **Cal. UCC § 10210** — true lease of personal property; risk of loss governed by the
+   elections herein.
+
+### Payment flow (contract text, group 3)
+
+The named primary policyholder **must make the initial payment** to the veterinary
+hospital — hospitals require payment at time of service and do not bill carriers. The
+policyholder files the claim, receives reimbursement, then reconciles the out-of-pocket
+balance per the elections.
 
 ---
 
-## 6. Open questions — owner ruling needed before build
+## 6. Still open — needed before build
 
-1. **PROHIBITED presentation.** Blocked-with-reason (recommended) or hidden entirely?
-2. **"High-value horse" threshold** for mandatory Lessor medical cover — a dollar figure,
-   or derived from `V5` agreed value plus jumping privileges?
-3. **Emergency authorisation default** — is $5,000 the number?
-4. **The staff carve-out, still unresolved from A-PARTY-VERIFY-2.** Staff currently
-   *cannot* fill a counterparty's insurance elections, and the code comment justifying it
-   assumes FHE is always the Lessor — untrue on reverse leases. Should staff be able to
-   record a counterparty's elections on their behalf, mirroring barn-office wet-signing?
-5. **Rebuild or revise?** My recommendation is rebuild — see §0.
-6. **Scope of this contract family.** These rules assume the California program described.
-   Do they apply unchanged to leases FHE merely *assists* clients with (external horse,
-   FHE neither Lessor nor Lessee)?
+Counsel settled the blocks, the high-value matrix and insurable interest. Outstanding:
+
+1. **Emergency authorisation limit** — is $5,000 the default, and who bears the
+   non-reimbursed portion where the lease is silent?
+2. **Staff carve-out** (internal, not legal). Staff currently cannot fill a
+   counterparty's insurance elections; the code comment justifying it assumes FHE is
+   always the Lessor, which is false on reverse leases. Should staff record elections on
+   a party's behalf, mirroring barn-office wet-signing? *Open since A-PARTY-VERIFY-2.*
+3. **Assisted leases** — where FHE drafts for two clients and is neither party, do any
+   obligations attach to FHE as drafter, and what disclaimer should carry?
+4. **First-party alternative** — does an equine **bailee** / "horses in your care,
+   custody or control" **property** form exist that pays regardless of fault? If so, that
+   — not the liability CCC — is what protects client relationships. *Broker question.*
+5. **Disclosure wording** for the duty-to-cooperate statement, and whether disclosing it
+   carries risk.
 
 ---
 
-## 7. What this does NOT yet cover
+## 7. Build sequencing
 
-Stated so it is not mistaken for completeness: policy-detail capture (carrier, limits,
-deductible amounts, COI dates) is sketched in the owner's blueprint but not yet
-translated into field definitions; that follows once §6 is answered and the
-revise-or-rebuild decision is made.
+1. Repair the three field defects in §3 (jump height, split percentages, `Other`). These
+   are wrong today regardless of everything else.
+2. Add V1–V5.
+3. Add the PROHIBITED capability to the engine (visible + explained + refused), then wire
+   B1–B6.
+4. Rebuild the four insurance sections around clause groups 1–4.
+5. Build group 5 (no-fault allocation) and group 6 (fault override).
+6. Add the four generated disclosures.
+
+Steps 1–2 are safe to start before §6 is answered. Step 3 is the architectural change and
+should be its own task.
