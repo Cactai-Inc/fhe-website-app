@@ -184,10 +184,17 @@ Evaluation order within each cell is top-to-bottom; first match wins.
 | **Mandatory disclosure** | The negligence trigger and duty to cooperate (§5). CCC must never be presented as protection for the horse. |
 
 > **Correction, found by comparing against an independently generated matrix
-> (2026-08-06).** Both this document and the independent version originally marked an
-> **individual Lessor as PERMITTED** to carry CCC. That is wrong, by the same reasoning
-> used to block individual *lessees*: CCC is a commercial inland-marine liability line,
-> unavailable to consumers. Party type governs availability on **both** sides.
+> (2026-08-06).** This document and the independent version *each* marked an
+> **individual Lessor as PERMITTED** to carry CCC. Both were wrong, by the same
+> reasoning that blocks individual *lessees*: CCC is a commercial inland-marine
+> liability line, unavailable to consumers. Party type governs availability on **both**
+> sides.
+>
+> The **lessee-side gate in the live template is the owner's own work and is correct** —
+> `{"equals":["ENTITY"],"field_key":"LESSEE.PARTY_TYPE"}` on `INSURANCE_RISK.CCC`. It is
+> also what exposed an earlier false claim in this document that the clause was
+> ungated. The error here was on the Lessor side only, and was made independently by
+> both machine-generated matrices.
 >
 > Going further, party type is not really the driver. **CCC covers a horse in your care
 > that you do not own.** An individual owner leasing their own horse out has no
