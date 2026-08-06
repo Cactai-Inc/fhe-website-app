@@ -7,7 +7,7 @@ is not done. "It typechecks" is not done.
 Status vocabulary: **DONE** (traced + verified live) · **BUILT** (code exists,
 not verified end to end) · **PARTIAL** · **NOT STARTED** · **BLOCKED**.
 
-Last updated 2026-08-05.
+Last updated 2026-08-06.
 
 ---
 
@@ -149,6 +149,17 @@ This is the critical path. Everything here must be DONE.
 | K3 | Section 3 — Account information (internal-only, staff-visible): legal name, contact/mobile/texts phones, correspondence email, mailing address (moved from section 1), Zelle ID, DOB, read-through emergency contact, staff-preferred-contact | **Code-complete, browser pending.** New `contacts` columns + RLS proven excluded from community reads (simulated other-member session) + C10 minor-guard extended to the new correspondence_email column. `AccountInfoCard.tsx`. See report. |
 | K4 | Section 4 — Login & security: login email / password / Google, all modal or inline, no inner pages | **Code-complete, browser pending.** Reused the existing `EmailChangeModal` unchanged; moved `ChangePasswordModal` and the Google-connect row out of the deleted `/app/profile`. `LoginSecurityCard.tsx`. See report. |
 | K5 | Eliminate the duplicate surfaces: `/app/profile` page (name/photo/bio + its own duplicate sign-in card) dissolved into K1/K4 | **Done.** `src/pages/app/Profile.tsx` deleted, route removed from `App.tsx`, `linkOAuthIdentity`'s dead default redirect fixed. See report for the full deleted-symbol list. |
+
+---
+
+## CLEANUP LEDGER
+
+| Date | What | Detail |
+|---|---|---|
+| 2026-08-06 | **Six service contract templates retired** (owner ruling 2026-08-05) | `HORSE_TRAINING`, `HORSE_EXERCISE`, `HORSEMANSHIP_TRAINING`, `HORSE_EVALUATION`, `RIDER_LESSON`, `RIDER_LESSON_JUMPER` deleted from `contract_templates` in prod (migration `20260806120000_svcpurge_retire_service_contracts.sql`, asserts zero documents per key before deleting). Their language now lives in the standalone categorical documents (releases / policies / authorizations). 29 → 23 templates; 87 `template_tokens` cascaded; 6 orphan `template_variants` removed; zero documents existed against any of the six, so nothing signed or generated was touched. The six `.md` bodies deleted and the generated bodies loader regenerated. **The SERVICES of the same name are LIVE and untouched** — `service_types`, `offerings` (32 active SKUs), `contract_requirements.service_type`, `activity_checklists`. `EVALUATION_LIABILITY_WAIVER` is a RELEASE and was explicitly not touched. See `docs/reports/TASK-SVCPURGE-REPORT.md`. |
+
+**Service Definition documents — the replacement concept — are a SEPARATE upcoming
+build.** SVCPURGE only removed; it did not build a replacement.
 
 ---
 
