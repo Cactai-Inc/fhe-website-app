@@ -40,15 +40,23 @@ export default function Home() {
 
   return (
     <div>
-      {/* I8 — the page used to show the name twice (a small "Community Feed"
-          eyebrow above the large title, which is literally "Community Feed"
-          on the default/all view). The eyebrow is gone; the h1's own top
-          margin is now the only padding above the name, upped 35% (0.125rem
-          → 0.16875rem) so the title doesn't sit flush against the page edge
-          without the eyebrow's line above it (owner spec 2026-08-05). */}
+      {/* Title model (owner spec 2026-08-05): small gold eyebrow is the view's
+          title; the large dark-green line is an optional per-page intro, only
+          shown on the default/all view ("Welcome new members!"), not a repeat
+          of the title. Filtered views keep their own eyebrow + description. */}
       <header className="mb-4">
-        <h1 className="font-serif text-green-800 text-3xl font-semibold mt-[0.169rem]">{meta.title}</h1>
-        <p className="body-text text-secondary text-sm mt-1.5 max-w-2xl">{meta.description}</p>
+        <p className="eyebrow">{meta.title}</p>
+        {view === 'all' ? (
+          <>
+            <h1 className="font-serif text-green-800 text-3xl font-semibold mt-0.5">Welcome new members!</h1>
+            <p className="body-text text-secondary text-sm mt-1.5 max-w-2xl">
+              This is a space to share your experiences at the ranch, links you find helpful, events you
+              hear about, and ads for tack or gear you no longer use that others may need.
+            </p>
+          </>
+        ) : (
+          <p className="body-text text-secondary text-sm mt-1.5 max-w-2xl">{meta.description}</p>
+        )}
       </header>
 
       <CommunityFeed view={view} />

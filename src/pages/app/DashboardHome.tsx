@@ -3,19 +3,26 @@ import { useDocumentTitle } from '../../lib/hooks';
 import { useViewSurfaces } from '../../lib/surfaces';
 import { useAuth } from '../../contexts/AuthContext';
 import { DashboardPanel } from '../../components/app/DashboardPanel';
+import { timeOfDayWord } from '../../lib/formatDateTime';
 
 /**
  * DASHBOARD (/app/dashboard) — priority actions + coming up. Split out from the
  * community front door: this is where a member's notifications and to-dos live.
  * Deal/care-only members keep their purpose-built homes.
  */
+const DAYPART_LABEL: Record<ReturnType<typeof timeOfDayWord>, string> = {
+  morning: 'Morning',
+  afternoon: 'Afternoon',
+  evening: 'Evening',
+  night: 'Evening', // greeting has no "night" bucket — falls back to Evening
+};
+
 export default function DashboardHome() {
   const { surfaces, loading: surfacesLoading } = useViewSurfaces();
   const { profile, isSuperAdmin } = useAuth();
   useDocumentTitle('Dashboard');
   const firstName = profile?.first_name || profile?.display_name || null;
-  const hour = new Date().getHours();
-  const daypart = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+  const daypart = DAYPART_LABEL[timeOfDayWord()];
 
   if (isSuperAdmin) return <Navigate to="/app/ops/superadmin/organizations" replace />;
 
@@ -28,8 +35,10 @@ export default function DashboardHome() {
   return (
     <div>
       <header className="mb-4">
-        <p className="eyebrow">Good {daypart}{firstName ? `, ${firstName}` : ''}</p>
-        <h1 className="font-serif text-green-800 text-3xl font-semibold mt-0.5">Dashboard</h1>
+        <p className="eyebrow">Dashboard</p>
+        <h1 className="font-serif text-green-800 text-3xl font-semibold mt-0.5">
+          Good {daypart}{firstName ? `, ${firstName}` : ''}
+        </h1>
       </header>
       <DashboardPanel />
     </div>
