@@ -128,13 +128,72 @@ What the parties must be able to obligate. Each is an election plus its contract
 4. **CCC** — who carries; limits; **excluded entirely where the Lessee is an
    individual**; never presented as protection for the horse (§5).
 5. **No-fault expense allocation** — *does not exist today, and is the most consequential
-   omission.* Horse is hurt, nobody was negligent, no policy responds, someone still owes
-   the vet. Allocated directly between the parties: 100% Lessee / 100% Lessor / percentage
-   split. Defaults: `FULL` → Lessee; `PARTIAL` → 50/50.
+   omission.* Specified in full at §4a.
 6. **Fault override** — a clause, not an election. Loss caused by the Lessee's clear
    breach (jumping above the agreed height, gate left unlatched) allocates **100% of the
    deductible and non-covered cost to the Lessee**, overriding group 5.
 7. **Disclosures** — §5. Generated, not optional.
+
+---
+
+## 4a. The no-fault expense matrix — full field spec
+
+**The scenario nothing in the contract currently answers.** A horse is injured or falls
+ill. Nobody was negligent. Either no policy responds at all, or one responds partially
+(deductible, exclusion, limit exceeded, claim denied). Someone still owes the vet, and
+today the document is silent.
+
+Distinguish this from the existing per-policy deductible fields:
+
+| | Existing `*_DED_RESP` | New no-fault matrix |
+|---|---|---|
+| Applies when | A policy **does** respond | Insurance **does not** cover it |
+| Scope | Per insurance type | One allocation across all veterinary cost |
+
+Kept as **one global allocation**, not one per insurance type: "who pays when insurance
+doesn't" does not meaningfully differ by which policy would have applied, and per-type
+duplication triples the interface for no gain. (Per the owner's scope bar.)
+
+### Field definitions
+
+| field_key | owner | format | required | label |
+|---|---|---|---|---|
+| `TXN.NOFAULT_PAYER` | DEAL | select | yes | Who pays the veterinary provider at time of service |
+| `TXN.NOFAULT_ALLOCATION` | DEAL | select | yes | Final responsibility for cost not covered by insurance |
+| `TXN.NOFAULT_SPLIT_LESSEE` | DEAL | number | when SPLIT | Percent borne by Lessee |
+| `TXN.NOFAULT_SPLIT_LESSOR` | DEAL | number | when SPLIT | Percent borne by Lessor |
+| `TXN.NOFAULT_OTHER` | DEAL | text | when OTHER | Describe the agreed allocation |
+| `TXN.NOFAULT_CONSULT_THRESHOLD` | DEAL | currency | no | Consult the other party before incurring non-emergency cost above |
+| `TXN.NOFAULT_RECONCILE_DAYS` | DEAL | number | yes | Days to settle the balance after any reimbursement |
+
+`owner_role = DEAL` throughout: these obligate **both** parties, so neither may set them
+unilaterally — the same shared-ownership treatment `TXN.LEASE_PURPOSE` already uses.
+
+**Options**
+
+- `NOFAULT_PAYER`: `LESSOR` / `LESSEE` / `POLICYHOLDER` (whichever party holds the
+  policy that would respond). Defaults to `POLICYHOLDER`, because §5's payment flow
+  requires the named policyholder to pay the hospital directly in order to claim.
+- `NOFAULT_ALLOCATION`: `100_LESSEE` / `100_LESSOR` / `SPLIT` / `OTHER`.
+  Defaults: `LEASE_TYPE = FULL` → `100_LESSEE`; `PARTIAL` → `SPLIT` at 50/50.
+
+**Gates**
+
+- `SPLIT_LESSEE` / `SPLIT_LESSOR`: `conditional_on` `NOFAULT_ALLOCATION = SPLIT`;
+  **both required when shown**, and validated to total exactly 100. (The existing split
+  fields fail on all three counts — see §3.)
+- `NOFAULT_OTHER`: `conditional_on` `NOFAULT_ALLOCATION = OTHER`; **required when shown**.
+
+**Precedence, stated in the clause body**
+
+1. Group 6 **fault override** supersedes this entirely — a loss from the Lessee's clear
+   breach allocates 100% to the Lessee regardless of what is elected here.
+2. Otherwise: the `NOFAULT_PAYER` pays the provider, files any claim, receives any
+   reimbursement, and the **net** cost is then allocated per `NOFAULT_ALLOCATION`,
+   settled within `NOFAULT_RECONCILE_DAYS`.
+3. The emergency authorisation limit (group 3) governs **urgency** — the authority to
+   incur cost without reaching the other party. This matrix governs **who ultimately
+   bears** it. Two different questions; the clause must not conflate them.
 
 ---
 
