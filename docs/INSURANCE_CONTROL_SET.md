@@ -133,6 +133,66 @@ handles the common configurations today:
 
 ---
 
+## 2a. The complete matrix — four types × both parties
+
+Shorthand: `LT` lease type · `LOR`/`LEE` party types · `OFF` offsite transport ·
+`II` Lessor insurable interest · `PROG` horse in lesson program · `UPMORT` upstream lease
+requires mortality · `OWNAUTH` primary owner authorises insuring · `HV` High-Value Asset
+(value ≥ $25k **or** jump ≥ 0.90 m **or** competition use)
+
+Evaluation order within each cell is top-to-bottom; first match wins.
+
+### 1 — General Liability
+
+| Determination | Rule |
+|---|---|
+| **Lessor may hold** | `LOR = ENTITY` → **MANDATORY** (CGL + Equestrian Professional Liability endorsement) · else **PERMITTED**. Never prohibited. |
+| **Lessee may hold** | `OFF = GRANTED` **or** `LEE = ENTITY` → **MANDATORY** · else **PERMITTED**. Never prohibited. |
+| **Lessor may require of Lessee** | Always **PERMITTED**; becomes MANDATORY on the same conditions as above. |
+| **Policy type offered to Lessee** | `LEE = INDIVIDUAL` → Personal Horse Owner's / Private Horse Rider's **only**; commercial GL removed from the list (**B6**) · `LEE = ENTITY` → commercial GL. |
+| **Shared** | Never. Wherever the Lessee carries: Lessor **and facility owner** as Additional Insureds + **Waiver of Subrogation** + COI within 5 days, all MANDATORY. |
+
+### 2 — Equine Mortality
+
+| Determination | Rule |
+|---|---|
+| **Lessor may hold** | `II = NONE` → **PROHIBITED** (**B5**) · `UPMORT = yes` **or** `II = OWNER` → **MANDATORY** · else **PERMITTED**. |
+| **Lessee may hold** | `LT = PARTIAL` → **PROHIBITED** (**B2**) · else **PERMITTED**. |
+| **Lessor may require of Lessee** | `LT = PARTIAL` → **PROHIBITED** (**B1**) · `LT = FULL` → **PERMITTED**. |
+| **Shared** | Never. Permitted alternative: Lessee **pays the premium** on the Lessor's policy, Lessor named **sole Loss Payee**. |
+| **On payout** | Deductible **and** any shortfall between payout and agreed value allocated per §4a. |
+
+### 3 — Major Medical / Surgical
+
+| Determination | Rule |
+|---|---|
+| **Lessor may hold** | `II = NONE` → **PROHIBITED** (**B5**) · `II ≠ OWNER` **and** `OWNAUTH = no` → **PROHIBITED** (owner has not authorised insuring their asset) · `HV` → **MANDATORY** · else **PERMITTED**. |
+| **Lessee may hold** | `LT = PARTIAL` **and** `PROG = yes` → **PROHIBITED** (commercial multi-student use defeats a private placement) · `LT = PARTIAL` **and** `PROG = no` → **PERMITTED**, limited to a pro-rata contribution toward the Lessor's existing premium · `LT = FULL` → **PERMITTED**. |
+| **Lessor may require of Lessee** | `LT = PARTIAL` → **PROHIBITED**, except requiring a pro-rata share of the Lessor's premium · `LT = FULL` → **PERMITTED**. |
+| **Shared** | Never. Premium **cost-splitting** permitted. |
+| **Payment** | Named policyholder pays the hospital at time of service, files, receives reimbursement, then reconciles (§5). |
+
+### 4 — Care, Custody & Control
+
+| Determination | Rule |
+|---|---|
+| **Section applies at all** | `LOR = ENTITY` **or** `LEE = ENTITY`. Otherwise the whole section is omitted. |
+| **Lessor may hold** | `LOR = ENTITY` → **MANDATORY** (a program working horses it does not own must answer owner claims) · else **PERMITTED**. Never prohibited. |
+| **Lessee may hold** | `LEE = INDIVIDUAL` → **PROHIBITED** (**B4**) · `LEE = ENTITY` taking custody → **MANDATORY** · else **PERMITTED**. |
+| **Lessor may require of Lessee** | `LEE = INDIVIDUAL` → **PROHIBITED** (**B3**) · `LEE = ENTITY` → **PERMITTED / MANDATORY** per above. |
+| **Shared** | Never — a commercial business liability form. |
+| **Mandatory disclosure** | The negligence trigger and duty to cooperate (§5). CCC must never be presented as protection for the horse. |
+
+### Cross-cutting
+
+| | Rule |
+|---|---|
+| **No policy is ever shareable** | Named-insured status is not coverage. Additional Insured gains third-party liability defence only — **no** first-party medical or mortality recovery on the horse. |
+| **What actually pays an owner without a fault finding** | Only the owner's **own** major-medical / mortality policy. No first-party equine bailee form exists in the market. |
+| **Fault override** | A Lessee breach allocates 100% of deductible and non-covered cost to the Lessee, superseding every allocation election. |
+
+---
+
 ## 3. Driving variables
 
 ### Live and usable
