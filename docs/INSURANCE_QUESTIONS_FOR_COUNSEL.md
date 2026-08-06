@@ -120,10 +120,17 @@ positioned to insist we were negligent is the horse's owner — our own client �
 press a claim against us. Our policy also bars us from voluntarily admitting liability,
 so we cannot concede fault to get our client paid without risking the coverage.
 
+We believe it goes further still: our policy also carries a **duty to cooperate**,
+obliging us to assist the carrier in investigating and **defending** the claim, with
+breach a ground to deny coverage. If that is right, we are contractually required to
+help defeat our own client's claim — the owner sues to be made whole, and our policy
+compels us to work against that recovery.
+
 So CCC does not appear to protect the horse or the client relationship at all. It
-protects our balance sheet from the client. We need to know whether that reading is
-correct, and what actually delivers compensation to an owner whose horse is hurt in our
-care when nobody was negligent — which we expect to be the common case.
+protects our balance sheet from the client, by a mechanism that is adversarial to the
+relationship our business depends on. We need to know whether that reading is correct,
+and what actually delivers compensation to an owner whose horse is hurt in our care when
+nobody was negligent — which we expect to be the common case.
 
 ---
 
@@ -164,7 +171,11 @@ care when nobody was negligent — which we expect to be the common case.
    mechanism for an owner to be compensated where we believe we *were* at fault?
    (d) Should the lease **require** the owner to maintain their own mortality and major
    medical cover precisely because our CCC cannot serve that function — and is it
-   lawful for us to require it as a condition of the lease?
+   lawful for us to require it as a condition of the lease? (e) Does the duty to
+   cooperate really oblige us to assist in defending against our own client, and if so
+   **should we disclose that to horse owners in the lease itself**? We would rather say
+   it plainly at signing than have an owner discover it mid-claim. Is there wording you
+   would recommend, and any risk in disclosing it?
 
 8. **Anything the framework still omits** that a California equine lease should address —
    loss of use, agreed-value disputes, subrogation waivers, or coverage lapse mid-term.

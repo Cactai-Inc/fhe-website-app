@@ -127,10 +127,16 @@ is found **legally negligent**. That produces a chain the contract must not pape
    FHE's own client — who must press a claim against FHE to be paid.
 5. Standard liability policies bar the insured from **voluntarily admitting liability**,
    so FHE cannot concede fault to get its client paid without risking the coverage.
+6. Worse: those policies also impose a **duty to cooperate** — the insured must assist
+   the carrier in investigating and **defending** the claim, and breach is grounds to
+   deny coverage. FHE is therefore contractually obliged to help defeat its own client's
+   claim. The owner sues to be made whole; FHE's policy compels FHE to work against that
+   recovery.
 
 So CCC is not a backstop for the horse. It is protection for FHE's balance sheet against
-being sued by the owner. Those are different products with different beneficiaries, and
-the present contract blurs them.
+being sued by the owner — and the mechanism by which it pays is **adversarial to the
+client relationship the business runs on**. Those are different products with different
+beneficiaries, and the present contract blurs them.
 
 **Design consequences, binding on the rebuild:**
 
@@ -144,6 +150,12 @@ the present contract blurs them.
   today it does not exist.
 - **A mandatory disclosure** must state the negligence trigger in plain words, alongside
   the no-shared-policy acknowledgement in §5.
+- **Disclose the adversarial structure to owners up front, in the lease.** An owner who
+  discovers mid-claim that FHE is helping the carrier defend against them will not
+  remain a client. Saying it plainly at signing is both fairer and safer than letting it
+  surface at the worst possible moment — and it is the argument for the owner carrying
+  their own mortality / major-medical cover, which pays them without anyone having to
+  establish fault.
 - Non-covered-cost allocation must **never route to CCC as a fallback layer**.
 
 ---
