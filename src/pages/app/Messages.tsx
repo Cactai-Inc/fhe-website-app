@@ -10,6 +10,7 @@ import {
 } from '../../lib/community';
 import { useDocumentTitle } from '../../lib/hooks';
 import { useAuth } from '../../contexts/AuthContext';
+import { PageCreateButton } from '../../components/app/PageCreateButton';
 import type { DirectMessage, DmConversation, MemberDirectoryEntry } from '../../lib/community-types';
 
 /**
@@ -295,9 +296,7 @@ export default function Messages() {
     <div className="w-full max-w-6xl">
       <div className="flex items-center justify-between mb-6">
         <h1 className="font-serif text-green-800 text-3xl font-semibold">Messages</h1>
-        <button type="button" onClick={() => setPicking(true)} className="btn-primary text-sm">
-          <PenSquare size={15} /> New message
-        </button>
+        <PageCreateButton label="Message" onClick={() => setPicking(true)} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-0 h-[72vh] bg-white border border-green-800/10 rounded-2xl overflow-hidden">

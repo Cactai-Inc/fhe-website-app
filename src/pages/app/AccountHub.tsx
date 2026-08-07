@@ -15,6 +15,7 @@ import { AddItemModal } from '../../components/app/StableEditors';
 import { HorseIntakeForm } from '../../components/app/HorseIntakeForm';
 import { SavedPanel, DocumentsPanel } from '../../components/app/AccountPanels';
 import { ProfileAndPreferences } from '../../components/app/profile/ProfileAndPreferences';
+import { PageCreateButton } from '../../components/app/PageCreateButton';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 
@@ -100,7 +101,10 @@ function StableSection() {
 
   return (
     <div className="mt-2.5 mb-1 p-4 bg-cream-100/60 border border-green-800/10 rounded-xl">
-      <SectionLabel>Horses</SectionLabel>
+      <div className="flex items-center justify-between gap-3">
+        <SectionLabel>Horses</SectionLabel>
+        <PageCreateButton label="Horse" onClick={() => setModal('horse')} />
+      </div>
       <div className="flex flex-col gap-2.5">
         {showHorses.map((h) => (
           <Link key={h.id} to={`/app/horses/${h.id}`}
@@ -117,7 +121,6 @@ function StableSection() {
             </div>
           </Link>
         ))}
-        <button type="button" onClick={() => setModal('horse')} className="text-[12px] text-gold-800 font-semibold text-left px-1">+ Add a horse</button>
       </div>
 
       <SectionLabel>Gear</SectionLabel>

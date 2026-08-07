@@ -25,7 +25,8 @@ import { adminCreateAnnouncement } from '../../lib/admin';
  * Operators additionally get visibility, post-as-company (admins), and scheduling.
  */
 
-type Step = 'destination' | 'post_type' | 'form' | 'announce';
+export type CreateModalStep = 'destination' | 'post_type' | 'form' | 'announce';
+type Step = CreateModalStep;
 type PostType = 'social' | 'for_sale' | 'event' | 'discussion';
 
 const POST_TYPES: { key: PostType; label: string; icon: typeof PenSquare; hint: string }[] = [
@@ -369,10 +370,10 @@ function AnnounceForm({ onClose }: { onClose: () => void }) {
   );
 }
 
-export function CreateModal({ onClose }: { onClose: () => void }) {
+export function CreateModal({ onClose, initialStep = 'destination' }: { onClose: () => void; initialStep?: CreateModalStep }) {
   const navigate = useNavigate();
   const { isStaff, isAdmin } = useAuth();
-  const [step, setStep] = useState<Step>('destination');
+  const [step, setStep] = useState<Step>(initialStep);
   const [postType, setPostType] = useState<PostType>('social');
 
   const title = step === 'destination' ? 'Create'
