@@ -4,6 +4,8 @@ import { useViewSurfaces } from '../../lib/surfaces';
 import { useAuth } from '../../contexts/AuthContext';
 import { CommunityFeed } from '../../components/feed/CommunityFeed';
 import { FEED_VIEW_META, FEED_VIEWS, type FeedView } from '../../lib/seed';
+import { PageCreateButton } from '../../components/app/PageCreateButton';
+import { useCreateModalTrigger } from '../../contexts/CreateModalContext';
 
 /**
  * COMMUNITY FEED (/app index) — the front door on sign-in. ONE stream of
@@ -20,6 +22,7 @@ export default function Home() {
   const { surfaces, loading: surfacesLoading } = useViewSurfaces();
   const { isSuperAdmin } = useAuth();
   const [params] = useSearchParams();
+  const createModal = useCreateModalTrigger();
 
   // URL is the source of truth for the active view — the nested nav links drive it.
   const view: FeedView = isFeedView(params.get('filter')) ? (params.get('filter') as FeedView) : 'all';
@@ -45,15 +48,22 @@ export default function Home() {
           shown on the default/all view ("Welcome new members!"), not a repeat
           of the title. Filtered views keep their own eyebrow + description. */}
       <header className="mb-4">
-        <p className="eyebrow">{meta.title}</p>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="eyebrow">{meta.title}</p>
+            {view === 'all' ? (
+              <h1 className="font-serif text-green-800 text-3xl font-semibold mt-0.5">Welcome new members!</h1>
+            ) : null}
+          </div>
+          {hasFeed && createModal && (
+            <PageCreateButton label="Post" onClick={() => createModal.openCreate('post_type')} />
+          )}
+        </div>
         {view === 'all' ? (
-          <>
-            <h1 className="font-serif text-green-800 text-3xl font-semibold mt-0.5">Welcome new members!</h1>
-            <p className="body-text text-secondary text-sm mt-1.5 max-w-2xl">
-              This is a space to share your experiences at the ranch, links you find helpful, events you
-              hear about, and ads for tack or gear you no longer use that others may need.
-            </p>
-          </>
+          <p className="body-text text-secondary text-sm mt-1.5 max-w-2xl">
+            This is a space to share your experiences at the ranch, links you find helpful, events you
+            hear about, and ads for tack or gear you no longer use that others may need.
+          </p>
         ) : (
           <p className="body-text text-secondary text-sm mt-1.5 max-w-2xl">{meta.description}</p>
         )}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, Outlet, Link, Navigate, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { FEED_VIEWS, FEED_VIEW_META, type FeedView } from '../../lib/seed';
 import { dmUnreadTotal } from '../../lib/community';
@@ -17,8 +17,9 @@ import {
   type WallState, type StandingCategory, type NavPresence,
 } from '../../lib/api';
 import { AppOverviewModal } from './AppOverviewModal';
-import { CreateModal } from './CreateModal';
+import { CreateModal, type CreateModalStep } from './CreateModal';
 import { CardstockHeader } from './CardstockHeader';
+import { CreateModalTriggerContext } from '../../contexts/CreateModalContext';
 
 /** I7 — green-glass nav surface (mobile drawer + desktop USER rail only —
  *  NOT the staff rail, which keeps its own `bg-cream-100/40`): a translucent
@@ -555,6 +556,12 @@ export default function AppLayout() {
   const accountSection = useActiveAccountSection();
   const [menuOpen, setMenuOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  // PLUSPASS — a page's own "+" control (e.g. Home's "+ Post") can jump the
+  // shared CreateModal straight past the generic destination menu into a
+  // specific step, via CreateModalTriggerContext below.
+  const [createStep, setCreateStep] = useState<CreateModalStep>('destination');
+  const openCreateAt = useCallback((step: CreateModalStep) => { setCreateStep(step); setCreateOpen(true); }, []);
+  const createModalTrigger = useMemo(() => ({ openCreate: openCreateAt }), [openCreateAt]);
   // Mobile left-nav drawer: the side menu, opened by the button in the header
   // (moved there from the content area, owner spec 2026-08-05).
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -964,7 +971,9 @@ export default function AppLayout() {
           </aside>
         )}
         <main className="flex-1 min-w-0 px-4 sm:px-8 xl:px-12 py-6 sm:py-9 pb-24">
-          <Outlet />
+          <CreateModalTriggerContext.Provider value={createModalTrigger}>
+            <Outlet />
+          </CreateModalTriggerContext.Provider>
         </main>
       </div>
 
@@ -1053,7 +1062,12 @@ export default function AppLayout() {
         </div>
       )}
 
-      {createOpen && <CreateModal onClose={() => setCreateOpen(false)} />}
+      {createOpen && (
+        <CreateModal
+          initialStep={createStep}
+          onClose={() => { setCreateOpen(false); setCreateStep('destination'); }}
+        />
+      )}
 
       {/* A3: the tour. Auto-opened on first login (stamps the marker on
           dismiss) or re-opened from the avatar menu (leaves the marker be). */}

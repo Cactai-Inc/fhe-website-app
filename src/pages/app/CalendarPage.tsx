@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight, X, Wallet, Settings } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
+import { PageCreateButton } from '../../components/app/PageCreateButton';
 import {
   fetchCalendar,
   fetchRevenue,
@@ -53,6 +54,20 @@ function addDays(d: Date, n: number): Date {
 }
 function sameDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+
+/** PLUSPASS — the "+ Booking" control doesn't have a grid cell to anchor on,
+ *  so it defaults to the next on-the-hour slot inside business hours (rolling
+ *  to tomorrow's open if we're past close). Both the staff editor and the
+ *  client's open-time request treat this as a suggestion the person can
+ *  still change inside the panel/adjust with staff after submitting. */
+function nextBookableSlot(openHour: number, closeHour: number): Date {
+  const d = new Date();
+  d.setMinutes(0, 0, 0);
+  d.setHours(d.getHours() + 1);
+  if (d.getHours() < openHour) d.setHours(openHour);
+  else if (d.getHours() >= closeHour) { d.setDate(d.getDate() + 1); d.setHours(openHour); }
+  return d;
 }
 
 /** The outline/fill treatment for an item by status (owner's color model:
@@ -187,6 +202,14 @@ export default function CalendarPage() {
     );
   }
 
+  // PLUSPASS — "+ Booking": staff get the same full editor a grid click opens
+  // (onEmptyClick); a client gets the same "request this open time" flow.
+  function onCreateBooking() {
+    const start = nextBookableSlot(openHour, closeHour);
+    if (isStaff) setEditing({ item: null, start });
+    else setRequesting(start);
+  }
+
   const title =
     view === 'week'
       ? `${range.from.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – ${addDays(range.from, 6).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`
@@ -199,6 +222,7 @@ export default function CalendarPage() {
           <CalendarDays size={22} className="text-gold-ink" aria-hidden="true" /> Calendar
         </h1>
         <div className="flex items-center gap-2">
+          <PageCreateButton label="Booking" onClick={onCreateBooking} />
           <div className="inline-flex rounded-full bg-green-800/10 p-0.5">
             {(['week', 'month'] as ViewMode[]).map((v) => (
               <button

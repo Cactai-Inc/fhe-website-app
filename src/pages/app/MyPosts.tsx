@@ -7,6 +7,9 @@ import {
   type MyFeedPost, type FeedVisibility,
 } from '../../lib/feed';
 import { FeedVideo } from '../../components/feed/FeedVideo';
+import { PageCreateButton } from '../../components/app/PageCreateButton';
+import { useCreateModalTrigger } from '../../contexts/CreateModalContext';
+import { useViewSurfaces } from '../../lib/surfaces';
 
 /**
  * MY POSTS (/app/my-posts) — the poster manages their own community posts: review,
@@ -36,6 +39,8 @@ function statusOf(p: MyFeedPost): { label: string; cls: string } {
 export default function MyPosts() {
   useDocumentTitle('My posts');
   const navigate = useNavigate();
+  const createModal = useCreateModalTrigger();
+  const { surfaces } = useViewSurfaces();
   const [posts, setPosts] = useState<MyFeedPost[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
@@ -53,8 +58,15 @@ export default function MyPosts() {
         <ArrowLeft size={15} /> Account
       </button>
       <header className="mb-5">
-        <p className="eyebrow">Community</p>
-        <h1 className="font-serif text-green-800 text-3xl font-semibold mt-0.5">My posts</h1>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="eyebrow">Community</p>
+            <h1 className="font-serif text-green-800 text-3xl font-semibold mt-0.5">My posts</h1>
+          </div>
+          {surfaces.has_feed && createModal && (
+            <PageCreateButton label="Post" onClick={() => createModal.openCreate('post_type')} />
+          )}
+        </div>
         <p className="body-text text-sm text-muted mt-1">Review, edit, or delete anything you’ve posted.</p>
       </header>
 
