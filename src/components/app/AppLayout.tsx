@@ -136,11 +136,15 @@ const QUICK: { label: string; icon: typeof GraduationCap; to: string; end?: bool
  *  do. Icons match what AccountHub's own Row already uses for that same
  *  destination, for visual continuity between the nav and the Account page. */
 const PRESENCE_LINKS: { key: keyof NavPresence; label: string; icon: typeof ShoppingBag; to: string; section?: string }[] = [
-  { key: 'orders', label: 'Orders', icon: ReceiptText, to: '/app/orders' },
-  { key: 'documents', label: 'Documents', icon: FileText, to: '/app/documents' },
-  { key: 'stable', label: 'Stable', icon: Boxes, to: '/app/account?section=stable', section: 'stable' },
+  { key: 'orders', label: 'My Orders', icon: ReceiptText, to: '/app/orders' },
+  { key: 'documents', label: 'My Documents', icon: FileText, to: '/app/documents' },
+  /* D2 resolved: /app/stable shipped with ACCOUNTSURFACE, so this points at the
+     real route. `section` MUST be dropped alongside it — isActive falls back to
+     a pathname match only when `section` is absent (see PresenceLink), so
+     leaving it would mean My Stable never highlights as active. */
+  { key: 'stable', label: 'My Stable', icon: Boxes, to: '/app/stable' },
   { key: 'posts', label: 'My Posts', icon: Grid3x3, to: '/app/my-posts' },
-  { key: 'saved', label: 'Saved Content', icon: Bookmark, to: '/app/account?section=saved', section: 'saved' },
+  { key: 'saved', label: 'My Saved Items', icon: Bookmark, to: '/app/account?section=saved', section: 'saved' },
 ];
 
 /** The community-feed views, as nested nav links. Each filters the one feed
@@ -533,10 +537,11 @@ function ClientNavItems({ bellCount, dmCount, presence, lessonsOn, onNavigate }:
       <RailLink to="/app/messages" label="Messages" icon={MessageSquare} badge={dmCount} />
       {presence.posts && <RailLink to="/app/my-posts" label="My Posts" icon={Grid3x3} />}
       {presence.stable && (
-        /* D2: ACCOUNTSURFACE's /app/stable route doesn't exist on main yet
-           (confirmed by grepping App.tsx before this build) — left pointed at
-           the existing ?section= link rather than shipping a dead route. */
-        <PresenceLink to="/app/account?section=stable" label="My Stable" icon={Boxes} section="stable" onNavigate={onNavigate} />
+        /* D2 resolved by the orchestrator at merge: ACCOUNTSURFACE's /app/stable
+           route is now on main, so this points at it directly instead of taking
+           the ?section= redirect hop. `section` dropped so isActive matches on
+           pathname — see the note in PRESENCE_LINKS. */
+        <PresenceLink to="/app/stable" label="My Stable" icon={Boxes} onNavigate={onNavigate} />
       )}
       {presence.saved && (
         /* Owner ruling 2026-08-07 (#5): Saved Content ships as a visible nav
@@ -632,7 +637,7 @@ function ClientRail({ bellCount, dmCount, presence, lessonsOn, onOpenTour, onSig
 }) {
   return (
     <aside className="hidden lg:block shrink-0 relative z-30 w-60">
-      <nav className={`sticky top-14 h-[calc(100dvh-3.5rem)] border-r border-green-800/10 ${NAV_GLASS} p-2 overflow-y-auto overflow-x-hidden flex flex-col`}>
+      <nav className={`sticky top-[var(--cs-hdr-h)] h-[calc(100dvh-var(--cs-hdr-h))] border-r border-green-800/10 ${NAV_GLASS} p-2 overflow-y-auto overflow-x-hidden flex flex-col`}>
         <div className="flex flex-col gap-0.5">
           {/* Community Feed (position 1) with its views nested underneath. */}
           <CommunityNav indentClass="pl-9" />
@@ -1048,7 +1053,7 @@ export default function AppLayout() {
              `staffRailPinned`/`staffRailWidthClass` directly now — no more
              hover-driven divergence between the two). */
           <aside className={`hidden lg:block shrink-0 relative z-30 transition-[width] duration-100 ease-out ${staffRailWidthClass}`}>
-            <nav className={`p-3 sticky top-14 h-[calc(100dvh-3.5rem)] overflow-y-auto overflow-x-hidden border-r border-green-800/10 bg-cream-100/40 transition-[width] duration-100 ease-out ${staffRailWidthClass}`}>
+            <nav className={`p-3 sticky top-[var(--cs-hdr-h)] h-[calc(100dvh-var(--cs-hdr-h))] overflow-y-auto overflow-x-hidden border-r border-green-800/10 bg-cream-100/40 transition-[width] duration-100 ease-out ${staffRailWidthClass}`}>
               {/* C1 (owner, 2026-08-07): icon-only always — the label is
                   dropped, not just hidden when collapsed — and moved to the
                   panel's right edge, the edge it acts on. */}
