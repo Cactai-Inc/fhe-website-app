@@ -154,6 +154,23 @@ This is also what gives the relocated tab clean room: the owner has confirmed **
 has space in the top-right for the tab to live**, and it will not touch content until the
 user scrolls.
 
+### B5b — The 481–590px dead zone overflows
+
+Found by `TASK-BP410` while sweeping widths; pre-existing, not caused by it.
+
+The short-name switch happens at `≤480px`, so anything **above** that renders the full
+*"French Heritage Equestrian"* at 29px with full-size marks. That needs ~590px.
+Measured: `scrollWidth` 582 against a 500px viewport.
+
+So every width from **481px to roughly 590px overflows** — small tablets, iPad
+split-screen, and any resized desktop window.
+
+Fix it as part of the width ladder rather than as a patch: you are already touching the
+breakpoint table for B0 and the tab move, so one thread should reason about the whole
+ladder at once. Either move the short-name switch up, or add a step in that range.
+**Report which and why** — the owner has been explicit that width is the scarcest
+resource on this header.
+
 ### B6 — Page titles stay LEFT-JUSTIFIED — do not change them
 
 An earlier instruction asked for the title block to be centred. **Withdrawn by the owner.**
@@ -216,7 +233,8 @@ where approved.
 
 ## Known, and NOT this task's to fix
 
-- **The header wordmark crowding** is fixed — `TASK-BP410` merged (`93d3d50`).
+- **The header wordmark crowding** below 410px is fixed — `TASK-BP410` merged. The
+  481–590px dead zone it uncovered is **B5b above**, and is in scope.
 - **Gilding the monogram** for mobile legibility is an owner-led design pass.
 
 ## Constraints

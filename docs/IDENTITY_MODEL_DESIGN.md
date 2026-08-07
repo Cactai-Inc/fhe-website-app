@@ -79,3 +79,23 @@ Edge creation is staff/admin-only today. Members cannot self-declare a company a
 when a company already has a CONNECTED person, a new association request routes to them;
 their approval grants it, inaction blocks it. Primary near-term use cases: owner-operators
 (rider whose business is directory-listed) and LLCs held for horse-ownership legal purposes.
+
+---
+
+## Why `guest` cannot imply `customer` — owner note, 2026-08-07
+
+Two real cases sit on opposite sides of the same standing category, which is why the two
+axes must stay independent:
+
+| Case | `guest` | `customer` | Why |
+|---|---|---|---|
+| **Gift buyer** | true | **true** | They bought something. They may never set foot on the property, may have no account until redemption, and exist only because money changed hands. |
+| **Ranch visitor** | true | **false** | They are on site — a spectator, a parent, a friend of a rider — and have bought nothing. |
+
+So `guest` describes **relationship to the property**, and `customer` describes **whether a
+purchase exists**. Collapsing them into one flag misclassifies one of these two, and both
+are common.
+
+This is also why gift redemption reaches account provisioning from an unauthenticated
+route (`/redeem` → `redeem_gift`): the buyer is already a customer before any account
+exists. See `TASK-SECFIX2` G1, where that grant is deliberately preserved.
