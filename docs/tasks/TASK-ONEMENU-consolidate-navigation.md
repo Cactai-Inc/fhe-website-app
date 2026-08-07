@@ -316,6 +316,47 @@ yet, leave the links alone and say so rather than shipping a dead link.
 
 ---
 
+## OWNER RULINGS — 2026-08-07. Phase 2 is unblocked.
+
+All six open questions answered. Build against these.
+
+1. **The avatar is an inert monogram.** Not a menu trigger, not a link. Remove the press
+   interaction, hover state, pointer cursor, tap-highlight suppression and the menu ARIA
+   semantics — a decoration must not announce itself as a control.
+
+2. **Consistency everywhere.** The new state palette (**C5b**) applies to every nav row in
+   both the rail and the drawer — no component keeps the old treatment. If it genuinely
+   cannot work somewhere, report that rather than leaving a mixed style.
+
+3. **Everything that lives only in the avatar menu moves to the side nav.** That includes
+   the staff Account link, which staff have never had in the drawer. No exceptions.
+
+4. **Admin and instructor converge** on the same item set. The current divergence is drift,
+   not design.
+
+5. **Saved Content is included** in the merged nav — but see the note below; the real answer
+   is that the member chooses.
+
+6. **Sign out goes at the bottom**, however much space sits between it and the last item.
+   **Make it a full-width tap target.** On iOS the system overlays that region (home
+   indicator, Safari toolbar), so a narrow control there is hard to hit. **This needs a real
+   device check** — if full width is still awkward, report it rather than moving it.
+
+### The nav is user-configurable — and this changes NAVPREFS
+
+Owner's model: the welcome modal lists every nav item, explains what each one does, and the
+member chooses which to keep. Each item then has a **toggle in Preferences** to show or hide
+it in the nav. **This is not built yet** — it is `NAVPREFS`, still queued.
+
+**One consequence for that queued task:** it was specced for **two toggles per item**, one
+per menu. With a single merged menu it needs **one**. Recorded here so NAVPREFS is corrected
+before it is built.
+
+For this task: ship every item visible, including Saved Content. Hiding is NAVPREFS's job,
+not a decision to hardcode here.
+
+---
+
 ## Phase 1 — the plan
 
 Produce the A2 migration list, then answer these. **Answer, do not decide.**
