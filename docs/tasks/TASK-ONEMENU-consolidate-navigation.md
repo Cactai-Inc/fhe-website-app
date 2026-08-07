@@ -129,7 +129,16 @@ reads as clearly forward without the backdrop turning heavy. Removing it visuall
 acceptable **only if** the drawer still separates clearly, and it must keep click-to-close
 either way — a transparent catcher if nothing is drawn.
 
-### B5 — Centre the page title block
+### B5 — Increase the space above the page title
+
+`<main>` (`AppLayout.tsx` ~966) carries `py-6 sm:py-9` — 24px above the page title on
+mobile. The owner reports it as too tight. Increase the top padding on mobile.
+
+This is also what gives the relocated tab clean room: the owner has confirmed **every page
+has space in the top-right for the tab to live**, and it will not touch content until the
+user scrolls.
+
+### B6 — Centre the page title block
 
 `src/pages/app/Home.tsx` ~47–60: the eyebrow, the `Welcome new members!` heading and the
 description are left-aligned inside a centred page. Centre them. The description carries
@@ -160,7 +169,7 @@ Produce the A2 migration list, then answer these. **Answer, do not decide.**
 4. **Desktop.** The avatar dropdown also serves desktop, where the rail is the nav. Does
    the dropdown survive on desktop and disappear only on mobile, or go everywhere?
    Consolidating on desktop is a much larger change and probably a separate task.
-5. **B5 scope** — one page, or all seven.
+5. **B6 scope** — one page, or all seven.
 
 **Stop after Phase 1 and report.**
 
@@ -184,10 +193,20 @@ where approved.
    unscrolled. Overlap **while scrolling is expected and correct**; do not "fix" it.
 6. The tab is reliably tappable **at its edges**, not just dead centre (B1).
 7. The current page is identifiable at a glance in the drawer, without a fill (B3).
+8. The avatar renders as a monogram with **no** interactive behaviour — no press, no
+   hover, no pointer cursor, and not announced as a control.
 8. The desktop rail still reads correctly after B3 — screenshot it.
 9. Superadmin's chrome is unchanged.
 10. Desktop is unchanged unless Q4 said otherwise.
 11. Typecheck and lint clean.
+
+## Known, and NOT this task's to fix
+
+- **The header wordmark is crowded on mobile** and the logo sits ~6px closer to the
+  wordmark than the avatar does (the grid is `1fr auto 1fr` while the marks are 56px and
+  50px, so the side gaps differ by the 6px size difference). `TASK-BP410` addresses the
+  crowding and is built but unmerged. **Do not attempt either here.**
+- **Gilding the monogram** for mobile legibility is an owner-led design pass.
 
 ## Constraints
 
