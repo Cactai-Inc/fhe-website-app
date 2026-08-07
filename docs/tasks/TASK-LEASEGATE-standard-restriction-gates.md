@@ -47,16 +47,22 @@ shape. That is not this system's grammar and will not evaluate.
 
 ---
 
-## The four blocks in scope
+## The three blocks in scope
 
 | # | Applies to | Condition | Reason text (verbatim) |
 |---|---|---|---|
 | B1 | Lessor requiring Lessee to carry **mortality** | `TXN.LEASE_TYPE = PARTIAL` | *Prohibited: Underwriting guidelines prevent partial lessees from establishing a sole insurable interest for third-party mortality placement.* |
 | B2 | Lessee **holding** mortality | `TXN.LEASE_TYPE = PARTIAL` | as B1 |
-| B5 | Lessor holding **mortality or medical** | `TXN.LESSOR_INSURABLE_INTEREST = NONE` | *Prohibited: Without a direct pecuniary interest in the Horse (Cal. Ins. Code §§ 281–284), the Lessor cannot lawfully insure it.* |
 | B6 | The **GL policy type** offered to the Lessee | `LESSEE.PARTY_TYPE = INDIVIDUAL` | Not a block — an **option filter**. See below. |
 
 **B3 and B4 are CCC and are OUT OF SCOPE.**
+**B5 (insurable interest) is OUT OF SCOPE** — owner direction. Do not add
+`TXN.LESSOR_INSURABLE_INTEREST` or any question about pecuniary interest.
+
+*Consequence, stated so it is not a surprise:* B5 was the only block touching **major
+medical**, so this task ships gates on **mortality (B1, B2)** and **general liability
+(B6)** only. Medical elections stay unrestricted. That is intended — the medical gate
+needs a new question the owner does not want asked yet.
 
 ### B6 is deliberately different in kind
 
@@ -65,22 +71,10 @@ the *field itself* remains legitimately selectable — the Lessor may still requ
 horse-owner or private-rider liability. So B6 **narrows the option list**; it does not
 disable the control. Conflating the two would refuse a field the Lessor is entitled to use.
 
-### B5 requires one new field
+### This task adds NO new fields
 
-`TXN.LESSOR_INSURABLE_INTEREST` does not exist and must be added:
-
-| Value | Meaning |
-|---|---|
-| `OWNER` | Lessor owns the horse |
-| `PRIMARY_LEASE_LIABILITY` | Lessor's upstream lease makes them financially liable for the horse's value |
-| `RECOUPABLE_INVESTMENT` | Lessor holds verifiable training investment that the horse's death destroys |
-| `NONE` | None of the above |
-
-The test is **direct pecuniary loss**, not a label — which is why a bare "leaseholder" is
-not an option. This is the only new question this task adds; everything else is a
-restriction on existing controls.
-
-Owner: `LESSOR`. Required: yes. Place it near the insurance section's opening.
+Every gate here restricts a control that already exists. If you conclude a block cannot be
+built without adding a field, **stop and report** — do not add one.
 
 ---
 
@@ -104,7 +98,7 @@ rather than widening scope.
 ## Verification
 
 The failure mode is silent — a gate that never fires looks exactly like a gate that
-works. Prove each of the four, and prove the negative:
+works. Prove each of the three, and prove the negative:
 
 1. **Each block fires.** Set the triggering condition; confirm the control renders,
    is disabled, and shows the exact reason text.
