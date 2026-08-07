@@ -12,8 +12,8 @@ sign-out question both need the owner's eyes first.
 ## Why
 
 Two menus on one small screen, each holding a slice of navigation, with a left-edge tab
-that sits over page text. One menu on the right removes the split, removes the tab's
-collision with left-aligned content, and gives the avatar a single clear job.
+sitting over the page title. One menu on the right removes the split, puts the tab where
+the UI has its most free space, and gives the avatar a single clear job.
 
 ---
 
@@ -104,7 +104,8 @@ where approved.
 4. The tab is reliably tappable at the right edge — it must satisfy the 44px minimum from
    `TASK-NAVFIX` N1. If NAVFIX has not merged, apply the same fix here rather than shipping
    a small target again.
-5. The tab no longer overlaps page text at 390px. Screenshot the community page.
+5. Nothing is covered **at initial load** at 390px — screenshot the community page
+   unscrolled. Overlap **while scrolling is expected and correct**; do not "fix" it.
 6. Superadmin's chrome is unchanged.
 7. Desktop is unchanged unless Q4 said otherwise.
 8. Typecheck and lint clean.
