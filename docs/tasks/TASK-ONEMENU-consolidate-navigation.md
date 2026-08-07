@@ -120,12 +120,9 @@ selection; verify all four still work.
 font-medium` plus a gold icon. On frosted glass an opaque cream fill fights the material —
 it reads as a card pasted onto the glass.
 
-**Remove the background fill** and replace it with a non-filling indicator. Recommended: a
-**left accent bar**, 2–3px gold on the leading edge, label kept at `font-medium`, icon
-still gold.
-
-If a left bar collides with the `pl-9` indent used by nested community links, report it
-rather than reworking the indent scheme.
+**Remove the cream background fill.** What replaces it is now specified in **C5b** — a
+green fill for selected and a translucent green for hover. The earlier accent-bar
+suggestion is **withdrawn**; build C5b instead.
 
 **`RailLink` is shared with the desktop rail.** Changing it changes both. That is
 acceptable and probably desirable, but confirm the desktop rail still reads correctly and
@@ -239,6 +236,44 @@ In `CommunityNav` (~line 430) the show/hide control renders a **15px** chevron w
 **10px** text label, against **17–18px** icons and **13.5px** labels everywhere else in the
 rail. Bring the Community Feed icon and its toggle to the same scale as every other nav
 item.
+
+### C5b — Nav state colours: default → hover → selected
+
+Owner spec, 2026-08-07. Replaces the cream-fill treatment in **B3** — read them together;
+B3 removes the old fill, this defines what replaces it.
+
+Three states, and the point is that **hover previews selection**:
+
+| State | Fill | Text + icon |
+|---|---|---|
+| **Default** | none | today's secondary green |
+| **Hover** | the same green at reduced opacity — *"you'll go here if you click"* | the **selected** text colour |
+| **Selected** | solid green | the **panel's own surface colour** |
+
+So hovering shows you a faint version of what the row becomes once you click it. On click
+the previous selection clears and the new row takes the solid fill.
+
+**Values:**
+
+- Green: **`green-800` `#143321`** — the brand green.
+- Selected text and icon: the panel surface, **`cream-100` `#f5f0e8`** (the rail is
+  `bg-cream-100/40`). Verify it reads cleanly on `green-800`; step to `cream-50 #faf8f4`
+  if it does not.
+- Hover fill: `green-800` at reduced opacity, tuned so it is clearly a preview rather
+  than mistakable for the selection itself. **If the translucency muddies against the
+  rail's own translucent surface, use the solid equivalent instead** — the owner
+  explicitly allowed either.
+
+**Applies to BOTH the icon-only and full-width rail, and to the mobile drawer.** One
+palette across all three; do not let the collapsed rail diverge.
+
+**Scope:** this is the four components from B3 — `RailLink`, `PresenceLink`,
+`AccountNavLink`, and `CommunityNav`'s nested links. A mixed treatment is worse than
+either state.
+
+**Interaction with B3:** B3 says remove the cream fill and use a non-filling indicator.
+**This supersedes that** — a fill is now wanted, just a different one. The accent-bar
+suggestion in B3 is withdrawn.
 
 ### C6 — Move the create tab left
 
