@@ -3,7 +3,12 @@
 Worktree `/Users/Cactai/Desktop/fhe-worktree-secfix`, branch `task/secfix` off `origin/main`
 (`4319a9a`). All database work against prod `db.lrstswfxfsezdmvkvukc.supabase.co`.
 
-**Status: S2 applied and verified. STOPPED before S1 and S3 as instructed.**
+**Status: all three applied and verified — S2, then S1, then S3, in three separate
+migrations, each revertable alone.**
+
+One gap is deliberately left open and needs a decision: `member_directory` cannot take
+`security_invoker` without a policy change, which this task forbids. See "S1 — the one
+view that could not take the primary fix".
 
 Everything below labelled "verified" was run by me against prod and the raw output is
 pasted. Where I am reasoning rather than observing, it says so.
@@ -176,9 +181,40 @@ ERROR:  new row violates row-level security policy for table "profiles"
 
 I left `anon`'s grant alone deliberately. Reported, not fixed — see "Not fixed".
 
-### S3 — confirmed (verification only; not yet fixed, per the stop instruction)
+### S3 — confirmed, and it writes real rows
 
-Not re-verified in depth yet; that belongs to the S3 pass. I have not touched it.
+`_ensure_client_account(uuid,text,text,text,text[],text[],text)`, SECURITY DEFINER, owner
+`postgres`. One overload only — the 6-argument call sites work because `p_template_keys`
+and `p_marker` have defaults, so a single revoke covers every call.
+
+No caller check of any kind. Verified mechanically rather than by reading:
+
+```
+NO auth/caller check anywhere in the body
+```
+
+(the body contains no reference to `is_admin`, `has_staff_access`, `auth.uid`, `app_role`,
+`current_org` or `current_user` — it validates only `p_org` non-null, email non-empty, and
+`p_marker IN ('CLIENT','CUSTOMER')`.)
+
+**Live exploit as `anon`, unauthenticated, inside `BEGIN … ROLLBACK`:**
+
+```
+ acting_as
+-----------
+ anon
+
+--- unauthenticated call, targeting the real FHE org by id ---
+ {"client_id": "9a00e53e-676b-4999-8d13-fff84bf3be8a", "contact_id": "4d19a47a-cbb2-456f-b9bf-10e32e95c92e"}
+
+--- rows it created ---
+ 4d19a47a-… | e656f20b-ef43-4725-9029-19e7f0190d9c | secfix-anon-probe@example.test | CONTACT
+ client_rows_created   = 1
+ required_docs_created = 4
+```
+
+An unauthenticated caller created a contact, a client and four required-document
+assignments in the production org. Rolled back; nothing persisted.
 
 ---
 
@@ -424,6 +460,374 @@ Sarah's document `704c8d2d-…` was never read or written by any statement in th
 
 ---
 
-## S1 and S3
+---
 
-Not started. Stopping here for the S2 verification pass as instructed.
+# S1 — five views leaking to `anon`
+
+`supabase/migrations/20260807130000_secfix_s1_view_security_invoker.sql`
+
+```sql
+ALTER VIEW public.clients_overview SET (security_invoker = true);
+ALTER VIEW public.inbound_queue    SET (security_invoker = true);
+ALTER VIEW public.memberships      SET (security_invoker = true);
+ALTER VIEW public.service_credits  SET (security_invoker = true);
+-- member_directory deliberately keeps definer semantics — see below.
+REVOKE SELECT ON public.clients_overview, public.inbound_queue, public.memberships,
+                 public.member_directory, public.service_credits FROM anon;
+```
+
+## S1 — the one view that could not take the primary fix
+
+**This is the open item.** `security_invoker` is applied to four views. It is **not**
+applied to `member_directory`, because measuring it first showed it would break the
+community directory.
+
+Dry run, all five switched on at once, counted per role:
+
+```
+=== AS ANON (target: 0 rows everywhere) ===
+ clients_overview |     0
+ inbound_queue    |     0
+ member_directory |     0
+ memberships      |     0
+ service_credits  |     0
+
+=== AS AN ORDINARY MEMBER 0a7fc801 (community directory was 6 rows) ===
+ clients_overview |     1
+ inbound_queue    |     0
+ member_directory |     1        <-- was 6
+ memberships      |     1
+ service_credits  |     0
+
+=== AS STAFF/ADMIN b45a5503 ===
+ inbound_queue    |    11
+ member_directory |     6
+ clients_overview |    14
+ memberships      |     9
+ service_credits  |     0
+```
+
+`member_directory` collapses **6 → 1** for an ordinary member. The cause is structural, not
+incidental: the directory is by definition a cross-member read, while the base tables
+restrict a non-admin to their own row —
+
+```
+ profiles | profiles_select_own | r | ((user_id = auth.uid()) OR (app_role() = 'SUPER_ADMIN') OR (is_admin() AND …))
+ contacts | contacts_select     | r | (is_admin() OR ((deleted_at IS NULL) AND (id = current_contact_id())))
+```
+
+Both consumers would break, not just one:
+
+- `fetchMemberDirectory()` (`src/lib/community.ts:27`) — the community directory would show
+  a member only themselves.
+- `fetchMemberProfile(userId)` (`src/lib/community.ts:40`, used by
+  `src/pages/app/MemberProfile.tsx` and `ProfileCard.tsx`) — every *other* member's profile
+  page would return null.
+
+Making `security_invoker` work there needs a new SELECT policy on `profiles` and
+`contacts`. That is a policy change, which this task explicitly forbids ("grants and view
+options only… if a fix appears to need more, stop and report"). Given "a lockout is a worse
+outcome than the exposure", I left the view option off.
+
+**What I did instead, and why I judged it in scope:** revoked `anon`'s SELECT. The task
+sanctions exactly this "where nothing legitimate reads the view as anon" — verified nothing
+does: both consumers are under `/app` and go through `community.ts`, whose `uid()` helper
+throws without a session. This closes the anon exposure on the most sensitive of the five
+(email, mobile, whatsapp for 6 real members) and leaves authenticated reads at 6 rows.
+
+It is **not** the primary fix. `member_directory` still executes with `postgres`'s rights
+and still bypasses RLS for any caller that can reach it. **Decision needed:** add a
+directory-scoped SELECT policy to `profiles` and `contacts` (then turn `security_invoker`
+on), or convert the directory to a SECURITY DEFINER RPC. Neither is in this task's scope.
+
+### The other four — confirmed unused before revoking anon
+
+- `clients_overview` — 0 references in `src/` or `api/`
+- `service_credits` — 0 references
+- `memberships` — 0 real references; the only two hits (`api/hard-delete-client.ts:12,48`)
+  are prose comments about the `members` **table** cascade, not view reads
+- `inbound_queue` — staff only, `src/lib/ops/api-intake.ts:135`
+
+## S1 — dry run
+
+The real migration body, then rolled back. anon is refused outright:
+
+```
+=== ANON ===
+ERROR:  permission denied for view clients_overview
+ERROR:  permission denied for view inbound_queue
+ERROR:  permission denied for view memberships
+ERROR:  permission denied for view member_directory
+ERROR:  permission denied for view service_credits
+
+=== ORDINARY MEMBER 0a7fc801 ===
+ member_directory_rows
+                     6
+--- fetchMemberProfile(another member) still resolves ---
+ d9f57a2f-d009-46dd-a77c-bcc2803c7e85 | Mary
+
+=== STAFF/ADMIN b45a5503 ===
+ inbound_queue_rows
+                 11
+```
+
+## S1 — applied, and verified live
+
+```
+BEGIN / ALTER VIEW ×4 / REVOKE ×5 / COMMIT   exit=0
+```
+
+End state:
+
+```
+       view       |        invoker        | anon_select | auth_select
+------------------+-----------------------+-------------+-------------
+ clients_overview | security_invoker=true | f           | t
+ inbound_queue    | security_invoker=true | f           | t
+ member_directory | (none)                | f           | t
+ memberships      | security_invoker=true | f           | t
+ service_credits  | security_invoker=true | f           | t
+```
+
+**Negative — anon gets nothing from any of the five:**
+
+```
+ERROR:  permission denied for view clients_overview
+ERROR:  permission denied for view inbound_queue
+ERROR:  permission denied for view memberships
+ERROR:  permission denied for view member_directory
+ERROR:  permission denied for view service_credits
+```
+
+**Positive — a real member still gets the community directory (6 rows):**
+
+```
+ directory_rows
+              6
+
+   who    | is_horse_owner | preferred_contact
+----------+----------------+-------------------
+ CJ       | f              | none
+ Sarah    | t              | none
+ CJ       | t              | sms
+ Madeline | f              | none
+ Mary     | f              | none
+ Claire   | f              | none
+```
+
+A second, different member (`d9f57a2f`) sees the same 6, and can still resolve another
+member's profile page:
+
+```
+ directory_rows
+              6
+ d226273d-b3a6-4fff-95aa-393160976c70 | Sarah
+```
+
+**Positive — staff still get `inbound_queue`'s 11 rows**, with the computed columns intact:
+
+```
+ inbound_queue_rows
+                 11
+
+      email       |  status   | days_open | already_converted | overdue
+------------------+-----------+-----------+-------------------+---------
+ elishou@gmail.co | new       |        24 | t                 | f
+ ashlanalexis22@g | new       |        22 | t                 | f
+ rkthicklin@gmail | new       |        20 | t                 | f
+ audrey.j.brennan | new       |        18 | f                 | t
+ hannah.dryden14@ | contacted |        16 | f                 | f
+ naomi.pouliot@ic | contacted |        14 | f                 | f
+ serenalee1732@gm | contacted |        13 | t                 | f
+ brian@brianoleni | new       |        12 | t                 | f
+ melanie619@hotma | new       |        10 | t                 | f
+ mrober0618@gmail | new       |         5 | t                 | f
+ crystal.a0719@ou | new       |         5 | f                 | t
+```
+
+The second admin (Claire, `fdbdfe89`) also gets 11 / 14 / 9 on inbound_queue /
+clients_overview / memberships.
+
+---
+
+# S3 — `anon` executing a SECURITY DEFINER writer
+
+`supabase/migrations/20260807140000_secfix_s3_ensure_client_account_execute.sql`
+
+```sql
+REVOKE EXECUTE ON FUNCTION
+  public._ensure_client_account(uuid,text,text,text,text[],text[],text)
+  FROM PUBLIC, anon, authenticated;
+```
+
+## The task doc's literal fix for S3 is also a silent no-op
+
+Second instance of the same class of trap. The function's ACL was:
+
+```
+ =X/postgres                <-- this is a grant to PUBLIC
+ postgres=X/postgres
+ anon=X/postgres
+ authenticated=X/postgres
+ service_role=X/postgres
+```
+
+Revoking from `anon` alone leaves the PUBLIC grant in place:
+
+```
+BEGIN
+REVOKE
+ anon_still_can_execute
+------------------------
+ t
+ROLLBACK
+```
+
+So `REVOKE … FROM anon` would have committed cleanly and left `anon` able to execute. PUBLIC
+must go too.
+
+## Scope decision (stated plainly)
+
+Once PUBLIC and `anon` are revoked, `authenticated` still held an explicit grant — the same
+unauthorised cross-org write, one signup away. Nothing legitimate uses it (no direct call
+anywhere in `src/` or `api/`; all four real callers are DEFINER), so I revoked that as well.
+`postgres` and `service_role` keep EXECUTE. Same judgement call as S2's INSERT, flagged
+rather than done quietly.
+
+## S3 — dry run and applied
+
+Dry-run first with all four callers exercised, then applied:
+
+```
+BEGIN / REVOKE / COMMIT   exit=0
+```
+
+ACL now:
+
+```
+ postgres=X/postgres
+ service_role=X/postgres
+
+ anon | authenticated | service_role
+------+---------------+--------------
+ f    | f             | t
+```
+
+**Negative — the exact call that created rows an hour earlier:**
+
+```
+=== as anon ===
+ERROR:  permission denied for function _ensure_client_account
+
+=== as a logged-in member ===
+ERROR:  permission denied for function _ensure_client_account
+```
+
+## S3 — all four callers still complete
+
+Two of the four (`redeem_gift`, `redeem_contract_invitation`) wrap the call in
+`EXCEPTION WHEN others THEN NULL` — "never block redemption on provisioning". So **their
+return value proves nothing**: if the revoke had broken provisioning they would still have
+reported success and silently skipped it. Every caller below is therefore verified by its
+side effects, not its return value.
+
+```
+--- 1/4 provision_client_invitation (as an authenticated ADMIN) ---
+ contact_id = 48bd8350-053b-47ab-8529-f9c59bf84377
+ contact | client | req_docs
+       1 |      1 |        4
+
+--- 2/4 ensure_gift_buyer_account ---
+ {"ok": true, "contact_id": "d9cef898-46b7-4cec-b6a6-96856f4aab64"}
+ buyer_contact_created = 1
+
+--- 3/4 redeem_gift ---
+ gift_status | client_row_recreated
+ redeemed    |                    1
+
+--- 4/4 redeem_contract_invitation ---
+ invitation_status | client_row_recreated
+ redeemed          |                    1
+```
+
+For callers 3 and 4 the client row was **deleted inside the transaction first**, so its
+reappearance is positive proof that `_ensure_client_account` actually ran. In caller 4's
+path `promote_contact_to_account` is skipped (profile.contact_id equals
+invitation.contact_id), so `_ensure_client_account` is the only thing that can recreate it.
+A control run of the identical scenario **without** the revoke produced the same result,
+confirming the test discriminates rather than passing trivially:
+
+```
+########## RUN A — WITH the revoke ##########
+ client_rows_after_delete = 0
+ invitation_status | client_row_recreated
+ redeemed          |                    1
+
+########## RUN B — control, revoke NOT applied ##########
+ client_row_recreated_control = 1
+```
+
+---
+
+# Final state — nothing was written
+
+```
+=== row counts (baseline vs after all three migrations: identical) ===
+ clients                    |    15
+ contact_required_documents |    30
+ contacts                   |    26
+ documents                  |    68
+ gifts                      |     0
+ invitations                |    35
+ profiles                   |    10
+
+=== no probe rows escaped any rolled-back test ===
+ probe_contacts    = 0
+ probe_gifts       = 0
+ probe_invitations = 0
+
+=== all three fixes hold simultaneously ===
+ S2: auth UPDATE contact_id = f | auth INSERT contact_id = f
+ S1: 4 views security_invoker=true, anon SELECT revoked on all 5
+ S3: anon EXECUTE = f
+
+=== Sarah's live negotiation document — read-only, untouched ===
+ 704c8d2d-d179-43f9-8a4a-7ea8cb920ab9 | sent_for_review | 2026-08-05 04:24:07.803698+00
+```
+
+`updated_at` predates this session. It was never written by any statement in this task.
+
+---
+
+# Open items
+
+1. **`member_directory` still bypasses RLS** (definer-side). anon is locked out, but the
+   primary fix is blocked on a policy decision. This is the one thing from the original
+   three findings that is not fully closed. **Needs a decision.**
+2. **`anon` holds table-level INSERT/UPDATE/DELETE on `profiles`**, and `authenticated`
+   holds DELETE. Dormant behind RLS (proven), out of S2's revert unit.
+3. **`redeem_gift` and `ensure_gift_buyer_account` are PUBLIC-executable** (`=X/postgres`
+   in their ACLs), noticed while checking the callers. Not examined — outside this task,
+   but the same shape as S3 and worth a look.
+4. Everything under "Also found by ACCTEVAL — NOT in this task" remains untouched.
+
+# Reverts
+
+Each migration reverts alone, in any order:
+
+```sql
+-- S2
+GRANT INSERT, UPDATE ON public.profiles TO authenticated;
+
+-- S1
+ALTER VIEW public.clients_overview SET (security_invoker = false);
+ALTER VIEW public.inbound_queue    SET (security_invoker = false);
+ALTER VIEW public.memberships      SET (security_invoker = false);
+ALTER VIEW public.service_credits  SET (security_invoker = false);
+GRANT SELECT ON public.clients_overview, public.inbound_queue, public.memberships,
+                public.member_directory, public.service_credits TO anon;
+
+-- S3
+GRANT EXECUTE ON FUNCTION public._ensure_client_account(uuid,text,text,text,text[],text[],text)
+  TO PUBLIC, anon, authenticated;
+```
