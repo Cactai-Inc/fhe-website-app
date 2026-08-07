@@ -393,6 +393,68 @@ clauses that carry the Lessor's acceptance — deleting the Lessee's protection 
 keeping the acknowledgment that does nothing. Any redesign must preserve an explicit
 Lessor acceptance of full responsibility, however the election is expressed.
 
+### What IS missing — owner specification, 2026-08-06
+
+The allocation exists but is **hardcoded to the Lessor**. `MED_TAIL` says costs *"are to
+be paid by Lessor"* and *"Lessor assumes and is responsible for all risks and costs not
+paid or covered"*. There is no election. These are the real gaps.
+
+**Design principle, owner-stated:** *"These don't need to be linked. We don't need to force
+things. We can just offer elections that they can opt into."* Everything below is an
+opt-in election, not a forced consequence of another selection.
+
+#### G1 — Non-covered costs must be electable to either party
+
+Today only the Lessor can carry them. The Lessee needs the option to assume responsibility
+for non-covered medical expenses. Both directions must be expressible; neither is default.
+
+#### G2 — A Lessee policyholder must owe a duty to pursue the claim
+
+**Does not exist in any form.** Where the Lessee holds the medical policy, they must be
+obligated to work with the carrier — submit claims, follow up, and make every best effort
+to get costs covered.
+
+**Why this is not administrative housekeeping:** the horse is the thing that gets
+encumbered. The debt lives with the **owner**. If the practice cannot bill the owner's
+card, it can still put a **claim against the horse itself**, which returns to the owner of
+record. So a Lessee who simply does not pursue a claim can leave a lien on an asset they
+do not own, with no contractual duty breached.
+
+This is the sharper form of the veterinary billing chain in §4d — not merely a misdirected
+charge, but an encumbrance on the horse.
+
+#### G3 — Payout direction differs by policy type
+
+- **Mortality** is against the horse → the payout belongs to the **owner**.
+- **Medical** goes to the **policyholder**, not the horse's owner — arguably must, since
+  they are the one incurring and reclaiming the cost — and only against **valid claims**.
+
+Mortality and medical should ride together as elections, but they do **not** share a
+payee. The document must express that split rather than treating "who holds it" as one
+question.
+
+#### G4 — Policy selection rights
+
+The owner may obligate the Lessee to carry a policy at stated monetary values or limits.
+But **limits alone do not settle which policy** — particularly where the owner is paying
+for a policy written in the Lessee's name for the lease term.
+
+Elections to offer, none of them forced:
+
+- minimum limits only;
+- the paying party chooses the policy;
+- **joint decision** on which policy is purchased, where cost is shared.
+
+Whether a joint-decision demand is reasonable depends on who is paying. That is a
+negotiation, so the contract offers it as an election rather than deciding it.
+
+#### G5 — Assignments should be able to follow policy terms
+
+Leave room to base allocation on what the actual policy says, rather than forcing every
+lease to restate it from scratch.
+
+---
+
 ### Method note — twice now
 
 This document twice asserted a defect in the template without reading the clause: first
