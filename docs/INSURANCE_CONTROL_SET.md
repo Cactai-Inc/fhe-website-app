@@ -406,6 +406,83 @@ unilaterally — the same shared-ownership treatment `TXN.LEASE_PURPOSE` already
 
 ---
 
+## 4b. Declaration vs fact — the distinction everything else rests on
+
+Owner ruling, 2026-08-06. Two kinds of value live in these sections and they must not be
+treated alike:
+
+| | Example | Who may set it |
+|---|---|---|
+| **Fact** | *"A partial lessee cannot lawfully obtain mortality cover."* | The system may assert it |
+| **Declaration** | *"I accept that no insurance exists."* · *"I will obtain and maintain."* | **Only the declaring party** |
+
+A design that force-sets a declaration on a party's behalf is invalid, however convenient.
+The present both-parties-waiver checkbox fails for a subtler reason: when one party
+*cannot lawfully obtain* cover, the other has no way to respond except refuse to sign.
+
+> *"If as Lessee I'm not comfortable leasing a horse that doesn't have medical insurance
+> from the owner, I will not be happy to check that box. If the owner doesn't have
+> insurance and I cannot get it, there is a discussion to be had."*
+
+**The contract has nowhere to put that discussion.** That gap — not the gating — is what
+drives the redesign.
+
+## 4c. The premium-sharing pathway — new, owner-specified
+
+The scenario the current sections cannot express. A lifelong owner assumes they can
+require the Lessee to insure; they cannot, because the Lessee is a partial lessee. The
+owner's remaining option must be available in the document:
+
+> *"They have to select the option to say they require it and they will buy it, and the
+> Lessee will pay a portion of the cost."*
+
+What that requires:
+
+1. **A written arrangement**, not a price adjustment. The contribution is **codified as a
+   distinct term** rather than folded into the lease rate — deliberately, so that
+   **if the policy lapses or the owner stops paying, the Lessee is absolved and entitled
+   to their money back.** Rolling it into rent destroys that remedy.
+2. **A promise to upload quotes** for the Lessee to review before the amount is fixed —
+   self-declared in the contract, then the agreed figure is written in.
+3. **Policy verification and monitoring by FHE** on the Lessee's behalf — confirming the
+   policy exists and stays current. Reciprocally on the Lessor's behalf in a full lease.
+
+### Full lease, reversed
+
+Per the research, a Lessor may not hold mortality or medical during a full lease; the
+Lessee obtains cover. Then:
+
+- **Mortality** — Lessor named beneficiary / loss payee, so the owner is paid on death.
+- **Medical** — the **Lessee** must be payee, so they can actually use the policy and be
+  reimbursed on claim.
+
+## 4d. The veterinary billing chain — unaddressed liability
+
+Owner-identified. Nothing in the contract currently mitigates this.
+
+Vets keep a card on file against the **account the horse is listed on** — the owner's.
+So a charge can land on the Lessor's card either by accident or as the practice's standing
+policy, regardless of who the lease makes responsible.
+
+The failure chain, where the Lessee holds the policy and the duty to claim:
+
+1. Lessee does not submit the claim, submits it wrongly, or misses the window and it ages
+   out.
+2. The vet has extended a balance while awaiting an insurance payment that never arrives.
+3. **The debt sits on the Lessor's account.**
+
+The Lessor bears a loss caused entirely by the Lessee's administrative failure, with no
+contractual recourse. Requires, at minimum: an explicit allocation of who pays the
+provider at point of service; a stated claim-submission deadline with the consequence of
+missing it; and an indemnity running to whoever's account carries the balance.
+
+**Scope note.** These additions only surface under particular selections. In the common
+arrangement — owner holds the policies, maintains them, partial lease — none of this
+prints, because the elections exclude it. That is why the owner is comfortable proceeding
+on a fork while `HORSE_LEASE_V2` stays untouched.
+
+---
+
 ## 5. What CCC actually does — binding on the build
 
 CCC is **liability** cover, not property cover. It responds only where the policyholder
