@@ -1,0 +1,36 @@
+sort_order,clause_key,heading,numbered,prints_when_plain_english,depends_on_fields,tokens_in_body,if_token_empty,dead_if
+100,INSURANCE_RISK.INSURANCE,Insurance Requirements,yes,ALWAYS,(none),(none),n/a,never
+150,INSURANCE_RISK.GENERAL_LIABILITY,General Liability Insurance,yes,ALWAYS,(none),(no body at all),n/a,never
+155,INSURANCE_RISK.GL_STATUS,(continuation),no,GL is not waived,"TXN.GL_LESSOR_STATUS; TXN.GL_LESSEE_STATUS","TXN.GL_LESSOR_STATUS; TXN.GL_LESSEE_STATUS",line still prints with a gap: 'Lessor:  general liability insurance covering...',GL waived
+162,INSURANCE_RISK.GL_DED_SIMPLE,(continuation),no,GL not waived and at least one party has or will obtain GL cover,"TXN.GL_DED_RESP; both GL statuses",TXN.GL_DED_RESP,line prints ending in a bare colon,"GL waived; or both parties NONE"
+164,INSURANCE_RISK.GL_DED_SPLITC,(continuation - appended to previous line),no,GL not waived and GL_DED_RESP=SPLIT and one party has or will obtain,"TXN.GL_DED_RESP_SPLIT_LESSOR; TXN.GL_DED_RESP_SPLIT_LESSEE","TXN.GL_DED_RESP_SPLIT_LESSOR; TXN.GL_DED_RESP_SPLIT_LESSEE",'The deductible shall be split between the parties: paid by Lessor and paid by Lessee.',"GL waived; split not chosen; both parties NONE"
+168,INSURANCE_RISK.GL_NONE,(continuation),no,GL is waived,TXN.GL_NOT_REQUIRED,(none),n/a,GL not waived
+169,INSURANCE_RISK.GL_LESSEE_RESP,General Liability - Lessee Responsibility,yes,Lessee has ticked their acceptance box,TXN.GL_LESSEE_RESPONSIBLE,(none),n/a,"dead unless both GL statuses NONE and GL not waived"
+200,INSURANCE_RISK.MORTALITY,Mortality Insurance,yes,ALWAYS,(none),(no body at all),n/a,never
+205,INSURANCE_RISK.MORT_STATUS,(continuation),no,Mortality not waived,"TXN.MORT_LESSOR_STATUS; TXN.MORT_LESSEE_STATUS","TXN.MORT_LESSOR_STATUS; TXN.MORT_LESSEE_STATUS",line still prints with a gap,Mortality waived
+214,INSURANCE_RISK.MORT_DEDR_SIMPLE,(continuation),no,Mortality not waived and one party has or will obtain,TXN.MORT_DED_RESP,TXN.MORT_DED_RESP,bare colon,"Mortality waived; both parties NONE"
+215,INSURANCE_RISK.MORT_DEDR_SPLITC,(continuation - appended),no,Mortality not waived and MORT_DED_RESP=SPLIT and one party has or will obtain,"TXN.MORT_DED_RESP_SPLIT_LESSOR; TXN.MORT_DED_RESP_SPLIT_LESSEE",same two,'...: paid by Lessor and paid by Lessee.',"Mortality waived; split not chosen; both NONE"
+220,INSURANCE_RISK.MORT_NONE,(continuation),no,Mortality is waived,TXN.MORT_NOT_REQUIRED,(none),n/a,Mortality not waived
+221,INSURANCE_RISK.MORT_LESSEE_RESP,Mortality - Lessee Responsibility,yes,Lessee has ticked their acceptance box,TXN.MORT_LESSEE_RESPONSIBLE,(none),n/a,"dead unless both MORT statuses NONE and mortality not waived"
+300,INSURANCE_RISK.MEDICAL,Medical Insurance,yes,ALWAYS,(none),(no body at all),n/a,never
+305,INSURANCE_RISK.MED_NONE,(continuation),no,Medical is waived,TXN.MED_NOT_REQUIRED,(none),n/a,Medical not waived
+306,INSURANCE_RISK.MED_LESSEE_RESP,Medical - Lessee Responsibility,yes,Lessee has ticked their acceptance box,TXN.MED_LESSEE_RESPONSIBLE,(none),n/a,"dead unless both MED statuses NONE and medical not waived"
+308,INSURANCE_RISK.MED_STATUS,(continuation),no,Medical not waived,"TXN.MED_LESSOR_STATUS; TXN.MED_LESSEE_STATUS",same two,line still prints with a gap,Medical waived
+314,INSURANCE_RISK.MED_DEDR_SIMPLE,(continuation),no,Medical not waived and one party has or will obtain,TXN.MED_DED_RESP,TXN.MED_DED_RESP,bare colon,"Medical waived; both parties NONE"
+315,INSURANCE_RISK.MED_DEDR_SPLITC,(continuation - appended),no,Medical not waived and MED_DED_RESP=SPLIT and one party has or will obtain,"TXN.MED_DED_RESP_SPLIT_LESSOR; TXN.MED_DED_RESP_SPLIT_LESSEE",same two,'...: paid by Lessor and paid by Lessee.',"Medical waived; split not chosen; both NONE"
+320,INSURANCE_RISK.MED_TAIL,(continuation - appended),no,Medical not waived,(none),(none),n/a,Medical waived
+400,INSURANCE_RISK.CCC,Care Custody and Control Insurance,yes,Lessee is an entity,LESSEE.PARTY_TYPE,HORSE.FAIR_MARKET_VALUE,'...fair market value of.',Lessee is an individual or unanswered
+450,INSURANCE_RISK.COORDINATION,Coordination of Coverage,yes,Lessee is an entity and mortality is not waived,"LESSEE.PARTY_TYPE; TXN.MORT_NOT_REQUIRED",(none),n/a,"Lessee is an individual; or mortality waived"
+500,INSURANCE_RISK.RISK_OF_LOSS,Risk of Loss of or Injury to the Horse,yes,ALWAYS,(none),(none),n/a,never
+550,INSURANCE_RISK.LOSS_OF_USE_ACK,Loss of Use,yes,ALWAYS,(none),(none),n/a,never
+950,INSURANCE_RISK.ASSUMPTION_INHERENT,Assumption of Inherent Risks,yes,ALWAYS,(none),(none),n/a,never
+960,INSURANCE_RISK.RELEASE,Release of Liability,yes,ALWAYS,(none),(none),n/a,never
+961,INSURANCE_RISK.RELEASE_LESSOR,Release of Liability by Lessor,yes,ALWAYS,(none),(none),n/a,never
+1100,INSURANCE_RISK.SAFETY_ATTIRE,Required Protective Attire,yes,ALWAYS,(none),(none),n/a,never
+1200,INSURANCE_RISK.TRAIL_RIDING,Trail Riding Risks,yes,permitted activities include TRAIL,TXN.PERMITTED_ACTIVITIES,(none),n/a,TRAIL not selected
+1210,INSURANCE_RISK.JUMPING_RISKS,Jumping Risks,yes,permitted activities include JUMPING,TXN.PERMITTED_ACTIVITIES,(none),n/a,JUMPING not selected
+1220,INSURANCE_RISK.COMPETITION_RISKS,Competition Risks,yes,permitted activities include COMPETITIONS,TXN.PERMITTED_ACTIVITIES,(none),n/a,COMPETITIONS not selected
+1230,INSURANCE_RISK.SHARED_ARENA_RISKS,Shared Arena Riding Risks,yes,permitted activities include ARENA_GROUP,TXN.PERMITTED_ACTIVITIES,(none),n/a,ARENA_GROUP not selected
+1300,INSURANCE_RISK.WAIVER_UNKNOWN,Waiver of Unknown Claims,yes,ALWAYS,(none),(none),n/a,never
+1400,INSURANCE_RISK.INDEMNIFICATION,Mutual Indemnification,yes,ALWAYS,(none),(none),n/a,never
+1520,INSURANCE_RISK.LIMITATION,Limitation of Liability,yes,ALWAYS,(none),HORSE.FAIR_MARKET_VALUE,'...shall not exceed the Horse's current fair market value of.',never

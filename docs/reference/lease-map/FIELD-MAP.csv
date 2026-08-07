@@ -1,0 +1,26 @@
+field_key,section,owner_role,required,input_kind,options,gated_by_plain_english,drives_clauses,referenced_by_clauses,reachable_when
+TXN.GL_NOT_REQUIRED,INSURANCE_RISK,LESSOR,no,checkbox,"YES / blank",Never gated,"ticked: GL_NONE on; GL_STATUS + GL_DED_SIMPLE + GL_DED_SPLITC off",(none),Always
+TXN.GL_LESSOR_STATUS,INSURANCE_RISK,LESSOR,yes,select,"HAS_WILL_MAINTAIN=Has and will maintain; WILL_OBTAIN=Will obtain and will maintain; NONE=Does not have and will not obtain",Only when GL not waived,"Has/Will obtain: GL_DED_SIMPLE on. NONE (with Lessee NONE): GL_LESSEE_RESPONSIBLE field on; locking blocked",GL_STATUS,GL not waived
+TXN.GL_LESSEE_STATUS,INSURANCE_RISK,LESSOR,yes,select,same three options,Only when GL not waived,same mirrored,GL_STATUS,GL not waived
+TXN.GL_LESSEE_RESPONSIBLE,INSURANCE_RISK,LESSEE,no,checkbox,"YES / blank",Both GL statuses NONE and GL not waived,ticked: GL_LESSEE_RESP on; signing block cleared,(none),Both GL statuses NONE and GL not waived
+TXN.GL_DED_RESP,INSURANCE_RISK,LESSOR,yes,select,"LESSOR; LESSEE; SPLIT; OTHER",Only when GL not waived,"SPLIT: GL_DED_SPLITC + both split fields on. OTHER: nothing further",GL_DED_SIMPLE,GL not waived
+TXN.GL_DED_RESP_SPLIT_LESSOR,INSURANCE_RISK,LESSOR,no,text,(free text percentage),GL not waived and GL_DED_RESP=SPLIT,(none),GL_DED_SPLITC,GL not waived and split chosen
+TXN.GL_DED_RESP_SPLIT_LESSEE,INSURANCE_RISK,LESSOR,no,text,(free text percentage),GL not waived and GL_DED_RESP=SPLIT,(none),GL_DED_SPLITC,GL not waived and split chosen
+TXN.MORT_NOT_REQUIRED,INSURANCE_RISK,LESSOR,no,checkbox,"YES / blank",Never gated,"ticked: MORT_NONE on; MORT_STATUS + MORT_DEDR_SIMPLE + MORT_DEDR_SPLITC + COORDINATION off",(none),Always
+TXN.MORT_LESSOR_STATUS,INSURANCE_RISK,LESSOR,yes,select,same three options,Only when mortality not waived,"Has/Will obtain: MORT_DEDR_SIMPLE on. NONE (with Lessee NONE): MORT_LESSEE_RESPONSIBLE on; locking blocked",MORT_STATUS,Mortality not waived
+TXN.MORT_LESSEE_STATUS,INSURANCE_RISK,LESSOR,yes,select,same three options,Only when mortality not waived,same mirrored,MORT_STATUS,Mortality not waived
+TXN.MORT_LESSEE_RESPONSIBLE,INSURANCE_RISK,LESSEE,no,checkbox,"YES / blank",Both MORT statuses NONE and mortality not waived,ticked: MORT_LESSEE_RESP on; signing block cleared,(none),Both MORT statuses NONE and mortality not waived
+TXN.MORT_DED_RESP,INSURANCE_RISK,LESSOR,yes,select,"LESSOR; LESSEE; SPLIT; OTHER",Only when mortality not waived,SPLIT: MORT_DEDR_SPLITC + both split fields on,MORT_DEDR_SIMPLE,Mortality not waived
+TXN.MORT_DED_RESP_SPLIT_LESSOR,INSURANCE_RISK,LESSOR,no,text,(free text),Mortality not waived and MORT_DED_RESP=SPLIT,(none),MORT_DEDR_SPLITC,as gated
+TXN.MORT_DED_RESP_SPLIT_LESSEE,INSURANCE_RISK,LESSOR,no,text,(free text),Mortality not waived and MORT_DED_RESP=SPLIT,(none),MORT_DEDR_SPLITC,as gated
+TXN.MED_NOT_REQUIRED,INSURANCE_RISK,LESSOR,no,checkbox,"YES / blank",Never gated,"ticked: MED_NONE on; MED_STATUS + MED_DEDR_SIMPLE + MED_DEDR_SPLITC + MED_TAIL off",(none),Always
+TXN.MED_LESSOR_STATUS,INSURANCE_RISK,LESSOR,yes,select,same three options,Only when medical not waived,"Has/Will obtain: MED_DEDR_SIMPLE on. NONE (with Lessee NONE): MED_LESSEE_RESPONSIBLE on; locking blocked",MED_STATUS,Medical not waived
+TXN.MED_LESSEE_STATUS,INSURANCE_RISK,LESSOR,yes,select,same three options,Only when medical not waived,same mirrored,MED_STATUS,Medical not waived
+TXN.MED_LESSEE_RESPONSIBLE,INSURANCE_RISK,LESSEE,no,checkbox,"YES / blank",Both MED statuses NONE and medical not waived,ticked: MED_LESSEE_RESP on; signing block cleared,(none),Both MED statuses NONE and medical not waived
+TXN.MED_DED_RESP,INSURANCE_RISK,LESSOR,yes,select,"LESSOR; LESSEE; SPLIT; OTHER",Only when medical not waived,SPLIT: MED_DEDR_SPLITC + both split fields on,MED_DEDR_SIMPLE,Medical not waived
+TXN.MED_DED_RESP_SPLIT_LESSOR,INSURANCE_RISK,LESSOR,no,text,(free text),Medical not waived and MED_DED_RESP=SPLIT,(none),MED_DEDR_SPLITC,as gated
+TXN.MED_DED_RESP_SPLIT_LESSEE,INSURANCE_RISK,LESSOR,no,text,(free text),Medical not waived and MED_DED_RESP=SPLIT,(none),MED_DEDR_SPLITC,as gated
+LESSEE.PARTY_TYPE,PARTIES,LESSEE,yes,select,"INDIVIDUAL=Individual; ENTITY=Entity / organization",Never gated,"ENTITY: CCC on; COORDINATION on when mortality not waived. Outside insurance: 10 further clauses + 2 signature fields",(not printed in insurance),Always
+TXN.PERMITTED_ACTIVITIES,PERMITTED_USE,DEAL,yes,buttons (multi),"LESSONS; ARENA_SOLO; ARENA_GROUP; TRAINING; COMPETITIONS; JUMPING; TRAIL",Never gated,"TRAIL: TRAIL_RIDING. JUMPING: JUMPING_RISKS. COMPETITIONS: COMPETITION_RISKS. ARENA_GROUP: SHARED_ARENA_RISKS. LESSONS/ARENA_SOLO/TRAINING: no insurance clause",PERMITTED_USE.MAIN,Always
+HORSE.FAIR_MARKET_VALUE,HORSE,LESSOR,no,currency,(amount),Never gated,(gates nothing),"CCC; LIMITATION",Always
+TXN.LEASE_TYPE,PURPOSE,LESSOR,yes,select,"FULL=Full lease (full-time access); PARTIAL=Partial lease (shared or limited access)",Never gated,"Nothing inside insurance. Outside: SCHEDULE.MAIN/OTHER/CHANGES only",(none),Always
