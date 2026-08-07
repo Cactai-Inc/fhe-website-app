@@ -74,3 +74,34 @@ The mockup server (`/tmp/nocache.py`) was `socketserver.TCPServer` — **single-
 Chrome opens ~6 parallel connections, so multi-megabyte JPEGs queued and timed out, and
 images appeared "not to render" with nothing whatsoever wrong with the files. Now
 `ThreadingTCPServer`. If mockup images mysteriously fail again, check this first.
+
+---
+
+## Mobile header legibility — DIAGNOSED, PARKED (2026-08-07)
+
+**The desktop header is right and must not be changed.** The mobile one is unreadable —
+owner tested in a dark room at full screen brightness and still could not read the name.
+
+**Cause: size, and nothing else.** At the 480px breakpoint the wordmark drops 44px → 30px.
+Shadow offsets are scaled proportionally (0.61 → 0.42px), so the recipe is mathematically
+consistent — but perception is not linear. Below roughly 36px the offsets fall under the
+threshold at which the eye separates them from the surface, and three tuned layers collapse
+into flat tone. Same treatment, different outcome; functionally a different design.
+
+**Ruled out, with evidence:**
+- *Gold foil.* Wrong on the tan leather (too close in hue and value to separate) and wrong
+  on the green. Flat golds read brown-olive because metal needs a full value range.
+- *Shadow tuning of any kind.* There is no luminance contrast to amplify — a blind emboss
+  letter is the sheet's own tone.
+- *Dropping the wordmark on mobile.* Refused: the app not showing the company name is what
+  started this work.
+
+**The fix is size**, and the only thing blocking it is the marks sharing a row with the
+name. Mock-ups at `mockups/mobile.html` (scratchpad): the owner ranked 48px best, then
+42px, with the 30px control worst — ranking tracked size monotonically and nothing else.
+A two-row mobile header (marks on one row, name at full width beneath) buys 42–48px.
+
+**Also noted:** foil stamping is a *debossing* process — a heated die presses foil into the
+material. Raised foil does not exist as a stamping process, so gilded-and-embossed is
+physically wrong. And on a debossed letter the shading belongs *inside* the glyph (top wall
+shadows the floor, bottom wall catches light); shading outside it is the emboss arrangement.
