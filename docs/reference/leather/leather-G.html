@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Leather G — downscale check + stamping</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Libre Caslon Text',Georgia,serif;background:#f7f3ea;color:#1d2b23;
+       padding-bottom:60vh}
+
+  .band{height:80px;display:flex;align-items:center;justify-content:center;
+    background-size:cover;background-position:center;background-repeat:no-repeat;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.07), inset 0 -1px 0 rgba(0,0,0,.32),
+               0 6px 18px rgba(40,24,10,.16)}
+  .raw  {background-image:url('leather-hide.jpg')}        /* 6.8 MB */
+  .b24  {background-image:url('leather-band-2400.jpg')}   /* 453 KB */
+  .b16  {background-image:url('leather-band-1600.jpg')}   /* 230 KB */
+
+  .wm{font-size:44px;font-weight:700;letter-spacing:.045em;line-height:1;white-space:nowrap}
+
+  /* ============================================================
+     STAMPING ON LEATHER — light from above throughout.
+
+     Paper barely changes tone under a die, so on the cardstock header the
+     letter face had to be the EXACT sheet tone and the whole effect came from
+     edge shadows; anything else read as ink.
+
+     Leather genuinely darkens when stamped — the fibres compact, the material
+     gets denser and smoother. So the face SHOULD change tone here, and the
+     honest way to say "same hide, compressed" is a TRANSLUCENT dark fill: the
+     leather darkens while its own grain still reads through the glyph.
+
+     The returning light is WARM, not white. Light bouncing off tan leather
+     comes back warm; a neutral highlight is the usual tell that it is faked.
+     ============================================================ */
+
+  /* 1 — deboss, compression fill */
+  .d1{color:rgba(18,7,2,.40);
+    text-shadow:
+      0 -1.2px 1.2px rgba(0,0,0,.55),
+      0  1.2px 1.4px rgba(255,206,150,.26)}
+
+  /* 2 — deboss, driven deeper */
+  .d2{color:rgba(14,5,1,.58);
+    text-shadow:
+      0 -1.4px 1.4px rgba(0,0,0,.68),
+      0  1.4px 1.6px rgba(255,206,150,.32),
+      0 -2.5px 4px  rgba(0,0,0,.28)}
+
+  /* 3 — deboss + burnished sheen: the compressed floor ends up smoother than
+         the hide around it, so it picks up a faint specular */
+  .d3{color:rgba(16,6,2,.46);
+    text-shadow:
+      0 -1.2px 1.2px rgba(0,0,0,.60),
+      0  1.2px 1.4px rgba(255,214,166,.30),
+      0  0.5px 0.5px rgba(255,232,196,.16)}
+
+  /* 4 — the cardstock recipe: walls only, no fill change. Kept for contrast. */
+  .e1{color:transparent;
+    text-shadow:
+      0  1.2px 1.2px rgba(0,0,0,.55),
+      0 -1.2px 1.2px rgba(255,206,150,.30)}
+
+  /* 5 — emboss, raised face: nothing compresses, so the fill LIGHTENS and the
+         shadow falls below */
+  .e2{color:rgba(255,206,150,.13);
+    text-shadow:
+      0  1.4px 1.4px rgba(0,0,0,.62),
+      0 -1.2px 1.2px rgba(255,214,166,.34),
+      0  2.5px 4px   rgba(0,0,0,.26)}
+
+  /* 6 — blind stamp, hot die: driven hard, floor scorches nearly black, walls
+         tight rather than soft */
+  .s1{color:rgba(8,3,1,.74);
+    text-shadow:
+      0 -1px 0.8px rgba(0,0,0,.78),
+      0  1px 1px   rgba(255,198,140,.30)}
+
+  .lbl{font-family:Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:.2em;
+    text-transform:uppercase;color:#6d7a6c;padding:24px 20px 7px}
+  .note{font-size:13.5px;line-height:1.65;color:#55655a;padding:7px 20px 0;max-width:74ch}
+  .rule{height:1px;background:rgba(41,58,55,.14);margin:34px 20px 0}
+  code{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;
+    background:rgba(41,58,55,.07);padding:1px 5px;border-radius:3px}
+</style>
+</head>
+<body>
+
+<div class="lbl">Part 1 — does the downscale cost anything?</div>
+<div class="note">Same composition in all three. If they look identical, we ship the small
+one: <code>6.8 MB → 453 KB</code>.</div>
+
+<div class="lbl">raw hide — 6.8 MB (what you judged)</div>
+<div class="band raw"></div>
+
+<div class="lbl">pre-downscaled band — 453 KB</div>
+<div class="band b24"></div>
+
+<div class="lbl">pre-downscaled band — 230 KB (how far it pushes)</div>
+<div class="band b16"></div>
+
+<div class="note">Downscaled offline by repeated halving rather than one big resize —
+that averages every source pixel into the result instead of skipping some, which is
+exactly how fine grain turns to shimmer. The band keeps the centre 45% of the hide's
+height: with <code>cover</code> on a wide header you only ever see a horizontal slice
+through the middle (~33% of it on a phone, ~10% on desktop), so nothing visible is lost
+and the left/right tanning you liked is horizontal — untouched.</div>
+
+<div class="rule"></div>
+
+<div class="lbl">Part 2 — stamping, on the 453 KB band</div>
+
+<div class="lbl">1 — deboss · compression fill</div>
+<div class="band b24"><div class="wm d1">French Heritage Equestrian</div></div>
+
+<div class="lbl">2 — deboss · driven deeper</div>
+<div class="band b24"><div class="wm d2">French Heritage Equestrian</div></div>
+
+<div class="lbl">3 — deboss · burnished sheen</div>
+<div class="band b24"><div class="wm d3">French Heritage Equestrian</div></div>
+
+<div class="lbl">4 — the cardstock recipe (walls only, no tone change)</div>
+<div class="band b24"><div class="wm e1">French Heritage Equestrian</div></div>
+<div class="note">This is exactly what paper required. Judge it against 1–3: if it looks
+flat here, that confirms leather wants the tone change and we build on that.</div>
+
+<div class="lbl">5 — emboss · raised face</div>
+<div class="band b24"><div class="wm e2">French Heritage Equestrian</div></div>
+
+<div class="lbl">6 — blind stamp · hot die</div>
+<div class="band b24"><div class="wm s1">French Heritage Equestrian</div></div>
+
+</body>
+</html>

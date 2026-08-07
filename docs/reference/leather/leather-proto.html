@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Leather — emboss / deboss prototypes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Libre Caslon Text',Georgia,serif;background:#f7f3ea;color:#1d2b23;
+       padding-bottom:60vh}
+
+  /* ============================================================
+     WHY LEATHER GETS A CONSTRUCTION CARDSTOCK COULD NOT USE
+
+     Paper barely changes tone when you press it, so on the cardstock header
+     the letter face had to be the EXACT sheet tone and the entire effect came
+     from edge shadows. Anything else read as ink.
+
+     Leather genuinely darkens under a die: the fibres compact, the material
+     gets denser, and the stamped area goes measurably darker and smoother.
+     So here the face SHOULD change tone — and the honest way to express
+     "same material, compressed" is a TRANSLUCENT dark fill, which darkens the
+     hide while its grain still reads through the glyph. That is physically
+     what compression does, and it is the thing paper never allowed.
+
+     Light is from above throughout, as everywhere else in the app:
+       deboss  →  top wall in shadow, bottom wall catching light
+       emboss  →  top face catching light, shadow falling below
+     ============================================================ */
+
+  .band{height:80px;display:flex;align-items:center;justify-content:center;
+    background-image:url('strip-A-topedge.jpg');
+    background-size:cover;background-position:center;background-repeat:no-repeat;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.07), inset 0 -1px 0 rgba(0,0,0,.32),
+               0 6px 18px rgba(40,24,10,.16)}
+  .band.f{background-image:url('strip-F-botedge.jpg')}
+  .band.g{background-image:url('leather-hide.jpg')}
+
+  .wm{font-size:44px;font-weight:700;letter-spacing:.045em;line-height:1;white-space:nowrap}
+
+  /* ---- 1. DEBOSS, compression fill -------------------------------------
+     Translucent darkening (the grain survives), a shadowed top wall and a
+     warm lit lower wall. The light that returns off leather is warm, not
+     white — a neutral highlight is the tell that it is fake. */
+  .d1{color:rgba(18,7,2,.40);
+    text-shadow:
+      0 -1.2px 1.2px rgba(0,0,0,.55),
+      0  1.2px 1.4px rgba(255,206,150,.26)}
+
+  /* ---- 2. DEBOSS, driven deeper --------------------------------------- */
+  .d2{color:rgba(14,5,1,.58);
+    text-shadow:
+      0 -1.4px 1.4px rgba(0,0,0,.68),
+      0  1.4px 1.6px rgba(255,206,150,.32),
+      0 -2.5px 4px  rgba(0,0,0,.28)}
+
+  /* ---- 3. DEBOSS + burnished sheen -------------------------------------
+     A die leaves the compressed floor smoother than the hide around it, so it
+     picks up a faint specular sheen. Third shadow is a tight warm bloom
+     sitting just inside the lower half of the letter. */
+  .d3{color:rgba(16,6,2,.46);
+    text-shadow:
+      0 -1.2px 1.2px rgba(0,0,0,.60),
+      0  1.2px 1.4px rgba(255,214,166,.30),
+      0  0.5px 0.5px rgba(255,232,196,.16)}
+
+  /* ---- 4. EMBOSS, pure edge light (the cardstock recipe, for contrast) --
+     No fill change at all — only walls. This is what paper needed. On leather
+     it should look flat by comparison; that comparison is the point. */
+  .e1{color:transparent;
+    text-shadow:
+      0  1.2px 1.2px rgba(0,0,0,.55),
+      0 -1.2px 1.2px rgba(255,206,150,.30)}
+
+  /* ---- 5. EMBOSS, raised face ------------------------------------------
+     Pushed up from behind: the face sits closer to the light so it lifts
+     slightly and warms, with the shadow falling BELOW it. Nothing compresses,
+     so the fill lightens rather than darkens. */
+  .e2{color:rgba(255,206,150,.13);
+    text-shadow:
+      0  1.4px 1.4px rgba(0,0,0,.62),
+      0 -1.2px 1.2px rgba(255,214,166,.34),
+      0  2.5px 4px   rgba(0,0,0,.26)}
+
+  /* ---- 6. BLIND STAMP, hot die -----------------------------------------
+     The branded look: driven hard, the floor scorches nearly black and the
+     walls are tight and sharp rather than soft. */
+  .s1{color:rgba(8,3,1,.74);
+    text-shadow:
+      0 -1px 0.8px rgba(0,0,0,.78),
+      0  1px 1px   rgba(255,198,140,.30)}
+
+  .lbl{font-family:Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:.2em;
+    text-transform:uppercase;color:#6d7a6c;padding:24px 20px 7px}
+  .note{font-size:13.5px;line-height:1.65;color:#55655a;padding:7px 20px 0;max-width:74ch}
+  code{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;
+    background:rgba(41,58,55,.07);padding:1px 5px;border-radius:3px}
+</style>
+</head>
+<body>
+
+<div class="lbl">1 — deboss · compression fill</div>
+<div class="band"><div class="wm d1">French Heritage Equestrian</div></div>
+<div class="note">Translucent darkening so the grain reads through the letter — the honest
+version of "same hide, compressed."</div>
+
+<div class="lbl">2 — deboss · driven deeper</div>
+<div class="band"><div class="wm d2">French Heritage Equestrian</div></div>
+
+<div class="lbl">3 — deboss · burnished sheen</div>
+<div class="band"><div class="wm d3">French Heritage Equestrian</div></div>
+<div class="note">Adds the faint specular the compressed floor picks up once it is
+smoother than the hide around it.</div>
+
+<div class="lbl">4 — emboss · pure edge light (the cardstock recipe)</div>
+<div class="band"><div class="wm e1">French Heritage Equestrian</div></div>
+<div class="note">No fill change — walls only. This is exactly what paper required. Judge
+it against 1–3: if it looks flat here, that confirms leather wants the tone change.</div>
+
+<div class="lbl">5 — emboss · raised face</div>
+<div class="band"><div class="wm e2">French Heritage Equestrian</div></div>
+
+<div class="lbl">6 — blind stamp · hot die</div>
+<div class="band"><div class="wm s1">French Heritage Equestrian</div></div>
+
+<div class="lbl">— the two strongest, on F (bottom edge) —</div>
+<div class="band f"><div class="wm d1">French Heritage Equestrian</div></div>
+<div class="band f"><div class="wm s1">French Heritage Equestrian</div></div>
+<div class="note">F is a much darker hide (mean <code>#382011</code> against A's
+<code>#5b4031</code>), so a compression fill has far less room to go darker before it
+closes up. Worth seeing whether the treatment survives the move.</div>
+
+<div class="lbl">— and on G (whole hide squeezed) —</div>
+<div class="band g"><div class="wm d1">French Heritage Equestrian</div></div>
+
+</body>
+</html>
