@@ -1,0 +1,442 @@
+import { useCallback, useEffect, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { fromHere } from '../../lib/linkOrigin';
+import {
+  FileText, Check, Download, History, Mail, BookOpen, X, ChevronLeft, ChevronRight,
+} from 'lucide-react';
+import { myDocuments, emailMyDocumentCopy, type MyDocumentRow } from '../../lib/api';
+import {
+  listMySignableDocuments,
+  signMyDocument,
+  type SignableDocument,
+} from '../../lib/ops/api-client';
+import type { SeedDocument } from '../../lib/seed';
+
+/**
+ * MY DOCUMENTS — the shared subject content (TASK-ACCOUNTSURFACE §3), rendered
+ * by both /app/documents and the Account page's inline panel.
+ *
+ * Phase 1 found the old DocumentsPanel (AccountPanels.tsx) was not a duplicate
+ * of the old Documents.tsx but a WEAKER one — no signing, no email-a-copy, no
+ * assigned-but-ungenerated documents, no supersede badge. Per the owner's
+ * ruling, the fuller behaviour wins: this file IS the old Documents.tsx body
+ * (self-sign, email-a-copy, the two-source pending/assigned/executed list),
+ * moved here unchanged. The one thing the OLD panel had that the OLD page
+ * didn't — reading a document's full merged text as paginated "paper", via
+ * PaperViewer — is folded back in (the `onView`/`viewing` plumbing and the
+ * PaperViewer component below, both carried over from AccountPanels.tsx
+ * unchanged) so neither surface loses anything either direction.
+ */
+
+/** Splits a document's merged body into readable "paper" pages. Lifted
+ *  unchanged from the old DocumentsPanel, which computed this eagerly for
+ *  every row; here it's computed once, when a document is opened to read. */
+function paginateBody(body: string): string[] {
+  const paras = body.split(/\n\n+/);
+  const pages: string[] = [];
+  let cur = '';
+  for (const para of paras) {
+    if (cur && (cur.length + para.length) > 2400) { pages.push(cur); cur = para; }
+    else cur = cur ? cur + '\n\n' + para : para;
+  }
+  if (cur) pages.push(cur);
+  return pages.length ? pages : [body];
+}
+
+/**
+ * H4/A8B — Send/Resend a copy of an executed document to the caller.
+ *
+ * Calls the authenticated self-send endpoint (/api/deliver-my-document), which
+ * mails ONLY the caller's own copy to their own account address. Renders beside
+ * the signed-PDF download and appears on executed documents only.
+ *
+ * Label reflects `executed_email_sent_at` — the DB-driven all-parties send
+ * stamp (documents_send_executed_email_trg), NOT this button's own click
+ * history: "Send me a copy" while that stamp is unset, "Resend me a copy"
+ * once it is.
+ *
+ * States are explicit and never optimistic: the button disables while the
+ * request is in flight, and success/failure render inline only AFTER the server
+ * answers. A failed send says so — it is never reported as sent.
+ */
+function EmailMeACopyButton({ documentId, sentAt }: { documentId: string; sentAt?: string | null }) {
+  const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [message, setMessage] = useState<string | null>(null);
+  const label = sentAt ? 'Resend a copy to me' : 'Send a copy to me';
+
+  const send = async () => {
+    setState('sending');
+    setMessage(null);
+    try {
+      const { email } = await emailMyDocumentCopy(documentId);
+      // Success is only ever set from the server's answer.
+      setState('sent');
+      setMessage(email ? `Sent to ${email}` : 'Sent.');
+    } catch (err) {
+      setState('error');
+      setMessage(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  return (
+    <>
+      <button
+        type="button"
+        className="inline-flex items-center gap-1.5 text-xs text-green-800 hover:text-green-700 px-2.5 py-1 rounded-lg border border-green-800/15 hover:border-green-800/30 focus-ring disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled={state === 'sending'}
+        onClick={send}
+        data-testid={`email-copy-${documentId}`}
+      >
+        <Mail size={13} aria-hidden="true" />
+        {state === 'sending' ? 'Sending…' : label}
+      </button>
+      {message && (
+        <p
+          role={state === 'error' ? 'alert' : 'status'}
+          className={`text-xs ${state === 'error' ? 'text-red-700' : 'text-green-700'}`}
+        >
+          {state === 'error' ? `Could not send: ${message}` : message}
+        </p>
+      )}
+    </>
+  );
+}
+
+/** The document rendered as PAPER: a page with drop shadow, subtle edges, and page
+ *  breaks. Slightly narrower than the sheet so scrolling reads as moving down a
+ *  document. Overlay so it feels like opening the physical document. Carried over
+ *  unchanged from the old DocumentsPanel/AccountPanels.tsx. */
+function PaperViewer({ doc, onClose }: { doc: SeedDocument; onClose: () => void }) {
+  const [page, setPage] = useState(0);
+  const total = doc.pages.length;
+  return (
+    <div className="fixed inset-0 bg-green-950/50 backdrop-blur-[2px] z-[70] flex flex-col" onClick={onClose}>
+      {/* top bar */}
+      <div className="flex items-center justify-between px-4 h-14 bg-white/95 border-b border-green-800/10 shrink-0" onClick={(e) => e.stopPropagation()}>
+        <div className="min-w-0">
+          <p className="font-serif text-green-800 text-[15px] font-semibold truncate">{doc.title}</p>
+          <p className="text-[11px] text-muted">{doc.signedOn}</p>
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            type="button"
+            onClick={async () => {
+              const text = doc.body ?? doc.pages.join('\n\n');
+              const { downloadDocumentPdf } = await import('../../lib/documentPdf');
+              await downloadDocumentPdf(doc.title, text);
+            }}
+            className="inline-flex items-center gap-1.5 text-[12px] text-green-800 hover:text-green-700 px-2.5 py-1.5 rounded-lg border border-green-800/15 hover:border-green-800/30 focus-ring"
+          >
+            <Download size={14} /> PDF
+          </button>
+          <button type="button" onClick={onClose} aria-label="Close" className="text-secondary hover:text-green-800 p-2 -mr-2"><X size={20} /></button>
+        </div>
+      </div>
+
+      {/* paper scroll region */}
+      <div className="flex-1 overflow-y-auto px-4 py-6 sm:py-8" onClick={(e) => e.stopPropagation()}>
+        <div className="max-w-[640px] mx-auto">
+          {/* the sheet */}
+          <div className="bg-white shadow-2xl shadow-green-950/30 rounded-[3px] mx-auto"
+            style={{ width: 'min(100%, 600px)' }}>
+            <div className="px-8 sm:px-12 py-10 sm:py-14">
+              <p className="whitespace-pre-line font-serif text-[14.5px] leading-[1.85] text-green-950">
+                {doc.pages[page]}
+              </p>
+            </div>
+            {/* page-edge foot */}
+            <div className="border-t border-dashed border-green-800/15 px-8 sm:px-12 py-3 flex items-center justify-between">
+              <span className="text-[10px] tracking-wide uppercase text-muted">French Heritage Equestrian</span>
+              <span className="text-[10px] text-muted">Page {page + 1} of {total}</span>
+            </div>
+          </div>
+
+          {/* pager */}
+          {total > 1 && (
+            <div className="flex items-center justify-center gap-3 mt-6">
+              <button type="button" onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white/90 border border-green-800/15 text-[12px] text-secondary disabled:opacity-40 focus-ring">
+                <ChevronLeft size={15} /> Prev
+              </button>
+              <div className="flex gap-1.5">
+                {doc.pages.map((_, i) => (
+                  <button key={i} type="button" onClick={() => setPage(i)}
+                    className={`h-1.5 rounded-full transition-all ${i === page ? 'w-6 bg-white' : 'w-1.5 bg-white/40'}`} aria-label={`Page ${i + 1}`} />
+                ))}
+              </div>
+              <button type="button" onClick={() => setPage((p) => Math.min(total - 1, p + 1))} disabled={page === total - 1}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white/90 border border-green-800/15 text-[12px] text-secondary disabled:opacity-40 focus-ring">
+                Next <ChevronRight size={15} />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Small "Read" trigger — opens the merged body in PaperViewer. Only rendered
+ *  where a body actually exists (signed rows, and executed rows that have a
+ *  matching SignableDocument with a merged_body); template-only/pending rows
+ *  have nothing to read yet. */
+function ReadButton({ onOpen }: { onOpen: () => void }) {
+  return (
+    <button type="button" onClick={onOpen}
+      className="inline-flex items-center gap-1.5 text-xs text-green-800 hover:text-green-700 px-2.5 py-1 rounded-lg border border-green-800/15 hover:border-green-800/30 focus-ring">
+      <BookOpen size={13} aria-hidden="true" /> Read
+    </button>
+  );
+}
+
+/**
+ * MEMBER self-sign row (mirrors the staff SigningPanel's SignPartyRow, but
+ * client-facing): the member types THEIR name and signs THEIR OWN party role.
+ * The `record_signature` RPC (20260702000000) verifies server-side that the
+ * caller's contact IS the party — the UI never chooses whose signature to seal.
+ * A rejected sign renders inline and the row stays unsigned (refresh happens
+ * only on success).
+ */
+function SelfSignRow({
+  item,
+  onSign,
+  onView,
+}: {
+  item: SignableDocument;
+  onSign: (item: SignableDocument, typedName: string) => Promise<void>;
+  onView: (doc: SeedDocument) => void;
+}) {
+  const location = useLocation();
+  const [typedName, setTypedName] = useState('');
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const trimmed = typedName.trim();
+  const { document: doc, party_role, signed } = item;
+  const inputId = `sign-name-${doc.id}`;
+  // Contract-workflow documents (contract_id set) are reviewed + signed on the
+  // full contract surface, which uses the contract-aware seal. Only release /
+  // waiver docs sign inline here. This keeps one signing entry point per contract
+  // (audit M-7) — the list deep-links contracts to /app/contracts/:id.
+  const isContractDoc = !!doc.contract_id;
+
+  const sign = async () => {
+    setPending(true);
+    setError(null);
+    try {
+      await onSign(item, trimmed);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setPending(false);
+    }
+  };
+
+  const openReader = () => {
+    if (!doc.merged_body) return;
+    onView({
+      id: doc.id,
+      title: doc.title ?? doc.display_code ?? 'Document',
+      signedOn: signed ? 'Signed' : 'Awaiting signature',
+      kind: doc.status ?? '',
+      pages: paginateBody(doc.merged_body),
+      body: doc.merged_body,
+    });
+  };
+
+  return (
+    <div className="bg-white border border-green-800/10 p-5" data-testid={`self-sign-${doc.id}`}>
+      <div className="flex items-start gap-3">
+        <FileText size={18} className="text-gold-ink flex-shrink-0 mt-0.5" aria-hidden="true" />
+        <div className="flex-1">
+          <p className="text-sm font-sans font-medium text-green-900">{doc.title ?? doc.display_code ?? 'Contract'}</p>
+          <p className="text-xs text-muted mt-1">You sign as {party_role.replace(/_/g, ' ').toLowerCase()}.</p>
+
+          {signed ? (
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <p className="text-xs text-green-700 inline-flex items-center gap-1">
+                <Check size={12} aria-hidden="true" /> You've signed this document.
+              </p>
+              {/* Read the full merged text, paginated as paper (folded back in
+                  from the old DocumentsPanel — see file header). */}
+              {doc.merged_body && <ReadButton onOpen={openReader} />}
+              {/* Fully-executed docs can be downloaded as a signed PDF, rendered
+                  from the document's merged_body (same renderer used elsewhere). */}
+              {doc.status === 'EXECUTED' && doc.merged_body && (
+                <button type="button"
+                  className="inline-flex items-center gap-1.5 text-xs text-green-800 hover:text-green-700 px-2.5 py-1 rounded-lg border border-green-800/15 hover:border-green-800/30 focus-ring"
+                  onClick={async () => {
+                    const { downloadDocumentPdf } = await import('../../lib/documentPdf');
+                    await downloadDocumentPdf(doc.title ?? 'Document', doc.merged_body ?? '');
+                  }}>
+                  <Download size={13} aria-hidden="true" /> Download signed PDF
+                </button>
+              )}
+              {/* H4: executed documents can also be re-sent to the member's own
+                  account email (authenticated party-scoped self-send). */}
+              {doc.status === 'EXECUTED' && (
+                <EmailMeACopyButton documentId={doc.id} sentAt={doc.executed_email_sent_at} />
+              )}
+            </div>
+          ) : isContractDoc ? (
+            <Link to={`/app/contracts/${doc.id}`} state={fromHere(location)}
+              className="btn-outline-gold inline-flex items-center mt-3 text-sm">
+              Open to review &amp; sign →
+            </Link>
+          ) : (
+            <div className="mt-3 flex flex-wrap items-end gap-3">
+              <div>
+                <label htmlFor={inputId} className="block text-xs text-muted mb-1">
+                  Type your full legal name to sign
+                </label>
+                <input
+                  id={inputId}
+                  className="border border-green-800/20 px-3 py-2 text-sm w-64 max-w-full focus-ring"
+                  value={typedName}
+                  autoComplete="off"
+                  onChange={(e) => setTypedName(e.target.value)}
+                />
+              </div>
+              <button
+                type="button"
+                className="btn-outline-gold"
+                disabled={!trimmed || pending}
+                onClick={sign}
+              >
+                {pending ? 'Signing…' : 'Sign'}
+              </button>
+            </div>
+          )}
+          {error && (
+            <p role="alert" className="text-xs text-red-700 mt-2">
+              Could not sign: {error}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function DocumentsContent() {
+  const [rows, setRows] = useState<MyDocumentRow[]>([]);
+  const [signables, setSignables] = useState<SignableDocument[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [viewing, setViewing] = useState<SeedDocument | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    Promise.all([
+      myDocuments().catch(() => [] as MyDocumentRow[]),
+      listMySignableDocuments().catch(() => [] as SignableDocument[]),
+    ])
+      .then(([d, s]) => {
+        if (!active) return;
+        setRows(d);
+        setSignables(s);
+      })
+      .finally(() => active && setLoading(false));
+    return () => { active = false; };
+  }, []);
+
+  /** Seal, then refresh both lists so the rows re-render sealed. E-sign
+   *  consent is passed true — same contract as the onboarding flow. */
+  const handleSign = useCallback(async (item: SignableDocument, typedName: string) => {
+    await signMyDocument(item.document.id, item.party_role, typedName, true);
+    const [d, s] = await Promise.all([myDocuments().catch(() => rows), listMySignableDocuments()]);
+    setRows(d);
+    setSignables(s);
+  }, [rows]);
+
+  const awaiting = signables.filter((s) => !s.signed);
+  const sealed = signables.filter((s) => s.signed);
+  // The one chronological list (3f): pending/assigned first, then executed in
+  // signing order — newest first, matching the page's read order.
+  const pendingRows = rows.filter((r) => r.kind !== 'executed');
+  const executedRows = rows
+    .filter((r) => r.kind === 'executed')
+    .sort((a, b) => (b.signed_at ?? '').localeCompare(a.signed_at ?? ''));
+
+  // Executed/pending rows come from `myDocuments()`, which has no body text.
+  // Signable rows do carry the merged body — match on document id so the
+  // chronological list can also offer "Read", not only the self-sign section.
+  const signableById = new Map(signables.map((s) => [s.document.id, s.document] as const));
+
+  return (
+    <div className="mt-2.5 mb-1">
+      {!loading && signables.length > 0 && (
+        <section aria-labelledby="self-sign-heading" className="mb-10" data-testid="self-sign-section">
+          <h2 id="self-sign-heading" className="font-serif text-lg text-green-900 mb-3">
+            {awaiting.length > 0 ? 'Contracts awaiting your signature' : 'Contracts you’ve signed'}
+          </h2>
+          <div className="flex flex-col gap-3">
+            {[...awaiting, ...sealed].map((item) => (
+              <SelfSignRow key={item.document.id} item={item} onSign={handleSign} onView={setViewing} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {loading ? (
+        <p className="body-text text-muted">Loading…</p>
+      ) : pendingRows.length === 0 && executedRows.length === 0 ? (
+        signables.length === 0 && (
+          <p className="body-text text-muted text-sm">No documents yet. They'll appear here as they're assigned or signed.</p>
+        )
+      ) : (
+        <div className="flex flex-col gap-3">
+          {pendingRows.map((r) => (
+            <div key={r.document_id ?? r.template_key} className="bg-white border border-gold-600/30 p-5 flex items-start gap-3">
+              <FileText size={18} className="text-gold-ink flex-shrink-0 mt-0.5" aria-hidden="true" />
+              <div>
+                <p className="text-sm font-sans font-medium text-green-900">{r.title}</p>
+                <p className="text-xs text-gold-900 mt-1">Awaiting your signature — you'll be prompted at sign-in.</p>
+              </div>
+            </div>
+          ))}
+          {executedRows.map((r) => {
+            const matched = r.document_id ? signableById.get(r.document_id) : undefined;
+            return (
+              <div key={r.document_id ?? r.template_key} className="bg-white border border-green-800/10 p-5 flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <FileText size={18} className="text-gold-ink flex-shrink-0 mt-0.5" aria-hidden="true" />
+                  <div>
+                    <p className="text-sm font-sans font-medium text-green-900">{r.title}</p>
+                    <p className="text-xs text-green-700 mt-1 inline-flex items-center gap-1">
+                      <Check size={12} aria-hidden="true" />
+                      Signed{r.signed_at ? ` · ${new Date(r.signed_at).toLocaleDateString()}` : ''}
+                    </p>
+                    {r.superseded && (
+                      <p className="text-xs text-muted mt-1 inline-flex items-center gap-1">
+                        <History size={12} aria-hidden="true" />
+                        Superseded — kept as a record; a newer version is in force.
+                      </p>
+                    )}
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      {matched?.merged_body && (
+                        <ReadButton onOpen={() => setViewing({
+                          id: matched.id,
+                          title: r.title,
+                          signedOn: r.signed_at ? `Signed ${new Date(r.signed_at).toLocaleDateString()}` : 'Signed',
+                          kind: r.current_status ?? '',
+                          pages: paginateBody(matched.merged_body as string),
+                          body: matched.merged_body as string,
+                        })} />
+                      )}
+                      {/* H4: the member can re-send their own copy. Requires a real
+                          document row — template-only entries have no document to send. */}
+                      {r.document_id && (
+                        <EmailMeACopyButton documentId={r.document_id} sentAt={r.executed_email_sent_at} />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {viewing && <PaperViewer doc={viewing} onClose={() => setViewing(null)} />}
+    </div>
+  );
+}
