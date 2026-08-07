@@ -8,7 +8,11 @@ import { ChevronDown } from 'lucide-react';
  * never moving, FULL BLEED — flush to the side nav on the left (whatever state
  * it is in) and to the window edge on the right. It achieves that by cancelling
  * <main>'s horizontal padding with negative margins, so it spans the content
- * column edge to edge without knowing the nav's width. It is sticky at top-14,
+ * column edge to edge without knowing the nav's width. It sticks at the app
+ * header's own height via `--cs-hdr-h` (published on :root by
+ * header-cardstock.css) rather than a hardcoded offset — the cardstock header
+ * is 80px on desktop and varies per breakpoint, so the old `top-14` (56px, the
+ * pre-cardstock h-14) let this bar slide under it,
  * which is the app header's height.
  *
  * CONTEXTUAL, NOT UNIVERSAL. It belongs to contract authoring/review only, so it
@@ -158,7 +162,7 @@ export function ContractSubheader({
        slide the bar under the nav rail. The reading-width cap is lifted by
        ContractPage instead (it applies max-w-5xl to the document body rather
        than to the whole page), so this stays inside <main> and simply fills it. */
-    <div className="sticky top-14 z-30 -mt-6 sm:-mt-9 mb-6 -mx-4 sm:-mx-8 xl:-mx-12">
+    <div className="sticky top-[var(--cs-hdr-h)] z-30 -mt-6 sm:-mt-9 mb-6 -mx-4 sm:-mx-8 xl:-mx-12">
       {/* Padding matches <main>'s so the buttons line up with the card below,
           but stops growing past sm: the xl:px-12 was throwing away 96px of usable
           width on each side exactly when the row needed it most. */}
