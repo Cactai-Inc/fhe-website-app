@@ -20,6 +20,7 @@ import { AppOverviewModal } from './AppOverviewModal';
 import { CreateModal, type CreateModalStep } from './CreateModal';
 import { CardstockHeader } from './CardstockHeader';
 import { CreateModalTriggerContext } from '../../contexts/CreateModalContext';
+import { captureWallReturnDestination } from '../../lib/wallReturn';
 
 /** I7 — green-glass nav surface (mobile drawer + desktop USER rail only —
  *  NOT the staff rail, which keeps its own `bg-cream-100/40`): a translucent
@@ -688,7 +689,14 @@ export default function AppLayout() {
   // the document flow on sign-in / refresh / navigation until every gating
   // document is signed. The wall IS the prompt — no dashboard notification.
   // Sign-out stays reachable (the flow renders inside the layout chrome).
+  //
+  // TASK-WALLRETURN: capture where they were actually headed before the
+  // redirect discards it — Onboarding's enterApp() reads this back once the
+  // member is done here, instead of always landing on the default dashboard/
+  // community view. Does not weaken the wall itself: the redirect below is
+  // unchanged, this only remembers what it's about to overwrite.
   if (wall?.wall && location.pathname !== '/app/onboarding') {
+    captureWallReturnDestination(location.pathname, location.search);
     return <Navigate to="/app/onboarding" replace />;
   }
 
