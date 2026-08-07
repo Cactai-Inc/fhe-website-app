@@ -242,16 +242,18 @@ item.
 Owner spec, 2026-08-07. Replaces the cream-fill treatment in **B3** — read them together;
 B3 removes the old fill, this defines what replaces it.
 
-Three states, and the point is that **hover previews selection**:
+**This spec is for the DESKTOP rail.** Hover has no meaning on a touch screen, so only the
+selected state carries over to the mobile drawer.
 
-| State | Fill | Text + icon |
-|---|---|---|
-| **Default** | none | today's secondary green |
-| **Hover** | the same green at reduced opacity — *"you'll go here if you click"* | the **selected** text colour |
-| **Selected** | solid green | the **panel's own surface colour** |
+| State | Where | Fill | Text + icon |
+|---|---|---|---|
+| **Default** | both | none | today's secondary green |
+| **Hover** | **desktop only** | the same green at reduced opacity — *"you'll go here if you click"* | the **selected** text colour |
+| **Selected** | **both** | solid green | the **panel's own surface colour** |
 
-So hovering shows you a faint version of what the row becomes once you click it. On click
-the previous selection clears and the new row takes the solid fill.
+On desktop, hovering shows a faint version of what the row becomes once clicked; on click
+the previous selection clears and the new row takes the solid fill. **The mobile drawer gets
+the selected state only** — do not invent a touch equivalent of hover.
 
 **Values:**
 
@@ -259,13 +261,14 @@ the previous selection clears and the new row takes the solid fill.
 - Selected text and icon: the panel surface, **`cream-100` `#f5f0e8`** (the rail is
   `bg-cream-100/40`). Verify it reads cleanly on `green-800`; step to `cream-50 #faf8f4`
   if it does not.
-- Hover fill: `green-800` at reduced opacity, tuned so it is clearly a preview rather
-  than mistakable for the selection itself. **If the translucency muddies against the
-  rail's own translucent surface, use the solid equivalent instead** — the owner
-  explicitly allowed either.
+- Hover fill (desktop): `green-800` at reduced opacity, tuned so it is clearly a preview
+  rather than mistakable for the selection itself. The desktop rail's own surface is
+  `bg-cream-100/40` — already translucent — so **if layering translucent green on it reads
+  muddy, use the solid equivalent instead.** The owner explicitly allowed either.
 
-**Applies to BOTH the icon-only and full-width rail, and to the mobile drawer.** One
-palette across all three; do not let the collapsed rail diverge.
+**Applies to both the icon-only and full-width rail** — one palette, and the collapsed rail
+must not diverge from the expanded one. The **selected** state also applies in the mobile
+drawer.
 
 **Scope:** this is the four components from B3 — `RailLink`, `PresenceLink`,
 `AccountNavLink`, and `CommunityNav`'s nested links. A mixed treatment is worse than
