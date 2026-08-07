@@ -331,6 +331,17 @@ What the parties must be able to obligate. Each is an election plus its contract
    breach (jumping above the agreed height, gate left unlatched) allocates **100% of the
    deductible and non-covered cost to the Lessee**, overriding group 5.
 7. **Disclosures** — §5. Generated, not optional.
+8. **Mid-term coverage lapse** — *new gap, answered 2026-08-06.* Nothing today says what
+   happens when a required policy lapses, is cancelled, or goes unrenewed mid-term. A
+   Lessee who stops paying premiums leaves FHE and the facility owner exposed with no
+   contractual remedy. Non-waivable clause, triggered wherever any policy is required,
+   with three progressive stages:
+   1. **Immediate suspension** of riding, training and transport privileges on lapse or
+      failure to produce a current COI.
+   2. **Cure period** — 48 hours to reinstate or evidence replacement coverage.
+   3. **Backstop** — Lessor may (not must) force-place coverage and bill 100% of premium
+      plus an administrative fee, **or** terminate for material breach. The Lessee remains
+      personally liable for any injury, damage or mortality during the uncovered window.
 
 ---
 
@@ -445,6 +456,21 @@ mechanism adversarial to the relationship the business runs on.
    *Lesson recorded:* this citation was supplied confidently by an AI research assistant,
    then retracted by the same assistant. Statutory citations going into signed
    instruments get verified independently before they are built.
+
+2. **Cal. Civ. Code § 1542** — the real statute here, and **already correct in the
+   templates.** Verified 2026-08-06 against the amended statute (Stats. 2018 ch. 157,
+   effective 2019-01-01): `HORSE_LEASE_V2`, `HORSE_BILL_OF_SALE` and `HORSE_SALE_V2` all
+   recite it character-for-character, ending *"…with the debtor or **released** party."*
+
+   **Do not "correct" this text.** An AI-supplied "verbatim" version ended *"releasing
+   party"* — wrong, in the one passage it simultaneously warned must be exact or the
+   release of unknown claims is void. Adopting it would have introduced the defect.
+
+   *Worth an attorney's view:* the § 1542 recital currently sits inside a paragraph.
+   California case law suggests a waiver buried in body text is more open to challenge
+   absent evidence the signer read that specific provision. A dedicated initial or
+   acknowledgement adjacent to the recital, blocking execution until ticked, would
+   harden it. Not implemented — counsel should rule.
 2. **No shared policy** — an Additional Insured gains third-party liability protection
    but **no** first-party medical or mortality cover on the horse.
 3. **CCC negligence trigger** — plain-language statement of the above.
