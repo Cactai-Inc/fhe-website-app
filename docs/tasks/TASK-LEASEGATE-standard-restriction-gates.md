@@ -6,7 +6,8 @@ sections that exist today: **General Liability, Major Medical, Equine Mortality*
 **Two phases, with a hard stop between them.** Phase 1 maps and analyses; the owner
 reviews; Phase 2 implements. Do not write a migration during Phase 1.
 
-**Prerequisite:** `TASK-LEASEFORK` must have run. Operates on `HORSE_LEASE_STANDARD`
+**Prerequisites:** `TASK-LEASEFORK` (creates the template) and `TASK-TIPTAP` (tap-capable
+tooltips — without it the reasons are invisible on the phones clients actually sign on). Operates on `HORSE_LEASE_STANDARD`
 only — `HORSE_LEASE_V2`, `_FULL` and `_SIMPLE` must end byte-identical, proven by
 checksum.
 
@@ -28,7 +29,15 @@ Instead:
 
 This is different from the existing ownership treatment (a field you don't own, which the
 *other* party will fill). Here **nobody** can fill it — it is settled by the facts of the
-lease. Reuse the tooltip mechanics; the label text differs.
+lease. Same mechanics, different message.
+
+**Nothing is greyed out.** The clause sentence still asks the party to make a selection,
+and inline space in prose is short — hence a brief fill (*"Not Eligible"*) with the full
+reason behind a tap.
+
+**The tooltip must open on TAP.** Most clients read and sign on a phone, where there is no
+hover. `TASK-TIPTAP` builds the tap-capable component; **this task depends on it** and must
+use it rather than the native `title` attribute, which iOS Safari ignores on tap.
 
 ---
 
