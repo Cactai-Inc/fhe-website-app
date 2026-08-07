@@ -73,6 +73,45 @@ either way, so if it is removed visually it still needs a transparent click-catc
 
 Show both options in the report if it is a close call.
 
+## N5 — The tab overlays page content
+
+Owner report: the tab sits over *"the c and the o and half the w"* of the top two lines on
+the community welcome page.
+
+**It is worse than a one-page collision.** The tab is `position: fixed` (34px wide at
+`left: 0`) and `<main>` carries only `px-4` (16px) on mobile. So the tab overlays an ~18px
+strip of whatever is at that vertical band — **at every scroll position**, on every page.
+Feed cards, all seven pages using the eyebrow title model, everything that scrolls past.
+
+Two parts, and the second is a decision:
+
+### N5a — Centre the title block (do this)
+
+`src/pages/app/Home.tsx` ~47–60: the eyebrow, the `Welcome new members!` heading and the
+description are left-aligned inside a centred page. Centre them.
+
+The description carries `max-w-2xl`, which needs `mx-auto` to actually centre rather than
+just centring its text within a left-anchored box.
+
+**Scope check first:** seven pages use this title model — `Home`, `DashboardHome`,
+`CatalogPage`, `CareHome`, `DealHome`, `MyPosts`, `AccountHub`. Centring only one makes the
+app inconsistent. Report what the others look like and whether the change should apply to
+all; **do not change all seven on your own initiative** — bring it back.
+
+### N5b — The persistent overlap (recommend, then stop)
+
+Centring the titles removes the collision the owner saw, but not the underlying overlap.
+
+**Orchestrator's recommendation:** raise `<main>`'s left padding on mobile only (below
+`lg`, where the tab exists) to clear 34px plus a small gap — roughly `px-4` → `pl-11`. Cost
+is ~28px of usable width on a 390px screen, about 7%.
+
+That cost is real and the owner has said repeatedly that the app needs width, so **do not
+implement N5b. Measure it, screenshot it both ways, and report** — the owner decides.
+
+Alternatives worth costing in the same report: shifting the tab partly off-screen so less
+of it protrudes; moving it lower; or leaving the overlap as accepted behaviour.
+
 ---
 
 ## Verification
@@ -86,7 +125,9 @@ The owner will judge this on a phone, so:
 4. The desktop rail still reads correctly after the N3 change — screenshot it.
 5. Superadmin's nav is untouched (it keeps its own mobile button and is excluded from the
    tab).
-6. Typecheck and lint clean.
+6. N5a: the community welcome text no longer sits under the tab, at 390px.
+7. N5b: screenshots with and without the gutter, and the measured width cost.
+8. Typecheck and lint clean.
 
 ## Constraints
 
