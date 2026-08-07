@@ -197,9 +197,14 @@ Produce the A2 migration list, then answer these. **Answer, do not decide.**
 3. **Superadmin.** It keeps its own header, its own mobile nav button, and its own avatar
    dropdown, and is excluded from the tab. Does this consolidation touch superadmin at all?
    **Recommendation: no** — leave platform chrome alone entirely.
-4. **Desktop.** The avatar dropdown also serves desktop, where the rail is the nav. Does
-   the dropdown survive on desktop and disappear only on mobile, or go everywhere?
-   Consolidating on desktop is a much larger change and probably a separate task.
+4. **Desktop — DECIDED, no longer a question.** Owner ruling 2026-08-07: **the avatar
+   dropdown is removed on desktop too, and its contents merge into the left-side rail.**
+   So the consolidation is universal — one menu everywhere, not a mobile-only change.
+
+   This makes the A2 migration list serve both surfaces. Sign out, Account, Company,
+   Quick access and the Manage groups all need a home in the rail as well as the drawer.
+   The rail and drawer already share `RailLink`, so much of this is placement rather than
+   new construction — but **confirm that before relying on it**.
 
 
 **Stop after Phase 1 and report.**
