@@ -80,6 +80,22 @@ deliberate canonical order the owner set — **do not reshuffle existing items**
 
 ## B. Drawer corrections (merged in from the deleted NAVFIX task)
 
+### B0 — Equalise the header's side columns
+
+The header grid is `1fr auto 1fr`, but the logo is **56px** and the avatar **50px**. Both
+side columns are the same width, so the left gap is `1fr − 56` and the right is `1fr − 50`:
+**the logo sits exactly 6px closer to the wordmark than the avatar does.** The owner sees
+it as the F being tighter to the logo than the C is to the e.
+
+**Fix by equalising the WRAPPER widths, not the drawn marks** (owner's choice). Give both
+mark wrappers the same width — the larger of the two — and centre the smaller SVG inside
+its wrapper. The logo stays visually larger, which is correct; only the spacing balances.
+
+**Do not resize either SVG.** `TASK-BP410` (merged, `93d3d50`) redrew them at exact
+viewBox-equals-render sizes so the 1px offsets stay literal; changing a drawn size
+reintroduces resampling. Note BP410 adds a second pair below 410px (48/42) — **equalise
+at that breakpoint too**, where the same 6px gap exists.
+
 ### B1 — The tab's touch target is too small
 
 `.cs-drawer-tab` is **34 × 46px** (`header-cardstock.css` ~355). The guideline minimum is
@@ -200,10 +216,7 @@ where approved.
 
 ## Known, and NOT this task's to fix
 
-- **The header wordmark is crowded on mobile** and the logo sits ~6px closer to the
-  wordmark than the avatar does (the grid is `1fr auto 1fr` while the marks are 56px and
-  50px, so the side gaps differ by the 6px size difference). `TASK-BP410` addresses the
-  crowding and is built but unmerged. **Do not attempt either here.**
+- **The header wordmark crowding** is fixed — `TASK-BP410` merged (`93d3d50`).
 - **Gilding the monogram** for mobile legibility is an owner-led design pass.
 
 ## Constraints
