@@ -24,6 +24,11 @@ import './header-cardstock.css';
  * render size (56 logo, 50 avatar) so one user unit is one CSS pixel and the
  * 1px stroke offsets land on exact device pixels. Resizing the marks
  * responsively is what made the outline jagged.
+ *
+ * Below 410px there isn't room for that at full size (TASK-BP410), so a
+ * SECOND pair of drawings exists at 48/42 units — redrawn, not resized — and
+ * header-cardstock.css swaps between the two pairs (`.cs-mark-lg`/
+ * `.cs-mark-sm`) at that breakpoint. Same rule, second size.
  */
 
 /** The squircle the FH sits inside — one path, drawn three times at three
@@ -31,6 +36,15 @@ import './header-cardstock.css';
 const SQUIRCLE =
   'M28 3.61 C 11.29 3.61, 3.61 11.29, 3.61 28 C 3.61 44.71, 11.29 52.39, 28 52.39 ' +
   'C 44.71 52.39, 52.39 44.71, 52.39 28 C 52.39 11.29, 44.71 3.61, 28 3.61 Z';
+
+/** The SAME squircle, REDRAWN at 48 units (geometry scaled ×48/56, not the
+ *  56-unit path resized) for the ≤410px breakpoint — see header-cardstock.css.
+ *  Scaling the 56-unit drawing down to 48px is what put the 1px stroke
+ *  offsets on fractional device pixels and produced the jagged-outline defect
+ *  this header already went through once (TASK-HEADER-REPORT). */
+const SQUIRCLE_48 =
+  'M24 3.09 C 9.68 3.09, 3.09 9.68, 3.09 24 C 3.09 38.32, 9.68 44.91, 24 44.91 ' +
+  'C 38.32 44.91, 44.91 38.32, 44.91 24 C 44.91 9.68, 38.32 3.09, 24 3.09 Z';
 
 type Props = {
   /** first letter of the member's display name — the debossed glyph */
@@ -67,6 +81,9 @@ export function CardstockHeader({
           </filter>
           {/* keeps the blurred wall strictly inside the struck rim */}
           <clipPath id="csWellClip"><circle cx="25" cy="25" r="22.2" /></clipPath>
+          {/* same clip, redrawn for the 42-unit avatar (≤410px) — cx/cy/r
+              scaled ×42/50, not the 50-unit circle resized */}
+          <clipPath id="csWellClip42"><circle cx="21" cy="21" r="18.65" /></clipPath>
           {/* Light comes from above, so the top wall casts and the bottom barely
               does. Faint on purpose: a diffuse shadow that gains REACH as the
               button sinks, not a fill that switches on. */}
@@ -83,10 +100,16 @@ export function CardstockHeader({
         <div className="cs-left">
           <Link to="/app" className="cs-homelink" aria-label="French Heritage Equestrian — home">
             <span className="cs-mark cs-logo">
-              <svg viewBox="0 0 56 56" width="56" height="56" aria-hidden="true" focusable="false">
+              <svg className="cs-mark-lg" viewBox="0 0 56 56" width="56" height="56" aria-hidden="true" focusable="false">
                 <path className="cs-ring-light" transform="translate(0,-1)" d={SQUIRCLE} />
                 <path className="cs-ring-dark" transform="translate(0,1)" d={SQUIRCLE} />
                 <path className="cs-ring" d={SQUIRCLE} />
+              </svg>
+              {/* TASK-BP410: redrawn at 48 units, not the 56-unit mark resized */}
+              <svg className="cs-mark-sm" viewBox="0 0 48 48" width="48" height="48" aria-hidden="true" focusable="false">
+                <path className="cs-ring-light" transform="translate(0,-1)" d={SQUIRCLE_48} />
+                <path className="cs-ring-dark" transform="translate(0,1)" d={SQUIRCLE_48} />
+                <path className="cs-ring" d={SQUIRCLE_48} />
               </svg>
               <span className="cs-glyph cs-fh cs-emboss">FH</span>
             </span>
@@ -112,13 +135,25 @@ export function CardstockHeader({
               aria-label="Account menu"
               aria-expanded={menuOpen}
             >
-              <svg viewBox="0 0 50 50" width="50" height="50" aria-hidden="true" focusable="false">
+              <svg className="cs-mark-lg" viewBox="0 0 50 50" width="50" height="50" aria-hidden="true" focusable="false">
                 <g clipPath="url(#csWellClip)">
                   <circle className="cs-ring-wall" cx="25" cy="24.4" r="21.8" />
                 </g>
                 <circle className="cs-ring-dark" cx="25" cy="24" r="22.2" />
                 <circle className="cs-ring-breath" cx="25" cy="26" r="22.2" />
                 <circle className="cs-ring" cx="25" cy="25" r="22.2" />
+              </svg>
+              {/* TASK-BP410: redrawn at 42 units, not the 50-unit mark resized.
+                  Well-band (wall + clip) cx/cy/r scaled ×42/50; the outline
+                  triple's ±1 y-offset (20/21/22) stays literal, same as the
+                  logo's translate(0,±1) — a physical pixel, not geometry. */}
+              <svg className="cs-mark-sm" viewBox="0 0 42 42" width="42" height="42" aria-hidden="true" focusable="false">
+                <g clipPath="url(#csWellClip42)">
+                  <circle className="cs-ring-wall" cx="21" cy="20.5" r="18.31" />
+                </g>
+                <circle className="cs-ring-dark" cx="21" cy="20" r="18.65" />
+                <circle className="cs-ring-breath" cx="21" cy="22" r="18.65" />
+                <circle className="cs-ring" cx="21" cy="21" r="18.65" />
               </svg>
               <span className="cs-glyph cs-av">{initial}</span>
             </button>
