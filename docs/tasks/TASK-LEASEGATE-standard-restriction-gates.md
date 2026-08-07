@@ -41,6 +41,40 @@ use it rather than the native `title` attribute, which iOS Safari ignores on tap
 
 ---
 
+## Ground truth from TASK-LEASEMAP — read before designing anything
+
+Verified against production, 2026-08-07:
+
+- **`TXN.LEASE_TYPE` gates NOTHING in the insurance section.** Not one clause, not one
+  field. The partial-vs-full distinction is completely invisible to every insurance gate
+  today. (It does gate three clauses elsewhere, so the field itself works.)
+
+  **So R1 and R2 below are new construction, not modifications.** There is no existing
+  partial/full behaviour to adjust, and nothing will break when you add it — but nothing
+  supports it either.
+
+- **No lease has ever had a current-generation insurance field filled.** The one executed
+  lease carries thirteen rows from the *previous* vocabulary (`GL_COST_PARTY`,
+  `GL_OBTAIN_PARTY`, `GL_PROTECTION`). So there is no production data exercising these
+  fields, and no regression risk from changing them — but equally no live example to test
+  against. Build your own.
+
+- **A blank status prints as an affirmative covenant.** Live draft `215bac09` currently
+  reads *"Lessor:  general liability insurance covering the Horse…"* — the sentence renders
+  with a gap where the value belongs and reads as a commitment. Any rule that leaves a
+  status empty inherits this.
+
+- **The `*_LESSEE_STATUS` dropdowns are `owner_role = LESSOR`** yet produce the Lessee's
+  own first-person undertaking (*"Lessee: Will obtain and will maintain…"*). The identical
+  commitment is party-protected as a checkbox and unprotected as a dropdown. See §4b of
+  `INSURANCE_CONTROL_SET.md` on declaration versus fact.
+
+- **A Lessee's election does not stay made.** Its gate depends on the Lessor's status, so
+  when the Lessor changes theirs the clause un-prints while the stored `YES` survives —
+  reversing the change reprints the Lessee's undertaking without the Lessee acting again.
+
+Full map: `docs/reference/lease-map/`.
+
 ## The rules
 
 ### R1 — Mortality, partial lease
