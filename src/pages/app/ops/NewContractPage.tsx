@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2, UserPlus } from 'lucide-react';
 import { useDocumentTitle } from '../../../lib/hooks';
-import { startLeaseContract, startSaleContract, linkContractToPurchase } from '../../../lib/api';
+import { startLeaseContract, startSaleContract, linkContractToPurchase, listLeaseTemplates } from '../../../lib/api';
+import type { ContractTemplate } from '../../../lib/ops/types';
 import {
   claimDocumentOrigination, setPartyControls, assignHorseSection,
 } from '../../../lib/contracts';
@@ -43,6 +44,11 @@ export default function NewContractPage() {
   const [type, setType] = useState<ContractType>('lease');
   const [contacts, setContacts] = useState<PartyOption[]>([]);
   const [horses, setHorses] = useState<StaffHorseRecord[]>([]);
+  // LEASEFORK: which lease VERSION to author. '' = send no template argument, so
+  // the RPC applies its own DEFAULT — the behaviour every caller had before the
+  // picker existed. Only ever populated for a lease.
+  const [leaseTemplates, setLeaseTemplates] = useState<ContractTemplate[]>([]);
+  const [leaseTemplateKey, setLeaseTemplateKey] = useState('');
 
   const [partyA, setPartyA] = useState('');   // lessee / buyer contact id
   const [partyB, setPartyB] = useState('');   // lessor / seller contact id
@@ -87,6 +93,9 @@ export default function NewContractPage() {
   useEffect(() => {
     contractPartyOptions().then(setContacts).catch(() => setContacts([]));
     staffHorseRecords().then(setHorses).catch(() => setHorses([]));
+    // A failure here leaves the picker empty, which falls back to the RPC default
+    // — starting a lease must never depend on this list loading.
+    listLeaseTemplates().then(setLeaseTemplates).catch(() => setLeaseTemplates([]));
   }, []);
   useEffect(() => { setHorseParty(roleB); }, [roleB]);
   useEffect(() => {
@@ -120,7 +129,7 @@ export default function NewContractPage() {
         chosenHorse = out.horse_id;
       }
       const result = type === 'lease'
-        ? await startLeaseContract(partyA, partyB, chosenHorse)
+        ? await startLeaseContract(partyA, partyB, chosenHorse, leaseTemplateKey || undefined)
         : await startSaleContract(
             partyA, partyB, chosenHorse,
             amount ? Number(amount.replace(/[$,]/g, '')) : undefined,
@@ -204,6 +213,28 @@ export default function NewContractPage() {
         {TYPES.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
       </select>
       <p className="text-xs text-muted mb-6">{t.hint}</p>
+
+      {/* LEASEFORK: which lease VERSION to author. Staff-facing only — this whole
+          route is <ProtectedRoute requireStaff>. Only shown when there is more
+          than one version to choose between; with a single template the choice is
+          not a choice, and leaving the value '' sends no template argument so the
+          RPC's own default applies. */}
+      {type === 'lease' && leaseTemplates.length > 1 && (
+        <section className="bg-white border border-green-800/10 rounded-xl p-4 mb-4">
+          <h2 className="font-serif text-green-800 text-base">Lease version</h2>
+          <p className="text-[12px] text-muted mb-3">
+            Which version of the lease to build this contract from. Leave it on the
+            default unless you have a reason to use another.
+          </p>
+          <select className="form-input" value={leaseTemplateKey} aria-label="Lease version"
+            onChange={(e) => setLeaseTemplateKey(e.target.value)}>
+            <option value="">Default</option>
+            {leaseTemplates.map((tpl) => (
+              <option key={tpl.id} value={tpl.template_key}>{tpl.title}</option>
+            ))}
+          </select>
+        </section>
+      )}
 
       <section className="bg-white border border-green-800/10 rounded-xl p-4 mb-4">
         <h2 className="font-serif text-green-800 text-base mb-3">Parties</h2>
