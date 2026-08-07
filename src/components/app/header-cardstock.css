@@ -97,6 +97,10 @@
 }
 .cs-mark svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .cs-glyph { position: relative; z-index: 1; line-height: 1; display: block; }
+/* PORT (TASK-BP410): the logo and avatar each carry a second SVG, redrawn at
+   48/42 units, swapped in at ≤410px by the breakpoint below. Hidden here so
+   the default (56/50) drawing is what renders everywhere else. */
+.cs-mark-sm { display: none; }
 
 /* .045em tracking. The wide spacing is a real part of why it reads better: each
    letter's shadow gets room to resolve instead of crowding its neighbour's
@@ -442,6 +446,34 @@
   .cs-ring-wall { stroke-width: 1.4; }
   .cs-avatar:hover .cs-ring-wall { stroke-width: 2.9; }
   .cs-avatar.is-pressed .cs-ring-wall { stroke-width: 4.8; }
+}
+
+/* TASK-BP410: iPhone 14/15/16 (390/393 CSS px, the volume phones of the last
+   three years) overflow the ≤480 budget by ~2.6px — the ≤480 numbers were
+   measured against a wider phone and never re-checked at the actual median
+   width. This recovers ~24px (~9.4px of slack at 390) by shrinking the two
+   marks and the side padding — the wordmark is untouched, "same fidelity,
+   without crowding" per the owner's spec.
+   The marks are NOT scaled down from 56/50: .cs-mark-lg/.cs-mark-sm swap in
+   a second pair of SVGs redrawn at 48/42 units (see CardstockHeader.tsx) so
+   the 1px stroke offsets stay on exact device pixels — resampling the
+   existing drawings down is the jagged-outline defect this header already
+   shipped once (TASK-HEADER-REPORT). --cs-hdr-h and the wordmark are
+   deliberately not touched here; only what the budget calls for changes. */
+@media (max-width: 410px) {
+  .cs-hdr {
+    padding-left: calc(8px + env(safe-area-inset-left));
+    padding-right: calc(8px + env(safe-area-inset-right));
+  }
+  .cs-logo { width: 48px; height: 48px; }
+  .cs-avatar { width: 42px; height: 42px; }
+  .cs-mark-lg { display: none; }
+  .cs-mark-sm { display: block; }
+  /* scaled proportionally off the 820px-breakpoint values (19→16.5, 25→21);
+     shadows stay the absolute values declared with .cs-fh/.cs-av — those are
+     physical pixels, not proportional to font-size */
+  .cs-fh { font-size: 16.5px; }
+  .cs-av { font-size: 21px; }
 }
 
 /* ============ PHONE IN LANDSCAPE ============
