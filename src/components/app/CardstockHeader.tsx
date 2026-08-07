@@ -1,5 +1,3 @@
-import { useState } from 'react';
-import type { MutableRefObject, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import './header-cardstock.css';
 
@@ -14,11 +12,16 @@ import './header-cardstock.css';
  *
  * The header holds EXACTLY those three marks. The old Calendar button, the old
  * mobile-nav button and the avatar's ChevronDown were removed deliberately (the
- * first is reachable from both menus; the second is now the drawer tab; the
- * debossed avatar is its own affordance).
+ * first is reachable from the nav; the second is now the drawer tab, moved to
+ * the top-right — ONEMENU A1; the debossed avatar is a DECORATIVE MONOGRAM,
+ * ONEMENU owner ruling 2026-08-07 — no click, no press/hover animation, no
+ * menu, no ARIA control semantics. It used to open the account dropdown; that
+ * dropdown is gone, its contents merged into the side nav (rail + drawer) in
+ * AppLayout.tsx).
  *
  * SUPERADMIN NEVER RENDERS THIS. Platform chrome is not tenant branding and
- * keeps its own white header — see AppLayout.
+ * keeps its own white header (with its own live avatar-menu button) — see
+ * AppLayout.
  *
  * Sizes are held at every breakpoint on purpose: each SVG is DRAWN at its
  * render size (56 logo, 50 avatar) so one user unit is one CSS pixel and the
@@ -49,27 +52,12 @@ const SQUIRCLE_48 =
 type Props = {
   /** first letter of the member's display name — the debossed glyph */
   initial: string;
-  /** the account dropdown, rendered inside the avatar's positioning context */
-  menu: ReactNode;
-  menuOpen: boolean;
-  onAvatarClick: () => void;
-  /** outside-click target for the account menu (owned by AppLayout) */
-  menuRef: MutableRefObject<HTMLDivElement | null>;
   /** admin/staff only; the CSS additionally holds it to desktop */
   showCreateTab: boolean;
   onCreate: () => void;
 };
 
-export function CardstockHeader({
-  initial, menu, menuOpen, onAvatarClick, menuRef, showCreateTab, onCreate,
-}: Props) {
-  /* Press physics run off a class, NOT :active, so a touch that drags off the
-     button — or is cancelled by a scroll — releases cleanly instead of sticking
-     down. The hover half of the same effect is inside @media (hover:hover) so
-     phones never latch it. */
-  const [pressed, setPressed] = useState(false);
-  const release = () => setPressed(false);
-
+export function CardstockHeader({ initial, showCreateTab, onCreate }: Props) {
   return (
     <div className="cs-hdrwrap">
       {/* Filter/clip/gradient defs for the avatar well. A native feGaussianBlur
@@ -123,42 +111,34 @@ export function CardstockHeader({
         </Link>
 
         <div className="cs-right">
-          <div className="relative" ref={menuRef}>
-            <button
-              type="button"
-              className={`cs-mark cs-avatar${pressed ? ' is-pressed' : ''}`}
-              onClick={onAvatarClick}
-              onPointerDown={() => setPressed(true)}
-              onPointerUp={release}
-              onPointerLeave={release}
-              onPointerCancel={release}
-              aria-label="Account menu"
-              aria-expanded={menuOpen}
-            >
-              <svg className="cs-mark-lg" viewBox="0 0 50 50" width="50" height="50" aria-hidden="true" focusable="false">
-                <g clipPath="url(#csWellClip)">
-                  <circle className="cs-ring-wall" cx="25" cy="24.4" r="21.8" />
-                </g>
-                <circle className="cs-ring-dark" cx="25" cy="24" r="22.2" />
-                <circle className="cs-ring-breath" cx="25" cy="26" r="22.2" />
-                <circle className="cs-ring" cx="25" cy="25" r="22.2" />
-              </svg>
-              {/* TASK-BP410: redrawn at 42 units, not the 50-unit mark resized.
-                  Well-band (wall + clip) cx/cy/r scaled ×42/50; the outline
-                  triple's ±1 y-offset (20/21/22) stays literal, same as the
-                  logo's translate(0,±1) — a physical pixel, not geometry. */}
-              <svg className="cs-mark-sm" viewBox="0 0 42 42" width="42" height="42" aria-hidden="true" focusable="false">
-                <g clipPath="url(#csWellClip42)">
-                  <circle className="cs-ring-wall" cx="21" cy="20.5" r="18.31" />
-                </g>
-                <circle className="cs-ring-dark" cx="21" cy="20" r="18.65" />
-                <circle className="cs-ring-breath" cx="21" cy="22" r="18.65" />
-                <circle className="cs-ring" cx="21" cy="21" r="18.65" />
-              </svg>
-              <span className="cs-glyph cs-av">{initial}</span>
-            </button>
-            {menu}
-          </div>
+          {/* ONEMENU (owner ruling 2026-08-07): decorative monogram only — no
+              button, no click handler, no press/hover class, no ARIA control
+              semantics. aria-hidden because it conveys nothing an assistive
+              tech user would act on (same treatment the logo's own SVGs
+              already get above); the account link now lives in the nav. */}
+          <span className="cs-mark cs-avatar" aria-hidden="true">
+            <svg className="cs-mark-lg" viewBox="0 0 50 50" width="50" height="50" focusable="false">
+              <g clipPath="url(#csWellClip)">
+                <circle className="cs-ring-wall" cx="25" cy="24.4" r="21.8" />
+              </g>
+              <circle className="cs-ring-dark" cx="25" cy="24" r="22.2" />
+              <circle className="cs-ring-breath" cx="25" cy="26" r="22.2" />
+              <circle className="cs-ring" cx="25" cy="25" r="22.2" />
+            </svg>
+            {/* TASK-BP410: redrawn at 42 units, not the 50-unit mark resized.
+                Well-band (wall + clip) cx/cy/r scaled ×42/50; the outline
+                triple's ±1 y-offset (20/21/22) stays literal, same as the
+                logo's translate(0,±1) — a physical pixel, not geometry. */}
+            <svg className="cs-mark-sm" viewBox="0 0 42 42" width="42" height="42" focusable="false">
+              <g clipPath="url(#csWellClip42)">
+                <circle className="cs-ring-wall" cx="21" cy="20.5" r="18.31" />
+              </g>
+              <circle className="cs-ring-dark" cx="21" cy="20" r="18.65" />
+              <circle className="cs-ring-breath" cx="21" cy="22" r="18.65" />
+              <circle className="cs-ring" cx="21" cy="21" r="18.65" />
+            </svg>
+            <span className="cs-glyph cs-av">{initial}</span>
+          </span>
         </div>
       </header>
 

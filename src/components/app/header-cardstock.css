@@ -186,62 +186,43 @@
 .cs-av {
   font-family: 'Libre Caslon Text', Georgia, serif;
   font-size: 24px; font-weight: 700; letter-spacing: .045em;
+  /* static deboss rest position — the letter sits sunken in the well. No longer
+     animated: OWNER RULING 2026-08-07 (ONEMENU) — the avatar is an inert
+     monogram, not a control, so the press/hover travel below is removed
+     entirely rather than left dormant. */
   transform: translateY(1px);
-  /* ease-out: an overshoot would carry it past rest on the way back up */
-  transition: transform .18s cubic-bezier(.22,.61,.36,1); will-change: transform;
 }
 
-/* iOS Safari paints a translucent grey box over any tappable element on touch,
-   and it ignores border-radius — so it renders as a square around the round
-   avatar. Suppressed here; our own press animation is the feedback. The other
-   properties stop the long-press callout menu and the blue text selection that
-   a tap-and-hold would otherwise trigger on the letter. */
+/* THE AVATAR — decorative monogram (owner ruling 2026-08-07): personalisation,
+   not a control. CardstockHeader.tsx renders it as a plain non-interactive
+   span — no button, no click handler, no menu ARIA. `-webkit-user-select`/
+   `-webkit-touch-callout` stay: a decorative glyph still shouldn't trigger the
+   system's long-press callout or text-selection UI on a tap-and-hold.
+   Width matches `.cs-logo` (B0 — equalises the header's side-column gaps; see
+   the wrapper-centering override below the ≤410 breakpoint). */
 .cs-avatar {
-  width: 50px; height: 50px; cursor: pointer; position: relative;
-  -webkit-tap-highlight-color: transparent;
+  width: 56px; height: 56px; position: relative;
   -webkit-touch-callout: none;
   -webkit-user-select: none; user-select: none;
-  /* PORT: the reference's avatar is a div; in the app it must be a real button
-     for the account menu, so the UA button styling is reset off it. */
-  background: none; border: 0; padding: 0; font: inherit; color: inherit;
-  -webkit-appearance: none; appearance: none;
+}
+/* B0: the avatar's own SVGs stay drawn at their literal render size (50/42
+   units) even though the wrapper above is now wider (56/48) to match the logo
+   — `.cs-mark svg`'s generic `inset:0;width/height:100%` would otherwise
+   stretch them to fill the bigger box, resampling the 1px stroke offsets this
+   header already fixed once (TASK-BP410). Centered instead via absolute
+   positioning + transform, at the SVG's own literal size. */
+.cs-avatar svg {
+  inset: auto; top: 50%; left: 50%; width: 50px; height: 50px;
+  transform: translate(-50%, -50%);
 }
 
-/* ============ THE WELL DEEPENING ============
-   The struck rim never changes — it is a hole in the stock. The depth cue is a
-   SEPARATE blurred band (.cs-ring-wall) living inside that rim, faint at rest
-   and reaching further inward as the button sinks. Growing the crisp rim itself
-   produced a hard black line; this layer is soft by construction.
-
-   It holds ONE opacity throughout: pressing makes it WIDER, never darker. Kept
-   narrow on purpose — a wide stroke blurred heavily near a 24px rim reaches the
-   middle and floods the face solid black. */
-/* same duration and curve as the letter's travel, so the floor and the letter
-   arrive together — a .2s wall under a .18s letter reads as the letter moving
-   first, on its own */
+/* ============ THE WELL (static) ============
+   The struck rim is a hole in the stock; `.cs-ring-wall` is the blurred depth
+   band living inside it. Formerly widened on hover/press — now a fixed, static
+   part of the deboss look, since the avatar no longer responds to either. */
 .cs-ring-wall {
   fill: none; stroke: url(#csWallFade); stroke-width: 1.2; filter: url(#csWallBlur);
-  transition: stroke-width .18s cubic-bezier(.22,.61,.36,1);
 }
-/* The letter moving alone read as "the letter slides inside a fixed hole". The
-   button's own edge has to move with it: the dark wall shifts DOWN as the floor
-   sinks (its shadow follows the receding surface) and the bottom breath dims,
-   exactly as on press but at half the amount. The band alone was too subtle to
-   register against a 1px letter shift. */
-.cs-avatar .cs-ring-dark { transition: transform .18s cubic-bezier(.22,.61,.36,1); }
-@media (hover: hover) {
-  .cs-avatar:hover .cs-ring-wall   { stroke-width: 2.4; }
-  .cs-avatar:hover .cs-ring-dark   { transform: translateY(0.5px); }
-  .cs-avatar:hover .cs-ring-breath { stroke: rgba(226,236,226,.04); }
-  .cs-avatar:hover .cs-av          { transform: translateY(2px); }   /* +1 rest + 1 */
-}
-.cs-avatar.is-pressed .cs-ring-wall { stroke-width: 4; transition-duration: .14s; }
-.cs-avatar.is-pressed .cs-ring-dark { transform: translateY(1.1px); transition-duration: .07s; }
-.cs-avatar.is-pressed .cs-ring-breath {
-  stroke: rgba(226,236,226,.02); stroke-width: 1.2; transition-duration: .07s;
-}
-/* the letter rides the floor down with it — 2.25px, shadows unchanged */
-.cs-avatar.is-pressed .cs-av { transform: translateY(3.25px); transition-duration: .07s; } /* +1 rest + 2.25 */
 
 /* ============ THE CREATE TAB ============
    A paper index tab cut from the same stock, hanging off the header's bottom
@@ -255,10 +236,15 @@
    the card rather than sliding across it. */
 .cs-tab {
   position: absolute; top: 100%; z-index: 1;
-  /* halfway between the wordmark's end and the avatar: the avatar sits at the
-     padding edge (33px) and is 50px wide, so its inner edge is 83px in; the tab
-     centre sits ~46px further left. */
-  --cs-tab-right: calc(112px + env(safe-area-inset-right));
+  /* C6 (owner, 2026-08-07): moved ~12px left of the original 112px — the
+     owner found the gap to the avatar too tight. B0 also widened the avatar's
+     wrapper (50→56px) to match the logo, which shifts its inner edge ~6px
+     further in on its own; 124px is the owner's target value taken as
+     literal, verified visually against the avatar and the stock seam rather
+     than re-derived arithmetically (this repo's own "further left" comment
+     the number replaces didn't match its own math either — 112 vs the
+     "~46px" it cited works out to 29px, not 46). */
+  --cs-tab-right: calc(124px + env(safe-area-inset-right));
   right: var(--cs-tab-right);
   width: 52px; height: 44px;
   display: none;   /* PORT: desktop-only — enabled at lg+ below */
@@ -341,10 +327,18 @@
 .cs-tab:active .cs-chev { transform: translateY(0.75px); }
 
 /* ============ THE DRAWER TAB (mobile only) ============
-   Left edge, 24px below the header. Uses the nav's own GREEN GLASS — not the
-   cardstock — because it belongs to the drawer, not the header: it rides out
-   WITH the drawer when it opens, staying attached to its edge, and the arrow
-   flips to point back. Tapping it again, or making a selection, closes both.
+   ONEMENU A1 (owner, 2026-08-07): mirrored from the left edge to the
+   top-right, below the header — the avatar dropdown is gone, the drawer
+   absorbs it, and the top-right is the emptiest part of the UI at initial
+   load. Still 24px below the header, still the nav's own GREEN GLASS — not
+   the cardstock — because it belongs to the drawer, not the header: it rides
+   out WITH the drawer when it opens (now leftward, off the right edge),
+   staying attached to its edge, and the arrow flips to point back. Tapping it
+   again, or making a selection, closes both.
+
+   Mirroring is `left`→`right`, the slide direction's sign, and the corner
+   radii — the arrow's own rotate-180-on-open mechanism needed no change: it
+   was never encoded which edge it belonged to.
 
    PORT: the surface itself is NOT declared here. The button carries the app's
    NAV_GLASS classes (AppLayout.tsx) so it is the same green glass as the drawer
@@ -357,22 +351,41 @@
    it by 24px. The task doc's wording — "24px below the header" — is what this
    reproduces at every breakpoint. */
 .cs-drawer-tab {
-  position: fixed; left: 0; top: calc(var(--cs-hdr-h) + 24px); z-index: 55;
+  position: fixed; right: 0; top: calc(var(--cs-hdr-h) + 24px); z-index: 55;
   width: 34px; height: 46px; border: 0; cursor: pointer;
   display: grid; place-items: center;
-  border-radius: 0 10px 10px 0;
+  border-radius: 10px 0 0 10px;
   box-shadow: 0 1px 2px rgba(16,28,22,.12), 0 6px 16px rgba(16,28,22,.14),
               inset 0 0 0 1px rgba(255,255,255,.28);
   transition: transform .28s cubic-bezier(.22,.61,.36,1);
   -webkit-tap-highlight-color: transparent;
   padding: 0;
 }
-/* when the drawer is open the tab rides out on its edge. min(288px,85vw) is the
-   drawer's own width formula (w-72 max-w-[85vw]), so the tab lands on the
-   drawer's edge at any viewport. */
-.cs-drawer-tab.is-open { transform: translateX(min(288px, 85vw)); }
+/* B1: the visible box is 34×46 — short of the 44×44 guideline on width only
+   (height already clears it). An invisible pseudo-element enlarges the
+   TOUCHABLE region without moving a single drawn pixel, same technique
+   `.cs-tab::before` above already uses for the create tab. Extends left (into
+   the content, where there's room) and a little top/bottom for edge taps;
+   `right:0` needs no extension since the tab already sits flush against the
+   viewport edge there. */
+.cs-drawer-tab::before {
+  content: ''; position: absolute; top: -6px; bottom: -6px; left: -14px; right: 0;
+}
+/* when the drawer is open the tab rides out on its edge, now leftward off the
+   right edge. min(288px,85vw) is the drawer's own width formula (w-72
+   max-w-[85vw]), so the tab lands on the drawer's edge at any viewport. */
+.cs-drawer-tab.is-open { transform: translateX(calc(-1 * min(288px, 85vw))); }
 .cs-drawer-tab .cs-arrow {
   width: 9px; height: 9px; position: relative;
+  /* A1 (owner, 2026-08-07): "the arrow points left when closed and flips
+     right when open." The two-segment chevron below is unchanged from the
+     left-edge tab and, left un-rotated, points RIGHT at rest — verified by
+     screenshot, not assumed (that's the direction Phase 1 explicitly
+     declined to assert without checking). A flat mirror of the tab's
+     position doesn't touch this geometry at all, so the base rest state
+     needed its own 180° turn to read as LEFT; `.is-open` now turns it BACK
+     to 0deg (right) instead of TO 180deg. */
+  transform: rotate(180deg);
   transition: transform .28s cubic-bezier(.22,.61,.36,1);
 }
 .cs-drawer-tab .cs-arrow::before, .cs-drawer-tab .cs-arrow::after {
@@ -381,7 +394,7 @@
 }
 .cs-drawer-tab .cs-arrow::before { top: 2px;    transform: rotate(45deg);  transform-origin: right center; }
 .cs-drawer-tab .cs-arrow::after  { bottom: 2px; transform: rotate(-45deg); transform-origin: right center; }
-.cs-drawer-tab.is-open .cs-arrow { transform: rotate(180deg); }
+.cs-drawer-tab.is-open .cs-arrow { transform: rotate(0deg); }
 /* desktop has the rail instead — the tab is phone/tablet only */
 @media (min-width: 1024px) { .cs-drawer-tab { display: none; } }
 
@@ -423,6 +436,22 @@
   }
   .cs-fh { font-size: 19px; } .cs-av { font-size: 25px; }
 }
+
+/* B5b (found by TASK-BP410, fixed here as part of the same width-ladder pass):
+   the short-name switch used to happen only at ≤480px, but the full name at
+   the 820-tier's 29px needs ~590px of width (measured `scrollWidth` 582 at a
+   500px viewport) — so 481–590px overflowed with nothing between the 820
+   block and the 480 block to catch it. Fixed as a new step, not a change to
+   either existing tier's own numbers: this ONLY moves the long/short text
+   swap earlier (600px, ~10px of margin above the measured 590px need); font
+   size, padding and marks stay exactly what the 820-tier already set for this
+   range. Chose a new step over moving the ≤480 tier itself so the ≤480
+   block's own sizing (30px font, 12px padding, etc.) — tuned for phones, not
+   this small-tablet/split-screen range — isn't dragged upward with it. */
+@media (max-width: 600px) {
+  .cs-wordmark .cs-long  { display: none; }
+  .cs-wordmark .cs-short { display: inline; }
+}
 @media (max-width: 480px) {
   /* Tighter to the edges — at 62/54 the marks crowded the wordmark. */
   :root { --cs-hdr-h: 88px; }
@@ -442,10 +471,9 @@
   /* marks held at drawn size (56/50) so 1 unit stays 1 px — resampling is what
      made the outline jagged */
   .cs-fh { font-size: 19px; } .cs-av { font-size: 25px; }
-  /* the press band gets the same inverse-scale treatment */
+  /* the well band gets the same inverse-scale treatment (static now, not a
+     press-state variant — see the avatar's ONEMENU note above) */
   .cs-ring-wall { stroke-width: 1.4; }
-  .cs-avatar:hover .cs-ring-wall { stroke-width: 2.9; }
-  .cs-avatar.is-pressed .cs-ring-wall { stroke-width: 4.8; }
 }
 
 /* TASK-BP410: iPhone 14/15/16 (390/393 CSS px, the volume phones of the last
@@ -466,9 +494,19 @@
     padding-right: calc(8px + env(safe-area-inset-right));
   }
   .cs-logo { width: 48px; height: 48px; }
-  .cs-avatar { width: 42px; height: 42px; }
+  /* B0: matches .cs-logo at this breakpoint too — the same 6px gap the
+     unconditional rule above fixes exists again here with the BP410 pair
+     (48 vs 42). */
+  .cs-avatar { width: 48px; height: 48px; }
   .cs-mark-lg { display: none; }
   .cs-mark-sm { display: block; }
+  /* B0: anti-stretch override for the smaller (42-unit) avatar SVG, same
+     reasoning as the unconditional `.cs-avatar svg` rule — higher specificity
+     (two classes) than that rule, so it wins regardless of source order. */
+  .cs-avatar .cs-mark-sm {
+    inset: auto; top: 50%; left: 50%; width: 42px; height: 42px;
+    transform: translate(-50%, -50%);
+  }
   /* scaled proportionally off the 820px-breakpoint values (19→16.5, 25→21);
      shadows stay the absolute values declared with .cs-fh/.cs-av — those are
      physical pixels, not proportional to font-size */
@@ -502,5 +540,4 @@
   }
   .cs-fh { font-size: 16px; } .cs-av { font-size: 20px; }
   .cs-ring-wall { stroke-width: 1.7; }
-  .cs-avatar.is-pressed .cs-ring-wall { stroke-width: 5.7; }
 }
