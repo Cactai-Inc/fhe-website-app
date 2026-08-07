@@ -1,8 +1,14 @@
-# TASK ONEMENU — one menu, moved to the right
+# TASK ONEMENU — one menu, moved to the right, plus drawer corrections
 
-Consolidate the two mobile menus into one. The avatar dropdown goes away entirely; the
-nav drawer absorbs everything it held, and its tab moves from the left edge to the
-**top-right**, below the header.
+**This task SUPERSEDES `TASK-NAVFIX-drawer-polish.md`, which is deleted.** Both sets of
+work touch the same drawer, so they are merged here explicitly. **Every item below is in
+scope for this thread** — nothing is optional and nothing belongs to another task.
+
+Two jobs, one thread:
+
+- **A. Consolidate** — the avatar dropdown goes away, the nav drawer absorbs it, and its
+  tab moves from the left edge to the **top-right**, below the header.
+- **B. Correct** — five defects the owner found testing the drawer on a phone.
 
 **Phase 1 is a plan. Do not write code until it is approved.** The migration list and the
 sign-out question both need the owner's eyes first.
@@ -17,7 +23,7 @@ the UI has its most free space, and gives the avatar a single clear job.
 
 ---
 
-## The layout choice
+## A1 — The layout choice
 
 Two options were raised. **Recommendation: Option B**, and the reasoning should be
 challenged rather than assumed.
@@ -53,7 +59,7 @@ points **left** when closed and flips right when open.
 
 ---
 
-## Phase 1 — the migration plan
+## A2 — Absorb the avatar menu
 
 The avatar menu holds items with no equivalent in the nav drawer. Produce the complete
 list and where each lands. Confirm this inventory yourself; it is a starting point, not
@@ -70,7 +76,76 @@ gospel:
 For each: does it belong in the merged menu, and where in the order? The nav drawer has a
 deliberate canonical order the owner set — **do not reshuffle existing items** to make room.
 
-### Questions to answer, not decide
+---
+
+## B. Drawer corrections (merged in from the deleted NAVFIX task)
+
+### B1 — The tab's touch target is too small
+
+`.cs-drawer-tab` is **34 × 46px** (`header-cardstock.css` ~355). The guideline minimum is
+44 × 44px, which is exactly why the owner reports it as *"not so sensitive to touch."*
+
+**Enlarge the hit area without changing a single visible pixel** — an invisible
+pseudo-element extending the touchable region, not padding or a larger box, which would
+move the artwork. Applies at the tab's new right-side position.
+
+### B2 — Remove the Close button
+
+`AppLayout.tsx` ~1024. The drawer header holds a "Close" button predating the tab. The tab
+now closes the drawer and rides out on its edge, so this is a second control for one job.
+
+Remove **the button only** — the `Menu` label stays. Keep the row's spacing sensible
+afterwards. `closeMobileNav` remains in use by the scrim, Escape, route change and link
+selection; verify all four still work.
+
+### B3 — Replace the active-page fill
+
+`RailLink` (~line 289) marks the current page with `bg-cream-200 text-green-800
+font-medium` plus a gold icon. On frosted glass an opaque cream fill fights the material —
+it reads as a card pasted onto the glass.
+
+**Remove the background fill** and replace it with a non-filling indicator. Recommended: a
+**left accent bar**, 2–3px gold on the leading edge, label kept at `font-medium`, icon
+still gold.
+
+If a left bar collides with the `pl-9` indent used by nested community links, report it
+rather than reworking the indent scheme.
+
+**`RailLink` is shared with the desktop rail.** Changing it changes both. That is
+acceptable and probably desirable, but confirm the desktop rail still reads correctly and
+screenshot it. If the two genuinely need to diverge, stop and report rather than forking
+the component.
+
+Keep `aria-current` intact — the accessible signal must not depend on colour.
+
+### B4 — Neutralise the overlay
+
+`AppLayout.tsx` ~1010: the scrim is `bg-green-950/50`. The drawer is green glass, so scrim
+and drawer sit in the same colour family and barely separate; the only contrast is the
+frosting itself.
+
+**Move the scrim into black and white** — something like `bg-black/40`, tuned so the drawer
+reads as clearly forward without the backdrop turning heavy. Removing it visually is
+acceptable **only if** the drawer still separates clearly, and it must keep click-to-close
+either way — a transparent catcher if nothing is drawn.
+
+### B5 — Centre the page title block
+
+`src/pages/app/Home.tsx` ~47–60: the eyebrow, the `Welcome new members!` heading and the
+description are left-aligned inside a centred page. Centre them. The description carries
+`max-w-2xl`, which needs `mx-auto` to actually centre rather than centring text inside a
+left-anchored box.
+
+**Scope check first.** Seven pages use this title model — `Home`, `DashboardHome`,
+`CatalogPage`, `CareHome`, `DealHome`, `MyPosts`, `AccountHub`. Centring one makes the app
+inconsistent. Report what the others look like and whether it should apply to all;
+**do not change all seven on your own initiative.**
+
+---
+
+## Phase 1 — the plan
+
+Produce the A2 migration list, then answer these. **Answer, do not decide.**
 
 1. **Sign out.** Where does it live in a merged menu, visually separated from navigation?
    It is destructive-adjacent and must not sit among ordinary links.
@@ -85,6 +160,7 @@ deliberate canonical order the owner set — **do not reshuffle existing items**
 4. **Desktop.** The avatar dropdown also serves desktop, where the rail is the nav. Does
    the dropdown survive on desktop and disappear only on mobile, or go everywhere?
    Consolidating on desktop is a much larger change and probably a separate task.
+5. **B5 scope** — one page, or all seven.
 
 **Stop after Phase 1 and report.**
 
@@ -106,16 +182,12 @@ where approved.
    a small target again.
 5. Nothing is covered **at initial load** at 390px — screenshot the community page
    unscrolled. Overlap **while scrolling is expected and correct**; do not "fix" it.
-6. Superadmin's chrome is unchanged.
-7. Desktop is unchanged unless Q4 said otherwise.
-8. Typecheck and lint clean.
-
-## Coordination
-
-`TASK-NAVFIX` touches the same drawer (close button, active-item styling, scrim colour,
-tab hit area). **These two must not run at the same time.** Land NAVFIX first, then build
-on it — or fold NAVFIX's items into this task and cancel it. Say which in the Phase 1
-report.
+6. The tab is reliably tappable **at its edges**, not just dead centre (B1).
+7. The current page is identifiable at a glance in the drawer, without a fill (B3).
+8. The desktop rail still reads correctly after B3 — screenshot it.
+9. Superadmin's chrome is unchanged.
+10. Desktop is unchanged unless Q4 said otherwise.
+11. Typecheck and lint clean.
 
 ## Constraints
 
