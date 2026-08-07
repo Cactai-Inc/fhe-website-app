@@ -325,8 +325,7 @@ What the parties must be able to obligate. Each is an election plus its contract
    payment** (§5); emergency authorisation limit and who bears the non-reimbursed part.
 4. **CCC** — who carries; limits; **excluded entirely where the Lessee is an
    individual**; never presented as protection for the horse (§5).
-5. **No-fault expense allocation** — *does not exist today, and is the most consequential
-   omission.* Specified in full at §4a.
+5. ~~No-fault expense allocation~~ — **STRUCK. It already exists.** See §4a.
 6. **Fault override** — a clause, not an election. Loss caused by the Lessee's clear
    breach (jumping above the agreed height, gate left unlatched) allocates **100% of the
    deductible and non-covered cost to the Lessee**, overriding group 5.
@@ -345,12 +344,67 @@ What the parties must be able to obligate. Each is an election plus its contract
 
 ---
 
-## 4a. The no-fault expense matrix — full field spec
+## 4a. The no-fault allocation — ALREADY BUILT, and this document was wrong about it
 
-**The scenario nothing in the contract currently answers.** A horse is injured or falls
-ill. Nobody was negligent. Either no policy responds at all, or one responds partially
-(deductible, exclusion, limit exceeded, claim denied). Someone still owes the vet, and
-today the document is silent.
+**CORRECTION (2026-08-06).** Earlier drafts called this "the scenario nothing in the
+contract currently answers" and "the most consequential omission", and specified seven new
+fields for it. **All of that was false.** The allocation exists, the owner authored it, and
+it is more thorough than what was proposed to replace it.
+
+`INSURANCE_RISK.MED_TAIL` states that the Lessor
+
+> *"assumes and is responsible for all risks and costs not paid or covered by any policy
+> held by either party, including in the event a policy is not in effect at the time of
+> the incident, an incident for which a claim is made is deemed not to be covered by a
+> policy, a payment for a claim made for an incident that is covered by a policy is less
+> than the actual cost incurred, or a claim made to a policy is denied for any reason."*
+
+That enumerates every failure mode the proposed "no-fault matrix" was meant to cover.
+
+**And the two paths are complementary, not gapped:**
+
+| Election | Clause that prints | Effect |
+|---|---|---|
+| Medical **elected** (`MED_NOT_REQUIRED` = NO/"") | `MED_TAIL` | Lessor bears everything no policy pays |
+| Medical **waived** (`MED_NOT_REQUIRED` = YES) | `MED_NONE` | Lessor accepts *"full risk and responsibility for any and all injury to or illness of the Horse … including all costs of veterinary care"* |
+
+One or the other **always** prints. There is no configuration where non-covered cost is
+unallocated. The earlier claim that waiving medical "leaves no allocation clause at all"
+was wrong — it swaps one allocation clause for a broader one.
+
+`MED_TAIL` additionally handles the payment mechanics: who pays the billing party, direct
+payment at the Lessee's request, reimbursement in either direction with written
+permission.
+
+### Why the waiver checkbox is protective, not decorative
+
+The Lessee acknowledging *"I know there is no insurance"* protects nobody. **What protects
+the Lessee is the Lessor's affirmative acceptance of full responsibility** — precisely
+what `MED_NONE`, `GL_NONE` and `MORT_NONE` say.
+
+> *"Without those, a person who says 'okay, you don't have insurance and I don't have
+> insurance, you're not requiring me to get it' is leaving the door wide open for a claim
+> later to be made that they need to share in the cost, without it being explicitly
+> accepted by the owner for full responsibility. The Lessee could find themselves in a
+> confrontation over the splitting of a cost they did not agree to."*
+
+**Consequence for R4 in `TASK-LEASEGATE`:** removing the waiver mechanism deletes the
+clauses that carry the Lessor's acceptance — deleting the Lessee's protection while
+keeping the acknowledgment that does nothing. Any redesign must preserve an explicit
+Lessor acceptance of full responsibility, however the election is expressed.
+
+### Method note — twice now
+
+This document twice asserted a defect in the template without reading the clause: first
+that `INSURANCE_RISK.CCC` was ungated (it is gated to entity lessees), then that the
+no-fault allocation was missing (it is `MED_TAIL`). Both were inferences from field-level
+queries, presented as findings, and both were load-bearing. **Read the clause body before
+claiming the contract fails to say something.**
+
+### The original (now superseded) proposal, retained for reference only
+
+The scenario: a horse is injured, nobody was negligent, and a policy pays partially or
+not at all.
 
 Distinguish this from the existing per-policy deductible fields:
 
