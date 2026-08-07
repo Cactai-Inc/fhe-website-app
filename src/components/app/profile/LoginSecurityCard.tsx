@@ -100,26 +100,38 @@ export function LoginSecurityCard() {
   }
 
   const googleConnected = linked?.includes('google') ?? false;
+  // TASK-ACCOUNTSURFACE §4: the Google switch is offered only to someone who
+  // already has a password set (an 'email' identity — otherwise there's
+  // nothing to "switch" from) AND whose sign-in email is itself Google-hosted.
+  // "Or is switching to one" (an in-flight email-change to a Google address)
+  // has no client-observable signal today — EmailChangeModal's own workspace
+  // detection is local, unpersisted state inside that modal, not a fact
+  // available here. Left out rather than guessed at; see the Phase 2 report.
+  const hasPassword = linked?.includes('email') ?? false;
+  const isGoogleHostedEmail = /@gmail\.com$/i.test(user?.email?.trim() ?? '');
+  const showGoogleSwitch = !googleConnected && hasPassword && isGoogleHostedEmail;
 
   return (
     <SectionCard icon={ShieldCheck} title="Login & security">
       <div className="flex flex-col gap-2.5">
         <Row title="Login" sub={user?.email ?? undefined} onClick={() => setEmailOpen(true)} />
         <Row title="Password" sub="Set or change your password" onClick={() => setPasswordOpen(true)} />
-        <div className="flex items-center justify-between gap-3 bg-cream-100/60 border border-green-800/10 rounded-xl px-3.5 py-3">
-          <span className="min-w-0">
-            <span className="block text-[13px] font-medium text-green-900">Sign in with Google</span>
-            <span className="block text-[11.5px] text-muted mt-0.5">
-              {googleConnected ? 'Connected' : 'Switch this account to Google sign-in'}
+        {(showGoogleSwitch || googleConnected) && (
+          <div className="flex items-center justify-between gap-3 bg-cream-100/60 border border-green-800/10 rounded-xl px-3.5 py-3">
+            <span className="min-w-0">
+              <span className="block text-[13px] font-medium text-green-900">Sign in with Google</span>
+              <span className="block text-[11.5px] text-muted mt-0.5">
+                {googleConnected ? 'Connected' : 'Switch this account to Google sign-in'}
+              </span>
             </span>
-          </span>
-          {!googleConnected && (
-            <button type="button" onClick={() => { void connectGoogle(); }}
-              className="text-[12px] font-medium text-green-800 border border-green-800/25 rounded-lg px-3 py-1.5 hover:border-green-800/40 focus-ring shrink-0">
-              Connect
-            </button>
-          )}
-        </div>
+            {!googleConnected && (
+              <button type="button" onClick={() => { void connectGoogle(); }}
+                className="text-[12px] font-medium text-green-800 border border-green-800/25 rounded-lg px-3 py-1.5 hover:border-green-800/40 focus-ring shrink-0">
+                Connect
+              </button>
+            )}
+          </div>
+        )}
         {linkError && <p role="alert" className="form-error flex items-center gap-1.5"><KeyRound size={13} /> {linkError}</p>}
       </div>
 

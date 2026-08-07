@@ -49,6 +49,7 @@ import Schedule from './pages/app/Schedule';
 import CalendarPage from './pages/app/CalendarPage';
 import Orders from './pages/app/Orders';
 import Gifts from './pages/app/Gifts';
+import Stable from './pages/app/Stable';
 import CatalogPage from './pages/app/CatalogPage';
 import Documents from './pages/app/Documents';
 import Onboarding from './pages/app/Onboarding';
@@ -231,6 +232,10 @@ export function AppRoutes() {
               <Route path="support" element={<Support />} />
               <Route path="account" element={<AccountHub />} />
               <Route path="my-posts" element={<MyPosts />} />
+              {/* TASK-ACCOUNTSURFACE §2 (2026-08-07): My Stable's real route —
+                  it previously only existed as /app/account?section=stable,
+                  which AccountHub now redirects here instead of pre-opening. */}
+              <Route path="stable" element={<Stable />} />
               {/* Purpose-built client homes (surface model: care / deal) */}
               <Route path="care" element={<CareHome />} />
               <Route path="deal" element={<DealHome />} />

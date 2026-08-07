@@ -4,22 +4,36 @@ import { AccountInfoCard } from './AccountInfoCard';
 import { LoginSecurityCard } from './LoginSecurityCard';
 
 /**
- * PROFILE & PREFERENCES — the consolidated surface (owner spec 2026-08-05,
- * TASK-PROFILE-account-restructure.md). Replaces the old inline ProfileSection
- * (which blended straight into the community contact fields with no section
- * boundary) and the separate /app/profile "Name, photo & bio" page (which
- * duplicated both the profile-edit fields AND a second sign-in-methods card).
- *
- * One flat stack of four unmistakably-bounded sections, each its own
- * SectionCard: Profile (community-visible) → Preferences → Account information
- * (staff-only) → Login & security. No inner pages anywhere in this tree.
+ * PROFILE & PREFERENCES — originally one consolidated surface (owner spec
+ * 2026-08-05, TASK-PROFILE-account-restructure.md), now three Account-page
+ * sections per TASK-ACCOUNTSURFACE §4 (owner spec 2026-08-07): My Profile,
+ * My Preferences, My Login. The four cards this built are unchanged — only
+ * their grouping into rows changed, from one to three. No inner pages
+ * anywhere in this tree.
  */
-export function ProfileAndPreferences() {
+
+/** MY PROFILE — splits internally into Community profile (ProfileCard, visible
+ *  to other members) and Account profile (AccountInfoCard, staff-only). */
+export function MyProfileContent() {
   return (
     <div className="mt-2.5 mb-1">
       <ProfileCard />
-      <PreferencesCard />
       <AccountInfoCard />
+    </div>
+  );
+}
+
+export function MyPreferencesContent() {
+  return (
+    <div className="mt-2.5 mb-1">
+      <PreferencesCard />
+    </div>
+  );
+}
+
+export function MyLoginContent() {
+  return (
+    <div className="mt-2.5 mb-1">
       <LoginSecurityCard />
     </div>
   );
