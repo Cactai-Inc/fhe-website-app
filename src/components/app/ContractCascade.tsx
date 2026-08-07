@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Info, MessageSquarePlus } from 'lucide-react';
 import { clauseConditionMet, type ContractField, type FieldStructured, type PartyChoice } from '../../lib/contracts';
 import { fieldSourceTip } from '../../lib/fieldSources';
+import { ExplainTip } from './ExplainTip';
 
 /* ── U5 / F1-F2: insurance responsibility elections ────────────────────────────
  * Each insurance section (GL / MORT / MED) resolves to exactly one end-state
@@ -293,10 +294,10 @@ export function ContractBody({
   while ((m = NEEDS_RE.exec(body))) {
     if (m.index > last) pushText(body.slice(last, m.index));
     nodes.push(
-      <mark key={`n${i++}`} title={`Needs: ${m[1]}`}
+      <ExplainTip key={`n${i++}`} text={`Needs: ${m[1]}`} underline={false} as="mark"
         className="bg-gold-100 text-gold-900 rounded px-1 border border-gold-400/60 border-dashed">
         {m[2]}
-      </mark>,
+      </ExplainTip>,
     );
     last = m.index + m[0].length;
   }
@@ -1140,14 +1141,9 @@ export function InlineFieldControl({
     <>
       {f.required && <span className="text-red-700 align-super text-[9px]">*</span>}
       {srcTip && (
-        <span
-          tabIndex={0}
-          title={srcTip}
-          aria-label={srcTip}
-          className="ml-1 align-super text-[9px] text-gold-700/80 cursor-help focus-ring rounded"
-        >
+        <ExplainTip text={srcTip} underline={false} className="ml-1 align-super text-[9px] text-gold-700/80">
           ⟲
-        </span>
+        </ExplainTip>
       )}
     </>
   );
@@ -1480,13 +1476,10 @@ function FieldNode({
           </span>
         )}
         {electionUnresolved && (
-          <span tabIndex={0} title={INSURANCE_TOOLTIP} aria-label={INSURANCE_TOOLTIP}
-            className="text-[10px] text-gold-700 cursor-help focus-ring rounded">ⓘ</span>
+          <ExplainTip text={INSURANCE_TOOLTIP} underline={false} className="text-[10px] text-gold-700">ⓘ</ExplainTip>
         )}
         {fieldSourceTip(f.field_key) && (
-          <span tabIndex={0} title={fieldSourceTip(f.field_key) ?? ''}
-            aria-label={fieldSourceTip(f.field_key) ?? ''}
-            className="text-[10px] text-gold-700/80 cursor-help focus-ring rounded">⟲</span>
+          <ExplainTip text={fieldSourceTip(f.field_key)} underline={false} className="text-[10px] text-gold-700/80">⟲</ExplainTip>
         )}
         {editable && (
           <label className="ml-auto flex items-center gap-1 text-[10px] text-muted cursor-pointer select-none">

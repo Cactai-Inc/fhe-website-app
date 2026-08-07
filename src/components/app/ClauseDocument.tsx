@@ -4,6 +4,7 @@ import {
   type ContractField, type SectionDef,
 } from '../../lib/contracts';
 import { InlineFieldControl } from './ContractCascade';
+import { ExplainTip } from './ExplainTip';
 
 /**
  * CLAUSE DOCUMENT — the numbered Section › Clause › Field authoring surface, as a
@@ -118,13 +119,9 @@ function TokenValue({ token, value, tip }: { token: string; value: string; tip?:
   // values carry the lock tooltip (dotted cue) naming where they are edited.
   if (value.trim()) {
     return (
-      <span
-        className={`font-medium text-green-900 whitespace-pre-line break-words${
-          tip ? ' [text-decoration:underline_dotted] decoration-gold-500/60 underline-offset-2 cursor-help' : ''}`}
-        title={tip} aria-label={tip}
-      >
+      <ExplainTip text={tip} className="font-medium text-green-900 whitespace-pre-line break-words">
         {value}
-      </span>
+      </ExplainTip>
     );
   }
   // party/horse imports show a muted "on file" hint instead of a fillable blank —
@@ -132,9 +129,9 @@ function TokenValue({ token, value, tip }: { token: string; value: string; tip?:
   const hint = AUTOFILL_HINT[token] ?? (token.startsWith('HORSE.') ? 'from horse record' : null);
   if (hint) {
     return (
-      <span className={`text-muted italic text-[12.5px]${tip ? ' cursor-help' : ''}`} title={tip} aria-label={tip}>
+      <ExplainTip text={tip} className="text-muted italic text-[12.5px]">
         {hint}
-      </span>
+      </ExplainTip>
     );
   }
   return (
@@ -210,10 +207,14 @@ function OwnedField({
   const Tag = block ? 'div' : 'span';
   if (!fieldIsMine(f, cb)) {
     const tip = otherPartyTip(f);
+    // asButton=false: children carry the field's own (disabled, since this
+    // branch only renders when the viewer doesn't own the field) input
+    // control — a role="button" wrapper around real form controls can make a
+    // screen reader stop exposing them individually, which title= never did.
     return (
-      <Tag className="opacity-55 cursor-help [&_*]:cursor-help" title={tip} aria-label={tip}>
+      <ExplainTip text={tip} as={Tag} asButton={false} className="opacity-55 [&_*]:cursor-help">
         {children}
-      </Tag>
+      </ExplainTip>
     );
   }
   return (
@@ -247,23 +248,15 @@ function ImportedRecordToken({
 }: { value: string; tip: string }) {
   if (!value.trim()) {
     return (
-      <span
-        className="text-muted italic text-[12.5px] cursor-help"
-        title={tip}
-        aria-label={tip}
-      >
+      <ExplainTip text={tip} className="text-muted italic text-[12.5px]">
         not on file
-      </span>
+      </ExplainTip>
     );
   }
   return (
-    <span
-      className="font-medium text-green-900 whitespace-pre-line break-words [text-decoration:underline_dotted] decoration-gold-500/60 underline-offset-2 cursor-help"
-      title={tip}
-      aria-label={tip}
-    >
+    <ExplainTip text={tip} className="font-medium text-green-900 whitespace-pre-line break-words">
       {value}
-    </span>
+    </ExplainTip>
   );
 }
 
@@ -996,7 +989,9 @@ export function ClauseDocument({
                           <p className="text-[13px] font-semibold text-green-900 mb-1 flex items-center gap-1.5">
                             {num ? <span className="text-muted tabular-nums">{num}</span> : null}
                             {showWords ? clause.heading : null}
-                            {clauseRequired && <span className="text-gold-700" title="Needs an answer before signing">*</span>}
+                            {clauseRequired && (
+                              <ExplainTip text="Needs an answer before signing" underline={false} className="text-gold-700">*</ExplainTip>
+                            )}
                           </p>
                         );
                       })()}
