@@ -98,19 +98,22 @@ just centring its text within a left-anchored box.
 app inconsistent. Report what the others look like and whether the change should apply to
 all; **do not change all seven on your own initiative** — bring it back.
 
-### N5b — The persistent overlap (recommend, then stop)
+### N5b — The overlap is ACCEPTED. Do not mitigate it.
 
-Centring the titles removes the collision the owner saw, but not the underlying overlap.
+An earlier draft recommended a mobile left gutter. **Withdrawn — the owner ruled against
+it, for two reasons that are worth carrying forward:**
 
-**Orchestrator's recommendation:** raise `<main>`'s left padding on mobile only (below
-`lg`, where the tab exists) to clear 34px plus a small gap — roughly `px-4` → `pl-11`. Cost
-is ~28px of usable width on a 390px screen, about 7%.
+1. *"The overlap is unavoidable on mobile — we use every inch of the screen."* Spending
+   ~7% of a 390px viewport on a gutter is the wrong trade.
+2. **The glass only reads as glass when something moves behind it.** A gutter would stop
+   content passing under the tab and leave the material looking dead. **The overlap is what
+   makes the effect work.**
 
-That cost is real and the owner has said repeatedly that the app needs width, so **do not
-implement N5b. Measure it, screenshot it both ways, and report** — the owner decides.
+So: **add no gutter, and do not shift, shrink or move the tab to reduce overlap.**
 
-Alternatives worth costing in the same report: shifting the tab partly off-screen so less
-of it protrudes; moving it lower; or leaving the overlap as accepted behaviour.
+Note also that `TASK-ONEMENU` moves this tab to the top-right, where the UI has its most
+free space — so nothing is covered at initial load, which is the moment that matters.
+Coordinate with that task rather than solving the same thing twice.
 
 ---
 
@@ -126,8 +129,7 @@ The owner will judge this on a phone, so:
 5. Superadmin's nav is untouched (it keeps its own mobile button and is excluded from the
    tab).
 6. N5a: the community welcome text no longer sits under the tab, at 390px.
-7. N5b: screenshots with and without the gutter, and the measured width cost.
-8. Typecheck and lint clean.
+7. Typecheck and lint clean.
 
 ## Constraints
 
