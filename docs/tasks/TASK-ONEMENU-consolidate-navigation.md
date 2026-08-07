@@ -183,6 +183,75 @@ and do not add `mx-auto` to the description.
 
 ---
 
+## C. Desktop rail corrections (owner, 2026-08-07)
+
+Six items on the desktop rail and the create tab. All verified in code by the orchestrator.
+
+### C1 — The collapse control: icon only, moved right
+
+`AppLayout.tsx` ~934. The pin/collapse button currently renders an icon **plus** the words
+`Collapse` / `Keep open`, left-aligned at the top of the rail.
+
+**The icon becomes the button.** Drop the text. Move it to the **right side of the panel**
+with appropriate padding, so it sits at the edge it acts on.
+
+### C2 — The page resizes before the menu moves — FIX THE CAUSE, NOT THE TIMING
+
+Two nested elements animate width independently, driven by **different state**:
+
+- the `<aside>` (which reserves page space) follows `staffRailPinned`
+- the `<nav>` inside it follows `staffRailOpen`, and
+  `staffRailOpen = staffRailPinned || staffRailHovered` (line 578)
+
+So when you click the control **with the cursor over the rail**, `staffRailHovered` is
+already true — the `<nav>` is already wide — and only the `<aside>` changes. The page
+reflows while the menu appears not to move. That is the reported bug.
+
+**Do not fix this by tuning durations.** Once C3 removes hover-expansion, both elements
+can follow a single state and move as one. If they still need to be separate, they must at
+minimum share one state and one transition.
+
+### C3 — Kill hover auto-expand
+
+`onMouseEnter` / `onMouseLeave` set `staffRailHovered`, which expands the collapsed rail
+over the page. **Remove it.** The rail is either **full — icons and labels — or icon-only**.
+Nothing in between, and no expansion the user did not ask for.
+
+This also removes half of C2's cause.
+
+### C4 — Tooltips on the icon-only rail, delayed 1–2s
+
+Collapsed, each item shows only its icon. On hover it reveals the same label the expanded
+rail shows, after a **1–2 second delay** — long enough that it appears only when the cursor
+lingers deliberately.
+
+`RailLink` currently passes `title={open ? undefined : label}`, a native tooltip with an
+uncontrollable delay. Replace it with something whose delay you set.
+
+**`ExplainTip` (`src/components/app/ExplainTip.tsx`, merged from `TASK-TIPTAP`) already
+exists** — evaluate it first. It was built tap-first for inline prose, so it may or may not
+suit a hover-with-delay rail label. **Reuse it if it fits; if it genuinely does not, say
+why rather than forcing it.** Do not build a third tooltip mechanism without saying so.
+
+### C5 — The Community Feed row is undersized
+
+In `CommunityNav` (~line 430) the show/hide control renders a **15px** chevron with a
+**10px** text label, against **17–18px** icons and **13.5px** labels everywhere else in the
+rail. Bring the Community Feed icon and its toggle to the same scale as every other nav
+item.
+
+### C6 — Move the create tab left
+
+`header-cardstock.css:261` — `--cs-tab-right: calc(112px + env(safe-area-inset-right))`.
+Move the tab **left by 10–15px**, roughly half its width, by **increasing** that offset to
+around `124px`.
+
+Note `--cs-tab-right` is also read at line 314 to position the tab's mirrored stock layer.
+Changing the variable moves both, which is correct — **verify the stock still lines up at
+the seam** afterwards.
+
+---
+
 ## Phase 1 — the plan
 
 Produce the A2 migration list, then answer these. **Answer, do not decide.**
