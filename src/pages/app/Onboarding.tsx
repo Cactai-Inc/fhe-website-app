@@ -34,6 +34,7 @@ import { HorseIntakeForm } from '../../components/app/HorseIntakeForm';
 import { AppOverviewModal } from '../../components/app/AppOverviewModal';
 import { useAuth } from '../../contexts/AuthContext';
 import type { Profile } from '../../lib/types';
+import { consumeWallReturnDestination } from '../../lib/wallReturn';
 
 /**
  * RIDER ONBOARDING — /app/onboarding. A client who already paid offline lands
@@ -383,11 +384,23 @@ export default function Onboarding() {
   // Close the overview tour and land on the member's home: dashboard when they
   // have notifications, else the community feed (D8: community for every
   // account holder — no guest branch).
+  //
+  // TASK-WALLRETURN: this is the single exit point every onboarding path
+  // (sign-only, horse + payment, "nothing to do") funnels through once the
+  // member is done here. AppLayout's wall redirect (AppLayout.tsx:684)
+  // captures where a walled member was actually headed before dropping them
+  // here — a captured destination wins over the default landing page, and is
+  // consumed (cleared) the moment it's used so it can't apply again later.
   async function enterApp() {
     setShowOverview(false);
     // A3: a fresh activation has now seen the tour — stamp it so AppLayout's
     // first-login auto-open does not show it a second time.
     try { await markTourSeen(); } catch { /* presentational marker only */ }
+    const wallReturnTo = consumeWallReturnDestination();
+    if (wallReturnTo) {
+      navigate(wallReturnTo, { replace: true });
+      return;
+    }
     let unread = 0;
     try { unread = await myUnreadCount(); } catch { /* default to community */ }
     navigate(unread > 0 ? '/app/dashboard' : '/app', { replace: true });
