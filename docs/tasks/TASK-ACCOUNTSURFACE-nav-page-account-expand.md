@@ -176,9 +176,26 @@ mechanical.
 **`TASK-PLUSPASS` is merged** — its "+ Horse" control on My Stable is on `main`. Build on
 it; do not duplicate or discard it when My Stable moves.
 
-**`TASK-ONEMENU` touches `AppLayout.tsx` too** (nav labels, the drawer, the avatar menu).
-These two must not write code at the same time. Check with the orchestrator before
-starting Phase 2 if ONEMENU is still in flight.
+### File ownership — ORCHESTRATOR RULING, 2026-08-07
+
+Both tasks were heading for the same components. Ownership is split by **file**, so both
+can run now:
+
+| File | Owner |
+|---|---|
+| `AppLayout.tsx` | **ONEMENU only** — do not touch it |
+| `AccountHub.tsx`, `AccountPanels.tsx`, the new stable page, `App.tsx` routes | **ACCOUNTSURFACE (you)** |
+
+**So this task does NOT change nav labels or nav links**, even though §4 lists them.
+ONEMENU is already rebuilding `PRESENCE_LINKS`, `ClientNavItems`, `PresenceLink` and
+`AccountNavLink` for the avatar-menu merge, so it applies the `My` labels and adds the
+`/app/stable` nav link as part of that rebuild — one thread touching those components once,
+rather than two in sequence.
+
+**You still create the `/app/stable` route and page** (§2). ONEMENU points nav at it.
+Build the route first so the link has somewhere to land.
+
+Apply `My` labels **on the Account page**. Leave the nav to ONEMENU.
 
 ## Constraints
 

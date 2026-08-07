@@ -252,6 +252,35 @@ the seam** afterwards.
 
 ---
 
+## D. Nav labels and the stable link — ORCHESTRATOR RULING, 2026-08-07
+
+`AppLayout.tsx` is **yours alone**. `TASK-ACCOUNTSURFACE` is forbidden from touching it, so
+two nav changes that logically belong to that task are executed **here**, because you are
+already rebuilding the components that carry them.
+
+### D1 — Apply the `My` labels in the nav
+
+Owner's table (`TASK-ACCOUNTSURFACE` §4). Nav labels must match the Account page exactly:
+
+`My Profile` · `My Preferences` · `My Login` · `My Documents` · `My Lessons` ·
+`My Saved Items` · `My Posts` · `My Orders` · `My Gifts` · `My Stable`
+
+**`Account` keeps no prefix** — page and nav link both stay plain `Account`.
+
+Includes the bare **`Lessons`** label in the rail, which is the public-versus-personal
+collision the rule exists to prevent.
+
+### D2 — Point nav at `/app/stable`
+
+Two call sites — `AppLayout.tsx:139` and `:504` — currently point at
+`/app/account?section=stable`, which is why "My Stable" and "Account" land in the same
+place.
+
+**ACCOUNTSURFACE creates that route.** Confirm it exists before repointing; if it does not
+yet, leave the links alone and say so rather than shipping a dead link.
+
+---
+
 ## Phase 1 — the plan
 
 Produce the A2 migration list, then answer these. **Answer, do not decide.**
