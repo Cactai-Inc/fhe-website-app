@@ -138,17 +138,15 @@ This is also what gives the relocated tab clean room: the owner has confirmed **
 has space in the top-right for the tab to live**, and it will not touch content until the
 user scrolls.
 
-### B6 — Centre the page title block
+### B6 — Page titles stay LEFT-JUSTIFIED — do not change them
 
-`src/pages/app/Home.tsx` ~47–60: the eyebrow, the `Welcome new members!` heading and the
-description are left-aligned inside a centred page. Centre them. The description carries
-`max-w-2xl`, which needs `mx-auto` to actually centre rather than centring text inside a
-left-anchored box.
+An earlier instruction asked for the title block to be centred. **Withdrawn by the owner.**
+With the tab moving to the top-right it no longer collides with left-aligned text, so the
+reason for centring is gone.
 
-**Scope check first.** Seven pages use this title model — `Home`, `DashboardHome`,
-`CatalogPage`, `CareHome`, `DealHome`, `MyPosts`, `AccountHub`. Centring one makes the app
-inconsistent. Report what the others look like and whether it should apply to all;
-**do not change all seven on your own initiative.**
+**Leave the eyebrow, heading and description left-justified exactly as they are, on every
+page.** Do not centre `Home.tsx`, do not touch the other six pages using the title model,
+and do not add `mx-auto` to the description.
 
 ---
 
@@ -169,7 +167,7 @@ Produce the A2 migration list, then answer these. **Answer, do not decide.**
 4. **Desktop.** The avatar dropdown also serves desktop, where the rail is the nav. Does
    the dropdown survive on desktop and disappear only on mobile, or go everywhere?
    Consolidating on desktop is a much larger change and probably a separate task.
-5. **B6 scope** — one page, or all seven.
+
 
 **Stop after Phase 1 and report.**
 
