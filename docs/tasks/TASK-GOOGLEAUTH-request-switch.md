@@ -113,3 +113,51 @@ linked identity **is** the proof of ownership. No verification email is sent.
 `docs/reports/TASK-GOOGLEAUTH-REPORT.md`. Include the answer to open decision 2 (the
 dashboard setting), and the same-account proof from verification step 2. State what you
 verified yourself versus assumed.
+
+---
+
+## Owner proposal 2026-08-07, and the ruling on it
+
+The owner proposed: if linking fails because the address is not Google-hosted, collect a
+Gmail address, **create a duplicate account** under it, have the member sign in there via
+Google, then merge or delete the original.
+
+**Ruled out — the duplicate is unnecessary and is the most dangerous thing we could build.**
+
+**Unnecessary:** `linkIdentity` attaches an identity to the current account; it does **not**
+require the Google address to match the account's email, and does not change the primary
+email. So the "not Google-hosted" rejection branch does not exist, and nothing remains for
+a duplicate to solve. The proposal was a reasonable response to the FIRST revision of this
+doc, which wrongly stated scenario A required a Google-hosted current address.
+
+**Dangerous:** a duplicate account duplicates identity across ~34 `contact_id`-keyed tables
+and ~20 `user_id`-keyed ones, including executed documents and signatures. It would then
+need merging and a deletion. That is the hardest operation in this system —
+`promote_contact_to_account` carries evidence-based survivor logic and a structural denylist
+for exactly this reason, and `purge_account` is allowlisted and staff-invoked only. It also
+runs directly at the standing rule that **executed documents are never swept.** And it opens
+a window in which one person has two live accounts; a mid-flow failure splits their identity
+and their signed paperwork.
+
+**One account delivers every outcome asked for:** the Google button works, the old email and
+password stay active, and both addresses are linked — as two identities on one account.
+
+### The genuine merge case
+
+If the Google address the member chooses **already belongs to another account**, linking
+conflicts. That is a real merge and it is **staff-handled, never automatic.** Detect the
+conflict, explain it, and route it to staff. Do not attempt to resolve it in this flow.
+
+### Must be proven before building on it
+
+Every identity in production currently has an identity email equal to its account email, so
+**cross-email linking is unproven in this project.** Coexistence IS proven —
+`admin@cactai.io` holds both an `email` and a `google` identity. **Prove cross-email linking
+on a throwaway account first**, and report the raw result. If it does not work, stop and
+report; do not fall back to duplicating an account.
+
+### Separate follow-up — notification routing
+
+The owner also asked that a member with two addresses choose where mail is sent (both, or
+pick one). That is a **notification preference, not auth** — independent of this task and to
+be specced separately. Do not fold it in here.
