@@ -123,9 +123,46 @@ Only two pages remain, competing for `Users`.
 | `Users2` | same metaphor as `Users`, visibly different glyph |
 | `UserCog` | managing people; leans administrative |
 
-**Recommendation:** give **`Users` to Community Feed** (it is member-facing and the metaphor
-is exact) and **`Contact2` to People** (it is a records list, and a contact card says
-"records" better than a crowd does). But this is the one call worth making by eye at 18px.
+### DECIDED — owner, 2026-08-08
+
+- **Community Feed → `Users`** (already the live value; no change needed)
+- **People → `Contact2`**
+
+The full assignment is now settled:
+
+| | |
+|---|---|
+| Dashboard | `LayoutDashboard` |
+| Calendar | `CalendarDays` |
+| Catalog | `ShoppingBag` |
+| Messages | `MessageSquare` |
+| Inbound | `Inbox` |
+| Support | `LifeBuoy` |
+| Documents | `FileText` |
+| Deals | `Handshake` |
+| Payment review | `Receipt` |
+| Content | `Library` |
+| Oversight | `Eye` |
+| Settings | `Settings` |
+| Gifts | `Gift` |
+| Community Feed | `Users` |
+| People | `Contact2` |
+| **Lessons** | **custom — jumping horse with rider, from the logo** |
+| **Horse care** | **custom — galloping horse** |
+
+**Nothing is blocking on icon choices any more.** What blocks now:
+
+1. **The merges are not implemented.** `People`, `Documents`, `Barn`, `Oversight`, `Content`
+   and `Settings` are proposals — the live nav still has 30 destinations. Most of this
+   assignment cannot be applied until they exist.
+2. **The two custom icons need artwork.** There is no horse asset anywhere in the repo — the
+   only mark in code is `public/favicon.svg`, which is the letters `FH`. The owner must
+   supply the logo file, and a literal reduction is unlikely to survive 18px (see the note in
+   `TASK-MOBILEPASS` about relief failing below ~36px — same class of problem).
+3. **`Horse care` is not a page at all.** See the gap recorded 2026-08-08: the services exist
+   in the catalog (Exercise, Training, Turnout, clipping) but have no grouping, label or page,
+   and `fulfillment_units` — the obligations ledger such a page would read — holds 7 rows
+   total, 1 across all 12 recurring offerings.
 
 ---
 
