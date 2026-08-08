@@ -473,9 +473,13 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
         <button type="button" onClick={() => setExpanded((v) => !v)}
           aria-label={expanded ? 'Collapse community views' : 'Expand community views'}
           aria-expanded={expanded}
-          className={`shrink-0 flex items-center gap-1 px-1.5 py-1.5 rounded-md focus-ring ${isAll ? 'text-cream-100 hover:bg-white/10' : 'text-green-700 hover:bg-green-800/[0.06]'}`}>
-          {expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-          <span className="text-[13.5px]">{expanded ? 'hide' : 'show'}</span>
+          /* Owner, 2026-08-08: icon only. The "show"/"hide" word crowded the row —
+             it competed with the "Community Feed" label for a rail that is only
+             240px wide, and on the selected (dark) state it read as a second
+             element sitting on the pill. The chevron already carries the meaning;
+             the accessible name lives on aria-label. */
+          className={`shrink-0 flex items-center justify-center p-1.5 rounded-md focus-ring ${isAll ? 'text-cream-100 hover:bg-white/10' : 'text-green-700 hover:bg-green-800/[0.06]'}`}>
+          {expanded ? <ChevronUp size={18} className="shrink-0" /> : <ChevronDown size={18} className="shrink-0" />}
         </button>
       </div>
       {/* nested views (specific filters only) — the selected one highlights */}
@@ -1070,7 +1074,13 @@ export default function AppLayout() {
               <div className="flex justify-end mb-1">
                 <button type="button" onClick={() => setCreateOpen(true)}
                   aria-label="Create" aria-haspopup="dialog"
-                  className="flex items-center justify-center rounded-lg p-2.5 text-green-700 hover:bg-white focus-ring">
+                  /* Owner, 2026-08-08: match the rail's own item metrics. This
+                     was `p-2.5` + `hover:bg-white`, inherited from the old
+                     collapse button — 10px padding against every nav item's
+                     `px-3 py-2.5`, so the icon sat off the shared centre line in
+                     the collapsed rail, and the white hover belonged to no other
+                     surface in the nav. */
+                  className="flex items-center justify-center rounded-lg px-3 py-2.5 text-green-700 lg:hover:bg-green-800/10 lg:hover:text-cream-100 focus-ring">
                   <Plus size={18} aria-hidden="true" className="shrink-0" />
                 </button>
               </div>
@@ -1131,7 +1141,13 @@ export default function AppLayout() {
                   <div className="mt-auto flex justify-end pt-2">
                     <button type="button" onClick={() => setStaffRailPinned((v) => !v)}
                       aria-label={staffRailPinned ? 'Collapse menu' : 'Keep menu open'} aria-pressed={staffRailPinned}
-                      className="flex items-center justify-center rounded-lg p-2.5 text-green-700 hover:bg-white focus-ring">
+                      /* Owner, 2026-08-08: match the rail's own item metrics. This
+                     was `p-2.5` + `hover:bg-white`, inherited from the old
+                     collapse button — 10px padding against every nav item's
+                     `px-3 py-2.5`, so the icon sat off the shared centre line in
+                     the collapsed rail, and the white hover belonged to no other
+                     surface in the nav. */
+                  className="flex items-center justify-center rounded-lg px-3 py-2.5 text-green-700 lg:hover:bg-green-800/10 lg:hover:text-cream-100 focus-ring">
                       {staffRailPinned ? <PanelLeftClose size={18} className="shrink-0" /> : <PanelLeftOpen size={18} className="shrink-0" />}
                     </button>
                   </div>
