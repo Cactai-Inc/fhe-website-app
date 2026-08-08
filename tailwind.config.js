@@ -18,6 +18,18 @@ export default {
           100: '#c3e5cc',
           50:  '#edf7f0',
         },
+        /* COMPENSATED GLASS BASES — owner's method, 2026-08-08.
+           These are INPUTS to an alpha blend, not colours anyone sees. A
+           translucent green over the warm cream page (hue 37deg) composites
+           72deg toward yellow: green-800/20 renders #c8cac0, hue 73deg, sat 9%.
+           Pre-shifting the base cooler cancels that rotation, so the RENDERED
+           colour lands on the brand hue instead of the declared one.
+             navGlass at /30 over cream -> #aed5bf, hue 145deg, sat 32%.
+           Recompute if the page background changes — the compensation is
+           specific to what is behind it. */
+        glass: {
+          nav: '#09975e',
+        },
         gold: {
           900: '#5c4a18',
           800: '#7a6421',
