@@ -179,9 +179,9 @@ function fromMember(m: MemberDirectoryEntry): FeedCard {
     socialFacebook: m.social_facebook,
     socialLinkedin: m.social_linkedin,
     socialTiktok: m.social_tiktok,
-    // Five channels straight from member_directory — hide-from-community is
-    // enforced server-side (hidden → null), so a present value IS an offered
-    // channel. No allow flags anymore: the split fields replaced them.
+    // Five channels straight from the member_directory_list RPC — hide-from-
+    // community is enforced server-side (hidden → null), so a present value IS an
+    // offered channel. No allow flags anymore: the split fields replaced them.
     communityEmail: m.community_email,
     mobileCall: m.mobile_call,
     mobileText: m.mobile_text,

@@ -64,9 +64,9 @@ export function preferredContactLabel(v: PreferredContact | null | undefined): s
   return PREFERRED_CONTACT_OPTIONS.find((o) => o.value === v)?.label ?? null;
 }
 
-/** The five community channels as read from member_directory (hidden fields
- *  arrive as null — a hidden channel is indistinguishable from an empty one,
- *  which is the point). */
+/** The five community channels as read from the member_directory_list RPC
+ *  (hidden fields arrive as null — a hidden channel is indistinguishable from an
+ *  empty one, which is the point). */
 export interface ContactInfo {
   communityEmail?: string | null;
   mobileCall?: string | null;
@@ -77,7 +77,7 @@ export interface ContactInfo {
 
 /** The concrete, launchable contact actions for a person. A channel appears
  *  exactly when its field carries a value — visibility was already enforced
- *  server-side by the member_directory view. */
+ *  server-side by the member_directory_list RPC. */
 export function contactActions(info: ContactInfo): { method: ContactMethod; href: string; label: string }[] {
   const out: { method: ContactMethod; href: string; label: string }[] = [];
   if (info.communityEmail) out.push({ method: 'email', href: mailHref(info.communityEmail), label: 'Email' });
