@@ -1,5 +1,20 @@
 # Conditional (optional) clauses — HORSE_LEASE_V2
 
+> ## ⚠️ STALE — DO NOT USE AS THE AUTHORITY ON GATES
+>
+> **Written 2026-07-31 against a 129-clause template. The lease now has 144 clauses,
+> 76 of them gated** (verified against production 2026-08-07). It also predates the
+> **2026-08-02 contract sprint** entirely, so none of that pass is reflected here.
+>
+> **The authority is `docs/reference/lease-map/`** — it is generated from the live
+> template, and it resolves gates into *consequences in both directions*, traced to
+> printed text. This file only ever recorded what a clause is conditioned on, not what
+> happens to the rest of the document when that condition changes.
+>
+> Kept for its plain-English gate phrasing, which is still useful as prose. **Verify every
+> claim against the database before relying on it.** If you need current gate data, query
+> `contract_clause_defs.conditional_on` directly.
+
 Companion to INFO_BUTTON_AUDIT.md. Every clause that appears only when a
 condition is met — 61 of the template's 129 clauses. The other 68 always show.
 
