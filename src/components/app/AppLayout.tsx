@@ -44,7 +44,7 @@ import { captureWallReturnDestination } from '../../lib/wallReturn';
       prefix while the test still reported "unsupported" and slammed a SOLID
       cream fallback over it — which is why one device showed glass and another
       showed opaque tan from identical code. The test now accepts either. */
-const NAV_GLASS = 'bg-cream-100/90 backdrop-blur-xl supports-[not((backdrop-filter:blur(1px))_or_(-webkit-backdrop-filter:blur(1px)))]:bg-cream-100 supports-[not((backdrop-filter:blur(1px))_or_(-webkit-backdrop-filter:blur(1px)))]:backdrop-blur-none';
+const NAV_GLASS = 'bg-green-800/20 backdrop-blur-xl supports-[not((backdrop-filter:blur(1px))_or_(-webkit-backdrop-filter:blur(1px)))]:bg-cream-100 supports-[not((backdrop-filter:blur(1px))_or_(-webkit-backdrop-filter:blur(1px)))]:backdrop-blur-none';
 
 /** Unread-notification count for the Dashboard nav badge. Refreshes on mount and
  *  on every route change (the notifications themselves live on the dashboard now —
