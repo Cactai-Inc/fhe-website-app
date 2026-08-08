@@ -211,6 +211,51 @@ known, not before.
   different mechanism from `contract_lock_blockers` (that blocks *signing*, not *starting*).
   Confirm with the owner which is intended.
 
+---
+
+## Addendum 3 — owner, 2026-08-07: the Lessee's counter-elections on a PARTIAL lease
+
+### Why the Lessee needs them
+
+On a partial lease, if the Lessor carries no cover and obliges the Lessee to bear costs —
+in full or by split percentage — **the Lessee has no way to insure that exposure
+themselves.** This is not a gap in the design; it follows from the eligibility matrix:
+`LT = PARTIAL` makes **Lessee may hold mortality PROHIBITED (B2)**, and medical is limited
+to a pro-rata contribution toward the Lessor's premium.
+
+So the Lessee's only route to defray an obligation the Lessor placed on them is **through
+the Lessor** — the Lessor obtaining a policy **at the Lessee's expense**.
+
+Without a counter-election the partial lease is take-it-or-leave-it on an exposure the
+Lessee is structurally barred from covering. **That is what these options fix.**
+
+### The Lessee's three responses
+
+Presented **after** the Lessor's election, because the Lessee's answer depends on the
+obligation placed on them:
+
+1. **Require the Lessor to obtain a policy** covering the Lessee's exposure, at the
+   **Lessee's expense** — coupled with a requirement that the **Lessor present the policy
+   options to the Lessee before purchasing.** Both parts, not one: paying for a policy
+   chosen without sight of the options is the thing this prevents.
+2. **Accept the responsibility as obligated** by the Lessor.
+3. **Neither** — route to the **suggestions / comments system** and state their preferred
+   handling of this section **in writing**.
+
+### Option 3 reuses machinery that already exists
+
+The change-request / suggestions path is built: `ContractChangeRequests.tsx` and
+`api/contract-change-requests-submitted.ts`. **Option 3 is a route into it, not new
+construction.** Do not rebuild a parallel negotiation channel for this section.
+
+### How this refines "asymmetrical"
+
+Addendum 2 recorded partial as "the Lessor makes all decisions; the Lessee accepts or
+rejects." That remains true about **who initiates**, but the Lessee's rejection is
+**structured, not free-form**: options 1 and 2 are elections the document must carry, and
+only option 3 falls through to prose. The asymmetry is in *sequence and initiative*, not in
+the Lessee having no recorded position.
+
 ## Sequencing
 
 **None of this is buildable until questions 1–3 are answered**, and question 4 needs
