@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { NavLink, Outlet, Link, Navigate, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { FEED_VIEWS, FEED_VIEW_META, type FeedView } from '../../lib/seed';
 import { dmUnreadTotal } from '../../lib/community';
@@ -32,7 +33,7 @@ import { captureWallReturnDestination } from '../../lib/wallReturn';
  *    solid (revert): 'bg-cream-100'
  *  `supports-[not(...)]` is the solid-color fallback for browsers without
  *  backdrop-filter support. */
-const NAV_GLASS = 'bg-green-800/[0.07] backdrop-blur-md supports-[not(backdrop-filter:blur(1px))]:bg-cream-100 supports-[not(backdrop-filter:blur(1px))]:backdrop-blur-none';
+const NAV_GLASS = 'bg-cream-100/[0.92] backdrop-blur-xl supports-[not(backdrop-filter:blur(1px))]:bg-cream-100 supports-[not(backdrop-filter:blur(1px))]:backdrop-blur-none';
 
 /** Unread-notification count for the Dashboard nav badge. Refreshes on mount and
  *  on every route change (the notifications themselves live on the dashboard now —
@@ -284,13 +285,74 @@ export function manageNavGroups(
  *  (with no delay class on the plain `transition-opacity`) hides fast by
  *  construction — no JS state, no third stateful tooltip mechanism. Caller
  *  must put `group relative` on the row. */
+/**
+ * E4 — collapsed-rail tooltip, rendered in a PORTAL.
+ *
+ * It used to be an absolutely-positioned sibling at `left-full`, i.e. deliberately
+ * outside the rail — but both rails carry `overflow-x-hidden`, which CLIPPED it.
+ * After the 1100ms delay the tooltip did appear, got cut off at the rail's edge,
+ * and all that survived was a sliver of its `bg-green-950` background. That is the
+ * "weird green marking on the nav rail" the owner reported.
+ *
+ * A portal is required rather than `position: fixed`: the member rail's surface
+ * uses `backdrop-blur`, and a backdrop-filter creates a containing block, so a
+ * fixed child would still be trapped. Rendering into <body> escapes both the
+ * clip and the containing block.
+ *
+ * Position is measured from the trigger on hover/focus rather than assumed, so it
+ * stays correct at any rail width and in either rail.
+ */
 function NavTooltipLabel({ label }: { label: string }) {
+  const anchorRef = useRef<HTMLSpanElement | null>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const timer = useRef<number | undefined>(undefined);
+
+  const show = useCallback(() => {
+    // The 1100ms dwell the owner specified — deliberate, not accidental hover.
+    timer.current = window.setTimeout(() => {
+      const host = anchorRef.current?.parentElement;
+      if (!host) return;
+      const r = host.getBoundingClientRect();
+      setPos({ top: r.top + r.height / 2, left: r.right + 8 });
+    }, 1100);
+  }, []);
+
+  const hide = useCallback(() => {
+    window.clearTimeout(timer.current);
+    setPos(null);
+  }, []);
+
+  useEffect(() => () => window.clearTimeout(timer.current), []);
+
+  useEffect(() => {
+    const host = anchorRef.current?.parentElement;
+    if (!host) return;
+    host.addEventListener('mouseenter', show);
+    host.addEventListener('mouseleave', hide);
+    host.addEventListener('focus', show);
+    host.addEventListener('blur', hide);
+    return () => {
+      host.removeEventListener('mouseenter', show);
+      host.removeEventListener('mouseleave', hide);
+      host.removeEventListener('focus', show);
+      host.removeEventListener('blur', hide);
+    };
+  }, [show, hide]);
+
   return (
-    <span
-      className="pointer-events-none absolute left-full ml-2 top-1/2 -translate-y-1/2 z-50 whitespace-nowrap rounded-md bg-green-950 text-cream-50 text-xs font-sans px-2 py-1 opacity-0 invisible transition-opacity duration-150 lg:group-hover:opacity-100 lg:group-hover:visible lg:group-hover:delay-[1100ms] group-focus-visible:opacity-100 group-focus-visible:visible group-focus-visible:delay-[1100ms]"
-    >
-      {label}
-    </span>
+    <>
+      <span ref={anchorRef} className="hidden" aria-hidden="true" />
+      {pos && createPortal(
+        <span
+          role="tooltip"
+          style={{ top: pos.top, left: pos.left }}
+          className="pointer-events-none fixed -translate-y-1/2 z-[100] whitespace-nowrap rounded-md bg-green-950 text-cream-50 text-xs font-sans px-2 py-1 shadow-lg"
+        >
+          {label}
+        </span>,
+        document.body,
+      )}
+    </>
   );
 }
 
@@ -313,7 +375,7 @@ function RailLink({ to, label, icon: Icon, end, badge = 0, open = true }: NavIte
       className={({ isActive }) =>
         `group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13.5px] font-sans transition-colors focus-ring ${open ? '' : 'justify-center'} ${
           isActive
-            ? 'bg-green-800 text-cream-100 font-medium'
+            ? 'bg-green-800/[0.88] backdrop-blur-sm text-cream-100 font-medium'
             : 'text-secondary [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100'
         }`
       }
@@ -323,7 +385,7 @@ function RailLink({ to, label, icon: Icon, end, badge = 0, open = true }: NavIte
           <span className="relative shrink-0">
             <Icon size={17} aria-hidden="true" className={isActive ? 'text-cream-100' : 'text-green-600 [@media(hover:hover)]:group-hover:text-cream-100'} />
             {badge > 0 && !open && (
-              <span className="absolute -top-1.5 -right-1.5 min-w-[1rem] h-4 px-1 bg-gold-600 text-white text-[10px] leading-4 text-center rounded-full">{badge > 9 ? '9+' : badge}</span>
+              <span className="absolute -top-1.5 -right-1.5 min-w-[1rem] h-4 px-1 bg-gold-600/90 backdrop-blur-sm text-white text-[10px] leading-4 text-center rounded-full">{badge > 9 ? '9+' : badge}</span>
             )}
           </span>
           {open && <span className="flex-1">{label}</span>}
@@ -370,7 +432,7 @@ function PresenceLink({ to, label, icon: Icon, section, onNavigate }: {
   return (
     <Link to={to} onClick={onNavigate} aria-current={isActive ? 'page' : undefined}
       className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans transition-colors focus-ring ${
-        isActive ? 'bg-green-800 text-cream-100 font-medium' : 'text-secondary [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100'}`}>
+        isActive ? 'bg-green-800/[0.88] backdrop-blur-sm text-cream-100 font-medium' : 'text-secondary [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100'}`}>
       <Icon size={18} aria-hidden="true" className={isActive ? 'text-cream-100' : 'text-green-600 [@media(hover:hover)]:group-hover:text-cream-100'} />
       <span className="whitespace-nowrap flex-1">{label}</span>
     </Link>
@@ -390,7 +452,7 @@ function AccountNavLink({ onNavigate, open = true }: { onNavigate?: () => void; 
     <Link to="/app/account" onClick={onNavigate} aria-current={isActive ? 'page' : undefined}
       aria-label={open ? undefined : 'Account'}
       className={`group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans transition-colors focus-ring ${open ? '' : 'justify-center'} ${
-        isActive ? 'bg-green-800 text-cream-100 font-medium' : 'text-secondary [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100'}`}>
+        isActive ? 'bg-green-800/[0.88] backdrop-blur-sm text-cream-100 font-medium' : 'text-secondary [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100'}`}>
       {/* `shrink-0` — see the note in CommunityNav's collapsed branch. Without it
           the collapsed rail squashes this icon to the ~8px of content box left
           after the nav's and the link's horizontal padding. */}
@@ -444,7 +506,7 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
     // I1B — staff rail icon strip: just the parent icon, active whenever on the feed.
     return (
       <Link to="/app" onClick={onNavigate} aria-label="Community Feed" aria-current={onFeed ? 'page' : undefined}
-        className={`group relative flex items-center justify-center rounded-lg px-3 py-2.5 focus-ring ${onFeed ? 'bg-green-800 text-cream-100' : 'text-secondary [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100'}`}>
+        className={`group relative flex items-center justify-center rounded-lg px-3 py-2.5 focus-ring ${onFeed ? 'bg-green-800/[0.88] backdrop-blur-sm text-cream-100' : 'text-secondary [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100'}`}>
         {/* `shrink-0` is REQUIRED, not decorative. In the 56px collapsed rail the
             nav's p-3 plus this link's px-3 leave ~8px of content box, and without
             flex-shrink:0 the SVG is compressed to fit — which is why this icon and
@@ -464,7 +526,7 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
           right-pointing (rotated ChevronDown) collapsed state. C5 (owner, 2026-08-07):
           the toggle's chevron/label were 15px/10px against 17-18px/13.5px everywhere
           else in the rail — brought up to the same scale. */}
-      <div className={`group relative flex items-center rounded-lg pr-1 ${isAll ? 'bg-green-800' : '[@media(hover:hover)]:hover:bg-green-600'}`}>
+      <div className={`group relative flex items-center rounded-lg pr-1 ${isAll ? 'bg-green-800/[0.88] backdrop-blur-sm' : '[@media(hover:hover)]:hover:bg-green-600'}`}>
         <Link to="/app" onClick={onNavigate} aria-current={isAll ? 'page' : undefined}
           className={`flex items-center gap-3 flex-1 min-w-0 px-3 py-2.5 text-[13.5px] font-sans focus-ring rounded-lg ${isAll ? 'text-cream-100 font-medium' : 'text-secondary [@media(hover:hover)]:group-hover:text-cream-100'}`}>
           <Users size={18} className={`shrink-0 ${isAll ? 'text-cream-100' : 'text-green-600 [@media(hover:hover)]:group-hover:text-cream-100'}`} />
@@ -490,7 +552,7 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
             return (
               <Link key={v.key} to={communityHref(v.key)} onClick={onNavigate} aria-current={isActive ? 'page' : undefined}
                 className={`group flex items-center ${indentClass} pr-3 py-1.5 rounded-lg text-[13px] font-sans transition-colors focus-ring ${
-                  isActive ? 'bg-green-800 text-cream-100 font-medium' : 'text-secondary [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100'}`}>
+                  isActive ? 'bg-green-800/[0.88] backdrop-blur-sm text-cream-100 font-medium' : 'text-secondary [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100'}`}>
                 <span className="whitespace-nowrap">{v.label}</span>
               </Link>
             );
@@ -608,7 +670,7 @@ function NavFooter({ open = true, onOpenTour, onSignOut, onNavigate }: {
   open?: boolean; onOpenTour: () => void; onSignOut: () => void; onNavigate?: () => void;
 }) {
   return (
-    <div className="mt-2 pt-2 border-t border-green-800/10 flex flex-col gap-0.5">
+    <div className="mt-2 pt-3 pb-2 border-t border-green-800/10 flex flex-col gap-1.5">
       <button type="button" onClick={() => { onNavigate?.(); onOpenTour(); }}
         aria-label={open ? undefined : 'App tour'}
         className={`group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans text-secondary hover:bg-green-800/[0.06] focus-ring ${open ? '' : 'justify-center'}`}>
@@ -1234,7 +1296,7 @@ export default function AppLayout() {
                 separate mobile-nav button, so it keeps an explicit close
                 control here. */}
             <div className="flex items-center justify-between px-1 pt-1 pb-4">
-              <span className="text-[10px] tracking-widest uppercase text-muted font-semibold">Menu</span>
+              <span aria-hidden="true" />
               {isSuperAdmin && (
                 <button type="button" onClick={closeMobileNav} aria-label="Close menu"
                   className="flex items-center gap-1.5 pl-3 pr-3 py-2.5 rounded-lg bg-cream-200 text-green-800 font-medium text-[13px] font-sans hover:bg-cream-200/70 focus-ring">
