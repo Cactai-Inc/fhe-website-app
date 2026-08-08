@@ -108,9 +108,58 @@ version-aware, one definition, called by `contact_document_wall_state()` **and**
 `my_onboarding_state()`. Any future divergence then becomes impossible by construction
 rather than by two authors remembering the same rule.
 
-**Do not fix this by making the wall version-blind.** Re-signing after a material change to
-a liability release is the point of versioning; the wall is the half that is behaving
-correctly. The onboarding page is the half that is wrong.
+### CORRECTED 2026-08-07 by the owner — the wall is the half that is wrong
+
+An earlier revision of this doc said "do not fix this by making the wall version-blind …
+the wall is the half that is behaving correctly." **That was wrong.** The owner's
+correction:
+
+> "I haven't sent re-signs to anyone other than Sarah, and if someone has them we need to
+> call them back."
+
+**Nobody was sent one.** No invitation exists for Madeline in 60 days. The re-signature
+demands are manufactured by the wall itself, silently, with no email, no notice and no
+staff decision.
+
+The mechanism: `contact_required_documents` is `(contact_id, template_key, org_id)` —
+**there is no version column.** An assignment records "this person needs
+`HUMAN_EMERGENCY_MEDICAL`", never "needs version 1". The wall then compares the signature
+against `max(version)`. So the instant anyone edits a template body and bumps its version,
+**every prior signer is silently re-papered.** All 9 wall-gating templates were bumped on
+2026-08-02 by the contract sprint, which is the true origin of this incident.
+
+Measured exposure: **10 people hold valid signatures the system now treats as stale**, over
+20 documents. Madeline Do is walled today; 8 more (Ashlan Hockersmith, Audrey Slater, Brian
+Olenik, Charles Zigmund, Elisheva Fiszer, Raymond Thicklin, Serena Lee) have no account yet
+and would be walled on first login.
+
+This contradicts the standing owner rule that **an imperfect executed document is still
+valid** and that re-signing supersedes and retains. Deciding to re-paper a client is a
+business and legal judgement. **The system must never make it as a side effect of editing
+text.**
+
+### So the fix inverts
+
+Make satisfaction **version-blind by default**: any `EXECUTED`, non-superseded document for
+an assigned `template_key` satisfies it. That makes the wall agree with
+`my_onboarding_state()` — resolving Bug B by conforming the *wall* to the page, not the
+page to the wall — and it releases Madeline and the 8 latent cases without asking anyone to
+sign anything they were never asked for.
+
+Forcing a re-signature must become an **explicit act**, never an inference:
+
+- staff assigning/re-assigning the document, or
+- an explicit per-template marker (e.g. "signatures below version N must re-sign"), set
+  deliberately when a change is material enough to warrant it.
+
+**Do not** silently bump `signed_template_version` on existing rows to paper over this —
+that falsifies the record of what each person actually signed. The signed version is
+evidence; leave it exactly as it is and change what the *gate* asks of it.
+
+**Ask the owner before implementing the forced-re-sign marker.** Whether the 2026-08-02
+body changes were material enough to require anyone to re-sign is the owner's call and
+legal counsel's, not this thread's. Ship the version-blind gate first; that is the part
+that is unambiguously correct.
 
 ### Required invariant
 
