@@ -78,8 +78,32 @@ Worktree: ~/Downloads/claude-code-repo/wt-secfix2, branch task/secfix2, off orig
 prompt that restates it duplicates the spec in two places that can drift, and it is exactly
 what feeds the summarizer. Prompt = pointer. Doc = everything.
 
-If attempt 3 also fails, stop trying — identify threads by **branch**, which is exact and
-cannot drift.
+### The reliable identifier: make the THREAD announce itself
+
+The owner sees a thread list. **Branch names are useless to them** — that would mean running
+git by hand, which the thread is doing, not the owner. So the fallback of "identify by
+branch" does not solve the owner's actual problem.
+
+What does: **every prompt instructs the thread to open its first reply with the ID.**
+
+```
+SECFIX2
+
+Begin your first reply with "SECFIX2" alone on the first line.
+
+Read docs/tasks/TASK-SECFIX2-gift-grant-and-directory.md and do exactly what it says.
+Worktree: ~/Downloads/claude-code-repo/wt-secfix2, branch task/secfix2, off origin/main.
+```
+
+That yields three identifiers with different reliability:
+
+| identifier | when visible | reliable? |
+|---|---|---|
+| tab title | immediately | **no** — auto-generated, ID often dropped |
+| **first line of the thread's own output** | on opening the thread | **yes** |
+| report filename | at completion | yes, but late |
+
+**This is the standard prompt shape.** Use it for every handoff.
 
 ### The ID is stamped in three places that do NOT depend on the title
 
