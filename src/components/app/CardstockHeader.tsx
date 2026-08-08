@@ -52,12 +52,9 @@ const SQUIRCLE_48 =
 type Props = {
   /** first letter of the member's display name — the debossed glyph */
   initial: string;
-  /** admin/staff only; the CSS additionally holds it to desktop */
-  showCreateTab: boolean;
-  onCreate: () => void;
 };
 
-export function CardstockHeader({ initial, showCreateTab, onCreate }: Props) {
+export function CardstockHeader({ initial }: Props) {
   return (
     <div className="cs-hdrwrap">
       {/* Filter/clip/gradient defs for the avatar well. A native feGaussianBlur
@@ -142,15 +139,16 @@ export function CardstockHeader({ initial, showCreateTab, onCreate }: Props) {
         </div>
       </header>
 
-      {/* THE CREATE TAB — admin/staff only, and desktop only (the CSS holds it
-          to lg+; on mobile the page-level `+` controls are the create path).
-          Ordered after the sheet but painted under it (z-index 1 vs 2), so it
-          emerges from BEHIND the card rather than sliding across it. */}
-      {showCreateTab && (
-        <button className="cs-tab" type="button" onClick={onCreate} aria-label="Create" aria-haspopup="dialog">
-          <span className="cs-chev" aria-hidden="true" />
-        </button>
-      )}
+      {/* THE CREATE TAB WAS REMOVED — owner, 2026-08-07.
+          It hung below the header on desktop and opened the create modal. The
+          create control now lives at the top of the nav rail as a `+`, in the
+          slot the collapse toggle used to hold, so there is one create entry
+          point instead of two and nothing overlaps page content.
+          The `showCreateTab` and `onCreate` props are gone with it. The
+          `.cs-tab` rules in header-cardstock.css are now unreferenced and can be
+          deleted in a cleanup pass — left in place for one release so the tab
+          can be restored quickly if the rail placement does not work in
+          practice. */}
     </div>
   );
 }

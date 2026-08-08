@@ -1033,11 +1033,7 @@ export default function AppLayout() {
            CardstockHeader.tsx). The Create tab is admin/staff + desktop only;
            a regular member's create path is the page-level `+` controls
            (PLUSPASS). */
-        <CardstockHeader
-          initial={initial}
-          showCreateTab={isStaff}
-          onCreate={() => setCreateOpen(true)}
-        />
+        <CardstockHeader initial={initial} />
       )}
 
       <div className="w-full max-w-[120rem] mx-auto flex">
@@ -1053,15 +1049,21 @@ export default function AppLayout() {
              `staffRailPinned`/`staffRailWidthClass` directly now — no more
              hover-driven divergence between the two). */
           <aside className={`hidden lg:block shrink-0 relative z-30 transition-[width] duration-100 ease-out ${staffRailWidthClass}`}>
-            <nav className={`p-3 sticky top-[var(--cs-hdr-h)] h-[calc(100dvh-var(--cs-hdr-h))] overflow-y-auto overflow-x-hidden border-r border-green-800/10 bg-cream-100/40 transition-[width] duration-100 ease-out ${staffRailWidthClass}`}>
-              {/* C1 (owner, 2026-08-07): icon-only always — the label is
-                  dropped, not just hidden when collapsed — and moved to the
-                  panel's right edge, the edge it acts on. */}
+            {/* `flex flex-col` is load-bearing: it is what lets the collapse
+                toggle's `mt-auto` push it (and Sign out) to the foot of the
+                rail. ClientRail already had it; this one did not. */}
+            <nav className={`p-3 sticky top-[var(--cs-hdr-h)] h-[calc(100dvh-var(--cs-hdr-h))] overflow-y-auto overflow-x-hidden border-r border-green-800/10 bg-cream-100/40 flex flex-col transition-[width] duration-100 ease-out ${staffRailWidthClass}`}>
+              {/* Owner, 2026-08-07: the create control lives HERE now, in the
+                  slot the collapse toggle used to occupy, and the header's
+                  hanging tab is gone. Icon only in both states — no label even
+                  when the rail is open, so position 1 is identical expanded and
+                  collapsed and the eye does not have to re-find it. The collapse
+                  toggle moved to the foot of the rail, above Sign out. */}
               <div className="flex justify-end mb-1">
-                <button type="button" onClick={() => setStaffRailPinned((v) => !v)}
-                  aria-label={staffRailPinned ? 'Collapse menu' : 'Keep menu open'} aria-pressed={staffRailPinned}
+                <button type="button" onClick={() => setCreateOpen(true)}
+                  aria-label="Create" aria-haspopup="dialog"
                   className="flex items-center justify-center rounded-lg p-2.5 text-green-700 hover:bg-white focus-ring">
-                  {staffRailPinned ? <PanelLeftClose size={18} /> : <PanelLeft size={18} />}
+                  <Plus size={18} aria-hidden="true" />
                 </button>
               </div>
               {/* The static heading here used to read "Management", duplicating
@@ -1111,6 +1113,19 @@ export default function AppLayout() {
                 <>
                   <div className="mt-1 flex flex-col gap-0.5">
                     <AccountNavLink open={staffRailPinned} />
+                  </div>
+                  {/* Owner, 2026-08-07: the collapse toggle sits at the FOOT of
+                      the rail, immediately above Sign out, and stays right-
+                      justified in BOTH states so it does not move when the rail
+                      collapses. `mt-auto` pins this block to the bottom — the
+                      <nav> is already flex-col, so the toggle and footer are
+                      pushed down regardless of how few nav items are present. */}
+                  <div className="mt-auto flex justify-end pt-2">
+                    <button type="button" onClick={() => setStaffRailPinned((v) => !v)}
+                      aria-label={staffRailPinned ? 'Collapse menu' : 'Keep menu open'} aria-pressed={staffRailPinned}
+                      className="flex items-center justify-center rounded-lg p-2.5 text-green-700 hover:bg-white focus-ring">
+                      {staffRailPinned ? <PanelLeftClose size={18} /> : <PanelLeft size={18} />}
+                    </button>
                   </div>
                   <NavFooter open={staffRailPinned} onOpenTour={() => setTourOpen(true)} onSignOut={handleSignOut} />
                 </>
