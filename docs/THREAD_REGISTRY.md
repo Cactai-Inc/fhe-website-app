@@ -15,7 +15,31 @@ Generated from repo state 2026-08-07. `main` = `267fc97`.
 | branch | `task/<id>` lowercase | `task/wallsync` |
 | report | `docs/reports/TASK-<ID>-REPORT.md` | `TASK-WALLSYNC-REPORT.md` |
 
-**Every prompt handed over starts with `THREAD ID: <ID>`.** Name the thread that.
+### Getting the ID into the thread's title
+
+The VS Code thread title is **auto-generated from the prompt's content**, and it discards a
+`THREAD ID: X` header as metadata — confirmed live on `WALLSYNC`, which auto-titled itself
+"Fix version-blind satisfaction predicate for wall and onboarding".
+
+**So the ID goes in the first natural-language sentence**, where the summarizer has to carry
+it:
+
+```
+WALLSYNC — fix the wall/onboarding deadlock.
+
+Read docs/tasks/TASK-WALLSYNC-…md in full before doing anything.
+```
+
+Not `THREAD ID: WALLSYNC` on its own line. That gets dropped.
+
+If the extension turns out to support renaming a thread manually, use that instead — it is
+exact, and this convention is only a workaround for not having it.
+
+### The ID is stamped in three places that do NOT depend on the title
+
+Even when a title goes astray, a thread is identifiable by its **branch** (`task/<id>`),
+its **worktree** (`wt-<id>`) and its **report** (`TASK-<ID>-REPORT.md`). Ask a thread what
+branch it is on and you have its ID.
 
 ---
 
