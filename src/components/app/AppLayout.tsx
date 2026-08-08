@@ -6,7 +6,7 @@ import {
   CalendarDays, Users, FileText, UserRound, ReceiptText, Shield, LogOut,
   GraduationCap, Home as HomeIcon, Boxes, Contact, LayoutDashboard,
   Mail, ChevronDown, ChevronUp, Plus, LifeBuoy, ShoppingBag, MessageSquare, BookOpen, ListChecks,
-  PanelLeft, PanelLeftClose, PanelLeftOpen, Activity, Compass, Handshake, Grid3x3, Bookmark,
+  PanelLeftClose, PanelLeftOpen, Activity, Compass, Handshake, Grid3x3, Bookmark,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useViewSurfaces } from '../../lib/surfaces';
@@ -391,7 +391,10 @@ function AccountNavLink({ onNavigate, open = true }: { onNavigate?: () => void; 
       aria-label={open ? undefined : 'Account'}
       className={`group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans transition-colors focus-ring ${open ? '' : 'justify-center'} ${
         isActive ? 'bg-green-800 text-cream-100 font-medium' : 'text-secondary lg:hover:bg-green-800/10 lg:hover:text-cream-100'}`}>
-      <UserRound size={18} aria-hidden="true" className={isActive ? 'text-cream-100' : 'text-green-600 lg:group-hover:text-cream-100'} />
+      {/* `shrink-0` — see the note in CommunityNav's collapsed branch. Without it
+          the collapsed rail squashes this icon to the ~8px of content box left
+          after the nav's and the link's horizontal padding. */}
+      <UserRound size={18} aria-hidden="true" className={`shrink-0 ${isActive ? 'text-cream-100' : 'text-green-600 lg:group-hover:text-cream-100'}`} />
       {open && <span className="whitespace-nowrap flex-1">Account</span>}
       {!open && <NavTooltipLabel label="Account" />}
     </Link>
@@ -442,7 +445,12 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
     return (
       <Link to="/app" onClick={onNavigate} aria-label="Community Feed" aria-current={onFeed ? 'page' : undefined}
         className={`group relative flex items-center justify-center rounded-lg px-3 py-2.5 focus-ring ${onFeed ? 'bg-green-800 text-cream-100' : 'text-secondary lg:hover:bg-green-800/10 lg:hover:text-cream-100'}`}>
-        <Users size={18} className={onFeed ? 'text-cream-100' : 'text-green-600 lg:group-hover:text-cream-100'} />
+        {/* `shrink-0` is REQUIRED, not decorative. In the 56px collapsed rail the
+            nav's p-3 plus this link's px-3 leave ~8px of content box, and without
+            flex-shrink:0 the SVG is compressed to fit — which is why this icon and
+            the account one rendered miniature while every RailLink icon (wrapped in
+            a shrink-0 span) stayed 18px. */}
+        <Users size={18} className={`shrink-0 ${onFeed ? 'text-cream-100' : 'text-green-600 lg:group-hover:text-cream-100'}`} />
         <NavTooltipLabel label="Community Feed" />
       </Link>
     );
@@ -932,11 +940,11 @@ export default function AppLayout() {
       <button type="button"
         onClick={() => { closeMenu(); setTourOpen(true); }}
         className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] border-t border-green-800/10 focus-ring">
-        <Compass size={17} aria-hidden="true" /> App tour
+        <Compass size={17} aria-hidden="true" className="shrink-0" /> App tour
       </button>
       <button type="button" onClick={handleSignOut}
         className="flex items-center gap-3 px-4 py-2.5 mt-1 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] border-t border-green-800/10 focus-ring">
-        <LogOut size={17} aria-hidden="true" /> Sign out
+        <LogOut size={17} aria-hidden="true" className="shrink-0" /> Sign out
       </button>
     </div>
   ) : null;
@@ -1063,7 +1071,7 @@ export default function AppLayout() {
                 <button type="button" onClick={() => setCreateOpen(true)}
                   aria-label="Create" aria-haspopup="dialog"
                   className="flex items-center justify-center rounded-lg p-2.5 text-green-700 hover:bg-white focus-ring">
-                  <Plus size={18} aria-hidden="true" />
+                  <Plus size={18} aria-hidden="true" className="shrink-0" />
                 </button>
               </div>
               {/* The static heading here used to read "Management", duplicating
@@ -1124,7 +1132,7 @@ export default function AppLayout() {
                     <button type="button" onClick={() => setStaffRailPinned((v) => !v)}
                       aria-label={staffRailPinned ? 'Collapse menu' : 'Keep menu open'} aria-pressed={staffRailPinned}
                       className="flex items-center justify-center rounded-lg p-2.5 text-green-700 hover:bg-white focus-ring">
-                      {staffRailPinned ? <PanelLeftClose size={18} /> : <PanelLeft size={18} />}
+                      {staffRailPinned ? <PanelLeftClose size={18} className="shrink-0" /> : <PanelLeftOpen size={18} className="shrink-0" />}
                     </button>
                   </div>
                   <NavFooter open={staffRailPinned} onOpenTour={() => setTourOpen(true)} onSignOut={handleSignOut} />
