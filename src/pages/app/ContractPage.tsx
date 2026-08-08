@@ -805,9 +805,28 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
     try {
       const r = await sendForReview(id!, roles);
       const extraNote = '';
-      setNote(r.skipped > 0
-        ? `Notified. Emailed ${r.emailed} of ${r.emailed + r.skipped} part${r.emailed + r.skipped === 1 ? 'y' : 'ies'}; ${r.skipped} could not be emailed (no email on file or email delivery not configured). In-app notifications were sent to parties with an account.${extraNote}`
-        : `Notified — all parties were notified by email and in-app.${extraNote}`);
+      // Name who was actually notified. "All parties" is only true when this
+      // send covered every invitable role — saying it after a single-party send
+      // (the "Send to Lessor only" button) reads as though the counterparty was
+      // emailed too, which is exactly what it is NOT.
+      const pretty = (x: string) => x.charAt(0) + x.slice(1).toLowerCase();
+      const names = roles.map(pretty);
+      const who = names.length > 1 && names.length === invitableRoles.length
+        ? 'all parties'
+        : names.length <= 1
+          ? (names[0] ?? '')
+          : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+      const wereWas = who === 'all parties' || names.length > 1 ? 'were' : 'was';
+      if (r.emailed === 0 && r.skipped === 0) {
+        // allSettled over an empty roles array yields 0/0, which used to fall
+        // into the success branch and report a send that never happened. On a
+        // legal document a false success is worse than an error.
+        setError('Nothing was sent — no party was selected to notify.');
+      } else {
+        setNote(r.skipped > 0
+          ? `Notified. Emailed ${r.emailed} of ${r.emailed + r.skipped} part${r.emailed + r.skipped === 1 ? 'y' : 'ies'}; ${r.skipped} could not be emailed (no email on file or email delivery not configured). In-app notifications were sent to parties with an account.${extraNote}`
+          : `Notified — ${who} ${wereWas} notified by email and in-app.${extraNote}`);
+      }
       await load();
       setChangeKey((k) => k + 1);
     } catch (e) {
