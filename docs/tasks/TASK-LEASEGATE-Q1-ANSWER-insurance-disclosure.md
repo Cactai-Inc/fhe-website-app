@@ -142,6 +142,75 @@ Against `GL_STATUS` 155 → `GL_NONE` 168, and `MORT_STATUS` 205 → `MORT_NONE`
 print-order bug in the medical group. **Not touched** — LEASEGATE Phase 2 is stopped and
 this is a live template. Confirm intent before changing it.
 
+---
+
+## Addendum 2 — owner, 2026-08-07: FULL lease inverts who holds the policy
+
+**This answers open question 1, and answers it larger than asked. Full and partial are not
+one model with a flag. They are two models, and they differ on the most basic fact — who is
+able to buy the policy at all.**
+
+### Partial lease — asymmetrical, Lessor-led
+
+The first scenario with conditional gating carrying **strict one-sided responsibility that
+also aligns with who makes the decisions**. The **Lessor makes all decisions; the Lessee
+accepts or rejects them.** The Lessor can hold the cover. Everything in Addendum 1 applies.
+
+### Full lease — the Lessor CANNOT hold the policy
+
+> "When the lease is full the owner cannot obtain the insurance that they could when there
+> was no lease in place, and the Lessee is the one that needs to get the policy even if the
+> Lessor pays for it."
+
+This is an **insurable-interest fact, not a preference.** On a full lease the policy must be
+obtained by the **Lessee**, regardless of who pays for it. Every Lessor-holds-the-policy
+path from Addendum 1 is unavailable here.
+
+Consequences the document must carry:
+
+1. The Lessee may be **required** to obtain a policy, **or** not required but free to **opt
+   in**.
+2. If the Lessee obtains one — required or optional — they must **declare** it.
+3. The **coverage must be made visible to the Lessor.**
+4. The **Lessor must be named as the party with the insurable interest** for the mortality
+   payout, and **that payout goes directly to the Lessor.**
+
+### "Require / do not require" is not a sufficient election
+
+The owner is explicit that the current binary is inadequate **in both directions**.
+
+**If the Lessor DOES require a policy**, they must do one of:
+
+- **state the requirements** for that policy (what cover, what limits); or
+- **waive the right to decide** the requirements; or
+- **both** — and additionally the parties may agree to **work together**, in which case
+  **no policy is purchased until both parties agree**. **The lease does not start until that
+  decision is made.** ← a lease-commencement dependency, not just a document gate.
+
+**If the Lessor does NOT require a policy**, they must still elect: **require, or waive the
+right to require**, that the Lessee be responsible for any or all costs related to mortality
+and/or medical.
+
+### The Lessee's own declaration
+
+Separately from the Lessor's election, **the Lessee must declare whether they will or will
+not obtain a policy.** That declaration is expected to be **influenced by the cost
+obligations the Lessor places on them** — so it is elicited *after* those obligations are
+known, not before.
+
+### What this means for the build
+
+- **LEASEMAP finding 1 is now a hard blocker, not an observation.** `TXN.LEASE_TYPE` reaches
+  **no** insurance clause or field today. The entire model branches on full vs partial, so
+  **that wiring must exist before any of this can be gated.** It is not currently in
+  LEASEGATE's scope.
+- Full lease needs fields that do not exist at all: Lessee's declaration of intent, policy
+  visibility/evidence to the Lessor, and the named-insurable-interest designation with
+  payout direction.
+- "The lease does not start until both agree" implies a **commencement gate**, which is a
+  different mechanism from `contract_lock_blockers` (that blocks *signing*, not *starting*).
+  Confirm with the owner which is intended.
+
 ## Sequencing
 
 **None of this is buildable until questions 1–3 are answered**, and question 4 needs
