@@ -1,8 +1,43 @@
 # Session handoff — 2026-08-07
 
+> ## CORRECTIONS — applied 2026-08-07 19:30, AUTHORITATIVE over anything below
+>
+> This document was written when `main` was `62192d4` and has since gone stale in three
+> ways. The body below is otherwise sound; these three items override it.
+>
+> **1. `main` is `43d564c`**, not `532915e` or `62192d4`.
+>
+> **2. FOUR threads are in flight, not three.** `NOGUARD` is the fourth, alongside
+> `SECFIX2`, `LEASEGATE` and `LEASESIMPLE`.
+>
+> **3. The no-guard family IS ALREADY TASKED AND RUNNING.** The body below lists it as
+> "not yet tasked" and ranks it first to pick up. **Do not task it.** Its spec is
+> `docs/tasks/TASK-NOGUARD-unguarded-definers.md`, committed at `5453268`, and the thread
+> is live. Starting a second one would put two threads on the same 84 functions and race
+> them on the same migrations.
+>
+> ### NOGUARD's measured surface, for auditing its report
+>
+> | | count |
+> |---|---|
+> | `SECURITY DEFINER` in `public`, anon-executable | 320 |
+> | …no guard token anywhere in the body | 111 |
+> | …of those, trigger functions (`RETURNS trigger`, not directly callable) | 27 |
+> | **…genuinely anon-callable with no guard** | **84** |
+> | **…of those 84, that also write** | **28** |
+>
+> That 84 came from a **crude keyword scan and is wrong in both directions** — it misses
+> functions that merely *mention* `auth.uid()` without authorising on it, and over-flags
+> ones safe by construction. The real surface is probably **larger**. The task doc says so;
+> hold the thread to re-deriving it rather than accepting the number.
+>
+> ### One source of truth
+>
+> `docs/ORCHESTRATOR_HANDOFF.md` covered the same ground and is now a pointer to this file.
+> **This file is canonical.** Do not create a third.
+
 **Read this first if you are picking up orchestration.** It states what is true, what is
-decided, what is waiting on the owner, and what to verify. `main` = `532915e`, everything
-pushed, working tree clean.
+decided, what is waiting on the owner, and what to verify.
 
 ---
 
