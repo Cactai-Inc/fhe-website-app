@@ -58,14 +58,18 @@ reopened, **and reopening stops the run.**
 
 | # | attempt | result |
 |---|---|---|
-| 1 | `THREAD ID: WALLSYNC` as a header line | **discarded as metadata** → "Fix version-blind satisfaction predicate for wall and onboarding" |
-| 2 | `NOGUARD — audit anon-callable SECURITY DEFINER functions…` | **ID dropped, description kept** → "Audit unguarded SECURITY DEFINER functions" |
+| 1 | `THREAD ID: WALLSYNC` as a header line | ✗ **discarded as metadata** → "Fix version-blind satisfaction predicate for wall and onboarding" |
+| 2 | `NOGUARD — audit anon-callable SECURITY DEFINER functions…` | ✗ **ID dropped, description kept** → "Audit unguarded SECURITY DEFINER functions" |
+| 3 | **ID alone on its own line, no description** | ✓ **WORKS** → "Complete **SECFIX2** gift grant and directory task" |
 
 The pattern: the summarizer treats `ID:` and `ID —` as discardable prefixes and titles from
-the task description that follows.
+the task description that follows. **Give it no description and the only substantive content
+left is the doc filename — which contains the ID, so the ID survives into the title.**
 
-**Attempt 3 — starve it.** The ID alone on its own line, no description anywhere in the
-prompt, everything else delegated to the doc:
+This also means **task doc filenames must carry the ID**, since that is what the title is
+built from. `TASK-<ID>-<slug>.md` already does.
+
+### THE STANDARD SHAPE — confirmed working, use it every time
 
 ```
 SECFIX2
