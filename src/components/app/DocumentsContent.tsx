@@ -317,35 +317,52 @@ function SelfSignRow({
   );
 }
 
+const errText = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
 export function DocumentsContent() {
   const [rows, setRows] = useState<MyDocumentRow[]>([]);
   const [signables, setSignables] = useState<SignableDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewing, setViewing] = useState<SeedDocument | null>(null);
+  // WALLSYNC: both loads used to `.catch(() => [])`, so a failed read rendered as
+  // "No documents yet" — indistinguishable from genuinely having none. That is how
+  // this page got mis-diagnosed as a data problem during the signing-wall outage.
+  // A failure must now say so, and stay retryable.
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reload, setReload] = useState(0);
 
   useEffect(() => {
     let active = true;
-    Promise.all([
-      myDocuments().catch(() => [] as MyDocumentRow[]),
-      listMySignableDocuments().catch(() => [] as SignableDocument[]),
-    ])
+    setLoadError(null);
+    // allSettled, not all: one failing source must not blank the other, but it
+    // must still be reported rather than swallowed.
+    Promise.allSettled([myDocuments(), listMySignableDocuments()])
       .then(([d, s]) => {
         if (!active) return;
-        setRows(d);
-        setSignables(s);
+        const errs: string[] = [];
+        if (d.status === 'fulfilled') setRows(d.value); else errs.push(errText(d.reason));
+        if (s.status === 'fulfilled') setSignables(s.value); else errs.push(errText(s.reason));
+        setLoadError(errs.length > 0 ? errs.join(' · ') : null);
       })
       .finally(() => active && setLoading(false));
     return () => { active = false; };
-  }, []);
+  }, [reload]);
 
   /** Seal, then refresh both lists so the rows re-render sealed. E-sign
-   *  consent is passed true — same contract as the onboarding flow. */
+   *  consent is passed true — same contract as the onboarding flow.
+   *  The signing call itself is NOT caught here: SelfSignRow reports it. The
+   *  refresh is reported separately so a successful signature is never shown as
+   *  a failed one, nor a failed refresh as stale-but-fine. */
   const handleSign = useCallback(async (item: SignableDocument, typedName: string) => {
     await signMyDocument(item.document.id, item.party_role, typedName, true);
-    const [d, s] = await Promise.all([myDocuments().catch(() => rows), listMySignableDocuments()]);
-    setRows(d);
-    setSignables(s);
-  }, [rows]);
+    const [d, s] = await Promise.allSettled([myDocuments(), listMySignableDocuments()]);
+    const errs: string[] = [];
+    if (d.status === 'fulfilled') setRows(d.value); else errs.push(errText(d.reason));
+    if (s.status === 'fulfilled') setSignables(s.value); else errs.push(errText(s.reason));
+    setLoadError(errs.length > 0
+      ? `Your signature was saved, but this list could not be refreshed: ${errs.join(' · ')}`
+      : null);
+  }, []);
 
   const awaiting = signables.filter((s) => !s.signed);
   const sealed = signables.filter((s) => s.signed);
@@ -363,6 +380,22 @@ export function DocumentsContent() {
 
   return (
     <div className="mt-2.5 mb-1">
+      {loadError && (
+        <div role="alert" className="mb-6 border border-red-700/40 bg-red-50 p-4">
+          <p className="text-sm font-sans font-medium text-red-800">
+            Your documents could not be loaded.
+          </p>
+          <p className="text-xs text-red-700 mt-1 break-words">{loadError}</p>
+          <button
+            type="button"
+            className="btn-secondary mt-3 text-xs"
+            onClick={() => { setLoading(true); setReload((n) => n + 1); }}
+          >
+            Try again
+          </button>
+        </div>
+      )}
+
       {!loading && signables.length > 0 && (
         <section aria-labelledby="self-sign-heading" className="mb-10" data-testid="self-sign-section">
           <h2 id="self-sign-heading" className="font-serif text-lg text-green-900 mb-3">
@@ -379,7 +412,9 @@ export function DocumentsContent() {
       {loading ? (
         <p className="body-text text-muted">Loading…</p>
       ) : pendingRows.length === 0 && executedRows.length === 0 ? (
-        signables.length === 0 && (
+        // Never claim "no documents" when the read failed — that is the exact
+        // false negative this task was reported as.
+        signables.length === 0 && !loadError && (
           <p className="body-text text-muted text-sm">No documents yet. They'll appear here as they're assigned or signed.</p>
         )
       ) : (
