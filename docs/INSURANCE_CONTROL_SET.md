@@ -156,18 +156,43 @@ Evaluation order within each cell is top-to-bottom; first match wins.
 
 | Determination | Rule |
 |---|---|
-| **Lessor may hold** | `II = NONE` → **PROHIBITED** (**B5**) · `UPMORT = yes` **or** `II = OWNER` → **MANDATORY** · else **PERMITTED**. |
-| **Lessee may hold** | `LT = PARTIAL` → **PROHIBITED** (**B2**) · else **PERMITTED**. |
+| **Lessor may hold** | **`LT = FULL` → PROHIBITED** (see correction below) · `II = NONE` → **PROHIBITED** (**B5**) · `UPMORT = yes` **or** `II = OWNER` → **MANDATORY** · else **PERMITTED**. |
+| **Lessee may hold** | `LT = PARTIAL` → **PROHIBITED** (**B2**) · **`LT = FULL` → the Lessee is the only party who can hold; see correction below** · else **PERMITTED**. |
 | **Lessor may require of Lessee** | `LT = PARTIAL` → **PROHIBITED** (**B1**) · `LT = FULL` → **PERMITTED**. |
-| **Shared** | Never. Permitted alternative: Lessee **pays the premium** on the Lessor's policy, Lessor named **sole Loss Payee**. |
-| **On payout** | Deductible **and** any shortfall between payout and agreed value allocated per §4a. |
+| **Shared** | Never. Permitted alternative: Lessee **pays the premium** on the Lessor's policy, Lessor named **sole Loss Payee**. (Partial only — on a full lease the Lessor holds no policy for the Lessee to pay into; the equivalent is the Lessee's policy naming the Lessor for insurable interest.) |
+| **On payout** | Deductible **and** any shortfall between payout and agreed value allocated per §4a. On a full lease the payout runs **directly to the Lessor** as the named insurable-interest party. |
+
+> **CORRECTION — owner, 2026-08-07. The rows above were wrong about full leases, in
+> both directions.**
+>
+> This matrix made the Lessor's ability to hold mortality turn on **insurable interest
+> alone**, and left the Lessee merely **PERMITTED** on a full lease. The owner's ruling:
+>
+> > "When the lease is full the owner cannot obtain the insurance that they could when there
+> > was no lease in place, and the Lessee is the one that needs to get the policy even if the
+> > Lessor pays for it."
+>
+> So on a **full** lease the positions invert: the **Lessor cannot obtain the cover**, and
+> the **Lessee is the party who must**, regardless of who pays the premium. Lease type — not
+> insurable interest — is the governing variable for *who may hold*. Insurable interest
+> still governs **where the payout goes**: the Lessor is named, and the mortality payout runs
+> directly to them.
+>
+> This is an **insurable-interest fact about how these policies are written**, not a
+> preference, so it is not negotiable between the parties.
+>
+> **Consequence for the build:** every "Lessor holds the policy" path is unavailable on a
+> full lease, and the full-lease branch instead needs the Lessee's declaration of intent,
+> evidence of coverage made visible to the Lessor, and the named-insurable-interest
+> designation. See `docs/tasks/TASK-LEASEGATE-Q1-ANSWER-insurance-disclosure.md`, Addendum 2.
 
 ### 3 — Major Medical / Surgical
 
 | Determination | Rule |
 |---|---|
-| **Lessor may hold** | `II = NONE` → **PROHIBITED** (**B5**) · `II ≠ OWNER` **and** `OWNAUTH = no` → **PROHIBITED** (owner has not authorised insuring their asset) · `HV` → **MANDATORY** · else **PERMITTED**. |
-| **Lessee may hold** | `LT = PARTIAL` **and** `PROG = yes` → **PROHIBITED** (commercial multi-student use defeats a private placement) · `LT = PARTIAL` **and** `PROG = no` → **PERMITTED**, limited to a pro-rata contribution toward the Lessor's existing premium · `LT = FULL` → **PERMITTED**. |
+| **Lessor may hold** | **`LT = FULL` → PROHIBITED** (same correction as mortality — the Lessor cannot obtain cover once a full lease is in place) · `II = NONE` → **PROHIBITED** (**B5**) · `II ≠ OWNER` **and** `OWNAUTH = no` → **PROHIBITED** (owner has not authorised insuring their asset) · `HV` → **MANDATORY** · else **PERMITTED**. |
+| **Lessee may hold** | `LT = PARTIAL` **and** `PROG = yes` → **PROHIBITED** (commercial multi-student use defeats a private placement) · `LT = PARTIAL` **and** `PROG = no` → **PERMITTED**, limited to a pro-rata contribution toward the Lessor's existing premium · `LT = FULL` → **the Lessee is the party who holds it**. |
+| **Medical depends on mortality** | **Medical cannot exist without mortality in force.** Resolve mortality first; only then is the medical component available. Each is a separate component of one policy, so **cost responsibility is elected separately** — e.g. the Lessor carries mortality while the Lessee pays 1–100% of medical. (Owner, 2026-08-07. This gate does not exist in the template today.) |
 | **Lessor may require of Lessee** | `LT = PARTIAL` → **PROHIBITED**, except requiring a pro-rata share of the Lessor's premium · `LT = FULL` → **PERMITTED**. |
 | **Shared** | Never. Premium **cost-splitting** permitted. |
 | **Payment** | Named policyholder pays the hospital at time of service, files, receives reimbursement, then reconciles (§5). |
