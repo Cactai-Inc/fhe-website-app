@@ -182,16 +182,29 @@ The pattern in all five: **asserting before verifying.** Query first.
 
 ---
 
-## Ready to send
+## IN FLIGHT — the incoming orchestrator's first job
 
-| ID | Why | Prereqs |
-|---|---|---|
-| **SECFIX2** | Two holes **open in production now** — `ensure_gift_buyer_account` is anon-callable and reaches the locked `_ensure_client_account`; `member_directory` has `security_invoker = off` | none |
-| **LEASEGATE** | Phase 1 analysis only, hard stop for owner review | LEASEFORK + TIPTAP ✓ merged |
-| **LEASESIMPLE** | Produces a keep/cut worksheet; makes no content decisions | LEASEFORK ✓ merged |
+Three threads were dispatched by the owner at the end of this session. **Audit each report
+against the live DB/repo before merging. Do not accept a self-reported "done".**
 
-Prompts for all three were drafted in-session **without** the mandatory preamble — prepend
-it before running.
+| ID | What | Prereqs | Watch for |
+|---|---|---|---|
+| **SECFIX2** | Two holes **open in production** — `ensure_gift_buyer_account` anon-callable and reaching the locked `_ensure_client_account`; `member_directory` `security_invoker = off` | none | Re-check `has_*_privilege()` yourself. Confirm `redeem_gift` is still anon-callable and gift redemption works — a lockout is worse than the exposure. |
+| **LEASEGATE** | Phase 1 analysis only, **hard stop** for owner review | LEASEFORK + TIPTAP ✓ | It must NOT have written a migration. `HORSE_LEASE_V2`/`_FULL`/`_SIMPLE` byte-identical **by checksum**. |
+| **LEASESIMPLE** | Keep/cut worksheet; makes **no** content decisions | LEASEFORK ✓ | It must have changed no template at all. |
+
+All three were dispatched **with** the mandatory preamble.
+
+### Verify-before-merge checklist that caught real problems this session
+
+- Test-merge with `git merge-tree`, but check the **exit code**, not just the word
+  "conflict" — a ref-not-found error otherwise reads as success.
+- Run `typecheck`, `typecheck:api` and `build` **on the merged result**, not on the branch.
+  Two integration defects were found only this way.
+- Query production as a **real staff account**, never a test identity — `cjzigs@icloud.com`
+  is role `USER` and silently returns empty staff results.
+- After any merge, grep for cross-thread hand-offs the threads flagged but could not
+  resolve themselves.
 
 ### NULLUID's own recommended follow-ups (not yet tasked)
 
