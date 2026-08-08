@@ -15,6 +15,37 @@ Generated from repo state 2026-08-07. `main` = `267fc97`.
 | branch | `task/<id>` lowercase | `task/wallsync` |
 | report | `docs/reports/TASK-<ID>-REPORT.md` | `TASK-WALLSYNC-REPORT.md` |
 
+## MANDATORY PREAMBLE — every prompt starts with this
+
+Threads were finding a **second clone on `~/Desktop`** and working in it. Two of them
+nearly lost work that way: NULLUID's four migrations and its report survived only because
+they were copied off the disk by hand after that clone's `.git` was destroyed by an iCloud
+sync.
+
+The cause was **the prompts, not the threads** — they said "your own worktree off
+`origin/main`" and never named the repo, so each thread discovered whatever clone it found.
+
+**The canonical repo is `/Users/Cactai/Downloads/claude-code-repo/fhe-website-app`. There
+is no other. Never `~/Desktop`.**
+
+Paste this at the top of every prompt, above the task instruction:
+
+```
+Repo: /Users/Cactai/Downloads/claude-code-repo/fhe-website-app
+
+STEP 1 — cd to that exact path. Verify it is a git repo and that `git remote -v`
+shows Cactai-Inc/fhe-website-app. Create your worktree from THERE.
+Do NOT use any clone under ~/Desktop. None is valid. If you find one, STOP and
+say so — do not read from it and do not work in it.
+Then print: CONFIRM 1
+
+STEP 2 — read the task doc named below, in full, before doing anything else.
+Then print: CONFIRM 2
+
+If you cannot print either CONFIRM, STOP and state the problem. Do not proceed
+past a CONFIRM you could not print.
+```
+
 ### Getting the ID into the thread's title
 
 The VS Code thread title is **auto-generated from the prompt's content**, and it discards a
