@@ -396,12 +396,12 @@ function RailLink({ to, label, icon: Icon, end, badge = 0, open = true }: NavIte
           <span className="relative shrink-0">
             <Icon size={17} aria-hidden="true" className={isActive ? 'text-cream-100' : 'text-green-600 [@media(hover:hover)]:group-hover:text-cream-100'} />
             {badge > 0 && !open && (
-              <span className="absolute -top-1.5 -right-1.5 min-w-[1rem] h-4 px-1 bg-gold-600/90 backdrop-blur-sm text-white text-[10px] leading-4 text-center rounded-full">{badge > 9 ? '9+' : badge}</span>
+              <span className="absolute -top-1.5 -right-1.5 min-w-[1rem] h-4 px-1 bg-gold-600/70 backdrop-blur-sm text-white text-[10px] leading-4 text-center rounded-full">{badge > 9 ? '9+' : badge}</span>
             )}
           </span>
           {open && <span className="flex-1">{label}</span>}
           {badge > 0 && open && (
-            <span className="min-w-[1.25rem] h-5 px-1.5 text-[11px] leading-5 text-center rounded-full bg-gold-600 text-white">{badge > 9 ? '9+' : badge}</span>
+            <span className="min-w-[1.25rem] h-5 px-1.5 text-[11px] leading-5 text-center rounded-full bg-gold-600/70 backdrop-blur-sm text-white">{badge > 9 ? '9+' : badge}</span>
           )}
           {!open && <NavTooltipLabel label={label} />}
         </>
@@ -418,7 +418,7 @@ function MenuLink({ to, label, icon: Icon, end, onNavigate }: NavItem & { onNavi
       onClick={onNavigate}
       className={({ isActive }) =>
         `flex items-center gap-3 px-4 py-2.5 text-sm font-sans transition-colors focus-ring ${
-          isActive ? 'bg-cream-200 text-green-800 font-medium ' : 'text-secondary hover:bg-green-800/[0.06]'
+          isActive ? 'bg-cream-200 text-green-800 font-medium ' : 'text-secondary [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100'
         }`
       }
     >
@@ -551,7 +551,7 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
              240px wide, and on the selected (dark) state it read as a second
              element sitting on the pill. The chevron already carries the meaning;
              the accessible name lives on aria-label. */
-          className={`shrink-0 flex items-center justify-center p-1.5 rounded-md focus-ring ${isAll ? 'text-cream-100 hover:bg-white/10' : 'text-green-700 hover:bg-green-800/[0.06]'}`}>
+          className={`shrink-0 flex items-center justify-center p-1.5 rounded-md focus-ring ${isAll ? 'text-cream-100 hover:bg-white/10' : 'text-green-700 [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100'}`}>
           {expanded ? <ChevronUp size={18} className="shrink-0" /> : <ChevronDown size={18} className="shrink-0" />}
         </button>
       </div>
@@ -684,14 +684,14 @@ function NavFooter({ open = true, onOpenTour, onSignOut, onNavigate }: {
     <div className="mt-2 pt-3 pb-2 border-t border-green-800/10 flex flex-col gap-1.5">
       <button type="button" onClick={() => { onNavigate?.(); onOpenTour(); }}
         aria-label={open ? undefined : 'App tour'}
-        className={`group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans text-secondary hover:bg-green-800/[0.06] focus-ring ${open ? '' : 'justify-center'}`}>
+        className={`group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans text-secondary [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100 focus-ring ${open ? '' : 'justify-center'}`}>
         <Compass size={17} aria-hidden="true" className="text-green-600 shrink-0" />
         {open && <span className="flex-1 text-left">App tour</span>}
         {!open && <NavTooltipLabel label="App tour" />}
       </button>
       <button type="button" onClick={() => { onNavigate?.(); onSignOut(); }}
         aria-label={open ? undefined : 'Sign out'}
-        className={`group relative flex items-center gap-3 rounded-lg px-3 py-3 text-[13.5px] font-sans text-secondary hover:bg-green-800/[0.06] focus-ring w-full pb-[max(0.75rem,env(safe-area-inset-bottom))] ${open ? '' : 'justify-center'}`}>
+        className={`group relative flex items-center gap-3 rounded-lg px-3 py-3 text-[13.5px] font-sans text-secondary [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100 focus-ring w-full pb-[max(0.75rem,env(safe-area-inset-bottom))] ${open ? '' : 'justify-center'}`}>
         <LogOut size={17} aria-hidden="true" className="text-green-600 shrink-0" />
         {open && <span className="flex-1 text-left">Sign out</span>}
         {!open && <NavTooltipLabel label="Sign out" />}
@@ -979,7 +979,7 @@ export default function AppLayout() {
           <div className="mt-1 border-t border-green-800/10 pt-2 px-4 pb-1 text-xs uppercase tracking-wide text-secondary/60">Company</div>
           <button type="button"
             onClick={() => { closeMenu(); navigate('/app/ops/documents'); }}
-            className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">
+            className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100 focus-ring">
             <FileText size={17} /> Pending agreements
           </button>
           {/* Both operators navigate to the community + catalog to help
@@ -987,12 +987,12 @@ export default function AppLayout() {
           <div className="mt-1 border-t border-green-800/10 pt-2 px-4 pb-1 text-xs uppercase tracking-wide text-secondary/60">Quick access</div>
           <div className="px-1"><CommunityNav onNavigate={closeMenu} indentClass="pl-9" /></div>
           <button type="button" onClick={() => { closeMenu(); navigate('/app/dashboard'); }}
-            className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">
+            className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100 focus-ring">
             <LayoutDashboard size={17} /> Dashboard
-            {unreadCount > 0 && <span className="ml-auto min-w-[1.25rem] h-5 px-1.5 text-[11px] leading-5 text-center rounded-full bg-gold-600 text-white">{unreadCount > 9 ? '9+' : unreadCount}</span>}
+            {unreadCount > 0 && <span className="ml-auto min-w-[1.25rem] h-5 px-1.5 text-[11px] leading-5 text-center rounded-full bg-gold-600/70 backdrop-blur-sm text-white">{unreadCount > 9 ? '9+' : unreadCount}</span>}
           </button>
           <button type="button" onClick={() => { closeMenu(); navigate('/app/catalog'); }}
-            className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">
+            className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100 focus-ring">
             <ShoppingBag size={17} /> Catalog
           </button>
         </>
@@ -1008,9 +1008,9 @@ export default function AppLayout() {
             return (
               <button key={q.label} type="button"
                 onClick={() => { closeMenu(); navigate(q.to); }}
-                className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] focus-ring">
+                className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100 focus-ring">
                 <q.icon size={17} /> {q.label}
-                {badge > 0 && <span className="ml-auto min-w-[1.25rem] h-5 px-1.5 text-[11px] leading-5 text-center rounded-full bg-gold-600 text-white">{badge > 9 ? '9+' : badge}</span>}
+                {badge > 0 && <span className="ml-auto min-w-[1.25rem] h-5 px-1.5 text-[11px] leading-5 text-center rounded-full bg-gold-600/70 backdrop-blur-sm text-white">{badge > 9 ? '9+' : badge}</span>}
               </button>
             );
           })}
@@ -1020,7 +1020,7 @@ export default function AppLayout() {
             return (
               <Link key={l.key} to={l.to} onClick={closeMenu}
                 className={`flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans focus-ring ${
-                  isActive ? 'bg-cream-200 text-green-800 font-medium ' : 'text-secondary hover:bg-green-800/[0.06]'}`}>
+                  isActive ? 'bg-cream-200 text-green-800 font-medium ' : 'text-secondary [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100'}`}>
                 <l.icon size={17} /> {l.label}
               </Link>
             );
@@ -1041,11 +1041,11 @@ export default function AppLayout() {
       )}
       <button type="button"
         onClick={() => { closeMenu(); setTourOpen(true); }}
-        className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] border-t border-green-800/10 focus-ring">
+        className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100 border-t border-green-800/10 focus-ring">
         <Compass size={17} aria-hidden="true" className="shrink-0" /> App tour
       </button>
       <button type="button" onClick={handleSignOut}
-        className="flex items-center gap-3 px-4 py-2.5 mt-1 w-full text-sm font-sans text-secondary hover:bg-green-800/[0.06] border-t border-green-800/10 focus-ring">
+        className="flex items-center gap-3 px-4 py-2.5 mt-1 w-full text-sm font-sans text-secondary [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100 border-t border-green-800/10 focus-ring">
         <LogOut size={17} aria-hidden="true" className="shrink-0" /> Sign out
       </button>
     </div>
@@ -1115,7 +1115,7 @@ export default function AppLayout() {
             </button>
             <div className="relative" ref={menuRef}>
               <button type="button" onClick={() => setMenuOpen((v) => !v)}
-                className="flex items-center gap-1 pl-1.5 pr-2 py-1 rounded-full hover:bg-green-800/[0.06] focus-ring"
+                className="flex items-center gap-1 pl-1.5 pr-2 py-1 rounded-full [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100 focus-ring"
                 aria-label="Account menu" aria-expanded={menuOpen}>
                 {/* No notifications badge on the avatar — the count lives on the
                     Dashboard nav link (desktop rail + mobile menu) instead. */}
