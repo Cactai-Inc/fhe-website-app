@@ -203,3 +203,71 @@ its `bg-green-950` background — "a weird green marking on the nav rail."
 **This is the highest-value item in section E** — it is a confirmed root cause with a clear
 fix, and it currently makes the collapsed rail unusable for anyone who does not already know
 the icons.
+
+---
+
+## F. Collapsed rail icon identity — 2026-08-08. **Fix before anything else in E.**
+
+Screenshot of the collapsed staff/platform rail. **Two defects compound into a rail that
+cannot be used at all.**
+
+### F1 — Eight nav items share one icon
+
+Counted from the nav tables in `AppLayout.tsx`:
+
+| icon | shared by |
+|---|---|
+| **`Shield` ×8** | Branding · Feature flags · Forms · Moderation · Organizations · Oversight · Products · Registry |
+| **`Contact` ×4** | Contacts · Employees · Leads · Team |
+| **`FileText` ×4** | Documents · Evaluations · My Documents · Records |
+| **`Boxes` ×3** | Barn Ops · Horses · My Stable |
+| `BookOpen` ×2 | Content store · Directory |
+| `ReceiptText` ×2 | My Orders · Payment review |
+
+**In a collapsed rail the icon is the only identifier.** Eight identical shields is not a
+polish problem, it is a navigation failure — and the `Shield` set is the superadmin platform
+group, so the owner sees the worst of it.
+
+### F2 — …and the tooltips that would rescue it are broken
+
+**E4** clips every tooltip to a green sliver. So the collapsed rail offers **no unique icon
+and no label**. Either defect alone is survivable; together there is literally no way to tell
+eight destinations apart.
+
+**Fix E4 first** — it is one portal change and it makes the rail usable immediately, even
+before the icons are re-chosen. Then do F1 properly.
+
+**Choosing replacements is a design decision — bring options to the owner.** Do not
+unilaterally reassign eight platform icons. Constraint: each icon must be distinguishable
+**at 18px, in a single colour, with no label** — that is the real test, not how it reads in a
+picker.
+
+### F3 — Account icon reads miniature
+
+`AccountNavLink` renders `<UserRound size={18} />` — **nominally identical to its
+neighbours**, same as the Community Feed case in **E1**. Same likely cause: `UserRound` is a
+thin outlined glyph with generous internal padding, so it reads smaller than solid-bodied
+icons at the same size. **Treat E1 and F3 together — one optical-sizing pass, not two
+one-off bumps.**
+
+### F4 — The collapse/expand toggle is asymmetric
+
+`AppLayout.tsx:1127` — `{staffRailPinned ? <PanelLeftClose size={18} /> : <PanelLeft size={18} />}`
+
+`PanelLeftClose` carries a directional arrow; **`PanelLeft` does not.** So collapsing shows a
+clear directional action and expanding shows an inert panel glyph. Use the matched pair:
+`PanelLeftClose` / **`PanelLeftOpen`** — the latter is already imported and used at line 989.
+
+### F5 — Sign out reads as a nav control
+
+`LogOut` (an arrow leaving a bracket) is easily read as "expand the rail", especially sitting
+directly below the collapse toggle after commit `42bbff2` moved that toggle to the foot.
+
+Two things to separate them — do both:
+
+1. Choose a sign-out glyph that cannot be confused with a panel control.
+2. **Give the toggle and Sign out clear visual separation** — the B1 padding item already
+   asks for breathing room around Sign out; this is the reason it matters, not just spacing.
+
+**Note the interaction:** `42bbff2` put these two adjacent. That was the orchestrator's
+change and it created this confusion, so F5 is a regression to fix, not a pre-existing flaw.
