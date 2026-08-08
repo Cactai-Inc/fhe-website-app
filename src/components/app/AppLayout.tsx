@@ -314,14 +314,14 @@ function RailLink({ to, label, icon: Icon, end, badge = 0, open = true }: NavIte
         `group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13.5px] font-sans transition-colors focus-ring ${open ? '' : 'justify-center'} ${
           isActive
             ? 'bg-green-800 text-cream-100 font-medium'
-            : 'text-secondary lg:hover:bg-green-800/10 lg:hover:text-cream-100'
+            : 'text-secondary [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100'
         }`
       }
     >
       {({ isActive }) => (
         <>
           <span className="relative shrink-0">
-            <Icon size={17} aria-hidden="true" className={isActive ? 'text-cream-100' : 'text-green-600 lg:group-hover:text-cream-100'} />
+            <Icon size={17} aria-hidden="true" className={isActive ? 'text-cream-100' : 'text-green-600 [@media(hover:hover)]:group-hover:text-cream-100'} />
             {badge > 0 && !open && (
               <span className="absolute -top-1.5 -right-1.5 min-w-[1rem] h-4 px-1 bg-gold-600 text-white text-[10px] leading-4 text-center rounded-full">{badge > 9 ? '9+' : badge}</span>
             )}
@@ -370,8 +370,8 @@ function PresenceLink({ to, label, icon: Icon, section, onNavigate }: {
   return (
     <Link to={to} onClick={onNavigate} aria-current={isActive ? 'page' : undefined}
       className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans transition-colors focus-ring ${
-        isActive ? 'bg-green-800 text-cream-100 font-medium' : 'text-secondary lg:hover:bg-green-800/10 lg:hover:text-cream-100'}`}>
-      <Icon size={18} aria-hidden="true" className={isActive ? 'text-cream-100' : 'text-green-600 lg:group-hover:text-cream-100'} />
+        isActive ? 'bg-green-800 text-cream-100 font-medium' : 'text-secondary [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100'}`}>
+      <Icon size={18} aria-hidden="true" className={isActive ? 'text-cream-100' : 'text-green-600 [@media(hover:hover)]:group-hover:text-cream-100'} />
       <span className="whitespace-nowrap flex-1">{label}</span>
     </Link>
   );
@@ -390,11 +390,11 @@ function AccountNavLink({ onNavigate, open = true }: { onNavigate?: () => void; 
     <Link to="/app/account" onClick={onNavigate} aria-current={isActive ? 'page' : undefined}
       aria-label={open ? undefined : 'Account'}
       className={`group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans transition-colors focus-ring ${open ? '' : 'justify-center'} ${
-        isActive ? 'bg-green-800 text-cream-100 font-medium' : 'text-secondary lg:hover:bg-green-800/10 lg:hover:text-cream-100'}`}>
+        isActive ? 'bg-green-800 text-cream-100 font-medium' : 'text-secondary [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100'}`}>
       {/* `shrink-0` — see the note in CommunityNav's collapsed branch. Without it
           the collapsed rail squashes this icon to the ~8px of content box left
           after the nav's and the link's horizontal padding. */}
-      <UserRound size={18} aria-hidden="true" className={`shrink-0 ${isActive ? 'text-cream-100' : 'text-green-600 lg:group-hover:text-cream-100'}`} />
+      <UserRound size={18} aria-hidden="true" className={`shrink-0 ${isActive ? 'text-cream-100' : 'text-green-600 [@media(hover:hover)]:group-hover:text-cream-100'}`} />
       {open && <span className="whitespace-nowrap flex-1">Account</span>}
       {!open && <NavTooltipLabel label="Account" />}
     </Link>
@@ -444,13 +444,13 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
     // I1B — staff rail icon strip: just the parent icon, active whenever on the feed.
     return (
       <Link to="/app" onClick={onNavigate} aria-label="Community Feed" aria-current={onFeed ? 'page' : undefined}
-        className={`group relative flex items-center justify-center rounded-lg px-3 py-2.5 focus-ring ${onFeed ? 'bg-green-800 text-cream-100' : 'text-secondary lg:hover:bg-green-800/10 lg:hover:text-cream-100'}`}>
+        className={`group relative flex items-center justify-center rounded-lg px-3 py-2.5 focus-ring ${onFeed ? 'bg-green-800 text-cream-100' : 'text-secondary [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100'}`}>
         {/* `shrink-0` is REQUIRED, not decorative. In the 56px collapsed rail the
             nav's p-3 plus this link's px-3 leave ~8px of content box, and without
             flex-shrink:0 the SVG is compressed to fit — which is why this icon and
             the account one rendered miniature while every RailLink icon (wrapped in
             a shrink-0 span) stayed 18px. */}
-        <Users size={18} className={`shrink-0 ${onFeed ? 'text-cream-100' : 'text-green-600 lg:group-hover:text-cream-100'}`} />
+        <Users size={18} className={`shrink-0 ${onFeed ? 'text-cream-100' : 'text-green-600 [@media(hover:hover)]:group-hover:text-cream-100'}`} />
         <NavTooltipLabel label="Community Feed" />
       </Link>
     );
@@ -464,10 +464,10 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
           right-pointing (rotated ChevronDown) collapsed state. C5 (owner, 2026-08-07):
           the toggle's chevron/label were 15px/10px against 17-18px/13.5px everywhere
           else in the rail — brought up to the same scale. */}
-      <div className={`group relative flex items-center rounded-lg pr-1 ${isAll ? 'bg-green-800' : 'lg:hover:bg-green-800/10'}`}>
+      <div className={`group relative flex items-center rounded-lg pr-1 ${isAll ? 'bg-green-800' : '[@media(hover:hover)]:hover:bg-green-600'}`}>
         <Link to="/app" onClick={onNavigate} aria-current={isAll ? 'page' : undefined}
-          className={`flex items-center gap-3 flex-1 min-w-0 px-3 py-2.5 text-[13.5px] font-sans focus-ring rounded-lg ${isAll ? 'text-cream-100 font-medium' : 'text-secondary lg:group-hover:text-cream-100'}`}>
-          <Users size={18} className={`shrink-0 ${isAll ? 'text-cream-100' : 'text-green-600 lg:group-hover:text-cream-100'}`} />
+          className={`flex items-center gap-3 flex-1 min-w-0 px-3 py-2.5 text-[13.5px] font-sans focus-ring rounded-lg ${isAll ? 'text-cream-100 font-medium' : 'text-secondary [@media(hover:hover)]:group-hover:text-cream-100'}`}>
+          <Users size={18} className={`shrink-0 ${isAll ? 'text-cream-100' : 'text-green-600 [@media(hover:hover)]:group-hover:text-cream-100'}`} />
           <span className="whitespace-nowrap">Community Feed</span>
         </Link>
         <button type="button" onClick={() => setExpanded((v) => !v)}
@@ -490,7 +490,7 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
             return (
               <Link key={v.key} to={communityHref(v.key)} onClick={onNavigate} aria-current={isActive ? 'page' : undefined}
                 className={`group flex items-center ${indentClass} pr-3 py-1.5 rounded-lg text-[13px] font-sans transition-colors focus-ring ${
-                  isActive ? 'bg-green-800 text-cream-100 font-medium' : 'text-secondary lg:hover:bg-green-800/10 lg:hover:text-cream-100'}`}>
+                  isActive ? 'bg-green-800 text-cream-100 font-medium' : 'text-secondary [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100'}`}>
                 <span className="whitespace-nowrap">{v.label}</span>
               </Link>
             );
@@ -1080,7 +1080,7 @@ export default function AppLayout() {
                      `px-3 py-2.5`, so the icon sat off the shared centre line in
                      the collapsed rail, and the white hover belonged to no other
                      surface in the nav. */
-                  className="flex items-center justify-center rounded-lg px-3 py-2.5 text-green-700 lg:hover:bg-green-800/10 lg:hover:text-cream-100 focus-ring">
+                  className="flex items-center justify-center rounded-lg px-3 py-2.5 text-green-700 [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100 focus-ring">
                   <Plus size={18} aria-hidden="true" className="shrink-0" />
                 </button>
               </div>
@@ -1147,7 +1147,7 @@ export default function AppLayout() {
                      `px-3 py-2.5`, so the icon sat off the shared centre line in
                      the collapsed rail, and the white hover belonged to no other
                      surface in the nav. */
-                  className="flex items-center justify-center rounded-lg px-3 py-2.5 text-green-700 lg:hover:bg-green-800/10 lg:hover:text-cream-100 focus-ring">
+                  className="flex items-center justify-center rounded-lg px-3 py-2.5 text-green-700 [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100 focus-ring">
                       {staffRailPinned ? <PanelLeftClose size={18} className="shrink-0" /> : <PanelLeftOpen size={18} className="shrink-0" />}
                     </button>
                   </div>
