@@ -24,30 +24,47 @@ gain a second way in. **Nothing is migrated and no account is recreated.**
 
 So this task is mostly **surfacing** existing seams in My Login, not building auth.
 
-## The two scenarios
+## The scenarios — read the ruling at the foot of this doc FIRST
 
-### A — same address, they just made a password instead of using the button
+There is **one mechanism** (`linkIdentity`) and **no rejection branch**. The three cases
+below differ only in which Google account the member consents with, and whether they also
+want their primary email changed.
 
-Their sign-in address is already Gmail or Google Workspace-hosted. They created a password
-at signup rather than pressing the Google button, and now want the button.
+### A — same address: they made a password instead of using the button
+
+Their sign-in address is already Gmail or Google Workspace-hosted.
 
 **Mechanism:** `linkOAuthIdentity('google')` → Google consent → back to the account page.
-Done. No email change, no staff action, no verification email.
+No email change, no staff action, no verification email.
 
-**The copy must state the requirement plainly**, because the member is the only one who
-knows it (owner, 2026-08-07): *this option only works if the address you sign in with today
-is a Gmail address or is hosted by Google Workspace.* Say it on the control itself, not in
-a tooltip. If they pick this and their address is not Google-hosted, Google consent will
-simply not produce a matching identity — the failure must be caught and explained in those
-terms, not surfaced as a raw provider error.
+**Copy requirement (owner, 2026-08-07):** this choice only succeeds if the address they
+sign in with today *is* a Gmail address or Google Workspace-hosted — the member is the only
+one who knows that, so state it **on the control itself**, not in a tooltip. If they choose
+it and their address is not Google-hosted, consent returns an identity that does not match;
+catch that and explain it in those terms rather than surfacing a raw provider error. **Then
+offer case B** — that is the recovery path, not an error dead end.
 
-### B — moving to a different address that is a Google account
+### B — different Google address, keep the current email as primary
 
-Self-evident to the member; no clarifying copy needed.
+This is the case the owner's proposal was really about, and it needs **no email change and
+no duplicate account**. The member consents with any Gmail they control; that identity
+links to their existing account.
+
+**Mechanism:** `linkOAuthIdentity('google')` — the same call as A. `linkIdentity` does not
+require the Google address to match the account email and does not alter the primary email.
+
+Result: old email and password still work, the Google button now works, both addresses are
+linked — **as two identities on one account.** No clarifying copy needed; it is self-evident
+to the member.
+
+### C — they also want the Gmail to BECOME their primary email
+
+Only when the member explicitly wants their account email changed, not merely a second way
+in. Do not push people here; B satisfies most of what they ask for.
 
 **Mechanism:** `startGoogleChange(newEmail)` — already built. Registers the pending change,
-hands off to Google consent, returns to `/verify-email?mode=google&token=…` where the
-linked identity **is** the proof of ownership. No verification email is sent.
+hands off to Google consent, returns to `/verify-email?mode=google&token=…` where the linked
+identity **is** the proof of ownership. No verification email is sent.
 
 ## Open decisions — ASK THE OWNER, do not choose these yourself
 
