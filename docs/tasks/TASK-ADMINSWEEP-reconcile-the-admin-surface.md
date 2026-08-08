@@ -1,15 +1,33 @@
-# TASK ADMINSWEEP — reconcile what admin needs against what admin has
+# TASK ADMINSWEEP — the front half of a full admin refactor
 
-**The sweep that was never done.** Owner, 2026-08-08:
+**This is not a cleanup task.** Owner, 2026-08-08:
 
-> "We never did a full sweep for the admin side of what's needed and what we have, to
-> reconcile the two and remove what we don't need or don't want to see, and build what's
-> missing."
+> "Collect the list of what's missing, combine it with the list of changes, and the outcome
+> will be a full refactor of the admin experience — aimed at enabling admin the same way
+> that we've aimed at enabling our users."
 
-Every other admin-surface change so far has been reactive — a defect noticed, an icon
-duplicated, a page found missing mid-conversation. **Three pages turned out not to exist
-inside twenty minutes** of one conversation (business Orders, Horse care, and the
-obligations view of Lessons). That is the symptom this task exists to end.
+That is the goal. Everything below serves it.
+
+## Read this before anything else
+
+**The owner is not reporting surprises. He is specifying needs.**
+
+An earlier revision of this doc framed three items — a business Orders page, Horse care, and
+an obligations view of Lessons — as "pages the owner expected that do not exist." **That was
+wrong, and the owner corrected it.** He did not expect them; he was naming what the business
+requires. The distinction matters because it changes what this task is: not reconciling a
+system against someone's assumptions, but **building the admin side against a stated set of
+needs that has never been written down.**
+
+**The consolidation proposal in `docs/reference/nav-icon-exercise.md` is a SHORTCUT and must
+not drive this work.** It merged pages so a duplicated icon set would fit — solving a
+symptom. Icons and page counts are *outputs* of knowing what admin needs, not inputs to it.
+Use that document only for the settled icon assignment; treat every merge in it as a
+hypothesis this task may discard.
+
+**The user side got this attention. The admin side never did.** Onboarding, documents,
+booking and community were all designed around enabling the member. No equivalent pass has
+been done for the person running the business.
 
 ---
 
@@ -61,7 +79,9 @@ only). It was held "until the suite ships."
 **So Sales has a backend waiting. Marketing has nothing** — no campaign, post-performance or
 planning surface exists.
 
-### Three pages the owner expected that do not exist
+### Three needs the owner has NAMED that have no page
+
+Stated requirements, not discovered gaps.
 
 - **Orders (business)** — only `/app/orders`, the personal page, now hidden from admin.
 - **Horse care** — the services exist in the catalog (Exercise, Training, Turnout 1x/2x
@@ -113,10 +133,15 @@ removes the load cost he is worried about.
 
 ---
 
-## Phase 2 — only after owner review
+## Phase 2 — the refactor, only after owner review
 
-Build the reconciliation's answer. **Sequence: remove, then merge, then build.** Removing
-first shrinks the surface everything else has to reason about.
+Phase 1 produces the needs list. **Phase 2 designs the admin experience against it**, and is
+where structure — pages, groups, tabs — is decided. Structure follows need; it is not
+assumed in advance.
+
+Sequence within Phase 2: **remove, then build, then group.** Removing first shrinks the
+surface everything else reasons about. Grouping comes LAST, once it is known what actually
+has to be grouped — the opposite of the shortcut this task replaces.
 
 ## Verification
 
