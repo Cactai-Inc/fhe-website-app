@@ -51,8 +51,14 @@ That is a keyword scan, and it will be **wrong in both directions**:
 
 Some of these are anon-callable **by design**, and revoking them breaks the product:
 
-- `redeem_gift` — `/redeem` is an unauthenticated route and a gift recipient may have no
-  account yet. **Explicitly confirmed by the owner. Do not revoke.**
+- `redeem_gift` — **leave it alone, but the usual reason for it is WRONG.** The standing
+  rationale was "`/redeem` is unauthenticated and a recipient may have no account yet." It
+  is not: `redeem_gift`'s body opens
+  `IF auth.uid() IS NULL THEN RETURN 'not_authenticated'`, so it **already refuses
+  anonymous callers itself**. `SECFIX2` found this; the orchestrator confirmed it at line 15
+  of the live function. The anon grant is therefore harmless, not load-bearing. Do not
+  revoke it, and **do not repeat the old justification** — a function that guards itself is
+  a different fact from a function that must stay open.
 - the public catalog read path (`public_offerings` and friends) — the marketing site is
   unauthenticated.
 

@@ -35,7 +35,12 @@ Drift away from these is what produced the confusion this document exists to end
   retains.
 - **`signed_template_version` is evidence** of what a person actually signed. Never rewrite
   it to make a symptom disappear. Change what the gate asks of it.
-- `redeem_gift` is intentionally anon-callable (`/redeem` is a public route).
+- `redeem_gift` keeps its anon grant, but **not** for the reason long repeated here. The old
+  rationale — "`/redeem` is public and a recipient may have no account yet" — is wrong. The
+  function's own body opens `IF auth.uid() IS NULL THEN RETURN 'not_authenticated'`, so it
+  refuses anonymous callers on its own; the grant is harmless rather than load-bearing.
+  **Open product question for the owner:** if a gift recipient without an account is meant
+  to redeem from `/redeem`, that does not work today — they must sign in first.
 
 ---
 
