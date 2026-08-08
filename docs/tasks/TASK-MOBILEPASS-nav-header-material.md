@@ -139,3 +139,64 @@ window (left) against real mobile Safari (right), same page.
 
 `docs/reports/TASK-MOBILEPASS-REPORT.md`. Screenshots for every visual claim. State what you
 verified on a real device versus in a resized window.
+
+---
+
+## E. DESKTOP left rail — owner + screenshots, 2026-08-08
+
+**Scope note:** this task was written for mobile; these are desktop-rail defects. Same files,
+same thread, so they belong here rather than in a task that would fight for `AppLayout.tsx`.
+
+### E1 — Community Feed icon looks undersized when collapsed
+
+`CommunityNav`'s collapsed branch (`AppLayout.tsx` ~446) renders `<Users size={18} />` —
+**the same nominal size as every other rail icon**, inside the same `px-3 py-2.5
+justify-center` box. So this is probably **not** a size bug.
+
+**Hypothesis to check first:** lucide's `Users` glyph carries more internal whitespace and
+thinner strokes than `Home`/`Calendar`/`Inbox`, so at an identical `size` it reads smaller.
+If confirmed, the fix is to bump **this icon's** size (or stroke width) until it matches
+optically — **optical size, not nominal size.** Do not change every icon to chase it.
+
+Confirm against the screenshot before doing anything: the collapsed rail shows this icon
+visibly smaller than the house beneath it.
+
+### E2 — Collapsed rail: create `+` at top, collapse toggle at foot
+
+Already implemented on `main` in commit **`42bbff2`** (create `+` occupies position 1; the
+collapse toggle moved to the rail foot, above Sign out, right-justified in both states).
+
+The owner reported it missing, **from a build that predates that commit**. **Verify against
+current `main` before treating it as outstanding** — and if it is genuinely wrong there, the
+bug is in that commit, not a missing change.
+
+### E3 — Hover contrast is too weak
+
+`lg:hover:bg-green-800/10` — **10% green** is not enough to read as a state change against
+the rail surface. Darken it.
+
+Interacts with **A1** (hover must key off `@media (hover: hover)`, not `lg:`) and with **C1**
+(the panel gets a real surface). **Set hover against the corrected surface**, not the current
+washed-out one, or it will be re-tuned twice.
+
+### E4 — Collapsed tooltip renders as a green sliver — ROOT CAUSE FOUND
+
+`NavTooltipLabel` positions itself `absolute left-full ml-2` — deliberately **outside** the
+rail. But the rail `<nav>` carries **`overflow-x-hidden`** (both `ClientRail` and the staff
+rail), which **clips it**.
+
+So the owner's report is exactly right and the mechanism is: after the 1100 ms delay the
+tooltip *does* appear, is clipped at the rail's edge, and all that survives is a sliver of
+its `bg-green-950` background — "a weird green marking on the nav rail."
+
+**The fix is not the tooltip's styling.** Options, in order of preference:
+
+1. Render the tooltip in a **portal** so it escapes the clipping context entirely.
+2. Drop `overflow-x-hidden` from the rail — **check why it is there first**; it is likely
+   guarding against horizontal scroll from long labels, so removing it may reintroduce that.
+3. Position the tooltip **inside** the rail bounds — worst option; a 56px rail cannot hold a
+   readable label.
+
+**This is the highest-value item in section E** — it is a confirmed root cause with a clear
+fix, and it currently makes the collapsed rail unusable for anyone who does not already know
+the icons.
