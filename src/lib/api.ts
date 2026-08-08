@@ -1057,6 +1057,24 @@ export async function listContractTemplates(): Promise<ContractTemplate[]> {
   return (data ?? []) as ContractTemplate[];
 }
 
+/** LEASEFORK: the selectable lease versions, for the picker on New contract.
+ *  `contract_kind` is what groups lease templates — HORSE_LEASE_V2 plus the
+ *  HORSE_LEASE_STANDARD / _FULL / _SIMPLE forks. The active + not-deleted filter
+ *  is what keeps the retired flat `HORSE_LEASE` template out of the list, and it
+ *  mirrors the validation start_lease_contract_v2 applies server-side, so the UI
+ *  cannot offer a template the RPC would reject. */
+export async function listLeaseTemplates(): Promise<ContractTemplate[]> {
+  const { data, error } = await supabase
+    .from('contract_templates')
+    .select('*')
+    .eq('contract_kind', 'HORSE_LEASE')
+    .eq('active', true)
+    .is('deleted_at', null)
+    .order('title');
+  if (error) throw error;
+  return (data ?? []) as ContractTemplate[];
+}
+
 /* generateDocument() removed 2026-07-30. It called generate_document with
  * `p_engagement_id`, a parameter no overload has had since `engagements` was
  * retired — every invocation would have failed on arity. It had no callers.
@@ -1927,12 +1945,21 @@ export async function createProductPrice(input: ProductPriceInput): Promise<Prod
 // source of truth for the contract seam. Only the start*Contract starters, which
 // ARE used (by NewContractPage), remain here.
 
-/** Start a horse lease contract — the clause-model authoring system (HORSE_LEASE_V2:
- *  numbered Section›Clause›Field, selection-first, real-time conditional clauses).
- *  Cut over from the legacy flat start_lease_contract on 2026-07-20. */
+/** Start a horse lease contract — the clause-model authoring system (numbered
+ *  Section›Clause›Field, selection-first, real-time conditional clauses).
+ *  Cut over from the legacy flat start_lease_contract on 2026-07-20.
+ *
+ *  LEASEFORK: `templateKey` picks which lease VERSION to author (HORSE_LEASE_V2
+ *  and its forks; see listLeaseTemplates). It is OMITTED from the payload when not
+ *  supplied, so the RPC's own DEFAULT 'HORSE_LEASE_V2' applies and this call stays
+ *  byte-identical to what it sent before the parameter existed. The RPC validates
+ *  the key (exists, active, not deleted, contract_kind = HORSE_LEASE) and raises
+ *  rather than falling back, so a bad key surfaces as an error, never as a
+ *  silently different contract. */
 export async function startLeaseContract(
   lesseeContactId: string, lessorContactId?: string, horseId?: string,
-): Promise<{ document_id: string; contract_id: string; fields_seeded: number }> {
+  templateKey?: string,
+): Promise<{ document_id: string; contract_id: string; fields_seeded: number; template_key: string }> {
   // H1 originator collapse: the company (staff caller) is ALWAYS the author —
   // no party is designated as responsible-for-authoring anymore. The RPC keeps
   // its p_responsible_role parameter for signature compatibility but ignores it.
@@ -1940,9 +1967,10 @@ export async function startLeaseContract(
     p_lessee_contact_id: lesseeContactId,
     p_lessor_contact_id: lessorContactId ?? null,
     p_horse_id: horseId ?? null,
+    ...(templateKey ? { p_template_key: templateKey } : {}),
   });
   if (error) throw error;
-  return data as { document_id: string; contract_id: string; fields_seeded: number };
+  return data as { document_id: string; contract_id: string; fields_seeded: number; template_key: string };
 }
 
 /** Start a BUYER/SELLER horse sale contract — the clause-model authoring system
