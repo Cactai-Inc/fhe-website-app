@@ -4,7 +4,7 @@ import { NavLink, Outlet, Link, Navigate, useNavigate, useLocation, useSearchPar
 import { FEED_VIEWS, FEED_VIEW_META, type FeedView } from '../../lib/seed';
 import { dmUnreadTotal } from '../../lib/community';
 import {
-  CalendarDays, Users, FileText, UserRound, ReceiptText, Shield, LogOut,
+  CalendarDays, Users, FileText, UserRound, ReceiptText, Shield, LogOut, ChevronLeft,
   GraduationCap, Home as HomeIcon, Boxes, Contact, LayoutDashboard,
   Mail, ChevronDown, ChevronUp, Plus, LifeBuoy, ShoppingBag, MessageSquare, BookOpen, ListChecks,
   PanelLeftClose, PanelLeftOpen, Activity, Compass, Handshake, Grid3x3, Bookmark,
@@ -1300,12 +1300,12 @@ export default function AppLayout() {
       {!isSuperAdmin && (
         <button
           type="button"
-          className={`cs-drawer-tab ${NAV_GLASS}${mobileNavOpen ? ' is-open' : ''}`}
+          className={`cs-drawer-tab${mobileNavOpen ? ' is-open' : ''}`}
           onClick={() => setMobileNavOpen((v) => !v)}
           aria-label={mobileNavOpen ? 'Close menu' : 'Open menu'}
           aria-expanded={mobileNavOpen}
         >
-          <span className="cs-arrow" aria-hidden="true" />
+          <ChevronLeft size={20} aria-hidden="true" strokeWidth={2.25} />
         </button>
       )}
 

@@ -351,51 +351,40 @@
    it by 24px. The task doc's wording — "24px below the header" — is what this
    reproduces at every breakpoint. */
 .cs-drawer-tab {
-  position: fixed; right: 0; top: calc(var(--cs-hdr-h) + 24px); z-index: 55;
-  width: 34px; height: 46px; border: 0; cursor: pointer;
+  /* Owner, 2026-08-08. Two changes, both from a real user failing to find this.
+
+     SOLID, NOT GLASS. It previously used NAV_GLASS. On an older iPhone the
+     broken @supports test (fixed in 628079a) resolved that to a SOLID CREAM
+     panel — a cream tab on a cream page, invisible. Sarah could not find the
+     menu. A tab is a CONTROL, not a surface: it has to be found, so it now
+     carries the brand green at full opacity with a cream chevron.
+
+     BIGGER. 34x46 -> 40x52, clearing the 44px touch guideline on both axes
+     with drawn pixels rather than an invisible pseudo-element. */
+  position: fixed;
+  right: env(safe-area-inset-right, 0px);
+  top: calc(var(--cs-hdr-h) + 24px);
+  /* BELOW the drawer (z-50), not above it. Combined with pointer-events:none
+     when open, the tab cannot be clicked through the panel. */
+  z-index: 45;
+  width: 40px; height: 52px; border: 0; cursor: pointer;
   display: grid; place-items: center;
-  border-radius: 10px 0 0 10px;
-  box-shadow: 0 1px 2px rgba(16,28,22,.12), 0 6px 16px rgba(16,28,22,.14),
-              inset 0 0 0 1px rgba(255,255,255,.28);
-  transition: transform .28s cubic-bezier(.22,.61,.36,1);
+  border-radius: 12px 0 0 12px;
+  background: #143321;
+  color: #f5f0e8;
+  box-shadow: 0 1px 2px rgba(16,28,22,.18), 0 6px 16px rgba(16,28,22,.22);
   -webkit-tap-highlight-color: transparent;
   padding: 0;
+  opacity: 1;
+  transition: opacity .22s ease;
 }
-/* B1: the visible box is 34×46 — short of the 44×44 guideline on width only
-   (height already clears it). An invisible pseudo-element enlarges the
-   TOUCHABLE region without moving a single drawn pixel, same technique
-   `.cs-tab::before` above already uses for the create tab. Extends left (into
-   the content, where there's room) and a little top/bottom for edge taps;
-   `right:0` needs no extension since the tab already sits flush against the
-   viewport edge there. */
-.cs-drawer-tab::before {
-  content: ''; position: absolute; top: -6px; bottom: -6px; left: -14px; right: 0;
-}
-/* when the drawer is open the tab rides out on its edge, now leftward off the
-   right edge. min(288px,85vw) is the drawer's own width formula (w-72
-   max-w-[85vw]), so the tab lands on the drawer's edge at any viewport. */
-.cs-drawer-tab.is-open { transform: translateX(calc(-1 * min(288px, 85vw))); }
-.cs-drawer-tab .cs-arrow {
-  width: 9px; height: 9px; position: relative;
-  /* A1 (owner, 2026-08-07): "the arrow points left when closed and flips
-     right when open." The two-segment chevron below is unchanged from the
-     left-edge tab and, left un-rotated, points RIGHT at rest — verified by
-     screenshot, not assumed (that's the direction Phase 1 explicitly
-     declined to assert without checking). A flat mirror of the tab's
-     position doesn't touch this geometry at all, so the base rest state
-     needed its own 180° turn to read as LEFT; `.is-open` now turns it BACK
-     to 0deg (right) instead of TO 180deg. */
-  transform: rotate(180deg);
-  transition: transform .28s cubic-bezier(.22,.61,.36,1);
-}
-.cs-drawer-tab .cs-arrow::before, .cs-drawer-tab .cs-arrow::after {
-  content: ''; position: absolute; left: 1px; width: 8px; height: 1.8px;
-  background: #1f3a2c; border-radius: 1px;
-}
-.cs-drawer-tab .cs-arrow::before { top: 2px;    transform: rotate(45deg);  transform-origin: right center; }
-.cs-drawer-tab .cs-arrow::after  { bottom: 2px; transform: rotate(-45deg); transform-origin: right center; }
-.cs-drawer-tab.is-open .cs-arrow { transform: rotate(0deg); }
-/* desktop has the rail instead — the tab is phone/tablet only */
+/* Owner: rather than fix the tab and drawer travelling at different speeds, do
+   not make the tab travel at all. It fades out on open and back in on close, so
+   there is no motion to synchronise — the mismatch is removed at the source
+   instead of tuned. The translateX that carried it alongside the drawer is gone
+   entirely; it existed only to serve that motion. */
+.cs-drawer-tab.is-open { opacity: 0; pointer-events: none; }
+
 @media (min-width: 1024px) { .cs-drawer-tab { display: none; } }
 
 /* ===================== RESPONSIVE =====================
