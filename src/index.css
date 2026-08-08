@@ -40,6 +40,17 @@
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Owner, 2026-08-08: the page surface let you drag past its own boundaries.
+       Vertical rubber-banding is wanted — it is the platform's own scroll feel.
+       HORIZONTAL is not: there is nothing to the left or right of the layout, so
+       dragging sideways only exposes bare background and makes the app feel
+       unmoored. `overscroll-behavior-x: none` stops the sideways drag while
+       leaving vertical bounce untouched; `overflow-x: clip` stops any child that
+       overflows from creating a real horizontal scroll range in the first place
+       (clip rather than hidden so it does not create a scroll container and
+       break `position: sticky` on the rails and subheader). */
+    overscroll-behavior-x: none;
+    overflow-x: clip;
   }
   /* Detect the screen and scale: Tailwind sizes are rem-based, so raising the
      root font-size on larger displays grows type, spacing, and max-w-* caps

@@ -88,6 +88,24 @@ const ROW_CLS = 'grid-cols-2 gap-2 pt-2 min-w-0 md:flex md:grid-cols-none md:ite
 
 const DRAWER_BTN_W = 'md:[width:clamp(5rem,9vw,9.5rem)]';
 
+
+/**
+ * "Click" or "tap"? Resolved from INPUT CAPABILITY, not viewport width — a
+ * narrow desktop window still has a mouse, and a large tablet still does not.
+ * Matches the same `(hover: hover)` axis the nav's hover states now use.
+ */
+function usePointerVerb(): 'click' | 'tap' {
+  const [verb, setVerb] = useState<'click' | 'tap'>('click');
+  useEffect(() => {
+    const mq = window.matchMedia('(hover: hover) and (pointer: fine)');
+    const apply = () => setVerb(mq.matches ? 'click' : 'tap');
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
+  }, []);
+  return verb;
+}
+
 export function ContractSubheader({
   drawers, leading, extras, trailing, destructive, openRequest, viewers = [],
 }: {
@@ -110,6 +128,7 @@ export function ContractSubheader({
    *  re-trigger for the same key. */
   openRequest?: { key: string; nonce: number };
 }) {
+  const closeVerb = usePointerVerb();
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [barOpen, setBarOpen] = useState(false);
   const [height, setHeight] = useState(DEFAULT_HEIGHT);
@@ -224,7 +243,11 @@ export function ContractSubheader({
                     : 'border-green-800/20 bg-white text-green-900 hover:bg-green-800/5'}`}>
                 {/* No icon while open — see the note above on Undo2/RotateCcw. */}
                 {!isOpen && d.icon}
-                {isOpen ? 'Click to close' : d.label}
+                {/* Owner, 2026-08-08: "click" is wrong on a phone. The label is
+                    resolved per input capability, not per viewport width — a
+                    narrow desktop window still has a pointer, and a large tablet
+                    does not. */}
+                {isOpen ? (closeVerb === 'tap' ? 'Tap to close' : 'Click to close') : d.label}
                 {!isOpen && d.count !== undefined && d.count > 0 && (
                   <span className="rounded-full bg-gold-400/30 px-1.5 text-[11px] tabular-nums">{d.count}</span>
                 )}
