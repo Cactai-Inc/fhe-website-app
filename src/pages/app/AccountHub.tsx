@@ -65,7 +65,7 @@ function Row({
 }
 
 export default function AccountHub() {
-  const { profile } = useAuth();
+  const { profile, isStaff } = useAuth();
   const realName = profile?.display_name
     || [profile?.first_name, profile?.last_name].filter(Boolean).join(' ')
     || 'Your profile';
@@ -99,11 +99,29 @@ export default function AccountHub() {
         <Row icon={UserRound} title="My Profile" sub={`${realName} · profile, account & security`} onClick={() => toggle('profile')} open={open === 'profile'} />
         {open === 'profile' && <div className="lg:col-span-2"><MyProfileContent /></div>}
 
+        {/* Owner, 2026-08-08: for STAFF the Account page is the COMPANY, not a
+            person — Profile (public + internal) and Login apply; everything else
+            does not. Company documents, the stable and posts belong in a business
+            section instead, and gifts are a company product rather than something
+            an admin holds personally.
+
+            REMOVED, NOT DELETED. Every section below still builds and is one
+            boolean from returning — this is the seam where a per-tenant module
+            flag goes when the platform offers personal-account features to other
+            tenants who do want them. */}
+        {!isStaff && (
+          <>
         <Row icon={Bell} title="My Preferences" sub="How the community can reach you" onClick={() => toggle('preferences')} open={open === 'preferences'} />
         {open === 'preferences' && <div className="lg:col-span-2"><MyPreferencesContent /></div>}
 
+          </>
+        )}
+
         <Row icon={ShieldCheck} title="My Login" sub="Sign-in email, password & Google" onClick={() => toggle('login')} open={open === 'login'} />
         {open === 'login' && <div className="lg:col-span-2"><MyLoginContent /></div>}
+
+        {!isStaff && (
+          <>
 
         <Row icon={Grid3x3} title="My Posts" sub="Your posts & listings" onClick={() => toggle('posts')} open={open === 'posts'} />
         {open === 'posts' && <div className="lg:col-span-2"><MyPostsContent /></div>}
@@ -125,6 +143,8 @@ export default function AccountHub() {
 
         <Row icon={Gift} title="My Gifts" sub="Gifts you can use" onClick={() => toggle('gifts')} open={open === 'gifts'} />
         {open === 'gifts' && <div className="lg:col-span-2"><GiftsContent /></div>}
+          </>
+        )}
       </div>
     </div>
   );
