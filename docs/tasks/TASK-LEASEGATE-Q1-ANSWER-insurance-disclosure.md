@@ -83,6 +83,65 @@ do not exist in the document today** — that is the gap this creates and fills.
 5. **Path 2 — "some amount":** fixed sum, percentage, or free text? And is it a one-off at
    lease start or recurring?
 
+---
+
+## Addendum — owner, 2026-08-07: medical depends on mortality
+
+### The dependency
+
+**Medical follows mortality. If mortality is not in place, medical disappears.**
+
+So the order of resolution is: establish whether **mortality** cover is held → **only then**
+enable the medical component. Medical can never stand alone.
+
+**Each is a separate component of one full policy**, so cost responsibility is elected
+**separately** for each — e.g. the Lessor pays for mortality while the Lessee pays 1–100%
+of medical.
+
+This is a **new gate that does not exist today**: nothing currently prevents a medical
+election while mortality is NONE.
+
+### Section ordering — ALREADY CORRECT, no change needed
+
+The owner asked for General Liability first, then mortality, then medical adjacent. That is
+already the live order. Verified in `HORSE_LEASE_STANDARD`:
+
+| sort | clause group |
+|---|---|
+| 150–169 | `GENERAL_LIABILITY` … `GL_LESSEE_RESP` |
+| 200–221 | `MORTALITY` … `MORT_LESSEE_RESP` |
+| 300–320 | `MEDICAL` … `MED_TAIL` |
+
+**Also worth knowing:** these are **not three sections.** There is one section,
+`INSURANCE_RISK` (sort 140, "Insurance, Risk of Loss, and Indemnification"), and GL /
+mortality / medical are clause groups within it. Any reordering is clause-level, not
+section-level.
+
+### Deductibles on mortality — OWNER RESEARCH PENDING
+
+The owner suspects mortality policies carry **no deductible**. If confirmed, the deductible
+language is stripped from the mortality group and kept for medical.
+
+**Mortality does carry deductible clauses today** — `INSURANCE_RISK.MORT_DEDR_SIMPLE`
+(sort 214) and `INSURANCE_RISK.MORT_DEDR_SPLITC` (215), mirroring the medical pair
+`MED_DEDR_SIMPLE` / `MED_DEDR_SPLITC`. **Do not remove them until the owner confirms**;
+this is a factual question about how mortality policies are written, not a design choice.
+
+### Defect found while checking the order — flagged, not fixed
+
+The medical group is internally out of order relative to the other two. GL and mortality
+both put `_STATUS` **before** `_NONE` and `_LESSEE_RESP`; medical puts them after:
+
+```
+305 MED_NONE          ← election clauses come first
+306 MED_LESSEE_RESP
+308 MED_STATUS        ← status comes after
+```
+
+Against `GL_STATUS` 155 → `GL_NONE` 168, and `MORT_STATUS` 205 → `MORT_NONE` 220. Likely a
+print-order bug in the medical group. **Not touched** — LEASEGATE Phase 2 is stopped and
+this is a live template. Confirm intent before changing it.
+
 ## Sequencing
 
 **None of this is buildable until questions 1–3 are answered**, and question 4 needs
