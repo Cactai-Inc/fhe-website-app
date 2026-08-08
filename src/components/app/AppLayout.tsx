@@ -1310,7 +1310,7 @@ export default function AppLayout() {
       )}
 
       {mobileNavOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
+        <div className="fixed inset-x-0 bottom-0 top-[var(--cs-hdr-h)] z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
           {/* B4 (owner, 2026-08-07): black/white scrim, not the drawer's own
               green family — the green-on-green barely separated. Applied
               unconditionally (superadmin's drawer is the same green glass and
