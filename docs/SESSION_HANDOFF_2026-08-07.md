@@ -1,43 +1,10 @@
 # Session handoff — 2026-08-07
 
-> ## CORRECTIONS — applied 2026-08-07 19:30, AUTHORITATIVE over anything below
->
-> This document was written when `main` was `62192d4` and has since gone stale in three
-> ways. The body below is otherwise sound; these three items override it.
->
-> **1. `main` is `43d564c`**, not `532915e` or `62192d4`.
->
-> **2. FOUR threads are in flight, not three.** `NOGUARD` is the fourth, alongside
-> `SECFIX2`, `LEASEGATE` and `LEASESIMPLE`.
->
-> **3. The no-guard family IS ALREADY TASKED AND RUNNING.** The body below lists it as
-> "not yet tasked" and ranks it first to pick up. **Do not task it.** Its spec is
-> `docs/tasks/TASK-NOGUARD-unguarded-definers.md`, committed at `5453268`, and the thread
-> is live. Starting a second one would put two threads on the same 84 functions and race
-> them on the same migrations.
->
-> ### NOGUARD's measured surface, for auditing its report
->
-> | | count |
-> |---|---|
-> | `SECURITY DEFINER` in `public`, anon-executable | 320 |
-> | …no guard token anywhere in the body | 111 |
-> | …of those, trigger functions (`RETURNS trigger`, not directly callable) | 27 |
-> | **…genuinely anon-callable with no guard** | **84** |
-> | **…of those 84, that also write** | **28** |
->
-> That 84 came from a **crude keyword scan and is wrong in both directions** — it misses
-> functions that merely *mention* `auth.uid()` without authorising on it, and over-flags
-> ones safe by construction. The real surface is probably **larger**. The task doc says so;
-> hold the thread to re-deriving it rather than accepting the number.
->
-> ### One source of truth
->
-> `docs/ORCHESTRATOR_HANDOFF.md` covered the same ground and is now a pointer to this file.
-> **This file is canonical.** Do not create a third.
-
 **Read this first if you are picking up orchestration.** It states what is true, what is
-decided, what is waiting on the owner, and what to verify.
+decided, what is waiting on the owner, and what to verify. **This file is canonical — keep
+it updated in place rather than starting a second handoff doc.**
+
+`main` = `dfb9ab4`, everything pushed, working tree clean.
 
 ---
 
@@ -219,8 +186,9 @@ The pattern in all five: **asserting before verifying.** Query first.
 
 ## IN FLIGHT — the incoming orchestrator's first job
 
-Three threads were dispatched by the owner at the end of this session. **Audit each report
-against the live DB/repo before merging. Do not accept a self-reported "done".**
+Four threads were dispatched by the owner at the end of this session — `SECFIX2`,
+`LEASEGATE`, `LEASESIMPLE` and `NOGUARD`. **Audit each report against the live DB/repo
+before merging. Do not accept a self-reported "done".**
 
 | ID | What | Prereqs | Watch for |
 |---|---|---|---|
@@ -241,11 +209,17 @@ All three were dispatched **with** the mandatory preamble.
 - After any merge, grep for cross-thread hand-offs the threads flagged but could not
   resolve themselves.
 
-### NULLUID's own recommended follow-ups (not yet tasked)
+### NULLUID's own recommended follow-ups
 
-1. **Audit the no-guard family** — anon-callable definers with *no* guard at all. NULLUID
-   ranked this above anything left in its own area; its searches all keyed on a guard
-   existing.
-2. `profiles_role_guard`'s `auth.uid() IS NULL → RETURN NEW` — latent.
+1. **The no-guard family — TASKED AND RUNNING as `NOGUARD`.** Spec:
+   `docs/tasks/TASK-NOGUARD-unguarded-definers.md`. **Do not task it again.** Measured
+   surface for auditing its report: 320 anon-executable `SECURITY DEFINER` functions in
+   `public`; 111 with no guard token at all; 27 of those are trigger functions (not
+   directly callable); **84 genuinely anon-callable unguarded, 28 of which write.** That 84
+   came from a crude keyword scan and is **wrong in both directions** — it misses functions
+   that merely *mention* `auth.uid()` without authorising on it, and over-flags ones safe by
+   construction. The real surface is probably **larger**. Hold the thread to re-deriving it
+   rather than accepting the number.
+2. `profiles_role_guard`'s `auth.uid() IS NULL → RETURN NEW` — latent, **not yet tasked**.
 3. **`test:db` is broken on `main` — 55 of 64 files failing, so that suite is currently
-   protecting nothing.**
+   protecting nothing.** Not yet tasked.
