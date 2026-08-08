@@ -33,7 +33,18 @@ import { captureWallReturnDestination } from '../../lib/wallReturn';
  *    solid (revert): 'bg-cream-100'
  *  `supports-[not(...)]` is the solid-color fallback for browsers without
  *  backdrop-filter support. */
-const NAV_GLASS = 'bg-cream-100/[0.92] backdrop-blur-xl supports-[not(backdrop-filter:blur(1px))]:bg-cream-100 supports-[not(backdrop-filter:blur(1px))]:backdrop-blur-none';
+/* Two bugs lived in this one line, both found 2026-08-08.
+   1. `bg-cream-100/[0.92]` NEVER EMITTED. The bracket-opacity form produced no
+      rule at all — verified absent from the built CSS — so the surface had no
+      background and rendered as bare blur. Percentage form (`/90`) emits, the
+      same way `/30` and `/40` already do elsewhere in this file.
+   2. The @supports fallback tested only UNPREFIXED `backdrop-filter`. Safari
+      shipped that unprefixed in v18; older iPhones support it solely as
+      `-webkit-backdrop-filter`. So on those phones the blur worked via the
+      prefix while the test still reported "unsupported" and slammed a SOLID
+      cream fallback over it — which is why one device showed glass and another
+      showed opaque tan from identical code. The test now accepts either. */
+const NAV_GLASS = 'bg-cream-100/90 backdrop-blur-xl supports-[not((backdrop-filter:blur(1px))_or_(-webkit-backdrop-filter:blur(1px)))]:bg-cream-100 supports-[not((backdrop-filter:blur(1px))_or_(-webkit-backdrop-filter:blur(1px)))]:backdrop-blur-none';
 
 /** Unread-notification count for the Dashboard nav badge. Refreshes on mount and
  *  on every route change (the notifications themselves live on the dashboard now —
