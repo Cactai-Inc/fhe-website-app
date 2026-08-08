@@ -46,25 +46,40 @@ If you cannot print either CONFIRM, STOP and state the problem. Do not proceed
 past a CONFIRM you could not print.
 ```
 
-### Getting the ID into the thread's title
+### Getting the ID into the thread's title — two approaches DISPROVEN
 
-The VS Code thread title is **auto-generated from the prompt's content**, and it discards a
-`THREAD ID: X` header as metadata — confirmed live on `WALLSYNC`, which auto-titled itself
-"Fix version-blind satisfaction predicate for wall and onboarding".
+The VS Code thread title is **auto-generated from the prompt**, and it is fixed from the
+opening content before the task doc is ever read. **The doc is not the source** — proven by
+`WALLSYNC`, whose doc is titled "TASK WALLSYNC — one satisfaction predicate" while the tab
+read something else entirely.
 
-**So the ID goes in the first natural-language sentence**, where the summarizer has to carry
-it:
+Renaming by hand is not an escape: the tab does not update until the thread is closed and
+reopened, **and reopening stops the run.**
+
+| # | attempt | result |
+|---|---|---|
+| 1 | `THREAD ID: WALLSYNC` as a header line | **discarded as metadata** → "Fix version-blind satisfaction predicate for wall and onboarding" |
+| 2 | `NOGUARD — audit anon-callable SECURITY DEFINER functions…` | **ID dropped, description kept** → "Audit unguarded SECURITY DEFINER functions" |
+
+The pattern: the summarizer treats `ID:` and `ID —` as discardable prefixes and titles from
+the task description that follows.
+
+**Attempt 3 — starve it.** The ID alone on its own line, no description anywhere in the
+prompt, everything else delegated to the doc:
 
 ```
-WALLSYNC — fix the wall/onboarding deadlock.
+SECFIX2
 
-Read docs/tasks/TASK-WALLSYNC-…md in full before doing anything.
+Read docs/tasks/TASK-SECFIX2-gift-grant-and-directory.md and do exactly what it says.
+Worktree: ~/Downloads/claude-code-repo/wt-secfix2, branch task/secfix2, off origin/main.
 ```
 
-Not `THREAD ID: WALLSYNC` on its own line. That gets dropped.
+**This is the better prompt shape regardless of naming.** The task doc is the spec; a prose
+prompt that restates it duplicates the spec in two places that can drift, and it is exactly
+what feeds the summarizer. Prompt = pointer. Doc = everything.
 
-If the extension turns out to support renaming a thread manually, use that instead — it is
-exact, and this convention is only a workaround for not having it.
+If attempt 3 also fails, stop trying — identify threads by **branch**, which is exact and
+cannot drift.
 
 ### The ID is stamped in three places that do NOT depend on the title
 
