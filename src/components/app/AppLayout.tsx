@@ -881,6 +881,31 @@ export default function AppLayout() {
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [mobileNavOpen]);
+
+  /* Owner, 2026-08-08: "What is the point of the overlay if you can still scroll
+     the page when the menu is open?" — correct, and it was worse than cosmetic:
+     the drawer declares role="dialog" aria-modal="true" while the page kept
+     scrolling behind it, so the scrim was decorative and the ARIA was a lie.
+     Locking the body while it is open makes the scrim mean something.
+
+     `position: fixed` on <body> rather than `overflow: hidden`, because iOS
+     Safari ignores overflow:hidden on body — and the scroll position is captured
+     and restored, since going fixed otherwise jumps the page to the top on close. */
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    const y = window.scrollY;
+    const { body } = document;
+    const prev = { position: body.style.position, top: body.style.top, width: body.style.width };
+    body.style.position = 'fixed';
+    body.style.top = `-${y}px`;
+    body.style.width = '100%';
+    return () => {
+      body.style.position = prev.position;
+      body.style.top = prev.top;
+      body.style.width = prev.width;
+      window.scrollTo(0, y);
+    };
+  }, [mobileNavOpen]);
   useEffect(() => { setMobileNavOpen(false); }, [location.pathname]);
 
   async function handleSignOut() {
@@ -1291,7 +1316,7 @@ export default function AppLayout() {
               unconditionally (superadmin's drawer is the same green glass and
               gets the same legibility fix; this is a neutral utility colour,
               not tenant branding). */}
-          <div className="absolute inset-0 bg-black/40" onClick={closeMobileNav} aria-hidden="true" />
+          <div className="absolute inset-0 bg-green-950/45" onClick={closeMobileNav} aria-hidden="true" />
           <nav
             className={`absolute inset-y-0 ${isSuperAdmin ? 'left-0' : 'right-0'} w-72 max-w-[85vw] ${NAV_GLASS} shadow-xl p-3 overflow-y-auto`}
             onClick={(e) => {
