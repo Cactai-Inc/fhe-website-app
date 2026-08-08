@@ -3,8 +3,11 @@
 Owner-reported 2026-08-07 from a narrow desktop window (mobile layout **with a cursor**).
 Orchestrator diagnostics are inline — **do not re-derive them, verify them.**
 
-**Two gaps in the brief:** the owner's Header item 3 was cut off mid-sentence, and the
-screenshots referenced did not arrive. **Ask before guessing at either.**
+**Screenshots were supplied and reviewed by the orchestrator 2026-08-08** — their findings
+are folded into C1, C1b, the Header section and E.
+
+**One gap remains:** the owner's **Header item 3 was cut off mid-sentence.** Ask; do not
+guess.
 
 ---
 
