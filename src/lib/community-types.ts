@@ -22,18 +22,20 @@ export interface MemberDirectoryEntry {
   avatar_url: string | null;
   bio: string | null;
   riding_level: string | null;
-  /** The five community channels (hide-from-community enforced in the view — a
-   *  hidden field arrives as null, so a present value IS an offered channel). */
+  /** The five community channels (hide-from-community enforced in the
+   *  member_directory_list RPC — a hidden field arrives as null, so a present
+   *  value IS an offered channel). */
   community_email: string | null;
   mobile_call: string | null;
   mobile_text: string | null;
   whatsapp_call: string | null;
   whatsapp_text: string | null;
   // The old one-value-plus-allow-toggles columns (email, mobile, whatsapp,
-  // allow_*) are deliberately NOT declared here. member_directory still returns
-  // them through the Stage A deprecation window, but nothing reads them and
-  // leaving them undeclared keeps the compiler as the guard against new reads.
-  // Stage B drops the columns; that is a DB change and not this thread's.
+  // allow_*) are deliberately NOT declared here — and as of SECFIX2 G2 they are
+  // no longer SENT either: the member_directory_list RPC does not select them,
+  // so the Stage A deprecation window is closed on the read path. The columns
+  // still exist on `contacts`; dropping them there is still a DB change and
+  // still not this thread's.
   social_tiktok: string | null;
   social_instagram: string | null;
   social_facebook: string | null;

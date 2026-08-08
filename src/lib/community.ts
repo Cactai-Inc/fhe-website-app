@@ -22,25 +22,27 @@ export async function getMyMember(): Promise<Member | null> {
 }
 
 // ─── Directory ───────────────────────────────────────────────────────────────
+/* SECFIX2 G2: both reads go through the `member_directory_list` definer RPC, not
+ * the `member_directory` view. The view was postgres-owned with security_invoker
+ * off, so any caller holding any JWT read every row with RLS bypassed. It is now
+ * security_invoker = true AND has SELECT revoked from anon/authenticated, so this
+ * RPC is the only path. The RPC gates itself (no anonymous and no suspended
+ * caller), enforces the contacts.hide_* flags, and returns a narrower column set
+ * — the legacy email/mobile/whatsapp columns are no longer sent at all.
+ * Ordering (display_name NULLS LAST) is done inside the RPC.
+ */
 export async function fetchMemberDirectory(): Promise<MemberDirectoryEntry[]> {
-  const { data, error } = await supabase
-    .from('member_directory')
-    .select('*')
-    .order('display_name', { nullsFirst: false });
+  const { data, error } = await supabase.rpc('member_directory_list');
   if (error) throw error;
   return (data ?? []) as MemberDirectoryEntry[];
 }
 
-/** A single member's public profile (from the same directory view, so hide/allow
- *  prefs are already enforced). Returns null if not a visible member. */
+/** A single member's public profile (the same RPC narrowed to one user, so the
+ *  hide/allow prefs are enforced identically). Null if not a visible member. */
 export async function fetchMemberProfile(userId: string): Promise<MemberDirectoryEntry | null> {
-  const { data, error } = await supabase
-    .from('member_directory')
-    .select('*')
-    .eq('user_id', userId)
-    .maybeSingle();
+  const { data, error } = await supabase.rpc('member_directory_list', { p_user_id: userId });
   if (error) throw error;
-  return (data ?? null) as MemberDirectoryEntry | null;
+  return ((data ?? [])[0] ?? null) as MemberDirectoryEntry | null;
 }
 
 /** A member's owned horses (name + home location) for their community profile. */
