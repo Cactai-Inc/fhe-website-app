@@ -9,11 +9,17 @@
 
     1. `contract_field_defs.default_value` — nullable, so every existing def and every
        other template is unaffected. Only `start_lease_contract_v2` reads it, and only
-       when seeding a brand-new document; it never overwrites a value a human set.
+       when seeding a brand-new document; it never reaches an existing one.
     2. `TXN.LEASE_TYPE` offers PARTIAL only, and defaults to PARTIAL.
 
-  Reversing this is a one-line options UPDATE once the full-lease insurance clauses
-  are built — the FULL value and every conditional that reads it are left in place.
+  The FULL option value and every conditional that reads it are left in place, so
+  restoring full leases is a one-line options UPDATE once their clauses exist.
+
+  The function below is the LIVE definition of start_lease_contract_v2 with three
+  lines changed (the seeding INSERT gains `value` <- `d.default_value`). It was
+  produced by patching pg_get_functiondef output, not rewritten from memory —
+  everything else, including the acquisition/LEASE_IN contract shape and the
+  active/deleted template validation, is byte-identical to what is running.
 
   Requires PGCLIENTENCODING=UTF8.
 */
@@ -22,60 +28,66 @@ ALTER TABLE contract_field_defs ADD COLUMN IF NOT EXISTS default_value text;
 
 COMMENT ON COLUMN contract_field_defs.default_value IS
   'Seeded into contract_fields.value when a document is created. NULL = seed blank. '
-  'Never applied to an existing document — sync_contract_fields_from_defs deliberately '
+  'Never applied to an existing document - sync_contract_fields_from_defs deliberately '
   'leaves values alone, so a default cannot retro-answer a question a party already saw.';
 
 
 -- ── seed defaults on document creation ───────────────────────────────────────
-CREATE OR REPLACE FUNCTION public.start_lease_contract_v2(
-  p_lessee_contact_id uuid,
-  p_lessor_contact_id uuid DEFAULT NULL::uuid,
-  p_horse_id uuid DEFAULT NULL::uuid,
-  p_responsible_role text DEFAULT 'LESSEE'::text,
-  p_template_key text DEFAULT 'HORSE_LEASE_V2'::text)
+CREATE OR REPLACE FUNCTION public.start_lease_contract_v2(p_lessee_contact_id uuid, p_lessor_contact_id uuid DEFAULT NULL::uuid, p_horse_id uuid DEFAULT NULL::uuid, p_responsible_role text DEFAULT 'LESSEE'::text, p_template_key text DEFAULT 'HORSE_LEASE_V2'::text)
  RETURNS jsonb
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'public'
 AS $function$
 DECLARE
-  v_org uuid; v_contract uuid; v_doc uuid; v_n int;
-  v_originator uuid; v_lessor uuid; v_key text; v_kind text;
+  v_contract   uuid;
+  v_org        uuid;
+  v_doc        uuid;
+  v_tmpl       uuid;
+  v_originator uuid;
+  v_n          int;
+  v_key        text;
+  v_active     boolean;
+  v_deleted    timestamptz;
+  v_kind       text;
 BEGIN
-  IF NOT has_staff_access() THEN
-    RAISE EXCEPTION 'not authorized to start a lease contract';
-  END IF;
-  v_org := current_org();
-  v_originator := current_contact_id();
+  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'authentication required'; END IF;
+  IF NOT has_staff_access() THEN RAISE EXCEPTION 'not authorized to start a lease contract'; END IF;
+  IF p_lessee_contact_id IS NULL THEN RAISE EXCEPTION 'a lessee contact is required'; END IF;
 
+  -- LEASEFORK: which lease version to author. NULL == not specified == the default.
   v_key := coalesce(p_template_key, 'HORSE_LEASE_V2');
 
-  IF p_lessee_contact_id IS NULL THEN
-    RAISE EXCEPTION 'a lessee contact is required';
-  END IF;
+  v_originator := current_contact_id();  -- H1: the company (staff caller) is always the author
 
-  v_lessor := coalesce(p_lessor_contact_id, org_company_contact_id());
-  IF v_lessor IS NULL THEN
-    RAISE EXCEPTION 'no lessor contact and no company contact for this organization';
-  END IF;
+  SELECT org_id INTO v_org FROM contacts WHERE id = p_lessee_contact_id;
 
-  SELECT contract_kind INTO v_kind
+  -- LEASEFORK: validate the selected template. No silent fallback — a bad key
+  -- raises rather than quietly authoring a different contract than was chosen.
+  SELECT id, active, deleted_at, contract_kind
+    INTO v_tmpl, v_active, v_deleted, v_kind
     FROM contract_templates WHERE template_key = v_key;
-  IF v_kind IS NULL THEN
-    RAISE EXCEPTION 'unknown lease template: %', v_key;
+  IF v_tmpl IS NULL THEN
+    RAISE EXCEPTION 'unknown contract template: %', v_key;
   END IF;
   IF v_kind IS DISTINCT FROM 'HORSE_LEASE' THEN
-    RAISE EXCEPTION 'template % is not a lease template (contract_kind %)',
+    RAISE EXCEPTION 'template % is not a lease template (contract_kind = %)',
       v_key, coalesce(v_kind, 'NULL');
   END IF;
+  IF NOT v_active OR v_deleted IS NOT NULL THEN
+    RAISE EXCEPTION 'template % is not active', v_key;
+  END IF;
 
-  INSERT INTO contracts (org_id, segment, title, horse_id, originator_contact_id, status)
-  VALUES (v_org, 'LEASE', 'Horse Lease Agreement', p_horse_id, v_originator, 'draft')
-  RETURNING id INTO v_contract;
-
-  INSERT INTO contract_parties (contract_id, party_role, contact_id, is_signer, signer_order, org_id)
-  VALUES (v_contract, 'LESSOR', v_lessor, true, 1, v_org),
-         (v_contract, 'LESSEE', p_lessee_contact_id, true, 2, v_org);
+  -- contract + parties (spine model)
+  INSERT INTO contracts (org_id, segment, status, horse_id, originator_contact_id, terms)
+    VALUES (v_org, 'acquisition', 'draft', p_horse_id, v_originator, jsonb_build_object('deal_side','LEASE_IN'))
+    RETURNING id INTO v_contract;
+  INSERT INTO contract_parties (org_id, contract_id, contact_id, party_role, is_signer, signer_order)
+    VALUES (v_org, v_contract, p_lessee_contact_id, 'LESSEE', true, 1);
+  IF p_lessor_contact_id IS NOT NULL THEN
+    INSERT INTO contract_parties (org_id, contract_id, contact_id, party_role, is_signer, signer_order)
+      VALUES (v_org, v_contract, p_lessor_contact_id, 'LESSOR', true, 2);
+  END IF;
 
   -- document shell (same generator the engine uses; body recomposed below)
   SELECT gd.document_id INTO v_doc FROM generate_document(
@@ -96,9 +108,9 @@ BEGIN
                        workflow_state = 'editable', status = 'AWAITING_SIGNATURE'
    WHERE id = v_doc;
 
-  -- seed fields straight from the clause-model defs (clause_key + responsibility_kind carried).
-  -- LEASEFIX 2026-08-09: `value` now seeds from d.default_value (NULL → blank, the
-  -- prior behaviour for every def that does not set one).
+  -- seed fields straight from the clause-model defs (clause_key + responsibility_kind carried)
+  -- LEASEFIX 2026-08-09: `value` seeds from d.default_value. NULL for every def that
+  -- does not set one, which is the prior behaviour exactly.
   INSERT INTO contract_fields (
     org_id, document_id, field_key, label, section, clause_key, owner_role,
     value_type, input_kind, format_type, options, conditional_on, closed, guidance,
@@ -136,8 +148,8 @@ UPDATE contract_field_defs
    AND options @> '[{"value": "FULL"}]'::jsonb;
 
 -- Live non-executed leases: adopt PARTIAL where the question is unanswered, so no
--- in-flight draft sits on a lease type the contract can no longer express. A doc
--- that already says PARTIAL is untouched; none says FULL (verified before applying).
+-- in-flight draft sits on a lease type the contract can no longer express. Verified
+-- before applying: three say PARTIAL already, the VOID one is blank, none says FULL.
 UPDATE contract_fields cf
    SET value = 'PARTIAL', updated_at = now()
   FROM documents d

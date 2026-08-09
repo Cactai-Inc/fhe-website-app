@@ -1,10 +1,16 @@
 # LEASEFIX batch 2 — the insurance section (13.2 / 13.3 / 13.4 / 13.5)
 
 Owner spec 2026-08-09. Batch 1 (11.x / 12.x) is applied and committed as `a184f3a`.
-This document holds the **draft contract language** and the control structure for the
-insurance rework. **Nothing here is applied yet — the prose needs owner sign-off first,
-because it becomes binding text in a lease awaiting execution (Sarah Morgan,
-`DOC-J7NXZDHD5F`).**
+This document holds the contract language and the control structure for the insurance
+rework. **APPLIED 2026-08-09** after owner sign-off, in migrations `20260809T1100`
+(partial-only + seeded defaults), `20260809T1200` (the section rebuild),
+`20260809T1300` (allocation composer + lock rules) and `20260809T1400` (render fixes).
+
+Owner amendments on sign-off:
+- CCC last sentence ends at "…is the policy to be claimed against for that loss." The
+  trailing ", and no other policy shall be claimed against for it" was cut.
+- 13.4 confirmed: mortality **not required** prints the N/A explanation; mortality
+  required opens the medical block.
 
 Owner decisions carried in from the Q&A:
 
@@ -139,8 +145,7 @@ Coverage:**
 > to, or death of the Horse is caused by Lessee's negligence. It shall not be claimed
 > against merely because other coverage is unavailable, is not in force, or has denied a
 > claim. Where a loss is caused by Lessee's negligence, care, custody and control
-> insurance is the policy to be claimed against for that loss, and no other policy shall
-> be claimed against for it.
+> insurance is the policy to be claimed against for that loss.
 
 Then, gated on `YES`:
 
