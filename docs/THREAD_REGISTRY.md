@@ -140,8 +140,9 @@ would have re-run finished work, including a "person is blocked" item that was a
 | **GOOGLEAUTH** | Self-serve "Activate Sign in with Google" | not run |
 | **FACILITYTERM** | Tenant chooses the facility word | not run — blocked on the owner's word list |
 | **MOBILEPASS** | Nav/header material pass — **owns `AppLayout.tsx`** | not run |
-| **NOGUARD1** | Access-control inventory of the anon-reachable definer surface | branch `task/noguard1` exists, doc commit only, unmerged, no report |
-| **NOGUARD2** | Harden the access checks NOGUARD1 finds | not run, gated on NOGUARD1 |
+| ~~**NOGUARD1**~~ | Access-control inventory of the anon-reachable definer surface | **DONE 2026-08-08.** Report merged at `9679006`; independently audited at `docs/reports/TASK-NOGUARD1-ORCHESTRATOR-AUDIT.md`. Findings confirmed against prod; the report understates the contract-field surface 3× |
+| **NOGUARD2** | Harden the access checks NOGUARD1 found | **UNBLOCKED, ready, highest-priority open item.** Verified target list now in its task doc. Starts with `void_signatures_on_edit` — a live hole |
+| **NOGUARD3** | Audit the `authenticated` surface (396 callable definer fns) | not specced — larger than the anon surface, never measured |
 
 Unspecced and outranking most of the above: **the contract issues the owner found after the
 reload fix.** Never described, so no doc exists. Ask before ordering anything around it.

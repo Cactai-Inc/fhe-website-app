@@ -7,6 +7,17 @@ conversation.
 Companions: `docs/HANDOFF-CHECKLIST.md` (what this had to contain), `CLAUDE.md` (the system
 itself, D1–D9 settled decisions), `docs/THREAD_REGISTRY.md` (thread IDs and status).
 
+> ## ⚠ READ THIS BEFORE PART 6 — `docs/WORK-INVENTORY-2026-08-08.md`
+>
+> **PART 6 of this document is incomplete and was written that way without knowing it.**
+> It lists ~9 tasks and 5 decisions. The full inventory is roughly ten times that, and the
+> two largest documents in the repo — `docs/BUILD_TRACKER.md` (129 items) and
+> `docs/BACKLOG.md` — are not named anywhere in this handoff.
+>
+> `docs/WORK-INVENTORY-2026-08-08.md` reconciles every source and is the single index that
+> suggestion S7 below says does not exist. **It also corrects four statements in PART 6.**
+> Read it before proposing any next task, and add every new request to it.
+
 ---
 
 # PART 1 — YOUR ROLE
@@ -310,10 +321,22 @@ wasted time in the last session was him testing code that had not shipped.
 
 ## Specced, ready to run
 
-`PAGEFRAME` (nine pages onto the shared header — moves A5/A6 to done) · `PURPOSEFIX` (a live
-defect he reported twice) · `NOGUARD1` · `SECFIX2` is done · `GIFTCREDITS` · `GOOGLEAUTH` ·
-`ADMINSWEEP` (the full admin refactor — the largest remaining piece) · `FACILITYTERM` ·
+**CORRECTED 2026-08-08. `NOGUARD1` has RUN** — report merged at `9679006`, independently
+audited at `docs/reports/TASK-NOGUARD1-ORCHESTRATOR-AUDIT.md`. **`NOGUARD2` is unblocked and
+outranks everything else on this line.**
+
+`NOGUARD2` (verified target list in its task doc — highest priority open item) · `PAGEFRAME`
+(nine pages onto the shared header — moves A5/A6 to done) · `PURPOSEFIX` (a live defect he
+reported twice) · `GIFTCREDITS` · `GOOGLEAUTH` · `ADMINSWEEP` (the full admin refactor) ·
+`FACILITYTERM` · `MOBILEPASS` (**owns `AppLayout.tsx`** — conflicts with any nav work) ·
 `TITLESWEEP` (run AFTER `PAGEFRAME`; it fills titles those conversions leave empty).
+`SECFIX2` is done.
+
+**This is not the whole queue.** `docs/WORK-INVENTORY-2026-08-08.md` PART 6 ranks these
+against the rest of the inventory; all of them sit below five items that are not on this line.
+
+The A-series numbers referenced above and below are indexed in
+`docs/reference/OPEN-CHANGE-REQUESTS-2026-08-08.md`.
 
 ## Decisions the owner owes
 
@@ -327,6 +350,22 @@ defect he reported twice) · `NOGUARD1` · `SECFIX2` is done · `GIFTCREDITS` ·
 
 ## Known and unfixed
 
+- **`void_signatures_on_edit(uuid)` — LIVE SECURITY HOLE, verified in production 2026-08-08.**
+  `SECURITY DEFINER`, `anon` holds EXECUTE, no identity check, no caller anywhere. An
+  unauthenticated caller with a document id soft-deletes **every signature on that document**
+  and resets its status. First target of `NOGUARD2`.
+- **76 of 285 anon-callable definer functions enforce no access rule; 38 of them write.**
+  Nine of those rewrite `contract_fields` on any document. The gift-guard note below is a
+  fraction of the surface, not the extent of it.
+- **`authenticated` has never been audited at all** — it holds EXECUTE on 396 callable
+  definer functions, and signing up is free. Larger than the anon surface. Not yet specced.
+- Three gift functions still have guards that do not fire for anonymous callers —
+  `gift_transfer` already carries the correct `coalesce(…, false)` shape to copy.
 - `test:db` is broken — 55 of 64 files failing. That suite protects nothing.
-- Three gift functions still have guards that do not fire for anonymous callers.
-- Nothing shipped in the last two days has been verified in a browser by anyone but the owner.
+- **Browser-verification debt: about twenty tracker items over two weeks** are
+  *code-complete, browser pending* — `A11`–`A13`, `A20`, `A21`, `F3`, `I1`–`I11`, `K1`–`K4`.
+  Server-side `psql` proof does not prove a render. **CORRECTED — the earlier text here said
+  "the last two days", which was wrong.**
+- **Migrations are not rebuild-safe.** Many rewrite live function bodies via
+  `pg_get_functiondef` + string-replace, which no-ops on a fresh database, and there is no
+  `schema_migrations` table. A production rebuild has no strategy.

@@ -1,3 +1,4 @@
+
 # Horse Lease Agreement — HORSE_LEASE_SIMPLE, rendered in full
 
 > **SAMPLE — NOT AN EXECUTABLE AGREEMENT.** Every name, address, date and figure below is invented
