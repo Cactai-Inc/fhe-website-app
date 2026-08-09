@@ -1,0 +1,239 @@
+/* ============================================================================
+ * THE APP HEADER — one header sitewide (TASK-ONEHEADER)
+ *
+ * Adopted from the LOGIN screen's header (src/components/layout/Header.tsx):
+ * a header that is transparent at the top of the page and descends a frosted,
+ * gold-ruled surface once you scroll. Signing in no longer swaps the header
+ * for a different one; the colours match across the wire.
+ *
+ * WRITTEN IN PLAIN CSS, DELIBERATELY. Two arbitrary Tailwind values silently
+ * emitted no rule at all on 2026-08-08 (`bg-cream-100/[0.92]` produced nothing,
+ * and the surface rendered as bare blur). Nothing in this file goes through
+ * Tailwind's value parser, so nothing here can fail that way.
+ *
+ * WHAT DID NOT COME ACROSS: the cardstock header's DEBOSSED RELIEF. Relief is
+ * layered text-shadow carving letters into a mid-tone photographic stock; on a
+ * transparent surface over arbitrary page content there is no material to carve
+ * and the values do not transfer. The wordmark, monogram and avatar are
+ * re-decided here as flat marks, not ported. The original is preserved whole at
+ * docs/reference/shelved-cardstock-header/.
+ * ========================================================================= */
+
+/* --cs-hdr-h IS THE HEADER HEIGHT, not a description of it.
+ *
+ * The name is kept because four other things already read it for their sticky
+ * offsets: the member rail, the staff rail, the contract subheader
+ * (ContractSubheader.tsx) and — until ONEHEADER removed it — the drawer tab.
+ * Renaming it would have been a rename across four files for no gain.
+ *
+ * The header takes its height FROM the variable (`height: var(--cs-hdr-h)`)
+ * rather than the variable being kept in step with the header by hand, which is
+ * how the cardstock file did it. That inverts the failure mode: the two cannot
+ * drift, because there is only one number.
+ *
+ * This is also why the header does NOT minify on scroll the way the public site
+ * does. Inside the app a header that changes height moves every sticky offset
+ * beneath it — both rails and the contract subheader — while you are scrolling a
+ * document. Fixed height per breakpoint; only the SURFACE changes on scroll.
+ * (Owner: confirm. The task doc names a fixed height as the safer default.) */
+:root { --cs-hdr-h: 76px; }
+
+.oh-hdr {
+  position: sticky; top: 0; z-index: 40;
+  height: var(--cs-hdr-h);
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+  /* the surface runs edge to edge; only the marks are inset past the notch */
+  padding-left: calc(20px + env(safe-area-inset-left));
+  padding-right: calc(20px + env(safe-area-inset-right));
+  background-color: transparent;
+  border-bottom: 1px solid transparent;
+  /* 450ms ease-out — the public header's own transition, so the two behave
+     identically either side of sign-in. */
+  transition: background-color .45s ease-out, border-color .45s ease-out,
+              box-shadow .45s ease-out;
+}
+
+/* ============ THE SCROLLED SURFACE ============
+ * The public header declares `bg-green-900/10 backdrop-blur-md` over its own
+ * page. That is a DECLARED colour, and this repo has already established
+ * (ONEHEADER §1, and the shelved header's own README) that over a warm cream
+ * page only the RENDERED colour matters. So the rendered colour is what is
+ * reproduced here, not the declaration.
+ *
+ *   green-900 (#0d2118) at 10% over the cream page (#faf8f4)  ->  #e2e2de
+ *
+ * #e2e2de is the target. Declaring it directly, at high alpha, buys one thing
+ * the low-alpha green cannot: STABILITY OVER WHAT PASSES BEHIND. In the app the
+ * member rail is a solid green-800 panel and it sits under this header for the
+ * first ~76px of every scroll. Low-alpha green over green-800 composites to
+ * #1a2d23 — a dark band — and the dark-green wordmark disappears into it.
+ *
+ *   this surface over the cream page   ->  #e3e3df   (the public header's tone)
+ *   this surface over green-800        ->  #c5c9c4   (wordmark still ~9:1)
+ *
+ * Same look where the app actually is, no failure where it sometimes is. */
+.oh-hdr.is-scrolled {
+  background-color: rgba(226, 226, 222, .86);
+  -webkit-backdrop-filter: blur(12px);
+          backdrop-filter: blur(12px);
+  border-bottom-color: rgba(186, 153, 53, .25);   /* gold-600/25 — the public header's hairline */
+  box-shadow: 0 1px 2px rgba(10, 26, 15, .10);    /* shadow-sm shadow-green-950/10 */
+}
+
+/* The @supports test accepts EITHER spelling. Testing only the unprefixed
+   property is the exact bug fixed in 628079a on the nav surface: Safari shipped
+   `backdrop-filter` unprefixed in v18, older iPhones support it solely as
+   `-webkit-backdrop-filter`, so a bare test reports "unsupported" on phones that
+   blur perfectly well. Without the blur the header needs to be fully opaque —
+   translucency with nothing diffusing what is behind it is unreadable. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .oh-hdr.is-scrolled { background-color: #e3e3df; }
+}
+
+/* ============ THE MARKS ============
+   Flat, not relieved — see the file header. The face is named explicitly for the
+   same reason the cardstock file named it: the app's body is font-sans (Inter),
+   so a mark that does not ask for the serif silently renders in Inter. */
+.oh-mono, .oh-wordmark, .oh-avatar {
+  font-family: 'Big Caslon', 'Libre Caslon Text', Georgia, serif;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none; user-select: none;
+}
+
+.oh-left  { grid-column: 1; display: flex; justify-content: flex-start; }
+.oh-right { grid-column: 3; display: flex; justify-content: flex-end; }
+
+.oh-homelink {
+  display: inline-flex; align-items: center;
+  min-height: 44px;                    /* touch target, per the public header */
+  text-decoration: none; color: inherit;
+}
+.oh-homelink:hover { text-decoration: none; }
+
+/* The FH monogram — the public header's squared, bordered mark. There is still
+   no full logo asset in the repo (only public/favicon.svg, which is these two
+   letters); drop a real one in here when it arrives. */
+.oh-mono {
+  width: 42px; height: 42px; flex: none;
+  display: grid; place-items: center;
+  border: 1px solid rgba(20, 51, 33, .40);   /* green-800/40 */
+  color: #0d2118;                             /* green-900 */
+  font-size: 17px; line-height: 1; letter-spacing: .04em;
+}
+
+/* ============ THE WORDMARK ============
+   Two stacked lines, the public header's nameplate. Stacking is also what fixes
+   the mobile defect the cardstock header could not: one 658px line needed ~840px
+   of header before it collided with the marks, and every phone breakpoint below
+   that was a compromise. Two short lines need ~200px and fit every phone at full
+   size, so "legible on mobile" stops being a width negotiation. */
+.oh-wordmark {
+  grid-column: 2; justify-self: center;
+  display: flex; flex-direction: column; align-items: center;
+  line-height: 1.06; white-space: nowrap;
+  text-decoration: none; color: #0d2118;      /* green-900 on cream ≈ 16:1 */
+}
+.oh-wordmark:hover { text-decoration: none; }
+.oh-w1 { font-size: 19px; letter-spacing: .06em; text-transform: uppercase; }
+.oh-w2 { font-size: 12px; letter-spacing: .30em; text-transform: uppercase; }
+/* Letter-spacing puts a trailing space after the LAST letter too, which is
+   inside the box being centred — so the glyphs sit half the tracking left of
+   true centre, and the two lines visibly disagree because their tracking
+   differs. A negative right margin equal to the tracking takes that trailing
+   space back out of the box, and the glyphs land centred. */
+.oh-w1 { margin-right: -.06em; }
+.oh-w2 { margin-right: -.30em; }
+
+/* ============ THE AVATAR — THE MENU BUTTON ============
+   ONEHEADER §2 (owner, 2026-08-08): the avatar is the control that opens the
+   nav again. It replaces the hanging drawer tab, which is deleted.
+
+   It is FILLED, not outlined, and that is deliberate rather than decorative. The
+   drawer tab was made solid green at full opacity on 2026-08-08 for a recorded
+   reason: on an older iPhone the previous glass tab resolved to a cream panel on
+   a cream page and a real user could not find the menu. This is now the only way
+   into the nav on a phone, so it carries the same rule — a control has to be
+   findable. The gold hairline marks it as interactive without implying a
+   dropdown (ONEHEADER §4: it opens the one nav, it does not bring back the
+   separate avatar menu ONEMENU removed).
+
+   `-webkit-touch-callout` stays for the same reason the cardstock avatar carried
+   it: a tap-and-hold should not raise the system's callout on a glyph. */
+.oh-avatar {
+  width: 42px; height: 42px; flex: none;
+  display: grid; place-items: center;
+  border: 0; padding: 0; margin: 0;
+  border-radius: 999px;
+  background: #143321;                        /* green-800 */
+  color: #f5f0e8;                             /* cream-100 */
+  font-size: 17px; line-height: 1; letter-spacing: .02em;
+  -webkit-touch-callout: none;
+}
+button.oh-avatar {
+  cursor: pointer;
+  box-shadow: 0 0 0 1px rgba(186, 153, 53, .55),   /* gold-600 hairline */
+              0 1px 2px rgba(16, 28, 22, .18);
+  transition: background-color .18s ease, box-shadow .18s ease, transform .12s ease;
+}
+@media (hover: hover) {
+  button.oh-avatar:hover {
+    background: #1a4429;                      /* green-700 */
+    box-shadow: 0 0 0 1px rgba(186, 153, 53, .85), 0 2px 6px rgba(16, 28, 22, .24);
+  }
+}
+button.oh-avatar:active { transform: translateY(1px); }
+button.oh-avatar:focus-visible {
+  outline: 2px solid #7a6421;                 /* gold-800, the app's focus token */
+  outline-offset: 2px;
+}
+/* The button form exists only where the drawer IS the nav. At lg+ the rail is
+   already on screen, so there is nothing to toggle and the mark goes inert —
+   the same 1024px rule, and the same reasoning, the drawer tab used before it
+   was deleted. AppHeader renders both and lets this decide, rather than
+   `lg:hidden`, so the outcome cannot depend on stylesheet injection order. */
+@media (min-width: 1024px)   { button.oh-avatar { display: none; } }
+@media (max-width: 1023.98px) { span.oh-avatar  { display: none; } }
+
+/* ===================== RESPONSIVE =====================
+   --cs-hdr-h is re-declared in each block because it IS the height; the marks
+   step down with it so the proportion holds. The wordmark itself only shrinks
+   once, at the narrowest tier — the stacked nameplate has the room. */
+@media (max-width: 600px) {
+  :root { --cs-hdr-h: 68px; }
+  .oh-hdr {
+    padding-left: calc(14px + env(safe-area-inset-left));
+    padding-right: calc(14px + env(safe-area-inset-right));
+  }
+  .oh-mono, .oh-avatar { width: 38px; height: 38px; font-size: 16px; }
+}
+
+/* iPhone 14/15/16 sit at 390–393 CSS px — the volume phones. At 19px the first
+   line runs ~200px, which fits, but the side clusters leave it no breathing
+   room, so both the marks and the name step down one notch together. */
+@media (max-width: 400px) {
+  :root { --cs-hdr-h: 64px; }
+  .oh-hdr {
+    padding-left: calc(10px + env(safe-area-inset-left));
+    padding-right: calc(10px + env(safe-area-inset-right));
+  }
+  .oh-mono, .oh-avatar { width: 36px; height: 36px; font-size: 15px; }
+  .oh-w1 { font-size: 16.5px; }
+  .oh-w2 { font-size: 10.5px; letter-spacing: .26em; margin-right: -.26em; }
+}
+
+/* ============ PHONE IN LANDSCAPE ============
+   ~850px wide but only ~390px tall, so the width breakpoints above would treat
+   it as a small tablet and give it a portrait-sized header eating a fifth of the
+   display. Keyed on height + coarse pointer so it can never catch a real tablet
+   or a narrow desktop window. Inherited from the cardstock header, which learned
+   it the hard way. */
+@media (max-height: 500px) and (orientation: landscape) and (pointer: coarse) {
+  :root { --cs-hdr-h: 56px; }
+  .oh-hdr {
+    padding-left: calc(16px + env(safe-area-inset-left));
+    padding-right: calc(16px + env(safe-area-inset-right));
+  }
+  .oh-mono, .oh-avatar { width: 34px; height: 34px; font-size: 14px; }
+  .oh-w1 { font-size: 16px; }
+  .oh-w2 { font-size: 10px; letter-spacing: .24em; margin-right: -.24em; }
+}

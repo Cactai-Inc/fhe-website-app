@@ -4,10 +4,11 @@ import { NavLink, Outlet, Link, Navigate, useNavigate, useLocation, useSearchPar
 import { FEED_VIEWS, FEED_VIEW_META, type FeedView } from '../../lib/seed';
 import { dmUnreadTotal } from '../../lib/community';
 import {
-  CalendarDays, Users, FileText, UserRound, ReceiptText, Shield, LogOut, ChevronLeft,
+  CalendarDays, Users, FileText, UserRound, ReceiptText, Shield, LogOut,
   GraduationCap, Home as HomeIcon, Boxes, Contact, LayoutDashboard,
-  Mail, ChevronDown, ChevronUp, Plus, LifeBuoy, ShoppingBag, MessageSquare, BookOpen, ListChecks,
+  ChevronDown, ChevronUp, Plus, LifeBuoy, ShoppingBag, MessageSquare, BookOpen, ListChecks,
   PanelLeftClose, PanelLeftOpen, Activity, Compass, Handshake, Grid3x3, Bookmark,
+  Inbox, Receipt, Eye, Library,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useViewSurfaces } from '../../lib/surfaces';
@@ -19,32 +20,63 @@ import {
 } from '../../lib/api';
 import { AppOverviewModal } from './AppOverviewModal';
 import { CreateModal, type CreateModalStep } from './CreateModal';
-import { CardstockHeader } from './CardstockHeader';
+import { AppHeader } from './AppHeader';
 import { CreateModalTriggerContext } from '../../contexts/CreateModalContext';
 import { captureWallReturnDestination } from '../../lib/wallReturn';
 
-/** I7 — green-glass nav surface (mobile drawer + desktop USER rail only —
- *  NOT the staff rail, which keeps its own `bg-cream-100/40`): a translucent
- *  green wash over the page's cream base, blurred so content scrolling
- *  behind reads through as glass (owner spec 2026-08-05). One shared
- *  constant so both surfaces stay identical and reverting to the previous
- *  solid look is a one-line swap:
- *    glass (ships):  NAV_GLASS below
- *    solid (revert): 'bg-cream-100'
- *  `supports-[not(...)]` is the solid-color fallback for browsers without
- *  backdrop-filter support. */
-/* Two bugs lived in this one line, both found 2026-08-08.
-   1. `bg-cream-100/[0.92]` NEVER EMITTED. The bracket-opacity form produced no
-      rule at all — verified absent from the built CSS — so the surface had no
-      background and rendered as bare blur. Percentage form (`/90`) emits, the
-      same way `/30` and `/40` already do elsewhere in this file.
-   2. The @supports fallback tested only UNPREFIXED `backdrop-filter`. Safari
-      shipped that unprefixed in v18; older iPhones support it solely as
-      `-webkit-backdrop-filter`. So on those phones the blur worked via the
-      prefix while the test still reported "unsupported" and slammed a SOLID
-      cream fallback over it — which is why one device showed glass and another
-      showed opaque tan from identical code. The test now accepts either. */
-const NAV_GLASS = 'bg-glass-nav/30 backdrop-blur-xl supports-[not((backdrop-filter:blur(1px))_or_(-webkit-backdrop-filter:blur(1px)))]:bg-cream-100 supports-[not((backdrop-filter:blur(1px))_or_(-webkit-backdrop-filter:blur(1px)))]:backdrop-blur-none';
+/* ── THE NAV PANEL — solid green, cream contents (ONEHEADER §1, owner 2026-08-08)
+ *
+ * The green glass is DROPPED. It was not a tuning problem, and the arithmetic
+ * behind the ruling is worth keeping because it is what rules out ever going
+ * back to a compensated base:
+ *
+ *   Over the warm cream page (hue 37deg) a translucent green composites 72deg
+ *   toward YELLOW — green-800/20 renders #c8cac0, hue 73deg, saturation 9%.
+ *   Compensating the base only works AT ONE ALPHA: a base solved for 30%
+ *   renders as bright emerald at 85%, because at high alpha the page barely
+ *   contributes. And at high alpha the brand green needs no correction at all —
+ *   #143321 at 85% renders #344d3d, hue 142deg, three degrees off brand.
+ *
+ * So over a cream page you can have GLASS or YOUR GREEN, not both. The owner
+ * chose the green. `glass.nav` in tailwind.config.js was the compensated base
+ * that solved for one alpha; nothing reads it now.
+ *
+ * CONSEQUENCE, and it is the whole rest of this change: every nav label, icon,
+ * section heading, divider and badge inverts to cream. Dark text on a dark panel
+ * was the actual defect in the previous build — not the green.
+ *
+ * All three nav surfaces take it (member rail, staff rail, mobile drawer). The
+ * staff rail's old `bg-cream-100/40` was not a decision anyone made, and leaving
+ * one of the three cream would have forced every shared row component
+ * (RailLink, PresenceLink, AccountNavLink, CommunityNav, NavFooter) to carry two
+ * palettes. "The mono menu stays" — one menu, one look.
+ *
+ * Every class below is a plain utility on a palette colour. Nothing uses the
+ * bracket-opacity form (`/[0.92]`), which emitted NO RULE AT ALL on 2026-08-08
+ * and left the surface as bare blur; percentage form is what emits. Each one is
+ * grepped out of the built CSS — see docs/reports/TASK-ONEHEADER-REPORT.md.
+ *
+ * Reverting the surface is still a one-line swap, now to `bg-cream-100`, but the
+ * row palette below has to come back with it. */
+const NAV_PANEL = 'bg-green-800';
+/** default row: cream at reading weight; hover is desktop-only (`hover:hover`)
+ *  so iOS's sticky post-tap `:hover` can never latch it on. */
+const NAV_ROW_IDLE = 'text-cream-100/80 [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100';
+/** selected row: the inversion of the panel. Cream fill, green ink — the same
+ *  two colours the other way round, which is what makes it read as selected on a
+ *  panel that is itself green-800 (C5b's old `bg-green-800` active fill would now
+ *  be invisible: it IS the panel). */
+const NAV_ROW_ACTIVE = 'bg-cream-100 text-green-900 font-medium';
+const NAV_ICON_IDLE = 'text-cream-100/65 [@media(hover:hover)]:group-hover:text-cream-100';
+const NAV_ICON_ACTIVE = 'text-green-800';
+/** group headings ("Management", "People", …) — the "section header" the owner
+ *  named explicitly. Quiet, but cream: on green-800 the old `text-muted`
+ *  (green-800/70) was dark-on-dark and effectively invisible. */
+const NAV_HEADING = 'text-cream-100/60';
+const NAV_DIVIDER = 'border-cream-100/20';
+/** badges: solid gold on green-950 ink. The old `bg-gold-600/70 text-white` was
+ *  a translucent gold tuned for a light panel; over green-800 it muddies. */
+const NAV_BADGE = 'bg-gold-500 text-green-950';
 
 /** Unread-notification count for the Dashboard nav badge. Refreshes on mount and
  *  on every route change (the notifications themselves live on the dashboard now —
@@ -193,8 +225,15 @@ const PLATFORM_NAV: NavItem[] = [
  * thing: WORK queues (Inbound, Support) and a list of PEOPLE (Leads). Leads
  * belongs with the other person-lists; the queues belong with the rest of the
  * day-to-day management surfaces. */
+/* ICONS — docs/reference/nav-icon-exercise.md, settled by the owner 2026-08-08.
+ * Applied here ONLY for pages that survive that document's proposed merges under
+ * their own name; the merges themselves are not implemented, and the doc is
+ * explicit that most of the assignment cannot land until they exist. What was
+ * and was not applied is listed in docs/reports/TASK-ONEHEADER-REPORT.md.
+ * Lessons and Horse care are the two custom marks and stay blocked on artwork. */
 const MANAGEMENT_GROUP: NavItem[] = [
-  { to: '/app/ops/intake', label: 'Inbound', icon: Mail },
+  // Inbox, not Mail: this is a work QUEUE, and Mail read as "email a person".
+  { to: '/app/ops/intake', label: 'Inbound', icon: Inbox },
   { to: '/app/ops/support', label: 'Support', icon: LifeBuoy },
   // Servicing folded in 2026-07-31: three links did not justify a heading of
   // their own, and they are day-to-day management like the queues above.
@@ -207,7 +246,9 @@ const MANAGEMENT_GROUP: NavItem[] = [
   { to: '/app/ops/deals', label: 'Deals', icon: Handshake },
   // Payment review is a management task; Business is hidden until the reporting
   // and business-ops surfaces that belong there actually exist.
-  { to: '/app/ops/payments/review', label: 'Payment review', icon: ReceiptText },
+  /* Receipt, not ReceiptText — which My Orders already uses in the member nav.
+     Two different pages were wearing one glyph. */
+  { to: '/app/ops/payments/review', label: 'Payment review', icon: Receipt },
 ];
 /* PEOPLE — everyone we know, one list per relationship to the business:
  *   Leads      potential future clients (the campaign list)
@@ -231,8 +272,12 @@ const COMMUNITY_GROUP: NavItem[] = [
   { to: '/app/ops/evaluations', label: 'Evaluations', icon: FileText },
   { to: '/app/ops/moderation', label: 'Moderation', icon: Shield },
   { to: '/app/ops/lookups', label: 'Field options', icon: ListChecks },
-  { to: '/app/ops/content', label: 'Content store', icon: BookOpen },
-  { to: '/app/ops/oversight', label: 'Oversight', icon: Shield },
+  // Library, not BookOpen — Directory (People) already holds BookOpen.
+  { to: '/app/ops/content', label: 'Content store', icon: Library },
+  /* Eye, not Shield. Shield was on Moderation, Oversight, all three Settings
+     pages and all three Platform pages — the "eight identical Shield icons" the
+     icon exercise names. This takes one of them off it. */
+  { to: '/app/ops/oversight', label: 'Oversight', icon: Eye },
 ];
 const MODULES_GROUP: NavItem[] = [
   // Brokerage has no staff hub page yet (mod.brokerage's live surfaces are the
@@ -367,16 +412,20 @@ function NavTooltipLabel({ label }: { label: string }) {
   );
 }
 
-/** C5b — nav state colours (owner spec 2026-08-07), superseding B3's cream
- *  fill: DEFAULT is today's secondary green (unchanged); SELECTED is a solid
- *  `green-800` fill with `cream-100` text/icon (the panel's own surface
- *  colour, not gold — the old gold-on-active-icon convention this replaces);
- *  HOVER is desktop-only (`lg:` — hover has no meaning on touch, and this
- *  also means iOS's sticky post-tap `:hover` can never trigger it), a
- *  translucent preview of the same green with the SAME selected text colour.
- *  One palette for icon-only and full-width alike. Applied identically here,
- *  in `PresenceLink`, `AccountNavLink` and both `CommunityNav` rows below —
- *  see the task doc, "no component keeps the old treatment." */
+/** Nav state colours. C5b (owner 2026-08-07) put a solid `green-800` fill on the
+ *  SELECTED row and left the default row in secondary green; ONEHEADER §1 makes
+ *  the PANEL green-800, so the selected fill would now be the panel itself and
+ *  the default row would be dark-on-dark. The whole palette inverts — see
+ *  NAV_ROW_IDLE / NAV_ROW_ACTIVE / NAV_ICON_* at the top of this file. C5b's
+ *  actual rules survive intact: one palette for icon-only and full-width alike,
+ *  hover desktop-only, selected carries its own icon colour. Applied identically
+ *  here, in `PresenceLink`, `AccountNavLink`, `NavFooter` and both `CommunityNav`
+ *  rows — no component keeps the old treatment.
+ *
+ *  `focus-ring-dark` rather than `focus-ring`: the two differ only in their ring
+ *  OFFSET colour, and `focus-ring`'s is `cream` — a cream halo drawn on a cream
+ *  page, which is what it was for. On the green panel the offset has to be the
+ *  panel, which is exactly what `focus-ring-dark` (ring-offset-green-800) is. */
 function RailLink({ to, label, icon: Icon, end, badge = 0, open = true }: NavItem & { badge?: number; open?: boolean }) {
   return (
     <NavLink
@@ -384,24 +433,22 @@ function RailLink({ to, label, icon: Icon, end, badge = 0, open = true }: NavIte
       end={end}
       aria-label={open ? undefined : label}
       className={({ isActive }) =>
-        `group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13.5px] font-sans transition-colors focus-ring ${open ? '' : 'justify-center'} ${
-          isActive
-            ? 'bg-green-800 text-cream-100 font-medium'
-            : 'text-secondary [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100'
+        `group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13.5px] font-sans transition-colors focus-ring-dark ${open ? '' : 'justify-center'} ${
+          isActive ? NAV_ROW_ACTIVE : NAV_ROW_IDLE
         }`
       }
     >
       {({ isActive }) => (
         <>
           <span className="relative shrink-0">
-            <Icon size={17} aria-hidden="true" className={isActive ? 'text-cream-100' : 'text-green-600 [@media(hover:hover)]:group-hover:text-cream-100'} />
+            <Icon size={17} aria-hidden="true" className={isActive ? NAV_ICON_ACTIVE : NAV_ICON_IDLE} />
             {badge > 0 && !open && (
-              <span className="absolute -top-1.5 -right-1.5 min-w-[1rem] h-4 px-1 bg-gold-600/70 text-white text-[10px] leading-4 text-center rounded-full">{badge > 9 ? '9+' : badge}</span>
+              <span className={`absolute -top-1.5 -right-1.5 min-w-[1rem] h-4 px-1 ${NAV_BADGE} text-[10px] leading-4 text-center rounded-full`}>{badge > 9 ? '9+' : badge}</span>
             )}
           </span>
           {open && <span className="flex-1">{label}</span>}
           {badge > 0 && open && (
-            <span className="min-w-[1.25rem] h-5 px-1.5 text-[11px] leading-5 text-center rounded-full bg-gold-600/70 text-white">{badge > 9 ? '9+' : badge}</span>
+            <span className={`min-w-[1.25rem] h-5 px-1.5 text-[11px] leading-5 text-center rounded-full ${NAV_BADGE}`}>{badge > 9 ? '9+' : badge}</span>
           )}
           {!open && <NavTooltipLabel label={label} />}
         </>
@@ -442,9 +489,9 @@ function PresenceLink({ to, label, icon: Icon, section, onNavigate }: {
   const isActive = section ? accountSection === section : location.pathname === to;
   return (
     <Link to={to} onClick={onNavigate} aria-current={isActive ? 'page' : undefined}
-      className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans transition-colors focus-ring ${
-        isActive ? 'bg-green-800 text-cream-100 font-medium' : 'text-secondary [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100'}`}>
-      <Icon size={18} aria-hidden="true" className={isActive ? 'text-cream-100' : 'text-green-600 [@media(hover:hover)]:group-hover:text-cream-100'} />
+      className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans transition-colors focus-ring-dark ${
+        isActive ? NAV_ROW_ACTIVE : NAV_ROW_IDLE}`}>
+      <Icon size={18} aria-hidden="true" className={isActive ? NAV_ICON_ACTIVE : NAV_ICON_IDLE} />
       <span className="whitespace-nowrap flex-1">{label}</span>
     </Link>
   );
@@ -462,12 +509,12 @@ function AccountNavLink({ onNavigate, open = true }: { onNavigate?: () => void; 
   return (
     <Link to="/app/account" onClick={onNavigate} aria-current={isActive ? 'page' : undefined}
       aria-label={open ? undefined : 'Account'}
-      className={`group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans transition-colors focus-ring ${open ? '' : 'justify-center'} ${
-        isActive ? 'bg-green-800 text-cream-100 font-medium' : 'text-secondary [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100'}`}>
+      className={`group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans transition-colors focus-ring-dark ${open ? '' : 'justify-center'} ${
+        isActive ? NAV_ROW_ACTIVE : NAV_ROW_IDLE}`}>
       {/* `shrink-0` — see the note in CommunityNav's collapsed branch. Without it
           the collapsed rail squashes this icon to the ~8px of content box left
           after the nav's and the link's horizontal padding. */}
-      <UserRound size={18} aria-hidden="true" className={`shrink-0 ${isActive ? 'text-cream-100' : 'text-green-600 [@media(hover:hover)]:group-hover:text-cream-100'}`} />
+      <UserRound size={18} aria-hidden="true" className={`shrink-0 ${isActive ? NAV_ICON_ACTIVE : NAV_ICON_IDLE}`} />
       {open && <span className="whitespace-nowrap flex-1">Account</span>}
       {!open && <NavTooltipLabel label="Account" />}
     </Link>
@@ -517,13 +564,13 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
     // I1B — staff rail icon strip: just the parent icon, active whenever on the feed.
     return (
       <Link to="/app" onClick={onNavigate} aria-label="Community Feed" aria-current={onFeed ? 'page' : undefined}
-        className={`group relative flex items-center justify-center rounded-lg px-3 py-2.5 focus-ring ${onFeed ? 'bg-green-800 text-cream-100' : 'text-secondary [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100'}`}>
+        className={`group relative flex items-center justify-center rounded-lg px-3 py-2.5 focus-ring-dark ${onFeed ? NAV_ROW_ACTIVE : NAV_ROW_IDLE}`}>
         {/* `shrink-0` is REQUIRED, not decorative. In the 56px collapsed rail the
             nav's p-3 plus this link's px-3 leave ~8px of content box, and without
             flex-shrink:0 the SVG is compressed to fit — which is why this icon and
             the account one rendered miniature while every RailLink icon (wrapped in
             a shrink-0 span) stayed 18px. */}
-        <Users size={18} className={`shrink-0 ${onFeed ? 'text-cream-100' : 'text-green-600 [@media(hover:hover)]:group-hover:text-cream-100'}`} />
+        <Users size={18} className={`shrink-0 ${onFeed ? NAV_ICON_ACTIVE : NAV_ICON_IDLE}`} />
         <NavTooltipLabel label="Community Feed" />
       </Link>
     );
@@ -537,10 +584,10 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
           right-pointing (rotated ChevronDown) collapsed state. C5 (owner, 2026-08-07):
           the toggle's chevron/label were 15px/10px against 17-18px/13.5px everywhere
           else in the rail — brought up to the same scale. */}
-      <div className={`group relative flex items-center rounded-lg pr-1 ${isAll ? 'bg-green-800' : '[@media(hover:hover)]:hover:bg-green-600'}`}>
+      <div className={`group relative flex items-center rounded-lg pr-1 ${isAll ? 'bg-cream-100' : '[@media(hover:hover)]:hover:bg-green-600'}`}>
         <Link to="/app" onClick={onNavigate} aria-current={isAll ? 'page' : undefined}
-          className={`flex items-center gap-3 flex-1 min-w-0 px-3 py-2.5 text-[13.5px] font-sans focus-ring rounded-lg ${isAll ? 'text-cream-100 font-medium' : 'text-secondary [@media(hover:hover)]:group-hover:text-cream-100'}`}>
-          <Users size={18} className={`shrink-0 ${isAll ? 'text-cream-100' : 'text-green-600 [@media(hover:hover)]:group-hover:text-cream-100'}`} />
+          className={`flex items-center gap-3 flex-1 min-w-0 px-3 py-2.5 text-[13.5px] font-sans focus-ring-dark rounded-lg ${isAll ? 'text-green-900 font-medium' : 'text-cream-100/80 [@media(hover:hover)]:group-hover:text-cream-100'}`}>
+          <Users size={18} className={`shrink-0 ${isAll ? NAV_ICON_ACTIVE : NAV_ICON_IDLE}`} />
           <span className="whitespace-nowrap">Community Feed</span>
         </Link>
         <button type="button" onClick={() => setExpanded((v) => !v)}
@@ -551,7 +598,11 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
              240px wide, and on the selected (dark) state it read as a second
              element sitting on the pill. The chevron already carries the meaning;
              the accessible name lives on aria-label. */
-          className={`shrink-0 flex items-center justify-center p-1.5 rounded-md focus-ring ${isAll ? 'text-cream-100 hover:bg-white/10' : 'text-green-700 [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100'}`}>
+          /* ONEHEADER §1: on the SELECTED row the pill is now cream, so the
+             chevron is green ink on it — the inverse of what it was when the
+             selected pill was green. Unselected, it sits on the green panel and
+             is cream like every other idle mark. */
+          className={`shrink-0 flex items-center justify-center p-1.5 rounded-md focus-ring-dark ${isAll ? 'text-green-800 hover:bg-green-800/10' : 'text-cream-100/65 [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100'}`}>
           {expanded ? <ChevronUp size={18} className="shrink-0" /> : <ChevronDown size={18} className="shrink-0" />}
         </button>
       </div>
@@ -562,8 +613,8 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
             const isActive = active === v.key;
             return (
               <Link key={v.key} to={communityHref(v.key)} onClick={onNavigate} aria-current={isActive ? 'page' : undefined}
-                className={`group flex items-center ${indentClass} pr-3 py-1.5 rounded-lg text-[13px] font-sans transition-colors focus-ring ${
-                  isActive ? 'bg-green-800 text-cream-100 font-medium' : 'text-secondary [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100'}`}>
+                className={`group flex items-center ${indentClass} pr-3 py-1.5 rounded-lg text-[13px] font-sans transition-colors focus-ring-dark ${
+                  isActive ? NAV_ROW_ACTIVE : NAV_ROW_IDLE}`}>
                 <span className="whitespace-nowrap">{v.label}</span>
               </Link>
             );
@@ -655,7 +706,10 @@ function ClientNavItems({ bellCount, dmCount, presence, lessonsOn, onNavigate }:
 function StaffNavItems({ bellCount, dmCount, open = true }: { bellCount: number; dmCount: number; open?: boolean }) {
   return (
     <>
-      <RailLink to="/app/dashboard" label="Dashboard" icon={HomeIcon} badge={bellCount} open={open} />
+      {/* LayoutDashboard, matching the member rail. Staff's `HomeIcon` was
+          called out as pre-existing drift when ONEMENU touched this line; the
+          icon exercise now settles ONE glyph per page, so the two converge. */}
+      <RailLink to="/app/dashboard" label="Dashboard" icon={LayoutDashboard} badge={bellCount} open={open} />
       <RailLink to="/app/calendar" label="Calendar" icon={CalendarDays} open={open} />
       <RailLink to="/app/catalog" label="Catalog" icon={ShoppingBag} open={open} />
       <RailLink to="/app/messages" label="Messages" icon={MessageSquare} badge={dmCount} open={open} />
@@ -681,18 +735,18 @@ function NavFooter({ open = true, onOpenTour, onSignOut, onNavigate }: {
   open?: boolean; onOpenTour: () => void; onSignOut: () => void; onNavigate?: () => void;
 }) {
   return (
-    <div className="mt-2 pt-3 pb-2 border-t border-green-800/10 flex flex-col gap-1.5">
+    <div className={`mt-2 pt-3 pb-2 border-t ${NAV_DIVIDER} flex flex-col gap-1.5`}>
       <button type="button" onClick={() => { onNavigate?.(); onOpenTour(); }}
         aria-label={open ? undefined : 'App tour'}
-        className={`group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans text-secondary [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100 focus-ring ${open ? '' : 'justify-center'}`}>
-        <Compass size={17} aria-hidden="true" className="text-green-600 shrink-0" />
+        className={`group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans ${NAV_ROW_IDLE} focus-ring-dark ${open ? '' : 'justify-center'}`}>
+        <Compass size={17} aria-hidden="true" className={`shrink-0 ${NAV_ICON_IDLE}`} />
         {open && <span className="flex-1 text-left">App tour</span>}
         {!open && <NavTooltipLabel label="App tour" />}
       </button>
       <button type="button" onClick={() => { onNavigate?.(); onSignOut(); }}
         aria-label={open ? undefined : 'Sign out'}
-        className={`group relative flex items-center gap-3 rounded-lg px-3 py-3 text-[13.5px] font-sans text-secondary [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100 focus-ring w-full pb-[max(0.75rem,env(safe-area-inset-bottom))] ${open ? '' : 'justify-center'}`}>
-        <LogOut size={17} aria-hidden="true" className="text-green-600 shrink-0" />
+        className={`group relative flex items-center gap-3 rounded-lg px-3 py-3 text-[13.5px] font-sans ${NAV_ROW_IDLE} focus-ring-dark w-full pb-[max(0.75rem,env(safe-area-inset-bottom))] ${open ? '' : 'justify-center'}`}>
+        <LogOut size={17} aria-hidden="true" className={`shrink-0 ${NAV_ICON_IDLE}`} />
         {open && <span className="flex-1 text-left">Sign out</span>}
         {!open && <NavTooltipLabel label="Sign out" />}
       </button>
@@ -710,8 +764,9 @@ function NavFooter({ open = true, onOpenTour, onSignOut, onNavigate }: {
  *  had an equivalent toggle either, so no account type has a sidebar-
  *  collapse control after this change.
  *
- *  I7: green-glass surface (NAV_GLASS) — see its definition near the top of
- *  this file for the one-line revert.
+ *  I7's green-glass surface is gone — ONEHEADER §1 makes this a solid green
+ *  panel (NAV_PANEL). See its definition near the top of this file for the
+ *  arithmetic that rules out going back to glass over a cream page.
  *
  *  ONEMENU: gains the trailing App-tour/Sign-out block (`NavFooter`) absorbed
  *  from the removed avatar dropdown — Q4's owner ruling made the dropdown's
@@ -722,7 +777,7 @@ function ClientRail({ bellCount, dmCount, presence, lessonsOn, onOpenTour, onSig
 }) {
   return (
     <aside className="hidden lg:block shrink-0 relative z-30 w-60">
-      <nav className={`sticky top-[var(--cs-hdr-h)] h-[calc(100dvh-var(--cs-hdr-h))] border-r border-green-800/10 ${NAV_GLASS} p-2 overflow-y-auto overflow-x-hidden flex flex-col`}>
+      <nav className={`sticky top-[var(--cs-hdr-h)] h-[calc(100dvh-var(--cs-hdr-h))] border-r border-green-950/20 ${NAV_PANEL} p-2 overflow-y-auto overflow-x-hidden flex flex-col`}>
         <div className="flex flex-col gap-0.5">
           {/* Community Feed (position 1) with its views nested underneath. */}
           <CommunityNav indentClass="pl-9" />
@@ -1130,20 +1185,26 @@ export default function AppLayout() {
         </div>
       </header>
       ) : (
-        /* ── THE CARDSTOCK NAMEPLATE ──────────────────────────────────────────
-           The tenant header: a Racing Green cardstock sheet carrying exactly
-           three marks — embossed FH squircle, embossed wordmark, debossed
-           avatar. See CardstockHeader.tsx and header-cardstock.css; the
-           specification is docs/reference/header-mockup.html.
+        /* ── THE ONE HEADER (TASK-ONEHEADER, owner 2026-08-08) ────────────────
+           The cardstock nameplate is SHELVED, not deleted — the files and the
+           texture asset stay put and a verbatim copy with restore instructions
+           lives at docs/reference/shelved-cardstock-header/. It returns when the
+           site is colour-matched to it.
 
-           Gone from here on purpose: the Calendar button (already in the
-           nav), the mobile nav button (now the drawer tab, moved to the
-           top-right below) and the avatar's ChevronDown (ONEMENU: the
-           debossed avatar is now a decorative monogram — no menu at all, see
-           CardstockHeader.tsx). The Create tab is admin/staff + desktop only;
-           a regular member's create path is the page-level `+` controls
-           (PLUSPASS). */
-        <CardstockHeader initial={initial} />
+           In its place: the login screen's header, so the header no longer
+           changes at sign-in and the colours match either side of the wire. See
+           AppHeader.tsx — it adopts the public header's MATERIAL and keeps the
+           app's own contents (home mark, wordmark, avatar), it does not import
+           the public header's site nav.
+
+           The avatar is the menu button again (ONEHEADER §2) below lg, which is
+           what let the hanging drawer tab be deleted (§3). It opens the one
+           nav — not a second avatar menu (§4). */
+        <AppHeader
+          initial={initial}
+          menuOpen={mobileNavOpen}
+          onToggleMenu={() => setMobileNavOpen((v) => !v)}
+        />
       )}
 
       <div className="w-full max-w-[120rem] mx-auto flex">
@@ -1162,7 +1223,13 @@ export default function AppLayout() {
             {/* `flex flex-col` is load-bearing: it is what lets the collapse
                 toggle's `mt-auto` push it (and Sign out) to the foot of the
                 rail. ClientRail already had it; this one did not. */}
-            <nav className={`p-3 sticky top-[var(--cs-hdr-h)] h-[calc(100dvh-var(--cs-hdr-h))] overflow-y-auto overflow-x-hidden border-r border-green-800/10 bg-cream-100/40 flex flex-col transition-[width] duration-100 ease-out ${staffRailWidthClass}`}>
+            {/* ONEHEADER §1: `bg-cream-100/40` becomes the shared NAV_PANEL. The
+                staff rail was the one nav surface still on a light background,
+                which was drift rather than a decision — and it shares every row
+                component with the two surfaces that ARE green, so leaving it
+                light would mean carrying two palettes through RailLink,
+                CommunityNav, AccountNavLink and NavFooter. One menu, one look. */}
+            <nav className={`p-3 sticky top-[var(--cs-hdr-h)] h-[calc(100dvh-var(--cs-hdr-h))] overflow-y-auto overflow-x-hidden border-r border-green-950/20 ${NAV_PANEL} flex flex-col transition-[width] duration-100 ease-out ${staffRailWidthClass}`}>
               {/* Owner, 2026-08-07: the create control lives HERE now, in the
                   slot the collapse toggle used to occupy, and the header's
                   hanging tab is gone. Icon only in both states — no label even
@@ -1178,7 +1245,7 @@ export default function AppLayout() {
                      `px-3 py-2.5`, so the icon sat off the shared centre line in
                      the collapsed rail, and the white hover belonged to no other
                      surface in the nav. */
-                  className="flex items-center justify-center rounded-lg px-3 py-2.5 text-green-700 [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100 focus-ring">
+                  className={`flex items-center justify-center rounded-lg px-3 py-2.5 ${NAV_ROW_IDLE} focus-ring-dark`}>
                   <Plus size={18} aria-hidden="true" className="shrink-0" />
                 </button>
               </div>
@@ -1187,7 +1254,7 @@ export default function AppLayout() {
                   Platform still gets one because it is the super-admin's only
                   section; a tenant's rail is self-describing. */}
               {isSuperAdmin && staffRailPinned && (
-                <p className="px-3 pt-1 pb-2 text-[10px] tracking-widest uppercase text-muted font-semibold">
+                <p className={`px-3 pt-1 pb-2 text-[10px] tracking-widest uppercase ${NAV_HEADING} font-semibold`}>
                   Platform
                 </p>
               )}
@@ -1202,14 +1269,14 @@ export default function AppLayout() {
                   <div key={g.key}>
                     {navGroups.length > 1 && staffRailPinned && (
                       <button type="button" onClick={() => toggleGroup(g.key)}
-                        className="w-full flex items-center justify-between px-3 py-1.5 text-[10px] tracking-widest uppercase text-muted font-semibold hover:text-green-800 focus-ring rounded-md">
+                        className={`w-full flex items-center justify-between px-3 py-1.5 text-[10px] tracking-widest uppercase ${NAV_HEADING} font-semibold hover:text-cream-100 focus-ring-dark rounded-md`}>
                         {g.label}
                         <ChevronDown size={12} className={`transition-transform ${groupOpen(g) ? '' : '-rotate-90'}`} />
                       </button>
                     )}
                     {/* collapsed strip: group headings shrink to a plain separator */}
                     {navGroups.length > 1 && !staffRailPinned && (
-                      <div className="my-1 border-t border-green-800/10" role="separator" aria-label={g.label} />
+                      <div className={`my-1 border-t ${NAV_DIVIDER}`} role="separator" aria-label={g.label} />
                     )}
                     {(navGroups.length === 1 || groupOpen(g) || !staffRailPinned) && (
                       <div className="flex flex-col gap-0.5">
@@ -1245,7 +1312,7 @@ export default function AppLayout() {
                      `px-3 py-2.5`, so the icon sat off the shared centre line in
                      the collapsed rail, and the white hover belonged to no other
                      surface in the nav. */
-                  className="flex items-center justify-center rounded-lg px-3 py-2.5 text-green-700 [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100 focus-ring">
+                  className={`flex items-center justify-center rounded-lg px-3 py-2.5 ${NAV_ROW_IDLE} focus-ring-dark`}>
                       {staffRailPinned ? <PanelLeftClose size={18} className="shrink-0" /> : <PanelLeftOpen size={18} className="shrink-0" />}
                     </button>
                   </div>
@@ -1272,42 +1339,22 @@ export default function AppLayout() {
           surface before. A click on any link inside closes it (delegated
           `closest('a')` handler below — Sign out/App tour are buttons, not
           links, so `NavFooter` closes explicitly via its own `onNavigate`).
-          I7: green-glass surface (NAV_GLASS) — see its definition near the
-          top of this file for the one-line revert. */}
-      {/* THE DRAWER TAB — mobile only. ONEMENU A1 (owner, 2026-08-07): moved
-          from the left edge to the top-right, below the header — the top-
-          right is the emptiest part of the UI at initial load, and the tab's
-          own mechanics (motion, glass, rides-out-on-the-drawer's-edge) are
-          unchanged, just mirrored. Still the drawer's own green glass
-          (NAV_GLASS), not cardstock, because it belongs to the drawer rather
-          than the header.
+          ONEHEADER §1: solid green panel (NAV_PANEL), not glass — see its
+          definition near the top of this file. */}
+      {/* THE DRAWER TAB IS GONE — ONEHEADER §3 (owner, 2026-08-08). No hanging
+          tab: the header's avatar button is the way into the nav on a phone, so
+          there is one control for one job instead of a tab bolted to the side of
+          the viewport. The `.cs-drawer-tab` rules ride out with the shelved
+          cardstock stylesheet, which is no longer imported.
 
-          It translates by min(288px,85vw) — the drawer's OWN width formula
-          (w-72 max-w-[85vw] below) — so it lands on the drawer's edge at any
-          viewport instead of at a guessed offset (the CSS negates this for
-          the now-leftward slide — see header-cardstock.css).
+          Sequencing held, per the task doc: the tab was the ONLY way into the
+          nav on mobile, so it could not go until the avatar button existed. It
+          does — see AppHeader above, and note it drives this same
+          `mobileNavOpen` state, so the two can no more desync than the tab
+          could.
 
-          Tab and drawer are driven from the single `mobileNavOpen` state, so
-          they cannot desync: the tab's position, its arrow, its labels and the
-          drawer are all one boolean. Every close path already routes through
-          that state — the scrim's onClick, the Escape handler and the
-          route-change effect above, and a selection inside the drawer.
-
-          Superadmin does not get it (it keeps its own mobile nav button,
-          unchanged, and its own drawer anchor — see the `isSuperAdmin` check
-          on the `<nav>` below); the CSS also hides it at lg+, where the rail
-          is the nav. */}
-      {!isSuperAdmin && (
-        <button
-          type="button"
-          className={`cs-drawer-tab${mobileNavOpen ? ' is-open' : ''}`}
-          onClick={() => setMobileNavOpen((v) => !v)}
-          aria-label={mobileNavOpen ? 'Close menu' : 'Open menu'}
-          aria-expanded={mobileNavOpen}
-        >
-          <ChevronLeft size={20} aria-hidden="true" strokeWidth={2.25} />
-        </button>
-      )}
+          Superadmin never had the tab; it keeps its own mobile nav button and
+          its own drawer anchor — see the `isSuperAdmin` checks below. */}
 
       {mobileNavOpen && (
         <div className="fixed inset-x-0 bottom-0 top-[var(--cs-hdr-h)] z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
@@ -1318,7 +1365,8 @@ export default function AppLayout() {
               not tenant branding). */}
           <div className="absolute inset-0 bg-green-950/45" onClick={closeMobileNav} aria-hidden="true" />
           <nav
-            className={`absolute inset-y-0 ${isSuperAdmin ? 'left-0' : 'right-0'} w-72 max-w-[85vw] ${NAV_GLASS} shadow-xl p-3 overflow-y-auto`}
+            id="app-nav-drawer"
+            className={`absolute inset-y-0 ${isSuperAdmin ? 'left-0' : 'right-0'} w-72 max-w-[85vw] ${NAV_PANEL} shadow-xl p-3 overflow-y-auto`}
             onClick={(e) => {
               // any real navigation inside closes the drawer
               if ((e.target as HTMLElement).closest('a')) closeMobileNav();
@@ -1352,7 +1400,7 @@ export default function AppLayout() {
             )}
             {navGroups.map((g) => (
               <div key={g.key}>
-                <div className="mt-2 border-t border-green-800/10 pt-2 px-3 pb-1 text-[10px] tracking-widest uppercase text-muted font-semibold">
+                <div className={`mt-2 border-t ${NAV_DIVIDER} pt-2 px-3 pb-1 text-[10px] tracking-widest uppercase ${NAV_HEADING} font-semibold`}>
                   {g.label}
                 </div>
                 <div className="flex flex-col gap-0.5">

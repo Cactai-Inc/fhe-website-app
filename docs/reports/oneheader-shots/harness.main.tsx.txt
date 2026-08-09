@@ -1,0 +1,115 @@
+/* TASK-ONEHEADER visual harness — NOT part of the app build.
+ *
+ * Mounts the REAL AppHeader component (not a hand-copied mock) against the real
+ * stylesheets, so the screenshots in the report are of the shipped component.
+ * The nav rows below reproduce AppLayout's palette constants VERBATIM — the
+ * strings are checked against AppLayout.tsx by the report's grep step.
+ *
+ * Delete this directory before merge, or leave it: vite's app build entry is
+ * index.html at the repo root and never reaches harness/.
+ */
+import { StrictMode, useState } from 'react';
+import { createRoot } from 'react-dom/client';
+import { MemoryRouter } from 'react-router-dom';
+import { LayoutDashboard, CalendarDays, ShoppingBag, MessageSquare, Users, UserRound, Inbox, Receipt, Eye, Library, ChevronUp } from 'lucide-react';
+import '../src/index.css';
+import { AppHeader } from '../src/components/app/AppHeader';
+
+/* Copied verbatim from src/components/app/AppLayout.tsx (ONEHEADER §1). */
+const NAV_PANEL = 'bg-green-800';
+const NAV_ROW_IDLE = 'text-cream-100/80 [@media(hover:hover)]:hover:bg-green-600 [@media(hover:hover)]:hover:text-cream-100';
+const NAV_ROW_ACTIVE = 'bg-cream-100 text-green-900 font-medium';
+const NAV_ICON_IDLE = 'text-cream-100/65 [@media(hover:hover)]:group-hover:text-cream-100';
+const NAV_ICON_ACTIVE = 'text-green-800';
+const NAV_HEADING = 'text-cream-100/60';
+const NAV_DIVIDER = 'border-cream-100/20';
+const NAV_BADGE = 'bg-gold-500 text-green-950';
+
+function Row({ icon: Icon, label, active = false, badge = 0 }: {
+  icon: typeof Users; label: string; active?: boolean; badge?: number;
+}) {
+  return (
+    <span className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13.5px] font-sans ${active ? NAV_ROW_ACTIVE : NAV_ROW_IDLE}`}>
+      <Icon size={17} className={active ? NAV_ICON_ACTIVE : NAV_ICON_IDLE} />
+      <span className="flex-1">{label}</span>
+      {badge > 0 && (
+        <span className={`min-w-[1.25rem] h-5 px-1.5 text-[11px] leading-5 text-center rounded-full ${NAV_BADGE}`}>{badge}</span>
+      )}
+    </span>
+  );
+}
+
+function Nav({ sticky = false }: { sticky?: boolean }) {
+  return (
+    /* Layout-only sizes are INLINE STYLES, not Tailwind. tailwind.config.js's
+       content globs cover ./src and ./index.html — not harness/ — so a
+       harness-only arbitrary value like `min-h-[560px]` would emit no rule and
+       silently render at zero. The palette classes above are safe because they
+       are the same strings AppLayout uses, so src is what emits them. */
+    <nav
+      className={`${NAV_PANEL} p-2 flex flex-col gap-0.5 ${sticky ? 'sticky top-[var(--cs-hdr-h)] h-[calc(100dvh-var(--cs-hdr-h))]' : ''}`}
+      style={{ width: 240, minHeight: sticky ? undefined : 560 }}
+    >
+      <span className={`group relative flex items-center rounded-lg pr-1 bg-cream-100`}>
+        <span className="flex items-center gap-3 flex-1 min-w-0 px-3 py-2.5 text-[13.5px] font-sans text-green-900 font-medium">
+          <Users size={18} className={NAV_ICON_ACTIVE} />
+          <span className="whitespace-nowrap">Community Feed</span>
+        </span>
+        <span className="shrink-0 flex items-center justify-center p-1.5 rounded-md text-green-800">
+          <ChevronUp size={18} />
+        </span>
+      </span>
+      <Row icon={LayoutDashboard} label="Dashboard" badge={3} />
+      <Row icon={CalendarDays} label="Calendar" />
+      <Row icon={ShoppingBag} label="Catalog" />
+      <Row icon={MessageSquare} label="Messages" badge={12} />
+      <div className={`mt-2 border-t ${NAV_DIVIDER} pt-2 px-3 pb-1 text-[10px] tracking-widest uppercase ${NAV_HEADING} font-semibold`}>
+        Management
+      </div>
+      <Row icon={Inbox} label="Inbound" badge={5} />
+      <Row icon={Receipt} label="Payment review" />
+      <Row icon={Eye} label="Oversight" />
+      <Row icon={Library} label="Content store" />
+      <Row icon={UserRound} label="Account" />
+    </nav>
+  );
+}
+
+/* Page filler that mimics what actually passes behind the header in the app:
+ * cream page, white cards, and a green-800 block (the rail's own colour) so
+ * Verification #4 — "over light AND dark page content" — is exercised. */
+function Filler() {
+  return (
+    <div className="flex-1 min-w-0 px-4 sm:px-8 pt-10 pb-24 flex flex-col gap-4">
+      <div className="bg-white border border-green-800/10 rounded-xl p-6">
+        <h1 className="font-serif text-xl text-green-800">A white card</h1>
+        <p className="body-text text-sm text-muted mt-2">Light page content passing under the header.</p>
+      </div>
+      <div id="greenblock" className="bg-green-800 rounded-xl p-6 grid place-items-center" style={{ height: 220, flex: 'none' }}>
+        <p className="text-cream-100 font-sans text-sm">A green-800 block — the darkest surface the app puts on a page.</p>
+      </div>
+      <div className="bg-white border border-green-800/10 rounded-xl p-6" style={{ height: 1200, flex: 'none' }}>
+        <p className="body-text text-sm text-muted">Scroll runway.</p>
+      </div>
+    </div>
+  );
+}
+
+function Harness() {
+  const [menuOpen, setMenuOpen] = useState(false);
+  return (
+    <MemoryRouter>
+      <div className="min-h-screen bg-cream">
+        <AppHeader initial="C" menuOpen={menuOpen} onToggleMenu={() => setMenuOpen((v) => !v)} />
+        <div className="w-full max-w-[120rem] mx-auto flex">
+          {/* sticky exactly as ClientRail / the staff rail do, so the screenshots
+              prove the offset lands flush with the header's bottom edge */}
+          <aside className="hidden lg:block shrink-0"><Nav sticky /></aside>
+          <Filler />
+        </div>
+      </div>
+    </MemoryRouter>
+  );
+}
+
+createRoot(document.getElementById('root')!).render(<StrictMode><Harness /></StrictMode>);
