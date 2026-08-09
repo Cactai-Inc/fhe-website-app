@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Avatar ring · mobile intensity · selected fill — options</title>
+<style>
+  :root{
+    --hdr:#f5f0e8;      /* cream-100 — the header surface */
+    --page:#faf8f4;     /* cream — the page */
+    --panel:#fdfcfa;    /* cream-25 — the nav panel */
+    --brand:#143321;    /* green-800 */
+    --navfill:#0d341e;  /* the compensated base */
+    --gold:#ba9935;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--page);color:#0d2118;
+       font:14px/1.5 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}
+  .wrap{max-width:1080px;margin:0 auto;padding:28px 20px 80px}
+  h1{font:600 26px/1.2 'Big Caslon','Libre Caslon Text',Georgia,serif;margin:0 0 6px}
+  h2{font:600 19px/1.2 'Big Caslon','Libre Caslon Text',Georgia,serif;
+     margin:44px 0 4px;padding-top:22px;border-top:1px solid rgba(20,51,33,.14)}
+  .sub{color:#4a5a50;margin:0 0 18px;max-width:64ch}
+  .note{font-size:12.5px;color:#5c6a61;max-width:70ch}
+  code{font:12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;background:rgba(20,51,33,.07);
+       padding:1px 5px;border-radius:3px}
+
+  /* ---------- the real header strip ---------- */
+  .strip{background:var(--hdr);height:76px;display:flex;align-items:center;gap:0;
+         padding:0 20px;border-radius:6px;border:1px solid rgba(20,51,33,.10)}
+  .strip .spacer{flex:1}
+  .mark{width:42px;height:42px;flex:none;display:grid;place-items:center;
+        font:17px/1 'Big Caslon','Libre Caslon Text',Georgia,serif;letter-spacing:.04em;
+        -webkit-user-select:none;user-select:none}
+
+  /* the LOGO, exactly as shipped (.oh-mono) */
+  .logo{border:1px solid rgba(20,51,33,.40);color:#0d2118}
+
+  /* avatar variants — all 42px round, letter-spacing .02em per .oh-avatar */
+  .av{border-radius:999px;letter-spacing:.02em;border:0}
+  .av-now      {background:var(--brand);color:#f5f0e8}
+  .av-now-btn  {background:var(--brand);color:#f5f0e8;
+                box-shadow:0 0 0 1px rgba(186,153,53,.55),0 1px 2px rgba(16,28,22,.18)}
+  .av-a        {background:transparent;color:#0d2118;border:1px solid rgba(20,51,33,.40)}
+  .av-b        {background:var(--brand);color:#f5f0e8;
+                box-shadow:0 0 0 1px rgba(20,51,33,.40)}
+  .av-c        {background:var(--brand);color:#f5f0e8;
+                box-shadow:0 0 0 2px var(--hdr),0 0 0 3px rgba(20,51,33,.40)}
+  .av-d        {background:#255f3e;color:#f5f0e8;
+                box-shadow:0 0 0 1px rgba(20,51,33,.55)}
+  .av-e        {background:#2b6e47;color:#f5f0e8;
+                box-shadow:0 0 0 2px var(--hdr),0 0 0 3px rgba(20,51,33,.45)}
+
+  .row{display:flex;align-items:flex-end;gap:26px;flex-wrap:wrap;margin:14px 0 0}
+  .cell{text-align:center;min-width:96px}
+  .cell .mark{margin:0 auto 8px}
+  .cap{font-size:11.5px;line-height:1.35;color:#4a5a50}
+  .cap b{display:block;color:#0d2118;font-size:12px;font-weight:600;margin-bottom:2px}
+  .on{background:var(--hdr);padding:16px 18px;border-radius:6px;
+      border:1px solid rgba(20,51,33,.10);display:inline-block}
+
+  /* ---------- nav rows ---------- */
+  .panels{display:flex;gap:22px;flex-wrap:wrap;margin-top:16px}
+  .panel{background:var(--panel);border:1px solid rgba(20,51,33,.10);border-radius:8px;
+         padding:10px;width:240px;box-shadow:0 1px 3px rgba(16,28,22,.06)}
+  .panel h3{margin:2px 0 10px;font:600 12px/1 Inter,sans-serif;letter-spacing:.06em;
+            text-transform:uppercase;color:#5c6a61}
+  .nrow{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:8px;
+        font-size:13.5px;margin-bottom:3px;color:var(--brand)}
+  .nrow .ico{width:16px;height:16px;border-radius:3px;background:currentColor;opacity:.7;flex:none}
+  .sel-now  {background:rgba(13,52,30,.80);color:#fdfcfa;font-weight:500}
+  .hov-now  {background:rgba(13,52,30,.64);color:#fdfcfa}
+  .sel-brand{background:rgba(20,51,33,.80);color:#fdfcfa;font-weight:500}
+  .hov-brand{background:rgba(20,51,33,.64);color:#fdfcfa}
+  .sel-lock {background:#255f3e;color:#fdfcfa;font-weight:500}
+  .hov-lock {background:#328053;color:#fdfcfa}
+
+  /* ---------- ladders ---------- */
+  .ladder{display:flex;gap:0;margin-top:14px;border-radius:6px;overflow:hidden;
+          border:1px solid rgba(20,51,33,.14)}
+  .step{flex:1;padding:22px 8px 10px;text-align:center;color:#f5f0e8;
+        font:11px/1.5 ui-monospace,Menlo,monospace}
+  .step small{display:block;opacity:.82;font-size:10px}
+  .warn{color:#7a2d1e;font-weight:600}
+  .ok{color:#1f5a38;font-weight:600}
+  table{border-collapse:collapse;margin-top:12px;font-size:12.5px}
+  th,td{text-align:left;padding:5px 14px 5px 0;border-bottom:1px solid rgba(20,51,33,.10)}
+  th{font-weight:600;color:#5c6a61;font-size:11.5px;text-transform:uppercase;letter-spacing:.05em}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Three things you named — rendered, not described</h1>
+<p class="sub">Everything below sits on the real surfaces: header <code>#f5f0e8</code>,
+nav panel <code>#fdfcfa</code>. Marks are 42&nbsp;px, the shipped size. Nothing here is applied
+to the app yet.</p>
+
+<!-- ============================================================ -->
+<h2>1 · The avatar ring</h2>
+<p class="sub">The logo is on the left of every strip so you can compare directly. It is
+<code>1px solid rgba(20,51,33,.40)</code>, transparent centre, square. The avatar today is a
+solid brand disc with <code>border:0</code> — on desktop it has no ring at all.</p>
+
+<div class="on">
+  <div class="row">
+    <div class="cell">
+      <div class="mark logo">FH</div>
+      <div class="cap"><b>THE LOGO</b>as shipped<br>ring, no fill</div>
+    </div>
+    <div class="cell">
+      <div class="mark av av-now">C</div>
+      <div class="cap"><b>NOW · desktop</b>solid brand<br>no ring</div>
+    </div>
+    <div class="cell">
+      <div class="mark av av-now-btn">C</div>
+      <div class="cap"><b>NOW · mobile</b>solid brand<br>gold hairline</div>
+    </div>
+  </div>
+</div>
+
+<p class="sub" style="margin-top:22px">Four ways to read “look like the logo with an outline
+ring around the letter”:</p>
+
+<div class="on">
+  <div class="row">
+    <div class="cell">
+      <div class="mark logo">FH</div>
+      <div class="cap"><b>logo</b>for reference</div>
+    </div>
+    <div class="cell">
+      <div class="mark av av-a">C</div>
+      <div class="cap"><b>A · matched</b>no fill, green letter<br>the logo, round</div>
+    </div>
+    <div class="cell">
+      <div class="mark av av-b">C</div>
+      <div class="cap"><b>B · fill + ring</b>brand fill<br>logo ring on it</div>
+    </div>
+    <div class="cell">
+      <div class="mark av av-c">C</div>
+      <div class="cap"><b>C · fill + gap + ring</b>ring floats off<br>the disc</div>
+    </div>
+    <div class="cell">
+      <div class="mark av av-d">C</div>
+      <div class="cap"><b>D · softer fill + ring</b>B, but the fill<br>steps back</div>
+    </div>
+  </div>
+</div>
+
+<p class="note" style="margin-top:14px"><b>A</b> is the literal reading — the avatar becomes the
+logo treatment, round instead of square. It is also the only one where the letter is green ink
+rather than cream. <b>B</b> and <b>C</b> keep the avatar as a filled mark and add the ring;
+<b>C</b> separates ring from disc with a header-coloured gap, which is what makes a ring read as
+a ring rather than a border. <b>D</b> is <b>B</b> with §2 applied.</p>
+
+<!-- ============================================================ -->
+<h2>2 · Mobile at reduced intensity</h2>
+<p class="sub">Today mobile and desktop are the <em>same</em> value — both
+<code>#143321</code>, the brand green, opaque. So “mobile is at the company brand colour” is
+exactly right, and there is currently no reduced version of anything.</p>
+
+<p class="note"><b>This is where “intensity ≠ hue” bites, and the palette does not currently
+obey it.</b> There are three ways to make something less intense and only one holds the hue:</p>
+
+<table>
+  <tr><th>Method</th><th>Value</th><th>Rendered hue</th><th>Off brand by</th></tr>
+  <tr><td>brand, opaque</td><td><code>#143321</code></td><td>145.2°</td><td class="ok">—</td></tr>
+  <tr><td>drop the alpha to 70%</td><td><code>green-800/70</code></td><td>135.4°</td><td class="warn">9.8°</td></tr>
+  <tr><td>drop the alpha to 60%</td><td><code>green-800/60</code></td><td>129.4°</td><td class="warn">15.8°</td></tr>
+  <tr><td>step down the ramp</td><td><code>green-600</code></td><td>138.5°</td><td class="warn">6.7°</td></tr>
+  <tr><td>step down the ramp</td><td><code>green-500</code></td><td>139.7°</td><td class="warn">5.5°</td></tr>
+  <tr><td><b>hue-locked tint</b></td><td><b>computed</b></td><td><b>145.2°</b></td><td class="ok">0.0°</td></tr>
+</table>
+
+<p class="note" style="margin-top:14px">Alpha over the warm header drifts the hue <em>away</em>
+from brand — the same effect that produced <code>navfill</code>. The existing green ramp drifts
+too: it was not built hue-locked. The bottom row is the ladder below — brand hue and brand
+saturation held exactly, lightness the only thing that moves.</p>
+
+<div class="ladder">
+  <div class="step" style="background:#143321">#143321<small>L 14% · brand</small></div>
+  <div class="step" style="background:#1a422b">#1a422b<small>L 18%</small></div>
+  <div class="step" style="background:#205134">#205134<small>L 22%</small></div>
+  <div class="step" style="background:#255f3e">#255f3e<small>L 26%</small></div>
+  <div class="step" style="background:#2b6e47">#2b6e47<small>L 30%</small></div>
+  <div class="step" style="background:#328053">#328053<small>L 35%</small></div>
+  <div class="step" style="background:#39935f">#39935f<small>L 40%</small></div>
+</div>
+<p class="note">All seven are hue 145.2°, saturation 43.7% — identical to the brand green.
+Only intensity changes.</p>
+
+<p class="sub" style="margin-top:22px">The mobile avatar at each step, on the real header:</p>
+<div class="on">
+  <div class="row">
+    <div class="cell"><div class="mark av av-now-btn">C</div><div class="cap"><b>NOW</b>#143321<br>brand</div></div>
+    <div class="cell"><div class="mark av" style="background:#1a422b;color:#f5f0e8">C</div><div class="cap"><b>L 18%</b>#1a422b</div></div>
+    <div class="cell"><div class="mark av" style="background:#205134;color:#f5f0e8">C</div><div class="cap"><b>L 22%</b>#205134</div></div>
+    <div class="cell"><div class="mark av" style="background:#255f3e;color:#f5f0e8">C</div><div class="cap"><b>L 26%</b>#255f3e</div></div>
+    <div class="cell"><div class="mark av" style="background:#2b6e47;color:#f5f0e8">C</div><div class="cap"><b>L 30%</b>#2b6e47</div></div>
+    <div class="cell"><div class="mark av" style="background:#328053;color:#f5f0e8">C</div><div class="cap"><b>L 35%</b>#328053</div></div>
+  </div>
+</div>
+<p class="note">Cream letter clears 4.5:1 through L&nbsp;35% (4.71:1) and fails past it.</p>
+
+<!-- ============================================================ -->
+<h2>3 · The selected / mouseover fill</h2>
+<p class="sub">Selected is <code>bg-navfill/80</code>, hover is <code>bg-navfill/64</code>,
+where <code>navfill</code> is <code>#0d341e</code> — a bespoke base that is darker
+(L&nbsp;12.7% vs 13.9%) and much more saturated (60% vs 43.7%) than the brand green. Your read is
+right about the base.</p>
+
+<div class="panels">
+  <div class="panel">
+    <h3>Now — navfill</h3>
+    <div class="nrow sel-now"><span class="ico"></span>Selected row</div>
+    <div class="nrow hov-now"><span class="ico"></span>Hovered row</div>
+    <div class="nrow"><span class="ico"></span>Idle row</div>
+  </div>
+  <div class="panel">
+    <h3>Brand base, same alphas</h3>
+    <div class="nrow sel-brand"><span class="ico"></span>Selected row</div>
+    <div class="nrow hov-brand"><span class="ico"></span>Hovered row</div>
+    <div class="nrow"><span class="ico"></span>Idle row</div>
+  </div>
+  <div class="panel">
+    <h3>Hue-locked, opaque</h3>
+    <div class="nrow sel-lock"><span class="ico"></span>Selected row</div>
+    <div class="nrow hov-lock"><span class="ico"></span>Hovered row</div>
+    <div class="nrow"><span class="ico"></span>Idle row</div>
+  </div>
+</div>
+
+<table>
+  <tr><th></th><th>Declared</th><th>Renders as</th><th>Hue</th><th>Sat</th><th>Cream text</th></tr>
+  <tr><td>selected — now</td><td><code>#0d341e</code>/80</td><td><code>#3d5c4a</code></td><td>145.2°</td><td>20.3%</td><td>7.24:1</td></tr>
+  <tr><td>selected — brand base</td><td><code>#143321</code>/80</td><td><code>#435b4c</code></td><td>143.9°</td><td>15.6%</td><td>7.20:1</td></tr>
+  <tr><td>selected — hue-locked</td><td><code>#255f3e</code></td><td><code>#255f3e</code></td><td>145.2°</td><td>43.7%</td><td>7.35:1</td></tr>
+  <tr><td>hover — now</td><td><code>#0d341e</code>/64</td><td><code>#637c6d</code></td><td>143.9°</td><td>11.0%</td><td>4.41:1</td></tr>
+  <tr><td>hover — brand base</td><td><code>#143321</code>/64</td><td><code>#687b6f</code></td><td>142.3°</td><td>8.6%</td><td>4.39:1</td></tr>
+  <tr><td>hover — hue-locked</td><td><code>#328053</code></td><td><code>#328053</code></td><td>145.2°</td><td>43.7%</td><td>4.71:1</td></tr>
+</table>
+
+<p class="note" style="margin-top:16px"><b>The finding that matters:</b> the hue compensation
+buys almost nothing at the alphas actually in use. Swapping the base from <code>navfill</code>
+to the brand value moves the rendered hue by 1.3° when selected and 1.6° on hover — invisible.
+The compensation was solved for <code>/20</code>, where the drift is real, and nothing on this
+panel runs at <code>/20</code>. So using the brand value costs no hue accuracy.</p>
+
+<p class="note"><b>But translucency is what desaturates both.</b> Selected renders at 20.3%
+saturation against the brand's 43.7% — that is why the fill reads washed rather than green,
+and no change of base fixes it, because the panel underneath is near-white. The opaque
+hue-locked column is the only one that is actually on the brand hue <em>and</em> the brand
+saturation.</p>
+
+</div>
+</body>
+</html>
