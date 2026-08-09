@@ -117,18 +117,34 @@ branch it is on and you have its ID.
 
 ---
 
-## NOT RUN — 8 specs written, waiting
+## NOT RUN — CORRECTED 2026-08-08
 
-| ID | What it does | Priority |
+**The previous "NOT RUN — 8 specs written" table was STALE and wrong.** Five of its eight
+entries had already run and merged by the time it was read: `WALLSYNC`, `LEASEGATE`,
+`LEASESIMPLE`, `NULLUID` and `SECFIX2` all have filed reports and all are ancestors of
+`main` (verified with `git merge-base --is-ancestor`, 2026-08-08). Anyone reading that table
+would have re-run finished work, including a "person is blocked" item that was already fixed.
+
+**The test used to build this list:** a task doc with no matching
+`docs/reports/TASK-<ID>-REPORT.md` has not run. That test is what the table below applies.
+
+| ID | What it does | State |
 |---|---|---|
-| **WALLSYNC** | Wall and onboarding page disagree; Madeline Do is locked out of her account today, 8 more latent | **1 — a person is blocked** |
-| **LEASEGATE** | Restriction gates on the lease. Unblocked (LEASEFORK + TIPTAP merged) | 2 — live docs wrong |
-| **LEASESIMPLE** | Strip the worksheet. Unblocked (LEASEFORK merged) | 2 |
-| **NULLUID** | Audit every SECURITY DEFINER guard that trusts a NULL `auth.uid()` | 3 — security |
-| **SECFIX2** | `ensure_gift_buyer_account` anon path + `member_directory` RLS bypass | 3 — security |
-| **GOOGLEAUTH** | Self-serve "Activate Sign in with Google" | 4 |
-| **PURPOSEFIX** | Deal field select | 4 |
-| **TITLESWEEP** | Conversational page intros | 4 |
+| **ADMINSWEEP** | Full admin refactor. Phase 1 = inventory only, hard stop | not run — largest remaining piece |
+| **PARTYJOURNEY** | Invite → auth → contract → capture → assignment → signature → PDF | not run — large, must be phased |
+| **INVITELINK** | Existing members get an activation link they do not need | not run |
+| **PAGEFRAME** | Nine pages onto the shared header (closes A5/A6) | not run |
+| **TITLESWEEP** | Conversational page intros — run AFTER `PAGEFRAME` | not run, gated |
+| **PURPOSEFIX** | Deal field select — a live defect, reported twice | not run |
+| **GIFTCREDITS** | Redemption delivers value | not run |
+| **GOOGLEAUTH** | Self-serve "Activate Sign in with Google" | not run |
+| **FACILITYTERM** | Tenant chooses the facility word | not run — blocked on the owner's word list |
+| **MOBILEPASS** | Nav/header material pass — **owns `AppLayout.tsx`** | not run |
+| **NOGUARD1** | Access-control inventory of the anon-reachable definer surface | branch `task/noguard1` exists, doc commit only, unmerged, no report |
+| **NOGUARD2** | Harden the access checks NOGUARD1 finds | not run, gated on NOGUARD1 |
+
+Unspecced and outranking most of the above: **the contract issues the owner found after the
+reload fix.** Never described, so no doc exists. Ask before ordering anything around it.
 
 ## MERGED — done, in `main`, nothing outstanding
 
@@ -136,7 +152,8 @@ branch it is on and you have its ID.
 `SECFIX` · `ACCTEVAL` · `BP410` · `SIGREAD` · `PLUSPASS` · `PARTYRLS` · `DOCVIS` ·
 `PROFILE` · `COSIGN` · `HEADER` · `LOCFIX` · `SQLTRUTH` · `SVCPURGE` · `UIPOLISH` ·
 `PARTYCTRL` · `COMPANYFIX` · `PAGETITLES` · `C10` · `I1B` · `R11` · `F3` · `A8` · `A8B` ·
-`A11` · `A12` · `A13` · `A14` · `A15` · `A16` · `A` (party-verify 1 & 2) · `B` · `C` · `I`
+`A11` · `A12` · `A13` · `A14` · `A15` · `A16` · `A` (party-verify 1 & 2) · `B` · `C` · `I` ·
+`WALLSYNC` · `LEASEGATE` · `LEASESIMPLE` · `NULLUID` · `SECFIX2` · `ONEHEADER`
 
 ## REPORTS NEVER REVIEWED BY THE OWNER
 
@@ -150,7 +167,7 @@ branch it is on and you have its ID.
 
 | # | Question | Recommendation |
 |---|---|---|
-| 1 | Send `WALLSYNC`? | Yes |
+| 1 | ~~Send `WALLSYNC`?~~ **CLOSED 2026-08-08 — it ran and merged.** | — |
 | 2 | Does the password survive Google linking? (`GOOGLEAUTH`) | Keep it |
 | 3 | Is manual identity linking enabled in Supabase Auth? (`GOOGLEAUTH`) | Owner must check the dashboard |
 | 4 | Lease picker shows "Default" and "Horse Lease Agreement" as two routes to one template (`LEASEFORK`) | Owner supplies a label |
