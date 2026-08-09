@@ -30,20 +30,6 @@ export default {
         glass: {
           nav: '#09975e',
         },
-        /* EARTH — owner, 2026-08-08: "the nav looks better when it's a darker
-           earth tone than the header and the content background, the green has
-           got to go." Derived from CREAM'S OWN HUE (37deg) taken deep, so the nav
-           reads as the same material family as the page rather than a second
-           palette bolted on. Cream labels clear 11:1 on earth-800. */
-        earth: {
-          950: '#231e15',
-          900: '#2f281e',
-          800: '#3a3327',
-          700: '#443d31',
-          600: '#4d473d',
-          500: '#5f594e',
-          400: '#7e7567',
-        },
         gold: {
           900: '#5c4a18',
           800: '#7a6421',
@@ -61,6 +47,13 @@ export default {
           50: '#faf8f4',
           100: '#f5f0e8',
           200: '#ede5d5',
+          /* Owner, 2026-08-08: the nav is "a slightly darker shade of the colors
+             already in play — the cream palette", not a brown. 300 is the nav
+             surface: 83% lightness against the header's 94% and the page's 97%,
+             so it separates without going dark, and the existing dark ink still
+             clears 9.9:1 on it. 400 is its hover. */
+          300: '#e6dac1',
+          400: '#decfaf',
         },
       },
       fontFamily: {

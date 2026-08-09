@@ -58,22 +58,22 @@ import { captureWallReturnDestination } from '../../lib/wallReturn';
  *
  * Reverting the surface is still a one-line swap, now to `bg-cream-100`, but the
  * row palette below has to come back with it. */
-const NAV_PANEL = 'bg-earth-800';
+const NAV_PANEL = 'bg-cream-300';
 /** default row: cream at reading weight; hover is desktop-only (`hover:hover`)
  *  so iOS's sticky post-tap `:hover` can never latch it on. */
-const NAV_ROW_IDLE = 'text-cream-100/80 [@media(hover:hover)]:hover:bg-earth-600 [@media(hover:hover)]:hover:text-cream-100';
+const NAV_ROW_IDLE = 'text-green-900/85 [@media(hover:hover)]:hover:bg-cream-400 [@media(hover:hover)]:hover:text-green-900';
 /** selected row: the inversion of the panel. Cream fill, green ink — the same
  *  two colours the other way round, which is what makes it read as selected on a
  *  panel that is itself earth-800 (C5b's old `bg-green-800` active fill would now
  *  be invisible: it IS the panel). */
-const NAV_ROW_ACTIVE = 'bg-cream-100 text-earth-900 font-medium';
-const NAV_ICON_IDLE = 'text-cream-100/65 [@media(hover:hover)]:group-hover:text-cream-100';
-const NAV_ICON_ACTIVE = 'text-earth-900';
+const NAV_ROW_ACTIVE = 'bg-green-800 text-cream-100 font-medium';
+const NAV_ICON_IDLE = 'text-green-800/60 [@media(hover:hover)]:group-hover:text-green-900';
+const NAV_ICON_ACTIVE = 'text-cream-100';
 /** group headings ("Management", "People", …) — the "section header" the owner
  *  named explicitly. Quiet, but cream: on a dark panel the old `text-muted`
  *  (green-800/70) was dark-on-dark and effectively invisible. */
-const NAV_HEADING = 'text-cream-100/60';
-const NAV_DIVIDER = 'border-cream-100/20';
+const NAV_HEADING = 'text-green-900/55';
+const NAV_DIVIDER = 'border-green-900/12';
 /** badges: solid gold on green-950 ink. The old `bg-gold-600/70 text-white` was
  *  a translucent gold tuned for a light panel; over green-800 it muddies. */
 const NAV_BADGE = 'bg-gold-500 text-green-950';
@@ -402,7 +402,7 @@ function NavTooltipLabel({ label }: { label: string }) {
         <span
           role="tooltip"
           style={{ top: pos.top, left: pos.left }}
-          className="pointer-events-none fixed -translate-y-1/2 z-[100] whitespace-nowrap rounded-md bg-earth-950 text-cream-50 text-xs font-sans px-2 py-1 shadow-lg"
+          className="pointer-events-none fixed -translate-y-1/2 z-[100] whitespace-nowrap rounded-md bg-green-950 text-cream-50 text-xs font-sans px-2 py-1 shadow-lg"
         >
           {label}
         </span>,
@@ -422,10 +422,10 @@ function NavTooltipLabel({ label }: { label: string }) {
  *  here, in `PresenceLink`, `AccountNavLink`, `NavFooter` and both `CommunityNav`
  *  rows — no component keeps the old treatment.
  *
- *  `focus-ring-dark` rather than `focus-ring`: the two differ only in their ring
+ *  `focus-ring` rather than `focus-ring`: the two differ only in their ring
  *  OFFSET colour, and `focus-ring`'s is `cream` — a cream halo drawn on a cream
  *  page, which is what it was for. On the green panel the offset has to be the
- *  panel, which is exactly what `focus-ring-dark` (ring-offset-green-800) is. */
+ *  panel, which is exactly what `focus-ring` (ring-offset-green-800) is. */
 function RailLink({ to, label, icon: Icon, end, badge = 0, open = true }: NavItem & { badge?: number; open?: boolean }) {
   return (
     <NavLink
@@ -433,7 +433,7 @@ function RailLink({ to, label, icon: Icon, end, badge = 0, open = true }: NavIte
       end={end}
       aria-label={open ? undefined : label}
       className={({ isActive }) =>
-        `group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13.5px] font-sans transition-colors focus-ring-dark ${open ? '' : 'justify-center'} ${
+        `group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13.5px] font-sans transition-colors focus-ring ${open ? '' : 'justify-center'} ${
           isActive ? NAV_ROW_ACTIVE : NAV_ROW_IDLE
         }`
       }
@@ -465,7 +465,7 @@ function MenuLink({ to, label, icon: Icon, end, onNavigate }: NavItem & { onNavi
       onClick={onNavigate}
       className={({ isActive }) =>
         `flex items-center gap-3 px-4 py-2.5 text-sm font-sans transition-colors focus-ring ${
-          isActive ? 'bg-cream-200 text-green-800 font-medium ' : 'text-secondary [@media(hover:hover)]:hover:bg-earth-600 [@media(hover:hover)]:hover:text-cream-100'
+          isActive ? 'bg-cream-200 text-green-800 font-medium ' : 'text-secondary [@media(hover:hover)]:hover:bg-cream-400 [@media(hover:hover)]:hover:text-cream-100'
         }`
       }
     >
@@ -489,7 +489,7 @@ function PresenceLink({ to, label, icon: Icon, section, onNavigate }: {
   const isActive = section ? accountSection === section : location.pathname === to;
   return (
     <Link to={to} onClick={onNavigate} aria-current={isActive ? 'page' : undefined}
-      className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans transition-colors focus-ring-dark ${
+      className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans transition-colors focus-ring ${
         isActive ? NAV_ROW_ACTIVE : NAV_ROW_IDLE}`}>
       <Icon size={18} aria-hidden="true" className={isActive ? NAV_ICON_ACTIVE : NAV_ICON_IDLE} />
       <span className="whitespace-nowrap flex-1">{label}</span>
@@ -509,7 +509,7 @@ function AccountNavLink({ onNavigate, open = true }: { onNavigate?: () => void; 
   return (
     <Link to="/app/account" onClick={onNavigate} aria-current={isActive ? 'page' : undefined}
       aria-label={open ? undefined : 'Account'}
-      className={`group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans transition-colors focus-ring-dark ${open ? '' : 'justify-center'} ${
+      className={`group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans transition-colors focus-ring ${open ? '' : 'justify-center'} ${
         isActive ? NAV_ROW_ACTIVE : NAV_ROW_IDLE}`}>
       {/* `shrink-0` — see the note in CommunityNav's collapsed branch. Without it
           the collapsed rail squashes this icon to the ~8px of content box left
@@ -564,7 +564,7 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
     // I1B — staff rail icon strip: just the parent icon, active whenever on the feed.
     return (
       <Link to="/app" onClick={onNavigate} aria-label="Community Feed" aria-current={onFeed ? 'page' : undefined}
-        className={`group relative flex items-center justify-center rounded-lg px-3 py-2.5 focus-ring-dark ${onFeed ? NAV_ROW_ACTIVE : NAV_ROW_IDLE}`}>
+        className={`group relative flex items-center justify-center rounded-lg px-3 py-2.5 focus-ring ${onFeed ? NAV_ROW_ACTIVE : NAV_ROW_IDLE}`}>
         {/* `shrink-0` is REQUIRED, not decorative. In the 56px collapsed rail the
             nav's p-3 plus this link's px-3 leave ~8px of content box, and without
             flex-shrink:0 the SVG is compressed to fit — which is why this icon and
@@ -584,9 +584,9 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
           right-pointing (rotated ChevronDown) collapsed state. C5 (owner, 2026-08-07):
           the toggle's chevron/label were 15px/10px against 17-18px/13.5px everywhere
           else in the rail — brought up to the same scale. */}
-      <div className={`group relative flex items-center rounded-lg pr-1 ${isAll ? 'bg-cream-100' : '[@media(hover:hover)]:hover:bg-earth-600'}`}>
+      <div className={`group relative flex items-center rounded-lg pr-1 ${isAll ? 'bg-cream-100' : '[@media(hover:hover)]:hover:bg-cream-400'}`}>
         <Link to="/app" onClick={onNavigate} aria-current={isAll ? 'page' : undefined}
-          className={`flex items-center gap-3 flex-1 min-w-0 px-3 py-2.5 text-[13.5px] font-sans focus-ring-dark rounded-lg ${isAll ? 'text-green-900 font-medium' : 'text-cream-100/80 [@media(hover:hover)]:group-hover:text-cream-100'}`}>
+          className={`flex items-center gap-3 flex-1 min-w-0 px-3 py-2.5 text-[13.5px] font-sans focus-ring rounded-lg ${isAll ? 'text-green-900 font-medium' : 'text-cream-100/80 [@media(hover:hover)]:group-hover:text-cream-100'}`}>
           <Users size={18} className={`shrink-0 ${isAll ? NAV_ICON_ACTIVE : NAV_ICON_IDLE}`} />
           <span className="whitespace-nowrap">Community Feed</span>
         </Link>
@@ -602,7 +602,7 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
              chevron is green ink on it — the inverse of what it was when the
              selected pill was green. Unselected, it sits on the green panel and
              is cream like every other idle mark. */
-          className={`shrink-0 flex items-center justify-center p-1.5 rounded-md focus-ring-dark ${isAll ? 'text-green-800 hover:bg-green-800/10' : 'text-cream-100/65 [@media(hover:hover)]:hover:bg-earth-600 [@media(hover:hover)]:hover:text-cream-100'}`}>
+          className={`shrink-0 flex items-center justify-center p-1.5 rounded-md focus-ring ${isAll ? 'text-green-800 hover:bg-green-800/10' : 'text-cream-100/65 [@media(hover:hover)]:hover:bg-cream-400 [@media(hover:hover)]:hover:text-cream-100'}`}>
           {expanded ? <ChevronUp size={18} className="shrink-0" /> : <ChevronDown size={18} className="shrink-0" />}
         </button>
       </div>
@@ -613,7 +613,7 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
             const isActive = active === v.key;
             return (
               <Link key={v.key} to={communityHref(v.key)} onClick={onNavigate} aria-current={isActive ? 'page' : undefined}
-                className={`group flex items-center ${indentClass} pr-3 py-1.5 rounded-lg text-[13px] font-sans transition-colors focus-ring-dark ${
+                className={`group flex items-center ${indentClass} pr-3 py-1.5 rounded-lg text-[13px] font-sans transition-colors focus-ring ${
                   isActive ? NAV_ROW_ACTIVE : NAV_ROW_IDLE}`}>
                 <span className="whitespace-nowrap">{v.label}</span>
               </Link>
@@ -738,14 +738,14 @@ function NavFooter({ open = true, onOpenTour, onSignOut, onNavigate }: {
     <div className={`mt-2 pt-3 pb-2 border-t ${NAV_DIVIDER} flex flex-col gap-1.5`}>
       <button type="button" onClick={() => { onNavigate?.(); onOpenTour(); }}
         aria-label={open ? undefined : 'App tour'}
-        className={`group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans ${NAV_ROW_IDLE} focus-ring-dark ${open ? '' : 'justify-center'}`}>
+        className={`group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans ${NAV_ROW_IDLE} focus-ring ${open ? '' : 'justify-center'}`}>
         <Compass size={17} aria-hidden="true" className={`shrink-0 ${NAV_ICON_IDLE}`} />
         {open && <span className="flex-1 text-left">App tour</span>}
         {!open && <NavTooltipLabel label="App tour" />}
       </button>
       <button type="button" onClick={() => { onNavigate?.(); onSignOut(); }}
         aria-label={open ? undefined : 'Sign out'}
-        className={`group relative flex items-center gap-3 rounded-lg px-3 py-3 text-[13.5px] font-sans ${NAV_ROW_IDLE} focus-ring-dark w-full pb-[max(0.75rem,env(safe-area-inset-bottom))] ${open ? '' : 'justify-center'}`}>
+        className={`group relative flex items-center gap-3 rounded-lg px-3 py-3 text-[13.5px] font-sans ${NAV_ROW_IDLE} focus-ring w-full pb-[max(0.75rem,env(safe-area-inset-bottom))] ${open ? '' : 'justify-center'}`}>
         <LogOut size={17} aria-hidden="true" className={`shrink-0 ${NAV_ICON_IDLE}`} />
         {open && <span className="flex-1 text-left">Sign out</span>}
         {!open && <NavTooltipLabel label="Sign out" />}
@@ -1034,7 +1034,7 @@ export default function AppLayout() {
           <div className="mt-1 border-t border-green-800/10 pt-2 px-4 pb-1 text-xs uppercase tracking-wide text-secondary/60">Company</div>
           <button type="button"
             onClick={() => { closeMenu(); navigate('/app/ops/documents'); }}
-            className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary [@media(hover:hover)]:hover:bg-earth-600 [@media(hover:hover)]:hover:text-cream-100 focus-ring">
+            className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary [@media(hover:hover)]:hover:bg-cream-400 [@media(hover:hover)]:hover:text-cream-100 focus-ring">
             <FileText size={17} /> Pending agreements
           </button>
           {/* Both operators navigate to the community + catalog to help
@@ -1042,12 +1042,12 @@ export default function AppLayout() {
           <div className="mt-1 border-t border-green-800/10 pt-2 px-4 pb-1 text-xs uppercase tracking-wide text-secondary/60">Quick access</div>
           <div className="px-1"><CommunityNav onNavigate={closeMenu} indentClass="pl-9" /></div>
           <button type="button" onClick={() => { closeMenu(); navigate('/app/dashboard'); }}
-            className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary [@media(hover:hover)]:hover:bg-earth-600 [@media(hover:hover)]:hover:text-cream-100 focus-ring">
+            className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary [@media(hover:hover)]:hover:bg-cream-400 [@media(hover:hover)]:hover:text-cream-100 focus-ring">
             <LayoutDashboard size={17} /> Dashboard
             {unreadCount > 0 && <span className="ml-auto min-w-[1.25rem] h-5 px-1.5 text-[11px] leading-5 text-center rounded-full bg-gold-600/70 text-white">{unreadCount > 9 ? '9+' : unreadCount}</span>}
           </button>
           <button type="button" onClick={() => { closeMenu(); navigate('/app/catalog'); }}
-            className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary [@media(hover:hover)]:hover:bg-earth-600 [@media(hover:hover)]:hover:text-cream-100 focus-ring">
+            className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary [@media(hover:hover)]:hover:bg-cream-400 [@media(hover:hover)]:hover:text-cream-100 focus-ring">
             <ShoppingBag size={17} /> Catalog
           </button>
         </>
@@ -1063,7 +1063,7 @@ export default function AppLayout() {
             return (
               <button key={q.label} type="button"
                 onClick={() => { closeMenu(); navigate(q.to); }}
-                className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary [@media(hover:hover)]:hover:bg-earth-600 [@media(hover:hover)]:hover:text-cream-100 focus-ring">
+                className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary [@media(hover:hover)]:hover:bg-cream-400 [@media(hover:hover)]:hover:text-cream-100 focus-ring">
                 <q.icon size={17} /> {q.label}
                 {badge > 0 && <span className="ml-auto min-w-[1.25rem] h-5 px-1.5 text-[11px] leading-5 text-center rounded-full bg-gold-600/70 text-white">{badge > 9 ? '9+' : badge}</span>}
               </button>
@@ -1075,7 +1075,7 @@ export default function AppLayout() {
             return (
               <Link key={l.key} to={l.to} onClick={closeMenu}
                 className={`flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans focus-ring ${
-                  isActive ? 'bg-cream-200 text-green-800 font-medium ' : 'text-secondary [@media(hover:hover)]:hover:bg-earth-600 [@media(hover:hover)]:hover:text-cream-100'}`}>
+                  isActive ? 'bg-cream-200 text-green-800 font-medium ' : 'text-secondary [@media(hover:hover)]:hover:bg-cream-400 [@media(hover:hover)]:hover:text-cream-100'}`}>
                 <l.icon size={17} /> {l.label}
               </Link>
             );
@@ -1096,11 +1096,11 @@ export default function AppLayout() {
       )}
       <button type="button"
         onClick={() => { closeMenu(); setTourOpen(true); }}
-        className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary [@media(hover:hover)]:hover:bg-earth-600 [@media(hover:hover)]:hover:text-cream-100 border-t border-green-800/10 focus-ring">
+        className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary [@media(hover:hover)]:hover:bg-cream-400 [@media(hover:hover)]:hover:text-cream-100 border-t border-green-800/10 focus-ring">
         <Compass size={17} aria-hidden="true" className="shrink-0" /> App tour
       </button>
       <button type="button" onClick={handleSignOut}
-        className="flex items-center gap-3 px-4 py-2.5 mt-1 w-full text-sm font-sans text-secondary [@media(hover:hover)]:hover:bg-earth-600 [@media(hover:hover)]:hover:text-cream-100 border-t border-green-800/10 focus-ring">
+        className="flex items-center gap-3 px-4 py-2.5 mt-1 w-full text-sm font-sans text-secondary [@media(hover:hover)]:hover:bg-cream-400 [@media(hover:hover)]:hover:text-cream-100 border-t border-green-800/10 focus-ring">
         <LogOut size={17} aria-hidden="true" className="shrink-0" /> Sign out
       </button>
     </div>
@@ -1170,7 +1170,7 @@ export default function AppLayout() {
             </button>
             <div className="relative" ref={menuRef}>
               <button type="button" onClick={() => setMenuOpen((v) => !v)}
-                className="flex items-center gap-1 pl-1.5 pr-2 py-1 rounded-full [@media(hover:hover)]:hover:bg-earth-600 [@media(hover:hover)]:hover:text-cream-100 focus-ring"
+                className="flex items-center gap-1 pl-1.5 pr-2 py-1 rounded-full [@media(hover:hover)]:hover:bg-cream-400 [@media(hover:hover)]:hover:text-cream-100 focus-ring"
                 aria-label="Account menu" aria-expanded={menuOpen}>
                 {/* No notifications badge on the avatar — the count lives on the
                     Dashboard nav link (desktop rail + mobile menu) instead. */}
@@ -1245,7 +1245,7 @@ export default function AppLayout() {
                      `px-3 py-2.5`, so the icon sat off the shared centre line in
                      the collapsed rail, and the white hover belonged to no other
                      surface in the nav. */
-                  className={`flex items-center justify-center rounded-lg px-3 py-2.5 ${NAV_ROW_IDLE} focus-ring-dark`}>
+                  className={`flex items-center justify-center rounded-lg px-3 py-2.5 ${NAV_ROW_IDLE} focus-ring`}>
                   <Plus size={18} aria-hidden="true" className="shrink-0" />
                 </button>
               </div>
@@ -1269,7 +1269,7 @@ export default function AppLayout() {
                   <div key={g.key}>
                     {navGroups.length > 1 && staffRailPinned && (
                       <button type="button" onClick={() => toggleGroup(g.key)}
-                        className={`w-full flex items-center justify-between px-3 py-1.5 text-[10px] tracking-widest uppercase ${NAV_HEADING} font-semibold hover:text-cream-100 focus-ring-dark rounded-md`}>
+                        className={`w-full flex items-center justify-between px-3 py-1.5 text-[10px] tracking-widest uppercase ${NAV_HEADING} font-semibold hover:text-cream-100 focus-ring rounded-md`}>
                         {g.label}
                         <ChevronDown size={12} className={`transition-transform ${groupOpen(g) ? '' : '-rotate-90'}`} />
                       </button>
@@ -1312,7 +1312,7 @@ export default function AppLayout() {
                      `px-3 py-2.5`, so the icon sat off the shared centre line in
                      the collapsed rail, and the white hover belonged to no other
                      surface in the nav. */
-                  className={`flex items-center justify-center rounded-lg px-3 py-2.5 ${NAV_ROW_IDLE} focus-ring-dark`}>
+                  className={`flex items-center justify-center rounded-lg px-3 py-2.5 ${NAV_ROW_IDLE} focus-ring`}>
                       {staffRailPinned ? <PanelLeftClose size={18} className="shrink-0" /> : <PanelLeftOpen size={18} className="shrink-0" />}
                     </button>
                   </div>
@@ -1363,7 +1363,7 @@ export default function AppLayout() {
               unconditionally (superadmin's drawer is the same green glass and
               gets the same legibility fix; this is a neutral utility colour,
               not tenant branding). */}
-          <div className="absolute inset-0 bg-earth-950/45" onClick={closeMobileNav} aria-hidden="true" />
+          <div className="absolute inset-0 bg-green-950/45" onClick={closeMobileNav} aria-hidden="true" />
           <nav
             id="app-nav-drawer"
             className={`absolute inset-y-0 ${isSuperAdmin ? 'left-0' : 'right-0'} w-72 max-w-[85vw] ${NAV_PANEL} shadow-xl p-3 overflow-y-auto`}
