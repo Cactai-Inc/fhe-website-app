@@ -77,10 +77,10 @@ Shipped and present in the deployed CSS. **Unconfirmed by eye.**
 
 | # | Needs |
 |---|---|
-| **E1** | **Header item 3** — the owner's third header note was cut off mid-sentence and never completed. |
-| **E2** | **The glass-vs-green decision** (from C2's math): high alpha (~0.90, reads green, barely glass), put the panel over a dark backdrop (what A1 changes), or accept pale grey-green. |
-| **E3** | The **logo file** for the two custom horse icons (A11). |
-| **E4** | Whether **"Horse care"** is the same page as Barn, or separate. |
+| ~~E1~~ | ~~Header item 3~~ — **CLOSED 2026-08-08.** All three header complaints described the cardstock header, which is being replaced. Owner: "none of that header message matters." |
+| ~~E2~~ | ~~Glass vs green~~ — **ANSWERED: lose the glass.** Solid brand green, cream labels. Header does **not** minify on scroll. |
+| ~~E3~~ | ~~Logo file for the custom horse icons~~ — **ON HOLD, owner 2026-08-08.** Lessons and Horse care keep placeholders; do not block nav work on them. |
+| ~~E4~~ | ~~Horse care vs Barn~~ — **ANSWERED: separate pages.** Also: FHE is a **stable at a ranch, not a barn** — 160 mentions across 45 files need a judged sweep, not a find-replace. |
 
 ---
 

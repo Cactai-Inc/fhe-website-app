@@ -59,10 +59,11 @@ Budget for re-deciding how the wordmark looks on glass, not for porting values.
 
 ## Related, already known
 
-- **The mobile wordmark is faint** (`TASK-MOBILEPASS` H1) and the **monogram is unfilled**
-  (H2). Both are relief-treatment problems. **If this task lands first, both may dissolve** —
-  do not fix them on the cardstock header only to delete it.
-- The owner has a **third header item that was cut off mid-sentence** (H3). Ask.
+- **The owner's three header complaints are CLOSED, 2026-08-08.** The faint mobile wordmark
+  (H1), the unfilled monogram (H2) and an unfinished third item (H3) were all about the
+  CARDSTOCK header. Owner: *"none of that header message matters, it's all about the current
+  one and we are switching it to the one from the login page."*
+  **Do not carry them forward and do not ask about H3.** They die with the header.
 - `.cs-tab` in `header-cardstock.css` is already dead (the create tab moved into the rail,
   `42bbff2`). Delete it with the rest.
 
