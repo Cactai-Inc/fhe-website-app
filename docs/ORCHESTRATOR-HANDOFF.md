@@ -120,8 +120,20 @@ origin/main. Not on ~/Desktop.
 
 Plus, outside the pasted block: **model, thinking, effort, worktree path, branch.**
 
-**Default to Opus 5, thinking ON, effort HIGH.** The owner's words: low effort on Opus 5 is
-"not the move." Medium is the same mistake one level down.
+~~**Default to Opus 5, thinking ON, effort HIGH.** The owner's words: low effort on Opus 5 is
+"not the move." Medium is the same mistake one level down.~~
+
+> **CONTESTED 2026-08-08 — do not follow the struck line above until this is settled.**
+> The owner, who ran every one of these threads, says it does not match what actually
+> happened: **session threads tended to run Sonnet with thinking, which he set to xhigh**,
+> and **the instruction he was given for almost every session was high or medium.**
+>
+> The two accounts cannot both be right, and he is the authority on what he ran. The struck
+> line is left visible so nobody re-derives it from an old copy. **An orchestrator reading
+> this must ASK for the model/effort default rather than assume either version.**
+>
+> Note the struck line's quote is about *Opus 5 at low effort*. That is not evidence about
+> Sonnet at any effort, and it was being applied as though it were.
 
 **The ID alone on its own line is not stylistic.** The thread's tab title is auto-generated
 from the prompt and discards `THREAD ID: X` headers and `ID — description` prefixes. Only the
