@@ -45,12 +45,18 @@
        HORIZONTAL is not: there is nothing to the left or right of the layout, so
        dragging sideways only exposes bare background and makes the app feel
        unmoored. `overscroll-behavior-x: none` stops the sideways drag while
-       leaving vertical bounce untouched; `overflow-x: clip` stops any child that
-       overflows from creating a real horizontal scroll range in the first place
-       (clip rather than hidden so it does not create a scroll container and
-       break `position: sticky` on the rails and subheader). */
+       leaving vertical bounce untouched. */
     overscroll-behavior-x: none;
-    overflow-x: clip;
+    /* `overflow-x: clip` WAS here and is deliberately gone (2026-08-08).
+       Setting overflow on the root element disturbs SCROLL ANCHORING — the
+       browser feature that holds your position when content above you
+       re-renders. Authoring a contract re-renders the document on every field
+       change, so with anchoring disturbed each selection threw the reader back
+       to the top of the page. That is a core workflow and it outweighs the
+       horizontal-overflow guard by a wide margin.
+       overscroll-behavior-x still stops the sideways rubber-band drag, which was
+       the actual complaint. If a child ever does overflow horizontally, clip it
+       on THAT element rather than on the document root. */
   }
   /* Detect the screen and scale: Tailwind sizes are rem-based, so raising the
      root font-size on larger displays grows type, spacing, and max-w-* caps
