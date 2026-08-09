@@ -9,23 +9,51 @@ were verified against the built CSS; that proves a rule shipped, not that it loo
 
 ---
 
-## A — NOT IMPLEMENTED
+## A — NOT IMPLEMENTED, with the owner's disposition (2026-08-08)
 
-| # | Request | Note |
+**Numbering matches the list printed to the owner in chat**, which is what he answered
+against. An earlier revision of this file numbered A13 differently — corrected here.
+
+| # | Request | Disposition |
 |---|---|---|
-| **A1** | **Replace the app header with the login screen's header** | The root blocker. The greens cannot match until this lands, and every nav colour is being tuned against a backdrop that is about to change. Spec: `TASK-ONEHEADER`. |
-| **A2** | Admin nav sections are not collapsible on mobile (desktop has it) | |
-| **A3** | Menu button overlaps the **contract actions** card on the contract page | |
-| **A4** | "Tap to open" hint text on mobile | "Tap to close" shipped; open did not |
-| **A5** | Page-header layout pass — add-new button sits at a different height on every page; `Horse records` is the reference | |
-| **A6** | Add-new button becomes a **square, icon-only `+`, right-aligned** | No text label |
-| **A7** | Page name moves **up**, above the button; description moves **down** | |
-| **A8** | Overall material uniformity — "some glass, some opaque buttons without texture, a header with a different colour and texture" | Depends on A1 |
-| **A9** | **Eight nav items share the `Shield` icon** (+ `Contact` ×4, `FileText` ×4, `Boxes` ×3) | Assignment decided in `nav-icon-exercise.md`; not applied |
-| **A10** | Sign-out icon reads as an expand-nav control | Made worse by moving the collapse toggle directly above it |
-| **A11** | Custom icons: **Lessons** = jumping horse with rider (from the logo), **Horse care** = galloping horse | Blocked: no horse artwork exists in the repo, and lucide has no horse |
-| **A12** | "Mess of greens" — five different greens in one calendar view, with no semantic assignment | |
-| **A13** | Second drawer option — **full-height with a logo cap** — for comparison | Below-header version shipped; this one not built |
+| **A1** | Replace the app header with the login screen's header | **RUNS FIRST.** `TASK-ONEHEADER`. Everything below is sequenced off it. |
+| **A2** | Admin nav sections not collapsible on mobile | **DEFERRED** until after the admin page-structure and menu-contents refactor. |
+| **A3** | Menu button overlaps the contract actions card | **SOLVED BY A15** — reverting to the avatar button removes the overlapping tab. No separate work. |
+| **A4** | "Tap to open" / "Tap to close" hint text | **CANCELLED — both.** The tab goes when the new header lands, so neither is needed. The shipped "Tap to close" is **removed**; the unshipped "Tap to open" is dropped. |
+| **A5** | Add-new button sits at a different height on every page | **After A1**, and after the menu tab is removed. |
+| **A6** | Add-new button becomes a square, icon-only `+`, right-aligned | **Implements alongside A5.** |
+| **A7** | Page name moves up, description moves down | **RE-EVALUATE after A1, A5, A6** — do not build to the current spec. |
+| **A8** | Overall material uniformity | **LAST.** Everything else first. |
+| **A9** | Eight nav items share `Shield` (+ `Contact` ×4, `FileText` ×4, `Boxes` ×3) | **Pending the ADMIN PAGE REFACTOR** — see the note below. |
+| **A10** | Sign-out icon reads as an expand-nav control | **With A9.** |
+| **A11** | Custom horse icons (Lessons, Horse care) | **With A9 and A10.** Artwork still on hold. |
+| **A12** | "Mess of greens" | **Part of A8.** |
+| **A13** | Nav resize | **Ships with A1** — actively underway in `TASK-ONEHEADER`. |
+| **A14** | Lose the glass; nav solid brand green with cream labels | **Next after A1 + A13.** |
+| **A15** | Remove the drawer tab; avatar becomes the menu button | **Runs with A14.** |
+
+### The admin refactor — the owner's concern, recorded
+
+> "A9 … is pending refactor of Admin pages (not listed as a request, which is concerning
+> because it was long active discussion with a massive list of priorities and requirements
+> and goals."
+
+**The concern is fair about THIS list.** This file is a UI change-request reconciliation and
+the admin refactor is not a UI change request, so it was never entered here — which means a
+reader of this list alone would not know the largest workstream exists.
+
+**The work IS captured**, in `docs/tasks/TASK-ADMINSWEEP-reconcile-the-admin-surface.md`
+(`99a7564`, reframed at `10d7a1a`): the full admin refactor, Phase 1 inventory with a hard
+stop, the Sales/Marketing/Company-management structure, the tabs ruling, the three named
+missing pages, and the finding that admin has pages for records and almost none for commerce.
+
+**But it is not one list.** The admin refactor, this UI list, and the lease/insurance
+workstream are three separate documents with no single index. If the owner cannot see all
+active workstreams in one place, that is the actual gap — not a missing entry.
+
+**Sequenced order, from the dispositions above:**
+
+`A1 + A13` → `A14 + A15` → `A5 + A6` → `A7` (re-evaluated) → **ADMIN REFACTOR** → `A9 + A10 + A11` → `A2` → `A8 + A12`
 
 ## B — IMPLEMENTED, NOT VISUALLY VERIFIED
 
