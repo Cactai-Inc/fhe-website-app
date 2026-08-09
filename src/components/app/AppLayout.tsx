@@ -584,9 +584,23 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
           right-pointing (rotated ChevronDown) collapsed state. C5 (owner, 2026-08-07):
           the toggle's chevron/label were 15px/10px against 17-18px/13.5px everywhere
           else in the rail — brought up to the same scale. */}
-      <div className={`group relative flex items-center rounded-lg pr-1 ${isAll ? 'bg-cream-100' : '[@media(hover:hover)]:hover:bg-navfill/64'}`}>
+      {/* Owner, 2026-08-09: the SELECTED pill was `bg-cream-100` — the header
+          fill again, sitting on the cream-25 panel, so the highlight barely
+          registered AND it was the inverse of NAV_ROW_ACTIVE, which this row's
+          own sublinks use. Selecting the parent and selecting a child looked
+          like two different design systems. The pill is now the shared
+          `bg-navfill/80`; because the row splits its background (this div) from
+          its ink (the Link and the toggle below), NAV_ROW_ACTIVE is applied in
+          those two halves rather than as one class. */}
+      <div className={`group relative flex items-center rounded-lg pr-1 ${isAll ? 'bg-navfill/80' : '[@media(hover:hover)]:hover:bg-navfill/64'}`}>
+        {/* Owner, 2026-08-09: the idle label was `text-cream-100/80` — a palette
+            left over from when NAV_PANEL was green. The panel is now cream-25
+            (#fdfcfa) and cream-100 (#f5f0e8) is literally the HEADER fill, so
+            this row's text was rendering header-colour ink on a near-white
+            panel: invisible. Idle now uses the same green ink as NAV_ROW_IDLE,
+            which every other row in the rail already had. */}
         <Link to="/app" onClick={onNavigate} aria-current={isAll ? 'page' : undefined}
-          className={`flex items-center gap-3 flex-1 min-w-0 px-3 py-2.5 text-[13.5px] font-sans focus-ring rounded-lg ${isAll ? 'text-green-900 font-medium' : 'text-cream-100/80 [@media(hover:hover)]:group-hover:text-cream-100'}`}>
+          className={`flex items-center gap-3 flex-1 min-w-0 px-3 py-2.5 text-[13.5px] font-sans focus-ring rounded-lg ${isAll ? 'text-cream-25 font-medium' : 'text-green-800 [@media(hover:hover)]:group-hover:text-cream-25'}`}>
           <Users size={18} className={`shrink-0 ${isAll ? NAV_ICON_ACTIVE : NAV_ICON_IDLE}`} />
           <span className="whitespace-nowrap">Community Feed</span>
         </Link>
@@ -598,11 +612,14 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
              240px wide, and on the selected (dark) state it read as a second
              element sitting on the pill. The chevron already carries the meaning;
              the accessible name lives on aria-label. */
-          /* ONEHEADER §1: on the SELECTED row the pill is now cream, so the
-             chevron is green ink on it — the inverse of what it was when the
-             selected pill was green. Unselected, it sits on the green panel and
-             is cream like every other idle mark. */
-          className={`shrink-0 flex items-center justify-center p-1.5 rounded-md focus-ring ${isAll ? 'text-green-800 hover:bg-green-800/10' : 'text-cream-100/65 [@media(hover:hover)]:hover:bg-navfill/64 [@media(hover:hover)]:hover:text-cream-100'}`}>
+          /* Owner, 2026-08-09: both halves of the old ONEHEADER §1 note here are
+             now dead — the panel is no longer green (so an idle cream mark
+             vanished, like the label did) and the selected pill is no longer
+             cream (so green ink on it would vanish in turn). Selected is cream
+             ink on the navfill pill, matching NAV_ICON_ACTIVE; idle is green,
+             matching NAV_ICON_IDLE. The selected hover tint inverts with the
+             pill: a light wash on dark, where it was a dark wash on light. */
+          className={`shrink-0 flex items-center justify-center p-1.5 rounded-md focus-ring ${isAll ? 'text-cream-25 hover:bg-cream-25/10' : 'text-green-800/70 [@media(hover:hover)]:hover:bg-navfill/64 [@media(hover:hover)]:hover:text-cream-25'}`}>
           {expanded ? <ChevronUp size={18} className="shrink-0" /> : <ChevronDown size={18} className="shrink-0" />}
         </button>
       </div>
@@ -1232,21 +1249,27 @@ export default function AppLayout() {
             <nav className={`p-3 sticky top-[var(--cs-hdr-h)] h-[calc(100dvh-var(--cs-hdr-h))] overflow-y-auto overflow-x-hidden border-r border-green-950/20 ${NAV_PANEL} flex flex-col transition-[width] duration-100 ease-out ${staffRailWidthClass}`}>
               {/* Owner, 2026-08-07: the create control lives HERE now, in the
                   slot the collapse toggle used to occupy, and the header's
-                  hanging tab is gone. Icon only in both states — no label even
-                  when the rail is open, so position 1 is identical expanded and
-                  collapsed and the eye does not have to re-find it. The collapse
-                  toggle moved to the foot of the rail, above Sign out. */}
-              <div className="flex justify-end mb-1">
+                  hanging tab is gone. The collapse toggle moved to the foot of
+                  the rail, above Sign out.
+                  Owner, 2026-08-09: it is no longer icon-only. The row spans the
+                  rail with the icon and the words "Add New" centred as one
+                  group — right-aligned bare "+" read as a stray control rather
+                  than an action. Collapsed, the label drops and the tooltip
+                  carries it, exactly as RailLink does, so the icon still lands
+                  on the shared centre line in the 56px strip. */}
+              <div className="mb-1">
                 <button type="button" onClick={() => setCreateOpen(true)}
-                  aria-label="Create" aria-haspopup="dialog"
+                  aria-label={staffRailPinned ? undefined : 'Add New'} aria-haspopup="dialog"
                   /* Owner, 2026-08-08: match the rail's own item metrics. This
                      was `p-2.5` + `hover:bg-white`, inherited from the old
                      collapse button — 10px padding against every nav item's
                      `px-3 py-2.5`, so the icon sat off the shared centre line in
                      the collapsed rail, and the white hover belonged to no other
                      surface in the nav. */
-                  className={`flex items-center justify-center rounded-lg px-3 py-2.5 ${NAV_ROW_IDLE} focus-ring`}>
-                  <Plus size={18} aria-hidden="true" className="shrink-0" />
+                  className={`group relative w-full flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-[13.5px] font-sans transition-colors ${NAV_ROW_IDLE} focus-ring`}>
+                  <Plus size={18} aria-hidden="true" className={`shrink-0 ${NAV_ICON_IDLE}`} />
+                  {staffRailPinned && <span className="whitespace-nowrap">Add New</span>}
+                  {!staffRailPinned && <NavTooltipLabel label="Add New" />}
                 </button>
               </div>
               {/* The static heading here used to read "Management", duplicating

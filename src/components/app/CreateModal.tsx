@@ -376,7 +376,9 @@ export function CreateModal({ onClose, initialStep = 'destination' }: { onClose:
   const [step, setStep] = useState<Step>(initialStep);
   const [postType, setPostType] = useState<PostType>('social');
 
-  const title = step === 'destination' ? 'Create'
+  // Owner, 2026-08-09: the entry step reads "Add New", matching the rail control
+  // that opens it — the modal and its trigger name the same action.
+  const title = step === 'destination' ? 'Add New'
     : step === 'post_type' ? 'New community post'
     : step === 'announce' ? 'Announcement'
     : POST_TYPES.find((p) => p.key === postType)?.label ?? 'Post';
@@ -391,16 +393,22 @@ export function CreateModal({ onClose, initialStep = 'destination' }: { onClose:
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between p-4 border-b border-green-800/10 bg-cream shrink-0">
-          <div className="flex items-center gap-2">
+        {/* Owner, 2026-08-09: the title is CENTRED. Three tracks of fixed, equal
+            width — back / title / close — rather than a `justify-between` row,
+            so the heading sits on the dialog's true centre line whether or not
+            the back button is present (on `destination` it is not) and does not
+            shift between steps. Equal side tracks are what make it centre; a
+            flex-1 middle with unequal neighbours would not. */}
+        <div className="grid grid-cols-[2.5rem_1fr_2.5rem] items-center p-4 border-b border-green-800/10 bg-cream shrink-0">
+          <div className="justify-self-start">
             {step !== 'destination' && (
               <button type="button" onClick={() => setStep(step === 'form' ? 'post_type' : 'destination')} aria-label="Back" className="text-secondary hover:text-green-800">
                 <ChevronLeft size={20} />
               </button>
             )}
-            <h2 className="font-serif text-green-800 text-lg">{title}</h2>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close" className="text-secondary hover:text-green-800"><X size={20} /></button>
+          <h2 className="font-serif text-green-800 text-lg text-center">{title}</h2>
+          <button type="button" onClick={onClose} aria-label="Close" className="justify-self-end text-secondary hover:text-green-800"><X size={20} /></button>
         </div>
 
         <div className="p-4 sm:p-5 overflow-y-auto pb-8">
