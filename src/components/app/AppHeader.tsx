@@ -12,8 +12,16 @@ import './app-header.css';
  *
  * What was adopted is the MATERIAL, not the contents. The public header carries
  * site nav and a sign-in CTA; this one carries what the app header has always
- * carried: the home mark, the wordmark, and the avatar. Sizing, surface,
- * typography and the gold hairline come across; the nav does not.
+ * carried: the home mark, the wordmark, and the avatar. Sizing, surface and
+ * typography come across; the nav does not.
+ *
+ * The gold hairline did NOT come across, though this note used to say it did.
+ * On the public header that rule belongs to the SCROLLED state, and §1 below
+ * removed the scrolled state — so the app header shipped with
+ * `border-bottom: transparent` and no edge of any kind, against a page, a rail
+ * and a subheader all within 1.11:1 of its own tone. It is separated by a soft
+ * two-layer shadow instead (owner, 2026-08-09) — depth rather than a drawn rule.
+ * See app-header.css, `.oh-hdr`.
  *
  * Three things are deliberately different from the public header, each recorded
  * at its rule in app-header.css:

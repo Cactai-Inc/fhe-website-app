@@ -56,6 +56,40 @@
      would trap a position:fixed child. */
   background-color: #f5f0e8;
   border-bottom: 1px solid transparent;
+  /* ============ THE EDGE ============
+     Owner, 2026-08-09: separation by DEPTH, not by a drawn rule.
+     The header had no edge at all — the border below is `transparent`, and the
+     gold hairline the file header claims was adopted never arrived, because on
+     the public header that rule lives in the SCROLLED state and ONEHEADER
+     removed the scroll state (see the orphaned comment block below, which still
+     describes a surface nothing renders any more). That left the header as the
+     only surface in the app with no boundary while the rail, the contract
+     subheader and the superadmin header all carry one.
+
+     It needed one because every neighbour is the same material:
+       header #f5f0e8 -> page #faf8f4            1.07:1
+       header #f5f0e8 -> rail/subheader #fdfcfa  1.11:1
+     Nothing at 1.1:1 reads as an edge.
+
+     Two layers, because they do different work: the tight one is contact — it
+     is what makes the boundary legible where the rail butts the header with no
+     scroll gap between them; the broad one is ambient lift, and it is what the
+     eye reads while content scrolls underneath. A single mid shadow does one
+     job passably and neither well.
+
+     Kept deliberately faint. This is a sticky surface that sits above ~every
+     page in the app, so it has to survive being looked at all day; the cue only
+     has to be enough to say "these are two planes", not to draw attention.
+
+     `rgba(16,28,22,…)` is the shadow ink already used elsewhere in this app's
+     chrome (see header-cardstock.css), not a new colour.
+
+     The transparent border STAYS. It costs nothing, and it holds 1px of the box
+     open so a rule can be added later without reflowing the header — the height
+     is fixed per breakpoint and box-sizing is border-box, so a border appearing
+     from nothing would otherwise steal a pixel from the content box. */
+  box-shadow: 0 2px 4px rgba(16, 28, 22, .08),
+              0 6px 18px rgba(16, 28, 22, .10);
 }
 
 /* ============ THE SCROLLED SURFACE ============
@@ -137,14 +171,22 @@
    ONEHEADER §2 (owner, 2026-08-08): the avatar is the control that opens the
    nav again. It replaces the hanging drawer tab, which is deleted.
 
-   It is FILLED, not outlined, and that is deliberate rather than decorative. The
-   drawer tab was made solid green at full opacity on 2026-08-08 for a recorded
-   reason: on an older iPhone the previous glass tab resolved to a cream panel on
-   a cream page and a real user could not find the menu. This is now the only way
-   into the nav on a phone, so it carries the same rule — a control has to be
-   findable. The gold hairline marks it as interactive without implying a
-   dropdown (ONEHEADER §4: it opens the one nav, it does not bring back the
-   separate avatar menu ONEMENU removed).
+   The BUTTON form is FILLED, not outlined, and that is deliberate rather than
+   decorative. The drawer tab was made solid green at full opacity on 2026-08-08
+   for a recorded reason: on an older iPhone the previous glass tab resolved to a
+   cream panel on a cream page and a real user could not find the menu. It is
+   still the only way into the nav on a phone, so it keeps that rule — a control
+   has to be findable. (ONEHEADER §4 still holds: it opens the one nav, it does
+   not bring back the separate avatar menu ONEMENU removed.) The gold hairline
+   that used to carry the interactive cue is gone — see the button rule below for
+   what replaced it and why.
+
+   Owner, 2026-08-09: THE TWO FORMS NO LONGER LOOK ALIKE. They never behaved
+   alike — at lg+ the rail is already open so the mark is inert, below that it is
+   the only way into the nav — but both rendered as the same filled green disc,
+   which told the desktop user a control was there and then did nothing when they
+   pressed it. Appearance now follows behaviour: the shared rule below carries
+   only GEOMETRY, and each form declares its own surface.
 
    `-webkit-touch-callout` stays for the same reason the cardstock avatar carried
    it: a tap-and-hold should not raise the system's callout on a glyph. */
@@ -153,24 +195,53 @@
   display: grid; place-items: center;
   border: 0; padding: 0; margin: 0;
   border-radius: 999px;
-  background: #143321;                        /* green-800 */
-  color: #f5f0e8;                             /* cream-100 */
-  font-size: 17px; line-height: 1; letter-spacing: .02em;
+  font-size: 17px; line-height: 1;
+  /* NO letter-spacing. It was `.02em`, and tracking on a ONE-character string
+     buys nothing except a trailing space that sits inside the box being centred
+     — so the glyph was pulled half the tracking off centre, the same defect the
+     wordmark documents above and corrects with a negative right margin. A single
+     glyph does not need the correction, it needs the tracking gone. */
   -webkit-touch-callout: none;
 }
+
+/* DESKTOP (lg+) — INERT MONOGRAM. No fill, so the disc stops reading as a
+   pressable target, and the glyph takes green-900: the logo's own ink, on the
+   header's own surface. `transparent` rather than the literal #f5f0e8 so it
+   keeps matching if the header surface is ever re-toned. */
+span.oh-avatar {
+  background: transparent;
+  color: #0d2118;                             /* green-900, as .oh-mono */
+}
+
+/* MOBILE (<lg) — THE MENU BUTTON. Idle is the LIGHTER green and every
+   interaction — hover, press, and the menu actually being open — resolves to the
+   darker brand green. One property moves, so what the control is doing is never
+   in question.
+     idle    green-600 #215531   cream-100 glyph  7.7:1
+     engaged green-800 #143321   cream-100 glyph 12.1:1
+   Both clear AA comfortably, and the idle fill is still solid at full opacity —
+   the finding that put a solid fill here (a real user could not locate the menu
+   when it resolved to cream-on-cream on an older iPhone) is about FINDABILITY,
+   which a lighter green satisfies just as well as a darker one.
+
+   The gold ring is GONE, with the shadow that sat under it. It was
+   `0 0 0 1px gold` plus `0 1px 2px` — a spread ring with an offset drop beneath
+   it, so the rim looked heavier along the bottom than the top and the disc read
+   as slightly off-centre; on hover both the ring's alpha and the shadow's size
+   changed at once, on top of a 1px translate, which is why the press was hard to
+   read. Fill is now the only thing that moves. The focus outline stays: it is the
+   app's focus token, and it is a keyboard affordance, not an interaction cue. */
 button.oh-avatar {
+  background: #215531;                        /* green-600 */
+  color: #f5f0e8;                             /* cream-100 */
   cursor: pointer;
-  box-shadow: 0 0 0 1px rgba(186, 153, 53, .55),   /* gold-600 hairline */
-              0 1px 2px rgba(16, 28, 22, .18);
-  transition: background-color .18s ease, box-shadow .18s ease, transform .12s ease;
+  transition: background-color .18s ease;
 }
 @media (hover: hover) {
-  button.oh-avatar:hover {
-    background: #1a4429;                      /* green-700 */
-    box-shadow: 0 0 0 1px rgba(186, 153, 53, .85), 0 2px 6px rgba(16, 28, 22, .24);
-  }
+  button.oh-avatar:hover { background: #143321; }        /* green-800 */
 }
-button.oh-avatar:active { transform: translateY(1px); }
+button.oh-avatar:active,
+button.oh-avatar[aria-expanded='true'] { background: #143321; }
 button.oh-avatar:focus-visible {
   outline: 2px solid #7a6421;                 /* gold-800, the app's focus token */
   outline-offset: 2px;
