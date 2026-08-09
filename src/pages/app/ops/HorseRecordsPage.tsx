@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { fromHere } from '../../../lib/linkOrigin';
-import { X, Plus, PencilLine, FileText, UserRound } from 'lucide-react';
+import { X, PencilLine, FileText, UserRound } from 'lucide-react';
+import { PageHeader } from '../../../components/app/PageHeader';
 import { useDocumentTitle } from '../../../lib/hooks';
 import {
   staffHorseRecords, staffUpdateHorse, staffAssignHorseParty, staffContactOptions,
@@ -210,17 +211,12 @@ export default function HorseRecordsPage() {
 
   return (
     <div className="max-w-4xl mx-auto py-8 px-4">
-      <div className="flex items-center justify-between mb-1">
-        <h1 className="font-serif text-2xl text-green-900">Horse records</h1>
-        <button type="button" onClick={() => setAdding(true)}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-green-800 text-white text-sm font-medium hover:bg-green-700 focus-ring">
-          <Plus size={15} /> Add a horse
-        </button>
-      </div>
-      <p className="text-sm text-green-800/70 mb-6">
-        The single source of truth for every horse — identity, parties, lease state,
-        and the documents that created them.
-      </p>
+      <PageHeader
+        title="Horse records"
+        addLabel="Add a horse"
+        onAdd={() => setAdding(true)}
+        description="The single source of truth for every horse — identity, parties, lease state, and the documents that created them."
+      />
 
       {error && <p role="alert" className="form-error mb-4">{error}</p>}
       {rows === null && !error && <p className="text-sm text-green-800/70">Loading…</p>}
