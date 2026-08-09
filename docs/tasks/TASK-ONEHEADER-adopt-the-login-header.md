@@ -49,10 +49,10 @@ Budget for re-deciding how the wordmark looks on glass, not for porting values.
   (`top: calc(var(--cs-hdr-h) + 24px)`). **Keep the variable and keep it accurate.** If the
   header minifies on scroll, the variable must track the *current* height or the sticky
   offsets will be wrong in one state.
-- **The scroll-minify behaviour is a decision, not a given.** The public site does it. Inside
-  the app, a header that changes height while you scroll a document also moves every sticky
-  offset beneath it. **Ask the owner whether the app header should minify at all** — a fixed
-  height is likely better inside the app and is the safer default.
+- **NO MINIFY — decided by the owner, 2026-08-08.** The public site shrinks its header on
+  scroll; the app header does **not**. It keeps a fixed height. A header that changes height
+  while you scroll also moves every sticky offset beneath it — both rails, the contract
+  subheader — and `--cs-hdr-h` would have to track a moving value. Fixed height, one value.
 - **The header is where the avatar and monogram live** in the app. The public header carries
   site nav and a CTA instead. **Do not import the public header's contents** — adopt its
   *material*, keep the app's own contents.

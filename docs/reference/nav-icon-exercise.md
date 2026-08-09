@@ -175,3 +175,48 @@ four document-pages competing for `FileText`, `ScrollText`, `ClipboardList`, `Ar
 **That is worth noting as evidence for the merges**, not just as an icon problem: when a nav
 cannot be given distinct icons, it is usually telling you the nav has too many entries, not
 that the icon set is too small.
+
+---
+
+## Owner corrections, 2026-08-08
+
+### "Barn" is the wrong word — we are a STABLE at a RANCH
+
+The merge proposal above called the horses page **Barn**. Wrong vernacular.
+**FHE is a stable at a ranch, not a barn.** Rename it **Stable**, which also matches the
+member-side term already in use (`My Stable`).
+
+**This is bigger than one label.** `barn` appears **160 times across 45 files**, including a
+whole route family (`ops/barnops`, `BarnopsHubPage`, `ResourcesPage`, `ConsumptionLogPage`,
+`AllocationRulesPage`) and the nav item **"Barn Ops"** — which names FHE's own operation
+incorrectly.
+
+**Do NOT sweep it blindly.** Some uses are correct equestrian terminology and must survive:
+
+| usage | verdict |
+|---|---|
+| **"Barn name"** (a horse's everyday name vs its registered name) | **CORRECT — keep.** Standard equestrian term. |
+| **"Barn A" / "Stable B"** as a physical structure prefix in a horse's location | **CORRECT — keep.** It describes a building. |
+| **"another barn"** meaning a different facility generally | probably fine — industry generic |
+| **"Saw the barn nearby"** (intake source option) | **WRONG** — this calls FHE a barn |
+| **"Barn Ops"** nav item and the `barnops` route family | **WRONG** — FHE's own operation |
+
+The test: **is it describing a building or a generic industry thing (keep), or is it naming
+FHE (change to stable/ranch)?**
+
+### Horse care is a SEPARATE page from Stable
+
+Owner, 2026-08-08: horse care does **not** merge into the stable page. Two distinct pages:
+
+- **Stable** — the horses and the physical operation.
+- **Horse care** — the obligations book for care services (exercise, training, turnout,
+  clipping), parallel to Lessons. **This page does not exist yet** — see the gap recorded in
+  `TASK-ADMINSWEEP`.
+
+So the merge count rises by one, and the earlier "Barn = Horses + Barn Ops + Boarding"
+proposal is superseded: it absorbed horse care, which the owner has now separated.
+
+### Custom horse icons — ON HOLD
+
+Owner: hold off on the logo file for now. **Lessons and Horse care keep placeholder icons**
+until artwork exists. Do not block the nav work on them, and do not invent a horse.
