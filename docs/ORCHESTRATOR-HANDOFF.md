@@ -292,7 +292,16 @@ wasted time in the last session was him testing code that had not shipped.
 
 ## Open — newly raised, not yet specced
 
-- **Contract issues the owner found** after the reload fix. Unstated. Ask.
+- **`TASK-PARTYJOURNEY`** — the owner's full flow spec, captured 2026-08-09: email link →
+  auth → contract open with a welcome modal → an unknown horse owner's 3-page capture flow →
+  responsibility highlighting → document assignment → the document-set journey → completion
+  detection and hand-back → change highlighting → PDF on signature. **Large; phase it and stop
+  between phases.** Two of his questions are already answered in it from the code: comments
+  and requests are excluded from the PDF by design (browser print, `.print-document` only),
+  and **there is no server-side PDF generator at all** — which is a prerequisite for the
+  auto-generation and single-email parts.
+- **Other contract issues the owner found** after the reload fix, beyond the above. Unstated.
+  Ask.
 - **Pages with narrow caps still look empty** on a 15" laptop. The scale-up landed, but a
   `max-w-3xl` page fills ~77% of the space beside the rail. Per-page caps, not the ladder.
 - **Subheader button outlines** — he asked to remove them except on Void and Delete, then
