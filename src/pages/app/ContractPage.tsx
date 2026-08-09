@@ -419,7 +419,11 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   const loadKeepingScroll = useCallback(async () => {
     const y = window.scrollY;
     await load();
-    requestAnimationFrame(() => window.scrollTo({ top: y }));
+    /* Two frames, deliberately. A single rAF can run BEFORE React has committed
+       the new document to the DOM, so the restore lands against the old (shorter
+       or taller) page and the browser clamps it. The second frame runs after the
+       commit, when the page is its final height and the position is reachable. */
+    requestAnimationFrame(() => requestAnimationFrame(() => window.scrollTo({ top: y })));
   }, [load]);
 
   const [remoteStale, setRemoteStale] = useState(false);
@@ -682,7 +686,16 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
     try {
       await fn();
       if (okMsg) setNote(okMsg);
-      await load();
+      /* THIS is the reload the owner reported — "every selection reloads the
+         page and I end up back at the top". Not the realtime echo I first went
+         after: act() wraps EVERY action, including each field change, and
+         reloaded the document directly.
+
+         The reload is correct and must stay — conditional clauses appear and
+         disappear based on field values, so the document genuinely has to
+         re-evaluate after a write. What was wrong is that it discarded the
+         reader's position while doing it. */
+      await loadKeepingScroll();
       setChangeKey((k) => k + 1);   // refresh track-changes / comments
     } catch (e) {
       setError(errMessage(e));
