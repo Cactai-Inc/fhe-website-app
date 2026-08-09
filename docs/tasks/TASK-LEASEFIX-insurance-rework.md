@@ -4,7 +4,8 @@ Owner spec 2026-08-09. Batch 1 (11.x / 12.x) is applied and committed as `a184f3
 This document holds the contract language and the control structure for the insurance
 rework. **APPLIED 2026-08-09** after owner sign-off, in migrations `20260809T1100`
 (partial-only + seeded defaults), `20260809T1200` (the section rebuild),
-`20260809T1300` (allocation composer + lock rules) and `20260809T1400` (render fixes).
+`20260809T1300` (allocation composer + lock rules), `20260809T1400` (render fixes) and
+`20260809T1500` (CCC as its own GL-dependent section).
 
 Owner amendments on sign-off:
 - CCC last sentence ends at "…is the policy to be claimed against for that loss." The
@@ -123,9 +124,22 @@ and hereby accepts" dropped — it is no longer an act of election):
 
 ---
 
-## 13.2(cont.) Care, Custody and Control — folded in, ENTITY Lessee only
+## 13.3 Care, Custody and Control — its own section, ENTITY Lessee only
 
-Every control and clause below is additionally gated on `LESSEE.PARTY_TYPE = ENTITY`.
+**Owner correction (batch 2e).** CCC is not part of a general liability policy by
+default; it is an ADD-ON to one, the same way medical rides on mortality. So it takes
+its own heading immediately after General Liability, and it DEPENDS on the Lessee
+carrying general liability — no Lessee policy, nothing for CCC to attach to, and the
+section prints N/A with the reason exactly as medical does without mortality:
+
+> Not applicable. Care, custody and control insurance is available only as an addition
+> to a general liability policy carried by Lessee. Because Lessee does not carry general
+> liability insurance under this Agreement, no care, custody and control coverage is
+> available.
+
+Every control and clause below is gated on `LESSEE.PARTY_TYPE = ENTITY` **and**
+`TXN.GL_LESSEE_ELECTION ∈ (HAS, WILL_OBTAIN)`. An individual Lessee sees no CCC
+section at all and the numbering closes up behind it.
 
 `TXN.CCC_REQUIRED` (LESSOR, select):
 
