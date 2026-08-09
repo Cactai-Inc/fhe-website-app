@@ -922,8 +922,22 @@ export function ClauseDocument({
                        are one hover target — the insurance "not required"
                        certifications are exactly this shape. */
                     <OwnedField key={f.field_key} f={f} cb={cb}>
-                      <span className="inline-flex items-baseline gap-1.5">
-                        {!selfLabels && <span>{f.label ?? f.field_key}</span>}
+                      {/* Owner, 2026-08-09: 13.3's label rendered one word per line
+                          in a narrow column beside the dropdown. InlineSelect sizes
+                          itself to its WIDEST option through an invisible
+                          whitespace-pre sizer, and 13.3's widest option is a full
+                          sentence ("Lessor requires Lessee to have Care, Custody and
+                          Control insurance for the duration of this lease
+                          agreement"). In a non-wrapping flex row with no shrink
+                          floor, that greedy control squeezed the label to its
+                          minimum content width — one word wide.
+                          shrink-0 gives the label its natural width, and flex-wrap
+                          lets the control drop to its own full-width line when it
+                          cannot sit beside it. Short labels are unchanged: they
+                          still share the line, because wrapping only happens when
+                          the row genuinely will not fit. */}
+                      <span className="inline-flex flex-wrap items-baseline gap-x-1.5 gap-y-1 max-w-full">
+                        {!selfLabels && <span className="shrink-0">{f.label ?? f.field_key}</span>}
                         <InlineFieldControl f={fieldWithAvailableOptions(f, valueByKey)}
                           editable={cb.editable && fieldIsMine(f, cb)}
                           onSave={cb.onSave} onSaveStructured={cb.onSaveStructured as never}
