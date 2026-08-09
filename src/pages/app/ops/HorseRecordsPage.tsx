@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { fromHere } from '../../../lib/linkOrigin';
 import { X, PencilLine, FileText, UserRound } from 'lucide-react';
-import { PageHeader } from '../../../components/app/PageHeader';
+import { PageLayout } from '../../../components/app/PageLayout';
 import { useDocumentTitle } from '../../../lib/hooks';
 import {
   staffHorseRecords, staffUpdateHorse, staffAssignHorseParty, staffContactOptions,
@@ -210,13 +210,12 @@ export default function HorseRecordsPage() {
   useEffect(() => { load(); }, [load]);
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4">
-      <PageHeader
-        title="Horse records"
-        addLabel="Add a horse"
-        onAdd={() => setAdding(true)}
-        description="The single source of truth for every horse — identity, parties, lease state, and the documents that created them."
-      />
+    <PageLayout
+      name="Horse records"
+      addLabel="Add a horse"
+      onAdd={() => setAdding(true)}
+      description="The single source of truth for every horse — identity, parties, lease state, and the documents that created them."
+    >
 
       {error && <p role="alert" className="form-error mb-4">{error}</p>}
       {rows === null && !error && <p className="text-sm text-green-800/70">Loading…</p>}
@@ -268,6 +267,6 @@ export default function HorseRecordsPage() {
           </div>
         </div>
       )}
-    </div>
+    </PageLayout>
   );
 }
