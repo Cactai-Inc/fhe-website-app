@@ -411,6 +411,17 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
      is, we mark the page stale and reload the moment focus leaves. Losing
      someone's half-typed sentence to a background refresh would be a far worse
      bug than a one-keystroke delay in seeing their edit. */
+  /* A realtime reload must never move the reader. Deferring it until focus
+     leaves (above) stops it happening mid-interaction, but the reload still
+     re-renders the document and the browser can lose the scroll position — so
+     capture and restore it around every realtime-driven load. User-initiated
+     loads (mount, route change, explicit save) deliberately do NOT use this. */
+  const loadKeepingScroll = useCallback(async () => {
+    const y = window.scrollY;
+    await load();
+    requestAnimationFrame(() => window.scrollTo({ top: y }));
+  }, [load]);
+
   const [remoteStale, setRemoteStale] = useState(false);
   useEffect(() => {
     if (!id) return;
@@ -420,11 +431,18 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         return;
       }
       const el = document.activeElement;
-      const typing = el instanceof HTMLInputElement
+      /* HTMLSelectElement was MISSING here (fixed 2026-08-08, owner-reported:
+         "every selection reloads the page, brings me to the top"). A field save
+         echoes back over realtime to the client that made it. Typing deferred
+         the reload; choosing from a <select> did not, so it fell straight
+         through to load() and the document re-rendered under the reader.
+         Any focused form control counts as an interaction, not just text. */
+      const interacting = el instanceof HTMLInputElement
         || el instanceof HTMLTextAreaElement
+        || el instanceof HTMLSelectElement
         || (el instanceof HTMLElement && el.isContentEditable);
-      if (typing) { setRemoteStale(true); return; }
-      void load();
+      if (interacting) { setRemoteStale(true); return; }
+      void loadKeepingScroll();
     });
   }, [id, load]);
 
@@ -433,10 +451,11 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
     if (!remoteStale) return;
     const onFocusOut = () => {
       const el = document.activeElement;
-      const stillTyping = el instanceof HTMLInputElement
+      const stillInteracting = el instanceof HTMLInputElement
         || el instanceof HTMLTextAreaElement
+        || el instanceof HTMLSelectElement
         || (el instanceof HTMLElement && el.isContentEditable);
-      if (!stillTyping) { setRemoteStale(false); void load(); }
+      if (!stillInteracting) { setRemoteStale(false); void loadKeepingScroll(); }
     };
     document.addEventListener('focusout', onFocusOut);
     return () => document.removeEventListener('focusout', onFocusOut);

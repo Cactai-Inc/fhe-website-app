@@ -3,6 +3,12 @@ export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
+      /* 64 is NOT in Tailwind's default opacity scale, so `bg-navfill/64`
+         generated NO RULE AT ALL and the hover state silently had no fill.
+         Declared here so the owner's exact value (80% selected, 64% hover — a
+         20% reduction) is expressible rather than rounded to the nearest
+         built-in step. */
+      opacity: { 64: '0.64' },
       colors: {
         // Primary brand colors
         green: {
@@ -30,6 +36,16 @@ export default {
         glass: {
           nav: '#09975e',
         },
+        /* NAV FILL — the selected/hover green, HUE-CORRECTED. Owner's method:
+           a translucent green composites toward the warm backdrop and drifts
+           yellow, so the DECLARED base is pre-shifted cooler and the RENDERED
+           colour lands on the brand hue. Solved against the near-white nav panel
+           at both alphas it is used at:
+             /85 (selected) -> #31523f  hue 145.5deg  near-white text 8.50:1
+             /65 (hover)    -> #617a6b  hue 144.0deg  near-white text 4.55:1
+           Recompute if the panel changes — the correction is specific to what is
+           behind it. */
+        navfill: '#0d341e',
         gold: {
           900: '#5c4a18',
           800: '#7a6421',
@@ -47,13 +63,11 @@ export default {
           50: '#faf8f4',
           100: '#f5f0e8',
           200: '#ede5d5',
-          /* Owner, 2026-08-08: the nav is "a slightly darker shade of the colors
-             already in play — the cream palette", not a brown. 300 is the nav
-             surface: 83% lightness against the header's 94% and the page's 97%,
-             so it separates without going dark, and the existing dark ink still
-             clears 9.9:1 on it. 400 is its hover. */
-          300: '#e6dac1',
-          400: '#decfaf',
+          /* 25 is the NAV PANEL — near-white, owner 2026-08-08. Lighter than the
+             page (#faf8f4) and the header (#f5f0e8) rather than darker, so the
+             nav reads as a raised surface instead of a heavy slab. Brand green
+             ink clears 13.4:1 on it. */
+          25: '#fdfcfa',
         },
       },
       fontFamily: {
