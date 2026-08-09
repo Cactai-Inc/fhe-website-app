@@ -62,8 +62,18 @@
      root font-size on larger displays grows type, spacing, and max-w-* caps
      proportionally — the app fills a laptop/desktop instead of a fixed 1280px
      column with dead margins. */
-  @media (min-width: 1600px) { html { font-size: 17px; } }
-  @media (min-width: 1920px) { html { font-size: 18px; } }
+  /* Owner, 2026-08-08: a 15" MacBook Air is 1512px wide and MISSED the first
+     step by 88px, so it sat at 16px while a wider desktop got the lift — the
+     same page filled nicely on one machine and left ~188px of dead space beside
+     the content on the other. The first step now starts at 1400px, which is
+     where 14-16" laptops live, and 1512px lands on 18px: the content column
+     fills 95% of the space beside the nav rail instead of 84%.
+     Ladder, and what each step is FOR:
+       1400px  laptops (13-16")        18px
+       1800px  large desktop displays  19px
+       2400px  very large / 4K         20px */
+  @media (min-width: 1400px) { html { font-size: 18px; } }
+  @media (min-width: 1800px) { html { font-size: 19px; } }
   @media (min-width: 2400px) { html { font-size: 20px; } }
 
   body {
