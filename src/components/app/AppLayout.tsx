@@ -64,13 +64,13 @@ const NAV_PANEL = 'bg-earth-800';
 const NAV_ROW_IDLE = 'text-cream-100/80 [@media(hover:hover)]:hover:bg-earth-600 [@media(hover:hover)]:hover:text-cream-100';
 /** selected row: the inversion of the panel. Cream fill, green ink — the same
  *  two colours the other way round, which is what makes it read as selected on a
- *  panel that is itself green-800 (C5b's old `bg-green-800` active fill would now
+ *  panel that is itself earth-800 (C5b's old `bg-green-800` active fill would now
  *  be invisible: it IS the panel). */
 const NAV_ROW_ACTIVE = 'bg-cream-100 text-earth-900 font-medium';
 const NAV_ICON_IDLE = 'text-cream-100/65 [@media(hover:hover)]:group-hover:text-cream-100';
-const NAV_ICON_ACTIVE = 'text-green-800';
+const NAV_ICON_ACTIVE = 'text-earth-900';
 /** group headings ("Management", "People", …) — the "section header" the owner
- *  named explicitly. Quiet, but cream: on green-800 the old `text-muted`
+ *  named explicitly. Quiet, but cream: on a dark panel the old `text-muted`
  *  (green-800/70) was dark-on-dark and effectively invisible. */
 const NAV_HEADING = 'text-cream-100/60';
 const NAV_DIVIDER = 'border-cream-100/20';
