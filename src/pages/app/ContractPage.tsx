@@ -15,7 +15,7 @@ import {
   setPartyControls, contractSigningSet,
   contractRedlineState, resolveFieldEdit, withdrawFieldEdit,
   resolveClause, withdrawClause, attachHorseToDocument,
-  sendContractToParty, markDocumentOpened,
+  markDocumentOpened,
   setFieldResponsibility, setFieldIncluded, setFieldNa, setFieldControlOverride, setFieldStructured,
   documentPartiesSummary, captureContactInfo, captureHorseRecord,
   saveContract,
@@ -624,7 +624,6 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
     ...partyControls.map((c) => c.party_role),
     ...(detail?.signatures ?? []).map((s) => s.party_role),
   ].filter((r) => r && !myRoles.includes(r) && r !== 'FHE' && r !== 'COMPANY')));
-  const sendableRoles = counterpartyRoles;
   const invitableRoles = counterpartyRoles;
   // Owner-side first (Lessor / Seller), then the counterparty (Lessee / Buyer),
   // then anything else — the consistent display order across every party list.
@@ -1016,7 +1015,11 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
      piled up on one side and read as a gap rather than as margin. Centring does
      not widen the column — a contract is prose and 1024px is already generous —
      it just puts the leftover space on both sides where it looks deliberate. */
-  const bodyWidth = embedded ? '' : 'max-w-5xl mx-auto';
+  /* pb-24 added 2026-08-09 (owner): the last card sat flush against the bottom of
+     the scroll area, so a contract read as though it had been cut off rather than
+     ended. Only on the standalone page — an embedded contract is laid out by its
+     host, which supplies its own spacing. */
+  const bodyWidth = embedded ? '' : 'max-w-5xl mx-auto pb-24';
   return (
     <div>
       {inSet && (
@@ -1869,41 +1872,23 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       {state !== 'executed' && state !== 'void' && state !== 'terminated'
         && (state === 'in_review' || state === 'locked' || (detail?.signatures.length ?? 0) > 0) && (
         <section id="contract-signatures" className="bg-white border border-green-800/10 rounded-xl p-6 scroll-mt-16 mt-6">
-          {(
-            (isOwnerSide && (state === 'in_review' || (state === 'locked' && !counterpartySigned)))
-            || (isOwnerSide && (state === 'in_review' || state === 'locked') && sendableRoles.length > 0)
-          ) && (
-          <div className="flex flex-wrap items-center gap-2.5 mb-5">
-            {isOwnerSide && state === 'in_review' && (
-              <>
-                {/* "Back to editing" removed 2026-07-31. It existed to escape the
-                    old freeze-on-open rule, which locked the author out as soon
-                    as a counterparty READ the draft. Edits now stay open until a
-                    signature exists, so there is nothing to go back FROM — and
-                    the button did not actually lift the freeze anyway, because
-                    the freeze was independent of workflow state. */}
-                {/* The second "Lock for signing" removed 2026-07-31 alongside the
-                    one in the Notify card — same reasoning: it cannot fire until
-                    the Lessor approves the horse, and the per-party controls
-                    already decide who may edit versus only request changes. */}
-              </>
-            )}
-            {isOwnerSide && state === 'locked' && !counterpartySigned && (
+          {/* "Send to Lessor" / "Send to Lessee" removed 2026-08-09 (owner). They
+              called send_contract_to_party, which inserts an in-app notification
+              and stamps sent_at but sends NO EMAIL — while the toast claimed the
+              party "have been notified". A party who was not looking at the app
+              got nothing, and the buttons were indistinguishable from the
+              subheader Send that does email. Notifying a party now has exactly
+              one path: the Send action in the deck above the title.
+              "Back to editing" (2026-07-31) and the second "Lock for signing"
+              (2026-07-31) were removed from this same row earlier; with the send
+              buttons gone the row exists only for Withdraw / correct. */}
+          {isOwnerSide && state === 'locked' && !counterpartySigned && (
+            <div className="flex flex-wrap items-center gap-2.5 mb-5">
               <button type="button" className="btn-secondary text-xs"
                 onClick={() => void act(() => advanceWorkflow(id!, 'editable'), 'Reopened for corrections.')}>
                 <RotateCcw size={13} /> Withdraw / correct
               </button>
-            )}
-
-            {/* Send to a party = notify them + grant access. Locked = for signature only. */}
-            {isOwnerSide && (state === 'in_review' || state === 'locked') && sendableRoles.map((r) => (
-              <button key={r} type="button" className="btn-primary text-xs"
-                onClick={() => void act(() => sendContractToParty(id!, r),
-                  `Sent to ${r.charAt(0) + r.slice(1).toLowerCase()} — they’ve been notified.`)}>
-                <Send size={13} /> Send to {r.charAt(0) + r.slice(1).toLowerCase()}
-              </button>
-            ))}
-          </div>
+            </div>
           )}
 
           {/* DOCUMENT-BEFORE-CONTRACT (2026-07-29): a party with unsatisfied
