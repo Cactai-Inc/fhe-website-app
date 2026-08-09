@@ -26,6 +26,32 @@ not, which produces a contract that reads as executed with nothing signing it.
 **ASK THE OWNER BEFORE ACTING: drop it, or guard it?** It has no caller, so a guard preserves
 dead code. **DO NOT GUESS.** If the answer is guard, the check is staff-only.
 
+**Two facts added by the orchestrator's own re-verification against production, 2026-08-08.**
+Neither report states them and both change how you execute this item.
+
+**a. Blast radius — the whole executed corpus.** Not a theoretical class of document:
+
+```
+documents with live signatures : 55
+live signature rows            : 56
+```
+
+Every executed document in the system is in range of one anonymous call.
+
+**b. There are THREE grants on this function, not one.** Raw `proacl`:
+
+```
+{=X/postgres, postgres=X/postgres, anon=X/postgres,
+ authenticated=X/postgres, service_role=X/postgres}
+```
+
+`=X/postgres` is the **PUBLIC** grant. If you revoke `anon` only,
+`has_function_privilege('anon', …)` still returns **true**, because PUBLIC still grants it —
+and the revoke reports success. That is precisely trap §2 below, and this function carries
+the exact grant shape that produced it in `SECFIX` S3. **Revoke `PUBLIC`, `anon` and
+`authenticated` separately, and print `has_function_privilege()` for all three afterwards.**
+If the ruling is DROP, this is moot — which is one more argument for dropping.
+
 ### 2. The nine anon-reachable `contract_fields` writers with no check
 
 28 functions write to `contract_fields`; 22 are anon-executable; these nine have no identity
