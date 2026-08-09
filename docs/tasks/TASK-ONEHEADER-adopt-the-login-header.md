@@ -91,3 +91,57 @@ Budget for re-deciding how the wordmark looks on glass, not for porting values.
 
 `docs/reports/TASK-ONEHEADER-REPORT.md`, with mobile screenshots and the emitted-CSS check
 for every new utility.
+
+---
+
+## OWNER DECISIONS — 2026-08-08. These are settled; build to them.
+
+> "Lose the glass, and just change the header and the nav resize, icon change, lose the tab
+> and use a header button once the new one lands. Avatar is the button again. But the mono
+> menu stays."
+
+### 1. The glass is dropped — nav becomes a solid panel
+
+Not a tuning change, a decision. The arithmetic behind it, proven live in a colour proof:
+
+- Over the warm cream page (hue 37°), a translucent green composites **72° toward yellow**.
+  `green-800/20` renders `#c8cac0` — hue 73°, saturation 9%.
+- Compensating the base only works **at one alpha**. A base solved for 30% renders as bright
+  emerald at 85%, because the background barely contributes there.
+- **At high alpha the brand green needs no correction at all**: `#143321` at 85% renders
+  `#344d3d`, hue 142° — three degrees off brand.
+
+So over a cream page you can have *glass* or *your green*, not both. **The owner chose the
+green.** Nav panel is `bg-green-800` at high opacity (~85%) or solid.
+
+**Consequence: every nav label, icon and section header must invert to cream.** Dark text on
+a dark panel is the actual defect in the current build, not the green.
+
+### 2. The avatar becomes the menu button — again
+
+The avatar in the NEW header is the control that opens the nav. It was made decorative by an
+earlier ruling; that is reversed.
+
+### 3. The drawer tab is removed entirely
+
+No hanging tab. The header's avatar button replaces it. Delete `.cs-drawer-tab` and its
+markup — the fade/opacity work from `e968ffa` goes with it.
+
+**Sequencing:** the tab is the ONLY way into the nav on mobile today. **Do not remove it
+before the avatar button works**, or the menu becomes unreachable on phones.
+
+### 4. "The mono menu stays"
+
+One menu, not two. The avatar opens the **same single nav** — it does **not** reintroduce the
+separate avatar dropdown that `ONEMENU` removed. Its contents stay in the nav.
+
+### 5. Also in this pass
+
+- **Nav resize** — the drawer's dimensions, per the owner.
+- **Icon change** — apply `docs/reference/nav-icon-exercise.md`, which is settled. Two icons
+  are custom and still blocked on artwork (Lessons, Horse care).
+
+### Order
+
+**The header lands first.** Everything else here is gated on it: the button lives in the new
+header, and the tab cannot go until that button exists.
