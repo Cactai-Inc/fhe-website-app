@@ -43,14 +43,19 @@
   height: var(--cs-hdr-h);
   display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
   /* the surface runs edge to edge; only the marks are inset past the notch */
+  /* container-site's own scale: px-5 / sm:px-8 / lg:px-12, so the header's
+     marks sit on the same gutter as every page beneath it. */
   padding-left: calc(20px + env(safe-area-inset-left));
   padding-right: calc(20px + env(safe-area-inset-right));
-  background-color: transparent;
+  /* Owner, 2026-08-08: FLAT AND OPAQUE, load through scroll. The public header
+     fades from transparent to a frosted tint as you scroll; the owner chose that
+     header for its simplicity and does not want the state change carried into
+     the app. One surface, always.
+     Bonus, and not incidental: with no backdrop-filter here the header cannot
+     re-composite on scroll, and it no longer creates a containing block that
+     would trap a position:fixed child. */
+  background-color: #f5f0e8;
   border-bottom: 1px solid transparent;
-  /* 450ms ease-out — the public header's own transition, so the two behave
-     identically either side of sign-in. */
-  transition: background-color .45s ease-out, border-color .45s ease-out,
-              box-shadow .45s ease-out;
 }
 
 /* ============ THE SCROLLED SURFACE ============
@@ -72,23 +77,7 @@
  *   this surface over green-800        ->  #c5c9c4   (wordmark still ~9:1)
  *
  * Same look where the app actually is, no failure where it sometimes is. */
-.oh-hdr.is-scrolled {
-  background-color: rgba(226, 226, 222, .86);
-  -webkit-backdrop-filter: blur(12px);
-          backdrop-filter: blur(12px);
-  border-bottom-color: rgba(186, 153, 53, .25);   /* gold-600/25 — the public header's hairline */
-  box-shadow: 0 1px 2px rgba(10, 26, 15, .10);    /* shadow-sm shadow-green-950/10 */
-}
 
-/* The @supports test accepts EITHER spelling. Testing only the unprefixed
-   property is the exact bug fixed in 628079a on the nav surface: Safari shipped
-   `backdrop-filter` unprefixed in v18, older iPhones support it solely as
-   `-webkit-backdrop-filter`, so a bare test reports "unsupported" on phones that
-   blur perfectly well. Without the blur the header needs to be fully opaque —
-   translucency with nothing diffusing what is behind it is unreadable. */
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .oh-hdr.is-scrolled { background-color: #e3e3df; }
-}
 
 /* ============ THE MARKS ============
    Flat, not relieved — see the file header. The face is named explicitly for the
@@ -134,8 +123,8 @@
   text-decoration: none; color: #0d2118;      /* green-900 on cream ≈ 16:1 */
 }
 .oh-wordmark:hover { text-decoration: none; }
-.oh-w1 { font-size: 19px; letter-spacing: .06em; text-transform: uppercase; }
-.oh-w2 { font-size: 12px; letter-spacing: .30em; text-transform: uppercase; }
+.oh-w1 { font-size: 26px; letter-spacing: .06em; text-transform: uppercase; }
+.oh-w2 { font-size: 14px; letter-spacing: .30em; text-transform: uppercase; }
 /* Letter-spacing puts a trailing space after the LAST letter too, which is
    inside the box being centred — so the glyphs sit half the tracking left of
    true centre, and the two lines visibly disagree because their tracking
@@ -217,8 +206,8 @@ button.oh-avatar:focus-visible {
     padding-right: calc(10px + env(safe-area-inset-right));
   }
   .oh-mono, .oh-avatar { width: 36px; height: 36px; font-size: 15px; }
-  .oh-w1 { font-size: 16.5px; }
-  .oh-w2 { font-size: 10.5px; letter-spacing: .26em; margin-right: -.26em; }
+  .oh-w1 { font-size: 21px; }
+  .oh-w2 { font-size: 12px; letter-spacing: .26em; margin-right: -.26em; }
 }
 
 /* ============ PHONE IN LANDSCAPE ============
@@ -234,6 +223,20 @@ button.oh-avatar:focus-visible {
     padding-right: calc(16px + env(safe-area-inset-right));
   }
   .oh-mono, .oh-avatar { width: 34px; height: 34px; font-size: 14px; }
-  .oh-w1 { font-size: 16px; }
-  .oh-w2 { font-size: 10px; letter-spacing: .24em; margin-right: -.24em; }
+  .oh-w1 { font-size: 19px; }
+  .oh-w2 { font-size: 11px; letter-spacing: .24em; margin-right: -.24em; }
+}
+
+/* Gutters track container-site so the header's marks align with page content. */
+@media (min-width: 640px) {
+  .oh-hdr {
+    padding-left: calc(32px + env(safe-area-inset-left));
+    padding-right: calc(32px + env(safe-area-inset-right));
+  }
+}
+@media (min-width: 1024px) {
+  .oh-hdr {
+    padding-left: calc(48px + env(safe-area-inset-left));
+    padding-right: calc(48px + env(safe-area-inset-right));
+  }
 }

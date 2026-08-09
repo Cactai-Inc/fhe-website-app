@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+
 import { Link } from 'react-router-dom';
 import './app-header.css';
 
@@ -41,21 +41,12 @@ type Props = {
 };
 
 export function AppHeader({ initial, menuOpen, onToggleMenu }: Props) {
-  /* The public header's own threshold and listener, verbatim (24px, passive).
-   *
-   * The `menuOpen` guard is not: while the drawer is open AppLayout pins <body>
-   * with `position: fixed`, which drives window.scrollY to 0 and would fire this
-   * handler — un-frosting the header the moment the menu opened, then re-frosting
-   * it on close. Detaching while the body is locked freezes the surface at
-   * whatever it was; re-attaching runs handler() once and re-syncs. */
-  const [scrolled, setScrolled] = useState(false);
-  useEffect(() => {
-    if (menuOpen) return;
-    const handler = () => setScrolled(window.scrollY > 24);
-    handler();
-    window.addEventListener('scroll', handler, { passive: true });
-    return () => window.removeEventListener('scroll', handler);
-  }, [menuOpen]);
+  /* No scroll listener. Owner, 2026-08-08: the header is FLAT AND OPAQUE from
+     load through scroll — he chose this header for its simplicity and did not
+     want the public site's transparent-to-frosted transition carried into the
+     app. Removing the listener also removes a real hazard: while the drawer is
+     open AppLayout pins <body> with position:fixed, which drives scrollY to 0
+     and would have flipped the header's surface the moment the menu opened. */
 
   /* The avatar is a MENU BUTTON only where the drawer is the nav. At lg+ the
    * rail is already on screen and open, so there is nothing for it to toggle —
@@ -66,7 +57,7 @@ export function AppHeader({ initial, menuOpen, onToggleMenu }: Props) {
   const avatarGlyph = <span aria-hidden="true">{initial}</span>;
 
   return (
-    <header className={`oh-hdr${scrolled ? ' is-scrolled' : ''}`}>
+    <header className={`oh-hdr`}>
       <div className="oh-left">
         <Link to="/app" className="oh-homelink" aria-label="French Heritage Equestrian — home">
           <span className="oh-mono" aria-hidden="true">FH</span>
