@@ -120,20 +120,42 @@ origin/main. Not on ~/Desktop.
 
 Plus, outside the pasted block: **model, thinking, effort, worktree path, branch.**
 
-~~**Default to Opus 5, thinking ON, effort HIGH.** The owner's words: low effort on Opus 5 is
-"not the move." Medium is the same mistake one level down.~~
+### Choosing the model and effort — THIS IS YOUR DECISION, NOT A DEFAULT TO LOOK UP
 
-> **CONTESTED 2026-08-08 — do not follow the struck line above until this is settled.**
-> The owner, who ran every one of these threads, says it does not match what actually
-> happened: **session threads tended to run Sonnet with thinking, which he set to xhigh**,
-> and **the instruction he was given for almost every session was high or medium.**
->
-> The two accounts cannot both be right, and he is the authority on what he ran. The struck
-> line is left visible so nobody re-derives it from an old copy. **An orchestrator reading
-> this must ASK for the model/effort default rather than assume either version.**
->
-> Note the struck line's quote is about *Opus 5 at low effort*. That is not evidence about
-> Sonnet at any effort, and it was being applied as though it were.
+**CORRECTED 2026-08-09, owner ruling.** Picking the model is part of composing the task. You
+have read the spec, you know what the thread must reason about and how much of it there is —
+**so you choose, per thread, and you state the choice.**
+
+> Owner, 2026-08-09: *"your role is to evaluate the intentions of the thread and decide which
+> model can handle the instructions being given and the workload involved."*
+
+**Do not ask him which model to use as a matter of routine.** An earlier orchestrator treated
+a disputed *default value* as licence to stop deciding at all — those are different things.
+The value was in question; the ownership of the decision never was.
+
+**What you are judging.** Not length. **Depth of reasoning, and cost of being wrong.**
+
+- **Highest tier** — adversarial audits, security work, anything touching production data,
+  migrations, legal documents, colour-compositing or other maths, ambiguous or self-
+  contradictory specs, and any task where a plausible-but-wrong answer would ship.
+- **Lower tier is legitimate** — mechanical sweeps against an explicit checklist, rename
+  passes, well-bounded conversions where the spec leaves nothing to interpret.
+- **Err UP, never down, when scope is unknown.** Under-powering a thread is the expensive
+  mistake; the work comes back wrong and someone re-runs it.
+
+**The one case where the owner picks: an open-ended standing thread.** When the thread has no
+fixed scope and its workload depends entirely on what he decides to ask it —
+`TASK-UIREVIEW` is the model — **you cannot know the workload, so he sets it.** Say so
+explicitly rather than going quiet, and still give him your recommendation.
+
+**The historical record, for reference only — do not treat either as a default.** A previous
+version of this document asserted "Opus 5, thinking ON, effort HIGH" on the strength of the
+owner's remark that *low effort on Opus 5* is "not the move." He has since said that did not
+match practice: threads **tended to run Sonnet with thinking, which he set to xhigh**, and the
+instruction he was given was usually **high or medium**. Note also that a remark about Opus at
+low effort is not evidence about Sonnet at any effort, and it was being generalised as though
+it were. Neither line settles a default, because **there is no default — you decide per
+thread.**
 
 **The ID alone on its own line is not stylistic.** The thread's tab title is auto-generated
 from the prompt and discards `THREAD ID: X` headers and `ID — description` prefixes. Only the
