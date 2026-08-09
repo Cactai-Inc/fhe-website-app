@@ -119,10 +119,30 @@
      contract render — clause editor, read-only frame, executed frame, ops
      viewer, signer view — lease, sale, and bill of sale alike. Style changes
      here, nowhere else. */
+  /* Owner, 2026-08-09: "the contract body renders narrower than it should at full
+     browser width", and the horse block drops from two columns to one as the
+     window WIDENS. Both are this rule.
+
+     The 2026-08-08 scale ladder (1400/1800/2400px → 18/19/20px root) works by
+     raising the root font size so every rem-based cap grows with the screen. This
+     cap was in INCHES. A CSS inch is a fixed 96px, so 8.5in pinned the paper at
+     816px on every display, and the page never received the fix the rest of the
+     app did — on a 1512px laptop the contract sat in an 816px column with the
+     window's extra width becoming dead gutter.
+
+     It also explains the columns. The paper's inner width was FIXED at 816 - 144
+     = 672px while the grid track inside it, minmax(17rem, …), GREW with the root
+     font: 272px at 16px root, 306px at 18px, 323px at 19px. Two tracks plus the
+     1.5rem gap fit inside 672px at 16px and stop fitting as the root grows — so
+     widening the window past a breakpoint collapsed two columns into one. Exactly
+     backwards from what a reader expects.
+
+     51rem/4.5rem are the same 816px/72px at a 16px root, so nothing changes on a
+     small screen; the paper now grows with the ladder instead of ignoring it. */
   .document-paper {
     @apply bg-white border border-green-800/10 rounded shadow-sm mx-auto w-full;
-    max-width: 8.5in;
-    padding: 0.75in;
+    max-width: 51rem;
+    padding: 4.5rem;
   }
   @media (max-width: 640px) {
     .document-paper { padding: 1.25rem; }
