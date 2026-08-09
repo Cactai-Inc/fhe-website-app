@@ -82,7 +82,7 @@ export default function HorsePage() {
     catch (e) { setError(e instanceof Error ? e.message : 'Could not remove the horse.'); setBusy(false); }
   }
 
-  if (error) return <div className="max-w-3xl"><p role="alert" className="form-error">{error}</p></div>;
+  if (error) return <div className="max-w-3xl mx-auto"><p role="alert" className="form-error">{error}</p></div>;
   if (!detail) return <p className="body-text text-muted text-sm">Loading the horse…</p>;
 
   const r = detail.record;

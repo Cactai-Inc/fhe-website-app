@@ -28,7 +28,7 @@ export default function CareHome() {
   const pendingDocs = state?.pending_horse_docs ?? [];
 
   return (
-    <div className="max-w-4xl">
+    <div className="max-w-4xl mx-auto">
       <header className="mb-6">
         <p className="eyebrow">Horse care</p>
         <h1 className="font-serif text-2xl text-green-900 mt-0.5">

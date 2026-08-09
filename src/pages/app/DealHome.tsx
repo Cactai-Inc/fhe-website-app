@@ -26,7 +26,7 @@ export default function DealHome() {
   const signed = (docs ?? []).filter((d) => d.status === 'EXECUTED');
 
   return (
-    <div className="max-w-4xl">
+    <div className="max-w-4xl mx-auto">
       <header className="mb-6">
         <p className="eyebrow">Acquisition</p>
         <h1 className="font-serif text-2xl text-green-900 mt-0.5">

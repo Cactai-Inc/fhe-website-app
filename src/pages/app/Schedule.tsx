@@ -78,7 +78,7 @@ export default function Schedule() {
   }
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-3xl mx-auto">
       <p className="eyebrow mb-2">Schedule</p>
       <h1 className="heading-section text-green-800 mb-8">What's coming up.</h1>
 

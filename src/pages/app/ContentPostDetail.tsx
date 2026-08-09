@@ -23,7 +23,7 @@ export default function ContentPostDetail() {
   if (loading) return <p className="body-text text-muted">Loading…</p>;
   if (!post) {
     return (
-      <div className="max-w-2xl">
+      <div className="max-w-2xl mx-auto">
         <h1 className="heading-section text-green-800 mb-4">Article not found</h1>
         <Link to="/app?filter=articles" className="link-underline">Back to articles</Link>
       </div>

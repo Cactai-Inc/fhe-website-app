@@ -993,8 +993,14 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
      worse, its buttons sized themselves against a 1024px box and kept wrapping
      when there was obviously room.
      The cap now sits on the document body below the bar, so the bar fills <main>
-     and the prose stays readable. */
-  const bodyWidth = embedded ? '' : 'max-w-5xl';
+     and the prose stays readable.
+
+     `mx-auto` added 2026-08-08 (owner: "a large space to the right of the
+     content"). The cap was LEFT-ALIGNED, so every pixel of extra window width
+     piled up on one side and read as a gap rather than as margin. Centring does
+     not widen the column — a contract is prose and 1024px is already generous —
+     it just puts the leftover space on both sides where it looks deliberate. */
+  const bodyWidth = embedded ? '' : 'max-w-5xl mx-auto';
   return (
     <div>
       {inSet && (

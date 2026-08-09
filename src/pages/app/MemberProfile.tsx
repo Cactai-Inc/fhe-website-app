@@ -43,7 +43,7 @@ export default function MemberProfile() {
 
   if (loading) return <p className="body-text text-muted text-sm">Loading…</p>;
   if (!m) return (
-    <div className="max-w-xl">
+    <div className="max-w-xl mx-auto">
       <Link to="/app?filter=members" className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-green-800 mb-4"><ArrowLeft size={14} /> Members</Link>
       <p className="body-text text-muted">This member isn't available.</p>
     </div>
