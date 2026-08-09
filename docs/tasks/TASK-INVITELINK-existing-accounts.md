@@ -44,6 +44,32 @@ to the document. It looks like the wrong page rather than a deliberate refusal.
 **Reverses the branching approach an earlier revision of this doc proposed.** Do not build
 two link shapes.
 
+### First: what a party actually is — this is why the token cannot be dropped
+
+Owner, 2026-08-09: *"The only way a person is on a contract as a party with the linked info
+from their profile is that they are in the system. But we also need to be able to send a
+contract to a person without an account — invite someone to claim this party."*
+
+**Every party is a `contact`.** `document_parties` points at a contact, and that contact is
+what the party's name and address render from. An account is a separate thing layered on top.
+So there are THREE states:
+
+| state | has | can sign in |
+|---|---|---|
+| Party with profile-linked info | contact **+** account | yes |
+| **Party awaiting claim** | contact **only** | **no** |
+| Not a party | neither | — |
+
+The middle state is the one the owner is naming, and the machinery already exists: the
+invitation carries `contact_id` and `document_id`, and `redeem_contract_invitation` calls
+`promote_contact_to_account(auth.uid(), contact_id)` — binding the account the person just
+created to the contact that is already the party.
+
+**So the token is not merely authentication. It is the CLAIM on a party slot.** Drop it and an
+account-less recipient creates an unrelated account, is not the party, and cannot see the
+document — while a duplicate contact for the same human now exists. That is why the token
+rides along on the document link rather than being replaced by it.
+
 ### One link, for everyone
 
 The email links to **the document itself**, carrying the invitation token:
