@@ -360,18 +360,36 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   const idRef = useRef(id);
   useEffect(() => { idRef.current = id; }, [id]);
 
-  const load = useCallback(async () => {
+  /* `blank` decides whether the document is torn down before refetching.
+   *
+   * Owner, 2026-08-08: "every selection reloads the page and I end up back at
+   * the top." THIS was it. load() cleared every piece of state synchronously,
+   * so the whole contract unmounted, the page went empty, and it remounted from
+   * scratch — on every single field change. Scroll, focus and open drawers all
+   * went with it. It reads as a page reload because functionally it is one.
+   *
+   * The clearing is CORRECT when the document is CHANGING: nothing from the old
+   * contract may stay interactive while a different one loads. It is wrong when
+   * refetching the SAME document after an edit — there is no other document to
+   * protect against, and the refetch is precisely so the reader can see their own
+   * change land.
+   *
+   * So: route change and first mount blank. Edits and realtime refreshes do not —
+   * the current content stays on screen and is swapped when the new data arrives.
+   * React reconciles in place, so nothing unmounts and the reader keeps their
+   * position without needing it restored afterwards. */
+  const load = useCallback(async ({ blank = true }: { blank?: boolean } = {}) => {
     if (!id) return;
     const requestedId = id;
-    // Clear synchronously, before any await, so nothing from the previous
-    // document can stay interactive while the new one loads.
-    setDetail(null);
-    setSigningSet([]);
-    setRedline(null);
-    setPartiesSummary(null);
-    setSigState(null);
-    setStructure(null);
-    setControlNote(null);
+    if (blank) {
+      setDetail(null);
+      setSigningSet([]);
+      setRedline(null);
+      setPartiesSummary(null);
+      setSigState(null);
+      setStructure(null);
+      setControlNote(null);
+    }
     setError(null);
     try {
       const d = await contractDocumentDetail(requestedId);
@@ -411,21 +429,6 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
      is, we mark the page stale and reload the moment focus leaves. Losing
      someone's half-typed sentence to a background refresh would be a far worse
      bug than a one-keystroke delay in seeing their edit. */
-  /* A realtime reload must never move the reader. Deferring it until focus
-     leaves (above) stops it happening mid-interaction, but the reload still
-     re-renders the document and the browser can lose the scroll position — so
-     capture and restore it around every realtime-driven load. User-initiated
-     loads (mount, route change, explicit save) deliberately do NOT use this. */
-  const loadKeepingScroll = useCallback(async () => {
-    const y = window.scrollY;
-    await load();
-    /* Two frames, deliberately. A single rAF can run BEFORE React has committed
-       the new document to the DOM, so the restore lands against the old (shorter
-       or taller) page and the browser clamps it. The second frame runs after the
-       commit, when the page is its final height and the position is reachable. */
-    requestAnimationFrame(() => requestAnimationFrame(() => window.scrollTo({ top: y })));
-  }, [load]);
-
   const [remoteStale, setRemoteStale] = useState(false);
   useEffect(() => {
     if (!id) return;
@@ -446,7 +449,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         || el instanceof HTMLSelectElement
         || (el instanceof HTMLElement && el.isContentEditable);
       if (interacting) { setRemoteStale(true); return; }
-      void loadKeepingScroll();
+      void load({ blank: false });
     });
   }, [id, load]);
 
@@ -459,7 +462,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         || el instanceof HTMLTextAreaElement
         || el instanceof HTMLSelectElement
         || (el instanceof HTMLElement && el.isContentEditable);
-      if (!stillInteracting) { setRemoteStale(false); void loadKeepingScroll(); }
+      if (!stillInteracting) { setRemoteStale(false); void load({ blank: false }); }
     };
     document.addEventListener('focusout', onFocusOut);
     return () => document.removeEventListener('focusout', onFocusOut);
@@ -695,7 +698,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
          disappear based on field values, so the document genuinely has to
          re-evaluate after a write. What was wrong is that it discarded the
          reader's position while doing it. */
-      await loadKeepingScroll();
+      await load({ blank: false });
       setChangeKey((k) => k + 1);   // refresh track-changes / comments
     } catch (e) {
       setError(errMessage(e));
@@ -722,7 +725,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   const [justSaved, setJustSaved] = useState(false);
   async function saveNow() {
     setError(null); setNote(null); setSaving(true);
-    try { await saveContract(id!); await load(); setJustSaved(true); }
+    try { await saveContract(id!); await load({ blank: false }); setJustSaved(true); }
     catch (e) { setError(errMessage(e, 'Could not save.')); }
     finally { setSaving(false); }
   }
@@ -768,7 +771,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       setNote(r.locked
         ? 'Approved — the contract is locked and ready to sign below.'
         : `Your approval was recorded. Before signing can open: ${r.blockers.map((b) => b.message).join('; ')}`);
-      await load();
+      await load({ blank: false });
       setChangeKey((k) => k + 1);
     } catch (e) {
       setError(errMessage(e, 'Could not record your approval.'));
@@ -859,7 +862,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           ? `Notified. Emailed ${r.emailed} of ${r.emailed + r.skipped} part${r.emailed + r.skipped === 1 ? 'y' : 'ies'}; ${r.skipped} could not be emailed (no email on file or email delivery not configured). In-app notifications were sent to parties with an account.${extraNote}`
           : `Notified — ${who} ${wereWas} notified by email and in-app.${extraNote}`);
       }
-      await load();
+      await load({ blank: false });
       setChangeKey((k) => k + 1);
     } catch (e) {
       setError(errMessage(e, 'Could not notify the parties.'));
@@ -871,7 +874,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   const saveField = useCallback(async (key: string, value: string) => {
     try {
       await setContractField(id!, key, value);
-      await load();
+      await load({ blank: false });
       setChangeKey((k) => k + 1);
     } catch (e) {
       setError(errMessage(e, 'Could not save that field.'));
@@ -902,7 +905,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
     }
     try {
       await captureContactInfo(id!, party.contact_id, patch);
-      await load();
+      await load({ blank: false });
       setChangeKey((k) => k + 1);
     } catch (e) {
       setError(errMessage(e, 'Could not save that contact detail.'));
@@ -926,7 +929,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
     }
     try {
       await captureHorseRecord(id!, patch);
-      await load();
+      await load({ blank: false });
       setChangeKey((k) => k + 1);
     } catch (e) {
       setError(errMessage(e, 'Could not save that horse-record detail.'));
@@ -969,7 +972,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           });
       setCoBuyerEntry({});
       setCoBuyerPick('');
-      await load();
+      await load({ blank: false });
       setChangeKey((k) => k + 1);
     } catch (e) {
       setError(errMessage(e, 'Could not add the co-buyer.'));
@@ -1078,7 +1081,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                   canRequest={editablePhase && !isVoid}
                   refreshKey={changeKey}
                   onCount={setOpenRequestCount}
-                  onChanged={() => { void load(); }}
+                  onChanged={() => { void load({ blank: false }); }}
                   inDrawer
                 />
               ),
@@ -1296,7 +1299,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
 
       {reviewOpen && id && (
         <ReviewChangesModal documentId={id} reviewerName={reviewerName}
-          onClose={() => setReviewOpen(false)} onDone={() => { void load(); }} />
+          onClose={() => setReviewOpen(false)} onDone={() => { void load({ blank: false }); }} />
       )}
 
       {/* mb-6: the notify card sat almost against the title. */}
@@ -1348,7 +1351,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         <VoidedKeepOrRemove
           documentId={id}
           note={doc?.void_reason ?? null}
-          onChosen={() => { void load(); }}
+          onChosen={() => { void load({ blank: false }); }}
           onRemoved={() => navigate(returnTo)}
         />
       )}
@@ -1401,7 +1404,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         <VoidContractModal
           documentId={id}
           onClose={() => setVoidModal(false)}
-          onVoided={() => { setVoidModal(false); void load(); setChangeKey((k) => k + 1); }}
+          onVoided={() => { setVoidModal(false); void load({ blank: false }); setChangeKey((k) => k + 1); }}
           onRemoved={() => { setVoidModal(false); navigate(returnTo); }}
         />
       )}
@@ -1449,7 +1452,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           documentId={id!}
           redline={redline}
           isOwnerSide={isOwnerSide}
-          onChanged={() => void load()}
+          onChanged={() => void load({ blank: false })}
         />
       )}
 
@@ -1484,7 +1487,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                   documentId={id}
                   parties={partiesSummary?.parties ?? []}
                   sentAt={doc?.executed_email_sent_at}
-                  onSent={() => { void load(); }}
+                  onSent={() => { void load({ blank: false }); }}
                 />
               </div>
             )}
@@ -1522,7 +1525,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           contract page (the creation page already collects these). */}
       {id && !embedded && (
         <PartiesHorseCard documentId={id} canEdit={isStaff && editablePhase}
-          onChanged={() => { void load(); }}
+          onChanged={() => { void load({ blank: false }); }}
           /* The document controls render INSIDE this card (owner 2026-07-31):
              they govern what these same parties may do, so two cards put the
              question and its answer in different places. */
@@ -1589,7 +1592,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
 
       {/* Horse gate — pick/add the horse before the rest of the contract */}
       {showHorseGate && id && (
-        <HorseGate documentId={id} onAttached={() => { void load(); }} />
+        <HorseGate documentId={id} onAttached={() => { void load({ blank: false }); }} />
       )}
 
       {/* H5: horse-confirmation control for clause-model documents (the legacy
@@ -2050,7 +2053,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
               canRequest={editablePhase && !isVoid}
               refreshKey={changeKey}
               onCount={setOpenRequestCount}
-              onChanged={() => { void load(); }}
+              onChanged={() => { void load({ blank: false }); }}
             />
           </div>
           <div className="rounded-lg border-l-4 border-green-700 border-y border-r border-green-800/10 bg-green-50/20 p-4">
@@ -2066,7 +2069,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           documentId={id}
           party={captureParty}
           onClose={() => setCaptureParty(null)}
-          onSaved={() => { setCaptureParty(null); void load(); setChangeKey((k) => k + 1); }}
+          onSaved={() => { setCaptureParty(null); void load({ blank: false }); setChangeKey((k) => k + 1); }}
         />
       )}
 
