@@ -148,6 +148,59 @@ fixed scope and its workload depends entirely on what he decides to ask it —
 `TASK-UIREVIEW` is the model — **you cannot know the workload, so he sets it.** Say so
 explicitly rather than going quiet, and still give him your recommendation.
 
+### The model economics, and the division of labour — owner ruling 2026-08-09
+
+**Only Fable costs something that cannot be recouped by waiting out the remaining time in a
+5-hour window.** Everything else recovers on its own. So Fable is the real budget constraint;
+the rest is a quality decision, not a cost one.
+
+**But every thread must get it right the first time.** A re-run is the expensive outcome
+regardless of which model burned the tokens.
+
+**The owner's read on each, in his words — inherit this, do not re-derive it:**
+
+- **Sonnet** — "impressive quality for certain basic coding requirements." The execution model.
+- **Opus** — "fickle." Strong reasoning, inconsistent. Use it to think, not to grind.
+- **Fable** — "hit and miss," and the only one with an unrecoverable cost.
+
+**THE ESTABLISHED PATTERN: one model authors the instruction set, another executes it.**
+Originally Fable authored and Sonnet executed.
+
+**The pipeline for large work — this is the shape to use:**
+
+```
+PLANNING THREAD (Opus)          works the problem out; produces plans, not code
+        |
+        v
+ORCHESTRATOR (this thread)      receives the plans; authors the task docs
+        |
+        v
+IMPLEMENTATION THREAD(S)        (Sonnet) do the coding against those docs
+```
+
+**The refactor runs this way.** A planning thread on Opus works out the admin refactor and
+hands its plans back to the orchestrator, who authors the implementation docs for Sonnet
+threads.
+
+**Why the split matters:** a thread that both decides *what* to build and then builds it has
+no independent check on its own reasoning. Separating them puts a document between the
+thinking and the doing, and the document is reviewable.
+
+### KEEP THE ORCHESTRATOR THREAD CLEAN — owner ruling 2026-08-09
+
+**This thread is procedural only.** Sequencing, authoring, auditing, merging, recording
+decisions.
+
+**Planning, reasoning and long discussion do NOT happen here.** They happen in a planning
+thread, and its output comes back as a document. The orchestrator's context is a shared
+resource for the whole project — burning it on a design argument that a dedicated thread
+could hold is the failure this rule prevents. The previous orchestration thread compacted
+twice and froze once, and work was lost each time.
+
+**In practice:** be short. Give the recommendation and the reason in a sentence or two, not
+an essay. If a question needs real thinking, that is a signal to spawn a thread for it, not
+to think about it here.
+
 **The historical record, for reference only — do not treat either as a default.** A previous
 version of this document asserted "Opus 5, thinking ON, effort HIGH" on the strength of the
 owner's remark that *low effort on Opus 5* is "not the move." He has since said that did not
