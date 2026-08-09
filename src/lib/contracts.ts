@@ -415,11 +415,22 @@ export async function inviteCounterparty(
  *  for parties with an app account) AND email each party role (email derived from
  *  the assigned contact). Returns a summary of how many were emailed vs skipped, so
  *  the caller can surface delivery problems instead of failing silently. Email
- *  errors don't block the workflow advance. */
+ *  errors don't block the workflow advance.
+ *
+ *  A LOCKED document is frozen FOR SIGNING, and `locked → in_review` is an illegal
+ *  transition in advance_document_workflow — so this used to throw before reaching
+ *  the invitations and no email went out at all. Sending a locked document is a
+ *  legitimate and necessary action: it is how the parties are asked to SIGN. The
+ *  state is read here rather than passed in, so no caller can get it wrong. */
 export async function sendForReview(
   documentId: string, partyRoles: string[],
 ): Promise<{ emailed: number; skipped: number }> {
-  await advanceWorkflow(documentId, 'in_review');
+  const { data: doc, error: stateErr } = await supabase
+    .from('documents').select('workflow_state').eq('id', documentId).single();
+  if (stateErr) throw stateErr;
+  if (doc?.workflow_state !== 'locked') {
+    await advanceWorkflow(documentId, 'in_review');
+  }
   const results = await Promise.allSettled(partyRoles.map((r) => inviteCounterparty(documentId, r)));
   let emailed = 0; let skipped = 0;
   for (const r of results) {

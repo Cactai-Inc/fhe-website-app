@@ -1101,7 +1101,12 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
              `leading` renders before them. */
           leading={(
             <>
-              {isOwnerSide && editablePhase && (
+              {/* LOCKED is included (2026-08-09, owner): a locked document is frozen
+                  FOR SIGNING, so sending it is how the parties are asked to sign —
+                  and since the per-party send buttons were removed, this is the only
+                  way to reach them. sendForReview skips the illegal locked→in_review
+                  advance on its own. */}
+              {isOwnerSide && (editablePhase || state === 'locked') && (
                 <button type="button" disabled={notifying}
                   className={`${SUBHEADER_BTN} sm:w-[7.5rem] border-green-800 bg-green-800 text-white hover:bg-green-700 disabled:opacity-60`}
                   onClick={() => setSendOpen(true)}>
@@ -2070,7 +2075,9 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
             onClick={(e) => e.stopPropagation()}>
             <h2 id="send-heading" className="font-serif text-lg text-green-800 mb-1">Send this contract</h2>
             <p className="text-[13px] text-muted mb-4">
-              Notifying a party asks them to review and sign. You stay on the contract.
+              {state === 'locked'
+                ? 'This contract is locked for signing, so notifying a party asks them to sign it. You stay on the contract.'
+                : 'Notifying a party asks them to review and sign. You stay on the contract.'}
             </p>
             <div className="flex flex-col gap-2">
               {invitableRoles.length > 1 && (
