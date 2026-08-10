@@ -1,6 +1,9 @@
 # TASK NAVHOVER — the admin nav hover flickers and snaps
 
 **Assignment for `UIREVIEW`.** Diagnose, confirm with the owner, then write change orders.
+
+**Status 2026-08-10:** reduced motion ruled out. **F2 — the icon carries no transition while
+its row does — is the leading hypothesis. Reproduce it before proposing anything.**
 `UIREVIEW` does not implement — `UIBUILD` does, from the orders.
 
 Owner, 2026-08-10:
@@ -79,7 +82,7 @@ cursor. Confirmed at `:436`, `:467`, `:492`, `:512`, `:633`, `:1269`.
 
 **The owner has not given a duration. Do not invent one** — see the OPEN QUESTIONS.
 
-## F4 — CHECK THIS FIRST. It costs one question and could explain everything.
+## F4 — RULED OUT 2026-08-10. Reduce motion is OFF. (kept so nobody re-tests it)
 
 `src/index.css:94–104`:
 
@@ -93,9 +96,13 @@ cursor. Confirmed at `:436`, `:467`, `:492`, `:512`, `:633`, `:1269`.
 in the entire app is neutralised to 0.001ms** — which is precisely "reacts instantly instead
 of easing", and the abrupt neutralisation can itself read as a flicker.
 
-**ASK HIM BEFORE ANALYSING FURTHER:** System Settings → Accessibility → Display → Reduce
-motion. If it is on, F3 is not the cause and the real question becomes what this app should
-do for reduced-motion users — a different conversation entirely.
+**ASKED AND ANSWERED — the owner confirmed 2026-08-10 that Reduce motion is NOT enabled.**
+
+So the reduced-motion block is not firing, every transition is running at its declared
+duration, and **F2 and F3 are the live explanations.** Do not re-test this.
+
+**F2 is now the leading hypothesis for the flicker** and it predicts a specific, watchable
+signature — the icon finishes changing colour before the row does.
 
 ## F5 — The staff rail declares its width transition TWICE
 
@@ -125,8 +132,7 @@ width transitions, so the answer changes what F5 is worth.
 
 # WHAT TO DO
 
-1. **Ask the reduced-motion question (F4) before anything else.** One question, and it may
-   close the whole task.
+1. ~~Ask the reduced-motion question~~ — **DONE. Ruled out, see F4.** Start at step 2.
 2. **Confirm which nav (F6)** and get a screen recording if he can — a flicker does not appear
    in a still, and F2 predicts a specific signature: **the icon changes colour before the row
    finishes.** Watching for that confirms or kills the leading hypothesis in seconds.
@@ -142,7 +148,7 @@ width transitions, so the answer changes what F5 is worth.
 
 # OPEN QUESTIONS — ASK, DO NOT GUESS
 
-1. **Is macOS "Reduce motion" on?** F4. Ask first.
+1. ~~**Is macOS "Reduce motion" on?**~~ **ANSWERED 2026-08-10 — NO.** F2/F3 stand.
 2. **Which nav — the staff/admin rail, or the client rail?** F6.
 3. **What duration does he want?** F3 shows the current value is 150ms. "Slower" is a
    direction, not a number. **Show him a comparison rather than picking one** — you may build
