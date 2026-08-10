@@ -58,6 +58,12 @@ import { captureWallReturnDestination } from '../../lib/wallReturn';
  *
  * Reverting the surface is still a one-line swap, now to `bg-cream-100`, but the
  * row palette below has to come back with it. */
+/** How long the drawer takes to cross, in ms. MUST match the `duration-440`
+ *  utility on the panel and the scrim — it is what keeps the element mounted
+ *  long enough to finish leaving. One number, declared once; the Tailwind side
+ *  of it is `transitionDuration.440` in tailwind.config.js. */
+const DRAWER_GLIDE_MS = 440;
+
 const NAV_PANEL = 'bg-cream-25';
 /** default row: cream at reading weight; hover is desktop-only (`hover:hover`)
  *  so iOS's sticky post-tap `:hover` can never latch it on. */
@@ -433,7 +439,7 @@ function RailLink({ to, label, icon: Icon, end, badge = 0, open = true }: NavIte
       end={end}
       aria-label={open ? undefined : label}
       className={({ isActive }) =>
-        `group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13.5px] font-sans transition-colors focus-ring ${open ? '' : 'justify-center'} ${
+        `group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13.5px] font-sans transition-colors duration-320 ease-glide focus-ring ${open ? '' : 'justify-center'} ${
           isActive ? NAV_ROW_ACTIVE : NAV_ROW_IDLE
         }`
       }
@@ -464,7 +470,7 @@ function MenuLink({ to, label, icon: Icon, end, onNavigate }: NavItem & { onNavi
       end={end}
       onClick={onNavigate}
       className={({ isActive }) =>
-        `flex items-center gap-3 px-4 py-2.5 text-sm font-sans transition-colors focus-ring ${
+        `flex items-center gap-3 px-4 py-2.5 text-sm font-sans transition-colors duration-320 ease-glide focus-ring ${
           isActive ? 'bg-cream-200 text-green-800 font-medium ' : 'text-secondary [@media(hover:hover)]:hover:bg-navfill/64 [@media(hover:hover)]:hover:text-cream-100'
         }`
       }
@@ -489,7 +495,7 @@ function PresenceLink({ to, label, icon: Icon, section, onNavigate }: {
   const isActive = section ? accountSection === section : location.pathname === to;
   return (
     <Link to={to} onClick={onNavigate} aria-current={isActive ? 'page' : undefined}
-      className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans transition-colors focus-ring ${
+      className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans transition-colors duration-320 ease-glide focus-ring ${
         isActive ? NAV_ROW_ACTIVE : NAV_ROW_IDLE}`}>
       <Icon size={18} aria-hidden="true" className={isActive ? NAV_ICON_ACTIVE : NAV_ICON_IDLE} />
       <span className="whitespace-nowrap flex-1">{label}</span>
@@ -509,7 +515,7 @@ function AccountNavLink({ onNavigate, open = true }: { onNavigate?: () => void; 
   return (
     <Link to="/app/account" onClick={onNavigate} aria-current={isActive ? 'page' : undefined}
       aria-label={open ? undefined : 'Account'}
-      className={`group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans transition-colors focus-ring ${open ? '' : 'justify-center'} ${
+      className={`group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans transition-colors duration-320 ease-glide focus-ring ${open ? '' : 'justify-center'} ${
         isActive ? NAV_ROW_ACTIVE : NAV_ROW_IDLE}`}>
       {/* `shrink-0` — see the note in CommunityNav's collapsed branch. Without it
           the collapsed rail squashes this icon to the ~8px of content box left
@@ -584,7 +590,7 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
           right-pointing (rotated ChevronDown) collapsed state. C5 (owner, 2026-08-07):
           the toggle's chevron/label were 15px/10px against 17-18px/13.5px everywhere
           else in the rail — brought up to the same scale. */}
-      <div className={`group relative flex items-center rounded-lg pr-1 ${isAll ? 'bg-cream-100' : '[@media(hover:hover)]:hover:bg-navfill/64'}`}>
+      <div className={`group relative flex items-center rounded-lg pr-1 transition-colors duration-320 ease-glide ${isAll ? 'bg-cream-100' : '[@media(hover:hover)]:hover:bg-navfill/64'}`}>
         <Link to="/app" onClick={onNavigate} aria-current={isAll ? 'page' : undefined}
           className={`flex items-center gap-3 flex-1 min-w-0 px-3 py-2.5 text-[13.5px] font-sans focus-ring rounded-lg ${isAll ? 'text-green-900 font-medium' : 'text-cream-100/80 [@media(hover:hover)]:group-hover:text-cream-100'}`}>
           <Users size={18} className={`shrink-0 ${isAll ? NAV_ICON_ACTIVE : NAV_ICON_IDLE}`} />
@@ -602,7 +608,7 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
              chevron is green ink on it — the inverse of what it was when the
              selected pill was green. Unselected, it sits on the green panel and
              is cream like every other idle mark. */
-          className={`shrink-0 flex items-center justify-center p-1.5 rounded-md focus-ring ${isAll ? 'text-green-800 hover:bg-green-800/10' : 'text-cream-100/65 [@media(hover:hover)]:hover:bg-navfill/64 [@media(hover:hover)]:hover:text-cream-100'}`}>
+          className={`shrink-0 flex items-center justify-center p-1.5 rounded-md transition-colors duration-320 ease-glide focus-ring ${isAll ? 'text-green-800 hover:bg-green-800/10' : 'text-cream-100/65 [@media(hover:hover)]:hover:bg-navfill/64 [@media(hover:hover)]:hover:text-cream-100'}`}>
           {expanded ? <ChevronUp size={18} className="shrink-0" /> : <ChevronDown size={18} className="shrink-0" />}
         </button>
       </div>
@@ -613,7 +619,7 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
             const isActive = active === v.key;
             return (
               <Link key={v.key} to={communityHref(v.key)} onClick={onNavigate} aria-current={isActive ? 'page' : undefined}
-                className={`group flex items-center ${indentClass} pr-3 py-1.5 rounded-lg text-[13px] font-sans transition-colors focus-ring ${
+                className={`group flex items-center ${indentClass} pr-3 py-1.5 rounded-lg text-[13px] font-sans transition-colors duration-320 ease-glide focus-ring ${
                   isActive ? NAV_ROW_ACTIVE : NAV_ROW_IDLE}`}>
                 <span className="whitespace-nowrap">{v.label}</span>
               </Link>
@@ -963,6 +969,46 @@ export default function AppLayout() {
   }, [mobileNavOpen]);
   useEffect(() => { setMobileNavOpen(false); }, [location.pathname]);
 
+  /* THE DRAWER'S MOTION — owner, 2026-08-09: "menu entry is side panel drawer
+     from right, ease and smooth, it glides on open and glides on close…  this app
+     is luxury, class, not in a hurry, everything moves with dignity."
+
+     `mobileNavOpen` alone could not express that. It was the mount condition, so
+     the panel was inserted already at its resting position and removed from it —
+     it appeared and vanished, and there was no travel to ease. An exit animation
+     needs the element to outlive the state that owns it.
+
+     Two DERIVED flags, both downstream of `mobileNavOpen`, so nothing here is a
+     second source of truth and the scroll lock above still runs off the original:
+       `drawerMounted` — is it in the DOM (stays true through the exit)
+       `drawerAtRest`  — is it at its resting position (drives the transform)
+
+     `prefers-reduced-motion` is already handled globally in index.css, which
+     collapses the transition to 0.001ms. The unmount timer below still waits the
+     full duration in that case; the panel is transparent and `pointer-events-none`
+     for that window, so it costs nothing but a late DOM removal. */
+  const [drawerMounted, setDrawerMounted] = useState(false);
+  const [drawerAtRest, setDrawerAtRest] = useState(false);
+  useEffect(() => {
+    if (mobileNavOpen) {
+      setDrawerMounted(true);
+      /* TWO frames, not one. The panel has to be painted off-screen once before
+         the class that moves it flips, or the browser folds both into a single
+         style recalculation, finds no start value to interpolate from, and the
+         drawer simply appears at rest — the exact bug this effect exists to fix.
+         A single rAF is not reliably enough; the second one guarantees a paint
+         has happened in between. */
+      let inner = 0;
+      const outer = requestAnimationFrame(() => {
+        inner = requestAnimationFrame(() => setDrawerAtRest(true));
+      });
+      return () => { cancelAnimationFrame(outer); cancelAnimationFrame(inner); };
+    }
+    setDrawerAtRest(false);
+    const t = window.setTimeout(() => setDrawerMounted(false), DRAWER_GLIDE_MS);
+    return () => window.clearTimeout(t);
+  }, [mobileNavOpen]);
+
   async function handleSignOut() {
     setMenuOpen(false);
     await signOut();
@@ -1034,7 +1080,7 @@ export default function AppLayout() {
           <div className="mt-1 border-t border-green-800/10 pt-2 px-4 pb-1 text-xs uppercase tracking-wide text-secondary/60">Company</div>
           <button type="button"
             onClick={() => { closeMenu(); navigate('/app/ops/documents'); }}
-            className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary [@media(hover:hover)]:hover:bg-navfill/64 [@media(hover:hover)]:hover:text-cream-100 focus-ring">
+            className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary [@media(hover:hover)]:hover:bg-navfill/64 [@media(hover:hover)]:hover:text-cream-100 transition-colors duration-320 ease-glide focus-ring">
             <FileText size={17} /> Pending agreements
           </button>
           {/* Both operators navigate to the community + catalog to help
@@ -1042,12 +1088,12 @@ export default function AppLayout() {
           <div className="mt-1 border-t border-green-800/10 pt-2 px-4 pb-1 text-xs uppercase tracking-wide text-secondary/60">Quick access</div>
           <div className="px-1"><CommunityNav onNavigate={closeMenu} indentClass="pl-9" /></div>
           <button type="button" onClick={() => { closeMenu(); navigate('/app/dashboard'); }}
-            className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary [@media(hover:hover)]:hover:bg-navfill/64 [@media(hover:hover)]:hover:text-cream-100 focus-ring">
+            className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary [@media(hover:hover)]:hover:bg-navfill/64 [@media(hover:hover)]:hover:text-cream-100 transition-colors duration-320 ease-glide focus-ring">
             <LayoutDashboard size={17} /> Dashboard
             {unreadCount > 0 && <span className="ml-auto min-w-[1.25rem] h-5 px-1.5 text-[11px] leading-5 text-center rounded-full bg-gold-600/70 text-white">{unreadCount > 9 ? '9+' : unreadCount}</span>}
           </button>
           <button type="button" onClick={() => { closeMenu(); navigate('/app/catalog'); }}
-            className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary [@media(hover:hover)]:hover:bg-navfill/64 [@media(hover:hover)]:hover:text-cream-100 focus-ring">
+            className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary [@media(hover:hover)]:hover:bg-navfill/64 [@media(hover:hover)]:hover:text-cream-100 transition-colors duration-320 ease-glide focus-ring">
             <ShoppingBag size={17} /> Catalog
           </button>
         </>
@@ -1063,7 +1109,7 @@ export default function AppLayout() {
             return (
               <button key={q.label} type="button"
                 onClick={() => { closeMenu(); navigate(q.to); }}
-                className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary [@media(hover:hover)]:hover:bg-navfill/64 [@media(hover:hover)]:hover:text-cream-100 focus-ring">
+                className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary [@media(hover:hover)]:hover:bg-navfill/64 [@media(hover:hover)]:hover:text-cream-100 transition-colors duration-320 ease-glide focus-ring">
                 <q.icon size={17} /> {q.label}
                 {badge > 0 && <span className="ml-auto min-w-[1.25rem] h-5 px-1.5 text-[11px] leading-5 text-center rounded-full bg-gold-600/70 text-white">{badge > 9 ? '9+' : badge}</span>}
               </button>
@@ -1074,7 +1120,7 @@ export default function AppLayout() {
             const isActive = l.section ? accountSection === l.section : location.pathname === l.to;
             return (
               <Link key={l.key} to={l.to} onClick={closeMenu}
-                className={`flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans focus-ring ${
+                className={`flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans transition-colors duration-320 ease-glide focus-ring ${
                   isActive ? 'bg-cream-200 text-green-800 font-medium ' : 'text-secondary [@media(hover:hover)]:hover:bg-navfill/64 [@media(hover:hover)]:hover:text-cream-100'}`}>
                 <l.icon size={17} /> {l.label}
               </Link>
@@ -1096,11 +1142,11 @@ export default function AppLayout() {
       )}
       <button type="button"
         onClick={() => { closeMenu(); setTourOpen(true); }}
-        className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary [@media(hover:hover)]:hover:bg-navfill/64 [@media(hover:hover)]:hover:text-cream-100 border-t border-green-800/10 focus-ring">
+        className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary [@media(hover:hover)]:hover:bg-navfill/64 [@media(hover:hover)]:hover:text-cream-100 border-t border-green-800/10 transition-colors duration-320 ease-glide focus-ring">
         <Compass size={17} aria-hidden="true" className="shrink-0" /> App tour
       </button>
       <button type="button" onClick={handleSignOut}
-        className="flex items-center gap-3 px-4 py-2.5 mt-1 w-full text-sm font-sans text-secondary [@media(hover:hover)]:hover:bg-navfill/64 [@media(hover:hover)]:hover:text-cream-100 border-t border-green-800/10 focus-ring">
+        className="flex items-center gap-3 px-4 py-2.5 mt-1 w-full text-sm font-sans text-secondary [@media(hover:hover)]:hover:bg-navfill/64 [@media(hover:hover)]:hover:text-cream-100 border-t border-green-800/10 transition-colors duration-320 ease-glide focus-ring">
         <LogOut size={17} aria-hidden="true" className="shrink-0" /> Sign out
       </button>
     </div>
@@ -1170,7 +1216,7 @@ export default function AppLayout() {
             </button>
             <div className="relative" ref={menuRef}>
               <button type="button" onClick={() => setMenuOpen((v) => !v)}
-                className="flex items-center gap-1 pl-1.5 pr-2 py-1 rounded-full [@media(hover:hover)]:hover:bg-navfill/64 [@media(hover:hover)]:hover:text-cream-100 focus-ring"
+                className="flex items-center gap-1 pl-1.5 pr-2 py-1 rounded-full transition-colors duration-320 ease-glide [@media(hover:hover)]:hover:bg-navfill/64 [@media(hover:hover)]:hover:text-cream-100 focus-ring"
                 aria-label="Account menu" aria-expanded={menuOpen}>
                 {/* No notifications badge on the avatar — the count lives on the
                     Dashboard nav link (desktop rail + mobile menu) instead. */}
@@ -1356,17 +1402,30 @@ export default function AppLayout() {
           Superadmin never had the tab; it keeps its own mobile nav button and
           its own drawer anchor — see the `isSuperAdmin` checks below. */}
 
-      {mobileNavOpen && (
-        <div className="fixed inset-x-0 bottom-0 top-[var(--cs-hdr-h)] z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
+      {drawerMounted && (
+        <div
+          className={`fixed inset-x-0 bottom-0 top-[var(--cs-hdr-h)] z-50 lg:hidden ${drawerAtRest ? '' : 'pointer-events-none'}`}
+          role="dialog" aria-modal="true" aria-label="Menu"
+        >
           {/* B4 (owner, 2026-08-07): black/white scrim, not the drawer's own
               green family — the green-on-green barely separated. Applied
               unconditionally (superadmin's drawer is the same green glass and
               gets the same legibility fix; this is a neutral utility colour,
               not tenant branding). */}
-          <div className="absolute inset-0 bg-green-950/45" onClick={closeMobileNav} aria-hidden="true" />
+          <div
+            className={`absolute inset-0 bg-green-950/45 transition-opacity duration-440 ease-glide ${drawerAtRest ? 'opacity-100' : 'opacity-0'}`}
+            onClick={closeMobileNav} aria-hidden="true"
+          />
           <nav
             id="app-nav-drawer"
-            className={`absolute inset-y-0 ${isSuperAdmin ? 'left-0' : 'right-0'} w-72 max-w-[85vw] ${NAV_PANEL} shadow-xl p-3 overflow-y-auto`}
+            /* The panel travels on `transform`, not on `right`/`left`: a transform
+               is composited, so the glide holds its frame rate on a phone while a
+               position animation would relayout the drawer's whole subtree every
+               frame. It leaves from the edge it lives on — the tenant drawer from
+               the right, superadmin's from the left. */
+            className={`absolute inset-y-0 ${isSuperAdmin ? 'left-0' : 'right-0'} w-72 max-w-[85vw] ${NAV_PANEL} shadow-xl p-3 overflow-y-auto transform-gpu transition-transform duration-440 ease-glide ${
+              drawerAtRest ? 'translate-x-0' : (isSuperAdmin ? '-translate-x-full' : 'translate-x-full')
+            }`}
             onClick={(e) => {
               // any real navigation inside closes the drawer
               if ((e.target as HTMLElement).closest('a')) closeMobileNav();
