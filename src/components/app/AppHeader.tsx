@@ -77,9 +77,14 @@ export function AppHeader({ initial, menuOpen, onToggleMenu }: Props) {
             specificity — which of them wins would come down to injected
             stylesheet order. A media query in the file that owns the rule cannot
             be beaten by source order. */}
+        {/* `data-open` carries the SAME `menuOpen` prop the drawer runs on, so the
+            avatar's 100%-while-open fill cannot drift out of step with the panel
+            it belongs to. Rest is 66%; hover, press and open are all full
+            strength — see the rule block in app-header.css. */}
         <button
           type="button"
           className="oh-avatar"
+          data-open={menuOpen ? 'true' : undefined}
           onClick={onToggleMenu}
           aria-label={menuOpen ? 'Close menu' : 'Open menu'}
           aria-expanded={menuOpen}

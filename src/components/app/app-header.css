@@ -148,28 +148,57 @@
 
    `-webkit-touch-callout` stays for the same reason the cardstock avatar carried
    it: a tap-and-hold should not raise the system's callout on a glyph. */
+/* Owner, 2026-08-09: "the avatar letter lost its ring — it should look like the
+   logo with an outline ring around the letter."
+   ONEHEADER shipped this as a solid green disc with `border: 0`, which dropped
+   the ring the shelved cardstock avatar had (a struck rim around the letter,
+   `.cs-ring-wall`). The ring below is the LOGO'S ring, same declaration as
+   `.oh-mono` above — 1px, green-800 at 40%, transparent centre, green-900 ink.
+   The two marks now read as one family; the only difference is round vs square.
+   The gold hairline the button form carried is gone with it: it sat in the ring
+   position, and two rings on one mark is not what the logo does. */
 .oh-avatar {
   width: 42px; height: 42px; flex: none;
   display: grid; place-items: center;
-  border: 0; padding: 0; margin: 0;
+  border: 1px solid rgba(20, 51, 33, .40);    /* green-800/40 — as .oh-mono */
+  padding: 0; margin: 0;
   border-radius: 999px;
-  background: #143321;                        /* green-800 */
+  background: #143321;                        /* green-800, full strength */
   color: #f5f0e8;                             /* cream-100 */
   font-size: 17px; line-height: 1; letter-spacing: .02em;
   -webkit-touch-callout: none;
 }
+
+/* ============ THE MOBILE AVATAR — 66% AT REST ============
+   Owner, 2026-08-09: "on mobile the avatar fill is 66% opacity version of 100%
+   opacity company color, on cursorover and click or tap, opacity 100%, and while
+   menu is open 100%, on menu close revert to 66%."
+
+   Only the BUTTON form takes this. The desktop `span` is an inert mark with no
+   states to move between, so it stays at full strength.
+
+   The `[data-open]` attribute is written by AppHeader from the same `menuOpen`
+   prop that drives the drawer, so the fill and the drawer cannot desync — there
+   is one source of truth, not a second piece of state tracking the first.
+
+   Declared as an alpha rather than a pre-composited hex on purpose: this mark
+   sits on the header and nothing else ever passes behind it, so there is no
+   backdrop instability of the kind that forced the scrolled surface below to be
+   declared as its rendered colour. */
 button.oh-avatar {
   cursor: pointer;
-  box-shadow: 0 0 0 1px rgba(186, 153, 53, .55),   /* gold-600 hairline */
-              0 1px 2px rgba(16, 28, 22, .18);
-  transition: background-color .18s ease, box-shadow .18s ease, transform .12s ease;
+  background: rgba(20, 51, 33, .66);
+  /* Slower than a control that does work — this one only announces the menu.
+     The same unhurried curve the drawer glides on. */
+  transition: background-color .32s cubic-bezier(.32, .72, 0, 1),
+              border-color .32s cubic-bezier(.32, .72, 0, 1),
+              transform .12s ease;
 }
 @media (hover: hover) {
-  button.oh-avatar:hover {
-    background: #1a4429;                      /* green-700 */
-    box-shadow: 0 0 0 1px rgba(186, 153, 53, .85), 0 2px 6px rgba(16, 28, 22, .24);
-  }
+  button.oh-avatar:hover { background: #143321; }
 }
+button.oh-avatar:active,
+button.oh-avatar[data-open='true'] { background: #143321; }
 button.oh-avatar:active { transform: translateY(1px); }
 button.oh-avatar:focus-visible {
   outline: 2px solid #7a6421;                 /* gold-800, the app's focus token */
