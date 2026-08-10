@@ -8,7 +8,14 @@ export default {
          Declared here so the owner's exact value (80% selected, 64% hover — a
          20% reduction) is expressible rather than rounded to the nearest
          built-in step. */
-      opacity: { 64: '0.64' },
+      /* 66 is the BUTTON CURSOR-OVER value (owner, 2026-08-09) and, like 64, it
+         is not in Tailwind's built-in scale — `bg-green-800/66` would emit
+         nothing at all. The owner picked 66 as a midpoint he could move either
+         way from; he can only move up. Over the subheader bar green-800/66
+         renders #63776b and carries the cream label at 4.66:1, and the next step
+         down (/62) is 4.14:1 — under AA at this button's size. 66 is the
+         lightest legible value in this direction, not a preference. */
+      opacity: { 64: '0.64', 66: '0.66' },
       /* MOTION — owner, 2026-08-09: "graceful, smooth, comfortable, not rushed
          or jarring… everything moves with dignity."
 

@@ -1,5 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <rect width="64" height="64" rx="10" fill="#143321"/>
-  <text x="32" y="44" font-family="Georgia, 'Cormorant Garamond', serif" font-size="34" font-weight="500"
-        text-anchor="middle" fill="#ba9935">FH</text>
+  <!-- THE HEADER'S LOGO MARK, as the favicon (owner, 2026-08-09).
+       Square with sharp corners, filled with the header's own background, and
+       outlined the same way .oh-mono is outlined in app-header.css:
+         fill    #f5f0e8  cream-100, the header surface
+         stroke  #143321 at 40%, the same rgba(20,51,33,.40) ring
+         ink     #0d2118  green-900
+         face    Big Caslon / Libre Caslon Text / Georgia — the header stack
+       The old mark was a rounded green tile with gold letters; nothing in the
+       header looks like that any more.
+       The stroke is inset by half its width (rect at 1.5 with stroke-width 3)
+       because SVG centres a stroke on the path — drawn at 0 it would lose its
+       outer half to the viewBox edge and read half as heavy. -->
+  <rect x="1.5" y="1.5" width="61" height="61"
+        fill="#f5f0e8" stroke="#143321" stroke-opacity="0.4" stroke-width="3"/>
+  <text x="32" y="43.5"
+        font-family="'Big Caslon', 'Libre Caslon Text', Georgia, serif"
+        font-size="27" letter-spacing="1.1"
+        text-anchor="middle" fill="#0d2118">FH</text>
 </svg>
