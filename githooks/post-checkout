@@ -1,0 +1,36 @@
+#!/bin/sh
+# FHE — shout when someone switches branches in the canonical checkout.
+#
+# Git has no pre-checkout hook, so this cannot prevent the switch — it runs after.
+# The teeth are in pre-commit. This exists so the moment is VISIBLE in the thread's
+# transcript rather than silent, because the symptom it produces (the app appearing
+# to lose a week of work, then looking fine on refresh) is otherwise unattributable.
+#
+# Args: $1 = previous HEAD, $2 = new HEAD, $3 = 1 for a branch checkout, 0 for a file checkout
+
+[ "$3" = "1" ] || exit 0
+
+CANONICAL="/users/cactai/downloads/claude-code-repo/fhe-website-app"
+TOP=$(git rev-parse --show-toplevel 2>/dev/null | tr '[:upper:]' '[:lower:]')
+[ "$TOP" = "$CANONICAL" ] || exit 0
+
+[ "$1" = "$2" ] && exit 0                  # no actual move
+
+BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+
+cat >&2 <<EOF
+
+  WARNING — you just switched the CANONICAL CHECKOUT to: $BRANCH
+
+  This rewrote the working tree. Anything serving or building from this directory
+  is now rendering $BRANCH, not main. That is what made the app appear to lose a
+  week of work on 2026-08-09.
+
+  If you are a task thread, you are in the wrong place. Go back to main and use a
+  worktree:
+
+      git checkout main
+      git worktree add ~/Downloads/claude-code-repo/wt-<id> -b task/<id> origin/main
+
+EOF
+exit 0

@@ -1,0 +1,61 @@
+#!/bin/sh
+# FHE — keep code changes out of the canonical checkout.
+#
+# WHY THIS EXISTS
+#   On 2026-08-09 a thread worked directly in the canonical checkout instead of a
+#   worktree. It ran `git checkout` to switch branches there, which rewrites the
+#   working tree — so for ~3 hours anything serving from that directory rendered a
+#   tree without that week's work. The owner saw the app "revert", then look normal
+#   after a refresh, with nothing left to investigate.
+#
+#   The worktree rule was already written in every task doc and every prompt. Prose
+#   did not enforce it. This does.
+#
+# WHAT IT DOES
+#   Refuses a commit that touches code IF the commit is being made from the canonical
+#   checkout. Commits from a worktree are untouched — that is where code work belongs.
+#   Documentation commits from the canonical checkout still pass, because that is all
+#   the orchestrator commits there.
+#
+# ESCAPE HATCH
+#   FHE_ALLOW_CODE=1 git commit ...
+#   For the orchestrator's own merge commits, which legitimately carry code into main
+#   from a thread branch. Use it deliberately; it is not a nuisance to be aliased away.
+
+CANONICAL="/users/cactai/downloads/claude-code-repo/fhe-website-app"
+
+# Case-insensitive compare — this repo's own worktree list contains both
+# /Users/Cactai and /Users/cactai for the same paths, and macOS treats them as one.
+TOP=$(git rev-parse --show-toplevel 2>/dev/null | tr '[:upper:]' '[:lower:]')
+
+[ "$TOP" = "$CANONICAL" ] || exit 0        # in a worktree — nothing to enforce
+[ -n "$FHE_ALLOW_CODE" ] && exit 0         # deliberate override
+
+# Paths that constitute "code" for this purpose. Anything that ships, plus the
+# migration journal — a migration committed here is one applied from here.
+BLOCKED=$(git diff --cached --name-only --diff-filter=ACMR | grep -E \
+  '^(src/|api/|supabase/|public/|scripts/|index\.html$|package(-lock)?\.json$|vite\.config\.|tailwind\.config\.|postcss\.config\.|tsconfig)')
+
+[ -z "$BLOCKED" ] && exit 0
+
+cat >&2 <<EOF
+
+  BLOCKED — code commit in the canonical checkout.
+
+  These staged files ship, and this directory is not where code work belongs:
+
+$(echo "$BLOCKED" | sed 's/^/      /')
+
+  Code work goes in a worktree:
+
+      git worktree add ~/Downloads/claude-code-repo/wt-<id> -b task/<id> origin/main
+
+  Then commit there. Your staged changes are untouched — nothing was lost.
+
+  If you are the orchestrator merging a thread branch into main, that is the one
+  legitimate case:
+
+      FHE_ALLOW_CODE=1 git commit ...
+
+EOF
+exit 1
