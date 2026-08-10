@@ -551,7 +551,7 @@ function DetailPanel({ item, onClose, onChanged, onBuy }: { item: CalendarItem; 
 
   return (
     <div className="fixed inset-0 z-50 bg-black/30 flex justify-end" onClick={onClose}>
-      <div className="bg-cream w-full max-w-sm h-full overflow-y-auto shadow-xl p-5" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-cream w-full max-w-sm h-full overflow-y-auto overscroll-contain shadow-xl p-5" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-serif text-lg text-green-900">{itemLabel(item)}</h2>
           <button type="button" onClick={onClose} aria-label="Close"><X size={20} /></button>
@@ -727,7 +727,7 @@ function RequestTimePanel({ start, onClose, onDone }: { start: Date; onClose: ()
 
   return (
     <div className="fixed inset-0 z-50 bg-black/30 flex justify-end" onClick={onClose}>
-      <div className="bg-cream w-full max-w-sm h-full overflow-y-auto shadow-xl p-5" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-cream w-full max-w-sm h-full overflow-y-auto overscroll-contain shadow-xl p-5" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-serif text-lg text-green-900">Request this time</h2>
           <button type="button" onClick={onClose} aria-label="Close"><X size={20} /></button>
@@ -806,7 +806,7 @@ function PurchaseLessonsPanel({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/30 flex justify-end" onClick={onClose}>
-      <div className="bg-cream w-full max-w-sm h-full overflow-y-auto shadow-xl p-5" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-cream w-full max-w-sm h-full overflow-y-auto overscroll-contain shadow-xl p-5" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-serif text-lg text-green-900">Buy lessons</h2>
           <button type="button" onClick={onClose} aria-label="Close"><X size={20} /></button>

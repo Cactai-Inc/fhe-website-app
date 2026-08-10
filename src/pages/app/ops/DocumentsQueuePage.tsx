@@ -146,7 +146,7 @@ function VersionDecisions() {
       {picking && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-green-950/40 px-4"
           role="dialog" aria-modal="true" aria-labelledby="vd-heading">
-          <div className="bg-white rounded-2xl border border-green-800/10 p-6 max-w-md w-full max-h-[80vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl border border-green-800/10 p-6 max-w-md w-full max-h-[80vh] overflow-y-auto overscroll-contain">
             <h2 id="vd-heading" className="font-serif text-lg text-green-800 mb-1">
               Who should re-sign {picking.title}?
             </h2>

@@ -146,7 +146,7 @@ function TeamMemberPanel({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/30 flex justify-end" onClick={onClose}>
-      <div className="bg-cream w-full max-w-md h-full overflow-y-auto shadow-xl" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-cream w-full max-w-md h-full overflow-y-auto overscroll-contain shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-4 border-b border-green-800/10 sticky top-0 bg-cream z-10">
           <h2 className="font-serif text-lg text-green-900 truncate">{memberName(member)}</h2>
           <button type="button" onClick={onClose} aria-label="Close"><X size={20} /></button>

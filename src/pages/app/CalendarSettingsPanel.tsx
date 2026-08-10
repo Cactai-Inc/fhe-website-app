@@ -61,7 +61,7 @@ export function CalendarSettingsPanel({ onClose, onSaved }: { onClose: () => voi
 
   return (
     <div className="fixed inset-0 z-50 bg-black/30 flex justify-end" onClick={onClose}>
-      <div className="bg-cream w-full sm:max-w-md h-full overflow-y-auto shadow-xl p-5" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-cream w-full sm:max-w-md h-full overflow-y-auto overscroll-contain shadow-xl p-5" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-serif text-lg text-green-900">Calendar settings</h2>
           <button type="button" onClick={onClose} aria-label="Close"><X size={20} /></button>

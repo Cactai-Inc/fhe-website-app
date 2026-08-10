@@ -103,7 +103,7 @@ export function Modal({
             </button>
           </div>
         )}
-        <div className="px-6 sm:px-8 py-6 overflow-y-auto">{children}</div>
+        <div className="px-6 sm:px-8 py-6 overflow-y-auto overscroll-contain">{children}</div>
         {footer && (
           <div className="flex justify-end gap-3 border-t border-green-800/10 px-6 sm:px-8 py-4 shrink-0">
             {footer}

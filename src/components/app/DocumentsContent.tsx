@@ -134,7 +134,7 @@ function PaperViewer({ doc, onClose }: { doc: SeedDocument; onClose: () => void 
       </div>
 
       {/* paper scroll region */}
-      <div className="flex-1 overflow-y-auto px-4 py-6 sm:py-8" onClick={(e) => e.stopPropagation()}>
+      <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-6 sm:py-8" onClick={(e) => e.stopPropagation()}>
         <div className="max-w-[640px] mx-auto">
           {/* the sheet */}
           <div className="bg-white shadow-2xl shadow-green-950/30 rounded-[3px] mx-auto"

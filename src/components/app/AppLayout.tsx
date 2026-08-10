@@ -1091,7 +1091,7 @@ export default function AppLayout() {
      ONE copy of the MenuLink set rather than a duplicate that can drift.
      Unchanged from its previous form: same links, same order, same handlers. */
   const accountMenu = menuOpen ? (
-    <div className="absolute right-0 mt-1 w-60 max-w-[calc(100vw-2rem)] bg-white border border-green-800/10 shadow-md rounded-md py-1 max-h-[calc(100dvh-5rem)] overflow-y-auto z-50 pb-3">
+    <div className="absolute right-0 mt-1 w-60 max-w-[calc(100vw-2rem)] bg-white border border-green-800/10 shadow-md rounded-md py-1 max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain z-50 pb-3">
       <p className="px-4 py-2 text-xs text-muted border-b border-green-800/10 truncate">{name}</p>
       <MenuLink to="/app/account" label="Account" icon={UserRound} onNavigate={closeMenu} />
       {/* admin references — company-associable items only */}
