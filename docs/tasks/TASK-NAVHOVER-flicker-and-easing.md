@@ -2,10 +2,10 @@
 
 **Assignment for `UIREVIEW`.** Diagnose, confirm with the owner, then write change orders.
 
-**Status 2026-08-10, after two owner answers:** reduced motion is OFF, and it happens on
-**BOTH** navs, **most noticeably on the expanded menu**. That combination rules F5 out and
-makes **F2 the explanation to disprove, not merely the leading one.** Reproduce it before
-proposing anything.
+**STATUS 2026-08-10 — F2 IS CONFIRMED FROM THE OWNER'S OWN RECORDING. The diagnosis is done.**
+Reduced motion is OFF; it happens on BOTH navs, worst expanded; F5 is eliminated. **Read F0
+first — the cause is established from frame evidence, so this task is now about the FIX and
+its values, not about finding the bug.**
 `UIREVIEW` does not implement — `UIBUILD` does, from the orders.
 
 Owner, 2026-08-10:
@@ -18,6 +18,41 @@ Owner, 2026-08-10:
 
 - **the flicker** — something visibly jitters or double-renders on hover
 - **the snap** — the state change has no perceptible ease
+
+---
+
+# F0 — CONFIRMED CAUSE, from the owner's screen recording. DO NOT RE-DIAGNOSE.
+
+**Evidence: `docs/reference/navhover-frames/`** — read its README, then look at
+`leads-hover-in-30fps.png`. Frames were extracted from the owner's recording with
+AVFoundation (there is no ffmpeg on this machine; the extractors are in that folder).
+
+Hovering **Leads** in the expanded staff rail, at 30fps:
+
+| frame | background | icon | label |
+|---|---|---|---|
+| 19.350s | white | green, visible | dark green |
+| **19.383s** | still near-white | **GONE — invisible** | still dark |
+| 19.417s | pale sage | faintly back | washing out |
+| 19.450s | mid sage | white, visible | white |
+| 19.483s+ | settled green | white | white |
+
+**The icon disappears completely for about one frame at the start of every hover.** It snaps
+to `cream-25` (near-white) with no transition, while its background is still near-white and
+only ~30ms into a 150ms ease. **White on white.** The green fill then arrives behind it and
+the icon reappears. That drop-out IS the flicker.
+
+**It is worse than F2 predicted.** F2 said the icon would desync from the row. It does not
+merely desync — **it vanishes.** And the label and icon are out of sync with each other too:
+at 19.383s the icon is gone while the label is still dark; at 19.417s the label has washed
+out while the icon has returned. **Three elements, two transition rates, one of them zero.**
+
+Visible transition runs ~19.383 → ~19.483 — about **100ms**, consistent with F3's 150ms
+default.
+
+**So there is one root cause for BOTH complaints**, and they are not independent:
+the icon has no transition (the flicker) and the row's transition is Tailwind's short default
+(the snap).
 
 ---
 
@@ -159,18 +194,29 @@ symptom but leaves the collapsed one, it is incomplete.**
 
 # WHAT TO DO
 
-1. ~~Ask the reduced-motion question~~ — **DONE. Ruled out, see F4.** Start at step 2.
-2. ~~Confirm which nav~~ — **DONE, see F6: both, worst expanded.** Get a screen recording if
-   he can. A flicker does not appear in a still, and F2 predicts a watchable signature:
-   **the icon finishes changing colour before the label beside it does.** That confirms or
-   kills it in seconds.
-3. **Diagnose from evidence, not from plausible code paths.** The contract reload bug took
-   three attempts; two were confident diagnoses from reading likely culprits, and what found
-   it was enumerating every call site. C1 above is a second instance of the same mistake.
-   **Reproduce it, then explain it.**
-4. **Then MODE C:** list what you found, numbered, with confidence markers, and **stop for his
-   confirmation before proposing fixes.**
-5. **Then write change orders** into `docs/ui-orders/`. One order per change.
+~~1. Ask the reduced-motion question~~ · ~~2. Confirm which nav~~ · ~~3. Diagnose~~ —
+**ALL DONE. See F0.** The cause is established from frame evidence. Do not spend the thread
+re-finding it.
+
+**What remains:**
+
+1. **Verify F0 against the code yourself** — it is a one-file read, and you should not take a
+   diagnosis on trust any more than the owner should. Confirm the icon element carries no
+   transition and that its hover colour is `cream-25`.
+2. **Enumerate the whole family.** `NAV_ICON_IDLE` is applied at every icon site in
+   `AppLayout.tsx`, and the client rail shows the same symptom. **List every element that
+   changes colour on hover and whether it carries its own transition.** Fixing the three sites
+   named in F2 leaves the rest broken.
+3. **Get the two values from the owner** — see OPEN QUESTIONS 3 and 4. **Show him a
+   comparison; do not pick.**
+4. **Then write change orders** into `docs/ui-orders/`. Expect at least two: one for the
+   missing transitions, one for the duration/curve. One order per change.
+
+**A note on the fix, not an instruction — the owner decides.** Adding `transition-colors` to
+the icon is the obvious move, but it makes the icon fade *through* invisibility rather than
+snap through it, which may still read badly against a near-white panel. An alternative is to
+stop routing the icon to near-white at all and give it a colour that stays legible at every
+point in the blend. **Put both to him rather than assuming the first.**
 
 ---
 
