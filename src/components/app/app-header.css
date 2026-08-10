@@ -55,7 +55,24 @@
      re-composite on scroll, and it no longer creates a containing block that
      would trap a position:fixed child. */
   background-color: #f5f0e8;
-  border-bottom: 1px solid transparent;
+  /* Owner, 2026-08-09: "the definition beneath the header looks lower than it
+     was previously", and — on the depth question — "either the header loses the
+     drop shadow and the line used as a border is ever so slight enough to exist
+     visually but remain subtle, or the entire thing needs to be rethought."
+
+     There was never a drop shadow to lose: this stylesheet declares no
+     `box-shadow` at all (the SHELVED cardstock header had four, which is where
+     the memory of one comes from). What it did declare was a TRANSPARENT border,
+     so the header had no bottom edge whatsoever — and the first line you met
+     going down the page was the contract subheader's, one bar lower. That is
+     exactly the "definition looks lower" report, and it is a missing line rather
+     than a moved one.
+
+     So the header gets the line. It is the same weight as the subheader's own
+     (`border-green-800/15`) and the rail's, so all three boundaries read as one
+     plane system: nothing is lifted, nothing casts, and content passing beneath
+     is the only thing that implies depth. */
+  border-bottom: 1px solid rgba(20, 51, 33, .15);
 }
 
 /* ============ THE SCROLLED SURFACE ============
@@ -163,8 +180,16 @@
   border: 1px solid rgba(20, 51, 33, .40);    /* green-800/40 — as .oh-mono */
   padding: 0; margin: 0;
   border-radius: 999px;
-  background: #143321;                        /* green-800, full strength */
-  color: #f5f0e8;                             /* cream-100 */
+  /* Owner, 2026-08-09: "on desktop the avatar doesn't show the ring around the
+     letter." It was there — and invisible. A green-800/40 ring drawn over a
+     green-800 fill composites to green-800 exactly: the ring and the disc were
+     the same colour, so there was nothing to see.
+     The desktop mark is inert and has no states to move between, so it takes the
+     LOGO'S treatment outright — transparent centre, green ink, ring. It is now
+     `.oh-mono` in every respect but its corners. The filled form below is the
+     button only, where the fill is doing work (it reports the menu's state). */
+  background: transparent;
+  color: #0d2118;                             /* green-900 — as .oh-mono */
   font-size: 17px; line-height: 1; letter-spacing: .02em;
   -webkit-touch-callout: none;
 }
@@ -188,6 +213,7 @@
 button.oh-avatar {
   cursor: pointer;
   background: rgba(20, 51, 33, .66);
+  color: #f5f0e8;                             /* cream-100 — the filled form */
   /* Slower than a control that does work — this one only announces the menu.
      The same unhurried curve the drawer glides on. */
   transition: background-color .32s cubic-bezier(.32, .72, 0, 1),

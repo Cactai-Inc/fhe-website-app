@@ -73,8 +73,8 @@ const NAV_ROW_IDLE = 'text-green-800 [@media(hover:hover)]:hover:bg-navfill/64 [
  *  panel that is itself earth-800 (C5b's old `bg-green-800` active fill would now
  *  be invisible: it IS the panel). */
 const NAV_ROW_ACTIVE = 'bg-navfill/80 text-cream-25 font-medium';
-const NAV_ICON_IDLE = 'text-green-800/70 [@media(hover:hover)]:group-hover:text-cream-25';
-const NAV_ICON_ACTIVE = 'text-cream-25';
+const NAV_ICON_IDLE = 'text-green-800/70 transition-colors duration-320 ease-glide [@media(hover:hover)]:group-hover:text-cream-25';
+const NAV_ICON_ACTIVE = 'text-cream-25 transition-colors duration-320 ease-glide';
 /** group headings ("Management", "People", …) — the "section header" the owner
  *  named explicitly. Quiet, but cream: on a dark panel the old `text-muted`
  *  (green-800/70) was dark-on-dark and effectively invisible. */
@@ -592,7 +592,16 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
           else in the rail — brought up to the same scale. */}
       <div className={`group relative flex items-center rounded-lg pr-1 transition-colors duration-320 ease-glide ${isAll ? 'bg-cream-100' : '[@media(hover:hover)]:hover:bg-navfill/64'}`}>
         <Link to="/app" onClick={onNavigate} aria-current={isAll ? 'page' : undefined}
-          className={`flex items-center gap-3 flex-1 min-w-0 px-3 py-2.5 text-[13.5px] font-sans focus-ring rounded-lg ${isAll ? 'text-green-900 font-medium' : 'text-cream-100/80 [@media(hover:hover)]:group-hover:text-cream-100'}`}>
+          /* THE FLICKER, cause 1 (owner, 2026-08-09 — "the flicker is still
+             present"). This label was `text-cream-100/80`, a cream mark left over
+             from when the panel was green-800. ONEHEADER made the panel
+             near-white, so it rendered #f7f2ec on #fdfcfa — 1.08:1, invisible.
+             The row was BLANK until the cursor arrived and appeared when it did,
+             so running the pointer down the menu made items materialise and
+             vanish. That is what read as flicker; it was never compositing.
+             Now on the same palette as every other idle row: green ink at rest,
+             cream on the fill when hovered. 13.43:1 idle. */
+          className={`flex items-center gap-3 flex-1 min-w-0 px-3 py-2.5 text-[13.5px] font-sans transition-colors duration-320 ease-glide focus-ring rounded-lg ${isAll ? 'text-green-900 font-medium' : 'text-green-800 [@media(hover:hover)]:group-hover:text-cream-25'}`}>
           <Users size={18} className={`shrink-0 ${isAll ? NAV_ICON_ACTIVE : NAV_ICON_IDLE}`} />
           <span className="whitespace-nowrap">Community Feed</span>
         </Link>
@@ -608,7 +617,18 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
              chevron is green ink on it — the inverse of what it was when the
              selected pill was green. Unselected, it sits on the green panel and
              is cream like every other idle mark. */
-          className={`shrink-0 flex items-center justify-center p-1.5 rounded-md transition-colors duration-320 ease-glide focus-ring ${isAll ? 'text-green-800 hover:bg-green-800/10' : 'text-cream-100/65 [@media(hover:hover)]:hover:bg-navfill/64 [@media(hover:hover)]:hover:text-cream-100'}`}>
+          /* THE FLICKER, cause 2. Two problems, both here.
+             (a) `text-cream-100/65` was the same cream-on-near-white as the label
+                 above — 1.07:1, invisible until hovered.
+             (b) This button carried `hover:bg-navfill/64` while its PARENT ROW
+                 carries the same fill, so hovering the chevron composited 0.64
+                 over 0.64 — an effective 87%, rendering #2c4e3a against the row's
+                 #637c6d. Crossing onto and off the chevron stepped the fill
+                 darker and back inside a single row.
+             The button no longer paints its own fill: the row it sits in already
+             lights up, and one hover surface per row is the point. It keeps its
+             own INK change so it still reads as separately hoverable. */
+          className={`shrink-0 flex items-center justify-center p-1.5 rounded-md transition-colors duration-320 ease-glide focus-ring ${isAll ? 'text-green-800 hover:bg-green-800/10' : 'text-green-800/70 [@media(hover:hover)]:group-hover:text-cream-25'}`}>
           {expanded ? <ChevronUp size={18} className="shrink-0" /> : <ChevronDown size={18} className="shrink-0" />}
         </button>
       </div>
@@ -783,7 +803,7 @@ function ClientRail({ bellCount, dmCount, presence, lessonsOn, onOpenTour, onSig
 }) {
   return (
     <aside className="hidden lg:block shrink-0 relative z-30 w-60">
-      <nav className={`sticky top-[var(--cs-hdr-h)] h-[calc(100dvh-var(--cs-hdr-h))] border-r border-green-950/20 ${NAV_PANEL} p-2 overflow-y-auto overflow-x-hidden flex flex-col`}>
+      <nav className={`sticky top-[var(--cs-hdr-h)] h-[calc(100dvh-var(--cs-hdr-h))] border-r border-green-800/15 ${NAV_PANEL} p-2 overflow-y-auto overscroll-contain overflow-x-hidden flex flex-col`}>
         <div className="flex flex-col gap-0.5">
           {/* Community Feed (position 1) with its views nested underneath. */}
           <CommunityNav indentClass="pl-9" />
@@ -1275,7 +1295,7 @@ export default function AppLayout() {
                 component with the two surfaces that ARE green, so leaving it
                 light would mean carrying two palettes through RailLink,
                 CommunityNav, AccountNavLink and NavFooter. One menu, one look. */}
-            <nav className={`p-3 sticky top-[var(--cs-hdr-h)] h-[calc(100dvh-var(--cs-hdr-h))] overflow-y-auto overflow-x-hidden border-r border-green-950/20 ${NAV_PANEL} flex flex-col transition-[width] duration-100 ease-out ${staffRailWidthClass}`}>
+            <nav className={`p-3 sticky top-[var(--cs-hdr-h)] h-[calc(100dvh-var(--cs-hdr-h))] overflow-y-auto overscroll-contain overflow-x-hidden border-r border-green-800/15 ${NAV_PANEL} flex flex-col transition-[width] duration-100 ease-out ${staffRailWidthClass}`}>
               {/* Owner, 2026-08-07: the create control lives HERE now, in the
                   slot the collapse toggle used to occupy, and the header's
                   hanging tab is gone. Icon only in both states — no label even
@@ -1423,7 +1443,7 @@ export default function AppLayout() {
                position animation would relayout the drawer's whole subtree every
                frame. It leaves from the edge it lives on — the tenant drawer from
                the right, superadmin's from the left. */
-            className={`absolute inset-y-0 ${isSuperAdmin ? 'left-0' : 'right-0'} w-72 max-w-[85vw] ${NAV_PANEL} shadow-xl p-3 overflow-y-auto transform-gpu transition-transform duration-440 ease-glide ${
+            className={`absolute inset-y-0 ${isSuperAdmin ? 'left-0' : 'right-0'} w-72 max-w-[85vw] ${NAV_PANEL} shadow-xl p-3 overflow-y-auto overscroll-contain transform-gpu transition-transform duration-440 ease-glide ${
               drawerAtRest ? 'translate-x-0' : (isSuperAdmin ? '-translate-x-full' : 'translate-x-full')
             }`}
             onClick={(e) => {
