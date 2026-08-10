@@ -252,6 +252,81 @@ and no change of base fixes it, because the panel underneath is near-white. The 
 hue-locked column is the only one that is actually on the brand hue <em>and</em> the brand
 saturation.</p>
 
+<!-- ============================================================ -->
+<h2>4 · The button cursor-over value — you can go up, not down</h2>
+<p class="sub">You said 66 was a number you picked so you could move equally either way.
+You can move up. <b>You cannot move down</b> — 66% is the floor, and the reason is the label,
+not the fill.</p>
+
+<p class="note">Hover flips the label to the bar's colour. That label has to survive on the
+fill underneath it. Over the subheader bar, <code>green-800/66</code> renders
+<code>#63776b</code> and carries cream at <b>4.66:1</b>. One step down, <code>/62</code>, is
+<b>4.14:1</b> — under AA at this button's size. So 66 is the lightest value that still works
+in this direction. Live buttons, hover them:</p>
+
+<div class="on" style="background:#fdfcfa">
+  <div class="row" style="align-items:center;gap:14px">
+    <button class="btn b66">Save</button>
+    <button class="btn b62">Save</button>
+    <button class="btn b56">Save</button>
+    <button class="btn b50">Save</button>
+    <button class="btn bsend">Send</button>
+  </div>
+  <div class="row" style="gap:14px;margin-top:8px">
+    <span class="cap" style="width:96px"><b>/66</b>4.66:1 ✓</span>
+    <span class="cap" style="width:96px"><b>/62</b>4.14:1 ✗</span>
+    <span class="cap" style="width:96px"><b>/56</b>3.49:1 ✗</span>
+    <span class="cap" style="width:96px"><b>/50</b>2.97:1 ✗</span>
+    <span class="cap" style="width:96px"><b>Send</b>for comparison</span>
+  </div>
+</div>
+
+<p class="sub" style="margin-top:24px">If you want the hover <em>lighter</em> than 66, the label
+has to stay green instead of flipping to cream. That is a different move, and it works —
+but only well below the dead zone:</p>
+
+<div class="on" style="background:#fdfcfa">
+  <div class="row" style="align-items:center;gap:14px">
+    <button class="btn t20">Save</button>
+    <button class="btn t12">Save</button>
+    <button class="btn t08">Save</button>
+  </div>
+  <div class="row" style="gap:14px;margin-top:8px">
+    <span class="cap" style="width:96px"><b>/20 tint</b>9.13:1</span>
+    <span class="cap" style="width:96px"><b>/12 tint</b>10.73:1</span>
+    <span class="cap" style="width:96px"><b>/8 tint</b>11.59:1</span>
+  </div>
+</div>
+
+<p class="note" style="margin-top:14px"><b>Between roughly 35% and 60% nothing is legible.</b>
+At <code>/45</code> the green label is 5.15:1 and the cream label 2.61:1 — the fill is too dark
+for green ink and too light for cream. That band is unusable whichever label you choose, which
+is why there is no middle setting to tune toward.</p>
+
+<table>
+  <tr><th>Direction</th><th>Fill</th><th>Label</th><th>Range that works</th></tr>
+  <tr><td><b>Invert</b> — currently applied</td><td>green-800 /66 → /100</td><td>cream-25</td><td>66% and up</td></tr>
+  <tr><td><b>Tint</b> — the alternative</td><td>green-800 /8 → /20</td><td>green-800</td><td>30% and down</td></tr>
+  <tr><td>anything between</td><td>/35 – /60</td><td>either</td><td class="warn">none</td></tr>
+</table>
+
+<style>
+  .btn{font:500 13px/1 Inter,sans-serif;border-radius:8px;padding:9px 18px;cursor:pointer;
+       border:1px solid #143321;background:#fff;color:#143321;
+       transition:background-color .32s cubic-bezier(.32,.72,0,1),color .32s cubic-bezier(.32,.72,0,1)}
+  .b66:hover{background:rgba(20,51,33,.66);color:#fdfcfa}
+  .b62:hover{background:rgba(20,51,33,.62);color:#fdfcfa}
+  .b56:hover{background:rgba(20,51,33,.56);color:#fdfcfa}
+  .b50:hover{background:rgba(20,51,33,.50);color:#fdfcfa}
+  .b66:active,.b62:active,.b56:active,.b50:active{background:#143321;color:#fdfcfa}
+  .t20:hover{background:rgba(20,51,33,.20)}
+  .t12:hover{background:rgba(20,51,33,.12)}
+  .t08:hover{background:rgba(20,51,33,.08)}
+  .t20:active,.t12:active,.t08:active{background:#143321;color:#fdfcfa}
+  .bsend{background:#143321;color:#fff}
+  .bsend:hover{background:#1a4429}
+</style>
+
 </div>
 </body>
 </html>
