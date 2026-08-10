@@ -149,15 +149,101 @@ total horses               : 3
 Option B is the conservative election — *"I DO NOT AUTHORIZE euthanasia without my express
 consent"* — so standardising on it moves toward more owner protection, not less.
 
-**One thing to raise with the owner, not to decide:** `docs/TOKEN_DICTIONARY.md:38` defines
-`CLIENT.EUTHANASIA_INITIALS` — *"Initials acknowledging the euthanasia-approval clause. Vet
-auth."* If the election stops being a choice, **what happens to that initials token** — does
-the owner still initial a stated clause, or does the token go? The owner offered two shapes
-("mark the record as if selected" vs "a clause that doesn't need their input") and they differ
-exactly here.
+### OWNER RULING 2026-08-10 — SETTLED. Questions 3 and 4 are closed.
 
-**Executed documents are never rewritten.** Any horse whose vet authorization has already been
-executed keeps what it says. This is a standing rule on this project, not a per-task choice.
+> "the token goes, we are telling them in the vet auth 'this is how we handle this situation'
+> we are not asking 'how do you want us to handle this situation'... hence adding a clause and
+> they sign the doc the clause is shown in, no reason for special handling on that specific
+> one, its the most accommodating of the two options."
+
+**The election is removed. Section 7 becomes a stated clause carrying Option B's substance.**
+No checkbox, no initials, no per-record field. They sign the document; the clause is in it.
+
+**A CORRECTION on which token.** `CLIENT.EUTHANASIA_INITIALS` — the one named in
+`docs/TOKEN_DICTIONARY.md:38` — is **already absent from the live template.** It survives only
+in the dictionary and in `supabase/contract_templates/Archive/HORSE_EMERGENCY_VET.md` (the v1
+body). What is actually live is a **checkbox pair**, and these are what must go:
+
+`{{HORSE.EUTHANASIA_A}}` · `{{HORSE.EUTHANASIA_B}}`
+
+Same intent as the owner's ruling — different token names. Remove all three references
+(the two live tokens, plus the stale dictionary entry).
+
+### The live text today — `HORSE_EMERGENCY_VET` v2, read from production
+
+```
+7. EUTHANASIA
+
+COMPANY may not authorize euthanasia without CLIENT approval.
+
+CLIENT must select ONE of the following (required):
+[ {{HORSE.EUTHANASIA_A}} ]  Option A - I AUTHORIZE the attending veterinarian to perform
+humane euthanasia if, in the veterinarian's professional judgment, it is necessary to
+relieve the Horse's suffering and I cannot be reached in time.
+[ {{HORSE.EUTHANASIA_B}} ]  Option B - I DO NOT AUTHORIZE euthanasia without my express
+consent. Every reasonable effort must be made to reach me or my emergency contact before
+any such decision, except where required by law.
+```
+
+**Draft the replacement from Option B's own wording and bring it to the owner before
+applying it. This is legal text — do not compose it and ship it in one motion.**
+
+### WHICH BODY IS AUTHORITATIVE — establish this FIRST
+
+`docs/BACKLOG.md` records, for this exact template: *"HORSE_EMERGENCY_VET historical-migration
+archaeology — ruled zero-live-behavior: the `.md` body wins live (byte-verified 2026-08-02)."*
+
+So `supabase/contract_templates/HORSE_EMERGENCY_VET.md` may be the source of truth rather than
+the `contract_templates` row. **Determine which actually renders before editing either**, and
+say how you established it. Editing the wrong one is a silent no-op that reports success.
+
+### Every surface that references the election
+
+Verified 2026-08-10. Nothing here is optional; a missed one leaves a dangling token.
+
+**Document bodies**
+- `contract_templates` row, `HORSE_EMERGENCY_VET` v2, section 7
+- `supabase/contract_templates/HORSE_EMERGENCY_VET.md` lines 64-70
+- `docs/TOKEN_DICTIONARY.md:38` — the stale `CLIENT.EUTHANASIA_INITIALS` entry
+- `supabase/contract_templates/Archive/HORSE_EMERGENCY_VET.md` — **the v1 archive. LEAVE IT.**
+  It is history, not a live surface.
+
+**Database functions that reference EUTHANASIA** (from `pg_get_functiondef`)
+`create_horse_record` · `update_horse_record` · `generate_document` ·
+`horse_field_token_value` · `horse_page_detail`
+
+**Frontend**
+- `HorseIntakeForm.tsx` — the A/B button block (`:962-985`), `euthanasiaAnswered` (`:646`),
+  its early-return branch (`:674-678`), and the key in `PATCHABLE_KEYS` (`:416`) and
+  `TYPED_KEYS` (`:419`), plus the load normaliser (`:536-537`)
+- `src/lib/horses.ts` — `:47` (the `'A' | 'B'` type), `:116`, `:296`, `:315`, `:337`, `:359`
+
+### The column, and what happens to in-flight documents
+
+**Keep `horses.euthanasia_authorization`.** All 3 horses are already `B` (F6) so there is
+nothing to backfill, and dropping a column is riskier than leaving one unread. **Stop
+collecting it; do not drop it.** Say so in the report rather than deciding otherwise.
+
+**Documents on `HORSE_EMERGENCY_VET` right now:**
+
+```
+EXECUTED           : 2     keep their text, untouched, forever
+AWAITING_SIGNATURE : 1     IN FLIGHT — will pick up the new clause on re-merge
+DRAFT              : 2     will pick up the new clause
+```
+
+**The AWAITING_SIGNATURE one is mid-signature.** Flag it to the owner before applying —
+changing the text under a document someone is being asked to sign is his call, not yours.
+
+**Executed documents are never rewritten**, and `signed_template_version` is evidence — it is
+never edited to make a symptom disappear.
+
+### Migration discipline
+
+If this becomes a body-rewrite migration: **it must assert the rewrite matched.** A string
+replacement that matches nothing silently no-ops and reports success — roughly 31 existing
+migrations in this repo have that shape. Dry-run in `BEGIN … ROLLBACK` with raw output shown,
+apply, verify with a query, commit.
 
 ## F7 — THE BLOCKED CLIENT IS IDENTIFIED, and her account has a second, separate bug
 
@@ -272,13 +358,15 @@ as the defects.** Report your Step 1–4 findings and the OPEN QUESTIONS answers
    "gray out" — that is a direction, not a value. **Show him options rather than picking one.**
    A previous session shipped eight visual changes he rejected, including a colour he had
    already turned down.
-3. **The euthanasia shape — which of his two?** (a) stamp `B` on the record silently and drop
-   the section, or (b) drop the field and state it as a fixed clause in the vet authorization.
-   He offered both.
-4. **What happens to `CLIENT.EUTHANASIA_INITIALS`?** See F6. Follows from question 3.
-5. **New records only, or existing ones too?** F6 shows this is moot today — all three
-   existing horses are already B — but confirm rather than assume, because it decides whether
-   a migration is needed at all.
+3. ~~**The euthanasia shape?**~~ **ANSWERED 2026-08-10 — a stated clause in the vet auth.**
+   See the ruling in F6.
+4. ~~**What happens to the initials token?**~~ **ANSWERED — it goes.** Note the correction in
+   F6: the live tokens are `{{HORSE.EUTHANASIA_A}}` / `{{HORSE.EUTHANASIA_B}}`, not
+   `CLIENT.EUTHANASIA_INITIALS`, which is already absent from the live body.
+5. **The replacement clause wording** — draft it from Option B and bring it to him. Legal
+   text is not composed and shipped in one motion.
+6. **The one `AWAITING_SIGNATURE` vet auth** — someone is mid-signature on the old text.
+   Applying the new clause changes what they are being asked to sign. His call.
 
 ---
 
