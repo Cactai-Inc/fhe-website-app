@@ -1,5 +1,26 @@
 # TASK UIREVIEW — the UI evaluation thread
 
+> ## ORCHESTRATOR ERROR, RECORDED 2026-08-10 — READ BEFORE JUDGING ANY RUNNING THREAD
+>
+> **This file was REWRITTEN underneath a thread that was already running against it.**
+>
+> The original version of this document gave `UIREVIEW` ownership of `AppLayout.tsx`, told it
+> to make changes, commit them, and not push. A thread was launched on that basis and did
+> exactly that — 10 commits, ~40 files, ~1868 insertions across `src/`, `tailwind.config.js`
+> and `app-header.css`, on `task/uireview`.
+>
+> The orchestrator then rewrote this same file in place to say `src/` is read-only and the
+> only output is change orders. **The running thread never saw the new instruction, and its
+> work is not a violation of the spec it was given.** It is not to be discarded or blamed.
+>
+> **The rule that was broken is the handoff's own:** *"A thread reading top-down must never
+> hit two contradictory instructions."* Changing a spec under a live thread is the same
+> failure, one level up. **A changed working model gets a NEW ID and a NEW FILE. It never gets
+> an in-place rewrite of a doc a thread is holding.**
+>
+> The split below is the intended model going forward. The already-running thread's output is
+> reconciled separately, as ordinary merge work.
+
 **You do not write code. You cannot write code. `src/` is READ-ONLY to you.**
 
 This is not a build-and-report task — it is a standing working mode. You stay open. The owner
