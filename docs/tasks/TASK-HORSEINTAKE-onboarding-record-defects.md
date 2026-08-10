@@ -1,0 +1,262 @@
+# TASK HORSEINTAKE — the horse record blocks a new owner's onboarding
+
+**A real client is blocked right now.** A new contact, a horse owner, cannot complete the
+horse record during onboarding. Everything else in this document is secondary to that.
+
+Owner, 2026-08-10, verbatim:
+
+> 1. the required fields are not indicated well enough and if a required field is not filled
+>    in it doesnt highlight it and tell them when they try to save.
+> 2. when n/a is selected the field should gray out, right now it marks the input tan which
+>    looks like its being highlighted not removed.
+> 3. Failure to save - they received a notice above the save button that says could not save
+>    the horse record.
+
+And separately, later the same day:
+
+> i want to remove the A/B euthanization selection section and just mark every record with
+> the option for B, dont show it at all, just add it to the horse record as if it were
+> selected, or add it to the vet authorization form as a clause that doesnt need their input
+> its just stated as how it is handled.
+
+**Almost everything is in one file:** `src/components/app/HorseIntakeForm.tsx` (1000 lines).
+
+---
+
+# FINDINGS ALREADY ESTABLISHED — do not re-derive these
+
+Verified 2026-08-10 against the repo and production. Each names where it was found.
+
+## F1 — The real error is being thrown away. Fix this FIRST.
+
+`src/lib/horses.ts:96`
+
+```ts
+const { data, error } = await supabase.rpc('create_horse_record', { p });
+if (error) throw error;
+```
+
+`HorseIntakeForm.tsx:739`
+
+```ts
+setErr(e instanceof Error ? e.message : 'Could not save the horse record.');
+```
+
+**Supabase's `PostgrestError` is a plain object. It is NOT an instance of `Error`.** So
+`e instanceof Error` is `false`, the branch falls to the literal string, and **the database's
+actual message — which says exactly what went wrong — is discarded and never shown to anyone.**
+
+That is why issue 3 has no diagnosis. **Fix the error surfacing before you try to guess the
+cause.** Then reproduce and read what the database actually says.
+
+The same shape may exist on other call sites in `src/lib/horses.ts` — check `updateHorseRecord`
+and the location/medication helpers while you are there.
+
+## F2 — Issue 3's message is the CATCH block, which means validation PASSED
+
+This matters and it is easy to miss.
+
+`submit()` has three early-return branches (`HorseIntakeForm.tsx:672–683`) that set their own
+messages and never reach the server. "Could not save the horse record." comes only from the
+`catch` at 739 — **after** `createHorseRecord` was called.
+
+**So the form was complete and the SERVER rejected it.** Issue 3 is a backend failure, not a
+validation failure. Do not conflate it with issue 1.
+
+## F3 — Candidate causes, from `create_horse_record`'s own body
+
+`SECURITY DEFINER`, read from `pg_get_functiondef` on production. It raises exactly three
+exceptions before the INSERT, and **every one of them would render as that same generic
+string**:
+
+| raise | fires when |
+|---|---|
+| `an authenticated member account is required to create a horse record` | `auth.uid() IS NULL OR current_contact_id() IS NULL` |
+| `no org context` | `current_org()` returns NULL |
+| `a horse name is required` | both `registered_name` and `nickname` are blank |
+
+Past that it INSERTs into `horses` — so a NOT NULL violation, a constraint, or an RLS/grant
+problem on the insert would also surface here.
+
+**One hypothesis TESTED AND WEAKENED — do not spend time on it.** The obvious guess was that a
+brand-new horse owner has no `contacts` row, so `current_contact_id()` returns NULL. Checked
+on production:
+
+```
+profiles with contact_id IS NULL : 0
+profiles total                   : 11
+```
+
+**Every existing profile has a contact.** That does not fully clear the path — the blocked
+user may be newer than that snapshot, or may have failed before a profile existed at all —
+but it is not the cause for any account currently on file. **Verify the state of the actual
+blocked account rather than assuming this class of bug.**
+
+**ASK THE OWNER WHO IT WAS.** With the person's identity you can check their `profiles`,
+`contacts` and `current_org()` directly, which beats any amount of reasoning from here.
+
+## F4 — Issue 2 is one CSS class
+
+`HorseIntakeForm.tsx:32`
+
+```
+const input = '… bg-white disabled:bg-cream-100 disabled:text-muted';
+```
+
+`cream-100` is **`#f5f0e8`** — the warm cream used for the header surface. **That is the "tan".**
+When N/A is checked the control disables (`HorseIntakeForm.tsx:45–46`) and takes that fill,
+which reads as a highlight rather than as removed.
+
+The fix is a genuinely neutral disabled treatment. **The owner has not specified the value.**
+See the OPEN QUESTIONS — do not invent a colour, and note that this project has a standing
+rule against unrequested visual choices.
+
+## F5 — Issue 1 is HALF WRONG, and the half that exists must not be rebuilt
+
+**The validation machinery is fully built and it does highlight and does tell them.**
+
+- `showError` state at `:441`, set by all three early-return branches at `:672–683`
+- Every unanswered required field gets `border-red-400` — threaded into `Field`,
+  `SelectOrOther`, `PersonBlock`, `VetBlock`, `LocationEntry`, the euthanasia buttons, and the
+  staff account picker. Roughly 30 call sites.
+- The message at `:681` is *"Please answer every required field — fill it in or mark it N/A."*
+
+**Do not rebuild any of that.** What is actually missing, and what the owner's complaint most
+likely describes:
+
+- **No up-front indication of WHICH fields are required.** No asterisk, no "required" marker,
+  no legend. The completeness rule (`HORSE_DOC_REQUIRED_KEYS` plus the structural extras at
+  `:636–658`) is invisible until submit fails. That is the "not indicated well enough" half,
+  and it is real.
+- **The message does not name the offending fields**, and on a 1000-line form the first red
+  border may be far off-screen. **There is no scroll-to-first-error.**
+- `border-red-400` against a default `border-green-800/15` may simply be too quiet.
+
+**Diagnose which of these it is before changing anything.** And re-read F2 — if what the
+client actually hit was issue 3, they may never have seen the validation path at all.
+
+## F6 — The euthanasia change is safer than it looks. The data is already all B.
+
+Production, `horses` where `deleted_at IS NULL`:
+
+```
+euthanasia_authorization = 'B' : 3
+total horses               : 3
+```
+
+**Every existing horse is already B.** There is no backfill and no divergence to reconcile.
+
+Option B is the conservative election — *"I DO NOT AUTHORIZE euthanasia without my express
+consent"* — so standardising on it moves toward more owner protection, not less.
+
+**One thing to raise with the owner, not to decide:** `docs/TOKEN_DICTIONARY.md:38` defines
+`CLIENT.EUTHANASIA_INITIALS` — *"Initials acknowledging the euthanasia-approval clause. Vet
+auth."* If the election stops being a choice, **what happens to that initials token** — does
+the owner still initial a stated clause, or does the token go? The owner offered two shapes
+("mark the record as if selected" vs "a clause that doesn't need their input") and they differ
+exactly here.
+
+**Executed documents are never rewritten.** Any horse whose vet authorization has already been
+executed keeps what it says. This is a standing rule on this project, not a per-task choice.
+
+---
+
+# WHAT TO DO
+
+**In this order. Stop at the gate.**
+
+## Step 1 — surface the real error (F1)
+
+Make the thrown Supabase error readable. A `PostgrestError` carries `message`, `details`,
+`hint` and `code` — all four are useful and none currently reach the screen.
+
+This is small, it is a prerequisite for everything else in issue 3, and it is worth shipping
+on its own.
+
+## Step 2 — diagnose the save failure (F2, F3)
+
+**Ask the owner who the blocked client is**, then check that account directly against
+production. Read F3's table and work down it with evidence.
+
+**Do not theorise from likely code paths.** The contract reload bug took three attempts
+because of exactly that; what found it was enumerating call sites. Reproduce, read the real
+error, then fix.
+
+## Step 3 — the N/A treatment (F4)
+
+One class. **BLOCKED on the owner's colour** — see OPEN QUESTIONS.
+
+## Step 4 — required-field indication (F5)
+
+**Extend, do not rebuild.** Determine which of F5's three gaps is the real complaint before
+writing anything.
+
+## Step 5 — GATE. STOP HERE AND REPORT.
+
+**The euthanasia change is a change to a legal document. Do not implement it in the same pass
+as the defects.** Report your Step 1–4 findings and the OPEN QUESTIONS answers, and wait.
+
+---
+
+# OPEN QUESTIONS — ASK, DO NOT GUESS
+
+1. **Who is the blocked client?** Needed for Step 2. Nothing else unblocks the diagnosis as
+   fast.
+2. **What should an N/A'd field look like?** Neutral grey, or something else? The owner said
+   "gray out" — that is a direction, not a value. **Show him options rather than picking one.**
+   A previous session shipped eight visual changes he rejected, including a colour he had
+   already turned down.
+3. **The euthanasia shape — which of his two?** (a) stamp `B` on the record silently and drop
+   the section, or (b) drop the field and state it as a fixed clause in the vet authorization.
+   He offered both.
+4. **What happens to `CLIENT.EUTHANASIA_INITIALS`?** See F6. Follows from question 3.
+5. **New records only, or existing ones too?** F6 shows this is moot today — all three
+   existing horses are already B — but confirm rather than assume, because it decides whether
+   a migration is needed at all.
+
+---
+
+# VERIFICATION
+
+Evidence, not assertion. For each item say **what you verified and what you assumed.**
+
+- **Issue 3** — the real database error, quoted verbatim from a reproduction. "It saves now"
+  without knowing why it failed is not a fix, it is a coincidence.
+- **Issue 2** — the disabled rule grepped out of `dist/assets/*.css`. **An arbitrary Tailwind
+  value can silently emit nothing while typecheck, lint and build all pass** —
+  `bg-cream-100/[0.92]` produced no rule at all, and `bg-navfill/64` produced nothing because
+  64 is not in the default opacity scale. Also: **minified CSS keeps the space after the
+  colon**, so grepping `bg-cream-100` style patterns without allowing for it returns false
+  negatives.
+- **Issue 1** — say which of F5's three gaps you found to be the actual complaint, and how you
+  established it.
+- `npm run typecheck` · `npm run typecheck:api` · `npm run lint` · `npm run build`.
+  Baseline: 0 errors, ~26 pre-existing lint warnings. More means you introduced them.
+
+**Nothing here is browser-verified by anyone but the owner.** Do not claim a render.
+
+---
+
+# CONSTRAINTS
+
+- **Worktree** `~/Downloads/claude-code-repo/wt-horseintake`, branch `task/horseintake`, off
+  `origin/main`. Repo is `/Users/Cactai/Downloads/claude-code-repo/fhe-website-app`.
+  **NEVER any clone under `~/Desktop`** — an iCloud sync destroyed a repo there and stranded
+  four applied migrations.
+- **You own** `src/components/app/HorseIntakeForm.tsx`, `src/lib/horses.ts`, and
+  `src/pages/app/HorseIntakePage.tsx`. `TASK-UIBUILD` owns the app chrome — `AppLayout.tsx`,
+  `AppHeader.tsx`, `index.css`, `tailwind.config.js`. **If your fix needs a change in any of
+  those, report it; do not apply it.**
+- **`ClauseDocument.tsx` is FROZEN.**
+- **Read-only on production data.** You may query it freely. **No writes, no migrations
+  applied**, without coming back first — and the euthanasia work is behind the Step 5 gate
+  regardless.
+- **Executed documents are never rewritten**, and `signed_template_version` is evidence — it
+  is never edited to make a symptom disappear.
+- **Sarah's document `704c8d2d-d179-43f9-8a4a-7ea8cb920ab9` is a LIVE NEGOTIATION.** Read-only.
+- **No design decisions alone.** Question 2 is a design decision. Show options.
+
+# REPORTING
+
+`docs/reports/TASK-HORSEINTAKE-REPORT.md`. State plainly what you verified versus what you
+took on trust, and list anything you could not determine.
