@@ -159,6 +159,70 @@ exactly here.
 **Executed documents are never rewritten.** Any horse whose vet authorization has already been
 executed keeps what it says. This is a standing rule on this project, not a per-task choice.
 
+## F7 — THE BLOCKED CLIENT IS IDENTIFIED, and her account has a second, separate bug
+
+**Claire Bourdon** — `claire.bourdon21@gmail.com`
+contact `8c413fd4-e30b-4ceb-96ef-96afca5dccdb` · user `d4a30809-8fe7-4db8-8f13-de69df7847d7`
+
+**Note:** this is NOT Claire at `hello@fhequestrian.com` (a D1 production FHE identity). Same
+first name, different person. Do not conflate them.
+
+### Two of `create_horse_record`'s three exceptions are RULED OUT for her
+
+Verified on production 2026-08-10:
+
+```
+profiles.org_id   : e656f20b-ef43-4725-9029-19e7f0190d9c
+profiles.contact_id : 8c413fd4-...      (set)
+contacts.org_id   : e656f20b-...        (matches)
+```
+
+So `current_contact_id()` and `current_org()` both resolve for her. **Neither the
+"authenticated member account is required" nor the "no org context" raise can fire.** The
+failure is at or after the INSERT — a constraint, a NOT NULL, an RLS/grant problem, or the
+microchip reconciliation branch. **Still unknown. F1 is how you find out.**
+
+### Her standing affiliations were destroyed at account creation — a separate ordering bug
+
+From `audit_logs`, her complete trail:
+
+| time (UTC) | what |
+|---|---|
+| 15:49:48.658 | `contacts` INSERT · `clients` INSERT · **`groups` INSERT ×2 — RIDER and HORSE_OWNER, `actor_user_id` NULL** |
+| 15:50:46 / :47 | `contacts` UPDATE ×2 |
+| **15:56:31.287** | **her `profiles` row is created — and `groups` DELETE ×2 removes BOTH, actor = her own new user id** |
+| 15:58:15.580 | `contacts` UPDATE |
+| 15:58:16.331 | **`documents` INSERT ×6 + UPDATE ×6** — her onboarding set |
+
+**The two DELETEs are one action, correctly logged.** `apply_affiliations` deletes group rows
+no longer derived; the `audit_contact_roles` trigger on `groups` is FOR EACH **ROW**, so two
+rows removed writes two entries at one timestamp. The audit is behaving properly.
+
+**The deletion itself is the bug.** `apply_affiliations` calls `derive_affiliations`, which
+computes from **executed documents + horse ownership**. At 15:56:31 she had neither — **her
+documents were not created until 15:58:16, 105 seconds later.** So derive correctly returned
+nothing and both rows were correctly removed. The ordering is what is wrong.
+
+**Two models are colliding:**
+
+- the invitation/provisioning path **writes RIDER and HORSE_OWNER directly** (actor NULL =
+  server-side). `CLAUDE.md` states plainly: *"If you find code writing those roles directly,
+  that's a regression — route it through `apply_affiliations`."*
+- `apply_affiliations` is the **sole legitimate writer** and rebuilds them from evidence
+
+Note the derive rule needs documents **EXECUTED**, not merely assigned — so signing is what
+would restore her groups, not receiving them.
+
+**DO NOT FIX THIS IN THIS THREAD.** It is identity/taxonomy work, it touches the provisioning
+spine, and it is not what is blocking the horse record. **Report it** — the orchestrator will
+spec it separately. Two things make it worth reporting carefully:
+
+- **it is not specific to her.** Any invited client whose categories are set before they
+  activate loses them at activation. Check `audit_logs` for the same DELETE pattern on other
+  contacts and say how many are affected.
+- **standing categories drive onboarding documents, app nav and gated offerings**, so the
+  consequence is what she is shown and offered, not just a stale row.
+
 ---
 
 # WHAT TO DO
@@ -175,8 +239,9 @@ on its own.
 
 ## Step 2 — diagnose the save failure (F2, F3)
 
-**Ask the owner who the blocked client is**, then check that account directly against
-production. Read F3's table and work down it with evidence.
+**The client is Claire Bourdon — see F7**, which already rules out two of F3's three
+candidates against production. Reproduce her submission, read the real error that F1 now
+surfaces, and work from that.
 
 **Do not theorise from likely code paths.** The contract reload bug took three attempts
 because of exactly that; what found it was enumerating call sites. Reproduce, read the real
@@ -200,8 +265,9 @@ as the defects.** Report your Step 1–4 findings and the OPEN QUESTIONS answers
 
 # OPEN QUESTIONS — ASK, DO NOT GUESS
 
-1. **Who is the blocked client?** Needed for Step 2. Nothing else unblocks the diagnosis as
-   fast.
+1. ~~**Who is the blocked client?**~~ **ANSWERED 2026-08-10 — Claire Bourdon, see F7.**
+   Her org and contact both resolve, so two of the three candidate causes are already ruled
+   out. Start from F7, not from scratch.
 2. **What should an N/A'd field look like?** Neutral grey, or something else? The owner said
    "gray out" — that is a direction, not a value. **Show him options rather than picking one.**
    A previous session shipped eight visual changes he rejected, including a colour he had
