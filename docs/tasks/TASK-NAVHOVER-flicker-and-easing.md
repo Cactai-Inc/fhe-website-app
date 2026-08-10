@@ -1,5 +1,30 @@
 # TASK NAVHOVER — the admin nav hover flickers and snaps
 
+> ## STOOD DOWN 2026-08-10 — ALREADY FIXED ON `task/uireview`. DO NOT RUN THIS.
+>
+> **The orchestrator specced this without reading an unmerged branch that had already
+> diagnosed and fixed it a day earlier.** `task/uireview` commit `29d4ed7`, 2026-08-09,
+> "fix(nav,header): the invisible ring, **the flicker's two causes**, the missing header line".
+>
+> That branch's `NAV_ICON_IDLE` reads:
+>
+> ```
+> text-green-800/70 transition-colors duration-320 ease-glide
+>   [@media(hover:hover)]:group-hover:text-cream-25
+> ```
+>
+> — the icon transition F0/F2 identified, plus a duration and curve. And it declared both as
+> **named** utilities in `tailwind.config.js` (`transitionDuration: {320, 440}`,
+> `transitionTimingFunction: {glide}`) rather than arbitrary values, **explicitly citing the
+> 2026-08-08 no-emit incident in a comment.** It walked into trap T1 knowingly and avoided it.
+>
+> **What survives from this document:** F0's frame evidence is still the proof that the fix
+> addresses the real cause, and the "sweep the whole family, not the three named sites" point
+> is still worth checking against that branch. Everything else is done.
+>
+> **The lesson, recorded against the orchestrator:** read the unmerged branches before
+> speccing. Three worktrees were live and one of them held the answer.
+
 **Assignment for `UIREVIEW`.** Diagnose, confirm with the owner, then write change orders.
 
 **STATUS 2026-08-10 — F2 IS CONFIRMED FROM THE OWNER'S OWN RECORDING. The diagnosis is done.**
