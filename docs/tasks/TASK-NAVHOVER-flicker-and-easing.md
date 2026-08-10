@@ -2,8 +2,10 @@
 
 **Assignment for `UIREVIEW`.** Diagnose, confirm with the owner, then write change orders.
 
-**Status 2026-08-10:** reduced motion ruled out. **F2 — the icon carries no transition while
-its row does — is the leading hypothesis. Reproduce it before proposing anything.**
+**Status 2026-08-10, after two owner answers:** reduced motion is OFF, and it happens on
+**BOTH** navs, **most noticeably on the expanded menu**. That combination rules F5 out and
+makes **F2 the explanation to disprove, not merely the leading one.** Reproduce it before
+proposing anything.
 `UIREVIEW` does not implement — `UIBUILD` does, from the orders.
 
 Owner, 2026-08-10:
@@ -72,6 +74,11 @@ moved to a new palette **while its icon did not**.
 - `:1295` — the group-heading button (`Management`, `People`, …): `hover:text-cream-100`
   with **no `transition-colors` at all** on the element
 
+**Sweep for the whole family rather than fixing the three named here.** `NAV_ICON_IDLE` is
+applied at every icon site in the file, and the client rail shows the same symptom — so
+enumerate every element that changes colour on hover and check each one carries its own
+transition. Fixing only the rows the owner happened to hover over is how this recurs.
+
 ## F3 — "Reacts too quickly" is the Tailwind default: 150ms
 
 Every nav row uses bare `transition-colors` with **no `duration-*` class**. Tailwind's default
@@ -104,7 +111,17 @@ duration, and **F2 and F3 are the live explanations.** Do not re-test this.
 **F2 is now the leading hypothesis for the flicker** and it predicts a specific, watchable
 signature — the icon finishes changing colour before the row does.
 
-## F5 — The staff rail declares its width transition TWICE
+## F5 — ELIMINATED 2026-08-10. Not the cause. (kept so nobody re-opens it)
+
+**The owner confirms the flicker happens on BOTH navs.** The client rail (`:779`) has no
+collapse and carries **no width transition at all** — so a duplicated `transition-[width]`
+cannot explain a symptom that appears there too.
+
+Whatever is wrong is in something **both** rails share: the row/icon classes of F2 and F3.
+The detail below is retained only so the deliberate `<aside>`/`<nav>` split is not "tidied"
+by someone who mistakes it for redundancy.
+
+### (retained, not a suspect) The staff rail declares its width transition twice
 
 `:1239` the `<aside>` and `:1249` the `<nav>` inside it **both** carry
 `transition-[width] duration-100 ease-out ${staffRailWidthClass}`.
@@ -115,27 +132,38 @@ comment.** But two elements animating the same property in a parent/child pair i
 in or out as a jitter source **during collapse/expand**. It should not affect a stationary
 hover — confirm that rather than assuming it.
 
-## F6 — Which nav is "the admin nav"?
+## F6 — ANSWERED 2026-08-10: BOTH navs, worst on the EXPANDED menu
 
-There are three surfaces and the owner said **admin, desktop**:
+> owner: "it happens on both, but its most noticable on the expanded menu"
 
-| surface | line | notes |
-|---|---|---|
-| **staff rail** | 1249 | **this is almost certainly the one** — `w-60 xl:w-64` pinned, `w-14` collapsed |
-| client rail | 779 | `w-60`, no collapse |
-| mobile drawer | 1369 | not desktop |
+**Both** = the staff rail (`:1249`) and the client rail (`:779`). Not the mobile drawer
+(`:1369`) — that is not desktop. This is what eliminates F5.
 
-**Confirm with him which he is on** — the staff rail has the collapse behaviour and the extra
-width transitions, so the answer changes what F5 is worth.
+**"Most noticeable expanded" is a prediction F2 makes, and it landing is strong evidence.**
+
+Count what changes on one hover in each state:
+
+| state | background | label | icon |
+|---|---|---|---|
+| **expanded** (`w-60`, labels shown) | eases — row has `transition-colors` | eases — inherits the row's colour change | **snaps — no transition** |
+| **collapsed** (`w-14`, icons only) | eases | *not rendered* | **snaps** |
+
+The label is rendered only when open (`:449`, `{open && <span className="flex-1">{label}</span>}`)
+and its colour comes from the row, which transitions. **So expanded, the icon desyncs against
+a moving reference sitting directly beside it. Collapsed, there is nothing to compare it to.**
+
+Same defect in both states; expanded just makes it legible. **If a fix removes the expanded
+symptom but leaves the collapsed one, it is incomplete.**
 
 ---
 
 # WHAT TO DO
 
 1. ~~Ask the reduced-motion question~~ — **DONE. Ruled out, see F4.** Start at step 2.
-2. **Confirm which nav (F6)** and get a screen recording if he can — a flicker does not appear
-   in a still, and F2 predicts a specific signature: **the icon changes colour before the row
-   finishes.** Watching for that confirms or kills the leading hypothesis in seconds.
+2. ~~Confirm which nav~~ — **DONE, see F6: both, worst expanded.** Get a screen recording if
+   he can. A flicker does not appear in a still, and F2 predicts a watchable signature:
+   **the icon finishes changing colour before the label beside it does.** That confirms or
+   kills it in seconds.
 3. **Diagnose from evidence, not from plausible code paths.** The contract reload bug took
    three attempts; two were confident diagnoses from reading likely culprits, and what found
    it was enumerating every call site. C1 above is a second instance of the same mistake.
@@ -149,7 +177,7 @@ width transitions, so the answer changes what F5 is worth.
 # OPEN QUESTIONS — ASK, DO NOT GUESS
 
 1. ~~**Is macOS "Reduce motion" on?**~~ **ANSWERED 2026-08-10 — NO.** F2/F3 stand.
-2. **Which nav — the staff/admin rail, or the client rail?** F6.
+2. ~~**Which nav?**~~ **ANSWERED — both, worst on the expanded menu.** F6.
 3. **What duration does he want?** F3 shows the current value is 150ms. "Slower" is a
    direction, not a number. **Show him a comparison rather than picking one** — you may build
    a standalone page under `docs/reference/` and run it. A previous session shipped eight
