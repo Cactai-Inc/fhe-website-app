@@ -14,17 +14,20 @@ CANONICAL="/users/cactai/downloads/claude-code-repo/fhe-website-app"
 TOP=$(git rev-parse --show-toplevel 2>/dev/null | tr '[:upper:]' '[:lower:]')
 [ "$TOP" = "$CANONICAL" ] || exit 0
 
-[ "$1" = "$2" ] && exit 0                  # no actual move
-
 BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+
+# Moving TO main is the safe direction — that is someone restoring the checkout,
+# which is what we want them to do. Only leaving main is the hazard.
+[ "$BRANCH" = "main" ] && exit 0
 
 cat >&2 <<EOF
 
-  WARNING — you just switched the CANONICAL CHECKOUT to: $BRANCH
+  WARNING — the CANONICAL CHECKOUT is no longer on main. It is on: $BRANCH
 
   This rewrote the working tree. Anything serving or building from this directory
-  is now rendering $BRANCH, not main. That is what made the app appear to lose a
-  week of work on 2026-08-09.
+  now renders $BRANCH. That is what made the app appear to lose a week of work on
+  2026-08-09 — the tree was correct again after the branch was merged back, so a
+  refresh looked normal and there was nothing left to find.
 
   If you are a task thread, you are in the wrong place. Go back to main and use a
   worktree:
