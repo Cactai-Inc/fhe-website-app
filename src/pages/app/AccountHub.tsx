@@ -15,6 +15,7 @@ import {
   MyProfileContent, MyPreferencesContent, MyLoginContent,
 } from '../../components/app/profile/ProfileAndPreferences';
 import { useAuth } from '../../contexts/AuthContext';
+import { consumeGoogleLinkReturn } from '../../lib/googleLink';
 import { Navigate, useSearchParams } from 'react-router-dom';
 
 /**
@@ -72,8 +73,15 @@ export default function AccountHub() {
   useDocumentTitle('Account');
   const [searchParams] = useSearchParams();
   const sectionParam = searchParams.get('section');
+  // TASK-GOOGLEAUTH: coming back from Google's consent screen lands on this page
+  // with nothing in the URL to say so (the redirect target carries no query
+  // string, so the Supabase Redirect-URL allow-list cannot mis-match it). Open
+  // My Login, where the outcome is reported. Reading here is safe: the read is
+  // cached for the page load, so LoginSecurityCard still gets the same answer.
   const [open, setOpen] = useState<Section>(() =>
-    (SECTION_VALUES.includes(sectionParam ?? '') ? sectionParam : null) as Section);
+    SECTION_VALUES.includes(sectionParam ?? '') ? (sectionParam as Section)
+      : consumeGoogleLinkReturn().returned ? 'login'
+        : null);
   const toggle = (s: Section) => setOpen((cur) => (cur === s ? null : s));
 
   // D8: every account holder sees the full account surface — "guest" is

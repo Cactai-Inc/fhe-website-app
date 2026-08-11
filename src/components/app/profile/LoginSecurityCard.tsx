@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react';
-import { ShieldCheck, ChevronRight, KeyRound } from 'lucide-react';
+import { ShieldCheck, ChevronRight, KeyRound, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
-import { listLinkedProviders, linkOAuthIdentity, updatePassword } from '../../../lib/auth';
+import { listLinkedIdentities, linkOAuthIdentity, updatePassword } from '../../../lib/auth';
+import type { LinkedIdentity } from '../../../lib/auth';
+import {
+  markGoogleLinkPending, clearGoogleLinkPending, consumeGoogleLinkReturn, describeLinkFailure,
+} from '../../../lib/googleLink';
 import { startGoogleChange, startPasswordChange } from '../../../lib/emailChange';
 import { EmailChangeModal } from '../EmailChangeModal';
 import { SectionCard } from './SectionCard';
@@ -78,6 +82,130 @@ function Row({
   );
 }
 
+/**
+ * TASK-GOOGLEAUTH — one self-serve control that gives a member a second way in.
+ *
+ * `linkIdentity()` attaches a Google identity to the account already signed in.
+ * Same `user_id`, same contact, same documents; the email and password keep
+ * working. No staff step, no email sent, no account created — and never an
+ * account duplicated to solve an auth problem.
+ *
+ * States are explicit and never optimistic (the `EmailMeACopyButton` discipline).
+ * "Linked" is only ever set from `listLinkedIdentities()` — the server's answer —
+ * and never from the fact that a redirect happened. `starting` covers the
+ * pre-redirect authorize call, which is where a configuration refusal surfaces;
+ * `leaving` is terminal on purpose, because the browser is on its way to Google
+ * and the control must stay busy until the page is gone.
+ */
+type LinkState = 'idle' | 'starting' | 'leaving' | 'failed' | 'unfinished';
+
+function GoogleSignInRow({ userId, accountEmail }: { userId: string | undefined; accountEmail: string | null }) {
+  const [identities, setIdentities] = useState<LinkedIdentity[] | null>(null);
+  const [state, setState] = useState<LinkState>('idle');
+  const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Idempotent for the page load, so React's development double-invoke and the
+    // Account hub's own read cannot consume the outcome out from under this.
+    const ret = consumeGoogleLinkReturn();
+    let alive = true;
+    (async () => {
+      const list = await listLinkedIdentities().catch(() => [] as LinkedIdentity[]);
+      if (!alive) return;
+      setIdentities(list);
+      if (!ret.returned) return;
+      if (list.some((i) => i.provider === 'google')) return; // the server says it landed
+      if (ret.errorCode || ret.errorDescription) {
+        setState('failed');
+        setMessage(describeLinkFailure(ret.errorCode, ret.errorDescription));
+      } else {
+        // Consent abandoned: back exactly as they were, so say so and stop.
+        setState('unfinished');
+        setMessage('That did not finish, so nothing changed. Your email and password still work.');
+      }
+    })();
+    return () => { alive = false; };
+  }, [userId]);
+
+  // Who sees the control: anyone whose linked providers do not already include
+  // google, read from the server's identity list. NEVER inferred from the email
+  // domain — that is what this replaced, and it hid the control from every
+  // password member on a non-Gmail address. Linking does not require the Google
+  // address to match the account email, so there is no domain to test and no
+  // second path to offer.
+  const google = identities?.find((i) => i.provider === 'google') ?? null;
+  const connected = Boolean(google);
+
+  async function activate() {
+    setState('starting');
+    setMessage(null);
+    markGoogleLinkPending();
+    const { error, code } = await linkOAuthIdentity('google', '/app/account');
+    if (error) {
+      // The browser never left — the authorize call itself was refused.
+      clearGoogleLinkPending();
+      setState('failed');
+      setMessage(describeLinkFailure(code, error));
+      return;
+    }
+    // The redirect is already in flight; hold the busy state until the page goes.
+    setState('leaving');
+  }
+
+  const busy = state === 'starting' || state === 'leaving';
+
+  return (
+    <div className="bg-cream-100/60 border border-green-800/10 rounded-xl px-3.5 py-3">
+      <div className="flex items-center justify-between gap-3">
+        <span className="min-w-0">
+          <span className="block text-[13px] font-medium text-green-900">Sign in with Google</span>
+          <span className="block text-[11.5px] text-muted mt-0.5">
+            {identities === null ? 'Checking…'
+              : connected
+                ? (google?.email
+                  ? `Connected as ${google.email}`
+                  : 'Connected')
+                : 'Add the Google button as a second way in. Your email and password keep working.'}
+          </span>
+        </span>
+        {identities !== null && (connected ? (
+          <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-green-700 shrink-0">
+            <CheckCircle2 size={14} aria-hidden="true" /> Active
+          </span>
+        ) : (
+          <button
+            type="button"
+            onClick={() => { void activate(); }}
+            disabled={busy}
+            data-testid="activate-google-signin"
+            className="text-[12px] font-medium text-green-800 border border-green-800/25 rounded-lg px-3 py-1.5 hover:border-green-800/40 focus-ring shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {busy ? 'Taking you to Google…' : 'Activate Sign in with Google'}
+          </button>
+        ))}
+      </div>
+      {/* The two addresses are allowed to differ, so a member who used a second
+          Google account is told plainly which one they connected and that their
+          sign-in email did not move. */}
+      {connected && google?.email && accountEmail
+        && google.email.trim().toLowerCase() !== accountEmail.trim().toLowerCase() && (
+        <p className="text-[11.5px] text-muted mt-2">
+          You sign in here as <span className="text-green-900">{accountEmail}</span>, and that has not changed —
+          the Google account above is an additional way in.
+        </p>
+      )}
+      {message && (
+        <p
+          role={state === 'failed' ? 'alert' : 'status'}
+          className={`text-[11.5px] mt-2 flex items-start gap-1.5 ${state === 'failed' ? 'text-red-700' : 'text-muted'}`}
+        >
+          <KeyRound size={13} className="shrink-0 mt-px" aria-hidden="true" /> <span>{message}</span>
+        </p>
+      )}
+    </div>
+  );
+}
+
 /** SECTION 4 — LOGIN & SECURITY. Owner spec 2026-08-05 (TASK-PROFILE): no inner
  *  pages — email change and password change are modals (already were), Google
  *  is a direct connect action. This dissolves the last surviving inner page
@@ -86,53 +214,13 @@ export function LoginSecurityCard() {
   const { user } = useAuth();
   const [emailOpen, setEmailOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
-  const [linked, setLinked] = useState<string[] | null>(null);
-  const [linkError, setLinkError] = useState<string | null>(null);
-
-  useEffect(() => {
-    listLinkedProviders().then(setLinked).catch(() => setLinked([]));
-  }, [user?.id]);
-
-  async function connectGoogle() {
-    setLinkError(null);
-    const { error } = await linkOAuthIdentity('google', '/app/account');
-    if (error) setLinkError(error);
-  }
-
-  const googleConnected = linked?.includes('google') ?? false;
-  // TASK-ACCOUNTSURFACE §4: the Google switch is offered only to someone who
-  // already has a password set (an 'email' identity — otherwise there's
-  // nothing to "switch" from) AND whose sign-in email is itself Google-hosted.
-  // "Or is switching to one" (an in-flight email-change to a Google address)
-  // has no client-observable signal today — EmailChangeModal's own workspace
-  // detection is local, unpersisted state inside that modal, not a fact
-  // available here. Left out rather than guessed at; see the Phase 2 report.
-  const hasPassword = linked?.includes('email') ?? false;
-  const isGoogleHostedEmail = /@gmail\.com$/i.test(user?.email?.trim() ?? '');
-  const showGoogleSwitch = !googleConnected && hasPassword && isGoogleHostedEmail;
 
   return (
     <SectionCard icon={ShieldCheck} title="Login & security">
       <div className="flex flex-col gap-2.5">
         <Row title="Login" sub={user?.email ?? undefined} onClick={() => setEmailOpen(true)} />
         <Row title="Password" sub="Set or change your password" onClick={() => setPasswordOpen(true)} />
-        {(showGoogleSwitch || googleConnected) && (
-          <div className="flex items-center justify-between gap-3 bg-cream-100/60 border border-green-800/10 rounded-xl px-3.5 py-3">
-            <span className="min-w-0">
-              <span className="block text-[13px] font-medium text-green-900">Sign in with Google</span>
-              <span className="block text-[11.5px] text-muted mt-0.5">
-                {googleConnected ? 'Connected' : 'Switch this account to Google sign-in'}
-              </span>
-            </span>
-            {!googleConnected && (
-              <button type="button" onClick={() => { void connectGoogle(); }}
-                className="text-[12px] font-medium text-green-800 border border-green-800/25 rounded-lg px-3 py-1.5 hover:border-green-800/40 focus-ring shrink-0">
-                Connect
-              </button>
-            )}
-          </div>
-        )}
-        {linkError && <p role="alert" className="form-error flex items-center gap-1.5"><KeyRound size={13} /> {linkError}</p>}
+        <GoogleSignInRow userId={user?.id} accountEmail={user?.email ?? null} />
       </div>
 
       {passwordOpen && <ChangePasswordModal onClose={() => setPasswordOpen(false)} />}

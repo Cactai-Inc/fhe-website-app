@@ -61,24 +61,64 @@ export async function signInWithOAuth(provider: OAuthProvider, redirectTo = '/ac
 
 export const signInWithGoogle = (redirectTo = '/account') => signInWithOAuth('google', redirectTo);
 
+export interface LinkedIdentity {
+  /** 'email' (a password) or an OAuth provider such as 'google'. */
+  provider: string;
+  /**
+   * The address the provider identified them by. This CAN differ from the
+   * account's sign-in email — linking does not require them to match and does
+   * not change the primary email — which is exactly why it is surfaced.
+   */
+  email: string | null;
+  linkedAt: string | null;
+}
+
+/**
+ * Identities attached to the signed-in account, as the SERVER sees them.
+ * `getUserIdentities()` runs through `getUser()`, which is a network read of
+ * `GET /user` rather than a projection of the cached session — so this is the
+ * authority on whether a link actually landed, and the only thing allowed to
+ * confirm one. Never infer a linked provider from the email domain.
+ */
+export async function listLinkedIdentities(): Promise<LinkedIdentity[]> {
+  const { data } = await supabase.auth.getUserIdentities();
+  return (data?.identities ?? []).map((i) => ({
+    provider: i.provider,
+    email: typeof i.identity_data?.email === 'string' ? i.identity_data.email : null,
+    linkedAt: i.created_at ?? null,
+  }));
+}
+
 /** Identities already linked to the signed-in user (e.g. ['email','google']). */
 export async function listLinkedProviders(): Promise<string[]> {
-  const { data } = await supabase.auth.getUserIdentities();
-  return (data?.identities ?? []).map((i) => i.provider);
+  return (await listLinkedIdentities()).map((i) => i.provider);
+}
+
+export interface LinkResult extends Result {
+  /**
+   * GoTrue error code when the server refused *before* any redirect, e.g.
+   * `manual_linking_disabled`. `linkIdentity()` fetches the authorize URL over
+   * the wire first and only then calls `window.location.assign`, so a
+   * configuration refusal comes back here synchronously and never reaches Google.
+   */
+  code: string | null;
 }
 
 /**
  * Attach an OAuth identity to the CURRENT signed-in account (explicit linking —
  * works regardless of email-confirmation state, unlike sign-in auto-linking).
+ * Nothing is migrated and no account is created: the same `user_id`, contact and
+ * documents simply gain a second way in, and the password keeps working.
+ *
  * Redirects to the provider and back; requires manual linking to be enabled in
- * Supabase Auth settings.
+ * Supabase Auth settings — see `LinkResult.code`.
  */
-export async function linkOAuthIdentity(provider: OAuthProvider, redirectTo = '/app/account'): Promise<Result> {
+export async function linkOAuthIdentity(provider: OAuthProvider, redirectTo = '/app/account'): Promise<LinkResult> {
   const { error } = await supabase.auth.linkIdentity({
     provider,
     options: { redirectTo: appUrl(redirectTo) },
   });
-  return { error: error?.message ?? null };
+  return { error: error?.message ?? null, code: error?.code ?? null };
 }
 export const signInWithApple = (redirectTo = '/account') => signInWithOAuth('apple', redirectTo);
 
