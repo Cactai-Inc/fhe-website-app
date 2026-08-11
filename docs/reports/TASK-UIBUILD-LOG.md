@@ -241,3 +241,40 @@ the diffstat.
   does not appear in a static render or a CSS grep — I have not tested it on
   a device, iOS or otherwise. Confirming this is unverified, not "probably
   fine."
+
+---
+
+## UIO-007 — closing the drawer over a contract no longer reloads and loses your place
+
+**Commit:** `3a807a5`
+
+Note: the order names `AppLayout.tsx:1392` for the drawer and `:965-979` for
+the body-lock effect — both had shifted (to ~1415 and ~977-1000) from my own
+prior edits earlier in the file. Relocated by content (`w-72 max-w-[85vw]`
+for the drawer, `body.style.position = 'fixed'` for the lock), not by
+trusting the line numbers.
+
+**What I verified:**
+- `npm run typecheck` — 0 errors. `npm run lint` — 0 errors, 30 warnings
+  (baseline). `npm run build` — succeeded.
+- Grepped source: `position = 'fixed'` — 0 occurrences left in the file.
+  `window.scrollTo`/`scrollY` — the only remaining hit is inside my own
+  explanatory comment (prose describing why the deleted code was wrong), not
+  code.
+- Grepped the built JS around the `app-nav-drawer` id (two occurrences exist
+  — the header's `aria-controls` reference and the drawer's own render;
+  checked both rather than assuming the first hit was the right one): the
+  drawer's actual `className` string ships with
+  `overflow-y-auto overscroll-contain`.
+- Confirmed via UIO-004's own verification that `.overscroll-contain{overscroll-behavior:contain}`
+  is a real emitted rule (not re-checked here, same build).
+
+**What I did NOT verify — the order is explicit that this needs a phone:**
+- The owner's exact repro (contract at a late section, open the avatar menu,
+  close via the avatar and via the content area) — not run in any browser.
+- **The iOS-specific caveat, which is the entire reason the old lock
+  existed:** whether `overscroll-behavior` actually contains the drawer's
+  scroll chaining on iOS Safari specifically, as opposed to just not
+  crashing. The order says to STOP and report rather than reinstate the lock
+  if this fails on a real device — I have not been able to test a real
+  device at all, so this is unconfirmed in either direction, not passing.
