@@ -549,3 +549,29 @@ The A-series numbers referenced above and below are indexed in
 - **Migrations are not rebuild-safe.** Many rewrite live function bodies via
   `pg_get_functiondef` + string-replace, which no-ops on a fresh database, and there is no
   `schema_migrations` table. A production rebuild has no strategy.
+
+---
+
+## VERIFICATION POLICY — owner ruling, 2026-08-10
+
+**No worktree gets a staff login. The owner confirms every render by eye.**
+
+Three threads (ROSTER, ACCOUNTSURFACE, PROFILE) each hit this wall and each shipped with
+"browser click-through not done". That is now the **expected** outcome, not a gap. Two
+alternatives were put to the owner and declined: a gitignored staff test credential
+(a staff-privileged automation account that can write production data — and D1 constrains
+who may hold FHE tenant rows), and repairing `test:db` first.
+
+**What a thread must do instead:**
+
+- Prove everything provable without a session — the rule present in `dist/assets/*.css`,
+  the RPC's actual output, DB row counts, a composed document body.
+- **State the two claims separately.** "The rule is in the built CSS" and "it looks right"
+  are different claims and only the first is the thread's to make.
+- **Never simulate a render and report it as one.** A psql snapshot fed through the real
+  components is a harness, not a render — ROSTER did exactly this, labelled it honestly, and
+  that labelling is the standard.
+
+**`test:db` remains broken — 55 of 64 files failing.** Until it is repaired, every database
+claim in every report is hand-verified, and the orchestrator re-verifies the load-bearing ones
+against production rather than accepting them. Repairing it is a queued task, not a blocker.
