@@ -59,6 +59,34 @@ aggregate columns over N+1 calls per row — the page renders a list.
 
 ---
 
+## AVATAR INITIALS — settled 2026-08-10. Two letters here.
+
+> Owner: *"keep the two letter use in place internally for admin, and keep the single letter
+> for the user facing avatar. Claire looked at the two options and she picked the single letter
+> as looking nicer."*
+
+**The rule underneath it, so the boundary is not argued case by case:**
+
+> **One letter for yourself. Two letters for other people.**
+
+| where | initials | why |
+|---|---|---|
+| header avatar (`AppHeader`) | **ONE** — `C` | it is always the signed-in person's own mark. Identity. |
+| this roster's rows | **TWO** — `CZ` | a list of other people who must be told apart. Differentiation. |
+
+**This is not "admin vs user-facing."** Staff see one letter in their own header and two in a
+roster row, and both are correct for what each is doing. **Do not change the header avatar.**
+
+**Two letters need two things a single letter does not:**
+
+- **Deliberate tracking.** Two capitals in a circle read cramped at default spacing.
+  `.oh-mono` already carries `letter-spacing: .04em` for `FH` — start from that rather than
+  guessing, and optically centre the pair rather than mathematically centring it.
+- **A rule for people who do not have two initials.** A contact with only a first name, or a
+  company like "French Heritage Equestrian". **Falling back to one letter silently produces an
+  inconsistent grid — the exact thing this page exists to make scannable.** Decide it, state
+  it, and apply it uniformly. If the answer is not obvious, ASK.
+
 ## What the row must show
 
 **Only when it exists.** An empty slot is information; a zero is noise.
