@@ -77,15 +77,37 @@ aggregate columns over N+1 calls per row — the page renders a list.
 **This is not "admin vs user-facing."** Staff see one letter in their own header and two in a
 roster row, and both are correct for what each is doing. **Do not change the header avatar.**
 
+**BOTH FORMS APPEAR ON SCREEN AT ONCE.** Owner: *"i see two letters for the entries into client
+page where the row card shows the person as their name and avatar with two letters, they see one
+letter like i do in the corner where the avatar is used in the ui for the header and what
+becomes a button on mobile."*
+
+So `C` sits in the corner while `CZ` sits in a row, in the same view. **To anyone who does not
+know the rule that reads as an inconsistency to be tidied** — and this codebase has a habit of
+exactly that. A comment in `AppLayout.tsx` still calls the nav a "solid green panel" when it is
+near-white; reconciling apparent mismatches the wrong way is a recorded failure mode (T5).
+
+**Put the REASON in the code, not only in this document.** A comment at both sites — the header
+avatar and the roster row — stating that one letter is identity, two letters are differentiation,
+and the difference is deliberate. **Without it the next thread makes them match and destroys the
+distinction.**
+
 **Two letters need two things a single letter does not:**
 
 - **Deliberate tracking.** Two capitals in a circle read cramped at default spacing.
   `.oh-mono` already carries `letter-spacing: .04em` for `FH` — start from that rather than
   guessing, and optically centre the pair rather than mathematically centring it.
-- **A rule for people who do not have two initials.** A contact with only a first name, or a
-  company like "French Heritage Equestrian". **Falling back to one letter silently produces an
-  inconsistent grid — the exact thing this page exists to make scannable.** Decide it, state
-  it, and apply it uniformly. If the answer is not obvious, ASK.
+- **People without two initials — SETTLED 2026-08-10.** Owner: *"the person with one name uses
+  one letter in the client page."*
+
+  **One name, one letter.** Do not pad it, do not take a second letter from the first name, do
+  not substitute the email or a company word. The row shows what the person's name actually
+  gives.
+
+  **So a one-letter row avatar is CORRECT, not a fallback that failed.** It differs from its
+  neighbours because the underlying name differs — which is information, not noise. **The mark's
+  circle, size and position do not change**; only the number of glyphs inside it does. Note this
+  in the comment too, or it reads as a bug in a grid of two-letter marks.
 
 ## What the row must show
 
