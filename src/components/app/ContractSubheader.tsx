@@ -168,7 +168,7 @@ export function ContractSubheader({
       {/* Padding matches <main>'s so the buttons line up with the card below,
           but stops growing past sm: the xl:px-12 was throwing away 96px of usable
           width on each side exactly when the row needed it most. */}
-      <div className="bg-cream-25 border-b border-green-800/15 px-4 sm:px-6 py-2.5">
+      <div className="bg-cream-25 border-b border-green-800/15 px-4 sm:px-6 py-2.5 oh-subheader-shadow">
         {/* MOBILE toggle. The bar stays sticky under the app header either way —
             collapsing hides the CONTROLS, not the bar, so the affordance to bring
             them back is always in the same place. */}

@@ -55,39 +55,41 @@
      re-composite on scroll, and it no longer creates a containing block that
      would trap a position:fixed child. */
   background-color: #f5f0e8;
-  border-bottom: 1px solid transparent;
-  /* ============ THE EDGE ============
-     Owner, 2026-08-09: separation by DEPTH, not by a drawn rule.
-     The header had no edge at all — the border below is `transparent`, and the
-     gold hairline the file header claims was adopted never arrived, because on
-     the public header that rule lives in the SCROLLED state and ONEHEADER
-     removed the scroll state (see the orphaned comment block below, which still
-     describes a surface nothing renders any more). That left the header as the
-     only surface in the app with no boundary while the rail, the contract
-     subheader and the superadmin header all carry one.
+  /* UIO-001, owner 2026-08-10: "the line will look better [than the drop
+     shadow], and then we can use the drop shadow on the sidebar nav and
+     subheader... because the drop shadow over the sidebar coming down from the
+     header looks weird, like the nav and the content area are on the same
+     surface but they functionally are not since they scroll separately."
 
-     It needed one because every neighbour is the same material:
-       header #f5f0e8 -> page #faf8f4            1.07:1
-       header #f5f0e8 -> rail/subheader #fdfcfa  1.11:1
-     Nothing at 1.1:1 reads as an edge.
+     The header no longer casts anything — depth belongs on what actually
+     floats (the two rails, the contract subheader), not on the header itself.
+     The reserved 1px border (previously transparent, holding its space open so
+     a rule could be added without reflowing this fixed-height, border-box
+     header) becomes that visible rule. Value matches `task/uireview`'s own
+     resolution of this same edge — same weight as the subheader's and the
+     rail's own border (`border-green-800/15`), so all three boundaries read as
+     one plane system. */
+  border-bottom: 1px solid rgba(20, 51, 33, .15);
+}
 
-     Two layers, because they do different work: the tight one is contact — it
-     is what makes the boundary legible where the rail butts the header with no
-     scroll gap between them; the broad one is ambient lift, and it is what the
-     eye reads while content scrolls underneath. A single mid shadow does one
-     job passably and neither well.
+/* ============ THE FLOATING SHADOW — relocated off the header (UIO-001) ============
+   Same shadow ink and weight the header used to carry (`rgba(16, 28, 22, …)`),
+   moved to the two things that genuinely float above content scrolling
+   independently beneath or beside them.
 
-     Kept deliberately faint. This is a sticky surface that sits above ~every
-     page in the app, so it has to survive being looked at all day; the cue only
-     has to be enough to say "these are two planes", not to draw attention.
+   Rails project onto the content beside them, not below — a rail is a vertical
+   surface, sticky at a fixed position while content scrolls past it, so the
+   depth cue belongs on the vertical seam. Same magnitudes as the header
+   carried, offset moved from the Y axis to the X axis. */
+.oh-rail-shadow {
+  box-shadow: 2px 0 4px rgba(16, 28, 22, .08),
+              6px 0 18px rgba(16, 28, 22, .10);
+}
 
-     `rgba(16,28,22,…)` is the shadow ink already used elsewhere in this app's
-     chrome (see header-cardstock.css), not a new colour.
-
-     The transparent border STAYS. It costs nothing, and it holds 1px of the box
-     open so a rule can be added later without reflowing the header — the height
-     is fixed per breakpoint and box-sizing is border-box, so a border appearing
-     from nothing would otherwise steal a pixel from the content box. */
+/* The contract subheader keeps the header's original orientation: it is itself
+   a horizontal bar with content scrolling beneath it, same shape the header
+   was. */
+.oh-subheader-shadow {
   box-shadow: 0 2px 4px rgba(16, 28, 22, .08),
               0 6px 18px rgba(16, 28, 22, .10);
 }
