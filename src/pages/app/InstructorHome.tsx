@@ -7,7 +7,8 @@ import {
 } from 'lucide-react';
 import { listLessonSessions, type LessonSession } from '../../lib/ops/api-lessons';
 import { zoneLabel } from '../../lib/formatDateTime';
-import { listContacts, listIntake } from '../../lib/api';
+import { listContacts } from '../../lib/api';
+import { useOpenLeads, type LeadEntry } from '../../lib/ops/useOpenLeads';
 import { SEED_ENABLED } from '../../lib/seed';
 import { SEED_INSTRUCTOR_SESSIONS, type SeedSession } from '../../lib/seed';
 
@@ -16,7 +17,7 @@ import { SEED_INSTRUCTOR_SESSIONS, type SeedSession } from '../../lib/seed';
  * MANAGER/EMPLOYEE, isTrainer). Distinct from the admin OpsDashboard: this surfaces
  * what a trainer does day-to-day — today's + upcoming lessons, quick servicing
  * actions, clients to reach — not tenant KPIs (billing, moderation, oversight).
- * Read paths use the real servicing seams (listLessonSessions/listContacts/listIntake)
+ * Read paths use the real servicing seams (listLessonSessions/listContacts/useOpenLeads)
  * with seed fallback when a list is empty.
  */
 
@@ -60,6 +61,25 @@ function ActionTile({ to, icon: Icon, label, sub }: { to: string; icon: typeof M
   );
 }
 
+/** A booking request or support ticket still awaiting staff action, rendered as
+ *  a dashboard entry (TASK-DASHLEADS) — same rows the Requests count used to
+ *  summarize, now actually listed, each opening its full workflow. */
+function RequestRow({ r }: { r: LeadEntry }) {
+  return (
+    <Link to={r.to}
+      className="flex items-start gap-3 bg-white border border-green-800/10 rounded-xl px-4 py-3 hover:border-green-800/25 hover:shadow-sm transition-all focus-ring">
+      <span className="w-9 h-9 rounded-lg bg-gold-50 text-gold-800 grid place-items-center shrink-0 mt-0.5">
+        <Mail size={16} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-[13px] font-medium text-green-900 truncate">{r.title}</p>
+        <p className="text-[11.5px] text-muted mt-0.5 line-clamp-1">{r.sub}</p>
+      </div>
+      <ChevronRight size={16} className="text-muted shrink-0 mt-1.5" />
+    </Link>
+  );
+}
+
 function LessonRow({ r }: { r: Row }) {
   const chip = STATUS_CHIP[r.status] ?? STATUS_CHIP.scheduled;
   return (
@@ -88,7 +108,8 @@ function LessonRow({ r }: { r: Row }) {
 export default function InstructorHome() {
   const [rows, setRows] = useState<Row[] | null>(null);
   const [clientCount, setClientCount] = useState<number | null>(null);
-  const [intakeCount, setIntakeCount] = useState<number | null>(null);
+  // Every trainer viewing this page is staff (isTrainer), so the fetch always runs.
+  const requests = useOpenLeads(true);
 
   useEffect(() => {
     let active = true;
@@ -96,7 +117,6 @@ export default function InstructorHome() {
       .then((s) => { if (active) setRows(s.map(toRow)); })
       .catch(() => { if (active) setRows([]); });
     listContacts().then((c) => active && setClientCount(c.length)).catch(() => active && setClientCount(null));
-    listIntake().then((i) => active && setIntakeCount(i.filter((r) => r.status === 'new' || r.status === 'contacted').length)).catch(() => active && setIntakeCount(null));
     return () => { active = false; };
   }, []);
 
@@ -121,7 +141,7 @@ export default function InstructorHome() {
         <ActionTile to="/app/ops/lessons" icon={GraduationCap} label="Lessons" sub="Sessions, packages, credits" />
         <ActionTile to="/app/calendar" icon={CalendarDays} label="Availability" sub="Set the times you teach" />
         <ActionTile to="/app/ops/contacts" icon={Contact} label="Clients" sub={clientCount !== null ? `${clientCount} on file` : 'People you service'} />
-        <ActionTile to="/app/ops/intake" icon={Mail} label="Requests" sub={intakeCount !== null ? `${intakeCount} to review` : 'Incoming inquiries'} />
+        <ActionTile to="/app/ops/intake" icon={Mail} label="Requests" sub={requests.length > 0 ? `${requests.length} to review` : 'Incoming inquiries'} />
       </div>
 
       {/* Today */}
@@ -138,6 +158,20 @@ export default function InstructorHome() {
           </div>
         )}
       </div>
+
+      {/* Requests — booking requests still new + support tickets not yet resolved,
+          the same rows the Requests count above summarizes. TASK-DASHLEADS: this
+          page's own subtitle promised "requests you're servicing" before anything
+          here actually rendered one. */}
+      {requests.length > 0 && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-2.5">
+            <h2 className="font-serif text-green-800 text-lg">Requests</h2>
+            <Link to="/app/ops/intake" className="text-[12px] text-gold-800 font-semibold inline-flex items-center gap-1">All requests <ChevronRight size={13} /></Link>
+          </div>
+          <div className="flex flex-col gap-2">{requests.slice(0, 6).map((r) => <RequestRow key={r.id} r={r} />)}</div>
+        </div>
+      )}
 
       {/* Upcoming */}
       {upcoming.length > 0 && (
