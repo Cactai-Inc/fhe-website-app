@@ -476,3 +476,68 @@ what the order asked for.
   order's own verification section hedges the same way ("survives a reload
   if the others do") — flagging in case that's news, since "same persistence"
   might have been assumed to mean "persists," not "doesn't, consistently."
+
+---
+
+## UIO-005 — Save becomes the outlined form of Send; the favicon adopts the header mark
+
+**Commit:** `521d08d`
+
+Cherry-picked `b052637` per the order. It touches three files, not the two
+the order's own "Files" section lists (`tailwind.config.js` is the third) —
+included it anyway since it's a hard dependency of the cherry-pick the order
+named by SHA: the 66% opacity step doesn't exist in Tailwind's default scale
+(same T1 trap as `opacity: 64`), so the Save button's hover would emit
+nothing without it.
+
+**Real conflict, not auto-merged:** `tailwind.config.js` collided textually
+— this branch's UIO-003 commit had already added a `transitionTimingFunction`/
+`transitionDuration` block (`glide`, `320`, `440`), and `b052637` adds a
+near-identical block under its own "MOTION" heading, sourced from the same
+`task/uireview` origin. Not a real disagreement — merged both additions
+(opacity now `{64, 66}`, motion tokens declared once) rather than picking a
+side or duplicating the block.
+
+**Favicon: applied the order's own later text, not `b052637`'s.** The order
+says its favicon supersedes `b052637`'s (different fill, stroke, tracking,
+font-size — checked the diff to confirm, not assumed from the order's
+prose). Applied verbatim, byte-for-byte, no comment added since "apply this
+verbatim, no design decisions left" reads as covering the file's exact
+contents, not just its visual result.
+
+**Did the order's own required 16px check rather than skipping it as already
+decided.** Rendered the verbatim (light) SVG and an inverted (dark-tile,
+light-letter) alternative at 16px, on both light and dark tab-bar
+backgrounds — headless Chrome screenshot (`--headless --screenshot`), then
+actually looked at the resulting PNG with the image-reading tool rather than
+inferring from the markup. The inverted option is close to invisible on a
+dark tab bar; the verbatim option holds up in both. This is the one place in
+today's queue I could do a real visual check rather than only a CSS grep,
+and it confirms the order's choice rather than surfacing a disagreement.
+
+**What I verified:**
+- `npm run typecheck` — 0 errors. `npm run lint` — 0 errors, 30 warnings
+  (baseline). `npm run build` — succeeded.
+- Grepped the built CSS: `.hover\:bg-green-800\/66:hover{background-color:#143321a8}`
+  (`a8` = 168/255 = 65.9% ≈ 66%), `.border-green-800{...}` and
+  `.active\:bg-green-800:active{...}` / `.active\:text-cream-25:active{...}`
+  / `.hover\:text-cream-25:hover{...}` all present as real rules.
+- `diff public/favicon.svg dist/favicon.svg` — identical; Vite copies
+  `public/` verbatim, confirmed rather than assumed.
+- `dist/apple-touch-icon.png` present, same byte size as the source PNG.
+- `sips -g pixelWidth -g pixelHeight -g hasAlpha` on the rendered PNG before
+  shipping it: 180×180, `hasAlpha: no` — the ground is genuinely filled, not
+  just visually opaque in a viewer that composites transparency for you.
+- `grep -o "favicon.svg\|apple-touch-icon.png" dist/index.html` — both
+  references present in the built HTML.
+
+**What I did NOT verify:**
+- The order says explicitly: "Neither is browser-verified by grepping. The
+  owner confirms both by eye." The Save button's actual hover/press
+  transition and the favicon in a real browser tab (as opposed to a
+  screenshot of an isolated SVG) are both unseen.
+- Font rendering: the apple-touch-icon PNG was rendered by this machine's
+  Chrome, which may or may not have resolved `Big Caslon` the same way an
+  end user's browser/OS will — I looked at the image and the letterforms
+  read as a real serif, but I can't confirm which font in the stack actually
+  won.
