@@ -520,33 +520,46 @@ it, and do not treat the word FROZEN as a reason to route the change somewhere w
 
   ### SO: the existing pattern's DISCIPLINE, plus the unit from the owner's spec.
 
-  ### THE GEOMETRY — the owner specced this and the orchestrator flattened it. It is correct.
+  ### THE CONTROL — a COMPOSITE format_type. Settled 2026-08-10.
 
-  > Owner: *"where does the $/% selector live, before or after the number? they live on opposite
-  > sides of a number in real life. that was why i said null/$ or null/% and show both while null
-  > once one is picked the other is locked."*
+  > Owner: *"unless the config for the entry for that field was selection that gets composed at
+  > render time. then they can select the \$/% first, then enter a number, and it renders as
+  > \$100 or 100%."*
 
-  **`$` PREFIXES. `%` SUFFIXES.** A single dropdown puts the unit on the wrong side for one of
-  the two. That is why the control is three slots, not two:
+  **This is the answer. It supersedes both the two-slot geometry and the single-dropdown
+  simplification the orchestrator proposed.**
 
   ```
-  Lessee's share of the cost:   [ null | $ ]   [ number ]   [ null | % ]
-                                      ^                           ^
-                                    $100                         50%
+  authoring:   [ $ | % ]  [ number ]
+  composed:    $100     or     100%
   ```
 
-  - **both empty** → both unit slots are live and selectable
-  - **`$` picked** → renders `$100`; the `%` slot **locks** and greys
-  - **`%` picked** → renders `50%`; the `$` slot **locks** and greys
+  The author picks the unit, types a number, and the field **composes the correct form at render
+  time** — symbol before for currency, after for percent.
 
-  **Mutually exclusive by construction** — the lock is what makes `$50%` unrepresentable rather
-  than merely discouraged.
+  **The orchestrator objected that "the document IS the form" means the control's position is
+  the document's position. That was too literal and it is wrong.** The system already has SEVEN
+  composite kinds whose authoring shape differs from their composed text:
 
-  **Do not "simplify" this into one dropdown.** It would read `$ 100` or `% 50` for one of the
-  two units, which is wrong typography in a legal instrument. The three-slot shape is the
-  requirement.
+  ```
+  buttons 41 · add_text 8 · reveal_text 4 · week_grid 4 · med_schedule 4 · fee_schedule 4 · contacts_list 4
+  ```
 
-  **One field. One party named. One value, in one of two units.**
+  `week_grid` is a grid while authoring and prose in the body. **A share control is the eighth of
+  its type, not a new architectural concept.**
+
+  ### This is ALSO why `*_SPLIT_TEXT` exists — and why it stops being needed
+
+  `TXN.MORT_COST_SPLIT_TEXT` and `TXN.MED_COST_SPLIT_TEXT`, both labelled "Split (composed)",
+  are **composition bolted on as a second field** because no composite kind existed to hold it.
+
+  **Putting the composition inside the control removes the reason those fields exist.** They are
+  not merely deleted — they are made unnecessary. Same for the per-party pair: one composite
+  field naming one party replaces four.
+
+  **One field. One party named. One value, in one of two units, composed correctly.**
+
+
 
   - `%` → the Lessor's share is `100 − X`, arithmetic, unstated.
   - `$` → the Lessor pays the remainder, arithmetic, unstated.
