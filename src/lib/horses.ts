@@ -3,6 +3,52 @@
  * the ONE creation path (microchip dedup server-side). */
 import { supabase } from './supabase';
 
+/* WHY THIS EXISTS (2026-08-10). A new horse owner was blocked in onboarding with
+ * "Could not save the horse record." and nobody could say why, because the
+ * database's own message never reached the screen.
+ *
+ * Supabase does NOT return an Error. postgrest-js builds the failure with
+ * `error = JSON.parse(body)` (PostgrestBuilder.then, v1.21.4) and hands back that
+ * PLAIN OBJECT — a PostgrestError instance is constructed only on the
+ * `.throwOnError()` path, which this codebase never uses. So `throw error`
+ * throws an object, every `catch (e)` in the app tests `e instanceof Error`,
+ * the test is false, and the real message is replaced by a generic string.
+ *
+ * DbError re-throws it as a real Error carrying all four PostgREST parts
+ * (message, details, hint, code), so the existing catch sites surface the truth. */
+export class DbError extends Error {
+  readonly code: string | null;
+  readonly details: string | null;
+  readonly hint: string | null;
+  constructor(error: unknown, what: string) {
+    const e = (error ?? {}) as { message?: unknown; code?: unknown; details?: unknown; hint?: unknown };
+    const str = (v: unknown) => (typeof v === 'string' && v.trim() !== '' ? v.trim() : null);
+    const message = str(e.message);
+    const details = str(e.details);
+    const hint = str(e.hint);
+    const code = str(e.code);
+    super([
+      message ?? `${what} failed.`,
+      details && details !== message ? `— ${details}` : null,
+      hint ? `Hint: ${hint}` : null,
+      code ? `[${code}]` : null,
+    ].filter(Boolean).join(' '));
+    this.name = 'DbError';
+    this.code = code;
+    this.details = details;
+    this.hint = hint;
+  }
+}
+
+/** The readable text of anything a catch block receives — a real Error, a raw
+ *  PostgREST object, or something else entirely. */
+export function errorText(e: unknown, fallback: string): string {
+  if (e instanceof Error && e.message.trim() !== '') return e.message;
+  const msg = (e as { message?: unknown } | null)?.message;
+  if (typeof msg === 'string' && msg.trim() !== '') return new DbError(e, fallback).message;
+  return fallback;
+}
+
 /** The standardized intake payload (matched pair to the record; every field maps
  *  to a column — supabase/horse_record/horse_intake_form.md). All optional except
  *  a name; blanks stay blank. */
@@ -88,12 +134,12 @@ export async function setHorseLocations(
     p_horse_id: horseId,
     p_payload: { home, current: current ?? null },
   });
-  if (error) throw error;
+  if (error) throw new DbError(error, 'Saving the horse locations');
 }
 
 export async function createHorseRecord(p: HorseIntakePayload): Promise<HorseRecordOutcome> {
-  const { data, error } = await supabase.rpc('create_horse_record', { p });
-  if (error) throw error;
+  const { data, error } = await supabase.rpc('create_horse_record', { p: scrubHorseSentinels(p) });
+  if (error) throw new DbError(error, 'Saving the horse record');
   return data as HorseRecordOutcome;
 }
 
@@ -133,18 +179,18 @@ export interface HorsePageDetail {
 }
 export async function horsePageDetail(horseId: string): Promise<HorsePageDetail> {
   const { data, error } = await supabase.rpc('horse_page_detail', { p_horse_id: horseId });
-  if (error) throw error;
+  if (error) throw new DbError(error, 'Loading the horse');
   return data as HorsePageDetail;
 }
 /** Delete a horse from the caller's stable (owner/staff). */
 export async function deleteStableHorse(horseId: string): Promise<void> {
   const { error } = await supabase.rpc('my_stable_delete_horse', { p_id: horseId });
-  if (error) throw error;
+  if (error) throw new DbError(error, 'Deleting the horse');
 }
 /** Update a horse record (owner/staff). Partial patch — only the keys present change. */
 export async function updateHorseRecord(horseId: string, patch: Record<string, string>): Promise<void> {
-  const { error } = await supabase.rpc('update_horse_record', { p_id: horseId, p: patch });
-  if (error) throw error;
+  const { error } = await supabase.rpc('update_horse_record', { p_id: horseId, p: scrubHorseSentinels(patch) });
+  if (error) throw new DbError(error, 'Saving the horse record');
 }
 
 /** A repeatable medication or supplement entry with cost, supplier, and order qty.
@@ -165,11 +211,11 @@ export interface HorseMedication {
 /** Replace-all a horse's medications + supplements. */
 export async function setHorseMedications(horseId: string, items: HorseMedication[]): Promise<void> {
   const { error } = await supabase.rpc('set_horse_medications', { p_horse_id: horseId, p_items: items });
-  if (error) throw error;
+  if (error) throw new DbError(error, 'Saving the medications and supplements');
 }
 export async function listHorseMedications(horseId: string): Promise<HorseMedication[]> {
   const { data, error } = await supabase.rpc('horse_medications_list', { p_horse_id: horseId });
-  if (error) throw error;
+  if (error) throw new DbError(error, 'Loading the medications and supplements');
   return (data ?? []) as HorseMedication[];
 }
 
@@ -187,7 +233,7 @@ export async function ensureHorseDocuments(
     p_contract_id: opts.contractId ?? null,
     p_include_care: opts.includeCare ?? null,
   });
-  if (error) throw error;
+  if (error) throw new DbError(error, 'Preparing the horse documents');
   return data as { owner_contact_id: string; generated: GeneratedHorseDoc[]; voided: number };
 }
 
@@ -201,7 +247,7 @@ export interface HorseOnboardingState {
  *  purchased horse-care service is blocked on an unsigned release). */
 export async function fetchHorseOnboardingState(): Promise<HorseOnboardingState> {
   const { data, error } = await supabase.rpc('my_horse_onboarding_state');
-  if (error) throw error;
+  if (error) throw new DbError(error, 'Loading the horse document state');
   return data as HorseOnboardingState;
 }
 
@@ -241,13 +287,13 @@ export interface StaffHorseRecord {
 
 export async function staffHorseRecords(): Promise<StaffHorseRecord[]> {
   const { data, error } = await supabase.rpc('staff_horse_records');
-  if (error) throw error;
+  if (error) throw new DbError(error, 'Loading the horse records');
   return (data ?? []) as StaffHorseRecord[];
 }
 
 export async function staffUpdateHorse(id: string, patch: Record<string, string>): Promise<void> {
-  const { error } = await supabase.rpc('staff_update_horse', { p_id: id, p: patch });
-  if (error) throw error;
+  const { error } = await supabase.rpc('staff_update_horse', { p_id: id, p: scrubHorseSentinels(patch) });
+  if (error) throw new DbError(error, 'Saving the horse');
 }
 
 export async function staffAssignHorseParty(
@@ -258,7 +304,7 @@ export async function staffAssignHorseParty(
     p_horse_id: horseId, p_role: role, p_contact_id: contactId,
     p_term_start: termStart ?? null, p_term_end: termEnd ?? null,
   });
-  if (error) throw error;
+  if (error) throw new DbError(error, 'Assigning the horse party');
 }
 
 export interface ContactOption { id: string; name: string; email: string | null }
@@ -266,7 +312,7 @@ export interface PartyOption extends ContactOption { is_company: boolean }
 
 export async function staffContactOptions(): Promise<ContactOption[]> {
   const { data, error } = await supabase.rpc('staff_contact_options');
-  if (error) throw error;
+  if (error) throw new DbError(error, 'Loading the contact options');
   return (data ?? []) as ContactOption[];
 }
 
@@ -275,14 +321,14 @@ export async function staffContactOptions(): Promise<ContactOption[]> {
  *  Company is returned first. */
 export async function contractPartyOptions(): Promise<PartyOption[]> {
   const { data, error } = await supabase.rpc('contract_party_options');
-  if (error) throw error;
+  if (error) throw new DbError(error, 'Loading the party options');
   return (data ?? []) as PartyOption[];
 }
 
 /** The org's canonical company contact id (creates it once if needed). */
 export async function companyContactId(): Promise<string | null> {
   const { data, error } = await supabase.rpc('company_contact_id');
-  if (error) throw error;
+  if (error) throw new DbError(error, 'Loading the company contact');
   return (data as string) ?? null;
 }
 
@@ -296,6 +342,30 @@ export async function companyContactId(): Promise<string | null> {
 //   KNOWN_CONDITIONS, EUTHANASIA_A/B. (MEDICATION_* is the repeatable list —
 //   an empty list is a valid "none".) "N/A" is a conscious answer, not a blank.
 export const HORSE_NA = 'N/A';
+
+/* THE SENTINEL CANNOT GO EVERYWHERE. "N/A" is a text answer, and six of the
+ * horses columns cannot hold text:
+ *   date_of_birth      date            → 22007 invalid input syntax for type date
+ *   fair_market_value  numeric         → 22P02 invalid input syntax for type numeric
+ *   sex                CHECK (5 codes) → 23514 horses_sex_check
+ *   euthanasia_authorization CHECK A|B → 23514
+ *   breed              FK horse_breeds → 23503 horses_breed_fkey
+ *   color              FK horse_colors → 23503 horses_color_fkey
+ * Each was reproduced against production on 2026-08-10 inside a rolled-back
+ * transaction. On those columns the sentinel is persisted as CLEARED (NULL) —
+ * the same rule the edit-mode patch has always used, now applied to creation
+ * too, which is where a brand-new owner met it. */
+export const HORSE_SENTINEL_UNSAFE_KEYS: (keyof HorseIntakePayload)[] = [
+  'date_of_birth', 'fair_market_value', 'sex', 'euthanasia_authorization', 'breed', 'color',
+];
+
+/** Clear the 'N/A' sentinel from the columns that cannot store it. Applied at
+ *  the seam so no caller can send a payload the INSERT will reject. */
+export function scrubHorseSentinels<T extends object>(p: T): T {
+  const out = { ...p } as Record<string, unknown>;
+  for (const k of HORSE_SENTINEL_UNSAFE_KEYS) if (out[k] === HORSE_NA) out[k] = '';
+  return out as T;
+}
 
 /** Payload keys required because a horse onboarding document merges them. */
 export const HORSE_DOC_REQUIRED_KEYS: (keyof HorseIntakePayload)[] = [
@@ -368,7 +438,7 @@ export async function getHorseIntakeRecord(horseId: string): Promise<HorseIntake
     .select(HORSE_INTAKE_COLUMNS)
     .eq('id', horseId)
     .maybeSingle();
-  if (error) throw error;
+  if (error) throw new DbError(error, 'Loading the horse record');
   return data as unknown as HorseIntakeRecord | null;
 }
 
@@ -380,7 +450,7 @@ export async function contactHorseRecords(contactId: string): Promise<HorseIntak
     .eq('current_owner_contact_id', contactId)
     .is('deleted_at', null)
     .order('created_at');
-  if (error) throw error;
+  if (error) throw new DbError(error, 'Loading the horse records');
   return (data ?? []) as unknown as HorseIntakeRecord[];
 }
 
@@ -388,5 +458,5 @@ export async function contactHorseRecords(contactId: string): Promise<HorseIntak
  *  alert + badge) linking the member to the intake form in edit mode. */
 export async function requestHorseRecordCompletion(horseId: string): Promise<void> {
   const { error } = await supabase.rpc('staff_request_horse_record_completion', { p_horse_id: horseId });
-  if (error) throw error;
+  if (error) throw new DbError(error, 'Requesting record completion');
 }
