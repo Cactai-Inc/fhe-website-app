@@ -510,7 +510,8 @@ export async function adminAttachOfferings(
 }
 
 export interface ClientAccountRow {
-  kind: 'account' | 'pending';
+  /** 'contact' (TASK-ROSTER): a bare contact — no clients row, no login. */
+  kind: 'account' | 'pending' | 'contact';
   user_id: string | null;
   contact_id: string | null;
   client_id: string | null;
@@ -526,6 +527,27 @@ export interface ClientAccountRow {
   invite_status: string | null;
   invite_expires_at: string | null;
   invite_scheduled_for: string | null;
+  document_count: number;
+  order_count: number;
+  /** Open credit balances, each with the name the credit applies to. */
+  credits: { label: string; remaining: number }[];
+  /** Consumed service events keyed by service_type code — the row band. */
+  services: Record<string, number>;
+}
+
+/** One fixed slot of the roster's positional service band. */
+export interface ServiceSlot {
+  code: string;
+  display_name: string;
+  segment: 'rider' | 'horse' | 'acquisition';
+}
+
+/** Slot taxonomy for the roster band: every purchasable service type, ordered
+ *  rider → horse → acquisition. DB-derived — never hardcode this list. */
+export async function rosterServiceSlots(): Promise<ServiceSlot[]> {
+  const { data, error } = await supabase.rpc('roster_service_slots');
+  if (error) throw error;
+  return (data ?? []) as ServiceSlot[];
 }
 
 /** Kill the invite link now (still shows as expired; resendable). */

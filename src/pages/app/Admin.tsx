@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, ChevronRight, Plus, Search, UserRound,
@@ -8,7 +8,7 @@ import { supabase } from '../../lib/supabase';
 import {
   adminSetSuspended, adminClientAccounts, adminClientItems, adminSendInvitation,
   adminExpireInvitation, adminDeleteInvitation, adminAccountAction, adminHardDeleteClient,
-  type ClientAccountRow, type ClientItems,
+  rosterServiceSlots, type ClientAccountRow, type ClientItems, type ServiceSlot,
 } from '../../lib/admin';
 import { contactAddress, formatAddress, type ContactAddress } from '../../lib/api';
 import { docDisplayLabel } from '../../lib/documentStatus';
@@ -22,10 +22,21 @@ import { StatusLog } from '../../lib/ops';
 import { entityStatusLog, type StatusLogEntry } from '../../lib/ops/api-status';
 
 /**
- * CLIENTS (/app/admin) — the account-centric surface (owner rework). CLIENT
- * accounts only (staff live on Team & access under Settings). Two states:
+ * CLIENTS (/app/admin) — THE one people page (owner ruling 2026-08-10, TASK-
+ * ROSTER: this page won over /app/ops/contacts, which is retired behind
+ * CONTACTS_PAGE_RETIRED). Shows every contact we serve — login-backed accounts,
+ * provisioned clients, and bare contacts with neither. Deliberate exclusions:
+ * LEAD (Leads page, until worked), TEAM (Team & access), DIRECTORY (rolodex).
  *
- *  LIST — every client, searchable + sortable. Clicking a row isolates it.
+ * THE ROW IS READ BY SHAPE: every service type owns a fixed slot in the row's
+ * service band (rider → horse care → acquisition), and a slot holds its
+ * position when empty. A rider shows counts on the left of the band, a horse
+ * owner on the right — who someone is reads from WHERE the ink sits, before a
+ * single word. Never let this collapse into a gap-closing flex row. The slot
+ * list comes from roster_service_slots() (the DB catalog), never a hardcoded
+ * set. Two states:
+ *
+ *  LIST — every person, searchable + sortable. Clicking a row isolates it.
  *  ISOLATED — the other rows disappear; the profile renders below the selected
  *  row; account-scoped TABS appear (Overview / Billing / Bookings / Documents /
  *  Orders / Payments / Activity / Posts / Messages / Login). More tabs than fit →
@@ -74,6 +85,142 @@ const fmtTs = (iso: string | null | undefined) =>
 const memberName = (m: ClientAccountRow) =>
   m.display_name || `${m.first_name ?? ''} ${m.last_name ?? ''}`.trim() || m.email || '—';
 const rowKeyOf = (m: ClientAccountRow) => m.user_id ?? m.contact_id ?? m.email ?? '';
+const memberInitials = (m: ClientAccountRow) =>
+  (((m.first_name?.[0] ?? '') + (m.last_name?.[0] ?? '')).toUpperCase())
+  || (m.email?.[0] ?? 'C').toUpperCase();
+
+// ── the positional service band ──────────────────────────────────────────────
+// Position encodes category (owner requirement): the shared grid template keeps
+// the header and every row on identical columns, so an empty slot is a visible
+// gap holding its place — never a collapsed one. Segment tints group the band
+// into rider | horse care | acquisition zones the eye can read at a distance.
+const SEGMENT_TINT: Record<string, string> = {
+  rider: 'bg-green-800/[0.04]',
+  horse: 'bg-gold-600/[0.07]',
+  acquisition: 'bg-cream-100/60',
+};
+
+/** Display transform only (NOT a catalog): drop the redundant "Horse " prefix
+ *  so band headers stay short. Slot identity remains the DB code. */
+const slotLabel = (s: ServiceSlot) => s.display_name.replace(/^Horse\s+/, '');
+
+/** Shared column template: person | docs | orders | credits | band… | status.
+ *  Derived from the slot count so a new catalog service grows the grid. */
+function rosterGrid(slotCount: number): CSSProperties {
+  return {
+    display: 'grid',
+    gridTemplateColumns:
+      `minmax(230px,1fr) 3rem 3rem 8.5rem repeat(${slotCount}, 3.5rem) 6.5rem`,
+    alignItems: 'center',
+    minWidth: `${230 + 328 + slotCount * 56}px`,
+  };
+}
+
+function segmentEdge(slots: ServiceSlot[], i: number): string {
+  return i > 0 && slots[i - 1].segment !== slots[i].segment
+    ? 'border-l border-green-800/15' : '';
+}
+
+export function RosterHeader({ slots, hasOther }: { slots: ServiceSlot[]; hasOther: boolean }) {
+  return (
+    <div style={rosterGrid(slots.length + (hasOther ? 1 : 0))}
+      className="px-4 pb-1 text-[9px] font-sans uppercase tracking-wide text-muted select-none">
+      <span />
+      <span className="text-center">Docs</span>
+      <span className="text-center">Orders</span>
+      <span className="pl-2">Credits</span>
+      {slots.map((s, i) => (
+        <span key={s.code} title={s.display_name}
+          className={`text-center leading-tight self-end px-0.5 min-w-0 ${SEGMENT_TINT[s.segment] ?? ''} ${segmentEdge(slots, i)}`}>
+          <span className="block break-words">{slotLabel(s)}</span>
+        </span>
+      ))}
+      {hasOther && <span className="text-center">Other</span>}
+      <span />
+    </div>
+  );
+}
+
+/** One band cell: the count when the slot is filled, a faint placeholder dot
+ *  when not. The cell itself always renders — that is the whole point. */
+function SlotCell({ n, tint, edge }: { n: number | undefined; tint: string; edge: string }) {
+  return (
+    <span className={`self-stretch flex items-center justify-center text-sm ${tint} ${edge} ${
+      n ? 'text-green-900 font-medium' : 'text-green-800/20'}`}>
+      {n ?? '·'}
+    </span>
+  );
+}
+
+/** One roster row. Every cell sits on the shared grid — person, then the fixed
+ *  count columns, then the band, then status. Blank beats zero everywhere. */
+export function RosterRow({ m, slots, hasOther, otherCount, onOpen }: {
+  m: ClientAccountRow; slots: ServiceSlot[]; hasOther: boolean;
+  otherCount: (m: ClientAccountRow) => number; onOpen: (key: string) => void;
+}) {
+  return (
+    <button type="button" onClick={() => onOpen(rowKeyOf(m))}
+      style={rosterGrid(slots.length + (hasOther ? 1 : 0))}
+      className="w-full bg-white border border-green-800/10 rounded-lg px-4 text-left hover:border-green-800/30 focus-ring overflow-hidden">
+      {/* person */}
+      <span className="min-w-0 flex items-center gap-3 py-2.5">
+        <span className="w-9 h-9 rounded-full bg-green-800 text-white grid place-items-center text-[12px] font-sans shrink-0">
+          {memberInitials(m)}
+        </span>
+        <span className="min-w-0">
+          <span className="block text-sm font-medium text-green-900 truncate">{memberName(m)}</span>
+          <span className="block text-xs text-muted truncate">{m.email}</span>
+          {(m.tags ?? []).length > 0 && (
+            <span className="flex flex-wrap gap-1 mt-0.5">
+              {(m.tags ?? []).map((t) => (
+                <span key={t} className="text-[9px] font-sans uppercase tracking-wide px-1.5 py-px rounded-full bg-green-50 text-green-800 border border-green-200">{t}</span>
+              ))}
+            </span>
+          )}
+        </span>
+      </span>
+      {/* docs · orders — a zero is noise, so blank when empty */}
+      <span className="text-center text-sm text-green-900">{m.document_count > 0 ? m.document_count : ''}</span>
+      <span className="text-center text-sm text-green-900">{m.order_count > 0 ? m.order_count : ''}</span>
+      {/* credits, each with the name it applies to */}
+      <span className="min-w-0 pl-2 pr-1">
+        {(m.credits ?? []).map((c) => (
+          <span key={c.label} title={`${c.remaining} × ${c.label}`}
+            className="block text-[11px] text-green-900 truncate leading-snug">
+            {c.remaining} × {c.label}
+          </span>
+        ))}
+      </span>
+      {/* THE BAND — fixed slot per service type; empty slots hold position */}
+      {slots.map((s, i) => (
+        <SlotCell key={s.code} n={m.services?.[s.code]}
+          tint={SEGMENT_TINT[s.segment] ?? ''} edge={segmentEdge(slots, i)} />
+      ))}
+      {hasOther && <SlotCell n={otherCount(m) || undefined} tint="" edge="border-l border-green-800/15" />}
+      {/* status */}
+      <span className="text-right py-2.5">
+        {m.kind === 'account' ? (
+          <span className={`block text-[10.5px] font-sans uppercase ${m.member_status === 'active' ? 'text-green-700' : 'text-muted'}`}>
+            {m.member_status === 'active' ? 'Active' : 'Inactive'}
+            {m.is_suspended ? ' · suspended' : ''}
+          </span>
+        ) : (
+          <span className={`block text-[10.5px] font-sans uppercase ${
+            m.invite_status === 'sent' ? 'text-gold-800' : 'text-muted'
+          }`}>
+            {m.invite_status === 'sent'
+              ? (m.invite_expires_at && new Date(m.invite_expires_at) < new Date() ? 'Invite expired' : 'Invited')
+              : m.invite_status === 'accepted' ? 'Claimed'
+              : m.kind === 'contact' ? 'No account' : 'Not invited'}
+          </span>
+        )}
+        <span className="block text-[11px] text-muted">
+          {m.kind === 'account' ? 'joined' : m.kind === 'pending' ? 'created' : 'added'} {fmt(m.created_at)}
+        </span>
+      </span>
+    </button>
+  );
+}
 
 // ── generic row list used by several tabs ────────────────────────────────────
 type ListRow = { key: string; main: string; sub: string; badge?: string; href?: string };
@@ -385,16 +532,19 @@ function PendingClientView({ row, onChanged }: { row: ClientAccountRow; onChange
 }
 
 // ── the page ─────────────────────────────────────────────────────────────────
-type SortKey = 'name' | 'joined' | 'status';
+// Sort PORTED from ContactsPage (the retired page's one keeper besides its
+// population): A–Z on the display name by default, or newest-first.
+type SortKey = 'name' | 'newest';
 
 export default function Admin() {
   useDocumentTitle('Clients');
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const [members, setMembers] = useState<ClientAccountRow[]>([]);
+  const [slots, setSlots] = useState<ServiceSlot[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [q, setQ] = useState('');
-  const [sortKey, setSortKey] = useState<SortKey>('joined');
+  const [sortKey, setSortKey] = useState<SortKey>('name');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [ov, setOv] = useState<Overview | null>(null);
   const [tab, setTab] = useState<TabId>('overview');
@@ -405,12 +555,19 @@ export default function Admin() {
   const [hardConfirm, setHardConfirm] = useState('');
 
   const load = useCallback(() => {
-    // login-backed clients + provisioned (no-login-yet) clients in one list
+    // login-backed accounts + provisioned clients + bare contacts, one list
     adminClientAccounts()
       .then(setMembers)
       .catch(() => setError('Could not load clients.'));
   }, []);
   useEffect(load, [load]);
+
+  // The band's fixed slots, from the DB catalog. 8 today (2 rider, 3 horse
+  // care, 3 acquisition) — if this ever grows past ~12 the row stops being
+  // readable at a glance and needs a design pass, not more columns.
+  useEffect(() => {
+    rosterServiceSlots().then(setSlots).catch(() => setSlots([]));
+  }, []);
 
   // /app/admin?open=<contact or user id> — auto-open (e.g. right after creation)
   useEffect(() => {
@@ -441,13 +598,25 @@ export default function Admin() {
     const filtered = members.filter((m) =>
       !needle
       || memberName(m).toLowerCase().includes(needle)
-      || (m.email ?? '').toLowerCase().includes(needle));
-    return [...filtered].sort((a, b) => {
-      if (sortKey === 'name') return memberName(a).localeCompare(memberName(b));
-      if (sortKey === 'status') return Number(b.member_status === 'active') - Number(a.member_status === 'active');
-      return new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime();
-    });
+      || (m.email ?? '').toLowerCase().includes(needle)
+      || (m.tags ?? []).some((t) => t.toLowerCase().includes(needle)));
+    // ContactsPage's sort, verbatim: newest by created_at, else name A–Z.
+    return [...filtered].sort((a, b) => sortKey === 'newest'
+      ? new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime()
+      : memberName(a).localeCompare(memberName(b)));
   }, [members, q, sortKey]);
+
+  // Data-safety valve: a consumed service whose type has NO active offering any
+  // more (so no slot) still must show — it lands in a trailing "Other" column
+  // that only exists while such data exists.
+  const slotCodes = useMemo(() => new Set(slots.map((s) => s.code)), [slots]);
+  const hasOther = useMemo(
+    () => members.some((m) => Object.keys(m.services ?? {}).some((c) => !slotCodes.has(c))),
+    [members, slotCodes]);
+  const otherCount = (m: ClientAccountRow) =>
+    Object.entries(m.services ?? {})
+      .filter(([c]) => !slotCodes.has(c))
+      .reduce((sum, [, n]) => sum + n, 0);
 
 
   async function toggleSuspend() {
@@ -543,12 +712,12 @@ export default function Admin() {
         {!selected && (
           <button type="button" onClick={() => navigate('/app/ops/accounts/new')}
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-green-800 text-white text-sm font-medium hover:bg-green-700 focus-ring">
-            <Plus size={15} /> New client
+            <Plus size={15} /> ADD NEW
           </button>
         )}
       </div>
       <p className="text-sm text-green-800/70 mb-5">
-        {selected ? 'Everything about this account, in one place.' : 'Every client account — click one to open it.'}
+        {selected ? 'Everything about this account, in one place.' : 'Everyone on file — click a row to open their record.'}
       </p>
 
       {error && <p role="alert" className="form-error mb-4">{error}</p>}
@@ -563,7 +732,7 @@ export default function Admin() {
                 value={q} onChange={(e) => setQ(e.target.value)} />
             </div>
             <div className="flex gap-1.5">
-              {([['joined', 'Newest'], ['name', 'A–Z'], ['status', 'Active first']] as [SortKey, string][]).map(([k, label]) => (
+              {([['name', 'A–Z'], ['newest', 'Newest']] as [SortKey, string][]).map(([k, label]) => (
                 <button key={k} type="button" onClick={() => setSortKey(k)}
                   className={`px-3 py-1.5 rounded-full text-xs font-sans ${sortKey === k ? 'bg-green-800 text-white' : 'bg-green-800/10 text-green-800 hover:bg-green-800/20'}`}>
                   {label}
@@ -571,39 +740,17 @@ export default function Admin() {
               ))}
             </div>
           </div>
-          <div className="flex flex-col gap-1.5">
-            {visible.map((m) => (
-              <button key={rowKeyOf(m)} type="button" onClick={() => setSelectedId(rowKeyOf(m))}
-                className="w-full flex items-center justify-between gap-3 bg-white border border-green-800/10 rounded-lg px-4 py-3 text-left hover:border-green-800/30 focus-ring">
-                <span className="min-w-0 flex items-center gap-3">
-                  <span className="w-9 h-9 rounded-full bg-green-800 text-white grid place-items-center text-sm font-sans shrink-0">
-                    {(memberName(m)[0] || 'C').toUpperCase()}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block text-sm font-medium text-green-900 truncate">{memberName(m)}</span>
-                    <span className="block text-xs text-muted truncate">{m.email}</span>
-                  </span>
-                </span>
-                <span className="text-right shrink-0">
-                  {m.kind === 'pending' ? (
-                    <span className={`block text-[10.5px] font-sans uppercase ${
-                      m.invite_status === 'sent' ? 'text-gold-800' : 'text-muted'
-                    }`}>
-                      {m.invite_status === 'sent'
-                        ? (m.invite_expires_at && new Date(m.invite_expires_at) < new Date() ? 'Invite expired' : 'Invited')
-                        : m.invite_status === 'accepted' ? 'Claimed' : 'Not invited'}
-                    </span>
-                  ) : (
-                    <span className={`block text-[10.5px] font-sans uppercase ${m.member_status === 'active' ? 'text-green-700' : 'text-muted'}`}>
-                      {m.member_status === 'active' ? 'Active' : 'Inactive'}
-                      {m.is_suspended ? ' · suspended' : ''}
-                    </span>
-                  )}
-                  <span className="block text-[11px] text-muted">{m.kind === 'pending' ? 'created' : 'joined'} {fmt(m.created_at)}</span>
-                </span>
-              </button>
-            ))}
-            {visible.length === 0 && <p className="text-sm text-muted py-6 text-center">No clients match.</p>}
+          {/* Positional roster. The wrapper scrolls sideways rather than ever
+              letting the grid reflow — slot positions are the information. */}
+          <div className="overflow-x-auto pb-2">
+            <RosterHeader slots={slots} hasOther={hasOther} />
+            <div className="flex flex-col gap-1.5">
+              {visible.map((m) => (
+                <RosterRow key={rowKeyOf(m)} m={m} slots={slots} hasOther={hasOther}
+                  otherCount={otherCount} onOpen={setSelectedId} />
+              ))}
+              {visible.length === 0 && <p className="text-sm text-muted py-6 text-center">No one matches.</p>}
+            </div>
           </div>
         </>
       )}
@@ -626,7 +773,8 @@ export default function Admin() {
                 <span className="min-w-0">
                   <span className="block font-serif text-lg text-green-900 leading-tight truncate">{memberName(selected)}</span>
                   <span className="block text-xs text-muted truncate">
-                    {selected.email} · {selected.kind === 'pending' ? 'Provisioned — no login yet' : 'Client'}
+                    {selected.email} · {selected.kind === 'pending' ? 'Provisioned — no login yet'
+                      : selected.kind === 'contact' ? 'Contact — no account' : 'Client'}
                     {selected.is_suspended ? ' · SUSPENDED' : ''}
                   </span>
                 </span>
@@ -697,7 +845,10 @@ export default function Admin() {
             )}
           </div>
 
-          {selected.kind === 'pending' && (
+          {/* pending clients AND bare contacts: items + paperwork + provision/
+              invite. Everything inside keys off contact_id and degrades without
+              a client_id, so the 'contact' kind reuses it as-is. */}
+          {selected.kind !== 'account' && (
             <PendingClientView row={selected} onChanged={load} />
           )}
 

@@ -513,7 +513,13 @@ export function HorseIntakeForm({
   useEffect(() => {
     loadLocations();   // populates the location-name suggestions; no auto-pre-fill
     // Staff get the client-account list for the assign-to picker.
-    if (isStaff) adminClientAccounts().then(setAccounts).catch(() => setAccounts([]));
+    // kind 'contact' (bare contact, no account) is excluded: owning a horse
+    // requires an account, so the assign-to picker keeps its old population.
+    if (isStaff) {
+      adminClientAccounts()
+        .then((rows) => setAccounts(rows.filter((r) => r.kind !== 'contact')))
+        .catch(() => setAccounts([]));
+    }
     listHorseBreeds().then(setBreeds).catch(() => setBreeds([]));
     listHorseColors().then(setColors).catch(() => setColors([]));
     listLookupOptions('horse_markings').then(setMarkingOpts).catch(() => setMarkingOpts([]));

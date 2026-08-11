@@ -23,6 +23,7 @@ import { CreateModal, type CreateModalStep } from './CreateModal';
 import { AppHeader } from './AppHeader';
 import { CreateModalTriggerContext } from '../../contexts/CreateModalContext';
 import { captureWallReturnDestination } from '../../lib/wallReturn';
+import { CONTACTS_PAGE_RETIRED } from '../../pages/app/ops/ContactsPage';
 
 /* ── THE NAV PANEL — solid green, cream contents (ONEHEADER §1, owner 2026-08-08)
  *
@@ -260,7 +261,8 @@ const MANAGEMENT_GROUP: NavItem[] = [
 const ACCOUNTS_GROUP: NavItem[] = [
   { to: '/app/ops/leads', label: 'Leads', icon: Contact },
   { to: '/app/admin', label: 'Clients', icon: Users },
-  { to: '/app/ops/contacts', label: 'Contacts', icon: Contact },
+  // Contacts RETIRED 2026-08-10 (TASK-ROSTER): Clients absorbed its population.
+  ...(CONTACTS_PAGE_RETIRED ? [] : [{ to: '/app/ops/contacts', label: 'Contacts', icon: Contact } as NavItem]),
   { to: '/app/ops/team', label: 'Team', icon: Contact },
   { to: '/app/ops/directory', label: 'Directory', icon: BookOpen },
 ];

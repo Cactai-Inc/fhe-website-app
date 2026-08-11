@@ -120,7 +120,8 @@ export default function InstructorHome() {
       <div className="grid sm:grid-cols-2 gap-2.5 mb-6">
         <ActionTile to="/app/ops/lessons" icon={GraduationCap} label="Lessons" sub="Sessions, packages, credits" />
         <ActionTile to="/app/calendar" icon={CalendarDays} label="Availability" sub="Set the times you teach" />
-        <ActionTile to="/app/ops/contacts" icon={Contact} label="Clients" sub={clientCount !== null ? `${clientCount} on file` : 'People you service'} />
+        {/* /app/admin, not the retired /app/ops/contacts (TASK-ROSTER) */}
+        <ActionTile to="/app/admin" icon={Contact} label="Clients" sub={clientCount !== null ? `${clientCount} on file` : 'People you service'} />
         <ActionTile to="/app/ops/intake" icon={Mail} label="Requests" sub={intakeCount !== null ? `${intakeCount} to review` : 'Incoming inquiries'} />
       </div>
 
