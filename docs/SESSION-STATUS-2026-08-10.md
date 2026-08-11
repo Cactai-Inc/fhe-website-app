@@ -56,7 +56,7 @@ survives.** `origin/main` = `6cf1215`, clean, in sync.
 
 | task | note |
 |---|---|
-| **INQUIRYMAIL** | form submissions send NO email; only a daily 16:00 cron carrying a COUNT |
+| ~~INQUIRYMAIL~~ | **DONE, merged 3edf978.** The spec's premise was WRONG: an immediate-send path (`api/request-received.ts`, on main since `3b0c2c9`) already existed and the public form already called it. The real gap was an email built from a client-picked subset with no reply path. Fixed: full row read server-side, reply-to added. **Lesson: I asserted a premise from a report instead of reading the call site.** |
 | **Dashboard/Inbound content merge** | nav half done; content merge needs its own order |
 | **UIO-013** | gold nav states, unsent |
 | **ROSTER re-point** | rows -> cards |
