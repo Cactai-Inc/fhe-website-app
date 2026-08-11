@@ -14,46 +14,49 @@ subheader gains a **bottom line** to match — so the two horizontal surfaces ar
 
 | surface | line | shadow |
 |---|---|---|
-| header | **keep** (`rgba(20,51,33,.15)`) | **ADD BACK — over the content area only, never over the nav** |
+| header | **keep** (`rgba(20,51,33,.15)`) | **ADD BACK — full width, over everything below it** |
 | contract subheader | **ADD** bottom line, same value | keep (Y-axis) |
 | nav rails | — | keep (X-axis) |
 
 **Reuse the header's original shadow value** — `0 2px 4px rgba(16,28,22,.08), 0 6px 18px
 rgba(16,28,22,.10)` — which is what the subheader already carries. Do not invent a second one.
 
-## THE SHADOW MUST NOT FALL ON THE NAV — added 2026-08-10
+## THE ELEVATION MODEL — owner, 2026-08-10. This supersedes the orchestrator's amendment below.
 
-> Owner: *"a drop shadow from the header over only the content area might look nicer, but the
-> line across the nav means there is already separation anyway... wouldnt it look weird if the
-> shadow doesnt look a little larger on the content area if the nav is sitting between the two?"*
-
-**He is describing real optics.** A shadow cast onto a NEARER surface is tight; onto a FURTHER
-one it is larger and softer. The nav rail is a raised surface — `#fdfcfa` is lighter than the
-page, which is what makes it read as raised — so the header's shadow ought to be tighter on the
-nav than on the content. **A single `box-shadow` cannot vary by what it lands on.**
-
-**So it must not land on the nav.** The elevation model becomes coherent:
+> *"the subheader is the issue, and why i opted for the full drop shadow from header instead of
+> partial. if the nav gets it, the subheader does too... genuinely the subheader and nav can be
+> on the same level but the header is always on top of everything."*
 
 ```
-header      highest   casts DOWN  onto content
-nav rail    raised    casts RIGHT onto content
-content     lowest    receives both, casts nothing
+header              ALWAYS on top. Casts onto whatever sits below it.
+nav + subheader     SAME LEVEL as each other. Receive the header's shadow,
+                    and cast their own onto the content.
+content             bottom. Receives from nav and subheader.
 ```
 
-**Nothing casts onto a surface at its own elevation.** The content area is the only receiver.
+**The header's shadow is FULL WIDTH and falls on everything below it — nav included.**
 
-**This also removes a third separator doing a second job.** The nav already has its `border-r`
-AND its own X-axis shadow from UIO-001. The header's shadow over it is separation number three
-in the same place.
+**Why full rather than content-only.** A content-only shadow changes its coverage depending on
+whether a subheader is present: full width on a page without one, partial on a page with one.
+**That seam is worse than the optical imprecision it was avoiding.** A full shadow simply lands
+on whatever is beneath it and needs no special-casing.
 
-**Suggested mechanism, not a mandate.** The header is `z-index: 40` (`app-header.css:42`); the
-rails are `relative z-30`. The rail is `sticky top-[var(--cs-hdr-h)]`, so its top edge sits at
-the header's bottom edge and it **never overlaps the header's own box** — raising the rail
-above the header therefore clips the shadow exactly where it is unwanted and nowhere else.
+**Why nav and subheader are peers.** They are the same surface at two orientations — one
+vertical, one horizontal. That is why they take matching treatment: each gets a line (the nav's
+`border-r`, the subheader's new `border-bottom`) AND each casts its own shadow onto the content.
 
-**Check the mobile drawer and scrim before changing any z-index.** They stack against the same
-values and must stay above both. If raising the rail disturbs them, say so and stop rather than
-re-stacking the whole app.
+**Nothing needs a z-index change.** The header at `z-index: 40` above the rails at `z-30` is
+already correct for this model.
+
+---
+
+### (SUPERSEDED — the orchestrator's earlier amendment, kept so it is not re-proposed)
+
+It argued the header's shadow should not fall on the nav, on the grounds that a shadow cast
+onto a nearer surface should be tighter than one cast further, and a single `box-shadow` cannot
+vary by what it lands on. **The optics were right; the conclusion was wrong.** It missed that
+nav and subheader are peers, so scoping the shadow to the content would make the shadow's
+coverage depend on which page you are looking at. **Do not raise the rail's z-index.**
 
 ## Files
 
