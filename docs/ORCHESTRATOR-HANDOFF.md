@@ -607,3 +607,22 @@ meaning, a document that cannot be signed — those are real at any row count.
 **This applies to the orchestrator first.** Relaying a thread's empty-table observation as
 news is the same error one step removed, and it is the one that has actually been costing the
 owner time.
+
+---
+
+## WORKING ORDER — owner, 2026-08-11
+
+**Leads first. Orders, payments and booking LAST.**
+
+> *"we'll circle back to the workflows for orders, payments, and booking after we get the leads
+> situation resolved… it is slowly moving toward being our focus but its truly the last thing
+> to worry about."*
+
+**This supersedes the earlier framing of BOOKFLOW as "the launch blocker."** The orchestrator
+led with that in several status reports on the strength of one earlier remark; the owner has
+now sequenced it explicitly and it goes last.
+
+The chain still runs in dependency order — a purchase cannot be exercised without a client, and
+a booking cannot be exercised without a purchase — so leads-first is also the cheaper order.
+Kit Garcin's Sunday lesson is the live acceptance case when the chain does come up; each place
+it breaks becomes a task with a real failure instead of a guess about one.
