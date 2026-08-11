@@ -974,30 +974,20 @@ export default function AppLayout() {
     return () => document.removeEventListener('keydown', onKey);
   }, [mobileNavOpen]);
 
-  /* Owner, 2026-08-08: "What is the point of the overlay if you can still scroll
-     the page when the menu is open?" — correct, and it was worse than cosmetic:
-     the drawer declares role="dialog" aria-modal="true" while the page kept
-     scrolling behind it, so the scrim was decorative and the ARIA was a lie.
-     Locking the body while it is open makes the scrim mean something.
+  /* UIO-007: the body lock that used to sit here (`position: fixed` on
+     <body>, scroll position captured and restored on close) is deleted, not
+     fixed. It was "restore scroll position after a teardown" — a workaround,
+     not a fix, and the same shape as the contract reload bug this project
+     already paid for once. It also restored the wrong scroller: it captured
+     `window.scrollY`, but the app scrolls inside `overflow-y-auto`
+     containers, so on a page with one (e.g. a contract mid-document) it put
+     the WINDOW back where it was while the actual scroller — a container —
+     had never moved, landing the user somewhere else entirely.
 
-     `position: fixed` on <body> rather than `overflow: hidden`, because iOS
-     Safari ignores overflow:hidden on body — and the scroll position is captured
-     and restored, since going fixed otherwise jumps the page to the top on close. */
-  useEffect(() => {
-    if (!mobileNavOpen) return;
-    const y = window.scrollY;
-    const { body } = document;
-    const prev = { position: body.style.position, top: body.style.top, width: body.style.width };
-    body.style.position = 'fixed';
-    body.style.top = `-${y}px`;
-    body.style.width = '100%';
-    return () => {
-      body.style.position = prev.position;
-      body.style.top = prev.top;
-      body.style.width = prev.width;
-      window.scrollTo(0, y);
-    };
-  }, [mobileNavOpen]);
+     The scrim still means something without it: the drawer (above) now
+     carries `overscroll-contain`, which stops its own scroll chaining to the
+     page behind it without freezing anything. If the page never moves,
+     there is nothing to capture and nothing to put back. */
   useEffect(() => { setMobileNavOpen(false); }, [location.pathname]);
 
   async function handleSignOut() {
@@ -1385,8 +1375,9 @@ export default function AppLayout() {
           surface before. A click on any link inside closes it (delegated
           `closest('a')` handler below — Sign out/App tour are buttons, not
           links, so `NavFooter` closes explicitly via its own `onNavigate`).
-          ONEHEADER §1: solid green panel (NAV_PANEL), not glass — see its
-          definition near the top of this file. */}
+          T5, corrected 2026-08-10: NAV_PANEL is near-white (`bg-cream-25`),
+          not solid green — that was true only of an earlier direction the
+          owner reversed. See its definition near the top of this file. */}
       {/* THE DRAWER TAB IS GONE — ONEHEADER §3 (owner, 2026-08-08). No hanging
           tab: the header's avatar button is the way into the nav on a phone, so
           there is one control for one job instead of a tab bolted to the side of
@@ -1412,7 +1403,7 @@ export default function AppLayout() {
           <div className="absolute inset-0 bg-green-950/45" onClick={closeMobileNav} aria-hidden="true" />
           <nav
             id="app-nav-drawer"
-            className={`absolute inset-y-0 ${isSuperAdmin ? 'left-0' : 'right-0'} w-72 max-w-[85vw] ${NAV_PANEL} shadow-xl p-3 overflow-y-auto`}
+            className={`absolute inset-y-0 ${isSuperAdmin ? 'left-0' : 'right-0'} w-72 max-w-[85vw] ${NAV_PANEL} shadow-xl p-3 overflow-y-auto overscroll-contain`}
             onClick={(e) => {
               // any real navigation inside closes the drawer
               if ((e.target as HTMLElement).closest('a')) closeMobileNav();
