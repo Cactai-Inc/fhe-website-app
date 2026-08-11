@@ -4,6 +4,7 @@ import type { FormEvent } from 'react';
 import { DataTable, FormField, Modal, ModuleGate, StatusBadge, useAsync, useToast } from '../../../../lib/ops';
 import type { Column } from '../../../../lib/ops';
 import { useModules } from '../../../../lib/ops/useModules';
+import { usePropertyTerm } from '../../../../contexts/BrandProvider';
 import {
   listLessonPackages,
   createLessonPackage,
@@ -189,6 +190,7 @@ const columns: Column<LessonPackage>[] = [
 export function LessonPackagesPage() {
   const modules = useModules();
   const lessonsOn = modules['mod.lessons'] === true;
+  const propertyTerm = usePropertyTerm();
 
   const [rows, setRows] = useState<LessonPackage[]>([]);
   const [drawer, setDrawer] = useState<DrawerState>({ mode: 'closed' });
@@ -251,7 +253,7 @@ export function LessonPackagesPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="font-serif text-2xl text-green-900">Lesson packages</h1>
-          <p className="text-sm text-green-800/70">The lesson packs your barn sells.</p>
+          <p className="text-sm text-green-800/70">The lesson packs your {propertyTerm.term} sells.</p>
         </div>
         {lessonsOn && (
           <button

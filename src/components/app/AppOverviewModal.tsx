@@ -6,6 +6,8 @@ import {
 } from 'lucide-react';
 import { Modal } from '../ops/kit/Modal';
 import { currentTourFormFactor, type StandingCategory, type NavPresence } from '../../lib/api';
+import { usePropertyTerm } from '../../contexts/BrandProvider';
+import { withArticle, withPreposition, type PropertyTerm } from '../../lib/propertyTerm';
 
 /**
  * APP OVERVIEW — the welcome tour of the member surface, rebuilt per the owner
@@ -41,28 +43,31 @@ function variantOf(categories: StandingCategory[]): Variant {
   return 'guest';
 }
 
-const INTRO: Record<Variant, string> = {
-  guest:
-    'The French Heritage Equestrian community is your window into life at the barn. '
-    + 'Your account opens the whole community: follow what’s happening, join the '
-    + 'conversation, message the barn and other members, and browse everything we '
-    + 'offer whenever you’re ready for more.',
-  rider:
-    'This is your home for riding with French Heritage Equestrian. Everything '
-    + 'around your lessons lives here — your schedule, your lesson credits, your '
-    + 'tackroom, and your signed paperwork — alongside the full member community: '
-    + 'the feed, events, and direct messages with the barn and other members.',
-  owner:
-    'This is the home for you and your horse at French Heritage Equestrian. Your '
-    + 'horse’s record, their care services, and the paperwork that goes with them '
-    + 'all live here — alongside the full member community: the feed, events, and '
-    + 'direct messages with the barn and other members.',
-  both:
-    'This is your home for everything you do with French Heritage Equestrian — '
-    + 'your riding and your horse. Your lessons, your schedule, your horse’s '
-    + 'record and care services, and all your paperwork live here, alongside the '
-    + 'full member community: the feed, events, and direct messages.',
-};
+function introFor(v: Variant, term: PropertyTerm): string {
+  const t = withArticle(term);
+  switch (v) {
+    case 'guest':
+      return 'The French Heritage Equestrian community is your window into life at '
+        + `${t}. Your account opens the whole community: follow what’s happening, join the `
+        + `conversation, message ${t} and other members, and browse everything we `
+        + 'offer whenever you’re ready for more.';
+    case 'rider':
+      return 'This is your home for riding with French Heritage Equestrian. Everything '
+        + 'around your lessons lives here — your schedule, your lesson credits, your '
+        + 'tackroom, and your signed paperwork — alongside the full member community: '
+        + `the feed, events, and direct messages with ${t} and other members.`;
+    case 'owner':
+      return 'This is the home for you and your horse at French Heritage Equestrian. Your '
+        + 'horse’s record, their care services, and the paperwork that goes with them '
+        + 'all live here — alongside the full member community: the feed, events, and '
+        + `direct messages with ${t} and other members.`;
+    case 'both':
+      return 'This is your home for everything you do with French Heritage Equestrian — '
+        + 'your riding and your horse. Your lessons, your schedule, your horse’s '
+        + 'record and care services, and all your paperwork live here, alongside the '
+        + 'full member community: the feed, events, and direct messages.';
+  }
+}
 
 interface Line { icon: typeof LayoutDashboard; label: string; desc: string }
 
@@ -80,12 +85,12 @@ interface Line { icon: typeof LayoutDashboard; label: string; desc: string }
  *  (`lessonsOn`) as the rail's Lessons entry, replacing the old RIDER/BOTH
  *  category gate so this list and the rail always agree on when Lessons is
  *  shown. */
-function pageLines(v: Variant, presence: NavPresence, lessonsOn: boolean): Line[] {
+function pageLines(v: Variant, presence: NavPresence, lessonsOn: boolean, term: PropertyTerm): Line[] {
   const lines: Line[] = [
     { icon: Users, label: 'Community Feed', desc: 'The one member feed — more on its focused views below.' },
     { icon: LayoutDashboard, label: 'Dashboard', desc: 'What needs your attention, and what’s coming up.' },
     { icon: CalendarDays, label: 'Calendar', desc: v === 'guest'
-      ? 'Anything scheduled with the barn, and open times you can book.'
+      ? `Anything scheduled with ${withArticle(term)}, and open times you can book.`
       : v === 'owner'
         ? 'Your horse’s scheduled services, payments due, and open times you can book.'
         : 'Your lessons and sessions, payments due, and open times you can book straight from the grid.' },
@@ -102,7 +107,7 @@ function pageLines(v: Variant, presence: NavPresence, lessonsOn: boolean): Line[
   if (presence.documents) {
     lines.push({ icon: FileText, label: 'Documents', desc: 'Every agreement you’ve signed, always available to download.' });
   }
-  lines.push({ icon: MessageSquare, label: 'Messages', desc: 'Direct messages with the barn and with other members.' });
+  lines.push({ icon: MessageSquare, label: 'Messages', desc: `Direct messages with ${withArticle(term)} and with other members.` });
   if (presence.posts) {
     lines.push({ icon: Grid3x3, label: 'My Posts', desc: 'Your community posts and listings, in one place.' });
   }
@@ -137,15 +142,17 @@ function accountLines(v: Variant): Line[] {
   return lines;
 }
 
-const FEED_VIEW_LINES: { label: string; desc: string }[] = [
-  { label: 'Social', desc: 'photos and moments members share' },
-  { label: 'Discussions', desc: 'questions and conversations' },
-  { label: 'For Sale', desc: 'horses and gear listed by the barn and members' },
-  { label: 'Events', desc: 'clinics, shows, and gatherings — RSVP to save your spot' },
-  { label: 'Articles', desc: 'guides and reading from French Heritage' },
-  { label: 'Resources', desc: 'trusted vets, farriers, and suppliers' },
-  { label: 'Members', desc: 'meet the community' },
-];
+function feedViewLines(term: PropertyTerm): { label: string; desc: string }[] {
+  return [
+    { label: 'Social', desc: 'photos and moments members share' },
+    { label: 'Discussions', desc: 'questions and conversations' },
+    { label: 'For Sale', desc: `horses and gear listed by ${withArticle(term)} and members` },
+    { label: 'Events', desc: 'clinics, shows, and gatherings — RSVP to save your spot' },
+    { label: 'Articles', desc: 'guides and reading from French Heritage' },
+    { label: 'Resources', desc: 'trusted vets, farriers, and suppliers' },
+    { label: 'Members', desc: 'meet the community' },
+  ];
+}
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return <h3 className="font-serif text-green-900 text-[15px] font-semibold mt-6 mb-2">{children}</h3>;
@@ -178,8 +185,13 @@ export function AppOverviewModal({
 }) {
   const variant = useMemo(() => variantOf(categories), [categories]);
   const mobile = currentTourFormFactor() === 'mobile';
-  const pages = useMemo(() => pageLines(variant, presence, lessonsOn), [variant, presence, lessonsOn]);
+  const propertyTerm = usePropertyTerm();
+  const pages = useMemo(
+    () => pageLines(variant, presence, lessonsOn, propertyTerm),
+    [variant, presence, lessonsOn, propertyTerm],
+  );
   const account = useMemo(() => accountLines(variant), [variant]);
+  const feedViews = useMemo(() => feedViewLines(propertyTerm), [propertyTerm]);
 
   const menuPhrase = mobile
     ? 'the menu button at the top-left of the page'
@@ -196,7 +208,7 @@ export function AppOverviewModal({
         </button>
       }
     >
-      <p className="body-text text-sm text-secondary">{INTRO[variant]}</p>
+      <p className="body-text text-sm text-secondary">{introFor(variant, propertyTerm)}</p>
 
       {mobile && (
         <p className="mt-3 flex items-start gap-2.5 text-[13px] text-green-900 bg-green-50 border border-green-200 rounded-lg px-3 py-2.5">
@@ -216,13 +228,13 @@ export function AppOverviewModal({
 
       <SectionHeading>The Community Feed</SectionHeading>
       <p className="text-[13px] text-secondary mb-2">
-        One feed, from the whole barn — announcements, events, and posts from members.
-        Post your own, or list something for sale. In the menu, the arrow next to
+        One feed, everyone {withPreposition(propertyTerm)} — announcements, events, and posts
+        from members. Post your own, or list something for sale. In the menu, the arrow next to
         &ldquo;Community Feed&rdquo; expands its focused views; each one filters the feed to
         just that kind of post, and &ldquo;Community Feed&rdquo; itself brings back everything:
       </p>
       <ul className="space-y-1 text-[13px] text-secondary list-none">
-        {FEED_VIEW_LINES.map((f) => (
+        {feedViews.map((f) => (
           <li key={f.label}>
             <span className="font-medium text-green-900">{f.label}</span> — {f.desc}
           </li>

@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { toErrorMessage } from '../../../../lib/ops/errors';
 import { ModuleGate, DataTable, Modal, FormField, AsyncButton, useAsync, useToast } from '../../../../lib/ops';
 import { useModules } from '../../../../lib/ops/useModules';
+import { usePropertyTerm } from '../../../../contexts/BrandProvider';
+import { titleCase } from '../../../../lib/propertyTerm';
 import {
   weekRange, listShifts, createShift, listStaffProfiles,
   listTimeEntriesForShift, createTimeEntry, staffDisplayName,
@@ -20,6 +22,7 @@ import {
 export function SchedulePage() {
   const modules = useModules();
   const on = modules['mod.employees'] === true;
+  const propertyTerm = usePropertyTerm();
   const toast = useToast();
 
   const [anchor, setAnchor] = useState(() => new Date());
@@ -186,7 +189,7 @@ export function SchedulePage() {
                 onChange={(e) => setShiftForm((f) => ({ ...f, ends_at: e.target.value }))} />
             )}
           </FormField>
-          <FormField label="Role" hint="e.g. Barn duty, Lessons, Show prep">
+          <FormField label="Role" hint={`e.g. ${titleCase(propertyTerm)} duty, Lessons, Show prep`}>
             {({ id, errorClass }) => (
               <input id={id} className={`form-input ${errorClass}`} value={shiftForm.role}
                 onChange={(e) => setShiftForm((f) => ({ ...f, role: e.target.value }))} />

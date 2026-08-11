@@ -13,6 +13,7 @@ import {
 import type { Horse, HorseInput, LookupCode, Contact } from '../../../lib/ops/types';
 import { HorseTable } from '../../../components/ops/horses/HorseTable';
 import { HorseForm } from '../../../components/ops/horses/HorseForm';
+import { usePropertyTerm } from '../../../contexts/BrandProvider';
 
 /**
  * OPS-HORSES — Horses roster + create/edit.
@@ -27,6 +28,7 @@ import { HorseForm } from '../../../components/ops/horses/HorseForm';
 type ModalState = { mode: 'closed' } | { mode: 'create' } | { mode: 'edit'; horse: Horse };
 
 export default function HorsesPage() {
+  const propertyTerm = usePropertyTerm();
   const [horses, setHorses] = useState<Horse[]>([]);
   const [breeds, setBreeds] = useState<LookupCode[]>([]);
   const [colors, setColors] = useState<LookupCode[]>([]);
@@ -81,7 +83,7 @@ export default function HorsesPage() {
       <header className="flex items-center justify-between">
         <div>
           <h1 className="font-serif text-2xl text-green-900">Horses</h1>
-          <p className="text-sm text-green-800/70">Roster of horses in your barn.</p>
+          <p className="text-sm text-green-800/70">Roster of horses {propertyTerm.preposition} your {propertyTerm.term}.</p>
         </div>
         <button type="button" className="btn-primary" onClick={() => setModal({ mode: 'create' })}>
           New horse

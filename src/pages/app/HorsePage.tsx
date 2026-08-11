@@ -6,6 +6,8 @@ import { useDocumentTitle } from '../../lib/hooks';
 import { horsePageDetail, deleteStableHorse, updateHorseRecord, type HorsePageDetail } from '../../lib/horses';
 import { listHorseBreeds, listHorseColors } from '../../lib/api';
 import { horseDeals, DEAL_TYPE_LABEL, type DealRow } from '../../lib/deals';
+import { usePropertyTerm } from '../../contexts/BrandProvider';
+import { withArticle } from '../../lib/propertyTerm';
 import type { LookupCode } from '../../lib/ops/types';
 
 /**
@@ -46,6 +48,7 @@ export default function HorsePage() {
   const { horseId } = useParams<{ horseId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const propertyTerm = usePropertyTerm();
   const [detail, setDetail] = useState<HorsePageDetail | null>(null);
   const [deals, setDeals] = useState<Pick<DealRow, 'id' | 'display_code' | 'deal_type' | 'status' | 'created_at'>[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -62,10 +65,10 @@ export default function HorsePage() {
       const raw = e instanceof Error ? e.message : '';
       // 3d: never surface raw database denial text — a friendly state instead.
       setError(/not authorized|unknown horse/i.test(raw)
-        ? "This horse record isn't available on your account. If you believe it should be, ask the barn to add you as a party on the record."
+        ? `This horse record isn't available on your account. If you believe it should be, ask ${withArticle(propertyTerm)} to add you as a party on the record.`
         : 'Could not load this horse.');
     }
-  }, [horseId]);
+  }, [horseId, propertyTerm]);
   useEffect(() => { void load(); }, [load]);
   // the deals this horse is part of — reciprocal link, best-effort (a viewer
   // without deal visibility simply sees none)

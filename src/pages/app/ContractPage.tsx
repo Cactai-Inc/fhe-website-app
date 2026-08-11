@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
 import { useAuth } from '../../contexts/AuthContext';
+import { usePropertyTerm } from '../../contexts/BrandProvider';
+import { withArticleCapitalized, agree } from '../../lib/propertyTerm';
 import {
   contractDocumentDetail, setContractField,
   resolveChangeRequest, advanceWorkflow, sendForReview, lockAndSign, confirmHorseSection,
@@ -246,6 +248,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   const location = useLocation();
   useDocumentTitle('Contract');
   const { isStaff, user, profile } = useAuth();
+  const propertyTerm = usePropertyTerm();
 
   /* WHO ELSE IS HERE. Presence uses the same channel pattern as the DM page.
      The display name is the community persona, falling back to the legal first
@@ -1525,7 +1528,9 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
               ) : (
                 <div className="flex flex-col gap-2">
                   <p className="text-[13px] text-green-950">
-                    {isStaff ? 'The barn has' : 'The other party has'} requested to terminate this contract.
+                    {isStaff
+                      ? `${withArticleCapitalized(propertyTerm)} ${agree(propertyTerm, 'has', 'have')}`
+                      : 'The other party has'} requested to terminate this contract.
                     {doc?.termination_request_reason ? ` Reason: ${doc.termination_request_reason}` : ''}
                   </p>
                   <div className="flex flex-col sm:flex-row gap-2.5">

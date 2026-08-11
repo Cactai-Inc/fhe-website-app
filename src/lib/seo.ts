@@ -11,7 +11,7 @@ export const BUSINESS = {
   name: 'French Heritage Equestrian',
   legalName: 'French Heritage Equestrian',
   description:
-    'A family-run hunter/jumper barn and community rooted in classical European horsemanship, offering riding lessons, horse training and care, and acquisition support in coastal San Diego.',
+    'A family-run hunter/jumper ranch and community rooted in classical European horsemanship, offering riding lessons, horse training and care, and acquisition support in coastal San Diego.',
   email: 'Hello@FHEquestrian.com',
   phone: '+1-858-439-3614',
   phoneDisplay: '858-439-3614',

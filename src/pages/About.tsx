@@ -139,7 +139,7 @@ export default function About() {
                 {[
                   'Well-kept riding arenas',
                   'Ocean breeze year-round',
-                  'Trail access from the barn',
+                  'Trail access from the ranch',
                   '2.5 miles — Torrey Pines Beach',
                   'Fully licensed & insured',
                   'Family-owned & operated',

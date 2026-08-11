@@ -8,6 +8,7 @@ import type {
   Invitation, Order, OrderItem, Payment,
   PaymentMethod, Profile,
 } from './types';
+import type { PropertyTerm } from './propertyTerm';
 import type {
   Contact, ContactInput, Client, Horse, HorseInput, LookupCode,
   ContractTemplate,
@@ -836,10 +837,22 @@ export async function myModules(): Promise<string[]> {
   return rows.map((r) => (typeof r === 'string' ? r : r.module_key));
 }
 
+/** The current caller's own tenant's property-term shape (U16). Mirrors
+ *  myModules(): my_property_term() reads config_values PAST staff-only RLS,
+ *  current_org()-scoped, so a plain USER member can resolve it for UI copy —
+ *  the seam the signed-in app was missing (BrandProvider's per-tenant fetch only
+ *  ever reached the anon public slug path). */
+export async function myPropertyTerm(): Promise<PropertyTerm> {
+  const { data, error } = await supabase.rpc('my_property_term');
+  if (error) throw error;
+  return data as PropertyTerm;
+}
+
 export interface OrgPublicConfig {
   org_id: string;
   slug: string;
   brand: Record<string, string>;
+  property: PropertyTerm;
   modules: string[];
   pricing: Array<{ product_key: string; name: string; amount: number }>;
 }
@@ -1859,6 +1872,19 @@ export async function listBrandingValues(): Promise<ConfigValueRow[]> {
     .order('key');
   if (error) throw error;
   return (data ?? []) as ConfigValueRow[];
+}
+
+/** The GLOBAL property-term picker list (U16) — world-readable, SUPER_ADMIN-
+ *  write. Extending it (the owner's "possibly others") is a data change: an
+ *  INSERT into property_terms, never a code change or a redeploy. */
+export async function listPropertyTerms(): Promise<PropertyTerm[]> {
+  const { data, error } = await supabase
+    .from('property_terms')
+    .select('key, term, article, plural, preposition')
+    .eq('active', true)
+    .order('sort_order');
+  if (error) throw error;
+  return (data ?? []) as PropertyTerm[];
 }
 
 /** Upload a branding asset (e.g. a logo) to the admin-write brand-assets bucket

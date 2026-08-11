@@ -33,6 +33,8 @@ import { listStableHorses, type StableHorse } from '../../lib/stable';
 import { HorseIntakeForm } from '../../components/app/HorseIntakeForm';
 import { AppOverviewModal } from '../../components/app/AppOverviewModal';
 import { useAuth } from '../../contexts/AuthContext';
+import { usePropertyTerm } from '../../contexts/BrandProvider';
+import { withArticle } from '../../lib/propertyTerm';
 import type { Profile } from '../../lib/types';
 import { consumeWallReturnDestination } from '../../lib/wallReturn';
 
@@ -156,6 +158,7 @@ export default function Onboarding() {
   useDocumentTitle('Welcome Aboard');
   const navigate = useNavigate();
   const { hasModule } = useAuth();
+  const propertyTerm = usePropertyTerm();
   // I6 — the app-overview modal's page list now mirrors AppLayout's canonical
   // USER nav order exactly, so this instance (the FIRST tour a member sees)
   // needs the same live presence + module gate as AppLayout threads in.
@@ -779,7 +782,7 @@ export default function Onboarding() {
           <h2 id="ob-horse-heading" className="font-serif text-green-800 text-xl mb-1.5">Tell us about your horse.</h2>
           <p className="body-text text-sm text-muted mb-5">
             Your service is for your own horse — your paperwork and care notes stay
-            attached to their record with the barn. If you have more than one, you
+            attached to their record with {withArticle(propertyTerm)}. If you have more than one, you
             can add them all here and cover them with a single signature.
           </p>
 
@@ -900,7 +903,7 @@ export default function Onboarding() {
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-green-900">{h.name}</p>
                       <p className="text-xs text-muted">
-                        {[h.breed, h.sex, h.color].filter(Boolean).join(' · ') || 'On file with the barn'}
+                        {[h.breed, h.sex, h.color].filter(Boolean).join(' · ') || `On file with ${withArticle(propertyTerm)}`}
                       </p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
@@ -963,7 +966,7 @@ export default function Onboarding() {
                 <h3 className="form-label mb-2">New horse</h3>
               )}
               <p className="body-text text-sm text-muted mb-5">
-                This creates their record with the barn. Anything you don't know can
+                This creates their record with {withArticle(propertyTerm)}. Anything you don't know can
                 stay blank — you can finish the rest later without holding up the
                 horses you have ready.
               </p>
