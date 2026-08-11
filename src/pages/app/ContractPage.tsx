@@ -658,6 +658,33 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   const companyPendingRoles = pendingSignerRoles.filter(
     (r) => !myRoles.includes(r) && companySignableRoles.has(r));
 
+  /* UIO-017. The #contract-signatures section below (~:1899) has its own
+     outer gate (state !== executed/void/terminated, and one of in_review /
+     locked / signatures.length > 0) — that part was already correct; a
+     comment right above it says so explicitly ("no empty white box"). The
+     bug is one level in: EVERY child inside that section is independently
+     gated on a finer-grained condition (role, docGated, nameGated, iSigned,
+     company-pending, signature count), and none of those seven conditions
+     is implied by the outer gate. A viewer who fails all seven — e.g. staff
+     with no party role of their own (`myRoles.length === 0`) looking at a
+     `locked` document with zero signatures, exactly what the signing freeze
+     produces everywhere right now — satisfies the outer gate (state ===
+     'locked') while every inner block stays hidden, and the section renders
+     its full card chrome around nothing.
+
+     This is the exact disjunction of those seven conditions, not a new
+     rule — if this is true, at least one child below actually renders;
+     if it's false, none of them would, and the section should not either.
+     (Conditions 2/3/4 below share one shape — `locked && has a role && not
+     signed yet`, split three ways only by which message shows — so their
+     union collapses to the shared prefix.) */
+  const hasSignatureCardContent =
+    (isOwnerSide && state === 'locked' && !counterpartySigned)
+    || (state === 'locked' && myRoles.length > 0 && !iSigned)
+    || iSigned
+    || (isOwnerSide && state === 'locked' && companyPendingRoles.length > 0)
+    || (detail?.signatures.length ?? 0) > 0;
+
   const sections = useMemo(() => {
     const by = new Map<string, ContractField[]>();
     for (const f of detail?.fields ?? []) {
@@ -1890,12 +1917,21 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
 
       {/* workflow + signing — the primary Send / Lock / Manage actions now live in
           the action deck above the title. This section carries the post-send
-          workflow steps (review round-trip, send-to-party) and the signing UI. It
-          only appears once there is something to show (a review/locked action, the
-          signing UI, or captured signatures) — in the plain editable phase there is
-          nothing here, so the whole card is omitted (no empty white box). */}
+          workflow steps (review round-trip, send-to-party) and the signing UI.
+          UIO-017, corrected: this comment used to claim the card is "omitted"
+          whenever there's nothing to show, checking only the workflow STATE —
+          but every child inside is gated on its own finer condition (role,
+          docGated, nameGated, iSigned, company-pending, signature count), none
+          of which the state check implies. A staff viewer with no party role
+          of their own on a `locked` document with zero signatures — exactly
+          what the signing freeze produces everywhere — passed the state check
+          and got the card with nothing inside it. `hasSignatureCardContent`
+          (declared above, next to the state it reads) is the actual
+          disjunction of what's inside; ANDed on here so this can only get
+          MORE restrictive than the state check alone, never less. */}
       {state !== 'executed' && state !== 'void' && state !== 'terminated'
-        && (state === 'in_review' || state === 'locked' || (detail?.signatures.length ?? 0) > 0) && (
+        && (state === 'in_review' || state === 'locked' || (detail?.signatures.length ?? 0) > 0)
+        && hasSignatureCardContent && (
         <section id="contract-signatures" className="bg-white border border-green-800/10 rounded-xl p-6 scroll-mt-16 mt-6">
           {/* "Send to Lessor" / "Send to Lessee" removed 2026-08-09 (owner). They
               called send_contract_to_party, which inserts an in-app notification
