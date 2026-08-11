@@ -71,3 +71,83 @@ export async function adminOversight(): Promise<Oversight> {
   if (error) throw error;
   return data as Oversight;
 }
+
+// ─── Document integrity (CONTRACTORPHAN) ─────────────────────────────────────
+
+/** A broken document, as one integrity check found it. */
+export interface IntegrityItem {
+  id: string;
+  display_code: string | null;
+  title: string | null;
+  horse: string | null;
+  status: string | null;
+  current_status: string | null;
+  detail: string;
+  /** Staff may remove it from the panel. False for anything signed or terminal. */
+  can_cleanup: boolean;
+}
+
+/** One check. It renders at zero too — a check that vanishes when it passes is
+ *  a check the owner cannot trust. */
+export interface IntegrityCheck {
+  key: string;
+  label: string;
+  why: string;
+  count: number;
+  items: IntegrityItem[];
+}
+
+/** The contact-orphan set: reported, explained, and never actionable. Note the
+ *  absence of `can_cleanup` — these carry no action control by design. */
+export interface IntegrityKnown {
+  key: string;
+  label: string;
+  note: string;
+  count: number;
+  items: {
+    id: string;
+    display_code: string | null;
+    title: string | null;
+    horse: string | null;
+    status: string | null;
+    current_status: string | null;
+    signatures: number;
+  }[];
+}
+
+export interface DocumentIntegrity {
+  checked_at: string;
+  item_limit: number;
+  checks: IntegrityCheck[];
+  known: IntegrityKnown;
+}
+
+/** Staff-only integrity sweep over live documents. */
+export async function documentIntegrity(): Promise<DocumentIntegrity> {
+  const { data, error } = await supabase.rpc('document_integrity');
+  if (error) throw error;
+  return data as DocumentIntegrity;
+}
+
+export interface CleanupResult {
+  id: string;
+  display_code: string | null;
+  title: string | null;
+  horse: string | null;
+  removed_at: string;
+}
+
+/**
+ * Remove ONE broken document, with a reason that is written to `status_events`.
+ * The database re-checks `can_cleanup_document` itself, so a document carrying
+ * any signature is refused here regardless of what the UI offered. There is
+ * deliberately no bulk form of this call.
+ */
+export async function cleanupDocument(documentId: string, reason: string): Promise<CleanupResult> {
+  const { data, error } = await supabase.rpc('cleanup_document', {
+    p_document_id: documentId,
+    p_reason: reason,
+  });
+  if (error) throw error;
+  return data as CleanupResult;
+}

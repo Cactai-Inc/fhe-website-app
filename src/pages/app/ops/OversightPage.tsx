@@ -2,12 +2,17 @@ import { useEffect, useState } from 'react';
 import { Users, LifeBuoy, Image, Flag } from 'lucide-react';
 import { useDocumentTitle } from '../../../lib/hooks';
 import { adminOversight, type Oversight } from '../../../lib/support';
+import { DocumentIntegrityPanel } from '../../../components/ops/DocumentIntegrityPanel';
 
 /**
  * OPS OVERSIGHT (Slice 5, /app/ops/oversight) — the admin's watch panel: usage
  * numbers + recent activity from the audit log (message/moderation/record events).
  * Admin-only (total control). Consolidates activity logs + usage + a moderation
  * pointer into one glanceable surface.
+ *
+ * CONTRACTORPHAN added the document integrity panel between the usage cards and
+ * recent activity — deliberately here rather than on a new page or behind a new
+ * nav entry, because this already is the staff oversight surface.
  */
 const CARDS: { key: keyof Oversight['usage']; label: string; icon: typeof Users }[] = [
   { key: 'members', label: 'Members', icon: Users },
@@ -46,6 +51,8 @@ export default function OversightPage() {
               </div>
             ))}
           </div>
+
+          <DocumentIntegrityPanel />
 
           <h2 className="font-serif font-medium text-green-800 text-xl mb-3">Recent activity</h2>
           {data.activity.length === 0 ? (
