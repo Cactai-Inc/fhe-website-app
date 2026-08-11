@@ -93,6 +93,33 @@ animals it covers, or whether the premium is itemised. **"Percentage of what" ne
 draft wordings (pro-rata / equal division / Lessor produces the figure) are all **withdrawn** —
 none is needed.
 
+### THE FINAL SHAPE — owner's own restatement, 2026-08-10
+
+> *"so the policy cost factor that gets printed is either lessor pays for insurance or the
+> lessor requires lessee to pay \$ and either lessor pays deductible or lessor requires lessee
+> to pay \$ or split by %, only for things the lessee caused."*
+
+```
+POLICY COST     Lessor pays
+                Lessor requires Lessee to pay $     (+ frequency — see below)
+
+DEDUCTIBLE      Lessor pays
+                Lessor requires Lessee to pay $
+                split by %
+                  — all scoped to events the Lessee caused
+```
+
+**The policy cost never takes a percentage. The deductible may.** That asymmetry is the whole
+resolution: a premium is not a well-defined base, a deductible is.
+
+**Note the deductible gains an explicit "Lessor pays" option** that earlier drafts left implicit.
+Three options there, two on the policy cost.
+
+**FREQUENCY — carried forward, not dropped.** The owner's earlier ruling stands unless he says
+otherwise: *"a payment amount (one time or weekly/monthly/annually)"*. His restatement omits it
+but does not retract it, and `$100` once versus `$100` monthly are different agreements.
+**Confirm before building; do not silently drop it.**
+
 ### What the section becomes — per side, mortality and medical
 
 > Owner, refining: *"without a split, its just either this is paid by lessor or lessor requires
@@ -133,6 +160,19 @@ Do not store an amount without its frequency.
 > the injury the lessee is responsible for is less than the deductible but because the owner
 > uses the insurance and has the clause they could try to use that language to get more money
 > from the lessee than they should be on the hook for (% of the cost of the actual injury)."*
+
+**THE EXISTING CLAUSE SCOPES THE TRIGGER, NOT THE AMOUNT.** Verified — both deductible clauses
+read identically:
+
+> *"If a claim is made under any such policy **arising from events for which Lessee bears
+> responsibility, whether directly or indirectly**, responsibility for **any deductible** shall
+> be borne by: X"*
+
+That is a **trigger condition**. On a bundled claim it is **satisfied** — the claim does arise
+from an event the Lessee is responsible for — so the clause fires and allocates *"any
+deductible"*, the whole of it. **Nothing apportions the deductible to the causing event.**
+`"whether directly or indirectly"` widens the trigger further, making a mixed claim easier to
+qualify, not harder.
 
 **A deductible applies ONCE PER CLAIM. Fault does not.** Bundling a pre-existing condition into
 the same claim inflates the Lessee's exposure without inflating their responsibility:
