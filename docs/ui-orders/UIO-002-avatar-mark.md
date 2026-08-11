@@ -34,6 +34,38 @@ green letter with no containing shape — while `.oh-mono` beside it keeps
 `border: 1px solid rgba(20,51,33,.40)`. The two marks do not read as a pair. Letter is 17px in
 a 42px mark.
 
+## THE FILL AND THE LETTER CHANGE TOGETHER. THIS IS ONE DECISION, NOT TWO.
+
+**Owner, 2026-08-10:** *"make sure the thread knows to switch the color of the letter when the
+color of the button is changed from an empty fill to a solid fill... i want to leave nothing
+to interpretation."*
+
+**There is no state in which the fill changes and the letter does not.**
+
+| layout | fill | letter | contrast |
+|---|---|---|---|
+| **desktop** — ring only, no fill | none (transparent) | **`green-900 #0d2118`** | 13.4 vs the cream header |
+| **mobile, rest** — solid | `green-800` + 14% white = `#355040` | **`cream-25 #fdfcfa`** | 8.68 |
+| **mobile, `:active`** — solid | `green-800` pure `#143321` | **`cream-25 #fdfcfa`** | 13.43 |
+
+### What happens if you change one and not the other
+
+**Keeping the green letter on the filled mobile mark gives `green-900` on `green-800` — a
+contrast ratio of 1.22.** That is invisible. Not "hard to read": the letter disappears
+completely, and the only way into the nav on a phone becomes a blank green circle.
+
+**This exact failure has already shipped on this project once** — a selected nav row whose
+text moved to a new palette while its icon did not. Do not repeat its shape.
+
+### The rule, stated as a rule
+
+- **Empty fill -> dark letter.** Desktop.
+- **Solid fill -> cream letter.** Mobile, both states.
+- The letter does **not** change between mobile rest and `:active`. Only the fill does. Cream
+  clears 8.68 and 13.43 respectively, so one letter colour serves both.
+
+---
+
 ## What it must become
 
 ### Desktop — ring only
