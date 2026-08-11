@@ -119,7 +119,11 @@ SELECT k, 'INSURANCE_RISK', v.ck, v.heading, v.body, v.ctype, v.so, false, v.con
 
   -- parent not in force: the MED_NA paradigm — say WHY it cannot be taken
   ('INSURANCE_RISK.CCC_NA', NULL, 'prose', 171,
-   'Not applicable. Care, custody and control coverage is available only as a rider on a general liability policy carried by Lessee. Because Lessee does not carry general liability insurance under this Agreement, no care, custody and control coverage is available.',
+   -- "component", never "rider" (owner, 2026-08-10): in a horse lease "rider" already
+   -- means the person on the horse. MED_NA established "a component of a mortality
+   -- policy on the Horse", so this matches vocabulary the document already uses.
+   -- parent/rider stays in the docs and in these comments — only contract text is banned.
+   'Not applicable. Care, custody and control coverage is available only as a component of a general liability policy carried by Lessee. Because Lessee does not carry general liability insurance under this Agreement, no care, custody and control coverage is available.',
    '{"all": [{"equals": ["ENTITY"], "field_key": "LESSEE.PARTY_TYPE"},
              {"equals": ["", "ACCEPTS_PERSONALLY"], "field_key": "TXN.GL_LESSEE_STATUS"}]}'),
 
