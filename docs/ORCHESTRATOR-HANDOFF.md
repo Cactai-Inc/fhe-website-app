@@ -51,6 +51,24 @@ reasoning about what the code probably did instead of checking what it actually 
 - **Do not make design decisions alone.** The previous session shipped eight visual changes
   the owner rejected, including a colour value he had already turned down. If a change alters
   how something looks and he has not specified it, show him options or ask.
+
+  > **REFINED 2026-08-10, owner ruling — know where the line is.** He said, of the avatar's
+  > opacity values: *"you make the call on these things."*
+  >
+  > **The split is DIRECTION versus NUMBERS.** He decides what a thing should do and be —
+  > outlined marks, a line instead of a shadow, a fill that deepens on press. **Once he has
+  > given the direction, the values that implement it are the orchestrator's** — alphas,
+  > durations, pixel sizes, the compensated base that holds a hue.
+  >
+  > **This does NOT loosen the rule above.** A change he has not directed still needs asking,
+  > and "he approved the direction" is not cover for widening the scope. When a number turns
+  > out to be a FORK rather than a dial — where the obvious adjustment changes what the thing
+  > IS — that goes back to him. UIO-002 records a worked example: raising the alpha there
+  > makes the fill more vivid, not darker, so "make it darker" is a different design, not a
+  > bigger number.
+  >
+  > **State the reasoning with every value you choose**, so he can turn one dial instead of
+  > re-litigating the set.
 - **Do not claim something is done because the code changed.** A build passing proves a rule
   compiled, not that it works or looks right.
 - **Do not correct an error only in chat.** Fix the document that carries it, or the next
