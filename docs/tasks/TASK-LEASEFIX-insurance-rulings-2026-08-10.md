@@ -135,11 +135,34 @@
 > the floating allocation, and the policy cost. **What stays is one selector and one value per
 > obligation.**
 >
-> ### Frequency — SETTLED 2026-08-10. Five options.
+> ### Frequency — SETTLED 2026-08-10. Five options, and it is an OPTIONAL INCLUSION.
 >
 > ```
 > one time · weekly · monthly · annually · PER USE
 > ```
+>
+> > Owner: *"the frequency doesnt always apply so its an optional inclusion."*
+>
+> **Use the existing `is_optional` mechanism** — `contract_clause_defs.is_optional`, already
+> true on **19 clauses in this lease**. Frequency joins an established pattern; **do not build a
+> new one.** It never renders when the Lessor bears the cost, since there is no Lessee
+> obligation to schedule.
+>
+> ### ONE THING TO DECIDE — what an OMITTED frequency means
+>
+> **"Lessee pays \$100" with no frequency is ambiguous** — once, or monthly? That is the exact
+> class of ambiguity everything else in this model was tightened to remove, so leaving it
+> undefined would undo the work.
+>
+> **Two coherent answers, and the owner picks:**
+>
+> 1. **Omission means ONE TIME.** The absence has a defined meaning; nothing is arguable after
+>    signing. Costs nothing, since "one time" is already an option anyone can state explicitly.
+> 2. **Omission means unspecified**, and the parties settle it outside the contract. Honest about
+>    what was actually agreed, but it puts a money term outside the instrument.
+>
+> **Do not choose this in code.** If option 1, the meaning belongs in the clause text so a reader
+> knows it without being told.
 >
 > **It resolves a real ambiguity, which is why it stays.** Three rhythms are in play and none is
 > the obvious default: the **policy's** (annual, or two to three instalments — the owner's runs
