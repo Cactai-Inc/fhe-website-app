@@ -70,3 +70,79 @@ choosing a border weight myself.
 - The header's line, the rail shadow (if visible), and the subheader shadow
   have not been looked at by eye in any browser or device size. Nothing here
   proves a render.
+
+---
+
+## UIO-002 — the avatar becomes a ring, and on mobile a solid button
+
+**Commit:** `9614a41`
+
+Implemented against the REWRITTEN (opaque) version at the top of the order —
+confirmed the banner and ignored the earlier translucent/`#02d67c` approach
+it supersedes. Also deliberately ignored `origin/task/uireview`'s own avatar
+CSS (a completely different, older mechanism: opacity-based idle/engaged
+states, no white-veil-over-opaque-fill technique) — UIO-001's "the branch's
+answer wins" only settles the header edge, not the avatar; UIO-002 is
+self-contained and more recent, so its spec is what shipped.
+
+**Mechanism choice (order required picking one and saying which):** white
+overlay as a `linear-gradient(rgba(255,255,255,X), rgba(255,255,255,X))`
+layer over `theme('colors.green.800')`, not a pseudo-element. Reasoning: the
+letter is this element's own text content and always paints above its own
+`background` regardless of how many layers that background has, so there's
+no stacking-order risk to manage, unlike a `::before` overlay which would
+need explicit z-index work to avoid covering the glyph.
+
+**What I verified:**
+- `npm run typecheck` — 0 errors.
+- `npm run lint` — 0 errors, 30 warnings (baseline, unchanged from UIO-001).
+- `npm run build` — succeeded, prerender included.
+- Grepped `dist/assets/index-BIOMXEDV.css` for every rule body named in the
+  order's verification section:
+  - `.oh-avatar` shared rule: `border:1px solid rgba(20,51,33,.4)`,
+    `font-size:20px` — ring and new size present.
+  - `span.oh-avatar` (desktop): `background:transparent;color:#0d2118` —
+    unchanged, no fill.
+  - `button.oh-avatar` (mobile rest): `background:linear-gradient(#ffffff24,#ffffff24),#143321`
+    — `#ffffff24` is white at alpha `0x24/255 = 14.1%`, matching the spec's
+    14%; base colour `#143321` confirms `theme('colors.green.800')` resolved
+    correctly.
+  - `button.oh-avatar:active,button.oh-avatar[aria-expanded=true]`:
+    `background:linear-gradient(#fff0,#fff0),#143321` — `#fff0` is the
+    4-digit hex shorthand for white at 0% alpha, so the pressed state
+    composites to pure `#143321` with nothing added.
+  - `button.oh-avatar:focus-visible`: outline present, unchanged.
+  - No `:hover` rule exists anywhere on `.oh-avatar` in the built CSS —
+    confirmed absent, matching "`:active` only, not `:hover`."
+  - Grepped `.oh-mono` separately to confirm it is untouched: still
+    `font-size:17px`, same border/colour as before.
+- **Contrast — computed independently (WCAG relative-luminance formula),
+  not copied from the order's table**, per "state the rendered contrast...
+  because nothing is composited":
+  - Mobile `:active`, `#fdfcfa` on `#143321`: **13.43:1** — exact match to
+    the order's table.
+  - Mobile rest, `#fdfcfa` on `#355040`: **8.63:1** by my calculation vs the
+    order's stated 8.68 — within hand-rounding tolerance, consistent.
+  - **Desktop, `#0d2118` on the header `#f5f0e8`: I compute 14.83:1, not the
+    13.4 the order's table states.** Checked my method against the state
+    doc's own separate "13.4:1" figure (`text-green-800` on the nav panel
+    `cream-25 #fdfcfa`) and reproduced it exactly (13.43), which is why I
+    trust the method — but that figure is for a different letter colour
+    (green-800, not green-900) on a different background (cream-25 nav
+    panel, not the header). My best read is the order's "13.4 vs the cream
+    header" line reused that unrelated figure rather than being computed
+    fresh for this pair. **Not a safety regression** — the actual contrast
+    is higher than claimed, comfortably AAA either way — but the stated
+    number in UIO-002 doesn't match what the shipped colours produce, and I
+    did not edit the order to correct it (read-only to me). Flagging for
+    UIREVIEW to confirm or correct.
+
+**What I did NOT verify — needs a browser check:**
+- The ring, the letter size, and both mobile fill states have not been
+  looked at by eye. In particular: the white-overlay-over-opaque-fill
+  technique and the size jump to 20px are both new visual outcomes, not just
+  copied values — worth a specific look, not just a glance.
+- Whether the `:active` transition reads as smooth. `transition: background`
+  is animating a `linear-gradient`'s alpha; modern Chrome/Firefox/Safari
+  interpolate two structurally-identical gradients, but this is inference
+  from the CSS, not something I've seen render.
