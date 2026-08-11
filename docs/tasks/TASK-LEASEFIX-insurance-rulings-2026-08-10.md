@@ -136,7 +136,74 @@ B · What the Lessor requires       requires Lessee to have or obtain GL
 requires GL and the Lessee answers that it carries none — requiring means the valid answers
 are *has* or *will obtain*. The material-breach collision cannot arise.
 
-### CONSEQUENCE: `ACCEPTS_PERSONALLY` may now have NO HOME. Do not resolve this alone.
+### SETTLED 2026-08-10 — BOTH PARTIES DECLARE; THE REQUIREMENT NARROWS THE MENU.
+
+> Owner: *"not required ≠ not having, so we give each party the option to declare as well as
+> the lessor the option to require which causes the not having to be not an option for lessee
+> to select."*
+
+**This is the model. Build 13.2 to it.**
+
+```
+Lessor declares own GL      has / will obtain / does not carry      ALWAYS asked
+Lessor requires GL          require / do not require                ALWAYS asked
+Lessee declares own GL      has / will obtain / does not carry      ALWAYS asked
+                            └─ "does not carry" is REMOVED from the option list
+                               whenever the Lessor requires
+
+CCC requirement             require / do not require        ENTITY Lessee only
+Lessee declares CCC         same three, same constraint     ENTITY + CCC required
+```
+
+**The requirement is a CONSTRAINT ON THE OPTION SET, not a separate question the Lessee
+answers.** Both parties always declare their own position. Requiring simply removes one choice
+from the other party's menu.
+
+**Why this eliminates the contradiction structurally.** "Does not carry" is *absent from the
+menu* whenever a requirement is live, rather than present and conflicting. There is no state in
+which the document can assert both a requirement and its non-fulfilment, so `GL_REQUIRED`'s
+material-breach language can never collide with `GL_LESSEE_PERSONAL`. **No suppression logic is
+needed** — the earlier three-change plan is obsolete.
+
+**Why the Lessee still declares when nothing is required.** *Not required is not the same as
+not having.* Whether the Lessee carries GL changes who actually bears an at-fault cost, and the
+allocation question in that branch is better informed for knowing it.
+
+**Enforcement is unchanged where it matters.** When the Lessor requires, the Lessee's only
+valid answers are *has* or *will obtain*, and a blank line still blocks the lock. A
+disagreement stalls the contract until one party moves — the owner's stated intent, and what
+`contract_lock_blockers` already does.
+
+### What this means for the change already live
+
+`f2b88b3` removed `ACCEPTS_PERSONALLY`'s `when` entirely, making it selectable everywhere.
+**That is now too wide.** It needs a `when` again — a different one than the original:
+
+| | gate |
+|---|---|
+| original, too narrow | `GL_LESSOR_REQUIRES = NEITHER` **AND** `GL_NO_REQ_ALLOCATION = LESSEE_AT_FAULT` |
+| shipped today, too wide | none |
+| **correct** | **`GL_LESSOR_REQUIRES` = do-not-require** |
+
+`docs/tasks/TASK-LEASEFIX-13.2-lessee-decline-option.md` is **SUPERSEDED** by this section. Its
+three-change plan solved a contradiction this structure prevents. Close it out; do not build
+from it.
+
+### CCC — SPLIT ENTIRELY. The bundled value goes.
+
+> Owner: *"either we split entirely or we merge properly. realizing that CCC is an option that
+> lessor only can require of an entity and they dont need to require it."*
+
+Two properties a bundled option cannot carry: CCC is askable **only of an entity**, and it is
+**independently optional**. Bundling it into a GL option that also serves individual Lessees is
+what made the original incoherent.
+
+**`GL_AND_CCC` is removed as a value.** GL requirement and CCC requirement become two
+questions, each with its own visibility rule and the same declare/require shape.
+
+---
+
+### (superseded) The concern this replaced
 
 The owner asked for a "does not carry" option for the Lessee and it went live today
 (`f2b88b3`, `when` removed). **Under this structure the Lessee either answers a requirement —
