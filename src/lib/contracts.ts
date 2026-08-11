@@ -88,6 +88,9 @@ export interface PartyChoice {
 export interface FieldStructured {
   // scalars
   value?: string; text?: string; amount?: string;
+  // share_amount composite: which unit `amount` is in — 'USD' or 'PCT'. Stored, never
+  // inferred: a fixed contribution and a proportion are different agreements.
+  unit?: string;
   // person / provider / contact-block
   name?: string; company?: string; phone?: string; email?: string; website?: string;
   // address

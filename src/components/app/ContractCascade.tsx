@@ -376,6 +376,43 @@ function SelectWithOther({ f, onSave, disabled }: { f: ContractField; onSave: Sa
  *  selected state — choosing No collapses the input (and clears it); the answer can
  *  be changed any time before signing. The composed sentence appears only when Yes
  *  with text; No / unanswered → the clause is omitted from the final document. */
+/** LEASEFIX G1 (owner-approved 2026-08-11): the share composite. A unit slot on
+ *  each side of a number — picking one LOCKS the other, so a share is either $100
+ *  or 100% and never both, and never a bare number whose unit has to be guessed.
+ *  Stores {unit, amount}; compose_field_prose renders "$100.00" or "100%".
+ *  A fixed contribution and a proportion are different agreements, so the unit is
+ *  stored rather than inferred. Follows the existing composite pattern (structured
+ *  in, composed text out) — see RevealText / MedSchedule below. */
+function ShareAmount({
+  f, onSaveStructured, disabled,
+}: { f: ContractField; onSaveStructured: SaveStructFn; disabled: boolean }) {
+  const s = f.structured ?? {};
+  const unit = (s.unit as string | undefined) ?? '';
+  const set = (patch: Partial<FieldStructured>) =>
+    void onSaveStructured(f.field_key, { ...s, ...patch });
+  const slot = 'text-sm rounded-lg border border-green-800/15 px-1.5 py-1 focus-ring bg-white'
+    + ' disabled:bg-cream-100 disabled:text-muted';
+  return (
+    <span className="inline-flex items-baseline gap-1.5">
+      <select className={slot} aria-label="Amount in dollars"
+        disabled={disabled || unit === 'PCT'} value={unit === 'USD' ? 'USD' : ''}
+        onChange={(e) => set({ unit: e.target.value })}>
+        <option value="">&mdash;</option>
+        <option value="USD">$</option>
+      </select>
+      <input className={inputCls} inputMode="decimal" placeholder="number"
+        disabled={disabled} value={(s.amount as string | undefined) ?? ''}
+        onChange={(e) => set({ amount: e.target.value })} />
+      <select className={slot} aria-label="Amount as a percentage"
+        disabled={disabled || unit === 'USD'} value={unit === 'PCT' ? 'PCT' : ''}
+        onChange={(e) => set({ unit: e.target.value })}>
+        <option value="">&mdash;</option>
+        <option value="PCT">%</option>
+      </select>
+    </span>
+  );
+}
+
 function RevealText({
   f, onSaveStructured, disabled,
 }: { f: ContractField; onSaveStructured: SaveStructFn; disabled: boolean }) {
@@ -739,6 +776,9 @@ function FieldControl({
   const save = () => { editingRef.current = false; if (local !== (f.value ?? '')) void onSave(f.field_key, local); };
 
   // ── structured formats (source of truth = f.structured) ──
+  if (fmt === 'share_amount') {
+    return <ShareAmount f={f} onSaveStructured={onSaveStructured} disabled={disabled} />;
+  }
   if (fmt === 'reveal_text') {
     return <RevealText f={f} onSaveStructured={onSaveStructured} disabled={disabled} />;
   }
@@ -1150,7 +1190,7 @@ export function InlineFieldControl({
 
   // Structured / multi-part formats can't collapse to a single inline token —
   // render the block control, but inline-block and compact so it stays in flow.
-  const isStructured = ['party', 'contact', 'person', 'address', 'location', 'pair', 'fee_schedule', 'med_schedule', 'contacts_list', 'reveal_text', 'certify', 'add_text'].includes(fmt)
+  const isStructured = ['party', 'contact', 'person', 'address', 'location', 'pair', 'fee_schedule', 'med_schedule', 'contacts_list', 'reveal_text', 'certify', 'add_text', 'share_amount'].includes(fmt)
     || kind === 'responsibility' || kind === 'week_grid';
   if (isStructured) {
     // add_text renders as a FLEX row: collapsed it's the "+ Add …" button with
