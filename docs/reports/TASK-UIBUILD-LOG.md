@@ -605,3 +605,12 @@ for the client rail to attach a divider to.
 - The content-merge decision itself (Inbound dissolving into Leads as
   contact records, per the order's latest correction) is explicitly out of
   scope for this commit and unbuilt.
+
+---
+
+## UIO-010 — the badge number
+
+**Status: CLOSED, NO CHANGE.** No commit. Read the order in full to confirm
+it's still closed as of the current queue (last touched at `490a104`,
+already synced past) — `NAV_BADGE` (`bg-gold-500 text-green-950`,
+`AppLayout.tsx`) is untouched. Nothing to verify because nothing shipped.
