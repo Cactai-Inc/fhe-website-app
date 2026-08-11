@@ -497,7 +497,7 @@ export function ClauseProse({
     // was pushed into a narrow indented column with the pills wrapping raggedly.
     // A control this size needs the full width of the clause.
     return kind === 'select' || kind === 'buttons' || kind === 'responsibility' || kind === 'week_grid'
-      || ['party', 'contact', 'person', 'address', 'location', 'pair', 'fee_schedule', 'med_schedule', 'reveal_text', 'week_grid'].includes(fmt);
+      || ['party', 'contact', 'person', 'address', 'location', 'pair', 'fee_schedule', 'med_schedule', 'reveal_text', 'week_grid', 'share_amount'].includes(fmt);
   };
 
   const flushMatrix = () => {
