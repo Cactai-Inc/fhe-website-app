@@ -146,3 +146,60 @@ need explicit z-index work to avoid covering the glyph.
   is animating a `linear-gradient`'s alpha; modern Chrome/Firefox/Safari
   interpolate two structurally-identical gradients, but this is inference
   from the CSS, not something I've seen render.
+
+---
+
+## UIO-003 — the nav hover flicker: icon transition, one double-paint, named durations
+
+**Commit:** `49f42aa`
+
+Synced `task/uibuild` to `origin/main` first (fast-forward, clean — all 4 of
+my prior commits were already merged upstream, so nothing was lost) to pick
+up this and the following orders.
+
+**Scope note:** the order names two examples beyond `NAV_ICON_IDLE` itself
+("Add New" Plus, the group-heading buttons) and instructs a sweep of "every
+element that changes colour on hover." I scoped that sweep to the nav-rail
+family the owner was actually looking at (`RailLink`/`PresenceLink`/
+`AccountNavLink`/`CommunityNav`/`NavFooter`/the group headings/the Add New
+row) — not `MenuLink` or the account-menu-shaped block around line 1054-1120,
+which read as a different, unrelated surface not named by the order and not
+part of "both navs." Flagging in case that scope guess was too narrow.
+
+**What I verified:**
+- `npm run typecheck` — 0 errors. `npm run lint` — 0 errors, 30 warnings
+  (baseline). `npm run build` — succeeded.
+- Grepped the built CSS by *property*, not by the value I authored (T2b):
+  `.duration-320{transition-duration:.32s}` and
+  `.ease-glide{transition-timing-function:cubic-bezier(.32,.72,0,1)}` both
+  emitted as real, separate utility rules — not folded into `transition-colors`
+  and not silently dropped.
+- Confirmed cascade order by byte offset in the built CSS:
+  `.transition-colors` (which bundles its own 150ms/default-ease) appears at
+  byte 71503; `.duration-320` at 72180 and `.ease-glide` at 72384 — both
+  after it, so they win the same-specificity override rather than losing to
+  the bundled default depending on source order.
+- Grepped the built JS for `duration-320`/`ease-glide`: 8 occurrences each,
+  matching the 8 edited call sites exactly (`NAV_ROW_IDLE`, `NAV_ICON_IDLE`,
+  the CommunityNav parent pill, its Link, its toggle button, both chevron
+  icons, the group-heading button).
+- Grepped the source for `bg-navfill/64` in the CommunityNav parent+toggle
+  block: appears exactly once now (the parent), confirming the double-paint
+  class was removed from the child and not accidentally duplicated.
+- The toggle's chevron icon has no colour class of its own — it inherits
+  `color` from the button. I added `transition-colors duration-320 ease-glide`
+  to the icon directly anyway rather than relying on inherited-value
+  reasoning (a continuously-transitioning ancestor's inherited value should
+  animate smoothly on a child with no transition of its own, by my
+  understanding of the CSS inheritance model) — the order's own bar is
+  "confirm each element carries its own transition," so I made it explicit
+  rather than resting on inference I haven't seen render.
+
+**What I did NOT verify — needs a browser check:**
+- The actual flicker fix. Nothing here proves the icon no longer vanishes on
+  hover, that the double-paint row now matches its neighbours' fill strength,
+  or that 320ms/glide reads as "easing" rather than "still too fast" — that's
+  the owner's read to make, on the frame evidence or in person.
+- The scope guess above (nav-rail family only, not the account-menu-shaped
+  block at ~1054-1120) is unverified against what the owner was actually
+  looking at when he recorded the flicker.
