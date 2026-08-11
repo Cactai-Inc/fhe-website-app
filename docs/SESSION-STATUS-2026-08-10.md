@@ -1,3 +1,6 @@
+> **SUPERSEDED by `docs/SESSION-STATUS-2026-08-11.md`.** Read that one. This is retained
+> only as the record of where 2026-08-10 ended.
+
 # SESSION STATUS — 2026-08-10, end of the orchestration day
 
 **Written for a context compaction. This is the full picture; nothing else from the session
