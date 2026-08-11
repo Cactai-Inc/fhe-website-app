@@ -33,6 +33,48 @@ this — *"still waiting for the browser tab favicon to be updated to match it."
 **Cormorant was replaced deliberately** — the owner's decision, recorded in `tailwind.config.js`:
 its thin strokes lost the emboss. The favicon never got that change.
 
+## THE FILE — apply this verbatim. No design decisions left.
+
+`public/favicon.svg`:
+
+```svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect x="2" y="2" width="60" height="60" fill="#faf8f4"
+        stroke="#143321" stroke-width="4"/>
+  <text x="32" y="43" text-anchor="middle"
+        font-family="'Big Caslon', 'Libre Caslon Text', Georgia, serif"
+        font-size="30" font-weight="400" letter-spacing="1.2"
+        fill="#0d2118">FH</text>
+</svg>
+```
+
+**Why it is not a literal copy of `.oh-mono`, and both reasons are 16px:**
+
+| | header | favicon | why |
+|---|---|---|---|
+| border | `1px rgba(20,51,33,.40)` | **4px solid `#143321`** | 1px at 40% renders sub-pixel at 16px and vanishes into the tab bar |
+| letters | 17px in 42px — 40% | **30px in 64px — 47%** | 40% is elegant at full size and spindly at a quarter of it |
+| ground | transparent | **`#faf8f4`** | a tab bar is not guaranteed light; transparent disappears on a dark theme |
+| corners | true square | true square | unchanged — the square is the mark |
+| tracking | `.04em` | `1.2` at 64px | the same ratio, expressed in user units |
+| typeface | `Big Caslon` → `Libre Caslon` → Georgia | **same stack** | Big Caslon is a macOS system font, so this matches the header exactly on a Mac and falls back to Georgia elsewhere. **An SVG favicon cannot load a web font** — `Libre Caslon Text` is listed but inert. At 16px the difference is not perceptible. |
+
+**Do not convert the letters to paths.** It would guarantee identical letterforms everywhere and
+solve a problem invisible at this size.
+
+## ALSO MISSING — `apple-touch-icon`
+
+`index.html` declares only `<link rel="icon" type="image/svg+xml" href="/favicon.svg" />`.
+**iOS home-screen bookmarks do not use SVG.** Add a **180×180 PNG** at
+`public/apple-touch-icon.png` rendered from the same mark, and reference it:
+
+```html
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+```
+
+**The PNG needs the ground filled** — iOS composites onto its own background and a transparent
+one goes black.
+
 ## Match the FORM. Judge the fill at 16px.
 
 **Match without argument:** the typeface (Libre Caslon Text), a shipped weight (400 or 700,
