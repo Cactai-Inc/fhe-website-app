@@ -10,6 +10,22 @@ the owner does not want to be told about the next one of these by a thread.
 
 ---
 
+# PART 1 — OWNER RULING 2026-08-10: **HELD. DO NOT APPLY.**
+
+The migration is written, dry-run-proven and **deliberately unapplied**. Parts 2 and 3 shipped,
+so the two documents are now visible in the integrity panel with working cleanup controls, and
+**the owner will delete them from the UI himself.**
+
+That is not a deferral — it exercises the cleanup tool on the exact case it was built for,
+which is a better proof than any dry run. **No thread should apply
+`20260811T1000_contractorphan_delete_orphaned_documents.sql`.** It stays in the journal as the
+record of what was proven.
+
+If the panel turns out not to be able to clean them, that is a defect in Part 3 and it comes
+back as a new task — not as a reason to run the migration.
+
+---
+
 # PART 1 — DELETE THE TWO ORPHANED BEAUMONT DOCUMENTS
 
 ## What is wrong
