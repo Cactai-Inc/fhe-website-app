@@ -3,6 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- UIO-005: iOS home-screen bookmarks don't take SVG, and a transparent
+         PNG would composite onto iOS's own background (black), so this is a
+         separate rendered PNG with the ground filled, not a fallback of the
+         favicon. -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <!-- viewport-fit=cover: without it iOS letterboxes the page inside the safe
          area in landscape, leaving pale bands beside the cardstock header where
          the notch and home indicator live. With it the page owns the full width
