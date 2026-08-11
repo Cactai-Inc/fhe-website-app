@@ -27,13 +27,71 @@
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
-import { sendInvitationEmail, type ChecklistRow } from './_lib/invitationEmail.js';
+import { sendInvitationEmail, recordInvitationDelivery, type ChecklistRow } from './_lib/invitationEmail.js';
 
 function makeToken(): string {
   // URL-safe random token. Node 18+ (the Vercel runtime) exposes Web Crypto globally.
   const bytes = new Uint8Array(24);
   globalThis.crypto.getRandomValues(bytes);
   return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+/** Where in the send path a failure happened. Returned to the caller so a staff
+ *  member (or a log line) can tell a provisioning failure from a delivery one. */
+type Stage =
+  | 'auth' | 'minor-check' | 'provision' | 'expiry-config'
+  | 'invitation-insert' | 'supersede' | 'email';
+
+interface ErrorDetail {
+  status: number;
+  message: string;
+  stage: Stage;
+  code?: string;
+  hint?: string;
+}
+
+/** A failure that knows where it happened. */
+class StageError extends Error {
+  constructor(public stage: Stage, public cause: unknown) {
+    super(cause instanceof Error ? cause.message : String(cause));
+    this.name = 'StageError';
+  }
+}
+
+/** Run a step; any throw is re-thrown tagged with the stage it came from. */
+async function at<T>(stage: Stage, fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    throw err instanceof StageError ? err : new StageError(stage, err);
+  }
+}
+
+/** A PostgREST/Postgres error shape (message + code/details/hint). */
+function pgFields(e: unknown): { message?: string; code?: string; details?: string; hint?: string } {
+  return (e && typeof e === 'object') ? e as Record<string, string> : {};
+}
+
+/**
+ * Turn any thrown value into an operator-readable failure: real message, the
+ * stage it came from, and a status that distinguishes "you asked for something
+ * impossible" (4xx) from "this deployment is broken" (5xx).
+ */
+function describeError(err: unknown): ErrorDetail {
+  const stage: Stage = err instanceof StageError ? err.stage : 'provision';
+  const raw = err instanceof StageError ? err.cause : err;
+  const f = pgFields(raw);
+  const message = (f.message || (raw instanceof Error ? raw.message : String(raw)) || 'unknown failure').trim();
+  const hint = [f.details, f.hint].filter(Boolean).join(' — ') || undefined;
+
+  // Missing deployment configuration is a 5xx: nothing the operator typed is wrong.
+  if (/Missing SUPABASE_URL|SERVICE_ROLE_KEY/i.test(message)) {
+    return { status: 500, stage, message: `server is misconfigured: ${message}`, code: f.code, hint };
+  }
+  // A RAISE EXCEPTION out of the provisioning spine is a rejected REQUEST, not a
+  // crash — the operator can act on it (pick a category, sign in as the tenant).
+  const rejected = /not authorized|is required|could not resolve org|already|invalid|expired|minor|not valid/i.test(message);
+  return { status: rejected ? 400 : 500, stage, message, code: f.code, hint };
 }
 
 /** provision_client_invitation() jsonb result. */
@@ -97,13 +155,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     typeof body.requestId === 'string' && body.requestId.trim() ? body.requestId.trim() : null;
 
   try {
-    const db = getSupabaseAdmin();
+    const db = await at('auth', async () => getSupabaseAdmin());
 
     // Verify the caller is an admin.
     const { data: userData, error: userErr } = await db.auth.getUser(token);
     if (userErr || !userData.user) return res.status(401).json({ error: 'unauthorized' });
-    const { data: profile } = await db
-      .from('profiles').select('is_admin, role, org_id').eq('user_id', userData.user.id).maybeSingle();
+    const profile = await at('auth', async () => {
+      const { data, error } = await db
+        .from('profiles').select('is_admin, role, org_id').eq('user_id', userData.user!.id).maybeSingle();
+      if (error) throw error;
+      return data;
+    });
     // Two-operator model: instructors (MANAGER/EMPLOYEE) provision + send client
     // invitations too — client support is a servicing capability.
     const isStaff = profile?.is_admin
@@ -114,19 +176,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (invitedRole !== 'USER' && !isAdminCaller) {
       return res.status(403).json({ error: 'only an admin can create staff accounts' });
     }
+    // An invitation belongs to a TENANT. A caller with no org has nothing to
+    // invite anyone into: the provisioning RPC would die on "could not resolve
+    // org", and the plain path on a NOT NULL violation four triggers deep —
+    // both previously flattened to "could not create invitation". The platform
+    // owner (admin@cactai.io) has org_id NULL BY DESIGN (D1a); the fix is to
+    // say so, never to give that account an org.
+    if (!profile.org_id) {
+      return res.status(403).json({
+        stage: 'auth' as Stage,
+        error: 'this account is not part of an organization, so it cannot send invitations — '
+          + 'sign in with the organization\'s own staff account and try again',
+      });
+    }
+    const orgId = profile.org_id as string;
 
     // C10: a minor cannot hold an account — reject before provisioning or
     // sending anything (no guardian-redirect for invitations, reject only).
-    const { data: existingContact } = await db
-      .from('contacts').select('id')
-      .ilike('email', email).is('deleted_at', null).limit(1).maybeSingle();
-    if (existingContact) {
+    await at('minor-check', async () => {
+      const { data: existingContact } = await db
+        .from('contacts').select('id')
+        .ilike('email', email).is('deleted_at', null).limit(1).maybeSingle();
+      if (!existingContact) return;
       const { data: isMinor, error: minorErr } = await db.rpc('is_minor_contact', { p_contact_id: existingContact.id });
       if (minorErr) throw minorErr;
-      if (isMinor) {
-        return res.status(400).json({ error: 'minors cannot be invited to hold accounts; invite the guardian' });
-      }
-    }
+      if (isMinor) throw new Error('minors cannot be invited to hold accounts; invite the guardian');
+    });
 
     const origin = req.headers.origin || `https://${req.headers.host}`;
 
@@ -136,29 +211,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // purchase + invitation. The RPC returns the token we email — the plain
       // invitations insert below must NOT also run. org_id is stamped from the
       // admin's profile (a service-role call has no current_org()).
-      const { data, error: rpcErr } = await db.rpc('provision_client_invitation', {
-        p_email: email,
-        p_first_name: firstName || null,
-        p_last_name: lastName || null,
-        p_categories: categories,
-        p_offering_ids: offeringIds,
-        p_template_keys: templateKeys.length > 0 ? templateKeys : null,
-        p_mark_paid: paymentStatus === 'paid',
-        p_payment_method: ((body.paymentMethod as string) || '').trim() || null,
-        p_notes: ((body.notes as string) || '').trim() || null,
-        p_request_id: requestId,
-        p_org_id: profile.org_id ?? null,
-        p_partial_amount: partialAmount,
+      const out = await at('provision', async () => {
+        const { data, error: rpcErr } = await db.rpc('provision_client_invitation', {
+          p_email: email,
+          p_first_name: firstName || null,
+          p_last_name: lastName || null,
+          p_categories: categories,
+          p_offering_ids: offeringIds,
+          p_template_keys: templateKeys.length > 0 ? templateKeys : null,
+          p_mark_paid: paymentStatus === 'paid',
+          p_payment_method: ((body.paymentMethod as string) || '').trim() || null,
+          p_notes: ((body.notes as string) || '').trim() || null,
+          p_request_id: requestId,
+          p_org_id: orgId,
+          p_partial_amount: partialAmount,
+        });
+        if (rpcErr) throw rpcErr;
+        return (Array.isArray(data) ? data[0] : data) as ProvisionResult;
       });
-      if (rpcErr) throw rpcErr;
-      const out = (Array.isArray(data) ? data[0] : data) as ProvisionResult;
 
       const registerUrl = `${origin}/activate?token=${out.token}`;
       // "your purchase is ready" line only when an offering was purchased.
       const offeringLabel = (out.labels && out.labels.length > 0) ? out.labels.join(', ') : null;
-      const emailed = await sendInvitationEmail(db, profile.org_id ?? null, email, registerUrl, offeringLabel);
+      // The invitation row is committed by now, so a delivery failure cannot roll
+      // it back — but it MUST come back as a failure, with its reason, or the
+      // operator walks away believing a person was emailed who never was.
+      const sent = await sendInvitationEmail(db, orgId, email, registerUrl, offeringLabel);
+      await recordInvitationDelivery(db, out.invitation_id, sent);
       return res.status(200).json({
-        registerUrl, emailed,
+        registerUrl,
+        emailed: sent.ok,
+        ...(sent.ok ? {} : { emailError: sent.error, stage: 'email' as Stage }),
+        invitationId: out.invitation_id,
         contactId: out.contact_id,
         categories: out.categories,
         purchaseId: out.purchase_id,
@@ -178,8 +262,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // expiresInDays still wins if explicitly passed.
     let days = Number(body.expiresInDays) > 0 ? Number(body.expiresInDays) : 0;
     if (!days) {
-      const { data: cfgDays } = await db.rpc('invitation_expiry_days', { p_org: profile.org_id ?? null });
-      days = Number(cfgDays) > 0 ? Number(cfgDays) : 7;
+      days = await at('expiry-config', async () => {
+        const { data: cfgDays, error: cfgErr } = await db.rpc('invitation_expiry_days', { p_org: orgId });
+        if (cfgErr) throw cfgErr;
+        return Number(cfgDays) > 0 ? Number(cfgDays) : 7;
+      });
     }
     const expiresAt = scheduledFor
       ? new Date(Date.now() + 48 * 3600000).toISOString()
@@ -190,24 +277,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // for this email (status='superseded', linked via superseded_by/resend_of)
     // so the client page can show the live link above the grayed-out prior one —
     // instead of a bare revoke that discards the lifecycle trail.
-    const { data: insRow, error: insErr } = await db.from('invitations').insert({
-      org_id: profile.org_id ?? null, // service-role insert has no current_org(); stamp the admin's org
-      request_id: requestId,
-      email,
-      token: inviteToken,
-      expires_at: expiresAt,
-      status: 'sent',
-      invited_role: invitedRole,
-      scheduled_for: scheduledFor,
-      // carried onto the account at redemption (name → profile, title → profile employment fields)
-      first_name: firstName || null,
-      last_name: lastName || null,
-      title: title || null,
-    }).select('id').single();
-    if (insErr) throw insErr;
+    const insRow = await at('invitation-insert', async () => {
+      const { data, error: insErr } = await db.from('invitations').insert({
+        org_id: orgId, // service-role insert has no current_org(); stamp the admin's org
+        request_id: requestId,
+        email,
+        token: inviteToken,
+        expires_at: expiresAt,
+        status: 'sent',
+        invited_role: invitedRole,
+        scheduled_for: scheduledFor,
+        // carried onto the account at redemption (name → profile, title → profile employment fields)
+        first_name: firstName || null,
+        last_name: lastName || null,
+        title: title || null,
+      }).select('id').single();
+      if (insErr) throw insErr;
+      return data;
+    });
 
-    await db.rpc('supersede_invitations', {
-      p_org: profile.org_id ?? null, p_email: email, p_new_invitation_id: insRow.id,
+    await at('supersede', async () => {
+      const { error: supErr } = await db.rpc('supersede_invitations', {
+        p_org: orgId, p_email: email, p_new_invitation_id: insRow.id,
+      });
+      if (supErr) throw supErr;
     });
 
     const registerUrl = `${origin}/activate?token=${inviteToken}`;
@@ -224,10 +317,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     } catch { /* checklist is best-effort — the invite still goes out */ }
 
-    const emailed = await sendInvitationEmail(db, profile.org_id ?? null, email, registerUrl, null, checklist, expiresAt);
-    return res.status(200).json({ registerUrl, emailed });
+    const sent = await sendInvitationEmail(db, orgId, email, registerUrl, null, checklist, expiresAt);
+    await recordInvitationDelivery(db, insRow.id, sent);
+    return res.status(200).json({
+      registerUrl,
+      emailed: sent.ok,
+      ...(sent.ok ? {} : { emailError: sent.error, stage: 'email' as Stage }),
+      invitationId: insRow.id,
+    });
   } catch (err) {
-    console.error('invite error', err);
-    return res.status(500).json({ error: 'could not create invitation' });
+    // NEVER flatten. A caller who cannot tell "this address belongs to a minor"
+    // from "the SMTP password is wrong" cannot fix either one. This endpoint is
+    // staff-only (verified above), so the real cause goes back to the operator.
+    const detail = describeError(err);
+    console.error('invite error', detail.stage, detail.message, err);
+    return res.status(detail.status).json({
+      error: detail.message,
+      stage: detail.stage,
+      ...(detail.code ? { code: detail.code } : {}),
+      ...(detail.hint ? { hint: detail.hint } : {}),
+    });
   }
 }

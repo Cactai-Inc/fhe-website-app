@@ -11,6 +11,7 @@ import {
   adminPendingStaffInvites, adminRevokeStaffInvite,
   type AdminMemberRow, type MemberRole, type PendingStaffInvite,
 } from '../../../lib/admin';
+import { InviteResultPanel } from '../../../components/app/InviteResultPanel';
 
 /**
  * TEAM (/app/ops/team, Accounts section) — the internal-accounts zone. The
@@ -368,7 +369,8 @@ function InviteStaffSection({ onSent }: { onSent: () => void }) {
   const role = 'ADMIN' as const;
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [result, setResult] = useState<{ url: string; emailed: boolean } | null>(null);
+  const [result, setResult] = useState<
+    { url: string; emailed: boolean; emailError?: string; email: string } | null>(null);
 
   async function send() {
     setBusy(true); setErr(null); setResult(null);
@@ -377,7 +379,7 @@ function InviteStaffSection({ onSent }: { onSent: () => void }) {
         email: email.trim(), role, expiresInDays: 7,
         firstName: firstName.trim(), lastName: lastName.trim(), title: title.trim(),
       });
-      setResult({ url: r.registerUrl, emailed: r.emailed });
+      setResult({ url: r.registerUrl, emailed: r.emailed, emailError: r.emailError, email: email.trim() });
       setFirstName(''); setLastName(''); setTitle(''); setEmail('');
       onSent(); // surface the new "Invited" row in the roster immediately
     } catch (e) {
@@ -411,12 +413,8 @@ function InviteStaffSection({ onSent }: { onSent: () => void }) {
       </div>
       {err && <p role="alert" className="form-error mt-2">{err}</p>}
       {result && (
-        <div className="bg-green-50 border border-green-200 p-3 mt-3 text-sm rounded-lg max-w-xl">
-          <p className="text-green-800 mb-1.5">
-            Invitation {result.emailed ? 'sent by email.' : 'created — email not configured; copy the link:'}
-          </p>
-          <code className="block break-all text-xs text-green-900 bg-white border border-green-200 p-2">{result.url}</code>
-        </div>
+        <InviteResultPanel url={result.url} emailed={result.emailed}
+          emailError={result.emailError} email={result.email} className="max-w-xl" />
       )}
     </section>
   );

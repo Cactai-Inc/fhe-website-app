@@ -335,6 +335,9 @@ export async function adminListResources(): Promise<ContentResource[]> {
 export interface AdminInviteResult {
   registerUrl: string;
   emailed: boolean;
+  /** Why delivery failed. Present iff `emailed` is false — never a bare false. */
+  emailError?: string;
+  invitationId?: string;
   /** Present when the invite provisioned a client (categories/offerings sent). */
   offeringLabel?: string | null;
   contactId?: string;
@@ -385,8 +388,14 @@ export async function adminSendInvitation(
     body: JSON.stringify(input),
   });
   if (!res.ok) {
-    const msg = await res.text().catch(() => '');
-    throw new Error(msg || 'Could not send invitation.');
+    // The endpoint returns { error, stage, code?, hint? } — surface the real
+    // cause and where it happened, not a JSON blob and not a generic string.
+    const payload = await res.json().catch(() => null) as
+      { error?: string; stage?: string; hint?: string } | null;
+    const detail = payload?.error?.trim();
+    const where = payload?.stage ? ` [${payload.stage}]` : '';
+    const hint = payload?.hint ? ` (${payload.hint})` : '';
+    throw new Error(detail ? `${detail}${hint}${where}` : `Could not send invitation (HTTP ${res.status}).`);
   }
   return (await res.json()) as AdminInviteResult;
 }

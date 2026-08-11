@@ -21,7 +21,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createHash } from 'node:crypto';
 import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
-import { sendInvitationEmail } from './_lib/invitationEmail.js';
+import { sendInvitationEmail, recordInvitationDelivery } from './_lib/invitationEmail.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -39,6 +39,7 @@ function sha256(s: string): string {
 /** provision_client_invitation() jsonb result (subset used here). */
 interface ProvisionResult {
   token: string;
+  invitation_id: string;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -107,7 +108,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const origin = req.headers.origin || `https://${req.headers.host}`;
       const registerUrl = `${origin}/activate?token=${out.token}`;
-      await sendInvitationEmail(db, orgId, email, registerUrl);
+      // The response is deliberately neutral (no enumeration), so the delivery
+      // outcome has nowhere to surface EXCEPT the invitation's status trail.
+      // Without this a self-onboarding signup that never got its email is
+      // invisible to everyone, including the person waiting for it.
+      const sent = await sendInvitationEmail(db, orgId, email, registerUrl);
+      await recordInvitationDelivery(db, out.invitation_id, sent);
     }
     // Rate-limited (or org unresolved) requests fall through to the same
     // { ok: true } response below — neutral, no enumeration, no provisioning.
