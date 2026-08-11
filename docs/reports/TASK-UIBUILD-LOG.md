@@ -541,3 +541,67 @@ and it confirms the order's choice rather than surfacing a disagreement.
   end user's browser/OS will — I looked at the image and the letterforms
   read as a real serif, but I can't confirm which font in the stack actually
   won.
+
+---
+
+## UIO-012 item 2/2b — Dashboard moves to Management, a divider separates Add New
+
+**Commit:** `cefaad7`
+
+Before writing any code for item 2, stopped and asked rather than guessing:
+`IntakePage.tsx` is 870 lines of business-critical staff workflow (booking
+pipeline, invitation provisioning that emails registration links, lesson
+scheduling) against `DashboardPanel.tsx`'s 46-line personal notification
+strip, and `IntakePage.tsx` isn't in UIO-012's Files list. Got back: nav
+half only, content merge is a separate task, confirmed via the order's own
+later correction ("the orchestrator misread the merge direction" —
+clarifying I hadn't actually picked a direction, only flagged the scale
+mismatch as a reason to ask; direction stands as originally stated —
+Dashboard retained and moved, Inbound dissolved from the nav).
+
+**What I verified:**
+- `npm run typecheck` — 0 errors. `npm run lint` — 0 errors, 30 warnings
+  (baseline). `npm run build` — succeeded.
+- Read the compiled `MANAGEMENT_GROUP` array (`x9` in the minified chunk)
+  directly: `{to:"/app/dashboard",label:"Dashboard",icon:Ju},{to:"/app/ops/support",...}`
+  — Dashboard present, no `/app/ops/intake` anywhere in that array.
+- Read the badge-injection line in the same chunk:
+  `.map(Be=>Be.to==="/app/dashboard"?{...Be,badge:c+d}:Be)` — targets the
+  right path, sums the right two variables (`c`=unreadCount, `d`=inboundCount
+  in this chunk's minified names, traced back from the surrounding scope).
+- Confirmed `StaffNavItems` (`QN` in the chunk) compiles with exactly three
+  items (Calendar, Catalog, Messages) and its function signature dropped
+  `bellCount` — then separately checked both of its call sites
+  (`r.jsx(QN,{dmCount:o,open:S})` and `r.jsx(QN,{dmCount:o})`) to confirm
+  neither still passes `bellCount`, rather than trusting the typecheck pass
+  alone to mean the call sites were also cleaned up.
+- Confirmed `ClientNavItems` (member rail) is unchanged — still has its own
+  Dashboard entry with `badge:e` (bellCount) — members were never part of
+  this reshuffle and I checked rather than assumed the shared `RailLink`
+  refactor left it alone.
+- Confirmed the new divider's compiled output sits directly between the Add
+  New button and the App pages group: `r.jsx("div",{className:`my-1
+  border-t ${xd}`,role:"separator"})`.
+- Grepped for `Inbox` (the lucide icon) across the file after removing its
+  only usage: zero remaining references, so removing the import doesn't
+  leave a dangling unused symbol.
+
+**Scope note, flagged rather than silently resolved:** the order says the
+divider "applies to both rails, client and staff." Checked `ClientRail`'s
+render and found no create control above its list at all — no "Add New"
+equivalent anywhere in the member rail. Added the divider only where a
+create control actually exists (the staff rail) rather than inventing one
+for the client rail to attach a divider to.
+
+**What I did NOT verify — needs a browser check:**
+- That the merged Management entry actually navigates to Dashboard and
+  shows the summed badge count correctly at runtime — traced through
+  compiled source, not clicked.
+- That removing `bellCount` from `StaffNavItems` didn't silently change
+  behavior somewhere the type system wouldn't catch (e.g., if a caller
+  relied on a truthy prop existing at all, not just its value) — TypeScript
+  and the excess-property check should catch a real mismatch, but this is
+  inference, not a render.
+- The content-merge decision itself (Inbound dissolving into Leads as
+  contact records, per the order's latest correction) is explicitly out of
+  scope for this commit and unbuilt.
