@@ -670,3 +670,78 @@ a missing value.
 Queue complete: UIO-003 through UIO-012 (all items), UIO-005, UIO-010,
 UIO-011. Nothing left `READY` as of this session's last sync with
 `origin/main`.
+
+---
+
+## New queue: UIO-013 through UIO-018
+
+Synced `task/uibuild` to `origin/main` (fast-forward, clean — 54 files, all
+from unrelated merged threads: NOGUARD2/3, ROSTER, ROSTERCARD,
+CONTRACTORPHAN, INVITEWORKS, DASHLEADS, LEASEFIX. None touch
+`AppLayout.tsx`/`app-header.css`/`ContractSubheader.tsx`). **Baseline lint
+warnings moved from 30 to 35** with this merge — confirmed by stashing my
+own changes and re-running lint against the merged-but-otherwise-untouched
+tree before assuming my work introduced anything. 35 is the correct
+baseline for everything below.
+
+## UIO-013 — the nav loses its fill states and takes gold
+
+**Commit:** `94f3f8d`
+
+**Scope:** applied to the nav-rail family only (`RailLink`/`NAV_ROW_IDLE`/
+`NAV_ICON_IDLE`/`CommunityNav`/Add New), consistent with UIO-003's own
+scoping — the account-menu-dropdown-shaped block (`MenuLink` and the block
+around what's now lines 1132-1268) still carries the old
+`hover:bg-navfill/64` fill untouched. Same reasoning as before: that's a
+different, unrelated surface the order doesn't name.
+
+**What I verified:**
+- `npm run typecheck` — 0 errors. `npm run lint` — 0 errors, 35 warnings
+  (new baseline, confirmed above). `npm run build` — succeeded.
+- Grepped the built CSS for all four underline sub-properties by property,
+  not by my authored class name — first attempt at the regex mis-escaped
+  Tailwind's arbitrary-variant selector (`\[\@media\(hover\:hover\)\]\:...`)
+  and returned nothing, which looked exactly like a T1 silent-fail; redid it
+  with a plain substring search rather than trusting the first empty result.
+  Confirmed present: `text-decoration-line:underline`,
+  `text-decoration-color:#ba9935` (gold-600, exact hex), `text-decoration-thickness:2px`,
+  `text-underline-offset:4px` — both the direct `hover:` forms (row-level,
+  e.g. RailLink) and the `group-hover:` forms (CommunityNav's Link, which
+  needs to react to hovering its sibling toggle button too).
+- Confirmed `.group:hover .[...]group-hover:bg-cream-25{background-color:rgb(253 252 250 ...)}`
+  present for the badge — exact cream-25 value.
+- Confirmed `bg-navfill/64` is now ONLY emitted for the untouched
+  account-menu block (grepped the source lines producing the one remaining
+  compiled rule, all outside this order's scope) and `bg-navfill/80`
+  (selected, untouched) still emits unchanged.
+- **The empirical check that mattered most**: before centralizing the
+  underline in the row-level className (rather than touching every
+  individual label span, which the order suggests as one option), rendered
+  a minimal flex-row reproduction (icon + label, `underline` on the row) in
+  headless Chrome and looked at it — confirmed the line stays under the
+  label's own text width and does not appear under the icon or stretch
+  across the row. This is standard CSS behavior (text-decoration doesn't
+  decorate replaced elements, and paints per-element even when inherited to
+  flex children), but I tested rather than assumed it given how explicit the
+  order is about the icon and the row being off-limits.
+
+**Selected-fill ("light gold") — explicitly NOT shipped**, per the order's
+own stop condition. Computed cream-25 vs. gold-600 contrast at every alpha
+from 0.2 to 1.0 (Python, WCAG relative-luminance formula): best case is
+2.66:1 at 100% opacity (no blend at all) — the fill and the label color are
+structurally incompatible, not a tuning problem. `NAV_ROW_ACTIVE` is
+byte-for-byte unchanged; documented the finding in a comment at its
+declaration so a future thread doesn't re-attempt the same math.
+
+**Badge on selected row also NOT changed** (not explicitly required, but
+coupled to the blocked piece) — reasoned that blending the badge into the
+panel color only makes visual sense against an unfilled or light
+background; against the still-dark `navfill/80` selected fill, a cream
+badge would look like a stray light dot rather than "a hole," so left it
+untouched pending the selected-fill question being resolved by the owner.
+
+**What I did NOT verify — needs a browser check:**
+- The actual rendered underline in the real app (not just the isolated
+  repro), the badge's hover blend, and whether removing the fill entirely
+  reads as intended rather than "broken" — this is explicitly a "try it"
+  per the owner, so the verdict is his to make.
