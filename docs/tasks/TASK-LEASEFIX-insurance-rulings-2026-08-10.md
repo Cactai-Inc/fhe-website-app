@@ -101,10 +101,28 @@
 > **Deleted:** the per-party pairs, `*_SPLIT_TEXT`, `*_COST_ALLOCATION`, `*_POLICY_COST`,
 > `*_COST_RESP`, `*_DED_RESP` and its split pair. **Fourteen fields per side become two.**
 >
+> ### Frequency — SETTLED 2026-08-10. Five options.
+>
+> ```
+> one time · weekly · monthly · annually · PER USE
+> ```
+>
+> **It resolves a real ambiguity, which is why it stays.** Three rhythms are in play and none is
+> the obvious default: the **policy's** (annual, or two to three instalments — the owner's runs
+> June to January), the **lease's** (his own is two days a week, paid per use), and the
+> **contribution's**.
+>
+> **The contribution follows the LEASE, not the policy.** The Lessee cannot see when the
+> Lessor's instalments fall due, and that schedule may change at renewal without the lease
+> changing. **"One time" is therefore NOT the default just because a policy is annual.**
+>
+> **`per use` is different in kind — do not let it be "corrected" later.** It states a **rate,
+> not a sum**, so the annual total is unknown at signing and that is intentional. It exists for
+> partial leases where use genuinely varies — the owner's own arrangement is the case for it.
+> **A thread that tries to demand a total, or to compute one, has misread it.**
+>
 > ### Still open with the owner
 >
-> - **Frequency** on the policy-cost contribution — one time / weekly / monthly / annually.
->   Specced earlier, omitted from his restatement, **not retracted. Confirm; do not drop.**
 > - **The CCC limit** — three questions in the CCC section below.
 
 ---
