@@ -14,10 +14,15 @@ import { fetchEvents } from '../../lib/community';
 import type { CommunityEvent } from '../../lib/community-types';
 import { supabase } from '../../lib/supabase';
 import { useNavigate as useNav } from 'react-router-dom';
+import { useOpenLeads } from '../../lib/ops/useOpenLeads';
 
 /**
  * DASHBOARD PANEL — the thin, high-value strip above the community feed on the
- * main page. Two bands, LIVE-wired and clickable:
+ * main page. Bands, LIVE-wired and clickable:
+ *   "New leads" (staff only) — open booking requests + open support tickets,
+ *   read straight from `requests`/`support_requests` (TASK-DASHLEADS: this is
+ *   the Inbound queue folded into the dashboard, so staff never need a second
+ *   page to see what just came in).
  *   "Needs your attention" — unread notifications (each links to its target) and
  *   "Coming up" — the next scheduled lessons and community events.
  * Renders nothing when there is truly nothing (no placeholder filler).
@@ -156,6 +161,7 @@ function fmtTime(d: Date): string {
 }
 
 export function DashboardPanel() {
+  const navigate = useNav();
   const [attention, setAttention] = useState<Tile[]>([]);
   const [comingUp, setComingUp] = useState<Tile[]>([]);
   const [checklist, setChecklist] = useState<ChecklistRow[]>([]);
@@ -163,8 +169,12 @@ export function DashboardPanel() {
   const [pendingChanges, setPendingChanges] = useState(0);
   const [horse, setHorse] = useState<HorseOnboardingState | null>(null);
   const [acqIntake, setAcqIntake] = useState<AcquisitionIntakeState | null>(null);
-  const { profile } = useAuth();
+  const { profile, isStaff } = useAuth();
   const firstName = profile?.first_name || profile?.display_name || null;
+  const leads = useOpenLeads(isStaff);
+  const leadTiles: Tile[] = leads.map((l) => ({
+    id: l.id, kind: 'lead', title: l.title, sub: l.sub, cta: 'Review', to: l.to, gold: true,
+  }));
   // Session hide for the member's own live "pending changes" tile (not backed by a
   // notification). Notification tiles are CONSUMED (deleted + logged) instead.
   const [hidden, setHidden] = useState<Set<string>>(new Set());
@@ -201,8 +211,13 @@ export function DashboardPanel() {
       // Welcome greetings ("[member] said hi") appear here like any notification, but
       // they auto-dismiss the moment their tile is actually SEEN (dismissOnView) — a
       // one-time hello, not a standing to-do — and carry a "Say hi back" action.
+      // request_new/support_new are excluded here (TASK-DASHLEADS): they now render
+      // in the dedicated "New leads" band above, sourced straight from
+      // requests/support_requests via useOpenLeads. Leaving them in both places
+      // would show the same lead twice and let "dismiss" here look like it closed
+      // the lead when the row underneath is untouched.
       const att: Tile[] = notifications
-        .filter((n) => !n.read_at)
+        .filter((n) => !n.read_at && n.kind !== 'request_new' && n.kind !== 'support_new')
         .slice(0, 3)
         .map((n) => {
           const greeter = n.kind === 'member_hi' ? (n.link?.match(/hi_back=([0-9a-f-]{36})/i)?.[1] ?? null) : null;
@@ -302,7 +317,8 @@ export function DashboardPanel() {
     || showPending || !!horseTile || !!acqTile;
   // Empty state: nothing needs attention and nothing's coming up → a warm all-clear
   // greeting (owner directive) instead of hiding the panel entirely.
-  const allCaughtUp = !hasAttention && comingUp.length === 0;
+  const allCaughtUp = !hasAttention && comingUp.length === 0 && leadTiles.length === 0;
+  const visibleLeads = leadTiles.slice(0, 6);
 
   return (
     <div className="rounded-2xl border border-green-800/10 shadow-[0_14px_34px_-14px_rgba(13,33,24,0.22)] bg-gradient-to-br from-white to-cream-100 mb-6 sm:mb-7 p-5 sm:p-6">
@@ -313,15 +329,33 @@ export function DashboardPanel() {
           <p>Enjoy your {timeOfDayWord()}!</p>
         </div>
       )}
+      {/* New leads — staff only. Booking requests still `new` + support requests
+          not yet `resolved`, read directly (TASK-DASHLEADS: the Inbound nav
+          destination is gone; this is where they live now). Its own heading,
+          separate from "Needs your attention" below: that band is personal,
+          per-user, and dismissable; this one is the shared work queue every
+          staff account sees the same rows in, until the row itself changes
+          status. */}
+      {visibleLeads.length > 0 && (
+        <>
+          <p className="text-[10px] tracking-widest uppercase text-gold-800 font-semibold mb-3">
+            New leads
+          </p>
+          <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+            {visibleLeads.map((t) => <TileCard key={t.id} tile={t} />)}
+          </div>
+          {leadTiles.length > visibleLeads.length && (
+            <button type="button" onClick={() => navigate('/app/ops/intake')}
+              className="mt-2.5 text-[12px] text-gold-800 font-semibold hover:underline">
+              {leadTiles.length - visibleLeads.length} more waiting →
+            </button>
+          )}
+        </>
+      )}
       {hasAttention && (
         <>
-          <p className="text-[10px] tracking-widest uppercase text-gold-800 font-semibold mb-3">Needs your attention</p>
+          <p className={`text-[10px] tracking-widest uppercase text-gold-800 font-semibold mb-3 ${visibleLeads.length > 0 ? 'mt-5' : ''}`}>Needs your attention</p>
           <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
-            {/* New inbound inquiries and support requests surface here as individual,
-                per-user notifications (request_new / support_new). Each is CONSUMED —
-                deleted, leaving only an audit log — when the owner closes it OR opens
-                its target. So a phone-handled item can just be closed, and dismissing
-                on one owner's dashboard never touches the other's. */}
             {horseTile && <TileCard tile={horseTile} />}
             {acqTile && <TileCard tile={acqTile} />}
             {checklist.length > 0 && <ChecklistCard rows={checklist} />}
@@ -355,7 +389,7 @@ export function DashboardPanel() {
       )}
       {comingUp.length > 0 && (
         <>
-          <p className={`text-[10px] tracking-widest uppercase text-muted font-semibold mb-3 ${hasAttention ? 'mt-5' : ''}`}>Coming up</p>
+          <p className={`text-[10px] tracking-widest uppercase text-muted font-semibold mb-3 ${(hasAttention || visibleLeads.length > 0) ? 'mt-5' : ''}`}>Coming up</p>
           <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
             {comingUp.map((t) => <TileCard key={t.id} tile={t} />)}
           </div>
