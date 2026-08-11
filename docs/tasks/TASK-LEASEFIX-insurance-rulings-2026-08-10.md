@@ -75,6 +75,62 @@ afterwards — it must still fire on genuinely-blank required fields.
 caused by the muted preview filtering fields whose own gate is unmet while still printing the
 caption. No field, no bug, and no need to touch the render rule.
 
+## 3b. STRIP THE SECTION TO TWO DECLARED AMOUNTS. Owner, 2026-08-10. Read this FIRST.
+
+> *"the premium apportionment doesnt need to get into this level of specificity via contract
+> machinery. just give them the fields and let them work it out and dont include anything about
+> the policy cost itself… this just says the lessor requires a certain amount of contribution
+> from the Lessee… we just strip that section down to a declared \$ required from the Lessee
+> for the mort and med insurance and the Lessor is declaring they have that insurance. there
+> are two places they declare a requirement for the lessee to agree with. the amount fixed and
+> the amount per incident where the lessee is deemed responsible/at fault."*
+
+**This DISSOLVES the apportionment problem rather than solving it.** A fixed contribution is
+self-contained: if the Lessee owes \$100, it does not matter what the policy costs, how many
+animals it covers, or whether the premium is itemised. **"Percentage of what" never arises.**
+
+**No apportionment clause. No insured-value reference. Nothing about the premium.** The three
+draft wordings (pro-rata / equal division / Lessor produces the figure) are all **withdrawn** —
+none is needed.
+
+### What the section becomes — per side, mortality and medical
+
+```
+Lessor declares own coverage      has / will obtain / does not carry
+Fixed contribution required       $   from the Lessee
+Per-incident amount at fault      $   where the Lessee is deemed responsible
+```
+
+**Two requirements the Lessee agrees to**, both currency, both stated by the Lessor.
+
+### FOURTEEN FIELDS COLLAPSE TO FOUR
+
+**Deleted, per section:**
+
+```
+*_COST_RESP · *_COST_SPLIT_LESSEE · *_COST_SPLIT_LESSOR · *_COST_SPLIT_TEXT
+*_COST_ALLOCATION · *_POLICY_COST
+*_DED_RESP · *_DED_RESP_SPLIT_LESSEE · *_DED_RESP_SPLIT_LESSOR
+```
+
+**Kept / added:** the Lessor's declaration, the fixed contribution, the per-incident amount.
+
+### CONSEQUENCE — this probably retires the `share_amount` composite before it is built
+
+**The `$`/`%` selector existed for mortality and medical.** If both amounts are now plain
+currency, there is no unit choice to make and **the composite has no user.**
+
+**The GL deductible splits are the last candidate.** Under this same logic they would become a
+per-incident dollar too — which is exactly what "the amount per incident where the Lessee is at
+fault" describes.
+
+**ASK THE OWNER before building `share_amount`:** does any split anywhere still need a
+percentage, or does the whole document move to declared dollar amounts? **If nothing needs it,
+do not build the control** — the proposed `ContractCascade` diff is withdrawn rather than
+deferred, and `percent_split` in `compose_field_prose` stays dead code as already decided.
+
+**Do not delete `share_amount` work already done in the DB half** until that is answered.
+
 ## 3. MORTALITY AND MEDICAL COLLAPSE INTO ONE SECTION — with a strict dependency.
 
 > Owner: *"you can collapse the two into one seamless section as long as medical remains an
