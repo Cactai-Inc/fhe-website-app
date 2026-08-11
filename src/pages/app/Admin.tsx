@@ -18,20 +18,34 @@ import { ProvisionClientForm } from '../../components/app/ProvisionClientForm';
 import {
   AssignDocumentsModal, ClientHorseRecordsCard, AttachOfferingPanel, PaperworkEditor,
 } from '../../components/app/ClientRecordActions';
+import {
+  RosterCard, rowKeyOf, memberName, EMPTY_SUPPLEMENT, type RosterSupplement,
+} from '../../components/app/RosterCard';
 import { StatusLog } from '../../lib/ops';
 import { entityStatusLog, type StatusLogEntry } from '../../lib/ops/api-status';
 
 /**
- * CLIENTS (/app/admin) — the account-centric surface (owner rework). CLIENT
- * accounts only (staff live on Team & access under Settings). Two states:
+ * CLIENTS (/app/admin) — THE one people page (TASK-ROSTER / TASK-ROSTERCARD,
+ * owner ruling 2026-08-10: this page won over /app/ops/contacts, which is
+ * retired behind CONTACTS_PAGE_RETIRED). Shows every contact we serve —
+ * login-backed accounts, provisioned clients, and bare contacts with neither.
+ * Deliberate exclusions: LEAD (Leads page, until worked), TEAM (Team &
+ * access), DIRECTORY (rolodex).
  *
- *  LIST — every client, searchable + sortable. Clicking a row isolates it.
- *  ISOLATED — the other rows disappear; the profile renders below the selected
- *  row; account-scoped TABS appear (Overview / Billing / Bookings / Documents /
- *  Orders / Payments / Activity / Posts / Messages / Login). More tabs than fit →
- *  a "more" control slides the tab rail sideways (animated); a back control
- *  appears on the left. Each tab carries a create action where one makes sense.
- *  A clear exit control returns to the list (tabs disappear with it).
+ * THIS IS A TRIAGE VIEW, NOT A DIRECTORY (owner). The grid of cards exists to
+ * make two groups jump out: who is stuck, and who is engaging most. The ring
+ * around each avatar carries the relationship (lead-weight grey / guest green
+ * / client-or-customer gold); badges show what's DERIVED (never free-text
+ * tags); flags surface only what can be acted on today. See RosterCard.tsx
+ * and docs/reports/TASK-ROSTERCARD-REPORT.md.
+ *
+ *  LIST — every person, searchable + sortable, rendered as cards. Clicking a
+ *  card isolates it.
+ *  ISOLATED — the other cards disappear; the profile renders below the
+ *  selected card; account-scoped TABS appear (Overview / Billing / Bookings /
+ *  Documents / Orders / Payments / Activity / Posts / Messages / Login). More
+ *  tabs than fit → wraps onto a second line. Each tab carries a create action
+ *  where one makes sense. A clear exit control returns to the list.
  */
 
 // ── account-scoped data shapes ────────────────────────────────────────────────
@@ -71,9 +85,6 @@ const fmt = (iso: string | null | undefined) =>
   iso ? new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
 const fmtTs = (iso: string | null | undefined) =>
   iso ? new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '—';
-const memberName = (m: ClientAccountRow) =>
-  m.display_name || `${m.first_name ?? ''} ${m.last_name ?? ''}`.trim() || m.email || '—';
-const rowKeyOf = (m: ClientAccountRow) => m.user_id ?? m.contact_id ?? m.email ?? '';
 
 // ── generic row list used by several tabs ────────────────────────────────────
 type ListRow = { key: string; main: string; sub: string; badge?: string; href?: string };
@@ -385,16 +396,19 @@ function PendingClientView({ row, onChanged }: { row: ClientAccountRow; onChange
 }
 
 // ── the page ─────────────────────────────────────────────────────────────────
-type SortKey = 'name' | 'joined' | 'status';
+// Sort PORTED from ContactsPage (TASK-ROSTER): A–Z on display name by default,
+// or newest-first. The old Active-first sort key is gone with the port.
+type SortKey = 'name' | 'newest';
 
 export default function Admin() {
   useDocumentTitle('Clients');
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const [members, setMembers] = useState<ClientAccountRow[]>([]);
+  const [supplement, setSupplement] = useState<RosterSupplement>(EMPTY_SUPPLEMENT);
   const [error, setError] = useState<string | null>(null);
   const [q, setQ] = useState('');
-  const [sortKey, setSortKey] = useState<SortKey>('joined');
+  const [sortKey, setSortKey] = useState<SortKey>('name');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [ov, setOv] = useState<Overview | null>(null);
   const [tab, setTab] = useState<TabId>('overview');
@@ -405,12 +419,108 @@ export default function Admin() {
   const [hardConfirm, setHardConfirm] = useState('');
 
   const load = useCallback(() => {
-    // login-backed clients + provisioned (no-login-yet) clients in one list
+    // login-backed accounts + provisioned clients + bare contacts, one list
     adminClientAccounts()
       .then(setMembers)
       .catch(() => setError('Could not load clients.'));
   }, []);
   useEffect(load, [load]);
+
+  // Everything the card needs beyond admin_client_accounts (TASK-ROSTERCARD:
+  // no DB work, so this is read directly under the same admin RLS the RPC
+  // itself requires). Reconciled against direct SQL in the report.
+  useEffect(() => {
+    if (members.length === 0) { setSupplement(EMPTY_SUPPLEMENT); return; }
+    let active = true;
+    const contactIds = members.map((m) => m.contact_id).filter((id): id is string => !!id);
+    const userIds = members.map((m) => m.user_id).filter((id): id is string => !!id);
+
+    Promise.all([
+      supabase.from('groups').select('contact_id, group_type'),
+      supabase.from('contacts').select('id, first_name, last_name, display_name, guardian_contact_id')
+        .is('deleted_at', null),
+      supabase.from('horses').select('registered_name, nickname, current_owner_contact_id, lessee_contact_id')
+        .is('deleted_at', null),
+      supabase.from('document_parties').select('contact_id, documents(status, deleted_at)')
+        .in('contact_id', contactIds),
+      supabase.from('documents').select('contact_id, status').in('contact_id', contactIds).is('deleted_at', null),
+      supabase.from('purchases').select('buyer_contact_id').eq('status', 'awaiting_payment').is('deleted_at', null),
+      userIds.length > 0
+        ? supabase.from('audit_logs').select('actor_user_id, occurred_at')
+            .in('actor_user_id', userIds).order('occurred_at', { ascending: false }).limit(2000)
+        : Promise.resolve({ data: [] as { actor_user_id: string; occurred_at: string }[] }),
+    ]).then(([groupsRes, contactsRes, horsesRes, partiesRes, docsRes, purchasesRes, auditRes]) => {
+      if (!active) return;
+
+      const groups = new Map<string, string[]>();
+      for (const r of groupsRes.data ?? []) {
+        const list = groups.get(r.contact_id) ?? [];
+        list.push(r.group_type);
+        groups.set(r.contact_id, list);
+      }
+
+      const contactNames = new Map<string, string>();
+      const guardianOf = new Map<string, string>();
+      const dependentsOf = new Map<string, string[]>();
+      for (const c of contactsRes.data ?? []) {
+        const name = c.display_name || `${c.first_name ?? ''} ${c.last_name ?? ''}`.trim() || 'Unnamed';
+        contactNames.set(c.id, name);
+        if (c.guardian_contact_id) {
+          guardianOf.set(c.id, c.guardian_contact_id);
+          const kids = dependentsOf.get(c.guardian_contact_id) ?? [];
+          kids.push(c.id);
+          dependentsOf.set(c.guardian_contact_id, kids);
+        }
+      }
+
+      const horsesOwned = new Map<string, string[]>();
+      const horsesLeased = new Map<string, string[]>();
+      for (const h of horsesRes.data ?? []) {
+        const label = h.nickname || h.registered_name || 'Unnamed horse';
+        if (h.current_owner_contact_id) {
+          const list = horsesOwned.get(h.current_owner_contact_id) ?? [];
+          list.push(label);
+          horsesOwned.set(h.current_owner_contact_id, list);
+        }
+        if (h.lessee_contact_id) {
+          const list = horsesLeased.get(h.lessee_contact_id) ?? [];
+          list.push(label);
+          horsesLeased.set(h.lessee_contact_id, list);
+        }
+      }
+
+      const dealParty = new Set<string>();
+      const outstandingDocs = new Set<string>();
+      const OUTSTANDING = new Set(['DRAFT', 'AWAITING_SIGNATURE']);
+      type PartyRow = { contact_id: string; documents: { status: string; deleted_at: string | null } | { status: string; deleted_at: string | null }[] | null };
+      for (const r of (partiesRes.data ?? []) as PartyRow[]) {
+        dealParty.add(r.contact_id);
+        const docs = Array.isArray(r.documents) ? r.documents : (r.documents ? [r.documents] : []);
+        for (const d of docs) {
+          if (!d.deleted_at && OUTSTANDING.has(d.status)) outstandingDocs.add(r.contact_id);
+        }
+      }
+      for (const d of (docsRes.data ?? []) as { contact_id: string | null; status: string }[]) {
+        if (d.contact_id && OUTSTANDING.has(d.status)) outstandingDocs.add(d.contact_id);
+      }
+
+      const unpaidContacts = new Set<string>();
+      for (const p of (purchasesRes.data ?? []) as { buyer_contact_id: string | null }[]) {
+        if (p.buyer_contact_id) unpaidContacts.add(p.buyer_contact_id);
+      }
+
+      const lastActive = new Map<string, string>();
+      for (const a of (auditRes.data ?? []) as { actor_user_id: string; occurred_at: string }[]) {
+        if (!lastActive.has(a.actor_user_id)) lastActive.set(a.actor_user_id, a.occurred_at);
+      }
+
+      setSupplement({
+        groups, guardianOf, dependentsOf, contactNames, dealParty, outstandingDocs,
+        unpaidContacts, horsesOwned, horsesLeased, lastActive,
+      });
+    });
+    return () => { active = false; };
+  }, [members]);
 
   // /app/admin?open=<contact or user id> — auto-open (e.g. right after creation)
   useEffect(() => {
@@ -441,12 +551,12 @@ export default function Admin() {
     const filtered = members.filter((m) =>
       !needle
       || memberName(m).toLowerCase().includes(needle)
-      || (m.email ?? '').toLowerCase().includes(needle));
-    return [...filtered].sort((a, b) => {
-      if (sortKey === 'name') return memberName(a).localeCompare(memberName(b));
-      if (sortKey === 'status') return Number(b.member_status === 'active') - Number(a.member_status === 'active');
-      return new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime();
-    });
+      || (m.email ?? '').toLowerCase().includes(needle)
+      || (m.tags ?? []).some((t) => t.toLowerCase().includes(needle)));
+    // ContactsPage's sort, ported verbatim: newest by created_at, else name A–Z.
+    return [...filtered].sort((a, b) => sortKey === 'newest'
+      ? new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime()
+      : memberName(a).localeCompare(memberName(b)));
   }, [members, q, sortKey]);
 
 
@@ -543,27 +653,30 @@ export default function Admin() {
         {!selected && (
           <button type="button" onClick={() => navigate('/app/ops/accounts/new')}
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-green-800 text-white text-sm font-medium hover:bg-green-700 focus-ring">
-            <Plus size={15} /> New client
+            <Plus size={15} /> ADD NEW
           </button>
         )}
       </div>
       <p className="text-sm text-green-800/70 mb-5">
-        {selected ? 'Everything about this account, in one place.' : 'Every client account — click one to open it.'}
+        {selected ? 'Everything about this account, in one place.' : 'Everyone on file — click a card to open their record.'}
       </p>
 
       {error && <p role="alert" className="form-error mb-4">{error}</p>}
 
-      {/* LIST state */}
+      {/* LIST state — a grid of triage cards (TASK-ROSTERCARD). The owner
+          reversed the earlier positional-row build (TASK-ROSTER, task/roster,
+          unmerged) in favour of this: the data volume he wants per person
+          does not fit a row. */}
       {!selected && (
         <>
           <div className="flex flex-wrap items-center gap-2 mb-4">
             <div className="relative flex-1 min-w-[220px]">
               <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-              <input className="form-input pl-9 w-full" placeholder="Search name or email…"
+              <input className="form-input pl-9 w-full" placeholder="Search name, email, or tag…"
                 value={q} onChange={(e) => setQ(e.target.value)} />
             </div>
             <div className="flex gap-1.5">
-              {([['joined', 'Newest'], ['name', 'A–Z'], ['status', 'Active first']] as [SortKey, string][]).map(([k, label]) => (
+              {([['name', 'A–Z'], ['newest', 'Newest']] as [SortKey, string][]).map(([k, label]) => (
                 <button key={k} type="button" onClick={() => setSortKey(k)}
                   className={`px-3 py-1.5 rounded-full text-xs font-sans ${sortKey === k ? 'bg-green-800 text-white' : 'bg-green-800/10 text-green-800 hover:bg-green-800/20'}`}>
                   {label}
@@ -571,40 +684,12 @@ export default function Admin() {
               ))}
             </div>
           </div>
-          <div className="flex flex-col gap-1.5">
+          <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
             {visible.map((m) => (
-              <button key={rowKeyOf(m)} type="button" onClick={() => setSelectedId(rowKeyOf(m))}
-                className="w-full flex items-center justify-between gap-3 bg-white border border-green-800/10 rounded-lg px-4 py-3 text-left hover:border-green-800/30 focus-ring">
-                <span className="min-w-0 flex items-center gap-3">
-                  <span className="w-9 h-9 rounded-full bg-green-800 text-white grid place-items-center text-sm font-sans shrink-0">
-                    {(memberName(m)[0] || 'C').toUpperCase()}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block text-sm font-medium text-green-900 truncate">{memberName(m)}</span>
-                    <span className="block text-xs text-muted truncate">{m.email}</span>
-                  </span>
-                </span>
-                <span className="text-right shrink-0">
-                  {m.kind === 'pending' ? (
-                    <span className={`block text-[10.5px] font-sans uppercase ${
-                      m.invite_status === 'sent' ? 'text-gold-800' : 'text-muted'
-                    }`}>
-                      {m.invite_status === 'sent'
-                        ? (m.invite_expires_at && new Date(m.invite_expires_at) < new Date() ? 'Invite expired' : 'Invited')
-                        : m.invite_status === 'accepted' ? 'Claimed' : 'Not invited'}
-                    </span>
-                  ) : (
-                    <span className={`block text-[10.5px] font-sans uppercase ${m.member_status === 'active' ? 'text-green-700' : 'text-muted'}`}>
-                      {m.member_status === 'active' ? 'Active' : 'Inactive'}
-                      {m.is_suspended ? ' · suspended' : ''}
-                    </span>
-                  )}
-                  <span className="block text-[11px] text-muted">{m.kind === 'pending' ? 'created' : 'joined'} {fmt(m.created_at)}</span>
-                </span>
-              </button>
+              <RosterCard key={rowKeyOf(m)} m={m} supplement={supplement} onOpen={setSelectedId} />
             ))}
-            {visible.length === 0 && <p className="text-sm text-muted py-6 text-center">No clients match.</p>}
           </div>
+          {visible.length === 0 && <p className="text-sm text-muted py-6 text-center">No one matches.</p>}
         </>
       )}
 
@@ -626,7 +711,8 @@ export default function Admin() {
                 <span className="min-w-0">
                   <span className="block font-serif text-lg text-green-900 leading-tight truncate">{memberName(selected)}</span>
                   <span className="block text-xs text-muted truncate">
-                    {selected.email} · {selected.kind === 'pending' ? 'Provisioned — no login yet' : 'Client'}
+                    {selected.email} · {selected.kind === 'pending' ? 'Provisioned — no login yet'
+                      : selected.kind === 'contact' ? 'Contact — no account' : 'Client'}
                     {selected.is_suspended ? ' · SUSPENDED' : ''}
                   </span>
                 </span>
@@ -697,7 +783,10 @@ export default function Admin() {
             )}
           </div>
 
-          {selected.kind === 'pending' && (
+          {/* pending clients AND bare contacts: items + paperwork + provision/
+              invite. Everything inside keys off contact_id and degrades
+              without a client_id, so 'contact' reuses it as-is. */}
+          {selected.kind !== 'account' && (
             <PendingClientView row={selected} onChanged={load} />
           )}
 
