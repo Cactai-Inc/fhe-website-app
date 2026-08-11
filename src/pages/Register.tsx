@@ -73,6 +73,20 @@ export default function Register() {
       .then(async (inv) => {
         if (!active) return;
         if (!inv) {
+          // SENDGUARD §1: validate_invitation only recognises a LIVE token, so a
+          // contract party who already signed and clicks an older link lands on
+          // "this link isn't valid" — a dead end for someone whose signature is
+          // already on file. redeem_contract_invitation now routes an
+          // already-signed party to their document; give it the chance to.
+          if (isContractInvite) {
+            try {
+              const documentId = await redeemContractInvitation(token);
+              if (!active) return;
+              navigate(`/app/contracts/${documentId}`, { replace: true });
+              return;
+            } catch { /* not signed, or not signed in — the invalid screen is right */ }
+          }
+          if (!active) return;
           setState('invalid');
           return;
         }
@@ -180,11 +194,18 @@ export default function Register() {
           <p className="eyebrow mb-3">Invitation</p>
           <h1 className="heading-section text-green-800 mb-4">This link isn't valid anymore</h1>
           <p className="body-text mb-8">
-            This invitation may have expired or been replaced by a newer one — check your inbox for
-            the most recent email. If you've already created your account, just sign in.
+            {isContractInvite
+              ? "This invitation may have expired or been replaced by a newer one. If you've already signed this document, sign in and we'll take you straight to it."
+              : "This invitation may have expired or been replaced by a newer one — check your inbox for the most recent email. If you've already created your account, just sign in."}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link to="/login" className="btn-primary">
+            {/* Come back HERE after signing in: a signed party's stale link resolves
+                to their document, but only once we know who they are. */}
+            <Link
+              to="/login"
+              state={isContractInvite ? { from: `/activate?token=${token}&kind=contract` } : undefined}
+              className="btn-primary"
+            >
               Sign In
               <ArrowRight size={16} />
             </Link>
