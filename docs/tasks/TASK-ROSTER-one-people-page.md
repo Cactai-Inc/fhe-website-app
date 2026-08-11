@@ -80,7 +80,62 @@ handle more than one name rather than assuming one.
 in comments and in `inviteCounterparty`; the visible badge is generated somewhere else. **Do not
 guess at the site.**
 
-## CARD STYLING INSTEAD OF THE WORD "CLIENT" — owner's proposal, NOT YET SPECIFIED
+## SETTLED 2026-08-10 — THE RING CARRIES THE RELATIONSHIP; THE CARD SHOWS WHAT IS DERIVED
+
+> Owner: *"maybe instead of the card doing the work for the category indication, we can use the
+> avatar ring and stop with the green fill, we can use a gold ring for a client or customer and a
+> green ring for a guest, and a grey ring for a lead."* … *"the card shows whats derived so we
+> know the system is accurate."*
+
+### Three dimensions, three encodings — none of them competing
+
+```
+RING COLOUR      what KIND of relationship        lead -> guest -> client/customer
+BADGES           what SERVICES they engage in     rider, horse owner
+SLOT POSITION    what they have CONSUMED          lessons, horse care
+```
+
+**And no green fill on the avatar.** The ring carries it.
+
+### The card shows DERIVED values only. `contacts.tags` is not rendered.
+
+**His reason is diagnostic, and it is the right one:** *"so we know the system is accurate."*
+**The card becomes a CHECK on `derive_affiliations`** — if a category is wrong you find out by
+looking at a person, not by running a query.
+
+**So `groups` is the source and `tags` is not shown.** That resolves both the Rider/RIDER and
+Horse Owner/HORSE OWNER mismatches: they were one card reading typed text and another reading
+the derived enum. **Only the derived side survives.**
+
+**`tags` is not deleted** — it still holds `signatory`, `owner`, `test`, `verify-thread`. It is
+simply not what a badge renders.
+
+### The ring derives cleanly — verified 2026-08-10
+
+```
+contact_type    CONTACT 15  ·  LEAD 6  ·  TEAM 4
+of the 15 CONTACTs:   14 have a clients row  ·  5 have an account
+customer_since = 0    nobody is a customer yet, so gold means CLIENT today
+```
+
+| ring | condition |
+|---|---|
+| **grey** | `contact_type = 'LEAD'` |
+| **gold** | `clients.client_since` **or** `.customer_since` present |
+| **green** | has an account, no service or commercial marker — **guest**, per D8 |
+
+**Unlike the badges, this has ONE source per state.** No claimed-versus-verified problem.
+
+### GAP — `TEAM` has no ring colour. ASK.
+
+**4 contacts are `TEAM`, and one of them also has a `clients` row**, so under the rules above
+they would render **gold** — staff appearing as clients in the roster. **That is unlikely to be
+intended.**
+
+**Options for the owner:** a fourth ring colour, no ring at all, or excluded from the roster
+entirely. **Do not pick.**
+
+## CARD STYLING INSTEAD OF THE WORD "CLIENT" — SUPERSEDED by the ring above
 >
 > > *"maybe instead of calling someone a client we can indicate by card styling. a green boarder
 > > is one thing, a gold border is another, and a non colored gray boarder is another?"*
