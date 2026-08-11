@@ -520,11 +520,33 @@ it, and do not treat the word FROZEN as a reason to route the change somewhere w
 
   ### SO: the existing pattern's DISCIPLINE, plus the unit from the owner's spec.
 
+  ### THE GEOMETRY — the owner specced this and the orchestrator flattened it. It is correct.
+
+  > Owner: *"where does the $/% selector live, before or after the number? they live on opposite
+  > sides of a number in real life. that was why i said null/$ or null/% and show both while null
+  > once one is picked the other is locked."*
+
+  **`$` PREFIXES. `%` SUFFIXES.** A single dropdown puts the unit on the wrong side for one of
+  the two. That is why the control is three slots, not two:
+
   ```
-  Lessee's share of the cost:   [ $ | % ]  [ number ]
+  Lessee's share of the cost:   [ null | $ ]   [ number ]   [ null | % ]
+                                      ^                           ^
+                                    $100                         50%
   ```
 
-  **One field. One party named. One unit selector.**
+  - **both empty** → both unit slots are live and selectable
+  - **`$` picked** → renders `$100`; the `%` slot **locks** and greys
+  - **`%` picked** → renders `50%`; the `$` slot **locks** and greys
+
+  **Mutually exclusive by construction** — the lock is what makes `$50%` unrepresentable rather
+  than merely discouraged.
+
+  **Do not "simplify" this into one dropdown.** It would read `$ 100` or `% 50` for one of the
+  two units, which is wrong typography in a legal instrument. The three-slot shape is the
+  requirement.
+
+  **One field. One party named. One value, in one of two units.**
 
   - `%` → the Lessor's share is `100 − X`, arithmetic, unstated.
   - `$` → the Lessor pays the remainder, arithmetic, unstated.
