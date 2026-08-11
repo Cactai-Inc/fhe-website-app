@@ -98,8 +98,42 @@
 > `share_amount`, a composite: select the unit, enter a number, compose `$100` or `50%` at
 > render. **One field per obligation, naming the Lessee only.**
 >
-> **Deleted:** the per-party pairs, `*_SPLIT_TEXT`, `*_COST_ALLOCATION`, `*_POLICY_COST`,
-> `*_COST_RESP`, `*_DED_RESP` and its split pair. **Fourteen fields per side become two.**
+> **CORRECTED 2026-08-10 — the count. It is 21 to 12, not 14 to 2.**
+>
+> The owner challenged the earlier "fourteen become two" and was right. That number counted only
+> the `share_amount` fields and forgot the selectors and frequency around them.
+>
+> **Today: 21** (`TXN.MORT*` + `TXN.MED*`, excluding `TXN.MEDICATIONS`, which is a med schedule
+> and unrelated). **After: 12.**
+>
+> ```
+> MORTALITY                          MEDICAL
+>   MORT_LESSOR_STATUS   keep          MED_INCLUDED     keep   (the gate)
+>   MORT_COST_RESP       keep          MED_COST_RESP    keep   who bears
+>   MORT_COST_SHARE      NEW           MED_COST_SHARE   NEW    share_amount, $ or %
+>   MORT_COST_FREQ       NEW           MED_COST_FREQ    NEW    5 values
+>   MORT_DED_RESP        keep          MED_DED_RESP     keep   who bears
+>   MORT_DED_SHARE       NEW           MED_DED_SHARE    NEW    share_amount, $ or %
+>         6                                  6
+> ```
+>
+> **DELETED — 15:**
+>
+> ```
+> MORT_COST_ALLOCATION        MED_COST_ALLOCATION
+> MORT_COST_SPLIT_LESSEE      MED_COST_SPLIT_LESSEE
+> MORT_COST_SPLIT_LESSOR      MED_COST_SPLIT_LESSOR
+> MORT_COST_SPLIT_TEXT        MED_COST_SPLIT_TEXT
+> MORT_DED_RESP_SPLIT_LESSEE  MED_DED_RESP_SPLIT_LESSEE
+> MORT_DED_RESP_SPLIT_LESSOR  MED_DED_RESP_SPLIT_LESSOR
+> MORT_POLICY_COST            MED_POLICY_COST
+> MORT_ELECTION
+> ```
+>
+> **Kept 6, added 6, deleted 15.** The reduction is real but it is in **complexity**, not raw
+> count: what goes is the per-party pairs that could contradict each other, the composed text,
+> the floating allocation, and the policy cost. **What stays is one selector and one value per
+> obligation.**
 >
 > ### Frequency — SETTLED 2026-08-10. Five options.
 >
