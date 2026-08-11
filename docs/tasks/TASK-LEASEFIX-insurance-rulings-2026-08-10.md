@@ -189,7 +189,43 @@ disagreement stalls the contract until one party moves — the owner's stated in
 three-change plan solved a contradiction this structure prevents. Close it out; do not build
 from it.
 
-### CCC — SPLIT ENTIRELY. The bundled value goes.
+### FINAL — 13.2 AND 13.3, FULLY SEPARATED. Settled 2026-08-10. Build to this.
+
+The real problem was never the data model: **the requirement lived in 13.2 while the content
+lived in 13.3.** Owner: *"either we separate the two ... and the ccc section needs to add the
+lessor requirement block or we keep it merged and ... the ccc content is shown in the gl
+section."* → **Separate.** Confirmed, and *"the same holds for ccc"* — the declare/require/
+narrow rule applies to CCC identically.
+
+```
+13.2  GENERAL LIABILITY                          every lease
+      Lessor declares own GL     has / will obtain / does not carry
+      Lessor requires GL         require / do not require
+      Lessee declares GL         has / will obtain / does not carry
+                                 └─ "does not carry" REMOVED when required
+
+13.3  CARE, CUSTODY AND CONTROL                  ENTITY Lessee only
+      Lessor requires CCC        require / do not require
+      Lessee declares CCC        has / will obtain / does not carry
+                                 └─ "does not carry" REMOVED when required
+```
+
+**Each section is self-contained** — requirement, declaration and terms in one place. A reader
+of 13.3 never has to go back to 13.2 to learn whether CCC was required.
+
+**`GL_AND_CCC` IS REMOVED as a value.** It is replaced by two independent answers. Note what
+that also removes: the bundle made CCC impossible to require without also requiring GL — a
+constraint that was encoded by accident rather than chosen.
+
+**`TXN.CCC_LESSEE_STATUS` gains a third option.** It currently has only `HAS` and
+`WILL_OBTAIN`. It gets a "does not carry" equivalent, gated exactly as GL's is — present when
+CCC is not required, absent when it is.
+
+**13.3 now shows for EVERY entity Lessee**, not only when CCC was required. An entity declares
+its CCC position either way, for the same reason the Lessee declares GL either way: *not
+required is not the same as not having.* Individual Lessees never see 13.3 at all.
+
+### (superseded by the above) CCC — split entirely. The bundled value goes.
 
 > Owner: *"either we split entirely or we merge properly. realizing that CCC is an option that
 > lessor only can require of an entity and they dont need to require it."*
