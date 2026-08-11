@@ -575,3 +575,35 @@ who may hold FHE tenant rows), and repairing `test:db` first.
 **`test:db` remains broken — 55 of 64 files failing.** Until it is repaired, every database
 claim in every report is hand-verified, and the orchestrator re-verifies the load-bearing ones
 against production rather than accepting them. Repairing it is a queued task, not a blocker.
+
+---
+
+## EMPTY IS NOT A FINDING — owner correction, 2026-08-11
+
+> *"this is the 10th time you are 'finding' this like its new news....they are not invited
+> because nothing in the app you built actually works yet. not the invite, not the paperwork,
+> not the purchasing, not the booking, not the people management....not even the ui is fully
+> functional yet."*
+
+**The app is pre-launch. Nothing has run end to end. Low or zero counts are the EXPECTED
+state, not evidence of a defect.**
+
+Things repeatedly mis-reported as findings, all of which are just "not built yet":
+
+- *8 of 9 provisioned clients were never invited* — the invite flow does not work
+- *supersession has never fired* — nothing has been signed twice
+- *no contact has consumed a horse-care service* — bookings do not work
+- *`fulfillment_units` has only 12 rows* — purchasing does not work
+- *`bookings` reads as inactivity* — bookings do not work
+
+**Before reporting a count as a finding, ask: does the feature that would produce this data
+actually work yet?** If the answer is no, the count is a restatement of the roadmap. Say
+nothing.
+
+**A finding is something that would still be wrong once the feature works.** A guard that
+admits the wrong caller, a constraint that does not hold, a clause that renders the wrong
+meaning, a document that cannot be signed — those are real at any row count.
+
+**This applies to the orchestrator first.** Relaying a thread's empty-table observation as
+news is the same error one step removed, and it is the one that has actually been costing the
+owner time.
