@@ -81,9 +81,17 @@ const NAV_ROW_ACTIVE = 'bg-navfill/80 text-cream-25 font-medium';
 const NAV_ICON_IDLE = 'text-green-800/70 transition-colors duration-320 ease-glide [@media(hover:hover)]:group-hover:text-cream-25';
 const NAV_ICON_ACTIVE = 'text-cream-25';
 /** group headings ("Management", "People", …) — the "section header" the owner
- *  named explicitly. Quiet, but cream: on a dark panel the old `text-muted`
- *  (green-800/70) was dark-on-dark and effectively invisible. */
-const NAV_HEADING = 'text-green-900/55';
+ *  named explicitly.
+ *  UIO-012: this and its hover were both leftovers from the green-panel era
+ *  (T5's family) — nobody chose them for a near-white panel. Rest was
+ *  `/55`, measured at 3.78:1 against `#fdfcfa`, already below the 4.5 floor
+ *  before anyone hovers; hover was cream text with no fill at all, which the
+ *  row hover gained (`bg-navfill/64`, 4.55:1) when the panel went near-white
+ *  but this heading never did — rendering `#f5f0e8` on `#fdfcfa`, 1.11:1,
+ *  effectively invisible. Raised to `/70` (owner: still visibly quieter than
+ *  the row labels, above the floor) — see the hover value at its own call
+ *  site below, which goes darker, not lighter, on a light panel. */
+const NAV_HEADING = 'text-green-900/70';
 const NAV_DIVIDER = 'border-green-900/12';
 /** badges: solid gold on green-950 ink. The old `bg-gold-600/70 text-white` was
  *  a translucent gold tuned for a light panel; over green-800 it muddies. */
@@ -951,9 +959,20 @@ export default function AppLayout() {
         items: g.items.map((it) => (it.to === '/app/ops/intake' ? { ...it, badge: inboundCount } : it)),
       }))
     : [];
+  /* UIO-012: the first five items (Community Feed + the four StaffNavItems)
+   *  sat above MANAGEMENT with no heading — the only group in the rail that
+   *  could not collapse. Not a real entry in `navGroups` (its content is
+   *  CommunityNav + StaffNavItems, not a flat NavItem[] a RailLink can
+   *  render), so it's a separate pseudo-group carrying only what
+   *  `groupOpen`/`toggleGroup` need — `items` stays empty and unused. */
+  const APP_PAGES_GROUP: NavGroup = { key: 'app-pages', label: 'App pages', items: [], defaultOpen: true };
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const groupOpen = (g: NavGroup) => openGroups[g.key] ?? g.defaultOpen ?? false;
-  const toggleGroup = (key: string) => setOpenGroups((p) => ({ ...p, [key]: !(p[key] ?? navGroups.find((g) => g.key === key)?.defaultOpen ?? false) }));
+  // `[...navGroups, APP_PAGES_GROUP]` — APP_PAGES_GROUP isn't IN navGroups,
+  // so a lookup scoped to navGroups alone would resolve its own defaultOpen
+  // as `undefined` on the first toggle and always flip to open, even when it
+  // was already open and the click meant to close it.
+  const toggleGroup = (key: string) => setOpenGroups((p) => ({ ...p, [key]: !(p[key] ?? [...navGroups, APP_PAGES_GROUP].find((g) => g.key === key)?.defaultOpen ?? false) }));
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -1291,10 +1310,28 @@ export default function AppLayout() {
                   Platform
                 </p>
               )}
+              {/* UIO-012: same chevron, same toggle, same persistence as the
+                  Management/People headings below — deliberately the same
+                  markup, not a shared component, so this doesn't risk
+                  touching their behaviour while giving this group its own. */}
               {!isSuperAdmin && (
-                <div className="mb-1 flex flex-col gap-0.5">
-                  <CommunityNav open={staffRailPinned} indentClass="pl-9" />
-                  <StaffNavItems bellCount={unreadCount} dmCount={dmCount} open={staffRailPinned} />
+                <div className="mb-1">
+                  {staffRailPinned && (
+                    <button type="button" onClick={() => toggleGroup(APP_PAGES_GROUP.key)}
+                      className={`w-full flex items-center justify-between px-3 py-1.5 text-[10px] tracking-widest uppercase ${NAV_HEADING} font-semibold transition-colors duration-320 ease-glide hover:text-green-900 focus-ring rounded-md`}>
+                      {APP_PAGES_GROUP.label}
+                      <ChevronDown size={12} className={`transition-transform ${groupOpen(APP_PAGES_GROUP) ? '' : '-rotate-90'}`} />
+                    </button>
+                  )}
+                  {!staffRailPinned && (
+                    <div className={`my-1 border-t ${NAV_DIVIDER}`} role="separator" aria-label={APP_PAGES_GROUP.label} />
+                  )}
+                  {(groupOpen(APP_PAGES_GROUP) || !staffRailPinned) && (
+                    <div className="flex flex-col gap-0.5 mt-0.5">
+                      <CommunityNav open={staffRailPinned} indentClass="pl-9" />
+                      <StaffNavItems bellCount={unreadCount} dmCount={dmCount} open={staffRailPinned} />
+                    </div>
+                  )}
                 </div>
               )}
               <div className="flex flex-col gap-1">
@@ -1303,9 +1340,14 @@ export default function AppLayout() {
                     {navGroups.length > 1 && staffRailPinned && (
                       <button type="button" onClick={() => toggleGroup(g.key)}
                         /* UIO-003: no transition at all before this — the
-                           group heading snapped straight to cream-100 on
-                           hover with nothing easing it in. */
-                        className={`w-full flex items-center justify-between px-3 py-1.5 text-[10px] tracking-widest uppercase ${NAV_HEADING} font-semibold transition-colors duration-320 ease-glide hover:text-cream-100 focus-ring rounded-md`}>
+                           group heading snapped straight to its hover colour
+                           with nothing easing it in.
+                           UIO-012: hover was `cream-100`, a leftover from the
+                           green-panel era — on the near-white panel it
+                           rendered #f5f0e8 on #fdfcfa, 1.11:1, effectively
+                           invisible. On a LIGHT panel emphasis goes darker,
+                           not lighter: full-strength green-900, 16.41:1. */
+                        className={`w-full flex items-center justify-between px-3 py-1.5 text-[10px] tracking-widest uppercase ${NAV_HEADING} font-semibold transition-colors duration-320 ease-glide hover:text-green-900 focus-ring rounded-md`}>
                         {g.label}
                         <ChevronDown size={12} className={`transition-transform ${groupOpen(g) ? '' : '-rotate-90'}`} />
                       </button>
