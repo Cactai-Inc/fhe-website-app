@@ -10,11 +10,13 @@ off `origin/main` (`2f5f5d2`). Not pushed.
 | 1 — delete the two orphaned documents | **WRITTEN AND DRY-RUN. NOT APPLIED.** Awaiting review, as instructed. |
 | 2 — integrity panel | Built and **applied to production** (function only; reads nothing destructive). |
 | 3 — cleanup controls | Built and **applied to production**. Grants verified by re-read. |
+| Follow-up — NULL-safe guard | **Applied to production.** Closed a live D1 hole; see §NULL below. |
 
 Migrations:
 
 - `supabase/migrations/20260811T1000_contractorphan_delete_orphaned_documents.sql` — **not applied**
 - `supabase/migrations/20260811T1100_contractorphan_integrity_panel_and_cleanup.sql` — applied
+- `supabase/migrations/20260811T1200_contractorphan_cleanup_guard_null_safe.sql` — applied
 
 ---
 
@@ -585,6 +587,177 @@ stale; `origin/main` itself reports 30.)
   identity — but it means the panel is readable by `admin@fhequestrian.com` /
   `hello@fhequestrian.com`, not by the platform account.
 
+  **Correction, 2026-08-11 (see §NULL below).** That was true of `document_integrity()`,
+  which uses an explicit `IS NULL` test, and *not* of the cleanup path, which admitted the
+  platform owner through a NULL. Stating the gate as uniformly correct was wrong. Fixed and
+  proven below.
+
+---
+
+# §NULL — the guard returned NULL, and it was a LIVE hole
+
+Added 2026-08-11, after the work above. Applied, not held.
+
+## What was wrong
+
+`can_cleanup_document` ended with:
+
+```sql
+RETURN has_staff_access() AND v_org = current_org();
+```
+
+For a caller whose `current_org()` is NULL, `v_org = current_org()` is NULL and
+`true AND NULL` is NULL — so the function returned **NULL, not false**. Only a caller who is
+*staff* **and** has a NULL org reaches it; for anyone else the expression short-circuits to
+`false AND NULL` = false. Today that is exactly one account: `admin@cactai.io`, SUPER_ADMIN,
+`org_id NULL`.
+
+`docs/reference/D1a-PLATFORM-OWNER-IS-NOT-A-TENANT.md` describes this class precisely, and
+names this task:
+
+> "…evaluates to NULL for a caller whose `current_org()` is NULL, so the `IF` skips and the
+> caller is admitted. For the platform owner that admission was the accident. The denial is
+> the correct behaviour."
+
+## It was not latent. It was live.
+
+`cleanup_document` guarded itself with `IF NOT can_cleanup_document(id) THEN RAISE …`.
+`NOT NULL` is NULL, which is not TRUE, so **the RAISE never fired and execution fell through
+to the delete.** Proven against production inside `BEGIN … ROLLBACK`, acting as the platform
+owner:
+
+```
+=== 1. the caller shape ===
+              acting_as               |    role     | staff | org
+--------------------------------------+-------------+-------+-----
+ 3c5d6af1-ce10-45c0-afbb-1ddbdfc77bd5 | SUPER_ADMIN | t     |
+
+=== 2. can_cleanup_document on an FHE tenant document: NULL, or false? ===
+ result | is_null
+--------+---------
+        | t
+
+=== 3. what `IF NOT can_cleanup_document(...)` therefore does ===
+ not_result | if_branch_taken
+------------+-----------------
+            | f                  ← the RAISE is skipped
+
+=== 4. can the platform owner actually remove an FHE document RIGHT NOW? ===
+WARNING:  HOLE CONFIRMED — the platform owner removed an FHE tenant document
+  display_code  | was_removed |              deleted_by
+----------------+-------------+--------------------------------------
+ DOC-84AAB8KDWT | t           | 3c5d6af1-ce10-45c0-afbb-1ddbdfc77bd5
+
+=== 5. document_integrity() (uses an explicit IS NULL test) ===
+NOTICE:  refused as designed: staff access required
+ROLLBACK
+```
+
+A platform-owner-attributed delete of an FHE tenant document is precisely the D1 violation
+the ruling forbids. `document_integrity()` was never exposed — it tests `v_org IS NULL`
+explicitly, which yields a real boolean.
+
+## The fix
+
+```sql
+RETURN coalesce(has_staff_access() AND v_org = current_org(), false);
+```
+
+plus the same defence on the destructive call site itself, so the path refuses even if the
+predicate is later changed back:
+
+```sql
+IF NOT coalesce(can_cleanup_document(p_document_id), false) THEN
+```
+
+**The denial of the platform owner is the intended end state, not a regression.** D1a settles
+it, and explicitly refuses the "just set `org_id` on `admin@cactai.io`" shortcut. Nothing
+here re-opens that.
+
+## Proofs after applying, against live production
+
+The fix is in the live function bodies (read back from `pg_get_functiondef`, not assumed):
+
+```
+ guard_coalesced | t          call_site_coalesced | t
+```
+
+**Platform owner — denied, and false rather than NULL:**
+
+```
+    role     | org | result | still_null
+-------------+-----+--------+------------
+ SUPER_ADMIN |     | f      | f
+```
+
+```
+DENIED as D1a requires: this document cannot be removed: it is signed, executed, void,
+                        terminated, already removed, or you are not staff in this organisation
+  display_code  | was_removed
+----------------+-------------
+ DOC-84AAB8KDWT | f
+```
+
+**Tenant staff — unchanged in every case:**
+
+```
+                 what                  | can_cleanup | is_null
+---------------------------------------+-------------+---------
+ orphan, unsigned                      | t           | f
+ orphan, unsigned                      | t           | f
+ EXECUTED + signed                     | f           | f
+ VOID                                  | f           | f
+ known contact-orphan, EXECUTED+signed | f           | f
+```
+
+**The whole-table sweeps still hold, and NULL is gone entirely:**
+
+```
+ executed_docs | wrongly_allowed | still_null          docs_with_signatures | wrongly_allowed | still_null
+---------------+-----------------+------------        ----------------------+-----------------+------------
+            61 |               0 |          0                            61 |               0 |          0
+
+ all_live_docs | any_null_left
+---------------+---------------
+            73 |             0     ← every live document now yields a real boolean
+```
+
+Tenant staff can still remove a genuine orphan, attributed to them
+(`deleted_by = b45a5503-…`), and the panel still refuses the platform owner with
+`staff access required`.
+
+No frontend change was needed — the UI already treated the value as falsy, which is why this
+never surfaced as visible breakage.
+
+---
+
+# A COUNT MOVED WHILE THIS TASK WAS RUNNING — and it exposes a weakness in one check
+
+`missing_fields` read **2** when measured at 11:00 and **1** at 11:20. I did not change it:
+another session edited the lease template in production between the two runs, taking
+`contract_field_defs` for `HORSE_LEASE_V2` from **128 defs to 114**.
+
+The check is count-based, exactly as the spec defined it ("documents holding fewer fields
+than their template defines"), and it reproduced the NOGUARD2 numbers exactly at the time.
+But the template shrinking underneath it shows the count is a weak proxy:
+
+```
+  display_code  |  status  | have | defined | defined_keys_absent | stale_keys_held
+----------------+----------+------+---------+---------------------+-----------------
+ DOC-RXW6U9M3BF | EXECUTED |  106 |     114 |                  35 |              27
+ DOC-U4PZP54FP5 | VOID     |  125 |     114 |                  15 |              26
+```
+
+`DOC-U4PZP54FP5` **is missing 15 keys the template defines** — but it holds 26 keys the
+template no longer defines, so its total (125) exceeds the defined count (114) and the
+count-based check no longer flags it. It renders an incomplete contract and the panel now
+says it is fine.
+
+**Not changed here.** The semantics were specified and signed off, and this turn's
+instruction was narrow. Flagging it for a ruling: comparing *keys* rather than *counts* would
+catch both documents and would not drift when a template is edited. It would also surface the
+stale-key side, which is arguably a second defect worth its own check.
+
 ---
 
 # WHAT NEEDS A DECISION
@@ -594,3 +767,9 @@ stale; `origin/main` itself reports 30.)
 2. **The `session_replication_role` practice.** Part 1 removes the last visible trace of
    this incident. The finding above is the record of it; the recommendation in that section
    is not implemented and is not in scope here.
+3. **Key-based vs count-based `missing_fields`.** The count-based check now passes a document
+   that is missing 15 defined keys. Changing it is a semantics change to a signed-off spec,
+   so it waits for a ruling.
+4. **The wider NULL-guard sweep.** D1a records 48 functions in the same shape and declares
+   the `coalesce(…, false)` repairs safe and NOGUARD3 Phase B unblocked. This task repaired
+   the two functions it owns. The other 48 are not touched here.
