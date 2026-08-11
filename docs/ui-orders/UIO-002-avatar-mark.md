@@ -34,6 +34,14 @@ green letter with no containing shape — while `.oh-mono` beside it keeps
 `border: 1px solid rgba(20,51,33,.40)`. The two marks do not read as a pair. Letter is 17px in
 a 42px mark.
 
+> **CORRECTED 2026-08-10 — the desktop contrast figure in this order was WRONG.** It said
+> 13.4; the correct value is **14.83**. `13.43` is `green-800` on the nav panel `#fdfcfa` — a
+> figure lifted from the UI-STATE colour table with the wrong ink AND the wrong backdrop. The
+> desktop letter is `green-900 #0d2118` on the header cream `#f5f0e8`.
+>
+> Both clear AAA, so nothing was at risk. **Caught by `UIBUILD`, which recomputed instead of
+> trusting the table.** That is the behaviour the verification rule exists to produce.
+
 ## THE FILL AND THE LETTER CHANGE TOGETHER. THIS IS ONE DECISION, NOT TWO.
 
 **Owner, 2026-08-10:** *"make sure the thread knows to switch the color of the letter when the
@@ -44,7 +52,7 @@ to interpretation."*
 
 | layout | fill | letter | contrast |
 |---|---|---|---|
-| **desktop** — ring only, no fill | none (transparent) | **`green-900 #0d2118`** | 13.4 vs the cream header |
+| **desktop** — ring only, no fill | none (transparent) | **`green-900 #0d2118`** | **14.83** vs the cream header |
 | **mobile, rest** — solid | `green-800` + 14% white = `#355040` | **`cream-25 #fdfcfa`** | 8.68 |
 | **mobile, `:active`** — solid | `green-800` pure `#143321` | **`cream-25 #fdfcfa`** | 13.43 |
 
