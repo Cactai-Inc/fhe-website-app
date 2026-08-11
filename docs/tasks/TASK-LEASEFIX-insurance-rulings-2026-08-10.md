@@ -126,6 +126,54 @@ THE DEDUCTIBLE — may be split
 **FREQUENCY IS PART OF THE TERM.** `$100` once and `$100` monthly are different agreements.
 Do not store an amount without its frequency.
 
+### THE DEDUCTIBLE SPLIT MUST BE CAPPED — or it over-charges the Lessee. Owner, 2026-08-10.
+
+> *"the deductible would be only an issue if the horse comes in with an injury the lessee is
+> responsible for, and a preexisting injury is also treated and the owner uses the insurance and
+> the injury the lessee is responsible for is less than the deductible but because the owner
+> uses the insurance and has the clause they could try to use that language to get more money
+> from the lessee than they should be on the hook for (% of the cost of the actual injury)."*
+
+**A deductible applies ONCE PER CLAIM. Fault does not.** Bundling a pre-existing condition into
+the same claim inflates the Lessee's exposure without inflating their responsibility:
+
+```
+deductible                        $2,000
+pre-existing injury, treated      $5,000
+injury the Lessee caused            $300
+owner claims both; deductible paid once
+clause: "Lessee pays 50% of the deductible"   ->   $1,000
+
+the Lessee caused $300 of harm and is billed $1,000
+```
+
+**The clause language is what permits it.** A bare percentage of the deductible measures the
+claim, not the fault.
+
+### The fix: keep the split, CAP it
+
+**Do not remove the split.** Parties may genuinely want to share a deductible; removing the
+option costs something real.
+
+**Add a ceiling. One sentence:**
+
+> …provided that the Lessee's share shall not exceed the cost of treating the injury for which
+> the Lessee is responsible.
+
+**This is clause text — draft it and bring it to the owner. Do not apply it.**
+
+A split still works when the claim is genuinely about the Lessee's incident, and it can never
+make the Lessee a contributor to someone else's pre-existing condition.
+
+**Two consequences to carry:**
+
+- **The ceiling is NOT a field.** "The cost of treating the injury for which the Lessee is
+  responsible" exists only after the fact, from the vet's invoice. **The clause states the
+  ceiling; nobody enters it at signing.**
+- **The same exposure may exist on the GL deductible**, where the Lessee is at fault for a
+  third-party claim that also involves other causes. **Check and report — do not assume either
+  way.**
+
 ### `share_amount` IS built after all — the deductible is its user
 
 **This answers the open question above.** The composite survives, with one user rather than
