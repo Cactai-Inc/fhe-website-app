@@ -493,6 +493,31 @@ it, and do not treat the word FROZEN as a reason to route the change somewhere w
   agreed to pay. Only the first belongs in an appendix, and keeping the second out of the clause
   would remove the term itself.
 
+  ### THE GENERAL PRINCIPLE — the two units ALLOCATE RISK DIFFERENTLY.
+
+  > Owner: *"and conversely when the policy isnt in place the lessee can agree to a fixed number
+  > or they can agree to a split."*
+
+  **This is the rule; the two cases above are instances of it.**
+
+  | | what the Lessee agreed to | their exposure |
+  |---|---|---|
+  | **`$100`** | a fixed contribution | **CAPPED.** Known at signing, unchanged by the premium |
+  | **`50%`** | a share of the cost | **FLOATS.** Half of a number that may not exist yet |
+
+  **When the policy is not yet obtained, both are meaningful and they mean different things.**
+  A percentage commits the Lessee to half of an unknown; a fixed amount caps them at a known
+  figure. **Which one the parties chose is precisely what a contract exists to record.**
+
+  **So neither unit substitutes for the other in ANY state:**
+
+  - policy in force, covering the leased horse alone -> both valid, different risk
+  - policy in force, covering several horses -> **`%` is undefined**, `$` required
+  - policy not yet obtained -> both valid, different risk
+
+  **A control offering one unit cannot express the agreement in two of those three states.**
+  That is why the selector exists — not for convenience.
+
   ### SO: the existing pattern's DISCIPLINE, plus the unit from the owner's spec.
 
   ```
