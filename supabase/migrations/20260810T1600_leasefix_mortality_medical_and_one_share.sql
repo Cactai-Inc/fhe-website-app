@@ -50,11 +50,26 @@
       TXN.MED_DED_RESP_SPLIT_{LESSOR,LESSEE}  -> TXN.MED_DED_LESSEE_SHARE
       TXN.GL_DED_RESP_SPLIT_{LESSOR,LESSEE}   -> TXN.GL_DED_LESSEE_SHARE
 
-  Typed `percent`, which already ships and renders the unit so the label does not
-  have to. The `$`/`%` SELECTOR does not exist yet — that is a ContractCascade
-  change, presented as a diff and NOT applied, because it is the shared authoring
-  surface for lease, sale and bill of sale. Until it lands these render as percent
-  fields; the data shape is already correct for it.
+  FINAL SHAPE (owner, 2026-08-10): a COMPOSITE `format_type`, authoring-shape
+  differing from composed text exactly as week_grid, med_schedule, fee_schedule and
+  contacts_list already do:
+
+      authoring   [$|%] [number]          structured = {"unit":"USD|PCT","amount":"100"}
+      composed    $100.00     or   100%   symbol before for currency, after for percent
+
+  Composition lives INSIDE the control, which is why this one field replaces four:
+  the per-party pair, the `*_SPLIT_TEXT` "Split (composed)" field and the floating
+  `Allocation` field. The composed-text fields are not merely deleted — putting
+  composition in the control removes the reason they existed.
+
+  NOTE: `percent_split` already exists in compose_field_prose and has ZERO users. It
+  composes "Lessor 60%, Lessee 40%" — the two-independent-shares shape the owner
+  killed. It is NOT reused here and is left untouched as dead code for a separate
+  cleanup to judge.
+
+  The DB half ships here (the compose branch). The AUTHORING CONTROL is a
+  ContractCascade change, presented as a diff and NOT applied — shared authoring
+  surface for lease, sale and bill of sale.
 
   Also deleted, per the owner: the premium input, the floating `Allocation` field,
   and the composed `*_SPLIT_TEXT` line that restated the split the line above
@@ -176,7 +191,7 @@ INSERT INTO contract_field_defs (
   template_key, field_key, label, section, clause_key, owner_role,
   input_kind, value_type, format_type, required, is_optional, sort_order, conditional_on)
 SELECT k, v.fk, v.label, 'INSURANCE_RISK', v.ck, 'LESSOR',
-       'percent', 'text', 'percent', false, false, v.so, v.cond::jsonb
+       'share_amount', 'text', 'share_amount', false, false, v.so, v.cond::jsonb
   FROM _lf CROSS JOIN (VALUES
 
   ('TXN.MORT_COST_LESSEE_SHARE', 'Lessee''s share of the cost', 'INSURANCE_RISK.MORT_SHARE', 207,
@@ -239,3 +254,134 @@ UPDATE contract_clause_defs
                                   {"equals": ["SPLIT", "OTHER"], "field_key": "TXN.MED_COST_RESP"},
                                   {"equals": ["SPLIT"], "field_key": "TXN.MED_DED_RESP"}]}'::jsonb
  WHERE template_key IN (SELECT k FROM _lf) AND clause_key = 'INSURANCE_RISK.MED_DEDR_SPLITC';
+
+
+-- ═══ the composite: compose $100.00 or 100% from the stored unit ═══════════
+CREATE OR REPLACE FUNCTION public.compose_field_prose(p_format text, p_structured jsonb, p_label text, p_value text DEFAULT NULL::text)
+ RETURNS text
+ LANGUAGE plpgsql
+ IMMUTABLE
+AS $function$
+DECLARE
+  s jsonb := coalesce(p_structured, '{}'::jsonb);
+  v_out text; v_party text; v_prov jsonb; v_manage jsonb; v_split jsonb;
+  v_parts text[]; v_e jsonb; v_sel int; v_opt jsonb; v_amt text;
+  v_num numeric;
+BEGIN
+  IF p_structured IS NULL OR p_structured = '{}'::jsonb THEN RETURN coalesce(p_value, ''); END IF;
+  CASE p_format
+    WHEN 'med_schedule' THEN v_out := compose_med_schedule(s);
+    WHEN 'reveal_text' THEN v_out := compose_reveal_text(s, p_value);
+    WHEN 'yesno' THEN
+      v_out := CASE upper(coalesce(s->>'value', p_value, '')) WHEN 'YES' THEN 'Yes' WHEN 'NO' THEN 'No' ELSE coalesce(p_value,'') END;
+    WHEN 'contact' THEN
+      v_parts := ARRAY[]::text[];
+      IF coalesce(s->>'name','')    <> '' THEN v_parts := v_parts || (s->>'name'); END IF;
+      IF coalesce(s->>'company','') <> '' THEN v_parts := v_parts || (s->>'company'); END IF;
+      IF coalesce(s->>'line1','')   <> '' THEN v_parts := v_parts || (s->>'line1'); END IF;
+      IF coalesce(s->>'city','') <> '' OR coalesce(s->>'state','') <> '' OR coalesce(s->>'postal','') <> '' THEN
+        v_parts := v_parts || btrim(concat_ws(' ', concat_ws(', ', nullif(s->>'city',''), nullif(s->>'state','')), nullif(s->>'postal','')));
+      END IF;
+      IF coalesce(s->>'phone','')   <> '' THEN v_parts := v_parts || (s->>'phone'); END IF;
+      IF coalesce(s->>'email','')   <> '' THEN v_parts := v_parts || (s->>'email'); END IF;
+      IF coalesce(s->>'website','') <> '' THEN v_parts := v_parts || (s->>'website'); END IF;
+      v_out := array_to_string(v_parts, ', ');
+      IF v_out = '' THEN v_out := needs(coalesce(p_label,'contact')); END IF;
+    WHEN 'person' THEN
+      v_parts := ARRAY[]::text[];
+      IF coalesce(s->>'name','')    <> '' THEN v_parts := v_parts || (s->>'name'); END IF;
+      IF coalesce(s->>'company','') <> '' THEN v_parts := v_parts || (s->>'company'); END IF;
+      IF coalesce(s->>'phone','')   <> '' THEN v_parts := v_parts || (s->>'phone'); END IF;
+      IF coalesce(s->>'email','')   <> '' THEN v_parts := v_parts || (s->>'email'); END IF;
+      v_out := array_to_string(v_parts, ', ');
+      IF v_out = '' THEN v_out := needs(coalesce(p_label,'contact')); END IF;
+    WHEN 'address' THEN
+      v_out := compose_address(s->>'line1', s->>'line2', s->>'city', s->>'state', s->>'postal');
+      IF coalesce(v_out,'') = '' THEN v_out := needs(coalesce(p_label,'address')); END IF;
+    WHEN 'location' THEN
+      v_out := nullif(btrim(concat_ws(' — ', nullif(s->>'name',''),
+                 compose_address(s->>'line1', s->>'line2', s->>'city', s->>'state', s->>'postal'))), '');
+      IF coalesce(v_out,'') = '' THEN v_out := needs(coalesce(p_label,'location')); END IF;
+    WHEN 'percent_split' THEN
+      v_split := s->'parties'; v_parts := ARRAY[]::text[];
+      IF v_split IS NOT NULL THEN
+        FOR v_e IN SELECT * FROM jsonb_array_elements(v_split) LOOP
+          v_parts := v_parts || (party_label(v_e->>'party') || ' ' || coalesce(v_e->>'pct','?') || '%');
+        END LOOP;
+      END IF;
+      v_out := array_to_string(v_parts, ', ');
+      IF coalesce(nullif(s->>'note',''),'') <> '' THEN v_out := btrim(v_out || ' (' || (s->>'note') || ')'); END IF;
+      IF v_out = '' THEN v_out := needs(coalesce(p_label,'split')); END IF;
+    -- LEASEFIX 2026-08-10: the share composite. Authoring is [$|%] + a number;
+    -- the composed form puts the symbol where the unit belongs -- before for
+    -- currency, after for percent. One field, one party (named in the LABEL),
+    -- replacing the per-party pair, the *_SPLIT_TEXT field and the Allocation
+    -- field: composition lives in the control, so those had no reason to exist.
+    -- A fixed contribution and a proportion are DIFFERENT AGREEMENTS -- 10%
+    -- floats with the premium at renewal, $100 does not -- so the unit is stored,
+    -- never inferred and never converted.
+    WHEN 'share_amount' THEN
+      v_num := nullif(regexp_replace(coalesce(s->>'amount',''), '[^0-9.]', '', 'g'), '')::numeric;
+      IF v_num IS NULL THEN
+        v_out := needs(coalesce(p_label, 'share'));
+      ELSIF upper(coalesce(s->>'unit','PCT')) = 'USD' THEN
+        v_out := fmt_money(v_num);
+      ELSE
+        v_out := rtrim(rtrim(to_char(v_num, 'FM999990.99'), '0'), '.') || '%';
+      END IF;
+    WHEN 'fee_schedule' THEN
+      v_parts := ARRAY[]::text[];
+      IF coalesce(nullif(btrim(s->>'initial_due'),''),'') <> '' THEN
+        DECLARE v_init text := btrim(s->>'initial_due');
+        BEGIN
+          -- U2.1: a parseable amount is formatted by fmt_money (two decimals,
+          -- thousands separators). Anything the user typed as their own wording
+          -- with no number in it is left exactly as written.
+          v_num := money_numeric(v_init);
+          IF v_num IS NOT NULL THEN v_init := fmt_money(v_num); END IF;
+          IF coalesce(nullif(btrim(s->>'initial_terms'),''),'') <> '' THEN
+            v_parts := v_parts || ('Initial payment due: ' || v_init || ' — ' || btrim(s->>'initial_terms') || '.');
+          ELSE
+            v_parts := v_parts || ('Initial payment due: ' || v_init || '.');
+          END IF;
+        END;
+      END IF;
+      v_sel := nullif(s->>'selected','')::int;
+      IF v_sel IS NOT NULL AND s->'options' IS NOT NULL AND jsonb_array_length(s->'options') > v_sel THEN
+        v_opt := (s->'options') -> v_sel; v_amt := btrim(coalesce(v_opt->>'amount',''));
+        IF v_amt <> '' THEN
+          v_num := money_numeric(v_amt);
+          IF v_num IS NOT NULL THEN v_amt := fmt_money(v_num);
+          ELSIF left(v_amt,1) <> '$' THEN v_amt := '$' || v_amt; END IF;
+          v_out := v_amt || '.';
+          IF coalesce(nullif(btrim(v_opt->>'notes'),''),'') <> '' THEN v_out := v_out || ' ' || btrim(v_opt->>'notes'); END IF;
+          v_parts := v_parts || v_out;
+        END IF;
+      END IF;
+      v_out := array_to_string(v_parts, ' ');
+      IF v_out = '' THEN v_out := needs(coalesce(p_label,'lease fee')); END IF;
+    WHEN 'party' THEN
+      v_party := s->>'party';
+      IF coalesce(v_party,'') = '' THEN v_out := needs(coalesce(p_label,'responsible party'));
+      ELSIF v_party = 'CARE_PROVIDER' THEN
+        v_prov := s->'provider'; v_out := party_label('CARE_PROVIDER');
+        IF coalesce(v_prov->>'name','') <> '' THEN v_out := v_out || ' (' || compose_field_prose('person', v_prov, p_label, NULL) || ')';
+        ELSE v_out := v_out || ' (' || needs('care provider contact') || ')'; END IF;
+      ELSIF v_party = 'OTHER' THEN v_out := coalesce(nullif(s->>'note',''), needs(coalesce(p_label,'arrangement')));
+      ELSIF v_party = 'SHARED' THEN v_out := compose_field_prose('percent_split', s, p_label, NULL);
+      ELSE v_out := party_label(v_party); END IF;
+    WHEN 'pair' THEN
+      v_manage := s->'manage'; IF v_manage IS NULL THEN v_manage := s; END IF;
+      v_out := compose_field_prose('party', v_manage, p_label, NULL);
+    WHEN 'week_grid' THEN v_out := compose_week_grid(s);
+    WHEN 'contacts_list' THEN v_out := compose_contacts_list(s);
+    WHEN 'certify' THEN
+      -- checked → the statement (its label); unchecked → nothing.
+      v_out := CASE WHEN upper(coalesce(s->>'value', p_value, '')) = 'YES'
+                    THEN coalesce(p_label, '') ELSE '' END;
+    ELSE
+      v_out := coalesce(nullif(s->>'value',''), nullif(s->>'text',''), p_value, '');
+  END CASE;
+  RETURN coalesce(v_out, '');
+END;
+$function$;
