@@ -1005,3 +1005,72 @@ not currently observable:**
   in the first place beyond confirming the empty content lives entirely in
   `ContractPage.tsx`'s own JSX — never needed to open the frozen file at
   all, so there is nothing to stop-and-propose.
+
+---
+
+## UIO-018 — the subheader gets the same gold underline as the nav
+
+**Commit:** `e770645`
+
+Confirmed UIO-013 was implemented (this session, earlier) before starting,
+per the order's own sequencing requirement — did not proceed on an
+assumption.
+
+**A real bug caught before shipping, not after:** `text-decoration`
+propagates through descendant boxes by default — this is different from
+the icon-skipping behavior UIO-013 verified (icons are replaced elements
+with no text runs at all; the count pill genuinely has its own text and
+sits inside the now-`hover:underline` button). Built a forced-hover HTML
+repro (a `.hovered` class standing in for `:hover`, since headless Chrome
+screenshots don't trigger real pointer state) with two buttons side by
+side — one with an unguarded count pill, one with `no-underline` added —
+and looked at both. The unguarded pill visibly shows the gold line running
+through its digit; the guarded one doesn't. Added `no-underline` to the
+real pill on that evidence, not on my recollection of how text-decoration
+propagation is supposed to work.
+
+**A syntax error from my own first attempt, caught by typecheck before it
+went anywhere:** placed the explanatory comment for the `no-underline` fix
+as a bare `{/* ... */}` directly inside a parenthesized `&&` JSX
+expression, which isn't valid without a fragment wrapping it — `tsc` failed
+with a cascade of parse errors starting at the comment's line. Moved the
+comment above the whole conditional instead of inside it. Re-ran
+typecheck clean before treating this as done.
+
+**What I verified:**
+- `npm run typecheck` — 0 errors (after fixing the syntax error above).
+  `npm run lint` — 0 errors, 35 warnings (baseline). `npm run build` —
+  succeeded.
+- Grepped the built CSS by property for all four `md:hover:` rules:
+  `text-decoration-line:underline`, `text-decoration-color:#ba9935` (exact
+  same gold-600 hex UIO-013 used), `text-decoration-thickness:2px`,
+  `text-underline-offset:4px` — byte-identical values to UIO-013's nav
+  treatment, confirming "reuse the exact declaration" rather than a
+  close-but-separate one.
+- Grepped `no-underline` — present as `text-decoration-line:none`, a real
+  rule, not silently dropped.
+- Grepped all four classes composing the selected/open state
+  (`border-gold-400`, `bg-gold-50`, `text-gold-900`, `shadow-inner`) —
+  still present and unchanged, confirming the order's "only the hover
+  changes" held.
+- Confirmed the viewers/party chip (~:293) is a sibling of the drawer
+  buttons in the JSX tree, not a descendant — re-read its surrounding
+  structure directly rather than assuming from the order's phrasing that it
+  needed the same guard the count pill did.
+
+**What I did NOT verify — needs a browser check:**
+- The actual hover behavior on a real desktop browser, and whether `md:`
+  (width-based, per the order) reads correctly compared to the nav's
+  `[@media(hover:hover)]` (capability-based) — these are deliberately
+  different mechanisms for two different components, and only a real
+  narrow-desktop-window test would show whether that distinction matters in
+  practice.
+
+---
+
+Second queue complete: UIO-013 through UIO-018, in order, all six
+implemented or explicitly stopped-and-reported on their blocked pieces.
+Two systemic findings surfaced and fixed beyond what any single order
+asked for: the NAV_DIVIDER/`/12` opacity bug (UIO-014) and the
+signatures-card gating bug (UIO-017) — both diagnosed from evidence, not
+from the orders' own stated hypotheses, which were wrong in both cases.
