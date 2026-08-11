@@ -447,24 +447,55 @@ it, and do not treat the word FROZEN as a reason to route the change somewhere w
   is arithmetic. **The insurance section already has the first half** — "paid by Lessor /
   split / Other". It needs the second half to be one field rather than four.
 
-  ### THROW OUT the null-$/number/null-% spec. Do not build it.
+  ### CORRECTED 2026-08-10 — THE UNIT SELECTOR STAYS. Percent-only is insufficient.
 
-  **The reason is the owner's own ruling from earlier the same day:** the premium is a FACT that
-  belongs in an appendix; the split is a TERM that belongs in the clause. **A percentage is a
-  proportion. A dollar amount is a premium wearing a different hat.** Allowing `$` in the split
-  field re-introduces exactly what that ruling removed — someone types `$400` and the policy
-  cost is back in the clause body.
+  > Owner: *"the case where the lessor says just give me $100 toward the insurance isnt possible
+  > with just a % field."*
 
-  His practical case for `$` does not survive either: if the premium is known and the Lessee
-  pays $400 of $1,000, that is 40% and the proportion is lossless. **If the premium is not
-  known, a dollar figure cannot be written at all.**
+  **He is right and the orchestrator's argument for percent-only was wrong.**
+
+  It claimed a percentage expresses any dollar split losslessly. **It does not.** A fixed
+  contribution and a proportion are **different agreements, not two notations for one:**
+
+  | | at signing | at renewal, premium rises |
+  |---|---|---|
+  | `10%` | $100 of $1,000 | **$150** of $1,500 — floats |
+  | `$100` | $100 of $1,000 | **$100** of $1,500 — fixed |
+
+  Converting "$100 toward it" into "10%" **changes what was agreed** the moment the premium
+  moves. The proportion is lossless only if the agreement was proportional to begin with.
+
+  **The premium-is-a-fact ruling does not cover this either.** `$100` is not the premium — it is
+  the **contribution**. The premium is what the policy costs; the contribution is what the Lessee
+  agreed to pay. Only the first belongs in an appendix, and keeping the second out of the clause
+  would remove the term itself.
+
+  ### SO: the existing pattern's DISCIPLINE, plus the unit from the owner's spec.
+
+  ```
+  Lessee's share of the cost:   [ $ | % ]  [ number ]
+  ```
+
+  **One field. One party named. One unit selector.**
+
+  - `%` → the Lessor's share is `100 − X`, arithmetic, unstated.
+  - `$` → the Lessor pays the remainder, arithmetic, unstated.
+
+  **What survives from the trainer pattern:** one field naming one party, never two independent
+  fields that can contradict each other. That is the part the insurance section got wrong.
+
+  **What survives from the owner's spec:** the unit selector, because a fixed contribution is a
+  term the contract must be able to express.
+
+  **What is thrown out:** the per-party pair (`*_SPLIT_LESSEE` **and** `*_SPLIT_LESSOR`), the
+  composed `*_SPLIT_TEXT`, and the floating `Allocation` field.
 
   ### What this replaces
 
   | | now | after |
   |---|---|---|
   | split declaration | 2 untyped free-text fields + `*_SPLIT_TEXT` ("Split (composed)") + the floating `Allocation` field | **one `percent` field** |
-  | control work | build a null-`$`/number/null-`%` chooser in `ContractCascade` | **none — `percent` already ships and renders** |
+  | control work | — | **a unit selector on ONE field.** `currency` and `percent` already ship; this adds the `$`/`%` choice to a single control rather than building a per-party pair |
   | consistency | two independent fields can both say 60% | **impossible — one number** |
 
   ### Applies everywhere a split is declared
@@ -477,8 +508,9 @@ it, and do not treat the word FROZEN as a reason to route the change somewhere w
   **Name whose share it is in the label, not in the value** — "Lessee's share of the cost",
   exactly as the trainer clause does. Do not write the unit into the label; `percent` renders it.
 
-  **No `ContractCascade` change is needed.** The thread's plan to present a diff for the shared
-  authoring surface can be dropped — there is nothing to extend.
+  **A `ContractCascade` change IS needed** — the unit selector does not exist today. The thread's
+  plan stands: **present the diff and WAIT.** It is a shared authoring surface, and
+  `ClauseDocument.tsx` is stop-and-propose.
 
 - **13.2's Lessee question still means two things across branches.** This is the root cause of
   the contradiction found on 2026-08-10 — see
