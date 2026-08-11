@@ -278,3 +278,56 @@ trusting the line numbers.
   crashing. The order says to STOP and report rather than reinstate the lock
   if this fails on a real device — I have not been able to test a real
   device at all, so this is unconfirmed in either direction, not passing.
+
+---
+
+## UIO-006 — the avatar reads as a button, and its letter grows on mobile
+
+**Commit:** `34c3301`
+
+Three defects named; two shipped, one deliberately did not (see below).
+
+**Hover value (gap 2):** the order says "sitting between rest and pressed in
+intensity" without a number, unlike gap 1 (open state) which explicitly says
+to bring a comparison instead of picking. Read that contrast in the order's
+own structure as intentional — gap 1 flags the "don't pick, show" caveat and
+gap 2 doesn't — so treated 7% (the exact arithmetic midpoint of the already-
+established 14%/0% ramp) as a principled interpolation of a fully-specified
+mechanism, not a new invented value, and shipped it. Flagging the reasoning
+explicitly in case that read was wrong — it's one number to change if so.
+
+**What I verified:**
+- `npm run typecheck` — 0 errors. `npm run lint` — 0 errors, 30 warnings
+  (baseline). `npm run build` — succeeded.
+- Grepped the built CSS: `button.oh-avatar:hover{background:linear-gradient(#ffffff12,#ffffff12),#143321}`
+  — `#ffffff12` is white at `0x12/255 = 7.06%`, matching the intended 7%.
+  Confirmed by byte offset that `:hover` (2059) precedes `:active` (2139) in
+  the compiled stylesheet, so a simultaneous hover+press still resolves to
+  the darker `:active` value, not the hover one.
+- Grepped `.oh-mono{...}` at both breakpoints: `font-size:16px` and
+  `font-size:15px`, byte-identical to before the change. Grepped
+  `.oh-avatar{...}`: `font-size:19px` and `font-size:18px` at the same two
+  breakpoints — matches the order's table exactly. The landscape block
+  (`width:34px;height:34px;font-size:14px`) is still one combined rule,
+  confirming I left it untouched as instructed.
+- Computed contrast independently for all three fills rather than trusting
+  my own arithmetic once: rest 8.63–8.68 (established), hover **10.92:1**,
+  active 13.43 (established) — monotonic, sits where a midpoint should.
+
+**Gap 1 (open state identical to pressed) — explicitly NOT shipped**, per
+the order's own instruction to bring a rendered comparison rather than pick.
+Built `docs/reference/uio-006-open-state-options.html` — three options
+(reuse the hover fill; keep the fill and add a second gold ring instead;
+shift to a gold-tinted veil rather than white) rendered against the real
+header background, each showing the full rest → press-flash → settle
+sequence so the click still reads regardless of which is chosen.
+`app-header.css` still pairs `:active` and `[aria-expanded='true']`
+unchanged — this is a real gap in the shipped avatar, not resolved by this
+commit, until the owner picks from that page.
+
+**What I did NOT verify — needs a browser check:**
+- All three rendered fills, the hover state, and the new mobile letter sizes
+  — not seen in an actual browser at any breakpoint.
+- Whether 7% actually reads as "between" to the eye the way it does on paper
+  — contrast math and perceived intensity aren't the same thing, and this
+  codebase has been burned by that gap before (T6/C1).
