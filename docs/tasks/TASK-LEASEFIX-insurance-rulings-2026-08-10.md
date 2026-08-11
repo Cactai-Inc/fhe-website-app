@@ -283,13 +283,26 @@ Lessee's policy standing behind the Lessor's animal.
 without stating why. **A clause that says what a policy is FOR is harder to misread and harder
 to strip out later by someone who thinks it is redundant.** Draft it and bring it to the owner.
 
-### One thing NOT settled — ASK
+### SETTLED — the Lessor's own GL declaration STAYS. Owner, 2026-08-10.
 
-The Lessor still declares their own GL (has / will obtain / does not carry), which requires
-nothing of the Lessee. **Given that only the Lessee's policy answers for the Lessee's acts, is
-the Lessor's own GL declaration still wanted in this document?** It may be useful context, or
-it may be a question that survives from the old model. **The owner has not said; do not remove
-it on inference.**
+> *"the GL is in there so the lessee knows if the owner has gl insurance. idk but it feels
+> unbalanced for that to not be in the contract."*
+
+**DISCLOSURE RUNS BOTH WAYS EVEN THOUGH THE REQUIREMENT RUNS ONE WAY.** The Lessor may require
+GL of the Lessee and not the reverse — but both parties state their position, and the Lessee is
+entitled to know the Lessor's.
+
+**The instinct has substance, and recording it matters, because a field that gates nothing is
+exactly what a later thread strips as dead weight.**
+
+**It is material to a decision the Lessee actually makes.** If harm arises involving the horse
+that is **not** the Lessee's fault — on the Lessor's premises, or from a condition the Lessor
+knew of — whether any policy responds turns on the Lessor carrying one. **A Lessee who knows the
+Lessor is uninsured may reasonably choose to carry more themselves.** That is a priced decision,
+not a courtesy.
+
+**DO NOT REMOVE `TXN.GL_LESSOR_COVERAGE` on the grounds that it gates nothing.** Gating nothing
+is the point — it is a disclosure, not a control.
 
 ## 4. 13.2's STRUCTURE — owner ruling. Two separate selections, and the second can end the section.
 
