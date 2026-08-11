@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { Gift as GiftIcon, ArrowRight, Sparkles } from 'lucide-react';
-import { openGift, redeemGift, type GiftReveal as GiftRevealData } from '../lib/gifts';
+import { openGift, redeemGift, registerForGift, type GiftReveal as GiftRevealData } from '../lib/gifts';
 import { useAuth } from '../contexts/AuthContext';
 import GiftRevealBox from '../components/gift/GiftReveal';
 import Seo from '../components/Seo';
@@ -12,11 +12,20 @@ export default function Redeem() {
   const [params] = useSearchParams();
   const code = params.get('code') || '';
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
 
   const [phase, setPhase] = useState<Phase>('loading');
   const [gift, setGift] = useState<GiftRevealData | null>(null);
   const [redeemMsg, setRedeemMsg] = useState<string | null>(null);
+
+  // Inline account creation — the gift code IS the credential (no invitation
+  // token exists for a gift recipient), so this doesn't route through the
+  // token-based /register flow at all.
+  const [showSignup, setShowSignup] = useState(false);
+  const [signupEmail, setSignupEmail] = useState('');
+  const [signupPassword, setSignupPassword] = useState('');
+  const [signupBusy, setSignupBusy] = useState(false);
+  const [signupError, setSignupError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -31,21 +40,44 @@ export default function Redeem() {
     return () => { active = false; };
   }, [code]);
 
-  async function handleRedeem() {
-    if (!user) {
-      // Send them to register/login, returning here to finish redeeming.
-      navigate(`/register?redeem=${encodeURIComponent(code)}`);
-      return;
-    }
-    const result = await redeemGift(code);
+  function applyRedeemResult(result: string) {
     if (result === 'redeemed') {
       navigate('/app');
     } else if (result === 'awaiting_intro_call') {
       setRedeemMsg("Almost there — we'll reach out to set up a quick intro call, then your booking unlocks.");
     } else if (result === 'already_redeemed') {
       setRedeemMsg('This gift has already been redeemed. Head to your account to book.');
+    } else if (result === 'redemption_failed') {
+      setRedeemMsg("Something went wrong setting up your account — your gift hasn't been used. Please try again in a moment, or reach out and we'll sort it.");
     } else {
       setRedeemMsg("We couldn't redeem this just now. Please reach out and we'll sort it.");
+    }
+  }
+
+  async function handleRedeem() {
+    if (!user) {
+      // No invitation token exists for a gift recipient — the code itself is
+      // the credential, so account creation happens right here.
+      setShowSignup(true);
+      return;
+    }
+    const result = await redeemGift(code);
+    applyRedeemResult(result);
+  }
+
+  async function handleSignupAndRedeem(e: React.FormEvent) {
+    e.preventDefault();
+    setSignupBusy(true);
+    setSignupError(null);
+    try {
+      await registerForGift(code, signupEmail.trim(), signupPassword);
+      await refreshProfile().catch(() => {});
+      const result = await redeemGift(code);
+      applyRedeemResult(result);
+    } catch (err) {
+      setSignupError(err instanceof Error ? err.message : 'Could not create your account.');
+    } finally {
+      setSignupBusy(false);
     }
   }
 
@@ -92,13 +124,43 @@ export default function Redeem() {
               )}
 
               <div className="bg-white/[0.06] border border-white/15 p-6 mt-8 max-w-sm mx-auto">
-                <p className="text-on-dark-soft text-sm mb-5">
-                  To use your gift, create your account and book your time with us.
-                </p>
-                <button type="button" onClick={handleRedeem} className="btn-ghost-white w-full justify-center">
-                  {user ? 'Redeem & book' : 'Create my account'}
-                  <ArrowRight size={16} />
-                </button>
+                {!user && showSignup ? (
+                  <form onSubmit={handleSignupAndRedeem} className="text-left">
+                    <p className="text-on-dark-soft text-sm mb-4">
+                      Create your account to use this gift.
+                    </p>
+                    <label className="block text-xs text-on-dark-soft mb-1" htmlFor="gift-email">Email</label>
+                    <input
+                      id="gift-email" type="email" required autoComplete="email"
+                      value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)}
+                      className="w-full mb-3 px-3 py-2 bg-white/10 border border-white/20 text-white placeholder-white/40 text-sm"
+                      placeholder="you@example.com"
+                    />
+                    <label className="block text-xs text-on-dark-soft mb-1" htmlFor="gift-password">Password</label>
+                    <input
+                      id="gift-password" type="text" required minLength={8} autoComplete="new-password"
+                      value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)}
+                      className="w-full mb-4 px-3 py-2 bg-white/10 border border-white/20 text-white placeholder-white/40 text-sm font-mono"
+                      placeholder="At least 8 characters"
+                    />
+                    <button type="submit" disabled={signupBusy || signupPassword.length < 8 || !signupEmail.trim()}
+                      className="btn-ghost-white w-full justify-center disabled:opacity-50">
+                      {signupBusy ? 'Creating your account…' : 'Create account & redeem'}
+                      {!signupBusy && <ArrowRight size={16} />}
+                    </button>
+                    {signupError && <p className="text-gold-200 text-sm mt-4">{signupError}</p>}
+                  </form>
+                ) : (
+                  <>
+                    <p className="text-on-dark-soft text-sm mb-5">
+                      To use your gift, create your account and book your time with us.
+                    </p>
+                    <button type="button" onClick={handleRedeem} className="btn-ghost-white w-full justify-center">
+                      {user ? 'Redeem & book' : 'Create my account'}
+                      <ArrowRight size={16} />
+                    </button>
+                  </>
+                )}
                 {redeemMsg && <p className="text-gold-200 text-sm mt-4">{redeemMsg}</p>}
               </div>
 
