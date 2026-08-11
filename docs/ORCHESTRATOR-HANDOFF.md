@@ -68,7 +68,28 @@ The last one is the orchestrator's own. **This rule governs you, not just the th
    `git patch-id --stable` on both sides. Never the SHA. For "did this style ship?": grep the
    *property* and read what follows, never the value you wrote.
 
-2. **`npx tsc` IN A WORKTREE WITHOUT `node_modules` IS NOT A TYPECHECK.** ADDED 2026-08-10.
+2. **A MIGRATION CONTAINING ITS OWN `COMMIT;` ENDS YOUR DRY-RUN WRAPPER.** ADDED 2026-08-10.
+   **Two separate threads applied changes to production on the same day believing they were
+   dry-running.** SENDGUARD (§1 fixtures) and INVITEFLOW (the affiliations migration). Same
+   cause both times:
+
+   ```sql
+   BEGIN;                    -- the house dry-run wrapper
+     \i migration.sql        -- the file contains its own BEGIN; ... COMMIT;
+                             -- <- the file's COMMIT ends YOUR transaction here
+   ROLLBACK;                 -- rolls back nothing. It already committed.
+   ```
+
+   `psql` warns — *"there is no transaction in progress"* — and **both threads read past it.**
+
+   **Two rules:**
+   - **A migration file must NEVER contain `BEGIN;` or `COMMIT;`.** The wrapper owns the
+     transaction. Grep every migration for them before running it.
+   - **A dry-run must PROVE it rolled back**, not assume it. Re-query the affected rows after
+     the `ROLLBACK` and show the raw output. A dry run that cannot demonstrate the change is
+     absent did not happen.
+
+3. **`npx tsc` IN A WORKTREE WITHOUT `node_modules` IS NOT A TYPECHECK.** ADDED 2026-08-10.
    **`tsc` on npm is not TypeScript** — it is an unrelated, ancient package. With no local
    install, `npx tsc` fetches *that*, runs it, and **exits 0**. It looks exactly like a clean
    typecheck and proves nothing. Caught and self-reported by the LEASEFIX thread; three of the
@@ -78,7 +99,7 @@ The last one is the orchestrator's own. **This rule governs you, not just the th
    must use `npm run typecheck` (which resolves the local binary) rather than `npx tsc`. A
    worktree is a fresh directory — it does not inherit the canonical checkout's `node_modules`.
 
-3. **A result that flatters the reporter deserves a SECOND test, not less scrutiny.** Stated
+4. **A result that flatters the reporter deserves a SECOND test, not less scrutiny.** Stated
    by the LEASEFIX thread against its own error, and it is the sharpest thing anyone has said
    about this: it had already proven its commits were patch-identical to shipped ones, then
    ignored that evidence for a test that made its work look more outstanding than it was.
