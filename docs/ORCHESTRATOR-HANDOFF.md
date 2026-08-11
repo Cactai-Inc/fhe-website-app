@@ -421,8 +421,11 @@ worked examples.
 what paragraphs cannot. When he said "I can't do anything with numbers", the answer was a
 page of live swatches.
 
-**S6 — Standing constraints that outlive any task.** Sarah's document
-`704c8d2d-d179-43f9-8a4a-7ea8cb920ab9` is a LIVE NEGOTIATION, read-only. `ClauseDocument.tsx`
+**S6 — Standing constraints that outlive any task.** **Sarah's document `704c8d2d-d179-43f9-8a4a-7ea8cb920ab9` is a SAMPLE UNDER REVIEW, not a live
+negotiation.** CORRECTED 2026-08-10 by the owner: *"the one for sarah even is a sample for her
+to review not the final version."* Verified — `AWAITING_SIGNATURE`, two parties, **zero
+signatures**. **Template changes are EXPECTED to reach it.** Do not scope a change to avoid it
+and do not treat it as read-only. `ClauseDocument.tsx`
 is FROZEN. Executed documents are never swept. `signed_template_version` is evidence and is
 never rewritten to make a symptom disappear.
 

@@ -158,5 +158,5 @@ Do not attempt this in one pass.
 
 - `ClauseDocument.tsx` is FROZEN — highlighting will need a scoped exception, granted by the
   orchestrator, not assumed.
-- Sarah's document `704c8d2d-…` is a LIVE NEGOTIATION — read-only, never write.
+- **Sarah's document `704c8d2d-…` is a SAMPLE UNDER REVIEW, not a live negotiation.** CORRECTED 2026-08-10 by the owner — *"the one for sarah even is a sample for her to review not the final version."* Verified: `AWAITING_SIGNATURE`, zero signatures. **Template changes are EXPECTED to reach it.** Not read-only.
 - Own git worktree, never `~/Desktop`.

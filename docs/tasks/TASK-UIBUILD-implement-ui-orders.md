@@ -146,4 +146,8 @@ was a workaround; not tearing down was the fix.
   in sync.
 - **No database writes, no migrations.** UI only. If an order turns out to need one, stop and
   report it — it goes back to the orchestrator.
-- **Sarah's document `704c8d2d-d179-43f9-8a4a-7ea8cb920ab9` is a LIVE NEGOTIATION.** Read-only.
+- **Sarah's document `704c8d2d-d179-43f9-8a4a-7ea8cb920ab9` is a SAMPLE UNDER REVIEW, not a live
+negotiation.** CORRECTED 2026-08-10 by the owner: *"the one for sarah even is a sample for her
+to review not the final version."* Verified — `AWAITING_SIGNATURE`, two parties, **zero
+signatures**. **Template changes are EXPECTED to reach it.** Do not scope a change to avoid it
+and do not treat it as read-only.

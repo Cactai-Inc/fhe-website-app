@@ -131,7 +131,7 @@ that was already correct.
   canonical checkout — a pre-commit hook will refuse code commits there.
 - **`ClauseDocument.tsx` is FROZEN** again. The one lifted exception was `2be3faa`, which has
   shipped.
-- Sarah's document `704c8d2d-d179-43f9-8a4a-7ea8cb920ab9` is a LIVE NEGOTIATION. Read-only.
+- **Sarah's document `704c8d2d-…` is a SAMPLE UNDER REVIEW, not a live negotiation.** CORRECTED 2026-08-10 by the owner — *"the one for sarah even is a sample for her to review not the final version."* Verified: `AWAITING_SIGNATURE`, zero signatures. **Template changes are EXPECTED to reach it.** Not read-only.
 - **Executed documents are never rewritten.** The two executed leases keep their text.
 - Dry-run in `BEGIN … ROLLBACK`, show raw output, then apply, then verify, then commit.
   **Do not push.**

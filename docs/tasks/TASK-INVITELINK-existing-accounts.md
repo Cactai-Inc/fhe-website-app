@@ -126,7 +126,7 @@ keep working. It simply stops being what a contract email points at.
 6. **Returning later with a spent token** → the document opens. Does not error.
 7. Survives an OAuth round trip to Google and back with the destination intact.
 8. Old `/activate?token=…&kind=contract` links already in inboxes still work.
-6. Sarah's document `704c8d2d-…` is a LIVE NEGOTIATION — read-only, never write.
+6. **Sarah's document `704c8d2d-…` is a SAMPLE UNDER REVIEW, not a live negotiation.** CORRECTED 2026-08-10 by the owner — *"the one for sarah even is a sample for her to review not the final version."* Verified: `AWAITING_SIGNATURE`, zero signatures. **Template changes are EXPECTED to reach it.** Not read-only.
 
 ## Reporting
 

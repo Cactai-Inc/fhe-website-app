@@ -407,7 +407,11 @@ Evidence, not assertion. For each item say **what you verified and what you assu
   regardless.
 - **Executed documents are never rewritten**, and `signed_template_version` is evidence — it
   is never edited to make a symptom disappear.
-- **Sarah's document `704c8d2d-d179-43f9-8a4a-7ea8cb920ab9` is a LIVE NEGOTIATION.** Read-only.
+- **Sarah's document `704c8d2d-d179-43f9-8a4a-7ea8cb920ab9` is a SAMPLE UNDER REVIEW, not a live
+negotiation.** CORRECTED 2026-08-10 by the owner: *"the one for sarah even is a sample for her
+to review not the final version."* Verified — `AWAITING_SIGNATURE`, two parties, **zero
+signatures**. **Template changes are EXPECTED to reach it.** Do not scope a change to avoid it
+and do not treat it as read-only.
 - **No design decisions alone.** Question 2 is a design decision. Show options.
 
 # REPORTING

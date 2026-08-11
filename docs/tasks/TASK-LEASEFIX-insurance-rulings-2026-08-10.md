@@ -133,10 +133,18 @@ threads have twice read it as absolute, hit a genuine need, and stepped over it.
 orchestrator approval.* `BUILD_TRACKER` A21 is the worked example — minimal diff presented,
 approved, then applied.
 
-**Why it exists:** it is the single rendering path for every contract and there is **no
-per-document override**. A layout change reaches every open document at once, including
-Sarah's live negotiation. A21 records a case where one clause body matching the wrong layout
-branch caused three defects across two root causes.
+**Why it exists** — CORRECTED 2026-08-10, the earlier rationale leaned on a premise the owner
+has since retracted. It is **not** about protecting one document: Sarah's is a sample under
+review, there are no real contracts in play, and **the owner wants template changes to reach
+everything.**
+
+The real reason is narrower and still holds: it is the **single authoring surface for every
+template** — lease, sale, bill of sale — 1055 lines, with no way to scope a change to one of
+them. `BUILD_TRACKER` A21 is the worked example: one clause body matching the wrong layout
+branch produced three defects across two root causes, and the fix had to be proven to have
+zero effect on `HORSE_SALE_V2` before it could ship.
+
+**61 EXECUTED documents remain evidence and are never rewritten.** That line does not move.
 
 **So:** if this task needs a change there, **present the minimal diff and wait.** Do not apply
 it, and do not treat the word FROZEN as a reason to route the change somewhere worse.

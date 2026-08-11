@@ -164,8 +164,11 @@ the point. Prove it with a before/after count.
   **Never `~/Desktop`.** The canonical repo is
   `/Users/Cactai/Downloads/claude-code-repo/fhe-website-app` and there is no other.
 - **`ClauseDocument.tsx` is FROZEN.**
-- **Sarah's document `704c8d2d-d179-43f9-8a4a-7ea8cb920ab9` is a LIVE NEGOTIATION —
-  read-only, never write.** Her onboarding documents are executed evidence of the bug and are
+**Sarah's document `704c8d2d-d179-43f9-8a4a-7ea8cb920ab9` is a SAMPLE UNDER REVIEW, not a live
+negotiation.** CORRECTED 2026-08-10 by the owner: *"the one for sarah even is a sample for her
+to review not the final version."* Verified — `AWAITING_SIGNATURE`, two parties, **zero
+signatures**. **Template changes are EXPECTED to reach it.** Do not scope a change to avoid it
+and do not treat it as read-only.
   likewise read-only. Use throwaway rows in `BEGIN … ROLLBACK` for every test.
 - Dry-run every migration in `BEGIN … ROLLBACK` with raw output shown, then apply, then verify
   with a query, then commit.
