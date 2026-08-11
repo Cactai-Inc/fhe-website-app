@@ -248,6 +248,7 @@ The handoff's own priority order, applied to the full inventory rather than the 
 | rank | rule | item |
 |---|---|---|
 | 1 | production is exposed | **`NOGUARD2`** — signatures on legal instruments can be voided anonymously |
+| 1= | production is exposed | **`SENDGUARD`** (added 2026-08-09) — three signing-invite paths have no already-signed guard, and `generate_my_onboarding_documents` deletes and recreates the pending draft on every page visit, so an emailed link points at a deleted row after one reload. Same write class as `NOGUARD2`; run them adjacent |
 | 2 | production is wrong | **Read `LEASEMAP`** — two findings mean live leases print contradictory risk terms. Costs one reading session, not a thread |
 | 3 | a person is blocked | **Deal-only party provisioning** — a brand-new party still cannot redeem a contract invitation. Blocks `A2`/`A3`/`A4`, and overlaps `PARTYJOURNEY`; reconcile the two before specing either |
 | 4 | the owner is blocked | **Cold-navigation failure** in his Chrome — open since 2026-08-06, unassigned, size unknown |
