@@ -54,6 +54,45 @@
 > - **`%`** — a **share of use**: *"50/50 since we share the horse."* It is the only term
 >   available when the Lessor **will obtain** a policy and no quote exists yet.
 >
+>
+> ### What each unit is FOR — and where transparency comes from
+>
+> > Owner: *"if the policy is in place the % is used only to protect against policy premium
+> > increases, as long as they dont increase based on adding another horse were fine, and the
+> > requirement to add the insurance documents to the contract deal are what give the lessee the
+> > transparency and using our system to upload and share the files give each party the
+> > simplicity of using one system for the whole deal."*
+>
+> | when | `%` is doing what |
+> |---|---|
+> | policy **will be obtained** | the only term available — no quote exists yet |
+> | policy **already in force** | **INDEXATION.** The Lessee's share tracks the premium, so a renewal increase is shared rather than absorbed by one party |
+>
+> **That is a different job from apportionment**, and it is why `%` earns its place even where a
+> dollar figure is known today.
+>
+> ### TRANSPARENCY COMES FROM THE ATTACHED DOCUMENTS, NOT FROM CLAUSE TEXT
+>
+> **The insurance documents are attached to the deal.** The Lessee sees the actual policy — what
+> it covers, what it costs, what the deductible is. **Evidence in the deal, not a formula in the
+> body.**
+>
+> **This is what answers "percentage of what".** The orchestrator spent several rounds trying to
+> define apportionment in clause language; the owner's answer is that the Lessee can read the
+> policy. **Do not reintroduce an apportionment clause.**
+>
+> **The capability already exists — verified:** `add_deal_document` and `deal_document_status`.
+> **This is a requirement to USE it, not something to build.** One system for the whole deal:
+> upload, share, both parties see the same file.
+>
+> ### The residual, named by the owner and accepted
+>
+> *"as long as they dont increase based on adding another horse were fine."* **If the Lessor
+> adds another animal and the premium rises, a `%` Lessee bears part of an increase they did not
+> cause.** The owner has named it and accepted it. **Do not build machinery against it** — that
+> is the apportionment problem returning in another form, and the attached policy is what makes
+> it visible.
+>
 > ### The fields
 >
 > `share_amount`, a composite: select the unit, enter a number, compose `$100` or `50%` at
