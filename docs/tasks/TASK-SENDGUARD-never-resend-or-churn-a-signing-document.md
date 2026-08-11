@@ -170,6 +170,34 @@ the point. Prove it with a before/after count.
 - Dry-run every migration in `BEGIN … ROLLBACK` with raw output shown, then apply, then verify
   with a query, then commit.
 - Separate migrations per section (§1, §2, §3), each revertable alone.
+
+### APPLY MODE — ADDED BY THE ORCHESTRATOR 2026-08-10. §2 GATES.
+
+**§1 and §3 apply in-thread.** §1 adds a refusal to paths that currently refuse nothing; §3
+changes the sweep's key from status to signatures and **changes zero rows today** — verified,
+there are no documents carrying a signature that are not already `EXECUTED`. Both fail loudly
+if wrong.
+
+**§2 DOES NOT APPLY. Dry-run it, report, and STOP for owner review.**
+
+This is the task doc's own risk assessment applied consistently. Its author wrote that §2 is
+*"not mechanical — the delete it removes exists to merge fresh profile data into the body, so
+'just reuse the row' reintroduces the bug the delete was added to fix. That's a judgment call
+inside the function, and it's precisely where a plausible-but-wrong answer ships."*
+
+**A change that ships precisely where a plausible-but-wrong answer ships does not apply itself
+to production unreviewed.**
+
+The specific reason §2 is different from the other two: **its failure is silent.** §1 wrongly
+implemented throws an error someone sees. §3 wrongly implemented changes no rows. **§2 wrongly
+implemented renders a correct-looking document containing stale merged data** — an old
+address, a former guardian, a previous phone number — on the document-generation path that
+every onboarding client passes through. Nobody notices until someone signs it.
+
+Deliver for §2: the migration unapplied, the `BEGIN … ROLLBACK` raw output, and the
+regression proof named in the verification section — **a draft created before profile
+completion must still end up with correct merged data after the change.** That proof is what
+the review is for.
 - **Do not touch the re-sign / template-version model.** Six version decisions are open with
   the owner. Nothing here decides them.
 
