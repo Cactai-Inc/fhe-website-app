@@ -34,11 +34,71 @@ export async function openGift(code: string): Promise<GiftReveal | null> {
   return (row as GiftReveal) ?? null;
 }
 
-/** Redeem the gift for the signed-in user. Returns a status string. */
+/** Redeem the gift for the signed-in user. Returns a status string — including
+ *  'redemption_failed' when provisioning didn't complete (the gift stays
+ *  redeemable; try again or contact us). */
 export async function redeemGift(code: string): Promise<string> {
   const { data, error } = await supabase.rpc('redeem_gift', { p_code: code });
   if (error) throw error;
   return data as string;
+}
+
+/** Create an account for a gift recipient who has none yet. The gift code is
+ *  the credential (open_gift/redeem_gift are unguarded/self-guarding for the
+ *  same reason) — not an invitation token, so this hits its own endpoint
+ *  rather than the invited-registration path. Signs the new account in on
+ *  success; the caller still needs to call redeemGift() after. */
+export async function registerForGift(code: string, email: string, password: string): Promise<void> {
+  const resp = await fetch('/api/register-gift', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code, email, password }),
+  });
+  if (!resp.ok) {
+    const payload = await resp.json().catch(() => ({ error: '' }));
+    throw new Error(payload.error || 'Could not create your account.');
+  }
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+}
+
+/** Staff-only: the one gift-creation path (D4). Converts a reviewed inquiry +
+ *  a real catalog offering into a redeemable gift. item_type/item_label/amount
+ *  are captured server-side from the offering, never passed as free text. */
+export interface CreateGiftInput {
+  offeringId: string;
+  buyerName: string;
+  buyerEmail: string;
+  recipientName: string;
+  recipientEmail?: string;
+  giftMessage?: string;
+  markPaid?: boolean;
+  requestId?: string;
+}
+export interface CreateGiftResult {
+  giftId: string;
+  code: string;
+  claimLink: string;
+  buyerContactId: string | null;
+}
+export async function createGift(input: CreateGiftInput): Promise<CreateGiftResult> {
+  const { data, error } = await supabase.rpc('create_gift', {
+    p_offering_id: input.offeringId,
+    p_buyer_name: input.buyerName,
+    p_buyer_email: input.buyerEmail,
+    p_recipient_name: input.recipientName,
+    p_recipient_email: input.recipientEmail ?? null,
+    p_gift_message: input.giftMessage ?? null,
+    p_mark_paid: input.markPaid ?? false,
+    p_request_id: input.requestId ?? null,
+  });
+  if (error) throw error;
+  return {
+    giftId: data.gift_id,
+    code: data.code,
+    claimLink: data.claim_link,
+    buyerContactId: data.buyer_contact_id ?? null,
+  };
 }
 
 /**

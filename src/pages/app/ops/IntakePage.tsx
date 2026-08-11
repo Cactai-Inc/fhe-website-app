@@ -43,6 +43,7 @@ import type {
   BookingRequestStatus,
 } from '../../../lib/ops/api-intake';
 import { ProvisionClientForm } from '../../../components/app/ProvisionClientForm';
+import { GiftCreateForm } from '../../../components/app/GiftCreateForm';
 import { listSupportRequests, setSupportStatus, type SupportRequest } from '../../../lib/support';
 import { BookingFieldsSettings } from './BookingFieldsSettings';
 import type { ProposedTime } from '../../../lib/types';
@@ -206,6 +207,7 @@ function RequestInbox({ openId }: { openId?: string } = {}) {
   const [inviteResult, setInviteResult] = useState<{
     url: string; emailed: boolean; offeringLabel?: string;
   } | null>(null);
+  const [giftOpen, setGiftOpen] = useState(false);
   const [horses, setHorses] = useState<ScheduleHorseOption[]>([]);
   // Schedule-lesson section (invited/converted requests): the provisioned
   // client resolved via request → invitation → email → contact → client, plus
@@ -244,6 +246,7 @@ function RequestInbox({ openId }: { openId?: string } = {}) {
     setInviteOpen(false);
     setInvite(inviteFormFor(row));
     setInviteResult(null);
+    setGiftOpen(false);
     setActionError(null);
     setRequestClientId(null);
     setRequestSessions([]);
@@ -561,7 +564,17 @@ function RequestInbox({ openId }: { openId?: string } = {}) {
                     Mark contacted
                   </button>
                 )}
-                {selected.status !== 'invited' && !inviteOpen && (
+                {selected.status !== 'converted' && !inviteOpen && !giftOpen && (
+                  <button
+                    type="button"
+                    className="btn-outline-gold text-sm"
+                    disabled={busy}
+                    onClick={() => setGiftOpen(true)}
+                  >
+                    Send as gift
+                  </button>
+                )}
+                {selected.status !== 'invited' && !inviteOpen && !giftOpen && (
                   <button
                     type="button"
                     className="btn-primary text-sm"
@@ -576,6 +589,30 @@ function RequestInbox({ openId }: { openId?: string } = {}) {
                     Send confirmation &amp; invite
                   </button>
                 )}
+              </div>
+            )}
+
+            {giftOpen && (
+              <div className="border-t border-green-800/10 pt-4">
+                <p className="body-text text-sm mb-4">
+                  Turn this inquiry into a gift — pick what they're buying, confirm who it's
+                  for, and get a claim link to send. The recipient redeems it themselves.
+                </p>
+                <GiftCreateForm
+                  requestId={selected.id}
+                  buyerName={selected.contact_name}
+                  buyerEmail={selected.contact_email}
+                  onCreated={() => {
+                    setSelected((prev) => (prev ? { ...prev, status: 'converted' } : prev));
+                    void refresh(statusFilter);
+                    toast.success('Gift created.');
+                  }}
+                />
+                <div className="flex justify-end mt-3">
+                  <button type="button" className="btn-outline-gold text-sm" onClick={() => setGiftOpen(false)}>
+                    Back
+                  </button>
+                </div>
               </div>
             )}
 
