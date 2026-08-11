@@ -562,6 +562,22 @@ docs 81 | sigs 62 | live_sigs 62 | contacts 34 | profiles 11 | purchases 5
 members 10 | contract_fields 654 | document_parties 127 | bookings 319
 ```
 
+**`contract_fields` later moved 654 → 645, and it was not this task.** The database is not
+quiescent — other threads and the live app are working against the same production instance. The
+drop happened at 02:54, after my last measurement of 654 and after every transaction I opened had
+closed. Attribution, checked rather than assumed:
+
+- **None of the seven migrations contains a single DML statement.** Verb census over all seven:
+  80 × `REVOKE`, 1 × `DROP`, plus `CREATE OR REPLACE FUNCTION`, `BEGIN`/`COMMIT` and `DO`-block
+  verifies. No `INSERT`, no `UPDATE`, no `DELETE`.
+- Every exploratory write I made was inside a transaction that rolled back, and I re-read the count
+  immediately afterwards: still 654.
+- The change arrived through a live PostgREST session (`usename=authenticator`), not through my
+  `psql` connection.
+- `documents` (81) and live `signatures` (62) never moved at any point.
+
+See *Chain 3* below — that same event doubles as live evidence the revokes are safe.
+
 **anon is now refused at the grant** (sample, run against the applied state):
 
 ```
@@ -631,6 +647,29 @@ inner function is unreachable directly.
 
 Row counts were re-read after every chain test and are unchanged (`contract_fields` 654,
 `document_parties` 127, `documents` 81, `signatures` 62, `horses` 4, `bookings` 319).
+
+**Chain 3 — an unplanned live one, from another session.** Five minutes after `20260810T0300`
+revoked `sync_contract_fields_from_defs` from anon **and** `authenticated`, another session updated
+**384** `contract_fields` rows through PostgREST — 3 `HORSE_LEASE_V2` documents × 128 template
+fields each, the signature of a `sync_contract_fields_from_defs` / remerge pass:
+
+```
+02:49:2x   20260810T0300 applied (revokes sync_contract_fields_from_defs)
+02:54:00   384 contract_fields rows updated by another session via PostgREST
+           = 3 documents x 128 fields; all three intact afterwards at 138 fields
+```
+
+That work completed normally against the revoked grants. It is the strongest available live
+confirmation that the revoke closed the direct surface without touching the internal path — and it
+was not run by me.
+
+Two documents show a negative field delta against their template defs
+(`ecaecd42…` −22, `9a56b738…` −3). Neither appears in the recently-touched set, so both gaps
+**pre-date** this task. Flagged, not caused here.
+
+**One of the three documents touched at 02:54 was `704c8d2d-…` — Sarah's live negotiation.** Another
+session is actively working on it. This task never read or wrote it: it is excluded by predicate
+from every query in this report.
 
 **Still accepted, not closed:** the remaining in-database callers were not each exercised —
 `start_bill_of_sale`, `start_bill_of_sale_standalone`, `start_sale_contract`,
