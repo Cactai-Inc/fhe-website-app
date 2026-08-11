@@ -11,7 +11,7 @@ import {
   type ClientAccountRow, type ClientItems,
 } from '../../lib/admin';
 import { contactAddress, formatAddress, type ContactAddress } from '../../lib/api';
-import { docDisplayLabel } from '../../lib/documentStatus';
+import { docDisplay, docDisplayLabel } from '../../lib/documentStatus';
 import { ProvisionClientForm } from '../../components/app/ProvisionClientForm';
 /* These four moved to a shared module so the contact dossier can render them
    too. Imported here rather than duplicated — one definition, two callers. */
@@ -202,6 +202,91 @@ function RpcListTab({
       {create && <TabCreate label={create.label} onClick={create.onClick} />}
       {rows === null ? <p className="text-sm text-muted">Loading…</p>
         : <RowList empty={empty} rows={rows.map(map)} />}
+    </div>
+  );
+}
+
+// ── documents tab: onboarding-class documents collapse into one packet ───────
+// DOCPACKET (owner, 2026-08-10): the onboarding set is a packet, not N
+// individual rows — but only for display. Grouping key is `wall_gating`
+// (contract_templates.wall_gating, the same flag my_wall_state() reads), not
+// a stored relationship, so swapping documents in/out of onboarding changes
+// the packet's contents automatically. A lease (or any other contract) has
+// wall_gating=false and stays listed on its own, exactly as before. Expanding
+// the packet reveals the same rows this page has always rendered — nothing
+// about generation, assignment or signing changes, and no row is hidden,
+// merged, or deleted; DocumentsTab reuses RowList/ListRow for both the
+// packet's contents and the non-packet rows, so there is no separate
+// rendering path to retire.
+const DOCUMENT_PACKET_NAME = 'Onboarding Packet'; // owner to confirm wording — see report.
+
+interface AdminDocRow {
+  id: string;
+  title: string | null;
+  status: string;
+  workflow_state: string | null;
+  created_at: string | null;
+  wall_gating: boolean;
+}
+
+function adminDocRowToListRow(r: AdminDocRow): ListRow {
+  const notStarted = r.status === 'NOT_STARTED';
+  const assigned = r.status === 'ASSIGNED';
+  return {
+    key: r.id,
+    main: r.title ?? 'Document',
+    sub: notStarted ? 'Assigned — not started'
+      : assigned ? 'Assigned — awaiting signature'
+      : fmtTs(r.created_at),
+    badge: notStarted ? 'Not started'
+      : assigned ? 'Awaiting signature'
+      : docDisplayLabel(r.status, r.workflow_state),
+    href: (notStarted || assigned) ? undefined : `/app/ops/documents/${r.id}`,
+  };
+}
+
+function DocumentsTab({
+  userId, refreshKey, onAssign,
+}: {
+  userId: string;
+  refreshKey: number;
+  onAssign: () => void;
+}) {
+  const [rows, setRows] = useState<AdminDocRow[] | null>(null);
+  const [packetOpen, setPacketOpen] = useState(false);
+  useEffect(() => {
+    setRows(null);
+    supabase.rpc('admin_client_documents', { p_user_id: userId })
+      .then(({ data, error }) => setRows(error ? [] : ((data as AdminDocRow[]) ?? [])));
+  }, [userId, refreshKey]);
+
+  const packetRows = (rows ?? []).filter((r) => r.wall_gating);
+  const otherRows = (rows ?? []).filter((r) => !r.wall_gating);
+  const signedCount = packetRows.filter((r) => docDisplay(r.status, r.workflow_state).tone === 'done').length;
+
+  return (
+    <div>
+      <TabCreate label="Assign documents" onClick={onAssign} />
+      {rows === null && <p className="text-sm text-muted">Loading…</p>}
+      {rows !== null && rows.length === 0 && <p className="text-sm text-muted">No documents.</p>}
+      {packetRows.length > 0 && (
+        <div className="mb-1.5">
+          <button type="button" onClick={() => setPacketOpen((o) => !o)} aria-expanded={packetOpen}
+            className="w-full flex items-center justify-between gap-3 bg-white border border-green-800/10 rounded-lg px-4 py-2.5 hover:border-green-800/30 hover:bg-green-50/40 focus-ring transition-colors">
+            <span className="min-w-0">
+              <span className="block text-sm text-green-900 truncate">{DOCUMENT_PACKET_NAME}</span>
+              <span className="block text-xs text-muted">{signedCount} of {packetRows.length} signed</span>
+            </span>
+            <ChevronRight size={15} className={`text-green-800/40 shrink-0 transition-transform ${packetOpen ? 'rotate-90' : ''}`} aria-hidden="true" />
+          </button>
+          {packetOpen && (
+            <div className="pl-3 mt-1.5 ml-2 border-l-2 border-green-800/10">
+              <RowList empty="" rows={packetRows.map(adminDocRowToListRow)} />
+            </div>
+          )}
+        </div>
+      )}
+      {otherRows.length > 0 && <RowList empty="" rows={otherRows.map(adminDocRowToListRow)} />}
     </div>
   );
 }
@@ -835,27 +920,8 @@ export default function Admin() {
             {ov && tab === 'documents' && (
               <>
                 {selected.contact_id && <ClientHorseRecordsCard contactId={selected.contact_id} />}
-                <RpcListTab key={tabRefresh} userId={selected.user_id!} rpc="admin_client_documents" empty="No documents."
-                  create={{ label: 'Assign documents', onClick: () => setAssignOpen(true) }}
-                  map={(r) => {
-                    // Requirement rows (no real document to open → no href):
-                    //   NOT_STARTED = assigned, no history at all;
-                    //   ASSIGNED    = re-assigned — prior signed copy superseded,
-                    //                 awaiting a fresh signature.
-                    const notStarted = String(r.status) === 'NOT_STARTED';
-                    const assigned = String(r.status) === 'ASSIGNED';
-                    return {
-                      key: String(r.id),
-                      main: String(r.title ?? 'Document'),
-                      sub: notStarted ? 'Assigned — not started'
-                        : assigned ? 'Assigned — awaiting signature'
-                        : fmtTs(r.created_at as string),
-                      badge: notStarted ? 'Not started'
-                        : assigned ? 'Awaiting signature'
-                        : docDisplayLabel(r.status as string, r.workflow_state as string),
-                      href: (notStarted || assigned) ? undefined : `/app/ops/documents/${String(r.id)}`,
-                    };
-                  }} />
+                <DocumentsTab userId={selected.user_id!} refreshKey={tabRefresh}
+                  onAssign={() => setAssignOpen(true)} />
               </>
             )}
             {ov && tab === 'orders' && (
