@@ -121,9 +121,39 @@
 > partial leases where use genuinely varies — the owner's own arrangement is the case for it.
 > **A thread that tries to demand a total, or to compute one, has misread it.**
 >
+>
+> ### CCC — the requirement states the limit. SETTLED 2026-08-10.
+>
+> > Owner: *"the ccc clause when lessor requires it should include the fmv as part of the
+> > statement, lessor requires ccc with policy limit of no less than fmv token."*
+>
+> **When the Lessor requires CCC, the clause states the required limit as no less than
+> `{{HORSE.FAIR_MARKET_VALUE}}`.** Verified present on the lease as a `currency` field — the
+> token already exists.
+>
+> **This removes the need for a CCC limit field entirely.** The requirement carries the number;
+> the Lessee's `has` / `will obtain` declaration is an **assertion that they meet it**. Nothing
+> separate to enter, nothing to compare, no gap to detect.
+>
+> **It is self-enforcing.** At a \$25k limit a party cannot truthfully declare they meet a
+> requirement stated against a million-dollar horse. **The document does not need to catch it —
+> they could not sign it.**
+>
+> **DO NOT add a field for the Lessee's actual limit.** A stated actual limit could sit below the
+> stated requirement, recreating exactly the contradiction removed from GL: a document asserting
+> a requirement and its non-fulfilment at once.
+>
+> **Closes two of the three earlier CCC questions.** Full-value coverage IS requirable, and it is
+> expressed as the requirement rather than a separate election. The required limit lives in the
+> document, derived from this horse's declared value at signing — which is also the right answer
+> for an executed document, since it freezes with the rest of the text.
+>
 > ### Still open with the owner
 >
-> - **The CCC limit** — three questions in the CCC section below.
+> - **When the Lessee cannot meet the required limit** — the remaining CCC question. They cannot
+>   truthfully declare `has` or `will obtain`, so the section stalls unanswered. **Is that the
+>   intended behaviour** — the same "non-acceptance is the absence of an answer" model already
+>   used for GL — **or should the document say something explicit?** Do not guess.
 
 ---
 
