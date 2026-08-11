@@ -15,8 +15,28 @@ export default {
          way from; he can only move up. Over the subheader bar green-800/66
          renders #63776b and carries the cream label at 4.66:1, and the next step
          down (/62) is 4.14:1 — under AA at this button's size. 66 is the
-         lightest legible value in this direction, not a preference. */
-      opacity: { 64: '0.64', 66: '0.66' },
+         lightest legible value in this direction, not a preference.
+
+         UIO-014: `border-green-900/12` (NAV_DIVIDER, this file, `:118`) had
+         been declared and used at SIX call sites — three pre-existing, three
+         added across this session's own earlier orders — without 12 ever
+         being added here. None of them emitted a border-color rule; Tailwind
+         preflight sets `border-style: solid` and `border-color: currentColor`
+         globally, so `border-t` alone still drew A line, just in whatever
+         colour the surrounding text happened to be, not the intended faint
+         wash. T1 by the book: present in source, silently wrong in the
+         render, and nobody had grepped the compiled CSS for it until now.
+
+         Swept the whole source tree for every `color-utility/N` opacity
+         modifier while fixing this one and cross-checked each against the
+         scale (built-in 5-steps plus what's declared here): `/8` is ALSO
+         missing — six sites across four files outside this task's ownership
+         (`ContractActivityCard.tsx`, `HorsePage.tsx`, `ops/ActivityPage.tsx`,
+         `ops/EvaluationReportsPage.tsx`). Adding it here fixes those as a
+         side effect of the shared scale; their content is untouched. Every
+         other value in use (5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60,
+         64, 66, 70, 75, 80, 85, 90, 95) is already covered. */
+      opacity: { 8: '0.08', 12: '0.12', 64: '0.64', 66: '0.66' },
       /* UIO-003 / MOTION — owner, 2026-08-09: "graceful, smooth, comfortable,
          not rushed or jarring… everything moves with dignity."
 

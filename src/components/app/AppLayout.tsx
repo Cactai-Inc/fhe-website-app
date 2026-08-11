@@ -866,7 +866,11 @@ function ClientRail({ bellCount, dmCount, presence, lessonsOn, onOpenTour, onSig
 }) {
   return (
     <aside className="hidden lg:block shrink-0 relative z-30 w-60">
-      <nav className={`sticky top-[var(--cs-hdr-h)] h-[calc(100dvh-var(--cs-hdr-h))] border-r border-green-950/20 ${NAV_PANEL} p-2 overflow-y-auto overflow-x-hidden flex flex-col oh-rail-shadow`}>
+      {/* UIO-014: the rail's right edge was heavier than every other divider
+          in the same panel — border-green-950/20, not this file's own
+          declared divider weight (NAV_DIVIDER, border-green-900/12). Not an
+          invented value; matching what's already the standard. */}
+      <nav className={`sticky top-[var(--cs-hdr-h)] h-[calc(100dvh-var(--cs-hdr-h))] border-r border-green-900/12 ${NAV_PANEL} p-2 overflow-y-auto overflow-x-hidden flex flex-col oh-rail-shadow`}>
         <div className="flex flex-col gap-0.5">
           {/* Community Feed (position 1) with its views nested underneath. */}
           <CommunityNav indentClass="pl-9" />
