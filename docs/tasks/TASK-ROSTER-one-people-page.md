@@ -76,11 +76,59 @@ letting the card grow unbounded.
 > a `clients` row would have rendered gold. `LEAD` also stays out — leads live on Leads until
 > worked.
 >
-> ### ONE THING TO ASK — what does ACTIVE mean?
+> ### ACTIVITY — SETTLED 2026-08-10. Actions, never sessions.
 >
-> **He has not defined it and it is the top of the whole chain.** Candidates: a recent booking, a
-> recent order, an account that has signed in, or simply documents complete and nothing
-> outstanding. **These produce very different grids. ASK. DO NOT GUESS.**
+> > *"the last active date maybe even timestamp"* … *"active now indicator with green dot (not
+> > auth session, but actually did something in the app within the last 1 hr."*
+>
+> ```
+> LAST ACTIVE   a timestamp on every card
+> GREEN DOT     that timestamp is within the last HOUR
+> ```
+>
+> **"Not auth session" is the requirement, not a nuance.** `auth.users.last_sign_in_at` exists
+> and is exactly what he is rejecting — a live session proves nothing about doing anything.
+> **Derive from ACTIONS.** Source: **`audit_logs`**, 2,852 rows, keyed on `actor_user_id`.
+>
+> ### THE COVERAGE GAP — `bookings` IS NOT AUDITED
+>
+> **29 tables write to `audit_logs`. `bookings` is not one of them.**
+>
+> ```
+> documents 1508 · contract_templates 336 · contacts 322 · signatures 176 · clients 83 …
+> ```
+>
+> **A client who books a lesson produces no audit row and reads as INACTIVE** — for probably the
+> most common client action in the product.
+>
+> **The owner: *"bookings is going to be addressed in full coming up soon here."*** See
+> `TASK-BOOKFLOW`. **Do not solve it here.** Either union `bookings` into the activity signal as
+> an interim, or wait for that work — **report which you did and why. Do not add an audit trigger
+> to `bookings` as a side effect**; that changes what the audit trail means and belongs with the
+> booking work.
+>
+> ### NEGATIVE INDICATORS — only for things he can ACT on
+>
+> > *"no need for a negative indicator, unless its to show they havent completed signup or their
+> > invite wasnt claimed. etc..."*
+>
+> **The absence of the green dot is enough to say "not active now."** No red dot, no grey dot, no
+> "inactive" label.
+>
+> **Flags are for ACTIONABLE states only:**
+>
+> ```
+> signup not completed       -> chase it
+> invite sent, not claimed   -> resend it
+> invite EXPIRED             -> reissue it     (7 of 13 sent invitations today)
+> documents outstanding      -> nudge them
+> unpaid                     -> collect
+> ```
+>
+> **The test: could he do something about it this afternoon?** *"Inactive for three weeks"* fails
+> it — that is the chain's opening question, not a flag. *"Invite expired, unclaimed"* passes.
+>
+> **This is what makes the grid a triage view rather than a status board.**
 
 ---
 
