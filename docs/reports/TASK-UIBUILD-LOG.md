@@ -614,3 +614,59 @@ for the client rail to attach a divider to.
 it's still closed as of the current queue (last touched at `490a104`,
 already synced past) — `NAV_BADGE` (`bg-gold-500 text-green-950`,
 `AppLayout.tsx`) is untouched. Nothing to verify because nothing shipped.
+
+---
+
+## UIO-011 — EVALUATION, outline hover and one-green harmonization
+
+**Commit:** `4f8e3b4`
+
+**Nothing in `src/` touched** — confirmed via `git status --short` before
+committing, showing only the new `docs/reference/` file.
+
+Built `docs/reference/uio-011-hover-and-green-evaluation.html`, self-contained
+(one Google Fonts link, all other CSS inline, same convention as the
+existing `header-mockup.html` and this session's own
+`uio-006-open-state-options.html`).
+
+**Actually rendered and looked at it before shipping**, not just read the
+markup: headless Chrome screenshot at full-page size, inspected with the
+image-reading tool. Found the three-column header-ink difference (today's
+`#0d2118` vs the proposed `#31523f`) was hard to judge at the full page's
+zoom level, so rendered an isolated close-up of just the two colours
+side-by-side to confirm the distinction is real but genuinely subtle — which
+matches the order's own numbers (2.7× lighter, not a different colour
+family) rather than being an artifact of my mockup. Did not tune the mockup
+to exaggerate the difference into something more dramatic than what the
+order's own contrast table describes.
+
+**What's on the page:**
+- Question A: two nav-column mockups side by side (today's fill hover vs an
+  outline-hover alternative), cursor shown on a non-selected row in both so
+  hover and selected read as distinct in the same frame.
+- Question B: three full mock-page columns (brand green everywhere / large
+  content text only in `#31523f` / everywhere including the header mark,
+  company name and avatar letter), each carrying the notification badge —
+  per the order's explicit instruction to include the badge in every column,
+  since this evaluation is the one pass where the gold/size/shape/position
+  are actually in scope (UIO-010 closed the number question but left the
+  aesthetic complaint open).
+- The order's own contrast table, reproduced rather than recomputed (this
+  file has no code to grep — it's a static mockup, not something Tailwind
+  builds).
+
+**Recommended nothing beyond what UIO-011 itself already states**, per the
+order's own reporting instruction — the page includes the orchestrator's
+existing rationale (try the harmonized green on large content text first,
+not everywhere) as page copy, but does not argue for column 2 over column 3
+or outline over fill beyond restating that reasoning.
+
+**What I did NOT do:** decide anything. This is the one order in today's
+queue that explicitly forbids a decision, not just discourages guessing at
+a missing value.
+
+---
+
+Queue complete: UIO-003 through UIO-012 (all items), UIO-005, UIO-010,
+UIO-011. Nothing left `READY` as of this session's last sync with
+`origin/main`.
