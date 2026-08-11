@@ -152,6 +152,17 @@ reporting success.
   are the owner's test identities: live and untouched until the owner-run post-Stage-5
   purge (via the 5g routine, never ad hoc). The 6 stranded executed documents ride on
   the test identities and exit with that purge — no re-anchoring.
+- **D1a — The platform owner is not a tenant (2026-08-10).** Sharpens D1, does not
+  supersede it. `admin@cactai.io` = PLATFORM owner, `org_id` **NULL by design**, and
+  **not a member of any tenant**. `admin@fhequestrian.com` = TENANT owner. They are
+  different things and are never merged. **Consequence: being DENIED by FHE
+  staff-gated functions is CORRECT for the platform account, not a bug.** Three
+  threads reported it as breakage; all three were wrong. `has_staff_access() AND
+  v_org = current_org()` goes NULL for it, so the `IF` skips and it is admitted —
+  *that admission was the accident.* All `coalesce(…, false)` repairs on those ~48
+  functions are therefore **safe**. **Do NOT set `org_id` on `admin@cactai.io`** — it
+  was proposed as the cheap fix and is refused. Full ruling:
+  `docs/reference/D1a-PLATFORM-OWNER-IS-NOT-A-TENANT.md`.
 - **D2 — Rename.** The affiliation table becomes `groups`.
 - **D3 — Purchaser wording.** DB stores a neutral promotion marker; display "client"
   in staff/ops surfaces, "customer" only in gift/product-only contexts. Members must
