@@ -11,12 +11,30 @@ off `origin/main` (`2f5f5d2`). Not pushed.
 | 2 — integrity panel | Built and **applied to production** (function only; reads nothing destructive). |
 | 3 — cleanup controls | Built and **applied to production**. Grants verified by re-read. |
 | Follow-up — NULL-safe guard | **Applied to production.** Closed a live D1 hole; see §NULL below. |
+| Ruling — missing-fields by key | **Applied to production.** See §KEYS. |
+| Ruling — re-test the other 48 | **Applied to production.** 62 functions across 3 tiers; see §48. |
 
 Migrations:
 
 - `supabase/migrations/20260811T1000_contractorphan_delete_orphaned_documents.sql` — **not applied**
 - `supabase/migrations/20260811T1100_contractorphan_integrity_panel_and_cleanup.sql` — applied
 - `supabase/migrations/20260811T1200_contractorphan_cleanup_guard_null_safe.sql` — applied
+- `supabase/migrations/20260811T1250_contractorphan_missing_fields_by_key.sql` — applied
+- `supabase/migrations/20260811T1300_noguard_null_tier1_destructive.sql` — applied (19)
+- `supabase/migrations/20260811T1400_noguard_null_tier2_writers.sql` — applied (25)
+- `supabase/migrations/20260811T1500_noguard_null_tier3_readers.sql` — applied (18)
+
+**Part 1 stays unapplied by owner ruling 2026-08-11 — the owner is removing those two
+documents from the panel himself.** The migration remains in the tree as the record of
+what was verified; it is not the route the deletion will take.
+
+**Worktree incident, stated because it affected the record.** Mid-task the worktree was
+swept of all untracked and ignored files: `.env`, `.env.db`, `node_modules` and two
+uncommitted migration files, one of which (`…T1250…`) had already been applied to
+production. Nothing was lost from the database. The file was rewritten and then **proven
+byte-identical to the live function body** by applying it inside a transaction and
+diffing `pg_get_functiondef`. Every migration since has been committed immediately after
+being applied, rather than at the end of the tier.
 
 ---
 
@@ -760,6 +778,214 @@ stale-key side, which is arguably a second defect worth its own check.
 
 ---
 
+# §KEYS — the missing-fields check now compares keys (owner ruling, applied)
+
+Migration `20260811T1250_contractorphan_missing_fields_by_key.sql`. Applied.
+
+The count-based test failed in both directions, and the evidence for both is above:
+a false negative (DOC-U4PZP54FP5 missing 15 defined keys but passing, because 26 stale
+keys pushed its total past the defined count) and drift (HORSE_LEASE_V2 going 128 → 114
+mid-task while LEASEFIX worked correctly, moving every document's number for reasons
+unrelated to the documents).
+
+Keyed now, and both numbers are reported. The check fires on absent keys only:
+
+```
+ DOC-RXW6U9M3BF | EXECUTED | 35 of 114 defined fields absent; 27 stale fields held (HORSE_LEASE_V2)
+ DOC-U4PZP54FP5 | VOID     | 15 of 114 defined fields absent; 26 stale fields held (HORSE_LEASE_V2)
+```
+
+Count is 2 again — but for the right reason, and it will not move the next time a
+template is edited. Label is now "Missing fields its template defines".
+
+---
+
+# §48 — the rest of the NULL guards, re-tested and repaired
+
+Owner ruling 2026-08-11: D1a's *safe to repair* stands, but *cosmetic* did not.
+Worked in order of consequence, destructive first, applied as we went — three
+migrations, each dry-run, applied and committed before the next was written.
+
+## The candidate set, derived from the live catalog rather than from a document
+
+```
+ definer functions carrying the bare idiom  : 63
+ already repaired (can_cleanup_document)    :  1
+ repaired here                              : 62
+   tier 1  destructive / legal state        : 19  (20 guards — resolve_change_request has 2)
+   tier 2  writers                          : 25
+   tier 3  readers                          : 18
+```
+
+NOGUARD3 counted 48 for the narrower party-or-staff idiom; the scan here is broader —
+any bare `has_staff_access() AND <ident> = current_org()` — and finds 63. The extra 15
+are the same defect in the same shape, so they were repaired with the rest rather than
+left because they fell outside an earlier census.
+
+## The repair, and why it is applied to the comparison rather than the `IF`
+
+```sql
+coalesce(has_staff_access() AND <row>.org_id = current_org(), false)
+```
+
+Wrapping the staff term itself is correct in every shape the idiom appears in —
+`IF NOT (staff OR party)`, `v_is_staff := staff`, `IF staff THEN`, and inside `EXISTS`
+where it is a no-op. Wrapping the enclosing `IF` would have needed paren-balancing per
+site and would have missed the variable-assignment shape entirely.
+
+The other disjunct is safe: `caller_is_document_party()` is
+`current_contact_id() IS NOT NULL AND EXISTS (…)` — a real boolean, verified live — so
+`false OR party` is a real boolean once the staff term is coalesced.
+
+## Each migration proves its own rewrite is a pure wrap
+
+Regex-rewriting 62 live function bodies is the dangerous part, so the migrations do not
+ask to be trusted. For every function: count the matches, rewrite, count the wraps,
+require the two to be equal — then **unwrap the result and require it to reproduce the
+original body byte for byte**, aborting the entire migration otherwise. A substitution
+that touched anything else cannot survive that check.
+
+The dry runs then assert the blast radius independently:
+
+```
+tier 1: functions changed = 19    diff lines = 40, every one a wrap
+tier 2: functions changed = 25    changed lines that are NOT a pure wrap = 0 rows
+tier 3: functions changed = 18    changed lines that are NOT a pure wrap = 0 rows
+```
+
+## Tier 2 and tier 3 were live too — that is the point of the ruling
+
+The tier-1 dry run produced the evidence for tier 2 by accident. Acting as
+`admin@cactai.io` against a document the platform owner has no business touching, every
+repaired tier-1 function refused and:
+
+```
+WARNING:  set_recipient_editing ADMITTED platform owner (unrepaired, expected)
+  display_code  | recipient_editing
+----------------+-------------------
+ DOC-EJV6VYU2GW | t                   ← it wrote
+```
+
+After tier 2:
+
+```
+set_recipient_editing  DENIED: not authorized to change editing permission on document …
+post_contract_comment  DENIED: not a party to this document
+assign_horse_section   DENIED: staff access required
+set_field_na           DENIED: not authorized for this document
+```
+
+Tier 3, before and after, same caller and same contracted document:
+
+```
+BEFORE  WARNING: contract_signing_set ADMITTED
+AFTER   NOTICE:  contract_signing_set DENIED: not authorized for this document set
+        NOTICE:  document_parties_summary DENIED: not authorized
+        NOTICE:  contract_document_detail DENIED: not authorized to read document …
+```
+
+Readers do not write, but a NULL guard on a reader still hands the platform owner the
+parties, redline state, signing set, deal record and change log of tenant contracts.
+D1 says it holds zero FHE tenant rows; reading them is the same violation minus the
+damage.
+
+## Tier 1 — the destructive paths, and what each guard was holding shut
+
+All 19 guard a write, and in each the skipped `RAISE` was the only thing between the
+caller and the action:
+
+| function | what the guard protects |
+|---|---|
+| `hard_delete_contract` | `DELETE` from `documents` **and** `contracts`, plus 8 child tables |
+| `advance_document_workflow` | drives `workflow_state` — execution, void, termination |
+| `can_void_document` | the predicate gating a void |
+| `archive_contract` | archives / un-archives |
+| `remove_contract_composition` | `DELETE` of a clause or field from a live contract |
+| `upsert_change_request` | `DELETE` + `UPDATE` + `INSERT` over change requests |
+| `set_document_party_hidden` | `DELETE` + `INSERT` — hides a document from a party |
+| `remerge_contract_from_fields` | rewrites `merged_body`: the contract's own text |
+| `reassign_document_party` | changes **who is a legal party** |
+| `send_contract_to_party` | sends a contract out for signature |
+| `invite_contract_counterparty` | creates an account invitation |
+| `share_document` | grants another contact access to a document |
+| `set_contract_field` / `set_field_structured` | writes field values, including money terms |
+| `seed_contract_fields` | bulk `INSERT` of a document's fields |
+| `claim_document_origination` | changes the originator |
+| `resolve_change_request` (×2) / `resolve_clause` / `resolve_field_edit` | accept or reject proposed contract changes |
+
+Proven denied for the platform owner, with the document verified untouched afterwards:
+`hard_delete_contract`, `archive_contract`, `share_document`, `seed_contract_fields`,
+`reassign_document_party`, `claim_document_origination`.
+
+## Final state
+
+```
+ unrepaired_remaining | repaired_total
+----------------------+----------------
+                    0 |             70
+```
+
+70 = the 63 candidates plus 7 gift/payment functions that already carried a coalesced
+`has_staff_access` from earlier NOGUARD work and were never in this class.
+
+Platform owner, every directly-callable repaired predicate — false, and not NULL:
+
+```
+                fn                 | v | is_null
+-----------------------------------+---+---------
+ can_cleanup_document              | f | f
+ can_void_document                 | f | f
+ caller_is_document_party_or_staff | f | f
+ caller_may_propose                | f | f
+```
+
+Tenant staff, across the repaired surface — 13 reads all return real data, a write
+round-trip through a repaired writer sets `recipient_editing` true and back to false,
+and nothing returns NULL where a boolean is expected:
+
+```
+ live_docs | void_null | cleanup_null | party_or_staff_null
+-----------+-----------+--------------+---------------------
+        73 |         0 |            0 |                   0
+```
+
+## Two things found along the way
+
+**The armed FK hazard is not specific to signing.** A tier-1 dry run hit it on
+`archive_contract`:
+
+```
+ERROR: insert or update on table "documents" violates foreign key constraint
+       "documents_contract_id_fkey"
+DETAIL: Key (contract_id)=(ae4ffe95-…) is not present in table "contracts".
+CONTEXT: UPDATE documents SET archived_at = …
+```
+
+`set_recipient_editing` (then unrepaired) had already written to that row earlier in the
+same transaction, so the archive was the **second same-transaction update** — the exact
+mechanism Part 1 describes, now observed on a real code path rather than reasoned about.
+It reinforces Part 1: any staff action touching those two documents twice in one
+transaction aborts, not only signing.
+
+**A correction to my own first pass.** I briefly read `contract_signing_set` as still
+admitting after the tier-3 repair. That was a bad test, not a finding: the function
+returns `jsonb`, so `FROM fn()` always yields exactly one row, and the document I used
+had no contract, so it returned `'[]'` before reaching the guard at all. Re-tested on a
+contracted document; the repair holds, as shown above.
+
+## Not done, and deliberately
+
+- **`profiles.contact_id` on `admin@cactai.io`.** D1a records the platform account still
+  holding one `contacts` row (`8795c065-…`) as the remaining D1 violation, and says it
+  gets its own task because it touches identity plumbing. Confirmed still present. Left
+  alone. It does not affect this sweep: `client_can_read_horse` and
+  `caller_is_document_party` are real booleans and both return false for that contact on
+  the documents tested.
+- **Setting `org_id` on the platform account.** Refused on the record by D1a. Not raised
+  again.
+
+---
+
 # WHAT NEEDS A DECISION
 
 1. **Apply Part 1?** The migration is written, dry-run, and guarded. It has not been
@@ -767,9 +993,14 @@ stale-key side, which is arguably a second defect worth its own check.
 2. **The `session_replication_role` practice.** Part 1 removes the last visible trace of
    this incident. The finding above is the record of it; the recommendation in that section
    is not implemented and is not in scope here.
-3. **Key-based vs count-based `missing_fields`.** The count-based check now passes a document
-   that is missing 15 defined keys. Changing it is a semantics change to a signed-off spec,
-   so it waits for a ruling.
-4. **The wider NULL-guard sweep.** D1a records 48 functions in the same shape and declares
-   the `coalesce(…, false)` repairs safe and NOGUARD3 Phase B unblocked. This task repaired
-   the two functions it owns. The other 48 are not touched here.
+3. ~~Key-based vs count-based `missing_fields`.~~ **Ruled 2026-08-11, applied.** See §KEYS.
+4. ~~The wider NULL-guard sweep.~~ **Ruled 2026-08-11, applied.** All 62 remaining
+   candidates repaired across three tiers. See §48.
+5. **`profiles.contact_id` on `admin@cactai.io`.** Still present, still the open D1
+   violation D1a recorded. Untouched here by design — it needs its own task.
+6. **The idiom regenerates.** NOGUARD3's systemic finding is now demonstrated twice over:
+   `can_cleanup_document` was written *during* NOGUARD3's own session and landed in this
+   class, and the sweep found 63 rather than 48 because the census had drifted. Nothing in
+   this task stops the next one being written the same way. A lint or a CI check on
+   `has_staff_access() AND … = current_org()` outside a `coalesce` would; that is a
+   proposal, not something done here.
