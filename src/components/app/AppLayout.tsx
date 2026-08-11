@@ -869,8 +869,15 @@ function ClientRail({ bellCount, dmCount, presence, lessonsOn, onOpenTour, onSig
       {/* UIO-014: the rail's right edge was heavier than every other divider
           in the same panel — border-green-950/20, not this file's own
           declared divider weight (NAV_DIVIDER, border-green-900/12). Not an
-          invented value; matching what's already the standard. */}
-      <nav className={`sticky top-[var(--cs-hdr-h)] h-[calc(100dvh-var(--cs-hdr-h))] border-r border-green-900/12 ${NAV_PANEL} p-2 overflow-y-auto overflow-x-hidden flex flex-col oh-rail-shadow`}>
+          invented value; matching what's already the standard.
+          UIO-016: p-2 -> p-3. Icon start was 20px from the panel's left
+          edge inside a 240px (w-60) panel; changing the container rather
+          than every row's own px-3 shifts both sides equally, so the hover
+          underline/selected fill stay symmetrically inset and no row class
+          needs touching. The staff rail's own <nav> already carries p-3 —
+          untouched here, this order's Files section scopes to this rail
+          only. */}
+      <nav className={`sticky top-[var(--cs-hdr-h)] h-[calc(100dvh-var(--cs-hdr-h))] border-r border-green-900/12 ${NAV_PANEL} p-3 overflow-y-auto overflow-x-hidden flex flex-col oh-rail-shadow`}>
         <div className="flex flex-col gap-0.5">
           {/* Community Feed (position 1) with its views nested underneath. */}
           <CommunityNav indentClass="pl-9" />
