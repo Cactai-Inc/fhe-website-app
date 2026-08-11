@@ -6,6 +6,7 @@ import {
   type AdminInviteResult,
 } from '../../lib/admin';
 import { fetchOfferings } from '../../lib/api';
+import { InviteResultPanel } from './InviteResultPanel';
 import type { Offering, Segment } from '../../lib/types';
 
 /**
@@ -89,7 +90,8 @@ export function ProvisionClientForm({
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [working, setWorking] = useState(false);
-  const [result, setResult] = useState<{ url: string; emailed: boolean; email: string } | null>(null);
+  const [result, setResult] = useState<
+    { url: string; emailed: boolean; emailError?: string; email: string } | null>(null);
   // Already-signed templates (kiosk walk-in) — shown as complete, not re-requested.
   const [signedTemplates, setSignedTemplates] = useState<string[]>([]);
 
@@ -205,7 +207,7 @@ export function ProvisionClientForm({
         ...(payStatus !== 'unpaid' ? { paymentMethod } : {}),
         ...(notes.trim() ? { notes: notes.trim() } : {}),
       });
-      setResult({ url: r.registerUrl, emailed: r.emailed, email: email.trim() });
+      setResult({ url: r.registerUrl, emailed: r.emailed, emailError: r.emailError, email: email.trim() });
       onProvisioned?.(r);
       if (source === 'new') {
         setEmail(''); setCategories([]); setDocChecked(null); setOfferingIds([]);
@@ -391,18 +393,8 @@ export function ProvisionClientForm({
       </form>
 
       {!hideResult && result && (
-        <div className="bg-green-50 border border-green-200 p-5 mt-6 text-sm rounded-lg">
-          <p className="text-green-800 mb-2">
-            Invitation sent to <strong>{result.email}</strong>
-            {result.emailed ? '.' : '. (Email provider not configured — copy the link below.)'}
-          </p>
-          <p className="text-green-900/70 text-xs mb-1">
-            This is the link in their email. It stays here until you send a new invitation.
-          </p>
-          <code className="block break-all text-xs text-green-900 bg-white border border-green-200 p-2 rounded">
-            {result.url}
-          </code>
-        </div>
+        <InviteResultPanel url={result.url} emailed={result.emailed}
+          emailError={result.emailError} email={result.email} className="mt-6 p-5" />
       )}
     </>
   );

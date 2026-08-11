@@ -13,6 +13,7 @@ import {
 import { contactAddress, formatAddress, type ContactAddress } from '../../lib/api';
 import { docDisplayLabel } from '../../lib/documentStatus';
 import { ProvisionClientForm } from '../../components/app/ProvisionClientForm';
+import { InviteResultPanel } from '../../components/app/InviteResultPanel';
 /* These four moved to a shared module so the contact dossier can render them
    too. Imported here rather than duplicated — one definition, two callers. */
 import {
@@ -248,7 +249,7 @@ function LoginTab({ ov }: { ov: Overview }) {
 // (assign category/offerings/paperwork + send, on THIS existing contact); already
 // invited → resend / expire / delete controls.
 function InvitePanel({ row, onSent }: { row: ClientAccountRow; onSent: () => void }) {
-  const [result, setResult] = useState<{ url: string; emailed: boolean } | null>(null);
+  const [result, setResult] = useState<{ url: string; emailed: boolean; emailError?: string } | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [log, setLog] = useState<StatusLogEntry[]>([]);
@@ -293,7 +294,7 @@ function InvitePanel({ row, onSent }: { row: ClientAccountRow; onSent: () => voi
             setBusy(true); setErr(null); setResult(null);
             try {
               const r = await adminSendInvitation({ email: row.email! });
-              setResult({ url: r.registerUrl, emailed: r.emailed });
+              setResult({ url: r.registerUrl, emailed: r.emailed, emailError: r.emailError });
               onSent();
             } catch (e) { setErr(e instanceof Error ? e.message : 'Could not send the invitation.'); }
             finally { setBusy(false); }
@@ -328,12 +329,8 @@ function InvitePanel({ row, onSent }: { row: ClientAccountRow; onSent: () => voi
       </div>
       {err && <p role="alert" className="form-error mt-3">{err}</p>}
       {result && (
-        <div className="bg-green-50 border border-green-200 p-3 mt-3 text-sm rounded-lg">
-          <p className="text-green-800 mb-1.5">
-            Invitation {result.emailed ? 'sent by email.' : 'created — email not configured; copy the link:'}
-          </p>
-          <code className="block break-all text-xs text-green-900 bg-white border border-green-200 p-2">{result.url}</code>
-        </div>
+        <InviteResultPanel url={result.url} emailed={result.emailed}
+          emailError={result.emailError} email={row.email ?? undefined} />
       )}
       {log.length > 0 && (
         <div className="mt-4 pt-3 border-t border-gold-600/20">

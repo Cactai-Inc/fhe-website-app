@@ -6,6 +6,15 @@ import { resolveTenantEmailIdentity, sendViaProvider } from './email.js';
 
 export interface ChecklistRow { kind: string; title: string; action: string; done: boolean }
 
+/** Outcome of an invitation send. `ok:false` ALWAYS carries the reason — a send
+ *  that failed must never be indistinguishable from one that worked. */
+export interface InvitationSendResult {
+  ok: boolean;
+  messageId: string | null;
+  /** Why the send failed, verbatim from the transport. Set iff !ok. */
+  error?: string;
+}
+
 /** Invitation email via the shared transport (Google SMTP first, Resend dormant),
  *  branded from the INVITING org's registry — never a hardcoded tenant name.
  *  When the invite carries a provisioned purchase, `offeringLabel` adds the
@@ -18,8 +27,13 @@ export async function sendInvitationEmail(
   offeringLabel?: string | null,
   checklist?: ChecklistRow[],
   expiresAt?: string | null,
-): Promise<boolean> {
-  if (!orgId) return false;
+): Promise<InvitationSendResult> {
+  // No org = no brand identity = no from-address. That is a real failure with a
+  // real cause (the platform owner has org_id NULL by design — D1a), not an
+  // "email provider not configured".
+  if (!orgId) {
+    return { ok: false, messageId: null, error: 'no org on the sending account — cannot resolve the sender identity' };
+  }
   const identity = await resolveTenantEmailIdentity(db, orgId);
   const fromEmail = process.env.INVITE_FROM_EMAIL || identity.fromEmail;
   const purchaseLine = offeringLabel
@@ -51,5 +65,30 @@ export async function sendInvitationEmail(
         : `This link expires soon. If it does, just reach out and we'll send a fresh one.`}</p>
       <hr/><pre style="font-family:inherit">${identity.footer}</pre>`,
   });
-  return out.ok;
+  return out.ok
+    ? { ok: true, messageId: out.messageId }
+    : { ok: false, messageId: null, error: out.error || 'the email transport rejected the send' };
+}
+
+/**
+ * Write the delivery attempt onto the invitation's status trail so "created but
+ * never emailed" is a fact staff can see later, not a boolean the handler drops
+ * on the floor. Best-effort by design: recording must never turn a successful
+ * send into a failed request.
+ */
+export async function recordInvitationDelivery(
+  db: ReturnType<typeof getSupabaseAdmin>,
+  invitationId: string | null | undefined,
+  sent: InvitationSendResult,
+): Promise<void> {
+  if (!invitationId) return;
+  try {
+    await db.rpc('record_invitation_delivery', {
+      p_invitation_id: invitationId,
+      p_ok: sent.ok,
+      p_error: sent.ok ? null : (sent.error ?? null),
+    });
+  } catch (err) {
+    console.error('could not record invitation delivery', invitationId, err);
+  }
 }
