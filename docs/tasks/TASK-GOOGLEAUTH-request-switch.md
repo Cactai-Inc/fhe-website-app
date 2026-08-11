@@ -129,3 +129,32 @@ route it to staff.** Never resolve it in this flow.
 
 `docs/reports/TASK-GOOGLEAUTH-REPORT.md`. Lead with the cross-email proof and the answer to
 open decision 2. State what you verified yourself versus assumed.
+
+---
+
+## OWNER RULINGS — 2026-08-11. Both open decisions are CLOSED.
+
+### Decision 2 — MANUAL LINKING IS ENABLED. Verified by the owner in Supabase directly.
+
+Not inferable from outside — `/auth/v1/settings` does not expose the flag, and the authorize
+endpoint checks authentication before the manual-linking gate, so it returns 401/403 and never
+the 422 that would answer it. **The owner checked the dashboard. It is on.** Do not re-derive
+this and do not re-ask.
+
+**Correction to this doc, carried forward:** it offered `admin@cactai.io` holding both an email
+and a google identity as evidence the flag was on. That inference was wrong — automatic
+same-email linking produces the same state with the flag off. The account is nonetheless a
+genuine manual-link case: the owner confirms it was linked through a prior working session,
+**not through the UI**. So it evidences manual linking having been performed; it evidences
+nothing about the UI path, which has still never run in production.
+
+### Decision 1 — the password SURVIVES. Implemented as built.
+
+Linking Google removes nothing. A member keeps both sign-in methods. Nothing here forecloses a
+separate, deliberate password-removal control later.
+
+### Still outstanding, and it is the QUIET failure
+
+The Google OAuth **Redirect URL allow-list** — the owner is checking it. If `/app/account` is
+not allow-listed, a member completes consent, is returned to the home page, and **the outcome
+is reported nowhere**: no error, no success. The linking flag fails loudly; this fails silently.
