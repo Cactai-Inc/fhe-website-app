@@ -465,18 +465,101 @@ it, and do not treat the word FROZEN as a reason to route the change somewhere w
   Converting "$100 toward it" into "10%" **changes what was agreed** the moment the premium
   moves. The proportion is lossless only if the agreement was proportional to begin with.
 
+  **AND THE STRONGER CASE — a percentage can be UNDEFINED, not merely awkward.**
+
+  > Owner: *"or the owner has more than one thing on that policy and a percent of an unknown
+  > number is not possible to calculate."*
+
+  **A mortality policy often covers more than the leased horse.** If the Lessor insures four
+  horses on one policy and the Lessee leases one of them, "the Lessee's share is 10%" asks:
+  **10% of what?**
+
+  - 10% of the blended premium makes the Lessee contribute toward three animals they have no
+    interest in.
+  - 10% of *this horse's* portion requires a per-horse figure that **frequently does not
+    exist** — the premium is written for the group, not itemised.
+
+  **So `$100 toward the policy` is not a rounder way of stating a percentage. It is the only
+  well-defined term available in that arrangement.** This is not an edge case: a lessor with a
+  barn is the ordinary lessor.
+
+  **A consequence for the clause text when `%` IS used:** the body must make clear what the
+  percentage is a percentage OF. "Lessee's share of the cost: 10%" is unambiguous only where the
+  policy covers the leased horse alone. **Draft that wording and bring it to the owner** — it is
+  clause text, not a control decision.
+
   **The premium-is-a-fact ruling does not cover this either.** `$100` is not the premium — it is
   the **contribution**. The premium is what the policy costs; the contribution is what the Lessee
   agreed to pay. Only the first belongs in an appendix, and keeping the second out of the clause
   would remove the term itself.
 
+  ### THE GENERAL PRINCIPLE — the two units ALLOCATE RISK DIFFERENTLY.
+
+  > Owner: *"and conversely when the policy isnt in place the lessee can agree to a fixed number
+  > or they can agree to a split."*
+
+  **This is the rule; the two cases above are instances of it.**
+
+  | | what the Lessee agreed to | their exposure |
+  |---|---|---|
+  | **`$100`** | a fixed contribution | **CAPPED.** Known at signing, unchanged by the premium |
+  | **`50%`** | a share of the cost | **FLOATS.** Half of a number that may not exist yet |
+
+  **When the policy is not yet obtained, both are meaningful and they mean different things.**
+  A percentage commits the Lessee to half of an unknown; a fixed amount caps them at a known
+  figure. **Which one the parties chose is precisely what a contract exists to record.**
+
+  **So neither unit substitutes for the other in ANY state:**
+
+  - policy in force, covering the leased horse alone -> both valid, different risk
+  - policy in force, covering several horses -> **`%` is undefined**, `$` required
+  - policy not yet obtained -> both valid, different risk
+
+  **A control offering one unit cannot express the agreement in two of those three states.**
+  That is why the selector exists — not for convenience.
+
   ### SO: the existing pattern's DISCIPLINE, plus the unit from the owner's spec.
 
+  ### THE CONTROL — a COMPOSITE format_type. Settled 2026-08-10.
+
+  > Owner: *"unless the config for the entry for that field was selection that gets composed at
+  > render time. then they can select the \$/% first, then enter a number, and it renders as
+  > \$100 or 100%."*
+
+  **This is the answer. It supersedes both the two-slot geometry and the single-dropdown
+  simplification the orchestrator proposed.**
+
   ```
-  Lessee's share of the cost:   [ $ | % ]  [ number ]
+  authoring:   [ $ | % ]  [ number ]
+  composed:    $100     or     100%
   ```
 
-  **One field. One party named. One unit selector.**
+  The author picks the unit, types a number, and the field **composes the correct form at render
+  time** — symbol before for currency, after for percent.
+
+  **The orchestrator objected that "the document IS the form" means the control's position is
+  the document's position. That was too literal and it is wrong.** The system already has SEVEN
+  composite kinds whose authoring shape differs from their composed text:
+
+  ```
+  buttons 41 · add_text 8 · reveal_text 4 · week_grid 4 · med_schedule 4 · fee_schedule 4 · contacts_list 4
+  ```
+
+  `week_grid` is a grid while authoring and prose in the body. **A share control is the eighth of
+  its type, not a new architectural concept.**
+
+  ### This is ALSO why `*_SPLIT_TEXT` exists — and why it stops being needed
+
+  `TXN.MORT_COST_SPLIT_TEXT` and `TXN.MED_COST_SPLIT_TEXT`, both labelled "Split (composed)",
+  are **composition bolted on as a second field** because no composite kind existed to hold it.
+
+  **Putting the composition inside the control removes the reason those fields exist.** They are
+  not merely deleted — they are made unnecessary. Same for the per-party pair: one composite
+  field naming one party replaces four.
+
+  **One field. One party named. One value, in one of two units, composed correctly.**
+
+
 
   - `%` → the Lessor's share is `100 − X`, arithmetic, unstated.
   - `$` → the Lessor pays the remainder, arithmetic, unstated.
