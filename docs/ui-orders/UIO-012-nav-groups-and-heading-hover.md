@@ -60,6 +60,29 @@ today.
 badge to stay a purely personal signal. But do not simply drop the inbound count: that is the
 one option that loses information the nav currently carries.
 
+### CORRECTED 2026-08-10 — the orchestrator misread the merge direction
+
+The orchestrator saw `IntakePage.tsx` at 870 lines against `DashboardHome.tsx` at 46 and
+concluded Inbound was the substantial surface that ought to absorb the Dashboard. **That was
+wrong — it read line count as purpose.**
+
+> Owner: *"I said dashboard is retained and moved. inbound is merged to show up as entries on
+> the dashboard and the inbound page is removed we dont need a dedicated page just for alerts,
+> the entry lives in leads as a contact record, it gets promoted or it stays there until its
+> promoted or deleted… the inbound served only one purpose and that is to alert me to a form
+> submission."*
+
+**Inbound's purpose is narrow: tell him a form arrived.** The lead itself belongs in **Leads, as
+a contact record**, where it is promoted or waits until promoted or deleted. Later, the campaign
+pipeline will move leads through stages the way clients move now.
+
+**So the direction is as originally stated. Dashboard is retained and moved; Inbound is
+dissolved.** Its alerts become dashboard entries; its lead data belongs in Leads.
+
+**The nav/content split still stands** — 870 lines of staff tooling is not a nav-menu change,
+and `IntakePage.tsx` is not in this order's Files list. Do the nav half here; the content merge
+is its own order.
+
 ### Removal means hidden, not deleted
 
 The standing rule from commit `86a2c33`: whichever route stops being listed keeps building and

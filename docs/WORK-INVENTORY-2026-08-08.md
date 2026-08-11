@@ -258,6 +258,15 @@ Everything currently in the handoff's "specced, ready to run" paragraph sits bel
 
 ---
 
+## AWAITING DETAIL FROM THE OWNER
+
+- **`TASK-BOOKFLOW`** — booking, calendar and order-view errors found 2026-08-10 walking the
+  real new-client invite and onboarding flow with Claire as **both horse owner and rider**.
+  Surfaces named: the calendar, booking of things already purchased, the order view, what admin
+  sees when a client picks slots, and what the client sees. **A launch blocker in his words —
+  "before i can turn this over to clients to use."** Placeholder at
+  `docs/tasks/TASK-BOOKFLOW-PENDING-owner-walkthrough.md`.
+
 ## How to keep this file true
 
 Any new request goes **here** as well as into its task doc. The failure this file exists to
