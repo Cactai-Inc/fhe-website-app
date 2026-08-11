@@ -16,6 +16,62 @@ the prose** — several bodies share near-identical sentences.
 
 ---
 
+# OWNER RULINGS, 2026-08-10 evening — THESE CLOSE B2, C4 AND D3
+
+**All three open questions are answered. Do not ask again. Do not re-litigate.**
+
+### D3 — the GL deductible split is DELETED
+
+GL is the **Lessee's own** policy, so its deductible is the Lessee's by construction.
+Retire `TXN.GL_DED_RESP`, `TXN.GL_DED_RESP_SPLIT_LESSOR`, `TXN.GL_DED_RESP_SPLIT_LESSEE`
+and `INSURANCE_RISK.GL_DED_SPLITC`. Splits survive **only** on mortality and medical, which
+are the Lessor's policies. §4 D1/D2 apply as written; §0b's renumber still happens and is what
+actually clears the stray text out of the CCC block.
+
+### D3a — THE AT-FAULT SCOPING IS LOAD-BEARING. DO NOT SIMPLIFY IT.
+
+Owner, verbatim: *"the deductible only applies to Lessee when Lessee is at fault."*
+
+The replacement sentence already carries that scoping in the fragment
+**"arising from events for which Lessee bears responsibility, whether directly or
+indirectly"**. You are removing a merge token from the end of that sentence. **The temptation
+is to tidy the sentence while you are in it. Do not.** That fragment is the entire reason the
+clause is not a blanket assignment of every deductible to the Lessee, and losing it changes
+what the contract means while looking like a cleanup.
+
+Reproduce the sentence **exactly** as given in §4 D1 and paste the composed output.
+
+### C4 — `GL_LESSEE_PERSONAL` SURVIVES, with its existing conditional gate
+
+Owner, verbatim: *"that option is only available when the Lessor doesnt require Lessee to
+maintain."*
+
+That is the `when` gate the option already carries (`GL_LESSOR_REQUIRES = NEITHER`). **Keep the
+option, keep the clause, keep the gate.** The final menu is three entries:
+
+| value | label | availability |
+|---|---|---|
+| `AGREES` | Agrees | always |
+| `ACCEPTS_PERSONALLY` | Does not carry general liability insurance | **only when `GL_LESSOR_REQUIRES = NEITHER`** |
+| `OTHER` | Other — text input | always |
+
+This also settles the arithmetic in §3 C1: the owner's "two removed selection options" really
+were only `HAS` and `WILL_OBTAIN`. **`ACCEPTS_PERSONALLY` was never in scope for removal** —
+an earlier draft of this addendum wrongly suggested deleting it.
+
+**§5 F6 is therefore answered too:** `CCC_NA` stays reachable, because the uninsured-Lessee
+state still exists. Do not touch it.
+
+### B2 — YES, the GL menu label becomes "maintain"
+
+`TXN.GL_LESSOR_REQUIRES`, option `GL_ONLY`:
+*"Requires Lessee to have or obtain general liability insurance"*
+→ **"Requires Lessee to maintain general liability insurance"**
+
+`NEITHER` is unchanged. This makes the menu agree with the body it prints (§2 B1).
+
+---
+
 # 0. TWO THINGS THAT ARE NOT IN THE OWNER'S LIST — READ BEFORE YOU START
 
 ## 0a. THE CCC SECTION WILL SILENTLY DISAPPEAR IF YOU DO ONLY WHAT IS ASKED
@@ -23,9 +79,12 @@ the prose** — several bodies share near-identical sentences.
 This is the most important paragraph in this document.
 
 `TXN.GL_LESSEE_STATUS` today has options `HAS` / `WILL_OBTAIN` / `ACCEPTS_PERSONALLY`.
-Item **C** below replaces them with `AGREES` / `OTHER`.
+Item **C** below removes `HAS` and `WILL_OBTAIN`, adds `AGREES` and `OTHER`, and **retains
+`ACCEPTS_PERSONALLY`** per the owner's C4 ruling.
 
-**Eight other objects gate on the two values you are deleting.** Verified in production:
+**Eight other objects gate on the two values you are deleting.** Verified in production.
+Note that `ACCEPTS_PERSONALLY` being retained does **not** save them — every one of these
+gates names `HAS` and `WILL_OBTAIN` specifically:
 
 ```
 FIELDS   TXN.CCC_REQUIRED          conditional_on: GL_LESSEE_STATUS equals [HAS, WILL_OBTAIN]
@@ -94,7 +153,7 @@ TO
 > coverage constitutes a material breach subject to the Termination for Cause provisions of
 > this Agreement.
 
-### B2. `TXN.GL_LESSOR_REQUIRES` — option label — **CONFIRM WITH THE OWNER, DO NOT ASSUME**
+### B2. `TXN.GL_LESSOR_REQUIRES` — option label — **ANSWERED: YES, use "maintain". See the ruling block at the top. The reasoning below is retained only as the question that produced it.**
 
 The `GL_ONLY` option currently reads *"Requires Lessee to have or obtain general liability
 insurance"*. The owner asked for exactly this "have or obtain" → "maintain" shift on the CCC
@@ -114,12 +173,16 @@ owner reads when authoring, and this thread does not author wording.
 FROM three options — `HAS` / `WILL_OBTAIN` / `ACCEPTS_PERSONALLY` (the last one carrying a
 `when` gate on `GL_LESSOR_REQUIRES = NEITHER`).
 
-TO two options:
+TO **three** options — see the ruling block at the top of this file (C4). `ACCEPTS_PERSONALLY`
+is **retained**, not removed:
 
 | value | label | behaviour |
 |---|---|---|
 | `AGREES` | Agrees | renders the C2 body |
+| `ACCEPTS_PERSONALLY` | Does not carry general liability insurance | **keep the existing `when` gate on `GL_LESSOR_REQUIRES = NEITHER`**; renders `GL_LESSEE_PERSONAL` unchanged |
 | `OTHER` | Other | **text input**, renders what the author types |
+
+Only `HAS` and `WILL_OBTAIN` are removed.
 
 Use the existing `Other`-with-text-input pattern already used elsewhere in this template.
 **Do not invent a new input mechanism.**
@@ -145,7 +208,7 @@ the insurance."* `GL_LESSEE_RESP` is that third segment — its substance is fol
 **Retire, do not hard-delete, if any executed document references them.** Executed documents
 are evidence and are never rewritten. Check first, then choose, and say which you did.
 
-### C4. `INSURANCE_RISK.GL_LESSEE_PERSONAL` — **OPEN QUESTION, ASK THE OWNER**
+### C4. `INSURANCE_RISK.GL_LESSEE_PERSONAL` — **ANSWERED: IT SURVIVES. See the ruling block at the top of this file. The discussion below is retained only as the reasoning that produced the question; the owner ruled AGAINST the recommendation in it.**
 
 This is the *"Lessee does not carry general liability insurance … accepts personal financial
 responsibility"* clause, driven by `ACCEPTS_PERSONALLY`.
@@ -307,6 +370,6 @@ that matches nothing silently no-ops. Show:
 4. The C2 body composed, verbatim
 5. Row counts unchanged on `documents` and `signatures`
 
-**Three questions must be answered by the owner before the corresponding item ships:**
+**ALL THREE OWNER QUESTIONS ARE NOW ANSWERED** — see the ruling block at the top of this file. Nothing in this addendum is blocked. Superseded question text:
 **B2** (GL menu label) · **C4** (does `GL_LESSEE_PERSONAL` survive) · **D3** (does the GL
 deductible split survive). Everything else proceeds without waiting.
