@@ -8,7 +8,8 @@ import {
 } from '../../lib/admin';
 import {
   contactHorseRecords, horseRecordCompleteness, requestHorseRecordCompletion,
-  type HorseIntakeRecord,
+  staffContactOptions,
+  type HorseIntakeRecord, type ContactOption,
 } from '../../lib/horses';
 import { fetchOfferings } from '../../lib/api';
 import type { Offering } from '../../lib/types';
@@ -39,13 +40,25 @@ function TabCreate({ label, onClick }: { label: string; onClick: () => void }) {
 /** 3f: the assignment picker — CONTRACTS (the clause-engine path, unchanged)
  *  and DOCUMENTS (the flat sign-only family). Selected documents APPEND to the
  *  person's pending set; assignment never gates staff operations — the wall
- *  constrains only the person's own session. On-file never blocks selection. */
-export function AssignDocumentsModal({ contactId, onClose, onAssigned }: {
-  contactId: string; onClose: () => void; onAssigned: () => void;
+ *  constrains only the person's own session. On-file never blocks selection.
+ *
+ *  TASK-DOCQUEUE (20260811): `contactId` is now optional and `initialTemplateKey`
+ *  lets a caller open this pre-scoped to one flat template — the documents
+ *  picker's "assign and generate" act for a flat card, where there is no
+ *  contact in context yet. When `contactId` is omitted, a first step asks
+ *  who it's for; both existing callers (ContactDossierModal, Admin.tsx)
+ *  already know the contact and skip straight past it, unchanged. */
+export function AssignDocumentsModal({
+  contactId: fixedContactId, initialTemplateKey, initialTemplateTitle, onClose, onAssigned,
+}: {
+  contactId?: string; initialTemplateKey?: string; initialTemplateTitle?: string;
+  onClose: () => void; onAssigned: () => void;
 }) {
   const navigate = useNavigate();
+  const [contactId, setContactId] = useState(fixedContactId ?? '');
+  const [contactOptions, setContactOptions] = useState<ContactOption[]>([]);
   const [templates, setTemplates] = useState<AssignableTemplate[]>([]);
-  const [picked, setPicked] = useState<string[]>([]);
+  const [picked, setPicked] = useState<string[]>(initialTemplateKey ? [initialTemplateKey] : []);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   // Explicit confirmation: the modal stays open after a successful assign and
@@ -54,6 +67,13 @@ export function AssignDocumentsModal({ contactId, onClose, onAssigned }: {
   const [result, setResult] = useState<AssignDocumentsResult | null>(null);
 
   useEffect(() => {
+    if (fixedContactId) return;
+    staffContactOptions().then(setContactOptions).catch((e) =>
+      setErr(e instanceof Error ? e.message : 'Could not load contacts.'));
+  }, [fixedContactId]);
+
+  useEffect(() => {
+    if (!contactId) return;
     staffAssignableTemplates(contactId).then(setTemplates).catch((e) =>
       setErr(e instanceof Error ? e.message : 'Could not load templates.'));
   }, [contactId]);
@@ -70,6 +90,34 @@ export function AssignDocumentsModal({ contactId, onClose, onAssigned }: {
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Could not assign.');
     } finally { setBusy(false); }
+  }
+
+  // No contact in context (opened from the documents picker rather than a
+  // dossier): ask who it's for before anything else can load.
+  if (!contactId) {
+    return (
+      <div className="fixed inset-0 z-[80] bg-green-950/40 flex items-center justify-center p-4" onClick={onClose}>
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+          <h2 className="font-serif text-xl text-green-900 mb-1">Who is this for?</h2>
+          {initialTemplateTitle && (
+            <p className="text-sm text-muted mb-3">Assigning: {initialTemplateTitle}</p>
+          )}
+          <select className="form-input mb-4" value="" aria-label="Choose a person"
+            onChange={(e) => setContactId(e.target.value)}>
+            <option value="">
+              {contactOptions.length === 0 && !err ? 'Loading…' : 'Choose…'}
+            </option>
+            {contactOptions.map((c) => (
+              <option key={c.id} value={c.id}>{c.name || c.email || c.id}</option>
+            ))}
+          </select>
+          {err && <p role="alert" className="text-sm text-red-700 mb-3">{err}</p>}
+          <div className="flex justify-end">
+            <button type="button" className="btn-outline-gold" onClick={onClose}>Cancel</button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (result) {
@@ -117,11 +165,18 @@ export function AssignDocumentsModal({ contactId, onClose, onAssigned }: {
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 max-h-[85vh] overflow-y-auto overscroll-contain" onClick={(e) => e.stopPropagation()}>
         <h2 className="font-serif text-xl text-green-900 mb-3">Assign documents</h2>
 
-        <p className="text-[11px] uppercase tracking-wide text-secondary/70 mb-1.5">Contracts</p>
-        <button type="button" className="btn-outline-gold w-full justify-center mb-4"
-          onClick={() => navigate('/app/ops/contracts/new')}>
-          New contract (lease / purchase) →
-        </button>
+        {/* Opened pre-scoped to one flat template (the documents picker's
+            assign-and-generate card): the contract shortcut doesn't apply —
+            clause-composed types route to authoring, not here. */}
+        {!initialTemplateKey && (
+          <>
+            <p className="text-[11px] uppercase tracking-wide text-secondary/70 mb-1.5">Contracts</p>
+            <button type="button" className="btn-outline-gold w-full justify-center mb-4"
+              onClick={() => navigate('/app/ops/contracts/new')}>
+              New contract (lease / purchase) →
+            </button>
+          </>
+        )}
 
         <p className="text-[11px] uppercase tracking-wide text-secondary/70 mb-1.5">Documents</p>
         <div className="flex flex-col gap-1.5 mb-4">

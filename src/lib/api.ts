@@ -12,7 +12,7 @@ import type { PropertyTerm } from './propertyTerm';
 import type {
   Contact, ContactInput, Client, Horse, HorseInput, LookupCode,
   ContractTemplate,
-  DocumentRow, Signature, PartyRole,
+  DocumentRow, DocumentQueueRow, DocumentTypeOption, Signature, PartyRole,
   DocumentDelivery, DeliveryInput, BillableLine,
   IntakeRequest,
 } from './ops/types';
@@ -1144,15 +1144,53 @@ export async function getDocument(id: string): Promise<DocumentRow | null> {
  *  `documents.engagement_id`, a column dropped with the `engagements` retirement.
  *  The sole caller passes no argument, so the dead branch never ran — but any
  *  future caller supplying one would have got a PostgREST error rather than a
- *  filtered list. Scope by contact or contract instead. */
-export async function listDocuments(): Promise<DocumentRow[]> {
+ *  filtered list. Scope by contact or contract instead.
+ *
+ *  TASK-DOCQUEUE (20260811): selects the columns the queue renders — never
+ *  `merged_body`, the full composed contract text, which this list has no use
+ *  for — and embeds the party/horse/type each row already carries via its FKs
+ *  (one query, not N+1). `contacts` needs the FK hint because `documents` has
+ *  several columns referencing it (contact_id, archived_by, voided_by, …); the
+ *  other embeds are unambiguous. */
+export async function listDocuments(): Promise<DocumentQueueRow[]> {
   const { data, error } = await supabase
     .from('documents')
-    .select('*')
+    .select(`
+      id, display_code, title, status, generated_at,
+      contact_id, horse_id, contract_id, template_id,
+      archived_at, terminated_at, current_status,
+      contact:contacts!documents_contact_id_fkey(first_name, last_name),
+      horse:horses!documents_horse_id_fkey(registered_name, nickname),
+      template:contract_templates!documents_template_id_fkey(title, template_key)
+    `)
     .is('deleted_at', null)
     .order('generated_at', { ascending: false });
   if (error) throw error;
-  return (data ?? []) as DocumentRow[];
+  return (data ?? []) as unknown as DocumentQueueRow[];
+}
+
+/**
+ * Document types the "+ Add new" picker can offer, with `has_clauses`
+ * DERIVED from whether `contract_clause_defs` rows exist for the template —
+ * never a hardcoded key list. That derivation is what the picker uses to
+ * decide a card's act: authoring (clause-composed) vs assign-and-generate
+ * (flat — nothing to author).
+ */
+export async function documentTypeOptions(): Promise<DocumentTypeOption[]> {
+  const [templates, clauses] = await Promise.all([
+    supabase.from('contract_templates')
+      .select('template_key, title, contract_kind')
+      .eq('active', true)
+      .is('deleted_at', null),
+    supabase.from('contract_clause_defs').select('template_key'),
+  ]);
+  if (templates.error) throw templates.error;
+  if (clauses.error) throw clauses.error;
+  const withClauses = new Set(
+    (clauses.data ?? []).map((r) => (r as { template_key: string }).template_key),
+  );
+  return ((templates.data ?? []) as { template_key: string; title: string; contract_kind: string | null }[])
+    .map((t) => ({ ...t, has_clauses: withClauses.has(t.template_key) }));
 }
 
 // ─── Signatures ───────────────────────────────────────────────────────────
