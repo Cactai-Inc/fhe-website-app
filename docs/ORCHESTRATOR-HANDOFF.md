@@ -626,3 +626,25 @@ The chain still runs in dependency order — a purchase cannot be exercised with
 a booking cannot be exercised without a purchase — so leads-first is also the cheaper order.
 Kit Garcin's Sunday lesson is the live acceptance case when the chain does come up; each place
 it breaks becomes a task with a real failure instead of a guess about one.
+
+## KIT GARCIN IS THE LAST TEST, NOT AN EARLY ONE — correction, 2026-08-11
+
+> *"Kit is the last thing we do after BookFlow is proven."*
+
+**The orchestrator got this wrong and was corrected.** It proposed using Kit's invite as an
+early test for INVITELINK / PARTYJOURNEY. That is wrong on two counts:
+
+1. **Kit's test case is the WHOLE chain**, and the owner's own list includes payment, Zelle
+   receipt recognition, the paid badge, order/document/booking visibility, and booking
+   notifications. Those depend on BOOKFLOW, which the owner sequenced **last**.
+2. **There is exactly one clean reserved lead.** Spending it on an intermediate test destroys
+   the only end-to-end acceptance case that starts from a genuinely untouched record.
+
+**The order is:** leads → the rest of the queue → orders / payments / booking (BOOKFLOW) →
+**then** Kit, as the single end-to-end proof.
+
+**Anything needing an invite test before then uses a throwaway identity**, the way INVITEWORKS
+did (`cjzigs+inviteworks@`, `+inviteworks2@`). **Never Kit.**
+
+`TASK-LEADCLEAN` already carries "KIT GARCIN IS RESERVED — do not touch that row." That stands
+and is now the general rule, not a per-task instruction.
