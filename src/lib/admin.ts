@@ -331,6 +331,16 @@ export async function adminListResources(): Promise<ContentResource[]> {
   return (data ?? []) as ContentResource[];
 }
 
+/** TASK-UPLOADS: `published` is the members' gate on company material — the
+ *  content_resources row policy AND the storage policy on the underlying object
+ *  both read it, so unpublishing withdraws the bytes, not just the listing. */
+export async function adminSetResourcePublished(id: string, published: boolean): Promise<void> {
+  assertWrote(
+    await supabase.from('content_resources').update({ published }).eq('id', id).select(),
+    published ? 'Publishing the file' : 'Unpublishing the file',
+  );
+}
+
 // ─── Invitations (admin creates token + sends email) ─────────────────────────
 export interface AdminInviteResult {
   registerUrl: string;

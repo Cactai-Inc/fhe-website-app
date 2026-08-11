@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   UserRound, Bell, ShieldCheck, Grid3x3, GraduationCap, Bookmark, FileText, Boxes,
-  ShoppingBag, Gift, ChevronRight,
+  ShoppingBag, Gift, Paperclip, ChevronRight,
 } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
 import { SavedPanel } from '../../components/app/AccountPanels';
@@ -11,6 +11,7 @@ import { MyLessonsContent } from '../../components/app/MyLessonsContent';
 import { OrdersContent } from '../../components/app/OrdersContent';
 import { GiftsContent } from '../../components/app/GiftsContent';
 import { DocumentsContent } from '../../components/app/DocumentsContent';
+import { FilesContent } from '../../components/app/FilesContent';
 import {
   MyProfileContent, MyPreferencesContent, MyLoginContent,
 } from '../../components/app/profile/ProfileAndPreferences';
@@ -35,11 +36,11 @@ import { Navigate, useSearchParams } from 'react-router-dom';
 
 type Section =
   | 'profile' | 'preferences' | 'login'
-  | 'posts' | 'lessons' | 'saved' | 'documents' | 'stable' | 'orders' | 'gifts'
+  | 'posts' | 'lessons' | 'saved' | 'documents' | 'files' | 'stable' | 'orders' | 'gifts'
   | null;
 
 const SECTION_VALUES: readonly string[] = [
-  'profile', 'preferences', 'login', 'posts', 'lessons', 'saved', 'documents', 'stable', 'orders', 'gifts',
+  'profile', 'preferences', 'login', 'posts', 'lessons', 'saved', 'documents', 'files', 'stable', 'orders', 'gifts',
 ];
 
 function Row({
@@ -142,6 +143,14 @@ export default function AccountHub() {
 
         <Row icon={FileText} title="My Documents" sub="Signed agreements & releases" onClick={() => toggle('documents')} open={open === 'documents'} />
         {open === 'documents' && <div className="lg:col-span-2"><DocumentsContent /></div>}
+
+        {/* TASK-UPLOADS: sits next to My Documents and is deliberately NOT the
+            same row. Documents are FHE's records — generated, signable,
+            evidentiary. Files are the member's own property, whoever clicked
+            upload. Owner, 2026-08-11: "Files are not ours, they belong to
+            whoever uploads them." Two concepts, two rows. */}
+        <Row icon={Paperclip} title="My Files" sub="Anything you've uploaded — yours, wherever it's shown" onClick={() => toggle('files')} open={open === 'files'} />
+        {open === 'files' && <div className="lg:col-span-2"><FilesContent /></div>}
 
         <Row icon={Boxes} title="My Stable" sub="Your horses, gear, and supplies" onClick={() => toggle('stable')} open={open === 'stable'} />
         {open === 'stable' && <div className="lg:col-span-2"><StableSection /></div>}
