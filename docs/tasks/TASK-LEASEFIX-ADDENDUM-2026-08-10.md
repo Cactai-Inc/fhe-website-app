@@ -102,6 +102,33 @@ to accept the deal.
 warning.** All three were considered and declined — each requires a numeric limit field that
 the free-text `Other` deliberately replaces.
 
+
+### G1 — CLAUSEDOCUMENT DIFF **APPROVED** for the share_amount control, 2026-08-11
+
+`ClauseDocument.tsx` is stop-and-propose, and the proposal had been sitting unapproved. **It is
+approved.** Verified in production: four fields carry `format_type = 'share_amount'`
+(`MORT_COST_LESSEE_SHARE`, `MORT_DED_LESSEE_SHARE`, `MED_COST_LESSEE_SHARE`,
+`MED_DED_LESSEE_SHARE`) and the string `share_amount` appears **nowhere in `src/`** — so the
+fields store structured values with no control able to write them.
+
+This is the owner's explicit specification:
+
+> *"unless the config for the entry for that field was selection that gets composed at render
+> time. then they can select the $/% first, then enter a number, and it renders as $100 or 100%"*
+
+**Scope of the approval, and nothing beyond it:**
+
+- **Follow the existing composite `format_type` pattern.** Seven already exist (`week_grid`,
+  `med_schedule`, `fee_schedule`, `contacts_list`, `buttons`, `add_text`, `reveal_text`).
+  **Do not invent a new mechanism** — the earlier objection that a composite control violates
+  "the document IS the form" was wrong, and these seven are the proof.
+- **Selector first, then the number**, composed at render: `$100` or `100%`. Once one is
+  picked the other is locked, per the owner's ruling.
+- **Minimal diff.** No refactoring, no tidying, no adjacent improvement. `ClauseDocument.tsx`
+  is approved for this control and nothing else.
+- The GL deductible split is **deleted** (D3), so this control belongs only to the four
+  mortality/medical share fields. **Do not add a fifth.**
+
 ### B2 — YES, the GL menu label becomes "maintain"
 
 `TXN.GL_LESSOR_REQUIRES`, option `GL_ONLY`:
