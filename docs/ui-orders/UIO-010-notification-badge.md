@@ -7,7 +7,9 @@
 
 ## The problem, measured
 
-Nav surface is `cream-25 #fdfcfa`. The badge is `gold-500 #caa83e`.
+**The desktop nav surface is NEAR-WHITE — `#fdfcfa`.** Its token is named `cream-25`, which
+misleads: the page is cream (`#faf8f4`) and the header is a warmer cream (`#f5f0e8`), so
+"the nav's cream" points at the wrong swatch. The badge is `gold-500 #caa83e`.
 
 ```
 cream-25 on gold-500 :  2.23:1     <- badge digits need 4.5:1
@@ -28,7 +30,7 @@ cream-25 on gold-900 : 8.37   PASS
 `gold-800 #7a6421` is the lightest gold that carries a cream number. **Cost:** the badge stops
 being bright gold and becomes a deep bronze — a visible change to the nav's accent.
 
-**2. Invert it.** Badge becomes the nav surface, number becomes gold. `gold-800` on `cream-25`
+**2. Invert it.** Badge becomes the near-white nav surface, number becomes gold. `gold-800` on `cream-25`
 is the same 5.58:1. Keeps the gold visible as the *number*, and the badge stops competing with
 the selected-row fill for attention.
 
