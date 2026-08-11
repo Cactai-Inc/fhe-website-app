@@ -1,5 +1,45 @@
 # LEASEFIX 13.2 — the Lessee's decline option. THREE changes, not one.
 
+> ## STATUS 2026-08-10 — PART 1 IS ALREADY LIVE IN PRODUCTION. Risk knowingly accepted.
+>
+> The thread widened the option before this document reached it: `ACCEPTS_PERSONALLY`'s
+> option-level `when` is **removed** and the label is now "Does not carry general liability
+> insurance". Applied to production; all three live leases offer it. `f2b88b3` on
+> `task/leasefix`, unpushed.
+>
+> **The contradiction described below is therefore REACHABLE NOW.** No lease is in that state
+> — the only lease carrying an insurance answer is `GL_AND_CCC` + `HAS`.
+>
+> **Owner ruling:** *"im the one authoring leases... lets wait until it finishes that work and
+> right now its just modeling the fix not implementing it so we can run all of it as one
+> thing."* Mitigation is that he is the sole lease author and knows the combination to avoid:
+> **Lessor requires GL + Lessee "does not carry."** Changes 2 and 3 land in the same batch as
+> the insurance-model rebuild.
+>
+> **Do not treat part 1 as done.** It is half a change sitting in production.
+
+> ## THE BLOCKER DOES NOT CATCH THIS — tested 2026-08-10, not assumed
+>
+> The thread argued the contradiction *"may be a fine draft state, since it's visible and gets
+> resolved before signing."* **Nothing enforces that.**
+>
+> In a rolled-back transaction, `GL_LESSOR_REQUIRES = GL_AND_CCC` with
+> `GL_LESSEE_STATUS = ACCEPTS_PERSONALLY` on a live lease, `contract_lock_blockers` returned:
+>
+> ```
+> required_fields                 — unrelated empty fields
+> horse_unconfirmed               — unrelated
+> insurance_acceptance_unchecked  — deductible share, care cost
+> ```
+>
+> **Not one blocker mentions the contradiction.** Fill the unrelated fields and it locks and
+> executes carrying both clauses. The blocker detects BLANK; `ACCEPTS_PERSONALLY` is a valid
+> answer, so the mechanism being relied on is structurally incapable of firing here.
+>
+> **A fourth compounding clause surfaced in the same test:** `insurance_acceptance_unchecked`
+> demands *"Lessee accepts responsibility for the share of any deductible"* — about a policy
+> the same document says does not exist. Add it to the suppression list in change 3.
+
 **Owner, 2026-08-10:** *"section 13.2 the lessee dropdown didnt have one option it needs to
 have since there is a scenario its valid and there is already the text for it when its
 selected."*
