@@ -61,6 +61,18 @@ reopened, **and reopening stops the run.**
 | 1 | `THREAD ID: WALLSYNC` as a header line | ✗ **discarded as metadata** → "Fix version-blind satisfaction predicate for wall and onboarding" |
 | 2 | `NOGUARD — audit anon-callable SECURITY DEFINER functions…` | ✗ **ID dropped, description kept** → "Audit unguarded SECURITY DEFINER functions" |
 | 3 | **ID alone on its own line, no description** | ✓ **WORKS** → "Complete **SECFIX2** gift grant and directory task" |
+| 3b | same shape, 2026-08-10 | ✓ **WORKS** → "Set up **SendGuard** signing document task" |
+
+**What "works" means here — set expectations before someone re-tests the failed shapes.**
+The ID never appears as a bare label. It survives **embedded in a generated sentence**, which
+is the success case in both rows 3 and 3b. A title like "Set up SendGuard signing document
+task" is the prompt behaving correctly.
+
+**The ID may be CASE-NORMALIZED.** `SENDGUARD` came back as `SendGuard` (2026-08-10), where
+`SECFIX2` kept its caps. Numerals appear to hold the shape; plain alphabetic IDs get
+title-cased. **So do not scan a thread list for an all-caps ID and conclude the prompt
+failed** — match case-insensitively. The reliable identifier remains the first line of the
+thread's own output, which is why every prompt instructs it.
 
 The pattern: the summarizer treats `ID:` and `ID —` as discardable prefixes and titles from
 the task description that follows. **Give it no description and the only substantive content
