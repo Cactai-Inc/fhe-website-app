@@ -66,20 +66,41 @@ Back-solved against `#f5f0e8` at both alphas, worst hue error **3.8 degrees** fr
 
 | state | alpha | renders | hue | sat | contrast vs the green-900 letter |
 |---|---|---|---|---|---|
-| rest | **0.18** | `#c9ebd5` | 141.2 | 45.9% | 13.08 |
-| `:active` | **0.36** | `#9ee7c1` | 148.8 | 60.3% | 11.74 |
+| rest | **0.22** | `#c0ead0` | 142.9 | 50.0% | 12.76 |
+| `:active` | **0.55** | `#6fe2ad` | 152.3 | 66.5% | 10.54 |
 
 For comparison, **brand `green-800` at the same alphas renders `#cccec4` (hue 72) and
 `#a4aca0` (hue 100)** — saturation under 10%. Grey. That is what "just use the brand green"
 produces here.
 
-**4. Alphas — `0.18` rest, `0.36` on `:active`.** A doubling: one clearly perceptible step,
-which is what touch needs since there is no hover to escalate through. Material's 8-to-12%
-range assumes a hover state exists.
+**4. Alphas — `0.22` rest, `0.55` on `:active`.** A 33-point jump.
 
-**Known dial:** saturation at 46/60% is livelier than the nav's ~32%. It is a small mark on a
-phone so it should carry it, but if the owner says it is too vivid, **lower the alphas before
-touching the base** — the base is what holds the hue correct.
+The owner, 2026-08-10: *"the fill should be much darker than 8-12% opacity... we need a larger
+jump than 2-4%."* **He was right, and Material was the wrong yardstick.** Material's 8/12% is a
+**state layer** — a tint drawn ON TOP of a component that already has its own fill. This ring
+has no underlying fill, so the percentage IS the whole mark. The two numbers were never
+comparable.
+
+### A FORK, not a dial — know this before "make it darker"
+
+**With this base, raising alpha makes the fill MORE VIVID, not darker.** Even at 0.70 the
+green-900 letter still clears AAA (9.80):
+
+```
+a=0.22 -> #c0ead0   a=0.36 -> #9ee7c1   a=0.55 -> #6fe2ad   a=0.70 -> #4bde9c
+```
+
+That is inherent, not a tuning miss. Holding brand hue over a LIGHT cream forces a bright,
+saturated base — a dark base renders grey here, which is exactly what `green-800` does
+(hue 72 at 0.18, hue 100 at 0.36, saturation under 10%). So:
+
+- **translucent and hue-correct** -> light and vivid. **This is what the owner asked for**
+  ("a version of green with transparency to match the hue of our company color").
+- **genuinely dark green** -> only at near-opaque alpha, where the backdrop stops mattering
+  and it is simply a filled circle, not a translucent one.
+
+If he asks for "darker" after seeing it, **that is a request to change fork, not to raise the
+alpha.** Come back rather than pushing the number.
 
 ## Files
 
