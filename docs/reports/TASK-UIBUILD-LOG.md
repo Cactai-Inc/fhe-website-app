@@ -824,3 +824,55 @@ fails):
   colour," not that the declared colour is definitely right everywhere it's
   used. Worth a specific look at all six, not just the one this order asked
   about.
+
+---
+
+## UIO-015 — the subheader buttons and text are too large on desktop
+
+**Commit:** `ae87c2c`
+
+**Amending per the orchestrator's instruction: the order's quoted "current
+state" of `SUBHEADER_BTN` (lines 72-75) was stale.** It quoted a version
+with `text-sm` and no `md:` overrides beyond `md:py-2`. The actual file had
+already moved to fluid `clamp()`-based sizing for `padding-inline`,
+`font-size` and `gap` (three more lines the order doesn't quote at all),
+replacing an earlier two-breakpoint version a comment block says had real
+bugs ("the row still wrapped well above the intended breakpoint"). This
+wasn't something I needed to discover by reading history — the order simply
+described a file that no longer existed by the time I reached it.
+
+**Tested the literal instruction before shipping it, found it was a no-op,
+and stopped rather than shipping something that looked right in the diff
+and did nothing in the render:** appended `md:text-[13px] md:px-2.5
+md:py-1.5` to the class string, built, and read the compiled CSS's byte
+offsets for both the new fixed-value rules and the existing `clamp()`
+rules. The `clamp()` rules land AFTER the fixed-value rules in Tailwind's
+own generated stylesheet regardless of where either sits in my source
+string — same specificity, later-in-source wins, so the fluid ceiling
+always overrode my fixed values. Reverted the experiment before asking.
+
+**Confirmed direction: lower the `clamp()` ceilings in place**, using
+exactly the values the orchestrator authorized (13px, 0.625rem/10px) —
+these are UIO-015's own targets (13px text, ~10px horizontal padding),
+just expressed correctly for the system the file actually uses, not my own
+invented numbers. Minimums and the `vw` scaling term untouched, so
+sub-ceiling fluid behavior is unchanged. Explicitly did NOT revert to fixed
+breakpoint values, which the orchestrator noted would reintroduce the bug
+the `clamp()` system exists to prevent.
+
+**What I verified:**
+- `npm run typecheck` — 0 errors. `npm run lint` — 0 errors, 35 warnings
+  (baseline). `npm run build` — succeeded.
+- Grepped the built CSS by the actual clamp arguments (not just presence of
+  the property): `font-size:clamp(11.5px,1.05vw,13px)` and
+  `padding-inline:clamp(.4rem,1.1vw,.625rem)` both present with the exact
+  new ceilings.
+- Confirmed the mobile base (`px-3 py-3 text-sm`, sub-`md`) and the `gap`
+  clamp (`clamp(0.25rem,0.5vw,0.375rem)`) are byte-for-byte unchanged —
+  grepped both directly rather than trusting the diff alone.
+
+**What I did NOT verify — the order says explicitly this is an eye
+judgement:**
+- The actual rendered button/text size on a real desktop viewport. Grepping
+  confirms the rule exists with the right numbers; it does not confirm 13px
+  reads as "not too large" to the owner.
