@@ -39,9 +39,18 @@ The six stale drafts are delete-and-recreate churn artifacts and are regenerated
 owner's next onboarding entry, so they are not signable while stale. **Nothing signable is
 outdated today.**
 
-**But the next content change breaks that.** The euthanasia rewrite of `HORSE_EMERGENCY_VET`
-has one document **AWAITING_SIGNATURE right now** (`fb6abc6c`). When that clause lands, nothing
-recomposes it, and the next signature is on superseded text.
+**CORRECTED 2026-08-10 — the orchestrator overstated the urgency here.** The original text
+warned that the euthanasia rewrite would leave `fb6abc6c` awaiting signature on superseded
+content. That document belongs to **`cjzigs@icloud.com`, the owner's own test identity** (D1).
+The owner caught it: *"the one awaiting signature is likely not valid anyway, its either for
+Mary or for a test case."*
+
+**Verified: not one AWAITING_SIGNATURE document belongs to an external client.** Two are on
+`cjzigs@`; the three leases are anchored to the company contact `hello@fhequestrian.com`.
+
+**The rule below is unaffected — it is an owner requirement, not a response to an incident.**
+What changes is the framing: there is no live client exposure today, so this is a mechanism to
+build before real volume, not a fire. Do not cite a test document as evidence of client risk.
 
 ---
 
