@@ -189,7 +189,58 @@ disagreement stalls the contract until one party moves — the owner's stated in
 three-change plan solved a contradiction this structure prevents. Close it out; do not build
 from it.
 
-### FINAL — 13.2 AND 13.3, FULLY SEPARATED. Settled 2026-08-10. Build to this.
+### FINAL — CCC IS A RIDER ON GL. Settled 2026-08-10. Build to this.
+
+> Owner: *"ccc is a rider on gl just like medical is a rider on mortality"*
+
+**This corrects the section below, which was recorded minutes earlier and got the dependency
+backwards.** It stated that removing `GL_AND_CCC` also removed "a constraint encoded by
+accident — CCC impossible to require without GL." **That constraint is not accidental. It is
+what a rider is.** There is no care-custody-and-control cover without a general liability
+policy to attach it to.
+
+**The insurance model is TWO parent/rider pairs, same machinery both times:**
+
+```
+GL           parent — stands alone
+ └─ CCC      RIDER — available only where GL is held or will be obtained
+                     AND the Lessee is an entity
+
+MORTALITY    parent — stands alone
+ └─ MEDICAL  RIDER — available only where mortality is held or will be obtained
+```
+
+**The gate moves.** CCC hangs off the **Lessee's own GL declaration**, not off the Lessor's
+requirement:
+
+```
+13.2  GENERAL LIABILITY                              every lease
+      Lessor declares own GL     has / will obtain / does not carry
+      Lessor requires GL         require / do not require
+      Lessee declares GL         has / will obtain / does not carry
+                                 └─ "does not carry" REMOVED when required
+
+13.3  CARE, CUSTODY AND CONTROL
+      SHOWN ONLY WHEN:  Lessee is an ENTITY
+                        AND Lessee declares GL = has OR will obtain
+      Lessor requires CCC        require / do not require
+      Lessee declares CCC        has / will obtain / does not carry
+                                 └─ "does not carry" REMOVED when required
+```
+
+**An entity Lessee who does not carry GL never sees 13.3.** There is nothing for the rider to
+attach to. The section below said 13.3 shows for *every* entity Lessee — **that is wrong and
+is superseded by this.**
+
+**A rider can still be declined.** "Lessee has GL but does not carry the CCC rider" is a real
+and valid state, which is why the third option survives on CCC — narrowed the same way when
+the Lessor requires it.
+
+**Consequence for the mortality/medical collapse (ruling 3):** the two pairs are the same
+machine. Whatever gating and controls are built for GL→CCC should be the same ones used for
+mortality→medical. **Build the parent/rider pattern once.**
+
+### (SUPERSEDED — got the dependency backwards) 13.2 and 13.3 fully separated
 
 The real problem was never the data model: **the requirement lived in 13.2 while the content
 lived in 13.3.** Owner: *"either we separate the two ... and the ccc section needs to add the
