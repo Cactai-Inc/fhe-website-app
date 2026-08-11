@@ -921,3 +921,87 @@ and this order doesn't touch the staff rail.
 **What I did NOT verify — needs a browser check:**
 - The actual rendered icon position and whether 24px reads correctly
   against the row labels. Not seen in a browser.
+
+---
+
+## UIO-017 — an empty card renders below the end of the contract
+
+**Commit:** `b278cc3`
+
+**The order's own lead was wrong, and I disproved it rather than working
+around it.** It hypothesized `#contract-signatures`'s wrapper was
+unconditional. Read it directly: it's gated on
+`state !== executed/void/terminated && (in_review || locked || signatures.length > 0)`
+— genuinely conditional — and a comment immediately above it already says
+"no empty white box," meaning someone had already reasoned about exactly
+this failure mode once. Per the order's own instruction ("if it is a
+different element, fix that one and say so"), kept looking.
+
+**The search, in order, with why each candidate was ruled out — not just
+the one that turned out right:**
+1. The three bottom-of-page cards (`ContractNotes`, `ContractChangeRequests`,
+   `ContractChangeHistory`, ~:2055-2073) — same shape of bug (wrapper
+   unconditional on `id && !(showDeck && !isExecuted)`, content
+   component-owned). Read all three components fully: each unconditionally
+   renders its own heading + a count/status line ("no changes yet", "none
+   yet", "0 events") even with zero data, so none can produce a visually
+   empty card. Ruled out by reading the actual render output, not assumed
+   safe because they "have content logic."
+2. `ContractActivityCard` (rendered bare, no wrapper, for any staff viewer
+   at any status) — same reasoning: it does return `null` while
+   loading/erroring (correct), but once loaded it always shows "Activity ·
+   N events" even at N=0. Ruled out.
+3. The horse-confirmation and co-buyer cards (~:1634, ~:1664) — both
+   require `editablePhase`, which the freeze scenario (locked/frozen
+   documents) rules out, and both always show static text regardless.
+   Ruled out.
+4. **`#contract-signatures`'s own children** — read every one of the seven
+   blocks inside the section end to end: every single one is independently
+   conditional (role, `docGated`, `nameGated`, `iSigned`,
+   `companyPendingRoles`, signature count) and there is no unconditional
+   content anywhere in the section — not a heading, not a label, nothing.
+   Constructed the specific viewer scenario that fails all seven at once
+   (staff, `myRoles.length === 0` — no party role of their own on this
+   contract — `state === 'locked'`, zero signatures) and confirmed it
+   satisfies the *outer* gate (`state === 'locked'` alone is sufficient)
+   while every inner block stays hidden. This is the actual bug: not "no
+   gating," but the outer gate and the seven inner gates checking different
+   things, with a real gap between them.
+
+**The fix is the precise disjunction of those seven conditions
+(`hasSignatureCardContent`), ANDed onto the existing outer gate** — not a
+new rule, the exact union of what's already there. Three of the seven share
+one shape (`locked && has a role && not signed yet`, split only by which
+message shows) and collapse to a single term in the derived value.
+
+**What I verified:**
+- `npm run typecheck` — 0 errors. `npm run lint` — 0 errors, 35 warnings
+  (baseline). `npm run build` — succeeded.
+- Read the compiled JS directly for the actual gate as shipped:
+  `Ae!=="executed"&&Ae!=="void"&&Ae!=="terminated"&&(Ae==="in_review"||Ae==="locked"||((f==null?void 0:f.signatures.length)??0)>0)&&fA&&r.jsxs("section",{id:"contract-signatures"...`
+  — `fA` (my `hasSignatureCardContent`) is ANDed on exactly where intended,
+  immediately before the section renders.
+
+**Reasoning about the populated case, since the signing freeze means I
+cannot observe one directly (the order requires this explicitly, not just
+permits it):** `hasSignatureCardContent` is constructed as the literal OR
+of the same seven conditions that gate the seven children. By construction,
+whenever it evaluates true, at least one of those seven conditions is true,
+which means that specific child renders. The new outer AND therefore can
+only ever suppress the section in states where it's already proven none of
+the seven children would show anything — it cannot suppress a state where
+something legitimately renders, because "something renders" and
+"`hasSignatureCardContent` is true" are the same fact by how the value was
+built, not two facts I'm hoping stay in sync.
+
+**What I did NOT verify — the order is explicit that a populated render is
+not currently observable:**
+- I have not seen this section render WITH content, before or after this
+  fix, since the signing freeze means no live document has any signatures
+  or signable state to show right now. The construction argument above is
+  the closest available substitute for that observation, not a replacement
+  for it — worth a specific check once the freeze lifts.
+- Did not check whether `ClauseDocument.tsx` was even a candidate location
+  in the first place beyond confirming the empty content lives entirely in
+  `ContractPage.tsx`'s own JSX — never needed to open the frozen file at
+  all, so there is nothing to stop-and-propose.
