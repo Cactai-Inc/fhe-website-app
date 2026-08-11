@@ -554,3 +554,31 @@ eleven live ones. **B4 first, then this group as a coherent Phase C.**
   during this session. The classification is of the 371; the Phase B arithmetic (374 − 23 = 351)
   is against the live number. NOGUARD1's caveats #8 and #9 are not theoretical — they bit twice
   in one session.
+
+---
+
+## PHASE B — APPLIED TO PRODUCTION 2026-08-11 by the orchestrator
+
+Held as dry-run-only pending the platform-owner decision. **D1a settled that decision**
+(the platform owner is not a tenant, so its denial is correct), which unblocked Phase B.
+
+Applied by the orchestrator, each migration in its own transaction:
+
+```
+20260811T0200_noguard3_revoke_internal_helpers.sql
+20260811T0300_noguard3_revoke_generate_document_helpers.sql
+20260811T0400_noguard3_inverted_guards.sql
+```
+
+**Verified after applying:**
+
+- `_provision_purchase_for_offerings` — the highest-consequence item, which let any free
+  signup mint a purchase marked paid — is now `anon=false, authenticated=false`, service_role
+  retained.
+- **No browser-called RPC was broken.** All 301 `rpc()` names in `src/` + `api/` cross-checked
+  against live grants: the 9 now closed to `authenticated` are the same 9 as before Phase B,
+  every one server-only through the service-role admin client.
+
+**Why this sat unapplied:** the orchestrator sets threads to stop-for-review and had not been
+closing the loop. That is the mechanism behind work being specified and never shipping, and it
+is an orchestrator failure rather than a thread failure.
