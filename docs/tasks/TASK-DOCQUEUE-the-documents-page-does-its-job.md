@@ -99,3 +99,54 @@ populated from real rows, and the list query no longer fetches `merged_body`. Pr
 against SQL.
 
 Report to `docs/reports/TASK-DOCQUEUE-REPORT.md`.
+
+---
+
+# OWNER RULING 2026-08-11 — the button surfaces a PICKER MODAL
+
+> *"button surfaces a picker modal"*
+> *"my instinct is to just make it a picker like the global Add New button, just documents
+> focused. a list of cards with the document types."*
+
+**This supersedes `DOCUMENT_LIBRARY_DESIGN.md` §J2**, which said to *remove* the page's own
+button once the global `+` carried everything. **The button stays, is relabelled `+ Add new`,
+and opens a documents-focused picker.** Do not delete it.
+
+## The picker's cards route to TWO DIFFERENT ACTS
+
+Verified in production 2026-08-11. This is the fact that decides the whole design:
+
+```
+CLAUSE-COMPOSED — 6 active templates, an authoring page exists
+  HORSE_LEASE_V2 / _FULL / _SIMPLE / _STANDARD    163 clauses · 114 fields (all four identical)
+  HORSE_SALE_V2                                    76 clauses ·  65 fields
+  HORSE_BILL_OF_SALE                               36 clauses ·  48 fields
+
+FLAT MARKDOWN — 14 active templates, ZERO clauses, ZERO fields, no authoring page
+  RELEASE_GENERAL · RELEASE_PARTICIPANT · RELEASE_HORSE_CARE · RELEASE_JUMPER_ADDENDUM
+  MINOR_RIDER · HUMAN_EMERGENCY_MEDICAL · HORSE_EMERGENCY_VET · FACILITY_RULES
+  FACILITY_LICENSE · COMPANY_POLICIES · INDEPENDENT_CONTRACTOR · HORSE_SEARCH_RETAINER
+  HORSE_TRANSACTION_REP · EVALUATION_LIABILITY_WAIVER
+```
+
+- **Contract-class card → authoring.** Opens the composition flow; there are terms to write.
+- **Onboarding-class card → assign and generate.** There is nothing to author — the template
+  has no clauses and no fields. The act is choosing a person. `DOCUMENT_LIBRARY_DESIGN.md` §J2
+  lists *"Assign documents to a person"* as its own action for exactly this reason, and today
+  it exists only buried in the contact dossier.
+
+**Opening a clause-authoring canvas for `RELEASE_GENERAL` would show an empty page.** Route by
+whether the template has clause defs — derive it, do not hardcode a list of keys.
+
+## Do not ship a card that goes nowhere
+
+Same rule as the empty preset tab. If a document type has no destination yet — an upload card
+before `TASK-UPLOADS` lands, or a type with neither clauses nor an assign path — **leave it out
+and report it.** A card that opens nothing is worse than an absent card.
+
+## Sequencing note
+
+`TASK-ONEAUTHOR` makes one page serve both kinds, and `TASK-UPLOADS` adds the upload card.
+**This task does not wait for either.** Build the picker against what exists today: the 6
+contract types route to the existing authoring flow, the 14 flat types route to assign, and the
+upload card appears when there is something behind it.
