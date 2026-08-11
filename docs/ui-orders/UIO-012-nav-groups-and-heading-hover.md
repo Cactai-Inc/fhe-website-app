@@ -17,12 +17,19 @@ nav that cannot be collapsed. **Give them one, labelled `App pages`**, using the
 component and behaviour as `Management` and `People` — same chevron, same toggle, same
 persistence.
 
-## 2. Merge Dashboard and Inbound into one Management entry — ANSWERED, READY
+## 2. Inbound goes away. Dashboard moves to where it always belonged — ANSWERED, READY
 
 > Owner, 2026-08-10: *"one nav entry under management and it uses the dashboard layout and the
-> leads are shown as dashboard entries."*
+> leads are shown as dashboard entries."* … *"inbound goes away. its my mangament dashboard
+> which right now is showing up in the community app section."*
 
-**It is a real merge, not a nav consolidation.**
+**Frame it as he does — this is not two things being merged.** The Dashboard **is** his
+management dashboard and has been filed in the wrong group. Inbound was a second surface doing
+part of the same job. So: **remove the duplicate, move the original to where it belongs.**
+
+That framing decides the ambiguous cases. When Inbound's behaviour and the Dashboard's differ,
+**the Dashboard is not compromising with a peer — it is absorbing a surface that should not
+have existed separately.**
 
 - **One nav entry, under `MANAGEMENT`.**
 - **The Dashboard layout wins.** Inbound's table view does not survive.
@@ -42,15 +49,16 @@ They both read 7 today and that is a coincidence:
 One is *addressed to you*; the other is *waiting to be picked up*. **The merged entry cannot
 carry both badges, so this needs a decision the two-entry version never required.**
 
-**Options, and the thread must ASK rather than pick:**
-1. **Sum them.** One number, everything needing attention. Simple; loses the distinction.
-2. **Keep notifications only.** The badge stays a personal signal; inbound work is visible as
-   entries in the body rather than as a count.
-3. **Two counts in one badge** — e.g. `7 · 7`. Preserves the distinction; busier.
+**Because Inbound goes away entirely, its count has nowhere else to live.** If the Dashboard
+badge does not absorb it, **open leads lose their only at-a-glance signal** — they would be
+visible as entries in the body but invisible from the nav, which is a regression against
+today.
 
-**Recommendation if pressed: sum them.** The merge's premise is that both are the same kind of
-thing from a dashboard's point of view, and two numbers on one entry re-creates the split the
-merge exists to remove. **But the owner decides.**
+**So the badge sums both sources.** `myUnreadCount()` + `inboundOpenCount()`.
+
+**Confirm with the owner before shipping** — it is one line either way and he may prefer the
+badge to stay a purely personal signal. But do not simply drop the inbound count: that is the
+one option that loses information the nav currently carries.
 
 ### Removal means hidden, not deleted
 
