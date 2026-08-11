@@ -143,6 +143,7 @@ would have re-run finished work, including a "person is blocked" item that was a
 | ~~**NOGUARD1**~~ | Access-control inventory of the anon-reachable definer surface | **DONE 2026-08-08.** Report merged at `9679006`; independently audited at `docs/reports/TASK-NOGUARD1-ORCHESTRATOR-AUDIT.md`. Findings confirmed against prod; the report understates the contract-field surface 3× |
 | **NOGUARD2** | Harden the access checks NOGUARD1 found | **UNBLOCKED, ready, highest-priority open item.** Verified target list now in its task doc. Starts with `void_signatures_on_edit` — a live hole |
 | **NOGUARD3** | Audit the `authenticated` surface (396 callable definer fns) | not specced — larger than the anon surface, never measured |
+| **SENDGUARD** | Signing document never re-sent to a signer, never churns under a link | **ready 2026-08-09** — 3 unguarded send paths + draft churn (3 ids in 6 min) + status-keyed sweep |
 
 Unspecced and outranking most of the above: **the contract issues the owner found after the
 reload fix.** Never described, so no doc exists. Ask before ordering anything around it.
