@@ -19,13 +19,31 @@ dollar amounts here."*
 - the policy-cost line
 - the `"shall be split between the parties: [Split (composed)]"` line
 
-**The orchestrator's reading, stated so it can be corrected in one word rather than discovered
-in a signed lease:** what goes is every line that records *an amount*. What stays is the
-**who-bears-it election** the owner specified by name — "paid by Lessor" / "split between
-Lessor and Lessee" / "Other" — because he wrote those three options out deliberately.
+**CORRECTED 2026-08-10 — the orchestrator's first reading was too broad. The owner:**
 
-**If that reading is wrong and the whole cost question goes, say so** — it changes whether the
-`$ or %` share control needs building at all.
+> *"no i meant the section where they can input the actual cost of the policy. the split is
+> either a $ driven split or a % driven split and that needs to remain, its not a cost listing
+> its the contribution declaration."*
+
+**The rule, and it is what stops a cost field being re-added later:**
+
+| | |
+|---|---|
+| **the premium** | a FACT that changes over time. Belongs in an appendix. **Never in a clause body.** |
+| **the split** | a TERM of the agreement. Belongs in the clause. **Stays.** |
+
+**REMOVED — the amount:**
+- the input for the actual cost of the policy
+- the floating free-text field placeholdered `Allocation`
+- the `"shall be split between the parties: [Split (composed)]"` line — redundant, the line
+  before it already says the parties split it
+
+**KEPT:**
+- the who-bears-it election: "paid by Lessor" / "split between Lessor and Lessee" / "Other"
+- **the contribution declaration** — Lessor's share and Lessee's share, `$`-driven or
+  `%`-driven. **Not a cost listing. What each party agreed to bear.**
+
+**So the `$ or %` control MUST be built.** It is no longer contingent on anything.
 
 **Amounts live in the deal, not the clause body.** The owner's rationale: policy documents
 become appendix items, and anyone wanting the figures in the contract uses the add-an-item
@@ -106,12 +124,34 @@ changes what silence means in an executed contract and is a separate decision.
 
 ---
 
+## `ClauseDocument.tsx` — the freeze is a STOP-AND-PROPOSE rule, not a prohibition
+
+Recorded 2026-08-10 because task docs have been writing "FROZEN" without the second half, and
+threads have twice read it as absolute, hit a genuine need, and stepped over it.
+
+**The actual rule** (`docs/SESSION_HANDOFF_2026-08-07.md`): *scoped exceptions only by
+orchestrator approval.* `BUILD_TRACKER` A21 is the worked example — minimal diff presented,
+approved, then applied.
+
+**Why it exists:** it is the single rendering path for every contract and there is **no
+per-document override**. A layout change reaches every open document at once, including
+Sarah's live negotiation. A21 records a case where one clause body matching the wrong layout
+branch caused three defects across two root causes.
+
+**So:** if this task needs a change there, **present the minimal diff and wait.** Do not apply
+it, and do not treat the word FROZEN as a reason to route the change somewhere worse.
+
 ## Still open, and NOT for the thread to decide
 
-- **The `$ or %` share control does not exist** and must be built: a null-or-`$` selector, a
-  number-only input, and a null-or-`%` alternate that greys when `$` is selected. The owner
-  specified it precisely. Build it once and use it in both places — which is why structure
-  settles first.
+- **The `$ or %` share control does not exist and MUST be built.** Confirmed 2026-08-10.
+
+  A null-or-`$` selector, a number-only input, and a null-or-`%` alternate that greys when
+  `$` is selected. Today there are separate currency and percent kinds and no combined one.
+
+  **The owner's reasoning, worth keeping:** *"they will use % when the policy cost is unknown
+  and they will use $ when the policy cost is known."* It must support both because parties
+  may agree a proportion before a premium exists — which is also why the premium itself is not
+  in the clause. Build once; mortality and medical both use it.
 - **13.2's Lessee question still means two things across branches.** This is the root cause of
   the contradiction found on 2026-08-10 — see
   `docs/tasks/TASK-LEASEFIX-13.2-lessee-decline-option.md`. Worth resolving in the same pass.
