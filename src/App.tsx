@@ -75,7 +75,7 @@ import { verifyWithPassword, verifyWithGoogle } from './lib/emailChange';
 import Admin from './pages/app/Admin';
 // Ops / CRM (staff/admin)
 import OpsHome from './pages/app/OpsHome';
-import ContactsPage, { LeadsPage, DirectoryPage } from './pages/app/ops/ContactsPage';
+import ContactsPage, { LeadsPage, DirectoryPage, CONTACTS_PAGE_RETIRED } from './pages/app/ops/ContactsPage';
 import HorsesPage from './pages/app/ops/HorsesPage';
 import HorseRecordsPage from './pages/app/ops/HorseRecordsPage';
 import DocumentsQueuePage from './pages/app/ops/DocumentsQueuePage';
@@ -259,7 +259,13 @@ export function AppRoutes() {
               {/* The four person-pages, each defined by contacts.contact_type.
                   /ops/contacts kept its path (the people we serve); the rolodex
                   moves to its own /ops/directory rather than sharing one. */}
-              <Route path="ops/contacts" element={<ProtectedRoute requireStaff><ContactsPage /></ProtectedRoute>} />
+              {/* RETIRED 2026-08-10 (TASK-ROSTER, reaffirmed TASK-ROSTERCARD):
+                  the Clients page won and now shows every contact. Route
+                  redirects rather than 404s so old links land on the winning
+                  page; flip the boolean to restore. */}
+              <Route path="ops/contacts" element={CONTACTS_PAGE_RETIRED
+                ? <Navigate to="/app/admin" replace />
+                : <ProtectedRoute requireStaff><ContactsPage /></ProtectedRoute>} />
               <Route path="ops/directory" element={<ProtectedRoute requireStaff><DirectoryPage /></ProtectedRoute>} />
               <Route path="ops/leads" element={<ProtectedRoute requireStaff><LeadsPage /></ProtectedRoute>} />
               <Route path="ops/horses" element={<ProtectedRoute requireStaff><HorsesPage /></ProtectedRoute>} />

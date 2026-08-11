@@ -515,11 +515,20 @@ function ContactDirectory({ mode }: { mode: DirectoryMode }) {
   );
 }
 
+/** RETIRED behind a boolean, never deleted (standing rule from 86a2c33).
+ *  Owner ruling 2026-08-10 (TASK-ROSTER, reaffirmed TASK-ROSTERCARD): the
+ *  Clients page (/app/admin) won — it now shows every contact, so this page's
+ *  population moved there. While true: the /app/ops/contacts route redirects
+ *  to /app/admin and the nav item is hidden. DirectoryPage and LeadsPage below
+ *  are NOT retired. */
+export const CONTACTS_PAGE_RETIRED = true;
+
 /** The rolodex: external providers — farriers, vets, suppliers, event organizers. */
 export function DirectoryPage() {
   return <ContactDirectory mode="directory" />;
 }
-/** The people we serve: clients, members, horse owners, counterparties. */
+/** The people we serve: clients, members, horse owners, counterparties.
+ *  Retired — see CONTACTS_PAGE_RETIRED. */
 export function ContactsPage() {
   return <ContactDirectory mode="contacts" />;
 }
