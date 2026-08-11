@@ -855,7 +855,7 @@ export function ClauseDocument({
         return (
           <section key={section.key} className={sectionAllOptional ? 'opacity-50' : ''}>
             <h2 className="font-serif text-green-900 text-2xl mb-3 flex items-baseline flex-wrap gap-x-2 gap-y-1 border-b border-green-800/10 pb-1.5">
-              <span className="text-gold-ink tabular-nums">{secNum}.</span>
+              <span className="text-green-800 tabular-nums">{secNum}.</span>
               {section.heading}
               {sectionAllOptional && (
                 <span className="text-[11px] text-gold-700/90 font-sans font-medium self-center normal-case tracking-normal">
@@ -1039,7 +1039,7 @@ export function ClauseDocument({
         return (
           <section key={`custom:${name}`}>
             <h2 className="font-serif text-green-900 text-2xl mb-3 flex items-baseline gap-2 border-b border-green-800/10 pb-1.5">
-              <span className="text-gold-ink tabular-nums">{secNum}.</span>
+              <span className="text-green-800 tabular-nums">{secNum}.</span>
               {name}
             </h2>
             <div className="flex flex-col gap-4">
