@@ -1,7 +1,14 @@
 # UIO-002 — the avatar becomes a ring that reads as a button on touch
 
 **Owner confirmed:** 2026-08-10
-**Status:** BLOCKED — four values are not specified. See "What it must become".
+**Status:** READY
+
+**Values chosen by the orchestrator, 2026-08-10, at the owner's direction.** He could not reach
+the authed state on the dev server to compare options and said: *"Just follow my last message
+and you'll implement the correct solution i think. if it doesnt look good we'll try something
+else."* That is a deliberate, narrow suspension of the standing "never invent a value" rule —
+**it does not generalise.** Every number below is stated with its reasoning so a single dial
+can be turned rather than the whole thing re-guessed.
 
 ## What he asked for
 
@@ -37,28 +44,42 @@ it must register for the ~100ms a tap lasts. That argues for a larger delta than
 hover state would use, because there is no hover to warm the user up. This codebase already
 gates hover on `[@media(hover:hover)]` for exactly this reason; follow that pattern.
 
-### NOT specified — do not invent these
+### The values, and why each one
 
-1. the letter size
-2. the ring width and colour
-3. **the compensated green** — see the warning below
-4. the two alpha values (rest and `:active`)
+**1. Letter size — `17px` becomes `20px`.** The owner asked for it to match the letters in the
+icon logo. `.oh-mono` renders `FH` at 17px in the same 42px mark; the avatar carries a single
+character, so it can take more optical weight before it crowds. Keep `.oh-mono` at 17px —
+he asked for the avatar to change, not the logo.
 
-**Build a rendered comparison under `docs/reference/` and let the owner choose.** This is the
-method that settled the nav colour after numbers failed: "I can't do anything with numbers."
+**2. Ring — `1px solid`, matching `.oh-mono`'s `rgba(20, 51, 33, .40)`.** Same weight, same
+colour, same 999px radius. The two marks are meant to read as a pair; that is the whole point
+of the request. Desktop gets the ring and NO fill.
 
-### THE GREEN MUST BE RE-DERIVED FOR THIS BACKDROP
+**3. The compensated green — `#02d67c`. THIS IS NOT A COLOUR ANYONE SEES.**
 
 A translucent green over the header's cream composites roughly **72 degrees toward yellow**.
+`navfill` is compensated against the near-white nav panel (`#fdfcfa`), `glass.nav` against the
+cream page (`#faf8f4`); **the header is `#f5f0e8`, a third surface, and neither existing token
+is valid here.** Reusing one is the C2 failure again.
 
-- `navfill` is pre-compensated against the **near-white nav panel** (`#fdfcfa`)
-- `glass.nav` is pre-compensated against the **cream page** (`#faf8f4`)
-- the header is **`#f5f0e8`** — a third surface
+Back-solved against `#f5f0e8` at both alphas, worst hue error **3.8 degrees** from brand 145:
 
-**Neither existing token is valid here.** Reusing one renders grey-green, which is the C2
-failure the owner has already been through once. Derive a third compensated base against
-`#f5f0e8`, at BOTH alphas, and state the rendered hue and contrast for each — the method and
-worked examples are in `docs/reference/`.
+| state | alpha | renders | hue | sat | contrast vs the green-900 letter |
+|---|---|---|---|---|---|
+| rest | **0.18** | `#c9ebd5` | 141.2 | 45.9% | 13.08 |
+| `:active` | **0.36** | `#9ee7c1` | 148.8 | 60.3% | 11.74 |
+
+For comparison, **brand `green-800` at the same alphas renders `#cccec4` (hue 72) and
+`#a4aca0` (hue 100)** — saturation under 10%. Grey. That is what "just use the brand green"
+produces here.
+
+**4. Alphas — `0.18` rest, `0.36` on `:active`.** A doubling: one clearly perceptible step,
+which is what touch needs since there is no hover to escalate through. Material's 8-to-12%
+range assumes a hover state exists.
+
+**Known dial:** saturation at 46/60% is livelier than the nav's ~32%. It is a small mark on a
+phone so it should carry it, but if the owner says it is too vivid, **lower the alphas before
+touching the base** — the base is what holds the hue correct.
 
 ## Files
 
