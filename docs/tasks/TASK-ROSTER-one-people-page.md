@@ -1,3 +1,62 @@
+> ## REVERSED 2026-08-10 — USE THE CONTACTS CARDS, NOT THE ADMIN ROWS.
+>
+> > Owner: *"for the contacts vs clients merge. we should use the contacts cards since they will
+> > format better with the volume of data i want to see on them."*
+>
+> **`ROSTER` delivered against the previous decision** — the positional ROW built on `Admin.tsx`
+> (`cd665cd`, unmerged). **The row format is superseded; the CARD format from `ContactsPage`
+> wins**, because the data volume he wants does not fit a row.
+>
+> **What survives from `ROSTER` and must NOT be rebuilt:** the database work is correct and
+> already applied — `admin_client_accounts`'s third arm for bare contacts, the per-row
+> aggregates (`document_count`, `order_count`, `credits`, `services`), and `roster_service_slots`.
+> **Only the presentation changes.**
+>
+> **The positional principle still holds** — a fixed slot per service type, holding its position
+> when empty, so a rider and a horse owner differ by SHAPE. **A card has more room for it than a
+> row did.**
+>
+> ## THE BADGE PROBLEM — two stores, not two casings. Verified 2026-08-10.
+>
+> > Owner: *"i need to understand why some cards show a badge with 'Rider' and others 'RIDER'"*
+>
+> ```
+> contacts.tags       free text, uncontrolled   "Horse owner" "owner" "Rider" "signatory" "test" "verify-thread"
+> groups.group_type   controlled enum           GUEST  HORSE_OWNER  RIDER
+> ```
+>
+> **They do not overlap per person:**
+>
+> ```
+> Mary Richardson    tags: Rider, Horse owner    groups: none
+> Brian Olenik       tags: none                  groups: RIDER
+> ```
+>
+> **One card renders from `tags`, the other from `groups`.** Same badge, different source,
+> different casing.
+>
+> **They are not two spellings of one fact — they are a CLAIM and a VERIFICATION.** `groups` is
+> derived: `apply_affiliations` is its sole writer, computed from executed documents and horse
+> ownership. `tags` is whatever someone typed, and it currently holds `test` and `verify-thread`.
+> Mary's tags say Rider and Horse owner; her documents are all still DRAFT, so she has no derived
+> groups. **Her tags are aspirational; her groups are the evidence.**
+>
+> **DECIDE BEFORE STYLING ANYTHING** — see the border question below. A colour that means
+> "verified" for one person and "somebody typed it" for another is worse than no colour.
+>
+> ## CARD STYLING INSTEAD OF THE WORD "CLIENT" — owner's proposal, NOT YET SPECIFIED
+>
+> > *"maybe instead of calling someone a client we can indicate by card styling. a green boarder
+> > is one thing, a gold border is another, and a non colored gray boarder is another?"*
+>
+> **The idea is sound and the mapping is not stated.** Three borders, three meanings — **which
+> three?** Client / customer / neither? Verified / claimed / unknown? Active / pending / archived?
+>
+> **ASK. And whatever it encodes, state which SOURCE drives it** — given the finding above, that
+> is the decision, not the colour.
+
+---
+
 # TASK ROSTER — one people page, and the row tells you who someone is at a glance
 
 **Owner ruling, 2026-08-10. This REVERSES a previous instruction and the reversal is the point.**
