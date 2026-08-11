@@ -68,7 +68,17 @@ The last one is the orchestrator's own. **This rule governs you, not just the th
    `git patch-id --stable` on both sides. Never the SHA. For "did this style ship?": grep the
    *property* and read what follows, never the value you wrote.
 
-2. **A result that flatters the reporter deserves a SECOND test, not less scrutiny.** Stated
+2. **`npx tsc` IN A WORKTREE WITHOUT `node_modules` IS NOT A TYPECHECK.** ADDED 2026-08-10.
+   **`tsc` on npm is not TypeScript** — it is an unrelated, ancient package. With no local
+   install, `npx tsc` fetches *that*, runs it, and **exits 0**. It looks exactly like a clean
+   typecheck and proves nothing. Caught and self-reported by the LEASEFIX thread; three of the
+   five live worktrees had no `node_modules` when checked.
+
+   **Every thread must run `npm install` in its worktree before claiming a typecheck**, and
+   must use `npm run typecheck` (which resolves the local binary) rather than `npx tsc`. A
+   worktree is a fresh directory — it does not inherit the canonical checkout's `node_modules`.
+
+3. **A result that flatters the reporter deserves a SECOND test, not less scrutiny.** Stated
    by the LEASEFIX thread against its own error, and it is the sharpest thing anyone has said
    about this: it had already proven its commits were patch-identical to shipped ones, then
    ignored that evidence for a test that made its work look more outstanding than it was.
