@@ -46,6 +46,34 @@ actual file, grep the built output. This codebase has repeatedly contradicted
 plausible-sounding assumptions. Every serious error in the previous session came from
 reasoning about what the code probably did instead of checking what it actually did.
 
+### The refinement that matters — ADDED 2026-08-10. "Verify more" is not the lesson.
+
+By 2026-08-10 the failures were no longer people skipping verification. They were people
+**running a test adjacent to the question instead of one that answers it**, getting a
+clean-looking result, and reporting it as fact. Four instances in one day:
+
+| the question | the test used | why it could not answer |
+|---|---|---|
+| is `oneheader` merged? | `git diff main..branch` | a diff between an ancestor and its descendant differs both ways |
+| why did the app revert? | a deployment theory | the reflog of the directory they were standing in held the answer |
+| did my commits land? | `merge-base --is-ancestor <cherry-picked SHA>` | a cherry-pick mints a new hash **by definition** — guaranteed "no" |
+| did the shadow ship? | grep the authored `rgba(...)` | the minifier rewrites it to 8-digit hex |
+
+The last one is the orchestrator's own. **This rule governs you, not just the threads.**
+
+**Two habits, and the second is the one people skip:**
+
+1. **Test the artifact on the target, not a proxy that merely correlates.** For "did this
+   land?": `git show <ref>:<file> | grep`, `git cat-file -e <ref>:<path>`, or
+   `git patch-id --stable` on both sides. Never the SHA. For "did this style ship?": grep the
+   *property* and read what follows, never the value you wrote.
+
+2. **A result that flatters the reporter deserves a SECOND test, not less scrutiny.** Stated
+   by the LEASEFIX thread against its own error, and it is the sharpest thing anyone has said
+   about this: it had already proven its commits were patch-identical to shipped ones, then
+   ignored that evidence for a test that made its work look more outstanding than it was.
+   **Suspicion should rise, not fall, when the answer is the one you wanted.**
+
 ## What you must NOT do
 
 - **Do not make design decisions alone.** The previous session shipped eight visual changes
