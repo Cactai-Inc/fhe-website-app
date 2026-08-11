@@ -216,12 +216,24 @@ distinct absent-states and CCC needs both:
 "not applicable" alone — *why* it is not applicable. Draft CCC's wording to the same standard
 and bring it to the owner before applying; it is clause text.
 
-**OPEN — the entity case. ASK, DO NOT GUESS.** CCC is askable only of an entity Lessee.
-Medical's N/A applies to everyone, so the paradigm does not answer this. For an INDIVIDUAL
-Lessee, does 13.3 appear with an N/A line, or not appear at all? Showing N/A for something
-never relevant to an individual may be noise rather than clarity — but the owner's stated
-goal is stable section numbering, and a section that appears for entities and vanishes for
-individuals still moves the numbers.
+**SETTLED — the entity case.** Owner, 2026-08-10: *"it disappears. for individuals."*
+
+**Three states, and the N/A paradigm applies only inside the entity branch:**
+
+| Lessee | Lessee's GL | 13.3 |
+|---|---|---|
+| individual | any | **ABSENT.** The section does not exist. Mortality takes 13.3 and the numbering shifts. |
+| entity | does not carry | **PRESENT, N/A line.** CCC is available to them in principle but has no policy to attach to. |
+| entity | has / will obtain | **PRESENT, full block.** Requirement + declaration. |
+
+**The distinction is conceptual availability, not policy state.** For an individual, CCC is not
+a thing that could ever apply — printing "not applicable" would be answering a question nobody
+asked. For an entity with no GL, CCC *is* applicable in principle and the N/A line earns its
+place by naming why it cannot be taken: no parent policy.
+
+**Accepted cost:** section numbers still differ between an individual's lease and an entity's.
+The owner has taken that trade knowingly — the numbering complaint was about CCC vanishing
+*within a document class*, not about individual and entity leases numbering alike.
 
 ### FINAL — CCC IS A RIDER ON GL. Settled 2026-08-10. Build to this.
 
