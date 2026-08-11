@@ -331,3 +331,38 @@ commit, until the owner picks from that page.
 - Whether 7% actually reads as "between" to the eye the way it does on paper
   — contrast math and perceived intensity aren't the same thing, and this
   codebase has been burned by that gap before (T6/C1).
+
+---
+
+## UIO-008 — the contract actions block points the wrong way and hides at the edge
+
+**Commit:** `5b79b64`
+
+Found it by content, not by trusting "whichever component renders the
+contract actions block": the label/gap/right-arrow shape the owner described
+matched `ContractSubheader.tsx`'s mobile toggle exactly (`justify-between`
+with the label on the far left and a lone `ChevronDown` pinned to the far
+right of a full-width row). Not `ClauseDocument.tsx` — no frozen-file
+stop-and-propose needed.
+
+**What I verified:**
+- `npm run typecheck` — 0 errors. `npm run lint` — 0 errors, 30 warnings
+  (baseline). `npm run build` — succeeded.
+- This component is a lazy chunk (T2's warning applies literally) — grepping
+  the main entry bundle would have found nothing whether it shipped or not.
+  Found the right chunk first (`grep -rl "Contract actions" dist/assets/*.js`
+  → `index-Bz1AJatT.js`), then inspected the compiled output directly:
+  `className:"md:hidden w-full flex items-center gap-1.5 py-1 text-left"` —
+  `justify-between` gone, `gap-1.5` present — and
+  `d?r.jsx(lc,{...}):r.jsx(Ws,{...})`, a genuine two-component conditional
+  with no `-rotate-90`/`transition-transform` left anywhere in that region.
+- Did not assume `lc`/`Ws` were what I expected from their position in the
+  ternary — grepped their actual `const lc=ae("ChevronUp",[["path",{d:"m18
+  15-6-6-6 6"...` and `const Ws=ae("ChevronDown",[["path",{d:"m6 9 6 6
+  6-6"...` definitions. Confirmed: `lc` (rendered when `barOpen` is true) is
+  ChevronUp, `Ws` (false) is ChevronDown — down closed, up open, as ordered.
+
+**What I did NOT verify:**
+- The spacing itself. The order says this is an eye judgement for the owner
+  to confirm — `gap-1.5` is stated and reasoned (matches this bar's own
+  SUBHEADER_BTN icon-to-label gap) but not rendered and looked at.
