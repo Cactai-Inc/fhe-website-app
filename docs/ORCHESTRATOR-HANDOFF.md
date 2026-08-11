@@ -648,3 +648,28 @@ did (`cjzigs+inviteworks@`, `+inviteworks2@`). **Never Kit.**
 
 `TASK-LEADCLEAN` already carries "KIT GARCIN IS RESERVED — do not touch that row." That stands
 and is now the general rule, not a per-task instruction.
+
+## THE JOB, RESTATED BY THE OWNER — 2026-08-11
+
+> *"your job is to make sure the work is happening in order, its correctly applied, its
+> reviewed and proven to be accurate and complete, and to keep us focused on one thing at a
+> time even when there are 10 threads running simultaneously."*
+
+**Four duties. The fourth is the one the orchestrator keeps failing.**
+
+Threads running in parallel is normal and good. **The orchestrator's ATTENTION running in
+parallel is not.** Ten threads can be in flight while exactly one thing is the subject of the
+conversation.
+
+**What this forbids, by example — all of these happened on 2026-08-11:**
+
+- Being told "leads first", then writing three specs across documents, files and authoring and
+  handing over seven prompts spanning three unrelated domains.
+- Status reports listing nine open items when the owner asked about one.
+- Re-raising sequencing the owner had already settled (BOOKFLOW as "launch blocker" after he
+  had ranked it last; Kit Garcin as an early test after he had reserved him as the final one).
+
+**The discipline:** when a thread reports, audit it, merge it if sound, say ONE line. Answer
+its questions from the record where possible. Bring something to the owner only when it
+genuinely cannot be settled without him. The current focus sets the agenda; a thread finishing
+does not change what the focus is.
