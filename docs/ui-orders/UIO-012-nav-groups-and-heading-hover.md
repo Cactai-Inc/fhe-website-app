@@ -1,6 +1,6 @@
 # UIO-012 — the community pages get a group, Dashboard moves, and the heading hover is invisible
 
-**Owner confirmed:** 2026-08-10 · **Status:** PARTLY BLOCKED — item 2 needs an answer first.
+**Owner confirmed:** 2026-08-10 · **Status:** READY — item 2 answered; one badge question inside it.
 
 > "the section headers that can be clicked to collapse, there isnt one for the community app
 > pages (the first 5), the dashboard and inbound are largely serving the same purpose so we
@@ -17,24 +17,45 @@ nav that cannot be collapsed. **Give them one, labelled `App pages`**, using the
 component and behaviour as `Management` and `People` — same chevron, same toggle, same
 persistence.
 
-## 2. Merge Dashboard and Inbound, move it to Management — BLOCKED, ASK FIRST
+## 2. Merge Dashboard and Inbound into one Management entry — ANSWERED, READY
 
-The owner: *"the dashboard and inbound are largely serving the same purpose so we should merge
-those and move dashboard into management and drop it from the community pages."*
+> Owner, 2026-08-10: *"one nav entry under management and it uses the dashboard layout and the
+> leads are shown as dashboard entries."*
 
-**Two readings, and they are very different jobs:**
+**It is a real merge, not a nav consolidation.**
 
-- **Nav consolidation.** One entry under Management pointing at one of the existing pages; the
-  other route stays reachable but unlisted. Small, reversible.
-- **Page merge.** The two pages actually become one — their content combined into a single
-  surface. Substantial, and it decides what happens to the two badge counts currently on
-  Dashboard (7) and Inbound (7).
+- **One nav entry, under `MANAGEMENT`.**
+- **The Dashboard layout wins.** Inbound's table view does not survive.
+- **The leads render as dashboard entries** inside that layout — the booking requests and
+  support items become entries, not a separate list page.
+- **Dashboard leaves the community group** (see item 1 — the group it leaves is `App pages`).
 
-**ASK WHICH. DO NOT PICK.** If it is the page merge, that is its own task and this order carries
-only the nav half.
+### THE BADGE — the two counts are DIFFERENT SOURCES. Verified.
 
-**Either way, note:** removal here means removed from view, not deleted — the standing rule from
-commit `86a2c33`. Keep the route building and one boolean from returning.
+They both read 7 today and that is a coincidence:
+
+| | source | what it counts |
+|---|---|---|
+| Dashboard | `myUnreadCount()` (`:81`) | unread **notifications** |
+| Inbound | `inboundOpenCount()` (`:95`) | open **requests + support** |
+
+One is *addressed to you*; the other is *waiting to be picked up*. **The merged entry cannot
+carry both badges, so this needs a decision the two-entry version never required.**
+
+**Options, and the thread must ASK rather than pick:**
+1. **Sum them.** One number, everything needing attention. Simple; loses the distinction.
+2. **Keep notifications only.** The badge stays a personal signal; inbound work is visible as
+   entries in the body rather than as a count.
+3. **Two counts in one badge** — e.g. `7 · 7`. Preserves the distinction; busier.
+
+**Recommendation if pressed: sum them.** The merge's premise is that both are the same kind of
+thing from a dashboard's point of view, and two numbers on one entry re-creates the split the
+merge exists to remove. **But the owner decides.**
+
+### Removal means hidden, not deleted
+
+The standing rule from commit `86a2c33`: whichever route stops being listed keeps building and
+stays one boolean from returning. **Do not delete either page.**
 
 ## 3. The heading hover is invisible. Measured — READY
 
@@ -83,7 +104,8 @@ floor. **State the rendered contrast you land on.**
 ## Do NOT
 
 - Do not change the row hover or selected states. They are correct and the owner said so.
-- Do not delete the Dashboard route. Hidden, not deleted.
+- Do not delete either route. Hidden behind a boolean, not deleted.
+- Do not keep Inbound's table layout. The Dashboard layout wins — the owner said so.
 - Do not restyle the chevron — UIO-008 is not about this one, and this one already points the
   right way.
 
