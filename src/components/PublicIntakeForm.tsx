@@ -221,21 +221,15 @@ export function PublicIntakeForm({
         },
         selections ?? [],
       );
-      // Fire-and-forget: email the barn so the owners hear about the inquiry even
-      // when they're not in the app. Never blocks or fails the submission — the
-      // request itself already saved and fired the in-app staff notification.
+      // Fire-and-forget: email the barn the full submission, immediately, so the
+      // owners hear about it even when they're not in the app. Never blocks or
+      // fails the submission — the request itself already saved and fired the
+      // in-app staff notification. The endpoint reads the content back from the
+      // saved `requests` row by id rather than trusting anything from here.
       void fetch('/api/request-received', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          requestId,
-          name: `${firstName.trim()} ${lastName.trim()}`.trim(),
-          email: email.trim(),
-          phone: phone.trim() || undefined,
-          notes: message.trim() || undefined,
-          category,
-          channel,
-        }),
+        body: JSON.stringify({ requestId }),
       }).catch(() => { /* delivery is best-effort; the request is already saved */ });
       onSubmitted?.(requestId);
     } catch (err) {

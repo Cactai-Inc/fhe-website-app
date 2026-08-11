@@ -121,6 +121,9 @@ export interface SendProviderInput {
   html: string;
   /** Optional file attachments (e.g. signed-document PDFs). */
   attachments?: EmailAttachment[];
+  /** Optional Reply-To (e.g. a form submitter's address), so a reply reaches
+   *  them directly instead of the tenant's authenticated From address. */
+  replyTo?: string;
 }
 
 export interface SendProviderResult {
@@ -171,6 +174,7 @@ async function sendViaGoogleSmtp(
     const info = await transporter.sendMail({
       from: `${input.fromName} <${input.fromEmail}>`,
       to: input.to,
+      ...(input.replyTo ? { replyTo: input.replyTo } : {}),
       subject: input.subject,
       html: input.html,
       attachments: (input.attachments ?? []).map((a) => ({
@@ -196,6 +200,7 @@ async function sendViaResend(input: SendProviderInput, key: string): Promise<Sen
         to: input.to,
         subject: input.subject,
         html: input.html,
+        ...(input.replyTo ? { reply_to: input.replyTo } : {}),
         ...(input.attachments && input.attachments.length > 0
           ? {
               attachments: input.attachments.map((a) => ({
