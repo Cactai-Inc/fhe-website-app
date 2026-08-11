@@ -154,6 +154,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const requestId =
     typeof body.requestId === 'string' && body.requestId.trim() ? body.requestId.trim() : null;
 
+  // RESEND vs REGENERATE (owner ruling 2026-08-11). This endpoint only ever
+  // MINTS a token, so it is never a resend — /api/admin-resend-invitation is.
+  // What `mode` decides is whether minting also RETIRES the link the person may
+  // already be holding:
+  //   'new'         first invitation, or an additional one — retire nothing.
+  //   'regenerate'  deliberate replacement — retire the prior live link.
+  // The caller says which; nothing here infers it from "an invitation exists".
+  const mode = body.mode === 'regenerate' ? 'regenerate' : 'new';
+
   try {
     const db = await at('auth', async () => getSupabaseAdmin());
 
@@ -230,13 +239,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return (Array.isArray(data) ? data[0] : data) as ProvisionResult;
       });
 
+      // Retiring the prior link is the CALLER's declared intent, not a side
+      // effect of provisioning. provision_client_invitation still supersedes
+      // internally today; the migration that removes that default is written
+      // and held for owner sign-off, and this call is what keeps regenerate
+      // correct once it lands. Idempotent in the meantime — the second call
+      // finds nothing left to retire.
+      if (mode === 'regenerate') {
+        await at('supersede', async () => {
+          const { error: supErr } = await db.rpc('supersede_invitations', {
+            p_org: orgId, p_email: email, p_new_invitation_id: out.invitation_id,
+          });
+          if (supErr) throw supErr;
+        });
+      }
+
       const registerUrl = `${origin}/activate?token=${out.token}`;
       // "your purchase is ready" line only when an offering was purchased.
       const offeringLabel = (out.labels && out.labels.length > 0) ? out.labels.join(', ') : null;
       // The invitation row is committed by now, so a delivery failure cannot roll
       // it back — but it MUST come back as a failure, with its reason, or the
       // operator walks away believing a person was emailed who never was.
-      const sent = await sendInvitationEmail(db, orgId, email, registerUrl, offeringLabel);
+      const sent = await sendInvitationEmail(db, { orgId, to: email, registerUrl, offeringLabel });
       await recordInvitationDelivery(db, out.invitation_id, sent);
       return res.status(200).json({
         registerUrl,
@@ -317,7 +341,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     } catch { /* checklist is best-effort — the invite still goes out */ }
 
-    const sent = await sendInvitationEmail(db, orgId, email, registerUrl, null, checklist, expiresAt);
+    const sent = await sendInvitationEmail(db, { orgId, to: email, registerUrl, checklist, expiresAt });
     await recordInvitationDelivery(db, insRow.id, sent);
     return res.status(200).json({
       registerUrl,

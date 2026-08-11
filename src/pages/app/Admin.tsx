@@ -8,12 +8,14 @@ import { supabase } from '../../lib/supabase';
 import {
   adminSetSuspended, adminClientAccounts, adminClientItems, adminSendInvitation,
   adminExpireInvitation, adminDeleteInvitation, adminAccountAction, adminHardDeleteClient,
+  adminResendInvitation,
   type ClientAccountRow, type ClientItems,
 } from '../../lib/admin';
 import { contactAddress, formatAddress, type ContactAddress } from '../../lib/api';
 import { docDisplayLabel } from '../../lib/documentStatus';
 import { ProvisionClientForm } from '../../components/app/ProvisionClientForm';
 import { InviteResultPanel } from '../../components/app/InviteResultPanel';
+import { InvitationHistoryPanel } from '../../components/app/InvitationHistoryPanel';
 /* These four moved to a shared module so the contact dossier can render them
    too. Imported here rather than duplicated — one definition, two callers. */
 import {
@@ -250,12 +252,17 @@ function LoginTab({ ov }: { ov: Overview }) {
 // invited → resend / expire / delete controls.
 function InvitePanel({ row, onSent }: { row: ClientAccountRow; onSent: () => void }) {
   const [result, setResult] = useState<{ url: string; emailed: boolean; emailError?: string } | null>(null);
+  const [resendNote, setResendNote] = useState<string | null>(null);
+  const [confirmRegen, setConfirmRegen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [log, setLog] = useState<StatusLogEntry[]>([]);
 
   const sent = row.invite_status === 'sent';
   const expired = sent && row.invite_expires_at ? new Date(row.invite_expires_at) < new Date() : false;
+  /** A link that works right now — the one regenerating would destroy. */
+  const live = sent && !expired;
   // Never invited → provision this existing contact via the shared form.
   const neverInvited = !row.invite_id && !row.invite_status;
 
@@ -285,23 +292,60 @@ function InvitePanel({ row, onSent }: { row: ClientAccountRow; onSent: () => voi
       <h3 className="font-serif text-green-800 text-base">Invitation</h3>
       <p className="text-[12px] text-muted mb-3">
         {sent
-          ? `Last invite ${expired ? 'EXPIRED' : 'expires'} ${row.invite_expires_at ? new Date(row.invite_expires_at).toLocaleString() : ''} — resend any time.`
+          ? `Their link ${expired ? 'EXPIRED' : 'works until'} ${row.invite_expires_at ? new Date(row.invite_expires_at).toLocaleString() : ''}.`
           : 'Send the registration invite.'}
       </p>
       <div className="flex flex-wrap items-center gap-2">
+        {/* RESEND and REGENERATE are different acts and staff choose between
+            them — sending again must never be what kills a working link
+            (owner ruling 2026-08-11). Resend is the safe default and leads. */}
+        {live && row.invite_id && (
+          <button type="button" disabled={busy}
+            onClick={() => void (async () => {
+              setBusy(true); setErr(null); setResult(null);
+              try {
+                const r = await adminResendInvitation(row.invite_id!);
+                setResendNote(r.emailed
+                  ? `Same link emailed again to ${r.email}. It keeps working.`
+                  : `NOT emailed — ${r.emailError || 'no reason reported'}. Copy the link below and send it yourself.`);
+                setRefreshKey((k) => k + 1);
+              } catch (e) { setErr(e instanceof Error ? e.message : 'Could not resend the invitation.'); }
+              finally { setBusy(false); }
+            })()}
+            className="btn-primary text-xs">
+            {busy ? 'Sending…' : 'Resend the same link'}
+          </button>
+        )}
         <button type="button" disabled={busy || !row.email}
           onClick={() => void (async () => {
-            setBusy(true); setErr(null); setResult(null);
+            // Regenerating retires a link that may be working right now, and
+            // may already be in someone's inbox. Make staff say so twice.
+            if (live && !confirmRegen) { setConfirmRegen(true); return; }
+            setBusy(true); setErr(null); setResult(null); setConfirmRegen(false);
             try {
-              const r = await adminSendInvitation({ email: row.email! });
+              // Explicit: this button exists to REPLACE the current link.
+              const r = await adminSendInvitation({
+                email: row.email!, mode: live ? 'regenerate' : 'new',
+              });
               setResult({ url: r.registerUrl, emailed: r.emailed, emailError: r.emailError });
+              setRefreshKey((k) => k + 1);
               onSent();
             } catch (e) { setErr(e instanceof Error ? e.message : 'Could not send the invitation.'); }
             finally { setBusy(false); }
           })()}
-          className="btn-primary text-xs">
-          {busy ? 'Sending…' : sent ? 'Resend invitation' : 'Send invitation'}
+          className={live ? 'px-3.5 py-2 rounded-lg border border-gold-600/50 text-gold-800 text-xs hover:bg-gold-50 focus-ring'
+            : 'btn-primary text-xs'}>
+          {busy ? 'Sending…'
+            : !sent ? 'Send invitation'
+            : confirmRegen ? 'Confirm — retire the current link'
+            : live ? 'Regenerate link' : 'Issue a new link'}
         </button>
+        {confirmRegen && (
+          <button type="button" onClick={() => setConfirmRegen(false)}
+            className="px-3 py-2 text-xs text-secondary hover:text-green-900 focus-ring">
+            Cancel
+          </button>
+        )}
         {row.invite_id && sent && !expired && (
           <button type="button" disabled={busy}
             onClick={() => void (async () => {
@@ -328,13 +372,21 @@ function InvitePanel({ row, onSent }: { row: ClientAccountRow; onSent: () => voi
         )}
       </div>
       {err && <p role="alert" className="form-error mt-3">{err}</p>}
+      {resendNote && <p role="status" className="text-[12px] text-green-800 mt-3">{resendNote}</p>}
       {result && (
         <InviteResultPanel url={result.url} emailed={result.emailed}
           emailError={result.emailError} email={row.email ?? undefined} />
       )}
+      {/* Every link ever issued to this person, with the real URL on each row —
+          the support view for "a client just read me a link over the phone".
+          Staff-gated: invitations RLS is is_admin() AND the org boundary. */}
+      <div className="mt-4 pt-3 border-t border-gold-600/20">
+        <InvitationHistoryPanel contactId={row.contact_id} email={row.email}
+          refreshKey={refreshKey} onResent={onSent} />
+      </div>
       {log.length > 0 && (
         <div className="mt-4 pt-3 border-t border-gold-600/20">
-          <p className="text-[11px] uppercase tracking-wide text-green-800/50 mb-2">Invitation history</p>
+          <p className="text-[11px] uppercase tracking-wide text-green-800/50 mb-2">Invitation timeline</p>
           <StatusLog entries={log} compact />
         </div>
       )}

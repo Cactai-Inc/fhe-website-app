@@ -127,6 +127,37 @@ export async function redeemMyPendingInvitation(): Promise<boolean> {
   return Boolean(data);
 }
 
+/** What the retired-link page may tell someone holding a link that no longer
+ *  works: where their CURRENT invitation went, and when. A masked address and a
+ *  date are not a credential, so this is safe to show to the link holder — but
+ *  the new token is never returned and the page never redirects to it. */
+export interface InvitationReplacementNotice {
+  masked_email: string;
+  sent_at: string;
+  expires_at: string;
+}
+
+/** Null when the token is unknown, still live, or has no current replacement. */
+export async function invitationReplacementNotice(
+  token: string,
+): Promise<InvitationReplacementNotice | null> {
+  const { data, error } = await supabase.rpc('invitation_replacement_notice', { p_token: token });
+  if (error) throw error;
+  const row = Array.isArray(data) ? data[0] : data;
+  return (row as InvitationReplacementNotice | null) ?? null;
+}
+
+/** "Send it to me again" from the retired-link page. Rate limited server-side,
+ *  and it can ONLY ever send to the address already on the invitation — no
+ *  address crosses this boundary. The response is deliberately neutral. */
+export async function requestInvitationResend(token: string): Promise<void> {
+  await fetch('/api/invitation-resend-request', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  });
+}
+
 /** Validate a signup token via the SECURITY DEFINER RPC. Returns null if invalid/expired. */
 export async function validateInvitation(token: string): Promise<Invitation | null> {
   const { data, error } = await supabase.rpc('validate_invitation', { p_token: token });

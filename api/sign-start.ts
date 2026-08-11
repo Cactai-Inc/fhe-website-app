@@ -112,7 +112,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // outcome has nowhere to surface EXCEPT the invitation's status trail.
       // Without this a self-onboarding signup that never got its email is
       // invisible to everyone, including the person waiting for it.
-      const sent = await sendInvitationEmail(db, orgId, email, registerUrl);
+      const sent = await sendInvitationEmail(db, { orgId, to: email, registerUrl });
       await recordInvitationDelivery(db, out.invitation_id, sent);
     }
     // Rate-limited (or org unresolved) requests fall through to the same

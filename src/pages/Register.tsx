@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { validateInvitation, redeemInvitation, myOnboardingState } from '../lib/api';
+import {
+  validateInvitation, redeemInvitation, myOnboardingState,
+  invitationReplacementNotice, requestInvitationResend,
+  type InvitationReplacementNotice,
+} from '../lib/api';
 import { redeemContractInvitation } from '../lib/contracts';
 import { signInWithGoogle } from '../lib/auth';
 import { OAUTH_PROVIDERS } from '../lib/authConfig';
@@ -40,6 +44,9 @@ export default function Register() {
 
   const [state, setState] = useState<State>('checking');
   const [invitation, setInvitation] = useState<Invitation | null>(null);
+  // Where the CURRENT invitation went, for someone holding a retired link.
+  const [notice, setNotice] = useState<InvitationReplacementNotice | null>(null);
+  const [resendState, setResendState] = useState<'idle' | 'sending' | 'sent'>('idle');
   // Gmail invites lead with Google only — the password form stays one click
   // away for the rare Gmail user who wants a password anyway.
   const [password, setPassword] = useState('');
@@ -86,7 +93,11 @@ export default function Register() {
               return;
             } catch { /* not signed, or not signed in — the invalid screen is right */ }
           }
+          // Dead link: find out whether a CURRENT one exists, so the page can
+          // name the inbox it went to instead of saying "check your email".
+          const replacement = await invitationReplacementNotice(token).catch(() => null);
           if (!active) return;
+          setNotice(replacement);
           setState('invalid');
           return;
         }
@@ -193,11 +204,46 @@ export default function Register() {
         <div className="max-w-md text-center">
           <p className="eyebrow mb-3">Invitation</p>
           <h1 className="heading-section text-green-800 mb-4">This link isn't valid anymore</h1>
-          <p className="body-text mb-8">
-            {isContractInvite
-              ? "This invitation may have expired or been replaced by a newer one. If you've already signed this document, sign in and we'll take you straight to it."
-              : "This invitation may have expired or been replaced by a newer one — check your inbox for the most recent email. If you've already created your account, just sign in."}
-          </p>
+          {/* "Check your inbox" is useless advice if we don't say WHICH inbox.
+              A masked address and a date are not a credential, so we can name
+              where the current invitation went — but never link or redirect to
+              it, and never reveal the new token. */}
+          {notice ? (
+            <>
+              <p className="body-text mb-3">
+                Your current invitation went to{' '}
+                <span className="font-medium text-green-800">{notice.masked_email}</span>{' '}
+                on {new Date(notice.sent_at).toLocaleDateString('en-US', {
+                  weekday: 'long', month: 'long', day: 'numeric',
+                })}. Look for the most recent email from us and use the link in that one.
+              </p>
+              <div className="mb-8">
+                {resendState === 'sent' ? (
+                  <p className="body-text text-sm text-green-800">
+                    Sent. It's on its way to that same address — give it a minute, and
+                    check your spam folder if it doesn't appear.
+                  </p>
+                ) : (
+                  <button type="button" disabled={resendState === 'sending'}
+                    onClick={() => {
+                      setResendState('sending');
+                      // Only ever goes to the address already on file — this
+                      // button takes no address and cannot be pointed elsewhere.
+                      void requestInvitationResend(token).finally(() => setResendState('sent'));
+                    }}
+                    className="btn-outline-gold disabled:opacity-50">
+                    {resendState === 'sending' ? 'Sending…' : 'Send it to me again'}
+                  </button>
+                )}
+              </div>
+            </>
+          ) : (
+            <p className="body-text mb-8">
+              {isContractInvite
+                ? "This invitation may have expired or been replaced by a newer one. If you've already signed this document, sign in and we'll take you straight to it."
+                : "This invitation may have expired or been replaced by a newer one — check your inbox for the most recent email. If you've already created your account, just sign in."}
+            </p>
+          )}
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             {/* Come back HERE after signing in: a signed party's stale link resolves
                 to their document, but only once we know who they are. */}

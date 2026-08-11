@@ -12,6 +12,7 @@ import {
   type AdminMemberRow, type MemberRole, type PendingStaffInvite,
 } from '../../../lib/admin';
 import { InviteResultPanel } from '../../../components/app/InviteResultPanel';
+import { InvitationHistoryPanel } from '../../../components/app/InvitationHistoryPanel';
 
 /**
  * TEAM (/app/ops/team, Accounts section) — the internal-accounts zone. The
@@ -37,6 +38,8 @@ function RosterSection({
   const staff = members.filter((m) => (m.role ?? 'USER') !== 'USER');
   const [selected, setSelected] = useState<AdminMemberRow | null>(null);
   const [revoking, setRevoking] = useState<string | null>(null);
+  /** Which pending invitee has their full link history open. */
+  const [openLinks, setOpenLinks] = useState<string | null>(null);
 
   async function revoke(id: string) {
     setRevoking(id);
@@ -74,27 +77,44 @@ function RosterSection({
 
         {/* Invited-but-not-yet-accepted staff. No profile exists until they redeem,
             so these come straight from the invitations table — matching how the
-            Clients page shows pending invitees. */}
+            Clients page shows pending invitees. This roster index stays filtered
+            to LIVE invites on purpose (it sits beside active staff); the full
+            history — retired and expired links included — opens per person via
+            "Links", so a retired link is retired but never hidden. */}
         {pending.map((i) => (
           <div key={i.id}
-            className="flex items-center justify-between gap-3 bg-gold-50/60 border border-dashed border-gold-300 rounded-lg px-4 py-3">
-            <span className="min-w-0">
-              <span className="block text-sm font-medium text-green-900 truncate">{inviteName(i)}</span>
-              <span className="block text-xs text-muted truncate">
-                {i.email}{i.title ? ` · ${i.title}` : ''}
+            className="bg-gold-50/60 border border-dashed border-gold-300 rounded-lg px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <span className="min-w-0">
+                <span className="block text-sm font-medium text-green-900 truncate">{inviteName(i)}</span>
+                <span className="block text-xs text-muted truncate">
+                  {i.email}{i.title ? ` · ${i.title}` : ''}
+                </span>
               </span>
-            </span>
-            <span className="flex items-center gap-2 shrink-0">
-              <span className="text-xs font-sans uppercase tracking-wide px-2.5 py-1 rounded-full bg-gold-200 text-gold-900">
-                Invited · {ROLE_LABEL[i.invited_role] ?? 'Staff'}
+              <span className="flex items-center gap-2 shrink-0">
+                <span className="text-xs font-sans uppercase tracking-wide px-2.5 py-1 rounded-full bg-gold-200 text-gold-900">
+                  Invited · {ROLE_LABEL[i.invited_role] ?? 'Staff'}
+                </span>
+                {isAdmin && (
+                  <button type="button"
+                    onClick={() => setOpenLinks((k) => (k === i.id ? null : i.id))}
+                    className="text-xs text-green-800 hover:text-green-900 underline underline-offset-2 focus-ring">
+                    {openLinks === i.id ? 'Hide links' : 'Links'}
+                  </button>
+                )}
+                {isAdmin && (
+                  <button type="button" onClick={() => revoke(i.id)} disabled={revoking === i.id}
+                    className="text-xs text-red-700 hover:text-red-800 underline underline-offset-2 disabled:opacity-50 focus-ring">
+                    {revoking === i.id ? 'Revoking…' : 'Revoke'}
+                  </button>
+                )}
               </span>
-              {isAdmin && (
-                <button type="button" onClick={() => revoke(i.id)} disabled={revoking === i.id}
-                  className="text-xs text-red-700 hover:text-red-800 underline underline-offset-2 disabled:opacity-50 focus-ring">
-                  {revoking === i.id ? 'Revoking…' : 'Revoke'}
-                </button>
-              )}
-            </span>
+            </div>
+            {isAdmin && openLinks === i.id && (
+              <div className="mt-3 pt-3 border-t border-gold-300/60">
+                <InvitationHistoryPanel email={i.email} onResent={reload} />
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -213,6 +233,12 @@ function TeamMemberPanel({
                       onClick={() => void run(() => adminSetSuspended(member.user_id, !member.is_suspended))}>
                       {member.is_suspended ? 'Reinstate' : 'Suspend'}
                     </button>
+                  </div>
+
+                  {/* ── Invitation links ── every link ever issued to them,
+                      retired ones included, with the real URL on each. */}
+                  <div className="border-t border-green-800/10 pt-4">
+                    <InvitationHistoryPanel contactId={member.contact_id} email={member.email} />
                   </div>
 
                   {/* ── Demote to client ── */}
