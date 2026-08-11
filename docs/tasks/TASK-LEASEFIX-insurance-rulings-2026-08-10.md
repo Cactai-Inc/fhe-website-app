@@ -95,13 +95,48 @@ none is needed.
 
 ### What the section becomes — per side, mortality and medical
 
+> Owner, refining: *"without a split, its just either this is paid by lessor or lessor requires
+> lessee to contribute a payment amount (one time or weekly/monthly/annually) for this category
+> of insurance."* … *"the deductible on the other hand. can be a split."*
+
 ```
-Lessor declares own coverage      has / will obtain / does not carry
-Fixed contribution required       $   from the Lessee
-Per-incident amount at fault      $   where the Lessee is deemed responsible
+Lessor declares own coverage    has / will obtain / does not carry
+
+THE PREMIUM — no split, ever
+  who bears it                  paid by Lessor  /  Lessee contributes
+  when Lessee contributes:
+    amount                      $
+    frequency                   one time / weekly / monthly / annually
+
+THE DEDUCTIBLE — may be split
+  per-incident, where the Lessee is deemed responsible
+  amount                        $ or %          <- share_amount
 ```
 
-**Two requirements the Lessee agrees to**, both currency, both stated by the Lessor.
+### The premium takes NO percentage. The deductible MAY.
+
+**This is the distinction that resolves everything above.**
+
+- **A premium is not a well-defined base.** It may cover several animals and may not be
+  itemised — *"percentage of what"* has no answer. So the contribution is **an amount the
+  Lessee pays**, full stop, and the apportionment machinery disappears.
+- **A deductible IS well-defined.** It is a bounded, known figure on **this** claim for **this**
+  horse. A proportion of it is computable at the moment it matters, so a split is meaningful.
+
+**FREQUENCY IS PART OF THE TERM.** `$100` once and `$100` monthly are different agreements.
+Do not store an amount without its frequency.
+
+### `share_amount` IS built after all — the deductible is its user
+
+**This answers the open question above.** The composite survives, with one user rather than
+several: the per-incident deductible share.
+
+**The premium contribution is plain `currency` plus a frequency selector** — it never uses
+`share_amount`, because it can never be a percentage.
+
+**No frequency vocabulary exists to reuse** — verified. `offerings.weekly_frequency` is a count
+of sessions, not a recurrence, and `TXN.MONTHLY_START` is a date. **The selector is new**, with
+exactly the owner's four values: one time / weekly / monthly / annually.
 
 ### FOURTEEN FIELDS COLLAPSE TO FOUR
 
@@ -124,12 +159,10 @@ currency, there is no unit choice to make and **the composite has no user.**
 per-incident dollar too — which is exactly what "the amount per incident where the Lessee is at
 fault" describes.
 
-**ASK THE OWNER before building `share_amount`:** does any split anywhere still need a
-percentage, or does the whole document move to declared dollar amounts? **If nothing needs it,
-do not build the control** — the proposed `ContractCascade` diff is withdrawn rather than
-deferred, and `percent_split` in `compose_field_prose` stays dead code as already decided.
-
-**Do not delete `share_amount` work already done in the DB half** until that is answered.
+**ANSWERED 2026-08-10: the deductible keeps the split, so `share_amount` IS built.** Its user
+is the per-incident deductible share and nothing else. The premium contribution never uses it.
+The proposed `ContractCascade` diff stands; `percent_split` in `compose_field_prose` stays dead
+code as already decided.
 
 ## 3. MORTALITY AND MEDICAL COLLAPSE INTO ONE SECTION — with a strict dependency.
 
