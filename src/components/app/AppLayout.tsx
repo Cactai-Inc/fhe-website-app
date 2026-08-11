@@ -794,7 +794,7 @@ function ClientRail({ bellCount, dmCount, presence, lessonsOn, onOpenTour, onSig
 }) {
   return (
     <aside className="hidden lg:block shrink-0 relative z-30 w-60">
-      <nav className={`sticky top-[var(--cs-hdr-h)] h-[calc(100dvh-var(--cs-hdr-h))] border-r border-green-950/20 ${NAV_PANEL} p-2 overflow-y-auto overflow-x-hidden flex flex-col`}>
+      <nav className={`sticky top-[var(--cs-hdr-h)] h-[calc(100dvh-var(--cs-hdr-h))] border-r border-green-950/20 ${NAV_PANEL} p-2 overflow-y-auto overflow-x-hidden flex flex-col oh-rail-shadow`}>
         <div className="flex flex-col gap-0.5">
           {/* Community Feed (position 1) with its views nested underneath. */}
           <CommunityNav indentClass="pl-9" />
@@ -1246,7 +1246,7 @@ export default function AppLayout() {
                 component with the two surfaces that ARE green, so leaving it
                 light would mean carrying two palettes through RailLink,
                 CommunityNav, AccountNavLink and NavFooter. One menu, one look. */}
-            <nav className={`p-3 sticky top-[var(--cs-hdr-h)] h-[calc(100dvh-var(--cs-hdr-h))] overflow-y-auto overflow-x-hidden border-r border-green-950/20 ${NAV_PANEL} flex flex-col transition-[width] duration-100 ease-out ${staffRailWidthClass}`}>
+            <nav className={`p-3 sticky top-[var(--cs-hdr-h)] h-[calc(100dvh-var(--cs-hdr-h))] overflow-y-auto overflow-x-hidden border-r border-green-950/20 ${NAV_PANEL} flex flex-col transition-[width] duration-100 ease-out oh-rail-shadow ${staffRailWidthClass}`}>
               {/* Owner, 2026-08-07: the create control lives HERE now, in the
                   slot the collapse toggle used to occupy, and the header's
                   hanging tab is gone. The collapse toggle moved to the foot of
