@@ -87,7 +87,7 @@ export function ReviewChangesModal({
   const accepted = Object.values(outcomes).filter((o) => o === 'accepted').length;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-start justify-center overflow-y-auto p-4"
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-start justify-center overflow-y-auto overscroll-contain p-4"
       role="dialog" aria-modal="true" aria-label="Review the changes"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="bg-white rounded-xl shadow-xl max-w-xl w-full my-8">

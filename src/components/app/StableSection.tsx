@@ -132,7 +132,7 @@ export function StableSection() {
               <h2 className="font-serif text-green-800 text-lg">Add a horse</h2>
               <button type="button" onClick={() => setModal(null)} aria-label="Close"><X size={20} /></button>
             </div>
-            <div className="p-4 sm:p-5 overflow-y-auto pb-8">
+            <div className="p-4 sm:p-5 overflow-y-auto overscroll-contain pb-8">
               {/* the standardized record intake (spec H.2/H.3 path 2) — creates the
                   real horse record with microchip dedup, then refreshes My Stable */}
               <HorseIntakeForm submitLabel="Add to my stable" onDone={() => { setModal(null); loadHorses(); }} />

@@ -70,6 +70,26 @@
      rail's own border (`border-green-800/15`), so all three boundaries read as
      one plane system. */
   border-bottom: 1px solid rgba(20, 51, 33, .15);
+  /* UIO-009, owner 2026-08-10: "add the drop shadow to the header again... the
+     subheader is the issue, and why i opted for the full drop shadow from
+     header instead of partial. if the nav gets it, the subheader does too...
+     genuinely the subheader and nav can be on the same level but the header
+     is always on top of everything."
+
+     This does NOT revert UIO-001 — the rails and subheader keep their own
+     shadow (below in this file), which is doing a different job. The
+     owner's model: header always on top, full width, casts onto whatever is
+     beneath it, nav included; nav and subheader are peers one level below,
+     each with a line and each casting their own shadow onto content; content
+     is the bottom. A content-only shadow would change coverage depending on
+     whether a page has a subheader — full width needs no special-casing.
+
+     No z-index change: z-40 (this rule) above the rails'/subheader's z-30 is
+     already correct for that model. Reusing the exact value this header
+     carried before UIO-001 — the same one the subheader already carries, Y-
+     axis, unchanged — rather than a new one. */
+  box-shadow: 0 2px 4px rgba(16, 28, 22, .08),
+              0 6px 18px rgba(16, 28, 22, .10);
 }
 
 /* ============ THE FLOATING SHADOW — relocated off the header (UIO-001) ============
@@ -249,12 +269,32 @@ button.oh-avatar {
   cursor: pointer;
   transition: background .18s ease;
 }
-/* `:active` ONLY, NOT `:hover`. There is no hover on touch — a sticky
-   post-tap `:hover` would latch the pressed fill on and never release it, the
-   same reason the nav rows gate their own hover behind
-   `[@media(hover:hover)]`. Rather than gate a hover rule here, this mark has
-   none: the desktop form (above) has no fill state at all, and the mobile
-   form moves only on a real, releasing `:active`. */
+/* UIO-006, gap 2: this mark shipped with `:active` only and never got a
+   hover half — a gap in UIO-002, not a thread error. B1 is a settled
+   principle in this codebase ("hover works in a narrow window with a
+   cursor — capability, not width"), and the nav rows already gate their own
+   hover the same way. Touch devices are unaffected: no `hover:hover` media,
+   no hover, straight to `:active`.
+
+   Sits at the arithmetic midpoint of the established ramp (14% rest, 0%
+   active) rather than a picked value — same mechanism, no new judgement
+   call: 7% white over green-800 renders `#244131`, cream-25 glyph 10.92:1,
+   between the rest and pressed contrasts on both sides. Declared BEFORE
+   `:active`/`[aria-expanded]` below so pressing while hovering still resolves
+   to the fully-pressed state, not the hover one. */
+@media (hover: hover) {
+  button.oh-avatar:hover {
+    background: linear-gradient(rgba(255, 255, 255, .07), rgba(255, 255, 255, .07)),
+                theme('colors.green.800');
+  }
+}
+/* `:active` — a real, releasing press. The OPEN state below is paired with
+   it unchanged from UIO-002: UIO-006 found that pairing makes the click
+   itself invisible (by the time the menu is open the mark already looks
+   pressed, so pressing again to close shows no change) but the fix is a
+   design choice the order asks to see rendered rather than have picked here
+   — see docs/reference/uio-006-open-state-options.html. Not resolved in this
+   file; do not read the absence of a change here as an oversight. */
 button.oh-avatar:active,
 button.oh-avatar[aria-expanded='true'] {
   background: linear-gradient(rgba(255, 255, 255, 0), rgba(255, 255, 255, 0)),
@@ -282,7 +322,17 @@ button.oh-avatar:focus-visible {
     padding-left: calc(14px + env(safe-area-inset-left));
     padding-right: calc(14px + env(safe-area-inset-right));
   }
-  .oh-mono, .oh-avatar { width: 38px; height: 38px; font-size: 16px; }
+  /* UIO-006: mark size stays shared (the complaint is the letter, not the
+     circle) but font-size splits. `.oh-mono` is UNCHANGED — the owner
+     corrected an earlier version of this order that touched it. `.oh-avatar`
+     keeps roughly its desktop ~48%-of-mark ratio: the avatar carries
+     REVERSED type (cream on a solid green fill) while the logo mark is dark
+     type on transparent, and reversed type reads optically smaller at the
+     same point size — the avatar needs the extra weight to look like its
+     equal, precisely where the fill exists. */
+  .oh-mono, .oh-avatar { width: 38px; height: 38px; }
+  .oh-mono { font-size: 16px; }
+  .oh-avatar { font-size: 19px; }
 }
 
 /* iPhone 14/15/16 sit at 390–393 CSS px — the volume phones. At 19px the first
@@ -294,7 +344,10 @@ button.oh-avatar:focus-visible {
     padding-left: calc(10px + env(safe-area-inset-left));
     padding-right: calc(10px + env(safe-area-inset-right));
   }
-  .oh-mono, .oh-avatar { width: 36px; height: 36px; font-size: 15px; }
+  /* UIO-006 — same split as the 600px block above. */
+  .oh-mono, .oh-avatar { width: 36px; height: 36px; }
+  .oh-mono { font-size: 15px; }
+  .oh-avatar { font-size: 18px; }
   .oh-w1 { font-size: 21px; }
   .oh-w2 { font-size: 12px; letter-spacing: .26em; margin-right: -.26em; }
 }

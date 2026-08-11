@@ -411,7 +411,7 @@ export function CreateModal({ onClose, initialStep = 'destination' }: { onClose:
           <button type="button" onClick={onClose} aria-label="Close" className="justify-self-end text-secondary hover:text-green-800"><X size={20} /></button>
         </div>
 
-        <div className="p-4 sm:p-5 overflow-y-auto pb-8">
+        <div className="p-4 sm:p-5 overflow-y-auto overscroll-contain pb-8">
           {step === 'destination' && (
             <div className="flex flex-col gap-2.5">
               <p className="text-[10px] tracking-widest uppercase text-muted font-semibold">Post to community</p>

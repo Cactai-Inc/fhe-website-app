@@ -120,7 +120,7 @@ export default function EvaluationsPage() {
               <h2 className="font-serif text-green-900">{open.horse_label ? `${open.title} — ${open.horse_label}` : open.title}</h2>
               <button type="button" onClick={() => setOpen(null)} className="text-green-800/50 hover:text-green-800 text-sm">Close</button>
             </div>
-            <div className="overflow-y-auto p-5 whitespace-pre-wrap text-sm text-green-900 leading-relaxed">
+            <div className="overflow-y-auto overscroll-contain p-5 whitespace-pre-wrap text-sm text-green-900 leading-relaxed">
               {open.body || 'No content.'}
             </div>
             <div className="flex gap-2 px-5 py-3 border-t border-green-800/10">

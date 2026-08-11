@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UIO-006 — the "open" state, three options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    background:#faf8f4;color:#0d2118;padding:32px 20px 80px;
+    max-width:760px;margin:0 auto;
+  }
+  h1{font-family:'Libre Caslon Text',Georgia,serif;font-size:22px;margin-bottom:6px}
+  .sub{color:#4a5750;font-size:14px;margin-bottom:32px;max-width:60ch;line-height:1.5}
+  .problem{
+    background:#fff;border:1px solid rgba(20,51,33,.12);border-radius:10px;
+    padding:16px 18px;margin-bottom:36px;font-size:14px;line-height:1.6;
+  }
+  .problem b{color:#0d2118}
+  section{margin-bottom:44px}
+  section h2{font-family:'Libre Caslon Text',Georgia,serif;font-size:17px;margin-bottom:4px}
+  .why{color:#4a5750;font-size:13.5px;line-height:1.55;margin-bottom:18px;max-width:62ch}
+  .row{display:flex;gap:28px;align-items:flex-end;flex-wrap:wrap}
+  .cell{text-align:center}
+  .cell .label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#6b7570;margin-bottom:10px}
+  .cell .contrast{font-size:11px;color:#6b7570;margin-top:8px;font-variant-numeric:tabular-nums}
+
+  /* The header strip each mark sits on, so the fill reads against its real backdrop. */
+  .hdr-strip{
+    background:#f5f0e8;border-bottom:1px solid rgba(20,51,33,.15);
+    border-radius:8px;padding:20px;display:inline-flex;
+  }
+
+  .mark{
+    width:42px;height:42px;border-radius:999px;
+    display:grid;place-items:center;
+    font-family:'Libre Caslon Text',Georgia,serif;font-size:20px;line-height:1;
+    border:1px solid rgba(20,51,33,.40);
+    color:#fdfcfa;
+  }
+  .rest        { background:#355040; }               /* 14% white over green-800 */
+  .hover       { background:#244131; }                /* 7%  white over green-800 */
+  .pressed     { background:#143321; }                /* 0%  — pure brand */
+
+  /* OPTION A — reuse the hover value for "open". Hover never fires on mobile
+     (this mark's only fill states are mobile ones), so there is no real
+     collision; pressing to close still flashes to 0% then releases to this. */
+  .open-a      { background:#244131; }
+
+  /* OPTION B — the fill does not change from REST at all. "Open" is carried
+     entirely by a second ring outside the existing one — a different visual
+     CHANNEL, not a third point on the same lightness ramp. Pressing still
+     flashes to 0% (pure brand, no outer ring) so the press itself is still
+     visible against either idle state. */
+  .open-b      { background:#355040; box-shadow:0 0 0 3px rgba(186,153,53,.55); }
+
+  /* OPTION C — a gold-tinted veil instead of a white one: 15% gold-600 over
+     green-800, a hue shift rather than a lightness step. Distinct from the
+     white-veil ramp by KIND, mirroring the outline-vs-fill question in
+     UIO-011 — "open" reads as a different sort of state, not a stop on the
+     same dial as hover/press. */
+  .open-c      { background:#2d4224; }
+
+  .pair{display:flex;gap:14px}
+  .arrow{align-self:center;color:#8a938c;font-size:18px;padding:0 2px}
+</style>
+</head>
+<body>
+
+<h1>UIO-006, item 1 — the "open" state</h1>
+<p class="sub">Not an implementation. Three rendered options for what the avatar looks like
+while the mobile nav drawer is open, so it stops looking identical to a press. Nothing here
+is shipped — <code>app-header.css</code> still pairs <code>:active</code> and
+<code>[aria-expanded='true']</code> at 0% veil, unchanged, until this is picked.</p>
+
+<div class="problem">
+  <b>The problem, as shipped today:</b> pressing the avatar to open the drawer and pressing it
+  again to close both resolve to the exact same fill (0% veil, pure <code>green-800</code>) —
+  by the time the menu is open the mark already looks pressed, so closing it produces no visible
+  change at all. <b>Whatever "open" becomes, pressing FROM open still has to look like something
+  happened</b> — each option below still flashes to the pure <code>:active</code> colour on the
+  physical press before settling into its own open state.
+</div>
+
+<section>
+  <h2>The existing ramp, for reference</h2>
+  <div class="why">Rest → hover (desktop only, shown for context) → pressed. This is already
+    shipped; nothing on this row changes.</div>
+  <div class="row">
+    <div class="cell">
+      <div class="label">rest · 14%</div>
+      <div class="hdr-strip"><div class="mark rest">M</div></div>
+      <div class="contrast">8.68 : 1</div>
+    </div>
+    <div class="cell">
+      <div class="label">hover · 7%</div>
+      <div class="hdr-strip"><div class="mark hover">M</div></div>
+      <div class="contrast">10.92 : 1</div>
+    </div>
+    <div class="cell">
+      <div class="label">pressed · 0%</div>
+      <div class="hdr-strip"><div class="mark pressed">M</div></div>
+      <div class="contrast">13.43 : 1</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Option A — open reuses the hover value</h2>
+  <div class="why">Open settles at the same 7% veil hover already uses. Since hover never fires
+    on a touch device, there's no real collision in practice: rest (14%) → press flashes to
+    0% → open settles at 7%, a value already in the vocabulary rather than a new one.
+    Simplest option — no new mechanism, just a third stop on the existing dial.</div>
+  <div class="row">
+    <div class="cell">
+      <div class="label">rest, closed</div>
+      <div class="hdr-strip"><div class="mark rest">M</div></div>
+    </div>
+    <div class="arrow">→ press →</div>
+    <div class="cell">
+      <div class="label">:active (flash)</div>
+      <div class="hdr-strip"><div class="mark pressed">M</div></div>
+    </div>
+    <div class="arrow">→ settles →</div>
+    <div class="cell">
+      <div class="label">open</div>
+      <div class="hdr-strip"><div class="mark open-a">M</div></div>
+      <div class="contrast">10.92 : 1</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Option B — open is a ring, not a fill change</h2>
+  <div class="why">Fill stays at REST's 14% — it never moves to signal "open." A second ring
+    (gold, outside the existing green ring) carries the open signal instead, on a different
+    visual channel entirely. The press still flashes to 0% (no ring), so the click reads even
+    though the settled "open" fill is identical to "closed."</div>
+  <div class="row">
+    <div class="cell">
+      <div class="label">rest, closed</div>
+      <div class="hdr-strip"><div class="mark rest">M</div></div>
+    </div>
+    <div class="arrow">→ press →</div>
+    <div class="cell">
+      <div class="label">:active (flash)</div>
+      <div class="hdr-strip"><div class="mark pressed">M</div></div>
+    </div>
+    <div class="arrow">→ settles →</div>
+    <div class="cell">
+      <div class="label">open</div>
+      <div class="hdr-strip"><div class="mark open-b">M</div></div>
+      <div class="contrast">8.68 : 1 (fill unchanged)</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Option C — open is gold-tinted, not just darker</h2>
+  <div class="why">A hue shift instead of a lightness step: 15% gold-600 blended into
+    green-800 rather than white. Reads as a different KIND of state rather than a third point
+    on the white-veil ramp — the same distinction UIO-011 raises for hover-as-outline-vs-fill.
+    Costs the "always exact brand green" property UIO-002 was built to protect, only in this
+    one state.</div>
+  <div class="row">
+    <div class="cell">
+      <div class="label">rest, closed</div>
+      <div class="hdr-strip"><div class="mark rest">M</div></div>
+    </div>
+    <div class="arrow">→ press →</div>
+    <div class="cell">
+      <div class="label">:active (flash)</div>
+      <div class="hdr-strip"><div class="mark pressed">M</div></div>
+    </div>
+    <div class="arrow">→ settles →</div>
+    <div class="cell">
+      <div class="label">open</div>
+      <div class="hdr-strip"><div class="mark open-c">M</div></div>
+      <div class="contrast">10.69 : 1</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Side by side</h2>
+  <div class="row">
+    <div class="cell">
+      <div class="label">A — reuse hover</div>
+      <div class="hdr-strip"><div class="mark open-a">M</div></div>
+    </div>
+    <div class="cell">
+      <div class="label">B — ring only</div>
+      <div class="hdr-strip"><div class="mark open-b">M</div></div>
+    </div>
+    <div class="cell">
+      <div class="label">C — gold-tinted</div>
+      <div class="hdr-strip"><div class="mark open-c">M</div></div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>

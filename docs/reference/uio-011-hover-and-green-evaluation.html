@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UIO-011 — outline hover, and one green</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  body{
+    margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    background:#efece4;color:#0d2118;padding:32px 20px 100px;
+  }
+  .wrap{max-width:1180px;margin:0 auto}
+  h1{font-family:'Libre Caslon Text',Georgia,serif;font-size:24px;margin:0 0 6px}
+  .sub{color:#4a5750;font-size:14px;line-height:1.6;max-width:70ch;margin-bottom:8px}
+  .banner{
+    background:#fff8e6;border:1px solid #e0c88a;border-radius:10px;padding:14px 18px;
+    font-size:13.5px;line-height:1.6;color:#5c4a18;margin-bottom:40px;max-width:80ch;
+  }
+  section{margin-bottom:64px}
+  section > h2{font-family:'Libre Caslon Text',Georgia,serif;font-size:19px;margin-bottom:6px}
+  .why{color:#4a5750;font-size:13.5px;line-height:1.6;max-width:72ch;margin-bottom:24px}
+  .quote{font-style:italic;color:#33413a}
+
+  /* ============ QUESTION A — nav hover mockups ============ */
+  .nav-pair{display:flex;gap:32px;flex-wrap:wrap}
+  .nav-mock{
+    width:248px;background:#fdfcfa;border-radius:10px;padding:10px;
+    box-shadow:0 8px 24px -12px rgba(13,33,24,.25);
+  }
+  .nav-mock .caption{
+    font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#6b7570;
+    padding:4px 8px 10px;
+  }
+  .row{
+    display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;
+    font-size:13.5px;color:#143321;margin-bottom:2px;
+  }
+  .row .dot{width:16px;height:16px;border-radius:4px;background:#143321;opacity:.55;flex:none}
+  .row.selected{background:#31523f;color:#fdfcfa;font-weight:500}
+  .row.selected .dot{background:#fdfcfa;opacity:1}
+  .row.hover-fill{background:#617a6b;color:#fdfcfa}
+  .row.hover-fill .dot{background:#fdfcfa;opacity:1}
+  .row.hover-outline{background:transparent;border:1.5px solid rgba(20,51,33,.45);color:#143321}
+  .row.plain{border:1.5px solid transparent}
+  .cursor-tag{
+    display:inline-block;margin-top:8px;font-size:11px;color:#8a6a10;background:#fff3d6;
+    border-radius:5px;padding:2px 7px;
+  }
+
+  /* ============ QUESTION B — three columns ============ */
+  .cols{display:flex;gap:0;border-radius:14px;overflow:hidden;box-shadow:0 10px 30px -14px rgba(13,33,24,.3)}
+  .col{flex:1;min-width:0;padding:0;display:flex;flex-direction:column}
+  .col + .col{border-left:1px solid #e4e0d5}
+  .col-label{
+    font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#6b7570;
+    background:#efece4;padding:10px 16px;border-bottom:1px solid #e4e0d5;
+  }
+  .mock-header{
+    background:#f5f0e8;display:flex;align-items:center;justify-content:space-between;
+    padding:14px 18px;
+  }
+  .mock-header .mark{
+    width:32px;height:32px;border:1px solid rgba(20,51,33,.40);display:grid;place-items:center;
+    font-family:'Libre Caslon Text',Georgia,serif;font-size:14px;letter-spacing:.04em;
+  }
+  .mock-header .company{
+    font-family:'Libre Caslon Text',Georgia,serif;font-size:13px;letter-spacing:.12em;
+    text-transform:uppercase;text-align:center;flex:1;
+  }
+  .mock-header .avatar{
+    width:32px;height:32px;border:1px solid rgba(20,51,33,.40);border-radius:999px;
+    display:grid;place-items:center;font-family:'Libre Caslon Text',Georgia,serif;font-size:15px;
+    position:relative;
+  }
+  .badge{
+    position:absolute;top:-5px;right:-5px;min-width:16px;height:16px;border-radius:999px;
+    background:#caa83e;color:#0a1a0f;font-size:10px;line-height:16px;text-align:center;
+    font-weight:600;padding:0 3px;
+  }
+  .mock-body{background:#faf8f4;padding:20px 20px 26px;flex:1}
+  .mock-body .eyebrow{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#8a938c;margin-bottom:4px}
+  .mock-body h3{font-family:'Libre Caslon Text',Georgia,serif;font-size:26px;margin:0 0 14px;font-weight:600}
+  .mock-body p{font-size:12.5px;line-height:1.6;color:#57615a;margin:0 0 14px}
+  .mock-body .card{
+    background:#fff;border:1px solid rgba(20,51,33,.10);border-radius:10px;padding:12px 14px;
+    margin-bottom:10px;
+  }
+  .mock-body .card .kind{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#8a6a10;margin-bottom:4px}
+  .mock-body .card .title{font-family:'Libre Caslon Text',Georgia,serif;font-size:15px;font-weight:600}
+
+  table{border-collapse:collapse;font-size:12.5px;margin-top:8px}
+  th,td{padding:5px 14px;text-align:left;border-bottom:1px solid #e4e0d5}
+  th{color:#6b7570;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+  .swatch{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>UIO-011 — outline hover, and one green</h1>
+<p class="sub">Evaluation only. Nothing here is shipped and nothing in <code>src/</code> changed
+for this. Two questions the owner asked to see rendered rather than decide on paper.</p>
+<div class="banner">
+  <strong>Not a recommendation.</strong> This page shows the options as asked — it does not
+  argue for one over another beyond what UIO-011 itself already states (the orchestrator's own
+  note, reproduced faithfully: try the harmonized green on large content text first, not
+  everywhere, because the logo is a brand mark and the nav-selected green is a rendered
+  composite tuned for a surface, not ink).
+</div>
+
+<!-- ============ QUESTION A ============ -->
+<section>
+  <h2>Question A — outline hover instead of fill</h2>
+  <p class="why quote">"im curious if we should change the hover state to an outline instead of
+  a fill, it looks weird with two buttons filled even with the difference in intensity."</p>
+  <p class="why">Today, hover (<code>bg-navfill/64</code>) and selected (<code>bg-navfill/80</code>)
+  are the same KIND of thing at two strengths — two filled rows next to each other compete, and
+  64 vs 80 is a narrow gap to carry the whole distinction. An outline hover separates "you're
+  pointing at this" from "you're on this" by kind rather than by intensity. Cursor is shown on
+  the row below the selected one in both mocks.</p>
+
+  <div class="nav-pair">
+    <div class="nav-mock">
+      <div class="caption">today — fill hover</div>
+      <div class="row selected"><span class="dot"></span>Community Feed</div>
+      <div class="row hover-fill"><span class="dot"></span>Dashboard</div>
+      <div class="row plain"><span class="dot"></span>Calendar</div>
+      <div class="row plain"><span class="dot"></span>Catalog</div>
+      <div class="row plain"><span class="dot"></span>Messages</div>
+      <div class="cursor-tag">cursor on Dashboard</div>
+    </div>
+    <div class="nav-mock">
+      <div class="caption">proposed — outline hover</div>
+      <div class="row selected"><span class="dot"></span>Community Feed</div>
+      <div class="row hover-outline"><span class="dot"></span>Dashboard</div>
+      <div class="row plain"><span class="dot"></span>Calendar</div>
+      <div class="row plain"><span class="dot"></span>Catalog</div>
+      <div class="row plain"><span class="dot"></span>Messages</div>
+      <div class="cursor-tag">cursor on Dashboard</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ QUESTION B ============ -->
+<section>
+  <h2>Question B — one green everywhere, or only large content text</h2>
+  <p class="why quote">"the intensity of the selected state for the desktop nav buttons differs
+  from the avatar button clicked state, and the overall intensity of the page names and company
+  name and logo letters and avatar letter. It might look nice to have them all match... should
+  we try it for everything or maybe just try it for large green text in the content area?"</p>
+  <p class="why">Three columns, same mock page each time. The badge (UIO-010's still-open
+  aesthetic complaint) rides along in every column, since this is the pass where the gold, its
+  size, shape and position are actually in scope.</p>
+
+  <div class="cols">
+    <div class="col">
+      <div class="col-label">1 — today, brand green everywhere</div>
+      <div class="mock-header">
+        <div class="mark" style="color:#0d2118">FH</div>
+        <div class="company" style="color:#0d2118">French Heritage Equestrian</div>
+        <div class="avatar" style="color:#0d2118">M<span class="badge">3</span></div>
+      </div>
+      <div class="mock-body">
+        <p class="eyebrow">Dashboard</p>
+        <h3 style="color:#143321">Good Morning, Mary</h3>
+        <div class="card">
+          <p class="kind">horse documents</p>
+          <p class="title" style="color:#143321">Complete your horse documents</p>
+        </div>
+        <p>Large green display text, page names and card titles, all at brand
+        <code>green-800 #143321</code>.</p>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="col-label">2 — large content text only in #31523f</div>
+      <div class="mock-header">
+        <div class="mark" style="color:#0d2118">FH</div>
+        <div class="company" style="color:#0d2118">French Heritage Equestrian</div>
+        <div class="avatar" style="color:#0d2118">M<span class="badge">3</span></div>
+      </div>
+      <div class="mock-body">
+        <p class="eyebrow">Dashboard</p>
+        <h3 style="color:#31523f">Good Morning, Mary</h3>
+        <div class="card">
+          <p class="kind">horse documents</p>
+          <p class="title" style="color:#31523f">Complete your horse documents</p>
+        </div>
+        <p>Only the large display text (page heading, card titles) moves to
+        <code>#31523f</code> — the nav-selected composite. Logo mark, company name and avatar
+        letter stay brand green, unchanged from column 1.</p>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="col-label">3 — everything in #31523f</div>
+      <div class="mock-header">
+        <div class="mark" style="color:#31523f">FH</div>
+        <div class="company" style="color:#31523f">French Heritage Equestrian</div>
+        <div class="avatar" style="color:#31523f">M<span class="badge">3</span></div>
+      </div>
+      <div class="mock-body">
+        <p class="eyebrow">Dashboard</p>
+        <h3 style="color:#31523f">Good Morning, Mary</h3>
+        <div class="card">
+          <p class="kind">horse documents</p>
+          <p class="title" style="color:#31523f">Complete your horse documents</p>
+        </div>
+        <p>Everything moves — page names, company name, the logo mark's letters and the
+        avatar's letter all take <code>#31523f</code>, including the header/logo, which is a
+        brand-identity decision as much as a harmonisation.</p>
+      </div>
+    </div>
+  </div>
+
+  <table>
+    <tr><th>ink</th><th>on page #faf8f4</th><th>on nav #fdfcfa</th><th>on header #f5f0e8</th></tr>
+    <tr>
+      <td><span class="swatch" style="background:#143321"></span>green-800 — today</td>
+      <td>12.98</td><td>13.43</td><td>12.14</td>
+    </tr>
+    <tr>
+      <td><span class="swatch" style="background:#31523f"></span>nav-selected #31523f — proposed</td>
+      <td>8.22</td><td>8.50</td><td>7.68</td>
+    </tr>
+  </table>
+</section>
+
+</div>
+</body>
+</html>

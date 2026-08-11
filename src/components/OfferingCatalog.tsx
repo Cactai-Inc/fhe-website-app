@@ -155,7 +155,7 @@ function CategoryModal({
         {category.description && <p className="text-sm text-secondary px-4 sm:px-5 pt-4">{category.description}</p>}
 
         {/* Item list */}
-        <div className="overflow-y-auto px-4 sm:px-5 py-4 flex flex-col gap-2.5">
+        <div className="overflow-y-auto overscroll-contain px-4 sm:px-5 py-4 flex flex-col gap-2.5">
           {items.map((o) => {
             const saved = isSelected(o.id);
             const priceless = o.price_amount == null;

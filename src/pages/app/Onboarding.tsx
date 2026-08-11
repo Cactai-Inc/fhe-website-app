@@ -1037,7 +1037,7 @@ export default function Onboarding() {
               {bodyLoading ? (
                 <p className="body-text text-muted text-sm mb-4">Loading the document…</p>
               ) : (
-                <div className="rounded-lg border border-green-800/15 bg-white/60 p-6 max-h-[28rem] overflow-y-auto mb-5" data-testid="onboarding-merged-body">
+                <div className="rounded-lg border border-green-800/15 bg-white/60 p-6 max-h-[28rem] overflow-y-auto overscroll-contain mb-5" data-testid="onboarding-merged-body">
                   {body ? (
                     <pre className="whitespace-pre-wrap break-words font-serif text-sm leading-relaxed text-green-900">
                       <BodyWithSignatures text={body} />

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 /**
  * CONTRACT SUBHEADER — the contract workspace's own toolbar.
@@ -171,14 +171,28 @@ export function ContractSubheader({
       <div className="bg-cream-25 border-b border-green-800/15 px-4 sm:px-6 py-2.5 oh-subheader-shadow">
         {/* MOBILE toggle. The bar stays sticky under the app header either way —
             collapsing hides the CONTROLS, not the bar, so the affordance to bring
-            them back is always in the same place. */}
+            them back is always in the same place.
+            UIO-008: was a single ChevronDown rotated -90deg when closed (reading
+            as a right arrow — "go somewhere", wrong for a block that expands in
+            place) and unrotated when open (reading as down, the wrong way round).
+            Swapped for the same ChevronDown/ChevronUp PAIR the nav groups use
+            (AppLayout.tsx's CommunityNav toggle) instead of a rotated single
+            icon — down closed, up open. Also `justify-between` -> `gap-1.5`:
+            the label sat left and the arrow was pinned hard against the right
+            edge of a full-width row, a big enough gap that the owner didn't
+            register they were part of one control. `gap-1.5` matches this same
+            bar's own icon-to-label spacing (SUBHEADER_BTN); the button keeps
+            `w-full` so the tap target doesn't shrink, only where the arrow sits
+            inside it changes. */}
         <button type="button" onClick={() => setBarOpen((v) => !v)}
           aria-expanded={barOpen}
-          className="md:hidden w-full flex items-center justify-between py-1 text-left">
+          className="md:hidden w-full flex items-center gap-1.5 py-1 text-left">
           <span className="text-[13px] font-medium text-green-900">
             {active ? active.label : 'Contract actions'}
           </span>
-          <ChevronDown size={16} className={`text-muted transition-transform ${barOpen ? '' : '-rotate-90'}`} />
+          {barOpen
+            ? <ChevronUp size={16} className="text-muted" />
+            : <ChevronDown size={16} className="text-muted" />}
         </button>
 
         {/* ROW ONE: the controls you reach for constantly — Send, Save, and the

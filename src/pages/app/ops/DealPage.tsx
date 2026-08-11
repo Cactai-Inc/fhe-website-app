@@ -58,7 +58,7 @@ function DealRecordModal({ dealId, name, onClose }: {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-start justify-center overflow-y-auto p-4"
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-start justify-center overflow-y-auto overscroll-contain p-4"
       role="dialog" aria-modal="true" aria-label="Deal record"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full my-8">

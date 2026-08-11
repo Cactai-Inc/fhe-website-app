@@ -413,7 +413,7 @@ export default function DocsParticipantFlow() {
               <h2 className="font-serif text-xl text-green-800 mb-1">{current.label}</h2>
               <p className="form-hint mb-5">Document {index + 1} of {SEQUENCE.length}</p>
 
-              <div className="border border-green-800/10 rounded max-h-96 overflow-y-auto p-5 mb-6 bg-cream/40">
+              <div className="border border-green-800/10 rounded max-h-96 overflow-y-auto overscroll-contain p-5 mb-6 bg-cream/40">
                 {previewError ? (
                   <p className="form-error" role="alert">{previewError}</p>
                 ) : previewBody === null ? (

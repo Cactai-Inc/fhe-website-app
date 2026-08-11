@@ -8,7 +8,7 @@ import {
   GraduationCap, Home as HomeIcon, Boxes, Contact, LayoutDashboard,
   ChevronDown, ChevronUp, Plus, LifeBuoy, ShoppingBag, MessageSquare, BookOpen, ListChecks,
   PanelLeftClose, PanelLeftOpen, Activity, Compass, Handshake, Grid3x3, Bookmark,
-  Inbox, Receipt, Eye, Library,
+  Receipt, Eye, Library,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useViewSurfaces } from '../../lib/surfaces';
@@ -60,19 +60,38 @@ import { captureWallReturnDestination } from '../../lib/wallReturn';
  * row palette below has to come back with it. */
 const NAV_PANEL = 'bg-cream-25';
 /** default row: cream at reading weight; hover is desktop-only (`hover:hover`)
- *  so iOS's sticky post-tap `:hover` can never latch it on. */
-const NAV_ROW_IDLE = 'text-green-800 [@media(hover:hover)]:hover:bg-navfill/64 [@media(hover:hover)]:hover:text-cream-25';
+ *  so iOS's sticky post-tap `:hover` can never latch it on.
+ *  UIO-003: `transition-colors duration-320 ease-glide` baked in here rather
+ *  than left to each call site — several (NavFooter's App tour/Sign out) had
+ *  no transition at all, and the rest had Tailwind's bare 150ms default,
+ *  which read as instant rather than easing. Centralising it means every row
+ *  that reads this constant is fixed at once and can't drift back out of
+ *  step the way a per-site `transition-colors` did. */
+const NAV_ROW_IDLE = 'text-green-800 transition-colors duration-320 ease-glide [@media(hover:hover)]:hover:bg-navfill/64 [@media(hover:hover)]:hover:text-cream-25';
 /** selected row: the inversion of the panel. Cream fill, green ink — the same
  *  two colours the other way round, which is what makes it read as selected on a
  *  panel that is itself earth-800 (C5b's old `bg-green-800` active fill would now
  *  be invisible: it IS the panel). */
 const NAV_ROW_ACTIVE = 'bg-navfill/80 text-cream-25 font-medium';
-const NAV_ICON_IDLE = 'text-green-800/70 [@media(hover:hover)]:group-hover:text-cream-25';
+/** UIO-003, cause 1: this constant had no transition at all, so the icon's
+ *  own colour snapped to `cream-25` on `group-hover` roughly 30ms into the
+ *  row's 150ms fill transition — visible as a one-frame vanish, proven on
+ *  the owner's own screen recording (`docs/reference/navhover-frames/`).
+ *  CSS transitions are not inherited from the row; the icon needs its own. */
+const NAV_ICON_IDLE = 'text-green-800/70 transition-colors duration-320 ease-glide [@media(hover:hover)]:group-hover:text-cream-25';
 const NAV_ICON_ACTIVE = 'text-cream-25';
 /** group headings ("Management", "People", …) — the "section header" the owner
- *  named explicitly. Quiet, but cream: on a dark panel the old `text-muted`
- *  (green-800/70) was dark-on-dark and effectively invisible. */
-const NAV_HEADING = 'text-green-900/55';
+ *  named explicitly.
+ *  UIO-012: this and its hover were both leftovers from the green-panel era
+ *  (T5's family) — nobody chose them for a near-white panel. Rest was
+ *  `/55`, measured at 3.78:1 against `#fdfcfa`, already below the 4.5 floor
+ *  before anyone hovers; hover was cream text with no fill at all, which the
+ *  row hover gained (`bg-navfill/64`, 4.55:1) when the panel went near-white
+ *  but this heading never did — rendering `#f5f0e8` on `#fdfcfa`, 1.11:1,
+ *  effectively invisible. Raised to `/70` (owner: still visibly quieter than
+ *  the row labels, above the floor) — see the hover value at its own call
+ *  site below, which goes darker, not lighter, on a light panel. */
+const NAV_HEADING = 'text-green-900/70';
 const NAV_DIVIDER = 'border-green-900/12';
 /** badges: solid gold on green-950 ink. The old `bg-gold-600/70 text-white` was
  *  a translucent gold tuned for a light panel; over green-800 it muddies. */
@@ -232,8 +251,14 @@ const PLATFORM_NAV: NavItem[] = [
  * and was not applied is listed in docs/reports/TASK-ONEHEADER-REPORT.md.
  * Lessons and Horse care are the two custom marks and stay blocked on artwork. */
 const MANAGEMENT_GROUP: NavItem[] = [
-  // Inbox, not Mail: this is a work QUEUE, and Mail read as "email a person".
-  { to: '/app/ops/intake', label: 'Inbound', icon: Inbox },
+  /* UIO-012 item 2, nav half only: Inbound removed from view here (route
+   *  still builds, hidden not deleted — commit 86a2c33's standing rule).
+   *  Dashboard moves in from the App pages group, since it was staff's own
+   *  management dashboard filed in the wrong section, not a community page.
+   *  The content merge (Inbound's booking/support queue folded into the
+   *  Dashboard's layout as entries) is its own task — not scoped to this
+   *  file, and not attempted here. */
+  { to: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/app/ops/support', label: 'Support', icon: LifeBuoy },
   // Servicing folded in 2026-07-31: three links did not justify a heading of
   // their own, and they are day-to-day management like the queues above.
@@ -592,7 +617,7 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
           `bg-navfill/80`; because the row splits its background (this div) from
           its ink (the Link and the toggle below), NAV_ROW_ACTIVE is applied in
           those two halves rather than as one class. */}
-      <div className={`group relative flex items-center rounded-lg pr-1 ${isAll ? 'bg-navfill/80' : '[@media(hover:hover)]:hover:bg-navfill/64'}`}>
+      <div className={`group relative flex items-center rounded-lg pr-1 transition-colors duration-320 ease-glide ${isAll ? 'bg-navfill/80' : '[@media(hover:hover)]:hover:bg-navfill/64'}`}>
         {/* Owner, 2026-08-09: the idle label was `text-cream-100/80` — a palette
             left over from when NAV_PANEL was green. The panel is now cream-25
             (#fdfcfa) and cream-100 (#f5f0e8) is literally the HEADER fill, so
@@ -600,7 +625,7 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
             panel: invisible. Idle now uses the same green ink as NAV_ROW_IDLE,
             which every other row in the rail already had. */}
         <Link to="/app" onClick={onNavigate} aria-current={isAll ? 'page' : undefined}
-          className={`flex items-center gap-3 flex-1 min-w-0 px-3 py-2.5 text-[13.5px] font-sans focus-ring rounded-lg ${isAll ? 'text-cream-25 font-medium' : 'text-green-800 [@media(hover:hover)]:group-hover:text-cream-25'}`}>
+          className={`flex items-center gap-3 flex-1 min-w-0 px-3 py-2.5 text-[13.5px] font-sans focus-ring rounded-lg transition-colors duration-320 ease-glide ${isAll ? 'text-cream-25 font-medium' : 'text-green-800 [@media(hover:hover)]:group-hover:text-cream-25'}`}>
           <Users size={18} className={`shrink-0 ${isAll ? NAV_ICON_ACTIVE : NAV_ICON_IDLE}`} />
           <span className="whitespace-nowrap">Community Feed</span>
         </Link>
@@ -619,8 +644,17 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
              ink on the navfill pill, matching NAV_ICON_ACTIVE; idle is green,
              matching NAV_ICON_IDLE. The selected hover tint inverts with the
              pill: a light wash on dark, where it was a dark wash on light. */
-          className={`shrink-0 flex items-center justify-center p-1.5 rounded-md focus-ring ${isAll ? 'text-cream-25 hover:bg-cream-25/10' : 'text-green-800/70 [@media(hover:hover)]:hover:bg-navfill/64 [@media(hover:hover)]:hover:text-cream-25'}`}>
-          {expanded ? <ChevronUp size={18} className="shrink-0" /> : <ChevronDown size={18} className="shrink-0" />}
+          /* UIO-003, cause 2: this button's own `hover:bg-navfill/64` used to
+             stack with the parent div's identical fill above — hovering the
+             toggle painted both layers (1 - 0.36² = 87% effective, against 64%
+             everywhere else), so this row alone read darker than its
+             neighbours on hover. The fill belongs on the parent only; this
+             keeps its own text-colour change and gains the transition neither
+             it nor its chevron had at all before. */
+          className={`shrink-0 flex items-center justify-center p-1.5 rounded-md focus-ring transition-colors duration-320 ease-glide ${isAll ? 'text-cream-25 hover:bg-cream-25/10' : 'text-green-800/70 [@media(hover:hover)]:hover:text-cream-25'}`}>
+          {expanded
+            ? <ChevronUp size={18} className="shrink-0 transition-colors duration-320 ease-glide" />
+            : <ChevronDown size={18} className="shrink-0 transition-colors duration-320 ease-glide" />}
         </button>
       </div>
       {/* nested views (specific filters only) — the selected one highlights */}
@@ -710,23 +744,19 @@ function ClientNavItems({ bellCount, dmCount, presence, lessonsOn, onNavigate }:
   );
 }
 
-/** ONEMENU — the staff rail/drawer equivalent of ClientNavItems. Dashboard and
- *  Calendar were already hardcoded at both render sites (unchanged icons —
- *  staff's Dashboard keeps `HomeIcon`, distinct from the member rail's
- *  `LayoutDashboard`, pre-existing and not in this task's scope). Catalog and
- *  Messages are the net-new items from A2's inventory: instructors already
- *  reached them through the old avatar dropdown's client-quick-links branch
- *  (which incorrectly also caught them, since it only excluded admins), while
+/** ONEMENU — the staff rail/drawer equivalent of ClientNavItems. Calendar was
+ *  already hardcoded at both render sites. Catalog and Messages are the
+ *  net-new items from A2's inventory: instructors already reached them
+ *  through the old avatar dropdown's client-quick-links branch (which
+ *  incorrectly also caught them, since it only excluded admins), while
  *  admins never got them at all. Owner ruling #4 — "admin and instructor
  *  converge... the current divergence is drift, not design" — resolved by
- *  giving every staff account the same set rather than picking a side. */
-function StaffNavItems({ bellCount, dmCount, open = true }: { bellCount: number; dmCount: number; open?: boolean }) {
+ *  giving every staff account the same set rather than picking a side.
+ *  UIO-012 item 2: Dashboard moved to the MANAGEMENT_GROUP table — it was
+ *  staff's own management dashboard, filed in the wrong section. */
+function StaffNavItems({ dmCount, open = true }: { dmCount: number; open?: boolean }) {
   return (
     <>
-      {/* LayoutDashboard, matching the member rail. Staff's `HomeIcon` was
-          called out as pre-existing drift when ONEMENU touched this line; the
-          icon exercise now settles ONE glyph per page, so the two converge. */}
-      <RailLink to="/app/dashboard" label="Dashboard" icon={LayoutDashboard} badge={bellCount} open={open} />
       <RailLink to="/app/calendar" label="Calendar" icon={CalendarDays} open={open} />
       <RailLink to="/app/catalog" label="Catalog" icon={ShoppingBag} open={open} />
       <RailLink to="/app/messages" label="Messages" icon={MessageSquare} badge={dmCount} open={open} />
@@ -922,18 +952,34 @@ export default function AppLayout() {
     if (!isTrainer) return;
     fetchMyGrantKeys().then(setGrantKeys).catch(() => {});
   }, [isTrainer]);
-  // Inbound's badge is injected here (not in the static MANAGEMENT_GROUP table)
-  // since it's a live count, mirroring how the Dashboard badge is passed as a
-  // prop rather than baked into QUICK.
+  // UIO-012 item 2: Dashboard's badge is injected here (not in the static
+  // MANAGEMENT_GROUP table) since it's a live count, the same reason
+  // Inbound's badge was before it moved here — Inbound's own count doesn't
+  // just move house, it SUMS into Dashboard's: myUnreadCount() (unreadCount,
+  // "addressed to you") + inboundOpenCount() (inboundCount, "waiting to be
+  // picked up") are different sources, and with Inbound off the nav its
+  // count has nowhere else to live — dropping it would make open leads
+  // invisible from the nav, a regression against today.
   const navGroups = showRail
     ? manageNavGroups(hasModule, isAdmin, isSuperAdmin, grantKeys).map((g) => ({
         ...g,
-        items: g.items.map((it) => (it.to === '/app/ops/intake' ? { ...it, badge: inboundCount } : it)),
+        items: g.items.map((it) => (it.to === '/app/dashboard' ? { ...it, badge: unreadCount + inboundCount } : it)),
       }))
     : [];
+  /* UIO-012: the first five items (Community Feed + the four StaffNavItems)
+   *  sat above MANAGEMENT with no heading — the only group in the rail that
+   *  could not collapse. Not a real entry in `navGroups` (its content is
+   *  CommunityNav + StaffNavItems, not a flat NavItem[] a RailLink can
+   *  render), so it's a separate pseudo-group carrying only what
+   *  `groupOpen`/`toggleGroup` need — `items` stays empty and unused. */
+  const APP_PAGES_GROUP: NavGroup = { key: 'app-pages', label: 'App pages', items: [], defaultOpen: true };
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const groupOpen = (g: NavGroup) => openGroups[g.key] ?? g.defaultOpen ?? false;
-  const toggleGroup = (key: string) => setOpenGroups((p) => ({ ...p, [key]: !(p[key] ?? navGroups.find((g) => g.key === key)?.defaultOpen ?? false) }));
+  // `[...navGroups, APP_PAGES_GROUP]` — APP_PAGES_GROUP isn't IN navGroups,
+  // so a lookup scoped to navGroups alone would resolve its own defaultOpen
+  // as `undefined` on the first toggle and always flip to open, even when it
+  // was already open and the click meant to close it.
+  const toggleGroup = (key: string) => setOpenGroups((p) => ({ ...p, [key]: !(p[key] ?? [...navGroups, APP_PAGES_GROUP].find((g) => g.key === key)?.defaultOpen ?? false) }));
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -954,30 +1000,20 @@ export default function AppLayout() {
     return () => document.removeEventListener('keydown', onKey);
   }, [mobileNavOpen]);
 
-  /* Owner, 2026-08-08: "What is the point of the overlay if you can still scroll
-     the page when the menu is open?" — correct, and it was worse than cosmetic:
-     the drawer declares role="dialog" aria-modal="true" while the page kept
-     scrolling behind it, so the scrim was decorative and the ARIA was a lie.
-     Locking the body while it is open makes the scrim mean something.
+  /* UIO-007: the body lock that used to sit here (`position: fixed` on
+     <body>, scroll position captured and restored on close) is deleted, not
+     fixed. It was "restore scroll position after a teardown" — a workaround,
+     not a fix, and the same shape as the contract reload bug this project
+     already paid for once. It also restored the wrong scroller: it captured
+     `window.scrollY`, but the app scrolls inside `overflow-y-auto`
+     containers, so on a page with one (e.g. a contract mid-document) it put
+     the WINDOW back where it was while the actual scroller — a container —
+     had never moved, landing the user somewhere else entirely.
 
-     `position: fixed` on <body> rather than `overflow: hidden`, because iOS
-     Safari ignores overflow:hidden on body — and the scroll position is captured
-     and restored, since going fixed otherwise jumps the page to the top on close. */
-  useEffect(() => {
-    if (!mobileNavOpen) return;
-    const y = window.scrollY;
-    const { body } = document;
-    const prev = { position: body.style.position, top: body.style.top, width: body.style.width };
-    body.style.position = 'fixed';
-    body.style.top = `-${y}px`;
-    body.style.width = '100%';
-    return () => {
-      body.style.position = prev.position;
-      body.style.top = prev.top;
-      body.style.width = prev.width;
-      window.scrollTo(0, y);
-    };
-  }, [mobileNavOpen]);
+     The scrim still means something without it: the drawer (above) now
+     carries `overscroll-contain`, which stops its own scroll chaining to the
+     page behind it without freezing anything. If the page never moves,
+     there is nothing to capture and nothing to put back. */
   useEffect(() => { setMobileNavOpen(false); }, [location.pathname]);
 
   async function handleSignOut() {
@@ -1042,7 +1078,7 @@ export default function AppLayout() {
      ONE copy of the MenuLink set rather than a duplicate that can drift.
      Unchanged from its previous form: same links, same order, same handlers. */
   const accountMenu = menuOpen ? (
-    <div className="absolute right-0 mt-1 w-60 max-w-[calc(100vw-2rem)] bg-white border border-green-800/10 shadow-md rounded-md py-1 max-h-[calc(100dvh-5rem)] overflow-y-auto z-50 pb-3">
+    <div className="absolute right-0 mt-1 w-60 max-w-[calc(100vw-2rem)] bg-white border border-green-800/10 shadow-md rounded-md py-1 max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain z-50 pb-3">
       <p className="px-4 py-2 text-xs text-muted border-b border-green-800/10 truncate">{name}</p>
       <MenuLink to="/app/account" label="Account" icon={UserRound} onNavigate={closeMenu} />
       {/* admin references — company-associable items only */}
@@ -1271,6 +1307,13 @@ export default function AppLayout() {
                   {staffRailPinned && <span className="whitespace-nowrap">Add New</span>}
                   {!staffRailPinned && <NavTooltipLabel label="Add New" />}
                 </button>
+                {/* UIO-012 item 2b: "Add New" is a control, not a page, but it
+                    sat flush above the list with nothing marking the
+                    difference — it read as the App pages group's first entry.
+                    Same divider language the collapsed-group separator below
+                    already uses (border-t + role="separator"), not a new
+                    treatment. */}
+                <div className={`my-1 border-t ${NAV_DIVIDER}`} role="separator" />
               </div>
               {/* The static heading here used to read "Management", duplicating
                   the Management GROUP below it — two identical labels in one nav.
@@ -1281,10 +1324,28 @@ export default function AppLayout() {
                   Platform
                 </p>
               )}
+              {/* UIO-012: same chevron, same toggle, same persistence as the
+                  Management/People headings below — deliberately the same
+                  markup, not a shared component, so this doesn't risk
+                  touching their behaviour while giving this group its own. */}
               {!isSuperAdmin && (
-                <div className="mb-1 flex flex-col gap-0.5">
-                  <CommunityNav open={staffRailPinned} indentClass="pl-9" />
-                  <StaffNavItems bellCount={unreadCount} dmCount={dmCount} open={staffRailPinned} />
+                <div className="mb-1">
+                  {staffRailPinned && (
+                    <button type="button" onClick={() => toggleGroup(APP_PAGES_GROUP.key)}
+                      className={`w-full flex items-center justify-between px-3 py-1.5 text-[10px] tracking-widest uppercase ${NAV_HEADING} font-semibold transition-colors duration-320 ease-glide hover:text-green-900 focus-ring rounded-md`}>
+                      {APP_PAGES_GROUP.label}
+                      <ChevronDown size={12} className={`transition-transform ${groupOpen(APP_PAGES_GROUP) ? '' : '-rotate-90'}`} />
+                    </button>
+                  )}
+                  {!staffRailPinned && (
+                    <div className={`my-1 border-t ${NAV_DIVIDER}`} role="separator" aria-label={APP_PAGES_GROUP.label} />
+                  )}
+                  {(groupOpen(APP_PAGES_GROUP) || !staffRailPinned) && (
+                    <div className="flex flex-col gap-0.5 mt-0.5">
+                      <CommunityNav open={staffRailPinned} indentClass="pl-9" />
+                      <StaffNavItems dmCount={dmCount} open={staffRailPinned} />
+                    </div>
+                  )}
                 </div>
               )}
               <div className="flex flex-col gap-1">
@@ -1292,7 +1353,15 @@ export default function AppLayout() {
                   <div key={g.key}>
                     {navGroups.length > 1 && staffRailPinned && (
                       <button type="button" onClick={() => toggleGroup(g.key)}
-                        className={`w-full flex items-center justify-between px-3 py-1.5 text-[10px] tracking-widest uppercase ${NAV_HEADING} font-semibold hover:text-cream-100 focus-ring rounded-md`}>
+                        /* UIO-003: no transition at all before this — the
+                           group heading snapped straight to its hover colour
+                           with nothing easing it in.
+                           UIO-012: hover was `cream-100`, a leftover from the
+                           green-panel era — on the near-white panel it
+                           rendered #f5f0e8 on #fdfcfa, 1.11:1, effectively
+                           invisible. On a LIGHT panel emphasis goes darker,
+                           not lighter: full-strength green-900, 16.41:1. */
+                        className={`w-full flex items-center justify-between px-3 py-1.5 text-[10px] tracking-widest uppercase ${NAV_HEADING} font-semibold transition-colors duration-320 ease-glide hover:text-green-900 focus-ring rounded-md`}>
                         {g.label}
                         <ChevronDown size={12} className={`transition-transform ${groupOpen(g) ? '' : '-rotate-90'}`} />
                       </button>
@@ -1362,8 +1431,9 @@ export default function AppLayout() {
           surface before. A click on any link inside closes it (delegated
           `closest('a')` handler below — Sign out/App tour are buttons, not
           links, so `NavFooter` closes explicitly via its own `onNavigate`).
-          ONEHEADER §1: solid green panel (NAV_PANEL), not glass — see its
-          definition near the top of this file. */}
+          T5, corrected 2026-08-10: NAV_PANEL is near-white (`bg-cream-25`),
+          not solid green — that was true only of an earlier direction the
+          owner reversed. See its definition near the top of this file. */}
       {/* THE DRAWER TAB IS GONE — ONEHEADER §3 (owner, 2026-08-08). No hanging
           tab: the header's avatar button is the way into the nav on a phone, so
           there is one control for one job instead of a tab bolted to the side of
@@ -1389,7 +1459,7 @@ export default function AppLayout() {
           <div className="absolute inset-0 bg-green-950/45" onClick={closeMobileNav} aria-hidden="true" />
           <nav
             id="app-nav-drawer"
-            className={`absolute inset-y-0 ${isSuperAdmin ? 'left-0' : 'right-0'} w-72 max-w-[85vw] ${NAV_PANEL} shadow-xl p-3 overflow-y-auto`}
+            className={`absolute inset-y-0 ${isSuperAdmin ? 'left-0' : 'right-0'} w-72 max-w-[85vw] ${NAV_PANEL} shadow-xl p-3 overflow-y-auto overscroll-contain`}
             onClick={(e) => {
               // any real navigation inside closes the drawer
               if ((e.target as HTMLElement).closest('a')) closeMobileNav();
@@ -1417,7 +1487,7 @@ export default function AppLayout() {
                 {!showRail ? (
                   <ClientNavItems bellCount={unreadCount} dmCount={dmCount} presence={presence} lessonsOn={lessonsOn} onNavigate={closeMobileNav} />
                 ) : (
-                  <StaffNavItems bellCount={unreadCount} dmCount={dmCount} />
+                  <StaffNavItems dmCount={dmCount} />
                 )}
               </div>
             )}

@@ -1135,10 +1135,20 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
             <button type="button" disabled={saving || justSaved}
               /* Fixed width so gaining the tick and the extra character does not
                  resize the button and shift everything beside it. */
-              className={`${SUBHEADER_BTN} sm:w-[7.5rem] disabled:opacity-100 ${
+              /* SAVE — owner, 2026-08-09. Outlined in the same green the Send
+                 button is FILLED with (green-800), label in that same green, so
+                 the pair reads as one family: Send is the solid form, Save the
+                 outlined one. Cursor-over takes the 66% fill with the label
+                 flipping to the bar's own colour (cream-25); pressing it goes to
+                 100% — momentarily becoming exactly the Send button — then
+                 settles back. `active:` is what makes that "briefly": it holds
+                 only while the pointer is down.
+                 The 66% is declared in tailwind.config.js; it is the lightest
+                 step that still carries the label at 4.5:1. */
+              className={`${SUBHEADER_BTN} sm:w-[7.5rem] disabled:opacity-100 transition-colors duration-320 ease-glide ${
                 justSaved
                   ? 'border-green-700 bg-green-50 text-green-800'
-                  : 'border-green-800/20 bg-white text-green-900 hover:bg-green-800/5 disabled:opacity-60'}`}
+                  : 'border-green-800 bg-white text-green-800 hover:bg-green-800/66 hover:text-cream-25 active:bg-green-800 active:text-cream-25 disabled:opacity-60'}`}
               onClick={() => void saveNow()}>
               {saving ? 'Saving…' : justSaved
                 ? <><Check size={15} /> Saved</>

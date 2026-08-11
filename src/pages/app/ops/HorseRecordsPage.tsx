@@ -260,7 +260,7 @@ export default function HorseRecordsPage() {
               <h2 className="font-serif text-green-800 text-lg">Add a horse</h2>
               <button type="button" onClick={() => setAdding(false)} aria-label="Close"><X size={20} /></button>
             </div>
-            <div className="p-4 sm:p-5 overflow-y-auto pb-8">
+            <div className="p-4 sm:p-5 overflow-y-auto overscroll-contain pb-8">
               <HorseIntakeForm submitLabel="Create record" ownerContactId={companyId ?? undefined}
                 onDone={() => { setAdding(false); load(); }} />
             </div>

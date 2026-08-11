@@ -75,7 +75,7 @@ function NewMessageModal({ members, onPick, onClose }: {
               className="bg-transparent flex-1 text-sm outline-none" aria-label="Search members" />
           </div>
         </div>
-        <div className="overflow-y-auto p-2">
+        <div className="overflow-y-auto overscroll-contain p-2">
           {filtered.length === 0 ? (
             <p className="text-sm text-muted text-center py-6">No members found.</p>
           ) : filtered.map((m) => {
@@ -301,7 +301,7 @@ export default function Messages() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-0 h-[72vh] bg-white border border-green-800/10 rounded-2xl overflow-hidden">
         {/* Conversation list */}
-        <aside className={`md:col-span-1 border-r border-green-800/10 overflow-y-auto ${otherId ? 'hidden md:block' : ''}`}>
+        <aside className={`md:col-span-1 border-r border-green-800/10 overflow-y-auto overscroll-contain ${otherId ? 'hidden md:block' : ''}`}>
           {conversations.length === 0 ? (
             <div className="p-6 text-center">
               <p className="text-sm text-muted mb-3">No conversations yet.</p>
@@ -371,7 +371,7 @@ export default function Messages() {
                 </Link>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-2">
+              <div className="flex-1 overflow-y-auto overscroll-contain p-5 flex flex-col gap-2">
                 {messages.length === 0 ? (
                   <p className="text-sm text-muted m-auto">Say hello.</p>
                 ) : grouped.map((g) => (
