@@ -143,15 +143,47 @@ it, and do not treat the word FROZEN as a reason to route the change somewhere w
 
 ## Still open, and NOT for the thread to decide
 
-- **The `$ or %` share control does not exist and MUST be built.** Confirmed 2026-08-10.
+- **The `$ or %` share control is a REBUILD, not a new build. CORRECTED 2026-08-10.**
 
-  A null-or-`$` selector, a number-only input, and a null-or-`%` alternate that greys when
-  `$` is selected. Today there are separate currency and percent kinds and no combined one.
+  > Owner: *"this needs rebuilding, it already exists but its written in a confusing manner
+  > with too much text."*
 
-  **The owner's reasoning, worth keeping:** *"they will use % when the policy cost is unknown
-  and they will use $ when the policy cost is known."* It must support both because parties
-  may agree a proportion before a premium exists — which is also why the premium itself is not
-  in the clause. Build once; mortality and medical both use it.
+  The thread reported *"the control you specified doesn't exist."* **That is wrong, and the
+  orchestrator relayed it without checking.** Verified against production:
+
+  `currency` and `percent` are both real `format_type` kinds, implemented in
+  `ContractCascade.tsx:903-906` (currency renders a `$` affix, percent a `%`), and already in
+  production use on `TXN.TRAINER_EXERCISE_SPLIT_PCT`.
+
+  **Every share field is untyped** — `format_type` is empty, so it falls through to plain text
+  and **the unit is written into the LABEL to compensate**:
+
+  ```
+  TXN.MORT_COST_SPLIT_LESSEE    (none)   "Lessee's share ($ or %)"
+  TXN.MORT_COST_SPLIT_LESSOR    (none)   "Lessor's share ($ or %)"
+  TXN.MED_COST_SPLIT_LESSEE     (none)   "Lessee's share ($ or %)"
+  TXN.MED_COST_SPLIT_LESSOR     (none)   "Lessor's share ($ or %)"
+  TXN.GL_DED_RESP_SPLIT_LESSEE  (none)   "Split — % paid by Lessee"
+  TXN.GL_DED_RESP_SPLIT_LESSOR  (none)   "Split — % paid by Lessor"
+  TXN.MED_DED_RESP_SPLIT_*      (none)   "Deductible split — paid by …"
+  ```
+
+  **That is the "too much text": the label is doing the control's job.** The same defect the
+  owner named about the placeholder — it reads as unauthored because a typed control was never
+  wired, not because the control was missing.
+
+  **The work:** type the fields, strip the unit out of every label, and extend the existing
+  kind to the owner's shape — a null-or-`$` selector, a number-only input, and a null-or-`%`
+  alternate that greys when `$` is selected. **Do not build a parallel control** beside
+  `currency`/`percent`; extend what is there and reuse it everywhere the table above lists.
+
+  **His reasoning, worth keeping:** *"they will use % when the policy cost is unknown and they
+  will use $ when the policy cost is known."* It must support both because parties may agree a
+  proportion before a premium exists — the same reason the premium is not in the clause.
+
+  `TXN.MORT_COST_SPLIT_TEXT` and `TXN.MED_COST_SPLIT_TEXT`, both labelled "Split (composed)",
+  are the redundant line the owner ordered removed. They go with this pass.
+
 - **13.2's Lessee question still means two things across branches.** This is the root cause of
   the contradiction found on 2026-08-10 — see
   `docs/tasks/TASK-LEASEFIX-13.2-lessee-decline-option.md`. Worth resolving in the same pass.
