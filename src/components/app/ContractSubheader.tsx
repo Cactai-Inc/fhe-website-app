@@ -73,8 +73,19 @@ export const SUBHEADER_BTN =
   + 'focus-ring whitespace-nowrap w-full px-3 py-3 text-sm '
   // From sm up: auto width, shrinkable, with fluid padding and type.
   + 'md:w-auto md:shrink md:min-w-0 md:py-2 '
-  + 'md:[padding-inline:clamp(0.4rem,1.1vw,0.875rem)] '
-  + 'md:[font-size:clamp(11.5px,1.05vw,14px)] '
+  // UIO-015, owner: "buttons on subheader and text (desktop version) too
+  // large." Ceilings only — 0.875rem->0.625rem (14px->10px) and
+  // 14px->13px — the minimums and the vw scaling term are untouched, so
+  // the fluid behaviour below the ceiling is exactly what it was. This
+  // order originally quoted a two-breakpoint version of this file that no
+  // longer existed; appending fixed-value classes on top of these arbitrary
+  // clamp() properties was a no-op (Tailwind's own generation order placed
+  // them after the fixed classes regardless of source order, so the clamp
+  // always won) — confirmed by building and reading the compiled CSS, not
+  // assumed. Lowering the ceiling in place is the form of this change that
+  // actually renders.
+  + 'md:[padding-inline:clamp(0.4rem,1.1vw,0.625rem)] '
+  + 'md:[font-size:clamp(11.5px,1.05vw,13px)] '
   + 'md:[gap:clamp(0.25rem,0.5vw,0.375rem)]';
 
 /* Drawer buttons hold a consistent width so the row does not reflow when
