@@ -1,3 +1,66 @@
+> ## WHAT THIS PAGE IS FOR — read this before designing anything. Owner, 2026-08-10.
+>
+> > *"the things that matter most right now are who is active and who isnt, inactive then makes
+> > me wonder if they were invited or not, if the invite expired, if they docs are done… i should
+> > be able to glance at the grid of cards and spot the problem children and the standouts that
+> > are engaging the most."*
+>
+> **THIS IS A TRIAGE VIEW, NOT A DIRECTORY.** Its job is to make two groups jump out of a grid:
+> **people who are stuck**, and **people who are engaging most**. Everything else is subordinate.
+>
+> ### The diagnosis chain — one question leading to the next, not four independent facts
+>
+> ```
+> is this person ACTIVE?
+>    no -> were they INVITED?
+>            no  -> nobody has reached out. That is the problem.
+>            yes -> has the invite EXPIRED?
+>                     yes -> the invite is the problem
+>                     no  -> are their DOCUMENTS done?
+>                              no -> the paperwork is the problem
+> ```
+>
+> **The card must let him walk that chain by eye.** A card showing four unrelated facts makes him
+> reconstruct it; a card showing where the chain stopped answers it.
+>
+> ### Every signal is backed — verified 2026-08-10
+>
+> ```
+> invitations           sent 13 (7 EXPIRED) · revoked 13 · redeemed 6 · accepted 6 · superseded 2
+>                       already exposed on admin_client_accounts as invite_status / invite_expires_at
+> unpaid                2 purchases at awaiting_payment
+> deal-only party       4 contacts are document parties with NO account and NO clients row
+> document completion   contact_required_documents, 36 rows, against executed documents
+> ```
+>
+> ### Badges — add DEAL-ONLY PARTY
+>
+> Rider and Horse owner stay (**derived from `groups`**, per the ruling below). **Add a
+> deal-only-party badge:** someone who is a party to a document but has no account and no client
+> relationship. **Four real people today**, currently indistinguishable from anyone else.
+>
+> ### Counts on the card
+>
+> **orders · credits · lessons · horses · UNPAID indicator.** The unpaid indicator is not a
+> count — **it is a flag, and it belongs with the problem signals**, not with the engagement
+> numbers.
+>
+> ### `TEAM` is EXCLUDED — settled
+>
+> > Owner: *"team doesnt need to be listed in a clients menu."*
+>
+> **Do not render `contact_type = 'TEAM'` at all.** That closes the gap where a staff member with
+> a `clients` row would have rendered gold. `LEAD` also stays out — leads live on Leads until
+> worked.
+>
+> ### ONE THING TO ASK — what does ACTIVE mean?
+>
+> **He has not defined it and it is the top of the whole chain.** Candidates: a recent booking, a
+> recent order, an account that has signed in, or simply documents complete and nothing
+> outstanding. **These produce very different grids. ASK. DO NOT GUESS.**
+
+---
+
 > ## REVERSED 2026-08-10 — USE THE CONTACTS CARDS, NOT THE ADMIN ROWS.
 >
 > > Owner: *"for the contacts vs clients merge. we should use the contacts cards since they will
