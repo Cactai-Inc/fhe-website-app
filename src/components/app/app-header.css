@@ -183,21 +183,30 @@
    that used to carry the interactive cue is gone — see the button rule below for
    what replaced it and why.
 
-   Owner, 2026-08-09: THE TWO FORMS NO LONGER LOOK ALIKE. They never behaved
-   alike — at lg+ the rail is already open so the mark is inert, below that it is
-   the only way into the nav — but both rendered as the same filled green disc,
-   which told the desktop user a control was there and then did nothing when they
-   pressed it. Appearance now follows behaviour: the shared rule below carries
-   only GEOMETRY, and each form declares its own surface.
+   UIO-002, owner 2026-08-10: "make the letter larger to match the letters in
+   the icon logo, add the ring and on mobile, fill the ring... then on click or
+   mouseover (only for mobile layout) [it changes] to indicate its a
+   functional button." The ring is `.oh-mono`'s own ring — 1px, green-800/40 —
+   so it pairs with the logo mark as an identity mark, not a control. It now
+   sits in the shared geometry rule since both forms carry it.
+
+   THE FILL AND THE LETTER CHANGE TOGETHER. THIS IS ONE DECISION, NOT TWO —
+   owner: "make sure the thread knows to switch the color of the letter when
+   the color of the button is changed from an empty fill to a solid fill... i
+   want to leave nothing to interpretation." Keeping green-900 on a filled
+   green-800 mark renders at 1.22 contrast — the letter disappears completely,
+   and this mark is the only way into the nav on a phone. Empty fill -> dark
+   letter (desktop). Solid fill -> cream letter (mobile, both states).
 
    `-webkit-touch-callout` stays for the same reason the cardstock avatar carried
    it: a tap-and-hold should not raise the system's callout on a glyph. */
 .oh-avatar {
   width: 42px; height: 42px; flex: none;
   display: grid; place-items: center;
-  border: 0; padding: 0; margin: 0;
+  border: 1px solid rgba(20, 51, 33, .40);    /* green-800/40 — as .oh-mono */
+  padding: 0; margin: 0;
   border-radius: 999px;
-  font-size: 17px; line-height: 1;
+  font-size: 20px; line-height: 1;            /* UIO-002: 17px -> 20px, to match the logo mark's optical weight now that this mark carries a ring too */
   /* NO letter-spacing. It was `.02em`, and tracking on a ONE-character string
      buys nothing except a trailing space that sits inside the box being centred
      — so the glyph was pulled half the tracking off centre, the same defect the
@@ -206,44 +215,51 @@
   -webkit-touch-callout: none;
 }
 
-/* DESKTOP (lg+) — INERT MONOGRAM. No fill, so the disc stops reading as a
-   pressable target, and the glyph takes green-900: the logo's own ink, on the
-   header's own surface. `transparent` rather than the literal #f5f0e8 so it
-   keeps matching if the header surface is ever re-toned. */
+/* DESKTOP (lg+) — RING ONLY, INERT MONOGRAM. No fill, so the disc stops
+   reading as a pressable target, and the glyph takes green-900: the logo's
+   own ink, on the header's own surface. `transparent` rather than the literal
+   #f5f0e8 so it keeps matching if the header surface is ever re-toned. */
 span.oh-avatar {
   background: transparent;
   color: #0d2118;                             /* green-900, as .oh-mono */
 }
 
-/* MOBILE (<lg) — THE MENU BUTTON. Idle is the LIGHTER green and every
-   interaction — hover, press, and the menu actually being open — resolves to the
-   darker brand green. One property moves, so what the control is doing is never
-   in question.
-     idle    green-600 #215531   cream-100 glyph  7.7:1
-     engaged green-800 #143321   cream-100 glyph 12.1:1
-   Both clear AA comfortably, and the idle fill is still solid at full opacity —
-   the finding that put a solid fill here (a real user could not locate the menu
-   when it resolved to cream-on-cream on an older iPhone) is about FINDABILITY,
-   which a lighter green satisfies just as well as a darker one.
+/* MOBILE (<lg) — THE MENU BUTTON. UIO-002, owner: "we set the color to the
+   brand color for the avatar fill on mobile layout... and then there is a
+   white low opacity overlay that changes to a lower opacity when the button
+   is interacted with. this results in the button looking interactive without
+   losing the branding alignment of the accurate color being distorted."
 
-   The gold ring is GONE, with the shadow that sat under it. It was
-   `0 0 0 1px gold` plus `0 1px 2px` — a spread ring with an offset drop beneath
-   it, so the rim looked heavier along the bottom than the top and the disc read
-   as slightly off-centre; on hover both the ring's alpha and the shadow's size
-   changed at once, on top of a 1px translate, which is why the press was hard to
-   read. Fill is now the only thing that moves. The focus outline stays: it is the
-   app's focus token, and it is a keyboard affordance, not an interaction cue. */
+   The fill is green-800 itself — the brand token, opaque, never a derived
+   value. A flat white layer sits on top and REDUCES on press, so the pressed
+   state is the exact brand colour with nothing composited. Implemented as a
+   linear-gradient layer over the token rather than a pseudo-element: the
+   letter is this element's own text content, so it always paints above this
+   element's own `background`, however many layers that background has — a
+   pseudo-element would need its own stacking managed to not cover the glyph.
+     rest     14% white over green-800  ->  #355040   cream-25 glyph  8.68:1
+     :active   0% white over green-800  ->  #143321   cream-25 glyph 13.43:1
+   Only the overlay's alpha moves; hue is fixed at 145.2deg in every state
+   because white is neutral — blending toward it moves lightness, not hue,
+   which is what keeps this "the brand colour" rather than a tint of it. */
 button.oh-avatar {
-  background: #215531;                        /* green-600 */
-  color: #f5f0e8;                             /* cream-100 */
+  background: linear-gradient(rgba(255, 255, 255, .14), rgba(255, 255, 255, .14)),
+              theme('colors.green.800');
+  color: #fdfcfa;                             /* cream-25 */
   cursor: pointer;
-  transition: background-color .18s ease;
+  transition: background .18s ease;
 }
-@media (hover: hover) {
-  button.oh-avatar:hover { background: #143321; }        /* green-800 */
-}
+/* `:active` ONLY, NOT `:hover`. There is no hover on touch — a sticky
+   post-tap `:hover` would latch the pressed fill on and never release it, the
+   same reason the nav rows gate their own hover behind
+   `[@media(hover:hover)]`. Rather than gate a hover rule here, this mark has
+   none: the desktop form (above) has no fill state at all, and the mobile
+   form moves only on a real, releasing `:active`. */
 button.oh-avatar:active,
-button.oh-avatar[aria-expanded='true'] { background: #143321; }
+button.oh-avatar[aria-expanded='true'] {
+  background: linear-gradient(rgba(255, 255, 255, 0), rgba(255, 255, 255, 0)),
+              theme('colors.green.800');
+}
 button.oh-avatar:focus-visible {
   outline: 2px solid #7a6421;                 /* gold-800, the app's focus token */
   outline-offset: 2px;
