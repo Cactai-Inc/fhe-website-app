@@ -253,7 +253,7 @@ export function CalendarItemPanel({
   return (
     <div className="fixed inset-0 z-50 bg-black/30 flex justify-end" onClick={() => void handleClose()}>
       <div
-        className="bg-cream w-full sm:max-w-md h-full overflow-y-auto shadow-xl flex flex-col"
+        className="bg-cream w-full sm:max-w-md h-full overflow-y-auto overscroll-contain shadow-xl flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-4 border-b border-green-800/10 sticky top-0 bg-cream z-10">

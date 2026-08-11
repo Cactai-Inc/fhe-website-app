@@ -575,8 +575,8 @@ function AddElementModal({
   // off above the fold with no way to scroll to them. Rendering through a
   // portal puts it back on the viewport where `fixed` means what it says.
   return createPortal((
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-green-950/40 p-4 overflow-y-auto" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[88vh] overflow-y-auto p-6 my-auto"
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-green-950/40 p-4 overflow-y-auto overscroll-contain" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[88vh] overflow-y-auto overscroll-contain p-6 my-auto"
         onClick={(e) => { e.stopPropagation(); setOpenChip(null); }}>
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-serif text-lg text-green-900">Add to this contract</h3>

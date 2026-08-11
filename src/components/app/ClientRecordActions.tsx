@@ -114,7 +114,7 @@ export function AssignDocumentsModal({ contactId, onClose, onAssigned }: {
 
   return (
     <div className="fixed inset-0 z-[80] bg-green-950/40 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 max-h-[85vh] overflow-y-auto overscroll-contain" onClick={(e) => e.stopPropagation()}>
         <h2 className="font-serif text-xl text-green-900 mb-3">Assign documents</h2>
 
         <p className="text-[11px] uppercase tracking-wide text-secondary/70 mb-1.5">Contracts</p>
@@ -268,7 +268,7 @@ export function AttachOfferingPanel({ contactId, onAttached }: { contactId: stri
   return (
     <div className="border border-green-800/15 rounded-lg p-4 mb-3">
       <p className="text-sm font-medium text-green-900 mb-2">Attach offering(s)</p>
-      <div className="space-y-2 max-h-56 overflow-y-auto mb-3">
+      <div className="space-y-2 max-h-56 overflow-y-auto overscroll-contain mb-3">
         {purchasable.map((o) => (
           <label key={o.id} className="flex items-center gap-2 text-sm text-secondary py-0.5">
             <input type="checkbox" className="accent-green-800" checked={picked.includes(o.id)} onChange={() => toggle(o.id)} />

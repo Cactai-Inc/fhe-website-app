@@ -23,7 +23,7 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
 function Shell({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
     <div className="fixed inset-0 bg-black/40 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
-      <div className="bg-cream w-full sm:max-w-md sm:rounded-2xl max-h-[92vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-cream w-full sm:max-w-md sm:rounded-2xl max-h-[92vh] overflow-y-auto overscroll-contain" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-4 border-b border-green-800/10 sticky top-0 bg-cream">
           <h2 className="font-serif text-green-800 text-lg">{title}</h2>
           <button type="button" onClick={onClose} aria-label="Close" className="text-secondary hover:text-green-800"><X size={20} /></button>

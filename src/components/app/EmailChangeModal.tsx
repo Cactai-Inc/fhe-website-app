@@ -129,7 +129,7 @@ export function EmailChangeModal({
   return (
     <div className="fixed inset-0 bg-green-950/40 backdrop-blur-[2px] z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
       <div
-        className="bg-cream w-full sm:max-w-[440px] sm:rounded-2xl max-h-[94vh] overflow-y-auto shadow-2xl shadow-green-950/30 animate-fade-up"
+        className="bg-cream w-full sm:max-w-[440px] sm:rounded-2xl max-h-[94vh] overflow-y-auto overscroll-contain shadow-2xl shadow-green-950/30 animate-fade-up"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Branded header band */}

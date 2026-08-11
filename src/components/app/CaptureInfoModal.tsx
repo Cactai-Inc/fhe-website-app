@@ -110,7 +110,7 @@ export function CaptureInfoModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
       role="dialog" aria-modal="true" aria-label="Add missing information"
       onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto"
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto overscroll-contain"
         onClick={(ev) => ev.stopPropagation()}>
         <div className="flex items-start justify-between gap-3 p-5 pb-3 border-b border-green-800/10">
           <div>

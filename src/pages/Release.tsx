@@ -268,7 +268,7 @@ export default function Release() {
                 </header>
                 <h2 className="eyebrow px-8 pt-6 pb-2 print-hidden">Your signed document</h2>
                 <div
-                  className="px-8 pb-6 max-h-96 overflow-y-auto whitespace-pre-wrap text-sm text-secondary leading-relaxed"
+                  className="px-8 pb-6 max-h-96 overflow-y-auto overscroll-contain whitespace-pre-wrap text-sm text-secondary leading-relaxed"
                   aria-label="Signed release document"
                 >
                   <BodyWithSignatures text={result.merged_body} />
@@ -366,7 +366,7 @@ export default function Release() {
                 <div className="bg-white border border-green-800/10 mb-2">
                   <h2 className="eyebrow px-8 pt-6 pb-2">{rules.title}</h2>
                   <div
-                    className="px-8 pb-6 max-h-96 overflow-y-auto whitespace-pre-wrap text-sm text-secondary leading-relaxed"
+                    className="px-8 pb-6 max-h-96 overflow-y-auto overscroll-contain whitespace-pre-wrap text-sm text-secondary leading-relaxed"
                     aria-label="Facility rules document"
                   >
                     {rules.body}
@@ -406,7 +406,7 @@ export default function Release() {
                 <div className="bg-white border border-green-800/10 mb-6">
                   <h2 className="eyebrow px-8 pt-6 pb-2">{preview.title}</h2>
                   <div
-                    className="px-8 pb-6 max-h-96 overflow-y-auto whitespace-pre-wrap text-sm text-secondary leading-relaxed"
+                    className="px-8 pb-6 max-h-96 overflow-y-auto overscroll-contain whitespace-pre-wrap text-sm text-secondary leading-relaxed"
                     aria-label="Release document"
                   >
                     {preview.body}
