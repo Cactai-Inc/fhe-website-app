@@ -8,7 +8,7 @@ export const BRAND = {
   // unless explicitly requested. shortName intentionally holds the full name so
   // any consumer that renders it stays compliant.
   shortName: 'French Heritage Equestrian',
-  tagline: 'A family-run hunter/jumper barn and community, rooted in classical European horsemanship.',
+  tagline: 'A family-run hunter/jumper ranch and community, rooted in classical European horsemanship.',
   email: 'Hello@FHEquestrian.com',
   emailHref: 'mailto:Hello@FHEquestrian.com',
   phoneDisplay: '858-439-3614',

@@ -4,6 +4,8 @@ import { fetchViewCards, sayHi, myGreetedUserIds, type FeedCard } from '../../li
 import { feedMarkSeen } from '../../lib/feed';
 import { SEED_ENABLED, type FeedView } from '../../lib/seed';
 import { useAuth } from '../../contexts/AuthContext';
+import { usePropertyTerm } from '../../contexts/BrandProvider';
+import { withArticle } from '../../lib/propertyTerm';
 import {
   contactActions, type ContactInfo, type ContactMethod,
 } from '../../lib/contact';
@@ -216,13 +218,14 @@ function Card({ c, myId, greeted, onOpen }: { c: FeedCard; myId?: string; greete
 }
 
 function EmptyState({ view }: { view: FeedView }) {
+  const propertyTerm = usePropertyTerm();
   return (
     <div className="text-center py-16">
       <p className="font-serif text-lg text-green-800 mb-1">Nothing here yet.</p>
       <p className="body-text text-sm text-muted">
         {view === 'members' ? 'The member directory will fill in as people join.'
           : view === 'for_sale' ? 'Listings for horses and gear will appear here.'
-          : 'New posts from the barn and community will appear here.'}
+          : `New posts from ${withArticle(propertyTerm)} and community will appear here.`}
       </p>
     </div>
   );

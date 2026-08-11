@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { FormField } from '../../../../lib/ops';
+import { usePropertyTerm } from '../../../../contexts/BrandProvider';
 import {
   sessionWindow,
   type LessonClientOption,
@@ -53,6 +54,7 @@ export function ScheduleSessionForm({
   const [note, setNote] = useState('');
   const [horseId, setHorseId] = useState('');
   const [fieldError, setFieldError] = useState<string | null>(null);
+  const propertyTerm = usePropertyTerm();
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -161,7 +163,7 @@ export function ScheduleSessionForm({
       {horses.length > 0 && (
         <FormField
           label="Horse"
-          hint="The horse for this lesson (barn horse or the rider's own). Internal tracking — not shown to the client. You can set or change this later."
+          hint={`The horse for this lesson (${propertyTerm.term} horse or the rider's own). Internal tracking — not shown to the client. You can set or change this later.`}
         >
           {({ id }) => (
             <select

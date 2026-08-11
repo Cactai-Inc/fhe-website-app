@@ -22,7 +22,7 @@ export default function Footer() {
             </p>
           </div>
           <p className="text-sm font-sans text-white/[0.7] leading-relaxed max-w-xs">
-            A family-run hunter/jumper barn and community, rooted in classical European
+            A family-run hunter/jumper ranch and community, rooted in classical European
             horsemanship, offering lessons, horse care, and acquisition support in coastal San Diego.
           </p>
         </div>

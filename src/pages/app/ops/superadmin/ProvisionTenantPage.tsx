@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { toErrorMessage } from '../../../../lib/ops/errors';
 import { FormField, AsyncButton, useAsync, useToast } from '../../../../lib/ops';
 import { useAuth } from '../../../../contexts/AuthContext';
+import { listPropertyTerms } from '../../../../lib/api';
+import { titleCase, type PropertyTerm } from '../../../../lib/propertyTerm';
 import {
   listTiers, listAddonModules, listTierModules, provisionTenant,
   type ProvisionTenantInput,
@@ -76,6 +78,7 @@ export function ProvisionTenantPage() {
   const tiers = useAsync(listTiers);
   const addons = useAsync(listAddonModules);
   const tierModules = useAsync(listTierModules);
+  const propertyTerms = useAsync(listPropertyTerms);
 
   const [step, setStep] = useState(0);
   const [stepError, setStepError] = useState<string | null>(null);
@@ -85,6 +88,7 @@ export function ProvisionTenantPage() {
   const [tierKey, setTierKey] = useState('');
   const [addonKeys, setAddonKeys] = useState<string[]>([]);
   const [brand, setBrand] = useState<Record<string, string>>({});
+  const [propertyTermKey, setPropertyTermKey] = useState('FACILITY');
   const [legal, setLegal] = useState<Record<string, string>>({});
   const [rates, setRates] = useState<Record<string, string>>({});
   const [result, setResult] = useState<{ orgId: string; missing: string[] } | null>(null);
@@ -92,7 +96,7 @@ export function ProvisionTenantPage() {
 
   useEffect(() => {
     if (!isSuperAdmin) return;
-    for (const l of [tiers, addons, tierModules]) {
+    for (const l of [tiers, addons, tierModules, propertyTerms]) {
       l.run().catch(() => { /* inline error branches */ });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -143,7 +147,9 @@ export function ProvisionTenantPage() {
       slug: slug.trim(),
       tierKey,
       adminEmail: adminEmail.trim(),
-      brand: prune(brand),
+      // PROPERTY.TERM_KEY routes to config_values ns PROPERTY (U16), same p_brand
+      // prefix-router BRAND./CONTACT./MODULE.<mod>. already use.
+      brand: { ...prune(brand), 'PROPERTY.TERM_KEY': propertyTermKey },
       legal: prune(legal),
       rates: prune(rates),
       modules: addonKeys,
@@ -276,6 +282,17 @@ export function ProvisionTenantPage() {
               )}
             </FormField>
           ))}
+          <FormField label="What do they call their place?" hint="Barn, ranch, stables, grounds, facility — their word renders everywhere in the app. Editable later.">
+            {({ id, errorClass }) => (
+              <select id={id} className={`form-input ${errorClass}`} value={propertyTermKey}
+                disabled={propertyTerms.isPending}
+                onChange={(e) => setPropertyTermKey(e.target.value)}>
+                {(propertyTerms.data ?? []).map((t: PropertyTerm) => (
+                  <option key={t.key} value={t.key}>{titleCase(t)}</option>
+                ))}
+              </select>
+            )}
+          </FormField>
         </div>
       )}
 
@@ -329,6 +346,10 @@ export function ProvisionTenantPage() {
               <dd className="inline">{addonKeys.length ? addonKeys.join(', ') : 'none'}</dd>
             </div>
             <div><dt className="inline font-semibold">Brand values: </dt><dd className="inline">{Object.keys(prune(brand)).length}</dd></div>
+            <div>
+              <dt className="inline font-semibold">Their word for their place: </dt>
+              <dd className="inline">{(propertyTerms.data ?? []).find((t) => t.key === propertyTermKey)?.term ?? propertyTermKey}</dd>
+            </div>
             <div><dt className="inline font-semibold">Legal values: </dt><dd className="inline">{Object.keys(prune(legal)).length} of {LEGAL_FIELDS.length}</dd></div>
             <div><dt className="inline font-semibold">Rate values: </dt><dd className="inline">{Object.keys(prune(rates)).length} of {RATE_FIELDS.length}</dd></div>
           </dl>

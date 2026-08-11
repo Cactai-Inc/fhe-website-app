@@ -3,6 +3,8 @@ import { ArrowRight } from 'lucide-react';
 import { submitRequest } from '../lib/api';
 import { fetchIntakeRequirements } from '../lib/ops/api-public';
 import { CATEGORY_FIELDS } from '../lib/intakeCategoryFields';
+import { usePropertyTerm } from '../contexts/BrandProvider';
+import { withArticle, type PropertyTerm } from '../lib/propertyTerm';
 import type {
   RequestCategory,
   RequestChannel,
@@ -32,16 +34,18 @@ const CATEGORIES: { value: RequestCategory; label: string }[] = [
   { value: 'partnership', label: 'Partnership / sponsorship' },
 ];
 
-const SOURCES: { value: string; label: string }[] = [
-  { value: '', label: 'How did you hear about us?' },
-  { value: 'referral', label: 'A friend or referral' },
-  { value: 'google', label: 'Google search' },
-  { value: 'social', label: 'Instagram / Facebook' },
-  { value: 'event', label: 'An event or show' },
-  { value: 'drive_by', label: 'Saw the barn nearby' },
-  { value: 'returning', label: "I'm a returning client" },
-  { value: 'other', label: 'Other' },
-];
+function sourcesFor(term: PropertyTerm): { value: string; label: string }[] {
+  return [
+    { value: '', label: 'How did you hear about us?' },
+    { value: 'referral', label: 'A friend or referral' },
+    { value: 'google', label: 'Google search' },
+    { value: 'social', label: 'Instagram / Facebook' },
+    { value: 'event', label: 'An event or show' },
+    { value: 'drive_by', label: `Saw ${withArticle(term)} nearby` },
+    { value: 'returning', label: "I'm a returning client" },
+    { value: 'other', label: 'Other' },
+  ];
+}
 
 const MESSAGE_MAX = 4000;
 
@@ -95,6 +99,8 @@ export function PublicIntakeForm({
   submitLabel = 'Send it our way',
   onSubmitted,
 }: PublicIntakeFormProps) {
+  const propertyTerm = usePropertyTerm();
+  const sources = sourcesFor(propertyTerm);
   const isCart = !!selections && selections.length > 0;
   const [category, setCategory] = useState<RequestCategory>(defaultCategory);
   const [firstName, setFirstName] = useState('');
@@ -425,7 +431,7 @@ export function PublicIntakeForm({
             value={source}
             onChange={(e) => setSource(e.target.value)}
           >
-            {SOURCES.map((s) => (
+            {sources.map((s) => (
               <option key={s.value} value={s.value}>
                 {s.label}
               </option>

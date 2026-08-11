@@ -6,6 +6,8 @@ import { myLessonSessions, type MemberLessonSession } from '../../lib/ops/api-me
 import { listLessonSessions } from '../../lib/ops/api-lessons';
 import { formatSessionWhen } from '../../lib/formatDateTime';
 import { useAuth } from '../../contexts/AuthContext';
+import { usePropertyTerm } from '../../contexts/BrandProvider';
+import { titleCase } from '../../lib/propertyTerm';
 import { useDocumentTitle } from '../../lib/hooks';
 import type { CommunityEvent, EventRsvp, RsvpStatus } from '../../lib/community-types';
 
@@ -36,8 +38,9 @@ function sessionWhen(s: MemberLessonSession): string {
 
 export default function Schedule() {
   useDocumentTitle('Schedule');
-  // Staff see the whole barn's sessions (org-wide); members see their own.
+  // Staff see the whole property's sessions (org-wide); members see their own.
   const { isStaff } = useAuth();
+  const propertyTerm = usePropertyTerm();
   const [events, setEvents] = useState<CommunityEvent[]>([]);
   const [rsvps, setRsvps] = useState<Record<string, RsvpStatus>>({});
   const [sessions, setSessions] = useState<MemberLessonSession[]>([]);
@@ -123,9 +126,9 @@ export default function Schedule() {
         )}
       </section>
 
-      {/* Barn events — the community calendar stays below the member's lessons. */}
-      <section aria-label="Barn events">
-        <h2 className="font-serif font-medium text-green-800 text-xl mb-4">Barn events</h2>
+      {/* {Term} events — the community calendar stays below the member's lessons. */}
+      <section aria-label={`${titleCase(propertyTerm)} events`}>
+        <h2 className="font-serif font-medium text-green-800 text-xl mb-4">{titleCase(propertyTerm)} events</h2>
         {loading ? (
           <p className="body-text text-muted">Loading…</p>
         ) : events.length === 0 ? (

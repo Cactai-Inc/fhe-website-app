@@ -13,6 +13,8 @@ import {
 import { listHorseBreeds, listHorseColors, listLookupOptions, recordLookupSuggestion } from '../../lib/api';
 import { adminClientAccounts, type ClientAccountRow } from '../../lib/admin';
 import { useAuth } from '../../contexts/AuthContext';
+import { usePropertyTerm } from '../../contexts/BrandProvider';
+import { withArticle } from '../../lib/propertyTerm';
 import type { LookupCode } from '../../lib/ops/types';
 
 /**
@@ -453,6 +455,7 @@ export function HorseIntakeForm({
   horseId?: string;
 }) {
   const { isStaff } = useAuth();
+  const propertyTerm = usePropertyTerm();
   const [f, setF] = useState<HorseIntakePayload>({ is_leased: 'no' });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -761,7 +764,7 @@ export function HorseIntakeForm({
     const unlisted = unlistedVocab();
     if (unlisted) {
       reject(`${unlisted} has to be chosen from the list — a typed-in value can’t be saved. `
-        + 'Pick the closest match, or "Other", and we’ll pass your entry to the barn.');
+        + `Pick the closest match, or "Other", and we’ll pass your entry to ${withArticle(propertyTerm)}.`);
       return;
     }
     setBusy(true);
@@ -834,8 +837,8 @@ export function HorseIntakeForm({
         <ShieldQuestion size={32} className="text-gold-800 mx-auto mb-3" />
         <p className="font-serif text-green-800 text-lg mb-1.5">This horse may already be on file.</p>
         <p className="text-sm text-muted max-w-md mx-auto">
-          We've opened a review with the barn. Upload your lease or ownership paperwork
-          from your Documents and we'll link the record to your account once verified.
+          We've opened a review with {withArticle(propertyTerm)}. Upload your lease or ownership
+          paperwork from your Documents and we'll link the record to your account once verified.
         </p>
       </div>
     );

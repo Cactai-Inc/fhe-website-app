@@ -2,9 +2,10 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import * as auth from '../lib/auth';
-import { myModules } from '../lib/api';
+import { myModules, myPropertyTerm } from '../lib/api';
 import type { Profile } from '../lib/types';
 import type { Member } from '../lib/community-types';
+import { DEFAULT_PROPERTY_TERM, resolvePropertyTerm, type PropertyTerm } from '../lib/propertyTerm';
 
 export type AppRole = 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'EMPLOYEE' | 'USER';
 
@@ -29,6 +30,9 @@ interface AuthContextValue {
   orgId: string | null;
   modules: string[];
   hasModule: (key: string) => boolean;
+  /** U16: the current tenant's own word for their facility (barn/ranch/stables/…).
+   *  Defaults to FACILITY until my_property_term() resolves (or on error). */
+  propertyTerm: PropertyTerm;
   signInWithPassword: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string) => Promise<{ error: string | null }>;
   signInWithGoogle: (redirectTo?: string) => Promise<{ error: string | null }>;
@@ -47,6 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [member, setMember] = useState<Member | null>(null);
   const [modules, setModules] = useState<string[]>([]);
+  const [propertyTerm, setPropertyTerm] = useState<PropertyTerm>(DEFAULT_PROPERTY_TERM);
   const [loading, setLoading] = useState(true);
 
   const loadProfile = useCallback(async (userId: string | undefined) => {
@@ -54,6 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setProfile(null);
       setMember(null);
       setModules([]);
+      setPropertyTerm(DEFAULT_PROPERTY_TERM);
       return;
     }
     const [profRes, memRes] = await Promise.all([
@@ -85,6 +91,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setModules(await myModules());
     } catch {
       setModules([]);
+    }
+    // Resolve the tenant's property term. A failure must NOT block sign-in —
+    // falls back to the neutral FACILITY default, same posture as modules above.
+    try {
+      setPropertyTerm(resolvePropertyTerm(await myPropertyTerm()));
+    } catch {
+      setPropertyTerm(DEFAULT_PROPERTY_TERM);
     }
   }, []);
 
@@ -131,6 +144,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setProfile(null);
     setMember(null);
     setModules([]);
+    setPropertyTerm(DEFAULT_PROPERTY_TERM);
   }, []);
 
   const refreshProfile = useCallback(async () => {
@@ -167,6 +181,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         orgId: profile?.org_id ?? null,
         modules,
         hasModule,
+        propertyTerm,
         signInWithPassword,
         signUp,
         signInWithGoogle,

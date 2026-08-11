@@ -10,6 +10,8 @@ import { needsTranscode, transcodeToMp4 } from '../../lib/transcode';
 import { createThread, proposeEvent } from '../../lib/community';
 import { listListableHorses, type ListableHorse } from '../../lib/stable';
 import { useAuth } from '../../contexts/AuthContext';
+import { usePropertyTerm } from '../../contexts/BrandProvider';
+import { titleCase } from '../../lib/propertyTerm';
 import { adminCreateAnnouncement } from '../../lib/admin';
 
 /**
@@ -328,6 +330,7 @@ function PostForm({ type, onClose }: { type: PostType; onClose: () => void }) {
 
 function AnnounceForm({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
+  const propertyTerm = usePropertyTerm();
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [pinned, setPinned] = useState(false);
@@ -353,7 +356,7 @@ function AnnounceForm({ onClose }: { onClose: () => void }) {
     <div className="flex flex-col gap-3.5">
       {/* gold outline — announcements read as official notices, not social posts */}
       <div className="border-2 border-gold-700/60 rounded-xl p-4 bg-white flex flex-col gap-3.5">
-        <div><FieldLabel>Title</FieldLabel><input className={inputCls} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Barn closed Friday for the show" /></div>
+        <div><FieldLabel>Title</FieldLabel><input className={inputCls} value={title} onChange={(e) => setTitle(e.target.value)} placeholder={`e.g. ${titleCase(propertyTerm)} closed Friday for the show`} /></div>
         <div><FieldLabel>Message</FieldLabel><textarea className={textareaCls} value={body} onChange={(e) => setBody(e.target.value)} placeholder="What everyone needs to know" /></div>
         <label className="inline-flex items-center gap-2 text-[12.5px] text-secondary">
           <input type="checkbox" className="accent-green-700" checked={pinned} onChange={(e) => setPinned(e.target.checked)} />
