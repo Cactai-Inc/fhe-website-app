@@ -166,6 +166,50 @@ controls, used twice.
 
 ---
 
+## 3c. THE COVERAGE MODEL — who insures what, and why. Owner, 2026-08-10.
+
+> *"gl i think needs to be owned by the lessee for it to cover their actions and when they are
+> responsible for the horse (ie: they left the gate open and the horse got out and damaged
+> personal property, or they were riding and lost control and damaged personal property or hurt
+> another nearby rider)."*
+
+**GL FOLLOWS THE ACTOR.** The gate left open, the loss of control while riding, the injured
+bystander — those are the **Lessee's** acts, and **only the Lessee's own policy responds to
+them.** The Lessor's GL does not.
+
+**That is why the Lessor can REQUIRE it rather than merely declare their own.** The requirement
+exists because there is no other way for the Lessor to be protected against the Lessee's
+negligence.
+
+### The whole model in one place
+
+| coverage | held by | responds to |
+|---|---|---|
+| **General liability** | **Lessee** | third-party injury and property damage **the Lessee causes** |
+| **Care, custody & control** — a component of the Lessee's GL | **Lessee** | **the horse itself**, while in the Lessee's custody |
+| **Mortality** | **Lessor** | the horse's death, **regardless of fault** |
+| **Medical** — a component of the Lessor's mortality policy | **Lessor** | treatment |
+
+**Two parties, two parent policies, one component each.** GL and CCC are Lessee-side and
+fault-driven; mortality and medical are Lessor-side and not.
+
+**This is why CCC is a component of GL and not standalone** — both are the Lessee covering harm
+the Lessee caused. GL handles everyone else; CCC handles the horse. **And it is why the CCC
+limit must be checked against the horse's declared value** (see the CCC section): it is the
+Lessee's policy standing behind the Lessor's animal.
+
+**Carry this reasoning into the clause text.** `GL_REQUIRED` currently states the requirement
+without stating why. **A clause that says what a policy is FOR is harder to misread and harder
+to strip out later by someone who thinks it is redundant.** Draft it and bring it to the owner.
+
+### One thing NOT settled — ASK
+
+The Lessor still declares their own GL (has / will obtain / does not carry), which requires
+nothing of the Lessee. **Given that only the Lessee's policy answers for the Lessee's acts, is
+the Lessor's own GL declaration still wanted in this document?** It may be useful context, or
+it may be a question that survives from the old model. **The owner has not said; do not remove
+it on inference.**
+
 ## 4. 13.2's STRUCTURE — owner ruling. Two separate selections, and the second can end the section.
 
 > Owner, 2026-08-10: *"the initial selections need to be separate. The lessor either has,
