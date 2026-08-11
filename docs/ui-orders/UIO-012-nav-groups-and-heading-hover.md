@@ -65,6 +65,31 @@ one option that loses information the nav currently carries.
 The standing rule from commit `86a2c33`: whichever route stops being listed keeps building and
 stays one boolean from returning. **Do not delete either page.**
 
+## 2b. A divider below "Add New" — READY
+
+> Owner: *"worth adding to the dashboard nav is an outline below the add new button so its
+> clearly separated as not part of the community app pages."*
+
+**"Add New" is a control, not a page**, but it currently sits flush above the page list with
+nothing marking the difference. It reads as the first item in the group.
+
+**Use the existing divider language — do not invent a treatment.** `NAV_DIVIDER`
+(`AppLayout.tsx:76`, `border-green-900/12`) is already used three ways in this file:
+
+```
+:755   NavFooter          mt-2 pt-3 pb-2 border-t
+:1302  collapsed group    my-1 border-t          role="separator"
+:1426  mobile section     mt-2 border-t pt-2
+```
+
+Follow `:1302`'s shape — `border-t` with `role="separator"` — with spacing that matches the
+rail's rhythm rather than a new value.
+
+**It also does a second job.** Once the `App pages` heading exists (item 1), the divider is
+what keeps "Add New" outside that group rather than reading as its first entry.
+
+**Applies to both rails**, client and staff, wherever the create control sits above the list.
+
 ## 3. The heading hover is invisible. Measured — READY
 
 `AppLayout.tsx:1295` — the group heading button:
