@@ -44,21 +44,51 @@ a 42px mark.
 
 It pairs with the logo mark because it is an identity mark here, not a control.
 
-### Mobile layout — a solid button
+### Mobile layout — the brand colour under a white veil that clears on press
 
-| state | fill | letter | contrast |
-|---|---|---|---|
-| rest | **`green-600` `#215531`** | `cream-25` `#fdfcfa` | **8.50** |
-| `:active` | **`green-800` `#143321`** | `cream-25` | **13.43** |
+**The owner's mechanism, 2026-08-10:**
 
-- **Press step:** 1.58 — the largest available in the scale between two usable fills.
-- **Fill against the cream header:** 7.69 at rest. It is unmistakably a control.
-- Keep the ring. Fill sits inside it.
+> "we set the color to the brand color for the avatar fill on mobile layout... and then there
+> is a white low opacity overlay that changes to a lower opacity when the button is interacted
+> with. this results in the button looking interactive without losing the branding alignment
+> of the accurate color being distorted."
 
-**Why not the light greens.** `green-100` renders at **1.20 contrast against the header** —
-effectively invisible. That is the Sarah failure repeated: a low-contrast control that a real
-user could not find on a real phone. **This mark is the only way into the nav on mobile**
-(ONEHEADER deleted the drawer tab), so it cannot be quiet.
+**The fill is `green-800 #143321` — the brand colour itself, never a derived value.** A white
+overlay sits on top and *reduces* on press, so the pressed state IS the brand colour, exactly.
+
+| state | white overlay | renders | cream letter | vs header |
+|---|---|---|---|---|
+| rest | **14%** | `#355040` | 8.68 | 7.85 |
+| `:active` | **0%** | **`#143321` — pure brand** | 13.43 | 12.14 |
+
+- **Press step: 1.55.** The veil lifting is the whole interaction.
+- **Letter:** `cream-25 #fdfcfa` in both states.
+- Keep the ring. The fill sits inside it.
+
+**Hue is mathematically fixed at 145.2 degrees in every state**, because white is neutral and
+blending toward it moves lightness, not hue. That is precisely what the owner was protecting.
+Verified at every overlay value from 0 to 36%: hue never moves.
+
+**THE ONE CONSEQUENCE, and it is a fork not a dial.** A white overlay preserves hue but
+**collapses saturation** — brand green is 43.7% saturated; at 14% white it is 20.1%, at 22% it
+is 14.4%. So the veil must stay LOW or the mark reads muted grey-green rather than brand green.
+14% is chosen as the point where the rest state still reads green while leaving a 1.55 step.
+
+**If the owner asks for a bigger press step, raising the rest overlay costs saturation** —
+20% white gives a 1.88 step but drops the rest state to 15.6% saturation. That trade goes back
+to him; do not simply turn the number up.
+
+**Do not implement this as two hardcoded hex values.** It must be the brand token with an
+overlay, so that changing the brand colour changes the button. A pseudo-element or a
+`linear-gradient` white layer over `background: theme(colors.green.800)` both work; pick one
+and say which.
+
+### Why not a light-green fill (rejected)
+
+An earlier revision proposed `green-100` at rest. It renders at **1.20 contrast against the
+cream header** — effectively invisible. That is the Sarah failure repeated: a low-contrast
+control a real user could not find on a real phone. **This mark is the only way into the nav
+on mobile** (ONEHEADER deleted the drawer tab), so it cannot be quiet.
 
 ### Letter size — 17px becomes 20px
 
@@ -76,7 +106,8 @@ do, so a sticky post-tap `:hover` can never latch the pressed fill on. The mobil
 
 - `src/components/app/app-header.css`
 
-**No `tailwind.config.js` change.** Every colour is an existing brand-scale entry.
+**No `tailwind.config.js` change.** The fill is the existing `green-800` token; the overlay is
+white at two opacities.
 
 ## Do NOT
 
@@ -84,7 +115,9 @@ do, so a sticky post-tap `:hover` can never latch the pressed fill on. The mobil
 - Do not change `.oh-mono` to match the avatar. He asked for the avatar to gain a ring, not
   for the logo mark to change.
 - Do not touch the 42px mark size, `--cs-hdr-h`, or any breakpoint.
-- Do not reintroduce translucency here in any form.
+- Do not reintroduce a *translucent green* in any form — the fill is opaque brand colour with
+  a white layer over it, which is a different mechanism and the only one that keeps the hue exact.
+- Do not bake the two states in as literal hex values. The brand token must be the source.
 
 ## Verification
 
