@@ -16,9 +16,12 @@ the prose** — several bodies share near-identical sentences.
 
 ---
 
-# OWNER RULINGS, 2026-08-10 evening — THESE CLOSE B2, C4 AND D3
+# OWNER RULINGS, 2026-08-10 evening — B2, C4, D3 **AND** THE THREE LONG-OPEN QUESTIONS
 
-**All three open questions are answered. Do not ask again. Do not re-litigate.**
+**Every open question on the insurance work is answered. Do not ask again. Do not
+re-litigate.** B2 / C4 / D3 came out of this addendum; E1 / E2 / E3 had been open since the
+original rulings doc and are closed here. `TASK-LEASEFIX-insurance-rulings-2026-08-10.md`
+still lists E1–E3 as open — **it is stale on those three, and this file is authoritative.**
 
 ### D3 — the GL deductible split is DELETED
 
@@ -61,6 +64,43 @@ an earlier draft of this addendum wrongly suggested deleting it.
 
 **§5 F6 is therefore answered too:** `CCC_NA` stays reachable, because the uninsured-Lessee
 state still exists. Do not touch it.
+
+### E1 — DEDUCTIBLE CAP: none. Leave it uncapped.
+
+Long-open question, now closed. **Do not add a cap sentence and do not add a cap field.**
+The Lessee's exposure is bounded by the policy, and the Lessee sees the policy because the
+insurance documents are attached to the deal. That was already the owner's model —
+*"the requirement to add the insurance documents to the contract deal are what give the
+lessee the transparency"* — and it stands.
+
+### E2 — BLANK FREQUENCY MEANS DELIBERATELY UNSPECIFIED
+
+Long-open question, now closed. When an author sets a contribution amount and leaves the
+frequency blank, the contract **states the amount and says nothing about timing**. It does not
+default to "one time".
+
+**Render nothing where the frequency would go.** No "one time", no "as agreed", no placeholder.
+
+```
+$100, frequency blank   ->   "Lessee shall contribute $100 toward the cost of the policy."
+```
+
+**Do not add a lock blocker for a missing frequency.** Blank is a valid, intended state.
+
+*Orchestrator's note, recorded once and not to be re-raised:* the owner was shown that this
+leaves a payment obligation with no stated due date, and chose it anyway. It is a deliberate
+allocation of that question to the parties. **Threads must not "fix" it.**
+
+### E3 — CCC STALL: no stall. `Other` absorbs it.
+
+Long-open question, now closed. When the Lessor requires a CCC limit of no less than the
+horse's FMV and the Lessee's actual limit is lower, the Lessee selects **`Other`** and writes
+their real limit. The shortfall is then visible in the document and the owner decides whether
+to accept the deal.
+
+**Do not build a numeric CCC limit field. Do not add a lock blocker. Do not add an ops
+warning.** All three were considered and declined — each requires a numeric limit field that
+the free-text `Other` deliberately replaces.
 
 ### B2 — YES, the GL menu label becomes "maintain"
 
