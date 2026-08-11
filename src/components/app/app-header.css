@@ -70,6 +70,26 @@
      rail's own border (`border-green-800/15`), so all three boundaries read as
      one plane system. */
   border-bottom: 1px solid rgba(20, 51, 33, .15);
+  /* UIO-009, owner 2026-08-10: "add the drop shadow to the header again... the
+     subheader is the issue, and why i opted for the full drop shadow from
+     header instead of partial. if the nav gets it, the subheader does too...
+     genuinely the subheader and nav can be on the same level but the header
+     is always on top of everything."
+
+     This does NOT revert UIO-001 — the rails and subheader keep their own
+     shadow (below in this file), which is doing a different job. The
+     owner's model: header always on top, full width, casts onto whatever is
+     beneath it, nav included; nav and subheader are peers one level below,
+     each with a line and each casting their own shadow onto content; content
+     is the bottom. A content-only shadow would change coverage depending on
+     whether a page has a subheader — full width needs no special-casing.
+
+     No z-index change: z-40 (this rule) above the rails'/subheader's z-30 is
+     already correct for that model. Reusing the exact value this header
+     carried before UIO-001 — the same one the subheader already carries, Y-
+     axis, unchanged — rather than a new one. */
+  box-shadow: 0 2px 4px rgba(16, 28, 22, .08),
+              0 6px 18px rgba(16, 28, 22, .10);
 }
 
 /* ============ THE FLOATING SHADOW — relocated off the header (UIO-001) ============
