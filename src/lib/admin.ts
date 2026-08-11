@@ -374,6 +374,13 @@ export async function adminSendInvitation(
     role?: 'USER' | 'MANAGER' | 'ADMIN';
     /** Agreed start date (YYYY-MM-DD): puts the invite on the 48-hour claim-and-pay window. */
     scheduledFor?: string;
+    /**
+     * Does minting this token RETIRE the link they may already be holding?
+     * 'new' (default) leaves any prior live link working; 'regenerate' is the
+     * deliberate replacement of a compromised or expired one. Sending the same
+     * link again is NOT this call — that is `adminResendInvitation`.
+     */
+    mode?: 'new' | 'regenerate';
   },
 ): Promise<AdminInviteResult> {
   const { data: sessionData } = await supabase.auth.getSession();
@@ -542,6 +549,120 @@ export interface ClientAccountRow {
   credits: { label: string; remaining: number }[];
   /** Consumed service events keyed by service_type code. */
   services: Record<string, number>;
+}
+
+// ─── Invitation history (staff support view) ────────────────────────────────
+/**
+ * EVERY invitation ever issued to one person — not just the live one. The
+ * owner's support case: a client reads a URL down the phone and he has to say
+ * at a glance whether it is the current link, a retired one or an expired one,
+ * and send the right one without leaving the page.
+ *
+ * `token` is a LIVE CREDENTIAL. It is readable here only because the
+ * `invitations` RLS pair is permissive `is_admin()` AND restrictive
+ * `org_id = current_org()` — so this returns rows only for an admin of the
+ * owning org. Never render it on a surface that is not staff-gated, and never
+ * log it.
+ */
+export interface InvitationHistoryRow {
+  id: string;
+  email: string;
+  token: string;
+  status: string;
+  invited_role: string | null;
+  categories: string[] | null;
+  created_at: string;
+  expires_at: string;
+  redeemed_at: string | null;
+  superseded_by: string | null;
+  resend_of: string | null;
+  failure_reason: string | null;
+  deleted_at: string | null;
+}
+
+const INVITATION_HISTORY_COLUMNS =
+  'id, email, token, status, invited_role, categories, created_at, expires_at, '
+  + 'redeemed_at, superseded_by, resend_of, failure_reason, deleted_at';
+
+/** What the row IS, right now — the four words the owner needs on the phone. */
+export type InviteLinkState = 'current' | 'retired' | 'expired' | 'redeemed';
+
+export function inviteLinkState(row: InvitationHistoryRow): InviteLinkState {
+  if (row.status === 'redeemed' || row.status === 'accepted') return 'redeemed';
+  if (row.deleted_at || row.status === 'revoked' || row.status === 'superseded') return 'retired';
+  if (row.status === 'redeemed_unsuccessful') return 'retired';
+  if (row.status === 'expired' || new Date(row.expires_at) <= new Date()) return 'expired';
+  if (row.status === 'sent') return 'current';
+  return 'retired';
+}
+
+/** Why a link stopped working, in the words staff would use out loud. */
+export function inviteRetiredReason(row: InvitationHistoryRow): string | null {
+  if (row.deleted_at) return 'deleted by staff';
+  if (row.status === 'revoked') return 'revoked by staff';
+  if (row.status === 'superseded') return 'replaced by a newer invitation';
+  if (row.status === 'redeemed_unsuccessful') {
+    return `redemption failed${row.failure_reason ? ` — ${row.failure_reason.replace(/_/g, ' ')}` : ''}`;
+  }
+  if (inviteLinkState(row) === 'expired') return 'expired';
+  return null;
+}
+
+/**
+ * Every invitation for one person, newest first. Matched on BOTH the contact
+ * link and the address, because the plain/staff path writes an invitation with
+ * no contact_id — filtering on either alone loses half the history.
+ */
+export async function adminInvitationHistory(
+  person: { contactId?: string | null; email?: string | null },
+): Promise<InvitationHistoryRow[]> {
+  const queries: PromiseLike<{ data: unknown; error: unknown }>[] = [];
+  if (person.contactId) {
+    queries.push(supabase.from('invitations').select(INVITATION_HISTORY_COLUMNS)
+      .eq('contact_id', person.contactId));
+  }
+  if (person.email) {
+    queries.push(supabase.from('invitations').select(INVITATION_HISTORY_COLUMNS)
+      .ilike('email', person.email.trim()));
+  }
+  if (queries.length === 0) return [];
+
+  const results = await Promise.all(queries);
+  const byId = new Map<string, InvitationHistoryRow>();
+  for (const r of results) {
+    if (r.error) throw r.error;
+    for (const row of (r.data ?? []) as InvitationHistoryRow[]) byId.set(row.id, row);
+  }
+  return Array.from(byId.values())
+    .sort((a, b) => b.created_at.localeCompare(a.created_at));
+}
+
+/**
+ * RESEND — the SAME link, to the address already on file. Not a regenerate:
+ * nothing is superseded and no new row is written, so a link the person is
+ * already holding keeps working. Regenerating is `adminSendInvitation`.
+ */
+export async function adminResendInvitation(
+  invitationId: string,
+): Promise<{ emailed: boolean; emailError?: string; email: string }> {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const accessToken = sessionData.session?.access_token;
+  const res = await fetch('/api/admin-resend-invitation', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+    body: JSON.stringify({ invitationId }),
+  });
+  const payload = await res.json().catch(() => null) as
+    { error?: string; emailed?: boolean; emailError?: string; email?: string } | null;
+  if (!res.ok) throw new Error(payload?.error || `Could not resend the invitation (HTTP ${res.status}).`);
+  return {
+    emailed: payload?.emailed === true,
+    emailError: payload?.emailError,
+    email: payload?.email ?? '',
+  };
 }
 
 /** Kill the invite link now (still shows as expired; resendable). */
