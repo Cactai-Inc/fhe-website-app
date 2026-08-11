@@ -203,3 +203,41 @@ part of "both navs." Flagging in case that scope guess was too narrow.
 - The scope guess above (nav-rail family only, not the account-menu-shaped
   block at ~1054-1120) is unverified against what the owner was actually
   looking at when he recorded the flicker.
+
+---
+
+## UIO-004 — contain every scroll container instead of harnessing the body
+
+**Commit:** `58f835d`
+
+Cherry-picked `ee9a261` with `git cherry-pick -n`. Both files that touch
+regions I'd already edited (`AppLayout.tsx`, `CreateModal.tsx`) auto-merged
+with no conflicts — inspected the resulting diff on `AppLayout.tsx` by hand
+anyway rather than trusting a clean auto-merge blindly; it's a single-line
+`overscroll-contain` addition to the account-menu dropdown, untouched by
+UIO-001/002/003.
+
+**File-count discrepancy:** the order says "35 sites across 21 files"; the
+actual commit's diffstat is 27 files, 35 single-line insertions. Went with
+the diffstat.
+
+**What I verified:**
+- `npm run typecheck` — 0 errors. `npm run lint` — 0 errors, 30 warnings
+  (baseline). `npm run build` — succeeded.
+- Diffed `src/index.css` against the pre-cherry-pick tree: empty. Nothing
+  landed on `html`/`body`, matching the order's whole premise.
+- Grepped the built CSS for the property: `.overscroll-contain{overscroll-behavior:contain}`
+  present as a real rule.
+- Grepped the built JS for `overscroll-contain`: 37 occurrences, not 35.
+  Traced the gap before reporting it as a discrepancy rather than assuming
+  either number was right: `git grep`'d the two extra sites
+  (`ContractDrawer.tsx:224`, `ContractSubheader.tsx:275`) and confirmed
+  they predate this cherry-pick — exactly what the original commit message
+  says ("the rails and drawer already done earlier"). 35 new + 2 pre-existing
+  = 37. Not a duplication bug.
+
+**What I did NOT verify — the order says this explicitly needs a phone:**
+- Overscroll chaining itself. This is a runtime scroll-physics behavior that
+  does not appear in a static render or a CSS grep — I have not tested it on
+  a device, iOS or otherwise. Confirming this is unverified, not "probably
+  fine."
