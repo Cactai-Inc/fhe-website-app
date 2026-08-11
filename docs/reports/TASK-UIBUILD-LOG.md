@@ -417,3 +417,62 @@ nothing without saying so.
   rail/subheader shadows beneath it, or whether the subheader's line (found
   already-present rather than added) is in fact what the owner meant, versus
   some other line I haven't identified. Not seen in a browser.
+
+---
+
+## UIO-012 — the community pages get a group, and the heading hover is invisible
+
+**Commit:** `67792c6`
+
+**Item 2 (merge Dashboard/Inbound) is BLOCKED per the order and not
+implemented** — asked the orchestrator directly rather than picking; see the
+conversation. Nothing in this commit touches Dashboard, Inbound, or their
+routes.
+
+**Item 1 correctness issue found and fixed, not just implemented as
+described:** the order doesn't mention it, but wiring the new group through
+the existing `toggleGroup` uncovered a real bug — its fallback (`"what was
+this group's state before any click"`) only searched `navGroups`, and the
+new pseudo-group isn't a member of that array. Left as-is, the group's first
+toggle would always resolve to open, including when it was already open and
+the click meant to close it. Widened the fallback's search array to
+`[...navGroups, APP_PAGES_GROUP]` rather than working around it with a
+separate, bespoke handler — keeps this genuinely "the same toggle," which is
+what the order asked for.
+
+**What I verified:**
+- `npm run typecheck` — 0 errors. `npm run lint` — 0 errors, 30 warnings
+  (baseline). `npm run build` — succeeded.
+- Grepped the built CSS: `.text-green-900\/70{color:#0d2118b3}` (0xb3/255 =
+  70.2%, matches) and `.hover\:text-green-900:hover{...color:rgb(13 33 24 /
+  var(--tw-text-opacity, 1))}` (opacity var defaults to 1 — full strength,
+  no alpha reduction).
+- Computed the rest-state contrast independently rather than trusting "it's
+  above the floor": green-900 at 70% over `#fdfcfa` renders `#55635c`,
+  **6.16:1** — clears 4.5 with real margin, well short of the row labels'
+  own weight, matching the order's "still visibly quieter" intent.
+- Found the App pages group's compiled output in its chunk
+  (`index-ciAhD9Pd.js`) and read it directly rather than trusting the
+  source diff alone: `Ae={key:"app-pages",label:"App pages",items:[],
+  defaultOpen:!0}`, and the toggle function's fallback spread confirmed as
+  `[...Ee,Ae].find(...)` (`Ee` = `navGroups`) — the fix landed in the
+  actual bundle, not just in source. Located the button's JSX immediately
+  before the existing `navGroups.map()` block in the same chunk and
+  confirmed it's structurally identical: same `className` template, same
+  `hs` (ChevronDown) component, same `ne(...)` (`groupOpen`) rotate logic —
+  not just visually similar source, the same pattern compiled.
+- Confirmed the separator branch (`!staffRailPinned`) and the content-gate
+  branch (`groupOpen(Ae) || !staffRailPinned`) both present and wired to the
+  same pseudo-group object.
+
+**What I did NOT verify — needs a browser check:**
+- Whether it actually collapses/expands correctly by clicking, whether the
+  chevron rotates, and whether the heading is now legible on hover. All
+  inferred from reading compiled output, not from clicking anything.
+- Persistence: this group behaves exactly like Management/People, which I
+  traced to mean **none of them persist across a page reload** — `openGroups`
+  is plain `useState({})` with no `localStorage` read/write anywhere I could
+  find, unlike `staffRailPinned` and `communityNav.expanded`, which do. The
+  order's own verification section hedges the same way ("survives a reload
+  if the others do") — flagging in case that's news, since "same persistence"
+  might have been assumed to mean "persists," not "doesn't, consistently."
