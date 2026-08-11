@@ -366,3 +366,54 @@ stop-and-propose needed.
 - The spacing itself. The order says this is an eye judgement for the owner
   to confirm — `gap-1.5` is stated and reasoned (matches this bar's own
   SUBHEADER_BTN icon-to-label gap) but not rendered and looked at.
+
+---
+
+## UIO-009 — the header keeps its line and gets its shadow back
+
+**Commit:** `62c71f5`
+
+**Re-read the order from scratch before building**, per the mid-session
+warning that it had been rewritten twice and an earlier version told UIBUILD
+to raise the rail's z-index — explicitly superseded inside the order's own
+final text ("Do not raise the rail's z-index"). What I actually built: only
+`box-shadow` added back to `.oh-hdr`; nothing touched `z-index` anywhere.
+
+**Subheader "gains a bottom line" — did not add anything, and want that
+flagged rather than silently no-op'd.** The order's table says the subheader
+line is a change ("ADD bottom line, same value") the same way the rail
+shadow was in UIO-001. I checked the actual current file:
+`ContractSubheader.tsx:171` already reads
+`bg-cream-25 border-b border-green-800/15 ...` — `border-green-800/15` IS
+`rgba(20,51,33,.15)`, the exact value the order asks for. This line
+predates my UIO-001 work (it was already there in the very first read of
+this file at the start of the session, before any UIBUILD commit touched
+it) — it isn't something UIO-001 added that the order's author missed. I'm
+reporting this as "already satisfied, nothing to add" rather than "done,"
+since the order's own premise (that this line doesn't currently exist)
+doesn't match what's in the file, and I'd rather flag the mismatch than
+either duplicate a declaration that's already correct or silently do
+nothing without saying so.
+
+**What I verified:**
+- `npm run typecheck` — 0 errors. `npm run lint` — 0 errors, 30 warnings
+  (baseline). `npm run build` — succeeded.
+- Checked every `z-30`/`z-40`/`z-50` site across `AppLayout.tsx` and
+  `ContractSubheader.tsx` rather than assuming the model held: header
+  (`.oh-hdr` and superadmin's own header) both `z-40`; both rails and the
+  contract subheader all `z-30`. Matches the owner's peer model exactly —
+  already correct, confirmed rather than trusted.
+- Grepped the built CSS: `.oh-hdr{...border-bottom:1px solid
+  rgba(20,51,33,.15);box-shadow:0 2px 4px #101c1614,0 6px 18px
+  #101c161a}` — both the line and the shadow present on the same rule, same
+  shadow value UIO-001 removed (converted to 8-digit hex by the minifier,
+  same as before: `#101c1614` = `rgba(16,28,22,.08)`).
+- Grepped the subheader's compiled output in its lazy chunk: `border-b
+  border-green-800/15` still present, unchanged by this commit — confirming
+  I didn't touch it, consistent with the "already satisfied" finding above.
+
+**What I did NOT verify:**
+- Whether the header shadow visually reads correctly now stacked with the
+  rail/subheader shadows beneath it, or whether the subheader's line (found
+  already-present rather than added) is in fact what the owner meant, versus
+  some other line I haven't identified. Not seen in a browser.
