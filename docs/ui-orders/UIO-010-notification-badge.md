@@ -5,13 +5,22 @@
 > Owner, after seeing the numbers: *"the gold is already dark enough. i wouldnt change that. so
 > maybe we leave the number as dark green if the white isnt acceptable."*
 
-**The badge stays exactly as it is: `green-950` on `gold-500`, 7.86:1.** That was already the
-most legible option on the table — the proposed change would have taken it to 2.23:1, and the
-only ways to rescue it cost either the gold's brightness or the badge's identity.
+**The badge stays exactly as it is: `green-950` on `gold-500`, 7.86:1.**
 
-**Recorded so the question is not re-opened.** The instinct — matching the number to the nav
-surface — is reasonable and it simply does not survive contact with a small reversed digit on
-a mid-tone gold. Everything below is the working that produced the answer.
+**It is not the best option — it is the legally acceptable one.** Owner's correction, and the
+distinction matters: contrast maths **rules options out**; it does not make what survives good.
+The proposed cream number was 2.23:1, and the only rescues cost either the gold's brightness or
+the badge's identity. Nothing here made the badge better.
+
+**SO THE AESTHETIC COMPLAINT IS STILL OPEN.** The owner noticed something about how the badge
+sits on the nav. What was settled is that **changing the number cannot fix it** — the number is
+the one element with no headroom. Anything that does fix it changes something else: the badge's
+size, its shape, its position, or the gold itself.
+
+**If the palette is revisited — see `UIO-011` — the badge comes with it.** That is the pass
+where this has room to move, because the gold would be in scope rather than fixed.
+
+Everything below is the working that ruled out the number.
 
 ---
 

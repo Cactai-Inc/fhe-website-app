@@ -58,6 +58,18 @@ on everything.** Two reasons:
 **Include the logo mark and the avatar in columns 2 and 3** so he can see exactly what changing
 the brand mark looks like beside not changing it.
 
+## Carry the badge into this
+
+`UIO-010` closed with **no change** — the owner wanted the badge number to match the nav
+surface and it cannot: a cream digit on `gold-500` is 2.23:1 against a 4.5 floor. **That ruled
+out the number; it did not resolve what he noticed about the badge.**
+
+Owner: *"its not the best option its the legally acceptable one."*
+
+**Include the badge in every column of this evaluation.** It is the one element whose fix must
+come from somewhere other than itself — the gold, the size, the shape, the position — and this
+is the only pass where those are in scope.
+
 ## Files
 
 `docs/reference/` only. **Nothing in `src/`.**
