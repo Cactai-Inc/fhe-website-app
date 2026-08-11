@@ -1504,11 +1504,12 @@ export default function AppLayout() {
 
       {mobileNavOpen && (
         <div className="fixed inset-x-0 bottom-0 top-[var(--cs-hdr-h)] z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
-          {/* B4 (owner, 2026-08-07): black/white scrim, not the drawer's own
-              green family — the green-on-green barely separated. Applied
-              unconditionally (superadmin's drawer is the same green glass and
-              gets the same legibility fix; this is a neutral utility colour,
-              not tenant branding). */}
+          {/* MOBILEPASS: this comment previously claimed a black/white scrim per
+              B4 (owner, 2026-08-07) — stale. The very next day (7adee89f,
+              2026-08-08) the scrim was deliberately moved back to green-950/45
+              and the owner said "contrast looks better"
+              (OPEN-CHANGE-REQUESTS-2026-08-08.md, C6: "still not settled" but
+              never reverted). Trust the code: green-950/45, not black/white. */}
           <div className="absolute inset-0 bg-green-950/45" onClick={closeMobileNav} aria-hidden="true" />
           <nav
             id="app-nav-drawer"
