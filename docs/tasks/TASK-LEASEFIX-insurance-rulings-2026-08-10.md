@@ -189,6 +189,30 @@ disagreement stalls the contract until one party moves — the owner's stated in
 three-change plan solved a contradiction this structure prevents. Close it out; do not build
 from it.
 
+### "RIDER" NEVER APPEARS IN CONTRACT TEXT. Owner ruling 2026-08-10.
+
+> Owner: *"the wording using 'rider' is going to be confusing."*
+
+**In a horse lease, "rider" already means the person on the horse.** It is the dominant sense
+in this document class, and the insurance sense collides with it in the one contract type
+where that is guaranteed to mislead.
+
+**Use "component" — the word `MED_NA` already uses**: *"available only as a component of a
+mortality policy on the Horse."* The vocabulary is established in this document, so matching
+it is both clearer and consistent by default.
+
+**APPROVED CCC N/A TEXT:**
+
+> **13.3 Care, Custody and Control Insurance**
+>
+> Not applicable. Care, custody and control coverage is available only as a component of a
+> general liability policy carried by Lessee. Because Lessee does not carry general liability
+> insurance under this Agreement, no care, custody and control coverage is available.
+
+**Scope of the ban:** contract text, clause bodies, field labels, option labels — anywhere a
+party reads it. **"Parent/rider" stays in the engineering docs**, where it names the pattern
+precisely and no counterparty ever sees it. Do not strip it from these rulings.
+
 ### CCC HOLDS ITS POSITION AND SHOWS N/A — it does not vanish. Settled 2026-08-10.
 
 > Owner: *"the ccc needs to move up to below the gl section right now it goes gl, mort, med,
