@@ -23,8 +23,35 @@ Any unauthenticated caller with a document id soft-deletes every signature on th
 and resets its status. On an `EXECUTED` document the status survives and the signatures do
 not, which produces a contract that reads as executed with nothing signing it.
 
-**ASK THE OWNER BEFORE ACTING: drop it, or guard it?** It has no caller, so a guard preserves
-dead code. **DO NOT GUESS.** If the answer is guard, the check is staff-only.
+### SETTLED 2026-08-10: DROP IT. Do not guard it, do not ask again.
+
+The owner framed the question correctly — *"if this is used to void someone elses signature
+when i edit a document they signed, i suppose that is best answered by if we want the
+signature to lock the doc or not. We've gone back and forth on this topic and reversed the
+decision at least twice."*
+
+**The lock already won, and it is live.** `assert_not_signature_locked(document_id)` raises on
+any document carrying a signature:
+
+> `this document is signed by {names} and is read-only — ask them to remove their signature
+> before making changes`
+
+It is enforced by four functions: `set_contract_field`, `set_field_structured`,
+`set_document_co_buyer`, `remove_document_co_buyer`.
+
+**`void_signatures_on_edit` is the OTHER policy** — edit freely, signatures silently void. It
+was never wired because the lock won. Keeping it is not keeping dead code; it is keeping a
+live, unauthenticated switch into the model that lost, and one that voids signatures while
+leaving `status = EXECUTED` intact — a contract that reads as executed with nothing signing it.
+
+**Dropping is reversible.** The full body is recorded in
+`docs/reports/TASK-NOGUARD1-ORCHESTRATOR-AUDIT.md` §2 and in six migrations. If the auto-void
+model is ever wanted, it gets rebuilt deliberately with a guard.
+
+**A DROP also moots the three-grant trap below** — there is nothing left to revoke. That is
+one more argument for it.
+
+**Not blocked on anything. Do this first.**
 
 **Two facts added by the orchestrator's own re-verification against production, 2026-08-08.**
 Neither report states them and both change how you execute this item.
@@ -202,6 +229,29 @@ For every function changed:
   **Never `~/Desktop`.**
 - Separate migrations per logical group, each revertable alone.
 - Dry-run in `BEGIN … ROLLBACK` with raw output shown, then apply.
+
+### APPLY MODE — SETTLED 2026-08-10. Split, and the split is not negotiable.
+
+**PHASE A — apply to production in-thread.** Only these, and only because each has no caller
+and a blast radius you can state in one line:
+
+1. `DROP FUNCTION void_signatures_on_edit(uuid)`
+2. the three `gift_*` `coalesce(…, false)` fixes — copied from `gift_transfer`, which already
+   carries the correct shape
+
+**Then report Phase A before starting Phase B.**
+
+**PHASE B — DRY-RUN ONLY. Stop for review. Do not apply.** Everything else: the nine
+anon-reachable `contract_fields` writers, `lease_expiry_nudge` and the definer-wrapper sweep,
+and the remaining unguarded set.
+
+Deliver migrations unapplied, plus `BEGIN … ROLLBACK` raw output, plus
+`has_function_privilege()` for `anon`, `authenticated` and PUBLIC before and after each change,
+plus the caller list for every function you would revoke.
+
+**Why B is not applied in-thread:** four of the nine `contract_fields` writers have
+in-database callers. A revoke there breaks contract authoring in production rather than
+breaking an attacker. That is a different risk class from Phase A and it gets a review.
 - **Migrations that rewrite function bodies must assert the rewrite matched.** This repo has
   ~31 body-rewriting migrations, and a replacement that matches nothing silently no-ops and
   reports success. `20260808T0300` shows the assertion pattern.
