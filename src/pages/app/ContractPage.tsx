@@ -838,7 +838,13 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
     setError(null); setNote(null);
     try {
       const r = await sendForReview(id!, roles);
-      const extraNote = '';
+      // SENDGUARD §1: a party who already signed is refused, not skipped. Say so —
+      // folding them into the skipped count would report "no email on file" about
+      // someone whose signature is already on this document.
+      const prettyRole = (x: string) => x.charAt(0) + x.slice(1).toLowerCase();
+      const extraNote = r.refused.length
+        ? ` ${r.refused.map(prettyRole).join(' and ')} already signed this document, so no new signing invitation was sent there.`
+        : '';
       // Name who was actually notified. "All parties" is only true when this
       // send covered every invitable role — saying it after a single-party send
       // (the "Send to Lessor only" button) reads as though the counterparty was
@@ -851,7 +857,11 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           ? (names[0] ?? '')
           : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
       const wereWas = who === 'all parties' || names.length > 1 ? 'were' : 'was';
-      if (r.emailed === 0 && r.skipped === 0) {
+      if (r.emailed === 0 && r.skipped === 0 && r.refused.length > 0) {
+        // Every selected party had already signed. Nothing was sent, and that is
+        // the correct outcome — report it as the reason, not as "nobody selected".
+        setNote(`Nothing to send —${extraNote}`);
+      } else if (r.emailed === 0 && r.skipped === 0) {
         // allSettled over an empty roles array yields 0/0, which used to fall
         // into the success branch and report a send that never happened. On a
         // legal document a false success is worse than an error.

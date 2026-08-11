@@ -53,6 +53,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(404).json({ error: `no ${partyRole} party on this contract` });
     }
 
+    // SENDGUARD §1: never send a signing invitation to someone who already signed.
+    // deliver-documents already refuses on document state (409); the signing-invite
+    // path never got the same discipline. invite_contract_counterparty guards this
+    // independently — it is directly callable — but the refusal is repeated here so
+    // the UI gets a distinguishable code instead of a raw database error.
+    const { data: signed } = await db
+      .from('signatures')
+      .select('party_role, signed_at')
+      .eq('document_id', documentId)
+      .eq('signer_contact_id', party.contact_id)
+      .eq('party_role', partyRole.toUpperCase())
+      .is('deleted_at', null)
+      .maybeSingle();
+    if (signed) {
+      return res.status(409).json({
+        code: 'ALREADY_SIGNED',
+        error: `This ${partyRole.toLowerCase()} has already signed this document — a new signing invitation was not sent.`,
+      });
+    }
+
     // The party is already assigned, so derive their email from the contact record
     // when the caller didn't pass one (Send-for-review path). Skip silently if the
     // contact has no email on file — the in-app notification still reaches them.
@@ -87,7 +107,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { data: inv, error: invErr } = await db.rpc('invite_contract_counterparty', {
       p_document_id: documentId, p_contact_id: party.contact_id, p_email: email,
     });
-    if (invErr) return res.status(400).json({ error: invErr.message });
+    // The RPC guards independently, so its refusal can still arrive here (a race, or
+    // a signature recorded under a different role than the one being invited). Keep
+    // it a refusal, not a generic 400.
+    if (invErr) {
+      return /already signed/i.test(invErr.message)
+        ? res.status(409).json({ code: 'ALREADY_SIGNED', error: invErr.message })
+        : res.status(400).json({ error: invErr.message });
+    }
     const token = (inv as { token: string }).token;
 
     const origin = req.headers.origin || `https://${req.headers.host}`;

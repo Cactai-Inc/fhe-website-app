@@ -396,7 +396,7 @@ export async function redeemContractInvitation(token: string): Promise<string> {
  *  token, and sends the branded email. */
 export async function inviteCounterparty(
   documentId: string, partyRole: string, email?: string,
-): Promise<{ emailed: boolean; reason?: string }> {
+): Promise<{ emailed: boolean; reason?: string; refused?: boolean }> {
   const { data: sess } = await supabase.auth.getSession();
   const bearer = sess?.session?.access_token;
   if (!bearer) throw new Error('You need to be signed in.');
@@ -406,7 +406,15 @@ export async function inviteCounterparty(
     // email is optional — the server derives it from the assigned party contact.
     body: JSON.stringify(email ? { documentId, partyRole, email } : { documentId, partyRole }),
   });
-  const json = (await res.json().catch(() => ({}))) as { error?: string; emailed?: boolean; reason?: string };
+  const json = (await res.json().catch(() => ({}))) as {
+    error?: string; emailed?: boolean; reason?: string; code?: string;
+  };
+  // SENDGUARD §1: "they already signed" is a refusal, not a failure. Return it as
+  // data so the caller can name it — throwing would make it indistinguishable from
+  // "no email on file", which is what the send-for-review summary would then say.
+  if (res.status === 409 && json.code === 'ALREADY_SIGNED') {
+    return { emailed: false, refused: true, reason: json.error };
+  }
   if (!res.ok) throw new Error(json.error || 'Could not send the invitation.');
   return { emailed: json.emailed !== false, reason: json.reason };
 }
@@ -424,7 +432,7 @@ export async function inviteCounterparty(
  *  state is read here rather than passed in, so no caller can get it wrong. */
 export async function sendForReview(
   documentId: string, partyRoles: string[],
-): Promise<{ emailed: number; skipped: number }> {
+): Promise<{ emailed: number; skipped: number; refused: string[] }> {
   const { data: doc, error: stateErr } = await supabase
     .from('documents').select('workflow_state').eq('id', documentId).single();
   if (stateErr) throw stateErr;
@@ -433,10 +441,14 @@ export async function sendForReview(
   }
   const results = await Promise.allSettled(partyRoles.map((r) => inviteCounterparty(documentId, r)));
   let emailed = 0; let skipped = 0;
-  for (const r of results) {
+  // A party who already signed is REFUSED, not skipped — reported separately so the
+  // summary never files them under "no email on file".
+  const refused: string[] = [];
+  results.forEach((r, i) => {
+    if (r.status === 'fulfilled' && r.value.refused) { refused.push(partyRoles[i]); return; }
     if (r.status === 'fulfilled' && r.value.emailed) emailed += 1; else skipped += 1;
-  }
-  return { emailed, skipped };
+  });
+  return { emailed, skipped, refused };
 }
 
 // (composeCostPhrase removed 2026-07-20, audit m-1: superseded — cost prose is
