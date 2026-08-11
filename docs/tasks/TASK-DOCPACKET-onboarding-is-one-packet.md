@@ -41,7 +41,24 @@ and it gets a new timestamp and falls out of its own packet.**
 
 ---
 
-## THE DECISION — three shapes. ASK, DO NOT PICK.
+## DECIDED 2026-08-10 — option 3, and the packet expands.
+
+**Grouping: contact + onboarding class.** No migration, no new column. Every onboarding-class
+document for a contact is one packet, whenever it was assigned — so swapping documents in and
+out changes the packet's contents, which is the flexibility the owner described. The class is
+already knowable from `contract_templates.wall_gating`.
+
+**Presentation: the packet row EXPANDS to reveal the individual documents**, each opening on
+its own exactly as today. **Not** a combined continuous render. This is the smallest change
+and every existing path keeps working — signing, printing and delivery still target the
+individual documents underneath.
+
+**Settled by the orchestrator, not the owner** (implementation detail under his direction):
+a lease sits OUTSIDE the packet — it is a contract, not onboarding paperwork.
+
+The three shapes are retained below as the record of why option 3 won.
+
+## The shapes considered — ASK, DO NOT PICK (historical)
 
 **1. Derive from the assignment instant.** No migration. **Breaks on every swap, resend or
 late addition.** Listed only so nobody proposes it later; it fails the owner's own use case.

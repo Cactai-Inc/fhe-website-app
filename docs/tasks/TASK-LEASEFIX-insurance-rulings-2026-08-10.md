@@ -110,6 +110,51 @@ controls, used twice.
 
 ---
 
+## 4. 13.2's STRUCTURE — owner ruling. Two separate selections, and the second can end the section.
+
+> Owner, 2026-08-10: *"the initial selections need to be separate. The lessor either has,
+> doesnt have, or will obtain. they are not requiring the lessee to do anything with this
+> selection. then, they can require the lessee to have or obtain liability coverage. if we are
+> merging CCC into this block then there is an additional set of options where they require
+> lessee to have or obtain gl with ccc. the does not require is standalone that negates the
+> section entirely for the lessee and the prior selection of their declaration is shown with
+> the does not require of lessee being shown below it."*
+
+```
+A · Lessor's own declaration       has / does not have / will obtain
+      about the Lessor ONLY. Requires nothing of the Lessee.
+
+B · What the Lessor requires       requires Lessee to have or obtain GL
+      of the Lessee                requires Lessee to have or obtain GL with CCC
+                                   does not require   <- STANDALONE
+
+      "does not require" NEGATES the Lessee section entirely. The document then
+      renders A, followed by the "does not require of Lessee" statement below it.
+```
+
+**This dissolves the contradiction by construction.** There is no branch in which the Lessor
+requires GL and the Lessee answers that it carries none — requiring means the valid answers
+are *has* or *will obtain*. The material-breach collision cannot arise.
+
+### CONSEQUENCE: `ACCEPTS_PERSONALLY` may now have NO HOME. Do not resolve this alone.
+
+The owner asked for a "does not carry" option for the Lessee and it went live today
+(`f2b88b3`, `when` removed). **Under this structure the Lessee either answers a requirement —
+has / will obtain — or has no section at all.** There is no third state for them to occupy.
+
+**ASK THE OWNER before removing or keeping it.** Removing it reverses a change he explicitly
+requested; keeping it reintroduces the branch this structure was designed to eliminate.
+Whichever way it goes, `docs/tasks/TASK-LEASEFIX-13.2-lessee-decline-option.md` is superseded
+and must be closed out rather than left as a live spec.
+
+### ALSO UNRESOLVED: is CCC merging back in, or keeping its own block?
+
+The original request said **remove the bundled GL+CCC option and give CCC its own requirement
+block.** This ruling says *"if we are merging CCC into this block then there is an additional
+set of options."* **Those point opposite ways. ASK.**
+
+---
+
 ## The two that were never candidates
 
 **"Other" leads nowhere.** The owner named "Other" as one of three options he wants. It
