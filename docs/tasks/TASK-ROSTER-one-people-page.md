@@ -45,7 +45,30 @@
 > count — **it is a flag, and it belongs with the problem signals**, not with the engagement
 > numbers.
 >
-> ### `TEAM` is EXCLUDED — settled
+> ### HORSES ON THE CARD — names, not just counts. Owner, 2026-08-10.
+
+> *"if they are leasing a horse"* … *"their horse's name for owner and for leasing"*
+
+**The card names the horses, and distinguishes the two relationships:**
+
+```
+Owns      Beaumont de Cactai, Peep Show
+Leasing   TIZ love
+```
+
+**Not a count.** A number tells him how many; a name tells him which, and which is what he needs
+to recognise a person at a glance. **Both relationships appear** — owned and leased are different
+facts about the same person and one does not imply the other.
+
+**The data exists:** `horses.current_owner_contact_id` for ownership, and the lessee side via
+`horse_relationships` / the lease's stamped lessee. **Confirm which is authoritative for leasing
+before building** — `A11`'s work used a lessee stamp plus an active `horse_relationships` row,
+and they may disagree.
+
+**Volume:** CJ owns 2 today, everyone else 1 or 0. **Say what happens at ten** rather than
+letting the card grow unbounded.
+
+### `TEAM` is EXCLUDED — settled
 >
 > > Owner: *"team doesnt need to be listed in a clients menu."*
 >
