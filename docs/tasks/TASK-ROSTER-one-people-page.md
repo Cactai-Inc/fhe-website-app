@@ -44,7 +44,43 @@
 > **DECIDE BEFORE STYLING ANYTHING** — see the border question below. A colour that means
 > "verified" for one person and "somebody typed it" for another is worse than no colour.
 >
-> ## CARD STYLING INSTEAD OF THE WORD "CLIENT" — owner's proposal, NOT YET SPECIFIED
+> ## THE PARENT / DEPENDENT PAIR — both cards name the other person. Owner, 2026-08-10.
+
+> *"the use of the COUNTERPARTY badge on a dependant when they are the RIDER is weird, the name
+> itself is weird. we should just label them as CLIENT and also as DEPENDENT with their Parent's
+> name listed."* … *"and the Parent should list their Dependent's name. the title Parent and
+> Dependent should be included."*
+
+**`COUNTERPARTY` is contract-role language leaking into a people page.** It describes a position
+in a document, not who someone is. **Replace it.**
+
+```
+the child's card     CLIENT · DEPENDENT        Parent: Brian Olenik
+the parent's card    CLIENT · PARENT           Dependent: Gabriella Olenik
+```
+
+**Both directions. The titles "Parent" and "Dependent" appear as labels, not just the names.**
+
+### The data exists and NOTHING reads it — verified 2026-08-10
+
+- **`contacts.guardian_contact_id`** is populated. **One real link today: Gabriella Olenik →
+  Brian Olenik.**
+- **It is referenced NOWHERE in `src/`.** The relationship has been in the database and invisible
+  in the UI, which is why the child gets labelled by her contract role instead.
+- **`contacts.date_of_birth`** exists alongside it.
+
+**USE THE FOREIGN KEY, NOT THE GROUP.** `PARENT_GUARDIAN` is a declared `group_type` with
+**zero rows** — it is not the source and deriving from it would produce nothing.
+
+**The reverse direction needs a lookup**, not a column: a parent is anyone who is some other
+contact's `guardian_contact_id`. **One person may have several dependants** — the card must
+handle more than one name rather than assuming one.
+
+**Find where `COUNTERPARTY` is actually rendered before changing it.** It appears in `src/` only
+in comments and in `inviteCounterparty`; the visible badge is generated somewhere else. **Do not
+guess at the site.**
+
+## CARD STYLING INSTEAD OF THE WORD "CLIENT" — owner's proposal, NOT YET SPECIFIED
 >
 > > *"maybe instead of calling someone a client we can indicate by card styling. a green boarder
 > > is one thing, a gold border is another, and a non colored gray boarder is another?"*
