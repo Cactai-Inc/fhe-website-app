@@ -876,3 +876,48 @@ judgement:**
 - The actual rendered button/text size on a real desktop viewport. Grepping
   confirms the rule exists with the right numbers; it does not confirm 13px
   reads as "not too large" to the owner.
+
+---
+
+## UIO-016 — nav icons and text sit too far left in the panel
+
+**Commit:** `6ed9809`
+
+**Same element as UIO-014** — confirmed by re-checking the same
+already-verified commit (`6ed5cd4`) rather than re-deriving it: line 827 at
+authoring time is the `ClientRail`'s `<nav>`, not the staff rail's.
+
+**The order's premise about the flagged comment doesn't hold, and I didn't
+edit it.** Traced the `!open` branch containing "nav's p-3 plus this
+link's px-3…" to its own preceding comment — "I1B — staff rail icon
+strip" — and confirmed via every `<CommunityNav>` call site
+(`grep -n "<CommunityNav"`) that `open={false}` is only ever passed by the
+staff rail (`open={staffRailPinned}`); every other caller either omits
+`open` (defaults `true`) or passes a literal `true`. The staff rail's own
+`<nav>` already carries `p-3` and is outside this order's scope. So the
+comment was already correct for the code path it actually describes, both
+before and after this change — "trust the code, fix the comment" doesn't
+apply here because the code it's near was never wrong. Left it untouched
+and said why, rather than editing a comment that didn't need it because
+the order said to.
+
+**What I verified:**
+- `npm run typecheck` — 0 errors. `npm run lint` — 0 errors, 35 warnings
+  (baseline). `npm run build` — succeeded.
+- Read the compiled JS for the client rail's className directly:
+  `border-r border-green-900/12 ${tv} p-3 overflow-y-auto...` — `p-3`
+  present, not just `p-2` replaced in source.
+- Grepped the eight row sites the order names (`px-3` on
+  `RailLink`/`PresenceLink`/`AccountNavLink`/etc.) — confirmed none of them
+  changed, so the icon inset shifts via the shared container only, as
+  intended.
+
+**What I did NOT do, and said so rather than silently skipping:** the
+order's "check the collapsed nav state too" instruction doesn't apply —
+the client rail has no collapsed/icon-only mode at all (fixed 240px,
+non-collapsible per I1, owner 2026-08-04). Only the staff rail collapses,
+and this order doesn't touch the staff rail.
+
+**What I did NOT verify — needs a browser check:**
+- The actual rendered icon position and whether 24px reads correctly
+  against the row labels. Not seen in a browser.
