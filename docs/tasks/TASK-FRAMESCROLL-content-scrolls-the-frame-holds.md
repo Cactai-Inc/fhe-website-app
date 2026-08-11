@@ -100,10 +100,15 @@ The page must not widen.
   changing how every existing table renders. Out of scope.
 - **Do not add a horizontal scrollbar where none is needed.** `auto`, never `scroll`.
 
-## 2. The backstop on `<main>` — and it must be `clip`, not `hidden`
+## 2. The backstop on `<main>` — SPECIFY IT, DO NOT APPLY IT
 
-Even with `DataTable` fixed, any future wide child re-creates the bug. Add a defensive
-horizontal clip to `<main>` (`AppLayout.tsx:1470`).
+**⚠️ YOU DO NOT EDIT `AppLayout.tsx`. `TASK-NAVMOTION` owns that file and is running
+concurrently.** Work out the correct one-line change, prove the reasoning below, and **hand
+the exact diff to the orchestrator in your report.** It gets applied at merge. One line is not
+worth a conflict in a 1,590-line file two threads are looking at.
+
+Even with `DataTable` fixed, any future wide child re-creates the bug. The backstop is a
+defensive horizontal clip on `<main>` (`AppLayout.tsx:1470`).
 
 **⚠️ IT MUST BE `overflow-x: clip`. `overflow-x: hidden` WILL BREAK STICKY POSITIONING.**
 
@@ -117,13 +122,14 @@ on `main` would break it.
 resolve against the real scrollport. It is also the only value that permits `overflow-y:
 visible` on the other axis.
 
-**Prove it, do not assume it:** after adding the clip, confirm `ContractSubheader` still sticks
-and that the two nav rails (both `sticky top-[var(--cs-hdr-h)]`, `AppLayout.tsx:880` and
-`:1338`) are unaffected. The rails are **siblings of `main`, not descendants** — state that
-you checked rather than inferring it.
+**Prove the reasoning, do not assume it.** Establish from the source which sticky elements sit
+inside `<main>` and which do not: `ContractSubheader` is sticky at `top: var(--cs-hdr-h)` and
+lives inside page content; the two nav rails (both `sticky top-[var(--cs-hdr-h)]`,
+`AppLayout.tsx:880` and `:1338`) are **siblings of `main`, not descendants**. State what you
+checked rather than inferring it, and say plainly that the render is unverified.
 
-If `overflow-x: clip` turns out to break something, **report it and ship §1 alone.** The
-root-cause fix is the deliverable; the backstop is insurance.
+**If you conclude the backstop is unsafe, say so and recommend against it.** The root-cause fix
+in §1 is the deliverable; the backstop is insurance and it is the orchestrator's call to apply.
 
 ## 3. The header must not be reachable by horizontal scroll
 
@@ -173,10 +179,9 @@ thread picks up — a long accurate list is the deliverable here, not a wide dif
 
 - Worktree `~/Downloads/claude-code-repo/wt-framescroll`, branch `task/framescroll`, off
   `origin/main`. **Never `~/Desktop`.** Do not push.
-- **You own `src/components/ops/kit/DataTable.tsx`.** Your only permitted edit in
-  `AppLayout.tsx` is the `overflow-x` on `<main>` at line 1470 — **that file belongs to
-  `TASK-NAVMOTION`, which is running concurrently.** One property, one line, nothing else. If
-  you need more, **report it and stop.**
+- **You own `src/components/ops/kit/DataTable.tsx`.** **You do not edit `AppLayout.tsx` at all**
+  — `TASK-NAVMOTION` owns it and is running concurrently. The `<main>` backstop is specified in
+  your report as an exact diff and applied by the orchestrator at merge.
 - **`ClauseDocument.tsx` is STOP-AND-PROPOSE** — report, never edit.
 - **`DocumentQueueTable.tsx` is being edited right now by `TASK-DOCQUEUE`**, which is adding
   person/horse/type columns to this exact table — the change that makes this bug worse. **Do
@@ -195,8 +200,9 @@ thread picks up — a long accurate list is the deliverable here, not a wide dif
 1. A `DataTable` wider than its container **scrolls horizontally inside its own frame.**
 2. **The document does not scroll horizontally**, so the app header stays put and its right
    edge never leaves the viewport.
-3. `ContractSubheader` and both nav rails **still stick** after the `main` change — stated as
-   checked, not assumed.
+3. The `<main>` backstop is delivered **as an exact one-line diff in the report**, with the
+   `clip`-versus-`hidden` reasoning and the sticky-descendant analysis stated as checked, not
+   assumed — and `AppLayout.tsx` is untouched in your branch.
 4. Nothing that hangs out of a table row is newly clipped — or, if something is, it is named in
    the report.
 5. The audit table lists every overflow driver found in `src/`, with the ones left unfixed
