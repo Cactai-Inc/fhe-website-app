@@ -1,6 +1,21 @@
 # UIO-010 — the badge number
 
-**Owner asked for:** 2026-08-10 · **Status:** BLOCKED — as specified it fails contrast.
+**Status: CLOSED 2026-08-10 — NO CHANGE. Do not implement.**
+
+> Owner, after seeing the numbers: *"the gold is already dark enough. i wouldnt change that. so
+> maybe we leave the number as dark green if the white isnt acceptable."*
+
+**The badge stays exactly as it is: `green-950` on `gold-500`, 7.86:1.** That was already the
+most legible option on the table — the proposed change would have taken it to 2.23:1, and the
+only ways to rescue it cost either the gold's brightness or the badge's identity.
+
+**Recorded so the question is not re-opened.** The instinct — matching the number to the nav
+surface — is reasonable and it simply does not survive contact with a small reversed digit on
+a mid-tone gold. Everything below is the working that produced the answer.
+
+---
+
+**(historical) Owner asked for:** 2026-08-10 · was BLOCKED — as specified it fails contrast.
 
 > "the notification bubbles on the nav are gold with a green number, lets make the number the
 > color of the nav surface."
