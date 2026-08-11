@@ -4,29 +4,56 @@ Branch `task/noguard2`, worktree `~/Downloads/claude-code-repo/wt-noguard2`, off
 @ `1928e98`. All work measured against production (`lrstswfxfsezdmvkvukc`) on 2026-08-10.
 
 **Phase A is APPLIED to production.** Commit `6192208`.
-**Phase B is DRY-RUN ONLY and is NOT applied.** Five migrations delivered unapplied, awaiting review.
+**Phase B is APPLIED to production**, owner-approved 2026-08-10 with both flags accepted
+(revoke `authenticated` on the set; keep the `org_id` predicate in the guard). Commit `e7953a3`
+delivered it dry-run; applied unchanged.
 
 ---
 
 ## Headline
 
 Phase A removed the worst finding outright and closed the last three "guard present, no effect"
-cases. Phase B is dry-run and proposes closing **24 more** of NOGUARD1's 76, in five separately
-revertable migrations.
+cases. Phase B closed **27 more** of NOGUARD1's 76, in five separately revertable migrations.
 
 Three claims in the input documents did not survive verification against production. All three
 made the target list **wrong in composition** — two functions on it are not reachable at all, one
 that belongs on it was missing, and the stated reason for guarding rather than revoking is false
-in this codebase. Details in *Corrections* below.
+in this codebase. Details in *Corrections* below. All three reproduce and are recorded at the top
+of `TASK-NOGUARD1-ORCHESTRATOR-AUDIT.md`; the third changed the strategy from "write seven guards"
+to "revoke six, guard one".
 
 | | count |
 |---|---|
 | NOGUARD1 **DOES NOT ENFORCE** | 76 |
-| closed by Phase A (applied) | **4** |
-| proposed closed by Phase B (dry-run) | **24** |
-| remaining after both | **48** |
+| closed by Phase A | **4** |
+| closed by Phase B | **27** |
+| **remaining** | **45** |
 
-Anon-callable definer functions moved **285 → 284** with Phase A. Phase B would take it to **260**.
+Measured against production after both phases:
+
+```
+                | NOGUARD1 baseline | after A+B
+                |    2026-08-07/08  | 2026-08-10
+----------------+-------------------+-----------
+definer_total   |        441        |    441
+anon_exec       |        319        |    291
+trigger_fns     |         34        |     34
+anon_callable   |        285        |    257
+auth_callable   |        396        |    370
+```
+
+`anon_callable` 285 → 257 is 27 revokes plus the one drop. `auth_callable` 396 → 370 is the 26
+functions that also lost `authenticated` (one of the 27, `fill_party_fields_from_contacts`, keeps
+it and is guarded instead). `definer_total` holds at 441 because another thread added
+`compose_insurance_allocation` during this task — see *Out of scope*.
+
+### A correction to my own arithmetic
+
+I reported "23 functions lose `authenticated`", "24 closed by Phase B", "28 total", "48 remaining"
+in the Phase B review summary. Those figures were computed before migration `20260810T0700` was
+written and were not recomputed. The correct figures are **26 / 27 / 31 / 45**. The *set* of
+functions was never wrong — all 27 are named in the tables below, and `0700` is described in full —
+only the counts were stale.
 
 ---
 
@@ -285,11 +312,11 @@ fewer new predicates is strictly less risk.
 
 ---
 
-# PHASE B — dry-run only, NOT applied
+# PHASE B — APPLIED to production
 
-Five migrations, each revertable alone. All five were dry-run individually **and** all five
-together in one transaction; every run ended `ROLLBACK` with no error and no warning. Production
-was re-read afterwards and is unchanged (`anon=t, PUBLIC=t, guarded=f` on every target).
+Five migrations, each revertable alone. Before approval, all five were dry-run individually **and**
+all five together in one transaction; every run ended `ROLLBACK` with no error and no warning, and
+production was re-read afterwards unchanged. They were then applied in order, unmodified.
 
 | migration | what | functions |
 |---|---|---|
@@ -509,9 +536,116 @@ Each migration's verify block **raises** if any target is still reachable, and s
 `service_role` was lost where it was meant to be retained. A revoke that silently did nothing
 cannot be reported as success.
 
+## Post-apply verification
+
+Re-read independently of the migrations' own verify blocks, so the check does not depend on the
+thing it is checking:
+
+```
+ total | still_anon | still_authed | still_public | svc_kept
+-------+------------+--------------+--------------+----------
+    27 |          0 |            1 |            0 |       27
+```
+
+The one retaining `authenticated` is the guarded one:
+
+```
+fill_party_fields_from_contacts(uuid) | anon f | authed t | guarded t
+  {postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+```
+
+**Row counts, t0 → t1 tight around the apply — identical**, including the tables these functions
+write to:
+
+```
+docs 81 | sigs 62 | live_sigs 62 | contacts 34 | profiles 11 | purchases 5
+members 10 | contract_fields 654 | document_parties 127 | bookings 319
+```
+
+**anon is now refused at the grant** (sample, run against the applied state):
+
+```
+ERROR:  permission denied for function recompose_document_fields
+ERROR:  permission denied for function remove_document_co_buyer
+ERROR:  permission denied for function affiliation_reconciliation
+ERROR:  permission denied for function confirm_booking_for_purchase
+ERROR:  permission denied for function lease_expiry_nudge
+```
+
+**A free signup is refused too**, which is the point of taking `authenticated` as well:
+
+```
+as authenticated (role USER):
+ERROR:  permission denied for function affiliation_reconciliation
+ERROR:  permission denied for function confirm_booking_for_purchase
+```
+
+**The guard, on a real document (not Sarah's), post-apply:**
+
+| caller | result |
+|---|---|
+| `anon` | `permission denied for function` — stopped at the grant |
+| signed-in stranger | `not authorized to write party fields on document 152912dd…` — stopped by the guard |
+| the real document party | **succeeds** |
+| staff | **succeeds** |
+
+**The three `service_role` paths survive** (privilege checked; deliberately NOT executed, because
+`lease_expiry_nudge` sends notifications to every lessee and `publish_open_slots_all` writes
+availability across every tenant):
+
+```
+confirm_booking_for_purchase(uuid)      | svc_can_run t
+lease_expiry_nudge(integer)             | svc_can_run t
+publish_open_slots_all(integer,integer) | svc_can_run t
+```
+
+## The last-mile residual: two chains closed, the rest accepted
+
+The residual named at review was that the privilege *mechanics* were proven but the revoked
+functions had not been run through their real in-database callers end-to-end. That was accepted
+rather than closed. Two chains have since been closed against the applied state, both inside
+`BEGIN … ROLLBACK`:
+
+**Chain 1 — horse-record capture** (`capture_horse_record_info` → `sync_contract_fields_from_defs`
+[revoked] → `fill_party_fields_from_contacts` [revoked from anon, guarded] →
+`remerge_contract_from_fields`), acting as staff:
+
+```
+capture_horse_record_info('a353eab0-…','{}')  -> chain_completed
+sync_contract_fields_from_defs('a353eab0-…')  -> ERROR: permission denied
+```
+
+Same user, same session: the chain completes, the direct call is refused.
+
+**Chain 2 — the browser "Save" button** (`src/lib/contracts.ts saveContract` →
+`remerge_contract_from_clauses` → `recompose_document_fields` [revoked]), on a live
+`HORSE_LEASE_V2` document:
+
+```
+remerge_contract_from_clauses('e1052bae-…') -> composed_body_chars 26510
+recompose_document_fields('e1052bae-…')     -> ERROR: permission denied
+```
+
+The highest-traffic contract path in the app composes a 26,510-character body normally while its
+inner function is unreachable directly.
+
+Row counts were re-read after every chain test and are unchanged (`contract_fields` 654,
+`document_parties` 127, `documents` 81, `signatures` 62, `horses` 4, `bookings` 319).
+
+**Still accepted, not closed:** the remaining in-database callers were not each exercised —
+`start_bill_of_sale`, `start_bill_of_sale_standalone`, `start_sale_contract`,
+`start_lease_contract_v2`, `add_deal_document`, `reassign_document_party`, `set_document_co_buyer`,
+and the trigger-borne paths into `apply_affiliations`, `generate_fulfillment_units`,
+`consume_unit_for_booking`, `log_status_event`, `set_unit_status`, `_resolve_location`,
+`_publish_open_slots_for_org`. Each creates or mutates real contract, fulfillment or calendar rows,
+and the task forbids modifying real data to demonstrate a fix. The two chains above exercise the
+same mechanism these rely on — a postgres-owned `SECURITY DEFINER` caller reaching a revoked
+callee — across four of the revoked functions, and the mechanism is uniform: it does not vary by
+which caller invokes it. This is the accepted residual, stated as accepted.
+
 ---
 
-# The remainder — 48 still DOES NOT ENFORCE, and why
+# The remainder — 45 still DOES NOT ENFORCE, and why
 
 Deliberately left, grouped by reason. Nothing here is left for lack of time; each has a reason it
 should not be changed by this task.
@@ -543,7 +677,7 @@ have `src/` callers on live party-facing surfaces and the right fix is a
 `caller_is_document_party_or_staff()` guard **per function**, each needing its own caller check.
 That is a coherent third phase, not a tail to bolt onto this one.
 
-**e. Horse/member readers (6).** `horse_medications_prose`, `horse_medication_component`,
+**e. Horse/member readers (8).** `horse_medications_prose`, `horse_medication_component`,
 `member_horses`, `member_display_name`, `location_full_label`, `expand_horse_blocks`,
 `horse_time_conflict`, `caller_may_use_horse`. Animal medical data and name/address lookups by id.
 Same reasoning as (d).
@@ -551,12 +685,14 @@ Same reasoning as (d).
 **f. Writers needing a designed guard, not a grant change (8).** `complete_deal`,
 `assert_horse_care_eligible` (creates documents despite the name),
 `send_executed_document_email`, `undelivered_executed_documents`, `supersede_invitations`,
-`ensure_staff_profile`, `insurance_resolution_sync`, `reap_expired_holds`,
-`affiliation_reconciliation`-adjacent sweeps. Several have `src/` or `api/` callers; each needs a
-purpose-appropriate predicate, and the task explicitly warns against pasting a staff check onto
-something meant for ordinary members.
+`ensure_staff_profile`, `insurance_resolution_sync`, `reap_expired_holds`. Several have `src/` or
+`api/` callers; each needs a purpose-appropriate predicate, and the task explicitly warns against
+pasting a staff check onto something meant for ordinary members.
 
-**g. Left alone on instruction (3).** `redeem_gift` (self-enforcing —
+7 + 4 + 4 + 14 + 8 + 8 = **45**.
+
+**Separately, left alone on instruction** (these are in NOGUARD1's *intentionally public* 10, not
+in the 76, so they are not part of the 45): `redeem_gift` (self-enforcing —
 `IF auth.uid() IS NULL THEN RETURN 'not_authenticated'`), `open_gift` (the gift code is the
 credential), and the public catalog read path. Confirmed untouched.
 
@@ -564,11 +700,12 @@ credential), and the public catalog read path. Confirmed untouched.
 
 # Out of scope, but tripped over
 
-**`authenticated` is still 396.** Unchanged by Phase A. Every one of the 76 is in that set and
-signing up is free. Phase B would incidentally close 24 of them for `authenticated` too, because
-revoking a function with no browser caller costs nothing — but the real NOGUARD3 question (the
-functions that *do* have browser callers and only distinguish *nobody* from *somebody*) is
-untouched.
+**`authenticated` went 396 → 370, and that is not NOGUARD3 being done.** Phase A left it at 396;
+Phase B closed 26 incidentally, because revoking a function with no browser caller costs nothing
+and leaving it would leave the finding open to anyone who signs up. The real NOGUARD3 question is
+untouched: **370** definer functions are still callable by any free signup, and most of them *do*
+have browser callers, so they cannot be fixed by a grant — they need predicates that distinguish
+*this* somebody from *that* one. On consequence that still outranks what this task closed.
 
 **A new `SECURITY DEFINER` function landed during this task.** `definer_total` is still 441 after I
 dropped one, so one was added since the audit: `compose_insurance_allocation(uuid)`, from the
@@ -603,22 +740,36 @@ within three days.
 - That revoking does not break a `SECURITY DEFINER` caller — by revoking and calling through one.
 - That no `api/` path reaches the seven contract writers — 6-deep closure from all 25 `api/` RPCs.
 - The gift guards, exercised as anon / buyer / staff / stranger, before and after.
-- The `fill_party_fields_from_contacts` guard, exercised as anon / party / stranger.
-- That all five Phase B migrations run clean and roll back clean, singly and together.
+- The `fill_party_fields_from_contacts` guard, exercised as anon / party / stranger / staff — both
+  in dry run and again against the applied state.
+- That all five Phase B migrations run clean and roll back clean, singly and together, and then
+  apply clean.
+- Post-apply: all 27 re-read independently of the migrations' own verify blocks; anon and
+  authenticated refused by direct call; the three `service_role` paths still privileged.
+- Two real in-database definer chains run end-to-end against the applied state — horse-record
+  capture and the browser `saveContract` path — each completing while the same user's direct call
+  to the revoked inner function is refused.
 
 **Assumed, and flagged rather than proven:**
 
-- **The 48 remainder are still unguarded.** I did not re-read all 48 bodies; I carried NOGUARD1's
+- **The 45 remainder are still unguarded.** I did not re-read all 45 bodies; I carried NOGUARD1's
   classification forward. Its method was sound and its own caveats apply — including that a
   `BEFORE` trigger, `CHECK` or `NOT NULL` outside the body may already stop some of them, which
   would make 76 an over-count.
-- **Phase B breaks nothing.** Proven for the privilege mechanics, for the guard's predicate, and for
-  the absence of `api/` paths. Not proven by running the seven guarded/revoked functions through
-  every one of their in-database callers end-to-end — several of those write real contract rows,
-  and the task forbids modifying real data to demonstrate a fix. This is the specific residual risk
-  the Phase B review exists to accept or reject.
+- **The remaining in-database callers.** Two chains are closed (above). The rest —
+  `start_bill_of_sale`, `start_bill_of_sale_standalone`, `start_sale_contract`,
+  `start_lease_contract_v2`, `add_deal_document`, `reassign_document_party`,
+  `set_document_co_buyer`, and the trigger-borne paths into `apply_affiliations`,
+  `generate_fulfillment_units`, `consume_unit_for_booking`, `log_status_event`, `set_unit_status`,
+  `_resolve_location`, `_publish_open_slots_for_org` — were not exercised, because each creates or
+  mutates real contract, fulfillment or calendar rows. The mechanism they depend on is the same one
+  the two closed chains demonstrate and does not vary by caller. **Owner-accepted at review as a
+  residual, not closed.**
 - **`current_org()` multi-tenancy.** The `fill_party_fields_from_contacts` guard's staff branch
   requires an org match. Verified correct for the single organization that exists; not verified
   under multi-tenancy, because multi-tenancy does not exist yet to test against.
 - **The PostgREST HTTP layer.** Not probed, for want of a real anon key. All anon behaviour was
   demonstrated at the database layer with the role and JWT claim PostgREST sets.
+- **The `service_role` sweeps were not executed**, only privilege-checked. Running
+  `lease_expiry_nudge` would notify every lessee and `publish_open_slots_all` would write
+  availability across every tenant; neither is an acceptable way to prove a grant.
