@@ -8,7 +8,7 @@ import {
   GraduationCap, Home as HomeIcon, Boxes, Contact, LayoutDashboard,
   ChevronDown, ChevronUp, Plus, LifeBuoy, ShoppingBag, MessageSquare, BookOpen, ListChecks,
   PanelLeftClose, PanelLeftOpen, Activity, Compass, Handshake, Grid3x3, Bookmark,
-  Inbox, Receipt, Eye, Library,
+  Receipt, Eye, Library,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useViewSurfaces } from '../../lib/surfaces';
@@ -251,8 +251,14 @@ const PLATFORM_NAV: NavItem[] = [
  * and was not applied is listed in docs/reports/TASK-ONEHEADER-REPORT.md.
  * Lessons and Horse care are the two custom marks and stay blocked on artwork. */
 const MANAGEMENT_GROUP: NavItem[] = [
-  // Inbox, not Mail: this is a work QUEUE, and Mail read as "email a person".
-  { to: '/app/ops/intake', label: 'Inbound', icon: Inbox },
+  /* UIO-012 item 2, nav half only: Inbound removed from view here (route
+   *  still builds, hidden not deleted — commit 86a2c33's standing rule).
+   *  Dashboard moves in from the App pages group, since it was staff's own
+   *  management dashboard filed in the wrong section, not a community page.
+   *  The content merge (Inbound's booking/support queue folded into the
+   *  Dashboard's layout as entries) is its own task — not scoped to this
+   *  file, and not attempted here. */
+  { to: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/app/ops/support', label: 'Support', icon: LifeBuoy },
   // Servicing folded in 2026-07-31: three links did not justify a heading of
   // their own, and they are day-to-day management like the queues above.
@@ -738,23 +744,19 @@ function ClientNavItems({ bellCount, dmCount, presence, lessonsOn, onNavigate }:
   );
 }
 
-/** ONEMENU — the staff rail/drawer equivalent of ClientNavItems. Dashboard and
- *  Calendar were already hardcoded at both render sites (unchanged icons —
- *  staff's Dashboard keeps `HomeIcon`, distinct from the member rail's
- *  `LayoutDashboard`, pre-existing and not in this task's scope). Catalog and
- *  Messages are the net-new items from A2's inventory: instructors already
- *  reached them through the old avatar dropdown's client-quick-links branch
- *  (which incorrectly also caught them, since it only excluded admins), while
+/** ONEMENU — the staff rail/drawer equivalent of ClientNavItems. Calendar was
+ *  already hardcoded at both render sites. Catalog and Messages are the
+ *  net-new items from A2's inventory: instructors already reached them
+ *  through the old avatar dropdown's client-quick-links branch (which
+ *  incorrectly also caught them, since it only excluded admins), while
  *  admins never got them at all. Owner ruling #4 — "admin and instructor
  *  converge... the current divergence is drift, not design" — resolved by
- *  giving every staff account the same set rather than picking a side. */
-function StaffNavItems({ bellCount, dmCount, open = true }: { bellCount: number; dmCount: number; open?: boolean }) {
+ *  giving every staff account the same set rather than picking a side.
+ *  UIO-012 item 2: Dashboard moved to the MANAGEMENT_GROUP table — it was
+ *  staff's own management dashboard, filed in the wrong section. */
+function StaffNavItems({ dmCount, open = true }: { dmCount: number; open?: boolean }) {
   return (
     <>
-      {/* LayoutDashboard, matching the member rail. Staff's `HomeIcon` was
-          called out as pre-existing drift when ONEMENU touched this line; the
-          icon exercise now settles ONE glyph per page, so the two converge. */}
-      <RailLink to="/app/dashboard" label="Dashboard" icon={LayoutDashboard} badge={bellCount} open={open} />
       <RailLink to="/app/calendar" label="Calendar" icon={CalendarDays} open={open} />
       <RailLink to="/app/catalog" label="Catalog" icon={ShoppingBag} open={open} />
       <RailLink to="/app/messages" label="Messages" icon={MessageSquare} badge={dmCount} open={open} />
@@ -950,13 +952,18 @@ export default function AppLayout() {
     if (!isTrainer) return;
     fetchMyGrantKeys().then(setGrantKeys).catch(() => {});
   }, [isTrainer]);
-  // Inbound's badge is injected here (not in the static MANAGEMENT_GROUP table)
-  // since it's a live count, mirroring how the Dashboard badge is passed as a
-  // prop rather than baked into QUICK.
+  // UIO-012 item 2: Dashboard's badge is injected here (not in the static
+  // MANAGEMENT_GROUP table) since it's a live count, the same reason
+  // Inbound's badge was before it moved here — Inbound's own count doesn't
+  // just move house, it SUMS into Dashboard's: myUnreadCount() (unreadCount,
+  // "addressed to you") + inboundOpenCount() (inboundCount, "waiting to be
+  // picked up") are different sources, and with Inbound off the nav its
+  // count has nowhere else to live — dropping it would make open leads
+  // invisible from the nav, a regression against today.
   const navGroups = showRail
     ? manageNavGroups(hasModule, isAdmin, isSuperAdmin, grantKeys).map((g) => ({
         ...g,
-        items: g.items.map((it) => (it.to === '/app/ops/intake' ? { ...it, badge: inboundCount } : it)),
+        items: g.items.map((it) => (it.to === '/app/dashboard' ? { ...it, badge: unreadCount + inboundCount } : it)),
       }))
     : [];
   /* UIO-012: the first five items (Community Feed + the four StaffNavItems)
@@ -1300,6 +1307,13 @@ export default function AppLayout() {
                   {staffRailPinned && <span className="whitespace-nowrap">Add New</span>}
                   {!staffRailPinned && <NavTooltipLabel label="Add New" />}
                 </button>
+                {/* UIO-012 item 2b: "Add New" is a control, not a page, but it
+                    sat flush above the list with nothing marking the
+                    difference — it read as the App pages group's first entry.
+                    Same divider language the collapsed-group separator below
+                    already uses (border-t + role="separator"), not a new
+                    treatment. */}
+                <div className={`my-1 border-t ${NAV_DIVIDER}`} role="separator" />
               </div>
               {/* The static heading here used to read "Management", duplicating
                   the Management GROUP below it — two identical labels in one nav.
@@ -1329,7 +1343,7 @@ export default function AppLayout() {
                   {(groupOpen(APP_PAGES_GROUP) || !staffRailPinned) && (
                     <div className="flex flex-col gap-0.5 mt-0.5">
                       <CommunityNav open={staffRailPinned} indentClass="pl-9" />
-                      <StaffNavItems bellCount={unreadCount} dmCount={dmCount} open={staffRailPinned} />
+                      <StaffNavItems dmCount={dmCount} open={staffRailPinned} />
                     </div>
                   )}
                 </div>
@@ -1473,7 +1487,7 @@ export default function AppLayout() {
                 {!showRail ? (
                   <ClientNavItems bellCount={unreadCount} dmCount={dmCount} presence={presence} lessonsOn={lessonsOn} onNavigate={closeMobileNav} />
                 ) : (
-                  <StaffNavItems bellCount={unreadCount} dmCount={dmCount} />
+                  <StaffNavItems dmCount={dmCount} />
                 )}
               </div>
             )}
