@@ -1,3 +1,37 @@
+> ## ORCHESTRATOR AUDIT 2026-08-10 — the deployment section of this report is WRONG. Corrected here.
+>
+> **Everything in this report is deployed.** The thread concluded otherwise by testing whether
+> its own cherry-picked SHAs are ancestors of `origin/main`. **Cherry-picks always get new
+> hashes** — reachability by SHA and presence by content are different questions.
+>
+> Verified against `origin/main` 2026-08-10:
+>
+> ```
+> IDENTICAL CONTENT  3ae412b == f4b7932   (Yes/No gates)
+> IDENTICAL CONTENT  41d9b37 == 2be3faa   (ClauseDocument.tsx — the frozen-file fix)
+> IDENTICAL CONTENT  f869a96 == 353f5ef   (13.2 requirement model)
+> IDENTICAL CONTENT  fd9329f == 1bec0a5   (Lessor's own coverage)
+> ```
+>
+> All four right-hand SHAs are ancestors of `origin/main`. `origin/main`'s
+> `ClauseDocument.tsx` carries the `flex-wrap`/`shrink-0` change, and all four migration files
+> — `20260809T1900`, `T2000`, `T2100`, `T2200` — are present in `supabase/migrations/`.
+>
+> **Two specific corrections:**
+> - *"Not deployed — 41d9b37, the ClauseDocument.tsx fix… the label squeeze is still there"* —
+>   **it shipped.** The freeze was lifted and the fix went out with the 2026-08-10 push.
+> - *"Live in the production database but not in git — the four migrations"* — **they are in
+>   git.** The journal/database gap this report flags as "the NULLUID shape" was already closed.
+>
+> **This is the third instance of one mistake from this thread** — the `oneheader` claim
+> (`git diff` instead of `merge-base`), the reversion diagnosis (inferred a deploy without
+> checking the reflog), and this. Each time the skepticism was right and the test was wrong.
+> **The habit to build: when asking "did this land?", test the CONTENT — `git patch-id
+> --stable`, or grep the file on the target ref. Never the SHA.**
+>
+> The rest of the report — §4's verified-versus-asserted split, and §5's own error record —
+> stands and is good work.
+
 # TASK LEASEFIX — report
 
 **2026-08-10.** Written in `~/Downloads/claude-code-repo/wt-leasefix`, branch `task/leasefix`,
