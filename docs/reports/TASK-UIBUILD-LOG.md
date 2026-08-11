@@ -670,3 +670,407 @@ a missing value.
 Queue complete: UIO-003 through UIO-012 (all items), UIO-005, UIO-010,
 UIO-011. Nothing left `READY` as of this session's last sync with
 `origin/main`.
+
+---
+
+## New queue: UIO-013 through UIO-018
+
+Synced `task/uibuild` to `origin/main` (fast-forward, clean — 54 files, all
+from unrelated merged threads: NOGUARD2/3, ROSTER, ROSTERCARD,
+CONTRACTORPHAN, INVITEWORKS, DASHLEADS, LEASEFIX. None touch
+`AppLayout.tsx`/`app-header.css`/`ContractSubheader.tsx`). **Baseline lint
+warnings moved from 30 to 35** with this merge — confirmed by stashing my
+own changes and re-running lint against the merged-but-otherwise-untouched
+tree before assuming my work introduced anything. 35 is the correct
+baseline for everything below.
+
+## UIO-013 — the nav loses its fill states and takes gold
+
+**Commit:** `94f3f8d`
+
+**Scope:** applied to the nav-rail family only (`RailLink`/`NAV_ROW_IDLE`/
+`NAV_ICON_IDLE`/`CommunityNav`/Add New), consistent with UIO-003's own
+scoping — the account-menu-dropdown-shaped block (`MenuLink` and the block
+around what's now lines 1132-1268) still carries the old
+`hover:bg-navfill/64` fill untouched. Same reasoning as before: that's a
+different, unrelated surface the order doesn't name.
+
+**What I verified:**
+- `npm run typecheck` — 0 errors. `npm run lint` — 0 errors, 35 warnings
+  (new baseline, confirmed above). `npm run build` — succeeded.
+- Grepped the built CSS for all four underline sub-properties by property,
+  not by my authored class name — first attempt at the regex mis-escaped
+  Tailwind's arbitrary-variant selector (`\[\@media\(hover\:hover\)\]\:...`)
+  and returned nothing, which looked exactly like a T1 silent-fail; redid it
+  with a plain substring search rather than trusting the first empty result.
+  Confirmed present: `text-decoration-line:underline`,
+  `text-decoration-color:#ba9935` (gold-600, exact hex), `text-decoration-thickness:2px`,
+  `text-underline-offset:4px` — both the direct `hover:` forms (row-level,
+  e.g. RailLink) and the `group-hover:` forms (CommunityNav's Link, which
+  needs to react to hovering its sibling toggle button too).
+- Confirmed `.group:hover .[...]group-hover:bg-cream-25{background-color:rgb(253 252 250 ...)}`
+  present for the badge — exact cream-25 value.
+- Confirmed `bg-navfill/64` is now ONLY emitted for the untouched
+  account-menu block (grepped the source lines producing the one remaining
+  compiled rule, all outside this order's scope) and `bg-navfill/80`
+  (selected, untouched) still emits unchanged.
+- **The empirical check that mattered most**: before centralizing the
+  underline in the row-level className (rather than touching every
+  individual label span, which the order suggests as one option), rendered
+  a minimal flex-row reproduction (icon + label, `underline` on the row) in
+  headless Chrome and looked at it — confirmed the line stays under the
+  label's own text width and does not appear under the icon or stretch
+  across the row. This is standard CSS behavior (text-decoration doesn't
+  decorate replaced elements, and paints per-element even when inherited to
+  flex children), but I tested rather than assumed it given how explicit the
+  order is about the icon and the row being off-limits.
+
+**Selected-fill ("light gold") — explicitly NOT shipped**, per the order's
+own stop condition. Computed cream-25 vs. gold-600 contrast at every alpha
+from 0.2 to 1.0 (Python, WCAG relative-luminance formula): best case is
+2.66:1 at 100% opacity (no blend at all) — the fill and the label color are
+structurally incompatible, not a tuning problem. `NAV_ROW_ACTIVE` is
+byte-for-byte unchanged; documented the finding in a comment at its
+declaration so a future thread doesn't re-attempt the same math.
+
+**Badge on selected row also NOT changed** (not explicitly required, but
+coupled to the blocked piece) — reasoned that blending the badge into the
+panel color only makes visual sense against an unfilled or light
+background; against the still-dark `navfill/80` selected fill, a cream
+badge would look like a stray light dot rather than "a hole," so left it
+untouched pending the selected-fill question being resolved by the owner.
+
+**What I did NOT verify — needs a browser check:**
+- The actual rendered underline in the real app (not just the isolated
+  repro), the badge's hover blend, and whether removing the fill entirely
+  reads as intended rather than "broken" — this is explicitly a "try it"
+  per the owner, so the verdict is his to make.
+
+---
+
+## UIO-014 — the divider between the desktop nav and the content is too dark
+
+**Commit:** `7280812`
+
+**Scope note:** the order's Files section names one line in `AppLayout.tsx`
+only. Determined which of the two rails "line 827" actually meant by
+checking out the exact commit that authored UIO-014
+(`git show 6ed5cd4:src/components/app/AppLayout.tsx`) rather than guessing
+from the current, already-shifted line numbers — confirmed it's the
+`ClientRail` (member rail), not the staff rail, which carries the identical
+`border-r border-green-950/20` untouched. Did not extend the fix to the
+staff rail on my own judgment.
+
+**Real bug found and fixed, not just the literal instruction implemented:**
+before shipping, checked whether `border-green-900/12` (the order's own
+stated target, "not invented — already this file's declared divider
+weight") actually compiles. It did not, anywhere, ever — confirmed by
+listing every `green-900` rule the build actually emits (10, 15, 20, 40,
+50, 70, 75, 80, 90, 95 all present; 12 absent) and cross-referencing
+Tailwind's real default opacity scale
+(`node -e "console.log(Object.keys(require('tailwindcss/defaultTheme').opacity))"`
+— steps of 5, so 12 was never going to be in it) against
+`tailwind.config.js`'s custom additions (64, 66 — not 12). Stopped and
+asked rather than shipping a value I'd just proven does nothing; the answer
+was to fix the scale (added `12: '0.12'`), which the orchestrator
+authorized explicitly since it's outside UIO-014's own Files list.
+
+**Swept the whole source tree for every other `color-utility/N` opacity
+modifier**, per the follow-up instruction, cross-checked against the full
+valid set (5-step default plus 8/12/64/66): found `/8` also missing,
+6 sites across 4 files this task doesn't own
+(`ContractActivityCard.tsx`, `HorsePage.tsx`, `ops/ActivityPage.tsx`,
+`ops/EvaluationReportsPage.tsx` — listed exhaustively via grep, not
+sampled). Added `8: '0.08'` to the same scale fix; did not touch those
+files' content, only the shared config that now makes their existing
+classes work. Every other value in active use (5 through 95 in 5s, plus 64
+and 66) was already covered — confirmed by the sweep script's full output,
+not a partial check.
+
+**The six NAV_DIVIDER sites that change as a side effect of the config
+fix** (all were rendering `border-color: currentColor` — Tailwind
+preflight's global default — instead of the intended faint wash, since
+`border-t` alone still draws a line even when its color utility silently
+fails):
+1. `AppLayout.tsx:827` — `NavFooter`'s own top border (pre-existing, not
+   from this session)
+2. `AppLayout.tsx:1362` — the "Add New" divider (UIO-012, this session)
+3. `AppLayout.tsx:1387` — the App pages group's collapsed-state divider
+   (UIO-012, this session)
+4. `AppLayout.tsx:1417` — the pre-existing collapsed-group separator
+   (Management/People/etc., predates this session)
+5. `AppLayout.tsx:1542` — the mobile drawer's section-heading border
+   (pre-existing)
+6. `AppLayout.tsx:873` (this order) — the client rail's own right edge,
+   the new site UIO-014 asked for
+
+**What I verified:**
+- `npm run typecheck` — 0 errors. `npm run lint` — 0 errors, 35 warnings
+  (baseline). `npm run build` — succeeded.
+- Grepped the built CSS by property for both fixed values:
+  `border-green-900\/12{border-color:#0d21181f}` (`0x1f`/255 = 12.2% ≈ 12%,
+  confirms the right alpha, not just that a rule exists) and
+  `green-800\/8{border-color:#14332114}` /
+  `green-800\/8{background-color:#14332114}` (`0x14`/255 = 7.8% ≈ 8%).
+- Read the compiled JS for the client rail's actual className string:
+  `border-r border-green-900/12` present; the staff rail's className still
+  reads `border-r border-green-950/20`, confirming the scope stayed at
+  exactly one rail as ordered.
+
+**What I did NOT verify:**
+- Whether the now-correctly-rendering dividers at the other 5 sites read as
+  intended visually, or whether any of them now looks TOO faint/heavy in
+  context — I only confirmed they went from "wrong colour" to "the declared
+  colour," not that the declared colour is definitely right everywhere it's
+  used. Worth a specific look at all six, not just the one this order asked
+  about.
+
+---
+
+## UIO-015 — the subheader buttons and text are too large on desktop
+
+**Commit:** `ae87c2c`
+
+**Amending per the orchestrator's instruction: the order's quoted "current
+state" of `SUBHEADER_BTN` (lines 72-75) was stale.** It quoted a version
+with `text-sm` and no `md:` overrides beyond `md:py-2`. The actual file had
+already moved to fluid `clamp()`-based sizing for `padding-inline`,
+`font-size` and `gap` (three more lines the order doesn't quote at all),
+replacing an earlier two-breakpoint version a comment block says had real
+bugs ("the row still wrapped well above the intended breakpoint"). This
+wasn't something I needed to discover by reading history — the order simply
+described a file that no longer existed by the time I reached it.
+
+**Tested the literal instruction before shipping it, found it was a no-op,
+and stopped rather than shipping something that looked right in the diff
+and did nothing in the render:** appended `md:text-[13px] md:px-2.5
+md:py-1.5` to the class string, built, and read the compiled CSS's byte
+offsets for both the new fixed-value rules and the existing `clamp()`
+rules. The `clamp()` rules land AFTER the fixed-value rules in Tailwind's
+own generated stylesheet regardless of where either sits in my source
+string — same specificity, later-in-source wins, so the fluid ceiling
+always overrode my fixed values. Reverted the experiment before asking.
+
+**Confirmed direction: lower the `clamp()` ceilings in place**, using
+exactly the values the orchestrator authorized (13px, 0.625rem/10px) —
+these are UIO-015's own targets (13px text, ~10px horizontal padding),
+just expressed correctly for the system the file actually uses, not my own
+invented numbers. Minimums and the `vw` scaling term untouched, so
+sub-ceiling fluid behavior is unchanged. Explicitly did NOT revert to fixed
+breakpoint values, which the orchestrator noted would reintroduce the bug
+the `clamp()` system exists to prevent.
+
+**What I verified:**
+- `npm run typecheck` — 0 errors. `npm run lint` — 0 errors, 35 warnings
+  (baseline). `npm run build` — succeeded.
+- Grepped the built CSS by the actual clamp arguments (not just presence of
+  the property): `font-size:clamp(11.5px,1.05vw,13px)` and
+  `padding-inline:clamp(.4rem,1.1vw,.625rem)` both present with the exact
+  new ceilings.
+- Confirmed the mobile base (`px-3 py-3 text-sm`, sub-`md`) and the `gap`
+  clamp (`clamp(0.25rem,0.5vw,0.375rem)`) are byte-for-byte unchanged —
+  grepped both directly rather than trusting the diff alone.
+
+**What I did NOT verify — the order says explicitly this is an eye
+judgement:**
+- The actual rendered button/text size on a real desktop viewport. Grepping
+  confirms the rule exists with the right numbers; it does not confirm 13px
+  reads as "not too large" to the owner.
+
+---
+
+## UIO-016 — nav icons and text sit too far left in the panel
+
+**Commit:** `6ed9809`
+
+**Same element as UIO-014** — confirmed by re-checking the same
+already-verified commit (`6ed5cd4`) rather than re-deriving it: line 827 at
+authoring time is the `ClientRail`'s `<nav>`, not the staff rail's.
+
+**The order's premise about the flagged comment doesn't hold, and I didn't
+edit it.** Traced the `!open` branch containing "nav's p-3 plus this
+link's px-3…" to its own preceding comment — "I1B — staff rail icon
+strip" — and confirmed via every `<CommunityNav>` call site
+(`grep -n "<CommunityNav"`) that `open={false}` is only ever passed by the
+staff rail (`open={staffRailPinned}`); every other caller either omits
+`open` (defaults `true`) or passes a literal `true`. The staff rail's own
+`<nav>` already carries `p-3` and is outside this order's scope. So the
+comment was already correct for the code path it actually describes, both
+before and after this change — "trust the code, fix the comment" doesn't
+apply here because the code it's near was never wrong. Left it untouched
+and said why, rather than editing a comment that didn't need it because
+the order said to.
+
+**What I verified:**
+- `npm run typecheck` — 0 errors. `npm run lint` — 0 errors, 35 warnings
+  (baseline). `npm run build` — succeeded.
+- Read the compiled JS for the client rail's className directly:
+  `border-r border-green-900/12 ${tv} p-3 overflow-y-auto...` — `p-3`
+  present, not just `p-2` replaced in source.
+- Grepped the eight row sites the order names (`px-3` on
+  `RailLink`/`PresenceLink`/`AccountNavLink`/etc.) — confirmed none of them
+  changed, so the icon inset shifts via the shared container only, as
+  intended.
+
+**What I did NOT do, and said so rather than silently skipping:** the
+order's "check the collapsed nav state too" instruction doesn't apply —
+the client rail has no collapsed/icon-only mode at all (fixed 240px,
+non-collapsible per I1, owner 2026-08-04). Only the staff rail collapses,
+and this order doesn't touch the staff rail.
+
+**What I did NOT verify — needs a browser check:**
+- The actual rendered icon position and whether 24px reads correctly
+  against the row labels. Not seen in a browser.
+
+---
+
+## UIO-017 — an empty card renders below the end of the contract
+
+**Commit:** `b278cc3`
+
+**The order's own lead was wrong, and I disproved it rather than working
+around it.** It hypothesized `#contract-signatures`'s wrapper was
+unconditional. Read it directly: it's gated on
+`state !== executed/void/terminated && (in_review || locked || signatures.length > 0)`
+— genuinely conditional — and a comment immediately above it already says
+"no empty white box," meaning someone had already reasoned about exactly
+this failure mode once. Per the order's own instruction ("if it is a
+different element, fix that one and say so"), kept looking.
+
+**The search, in order, with why each candidate was ruled out — not just
+the one that turned out right:**
+1. The three bottom-of-page cards (`ContractNotes`, `ContractChangeRequests`,
+   `ContractChangeHistory`, ~:2055-2073) — same shape of bug (wrapper
+   unconditional on `id && !(showDeck && !isExecuted)`, content
+   component-owned). Read all three components fully: each unconditionally
+   renders its own heading + a count/status line ("no changes yet", "none
+   yet", "0 events") even with zero data, so none can produce a visually
+   empty card. Ruled out by reading the actual render output, not assumed
+   safe because they "have content logic."
+2. `ContractActivityCard` (rendered bare, no wrapper, for any staff viewer
+   at any status) — same reasoning: it does return `null` while
+   loading/erroring (correct), but once loaded it always shows "Activity ·
+   N events" even at N=0. Ruled out.
+3. The horse-confirmation and co-buyer cards (~:1634, ~:1664) — both
+   require `editablePhase`, which the freeze scenario (locked/frozen
+   documents) rules out, and both always show static text regardless.
+   Ruled out.
+4. **`#contract-signatures`'s own children** — read every one of the seven
+   blocks inside the section end to end: every single one is independently
+   conditional (role, `docGated`, `nameGated`, `iSigned`,
+   `companyPendingRoles`, signature count) and there is no unconditional
+   content anywhere in the section — not a heading, not a label, nothing.
+   Constructed the specific viewer scenario that fails all seven at once
+   (staff, `myRoles.length === 0` — no party role of their own on this
+   contract — `state === 'locked'`, zero signatures) and confirmed it
+   satisfies the *outer* gate (`state === 'locked'` alone is sufficient)
+   while every inner block stays hidden. This is the actual bug: not "no
+   gating," but the outer gate and the seven inner gates checking different
+   things, with a real gap between them.
+
+**The fix is the precise disjunction of those seven conditions
+(`hasSignatureCardContent`), ANDed onto the existing outer gate** — not a
+new rule, the exact union of what's already there. Three of the seven share
+one shape (`locked && has a role && not signed yet`, split only by which
+message shows) and collapse to a single term in the derived value.
+
+**What I verified:**
+- `npm run typecheck` — 0 errors. `npm run lint` — 0 errors, 35 warnings
+  (baseline). `npm run build` — succeeded.
+- Read the compiled JS directly for the actual gate as shipped:
+  `Ae!=="executed"&&Ae!=="void"&&Ae!=="terminated"&&(Ae==="in_review"||Ae==="locked"||((f==null?void 0:f.signatures.length)??0)>0)&&fA&&r.jsxs("section",{id:"contract-signatures"...`
+  — `fA` (my `hasSignatureCardContent`) is ANDed on exactly where intended,
+  immediately before the section renders.
+
+**Reasoning about the populated case, since the signing freeze means I
+cannot observe one directly (the order requires this explicitly, not just
+permits it):** `hasSignatureCardContent` is constructed as the literal OR
+of the same seven conditions that gate the seven children. By construction,
+whenever it evaluates true, at least one of those seven conditions is true,
+which means that specific child renders. The new outer AND therefore can
+only ever suppress the section in states where it's already proven none of
+the seven children would show anything — it cannot suppress a state where
+something legitimately renders, because "something renders" and
+"`hasSignatureCardContent` is true" are the same fact by how the value was
+built, not two facts I'm hoping stay in sync.
+
+**What I did NOT verify — the order is explicit that a populated render is
+not currently observable:**
+- I have not seen this section render WITH content, before or after this
+  fix, since the signing freeze means no live document has any signatures
+  or signable state to show right now. The construction argument above is
+  the closest available substitute for that observation, not a replacement
+  for it — worth a specific check once the freeze lifts.
+- Did not check whether `ClauseDocument.tsx` was even a candidate location
+  in the first place beyond confirming the empty content lives entirely in
+  `ContractPage.tsx`'s own JSX — never needed to open the frozen file at
+  all, so there is nothing to stop-and-propose.
+
+---
+
+## UIO-018 — the subheader gets the same gold underline as the nav
+
+**Commit:** `e770645`
+
+Confirmed UIO-013 was implemented (this session, earlier) before starting,
+per the order's own sequencing requirement — did not proceed on an
+assumption.
+
+**A real bug caught before shipping, not after:** `text-decoration`
+propagates through descendant boxes by default — this is different from
+the icon-skipping behavior UIO-013 verified (icons are replaced elements
+with no text runs at all; the count pill genuinely has its own text and
+sits inside the now-`hover:underline` button). Built a forced-hover HTML
+repro (a `.hovered` class standing in for `:hover`, since headless Chrome
+screenshots don't trigger real pointer state) with two buttons side by
+side — one with an unguarded count pill, one with `no-underline` added —
+and looked at both. The unguarded pill visibly shows the gold line running
+through its digit; the guarded one doesn't. Added `no-underline` to the
+real pill on that evidence, not on my recollection of how text-decoration
+propagation is supposed to work.
+
+**A syntax error from my own first attempt, caught by typecheck before it
+went anywhere:** placed the explanatory comment for the `no-underline` fix
+as a bare `{/* ... */}` directly inside a parenthesized `&&` JSX
+expression, which isn't valid without a fragment wrapping it — `tsc` failed
+with a cascade of parse errors starting at the comment's line. Moved the
+comment above the whole conditional instead of inside it. Re-ran
+typecheck clean before treating this as done.
+
+**What I verified:**
+- `npm run typecheck` — 0 errors (after fixing the syntax error above).
+  `npm run lint` — 0 errors, 35 warnings (baseline). `npm run build` —
+  succeeded.
+- Grepped the built CSS by property for all four `md:hover:` rules:
+  `text-decoration-line:underline`, `text-decoration-color:#ba9935` (exact
+  same gold-600 hex UIO-013 used), `text-decoration-thickness:2px`,
+  `text-underline-offset:4px` — byte-identical values to UIO-013's nav
+  treatment, confirming "reuse the exact declaration" rather than a
+  close-but-separate one.
+- Grepped `no-underline` — present as `text-decoration-line:none`, a real
+  rule, not silently dropped.
+- Grepped all four classes composing the selected/open state
+  (`border-gold-400`, `bg-gold-50`, `text-gold-900`, `shadow-inner`) —
+  still present and unchanged, confirming the order's "only the hover
+  changes" held.
+- Confirmed the viewers/party chip (~:293) is a sibling of the drawer
+  buttons in the JSX tree, not a descendant — re-read its surrounding
+  structure directly rather than assuming from the order's phrasing that it
+  needed the same guard the count pill did.
+
+**What I did NOT verify — needs a browser check:**
+- The actual hover behavior on a real desktop browser, and whether `md:`
+  (width-based, per the order) reads correctly compared to the nav's
+  `[@media(hover:hover)]` (capability-based) — these are deliberately
+  different mechanisms for two different components, and only a real
+  narrow-desktop-window test would show whether that distinction matters in
+  practice.
+
+---
+
+Second queue complete: UIO-013 through UIO-018, in order, all six
+implemented or explicitly stopped-and-reported on their blocked pieces.
+Two systemic findings surfaced and fixed beyond what any single order
+asked for: the NAV_DIVIDER/`/12` opacity bug (UIO-014) and the
+signatures-card gating bug (UIO-017) — both diagnosed from evidence, not
+from the orders' own stated hypotheses, which were wrong in both cases.

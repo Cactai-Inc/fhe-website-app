@@ -66,19 +66,42 @@ const NAV_PANEL = 'bg-cream-25';
  *  no transition at all, and the rest had Tailwind's bare 150ms default,
  *  which read as instant rather than easing. Centralising it means every row
  *  that reads this constant is fixed at once and can't drift back out of
- *  step the way a per-site `transition-colors` did. */
-const NAV_ROW_IDLE = 'text-green-800 transition-colors duration-320 ease-glide [@media(hover:hover)]:hover:bg-navfill/64 [@media(hover:hover)]:hover:text-cream-25';
+ *  step the way a per-site `transition-colors` did.
+ *  UIO-013 ("try it, not a settled design" — owner): the fill is GONE.
+ *  Hover no longer paints the row or swaps the text to cream — it puts a
+ *  gold underline under the label. Text-decoration is inherited but painted
+ *  per element's own content, and a flex icon is a replaced element with no
+ *  glyphs to decorate, so putting `underline` on the row (rather than
+ *  reaching into every label span individually) still lands only under the
+ *  text — verified empirically (a Chrome screenshot of icon+label in a flex
+ *  row with `underline` on the row), not assumed from the spec. `decoration-2`
+ *  and `underline-offset-4` are Tailwind's own scale steps, not arbitrary
+ *  values — see T1. */
+const NAV_ROW_IDLE = 'text-green-800 transition-colors duration-320 ease-glide [@media(hover:hover)]:hover:underline [@media(hover:hover)]:hover:decoration-gold-600 [@media(hover:hover)]:hover:decoration-2 [@media(hover:hover)]:hover:underline-offset-4';
 /** selected row: the inversion of the panel. Cream fill, green ink — the same
  *  two colours the other way round, which is what makes it read as selected on a
  *  panel that is itself earth-800 (C5b's old `bg-green-800` active fill would now
- *  be invisible: it IS the panel). */
+ *  be invisible: it IS the panel).
+ *  UIO-013 asked for this to become a "light gold" fill, solved the same way
+ *  `navfill` was (a compensated blend against the near-white panel), with
+ *  the label's contrast checked against the result. Checked, and stopped
+ *  here per the order's own instruction: `cream-25` text does not clear
+ *  4.5:1 against gold-600 at ANY alpha — 2.66:1 even at 100% (no blend at
+ *  all), and every lighter step is worse, not better, since a lighter gold
+ *  is a lighter fill and cream-25 is already itself nearly white. There is
+ *  no alpha to solve for; the fill and the current text colour are
+ *  structurally incompatible. Left unchanged rather than darkening the
+ *  label to compensate, which the order explicitly rules out. */
 const NAV_ROW_ACTIVE = 'bg-navfill/80 text-cream-25 font-medium';
 /** UIO-003, cause 1: this constant had no transition at all, so the icon's
  *  own colour snapped to `cream-25` on `group-hover` roughly 30ms into the
  *  row's 150ms fill transition — visible as a one-frame vanish, proven on
  *  the owner's own screen recording (`docs/reference/navhover-frames/`).
- *  CSS transitions are not inherited from the row; the icon needs its own. */
-const NAV_ICON_IDLE = 'text-green-800/70 transition-colors duration-320 ease-glide [@media(hover:hover)]:group-hover:text-cream-25';
+ *  CSS transitions are not inherited from the row; the icon needs its own.
+ *  UIO-013: the `group-hover:text-cream-25` swap is gone with the fill it
+ *  was contrasting against — "do not underline the icon" is explicit, and
+ *  there is nothing else for the icon to do on hover now. It stays put. */
+const NAV_ICON_IDLE = 'text-green-800/70 transition-colors duration-320 ease-glide';
 const NAV_ICON_ACTIVE = 'text-cream-25';
 /** group headings ("Management", "People", …) — the "section header" the owner
  *  named explicitly.
@@ -468,12 +491,25 @@ function RailLink({ to, label, icon: Icon, end, badge = 0, open = true }: NavIte
           <span className="relative shrink-0">
             <Icon size={17} aria-hidden="true" className={isActive ? NAV_ICON_ACTIVE : NAV_ICON_IDLE} />
             {badge > 0 && !open && (
-              <span className={`absolute -top-1.5 -right-1.5 min-w-[1rem] h-4 px-1 ${NAV_BADGE} text-[10px] leading-4 text-center rounded-full`}>{badge > 9 ? '9+' : badge}</span>
+              <span className={`absolute -top-1.5 -right-1.5 min-w-[1rem] h-4 px-1 ${NAV_BADGE} ${
+                /* UIO-013: on hover the row is unfilled now (panel colour),
+                   so the badge blending into `cream-25` reads as a hole in
+                   the panel rather than a second accent beside the gold
+                   underline. Scoped to `!isActive` deliberately — the
+                   "selected" restyle is not shipped in this order (see log:
+                   cream text failed 4.5:1 against every light-gold fill I
+                   tried), so a selected row's badge stays untouched; blending
+                   it into the panel while the row itself is still the old
+                   dark green fill would just make it invisible. */
+                !isActive ? '[@media(hover:hover)]:group-hover:bg-cream-25' : ''
+              } text-[10px] leading-4 text-center rounded-full`}>{badge > 9 ? '9+' : badge}</span>
             )}
           </span>
           {open && <span className="flex-1">{label}</span>}
           {badge > 0 && open && (
-            <span className={`min-w-[1.25rem] h-5 px-1.5 text-[11px] leading-5 text-center rounded-full ${NAV_BADGE}`}>{badge > 9 ? '9+' : badge}</span>
+            <span className={`min-w-[1.25rem] h-5 px-1.5 text-[11px] leading-5 text-center rounded-full ${NAV_BADGE} ${
+              !isActive ? '[@media(hover:hover)]:group-hover:bg-cream-25' : ''
+            }`}>{badge > 9 ? '9+' : badge}</span>
           )}
           {!open && <NavTooltipLabel label={label} />}
         </>
@@ -617,7 +653,12 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
           `bg-navfill/80`; because the row splits its background (this div) from
           its ink (the Link and the toggle below), NAV_ROW_ACTIVE is applied in
           those two halves rather than as one class. */}
-      <div className={`group relative flex items-center rounded-lg pr-1 transition-colors duration-320 ease-glide ${isAll ? 'bg-navfill/80' : '[@media(hover:hover)]:hover:bg-navfill/64'}`}>
+      {/* UIO-013: the idle branch's hover fill is gone — the "Community Feed"
+          Link below carries a group-hover underline instead. `group` stays on
+          this div because that underline is still triggered by hovering
+          anywhere in the row, toggle button included, matching how the fill
+          covered the same area before. */}
+      <div className={`group relative flex items-center rounded-lg pr-1 transition-colors duration-320 ease-glide ${isAll ? 'bg-navfill/80' : ''}`}>
         {/* Owner, 2026-08-09: the idle label was `text-cream-100/80` — a palette
             left over from when NAV_PANEL was green. The panel is now cream-25
             (#fdfcfa) and cream-100 (#f5f0e8) is literally the HEADER fill, so
@@ -625,7 +666,7 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
             panel: invisible. Idle now uses the same green ink as NAV_ROW_IDLE,
             which every other row in the rail already had. */}
         <Link to="/app" onClick={onNavigate} aria-current={isAll ? 'page' : undefined}
-          className={`flex items-center gap-3 flex-1 min-w-0 px-3 py-2.5 text-[13.5px] font-sans focus-ring rounded-lg transition-colors duration-320 ease-glide ${isAll ? 'text-cream-25 font-medium' : 'text-green-800 [@media(hover:hover)]:group-hover:text-cream-25'}`}>
+          className={`flex items-center gap-3 flex-1 min-w-0 px-3 py-2.5 text-[13.5px] font-sans focus-ring rounded-lg transition-colors duration-320 ease-glide ${isAll ? 'text-cream-25 font-medium' : 'text-green-800 [@media(hover:hover)]:group-hover:underline [@media(hover:hover)]:group-hover:decoration-gold-600 [@media(hover:hover)]:group-hover:decoration-2 [@media(hover:hover)]:group-hover:underline-offset-4'}`}>
           <Users size={18} className={`shrink-0 ${isAll ? NAV_ICON_ACTIVE : NAV_ICON_IDLE}`} />
           <span className="whitespace-nowrap">Community Feed</span>
         </Link>
@@ -644,14 +685,15 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
              ink on the navfill pill, matching NAV_ICON_ACTIVE; idle is green,
              matching NAV_ICON_IDLE. The selected hover tint inverts with the
              pill: a light wash on dark, where it was a dark wash on light. */
-          /* UIO-003, cause 2: this button's own `hover:bg-navfill/64` used to
-             stack with the parent div's identical fill above — hovering the
-             toggle painted both layers (1 - 0.36² = 87% effective, against 64%
-             everywhere else), so this row alone read darker than its
-             neighbours on hover. The fill belongs on the parent only; this
-             keeps its own text-colour change and gains the transition neither
-             it nor its chevron had at all before. */
-          className={`shrink-0 flex items-center justify-center p-1.5 rounded-md focus-ring transition-colors duration-320 ease-glide ${isAll ? 'text-cream-25 hover:bg-cream-25/10' : 'text-green-800/70 [@media(hover:hover)]:hover:text-cream-25'}`}>
+          /* UIO-003, cause 2 (historical): this button's own `hover:bg-navfill/64`
+             used to stack with the parent div's identical fill above —
+             hovering the toggle painted both layers (1 - 0.36² = 87%
+             effective, against 64% everywhere else). Fixed by moving the fill
+             to the parent only.
+             UIO-013: that parent fill is gone entirely now, and this is an
+             icon-only control with no text to underline — "do not underline
+             the icon" — so its idle branch gets no hover treatment at all. */
+          className={`shrink-0 flex items-center justify-center p-1.5 rounded-md focus-ring transition-colors duration-320 ease-glide ${isAll ? 'text-cream-25 hover:bg-cream-25/10' : 'text-green-800/70'}`}>
           {expanded
             ? <ChevronUp size={18} className="shrink-0 transition-colors duration-320 ease-glide" />
             : <ChevronDown size={18} className="shrink-0 transition-colors duration-320 ease-glide" />}
@@ -824,7 +866,18 @@ function ClientRail({ bellCount, dmCount, presence, lessonsOn, onOpenTour, onSig
 }) {
   return (
     <aside className="hidden lg:block shrink-0 relative z-30 w-60">
-      <nav className={`sticky top-[var(--cs-hdr-h)] h-[calc(100dvh-var(--cs-hdr-h))] border-r border-green-950/20 ${NAV_PANEL} p-2 overflow-y-auto overflow-x-hidden flex flex-col oh-rail-shadow`}>
+      {/* UIO-014: the rail's right edge was heavier than every other divider
+          in the same panel — border-green-950/20, not this file's own
+          declared divider weight (NAV_DIVIDER, border-green-900/12). Not an
+          invented value; matching what's already the standard.
+          UIO-016: p-2 -> p-3. Icon start was 20px from the panel's left
+          edge inside a 240px (w-60) panel; changing the container rather
+          than every row's own px-3 shifts both sides equally, so the hover
+          underline/selected fill stay symmetrically inset and no row class
+          needs touching. The staff rail's own <nav> already carries p-3 —
+          untouched here, this order's Files section scopes to this rail
+          only. */}
+      <nav className={`sticky top-[var(--cs-hdr-h)] h-[calc(100dvh-var(--cs-hdr-h))] border-r border-green-900/12 ${NAV_PANEL} p-3 overflow-y-auto overflow-x-hidden flex flex-col oh-rail-shadow`}>
         <div className="flex flex-col gap-0.5">
           {/* Community Feed (position 1) with its views nested underneath. */}
           <CommunityNav indentClass="pl-9" />
