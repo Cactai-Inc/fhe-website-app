@@ -745,3 +745,82 @@ untouched pending the selected-fill question being resolved by the owner.
   repro), the badge's hover blend, and whether removing the fill entirely
   reads as intended rather than "broken" — this is explicitly a "try it"
   per the owner, so the verdict is his to make.
+
+---
+
+## UIO-014 — the divider between the desktop nav and the content is too dark
+
+**Commit:** `7280812`
+
+**Scope note:** the order's Files section names one line in `AppLayout.tsx`
+only. Determined which of the two rails "line 827" actually meant by
+checking out the exact commit that authored UIO-014
+(`git show 6ed5cd4:src/components/app/AppLayout.tsx`) rather than guessing
+from the current, already-shifted line numbers — confirmed it's the
+`ClientRail` (member rail), not the staff rail, which carries the identical
+`border-r border-green-950/20` untouched. Did not extend the fix to the
+staff rail on my own judgment.
+
+**Real bug found and fixed, not just the literal instruction implemented:**
+before shipping, checked whether `border-green-900/12` (the order's own
+stated target, "not invented — already this file's declared divider
+weight") actually compiles. It did not, anywhere, ever — confirmed by
+listing every `green-900` rule the build actually emits (10, 15, 20, 40,
+50, 70, 75, 80, 90, 95 all present; 12 absent) and cross-referencing
+Tailwind's real default opacity scale
+(`node -e "console.log(Object.keys(require('tailwindcss/defaultTheme').opacity))"`
+— steps of 5, so 12 was never going to be in it) against
+`tailwind.config.js`'s custom additions (64, 66 — not 12). Stopped and
+asked rather than shipping a value I'd just proven does nothing; the answer
+was to fix the scale (added `12: '0.12'`), which the orchestrator
+authorized explicitly since it's outside UIO-014's own Files list.
+
+**Swept the whole source tree for every other `color-utility/N` opacity
+modifier**, per the follow-up instruction, cross-checked against the full
+valid set (5-step default plus 8/12/64/66): found `/8` also missing,
+6 sites across 4 files this task doesn't own
+(`ContractActivityCard.tsx`, `HorsePage.tsx`, `ops/ActivityPage.tsx`,
+`ops/EvaluationReportsPage.tsx` — listed exhaustively via grep, not
+sampled). Added `8: '0.08'` to the same scale fix; did not touch those
+files' content, only the shared config that now makes their existing
+classes work. Every other value in active use (5 through 95 in 5s, plus 64
+and 66) was already covered — confirmed by the sweep script's full output,
+not a partial check.
+
+**The six NAV_DIVIDER sites that change as a side effect of the config
+fix** (all were rendering `border-color: currentColor` — Tailwind
+preflight's global default — instead of the intended faint wash, since
+`border-t` alone still draws a line even when its color utility silently
+fails):
+1. `AppLayout.tsx:827` — `NavFooter`'s own top border (pre-existing, not
+   from this session)
+2. `AppLayout.tsx:1362` — the "Add New" divider (UIO-012, this session)
+3. `AppLayout.tsx:1387` — the App pages group's collapsed-state divider
+   (UIO-012, this session)
+4. `AppLayout.tsx:1417` — the pre-existing collapsed-group separator
+   (Management/People/etc., predates this session)
+5. `AppLayout.tsx:1542` — the mobile drawer's section-heading border
+   (pre-existing)
+6. `AppLayout.tsx:873` (this order) — the client rail's own right edge,
+   the new site UIO-014 asked for
+
+**What I verified:**
+- `npm run typecheck` — 0 errors. `npm run lint` — 0 errors, 35 warnings
+  (baseline). `npm run build` — succeeded.
+- Grepped the built CSS by property for both fixed values:
+  `border-green-900\/12{border-color:#0d21181f}` (`0x1f`/255 = 12.2% ≈ 12%,
+  confirms the right alpha, not just that a rule exists) and
+  `green-800\/8{border-color:#14332114}` /
+  `green-800\/8{background-color:#14332114}` (`0x14`/255 = 7.8% ≈ 8%).
+- Read the compiled JS for the client rail's actual className string:
+  `border-r border-green-900/12` present; the staff rail's className still
+  reads `border-r border-green-950/20`, confirming the scope stayed at
+  exactly one rail as ordered.
+
+**What I did NOT verify:**
+- Whether the now-correctly-rendering dividers at the other 5 sites read as
+  intended visually, or whether any of them now looks TOO faint/heavy in
+  context — I only confirmed they went from "wrong colour" to "the declared
+  colour," not that the declared colour is definitely right everywhere it's
+  used. Worth a specific look at all six, not just the one this order asked
+  about.
