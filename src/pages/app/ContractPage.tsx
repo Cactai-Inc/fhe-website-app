@@ -31,7 +31,7 @@ import {
 import { myWallState, myNameConfirmationState, startBillOfSale, setDocumentCoBuyer, type NameConfirmationState } from '../../lib/api';
 import { ReviewChangesModal } from '../../components/app/ReviewChangesModal';
 import { contractPartyOptions, type PartyOption } from '../../lib/horses';
-import { ContractSubheader, SUBHEADER_BTN } from '../../components/app/ContractSubheader';
+import { ContractSubheader, SUBHEADER_BTN, type DrawerSpec } from '../../components/app/ContractSubheader';
 import { ContractNotes } from '../../components/app/ContractNotes';
 import { subscribeToContract, useContractPresence } from '../../lib/contractRealtime';
 import { ConfirmNameModal } from '../../components/app/ConfirmNameModal';
@@ -47,7 +47,11 @@ import { PartiesHorseCard } from '../../components/app/PartiesHorseCard';
 import { ClauseDocument } from '../../components/app/ClauseDocument';
 import { SendCopiesMenu } from '../../components/app/SendCopiesMenu';
 import { ContractActivityCard } from '../../components/app/ContractActivityCard';
-import { contractTemplateStructure, type TemplateStructure } from '../../lib/contracts';
+import { FlatDocument } from '../../components/app/FlatDocument';
+import {
+  contractTemplateStructure, DEFAULT_TEMPLATE_CONFIG,
+  type TemplateStructure, type TemplateConfig,
+} from '../../lib/contracts';
 
 /** Pull a human message out of any thrown value. Supabase/PostgREST errors are
  *  plain objects with a `.message` (and often `.details`/`.hint`), NOT Error
@@ -65,6 +69,21 @@ function errMessage(e: unknown, fallback = 'That action failed.'): string {
   if (typeof e === 'string' && e) return e;
   return fallback;
 }
+
+/** RETIRED behind a boolean, never deleted (standing rule from 86a2c33; the
+ *  pattern is CONTACTS_PAGE_RETIRED).
+ *
+ *  TASK ONEAUTHOR 2026-08-11: the collapsible "Review the document text" preview
+ *  near the bottom of this page was the flat document's only body renderer, and
+ *  it was positioned by how the document happened to be BUILT rather than by
+ *  where a document belongs — below the change-request list, behind a control
+ *  labelled as though the document were an attachment to itself.
+ *
+ *  Its successor is <FlatDocument>, in the ONE body slot beside <ClauseDocument>.
+ *  Nothing is lost in the move: same ContractBody renderer, still collapsible,
+ *  still expanded by default. The block below stays as the record of what it was.
+ *  While true, it never renders. */
+const INLINE_BODY_PREVIEW_RETIRED = true;
 
 /**
  * CONTRACT (/app/contracts/:id) — the negotiated-contract surface (Update A).
@@ -280,6 +299,12 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   const [changeKey, setChangeKey] = useState(0);
   // Clause structure for clause-model (Section›Clause›Field) documents.
   const [structure, setStructure] = useState<TemplateStructure | null>(null);
+  /* TASK ONEAUTHOR — which surfaces THIS document type can actually have, read
+     from contract_templates. It is deliberately SEPARATE state from `structure`:
+     `structure` goes null for a flat document (that null IS the flat branch), but
+     the configuration applies to both branches and matters most on the flat one.
+     Starts at the permissive default, so nothing is hidden before it loads. */
+  const [templateConfig, setTemplateConfig] = useState<TemplateConfig>(DEFAULT_TEMPLATE_CONFIG);
   // Parties/horse summary drives the "required info missing" gate on lock, and the
   // capture modal shown when locking with gaps.
   const [partiesSummary, setPartiesSummary] = useState<PartiesHorseSummary | null>(null);
@@ -489,14 +514,22 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
 
   const doc = detail?.document;
 
-  // Fetch the clause structure for clause-model documents (those carrying a
-  // template_key with section/clause defs). Null → render the legacy flat grouping.
+  /* ONE FETCH, TWO ANSWERS (TASK ONEAUTHOR).
+     contract_template_structure() returns the clause structure AND the template's
+     surface configuration. Zero sections → `structure` is null, which is the flat
+     branch; the config lands either way.
+     Every failure path falls back to the PERMISSIVE default rather than hiding
+     surfaces: a lookup that did not answer must not be read as "this document has
+     no drawers". */
   const templateKey = doc?.template_key ?? null;
   useEffect(() => {
-    if (!templateKey) { setStructure(null); return; }
+    if (!templateKey) { setStructure(null); setTemplateConfig(DEFAULT_TEMPLATE_CONFIG); return; }
     contractTemplateStructure(templateKey)
-      .then((s) => setStructure(s.sections.length > 0 ? s : null))
-      .catch(() => setStructure(null));
+      .then((s) => {
+        setStructure(s.sections.length > 0 ? s : null);
+        setTemplateConfig(s.config ?? DEFAULT_TEMPLATE_CONFIG);
+      })
+      .catch(() => { setStructure(null); setTemplateConfig(DEFAULT_TEMPLATE_CONFIG); });
   }, [templateKey]);
 
   // Email the signer a PDF copy once the document is executed. The endpoint is
@@ -591,14 +624,17 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
     for (const f of detail?.fields ?? []) m[f.field_key] = f.responsibility?.party ?? f.value ?? '';
     return m;
   }, [detail?.fields]);
-  // Sale-family docs: contact options for the co-buyer picker (same list the
-  // primary parties are picked from on NewContractPage).
-  const isSaleFamily = templateKey === 'HORSE_SALE_V2' || templateKey === 'HORSE_BILL_OF_SALE';
+  /* Co-buyer: contact options for the picker (same list the primary parties are
+     picked from on NewContractPage). WAS `templateKey === 'HORSE_SALE_V2' ||
+     templateKey === 'HORSE_BILL_OF_SALE'` — now the template says so itself
+     (contract_templates.allows_co_buyer), so a third document type that takes a
+     co-buyer is an UPDATE, not an edit to this file. */
+  const allowsCoBuyer = templateConfig.allows_co_buyer;
   useEffect(() => {
-    if (isSaleFamily && isStaff) {
+    if (allowsCoBuyer && isStaff) {
       contractPartyOptions().then(setCoBuyerOptions).catch(() => setCoBuyerOptions([]));
     }
-  }, [isSaleFamily, isStaff]);
+  }, [allowsCoBuyer, isStaff]);
 
   const myFillableEmpty = (detail?.fields ?? []).filter(
     (f) => f.can_edit
@@ -1029,13 +1065,15 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
     terminated: 'Terminated',
   };
 
-  // ── segmented signing set (lease → vet auth → care release) ──
-  const stepLabel = (k: string) =>
-    k === 'HORSE_LEASE' || k === 'HORSE_LEASE_V2' ? 'Lease agreement'
-      : k === 'HORSE_SALE_V2' ? 'Sale agreement'
-        : k === 'HORSE_BILL_OF_SALE' ? 'Bill of sale'
-          : k === 'HORSE_EMERGENCY_VET' ? 'Vet authorization'
-            : k === 'RELEASE_HORSE_CARE' ? 'Care liability release' : 'Document';
+  /* ── segmented signing set (lease → vet auth → care release) ──
+     The step's name is carried WITH the row (contract_templates.short_label, via
+     contract_signing_set) instead of a map in this file. That map named 5 of the
+     26 templates and rendered every other one as the literal word "Document";
+     today's single live set happens to be two of the five, so nothing was visibly
+     broken — it was one new document type away from being so.
+     `title` is the fallback the RPC itself already applies, so the last resort
+     here only fires for a payload from before the column existed. */
+  const stepLabel = (s: SigningSetDoc) => s.short_label?.trim() || s.title?.trim() || 'Document';
   const inSet = signingSet.length > 1;
   const curIdx = signingSet.findIndex((s) => s.document_id === id);
   const nextInSeq = curIdx >= 0 ? signingSet.slice(curIdx + 1).find((s) => !s.executed) : undefined;
@@ -1081,7 +1119,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                     {s.executed ? <CheckCircle2 size={13} aria-hidden="true" />
                       : locked ? <Lock size={12} aria-hidden="true" />
                         : <span className="w-3.5 text-center tabular-nums">{i + 1}</span>}
-                    {stepLabel(s.template_key)}
+                    {stepLabel(s)}
                   </Link>
                   {i < signingSet.length - 1 && <span className="text-green-800/30 mx-1.5" aria-hidden="true">→</span>}
                 </li>
@@ -1095,7 +1133,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           ) : thisExecuted && nextInSeq ? (
             <button type="button" onClick={() => navigate(`/app/contracts/${nextInSeq.document_id}`)}
               className="btn-primary mt-3">
-              Continue to {stepLabel(nextInSeq.template_key)} →
+              Continue to {stepLabel(nextInSeq)} →
             </button>
           ) : !thisExecuted ? (
             <p className="form-hint mt-3">Sign this document to continue to the next.</p>
@@ -1106,14 +1144,24 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       {showDeck && id && !isExecuted && (
         <ContractSubheader
           viewers={viewers}
+          /* WHICH SURFACES THIS DOCUMENT CAN HAVE (TASK ONEAUTHOR).
+             The drawer machinery is already generic — every one of these just
+             watches `changeKey` and does not care what kind of document it is.
+             What varies is whether the surface can ever have contents: a release
+             signed at a kiosk is issued as-is, so a change-requests drawer on one
+             is a button that opens onto nothing, the same defect as the "and 1
+             more" control that expanded to nothing.
+             The answer is DATA (contract_templates.show_*), defaulting to true, so
+             the only documents that lose a drawer are the ones classified as
+             standard-form — and reclassifying one is an UPDATE, not a code edit. */
           drawers={[
-            {
+            templateConfig.show_comments && {
               key: 'notes',
               label: 'Comments',
               icon: <StickyNote size={14} />,
               render: () => <ContractNotes documentId={id} refreshKey={changeKey} />,
             },
-            {
+            templateConfig.show_change_requests && {
               key: 'requests',
               label: 'Requests',
               icon: <MessageSquarePlus size={14} />,
@@ -1129,13 +1177,13 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                 />
               ),
             },
-            {
+            templateConfig.show_history && {
               key: 'history',
               label: 'History',
               icon: <History size={14} />,
               render: () => <ContractChangeHistory documentId={id} refreshKey={changeKey} inDrawer />,
             },
-          ]}
+          ].filter(Boolean) as DrawerSpec[]}
           /* SAVE IS POSITION 1. It lived in `extras`, which renders AFTER the
              drawer buttons — so "first in extras" still put it fourth on screen.
              `leading` renders before them. */
@@ -1202,7 +1250,11 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           /* ROW TWO when the bar wraps: secondary document actions. */
           trailing={
             <>
-              {structure && id && !isExecuted && (
+              {/* Not gated on `structure` any more (TASK ONEAUTHOR): jumping to
+                  the signature block is a PAGE affordance, not a clause-model one,
+                  and a 12,000-character release is exactly the document where the
+                  reader most needs it. The scroll target is the same either way. */}
+              {id && !isExecuted && (
                 <button type="button"
                   className={`${SUBHEADER_BTN} border-green-800/20 bg-white text-green-900 hover:bg-green-800/5`}
                   /* The signatures card only exists once the document is in
@@ -1218,13 +1270,20 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                   Scroll to Bottom
                 </button>
               )}
-              {/* Sale contract → generate the companion Equine Bill of Sale on the
-                  same engagement (parties, horse, price and payment status carry). */}
-              {templateKey === 'HORSE_SALE_V2' && id && isStaff && !isVoid && (
+              {/* Generate this document's COMPANION on the same engagement (parties,
+                  horse, price and payment status carry). WAS `templateKey ===
+                  'HORSE_SALE_V2'`; the pairing now lives on the template row
+                  (companion_template_key), so a second pairing is an UPDATE.
+                  `start_bill_of_sale` is still the RPC — it derives everything from
+                  the source document and is the only companion generator that
+                  exists; a future second pair needs its own RPC, and this button
+                  should stay pointed at the one the config names. */}
+              {templateConfig.companion_template_key === 'HORSE_BILL_OF_SALE'
+                && id && isStaff && !isVoid && (
                 <button type="button" disabled={bosBusy}
                   className={`${SUBHEADER_BTN} border-green-800/20 bg-white text-green-900 hover:bg-green-800/5 disabled:opacity-60`}
                   onClick={() => void generateBillOfSale()}>
-                  {bosBusy ? 'Generating…' : 'Generate bill of sale'}
+                  {bosBusy ? 'Generating…' : `Generate ${(templateConfig.companion_label ?? 'companion document').toLowerCase()}`}
                 </button>
               )}
               {structure && id && isOwnerSide && editablePhase && (
@@ -1588,8 +1647,13 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           onChanged={() => { void load({ blank: false }); }}
           /* The document controls render INSIDE this card (owner 2026-07-31):
              they govern what these same parties may do, so two cards put the
-             question and its answer in different places. */
-          footer={isOwnerSide && editablePhase ? (
+             question and its answer in different places.
+             TASK ONEAUTHOR: and only for a document those permissions MEAN
+             something. A standard-form release is issued as-is and signed — there
+             is no deal to edit and no suggestion to make, so a matrix of
+             fill/edit/suggest toggles on one is a control that governs nothing.
+             Per-template (contract_templates.show_party_controls), default true. */
+          footer={isOwnerSide && editablePhase && templateConfig.show_party_controls ? (
             <>
               {/* Rule feedback lands HERE, beside the checkboxes that caused it —
                   the page-level banner sits far below and would be missed. */}
@@ -1690,7 +1754,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           exists yet. Pick an existing account/contact (the same list the primary
           parties come from) or hand-enter to create a contact record. The server
           adds the party with the next signer_order and fills COBUYER.*. */}
-      {isSaleFamily && isStaff && editablePhase && !isVoid
+      {allowsCoBuyer && isStaff && editablePhase && !isVoid
         && valueMap['TXN.CO_BUYER_ENABLED'] === 'YES'
         && (partiesSummary?.parties.filter((p) => p.party_role === 'BUYER').length ?? 0) < 2 && (
         <div className="mb-4 bg-white border border-gold-600/40 rounded-xl px-5 py-4">
@@ -1731,12 +1795,23 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         </div>
       )}
 
-      {/* Clause-model documents (Section›Clause›Field): numbered structure with
-          live gating. Hidden when the doc should render read-only (review-only,
+      {/* ═══ THE DOCUMENT BODY — one slot, renderer chosen by the document ═══
+          TASK ONEAUTHOR. Whether a document is clause-composed is not a property
+          of this page; it is a property of the document, and the page already
+          asks: contract_template_structure returns zero sections for a flat
+          template and `structure` becomes null.
+
+            structure present → <ClauseDocument>  (fields, clauses, Add New Item)
+            structure null    → <FlatDocument>    (the composed text, read-only)
+
+          Both are hidden when the doc should render read-only (review-only,
           locked, terminated, EXECUTED) — those render as the merged-body frame,
           which shows the actual captured signatures instead of SIG.* placeholders.
           (Executed has readOnlyDoc=false by design — it uses its own sealed frame —
-          so exclude it explicitly here too.) */}
+          so exclude it explicitly here too.)
+
+          Clause-model documents (Section›Clause›Field): numbered structure with
+          live gating. */}
       {state !== 'executed' && !readOnlyDoc && !showHorseGate && structure && (
         <ClauseDocument
           sections={structure.sections}
@@ -1841,7 +1916,19 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         );
       })}
 
+      {/* …and the OTHER half of the one body slot: a document with no clause
+          structure. It renders HERE, immediately after any flat field sections, so
+          the reading order is fill-then-read; all fourteen flat templates carry
+          zero field defs, so in practice it lands in exactly the position
+          <ClauseDocument> occupies for the six clause-composed ones.
 
+          Same visibility rule as the clause branch above, so neither renderer can
+          appear while the read-only merged frame (below) or the executed frame is
+          showing the same text. This REPLACES the old collapsible "Review the
+          document text" block that used to sit further down the page. */}
+      {state !== 'executed' && !showHorseGate && !readOnlyDoc && !structure && (
+        <FlatDocument body={doc.merged_body} title={doc.title} />
+      )}
 
       {/* (change-request composer removed 2026-07-20, audit M-3: it was
           unreachable — crFieldKey was never set. A field-level "suggest a change"
@@ -1849,7 +1936,14 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           superseded third mechanism is gone. The "Open change requests" list
           below still renders any existing requests.) */}
 
-      {/* open change requests */}
+      {/* open change requests.
+          DELIBERATELY NOT gated on templateConfig.show_change_requests. That flag
+          decides whether the COMPOSE surface appears; this list only renders when
+          it already has contents, so it is safe by construction, and gating it
+          would strand a real request that was raised before its template was
+          classified standard-form — hiding something that exists is the worse of
+          the two defects. (Verified 2026-08-11: zero change requests exist on any
+          document in production, so nothing is stranded today either.) */}
       {(detail.open_change_requests.length > 0) && state !== 'executed' && (
         <section className="bg-white border border-gold-400/40 rounded-lg p-5 mb-4">
           <h2 className="font-serif text-green-800 mb-3">Open change requests</h2>
@@ -1903,10 +1997,11 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       {/* The pre-executed "document preview" (collapsible merged_body) is gone:
           the clause-model authoring surface above IS the full document in context
           — every clause's prose renders with its inputs inline, selected and
-          unselected alike. For a LEGACY flat document (no clause structure) the
-          author still needs a way to read the composed text, so the collapsible
-          preview is kept ONLY in that fall-through case. */}
-      {state !== 'executed' && !reviewOnly && !structure && doc.merged_body && (
+          unselected alike.
+          TASK ONEAUTHOR: the flat fall-through that used to live here moved UP into
+          the one body slot, beside <ClauseDocument>, as <FlatDocument>. Retired
+          behind INLINE_BODY_PREVIEW_RETIRED, never deleted. */}
+      {!INLINE_BODY_PREVIEW_RETIRED && (
         <section className="bg-white border border-green-800/10 rounded-lg p-5 mb-4">
           <button type="button" className="font-serif text-green-800 underline-offset-4 hover:underline"
             onClick={() => setShowBody((v) => !v)}>
@@ -2093,23 +2188,32 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       {/* Matches the subheader's condition exactly, so the drawers appear in
           EXACTLY one place: inline here whenever the subheader is absent (an
           executed contract, a void one, or the embedded creation view). */}
+      {/* Gated on the SAME per-template configuration as the subheader drawers —
+          the two are one surface list rendered in two places, so a document that
+          cannot have change requests must not get them here either. */}
       {id && !(showDeck && !isExecuted) && (
         <div className="mt-5 flex flex-col gap-4">
-          <div className="rounded-lg border border-green-800/12 bg-white p-4">
-            <ContractNotes documentId={id} refreshKey={changeKey} />
-          </div>
-          <div className="rounded-lg border-l-4 border-gold-400 border-y border-r border-green-800/10 bg-cream-100/30 p-4">
-            <ContractChangeRequests
-              documentId={id}
-              canRequest={editablePhase && !isVoid}
-              refreshKey={changeKey}
-              onCount={setOpenRequestCount}
-              onChanged={() => { void load({ blank: false }); }}
-            />
-          </div>
-          <div className="rounded-lg border-l-4 border-green-700 border-y border-r border-green-800/10 bg-green-50/20 p-4">
-            <ContractChangeHistory documentId={id} refreshKey={changeKey} />
-          </div>
+          {templateConfig.show_comments && (
+            <div className="rounded-lg border border-green-800/12 bg-white p-4">
+              <ContractNotes documentId={id} refreshKey={changeKey} />
+            </div>
+          )}
+          {templateConfig.show_change_requests && (
+            <div className="rounded-lg border-l-4 border-gold-400 border-y border-r border-green-800/10 bg-cream-100/30 p-4">
+              <ContractChangeRequests
+                documentId={id}
+                canRequest={editablePhase && !isVoid}
+                refreshKey={changeKey}
+                onCount={setOpenRequestCount}
+                onChanged={() => { void load({ blank: false }); }}
+              />
+            </div>
+          )}
+          {templateConfig.show_history && (
+            <div className="rounded-lg border-l-4 border-green-700 border-y border-r border-green-800/10 bg-green-50/20 p-4">
+              <ContractChangeHistory documentId={id} refreshKey={changeKey} />
+            </div>
+          )}
         </div>
       )}
 
