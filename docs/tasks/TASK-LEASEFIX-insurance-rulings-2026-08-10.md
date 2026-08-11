@@ -1,4 +1,75 @@
-# LEASEFIX insurance — owner rulings, 2026-08-10. These close the five modelling candidates.
+# LEASEFIX insurance — owner rulings, 2026-08-10
+
+> ## THE SETTLED MODEL — build to this. Everything after it is the working that produced it.
+>
+> Reached over several rounds on 2026-08-10. **The sections below contain superseded positions,
+> including several the orchestrator argued for and the owner corrected.** They are the record
+> of why, not instructions.
+>
+> ### Scope
+>
+> **RESTRUCTURING, not authoring.** The clause language already exists. What is being removed is
+> complex payment mechanics. **Do not draft new legal text.**
+>
+> ### Only the Lessee's obligation is written
+>
+> > Owner: *"the lessor's portion doesnt need to be written in, only what the lessee is
+> > obligated to, its still \$ or % and that depends on things we have to provide the ability
+> > for the contract to accommodate."*
+>
+> **The Lessor's share is never stated — it is the remainder.** A 50/50 agreement is written
+> **"Lessee: 50%"**; a three-way split is **"Lessee: 33%"**. What the Lessor keeps, and what any
+> third party pays, is not this contract's business.
+>
+> **This removes "split by %" as a separate option.** It is not a third choice — it is the `%`
+> form of the Lessee's obligation.
+>
+> ### The whole model
+>
+> ```
+> WHO HOLDS WHAT
+>   Lessee   general liability        third-party harm the LESSEE causes
+>   Lessee   care, custody & control  the horse in the LESSEE's custody
+>                                     (a component of the Lessee's GL)
+>   Lessor   mortality                the horse's death, regardless of fault
+>   Lessor   medical                  treatment (a component of mortality)
+>
+> WHAT EACH PARTY DECLARES
+>   Lessor   own GL              has / will obtain / does not carry   (disclosure only)
+>   Lessor   requires of Lessee  require / do not require
+>   Lessee   own GL              has / will obtain / does not carry
+>                                -> "does not carry" LEAVES THE MENU when required
+>   CCC      same shape, ENTITY Lessee only, gated on the Lessee holding GL
+>
+> WHAT THE LESSEE OWES — one field each, $ or %
+>   policy cost   nothing, or a stated amount     % = a share of USE
+>   deductible    nothing, or a stated amount     scoped to what the Lessee caused
+> ```
+>
+> ### Why both units exist
+>
+> **They allocate risk differently; neither substitutes for the other.**
+>
+> - **`$`** — the Lessee's exposure is **capped**. Known at signing, unmoved by the premium.
+> - **`%`** — a **share of use**: *"50/50 since we share the horse."* It is the only term
+>   available when the Lessor **will obtain** a policy and no quote exists yet.
+>
+> ### The fields
+>
+> `share_amount`, a composite: select the unit, enter a number, compose `$100` or `50%` at
+> render. **One field per obligation, naming the Lessee only.**
+>
+> **Deleted:** the per-party pairs, `*_SPLIT_TEXT`, `*_COST_ALLOCATION`, `*_POLICY_COST`,
+> `*_COST_RESP`, `*_DED_RESP` and its split pair. **Fourteen fields per side become two.**
+>
+> ### Still open with the owner
+>
+> - **Frequency** on the policy-cost contribution — one time / weekly / monthly / annually.
+>   Specced earlier, omitted from his restatement, **not retracted. Confirm; do not drop.**
+> - **The CCC limit** — three questions in the CCC section below.
+
+---
+
 
 The thread modelled 13.2–13.5 and offered five further simplifications. **Three are now
 settled by the owner. Two were not candidates at all.** This document is authoritative over
