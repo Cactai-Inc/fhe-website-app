@@ -93,6 +93,40 @@ animals it covers, or whether the premium is itemised. **"Percentage of what" ne
 draft wordings (pro-rata / equal division / Lessor produces the figure) are all **withdrawn** —
 none is needed.
 
+### SCOPE — THIS IS RESTRUCTURING, NOT AUTHORING. Owner, 2026-08-10.
+
+> *"you dont need to be authoring new things, this is already in the contract language. its just
+> light restructuring for simplification and the removal of the complex payment mechanics for
+> policy side."*
+
+**The clause language exists. Do not draft new legal text.** The orchestrator drafted a cap
+sentence and three apportionment wordings — **all withdrawn as out of scope.** What is being
+removed is **complex payment mechanics**, not prose that needs replacing.
+
+### CORRECTED — the POLICY COST keeps its `%`. Owner, 2026-08-10.
+
+> *"the % split would only have legs if the lessor is going to obtain a policy and the lessor
+> wants the lessee to pay a portion, the \$ is not known until the quotes come in, they can
+> agree to a split or a \$ but more likely the owner says lets split it 50/50 since we share the
+> horse or 33/33/33 since i lease partially to you and another person and use the horse myself
+> too."*
+
+**An earlier ruling here said the policy cost never takes a percentage. That was wrong and is
+superseded.**
+
+**The `%` on a premium is a SHARE OF USE, not an apportionment of cost.** *"50/50 since we share
+the horse"*, *"33/33/33 since I lease partially to you and another person and use the horse
+myself"* — the percentage mirrors **how the horse is divided between the parties**, which is a
+term they can state at signing.
+
+**And it is needed exactly where the orchestrator argued it was undefined.** When the Lessor
+**will obtain** a policy, **the dollar figure does not exist until quotes come in.** A share is
+the only thing the parties *can* agree to.
+
+**The "percentage of what" objection concerned an EXISTING barn policy covering several
+animals.** A policy obtained **because this lease requires it** has a well-defined base — that
+premium, for this horse. **The objection was over-generalised from one case to all premiums.**
+
 ### THE FINAL SHAPE — owner's own restatement, 2026-08-10
 
 > *"so the policy cost factor that gets printed is either lessor pays for insurance or the
@@ -109,8 +143,9 @@ DEDUCTIBLE      Lessor pays
                   — all scoped to events the Lessee caused
 ```
 
-**The policy cost never takes a percentage. The deductible may.** That asymmetry is the whole
-resolution: a premium is not a well-defined base, a deductible is.
+**BOTH may take a percentage** — see the correction above. The policy-cost `%` is a share of
+use agreed at signing, which is the only thing available when the Lessor will obtain a policy
+and no quote exists yet.
 
 **Note the deductible gains an explicit "Lessor pays" option** that earlier drafts left implicit.
 Three options there, two on the policy cost.
