@@ -189,6 +189,40 @@ disagreement stalls the contract until one party moves — the owner's stated in
 three-change plan solved a contradiction this structure prevents. Close it out; do not build
 from it.
 
+### CCC HOLDS ITS POSITION AND SHOWS N/A — it does not vanish. Settled 2026-08-10.
+
+> Owner: *"the ccc needs to move up to below the gl section right now it goes gl, mort, med,
+> ccc"* … *"just like the na is shown for med when mort is doesnt have, the ccc should follow
+> that same paradigm"*
+
+**The stored order is already correct** — GL 150–172, CCC 173–175, Mortality 200–215, Medical
+300–320. Verified in the composed body of `e1052bae`, which renders **13.2 GL → 13.3 CCC →
+13.4 Mortality → 13.5 Medical**.
+
+**The problem is that CCC VANISHES when gated off, and everything renumbers around the hole.**
+`704c8d2d` and `215bac09` render `12.2 GL → 12.3 Mortality → 12.4 Medical` with no CCC at all
+— which is why it reads as out of order or missing. **The section numbers move under the
+owner between documents.**
+
+**The fix is the N/A paradigm already used for medical.** Mirror it exactly. Medical has TWO
+distinct absent-states and CCC needs both:
+
+| state | medical's clause | what CCC needs |
+|---|---|---|
+| **parent not in force** | `MED_NA`, on `MORT_ELECTION = NOT_REQUIRED` — *"Not applicable. Medical coverage is available only as a component of a mortality policy on the Horse. Because no mortality insurance is required or in force under this Agreement, no medical coverage is available."* | a `CCC_NA` clause on the Lessee declaring no GL, naming the same dependency: CCC is available only as a rider on a general liability policy |
+| **parent in force, rider declined** | `MED_NOT_INCLUDED`, on `MORT_ELECTION = REQUIRED` + `MED_INCLUDED = NO` — *"Medical coverage is not included on the mortality policy for the Horse under this Agreement."* | the equivalent for CCC not carried where GL is in force |
+
+**Note what `MED_NA` does well and copy it:** it states the dependency as the reason. Not
+"not applicable" alone — *why* it is not applicable. Draft CCC's wording to the same standard
+and bring it to the owner before applying; it is clause text.
+
+**OPEN — the entity case. ASK, DO NOT GUESS.** CCC is askable only of an entity Lessee.
+Medical's N/A applies to everyone, so the paradigm does not answer this. For an INDIVIDUAL
+Lessee, does 13.3 appear with an N/A line, or not appear at all? Showing N/A for something
+never relevant to an individual may be noise rather than clarity — but the owner's stated
+goal is stable section numbering, and a section that appears for entities and vanishes for
+individuals still moves the numbers.
+
 ### FINAL — CCC IS A RIDER ON GL. Settled 2026-08-10. Build to this.
 
 > Owner: *"ccc is a rider on gl just like medical is a rider on mortality"*
