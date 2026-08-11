@@ -259,6 +259,59 @@ place by naming why it cannot be taken: no parent policy.
 The owner has taken that trade knowingly — the numbering complaint was about CCC vanishing
 *within a document class*, not about individual and entity leases numbering alike.
 
+### CCC CARRIES A LIMIT, AND THE LIMIT IS A TERM. Owner, 2026-08-10.
+
+> *"when i get a policy with CCC the owner will want me to make sure my limit is enough to cover
+> the value of their animal. so the declared value FMV is the number they provide to me on the
+> intake form and we import into the contract… right now my CCC limit is \$25k, if i work with
+> the horses im currently working with they are all under that so im fine. if a person with a
+> million dollar jumping horse (an actual scenario we have experienced already) asks me to come
+> help with their horse… my CCC will not be enough so if they wanted to require their horse
+> value is covered with my CCC i cant agree to that unless i increase the policy limit."*
+
+**CCC is the only insurance question in this document with a NUMBER THAT MUST BE CHECKED
+AGAINST ANOTHER NUMBER.** Everything else is has / will obtain / does not carry. CCC has a
+**limit**, and a limit is meaningless except against the value it is supposed to cover.
+
+**The value is already in the contract.** The owner declares it on the horse intake form and it
+imports as **`HORSE.FAIR_MARKET_VALUE`** (`currency`, "Fair market value"). No new capture is
+needed for the horse side.
+
+**What CCC covers, and who holds it.** CCC responds when the party in custody of the animal
+causes its loss — so it is held by the party **caring for** the horse, and it protects the
+**owner's** interest. In the FHE-as-Lessee arrangement, **FHE holds the CCC and the Lessor's
+horse is the exposure.**
+
+### So the section needs a LIMIT field and a comparison
+
+- **the CCC limit** — a `currency` field on the party holding the policy
+- **compared against `HORSE.FAIR_MARKET_VALUE`**
+- **the gap, when the limit is lower**, has to surface rather than sit unstated
+
+**This is a real business constraint, not just a form field.** At a \$25k limit FHE can
+truthfully agree to cover today's horses and **cannot** agree to cover a million-dollar jumper —
+a scenario they have already encountered. **That is a term the company would be unable to sign,
+which is exactly the kind of thing the document should refuse to let someone sign by accident.**
+
+### DESIGN QUESTIONS — ASK, DO NOT GUESS
+
+1. **When FMV exceeds the CCC limit, what does the document do?** Disclose the gap and let the
+   parties proceed knowingly, or block until it is resolved? **The insurance-resolution spec
+   already has a precedent** — a both-`NONE` section is UNRESOLVED and blocks signing until the
+   responsible party elects (`docs/insurance-resolution-spec.md`, owner ruling 2026-08-01).
+   **This is the same shape.**
+2. **Is covering the full declared value a REQUIREMENT the Lessor can impose**, or a fact the
+   document states? The owner's phrasing — *"if they wanted to require their horse value is
+   covered"* — suggests a requirement, which would make it a third thing the Lessor can require
+   alongside GL and CCC.
+3. **Does the limit belong to the party or to the document?** FHE's limit is one number across
+   every lease. Restating it per contract risks drift; deriving it from one place risks
+   staleness in an executed document. **Executed documents must keep the limit as it stood at
+   signing** — that is evidence.
+
+**Do not build the limit field until 1 and 2 are answered** — they decide whether it is a
+disclosure, a gate, or a requirement, and those are three different controls.
+
 ### FINAL — CCC IS A RIDER ON GL. Settled 2026-08-10. Build to this.
 
 > Owner: *"ccc is a rider on gl just like medical is a rider on mortality"*
