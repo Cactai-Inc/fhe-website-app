@@ -115,3 +115,87 @@ Six stale cards leave the dashboard, Serena Lee's leaves too, the four genuinely
 stay, **Kit Garcin stays**, and no `requests` row is deleted. Prove each count against SQL.
 
 Report to `docs/reports/TASK-LEADCLEAN-REPORT.md`.
+
+---
+
+# ADDENDUM — 2026-08-11. THE DETECTION ALREADY EXISTS. CONSOLIDATION IS THE REAL TASK.
+
+**If you have already started, read this — it changes §4 and widens the scope.**
+
+## The system already knows. It just tells the owner instead of acting.
+
+`inbound_queue` (a DB view) computes **`already_converted`** on every row:
+
+```sql
+c.contact_type = 'CONTACT' AS already_converted
+```
+
+It joins `requests` → `contacts` on `contact_id` when set and falls back to lower(email) —
+**exactly the join §2 asks for. Do not write a second one.** `src/lib/ops/api-intake.ts:124`
+carries the field, and its own comment says *"Six of the nine rows in the live backlog were
+exactly this."*
+
+And `IntakePage.tsx:697` then does this with it:
+
+```js
+const stale = rows.filter((r) => r.already_converted && r.status === 'new');
+// renders: "{stale.length} already handled, still marked new"
+```
+
+**The software computes the answer, renders a notice asking the owner to act on it, and does
+nothing.** The owner's words: *"funny, my software telling me to do its job for it when it
+already knows what should be done and isnt doing it."*
+
+**That notice is the bug.** The fix is not a better notice.
+
+## §4 is settled: use `already_converted`. Do not invent a definition.
+
+§4 offered a choice and §2 proposed "holds a `clients` row". **Checked against production: both
+definitions agree on all 12 live rows.** So the view's definition wins on the grounds that it
+already exists, is already delivered to the UI, and already has a consumer.
+
+**One definition, one source.** A second derivation is how three views came to disagree.
+
+## THE ACTUAL PROBLEM — three surfaces over one dataset
+
+| surface | file | what it shows |
+|---|---|---|
+| Dashboard | `DashboardPanel.tsx` (`/app/dashboard`) | leads as cards — where staff land |
+| Inbound | `ops/IntakePage.tsx` | the queue, with `already_converted` badges and the stale notice |
+| Leads | `LeadsPage` in `ops/ContactsPage.tsx` | LEAD-typed contacts |
+
+Overlapping, differently filtered, none acting on the signal. **The owner already ruled on the
+target shape** — *"inbound goes away. its my management dashboard"* and *"one nav entry under
+management and it uses the dashboard layout and the leads are shown as dashboard entries."*
+
+**So: the dashboard is the surface. Inbound retires.**
+
+**But IntakePage carries real working machinery that must NOT be lost** — the per-service fit
+checklist (`LESSON_FIT_CHECKLIST`, stored via `set_request_checklist`), `ProvisionClientForm`,
+the schedule-lesson path that sets `status='converted'`, and `findClientForRequest`. **Retire
+the page, keep the machinery**, reachable from the lead card. Retire behind a boolean the way
+`ContactsPage` was retired. **Delete nothing.**
+
+## The "and 1 more" defect — three bugs in one control
+
+Owner: *"the dashboard view says 'and 1 more' below the rows of cards shown but clicking it
+doesnt show 1 more it shows many more because it doesnt work as expected (expand the leads
+section of the dashboard, it takes me to the inbound page)."*
+
+1. The **count is wrong** — it says 1 and there are many.
+2. The **action is wrong** — it navigates instead of expanding.
+3. Its **destination is a page that is being retired.**
+
+Expanding must expand, in place, and the count must be the real remainder.
+
+## The `converted` status exists and has never been reached
+
+`IntakePage.tsx:61` defines `converted`, and `invited`, as request statuses. **Production
+`requests.status` only ever holds `new` or `contacted`** — the only writer is the
+schedule-a-lesson path, so the seven stale rows never had a route to it.
+
+**Do not backfill `status='converted'` to fix the display.** Derive from `already_converted`
+so it is right retroactively and cannot drift. Whether `converted` should also be written when
+that path runs is a separate question — report it, do not decide it.
+
+## KIT GARCIN IS STILL THE CONTROL. Nothing above changes that.
