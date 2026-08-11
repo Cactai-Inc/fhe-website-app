@@ -3,7 +3,7 @@ import { Loader2, ShieldQuestion } from 'lucide-react';
 import {
   createHorseRecord, setHorseLocations, setHorseMedications,
   getHorseIntakeRecord, updateHorseRecord, horsePageDetail, listHorseMedications,
-  HORSE_DOC_REQUIRED_KEYS,
+  HORSE_DOC_REQUIRED_KEYS, HORSE_DOC_REQUIRED_LABELS, HORSE_SENTINEL_UNSAFE_KEYS, errorText,
   type HorseIntakePayload, type HorseRecordOutcome, type HorseLocationDetail, type HorseMedication,
 } from '../../lib/horses';
 import {
@@ -43,9 +43,12 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 /** A required field with an N/A escape. When N/A is checked the control disables
- *  and the value becomes the sentinel "N/A" (a conscious answer, not a blank). */
+ *  and the value becomes the sentinel "N/A" (a conscious answer, not a blank).
+ *  `required` marks the label with the trailing asterisk this form already uses
+ *  on the staff account picker — the owner asked for required to be visible
+ *  BEFORE a failed save, not only after it. */
 function Field({
-  label, value, onChange, type = 'text', placeholder, options, span, textarea, showError, inputMode, onBlurFormat,
+  label, value, onChange, type = 'text', placeholder, options, span, textarea, showError, required, inputMode, onBlurFormat,
 }: {
   label: string;
   value?: string;
@@ -56,6 +59,7 @@ function Field({
   span?: boolean;
   textarea?: boolean;
   showError?: boolean;
+  required?: boolean;
   inputMode?: 'numeric' | 'tel' | 'email' | 'url' | 'text';
   /** normalize the value on blur (e.g. currency) — returns the display string. */
   onBlurFormat?: (v: string) => string;
@@ -66,7 +70,7 @@ function Field({
   return (
     <div className={span ? 'sm:col-span-2' : ''}>
       <div className="flex items-center justify-between mb-1">
-        <label className="block text-[11px] tracking-wide uppercase text-muted font-semibold">{label}</label>
+        <label className="block text-[11px] tracking-wide uppercase text-muted font-semibold">{label}{required ? ' *' : ''}</label>
         <label className="flex items-center gap-1 text-[10px] text-muted cursor-pointer select-none">
           <input type="checkbox" checked={na} onChange={(e) => onChange(e.target.checked ? NA : '')} /> N/A
         </label>
@@ -95,7 +99,7 @@ const OTHER = '__other__';
  *  the official list later. A stored value that isn't a known option code is treated
  *  as a prior "Other" entry and shown in the text box. Keeps the N/A escape. */
 function SelectOrOther({
-  label, value, onChange, options, lookupKey, placeholder, span, showError, hint,
+  label, value, onChange, options, lookupKey, placeholder, span, showError, required, invalid, hint,
 }: {
   label: string;
   value?: string;
@@ -105,6 +109,10 @@ function SelectOrOther({
   placeholder?: string;
   span?: boolean;
   showError?: boolean;
+  required?: boolean;
+  /** Answered, but with a value this field cannot store (a typed-in code that
+   *  isn't in the vocabulary) — marked like an unanswered required field. */
+  invalid?: boolean;
   hint?: string;
 }) {
   // Vocabularies that define a NONE code (passport country, registration org,
@@ -118,13 +126,13 @@ function SelectOrOther({
   const isOther = !na && !!value && value !== NA && !isKnown;
   const [otherOpen, setOtherOpen] = useState(isOther);
   const answered = na || filled(value);
-  const cls = `${input}${showError && !answered ? ' border-red-400' : ''}`;
+  const cls = `${input}${(showError && !answered) || invalid ? ' border-red-400' : ''}`;
 
   const selectValue = na ? '' : otherOpen || isOther ? OTHER : (isKnown ? value : '');
   return (
     <div className={span ? 'sm:col-span-2' : ''}>
       <div className="flex items-center justify-between mb-1">
-        <label className="block text-[11px] tracking-wide uppercase text-muted font-semibold">{label}</label>
+        <label className="block text-[11px] tracking-wide uppercase text-muted font-semibold">{label}{required ? ' *' : ''}</label>
         <label className="flex items-center gap-1 text-[10px] text-muted cursor-pointer select-none">
           <input type="checkbox" checked={na} onChange={(e) => { setOtherOpen(false); onChange(e.target.checked ? naStored : ''); }} /> N/A
         </label>
@@ -156,14 +164,18 @@ function PersonBlock({
   title, name, second, showError, span = true,
 }: {
   title: string;
-  name: { label: string; value?: string; onChange: (v: string) => void; placeholder?: string };
-  second: { label: string; kind: 'tel' | 'email'; value?: string; onChange: (v: string) => void; placeholder?: string };
+  name: { label: string; value?: string; onChange: (v: string) => void; placeholder?: string; required?: boolean };
+  /** `required` — the second part is its own required answer (the farrier's phone
+   *  is a document-merged token). Without it the field could never turn red, so a
+   *  failed save named a problem with nothing on screen to point at. */
+  second: { label: string; kind: 'tel' | 'email'; value?: string; onChange: (v: string) => void; placeholder?: string; required?: boolean };
   showError?: boolean;
   span?: boolean;
 }) {
   // N/A applies to the whole block: both parts become the sentinel together.
   const na = name.value === NA && second.value === NA;
   const answered = na || filled(name.value);
+  const secondAnswered = na || second.value === NA || filled(second.value);
   const setNa = (on: boolean) => { name.onChange(on ? NA : ''); second.onChange(on ? NA : ''); };
   const cls = (bad: boolean) => `${input}${showError && bad ? ' border-red-400' : ''}`;
   return (
@@ -176,13 +188,13 @@ function PersonBlock({
       </div>
       <div className="grid sm:grid-cols-2 gap-2">
         <div>
-          <label className="block text-[10px] uppercase tracking-wide text-muted mb-1">{name.label}</label>
+          <label className="block text-[10px] uppercase tracking-wide text-muted mb-1">{name.label}{name.required ? ' *' : ''}</label>
           <input className={cls(!answered)} disabled={na} value={na ? '' : (name.value ?? '')} placeholder={name.placeholder}
             onChange={(e) => name.onChange(e.target.value)} />
         </div>
         <div>
-          <label className="block text-[10px] uppercase tracking-wide text-muted mb-1">{second.label}</label>
-          <input type={second.kind} inputMode={second.kind} className={cls(false)} disabled={na}
+          <label className="block text-[10px] uppercase tracking-wide text-muted mb-1">{second.label}{second.required ? ' *' : ''}</label>
+          <input type={second.kind} inputMode={second.kind} className={cls(!!second.required && !secondAnswered)} disabled={na}
             value={na ? '' : (second.value ?? '')} placeholder={second.placeholder}
             onChange={(e) => second.onChange(e.target.value)} />
         </div>
@@ -205,6 +217,9 @@ function VetBlock({
   const parts: (keyof HorseIntakePayload)[] = ['vet_name', 'vet_phone', 'vet_business_name', 'vet_address_line1', 'vet_city', 'vet_state', 'vet_postal'];
   const na = parts.every((k) => f[k] === NA);
   const answered = na || filled(f.vet_name as string | undefined);
+  // The vet's PHONE is a document-merged token, so it is required too — and it
+  // had no error state at all, which is how a failed save could highlight nothing.
+  const phoneAnswered = na || f.vet_phone === NA || filled(f.vet_phone as string | undefined);
   const setNa = (on: boolean) => parts.forEach((k) => set(k)(on ? NA : ''));
   const val = (k: keyof HorseIntakePayload) => (na ? '' : ((f[k] as string | undefined) ?? ''));
   const cls = (bad: boolean) => `${input}${showError && bad ? ' border-red-400' : ''}`;
@@ -220,12 +235,12 @@ function VetBlock({
         </label>
       </div>
       <div className="grid sm:grid-cols-2 gap-2">
-        <div><L>Veterinarian name</L>
+        <div><L>Veterinarian name *</L>
           <input className={cls(!answered)} disabled={na} value={val('vet_name')} placeholder="Dr. name" onChange={(e) => set('vet_name')(e.target.value)} /></div>
         <div><L>Business / practice name</L>
           <input className={cls(false)} disabled={na} value={val('vet_business_name')} placeholder="Practice name" onChange={(e) => set('vet_business_name')(e.target.value)} /></div>
-        <div><L>Phone</L>
-          <input type="tel" inputMode="tel" className={cls(false)} disabled={na} value={val('vet_phone')} placeholder="(555) 555-5555" onChange={(e) => set('vet_phone')(e.target.value)} /></div>
+        <div><L>Phone *</L>
+          <input type="tel" inputMode="tel" className={cls(!phoneAnswered)} disabled={na} value={val('vet_phone')} placeholder="(555) 555-5555" onChange={(e) => set('vet_phone')(e.target.value)} /></div>
         <div><L>Street address</L>
           <input className={cls(false)} disabled={na} value={val('vet_address_line1')} placeholder="123 Barn Rd" onChange={(e) => set('vet_address_line1')(e.target.value)} /></div>
         <div><L>City</L>
@@ -277,13 +292,14 @@ function PrefixValue({ prefixes, value, onChange, placeholder }: { prefixes: str
  *  (trainer / care giver / groom / other). A bare name like "Carmel Creek Ranch" isn't
  *  enough to find a horse; the address + barn/stall are what make it locatable. */
 function LocationEntry({
-  title, heading, v, onChange, showError, nameOptions,
+  title, heading, v, onChange, showError, required, nameOptions,
 }: {
   title: string;
   heading: string;
   v: HorseLocationDetail;
   onChange: (v: HorseLocationDetail) => void;
   showError?: boolean;
+  required?: boolean;
   nameOptions: { value: string; label: string }[];
 }) {
   const set = (patch: Partial<HorseLocationDetail>) => onChange({ ...v, ...patch });
@@ -297,7 +313,7 @@ function LocationEntry({
       {title && <p className="text-[11px] tracking-wide uppercase text-gold-800 font-semibold mb-0.5">{title}</p>}
       {heading && <p className="text-[10px] text-muted mb-2.5">{heading}</p>}
       <div className="grid sm:grid-cols-2 gap-2">
-        <div className="sm:col-span-2"><L>Location name</L>
+        <div className="sm:col-span-2"><L>Location name{required ? ' *' : ''}</L>
           <input list={listId} className={`${input}${bad ? ' border-red-400' : ''}`} value={v.name ?? ''}
             placeholder="e.g. Carmel Creek Ranch" onChange={(e) => set({ name: e.target.value })} />
           <datalist id={listId}>{nameOptions.map((o) => <option key={o.value} value={o.value} />)}</datalist>
@@ -415,8 +431,11 @@ const PATCHABLE_KEYS: (keyof HorseIntakePayload)[] = [
   'medical_history', 'behavioral_history', 'known_conditions',
   'euthanasia_authorization', 'training_history', 'competition_history',
 ];
-// typed columns can't hold the 'N/A' sentinel — persist those as cleared
-const TYPED_KEYS = new Set<keyof HorseIntakePayload>(['date_of_birth', 'fair_market_value', 'sex', 'euthanasia_authorization']);
+// Columns that can't hold the 'N/A' sentinel (typed, CHECK-constrained, or a
+// foreign key into the breed/color vocabularies) — persist those as cleared.
+// The set lives in lib/horses.ts so the create path and the patch path can't
+// drift: it was the create path missing this that blocked a real owner.
+const TYPED_KEYS = new Set<keyof HorseIntakePayload>(HORSE_SENTINEL_UNSAFE_KEYS);
 
 export function HorseIntakeForm({
   onDone, submitLabel = 'Add horse', ownerContactId, horseId,
@@ -439,6 +458,12 @@ export function HorseIntakeForm({
   const [err, setErr] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [showError, setShowError] = useState(false);
+  // Bumped on every REJECTED submit so the scroll-to-the-first-problem effect
+  // re-fires even when the error state was already on. On a form this long the
+  // first red border is routinely far off-screen, so the message alone read as
+  // "it tells me nothing is wrong but won't save".
+  const [errorPulse, setErrorPulse] = useState(0);
+  const formRef = useRef<HTMLDivElement>(null);
   // AUTOSAVE-ON-BLUR: once a record exists (edit mode, or right after the first
   // successful create), leaving any field persists the changed columns via the
   // update_horse_record sparse patch (it RAISES rather than silently no-ops, so
@@ -447,6 +472,8 @@ export function HorseIntakeForm({
   const lastSavedRef = useRef<HorseIntakePayload>({});
   const savingRef = useRef(false);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  // What the database actually said when an autosave failed (was discarded).
+  const [saveErr, setSaveErr] = useState<string | null>(null);
   const [locations, setLocations] = useState<CalendarLocation[]>([]);
   // Staff-only: the account this record is assigned to. The record binds to the
   // creating account UNLESS staff assigns it to another client here. For a client
@@ -591,13 +618,25 @@ export function HorseIntakeForm({
     try {
       await updateHorseRecord(id, patch);   // raises on a blocked write — never silent
       lastSavedRef.current = { ...f };
+      setSaveErr(null);
       setSaveState('saved');
-    } catch {
+    } catch (e) {
+      setSaveErr(errorText(e, 'Could not save your last change.'));
       setSaveState('error');
     } finally {
       savingRef.current = false;
     }
   }
+
+  // Take the member TO the first thing that needs them. Runs on every rejected
+  // submit, preferring the first flagged field and falling back to the message
+  // itself when the rejection came from the server rather than a field.
+  useEffect(() => {
+    if (!errorPulse) return;
+    const root = formRef.current;
+    const target = root?.querySelector('.border-red-400') ?? root?.querySelector('.form-error');
+    target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [errorPulse]);
 
   const toOpts = (rows: LookupCode[]) => rows.map((r) => ({ value: r.code, label: r.display_name }));
   const breedOpts = toOpts(breeds);
@@ -659,26 +698,70 @@ export function HorseIntakeForm({
     && alwaysKeys.every((k) => answered(f[k] as string | undefined))
     && condKeys.every((k) => answered(f[k] as string | undefined));
 
+  // The still-unanswered required fields, BY NAME. The message used to say only
+  // that something was missing, which on a form this long is not findable.
+  const CONDITIONAL_LABELS: Record<string, string> = {
+    lessee_name_text: 'Lessee name', lease_start: 'Lease start', lease_end: 'Lease end',
+  };
+  const missingRequired = (): string[] => {
+    const out: string[] = [];
+    if (!hasRealName || !nameAnswered) out.push('Name (registered or barn)');
+    for (const k of [...alwaysKeys, ...condKeys]) {
+      if (!answered(f[k] as string | undefined)) {
+        out.push(HORSE_DOC_REQUIRED_LABELS[k as string] ?? CONDITIONAL_LABELS[k as string] ?? String(k));
+      }
+    }
+    if (!euthanasiaAnswered) out.push('Emergency euthanasia authorization');
+    if (!filled(homeLoc.name)) out.push('Home location name');
+    if (!leased && currentDiffers && !filled(currentLoc.name)) out.push('Current location name');
+    if (leased && !leaseFromContract && !filled(leaseLoc.name)) out.push('Lease location name');
+    if (leased && !secondariesOk) out.push('Lessee name or email');
+    return out;
+  };
+
+  // BREED and COLOR are FOREIGN KEYS into the reference vocabularies, so a value
+  // typed into "Other (enter manually)" cannot be stored — the INSERT fails with
+  // horses_breed_fkey / horses_color_fkey and the member only ever saw "Could not
+  // save the horse record." Caught here, at the field, with the list option named.
+  const isKnownCode = (v: string | undefined, opts: { value: string }[]) =>
+    !v || v === NA || opts.some((o) => o.value === v);
+  const unlistedVocab = (): string | null => {
+    if (breedOpts.length && !isKnownCode(f.breed, breedOpts)) return 'Breed';
+    if (colorOpts.length && !isKnownCode(f.color, colorOpts)) return 'Color';
+    return null;
+  };
+
+  /** Reject this submit: mark the fields, say why, and take them to the first one. */
+  function reject(message: string) {
+    setShowError(true);
+    setErr(message);
+    setErrorPulse((n) => n + 1);
+  }
+
   async function submit() {
     setErr(null);
     if (isStaff && !assignTo) {
-      setShowError(true);
-      setErr('Choose the account this horse belongs to.');
+      reject('Choose the account this horse belongs to.');
       return;
     }
     if (!hasRealName) {
-      setShowError(true);
-      setErr('Give the horse at least a registered or barn name (N/A can’t apply to both).');
+      reject('Give the horse at least a registered or barn name (N/A can’t apply to both).');
       return;
     }
     if (!euthanasiaAnswered) {
-      setShowError(true);
-      setErr('Please choose an emergency euthanasia authorization (Option A or B).');
+      reject('Please choose an emergency euthanasia authorization (Option A or B).');
       return;
     }
     if (!complete) {
-      setShowError(true);
-      setErr('Please answer every required field — fill it in or mark it N/A.');
+      const missing = missingRequired();
+      reject('Please answer every required field — fill it in or mark it N/A.'
+        + (missing.length ? ` Still needed: ${missing.join(', ')}.` : ''));
+      return;
+    }
+    const unlisted = unlistedVocab();
+    if (unlisted) {
+      reject(`${unlisted} has to be chosen from the list — a typed-in value can’t be saved. `
+        + 'Pick the closest match, or "Other", and we’ll pass your entry to the barn.');
       return;
     }
     setBusy(true);
@@ -736,7 +819,10 @@ export function HorseIntakeForm({
         await linkLocations(out.horse_id); await linkMeds(out.horse_id); onDone(out.horse_id);
       }
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not save the horse record.');
+      // The database's own message — see DbError in lib/horses.ts. Before that
+      // this branch printed a generic sentence and threw the diagnosis away.
+      setErr(errorText(e, 'Could not save the horse record.'));
+      setErrorPulse((n) => n + 1);
     } finally {
       setBusy(false);
     }
@@ -762,7 +848,7 @@ export function HorseIntakeForm({
   return (
     // AUTOSAVE: focus leaving ANY field inside the form persists the changed
     // columns (blur bubbles as focusout). Diff-based — no-op when unchanged.
-    <div className="flex flex-col gap-1" onBlur={() => void autosave()}>
+    <div ref={formRef} className="flex flex-col gap-1" onBlur={() => void autosave()}>
       {/* Account-type-first: STAFF must pick the account this record belongs to; a
           CLIENT's record binds to their own account automatically (no picker). */}
       {isStaff && (
@@ -783,8 +869,7 @@ export function HorseIntakeForm({
       )}
 
       <p className="text-xs text-muted mb-1">
-        Fields that feed your horse’s legal documents (identity, description, value,
-        vet &amp; farrier, known conditions, euthanasia authorization, location) are
+        Fields marked <strong>*</strong> feed your horse’s legal documents and are
         required — fill them in or mark them <strong>N/A</strong>. Everything else is
         optional but welcome. Your progress saves as you go — you can leave and pick
         this up later.
@@ -793,7 +878,7 @@ export function HorseIntakeForm({
       <Section title="Location">
         <div className="sm:col-span-2 flex flex-col gap-3">
           <LocationEntry title="Home location" heading="Where the horse normally resides for boarding."
-            v={homeLoc} onChange={setHomeLoc} showError={showError} nameOptions={locationNameOpts} />
+            v={homeLoc} onChange={setHomeLoc} showError={showError} required nameOptions={locationNameOpts} />
           {/* The general "different location" alternate applies ONLY when the horse is
               NOT leased. When leased, the lease location (below) IS the current location,
               so this is hidden — showing it too would be redundant or contradictory. */}
@@ -805,7 +890,7 @@ export function HorseIntakeForm({
               </label>
               {currentDiffers && (
                 <LocationEntry title="Current location" heading="Where the horse actually is right now."
-                  v={currentLoc} onChange={setCurrentLoc} showError={showError} nameOptions={locationNameOpts} />
+                  v={currentLoc} onChange={setCurrentLoc} showError={showError} required nameOptions={locationNameOpts} />
               )}
             </>
           )}
@@ -833,11 +918,11 @@ export function HorseIntakeForm({
           <div className="sm:col-span-2 flex flex-col gap-3">
             <div className="grid sm:grid-cols-2 gap-3">
               <PersonBlock title="Lessee" showError={showError} span={false}
-                name={{ label: 'Lessee name', value: f.lessee_name_text, onChange: set('lessee_name_text'), placeholder: 'Full name' }}
+                name={{ label: 'Lessee name', value: f.lessee_name_text, onChange: set('lessee_name_text'), placeholder: 'Full name', required: true }}
                 second={{ label: 'Lessee email', kind: 'email', value: f.lessee_email, onChange: set('lessee_email'), placeholder: 'name@example.com' }} />
               <div className="grid grid-cols-2 gap-2 self-start">
-                <Field label="Lease start" type="date" value={f.lease_start} onChange={set('lease_start')} showError={showError} />
-                <Field label="Lease end" type="date" value={f.lease_end} onChange={set('lease_end')} showError={showError} />
+                <Field label="Lease start" type="date" value={f.lease_start} onChange={set('lease_start')} showError={showError} required />
+                <Field label="Lease end" type="date" value={f.lease_end} onChange={set('lease_end')} showError={showError} required />
               </div>
             </div>
             {/* The lease location IS the horse's current location during the term. From
@@ -850,7 +935,7 @@ export function HorseIntakeForm({
               </div>
             ) : (
               <LocationEntry title="Lease location (current)" heading="Where the horse resides during the lease term — this is its current location."
-                v={leaseLoc} onChange={setLeaseLoc} showError={showError} nameOptions={locationNameOpts} />
+                v={leaseLoc} onChange={setLeaseLoc} showError={showError} required nameOptions={locationNameOpts} />
             )}
 
             {/* Temporary current location: an explicit override for a >48h stay during
@@ -890,15 +975,15 @@ export function HorseIntakeForm({
       </Section>
 
       <Section title="Horse identity">
-        <Field label="Nickname" value={f.nickname} onChange={set('nickname')} showError={showError} placeholder="Everyday name (e.g. Beau)" />
-        <Field label="Registered name" value={f.registered_name} onChange={set('registered_name')} showError={showError} />
-        <Field label="Registration number" value={f.registration_number} onChange={set('registration_number')} showError={showError} />
+        <Field label="Nickname" value={f.nickname} onChange={set('nickname')} showError={showError} required placeholder="Everyday name (e.g. Beau)" />
+        <Field label="Registered name" value={f.registered_name} onChange={set('registered_name')} showError={showError} required />
+        <Field label="Registration number" value={f.registration_number} onChange={set('registration_number')} showError={showError} required />
         <SelectOrOther label="Registration organization" value={f.registration_org} onChange={set('registration_org')} showError={false} options={toOpts(regOrgOpts)} lookupKey="horse_registration_org" placeholder="Registry name" />
-        <Field span label="Microchip number (checked first)" value={f.microchip_id} onChange={set('microchip_id')} placeholder="e.g. 985 112233445566" showError={showError} />
+        <Field span label="Microchip number (checked first)" value={f.microchip_id} onChange={set('microchip_id')} placeholder="e.g. 985 112233445566" showError={showError} required />
         <Field label="Passport number" value={f.passport_number} onChange={set('passport_number')} showError={false} />
         <SelectOrOther label="Passport country" value={f.passport_country} onChange={set('passport_country')} showError={false} options={toOpts(passportCountryOpts)} lookupKey="horse_passport_country" placeholder="Country" />
         <Field label="Current fair market value" type="text" inputMode="numeric" value={f.fair_market_value}
-          onChange={set('fair_market_value')} placeholder="$0.00" showError={showError}
+          onChange={set('fair_market_value')} placeholder="$0.00" showError={showError} required
           onBlurFormat={(v) => {
             const n = Number(v.replace(/[$,\s]/g, ''));
             return Number.isFinite(n) && v.trim() !== '' ? n.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) : v;
@@ -906,17 +991,23 @@ export function HorseIntakeForm({
       </Section>
 
       <Section title="Description">
-        <SelectOrOther label="Breed" value={f.breed} onChange={set('breed')} showError={showError} options={breedOpts} lookupKey="horse_breeds" placeholder="Breed name" />
-        <SelectOrOther label="Color" value={f.color} onChange={set('color')} showError={showError} options={colorOpts} lookupKey="horse_colors" placeholder="Color" />
+        <SelectOrOther label="Breed" value={f.breed} onChange={set('breed')} showError={showError} required
+          invalid={showError && !isKnownCode(f.breed, breedOpts)}
+          options={breedOpts} lookupKey="horse_breeds" placeholder="Breed name"
+          hint="Choose from the list — a typed-in breed can’t be stored on the record." />
+        <SelectOrOther label="Color" value={f.color} onChange={set('color')} showError={showError} required
+          invalid={showError && !isKnownCode(f.color, colorOpts)}
+          options={colorOpts} lookupKey="horse_colors" placeholder="Color"
+          hint="Choose from the list — a typed-in color can’t be stored on the record." />
         <SelectOrOther label="Markings" value={f.markings} onChange={set('markings')} showError={false} options={toOpts(markingOpts)} lookupKey="horse_markings" placeholder="Describe the markings" />
-        <Field label="Sex" value={f.sex} onChange={set('sex')} showError={showError}
+        <Field label="Sex" value={f.sex} onChange={set('sex')} showError={showError} required
           options={[
             { value: 'MARE', label: 'Mare' }, { value: 'GELDING', label: 'Gelding' },
             { value: 'STALLION', label: 'Stallion' }, { value: 'FILLY', label: 'Filly' },
             { value: 'COLT', label: 'Colt' },
           ]} />
-        <Field label="Date of birth" type="date" value={f.date_of_birth} onChange={set('date_of_birth')} showError={showError} />
-        <Field label="Height" value={f.height} onChange={set('height')} placeholder="e.g. 16.2 hh" showError={showError} />
+        <Field label="Date of birth" type="date" value={f.date_of_birth} onChange={set('date_of_birth')} showError={showError} required />
+        <Field label="Height" value={f.height} onChange={set('height')} placeholder="e.g. 16.2 hh" showError={showError} required />
       </Section>
 
       <Section title="History">
@@ -935,7 +1026,7 @@ export function HorseIntakeForm({
         <Field span label="Behavioral concerns (temperament, handling)" textarea
           value={f.behavioral_history} onChange={set('behavioral_history')} showError={false}
           placeholder="e.g. cross-ties well; spooky in wind" />
-        <Field span label="Known conditions (current or recurring)" textarea
+        <Field span label="Known conditions (current or recurring)" textarea required
           value={f.known_conditions} onChange={set('known_conditions')} showError={showError}
           placeholder="e.g. allergic to cedar bedding; prone to right-front bruising when jumping" />
       </Section>
@@ -951,8 +1042,8 @@ export function HorseIntakeForm({
       <Section title="Veterinary and Farrier">
         <VetBlock f={f} set={set} showError={showError} />
         <PersonBlock title="Current Farrier" showError={showError}
-          name={{ label: 'Farrier name', value: f.farrier_name, onChange: set('farrier_name'), placeholder: 'Farrier name' }}
-          second={{ label: 'Phone', kind: 'tel', value: f.farrier_phone, onChange: set('farrier_phone'), placeholder: '(555) 555-5555' }} />
+          name={{ label: 'Farrier name', value: f.farrier_name, onChange: set('farrier_name'), placeholder: 'Farrier name', required: true }}
+          second={{ label: 'Phone', kind: 'tel', value: f.farrier_phone, onChange: set('farrier_phone'), placeholder: '(555) 555-5555', required: true }} />
       </Section>
 
       <div>
@@ -987,7 +1078,7 @@ export function HorseIntakeForm({
         <p className={`text-[11px] mt-1 ${saveState === 'error' ? 'text-red-700' : 'text-muted'}`} aria-live="polite">
           {saveState === 'saving' ? 'Saving…'
             : saveState === 'saved' ? 'Progress saved.'
-            : 'Could not save your last change — it will retry when you leave the next field.'}
+            : `${saveErr ?? 'Could not save your last change.'} It will retry when you leave the next field.`}
         </p>
       )}
       <button type="button" onClick={submit} disabled={busy}

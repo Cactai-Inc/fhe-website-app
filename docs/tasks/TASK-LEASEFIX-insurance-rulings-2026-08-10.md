@@ -189,6 +189,30 @@ disagreement stalls the contract until one party moves — the owner's stated in
 three-change plan solved a contradiction this structure prevents. Close it out; do not build
 from it.
 
+### "RIDER" NEVER APPEARS IN CONTRACT TEXT. Owner ruling 2026-08-10.
+
+> Owner: *"the wording using 'rider' is going to be confusing."*
+
+**In a horse lease, "rider" already means the person on the horse.** It is the dominant sense
+in this document class, and the insurance sense collides with it in the one contract type
+where that is guaranteed to mislead.
+
+**Use "component" — the word `MED_NA` already uses**: *"available only as a component of a
+mortality policy on the Horse."* The vocabulary is established in this document, so matching
+it is both clearer and consistent by default.
+
+**APPROVED CCC N/A TEXT:**
+
+> **13.3 Care, Custody and Control Insurance**
+>
+> Not applicable. Care, custody and control coverage is available only as a component of a
+> general liability policy carried by Lessee. Because Lessee does not carry general liability
+> insurance under this Agreement, no care, custody and control coverage is available.
+
+**Scope of the ban:** contract text, clause bodies, field labels, option labels — anywhere a
+party reads it. **"Parent/rider" stays in the engineering docs**, where it names the pattern
+precisely and no counterparty ever sees it. Do not strip it from these rulings.
+
 ### CCC HOLDS ITS POSITION AND SHOWS N/A — it does not vanish. Settled 2026-08-10.
 
 > Owner: *"the ccc needs to move up to below the gl section right now it goes gl, mort, med,
@@ -396,46 +420,97 @@ it, and do not treat the word FROZEN as a reason to route the change somewhere w
 
 ## Still open, and NOT for the thread to decide
 
-- **The `$ or %` share control is a REBUILD, not a new build. CORRECTED 2026-08-10.**
+- **THE SPLIT IS ONE PERCENT FIELD. No chooser is built. SETTLED 2026-08-10.**
 
-  > Owner: *"this needs rebuilding, it already exists but its written in a confusing manner
-  > with too much text."*
+  > Owner: *"the unification of the $/% system for splits needs to be done properly. i specced
+  > something different than what we already had in the system… the one implemented elsewhere is
+  > likely the right approach and my authored approach is likely best fit to throw out and the
+  > current implementation on the contract in the insurance section we can both agree is totally
+  > fubar."*
 
-  The thread reported *"the control you specified doesn't exist."* **That is wrong, and the
-  orchestrator relayed it without checking.** Verified against production:
+  **He is right, and his own earlier ruling is what settles it.**
 
-  `currency` and `percent` are both real `format_type` kinds, implemented in
-  `ContractCascade.tsx:903-906` (currency renders a `$` affix, percent a `%`), and already in
-  production use on `TXN.TRAINER_EXERCISE_SPLIT_PCT`.
-
-  **Every share field is untyped** — `format_type` is empty, so it falls through to plain text
-  and **the unit is written into the LABEL to compensate**:
+  **What the system already does, live on all four lease templates:**
 
   ```
-  TXN.MORT_COST_SPLIT_LESSEE    (none)   "Lessee's share ($ or %)"
-  TXN.MORT_COST_SPLIT_LESSOR    (none)   "Lessor's share ($ or %)"
-  TXN.MED_COST_SPLIT_LESSEE     (none)   "Lessee's share ($ or %)"
-  TXN.MED_COST_SPLIT_LESSOR     (none)   "Lessor's share ($ or %)"
-  TXN.GL_DED_RESP_SPLIT_LESSEE  (none)   "Split — % paid by Lessee"
-  TXN.GL_DED_RESP_SPLIT_LESSOR  (none)   "Split — % paid by Lessor"
-  TXN.MED_DED_RESP_SPLIT_*      (none)   "Deductible split — paid by …"
+  TXN.TRAINER_EXERCISE_SPLIT_PCT   format_type: percent   "Lessee's share of the cost"
   ```
 
-  **That is the "too much text": the label is doing the control's job.** The same defect the
-  owner named about the placeholder — it reads as unauthored because a typed control was never
-  wired, not because the control was missing.
+  reading, in the clause body:
 
-  **The work:** type the fields, strip the unit out of every label, and extend the existing
-  kind to the owner's shape — a null-or-`$` selector, a number-only input, and a null-or-`%`
-  alternate that greys when `$` is selected. **Do not build a parallel control** beside
-  `currency`/`percent`; extend what is there and reuse it everywhere the table above lists.
+  ```
+  Party responsible for costs:   {{TXN.TRAINER_EXERCISE_COST}}
+  Lessee's share of the cost:    {{TXN.TRAINER_EXERCISE_SPLIT_PCT}}
+  ```
 
-  **His reasoning, worth keeping:** *"they will use % when the policy cost is unknown and they
-  will use $ when the policy cost is known."* It must support both because parties may agree a
-  proportion before a premium exists — the same reason the premium is not in the clause.
+  **A who-pays election, then ONE percent naming one party's share.** The other party's share
+  is arithmetic. **The insurance section already has the first half** — "paid by Lessor /
+  split / Other". It needs the second half to be one field rather than four.
 
-  `TXN.MORT_COST_SPLIT_TEXT` and `TXN.MED_COST_SPLIT_TEXT`, both labelled "Split (composed)",
-  are the redundant line the owner ordered removed. They go with this pass.
+  ### CORRECTED 2026-08-10 — THE UNIT SELECTOR STAYS. Percent-only is insufficient.
+
+  > Owner: *"the case where the lessor says just give me $100 toward the insurance isnt possible
+  > with just a % field."*
+
+  **He is right and the orchestrator's argument for percent-only was wrong.**
+
+  It claimed a percentage expresses any dollar split losslessly. **It does not.** A fixed
+  contribution and a proportion are **different agreements, not two notations for one:**
+
+  | | at signing | at renewal, premium rises |
+  |---|---|---|
+  | `10%` | $100 of $1,000 | **$150** of $1,500 — floats |
+  | `$100` | $100 of $1,000 | **$100** of $1,500 — fixed |
+
+  Converting "$100 toward it" into "10%" **changes what was agreed** the moment the premium
+  moves. The proportion is lossless only if the agreement was proportional to begin with.
+
+  **The premium-is-a-fact ruling does not cover this either.** `$100` is not the premium — it is
+  the **contribution**. The premium is what the policy costs; the contribution is what the Lessee
+  agreed to pay. Only the first belongs in an appendix, and keeping the second out of the clause
+  would remove the term itself.
+
+  ### SO: the existing pattern's DISCIPLINE, plus the unit from the owner's spec.
+
+  ```
+  Lessee's share of the cost:   [ $ | % ]  [ number ]
+  ```
+
+  **One field. One party named. One unit selector.**
+
+  - `%` → the Lessor's share is `100 − X`, arithmetic, unstated.
+  - `$` → the Lessor pays the remainder, arithmetic, unstated.
+
+  **What survives from the trainer pattern:** one field naming one party, never two independent
+  fields that can contradict each other. That is the part the insurance section got wrong.
+
+  **What survives from the owner's spec:** the unit selector, because a fixed contribution is a
+  term the contract must be able to express.
+
+  **What is thrown out:** the per-party pair (`*_SPLIT_LESSEE` **and** `*_SPLIT_LESSOR`), the
+  composed `*_SPLIT_TEXT`, and the floating `Allocation` field.
+
+  ### What this replaces
+
+  | | now | after |
+  |---|---|---|
+  | split declaration | 2 untyped free-text fields + `*_SPLIT_TEXT` ("Split (composed)") + the floating `Allocation` field | **one `percent` field** |
+  | control work | — | **a unit selector on ONE field.** `currency` and `percent` already ship; this adds the `$`/`%` choice to a single control rather than building a per-party pair |
+  | consistency | two independent fields can both say 60% | **impossible — one number** |
+
+  ### Applies everywhere a split is declared
+
+  Mortality, medical, and the GL/CCC deductible splits. **Same field shape, same label form,
+  same position.** `TXN.MED_COST_SPLIT_LESSEE` / `_LESSOR`, `TXN.MORT_COST_SPLIT_LESSEE` /
+  `_LESSOR`, `TXN.GL_DED_RESP_SPLIT_*`, `TXN.MED_DED_RESP_SPLIT_*` all collapse to one `percent`
+  field each, and the `*_SPLIT_TEXT` fields are deleted.
+
+  **Name whose share it is in the label, not in the value** — "Lessee's share of the cost",
+  exactly as the trainer clause does. Do not write the unit into the label; `percent` renders it.
+
+  **A `ContractCascade` change IS needed** — the unit selector does not exist today. The thread's
+  plan stands: **present the diff and WAIT.** It is a shared authoring surface, and
+  `ClauseDocument.tsx` is stop-and-propose.
 
 - **13.2's Lessee question still means two things across branches.** This is the root cause of
   the contradiction found on 2026-08-10 — see

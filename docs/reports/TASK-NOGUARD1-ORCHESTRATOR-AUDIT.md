@@ -1,3 +1,40 @@
+> ## THIS AUDIT WAS WRONG IN THREE PLACES. Corrected 2026-08-10 by NOGUARD2, verified by the orchestrator.
+>
+> NOGUARD2 tested what this document asserted. All three corrections reproduce against
+> production. **Two of them changed the fix strategy**, so they matter more than a fact count.
+>
+> **1. "Nine unguarded anon-reachable `contract_fields` writers" — it is SEVEN.**
+> `contract_split_deductible_sync` and `sync_horse_fields_to_documents` are `RETURNS trigger`
+> and cannot be invoked directly (`ERROR: trigger functions can only be called as triggers`).
+> §3's query dropped NOGUARD1's `rettype <> 'trigger'` filter, which is exactly how they got
+> on the list.
+>
+> **2. "All three [lock-carrying functions] are `anon = false`" — WRONG, and one was missed.**
+> ```
+> set_contract_field        anon f   <- correct
+> set_document_co_buyer     anon t   <- WRONG
+> remove_document_co_buyer  anon t   <- WRONG
+> set_field_structured      anon t   <- a FOURTH lock-caller, omitted entirely
+> ```
+> `remove_document_co_buyer` has no identity check and deletes BUYER parties on any document
+> id. This audit corrected the thread's report using a fact that was itself wrong.
+>
+> **3. "A function with an internal caller must be GUARDED, not revoked — revoking would break
+> the caller." FALSE.** Proven in a rolled-back transaction:
+> ```
+> anon -> inner directly         ERROR: permission denied for function
+> anon -> definer outer -> inner "inner reached"
+> ```
+> `SECURITY DEFINER` runs as its owner, so an inner call is checked against `postgres`, not
+> the session role. Every in-database caller in scope is postgres-owned and definer. **This is
+> why six of seven are revoked rather than given six new guards — fewer new predicates is less
+> risk.** NOGUARD1's category-5 argument was right; this audit contradicted it and the task doc
+> inherited the error.
+>
+> **The lesson, and it is the standing one:** each wrong claim came from a test adjacent to the
+> question — a DML pattern match instead of a signature check, a remembered grant instead of a
+> queried one, and a plausible privilege model instead of a rolled-back experiment.
+
 # NOGUARD1 — orchestrator's independent audit
 
 **Audited 2026-08-08 against production (`lrstswfxfsezdmvkvukc`), read-only.** This is the
