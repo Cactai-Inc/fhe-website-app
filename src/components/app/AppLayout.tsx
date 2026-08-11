@@ -60,14 +60,25 @@ import { captureWallReturnDestination } from '../../lib/wallReturn';
  * row palette below has to come back with it. */
 const NAV_PANEL = 'bg-cream-25';
 /** default row: cream at reading weight; hover is desktop-only (`hover:hover`)
- *  so iOS's sticky post-tap `:hover` can never latch it on. */
-const NAV_ROW_IDLE = 'text-green-800 [@media(hover:hover)]:hover:bg-navfill/64 [@media(hover:hover)]:hover:text-cream-25';
+ *  so iOS's sticky post-tap `:hover` can never latch it on.
+ *  UIO-003: `transition-colors duration-320 ease-glide` baked in here rather
+ *  than left to each call site — several (NavFooter's App tour/Sign out) had
+ *  no transition at all, and the rest had Tailwind's bare 150ms default,
+ *  which read as instant rather than easing. Centralising it means every row
+ *  that reads this constant is fixed at once and can't drift back out of
+ *  step the way a per-site `transition-colors` did. */
+const NAV_ROW_IDLE = 'text-green-800 transition-colors duration-320 ease-glide [@media(hover:hover)]:hover:bg-navfill/64 [@media(hover:hover)]:hover:text-cream-25';
 /** selected row: the inversion of the panel. Cream fill, green ink — the same
  *  two colours the other way round, which is what makes it read as selected on a
  *  panel that is itself earth-800 (C5b's old `bg-green-800` active fill would now
  *  be invisible: it IS the panel). */
 const NAV_ROW_ACTIVE = 'bg-navfill/80 text-cream-25 font-medium';
-const NAV_ICON_IDLE = 'text-green-800/70 [@media(hover:hover)]:group-hover:text-cream-25';
+/** UIO-003, cause 1: this constant had no transition at all, so the icon's
+ *  own colour snapped to `cream-25` on `group-hover` roughly 30ms into the
+ *  row's 150ms fill transition — visible as a one-frame vanish, proven on
+ *  the owner's own screen recording (`docs/reference/navhover-frames/`).
+ *  CSS transitions are not inherited from the row; the icon needs its own. */
+const NAV_ICON_IDLE = 'text-green-800/70 transition-colors duration-320 ease-glide [@media(hover:hover)]:group-hover:text-cream-25';
 const NAV_ICON_ACTIVE = 'text-cream-25';
 /** group headings ("Management", "People", …) — the "section header" the owner
  *  named explicitly. Quiet, but cream: on a dark panel the old `text-muted`
@@ -592,7 +603,7 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
           `bg-navfill/80`; because the row splits its background (this div) from
           its ink (the Link and the toggle below), NAV_ROW_ACTIVE is applied in
           those two halves rather than as one class. */}
-      <div className={`group relative flex items-center rounded-lg pr-1 ${isAll ? 'bg-navfill/80' : '[@media(hover:hover)]:hover:bg-navfill/64'}`}>
+      <div className={`group relative flex items-center rounded-lg pr-1 transition-colors duration-320 ease-glide ${isAll ? 'bg-navfill/80' : '[@media(hover:hover)]:hover:bg-navfill/64'}`}>
         {/* Owner, 2026-08-09: the idle label was `text-cream-100/80` — a palette
             left over from when NAV_PANEL was green. The panel is now cream-25
             (#fdfcfa) and cream-100 (#f5f0e8) is literally the HEADER fill, so
@@ -600,7 +611,7 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
             panel: invisible. Idle now uses the same green ink as NAV_ROW_IDLE,
             which every other row in the rail already had. */}
         <Link to="/app" onClick={onNavigate} aria-current={isAll ? 'page' : undefined}
-          className={`flex items-center gap-3 flex-1 min-w-0 px-3 py-2.5 text-[13.5px] font-sans focus-ring rounded-lg ${isAll ? 'text-cream-25 font-medium' : 'text-green-800 [@media(hover:hover)]:group-hover:text-cream-25'}`}>
+          className={`flex items-center gap-3 flex-1 min-w-0 px-3 py-2.5 text-[13.5px] font-sans focus-ring rounded-lg transition-colors duration-320 ease-glide ${isAll ? 'text-cream-25 font-medium' : 'text-green-800 [@media(hover:hover)]:group-hover:text-cream-25'}`}>
           <Users size={18} className={`shrink-0 ${isAll ? NAV_ICON_ACTIVE : NAV_ICON_IDLE}`} />
           <span className="whitespace-nowrap">Community Feed</span>
         </Link>
@@ -619,8 +630,17 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
              ink on the navfill pill, matching NAV_ICON_ACTIVE; idle is green,
              matching NAV_ICON_IDLE. The selected hover tint inverts with the
              pill: a light wash on dark, where it was a dark wash on light. */
-          className={`shrink-0 flex items-center justify-center p-1.5 rounded-md focus-ring ${isAll ? 'text-cream-25 hover:bg-cream-25/10' : 'text-green-800/70 [@media(hover:hover)]:hover:bg-navfill/64 [@media(hover:hover)]:hover:text-cream-25'}`}>
-          {expanded ? <ChevronUp size={18} className="shrink-0" /> : <ChevronDown size={18} className="shrink-0" />}
+          /* UIO-003, cause 2: this button's own `hover:bg-navfill/64` used to
+             stack with the parent div's identical fill above — hovering the
+             toggle painted both layers (1 - 0.36² = 87% effective, against 64%
+             everywhere else), so this row alone read darker than its
+             neighbours on hover. The fill belongs on the parent only; this
+             keeps its own text-colour change and gains the transition neither
+             it nor its chevron had at all before. */
+          className={`shrink-0 flex items-center justify-center p-1.5 rounded-md focus-ring transition-colors duration-320 ease-glide ${isAll ? 'text-cream-25 hover:bg-cream-25/10' : 'text-green-800/70 [@media(hover:hover)]:hover:text-cream-25'}`}>
+          {expanded
+            ? <ChevronUp size={18} className="shrink-0 transition-colors duration-320 ease-glide" />
+            : <ChevronDown size={18} className="shrink-0 transition-colors duration-320 ease-glide" />}
         </button>
       </div>
       {/* nested views (specific filters only) — the selected one highlights */}
@@ -1292,7 +1312,10 @@ export default function AppLayout() {
                   <div key={g.key}>
                     {navGroups.length > 1 && staffRailPinned && (
                       <button type="button" onClick={() => toggleGroup(g.key)}
-                        className={`w-full flex items-center justify-between px-3 py-1.5 text-[10px] tracking-widest uppercase ${NAV_HEADING} font-semibold hover:text-cream-100 focus-ring rounded-md`}>
+                        /* UIO-003: no transition at all before this — the
+                           group heading snapped straight to cream-100 on
+                           hover with nothing easing it in. */
+                        className={`w-full flex items-center justify-between px-3 py-1.5 text-[10px] tracking-widest uppercase ${NAV_HEADING} font-semibold transition-colors duration-320 ease-glide hover:text-cream-100 focus-ring rounded-md`}>
                         {g.label}
                         <ChevronDown size={12} className={`transition-transform ${groupOpen(g) ? '' : '-rotate-90'}`} />
                       </button>

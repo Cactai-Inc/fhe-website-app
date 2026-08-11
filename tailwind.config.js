@@ -9,6 +9,25 @@ export default {
          20% reduction) is expressible rather than rounded to the nearest
          built-in step. */
       opacity: { 64: '0.64' },
+      /* UIO-003. Declared as real theme values for the same reason `opacity: 64`
+         is: the arbitrary-value form (`duration-[320ms]`, `ease-[cubic-bezier(...)]`)
+         is exactly what emitted NO RULE AT ALL on 2026-08-08. A named utility is
+         generated like any built-in and can be grepped out of the built CSS.
+
+         `glide` is the drawer-and-fill curve: it leaves immediately and settles
+         long, which is what reads as unhurried rather than slow. Tailwind's
+         default `ease-in-out` is symmetric and reads mechanical at this length.
+
+         One vocabulary, three lengths — 320 for a colour settling under the
+         cursor, 440 for a panel crossing the screen. Change them here and every
+         surface moves together. */
+      transitionTimingFunction: {
+        glide: 'cubic-bezier(.32, .72, 0, 1)',
+      },
+      transitionDuration: {
+        320: '320ms',
+        440: '440ms',
+      },
       colors: {
         // Primary brand colors
         green: {
