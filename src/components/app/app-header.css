@@ -146,7 +146,15 @@
 }
 
 .oh-left  { grid-column: 1; display: flex; justify-content: flex-start; }
-.oh-right { grid-column: 3; display: flex; justify-content: flex-end; }
+/* `position: relative` is the ONE-TIME TIP's containing block (NAVMOTION §D2).
+   The tip hangs BELOW the header's bottom edge, so it needs an ancestor that is
+   positioned and that does not clip: `.oh-right` declares no `overflow`, and
+   neither does `.oh-hdr` above it (checked, not assumed — §D2 asks for that
+   specifically, and this file already records a rail's `overflow-x-hidden`
+   clipping a tooltip into a portal once). Anchoring on `.oh-right` rather than
+   `.oh-hdr` also puts `right: 0` exactly on the avatar's own right edge, so the
+   tip's pointer can be measured off the mark instead of off the viewport. */
+.oh-right { grid-column: 3; display: flex; justify-content: flex-end; position: relative; }
 
 .oh-homelink {
   display: inline-flex; align-items: center;
@@ -312,44 +320,196 @@ button.oh-avatar:focus-visible {
 @media (min-width: 1024px)   { button.oh-avatar { display: none; } }
 @media (max-width: 1023.98px) { span.oh-avatar  { display: none; } }
 
+/* ============ §D1 — THE PERMANENT MENU CARET (NAVMOTION, owner 2026-08-11) ====
+   "the mobile nav needs a way for the user to know the avatar button is the
+   activation surface." An avatar reads as PROFILE. A caret reads as "this opens
+   something", and unlike the one-time tip (§D2) it is still there on day thirty.
+
+   IT TAKES THE GLYPH'S OWN INK, and that is the whole reason it needs no ramp of
+   its own. The order says "extend that ramp, do not replace it" — the documented
+   white-overlay ramp moves the BACKGROUND (14% rest / 7% hover / 0% pressed) and
+   never the ink, so a caret drawn in `#fdfcfa` rides every step of it for free
+   and carries the ramp's own recorded contrasts unchanged: 8.68:1 at rest,
+   10.92:1 on hover, 13.43:1 pressed. Nothing here re-decides those numbers.
+
+   MOBILE ONLY, in a media query rather than `lg:hidden` — same rule, same
+   reason, as the display split directly above: the outcome must not depend on
+   stylesheet injection order.
+
+   THE GEOMETRY, so it is not re-derived later. The mark is 42px at every width
+   now (§G), so this is one calculation, not four:
+     - `padding-bottom: 7px` on a border-box 42px button leaves a 33px content
+       box, so `place-items: center` lands the glyph 3.5px higher and frees the
+       bottom of the disc. The mark does NOT change size and the font-size ratio
+       the file protects is untouched — only where the glyph sits inside it.
+     - the caret is 8px wide x 5px tall, 6px off the bottom. At that height the
+       42px disc is still 33.8px across, so it clears the ring by ~13px a side.
+   `::after` is safe here where a background pseudo-element was not: the letter
+   is the button's own text content and paints above the element's background,
+   but a pseudo-element is a separate box — it is only a hazard when it has to
+   sit BEHIND the glyph, which this one does not.
+
+   IT ROTATES WITH `aria-expanded`. This is NOT the UIO-006 open-state question
+   and does not answer it: that one is about the FILL, is explicitly left for the
+   owner to see rendered, and is untouched below. A caret that pointed down while
+   the menu it opens is already open would be a defect on arrival, not a deferred
+   decision. */
+@media (max-width: 1023.98px) {
+  button.oh-avatar { position: relative; padding-bottom: 7px; }
+  button.oh-avatar::after {
+    content: '';
+    position: absolute;
+    left: 50%; bottom: 6px;
+    width: 0; height: 0; margin-left: -4px;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid #fdfcfa;            /* cream-25 — the glyph's own ink */
+    pointer-events: none;
+    transition: transform theme('transitionDuration.320') theme('transitionTimingFunction.glide');
+  }
+  button.oh-avatar[aria-expanded='true']::after { transform: rotate(180deg); }
+}
+
+/* ============ §D2 — THE ONE-TIME TIP (NAVMOTION, owner 2026-08-11) ============
+   > "Lets show a tip in a box that appears with visual presence to catch the eye
+   >  that says click for menu. 3-4 seconds should be enough if it pops in a
+   >  movement oriented way."
+
+   It REPLACES the bounce, and it replaces it because motion catches the eye but
+   only words carry the meaning: a bouncing avatar says "press me" without ever
+   saying what opens. AppHeader.tsx owns when it appears and when it leaves; this
+   file owns what it looks like.
+
+   IT CANNOT SHIFT LAYOUT. Absolutely positioned out of flow, animating
+   `transform`/`opacity` only, so nothing around it reflows and `--cs-hdr-h`
+   never moves. `pointer-events: none` so it can never intercept a tap meant for
+   the mark it is pointing at — the tip is an advisory, and dismissing it is the
+   job of the listeners in AppHeader, not of the box itself.
+
+   Solid green-800 with cream-25 text — 13.43:1, the same pair and the same
+   number as the pressed avatar. A translucent box over arbitrary page content
+   would have no fixed contrast to state, which is the failure this file already
+   records for the glass drawer tab ("a real user could not find the menu").
+
+   The pointer sits 15px off the right edge: `.oh-right` is flex/end so the
+   avatar's right edge IS this box's `right: 0`, the mark is 42px wide, and a
+   12px arrow centred under the mark's centre is 21 - 6 = 15px in. It points at
+   the control it is talking about rather than floating near it. */
+.oh-tip {
+  position: absolute;
+  top: calc(100% + 10px); right: 0;
+  z-index: 1;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: theme('colors.green.800');
+  color: #fdfcfa;                             /* cream-25 on green-800 = 13.43:1 */
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px; line-height: 1.25; font-weight: 500;
+  white-space: nowrap;
+  box-shadow: 0 6px 18px rgba(16, 28, 22, .22);
+  pointer-events: none;
+}
+.oh-tip::after {
+  content: '';
+  position: absolute;
+  bottom: 100%; right: 15px;
+  border: 6px solid transparent;
+  border-bottom-color: theme('colors.green.800');
+}
+/* "It pops… movement oriented." `ease-glide` IS the house curve for this —
+   declared in tailwind.config.js as fast departure, long settle, which is what
+   scale-and-settle wants. Read through `theme()` rather than re-typing the
+   cubic-bezier so there is still exactly one copy of the curve in the app; §C1
+   forbids adding a new easing or duration token and this adds neither. */
+@keyframes oh-tip-pop {
+  0%   { opacity: 0; transform: translateY(-6px) scale(.86); }
+  100% { opacity: 1; transform: translateY(0)    scale(1);   }
+}
+@keyframes oh-tip-fade {
+  0%   { opacity: 1; transform: translateY(0)    scale(1);   }
+  100% { opacity: 0; transform: translateY(-4px) scale(.96); }
+}
+.oh-tip--pop { animation: oh-tip-pop  theme('transitionDuration.320') theme('transitionTimingFunction.glide') both; }
+.oh-tip--out { animation: oh-tip-fade theme('transitionDuration.320') theme('transitionTimingFunction.glide') both; }
+/* Never at lg+ — there is nothing to discover when the rail is already on
+   screen. AppHeader also refuses to start the timers above 1024px; this is the
+   half that cannot be beaten by source order, matching the avatar split above. */
+@media (min-width: 1024px) { .oh-tip { display: none; } }
+
 /* ===================== RESPONSIVE =====================
-   --cs-hdr-h is re-declared in each block because it IS the height; the marks
-   step down with it so the proportion holds. The wordmark itself only shrinks
-   once, at the narrowest tier — the stacked nameplate has the room. */
+   NAVMOTION §G, owner 2026-08-11:
+   > "the header logo and avatar get smaller on mobile layout and i dont think
+   >  they need to, but the name doesnt get small enough so even at the size they
+   >  are now the name text gets too close to them, if we scale down the name text
+   >  a little for breathing room and keep the avatar and logo at their original
+   >  size i think it will look better."
+
+   THE MARKS NOW HOLD 42px AT EVERY WIDTH. What this file said before — "the
+   marks step down with [--cs-hdr-h] so the proportion holds" — was a real
+   decision, not drift, and it is superseded rather than corrected: the owner has
+   measured the result and prefers constant marks to a constant mark/header
+   ratio. The header height still steps (76 -> 68 -> 64 -> 56) and a 42px mark
+   clears all four; the arithmetic is at each tier below.
+
+   THE 401-600px BAND WAS THE ACTUAL BUG: the marks stepped down at 600px and the
+   wordmark did not step at all until 400px, so a full-size 26px nameplate sat
+   beside 38px marks in a shorter header. That is the crowding. The wordmark now
+   moves in this block, where it previously did not move at all, and moves
+   further at the narrow tiers.
+
+   WIDTH BUDGET, so the next tier is chosen by arithmetic and not by eye. The
+   grid is `1fr auto 1fr` and the side items are 42px and `flex: none`, so the
+   1fr columns cannot compress below 42px — the wordmark's first line has
+   exactly (viewport - horizontal padding - 84px) to live in before it starts
+   pushing the marks apart. "FRENCH HERITAGE" measures 10.48em at .06em tracking
+   (summed from Libre Caslon Text's uppercase advances; this file's own earlier
+   note recorded ~200px at 19px, i.e. 10.53em — the two agree to within a
+   rounding step, which is why it is trusted here).
+
+   Note the two faces are NOT metrically identical: macOS renders Big Caslon and
+   everything else renders the hosted Libre Caslon Text. The slack figures below
+   are the reason the tiers are chosen with room rather than to the pixel. */
 @media (max-width: 600px) {
   :root { --cs-hdr-h: 68px; }
   .oh-hdr {
     padding-left: calc(14px + env(safe-area-inset-left));
     padding-right: calc(14px + env(safe-area-inset-right));
   }
-  /* UIO-006: mark size stays shared (the complaint is the letter, not the
-     circle) but font-size splits. `.oh-mono` is UNCHANGED — the owner
-     corrected an earlier version of this order that touched it. `.oh-avatar`
-     keeps roughly its desktop ~48%-of-mark ratio: the avatar carries
-     REVERSED type (cream on a solid green fill) while the logo mark is dark
-     type on transparent, and reversed type reads optically smaller at the
-     same point size — the avatar needs the extra weight to look like its
-     equal, precisely where the fill exists. */
-  .oh-mono, .oh-avatar { width: 38px; height: 38px; }
-  .oh-mono { font-size: 16px; }
-  .oh-avatar { font-size: 19px; }
+  /* §G: the mark step-down that used to be here is GONE — .oh-mono and
+     .oh-avatar hold 42px, and with the size held their font-sizes hold too
+     (17px / 20px), which is what preserves the two relationships this file
+     protects by name: `.oh-mono` is untouched (the owner corrected an earlier
+     order that touched it), and the avatar's glyph stays the LARGER fraction of
+     its mark — 20/42 = 47.6% against the monogram's 17/42 = 40.5% — because
+     reversed type reads optically smaller and needs the extra weight exactly
+     where the fill is. Holding the size is what keeps that ratio intact; the
+     old UIO-006 split existed only to maintain it while the mark shrank.
+     42px in a 68px header leaves 13px above and below. */
+  /* Worst case in this band is 401px: 401 - 28 - 84 = 289px of centre column
+     against 23 x 10.48 = 241px, so 48px of slack (24px a side). */
+  .oh-w1 { font-size: 23px; }
+  .oh-w2 { font-size: 13px; }
 }
 
-/* iPhone 14/15/16 sit at 390–393 CSS px — the volume phones. At 19px the first
-   line runs ~200px, which fits, but the side clusters leave it no breathing
-   room, so both the marks and the name step down one notch together. */
+/* iPhone 14/15/16 sit at 390–393 CSS px — the volume phones, and 320px is the
+   floor this tier has to survive.
+   The marks hold 42px here too (64px header, 11px above and below), so the
+   centre column is 8px narrower than it used to be at the same width AND the
+   name has to give back more than the marks took: at the old 21px the first line
+   ran 220px inside a 228px budget — 4px a side, which is precisely the collision
+   the owner is describing. At 18px it runs 189px inside 216px: 27px of slack,
+   13.7px a side. That is the whole trade §G asks for, in one line. */
 @media (max-width: 400px) {
   :root { --cs-hdr-h: 64px; }
   .oh-hdr {
     padding-left: calc(10px + env(safe-area-inset-left));
     padding-right: calc(10px + env(safe-area-inset-right));
   }
-  /* UIO-006 — same split as the 600px block above. */
-  .oh-mono, .oh-avatar { width: 36px; height: 36px; }
-  .oh-mono { font-size: 15px; }
-  .oh-avatar { font-size: 18px; }
-  .oh-w1 { font-size: 21px; }
-  .oh-w2 { font-size: 12px; letter-spacing: .26em; margin-right: -.26em; }
+  .oh-w1 { font-size: 18px; }
+  /* letter-spacing unchanged at .26em — and BECAUSE it is unchanged the paired
+     `margin-right` is unchanged with it. They are one value written twice; the
+     rule is that they move together, not that they must be restated. */
+  .oh-w2 { font-size: 11px; letter-spacing: .26em; margin-right: -.26em; }
 }
 
 /* ============ PHONE IN LANDSCAPE ============
@@ -364,7 +524,21 @@ button.oh-avatar:focus-visible {
     padding-left: calc(16px + env(safe-area-inset-left));
     padding-right: calc(16px + env(safe-area-inset-right));
   }
-  .oh-mono, .oh-avatar { width: 34px; height: 34px; font-size: 14px; }
+  /* §G: the 34px step is gone with the other two. THIS IS THE TIGHT TIER and the
+     order names it: 42px in a 56px header leaves 7px above and 6px below (the
+     1px bottom border is inside the border-box). It clears — but 6.5px is the
+     smallest clearance in the file, so it is the one tier to look at first, and
+     the sanctioned fix if it reads cramped is to RAISE this tier's height, not
+     to shrink the mark back.
+     Removing this rule also repairs something it broke: it collapsed .oh-mono
+     and .oh-avatar to a SHARED 14px font-size, which flattened the deliberate
+     40.5% / 47.6% split the two blocks above document. At the held size both
+     return to their own ratio.
+     The wordmark does NOT step further here. This tier is constrained by HEIGHT,
+     not width — a landscape phone is ~850px wide, so the centre column has ~700px
+     for a 19px line that needs 199px. Shrinking it would be answering a question
+     nobody asked; the 42px marks now govern this header's height, and the
+     wordmark stack at 19/11 is 31.8px, well inside them. */
   .oh-w1 { font-size: 19px; }
   .oh-w2 { font-size: 11px; letter-spacing: .24em; margin-right: -.24em; }
 }

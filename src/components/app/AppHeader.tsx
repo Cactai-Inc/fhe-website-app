@@ -1,5 +1,7 @@
 
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { usePrefersReducedMotion } from '../../lib/hooks';
 import './app-header.css';
 
 /**
@@ -48,7 +50,100 @@ type Props = {
   onToggleMenu: () => void;
 };
 
+/* ── §D2, THE ONE-TIME TIP — the four values that decide its behaviour ────────
+ * The wording is a constant because the owner asked for it to be one ("or
+ * wording the owner prefers — put the string in one constant").
+ *
+ * THE MARKER IS localStorage, and that is a deliberate reading of "follow
+ * whatever this app already uses for first-run markers" rather than a shortcut.
+ * The app has TWO such mechanisms: the tour's server-side, per-form-factor stamp
+ * (`profiles.tour_seen_mobile_at`, written by `markTourSeen()`), and the
+ * localStorage flags AppLayout already keeps for `communityNav.expanded` and
+ * `staffRail.pinned`. The tour's needs a migration and a column, which is a
+ * database change for a header hint and is outside this task's file ownership;
+ * the localStorage form is what this surface already uses, is per-device (which
+ * is the correct grain for "first MOBILE visit" — the same account on a phone
+ * and a laptop are two different discoveries), and costs nothing. If the owner
+ * wants this to survive a cleared browser, the swap is `markTourSeen`'s shape
+ * and one column.
+ *
+ * The dwell is timed on the DWELL, not on the whole animation — 3.5s of the
+ * owner's "3-4 seconds" at full presence, with the 320ms pop before it and the
+ * 320ms fade after it on top. */
+const MENU_TIP_TEXT = 'Click for menu';
+const MENU_TIP_SEEN_KEY = 'navMenuTip.seen';
+const MENU_TIP_DWELL_MS = 3500;
+const MENU_TIP_EXIT_MS = 320;   // matches .oh-tip--out's duration-320 in app-header.css
+/** The same 1024px line the avatar's own display split uses. Declared once here
+ *  and once in app-header.css: this half decides whether the TIMERS ever start,
+ *  the CSS half decides whether the box can ever paint. Belt and braces on
+ *  purpose — the CSS half is the one that cannot be beaten by source order. */
+const MENU_TIP_MOBILE_MQ = '(max-width: 1023.98px)';
+
 export function AppHeader({ initial, menuOpen, onToggleMenu }: Props) {
+  /* §D2 — a first-run teaching moment that leaves. Three states rather than a
+     boolean because the box has to still be in the DOM while it fades out; the
+     drawer in AppLayout is built the same way and for the same reason. */
+  const [tip, setTip] = useState<'hidden' | 'in' | 'out'>('hidden');
+  const reducedMotion = usePrefersReducedMotion();
+  const exitTimer = useRef<number | undefined>(undefined);
+
+  /** Stamps the marker and starts the exit. Every dismissal path lands here, so
+   *  "it never returns" is true of all of them, not just of the timer. */
+  const dismissTip = useCallback(() => {
+    setTip((t) => {
+      if (t !== 'in') return t;
+      exitTimer.current = window.setTimeout(() => setTip('hidden'), MENU_TIP_EXIT_MS);
+      return 'out';
+    });
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    /* Stamped on SHOW, not on dismiss. A member who backgrounds the app
+       mid-dwell has still been shown the tip; re-teaching them on the next
+       load is the thing "first mobile visit only" rules out. */
+    try {
+      if (localStorage.getItem(MENU_TIP_SEEN_KEY) === '1') return;
+      if (!window.matchMedia?.(MENU_TIP_MOBILE_MQ).matches) return;
+      localStorage.setItem(MENU_TIP_SEEN_KEY, '1');
+    } catch { return; }   /* private mode / storage disabled — no tip, no crash */
+    setTip('in');
+  }, []);
+
+  /* The dwell. Under reduced motion there is no pop to wait out, so the dwell
+     starts immediately — the box is fully present from frame one. */
+  useEffect(() => {
+    if (tip !== 'in') return;
+    const t = window.setTimeout(dismissTip, MENU_TIP_DWELL_MS + (reducedMotion ? 0 : MENU_TIP_EXIT_MS));
+    return () => window.clearTimeout(t);
+  }, [tip, reducedMotion, dismissTip]);
+
+  /* "Any interaction dismisses it immediately: touch, click, scroll, or focus."
+     `pointerdown` covers touch and mouse in one; `scroll` is captured because
+     the app scrolls inside `overflow-y-auto` containers, not only on window, so
+     a bubble-phase listener would miss most of the real scrolling. */
+  useEffect(() => {
+    if (tip !== 'in') return;
+    const opts = { capture: true, passive: true } as const;
+    document.addEventListener('pointerdown', dismissTip, opts);
+    document.addEventListener('scroll', dismissTip, opts);
+    document.addEventListener('focusin', dismissTip, opts);
+    document.addEventListener('keydown', dismissTip, opts);
+    return () => {
+      document.removeEventListener('pointerdown', dismissTip, opts);
+      document.removeEventListener('scroll', dismissTip, opts);
+      document.removeEventListener('focusin', dismissTip, opts);
+      document.removeEventListener('keydown', dismissTip, opts);
+    };
+  }, [tip, dismissTip]);
+
+  /* Opening the menu obviously dismisses it — and this is the one path where
+     the tip has actually done its job. */
+  useEffect(() => { if (menuOpen) dismissTip(); }, [menuOpen, dismissTip]);
+
+  useEffect(() => () => window.clearTimeout(exitTimer.current), []);
+
   /* No scroll listener. Owner, 2026-08-08: the header is FLAT AND OPAQUE from
      load through scroll — he chose this header for its simplicity and did not
      want the public site's transparent-to-frosted transition carried into the
@@ -96,6 +191,24 @@ export function AppHeader({ initial, menuOpen, onToggleMenu }: Props) {
           {avatarGlyph}
         </button>
         <span className="oh-avatar">{avatarGlyph}</span>
+        {/* §D2 — an ADVISORY, not an alert. `role="status"` is polite, so it
+            never interrupts a screen-reader user mid-sentence, and nothing here
+            takes or traps focus: the box is `pointer-events: none` and holds no
+            control at all. Rendering it after the marks keeps it out of the tab
+            order by construction as well as by having nothing focusable in it.
+            Under reduced motion the box still appears — it is information, not
+            decoration, and it is the only thing that says what the control does
+            — but it arrives with no pop. That is the deliberate opposite of the
+            drawer's reduced-motion rule (§C3), which suppresses motion outright,
+            because suppressing THIS would withhold the message itself. */}
+        {tip !== 'hidden' && (
+          <div
+            className={`oh-tip ${tip === 'out' ? 'oh-tip--out' : reducedMotion ? '' : 'oh-tip--pop'}`}
+            role="status"
+          >
+            {MENU_TIP_TEXT}
+          </div>
+        )}
       </div>
     </header>
   );
