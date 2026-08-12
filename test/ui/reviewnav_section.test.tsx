@@ -131,13 +131,17 @@ describe('the live pages MOVED, they were not copied', () => {
   /* One row per link the task took out of another nav group. If any of these
      ever shows up twice, the owner cannot tell A from a copy of A — which is
      the duplication problem this whole section exists to end. */
+  /* /app/admin, /app/ops/leads and /app/ops/directory (People → Clients /
+     Leads / Directory) REMOVED 2026-08-12 — TASK-RECORDS accepted that slot
+     of the comparison rather than restoring the three rows: they collapsed
+     into ONE new row, "Records" (ACCOUNTS_GROUP, /app/records), which was
+     never in Review and so is not a MOVED link — it ships straight to its
+     permanent home. Those three routes still resolve (they redirect into
+     Records' own tabs) but no longer have a nav row of their own to move. */
   const MOVED = [
     '/app/dashboard',          // Management → Dashboard
     '/app/ops/horse-records',  // Management → Horses
     '/app/ops/records',        // Modules → Records
-    '/app/admin',              // People → Clients
-    '/app/ops/leads',          // People → Leads
-    '/app/ops/directory',      // People → Directory
     '/app/ops/team',           // Settings → Team
     '/app/account',            // the rail's AccountNavLink row
     '/app/calendar',           // StaffNavItems → Calendar

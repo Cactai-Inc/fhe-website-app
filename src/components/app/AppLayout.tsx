@@ -6,9 +6,13 @@ import { dmUnreadTotal } from '../../lib/community';
 import {
   CalendarDays, Users, FileText, UserRound, ReceiptText, Shield, LogOut,
   GraduationCap, Home as HomeIcon, Boxes, Contact, LayoutDashboard,
-  /* BookOpen left with the Directory row (REVIEW SECTION move, TASK-REVIEWNAV)
-     — it was that row's icon and nothing else in this file used it. Restore the
-     import when Directory comes back out of Review. */
+  /* BookOpen was the Directory row's icon (REVIEW SECTION move, TASK-REVIEWNAV).
+     TASK-RECORDS (2026-08-12) reclaims it for the single Records entry that
+     replaces Leads/Clients/Directory — Contact and Users are both already
+     doing other jobs in this rail (Employees, Community), and the task's own
+     instruction is to inherit one of the three retired icons rather than add
+     a fourth glyph. */
+  BookOpen,
   ChevronDown, ChevronUp, Plus, LifeBuoy, ShoppingBag, MessageSquare, ListChecks,
   PanelLeftClose, PanelLeftOpen, Activity, Compass, Handshake, Grid3x3, Bookmark,
   Receipt, Eye, Library,
@@ -524,13 +528,12 @@ const MANAGEMENT_GROUP: NavItem[] = [
      Two different pages were wearing one glyph. */
   { to: '/app/ops/payments/review', label: 'Payment review', icon: Receipt },
 ];
-/* PEOPLE — everyone we know, one list per relationship to the business:
- *   Leads      potential future clients (the campaign list)
- *   Clients    the paying/serviced roster
- *   Contacts   internal people we serve who are not part of the company
- *   Team       the company itself
- *   Directory  external providers — farriers, vets, suppliers, organizers
- * Leads moved here from Front desk: it is a list of PEOPLE, not a work queue. */
+/* PEOPLE (and horses). TASK-RECORDS (2026-08-12) folded what used to be four
+ * separate nav rows — Leads, Clients, Contacts (already gone), Directory —
+ * plus Horses into ONE row, Records, whose five internal tabs carry the
+ * distinctions this comment used to describe: Leads / Clients / Partners /
+ * Vendors / Horses. Team is still not here — "that is a business
+ * configuration activity" (owner) — it lives in Settings. */
 const ACCOUNTS_GROUP: NavItem[] = [
   /* Owner, 2026-08-12: "contacts routes to clients, switch the icons and remove
      the contacts nav item and move the clients icon to Leads."
@@ -550,16 +553,20 @@ const ACCOUNTS_GROUP: NavItem[] = [
      configuration section." Who works here is configuration, not a daily
      people-management surface. */
 
-  /* REVIEW SECTION — ALL THREE MOVED OUT, not deleted (TASK-REVIEWNAV). They
-     are People slots A, C and D of one comparison — three person-lists, two of
-     them the same file in different modes — so the whole group went:
+  /* REVIEW SECTION — RESOLVED, not restored (TASK-RECORDS, 2026-08-12). The
+     three rows TASK-REVIEWNAV moved out —
        { to: '/app/ops/leads',     label: 'Leads',     icon: Users }
        { to: '/app/admin',         label: 'Clients',   icon: Contact }
        { to: '/app/ops/directory', label: 'Directory', icon: BookOpen }
-     THIS ARRAY IS NOW EMPTY, so `manageNavGroups`'s length filter drops the
-     "People" heading from the rail entirely until something comes back. That is
-     expected, not a bug — and TASK-ONEPEOPLE is about to replace all three with
-     one tabbed page anyway, which is the decision this review feeds. */
+     — do NOT come back as three rows. TASK-ONEPEOPLE, which the REVIEWNAV
+     report named as the pending decision, was superseded by three owner
+     rulings (client is a marker not a type; vendors and partners are
+     separate; horses belong on this page) recorded in TASK-RECORDS. The
+     single row below is that resolution: one page, five tabs (Leads /
+     Clients / Partners / Vendors / Horses), replacing all three old
+     destinations — which is why it takes BookOpen (Directory's old icon,
+     unclaimed) rather than reviving Users or Contact. */
+  { to: '/app/records', label: 'Records', icon: BookOpen },
 ];
 /* SERVICING and BUSINESS were folded into Management 2026-07-31 (owner): the
  * goal is fewer headings, not more. Their items live in MANAGEMENT_GROUP above.

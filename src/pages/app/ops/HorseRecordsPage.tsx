@@ -23,8 +23,16 @@ import { generateLeaseAvailability } from '../../../lib/ops/api-lease';
 const input = 'w-full px-3 py-2 rounded-lg border border-green-800/15 text-sm text-green-900 focus-ring bg-white';
 
 function EditableRecord({
-  r, contacts, onSaved,
-}: { r: StaffHorseRecord; contacts: ContactOption[]; onSaved: () => void }) {
+  r, contacts, onSaved, onOpenContact,
+}: {
+  r: StaffHorseRecord; contacts: ContactOption[]; onSaved: () => void;
+  /** TASK-RECORDS (2026-08-12): when composed inside the Records page, opens the
+   *  owner/lessee's dossier in place instead of leaving the tab — "a horse links
+   *  to its people … without leaving the page." Undefined on the standalone
+   *  /app/ops/horse-records route, where owner/lessee render as plain text,
+   *  unchanged from before. */
+  onOpenContact?: (contactId: string) => void;
+}) {
   const location = useLocation();
   const [editing, setEditing] = useState(false);
   const [patch, setPatch] = useState<Record<string, string>>({});
@@ -129,6 +137,11 @@ function EditableRecord({
               <option value="">— unassigned{r.owner_name_text ? ` (${r.owner_name_text})` : ''}</option>
               {contacts.map((c) => <option key={c.id} value={c.id}>{c.name}{c.email ? ` · ${c.email}` : ''}</option>)}
             </select>
+          ) : onOpenContact && r.owner_contact_id ? (
+            <button type="button" onClick={() => onOpenContact(r.owner_contact_id!)}
+              className="text-sm text-green-900 underline underline-offset-2 hover:text-green-700 focus-ring rounded-sm">
+              {r.owner_name || r.owner_name_text || '— unassigned'}
+            </button>
           ) : (
             <p className="text-sm text-green-900">{r.owner_name || r.owner_name_text || '— unassigned'}</p>
           )}
@@ -152,7 +165,12 @@ function EditableRecord({
             </div>
           ) : (
             <p className="text-sm text-green-900">
-              {r.lessee_name || r.lessee_name_text || '— not leased'}
+              {onOpenContact && r.lessee_contact_id ? (
+                <button type="button" onClick={() => onOpenContact(r.lessee_contact_id!)}
+                  className="underline underline-offset-2 hover:text-green-700 focus-ring rounded-sm">
+                  {r.lessee_name || r.lessee_name_text || '— not leased'}
+                </button>
+              ) : (r.lessee_name || r.lessee_name_text || '— not leased')}
               {r.lease_end && <span className="text-muted text-xs"> · through {r.lease_end}</span>}
             </p>
           )}
@@ -192,7 +210,7 @@ function EditableRecord({
   );
 }
 
-export default function HorseRecordsPage() {
+export default function HorseRecordsPage({ onOpenContact }: { onOpenContact?: (contactId: string) => void } = {}) {
   const [companyId, setCompanyId] = useState<string | null>(null);
   useEffect(() => { companyContactId().then(setCompanyId).catch(() => {}); }, []);
   useDocumentTitle('Horse records');
@@ -248,7 +266,9 @@ export default function HorseRecordsPage() {
                 </div>
               </div>
             </button>
-            {openId === r.id && <EditableRecord r={r} contacts={contacts} onSaved={load} />}
+            {openId === r.id && (
+              <EditableRecord r={r} contacts={contacts} onSaved={load} onOpenContact={onOpenContact} />
+            )}
           </div>
         ))}
       </div>

@@ -82,8 +82,10 @@ export interface PageEntry {
  *  page can say why a row it offers to hide is not in the rail today, and so
  *  nobody reads the absence as a registry bug. */
 export const PARKED_IN_REVIEW = new Set([
-  'mgmt.dashboard', 'mgmt.horses', 'people.leads', 'people.clients',
-  'people.directory', 'records.hub', 'settings.team',
+  'mgmt.dashboard', 'mgmt.horses', 'records.hub', 'settings.team',
+  /* people.leads / people.clients / people.directory REMOVED 2026-08-12
+     (TASK-RECORDS) — not restored, superseded. Their one-key replacement,
+     people.records, ships directly into ACCOUNTS_GROUP, never parked. */
 ]);
 
 /** Display names for the module sections on the settings page. Mirrors
@@ -134,9 +136,12 @@ export const PAGE_REGISTRY: PageEntry[] = [
   },
 
   // ── People ───────────────────────────────────────────────────────────────
-  { key: 'people.leads', path: '/app/ops/leads', label: 'Leads', group: 'accounts' },
-  { key: 'people.clients', path: '/app/admin', label: 'Clients', group: 'accounts' },
-  { key: 'people.directory', path: '/app/ops/directory', label: 'Directory', group: 'accounts' },
+  // TASK-RECORDS (2026-08-12): people.leads / people.clients / people.directory
+  // retired as three keys — Leads, Clients and Directory (split into Partners
+  // and Vendors) are tabs on ONE page now, not three nav rows. One key covers
+  // all five tabs, Horses included, because hiding operates on the nav row and
+  // there is only one.
+  { key: 'people.records', path: '/app/records', label: 'Records', group: 'accounts' },
 
   // ── Community ────────────────────────────────────────────────────────────
   { key: 'community.activity', path: '/app/ops/activity', label: 'Activity', group: 'community' },

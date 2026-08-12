@@ -35,11 +35,19 @@ import { ContactForm } from '../../../components/ops/contacts/ContactForm';
  * client-side leftover. The old rule was `if nothing else matched → Lead`, which
  * made the Leads page a catch-all rather than a campaign list. See
  * docs/PERSON_DATA_CONSOLIDATION.md. */
-type DirectoryMode = 'directory' | 'leads' | 'contacts';
+/* TASK-RECORDS (2026-08-12): 'vendors' and 'partners' are the split of the old
+ * 'directory' mode (owner: "Vendors and partners are separate"). 'directory'
+ * itself stays defined — DIRECTORY is a deprecated-not-removed contact_type
+ * and the retired /app/ops/review/contacts mount still reads 'contacts' — but
+ * no live page routes to 'directory' any more. 'all' is new: every population
+ * this file covers except TEAM, one flat list, for the Records page's All tab. */
+type DirectoryMode = 'directory' | 'leads' | 'contacts' | 'vendors' | 'partners' | 'all';
 
-/** Which stored contact_type each page shows. */
-const MODE_TYPE: Record<DirectoryMode, ContactType> = {
+/** Which stored contact_type each page shows. 'all' has no single type — its
+ *  filter lives in `load()` below, alongside the existing unfiled split. */
+const MODE_TYPE: Partial<Record<DirectoryMode, ContactType>> = {
   directory: 'DIRECTORY', leads: 'LEAD', contacts: 'CONTACT',
+  vendors: 'VENDOR', partners: 'PARTNER',
 };
 
 const MODE_COPY: Record<DirectoryMode, { title: string; blurb: string; newLabel: string }> = {
@@ -56,6 +64,21 @@ const MODE_COPY: Record<DirectoryMode, { title: string; blurb: string; newLabel:
   contacts: {
     title: 'Contacts',
     blurb: 'The people we serve — clients, members, horse owners and counterparties who are not part of the company.',
+    newLabel: 'contact',
+  },
+  vendors: {
+    title: 'Vendors',
+    blurb: 'People and businesses we pay — farriers, veterinarians, feed suppliers, haulers.',
+    newLabel: 'vendor',
+  },
+  partners: {
+    title: 'Partners',
+    blurb: 'People and businesses we work alongside — referring trainers, affiliated barns, event organisers, referral and co-marketing relationships.',
+    newLabel: 'partner',
+  },
+  all: {
+    title: 'All',
+    blurb: 'Every lead, client, partner and vendor on file, in one list.',
     newLabel: 'contact',
   },
 };
@@ -178,8 +201,12 @@ function ContactDirectory({ mode }: { mode: DirectoryMode }) {
       // Leads by default. Unclassified rows (contact_type null) belong to NO
       // page — they are surfaced in the Unfiled banner so a human files them,
       // rather than silently padding a campaign list.
+      // 'all' (TASK-RECORDS) has no single MODE_TYPE — it shows every filed
+      // type except TEAM, which lives in Configuration, not on this page.
       .then((all) => {
-        setRows(all.filter((r) => r.contact_type === MODE_TYPE[mode]));
+        setRows(all.filter((r) => (mode === 'all'
+          ? !!r.contact_type && r.contact_type !== 'TEAM'
+          : r.contact_type === MODE_TYPE[mode])));
         setUnfiled(all.filter((r) => !r.contact_type));
       })
       .catch(() => setError('Could not load the directory.'));
@@ -350,6 +377,13 @@ function ContactDirectory({ mode }: { mode: DirectoryMode }) {
                 <p className="text-sm font-medium text-green-900 truncate">{contactName(r) || r.email || '—'}</p>
                 <p className="text-[11px] text-muted truncate">{r.email ?? r.phone ?? 'no contact info'}</p>
               </div>
+              {/* All tab only: which stored type, since the four single-type
+                  tabs each already say so by being on that tab. */}
+              {mode === 'all' && r.contact_type && (
+                <span className="text-[10px] font-sans uppercase tracking-wide px-2 py-0.5 rounded-full bg-green-800/10 text-green-800 shrink-0 ml-auto">
+                  {CONTACT_TYPE_LABEL[r.contact_type]}
+                </span>
+              )}
             </div>
             <Chips r={r} />
             {depthLine(r) && <p className="text-[11px] text-muted mt-2">{depthLine(r)}</p>}
@@ -385,7 +419,13 @@ function ContactDirectory({ mode }: { mode: DirectoryMode }) {
                 {open.contact_type ? 'Filed under' : 'Not filed yet'}
               </p>
               <div className="flex flex-wrap gap-1.5">
-                {(['LEAD', 'CONTACT', 'DIRECTORY', 'TEAM'] as ContactType[]).map((t) => (
+                {/* DIRECTORY is deprecated (TASK-RECORDS, 2026-08-12) — split into
+                    VENDOR and PARTNER. Not offered as a fresh pick, but shown if a
+                    contact is already filed there. */}
+                {([
+                  'LEAD', 'CONTACT', 'VENDOR', 'PARTNER', 'TEAM',
+                  ...(open.contact_type === 'DIRECTORY' ? ['DIRECTORY' as const] : []),
+                ] as ContactType[]).map((t) => (
                   <button key={t} type="button" onClick={() => void file(open.id, t)}
                     className={`text-[11px] px-2.5 py-1 rounded-full border focus-ring ${
                       open.contact_type === t
@@ -522,9 +562,24 @@ function ContactDirectory({ mode }: { mode: DirectoryMode }) {
  *  are NOT retired. */
 export const CONTACTS_PAGE_RETIRED = true;
 
-/** The rolodex: external providers — farriers, vets, suppliers, event organizers. */
+/** The rolodex: external providers — farriers, vets, suppliers, event organizers.
+ *  No live route points here any more (TASK-RECORDS split it into Vendors and
+ *  Partners below) — kept, not deleted, since 'directory' is still a valid mode
+ *  and DIRECTORY a still-accepted (deprecated) contact_type. */
 export function DirectoryPage() {
   return <ContactDirectory mode="directory" />;
+}
+/** People and businesses we pay. Records tab. */
+export function VendorsPage() {
+  return <ContactDirectory mode="vendors" />;
+}
+/** People and businesses we work alongside. Records tab. */
+export function PartnersPage() {
+  return <ContactDirectory mode="partners" />;
+}
+/** Every lead, client, partner and vendor, one flat list. Records "All" tab. */
+export function AllRecordsPage() {
+  return <ContactDirectory mode="all" />;
 }
 /** The people we serve: clients, members, horse owners, counterparties.
  *  Retired — see CONTACTS_PAGE_RETIRED. */
