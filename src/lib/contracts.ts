@@ -238,10 +238,68 @@ export interface SectionDef {
   guidance: string | null;
   clauses: ClauseDef[];
 }
-export interface TemplateStructure { template_key: string; sections: SectionDef[] }
+/**
+ * TASK ONEAUTHOR — per-document-type behaviour, carried as DATA on
+ * `contract_templates` (alongside `contract_kind` / `service_type` /
+ * `wall_gating` / `party_namespaces`, which are the same thing).
+ *
+ * The ONE authoring page reads this to decide which surfaces a document can
+ * actually have. It is never a conditional on `template_key`: 26 templates
+ * behind a conditional is 26 special cases, and this codebase already deleted
+ * two hardcoded shadow catalogs for exactly that reason.
+ *
+ * Every surface flag defaults TRUE server-side — including for a template_key
+ * with no row — so an unconfigured document never silently loses a drawer.
+ */
+export interface TemplateConfig {
+  title: string | null;
+  /** Short name for a signing-set step / picker chip; falls back to `title`. */
+  short_label: string | null;
+  contract_kind: string | null;
+  /** Comments drawer. */
+  show_comments: boolean;
+  /** Change-requests drawer. FALSE for standard-form documents nobody negotiates. */
+  show_change_requests: boolean;
+  /** Change-history drawer. */
+  show_history: boolean;
+  /** The per-party can_fill / can_edit_deal / can_suggest card. */
+  show_party_controls: boolean;
+  /** The co-buyer capture card (the sale family). */
+  allows_co_buyer: boolean;
+  /** A document this one can generate alongside itself (sale → bill of sale). */
+  companion_template_key: string | null;
+  companion_label: string | null;
+}
 
-/** The clause structure for a template — sections › clauses, ordered. Powers the
- *  numbered Section›Clause›Field rendering. Cached per template. */
+/** The permissive fallback: exactly how the page behaved before any of this was
+ *  configurable. Used when a document carries no template_key at all, and when
+ *  the structure fetch fails — a failed lookup must never take a surface away. */
+export const DEFAULT_TEMPLATE_CONFIG: TemplateConfig = {
+  title: null,
+  short_label: null,
+  contract_kind: null,
+  show_comments: true,
+  show_change_requests: true,
+  show_history: true,
+  show_party_controls: true,
+  allows_co_buyer: false,
+  companion_template_key: null,
+  companion_label: null,
+};
+
+export interface TemplateStructure {
+  template_key: string;
+  sections: SectionDef[];
+  /** Optional so a cached/legacy payload without it still type-checks; readers
+   *  fall back to DEFAULT_TEMPLATE_CONFIG. */
+  config?: TemplateConfig;
+}
+
+/** The clause structure for a template — sections › clauses, ordered — PLUS the
+ *  template's surface configuration. Powers the numbered Section›Clause›Field
+ *  rendering; `sections: []` is what makes a document flat, and the config is
+ *  returned on BOTH branches because the flat one is where it decides the most.
+ *  Cached per template. */
 const _structureCache = new Map<string, TemplateStructure>();
 export async function contractTemplateStructure(templateKey: string): Promise<TemplateStructure> {
   const cached = _structureCache.get(templateKey);
@@ -288,6 +346,10 @@ export interface SigningSetDoc {
   document_id: string;
   title: string | null;
   template_key: string;
+  /** TASK ONEAUTHOR: the step's display name, carried with the row. Replaces the
+   *  page's hardcoded template_key→label map, which knew 5 of 26 templates and
+   *  called every other document "Document". Falls back to the template title. */
+  short_label?: string | null;
   sign_sequence: number;
   status: string;
   executed: boolean;
