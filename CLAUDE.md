@@ -232,3 +232,20 @@ reporting success.
   stage-of-life ruling, not a permanent architecture. Consistent with the standing rules
   that executed documents are evidence and that retirement means hidden behind a boolean,
   never deleted.
+- **D12 — TWO template engines: a Form builder and a Document builder (2026-08-12).**
+  Owner: *"we build two… i want the interfaces to be different… The option to add a
+  signature block should not be part of a form. one giant authoring tool will make it
+  less efficient to build or edit with."* **The authoring INTERFACES are separate** —
+  different element palettes, different presets, different canvases. **A signature block
+  exists only in the Document builder.** Both open the same way: *"I need to create a
+  form/document"* → choose a **preset** or **build from scratch**.
+  **What IS shared, because the owner specified it identically for both:** the lifecycle
+  and its controls — save as draft · publish (new = v1, edit = +1) · edit returns to draft
+  (with the option to remove or keep the published version) · archive · delete. That is
+  state management, not authoring, and sharing it is what stops the two engines drifting
+  into two different meanings of "published". **Do not read D12 as licence to build the
+  version/publish machinery twice.**
+  Taxonomy (owner): products, articles and guides are built with **forms**; contracts and
+  read-only personalized items are built with **documents**; correspondence emails are
+  documents with a delivery channel and live in their own Templates section.
+  Full delta: `docs/reference/TEMPLATE-ENGINES-DELTA-2026-08-12.md`.
