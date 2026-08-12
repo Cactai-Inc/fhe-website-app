@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FileText, Handshake, Mail, MapPin, Phone, Trash2, UserPlus } from 'lucide-react';
+import { PageLayout } from '../../../components/app/PageLayout';
 import { useAuth } from '../../../contexts/AuthContext';
 import { toErrorMessage } from '../../../lib/ops/errors';
 import { Modal, useAsync, useToast } from '../../../lib/ops';
@@ -249,15 +250,13 @@ function ContactDirectory({ mode }: { mode: DirectoryMode }) {
   }
 
   return (
-    <div className="max-w-5xl mx-auto py-8 px-4">
-      <div className="flex items-center justify-between mb-1">
-        <h1 className="font-serif text-2xl text-green-900">{MODE_COPY[mode].title}</h1>
-        <button type="button" className="btn-primary" onClick={() => { setFormError(null); setCreating(true); }}>
-          {MODE_COPY[mode].newLabel}
-        </button>
-      </div>
-      <p className="text-sm text-green-800/70 mb-5">{MODE_COPY[mode].blurb}</p>
-
+    <PageLayout
+      name={MODE_COPY[mode].title}
+      description={MODE_COPY[mode].blurb}
+      width="wide"
+      onAdd={() => { setFormError(null); setCreating(true); }}
+      addLabel={MODE_COPY[mode].newLabel}
+    >
       {/* Unfiled: a contact with no contact_type belongs to no page, so without
           this it would be invisible everywhere. Shown on every person-page so it
           cannot be missed, with one-click filing. */}
@@ -511,7 +510,7 @@ function ContactDirectory({ mode }: { mode: DirectoryMode }) {
           />
         )}
       </Modal>
-    </div>
+    </PageLayout>
   );
 }
 
