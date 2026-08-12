@@ -166,3 +166,91 @@ has to be grouped — the opposite of the shortcut this task replaces.
 
 `docs/reports/TASK-ADMINSWEEP-PHASE1.md` — the three-column reconciliation, the route
 inventory, and an explicit list of what you could not determine.
+
+---
+
+# PHASE 2 — OWNER DIRECTION, 2026-08-11
+
+**Phase 1 is merged (`fb06d3d`). Read `docs/reports/TASK-ADMINSWEEP-PHASE1.md` first — it is
+your own inventory and it is now the baseline.**
+
+## ⚠️ M-6 IS REVERSED. WIRE THEM UP; DO NOT RETIRE THEM.
+
+> **Owner:** *"Lets see OpsDashboard and InstructorHome wired up before we make a decision. I
+> knew i asked for those and didnt get them."*
+
+Phase 1 offered a landing surface as its cheapest win. The orchestrator's note to the owner
+recommended retiring both in favour of `DashboardPanel`. **The owner has overruled that.** He
+specified these, never saw them, and will not decide on something he has not looked at.
+
+**Build the ability to evaluate them. Do not delete, retire, or gate either one.**
+
+### What is actually true today — verified 2026-08-11
+
+```
+App.tsx:257   <Route path="ops" element={<ProtectedRoute requireStaff><OpsHome/></ProtectedRoute>} />
+OpsHome.tsx:13   return isAdmin ? <OpsDashboard /> : <InstructorHome />;
+```
+
+- **`/app/ops` already renders `OpsDashboard` for an admin.** The owner can view it today by
+  typing the URL. The only thing missing has ever been a nav link.
+- **`InstructorHome` cannot be viewed by anyone.** It renders only for non-admin staff, and
+  production `profiles.role` holds **only** `ADMIN` (2), `SUPER_ADMIN` (1) and `USER` (10) —
+  **zero MANAGER or EMPLOYEE rows.** There is no account in existence that renders this page.
+
+### Deliver, in this order
+
+1. **A way to see `InstructorHome` without inventing an account.** A staff-gated preview route
+   is the cheapest honest option. **It must be unmistakably a preview** — do not let it become a
+   second real entry point, and do not fake a role or mutate anyone's `profiles.role` to achieve
+   it. Say plainly in the report how a reader can tell it apart from the real thing.
+2. **An assessment of each page against what it would need to be a real landing surface** —
+   what it renders, what it queries, what is stale, what is empty because the data is empty
+   (Phase 1's ledger finding applies directly). The owner is deciding from this.
+3. **The nav entry — SPECIFIED, NOT APPLIED.** `AppLayout.tsx` belongs to `TASK-NAVMOTION`,
+   which is running. **Hand the orchestrator an exact diff in the report.** One nav entry is not
+   worth a conflict in a file another thread is restructuring.
+
+### The tension you must respect, and must not resolve yourself
+
+**`TASK-LEADCLEAN` is running right now** and is consolidating the lead surfaces onto
+`DashboardPanel` (`/app/dashboard`), on the owner's ruling: *"inbound goes away. its my
+management dashboard… one nav entry under management."*
+
+**So do not make `OpsDashboard` a competing staff landing page.** Wiring it up here is **for
+evaluation**, so the owner can compare it against `DashboardPanel` and choose. Building it into
+a second permanent home would recreate exactly the duplication LEADCLEAN is removing.
+
+**If your assessment concludes one of them should replace `DashboardPanel`, say so as a
+recommendation with evidence. Do not implement it.** That is the owner's call and it is
+downstream of LEADCLEAN landing.
+
+## The removal candidates — X-1 through X-4
+
+**Nothing is removed until the owner rules.** He has not yet ruled on X-1 (the duplicate
+Contacts nav entry), X-2 (`/app/ops/horses`, zero references), X-3 (the dormant
+`/app/ops/availability` redirect) or X-4 (two of the three horse surfaces).
+
+**Do not execute removals in this phase.** If the owner rules mid-flight, the rule stands:
+**hidden behind a boolean, never deleted** (`86a2c33`).
+
+## Everything else Phase 1 raised
+
+`F-1` (6 of 12 fulfillment units orphaned by ~57 hard-deleted purchases) and `F-2` (the ledger
+has never been consumed — 0 of 319 bookings carry a `purchase_id`, `credit_id` or `contract_id`)
+are **findings, not this phase's work.** Do not build an obligations surface on them. The owner
+has ranked orders/payments/booking **last**.
+
+## Constraints
+
+- Same worktree and branch — `~/Downloads/claude-code-repo/wt-adminsweep`, `task/adminsweep`.
+  **Rebase onto `origin/main` first**; PAGEFRAME, TITLESWEEP, LEASESET and UPLOADS/ONEAUTHOR/
+  DOCQUEUE have all landed since your Phase 1 base.
+- **Do not edit `AppLayout.tsx`** (NAVMOTION), **`DataTable.tsx`** (FRAMESCROLL), the documents
+  queue table/page (DOCCOLS), **`DashboardPanel.tsx` or `ops/IntakePage.tsx`** (LEADCLEAN).
+- **Delete nothing.**
+- No staff browser session exists and you will not be given one. Report renders as
+  **NOT VERIFIED** and give the owner a numbered checklist — starting with the URL for each page.
+- Apply your proven work. **Do not leave it held.**
+
+Report to `docs/reports/TASK-ADMINSWEEP-PHASE2.md`.
