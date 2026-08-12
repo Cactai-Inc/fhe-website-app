@@ -11,10 +11,23 @@
  * availability, category-specific details, notes…) is read back from the
  * `requests` row itself, the one place all of it is already stored. Emails
  * only the tenant's own configured ops inbox (CONTACT.OPS_INBOX, fallback
- * hello@fhequestrian.com), never an address from the request body. Best-
- * effort: any failure returns 200 { emailed:false } so a mail hiccup never
- * blocks the visitor's submission (which already succeeded) — the real error
- * is still logged server-side so a send failure doesn't disappear silently.
+ * hello@fhequestrian.com), never an address from the request body.
+ *
+ * INBOUNDALERT — best-effort NO LONGER MEANS UNRECORDED. This still returns
+ * 200 { emailed:false } on every failure so a mail hiccup can never cost a
+ * lead, but "do not block the submission" and "do not record the outcome" are
+ * different things, and only the first one was ever intended. Every attempt now
+ * writes a `request_alert_sends` row — recipient, timestamp, outcome, and the
+ * provider's error verbatim — via log_request_alert_send, the same discipline
+ * receipt_sends applies to receipts. claim_request_alert_send refuses a second
+ * send once one has succeeded. The console.error stays; it is a convenience,
+ * not the record.
+ *
+ * A request with NO row at all means this endpoint never ran for it — which is
+ * exactly what production looked like for all 13 live requests before this
+ * change, because the only caller was the /contact form and every real lead
+ * came through checkout or the kiosk. The alert now dispatches from
+ * submitRequest (src/lib/api.ts), the one spine all three intake paths share.
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
@@ -95,8 +108,48 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
   if (!body.requestId) return res.status(400).json({ error: 'requestId required' });
 
+  const requestId = body.requestId;
+  /* One key per INVOCATION, not per request: every attempt is its own row, so a
+   * retry after a failure is recorded rather than silently swallowed by the
+   * unique index. "Provable and single" is enforced by claim_request_alert_send
+   * refusing once an attempt has SUCCEEDED — the same guard receipt_sends uses;
+   * the key only stops one invocation double-logging itself. */
+  const attemptKey = `request-alert:${requestId}:${Date.now()}`;
+  let db: ReturnType<typeof getSupabaseAdmin> | null = null;
+
+  /** Record the attempt. Never throws: logging must not mask the send outcome,
+   *  and must never fail the visitor's already-saved submission. */
+  const logAttempt = async (
+    recipient: string | null, succeeded: boolean,
+    error: string | null, messageId: string | null,
+  ): Promise<void> => {
+    if (!db) return;
+    try {
+      await db.rpc('log_request_alert_send', {
+        p_request_id: requestId,
+        p_key: attemptKey,
+        p_recipient: recipient,
+        p_succeeded: succeeded,
+        p_error: error,
+        p_message_id: messageId,
+      });
+    } catch (logErr) {
+      console.error('request-received could not record its attempt', { requestId, logErr });
+    }
+  };
+
   try {
-    const db = getSupabaseAdmin();
+    db = getSupabaseAdmin();
+
+    // Refuses only when an alert for this request already SUCCEEDED. A prior
+    // failure leaves the door open, because a failed alert still owes the owner
+    // a lead he has not heard about.
+    const { data: maySend } = await db.rpc('claim_request_alert_send', {
+      p_request_id: requestId, p_key: attemptKey,
+    });
+    if (maySend === false) {
+      return res.status(200).json({ ok: true, emailed: false, reason: 'already alerted' });
+    }
 
     const { data } = await db
       .from('requests')
@@ -104,14 +157,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         'id, org_id, contact_name, contact_email, contact_phone, contact_method, ' +
         'proposed_times, subject, category, channel, entry_location, intent, details, notes, created_at',
       )
-      .eq('id', body.requestId)
+      .eq('id', requestId)
       .maybeSingle();
     const r = data as RequestRow | null;
+    // The one outcome that CANNOT be recorded: request_alert_sends is anchored
+    // to requests by foreign key, so with no request there is nothing to hang
+    // the evidence on. Everything past this point is recorded.
     if (!r) return res.status(200).json({ ok: true, emailed: false, reason: 'request not found' });
 
     const identity = await resolveTenantEmailIdentity(db, r.org_id);
     const to = identity.opsInbox || OPS_INBOX_FALLBACK; // the ops inbox, not the public contact address
-    if (!to) return res.status(200).json({ ok: true, emailed: false, reason: 'no ops inbox configured' });
+    if (!to) {
+      await logAttempt(null, false, 'no ops inbox configured', null);
+      return res.status(200).json({ ok: true, emailed: false, reason: 'no ops inbox configured' });
+    }
 
     // Link origin comes from the request, never a baked-in hostname — the same
     // source notifications-nudge and calendar-reminders use, so preview and
@@ -155,6 +214,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       'REQ.NOTES_HTML': notes ? esc(notes) : '',
     });
     if (!rendered) {
+      // EMAILEXTRACT moved this email's prose into the REQUEST_RECEIVED template,
+      // which adds a way for the alert to die that did not exist before: the
+      // template row goes missing and the send never happens. Recorded like any
+      // other failed attempt — an unrecorded 200 is the exact defect this task
+      // exists to close, and a new one is not exempt from it.
+      await logAttempt(to, false, 'REQUEST_RECEIVED template missing', null);
       return res.status(200).json({ ok: true, emailed: false, reason: 'REQUEST_RECEIVED template missing' });
     }
 
@@ -167,6 +232,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       html: rendered.html,
     });
 
+    // The attempt is recorded either way — that is the point of this endpoint's
+    // existence being provable rather than assumed.
+    await logAttempt(to, sent.ok, sent.ok ? null : (sent.error ?? 'send failed'), sent.messageId);
+
     if (!sent.ok) {
       console.error('request-received send failed', { requestId: r.id, error: sent.error });
       return res.status(200).json({ ok: true, emailed: false, reason: sent.error ?? 'send failed' });
@@ -174,6 +243,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ ok: true, emailed: true });
   } catch (err) {
     console.error('request-received error', err);
+    await logAttempt(null, false, err instanceof Error ? err.message : 'internal error', null);
     // best-effort: never fail the visitor's submission over a mail error
     return res.status(200).json({ ok: true, emailed: false, reason: 'internal error' });
   }

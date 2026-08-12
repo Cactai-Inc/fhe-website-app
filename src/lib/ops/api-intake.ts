@@ -84,6 +84,24 @@ export interface BookingRequest {
   /** Category-specific answers (C1), keyed by field key. Empty object when none. */
   details: Record<string, string> | null;
   request_selections: BookingRequestSelection[];
+  /** INBOUNDALERT: whether the ops inbox was actually told about this lead.
+   *  NOT selected from `requests` — merged on by `listLeadQueue` from the
+   *  `inbound_queue` row, which is where the verdict is defined. Absent on rows
+   *  that did not come through `listLeadQueue` (e.g. plain `listBookingRequests`). */
+  alert?: RequestAlertState;
+}
+
+/** How the ops-inbox alert for one request turned out. Mirrors `inbound_queue`'s
+ *  alert_* columns exactly — the definition lives in the view, not here. */
+export interface RequestAlertState {
+  /** 'sent' | 'failed' | 'not_attempted' | 'unknown' (predates the record). */
+  state: 'sent' | 'failed' | 'not_attempted' | 'unknown';
+  /** When the alert last succeeded, or last failed. Null when never attempted. */
+  attemptedAt: string | null;
+  /** Where it was sent — the tenant's configured ops inbox. */
+  recipient: string | null;
+  /** The provider's error, verbatim. Null unless `state` is 'failed'. */
+  error: string | null;
 }
 
 /** The Request Inbox, newest first, selections embedded; optionally one status. */
@@ -125,6 +143,15 @@ export interface InboundQueueRow {
   /** Still new, NOT already converted, and 2+ days old. Deliberately narrow so
    *  stale bookkeeping does not shout for attention it does not need. */
   overdue: boolean;
+  /** INBOUNDALERT — was the owner actually told? Computed in the view from
+   *  `request_alert_sends`, one row per send attempt. 'not_attempted' means the
+   *  alert endpoint never ran at all; 'unknown' means the request predates the
+   *  attempt record, so silence proves nothing either way. */
+  alert_state: 'sent' | 'failed' | 'not_attempted' | 'unknown';
+  alert_attempted_at: string | null;
+  alert_recipient: string | null;
+  /** The provider's error verbatim, or null when the alert succeeded. */
+  alert_error: string | null;
 }
 
 /** The inbound queue, oldest first — a queue is worked from the top, so the
@@ -206,7 +233,19 @@ export async function listLeadQueue(): Promise<LeadQueue> {
     }
     if (TERMINAL_REQUEST_STATUSES.has(row.status)) continue;
     const full = byId.get(row.id);
-    if (full) open.push(full);
+    // The alert verdict rides along from the view rather than being re-derived
+    // here — same rule as `already_converted`: one definition, in the database.
+    if (full) {
+      open.push({
+        ...full,
+        alert: {
+          state: row.alert_state,
+          attemptedAt: row.alert_attempted_at,
+          recipient: row.alert_recipient,
+          error: row.alert_error,
+        },
+      });
+    }
   }
   converted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   return { open, converted };

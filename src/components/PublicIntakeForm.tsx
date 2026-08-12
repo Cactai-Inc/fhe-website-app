@@ -227,16 +227,12 @@ export function PublicIntakeForm({
         },
         selections ?? [],
       );
-      // Fire-and-forget: email the barn the full submission, immediately, so the
-      // owners hear about it even when they're not in the app. Never blocks or
-      // fails the submission — the request itself already saved and fired the
-      // in-app staff notification. The endpoint reads the content back from the
-      // saved `requests` row by id rather than trusting anything from here.
-      void fetch('/api/request-received', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requestId }),
-      }).catch(() => { /* delivery is best-effort; the request is already saved */ });
+      // The ops-inbox alert email is NOT fired here any more. INBOUNDALERT moved
+      // it into `submitRequest` itself (src/lib/api.ts), because this call site
+      // being the only one that had it is precisely why no lead ever produced an
+      // alert: every real submission came through Checkout or the kiosk, neither
+      // of which called this endpoint. Same dispatch, same best-effort contract,
+      // one place — and now the two paths that were missing it get it too.
       onSubmitted?.(requestId);
     } catch (err) {
       setError(

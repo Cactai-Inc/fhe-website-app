@@ -13,6 +13,13 @@ export interface LeadEntry {
    *  surface can open the working drawer IN PLACE rather than navigating to a
    *  page; support entries have none and fall back to `to`. */
   request?: BookingRequest;
+  /** INBOUNDALERT — set ONLY when the owner was not told by email about this
+   *  lead, and says which way it failed. The lead itself is captured either way;
+   *  this is the honest admission that the notification did not reach him, shown
+   *  where he already looks instead of in a serverless log nobody reads.
+   *  Undefined when the alert sent, and when the request predates the record
+   *  ('unknown') — we do not accuse a path we have no evidence about. */
+  alertWarning?: string;
 }
 
 export interface LeadQueueState {
@@ -22,6 +29,21 @@ export interface LeadQueueState {
   converted: ConvertedLead[];
   /** Re-read both sides — call after the drawer changes a request. */
   reload: () => void;
+}
+
+/** The one sentence a lead card shows when the email alert did not reach the
+ *  owner. Deliberately says the lead is still here — the failure is the telling,
+ *  not the capturing — and carries the provider's own words when there are any,
+ *  because "it failed" without a cause is how this defect survived two leads. */
+function alertWarning(r: BookingRequest): string | undefined {
+  const a = r.alert;
+  if (!a || a.state === 'sent' || a.state === 'unknown') return undefined;
+  if (a.state === 'not_attempted') {
+    return 'Email alert never sent — this lead is saved, but you were not emailed about it.';
+  }
+  return a.error
+    ? `Email alert failed — you were not emailed about this lead. ${a.error}`
+    : 'Email alert failed — this lead is saved, but you were not emailed about it.';
 }
 
 function bookingEntry(r: BookingRequest): LeadEntry {
@@ -36,6 +58,7 @@ function bookingEntry(r: BookingRequest): LeadEntry {
     // which opens that lead's drawer from the `request` param.
     to: `/app/dashboard?request=${r.id}`,
     request: r,
+    alertWarning: alertWarning(r),
   };
 }
 

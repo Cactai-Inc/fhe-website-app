@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { fromHere } from '../../lib/linkOrigin';
-import { X, Hand } from 'lucide-react';
+import { X, Hand, MailWarning } from 'lucide-react';
 import { myNotifications, consumeNotification, markNotificationRead, type AppNotification } from '../../lib/api';
 import { sayHiBack } from '../../lib/communityFeed';
 import { timeOfDayWord } from '../../lib/formatDateTime';
@@ -55,6 +55,10 @@ interface Tile {
   /** Handle the CTA HERE instead of navigating to `to` — a lead card opens its
    *  working drawer in place rather than sending staff to another page. */
   onActivate?: () => void;
+  /** INBOUNDALERT: one line admitting the email alert for this lead did not
+   *  reach the owner. Additive to LEADCLEAN's shipped card — the layout is
+   *  untouched, this only appears when there is something to admit. */
+  warn?: string;
 }
 
 function TileCard({ tile, onDismiss, onOpen }: {
@@ -102,6 +106,12 @@ function TileCard({ tile, onDismiss, onOpen }: {
       <p className="text-[9px] tracking-widest uppercase text-gold-800 font-semibold mb-1.5 pr-5">{tile.kind}</p>
       <p className="font-serif text-green-800 text-xl leading-tight font-semibold">{tile.title}</p>
       {tile.sub && <p className="text-sm text-muted mt-1">{tile.sub}</p>}
+      {tile.warn && (
+        <p className="flex items-start gap-1.5 text-[12.5px] text-red-700 mt-2 leading-snug">
+          <MailWarning size={14} className="shrink-0 mt-px" aria-hidden />
+          <span>{tile.warn}</span>
+        </p>
+      )}
       {isGreeting ? (
         <button
           type="button"
@@ -198,6 +208,9 @@ export function DashboardPanel() {
   const leadTiles: Tile[] = leads.map((l) => ({
     id: l.id, kind: 'lead', title: l.title, sub: l.sub, cta: 'Review', to: l.to, gold: true,
     onActivate: l.request ? () => setOpenLead(l.request!) : undefined,
+    // Set only when the ops-inbox email did not reach him. The lead is captured
+    // regardless — this says he was not told, which is a different failure.
+    warn: l.alertWarning,
   }));
 
   // Deep link: notification writers emit /app/ops/intake?request=<id>, which the
