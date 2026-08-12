@@ -145,10 +145,13 @@ confirmation screen rendering is enough to cancel the request.
 recorded that exact recipient). **But the task doc's expectation that "a mirror trigger is
 supposed to bridge them" is not so.** `mirror_admin_notification` is a trigger on the
 `notifications` table; it copies **in-app notifications** between admins and touches no
-email at all. Nothing in this codebase sends the lead alert anywhere but `hello@`. **If
-Google-side forwarding from `hello@` to `admin@` is not configured, the owner will not see
-these emails even when they send perfectly.** I cannot verify mailbox-side forwarding from
-here — that is an owner check, and it is the one remaining unknown in the delivery path.
+email at all. Nothing in this codebase sends the lead alert anywhere but `hello@`.
+
+**RESOLVED by the owner, 2026-08-12: `hello@` DOES forward to `admin@`.** The bridge is
+mailbox-side at Google, not in this codebase — which is the right place for it, but means
+no code reader can discover it. **The delivery path now has no unknowns:** an alert that
+sends reaches the owner. Recorded here because the next thread to read
+`identity.opsInbox || 'hello@fhequestrian.com'` will otherwise ask the same question.
 
 ---
 
@@ -237,12 +240,16 @@ failure. This is delivery-path, not content — I did not move where the content
 
 ## Flagged, NOT fixed — for the orchestrator
 
-1. **`CONTACT.OPS_INBOX` has no owner-facing editor — a D13 violation.** The address every
-   lead alert is sent to is only changeable by SQL. `AdminBrandingPage` reads `BRAND.*` and
-   `CONTACT.*` but only *renders* the seven BRAND keys. **Per D13's corollary I am naming
-   the follow-up rather than calling this shipped: the ops inbox needs a field on that
-   page.** This matters more than it looks — if the answer to §4's forwarding question is
-   "send it to `admin@` instead", today that is a developer task.
+1. **`CONTACT.OPS_INBOX` has no owner-facing editor — a D13 violation.** The single address
+   every lead alert is sent to exists only as a `config_values` row. **Nothing in `src/`
+   references `OPS_INBOX` at all**, and no UI writes any `CONTACT.*` key —
+   `AdminBrandingPage` fetches `BRAND.*` and `CONTACT.*` together and then discards
+   everything that is not `BRAND` (`api.ts:2016` reads both; the page keeps one). So
+   changing where lead alerts go — a different address, a second one, a new staff member —
+   requires a thread and a SQL statement. **Per D13's corollary I am naming the follow-up
+   rather than calling this shipped: the ops inbox needs a field on the branding page.**
+   Not urgent, now that forwarding is confirmed: alerts reach the owner today. It is the
+   day he wants to change it that has no answer.
 
 2. **`claim_receipt_send` / `log_receipt_send` are executable by `anon` and
    `authenticated`.** Anyone with the public anon key can write `receipt_sends` rows
@@ -253,9 +260,8 @@ failure. This is delivery-path, not content — I did not move where the content
    evidence survives in `audit_logs` and nothing in the app reads it. This is precisely
    what made "Kit was never notified" look true for three days.
 
-4. **Whether `hello@` forwards to `admin@` is unverified and is the last unknown in the
-   delivery path.** An owner-side mailbox check, not a code question. If it does not
-   forward, every alert this task just made work will still land somewhere he does not read.
+4. ~~Whether `hello@` forwards to `admin@`.~~ **Answered by the owner: it does.** Closed —
+   see §4. No action.
 
 5. **Kit and Kylie report `alert_state = 'unknown'`, deliberately.** No attempt record
    existed when they came in, so silence proves nothing. Per the task: not backfilled, not
