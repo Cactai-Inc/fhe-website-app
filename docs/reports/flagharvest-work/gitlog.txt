@@ -1,0 +1,709 @@
+6a58c0f 2026-08-12 docs: FLAGHARVEST spec — every flagged item reconciled against itself and later work, no elimination by decision
+4116558 2026-08-12 docs: D15 — a linked file is never removed from the system
+ccf5357 2026-08-12 docs(inboundalert): hello@ forwards to admin@ (owner-confirmed) — delivery path has no unknowns left
+9a8d711 2026-08-12 merge: INBOUNDALERT — the alert is provable and now actually fires
+7e9b0b4 2026-08-12 INBOUNDALERT: an inbound lead's alert becomes provable, and actually fires
+af8420a 2026-08-12 merge: RECORDS — Leads/Clients/Partners/Vendors/Horses on one page
+74d9e46 2026-08-12 merge: EMAILEXTRACT — email content out of the code
+c43ed72 2026-08-12 merge: GUARDREST — the last bare definer guards, three live holes closed
+b646106 2026-08-12 merge: TESTDB — the DB suite runs
+71b1f8f 2026-08-12 docs: INBOUNDALERT spec — leads arrive silently, no evidence the alert was attempted
+3d5daef 2026-08-12 EMAILEXTRACT: the email content leaves the code
+bcda19b 2026-08-12 test(db): make the db suite actually run — 651 skipped -> 107
+d7b9f49 2026-08-12 TASK RECORDS: one page — Leads, Clients, Partners, Vendors, Horses
+4c66e62 2026-08-12 GUARDREST: coalesce the last bare definer guards; align staff RLS with the nav
+74cd330 2026-08-12 merge: COUNTFIX — one definition per number across five surfaces
+f1d5a38 2026-08-12 merge: BOOKWRITE — bookings record their relationships; purchase_id cascade disarmed
+7cd0272 2026-08-12 merge: REQTRIGGER — the AFTER trigger now persists the contact link
+73effd9 2026-08-12 docs: INREVIEW spec — widen five RPCs to in_review per D14
+62abef0 2026-08-12 docs: D14 — change review replaces the lock; signability gated by completeness; superseding versions
+204cc4f 2026-08-12 docs: TASK-REQTRIGGER report
+ab283cb 2026-08-12 fix(db): requests_capture_contact persists contact_id via UPDATE, not discarded NEW assignment
+ab91d9d 2026-08-12 BOOKWRITE: a booking records what it knows
+f0510c8 2026-08-12 docs: COUNTFIX report — five definitions, the SQL behind each, two spec corrections
+20acafd 2026-08-12 COUNTFIX 1.1: the Ops KPI tile adopts inbound_open_count()
+ac6b61b 2026-08-12 COUNTFIX 1.4: /app/deal reads the member's one document list, filtered
+ffbb296 2026-08-12 COUNTFIX 1.5 + 1.2 + 1.3: one definition per number
+0567935 2026-08-12 docs: session status points at the baton
+f3ca40e 2026-08-12 merge: PAGEVIS — every module on, per-page visibility (App.tsx route conflict resolved, both kept)
+84549ea 2026-08-12 merge: TEXTEDIT — edit template wording in the UI, draft/publish/version, token picker
+e349fda 2026-08-12 docs: FHE points at the ORCH product charter — the role is owned by the product, not this repo
+ab8bb83 2026-08-12 docs: GUARDREST, EMAILEXTRACT and REQTRIGGER specs; bare-guard count corrected to 15
+914c19d 2026-08-12 docs: correction — the website is LAST; app validated first, and validation needs the duplicates resolved and the test suite alive
+44dd412 2026-08-12 docs: split the orchestrator role (ORCHESTRATOR.md) from session state; handoff doc marked superseded
+88e675e 2026-08-12 docs: session status 2026-08-12 for compaction
+4bdd315 2026-08-12 PAGEVIS: every module on, and the tenant hides pages one at a time
+f05ccbc 2026-08-12 feat(textedit): edit template wording in the UI — draft, publish, version, no SQL
+7d63f95 2026-08-12 docs: TESTDB, COUNTFIX and BOOKWRITE specs; plan updated with measured test counts
+ed29130 2026-08-12 merge: TOKENAUDIT — descriptions for all 307 tokens, dead sources and duplicate wiring named
+c14e8d3 2026-08-12 TOKENAUDIT: a description for every template_tokens row + the dead-wiring audit
+5a5c6c1 2026-08-12 docs: plan of attack 2026-08-12 — everything unresolved, ordered
+e6add83 2026-08-12 docs: RECORDS spec (people + horses, five tabs); ONEPEOPLE retired as superseded
+9da42e2 2026-08-12 merge: REVIEWNAV — temporary Review section for A/B/C comparison
+baeea8c 2026-08-12 merge: ADDNEW — page create control reads + Add New
+cc0249e 2026-08-12 merge: ADDITEM — the Add New Item editor's mechanics
+46fcba1 2026-08-12 docs: TOKENAUDIT spec — describe all 307 tokens, name the 59 dead sources and the duplicate wiring
+aca38d7 2026-08-12 feat(reviewnav): a temporary Review section that puts every duplicate side by side
+8ee5527 2026-08-12 docs: TEXTEDIT spec — edit template wording in the UI, draft/publish/version, token picker
+226f6ec 2026-08-12 docs: the tool fits the architecture — editors over the existing tables, no unified template schema
+701cec7 2026-08-12 docs: one archive page; emails are documents with a delivery output; sign-by-email must be a link not a reply
+ea158be 2026-08-12 docs: D13 — the owner must be able to change it without a developer
+79f555c 2026-08-12 docs: form engine has two editable halves — capture and render as one list, two views
+4891f49 2026-08-12 docs: two-engine delta (editing is the primary flow); per-product image approved, no placeholder
+310b21c 2026-08-12 TASK-ADDNEW: revert A6, page-level create control reads "+ Add New"
+af6be57 2026-08-12 docs: D12 — two template engines, one shared lifecycle
+fcb434b 2026-08-12 merge: DUPECENSUS — every duplicate, every implementation, ranked by damage (docs only)
+6f540ac 2026-08-12 docs(reviewnav): addendum — Review is a standing queue, not a one-off comparison
+bcd9e60 2026-08-12 docs(dupecensus): every duplicate, every implementation, ranked by damage
+8b76e37 2026-08-12 fix(additem): the Add New Item editor's mechanics — typing, clicking, closing, position, removal
+7a6dec5 2026-08-12 docs: catalog/products/price-book map — two layers exist, price table repoints, per-product image reserved not built
+1896002 2026-08-12 docs: Bookings-as-the-page decision + the booking data that decides its build order
+9481414 2026-08-12 docs: ONEPEOPLE spec — Leads/Clients/Directory become tabs on one Contacts page
+7f20103 2026-08-12 fix(nav): Team moves to the configuration group and takes UserRound (it shared Contact with Clients)
+0687429 2026-08-12 fix(nav): remove the Contacts entry (it redirected to Clients); Leads takes Users, Clients takes Contact — ADMINSWEEP X-1
+f6da69f 2026-08-12 docs: the 23 form definitions are read by nothing — third hardcoded shadow
+d7ec6a5 2026-08-12 docs: ADDITEM spec — the Add New Item editor diagnosed, mechanics first
+bab6fdd 2026-08-12 fix(framescroll): apply the <main> overflow-x:clip backstop, proven emitting
+5d54177 2026-08-12 merge: LEADCLEAN — the dashboard cleans itself; Inbound retires, its machinery does not
+29597ff 2026-08-12 merge: FRAMESCROLL — DataTable scrolls inside its own frame, not the page
+33525cd 2026-08-12 docs: record the globalization debt with measurements — not scheduled, runs after consolidation
+25a2761 2026-08-11 docs: REVIEWNAV — temporary Review nav section for A/B/C comparison of every duplicate
+bbf948d 2026-08-11 docs: DUPECENSUS also produces the Review manifest that REVIEWNAV consumes
+b9beb28 2026-08-11 docs: HORSEONE held — it would destroy the A/B/C before the owner reviews it
+611b90c 2026-08-11 docs: PAGEVIS spec (all modules on + per-page visibility); HORSEONE amended — MODULES_GROUP will not be empty
+e7f2250 2026-08-11 docs: DUPECENSUS spec — every implementation of every duplicate, ranked by damage
+de397a9 2026-08-11 docs: HORSEONE spec + standing rule — improve the page that exists, never build a second
+bd62080 2026-08-11 leadclean: add TASK-LEADCLEAN-REPORT.md
+a22b03e 2026-08-11 leadclean: follow the hook's new shape in ADMINSWEEP's InstructorHome preview test
+3848dfe 2026-08-11 LEADCLEAN: the dashboard cleans itself; Inbound retires, its machinery does not
+8e24e0c 2026-08-11 fix: DataTable scrolls horizontally inside its own frame, not the page
+a8b0bbe 2026-08-11 merge: NAVMOTION — flicker fixed, underline-selected, drawer slides from the left, tip box, asymmetric inset
+ac14ec0 2026-08-11 docs: D11 — nothing is purged; accounts archive and their files stay visible
+fa1e856 2026-08-11 merge: DOCCOLS — Party 1/Party 2 with role labels, real dates, version, column toggle
+bc2a3a8 2026-08-11 merge: ADMINSWEEP Phase 2 — InstructorHome preview route + landing-page assessment
+7533d31 2026-08-11 navmotion: the nav stops flickering, starts sliding, and says what it is
+6bab07d 2026-08-11 adminsweep(P2): report — assessment of both landing pages, exact nav diff, owner checklist
+457f5cc 2026-08-11 adminsweep(P2): a preview route so InstructorHome can be looked at before it is judged
+0f5beff 2026-08-11 doccols: Party 1/Party 2 with role labels, real dates, version, column toggle
+f829eb7 2026-08-11 docs: ADMINSWEEP Phase 2 direction (M-6 reversed — wire up, do not retire); ADDNEW spec supersedes A6
+fb06d3d 2026-08-11 merge: ADMINSWEEP Phase 1 — admin surface inventory and reconciliation (docs only, no code)
+4f93165 2026-08-11 merge: TITLESWEEP — page-name eyebrows and conversational intros
+a6836d1 2026-08-11 merge: LEASESET — lease family becomes Standard/Simple/Detailed, original archived (D10)
+4e4e012 2026-08-11 LEASESET: lease family becomes Standard/Simple/Detailed, archive HORSE_LEASE (D10)
+bce201f 2026-08-11 merge: PAGEFRAME — 8 pages onto PageLayout/PageHeader
+5fdf4c7 2026-08-11 pageframe: add TASK-PAGEFRAME-REPORT.md
+16f2516 2026-08-11 docs: D10 — lease family ruling (Standard/Simple/Detailed + archived original); LEASESET spec
+0fddae4 2026-08-11 pageframe: convert EvaluationReportsPage.tsx to PageLayout
+166bee7 2026-08-11 pageframe: convert DealPage.tsx to PageLayout
+a527744 2026-08-11 pageframe: convert NewContractPage.tsx to PageLayout
+55a9ade 2026-08-11 pageframe: convert ContactsPage.tsx (Directory/Leads) to PageLayout
+69ec56d 2026-08-11 pageframe: convert LookupReviewPage.tsx to PageLayout
+72dfb7d 2026-08-11 pageframe: convert Admin.tsx (Clients) to PageLayout
+12ffb4c 2026-08-11 pageframe: convert DealsPage.tsx to PageLayout
+caa0e1f 2026-08-11 pageframe: convert CareHome.tsx to PageLayout
+f4b84d0 2026-08-11 docs: DOCCOLS spec — both parties with role labels, real dates, version, column toggle
+65cca57 2026-08-11 adminsweep: Phase 1 inventory + reconciliation — three unreachable admin surfaces, ledger generates but is never consumed
+595a3f9 2026-08-11 TITLESWEEP: document rebase onto origin/main (d84a562)
+ae902f9 2026-08-11 TITLESWEEP: page-name eyebrows + conversational intros (owner spec 2026-08-05)
+d84a562 2026-08-11 merge: DOCQUEUE — real status vocabulary, person/horse/type columns, + Add new picker
+89495fc 2026-08-11 merge: ONEAUTHOR — one authoring page, renderer and surfaces chosen by the document
+771c0d2 2026-08-11 merge: UPLOADS — the Files spine, files belong to their uploader or the org
+800b352 2026-08-11 docs: NAVMOTION amendments — tip box replaces the bounce, off-canvas mechanism confirmed, asymmetric left inset (§H); UIO-016 marked superseded in part
+3d6663b 2026-08-11 docs: FRAMESCROLL hands the AppLayout backstop to the orchestrator — NAVMOTION owns that file
+668c1ba 2026-08-11 merge: MOBILEPASS — stale scrim comment corrected, shelved cardstock files deleted (originals preserved in docs/reference/)
+585b10b 2026-08-11 docs: NAVMOTION + FRAMESCROLL specs — nav motion/indicator/header sizing, and the one-component overflow root cause
+c7e11f5 2026-08-11 feat(uploads): the Files spine — a file belongs to its uploader, not to us
+7c0f89f 2026-08-11 ONEAUTHOR: one authoring page, renderer and surfaces chosen by the document
+83f50bc 2026-08-11 docqueue: real status vocabulary, person/horse/type columns, + Add new picker
+ff10e1d 2026-08-11 fix(mobilepass): correct stale scrim comment, delete dead cardstock files
+7c1d1fb 2026-08-11 docs: session status 2026-08-11 for compaction
+a9b2042 2026-08-11 docs: the job, restated by the owner — one focus, however many threads
+763d9a6 2026-08-11 docs: correction — Kit Garcin is the LAST test, after BOOKFLOW
+454016c 2026-08-11 docs(uploads): owner ruling — Files are separate, and they are not ours
+33b6874 2026-08-11 docs(docqueue): owner ruling — + Add new surfaces a picker modal
+1d0a7b8 2026-08-11 docs: TASK-ONEAUTHOR — one authoring page that arranges itself around the document
+b085c41 2026-08-11 docs: TASK-UPLOADS — a file can live on an account, and on the company
+ce92ca5 2026-08-11 docs: TASK-DOCQUEUE — implement the documents-page design that never shipped
+63b6a47 2026-08-11 docs: working order — leads first, orders/payments/booking last
+63f3b90 2026-08-11 docs(leadclean): the detection already exists — consolidation is the task
+3ab4bb5 2026-08-11 docs: TASK-LEADCLEAN — lead cards retire themselves on conversion
+550d5b5 2026-08-11 merge: purposefix
+06b5eda 2026-08-11 merge: inviteworks
+b275543 2026-08-11 merge: giftcredits
+73af41c 2026-08-11 merge: facilityterm
+2595a84 2026-08-11 merge: docpacket
+915f5ef 2026-08-11 merge: contractorphan
+ffc5138 2026-08-11 merge: uibuild
+bb828ab 2026-08-11 docs(googleauth): both open decisions closed by owner
+88e1577 2026-08-11 INVITEWORKS: split RESEND from REGENERATE, and make every link visible
+1ffef53 2026-08-11 FACILITYTERM: tenant picks their word for barn/ranch/stables/grounds/facility
+478c378 2026-08-11 GIFTCREDITS: a redeemed gift now delivers something
+f1c23bb 2026-08-11 DOCPACKET — onboarding documents collapse into one packet row
+153335d 2026-08-11 merge: GOOGLEAUTH — the link control was invisible to every eligible member
+60f0493 2026-08-11 docs(uibuild): UIO-018 log entry — verified vs not verified; second queue complete
+e770645 2026-08-11 feat(ui): UIO-018 — subheader gets the same gold underline hover as the nav
+4ba186c 2026-08-11 docs(uibuild): UIO-017 log entry — full diagnostic trail
+b278cc3 2026-08-11 fix(ui): UIO-017 — the empty card below the contract, diagnosed and fixed at the actual cause
+2b2b9c4 2026-08-11 TASK-PURPOSEFIX: Purpose select inertness already fixed — verify + document
+d2ff0d5 2026-08-11 docs: report the key-based check and the full NULL-guard sweep
+1d4272d 2026-08-11 docs(uibuild): UIO-016 log entry — verified vs not verified
+6ed9809 2026-08-11 fix(ui): UIO-016 — nav icons and text move in from the panel edge
+b58bc47 2026-08-11 NOGUARD-NULL tier 3: coalesce the guard on 18 readers
+8f8be6a 2026-08-11 GOOGLEAUTH: one self-serve control, and the domain gate that hid it deleted
+4b2ef66 2026-08-11 docs(uibuild): UIO-015 log entry — verified vs not verified
+ae87c2c 2026-08-11 fix(ui): UIO-015 — subheader buttons and text smaller on desktop, ceiling only
+d0b169d 2026-08-11 NOGUARD-NULL tier 2: coalesce the guard on 25 writers
+da1e979 2026-08-11 merge: CONTRACTORPHAN — keys-not-counts + NULL-guard tier 1 (19 destructive paths)
+8f025c8 2026-08-11 NOGUARD-NULL tier 1: coalesce the guard on 19 destructive paths
+5fad169 2026-08-11 merge: INVITEWORKS — the invite works; what was broken was the reporting
+12703e6 2026-08-11 merge: LEASEFIX — the share_amount [$|%] control
+39c5134 2026-08-11 CONTRACTORPHAN: missing-fields check compares KEYS, not counts
+aed3fd2 2026-08-11 feat(contract): the share_amount composite control — G1, owner-approved
+6d815d3 2026-08-11 docs(uibuild): UIO-014 log entry — verified vs not verified
+7280812 2026-08-11 fix(ui): UIO-014 — rail divider matches the panel's own weight; fixes a T1 bug that predates this order
+6d489d2 2026-08-11 INVITEWORKS: make the invite flow reportable, and fix what it was hiding
+b2a5019 2026-08-11 docs(leasefix): APPROVE the ClauseDocument share_amount control
+d9cb6d1 2026-08-11 merge: LEASEFIX addendum layer — APPLIED, not held
+17e162b 2026-08-11 merge: DASHLEADS — leads render on the dashboard staff actually land on
+6f6be9c 2026-08-11 merge: CONTRACTORPHAN — can_cleanup_document was a LIVE hole, not latent
+bd26667 2026-08-11 docs: TASK-DASHLEADS report
+8f70710 2026-08-11 DASHLEADS: leads render as dashboard entries at /app/dashboard, not a second page
+d188dfc 2026-08-11 docs(uibuild): UIO-013 log entry — verified vs not verified
+94f3f8d 2026-08-11 feat(ui): UIO-013 — nav loses its hover fill, takes a gold underline; selected-fill change stopped on contrast
+c0fcbb9 2026-08-11 CONTRACTORPHAN: make the cleanup guard NULL-safe (live D1 hole)
+2bbafc6 2026-08-11 LEASEFIX 2q: the addendum layer — APPLIED
+3ae62c0 2026-08-11 docs: TASK-DASHLEADS + TASK-INVITEWORKS — implementation, not audit
+2e5adef 2026-08-11 NOGUARD3 Phase B APPLIED to production
+f2adf96 2026-08-11 merge: LEASEFIX 2o + 2p — APPLIED to production
+c80683d 2026-08-11 docs: empty is not a finding — owner correction
+c38c940 2026-08-11 docs: D1a into CLAUDE.md so every session inherits it
+a9c610c 2026-08-11 docs: CONTRACTORPHAN Part 1 HELD by owner ruling — he cleans up from the UI
+e584fe7 2026-08-11 merge: ROSTERCARD — the people page is cards
+e265c64 2026-08-11 merge: CONTRACTORPHAN parts 2+3 applied, part 1 held for the apply decision
+b57350a 2026-08-11 merge: NOGUARD3 Phase A applied, Phase B dry-run only
+b51e6b5 2026-08-11 docs: D1a — the platform owner is not a tenant (owner ruling)
+ae695f9 2026-08-11 NOGUARD3 Phase B (DRY RUN, unapplied) + report
+7011e9c 2026-08-11 feat(rostercard): the people page is cards — triage grid replaces the row build
+f4e59d8 2026-08-11 NOGUARD3 Phase A: feed post ownership guard fails closed
+f88246b 2026-08-11 CONTRACTORPHAN: document integrity panel + staff cleanup controls
+94399b6 2026-08-11 docs: correct the INQUIRYMAIL premise in the session status
+3edf978 2026-08-11 merge: INQUIRYMAIL — the inbound email carries the whole submission, and replies reach the sender
+e25596e 2026-08-11 TASK INQUIRYMAIL: full-content immediate inquiry email + reply-to
+2f5f5d2 2026-08-11 docs: TASK-ROSTERCARD + TASK-NOGUARD3 specs
+10b4a4d 2026-08-11 docs: TASK-CONTRACTORPHAN — delete 2 orphaned docs, then make breakage visible
+42722e6 2026-08-11 docs: verification policy — owner confirms renders, threads never claim them
+5735a4f 2026-08-11 docs(leasefix): close the three long-open insurance questions
+c570f0c 2026-08-10 docs(leasefix): owner rulings close B2, C4, D3 — addendum unblocked
+6ed5cd4 2026-08-10 docs: owner change set 2026-08-10 — LEASEFIX addendum + UIO-014..018
+9f38040 2026-08-10 merge: NOGUARD2 — Phase A + Phase B access hardening
+016c89c 2026-08-10 roster: take the DB layer onto main, hold the row presentation
+b549873 2026-08-10 merge: SUPERSEDE — apply_document_supersession is horse-scoped
+1aa1eca 2026-08-10 docs: full session status for context compaction
+6cf1215 2026-08-10 docs: activity is actions not sessions; flags only where he can act
+22cff3b 2026-08-10 docs: horse names on the card, and two live findings behind the TEAM exclusion
+bc91034 2026-08-10 docs: the roster is a triage view — the diagnosis chain, not a directory
+853f23b 2026-08-10 docs: the ring carries the relationship, the card shows only derived values
+4b4e44a 2026-08-10 docs: parent/dependent pair — both cards name the other person
+ea69c02 2026-08-10 docs: UIO-013 nav gold states; roster reverses to cards; the badge is two stores
+2bf42de 2026-08-10 docs: frequency is an optional inclusion — and an omission needs a meaning
+d8a5786 2026-08-10 Merge task/uibuild: eight UI orders
+fa2f45c 2026-08-10 docs: correct the field count — 21 to 12, not 14 to 2
+430eaa1 2026-08-10 docs: the CCC requirement states the limit — no limit field needed
+ffb659e 2026-08-10 docs: frequency settled — five options including per use
+f23f14c 2026-08-10 docs: what each unit is for, and transparency via attached documents
+63a6c8a 2026-08-10 docs: state the settled insurance model once, at the top
+cf885d2 2026-08-10 docs: the policy cost keeps its percentage, and this is restructuring not authoring
+21790a7 2026-08-10 docs: record the owner's final shape, and that the clause scopes trigger not amount
+249a0af 2026-08-10 docs: the Lessor's own GL declaration stays — disclosure runs both ways
+88c737d 2026-08-10 docs: cap the deductible split or it over-charges the Lessee
+69b9651 2026-08-10 docs: the premium takes no percentage, the deductible may — and frequency is part of the term
+d2d7030 2026-08-10 docs: the coverage model — GL follows the actor
+e41bec6 2026-08-10 docs: strip mortality/medical to two declared amounts — 14 fields become 4
+01c18be 2026-08-10 docs(uibuild): UIO-011 log entry — verified vs not verified; queue complete
+4f8e3b4 2026-08-10 docs(ui): UIO-011 — evaluation page for outline hover and one-green harmonization
+71f737c 2026-08-10 docs(uibuild): UIO-010 log entry — closed, no change, acknowledged
+0d481ae 2026-08-10 docs(uibuild): UIO-012 item 2/2b log entry — verified vs not verified
+cefaad7 2026-08-10 feat(ui): UIO-012 item 2/2b — Dashboard moves to Management, a divider separates Add New
+e047862 2026-08-10 docs: CCC carries a limit, and the limit must be checked against the horse's value
+7d016f1 2026-08-10 fix(supersession): scope apply_document_supersession to the horse
+4587306 2026-08-10 merge: sync with origin/main (UIO-012 item 2 merge-direction correction)
+fa1123b 2026-08-10 docs: form submissions must email the content, and correct the merge direction
+a396899 2026-08-10 docs: capture the pending booking/calendar issues before they are lost
+f5abe2a 2026-08-10 Merge task/inviteflow: the invited category survives to the account
+904911e 2026-08-10 LEASEFIX 2p: the share is a composite format_type — HELD, NOT APPLIED
+cded330 2026-08-10 docs: signing freeze in force, with the checklist for lifting it
+30290e5 2026-08-10 Merge origin/main (4ef18b0) into task/leasefix
+4ef18b0 2026-08-10 docs: the share control is a composite format_type, composed at render
+d45152c 2026-08-10 docs: TASK-SUPERSEDE — signing one horse's document supersedes another horse's
+b5630dc 2026-08-10 docs: the $/% selector geometry — three slots, not a dropdown
+f3e2c94 2026-08-10 docs(uibuild): UIO-005 log entry — verified vs not verified
+521d08d 2026-08-10 feat(ui): UIO-005 — Save becomes the outlined form of Send; favicon adopts the header mark
+456f8c4 2026-08-10 LEASEFIX 2p: ruling 3 + the single-share collapse — HELD, NOT APPLIED
+34ba0fb 2026-08-10 docs: the two units allocate risk differently — that is the principle
+7344fa4 2026-08-10 docs: a percentage can be undefined — the policy may cover more than the leased horse
+5c3a4e1 2026-08-10 Merge origin/main (8f82ace) into task/leasefix
+8f82ace 2026-08-10 docs: correct the split ruling — the unit selector stays
+51d00ea 2026-08-10 merge: sync with origin/main (UIO-005 finalized with favicon SVG + apple-touch-icon spec, UIO-012 item 2 answered + divider added)
+30a7d2f 2026-08-10 docs: the split is one percent field — throw out the $/% chooser
+5017bd9 2026-08-10 docs: UIO-005 — the finished favicon SVG, verbatim, plus the missing apple-touch-icon
+9d2e2e2 2026-08-10 Merge task/horsedocs: the sweep can no longer delete a signed document
+13aced2 2026-08-10 docs: UIO-005 — the favicon is built from retired parts
+62131da 2026-08-10 docs: the mark system — two axes, three marks, deliberately unlike each other
+b48b497 2026-08-10 docs: one name means one letter, and the reason goes in the code
+04819c5 2026-08-10 docs: avatar initials — one letter for yourself, two for other people
+511c2f0 2026-08-10 docs(uibuild): UIO-012 log entry — verified vs not verified
+67792c6 2026-08-10 feat(ui): UIO-012 — the App pages group collapses, and the heading hover is visible
+d32d37c 2026-08-10 docs(uibuild): UIO-009 log entry — verified vs not verified
+33dd0ac 2026-08-10 docs: TASK-ROSTER — the Clients page wins, shows every contact, rows read by shape
+62c71f5 2026-08-10 feat(ui): UIO-009 — the header keeps its line and gets its shadow back
+c48ab21 2026-08-10 docs(uibuild): UIO-008 log entry — verified vs not verified
+5b79b64 2026-08-10 fix(ui): UIO-008 — contract actions arrow points down closed / up open, moved to its label
+bcf3d16 2026-08-10 docs(uibuild): UIO-006 log entry — verified vs not verified
+34c3301 2026-08-10 feat(ui): UIO-006 — avatar hover state added, mobile letter size split from .oh-mono
+2ed1e7a 2026-08-10 docs(uibuild): UIO-007 log entry — verified vs not verified
+3a807a5 2026-08-10 fix(ui): UIO-007 — closing the drawer over a contract no longer reloads and loses your place
+f1878c9 2026-08-10 docs: UIO-012 — a divider below Add New
+92c5da0 2026-08-10 docs: UIO-012 — Inbound goes away; Dashboard was always the management dashboard
+7b1eaf5 2026-08-10 docs: UIO-012 item 2 answered — one Management entry, Dashboard layout, leads as entries
+a984dad 2026-08-10 merge: sync with origin/main (UIO-009 rewritten twice, UIO-012 added)
+9d5dfd3 2026-08-10 docs(uibuild): UIO-004 log entry — verified vs not verified
+58f835d 2026-08-10 feat(ui): UIO-004 — contain every scroll container instead of harnessing the body
+85f2d37 2026-08-10 docs(uibuild): UIO-003 log entry — verified vs not verified
+49f42aa 2026-08-10 feat(ui): UIO-003 — the nav hover flicker: icon transition, one double-paint, named durations
+95f1aca 2026-08-10 docs: UIO-012 — App pages group, Dashboard move, and the invisible heading hover
+87f3219 2026-08-10 fix(documents): ensure_horse_documents never sweeps a signed document
+ca88300 2026-08-10 docs: UIO-009 — the owner's elevation model supersedes my amendment
+1213e98 2026-08-10 docs: UIO-009 — the header's shadow falls on the content only, never on the nav
+490a104 2026-08-10 docs: the badge is the legally acceptable option, not the best one
+38bb003 2026-08-10 docs: UIO-010 closed, no change — the badge was already the best option
+e3477d0 2026-08-10 docs: the desktop nav is near-white, not cream — the token name misleads
+a70183a 2026-08-10 docs: UIO-008/009/010 and UIO-011 evaluation
+1a3be42 2026-08-10 docs: UIO-006 avatar interaction, UIO-007 the drawer scroll lock
+33ce223 2026-08-10 docs: UIO-003/004/005 — extract the still-unshipped work from task/uireview
+cc89fed 2026-08-10 NOGUARD2: account for a concurrent contract_fields change, and record chain 3
+bfce199 2026-08-10 LEASEFIX 2o applied: 'component', never 'rider', in contract text
+3b5f2cc 2026-08-10 NOGUARD2 Phase B: applied to production; report updated with post-apply proof
+5be908a 2026-08-10 fix(invitations): the category you choose survives to the account
+359e363 2026-08-10 docs: 'rider' never appears in contract text — use 'component'
+b624eaf 2026-08-10 Merge task/horseintake: a blocked client can save a horse record
+ac4bf5a 2026-08-10 LEASEFIX 2o: 13.2/13.3 rebuilt to the 2026-08-10 rulings — HELD, NOT APPLIED
+5817c47 2026-08-10 docs: correct my NOGUARD1 audit in three places, and record the COMMIT-in-migration trap
+9c4b676 2026-08-10 docs: TASK-HORSEDOCS — a sweep that can delete signed documents
+787d980 2026-08-10 docs: 13.3 disappears for individuals; N/A applies only inside the entity branch
+a3cbaf2 2026-08-10 Merge task/sendguard: guard the signing paths, stop the draft churn
+16362d0 2026-08-10 Merge task/leasefix: 13.2 decline option, green section numbers, insurance model
+9417a87 2026-08-10 docs: CCC holds its position and shows N/A rather than vanishing
+fbdf64c 2026-08-10 docs: CCC is a rider on GL — corrects the dependency I had backwards
+ee4a0e1 2026-08-10 docs: 13.2 and 13.3 fully separated — the model is complete
+e419847 2026-08-10 docs: 13.2 model settled — both parties declare, the requirement narrows the menu
+2c37099 2026-08-10 docs: 13.2 structure ruling, and the packet decisions
+bc4dc27 2026-08-10 docs: correct the urgency claim in the currency rule
+b3c5b06 2026-08-10 docs: TASK-DOCPACKET — the onboarding set should present as one packet
+96f7c13 2026-08-10 docs: live unsigned documents must carry current template content
+07a3004 2026-08-10 docs: Sarah's document is a sample under review, not a live negotiation
+658f17c 2026-08-10 docs: correct the share control — it exists untyped, it is a rebuild
+38da94a 2026-08-10 docs: the split stays, the premium goes — and the freeze is stop-and-propose
+3e9cdf8 2026-08-10 docs: LEASEFIX insurance rulings — cost lines out, checkboxes out, mortality/medical collapse
+1b80579 2026-08-10 docs: npx tsc without node_modules is not a typecheck
+49dac96 2026-08-10 docs: 13.2 — part 1 is live, and the blocker cannot catch the contradiction
+d1d88e2 2026-08-10 style(contract): section numbers in company green; model 13.2-13.5 before building
+e7953a3 2026-08-10 NOGUARD2 Phase B: five migrations, DRY-RUN ONLY, not applied
+b43770e 2026-08-10 SENDGUARD: never re-send a signing document, never churn it under a link
+44471d3 2026-08-10 docs: LEASEFIX 13.2 decline option — it is three changes, not one
+f2b88b3 2026-08-10 fix(lease): the Lessee's "does not carry" option is selectable, and renamed
+7df2005 2026-08-10 docs: the failure is an adjacent test, not skipped verification
+5eef266 2026-08-10 docs: T2b — minified CSS converts rgba() to 8-digit hex
+0bb63ba 2026-08-10 Merge task/uibuild: UIO-001 header depth + UIO-002 avatar mark
+6192208 2026-08-10 NOGUARD2 Phase A: drop void_signatures_on_edit, make gift guards fail closed
+4b74318 2026-08-10 docs(uibuild): UIO-002 log entry — verified vs not verified
+9614a41 2026-08-10 feat(ui): UIO-002 — the avatar becomes a ring, and on mobile a solid button
+ec12dca 2026-08-10 docs: audit the LEASEFIX report — its deployment section is wrong, everything shipped
+9f8aa4d 2026-08-10 docs: LEASEFIX report — worktree move, the frozen-file edit, verified vs asserted
+26d8dfa 2026-08-10 docs: record that the tab title case-normalizes the ID
+7b9f2c6 2026-08-10 docs: SENDGUARD — gate section 2, apply 1 and 3
+f97f8a0 2026-08-10 docs(uibuild): UIO-001 log entry — verified vs not verified
+538c396 2026-08-10 feat(ui): UIO-001 — the header gets a line; the drop shadow moves to what actually floats
+1928e98 2026-08-10 docs: NOGUARD2 — drop void_signatures_on_edit, and split the apply mode
+1153ddf 2026-08-10 docs: add SENDGUARD to the work inventory ranking
+4ae8710 2026-08-10 docs: TASK-SENDGUARD — guard the signing-invite paths and stop draft churn
+36ad52c 2026-08-10 docs: UIO-002 — state the fill/letter coupling as a rule, with the failure number
+aeb948e 2026-08-10 docs: UIO-002 — brand colour under a white veil that clears on press
+60ef818 2026-08-10 docs: UIO-002 rewritten opaque — the owner corrected the approach
+8429a26 2026-08-10 docs: record where 'you make the call' begins and ends
+dc4d300 2026-08-10 docs: UIO-002 alphas to 0.22/0.55, and record the vivid-vs-dark fork
+af4ee28 2026-08-10 docs: UIO-002 goes READY — values chosen, with the arithmetic behind the green
+15fcb23 2026-08-10 docs: correct T4 — the shelved header is structurally inert, not a latent hazard
+7910a96 2026-08-10 docs: UIO-001 header depth ruling, UIO-002 avatar mark
+935fc63 2026-08-10 docs: stand NAVHOVER down — task/uireview fixed it a day earlier
+d65fd52 2026-08-10 build(hooks): install to .git so a checkout cannot delete them
+3faf17b 2026-08-10 build(hooks): warn only when LEAVING main, and say so accurately
+d9b0f9c 2026-08-10 build(hooks): keep code commits out of the canonical checkout
+eed7c56 2026-08-10 docs: LEASEFIX report — worktree move, the frozen-file edit, verified vs asserted
+fd9329f 2026-08-09 fix(lease): the Lessor's own liability coverage is its own question
+f869a96 2026-08-09 fix(lease): 13.2 asks what the Lessor REQUIRES; CCC follows from that
+41d9b37 2026-08-09 fix(contract): stop a wide dropdown crushing its own label
+3ae412b 2026-08-09 fix(lease): the two new Yes/No gates render as Yes/No, not a text box
+2b974e2 2026-08-10 docs: LEASEFIX stop-directive, and record that I rewrote a spec under a live thread
+fa13950 2026-08-10 docs: NAVHOVER — F0 records the confirmed cause; the task is now the fix, not the hunt
+751ed0e 2026-08-10 docs: NAVHOVER frame evidence — the icon vanishes for a frame on every hover
+796586a 2026-08-10 docs: NAVHOVER — F5 eliminated, F6 answered, F2 now the hypothesis to disprove
+90988c7 2026-08-10 docs: NAVHOVER — reduce motion ruled out, F2 is now the leading hypothesis
+40123ae 2026-08-10 docs: TASK-NAVHOVER — the icon has no transition while its row does
+bb3ab1c 2026-08-10 fix(horse intake): show the database's real error, and stop sending "N/A" where it can't be stored
+b0fd527 2026-08-10 docs: HORSEINTAKE — euthanasia ruling settled, and the real scope of it
+3d12d0e 2026-08-10 docs: HORSEINTAKE F7 — the blocked client is identified, and her groups were wiped at activation
+e415cc9 2026-08-10 docs: TASK-HORSEINTAKE — a new horse owner is blocked in onboarding
+1bec0a5 2026-08-09 fix(lease): the Lessor's own liability coverage is its own question
+353f5ef 2026-08-09 fix(lease): 13.2 asks what the Lessor REQUIRES; CCC follows from that
+2be3faa 2026-08-09 fix(contract): stop a wide dropdown crushing its own label
+f4b7932 2026-08-09 fix(lease): the two new Yes/No gates render as Yes/No, not a text box
+7cfe8b6 2026-08-09 fix(lease): 3.5 reads "Rider and Other Serious Injuries"
+a7a6152 2026-08-09 fix: restore imported horse values, and let the contract paper scale
+f34f36b 2026-08-09 fix(contract): Send works on a locked document; reopen a locked unsigned draft
+375a2f8 2026-08-09 Merge LEASEFIX: lease template corrections + insurance section rebuild
+548f89a 2026-08-09 fix(contract): drop the per-party Send buttons; give the page a bottom edge
+6e18d8c 2026-08-09 LEASEFIX 2e: CCC becomes its own GL-dependent section
+fa816e2 2026-08-09 LEASEFIX batch 2: the insurance section rebuilt (13.2 / 13.3 / 13.4)
+f3f4f4d 2026-08-09 fix(header): give the header a real edge; split the avatar's two forms
+3e62816 2026-08-09 fix(header): give the header a real edge; split the avatar's two forms
+c86c723 2026-08-09 docs: LEASEFIX batch 2 spec — insurance rework, awaiting owner sign-off
+a184f3a 2026-08-09 LEASEFIX batch 1: Permitted Use + Horse Care corrections
+de51ec8 2026-08-09 fix(nav): retire the stale green-panel palette on the Community Feed row; label the create control
+d0699ff 2026-08-09 docs: split the UI loop into two threads with an order queue between them
+e243ced 2026-08-09 docs: the model economics, the author/execute split, and keep this thread procedural
+4d467f9 2026-08-09 docs: the orchestrator picks the model — it is a decision, not a default to look up
+0cabfca 2026-08-09 docs: TASK-UIREVIEW — a standing screenshot review loop, not a build task
+664f802 2026-08-08 docs: mark the model/effort default CONTESTED — the owner says it never matched what he ran
+800aa73 2026-08-08 docs: point the handoff at the real index; add verified blast radius + grant trap to NOGUARD2
+5cce651 2026-08-08 docs: NOGUARD1 audit + the work inventory the handoff was missing
+9679006 2026-08-08 docs: merge TASK-NOGUARD1 audit report (476 lines, docs-only)
+a980f7b 2026-08-08 docs: correct a stale NOT RUN table that would have re-run five finished threads
+89625a1 2026-08-08 docs: TASK-PARTYJOURNEY — the owner's full invite-to-signature flow
+635ba8c 2026-08-08 docs: INVITELINK — the token is a claim on a party slot, not just auth
+8b24888 2026-08-08 docs: INVITELINK reversed — the document is the link, auth is the interstitial
+af7fed9 2026-08-08 docs: TASK-INVITELINK — existing members get an activation link they do not need
+d2e8ecf 2026-08-08 docs: the orchestrator handoff
+115fa8e 2026-08-08 fix(contract): stop tearing the document down on every edit
+6401060 2026-08-08 fix(contract): the reload was act(), not the realtime echo
+280120e 2026-08-08 fix(layout): a 15" laptop missed the scale-up by 88px
+40d49d8 2026-08-08 fix(contract): subheader surface matches the nav rail
+2cc9742 2026-08-08 fix(layout): centre the capped columns — the empty space was alignment
+4381a5e 2026-08-08 fix(contract): a <select> was falling through to a full document reload
+259d0e9 2026-08-08 fix: remove overflow-x:clip from html — it broke contract authoring
+7adee89 2026-08-08 fix(nav): a darker cream, not a brown — earth scale removed
+7d7114b 2026-08-08 fix(nav): the active row's ICON was still green
+5c9b172 2026-08-08 feat(nav): earth tone replaces the green
+0016514 2026-08-08 docs: TASK-PAGEFRAME — nine pages converted individually, not swept
+6822d98 2026-08-08 feat(pages): page layout template — uniform header, page-specific content
+9cdb5b1 2026-08-08 feat(pages): one page-header component, square icon-only add control (A5/A6)
+483eb40 2026-08-08 fix(header): flat opaque surface, 76px kept, wordmark scaled up
+ce06788 2026-08-08 Merge task/oneheader: adopt the login header, drop the glass, delete the drawer tab
+cab70b4 2026-08-08 docs: handoff checklist — requirements preserved, handoff NOT written
+eaab867 2026-08-08 ONEHEADER: adopt the login header, drop the glass, delete the drawer tab
+fba2b57 2026-08-08 docs: TASK-FACILITYTERM — the tenant picks what to call their place
+24f1246 2026-08-08 feat: remove the close-verb label, and record the owner's A-list dispositions
+5be5991 2026-08-08 docs: close all four owner-blocked items
+ba992f6 2026-08-08 docs: record E2/E3/E4 — no minify, icons on hold, and 'barn' is wrong
+6b34ec2 2026-08-08 docs: ONEHEADER gains the owner's settled decisions
+d2658a4 2026-08-08 feat(nav): hue-compensated glass token, and snapshot the cardstock header
+369c0f4 2026-08-08 docs: reconcile every open UI change request against main
+3b52733 2026-08-08 feat(nav): the mobile drawer starts below the header
+4e39a04 2026-08-08 fix(nav): one material for hover and selection, and no nested blurs
+d27b4f9 2026-08-08 docs: TASK-ONEHEADER — adopt the login header across the app
+e968ffa 2026-08-08 fix(nav): the drawer tab a real user could not find
+d59432d 2026-08-08 fix(nav): one hover language, and badges that belong on glass
+795f121 2026-08-08 fix(nav): the mobile scrim now means something — scroll lock + green scrim
+0c8c8da 2026-08-08 fix(nav): restore green glass — cream/90 should never have shipped
+628079a 2026-08-08 fix(nav): NAV_GLASS emitted no background, and mis-detected older Safari
+aa15d40 2026-08-08 fix(mobile): stop horizontal overscroll, and say "tap" on touch devices
+10d7a1a 2026-08-08 docs: ADMINSWEEP reframed — a full admin refactor, not a cleanup
+99a7564 2026-08-08 docs: TASK-ADMINSWEEP — the admin reconciliation that was never done
+38037b4 2026-08-08 docs: nav icon assignment locked — Users/Community Feed, Contact2/People
+86a2c33 2026-08-08 feat(account): for staff, Account is the company — personal sections removed
+87915bd 2026-08-08 docs: admin nav pages, merge proposal, and icon assignment exercise
+1f562b6 2026-08-08 fix(nav): tooltip portal, panel surface, selected state, and the small items
+c810495 2026-08-08 fix(nav): hover is a solid lower-intensity green, gated on hover capability
+91cfa4a 2026-08-08 fix(nav): rail button metrics and drop the show/hide word
+7c7b09d 2026-08-08 fix(nav): collapsed rail squashed icons — missing shrink-0, plus toggle symmetry
+0a09096 2026-08-08 docs: MOBILEPASS section F — the collapsed rail cannot be used
+b000a18 2026-08-08 docs: MOBILEPASS — screenshots received and folded in
+33076c5 2026-08-08 docs: MOBILEPASS gains the desktop rail defects, incl. tooltip root cause
+aab2a51b 2026-08-08 docs: TASK-MOBILEPASS — mobile nav, header legibility, one material language
+42bbff2 2026-08-07 feat(nav): create moves into the rail, collapse toggle moves to the foot
+d54e50a 2026-08-07 docs: TASK-NOGUARD1 — access-control inventory of the anon-reachable definer surface
+ab3d490 2026-08-07 docs: split NOGUARD into inventory + hardening, defensive framing
+08c6738 2026-08-07 docs: TASK-GIFTCREDITS — a redeemed gift currently delivers nothing
+3c5c96d 2026-08-07 Merge task/leasesimple: keep/cut worksheet for the simple lease
+08ec02a 2026-08-07 fix(security): make three anon-reachable payment guards fail closed
+3e37028 2026-08-07 docs: insurance decision map — the flow charts behind the gates
+a186d3f 2026-08-07 docs: correct the insurance matrix — full lease inverts who may hold
+6f3ee0f 2026-08-07 docs: LEASEGATE — the Lessee's counter-elections on a partial lease
+fed8400 2026-08-07 docs: LEASEGATE — full lease inverts who can hold the policy
+2c948f0 2026-08-07 docs: LEASEGATE — medical depends on mortality; ordering already correct
+27516d1 2026-08-07 docs: LEASEGATE Q1 answered — disclosure and acceptance, not a bare waiver
+b31f0eb 2026-08-07 Merge task/leasegate Phase 1: analysis only, three blocking decisions for the owner
+c99a7a8 2026-08-07 docs: correct the redeem_gift rationale — it guards itself
+e38c56e 2026-08-07 Merge task/secfix2: close the gift-account anon path and the member_directory RLS bypass
+5d9f538 2026-08-07 docs: single canonical handoff, current state only
+dfb9ab4 2026-08-07 fix(contract): name the party actually notified, and stop reporting a send that never happened
+196e998 2026-08-07 docs: collapse two handoff docs into one, correct the stale NOGUARD instruction
+c5eaad6 2026-08-07 docs(leasesimple): keep/cut worksheet for HORSE_LEASE_SIMPLE
+43d564c 2026-08-07 docs: orchestrator handoff for thread succession
+1008477 2026-08-07 SECFIX2: close the anon path into _ensure_client_account, fix member_directory
+71f622c 2026-08-07 docs: thread naming SOLVED — attempt 3 confirmed working
+7dc5d2e 2026-08-07 docs: threads announce their own ID — the reliable identifier
+b83d03f 2026-08-07 docs: two thread-naming approaches disproven, prompt shape corrected
+f79b7da 2026-08-07 docs: LEASEGATE Phase 1 — insurance option gate map and impact analysis
+5453268 2026-08-07 docs: TASK-NOGUARD — the family every prior audit was blind to
+0635acb 2026-08-07 docs: mark CONDITIONAL_CLAUSES.md stale — 129 clauses vs 144 live
+62192d4 2026-08-07 docs: handoff — three threads in flight, verify-before-merge checklist
+d309e57 2026-08-07 docs: session handoff — state, pending decisions, UVT checklist
+532915e 2026-08-07 docs: mandatory repo-path + CONFIRM preamble for every prompt
+aaf5475 2026-08-07 Merge task/wallsync: one shared satisfaction predicate, explicit re-sign
+e775c5e 2026-08-07 recover NULLUID: 4 migrations + report stranded on a deleted clone
+b6d5d7c 2026-08-07 WALLSYNC: one satisfaction predicate; stop the wall manufacturing re-signs
+c509560 2026-08-07 docs: thread titles are auto-generated — put the ID in the first sentence
+38c2b05 2026-08-07 docs: thread registry — one ID per thread, used as label/branch/report
+267fc97 2026-08-07 docs: TASK-GOOGLEAUTH — collapse to the single self-serve control
+f57fa2f 2026-08-07 docs: TASK-GOOGLEAUTH — reconcile scenarios with the ruling
+9bf38f6 2026-08-07 docs: TASK-GOOGLEAUTH — rule out the duplicate-account path
+97c9fa3 2026-08-07 docs: TASK-GOOGLEAUTH corrected — self-serve linkIdentity, already built
+1659c52 2026-08-07 docs: TASK-GOOGLEAUTH — request-switch button, owner's two scenarios
+ab2ed85 2026-08-07 Merge task/leasefork: lease template forking + anon hole fix
+b1c311a 2026-08-07 docs: TASK-WALLSYNC Bug B inverted — the wall is the wrong half
+3299a1b 2026-08-07 fix(nav): header-height offsets and resolve D2 stable route
+a4f49b4 2026-08-07 Merge task/onemenu: one menu moved right, avatar absorbed, rail C1-C6
+e068f32 2026-08-07 Merge task/accountsurface: account rows expand in place, /app/stable route
+8b64e2c 2026-08-07 fix(wall): backfill signed_template_version=0 -> 1, releasing falsely-walled members
+df15bb4 2026-08-07 docs: TASK-WALLSYNC — wall/onboarding deadlock diagnosis
+8facc04 2026-08-07 Fix: contract subheader slid under the cardstock header
+91ea92e 2026-08-07 ONEMENU: one menu moved to the right, avatar inert, rail C1-C6, D1/D2 labels
+02efb58 2026-08-07 TASK-ACCOUNTSURFACE Phase 2: all account rows expand in place, My Stable gets a route
+6f3da34 2026-08-07 Task doc: NULLUID — 'NULL uid means trusted' guard hole, confirmed in set_org_module
+2fa07bc 2026-08-07 Merge task/wallreturn: the signing wall no longer discards the destination
+bec0e6f 2026-08-07 Merge remote-tracking branch 'origin/main' into task/accountsurface
+7320419 2026-08-07 ONEMENU C5b: scope the colour spec to desktop; only selected carries to mobile
+a5c6ab7 2026-08-07 ONEMENU: owner rulings on all six open questions — Phase 2 unblocked
+97910b0 2026-08-07 LEASEFORK Phase 3: template selection at write time (+ fix an anon hole from Phase 1)
+a867dd0 2026-08-07 ONEMENU C5b: nav state colours — hover previews selection
+c5dfe6c 2026-08-07 Split ONEMENU/ACCOUNTSURFACE by file so both can run
+da9f954 2026-08-07 Preserve the signing wall's intended destination (TASK-WALLRETURN)
+3d0e9d9 2026-08-07 ONEMENU: add section C — six desktop rail corrections
+ae8e88f 2026-08-07 Account sections spec + desktop avatar menu merges into the rail (owner, 2026-08-07)
+394574b 2026-08-07 Merge task/tiptap-tooltips: tap-capable explanations
+2d10f26 2026-08-07 Merge task/leasemap: conditional dependency map for the lease
+9ea7636 2026-08-07 LEASEGATE: fold in LEASEMAP ground truth — LEASE_TYPE gates nothing in insurance
+4de9876 2026-08-07 LEASEMAP: map the lease's insurance conditional system (read-only)
+74c1e98 2026-08-07 TASK TIPTAP: tap-capable explanations for iOS Safari
+5186fe9 2026-08-07 LEASEFORK Phases 1-2: clone_contract_template + three byte-identical lease forks
+68310fc 2026-08-07 TASK-ACCOUNTSURFACE Phase 1: nav/account duplication assessment
+4b2fef2 2026-08-07 SECFIX2 task doc; ONEMENU gains the 481-590px dead zone; identity note on guest vs customer
+6b643f1 2026-08-07 Merge task/secfix: close three production vulnerabilities
+a7ccf43 2026-08-07 SECFIX S1 + S3: close the two anon-reachable holes
+b8b078a 2026-08-07 Merge task/accteval: account system audit report
+309de0b 2026-08-07 SECFIX S2: authenticated can no longer write profiles.contact_id
+4319a9a 2026-08-07 Record the mobile header diagnosis: cause is size, gold ruled out, fix is a two-row layout
+ae60019 2026-08-07 Task doc: WALLRETURN — the signing wall discards the intended destination
+93d3d50 2026-08-07 Merge task/bp410: compact header marks below 410px
+a424971 2026-08-07 Merge task/sigread-signature-self-read
+f5b603c 2026-08-07 Merge task/pluspass
+cefb173 2026-08-07 BP410: compact header marks below 410px
+2941f6d 2026-08-07 Task doc: ACCOUNTSURFACE — one rule for nav-page vs account-expand; supersedes STABLEPAGE
+be802cc 2026-08-07 ONEMENU: withdraw the title-centring change — titles stay left-justified
+bd1b820 2026-08-07 ONEMENU: avatar becomes a decorative monogram; more space above page titles
+5655bae 2026-08-07 Merge NAVFIX into ONEMENU as one unified task; delete NAVFIX
+e14cd6b 2026-08-07 ONEMENU: verification says nothing covered AT LOAD; scroll overlap is correct
+dcd35fd 2026-08-07 Task doc: ONEMENU — consolidate to one right-side menu; overlap is intended
+175a364 2026-08-07 NAVFIX: add N5 — the fixed tab overlays page content at every scroll position
+1001ca3 2026-08-07 Task doc: NAVFIX — four mobile drawer corrections from owner device testing
+7e462b9 2026-08-06 Insurance: specify the REAL gaps (owner, 2026-08-06)
+d690adc 2026-08-06 Insurance: CORRECT a second false gap — the no-fault allocation already exists
+bf35d95 2026-08-06 Insurance: capture declaration-vs-fact, premium sharing, and the vet billing chain
+fc2293d 2026-08-06 Task doc: TIPTAP — explanations must open on tap; LEASEGATE now depends on it
+b5269a4 2026-08-06 LEASEGATE rewritten: two phases, map-and-analyse before implementing
+ecb944b 2026-08-06 Task doc: SECFIX — anon data exposure and profile identity takeover (HIGHEST PRIORITY)
+28428e7 2026-08-06 LEASEGATE: drop B5 and the insurable-interest field (owner direction)
+32679f9 2026-08-06 Task docs: LEASEGATE (restriction gates, 3 sections) and LEASESIMPLE (strip worksheet)
+b4af5fe 2026-08-06 ACCTEVAL: account system audit — findings report (no code changes)
+80849b0 2026-08-06 PLUSPASS: page-level "+" create controls for the 5 member-facing surfaces
+c52f721 2026-08-06 TASK-SIGREAD: signer self-read policy on signatures
+fa06ac9 2026-08-06 Insurance build plan — five reviewable passes, scope reduced to matrix level
+dcd4444 2026-08-06 Task doc: SIGREAD — signer cannot read their own signature
+ac70e14 2026-08-06 Merge task/partyrls: party self-read on document_parties
+8effb53 2026-08-06 Task doc: LEASEFORK — fork the lease into three selectable versions
+ed7e1dc 2026-08-06 PARTYRLS: add document_parties party self-read policy
+20061f0 2026-08-06 Task doc: ACCTEVAL — account system audit (findings only, no recommendations)
+98f541d 2026-08-06 Preserve leather 'version B' design assets before scratchpad cleanup
+02a9f4c 2026-08-06 Insurance: verify 1542 (templates already correct), add mid-term lapse remedies
+d51b01d 2026-08-06 Insurance: correct attribution on the CCC finding
+f906f4e 2026-08-06 Insurance: correct CCC for individual lessors; specify blocks in our own grammar
+5f33f2f 2026-08-06 Insurance: write out the complete 4-type matrix
+c192b16 2026-08-06 Insurance: STRIKE the 3333.7 warning — California has no equine liability act
+38e8563 2026-08-06 Insurance: CORRECT a false finding — CCC is gated to entity lessees
+19e8257 2026-08-06 Insurance: specify the no-fault expense matrix as concrete field definitions
+3024c35 2026-08-06 Insurance: add Waiver of Subrogation; require verbatim statutory warning; record rejected code approach
+516f1f8 2026-08-06 Insurance: rewrite control set as a build spec — 6 blocks, 7 clause groups
+f8f29ec 2026-08-06 Insurance: the duty to cooperate makes CCC adversarial to the client relationship
+42cfca7 2026-08-06 Insurance: CCC pays only on a negligence finding — record what that means
+2a5e27d 2026-08-06 Insurance: counsel-facing writeup; correct CCC finding (exists as an unconditional clause, not absent)
+8fe7cb6 2026-08-06 Insurance control set — governing condition sets for review (not for implementation)
+111c9aa 2026-08-06 Task docs: PLUSPASS (contextual create), PARTYRLS (party read policies), BP410 (390px header fix)
+123f8c0 2026-08-06 Merge work/header-cardstock: Racing Green cardstock header
+040b312 2026-08-06 Merge task/svcpurge: retire six unused service contract templates
+053e8b0 2026-08-06 Merge task/checkboxtip: ownership affordance on non-editable contract fields
+8ab557d 2026-08-06 TASK HEADER: Racing Green cardstock nameplate header
+a0a7304 2026-08-06 TASK CHECKBOXTIP: ownership affordance on fields the viewer cannot edit
+4049ced 2026-08-06 SVCPURGE: retire the six service contract templates (owner ruling 2026-08-05)
+4e010d0 2026-08-06 TASK HEADER: final spec — tabs, font swap, superadmin untouched
+fd779cf 2026-08-06 TASK HEADER: task doc, approved mockup reference, cardstock asset
+2a8b056 2026-08-06 Merge task/a-party-verify-2 (final): copy tweaks, report, tracker
+9d9d299 2026-08-06 TASK A-PARTY-VERIFY-2: report, tracker update
+a70bccb 2026-08-06 Documents: copy tweaks on the email-me-a-copy button (owner feedback)
+10216ef 2026-08-05 Identity model: Q3 ruling — staff-only edge creation, future peer-validation model
+1157d7f 2026-08-05 Identity model design v1 — is_tenant, freed is_company, curated directory, contact_affiliations edge, phased P1-P5
+cc12e6c 2026-08-05 Merge task/companyfix-tenant-marker: organizations.company_contact_id + deterministic resolver
+a79b34b 2026-08-05 Merge task/pagetitles: eyebrow-only title model, feed intro copy, catalog fixes, Acquisition rename
+5dc63cc 2026-08-05 Merge task/a-party-verify-2 (interim 2): gate-driving fields stay actionable when body-inlined
+c4775ba 2026-08-05 TASK PAGETITLES: page-title restructure + copy pass
+bde1e9b 2026-08-05 TASK COMPANYFIX: explicit tenant-company marker on organizations
+5c23f95 2026-08-05 ClauseDocument: let a gate-driving field stay actionable when body-inlined
+629c456 2026-08-05 ContractPage: don't wipe the action-result banner on load()
+1164cd2 2026-08-05 Document library design v2: owner rulings — filters not tabs, parties column, separate FILES system, Documents|Templates tabs, template versioning
+c6ab3ff 2026-08-05 SEEDFIX: can_edit_deal defaults true at contract creation + backfill (owner ruling: deal gates nothing)
+de669b4 2026-08-05 Merge task/locfix: location clause layout — linebreak template fix + self-labeling widget matrix branch
+2372eb3 2026-08-05 TASK LOCFIX: fix lease Location section layout defects
+bd97df9 2026-08-05 Merge task/cosign: company-as-party signing affordance, doomed individual-sign buttons removed
+96b210c 2026-08-05 TASK COSIGN: staff can sign the company's own party role in the UI
+7c23843 2026-08-05 Merge task/uipolish: canonical nav order, glass nav, header wordmark/logo, feed copy, icon menu button
+8d6fff6 2026-08-05 Merge task/profile-restructure: four-section Profile & Preferences, no inner pages, internal-only account info
+15e4ed3 2026-08-05 TASK-PROFILE: consolidate Profile & Preferences into one no-inner-pages surface
+8af4332 2026-08-05 TASK UIPOLISH: canonical nav order, green-glass rail, header wordmark+logo, feed copy
+1d78b49 2026-08-04 Merge task/a-party-verify-2 (interim): ContractPage staleness fix
+eb66a63 2026-08-04 ContractPage: clear per-document state synchronously on id change
+92af46f 2026-08-04 Merge task/i1b-staff-collapse: staff rail collapse toggle + header mobile menu button
+1440ce6 2026-08-04 I1B: rebuild sidebar collapse toggle on staff rail (remediation of I1's missing half)
+eb2a952 2026-08-04 I4: drop gold ring on selected nav state — fill-only per owner ruling 2026-08-05
+b509759 2026-08-04 Tracker: J4 deal editability + J5 deal/contract party divergence (owner spec 2026-08-05)
+241cd72 2026-08-04 Merge task/a16-sign-notifications: party_signed staff notifications, non-blocking, company-side excluded
+0bef616 2026-08-04 Merge task/a15-delivery-failures: pg_net timeout fix + undelivered sweep + hourly cron
+3700a9d 2026-08-04 Merge task/i-user-nav-ux: USER nav presence links, mobile close, selected-state restyle, show/hide affordance
+cc39087 2026-08-04 Task I: USER-account nav & mobile UX pass (I1-I5)
+a59a886 2026-08-04 TASK A16: notify staff when a party signs, non-company, non-blocking
+3e23d6c 2026-08-04 J1/J2 design spec draft — document library + create menu (owner review pending)
+4041510 2026-08-04 A15: delivery failures surfaced to admin
+8429ec8 2026-08-04 Tracker: section J — admin documents library + deals vetting (owner spec 2026-08-04)
+5b5b5cd 2026-08-04 Tracker: section I — user-account nav & mobile UX (owner spec 2026-08-04)
+424bc96 2026-08-04 Merge task/a8-execution-email: execution email proven live, pg_net pinned, A8/A9 DONE
+8e1dfae 2026-08-04 TASK A8: verify + prove execution email fires (A8/A9 DONE)
+cb93772 2026-08-04 Merge task/docvis-party-documents: parties see documents they signed (RLS + my_documents)
+b794a30 2026-08-04 Merge task/f3-rider-notes: rider notes/questions on bookings (SessionNotesView)
+ca79749 2026-08-04 F3: rider notes/questions UI — SessionNotesView (read+write, phase-derived)
+62e83de 2026-08-04 TASK DOCVIS: parties see documents they signed
+9364562 2026-08-04 Merge task/c10-minor-rules: minor outreach guard, guardian-addressed delivery
+4a952e9 2026-08-04 Merge task/a-party-verify: party-side verification pass — A7 fix, A17-19 root cause, tracker truth
+626ada6 2026-08-04 C10: minor downstream rules — no outreach to minors, guardian-addressed delivery
+32d6c95 2026-08-04 A-PARTY-VERIFY: fix stale executed-doc message, diagnose 3 blocking gaps
+377d8db 2026-08-04 Merge task/partyctrl-seed: seed document_party_controls at contract creation + backfill
+84f4fd2 2026-08-04 Seed document_party_controls at contract creation (fixes bootstrap deadlock)
+42ebdc9 2026-08-04 Merge task/a13-lessee-booking: shared horse eligibility helper + lesson booking picker
+d976d4e 2026-08-04 Merge task/a12-lease-schedule: lease schedule read-through on horse record
+0923cdc 2026-08-04 A13: lessee can book lessons with their leased horse
+e644a3b 2026-08-04 A12: horse record shows the partial-lease schedule captured in the contract
+7749943 2026-08-04 Merge task/a11-lessee-visibility: lease term on stable cards, lessee framing, dead link fix
+1f92c05 2026-08-04 A11 report: note rebase onto latest origin/main, re-verify done-checks + live DB post-rebase
+48a5cad 2026-08-04 A11: lessee-perspective horse visibility (server-verified, browser pending)
+11a4d72 2026-08-04 A11-13: report blocker — task spec doc missing, no build performed
+9e9a29d 2026-08-04 Merge task/sqltruth: recapture live contract SQL bodies into version control
+8e8a3ce 2026-08-04 TASK SQLTRUTH: recapture live contract SQL function bodies into git
+535d5e8 2026-08-04 Merge task/a14-event-log: contract event log RPC + staff Activity card
+ce14328 2026-08-04 A14: contract-scoped event log, staff-only admin surface
+418174e 2026-08-04 Merge task/r11-numbering-additem: heading-derived numbering + add-item rebuild
+b31d9da 2026-08-04 Merge task/a8b-send-resend-ui-v2: executed-copy send/resend UI + recipient-targeted delivery
+f415634 2026-08-04 Merge task/c-sign-pages: four /sign self-onboarding pages (additive)
+c4accdb 2026-08-04 Merge task/b-lead-notifications-v2: support-request email dispatch, OPS_INBOX fix
+fffec28 2026-08-04 TASK C: four /sign self-onboarding pages (additive)
+a1df719 2026-08-04 R11: task report — evidence, live pastes, deviations
+155eab5 2026-08-04 R11 Phase B: add-item rebuild — three rows, chips, condition separators
+3b0c2c9 2026-08-04 TASK B: lead/inbound notifications — support-request email dispatch, OPS_INBOX fix
+b9a57ee 2026-08-04 R11 Phase A: numbering derives from headings
+edf0c0d 2026-08-04 TASK A8B: executed-copy send/resend UI + recipient-targeted delivery
+fbc3e1e 2026-08-04 Task spec C: four /sign self-onboarding pages (additive)
+523ab7f 2026-08-04 R11 spec: condition blocks are self-contained (containment scope, owner model)
+d859777 2026-08-04 R11 spec: condition separator carries editable gold caption (auto-default)
+639848b 2026-08-04 R11 spec: multi-reveal under one separator; value picker marks not hides
+6745470 2026-08-04 R11 spec: Row-3 line stack with condition-separator gating (owner model)
+308ed7b 2026-08-04 R11 spec: bounded conditional visibility (B3) for custom content
+82f946f 2026-08-04 R11 spec: Row 3 chip model, popover config, real-renderer preview
+04abab9 2026-08-04 Task spec R11: heading-derived numbering + add-item rebuild (supersedes R10)
+4188d07 2026-08-04 Task spec R10: variant-group presentation
+4162799 2026-08-04 Task spec B: lead/inbound notifications
+778042e 2026-08-04 Task spec A8B: send/resend UI + recipient-targeted delivery
+c6c4bc6 2026-08-04 A8 redesigned per owner: the email fires when the signature completes execution
+971ec91 2026-08-04 A8: executed-document delivery no longer depends on a browser being open
+782ae8c 2026-08-04 Build tracker: full item list with honest status for lease go-live, kiosk, booking
+142e327 2026-08-04 Booking spec Part B: horse auto-inheritance and the lesson card
+881936e 2026-08-04 Specs: autonomous booking (horse/rider matching) + credit and balance audit
+90187ba 2026-08-04 GUEST becomes a real category; purchase promotes the buyer; skill-match fields
+332faff 2026-08-04 Lease structure batch: restrictions polarity, competitions grouping, Training restored, Lessons slot, R5 periods, R8 captions
+411a67a 2026-08-04 Contract editor: renderer fixes R1-R4, R6-R7 + party ownership affordances
+c58a7a3 2026-08-04 Phone normalisation made global (was contacts-only)
+332665d 2026-08-04 Contract toolbar: Add-item modal escapes its clipping ancestor; Scroll to Bottom always scrolls
+ba65f90 2026-08-03 Rolling availability: hourly cron keeps 4 weeks of open slots published
+86d404c 2026-08-03 Bookable availability: publish_open_slots from business hours + generic-slot credit fix
+9d081ac 2026-08-03 Signing lifecycle repairs: company-side signing, withdrawal regression, execution-effects NULL guard
+a83bf1e 2026-08-03 Handoff export for the external audit thread
+d1bbcb9 2026-08-03 Imported data is locked at the document, tooltip names the source record
+1fd6339 2026-08-03 Lease authoring surface repaired + Location folded into The Horse + multi-line horse location
+ff869c0 2026-08-03 Deals rebuilt as a blank named container (owner correction)
+47303b3 2026-08-03 Deals in the nav rail; Reopen becomes Edit and routes to the blocking document
+90e56e5 2026-08-03 Deal completion: a deal settles itself when its requirements are met
+e668be7 2026-08-03 Deal plan Stage 5: verification — the lease gate passes
+65f7640 2026-08-03 Deal plan Stage 4b: the L9 signature/edit surface
+8279b51 2026-08-03 Deal plan Stage 4a: signed documents are read-only; signatures are withdrawn, never silently voided (L9)
+d47c8a8 2026-08-03 Deal plan Stage 3: documents on a deal, status by type, reciprocal links, deal record
+9b593dd 2026-08-03 Deal plan Stage 2: the deal layer — envelope, RPCs, deals page, deal page
+ed4f884 2026-08-03 Deal plan Stage 0+1: bill of sale becomes a standalone contract; cleanup bundle
+3475dd4 2026-08-02 Sale build: HORSE_SALE_V2 + HORSE_BILL_OF_SALE on the clause engine; flat sale templates retired
+99977e5 2026-08-02 Closure validation article: live-path proof of Beau fix + U2.8, disposed in-session
+c2ef515 2026-08-02 Closure gate fixes: Profile.contact_id typed; last 'confirmed' reader dropped; extract refreshed post-U2.8
+bc3f4f1 2026-08-02 BACKLOG drained to survivor classes; stable.ts drops fabricated location fallback
+2ff2570 2026-08-02 BACKLOG drain: frontend defects, hardening, retirements
+d5281be 2026-08-02 Harness smoke: core-table list caught up to the live spine (6/6 green)
+878322c 2026-08-02 Harness: reset row_security after snapshot load; smoke table list caught up
+b7a2cdc 2026-08-02 Test harness: regenerate schema snapshot from the post-sprint live schema
+b4aacc6 2026-08-02 service_catalog test: drop retired services.ts import; re-align serviceCatalog.ts to live
+466e4df 2026-08-02 U2.8: deductible clauses gate on a policy actually existing (positive form)
+9399f1e 2026-08-02 Retire profiles.phone (D14 closure): repoint every reader, drop the column
+002d351 2026-08-02 pending_fee_candidates: p.mobile -> c.mobile (function errored on every call)
+23df7fc 2026-08-02 Vocabulary sweep: N/A sentinel writes vocab NONE codes; migrate mis-stored rows
+e5096ba 2026-08-02 horse_field_token_value: BREED/COLOR fall back to the raw stored value
+fff85be 2026-08-02 Lease editor: week_grid label stacks above a full-width grid (M25c)
+2aedbdb 2026-08-02 Lease manifest 2026-08-02: M1-M24 content + M25(a) ordering, applied to live
+006ea2d 2026-08-02 release_preview: resolve ORG.PRINCIPALS in kiosk previews
+77497b1 2026-08-02 ORG.PRINCIPALS config (Charles Zigmund and Claire Bourdon) + prune HORSE_LEASE-orphaned global token rows
+d19f469 2026-08-02 Onboarding document bodies: load the 2026-08-02 counsel-reviewed versions
+59d8616 2026-08-02 Retire HORSE_LEASE: soft-delete the template row
+ea6112a 2026-08-02 Flush pre-existing generator staleness into the generated bodies loader
+119cc67 2026-08-02 Fix golden-render harness call: h.sql -> h.q (TestDb exposes q)
+e996bf9 2026-08-02 Post-run closeout report: H2/H3 completion, D15 fix, harness repair
+305474b 2026-08-02 Test harness: schema snapshot replaces migration replay as the default setup path
+ddae52e 2026-08-01 Fix D15: remerge_contract_from_clauses missing currency formatting
+9c6052f 2026-08-01 Restyle signer copy to plain/professional, matching the company copy
+973c360 2026-08-01 Fix: documents has no signed_at column (regression from b3b628a)
+b3b628a 2026-08-01 Party-copy email: owner-specified subject/body/signature format
+e6dbe95 2026-08-01 Fix delivery-email defects found during H2 production verification
+42e2ded 2026-08-01 H2 hardening: gate /api/deliver-document, move kiosk delivery server-side
+7a622e1 2026-08-01 docs: append confirmed final main hash to Stages 4-5 report
+ff4aced 2026-08-01 docs: record final commit/push/merge hashes in Stages 4-5 report
+953d5bf 2026-08-01 Merge work/u1-lead-trust: Stages 1-5 remediation run complete
+f028610 2026-08-01 FINAL STAGE — export, reconciliation report (Stages 4-5)
+43a52fe 2026-08-01 test/db harness: three real fixes, harness still not green (time-boxed, per report)
+421d96e 2026-08-01 STAGE 5 — Stage B legacy retirement (U7, partial per zero-reader sweep)
+bc25c92 2026-08-01 STAGE 4c — Insurance resolution flow, frontend (F1-F4)
+51bb3d7 2026-08-01 STAGE 4b — Insurance resolution flow, DB unit (D1-D5)
+284c331 2026-08-01 STAGE 4a — Hardening H1/H3/H4 (H2 stop-and-show)
+266bc7a 2026-08-01 Stages 1–3 report and handoff for the Stage 4–5 session
+1c78249 2026-08-01 STAGE 3 — Payment notifications (U3)
+c0b1ad8 2026-08-01 STAGE 2 — Contract polish + type correctness (U2)
+0975671 2026-08-01 STAGE 1 — Lead trust + notification integrity (U1)
+6ddb9d0 2026-08-01 Regeneration gate: fresh extract, FHE-as-Lessee sample, item-E reconciled
