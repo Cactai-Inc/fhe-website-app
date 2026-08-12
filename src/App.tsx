@@ -119,6 +119,14 @@ import AdminModulesPage from './pages/app/ops/admin/AdminModulesPage';
 import AdminRegistryPage from './pages/app/ops/admin/AdminRegistryPage';
 import AdminBrandingPage from './pages/app/ops/admin/AdminBrandingPage';
 import AdminProductsPage from './pages/app/ops/admin/AdminProductsPage';
+/* ── REVIEW SECTION (temporary — TASK-REVIEWNAV, owner 2026-08-11/12) ────────
+   The section EMPTIES OUT as pages are accepted; when src/lib/reviewSection.ts
+   is empty, delete these two imports, the five `ops/review*` routes below, and
+   src/pages/app/ops/review/. See that file's header for the full procedure. */
+import ReviewIndexPage from './pages/app/ops/review/ReviewIndexPage';
+import {
+  ReviewContactsPage, ReviewIntakePage, ReviewContactDossier, ReviewContactForm,
+} from './pages/app/ops/review/ReviewMounts';
 import ProvisionTenantPage from './pages/app/ops/superadmin/ProvisionTenantPage';
 import OrganizationsPage from './pages/app/ops/superadmin/OrganizationsPage';
 import TenantDetailPage from './pages/app/ops/superadmin/TenantDetailPage';
@@ -326,6 +334,21 @@ export function AppRoutes() {
               <Route path="ops/employees" element={<ProtectedRoute requireStaff><EmployeesHubPage /></ProtectedRoute>} />
               <Route path="ops/employees/staff" element={<ProtectedRoute requireStaff><StaffPage /></ProtectedRoute>} />
               <Route path="ops/employees/schedule" element={<ProtectedRoute requireStaff><SchedulePage /></ProtectedRoute>} />
+              {/* ── REVIEW SECTION (temporary — TASK-REVIEWNAV) ───────────────
+                  Review-ONLY routes: the four implementations in DUPECENSUS's
+                  manifest that could not otherwise be reached. requireAdmin,
+                  matching the admin-only nav group — no other route in the app
+                  points here, and none of these is a second home for a live
+                  page. ⚠ NEITHER RETIREMENT CONSTANT WAS FLIPPED: /app/ops/
+                  contacts and /app/ops/intake still redirect above, untouched;
+                  these mount the components instead. Delete this block, its two
+                  imports and the pages/app/ops/review/ folder to remove. */}
+              <Route path="ops/review" element={<ProtectedRoute requireAdmin><ReviewIndexPage /></ProtectedRoute>} />
+              <Route path="ops/review/contacts" element={<ProtectedRoute requireAdmin><ReviewContactsPage /></ProtectedRoute>} />
+              <Route path="ops/review/intake" element={<ProtectedRoute requireAdmin><ReviewIntakePage /></ProtectedRoute>} />
+              <Route path="ops/review/contact-dossier" element={<ProtectedRoute requireAdmin><ReviewContactDossier /></ProtectedRoute>} />
+              <Route path="ops/review/contact-form" element={<ProtectedRoute requireAdmin><ReviewContactForm /></ProtectedRoute>} />
+              {/* ── end REVIEW SECTION ───────────────────────────────────────── */}
               {/* Ops admin + superadmin (superadmin pages self-hide behind isSuperAdmin) */}
               <Route path="ops/admin/modules" element={<ProtectedRoute requireSuperAdmin><AdminModulesPage /></ProtectedRoute>} />
               <Route path="ops/admin/registry" element={<ProtectedRoute requireSuperAdmin><AdminRegistryPage /></ProtectedRoute>} />
