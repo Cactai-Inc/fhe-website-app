@@ -342,7 +342,7 @@ export default function DocumentsQueuePage() {
             creation — one document type among many the page handles. */}
         <button type="button" onClick={() => setPickerOpen(true)}
           className="px-4 py-2 rounded-lg bg-green-800 text-white text-sm font-medium hover:bg-green-700 focus-ring">
-          + Add new
+          + Add New
         </button>
       </div>
 

@@ -212,7 +212,7 @@ export default function HorseRecordsPage() {
   return (
     <PageLayout
       name="Horse records"
-      addLabel="Add a horse"
+      addLabel="horse"
       onAdd={() => setAdding(true)}
       description="The single source of truth for every horse — identity, parties, lease state, and the documents that created them."
     >

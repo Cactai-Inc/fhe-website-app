@@ -46,17 +46,17 @@ const MODE_COPY: Record<DirectoryMode, { title: string; blurb: string; newLabel:
   directory: {
     title: 'Directory',
     blurb: 'External people and businesses that provide something — farriers, veterinarians, suppliers, service providers, event organizers.',
-    newLabel: 'New directory entry',
+    newLabel: 'directory entry',
   },
   leads: {
     title: 'Leads',
     blurb: 'Potential future clients. People we hold information about so we can reach out or include them in a campaign.',
-    newLabel: 'New lead',
+    newLabel: 'lead',
   },
   contacts: {
     title: 'Contacts',
     blurb: 'The people we serve — clients, members, horse owners and counterparties who are not part of the company.',
-    newLabel: 'New contact',
+    newLabel: 'contact',
   },
 };
 

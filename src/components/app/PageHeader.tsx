@@ -33,9 +33,28 @@ import type { ReactNode } from 'react';
  * universal add-new affordance, and the words made every button a different
  * width, which is part of why the rows never lined up.
  *
- * Dropping visible text does NOT drop the accessible name. `addLabel` becomes
- * both `aria-label` and the hover `title`, so a screen reader still hears "Add a
- * horse" and a mouse user can still discover it.
+ * TASK-ADDNEW (2026-08-11) — A6 IS REVERTED. Owner: "I previously told you to
+ * make the + icon the button on the pages where i can create something, i
+ * revert that and supersede the decision to the documents page version it
+ * looks the best, + Add New." A6's stated problem does not survive this
+ * change: it dropped the label because labels *varied* ("New deal", "Add a
+ * horse", "Add a new client") so every button was a different width. If every
+ * button reads the same two words, they are all identical widths — the
+ * alignment problem A6 existed to solve is solved by uniformity, not silence.
+ * The control is now `+ Add New`, matching `DocumentsQueuePage.tsx`, on every
+ * page, always the same width.
+ *
+ * ACCESSIBLE NAME — resolution 1 of the two TASK-ADDNEW named as compliant
+ * with WCAG 2.5.3 Label in Name: the accessible name must CONTAIN the visible
+ * text. Visible text is always "Add New"; `addLabel` is now the OBJECT NOUN
+ * being added ("horse", "client", "deal" — not a full sentence), composed as
+ * `aria-label="Add New {addLabel}"`. That keeps "Add New" as an exact prefix
+ * of the accessible name (satisfying 2.5.3) while a screen-reader user still
+ * hears which page they're on, which an app-wide "Add New" with no context
+ * would not give them. Omitting `addLabel` falls back to the visible text
+ * alone as the accessible name (resolution 2) — no page in this app does that
+ * today, but the type stays optional for a page with nothing more specific to
+ * say.
  */
 export function PageHeader({ name, title, description, onAdd, addLabel }: {
   /** The gold eyebrow — what this page IS. Short, it gets uppercased. */
@@ -50,7 +69,8 @@ export function PageHeader({ name, title, description, onAdd, addLabel }: {
   description?: ReactNode;
   /** Omit to render no control; the row still holds the page name. */
   onAdd?: () => void;
-  /** Required whenever `onAdd` is given: the accessible name, e.g. "Add a horse". */
+  /** Required whenever `onAdd` is given: the object noun, e.g. "horse", not a
+   *  full sentence. Composed into the accessible name as "Add New {addLabel}". */
   addLabel?: string;
 }) {
   return (
@@ -65,11 +85,11 @@ export function PageHeader({ name, title, description, onAdd, addLabel }: {
           <button
             type="button"
             onClick={onAdd}
-            aria-label={addLabel}
-            title={addLabel}
-            className="shrink-0 grid place-items-center w-10 h-10 rounded-lg bg-green-800 text-white hover:bg-green-700 focus-ring"
+            aria-label={addLabel ? `Add New ${addLabel}` : undefined}
+            className="shrink-0 inline-flex items-center gap-2 h-10 px-4 rounded-lg bg-green-800 text-white text-sm font-medium hover:bg-green-700 focus-ring"
           >
-            <Plus size={18} aria-hidden="true" />
+            <Plus size={16} aria-hidden="true" />
+            Add New
           </button>
         )}
       </div>

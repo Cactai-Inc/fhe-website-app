@@ -34,7 +34,7 @@ export default function CareHome() {
       name="Horse care"
       title={first ? `Welcome, ${first}` : 'Your horse care'}
       onAdd={() => navigate('/app/horse-intake')}
-      addLabel="Add a horse"
+      addLabel="horse"
     >
       {/* documents that gate services */}
       {(pendingDocs.length > 0 || state?.service_blocked) && (

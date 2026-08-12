@@ -230,7 +230,7 @@ export default function DealsPage() {
       description="Every sale and lease, and the documents that make each one real."
       width="wide"
       onAdd={rows && rows.length > 0 ? () => setCreating(true) : undefined}
-      addLabel="New deal"
+      addLabel="deal"
     >
       {err && <p role="alert" className="form-error mb-3">{err}</p>}
 
