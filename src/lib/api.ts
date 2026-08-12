@@ -1151,17 +1151,31 @@ export async function getDocument(id: string): Promise<DocumentRow | null> {
  *  for — and embeds the party/horse/type each row already carries via its FKs
  *  (one query, not N+1). `contacts` needs the FK hint because `documents` has
  *  several columns referencing it (contact_id, archived_by, voided_by, …); the
- *  other embeds are unambiguous. */
+ *  other embeds are unambiguous.
+ *
+ *  TASK-DOCCOLS (20260811): Contract # and Type dropped from what's rendered
+ *  (`template` embed slimmed to `version`, the sole remaining reader — the
+ *  Version column's fallback for an unsigned document). Added `sent_at`,
+ *  `voided_at`, `signed_template_version` (plain columns, no join cost), and
+ *  two one-to-many embeds so the party/date derivation stays a single query:
+ *  `parties` (`document_parties`, unambiguous FK — one row per party role,
+ *  collapsed client-side by `deriveDocumentParties` in `partyDisplay.ts`) and
+ *  `signatures` (`signed_at`/`deleted_at` only, never the typed name/IP —
+ *  collapsed to `max(signed_at)` by `deriveDateSigned`, since there is no
+ *  `documents.signed_at` column). Neither embed fans out much: at most 2
+ *  party rows and at most 2 signature rows per document today. */
 export async function listDocuments(): Promise<DocumentQueueRow[]> {
   const { data, error } = await supabase
     .from('documents')
     .select(`
-      id, display_code, title, status, generated_at,
+      id, display_code, title, status, generated_at, sent_at, voided_at, signed_template_version,
       contact_id, horse_id, contract_id, template_id,
       archived_at, terminated_at, current_status,
       contact:contacts!documents_contact_id_fkey(first_name, last_name),
       horse:horses!documents_horse_id_fkey(registered_name, nickname),
-      template:contract_templates!documents_template_id_fkey(title, template_key)
+      template:contract_templates!documents_template_id_fkey(version),
+      parties:document_parties!document_parties_document_id_fkey(contact_id, party_role, signer_order, contact:contacts!document_parties_contact_id_fkey(first_name, last_name, is_company)),
+      signatures!signatures_document_id_fkey(signed_at, deleted_at)
     `)
     .is('deleted_at', null)
     .order('generated_at', { ascending: false });
