@@ -2,6 +2,7 @@
  * ownership server-side; these are thin typed wrappers.
  */
 import { supabase } from './supabase';
+import { FILES_BUCKET } from './files';
 import type {
   Member, MemberDirectoryEntry, MemberHorse, Announcement, Channel, ChannelMessage,
   Thread, ThreadPost, DirectMessage, DmConversation, ContentPost, ContentResource,
@@ -304,9 +305,16 @@ export async function fetchResources(): Promise<ContentResource[]> {
   return (data ?? []) as ContentResource[];
 }
 
-/** Signed URL for a Storage-backed resource (private 'members' bucket). */
+/** Signed URL for a Storage-backed resource.
+ *
+ *  TASK-UPLOADS fixed a live defect here: this signed against a bucket named
+ *  `members`, which has never existed — there are twelve buckets and that is not
+ *  one of them, so every call returned null and no resource was downloadable.
+ *  Company material now lives in the private `facility-files` bucket alongside
+ *  the rest of the Files spine. Members reach it only while the
+ *  content_resources row is published; the storage policy reads that same flag. */
 export async function resourceDownloadUrl(storagePath: string): Promise<string | null> {
-  const { data, error } = await supabase.storage.from('members').createSignedUrl(storagePath, 60 * 10);
+  const { data, error } = await supabase.storage.from(FILES_BUCKET).createSignedUrl(storagePath, 60 * 10);
   if (error) return null;
   return data.signedUrl;
 }

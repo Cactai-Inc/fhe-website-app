@@ -148,6 +148,10 @@ export interface ContentResource {
   kind: ResourceKind;
   url: string | null;
   storage_path: string | null;
+  /** TASK-UPLOADS: the `files` row holding the bytes. The company's material is
+   *  stored once, owned by the ORG, and catalogued here. Null on link/video
+   *  resources, which have no stored object. */
+  file_id: string | null;
   published: boolean;
   created_at: string;
 }
