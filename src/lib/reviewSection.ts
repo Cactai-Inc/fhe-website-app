@@ -335,6 +335,18 @@ export const REVIEW_GROUPS: ReviewGroup[] = [
       },
     ],
   },
+  {
+    key: 'templates',
+    title: 'Template wording editor',
+    question: 'New page (TASK-TEXTEDIT): can you change lease wording end-to-end — draft, publish, version — without SQL?',
+    entries: [
+      {
+        slot: 'A', label: 'Templates · new', to: '/app/ops/admin/templates',
+        what: 'AdminTemplatesPage — every contract template, clause-composed and flat, with draft → publish → version and the token picker. On acceptance its nav row belongs in SETTINGS_GROUP beside Forms.',
+        warn: 'Edits are REAL: drafts are harmless (live text untouched), but Publish bumps the live template version. The three live lease templates save and publish together by design.',
+      },
+    ],
+  },
 ];
 
 /** The one sentence the section has to say about itself, per the owner's rule
