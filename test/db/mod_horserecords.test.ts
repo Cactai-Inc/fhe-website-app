@@ -43,7 +43,7 @@ async function seedHorse(org: string, barnName: string, ownerContact?: string): 
   await h.asSuperuser();
   await h.q(`select set_config('app.current_org',$1,false)`, [org]);
   const [row] = await h.q<{ id: string }>(
-    `insert into horses (barn_name, current_owner_contact_id) values ($1,$2) returning id`,
+    `insert into horses (nickname, current_owner_contact_id) values ($1,$2) returning id`,
     [barnName, ownerContact ?? null]);
   await h.q(`select set_config('app.current_org',$1,false)`, [orgA]); // restore default GUC
   return row.id;
@@ -83,14 +83,15 @@ beforeAll(async () => {
   aHorseOwned = await seedHorse(orgA, 'Comet', aOwnerContact);         // owner-of-record path
   aHorseEng   = await seedHorse(orgA, 'Blaze');                        // engagement-owned path
 
-  // Give aEngOwnerUser a client + an engagement referencing aHorseEng, so
-  // caller_owns_horse resolves through the OWNED ENGAGEMENT branch.
+  // aEngOwnerUser used to get a client + an engagement on aHorseEng, so
+  // caller_owns_horse would resolve through an OWNED ENGAGEMENT branch.
+  // `engagements` is RETIRED (CLAUDE.md: "Tables/concepts: engagements, orders,
+  // client_purchases, …") and caller_owns_horse no longer has that branch —
+  // verified against the live function, whose body does not mention engagements
+  // at all. The scaffolding is gone; aHorseEng survives as a horse NOBODY owns,
+  // which is what the remaining assertions actually need it to be.
   await h.asSuperuser();
-  const [aEngClient] = await h.q<{ id: string }>(
-    `insert into clients (contact_id) values ($1) returning id`, [aEngOwnerContact]);
-  await h.q(
-    `insert into engagements (client_id, service_type, primary_horse_id)
-       values ($1,'HORSE_FINDER',$2)`, [aEngClient.id, aHorseEng]);
+  await h.q(`insert into clients (contact_id) values ($1)`, [aEngOwnerContact]);
 
   // org B: a contact + a horse it owns (the cross-org leakage probe).
   await h.asSuperuser();
@@ -225,23 +226,17 @@ describe('owner-contact client reads own horse_relationships + health', () => {
   });
 });
 
-describe('caller_owns_horse() — resolves via ownership OR owned engagement', () => {
+// The "OR owned engagement" half of this contract is GONE with `engagements`
+// (CLAUDE.md RETIRED list). The test that asserted it — "an ENGAGEMENT owner
+// resolves true for the engagement's horse" — was deleted rather than rewritten:
+// it covered a resolution branch that no longer exists in caller_owns_horse.
+describe('caller_owns_horse() — resolves via ownership of record', () => {
   it('owner-of-record resolves true for their horse, false for another', async () => {
     await h.asUser(aOwnerUser);
     const [owned] = await h.q<{ ok: boolean }>(`select caller_owns_horse($1) as ok`, [aHorseOwned]);
     const [other] = await h.q<{ ok: boolean }>(`select caller_owns_horse($1) as ok`, [aHorseEng]);
     expect(owned.ok).toBe(true);
     expect(other.ok).toBe(false);
-  });
-
-  it('an ENGAGEMENT owner resolves true for the engagement\'s horse', async () => {
-    await h.asUser(aEngOwnerUser);
-    const [viaEng] = await h.q<{ ok: boolean }>(`select caller_owns_horse($1) as ok`, [aHorseEng]);
-    expect(viaEng.ok).toBe(true);
-    // and the engagement owner can read that horse's health events (farrier).
-    const rows = await h.q<{ horse_id: string; event_type: string }>(
-      `select horse_id, event_type from horse_health_events`);
-    expect(rows.some((r) => r.horse_id === aHorseEng && r.event_type === 'farrier')).toBe(true);
   });
 
   it('a stranger resolves false for every horse', async () => {

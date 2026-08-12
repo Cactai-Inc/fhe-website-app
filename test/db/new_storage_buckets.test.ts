@@ -150,7 +150,7 @@ describe('horse-health owner read', () => {
       [orgA]))[0].id;
     await h.q(`update profiles set contact_id=$1 where user_id=$2`, [contact, uid]);
     const horse = (await h.q<{ id: string }>(
-      `insert into horses (barn_name, current_owner_contact_id, org_id) values ('Bella',$1,$2) returning id`,
+      `insert into horses (nickname, current_owner_contact_id, org_id) values ('Bella',$1,$2) returning id`,
       [contact, orgA]))[0].id;
 
     // Seed a health object under the owner's org + horse.
@@ -160,7 +160,7 @@ describe('horse-health owner read', () => {
     const otherContact = (await h.q<{ id: string }>(
       `insert into contacts (first_name, org_id) values ('Other', $1) returning id`, [orgA]))[0].id;
     const otherHorse = (await h.q<{ id: string }>(
-      `insert into horses (barn_name, current_owner_contact_id, org_id) values ('NotYours',$1,$2) returning id`,
+      `insert into horses (nickname, current_owner_contact_id, org_id) values ('NotYours',$1,$2) returning id`,
       [otherContact, orgA]))[0].id;
     await h.q(`insert into storage.objects (bucket_id, name) values ('horse-health', $1)`,
       [`${orgA}/${otherHorse}/coggins.pdf`]);

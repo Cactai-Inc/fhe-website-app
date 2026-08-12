@@ -45,7 +45,7 @@ beforeAll(async () => {
   stranger = (await h.q<{ id: string }>(
     `insert into contacts (first_name, last_name, email) values ('Sam','Stranger','sam@stranger.test') returning id`))[0].id;
   horse = (await h.q<{ id: string }>(
-    `insert into horses (registered_name, barn_name, breed, sex) values ('Comet','Buddy',$1,'GELDING') returning id`,
+    `insert into horses (registered_name, nickname, breed, sex) values ('Comet','Buddy',$1,'GELDING') returning id`,
     [(await h.q<{ code: string }>(`select code from horse_breeds order by code limit 1`))[0].code]))[0].id;
   void breed;
 

@@ -36138,3 +36138,119 @@ INSERT INTO public.template_tokens VALUES ('7748658e-c364-4cf9-8d9a-a22567fea7c0
 --
 
 
+
+--
+-- GLOBAL LOOKUP / PLATFORM-CATALOG SEED (added by TASK-TESTDB, 2026-08-12)
+--
+-- These five tables are seeded by MIGRATIONS, not by tenant activity. The
+-- snapshot path deliberately does not replay migrations, so before this section
+-- existed they loaded EMPTY, and the suite broke in two ways:
+--
+--   * modules / tiers / tier_modules empty  -> every insert into org_modules or
+--     products failed on *_module_key_fkey, and provision_tenant raised
+--     "unknown tier: tier.boarding". 9 test files died in beforeAll.
+--   * horse_breeds empty -> `select code from horse_breeds limit 1` returned no
+--     row, so tests read .code/.display_name off undefined. 12 more files died.
+--
+-- All five are GLOBAL: no org_id column, no tenant rows, no personal data — they
+-- are the platform's own vocabulary (feature keys, plan tiers, breed/colour
+-- lookups). That is the PII review SNAPSHOT_DATA_TABLES asks for; nothing here
+-- describes a person. Pulled data-only from the live database, which matches the
+-- migration seeds: 12 modules, 5 tiers, 15 tier_modules, 15 breeds, 14 colours.
+--
+-- Ordered modules+tiers before tier_modules to satisfy its two foreign keys.
+--
+INSERT INTO public.horse_breeds (code, display_name, active, sort_order) VALUES ('WARMBLOOD', 'Warmblood (unspecified)', true, 1);
+INSERT INTO public.horse_breeds (code, display_name, active, sort_order) VALUES ('DUTCH_WARMBLOOD', 'Dutch Warmblood (KWPN)', true, 2);
+INSERT INTO public.horse_breeds (code, display_name, active, sort_order) VALUES ('HANOVERIAN', 'Hanoverian', true, 3);
+INSERT INTO public.horse_breeds (code, display_name, active, sort_order) VALUES ('HOLSTEINER', 'Holsteiner', true, 4);
+INSERT INTO public.horse_breeds (code, display_name, active, sort_order) VALUES ('OLDENBURG', 'Oldenburg', true, 5);
+INSERT INTO public.horse_breeds (code, display_name, active, sort_order) VALUES ('THOROUGHBRED', 'Thoroughbred', true, 6);
+INSERT INTO public.horse_breeds (code, display_name, active, sort_order) VALUES ('IRISH_SPORT_HORSE', 'Irish Sport Horse', true, 7);
+INSERT INTO public.horse_breeds (code, display_name, active, sort_order) VALUES ('QUARTER_HORSE', 'Quarter Horse', true, 8);
+INSERT INTO public.horse_breeds (code, display_name, active, sort_order) VALUES ('ARABIAN', 'Arabian', true, 9);
+INSERT INTO public.horse_breeds (code, display_name, active, sort_order) VALUES ('ANDALUSIAN', 'Andalusian (PRE)', true, 10);
+INSERT INTO public.horse_breeds (code, display_name, active, sort_order) VALUES ('FRIESIAN', 'Friesian', true, 11);
+INSERT INTO public.horse_breeds (code, display_name, active, sort_order) VALUES ('WELSH_PONY', 'Welsh Pony', true, 12);
+INSERT INTO public.horse_breeds (code, display_name, active, sort_order) VALUES ('PONY', 'Pony (other)', true, 13);
+INSERT INTO public.horse_breeds (code, display_name, active, sort_order) VALUES ('OTHER', 'Other / Crossbred', true, 99);
+INSERT INTO public.horse_breeds (code, display_name, active, sort_order) VALUES ('SELLE_FRANCAIS', 'Selle Français', true, 15);
+INSERT INTO public.horse_colors (code, display_name, active, sort_order) VALUES ('BAY', 'Bay', true, 1);
+INSERT INTO public.horse_colors (code, display_name, active, sort_order) VALUES ('DARK_BAY', 'Dark Bay / Brown', true, 2);
+INSERT INTO public.horse_colors (code, display_name, active, sort_order) VALUES ('CHESTNUT', 'Chestnut', true, 3);
+INSERT INTO public.horse_colors (code, display_name, active, sort_order) VALUES ('GREY', 'Grey', true, 4);
+INSERT INTO public.horse_colors (code, display_name, active, sort_order) VALUES ('BLACK', 'Black', true, 5);
+INSERT INTO public.horse_colors (code, display_name, active, sort_order) VALUES ('PALOMINO', 'Palomino', true, 6);
+INSERT INTO public.horse_colors (code, display_name, active, sort_order) VALUES ('BUCKSKIN', 'Buckskin', true, 7);
+INSERT INTO public.horse_colors (code, display_name, active, sort_order) VALUES ('DUN', 'Dun', true, 8);
+INSERT INTO public.horse_colors (code, display_name, active, sort_order) VALUES ('ROAN', 'Roan', true, 9);
+INSERT INTO public.horse_colors (code, display_name, active, sort_order) VALUES ('PINTO', 'Pinto / Paint', true, 10);
+INSERT INTO public.horse_colors (code, display_name, active, sort_order) VALUES ('CREMELLO', 'Cremello / Perlino', true, 11);
+INSERT INTO public.horse_colors (code, display_name, active, sort_order) VALUES ('GRULLA', 'Grulla', true, 12);
+INSERT INTO public.horse_colors (code, display_name, active, sort_order) VALUES ('WHITE', 'White', true, 13);
+INSERT INTO public.horse_colors (code, display_name, active, sort_order) VALUES ('OTHER', 'Other', true, 99);
+INSERT INTO public.modules (module_key, name, description, is_core, active, created_at) VALUES ('core.tenancy', 'Tenancy & Identity', 'organizations, profiles.org_id, current_org(), org_modules, has_module(). The isolation + entitlement substrate.', true, true, '2026-07-02 22:24:22.560749+00');
+INSERT INTO public.modules (module_key, name, description, is_core, active, created_at) VALUES ('core.roles', 'Roles & Access', 'SUPER_ADMIN/ADMIN/MANAGER/EMPLOYEE/USER model, app_role()/is_admin()/has_staff_access() and ownership predicates.', true, true, '2026-07-02 22:24:22.560749+00');
+INSERT INTO public.modules (module_key, name, description, is_core, active, created_at) VALUES ('core.registry', 'Global Value Registry', 'business_config + config_values + config_value(). The define-once home for prices, rates, legal identity, branding, copy, contact info.', true, true, '2026-07-02 22:24:22.560749+00');
+INSERT INTO public.modules (module_key, name, description, is_core, active, created_at) VALUES ('core.branding', 'Branding & Public Site', 'Per-tenant brand rows driving the branded public site + member app.', true, true, '2026-07-02 22:24:22.560749+00');
+INSERT INTO public.modules (module_key, name, description, is_core, active, created_at) VALUES ('core.contracts', 'Contracts, Documents & E-Sign', 'contract_templates, template_tokens, documents, signatures, generate_document, record_signature.', true, true, '2026-07-02 22:24:22.560749+00');
+INSERT INTO public.modules (module_key, name, description, is_core, active, created_at) VALUES ('core.payments', 'Payments, Billing & Audit', 'transactions, billable_lines, Stripe/Zelle reconcile, audit_logs.', true, true, '2026-07-02 22:24:22.560749+00');
+INSERT INTO public.modules (module_key, name, description, is_core, active, created_at) VALUES ('mod.brokerage', 'Brokerage & Contracts', 'Search/evaluation/transaction-representation, engagement_stages, brokerage engagement RPCs.', false, true, '2026-07-02 22:24:22.560749+00');
+INSERT INTO public.modules (module_key, name, description, is_core, active, created_at) VALUES ('mod.lessons', 'Lessons & Membership', 'lesson_packages, lesson_credits, lesson_bookings, membership plans.', false, true, '2026-07-02 22:24:22.560749+00');
+INSERT INTO public.modules (module_key, name, description, is_core, active, created_at) VALUES ('mod.boarding', 'Boarding & Facility', 'facilities, stalls, board_agreements, board_charges.', false, true, '2026-07-02 22:24:22.560749+00');
+INSERT INTO public.modules (module_key, name, description, is_core, active, created_at) VALUES ('mod.barnops', 'Barn Ops & Inventory', 'resources, resource_lots, consumption_events, cost_allocation_rules, resolve_consumption_billing().', false, true, '2026-07-02 22:24:22.560749+00');
+INSERT INTO public.modules (module_key, name, description, is_core, active, created_at) VALUES ('mod.employees', 'Employees & Scheduling', 'staff_profiles, shifts, time_entries, service_assignments.', false, true, '2026-07-02 22:24:22.560749+00');
+INSERT INTO public.modules (module_key, name, description, is_core, active, created_at) VALUES ('mod.horserecords', 'Horse Records & Health', 'Horse records: ownership and rights (horse_relationships), health events, and medications.', false, true, '2026-07-02 22:24:22.560749+00');
+INSERT INTO public.tiers (tier_key, name, monthly_price, sort_order, active, created_at) VALUES ('tier.lesson_barn', 'Lesson Barn', 99.00, 1, true, '2026-07-02 22:24:22.560749+00');
+INSERT INTO public.tiers (tier_key, name, monthly_price, sort_order, active, created_at) VALUES ('tier.brokerage', 'Brokerage', 149.00, 2, true, '2026-07-02 22:24:22.560749+00');
+INSERT INTO public.tiers (tier_key, name, monthly_price, sort_order, active, created_at) VALUES ('tier.lesson_brokerage', 'Lesson + Brokerage', 199.00, 3, true, '2026-07-02 22:24:22.560749+00');
+INSERT INTO public.tiers (tier_key, name, monthly_price, sort_order, active, created_at) VALUES ('tier.boarding', 'Boarding Barn', 199.00, 4, true, '2026-07-02 22:24:22.560749+00');
+INSERT INTO public.tiers (tier_key, name, monthly_price, sort_order, active, created_at) VALUES ('tier.full_barn', 'Full Barn', 349.00, 5, true, '2026-07-02 22:24:22.560749+00');
+INSERT INTO public.tier_modules (tier_key, module_key) VALUES ('tier.lesson_barn', 'mod.lessons');
+INSERT INTO public.tier_modules (tier_key, module_key) VALUES ('tier.brokerage', 'mod.brokerage');
+INSERT INTO public.tier_modules (tier_key, module_key) VALUES ('tier.brokerage', 'mod.horserecords');
+INSERT INTO public.tier_modules (tier_key, module_key) VALUES ('tier.lesson_brokerage', 'mod.lessons');
+INSERT INTO public.tier_modules (tier_key, module_key) VALUES ('tier.lesson_brokerage', 'mod.brokerage');
+INSERT INTO public.tier_modules (tier_key, module_key) VALUES ('tier.lesson_brokerage', 'mod.horserecords');
+INSERT INTO public.tier_modules (tier_key, module_key) VALUES ('tier.boarding', 'mod.boarding');
+INSERT INTO public.tier_modules (tier_key, module_key) VALUES ('tier.boarding', 'mod.horserecords');
+INSERT INTO public.tier_modules (tier_key, module_key) VALUES ('tier.boarding', 'mod.barnops');
+INSERT INTO public.tier_modules (tier_key, module_key) VALUES ('tier.full_barn', 'mod.brokerage');
+INSERT INTO public.tier_modules (tier_key, module_key) VALUES ('tier.full_barn', 'mod.lessons');
+INSERT INTO public.tier_modules (tier_key, module_key) VALUES ('tier.full_barn', 'mod.boarding');
+INSERT INTO public.tier_modules (tier_key, module_key) VALUES ('tier.full_barn', 'mod.barnops');
+INSERT INTO public.tier_modules (tier_key, module_key) VALUES ('tier.full_barn', 'mod.horserecords');
+INSERT INTO public.tier_modules (tier_key, module_key) VALUES ('tier.full_barn', 'mod.employees');
+
+--
+-- org_modules: tenant #1's module entitlements (TASK-TESTDB).
+-- Per-tenant, but the tenant is the one organization the snapshot already seeds,
+-- and the rows are module keys + booleans — no personal data. Migration
+-- 20260630010000_entitlements backfills these from tier.lesson_brokerage; without
+-- them every has_module()-gated RLS policy denies, and the module suites
+-- (mod_horserecords, mod_barnops, mod_boarding, ...) fail in setup on
+-- "new row violates row-level security policy ..._module_gate".
+--
+INSERT INTO public.org_modules (id, org_id, module_key, enabled, source, enabled_at, expires_at, created_at, updated_at) VALUES ('a0ab85f8-564e-4c90-939f-96e66383d431', 'e656f20b-ef43-4725-9029-19e7f0190d9c', 'mod.lessons', true, 'TIER', '2026-07-02 22:24:22.560749+00', NULL, '2026-07-02 22:24:22.560749+00', '2026-07-09 14:09:00.379279+00');
+INSERT INTO public.org_modules (id, org_id, module_key, enabled, source, enabled_at, expires_at, created_at, updated_at) VALUES ('7f59085b-7ff9-4812-857a-a903794af7ff', 'e656f20b-ef43-4725-9029-19e7f0190d9c', 'mod.brokerage', true, 'TIER', '2026-07-02 22:24:22.560749+00', NULL, '2026-07-02 22:24:22.560749+00', '2026-07-09 14:09:00.379279+00');
+INSERT INTO public.org_modules (id, org_id, module_key, enabled, source, enabled_at, expires_at, created_at, updated_at) VALUES ('dbf74142-2f45-4b7b-b0a1-aa87070d6642', 'e656f20b-ef43-4725-9029-19e7f0190d9c', 'mod.horserecords', true, 'TIER', '2026-07-02 22:24:22.560749+00', NULL, '2026-07-02 22:24:22.560749+00', '2026-07-09 14:09:00.379279+00');
+INSERT INTO public.org_modules (id, org_id, module_key, enabled, source, enabled_at, expires_at, created_at, updated_at) VALUES ('877bf5c1-2d52-439e-af1d-441570cfb6e3', 'e656f20b-ef43-4725-9029-19e7f0190d9c', 'mod.boarding', true, 'GRANT', '2026-08-12 15:02:21.285597+00', NULL, '2026-07-09 14:09:00.379279+00', '2026-08-12 15:02:21.285597+00');
+INSERT INTO public.org_modules (id, org_id, module_key, enabled, source, enabled_at, expires_at, created_at, updated_at) VALUES ('9a12f89c-c1e1-4a05-84d0-1677624318ad', 'e656f20b-ef43-4725-9029-19e7f0190d9c', 'mod.barnops', true, 'GRANT', '2026-08-12 15:02:21.285597+00', NULL, '2026-07-09 14:09:00.379279+00', '2026-08-12 15:02:21.285597+00');
+INSERT INTO public.org_modules (id, org_id, module_key, enabled, source, enabled_at, expires_at, created_at, updated_at) VALUES ('6d151f57-1f12-46c3-acc5-5b6f69fd4182', 'e656f20b-ef43-4725-9029-19e7f0190d9c', 'mod.employees', true, 'GRANT', '2026-08-12 15:02:21.285597+00', NULL, '2026-07-09 14:09:00.379279+00', '2026-08-12 15:02:21.285597+00');
+
+--
+-- template_variants: GLOBAL contract-variant registry (TASK-TESTDB).
+-- No org_id, no personal data — template keys, deal-side enums and token
+-- override maps. Migration-seeded, so it loaded empty and mod_brokerage's
+-- live template_variants assertions had no rows to find.
+--
+INSERT INTO public.template_variants (id, template_key, retained_by, deal_side, token_overrides, active, created_at, updated_at) VALUES ('96f4acab-f357-4d16-bcc9-50c5246c0c42', 'HORSE_SEARCH_RETAINER', 'buyer', 'BUY', '{"SIDE": "BUY", "ROLE_TERM": "buyer", "TARGET_TERM": "a horse", "DIRECTION_TERM": "purchase"}', true, '2026-07-02 22:24:30.699591+00', '2026-07-02 22:24:30.699591+00');
+INSERT INTO public.template_variants (id, template_key, retained_by, deal_side, token_overrides, active, created_at, updated_at) VALUES ('07eb43aa-636d-4c49-9a41-0f3711d46db6', 'HORSE_SEARCH_RETAINER', 'lessee', 'LEASE_IN', '{"SIDE": "LEASE_IN", "ROLE_TERM": "lessee", "TARGET_TERM": "a horse", "DIRECTION_TERM": "lease (lessee)"}', true, '2026-07-02 22:24:30.699591+00', '2026-07-02 22:24:30.699591+00');
+INSERT INTO public.template_variants (id, template_key, retained_by, deal_side, token_overrides, active, created_at, updated_at) VALUES ('73dafe8c-9cf0-4659-abc7-d17c4f196588', 'HORSE_SEARCH_RETAINER', 'owner', 'SELL', '{"SIDE": "SELL", "ROLE_TERM": "owner", "TARGET_TERM": "a buyer", "DIRECTION_TERM": "sale"}', true, '2026-07-02 22:24:30.699591+00', '2026-07-02 22:24:30.699591+00');
+INSERT INTO public.template_variants (id, template_key, retained_by, deal_side, token_overrides, active, created_at, updated_at) VALUES ('0dd35b7f-393c-4345-9331-b6e857821d5d', 'HORSE_SEARCH_RETAINER', 'owner', 'LEASE_OUT', '{"SIDE": "LEASE_OUT", "ROLE_TERM": "owner", "TARGET_TERM": "a lessee", "DIRECTION_TERM": "lease (lessor)"}', true, '2026-07-02 22:24:30.699591+00', '2026-07-02 22:24:30.699591+00');
+INSERT INTO public.template_variants (id, template_key, retained_by, deal_side, token_overrides, active, created_at, updated_at) VALUES ('009d5f93-5a8b-48e3-8b09-50f94f18bd81', 'HORSE_TRANSACTION_REP', 'buyer', 'BUY', '{"ROLE_TERM": "buyer", "DIRECTION_TERM": "purchase", "COUNTERPARTY_TERM": "seller"}', true, '2026-07-02 22:24:51.239859+00', '2026-07-02 22:24:51.239859+00');
+INSERT INTO public.template_variants (id, template_key, retained_by, deal_side, token_overrides, active, created_at, updated_at) VALUES ('64d7458f-e243-40a2-97df-d05159dab33a', 'HORSE_TRANSACTION_REP', 'seller', 'SELL', '{"ROLE_TERM": "seller", "DIRECTION_TERM": "sale", "COUNTERPARTY_TERM": "buyer"}', true, '2026-07-02 22:24:51.239859+00', '2026-07-02 22:24:51.239859+00');
+INSERT INTO public.template_variants (id, template_key, retained_by, deal_side, token_overrides, active, created_at, updated_at) VALUES ('5ac65fad-5593-4c23-867f-89eb01537eee', 'HORSE_TRANSACTION_REP', 'owner', 'SELL', '{"ROLE_TERM": "seller", "DIRECTION_TERM": "sale", "COUNTERPARTY_TERM": "buyer"}', true, '2026-07-02 22:24:51.239859+00', '2026-07-02 22:24:51.239859+00');
+INSERT INTO public.template_variants (id, template_key, retained_by, deal_side, token_overrides, active, created_at, updated_at) VALUES ('05817246-ee2f-4573-a2ed-9d12db713e95', 'HORSE_TRANSACTION_REP', 'lessee', 'LEASE_IN', '{"ROLE_TERM": "lessee", "DIRECTION_TERM": "lease (as lessee)", "COUNTERPARTY_TERM": "lessor"}', true, '2026-07-02 22:24:51.239859+00', '2026-07-02 22:24:51.239859+00');
+INSERT INTO public.template_variants (id, template_key, retained_by, deal_side, token_overrides, active, created_at, updated_at) VALUES ('35ed14e5-b22d-47f4-bb21-b8b73fce8745', 'HORSE_TRANSACTION_REP', 'lessor', 'LEASE_OUT', '{"ROLE_TERM": "lessor", "DIRECTION_TERM": "lease (as lessor)", "COUNTERPARTY_TERM": "lessee"}', true, '2026-07-02 22:24:51.239859+00', '2026-07-02 22:24:51.239859+00');
+INSERT INTO public.template_variants (id, template_key, retained_by, deal_side, token_overrides, active, created_at, updated_at) VALUES ('5730238b-dc56-4664-8b73-0267feb85032', 'HORSE_TRANSACTION_REP', 'owner', 'LEASE_OUT', '{"ROLE_TERM": "lessor", "DIRECTION_TERM": "lease (as lessor)", "COUNTERPARTY_TERM": "lessee"}', true, '2026-07-02 22:24:51.239859+00', '2026-07-02 22:24:51.239859+00');

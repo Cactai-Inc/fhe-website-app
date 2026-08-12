@@ -98,9 +98,9 @@ beforeAll(async () => {
 
   // Horses per org (org_id defaults to the pinned GUC).
   aHorse = ((await asOrg(orgA,
-    `insert into horses (barn_name) values ('Comet') returning id`)) as { id: string }[])[0].id;
+    `insert into horses (nickname) values ('Comet') returning id`)) as { id: string }[])[0].id;
   bHorse = ((await asOrg(orgB,
-    `insert into horses (barn_name) values ('RivalHorse') returning id`)) as { id: string }[])[0].id;
+    `insert into horses (nickname) values ('RivalHorse') returning id`)) as { id: string }[])[0].id;
 
   // org B contact (the cross-org leakage probe).
   bContact = ((await asOrg(orgB,

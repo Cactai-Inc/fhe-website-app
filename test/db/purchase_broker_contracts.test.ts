@@ -38,7 +38,7 @@ beforeAll(async () => {
   client = (await h.q<{ id: string }>(
     `insert into contacts (first_name, last_name, email) values ('Cara','Client','cara@client.test') returning id`))[0].id;
   horse = (await h.q<{ id: string }>(
-    `insert into horses (registered_name, barn_name, breed, sex) values ('Rocket','Roo',$1,'MARE') returning id`, [breedCode]))[0].id;
+    `insert into horses (registered_name, nickname, breed, sex) values ('Rocket','Roo',$1,'MARE') returning id`, [breedCode]))[0].id;
 
   admin    = await h.createAuthUser({ email: 'ops@fhe.test', role: 'ADMIN', org });
   buyerUid = await h.createAuthUser({ email: 'bianca@buyer.test', role: 'USER', org });
