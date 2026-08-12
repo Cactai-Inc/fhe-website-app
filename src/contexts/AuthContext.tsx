@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import * as auth from '../lib/auth';
-import { myModules, myPropertyTerm } from '../lib/api';
+import { myModules, myPropertyTerm, myHiddenPages } from '../lib/api';
 import type { Profile } from '../lib/types';
 import type { Member } from '../lib/community-types';
 import { DEFAULT_PROPERTY_TERM, resolvePropertyTerm, type PropertyTerm } from '../lib/propertyTerm';
@@ -30,6 +30,18 @@ interface AuthContextValue {
   orgId: string | null;
   modules: string[];
   hasModule: (key: string) => boolean;
+  /** TASK-PAGEVIS: the page_keys this TENANT has hidden from its own nav
+   *  (src/lib/pageRegistry.ts). A PREFERENCE, not a permission — every route
+   *  still resolves, and nothing here gates data. Empty until my_hidden_pages()
+   *  resolves, and empty on error, so a failure shows MORE nav rather than
+   *  hiding a page the tenant never chose to hide. */
+  hiddenPages: string[];
+  isPageHidden: (pageKey: string) => boolean;
+  /** Re-read my_hidden_pages() alone. The settings page calls this after a
+   *  toggle so the rail updates in the same session — without it the owner
+   *  would hide a page and still see its nav row until the next sign-in, which
+   *  reads as the toggle not working. */
+  refreshHiddenPages: () => Promise<void>;
   /** U16: the current tenant's own word for their facility (barn/ranch/stables/…).
    *  Defaults to FACILITY until my_property_term() resolves (or on error). */
   propertyTerm: PropertyTerm;
@@ -51,6 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [member, setMember] = useState<Member | null>(null);
   const [modules, setModules] = useState<string[]>([]);
+  const [hiddenPages, setHiddenPages] = useState<string[]>([]);
   const [propertyTerm, setPropertyTerm] = useState<PropertyTerm>(DEFAULT_PROPERTY_TERM);
   const [loading, setLoading] = useState(true);
 
@@ -59,6 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setProfile(null);
       setMember(null);
       setModules([]);
+      setHiddenPages([]);
       setPropertyTerm(DEFAULT_PROPERTY_TERM);
       return;
     }
@@ -98,6 +112,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setPropertyTerm(resolvePropertyTerm(await myPropertyTerm()));
     } catch {
       setPropertyTerm(DEFAULT_PROPERTY_TERM);
+    }
+    // Resolve the tenant's hidden-page set. FAIL OPEN, not closed — the opposite
+    // posture to modules above, and deliberately: modules are an entitlement, so
+    // an unresolved one must lock; page visibility is a display preference, so an
+    // unresolved one must SHOW. A failed fetch that hid nav rows would look
+    // exactly like the tenant having hidden them.
+    try {
+      setHiddenPages(await myHiddenPages());
+    } catch {
+      setHiddenPages([]);
     }
   }, []);
 
@@ -144,7 +168,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setProfile(null);
     setMember(null);
     setModules([]);
+    setHiddenPages([]);
     setPropertyTerm(DEFAULT_PROPERTY_TERM);
+  }, []);
+
+  const refreshHiddenPages = useCallback(async () => {
+    try {
+      setHiddenPages(await myHiddenPages());
+    } catch {
+      // Fail open, same posture as the initial load.
+      setHiddenPages([]);
+    }
   }, []);
 
   const refreshProfile = useCallback(async () => {
@@ -163,6 +197,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // superadmin-only nav/routes gate on it without being folded into has_module().
   const isSuperAdmin = role === 'SUPER_ADMIN';
   const hasModule = useCallback((key: string) => modules.includes(key), [modules]);
+  const isPageHidden = useCallback((pageKey: string) => hiddenPages.includes(pageKey), [hiddenPages]);
 
   return (
     <AuthContext.Provider
@@ -181,6 +216,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         orgId: profile?.org_id ?? null,
         modules,
         hasModule,
+        hiddenPages,
+        isPageHidden,
+        refreshHiddenPages,
         propertyTerm,
         signInWithPassword,
         signUp,

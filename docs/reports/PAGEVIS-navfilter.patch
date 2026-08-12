@@ -1,0 +1,305 @@
+From: TASK-PAGEVIS
+Subject: [PATCH] PAGEVIS — the nav filter (HELD: AppLayout.tsx belongs to TASK-HORSEONE)
+
+Apply after HORSEONE merges:
+    git apply docs/reports/PAGEVIS-navfilter.patch
+
+Adds: NavItem.page, page keys on every hideable row, the 8 module CHILD rows,
+the Page visibility settings row, and the visibility clause in manageNavGroups().
+Ships with its own proof — test/ui/pagevis_nav_filter.test.ts, 10 tests, green
+against this exact diff before it was held.
+
+diff --git a/src/components/app/AppLayout.tsx b/src/components/app/AppLayout.tsx
+index e41fed5..0b27d59 100644
+--- a/src/components/app/AppLayout.tsx
++++ b/src/components/app/AppLayout.tsx
+@@ -11,7 +11,7 @@ import {
+      import when Directory comes back out of Review. */
+   ChevronDown, ChevronUp, Plus, LifeBuoy, ShoppingBag, MessageSquare, ListChecks,
+   PanelLeftClose, PanelLeftOpen, Activity, Compass, Handshake, Grid3x3, Bookmark,
+-  Receipt, Eye, Library,
++  Receipt, Eye, EyeOff, Library,
+ } from 'lucide-react';
+ import { useAuth } from '../../contexts/AuthContext';
+ import { usePrefersReducedMotion } from '../../lib/hooks';
+@@ -406,6 +406,11 @@ interface NavItem {
+   module?: string;
+   adminOnly?: boolean;
+   superAdmin?: boolean;
++  /* TASK-PAGEVIS — this row's key in src/lib/pageRegistry.ts. The tenant hides
++     rows one at a time under Settings -> Page visibility, and the stored key is
++     this slug rather than `to`, so a route rename cannot orphan the choice.
++     A row with no `page` can never be hidden; that is the safe default. */
++  page?: string;
+   /** Unread-style count shown on this item's badge (RailLink). Not part of the
+    *  static nav tables — injected at render time (see AppLayout's navGroups). */
+   badge?: number;
+@@ -509,20 +514,20 @@ const MANAGEMENT_GROUP: NavItem[] = [
+      horse roster) and now live ONLY in the Review group. Put them back here on
+      acceptance. Dashboard's badge is injected by route below, not by table
+      position, so it followed the row and still reads unread + inbound. */
+-  { to: '/app/ops/support', label: 'Support', icon: LifeBuoy },
++  { to: '/app/ops/support', label: 'Support', icon: LifeBuoy, page: 'mgmt.support' },
+   // Servicing folded in 2026-07-31: three links did not justify a heading of
+   // their own, and they are day-to-day management like the queues above.
+-  { to: '/app/ops/lessons', label: 'Lessons', icon: GraduationCap, module: 'mod.lessons' },
+-  { to: '/app/ops/documents', label: 'Documents', icon: FileText },
++  { to: '/app/ops/lessons', label: 'Lessons', icon: GraduationCap, module: 'mod.lessons', page: 'lessons.hub' },
++  { to: '/app/ops/documents', label: 'Documents', icon: FileText, page: 'mgmt.documents' },
+   // A deal is the envelope a transaction lives in — its parties, what each side
+   // gives, and the documents that make it real. It sits beside Documents because
+   // that is what it produces.
+-  { to: '/app/ops/deals', label: 'Deals', icon: Handshake },
++  { to: '/app/ops/deals', label: 'Deals', icon: Handshake, page: 'mgmt.deals' },
+   // Payment review is a management task; Business is hidden until the reporting
+   // and business-ops surfaces that belong there actually exist.
+   /* Receipt, not ReceiptText — which My Orders already uses in the member nav.
+      Two different pages were wearing one glyph. */
+-  { to: '/app/ops/payments/review', label: 'Payment review', icon: Receipt },
++  { to: '/app/ops/payments/review', label: 'Payment review', icon: Receipt, page: 'mgmt.payments_review' },
+ ];
+ /* PEOPLE — everyone we know, one list per relationship to the business:
+  *   Leads      potential future clients (the campaign list)
+@@ -565,23 +570,36 @@ const ACCOUNTS_GROUP: NavItem[] = [
+  * goal is fewer headings, not more. Their items live in MANAGEMENT_GROUP above.
+  * BUSINESS_GROUP returns when there is more in it than a single link. */
+ const COMMUNITY_GROUP: NavItem[] = [
+-  { to: '/app/ops/activity', label: 'Activity', icon: Activity },
+-  { to: '/app/ops/evaluations', label: 'Evaluations', icon: FileText },
+-  { to: '/app/ops/moderation', label: 'Moderation', icon: Shield },
+-  { to: '/app/ops/lookups', label: 'Field options', icon: ListChecks },
++  { to: '/app/ops/activity', label: 'Activity', icon: Activity, page: 'community.activity' },
++  { to: '/app/ops/evaluations', label: 'Evaluations', icon: FileText, page: 'community.evaluations' },
++  { to: '/app/ops/moderation', label: 'Moderation', icon: Shield, page: 'community.moderation' },
++  { to: '/app/ops/lookups', label: 'Field options', icon: ListChecks, page: 'community.lookups' },
+   // Library, not BookOpen — Directory (People) already holds BookOpen.
+-  { to: '/app/ops/content', label: 'Content store', icon: Library },
++  { to: '/app/ops/content', label: 'Content store', icon: Library, page: 'community.content' },
+   /* Eye, not Shield. Shield was on Moderation, Oversight, all three Settings
+      pages and all three Platform pages — the "eight identical Shield icons" the
+      icon exercise names. This takes one of them off it. */
+-  { to: '/app/ops/oversight', label: 'Oversight', icon: Eye },
++  { to: '/app/ops/oversight', label: 'Oversight', icon: Eye, page: 'community.oversight' },
+ ];
+ const MODULES_GROUP: NavItem[] = [
+   // Brokerage has no staff hub page yet (mod.brokerage's live surfaces are the
+   // client-lane engagement reads) — the entry linked to an unregistered route
+   // and 404'd for every staff user with the module on. Re-add with the hub.
+-  { to: '/app/ops/boarding', label: 'Boarding', icon: HomeIcon, module: 'mod.boarding' },
+-  { to: '/app/ops/barnops', label: 'Barn Ops', icon: Boxes, module: 'mod.barnops' },
++  /* TASK-PAGEVIS — the CHILD pages are nav rows now, not just cards on their
++     hub. The owner asked to hide individual pages, and a page with no row of
++     its own can only be hidden by hiding its hub, which is the "do not make me
++     hide whole modules" complaint restated. Their own rows are also what makes
++     the NO-CASCADE rule safe: hiding a hub cannot strand a child that has its
++     own way in. If these rows are ever removed, the cascade rule has to change
++     with them. Every row here starts VISIBLE and the owner trims from there. */
++  { to: '/app/ops/boarding', label: 'Boarding', icon: HomeIcon, module: 'mod.boarding', page: 'boarding.hub' },
++  { to: '/app/ops/boarding/facilities', label: 'Facilities & stalls', icon: HomeIcon, module: 'mod.boarding', page: 'boarding.facilities' },
++  { to: '/app/ops/boarding/agreements', label: 'Board agreements', icon: FileText, module: 'mod.boarding', page: 'boarding.agreements' },
++  { to: '/app/ops/boarding/charges', label: 'Board charges', icon: Receipt, module: 'mod.boarding', page: 'boarding.charges' },
++  { to: '/app/ops/barnops', label: 'Barn Ops', icon: Boxes, module: 'mod.barnops', page: 'barnops.hub' },
++  { to: '/app/ops/barnops/resources', label: 'Resources', icon: Boxes, module: 'mod.barnops', page: 'barnops.resources' },
++  { to: '/app/ops/barnops/consumption', label: 'Consumption log', icon: ListChecks, module: 'mod.barnops', page: 'barnops.consumption' },
++  { to: '/app/ops/barnops/allocation-rules', label: 'Allocation rules', icon: ListChecks, module: 'mod.barnops', page: 'barnops.allocation_rules' },
+   /* REVIEW SECTION — MOVED OUT, not deleted (TASK-REVIEWNAV). One row LEFT
+      this group for Review:
+        { to: '/app/ops/records', label: 'Records', icon: FileText, module: 'mod.horserecords' }
+@@ -592,7 +610,9 @@ const MODULES_GROUP: NavItem[] = [
+      `module` key: the Review row deliberately has no module gate (the owner has
+      to be able to reach every implementation), and putting it back ungated
+      would show Records to a tenant that has the module off. */
+-  { to: '/app/ops/employees', label: 'Employees', icon: Contact, module: 'mod.employees' },
++  { to: '/app/ops/employees', label: 'Employees', icon: Contact, module: 'mod.employees', page: 'employees.hub' },
++  { to: '/app/ops/employees/staff', label: 'Staff', icon: UserRound, module: 'mod.employees', page: 'employees.staff' },
++  { to: '/app/ops/employees/schedule', label: 'Schedule', icon: CalendarDays, module: 'mod.employees', page: 'employees.schedule' },
+ ];
+ const SETTINGS_GROUP: NavItem[] = [
+   /* Owner, 2026-08-12: "team moves to configuration section." Arrived here from
+@@ -626,9 +646,13 @@ const SETTINGS_GROUP: NavItem[] = [
+      production `profiles.role` holds only ADMIN, SUPER_ADMIN and USER; there is
+      not one MANAGER or EMPLOYEE account in existence. Restore it here WITHOUT
+      `adminOnly` on acceptance, for the reason recorded above. */
+-  { to: '/app/ops/admin/branding', label: 'Branding', icon: Shield, adminOnly: true },
+-  { to: '/app/ops/admin/products', label: 'Products', icon: Shield, adminOnly: true },
+-  { to: '/app/ops/admin/forms', label: 'Forms', icon: Shield, adminOnly: true },
++  { to: '/app/ops/admin/branding', label: 'Branding', icon: Shield, adminOnly: true, page: 'settings.branding' },
++  { to: '/app/ops/admin/products', label: 'Products', icon: Shield, adminOnly: true, page: 'settings.products' },
++  { to: '/app/ops/admin/forms', label: 'Forms', icon: Shield, adminOnly: true, page: 'settings.forms' },
++  /* TASK-PAGEVIS — where the tenant hides pages. Deliberately carries NO
++     `page` key: it is the way back from every other choice made here, and
++     set_page_hidden refuses to hide it server-side as well. */
++  { to: '/app/ops/admin/pages', label: 'Page visibility', icon: EyeOff, adminOnly: true },
+ ];
+ 
+ // kept for compatibility with anything importing MANAGE_NAV
+@@ -644,6 +668,9 @@ export function manageNavGroups(
+   isAdmin: boolean,
+   isSuperAdmin: boolean,
+   grantKeys: string[] = [],
++  /* TASK-PAGEVIS. Defaulted, so every existing caller and test keeps working
++     and a caller that does not pass it simply hides nothing. */
++  isPageHidden: (pageKey: string) => boolean = () => false,
+ ): NavGroup[] {
+   if (isSuperAdmin) {
+     // the platform admin belongs to no tenant — platform surfaces only
+@@ -651,7 +678,14 @@ export function manageNavGroups(
+   }
+   const visible = (items: NavItem[]) => items.filter(
+     (i) => (!i.module || hasModule(i.module))
+-        && (!i.adminOnly || isAdmin || grantKeys.includes(i.to)),
++        && (!i.adminOnly || isAdmin || grantKeys.includes(i.to))
++        /* TASK-PAGEVIS — the tenant's own choice, and the LAST clause on
++           purpose. The two above are ENTITLEMENT and ROLE; this one is a
++           display preference and must never read like a third gate. It removes
++           the row and nothing else: the route stays registered, the URL still
++           works, and nobody is denied anything. A row with no `page` key is
++           unhideable by construction. */
++        && !(i.page && isPageHidden(i.page)),
+   );
+   const groups: NavGroup[] = [
+     /* MANAGEMENT leads: the two work QUEUES that must be dealt with each day.
+@@ -1264,7 +1298,7 @@ function ClientRail({ bellCount, dmCount, presence, lessonsOn, onOpenTour, onSig
+ }
+ 
+ export default function AppLayout() {
+-  const { profile, isAdmin, isStaff, isSuperAdmin, hasModule, signOut } = useAuth();
++  const { profile, isAdmin, isStaff, isSuperAdmin, hasModule, isPageHidden, signOut } = useAuth();
+   const dmCount = useDmUnread();
+   useViewSurfaces();
+   const navigate = useNavigate();
+@@ -1507,7 +1541,7 @@ export default function AppLayout() {
+   // count has nowhere else to live — dropping it would make open leads
+   // invisible from the nav, a regression against today.
+   const navGroups = showRail
+-    ? manageNavGroups(hasModule, isAdmin, isSuperAdmin, grantKeys).map((g) => ({
++    ? manageNavGroups(hasModule, isAdmin, isSuperAdmin, grantKeys, isPageHidden).map((g) => ({
+         ...g,
+         items: g.items.map((it) => (it.to === '/app/dashboard' ? { ...it, badge: unreadCount + inboundCount } : it)),
+       }))
+diff --git a/test/ui/pagevis_nav_filter.test.ts b/test/ui/pagevis_nav_filter.test.ts
+new file mode 100644
+index 0000000..3d27958
+--- /dev/null
++++ b/test/ui/pagevis_nav_filter.test.ts
+@@ -0,0 +1,120 @@
++/**
++ * TASK-PAGEVIS — the nav filter.
++ *
++ * ⚠ THIS FILE SHIPS WITH THE HELD AppLayout DIFF, NOT BEFORE IT. AppLayout.tsx
++ * belongs to TASK-HORSEONE, which had not merged when PAGEVIS ran, so the nav
++ * change and this proof of it live together in
++ * docs/reports/PAGEVIS-navfilter.patch. Applying that patch adds both.
++ *
++ * `manageNavGroups` is exported and pure, so the filter is provable without a
++ * browser, without mocking a session, and without rendering the rail. What it
++ * checks is the part that could be got wrong:
++ *
++ *  · hiding removes EXACTLY one row, and the module's other rows survive;
++ *  · hiding is applied AFTER entitlement and role, never instead of them;
++ *  · the Page visibility row itself carries no key, so nothing can hide it;
++ *  · every `page` key in the nav is a real registry entry (the two would
++ *    otherwise drift and a toggle would silently control nothing).
++ */
++import { describe, it, expect } from 'vitest';
++import { manageNavGroups, MANAGE_NAV } from '../../src/components/app/AppLayout';
++import { pageByKey } from '../../src/lib/pageRegistry';
++
++const ALL_MODULES = () => true;
++const NONE_HIDDEN = () => false;
++
++function rows(hidden: (k: string) => boolean, hasModule = ALL_MODULES) {
++  return manageNavGroups(hasModule, true, false, [], hidden)
++    .flatMap((g) => g.items.map((i) => i.to));
++}
++
++describe('PAGEVIS — the nav filter', () => {
++  it('every nav `page` key is a real registry entry', () => {
++    for (const item of MANAGE_NAV) {
++      if (!item.page) continue;
++      expect(
++        pageByKey(item.page),
++        `nav row "${item.label}" carries page key "${item.page}", which the registry does not list`,
++      ).toBeDefined();
++    }
++  });
++
++  it('every nav `page` key points at the row it is on', () => {
++    for (const item of MANAGE_NAV) {
++      if (!item.page) continue;
++      expect(pageByKey(item.page)!.path, `"${item.label}" and its registry entry disagree on the route`)
++        .toBe(item.to);
++    }
++  });
++
++  it('shows all 11 previously-dark module pages when nothing is hidden', () => {
++    const shown = rows(NONE_HIDDEN);
++    for (const path of [
++      '/app/ops/boarding', '/app/ops/boarding/facilities',
++      '/app/ops/boarding/agreements', '/app/ops/boarding/charges',
++      '/app/ops/barnops', '/app/ops/barnops/resources',
++      '/app/ops/barnops/consumption', '/app/ops/barnops/allocation-rules',
++      '/app/ops/employees', '/app/ops/employees/staff', '/app/ops/employees/schedule',
++    ]) {
++      expect(shown, `not in the nav: ${path}`).toContain(path);
++    }
++  });
++
++  it('hiding one page removes exactly that row — its siblings stay', () => {
++    const before = rows(NONE_HIDDEN);
++    const after = rows((k) => k === 'boarding.facilities');
++
++    expect(before.filter((p) => !after.includes(p))).toEqual(['/app/ops/boarding/facilities']);
++    for (const sib of ['/app/ops/boarding', '/app/ops/boarding/agreements', '/app/ops/boarding/charges']) {
++      expect(after, `sibling lost with it: ${sib}`).toContain(sib);
++    }
++  });
++
++  it('hiding a HUB is not a cascade — its children keep their rows', () => {
++    const after = rows((k) => k === 'barnops.hub');
++    expect(after).not.toContain('/app/ops/barnops');
++    for (const child of [
++      '/app/ops/barnops/resources', '/app/ops/barnops/consumption',
++      '/app/ops/barnops/allocation-rules',
++    ]) {
++      expect(after, `orphaned by hiding the hub: ${child}`).toContain(child);
++    }
++  });
++
++  it('hiding does not reach across modules', () => {
++    const after = rows((k) => k.startsWith('boarding.'));
++    expect(after.filter((p) => p.startsWith('/app/ops/boarding'))).toEqual([]);
++    expect(after).toContain('/app/ops/barnops');
++    expect(after).toContain('/app/ops/employees');
++  });
++
++  it('is applied after entitlement, not instead of it', () => {
++    // Module off + page hidden: still gone, and no error from the double gate.
++    const noBoarding = (k: string) => k !== 'mod.boarding';
++    expect(rows((k) => k === 'boarding.hub', noBoarding)).not.toContain('/app/ops/boarding');
++    // Module off alone already removes it — hiding is not what is doing the work.
++    expect(rows(NONE_HIDDEN, noBoarding)).not.toContain('/app/ops/boarding');
++  });
++
++  it('cannot hide the Page visibility row — it carries no key', () => {
++    const row = MANAGE_NAV.find((i) => i.to === '/app/ops/admin/pages');
++    expect(row, 'the control surface has no nav row').toBeDefined();
++    expect(row!.page, 'giving this row a page key would make the way back hideable').toBeUndefined();
++
++    // Hide everything the registry knows about; this row must survive.
++    expect(rows(() => true)).toContain('/app/ops/admin/pages');
++  });
++
++  it('leaves the other Settings rows hideable', () => {
++    const after = rows((k) => k === 'settings.branding');
++    expect(after).not.toContain('/app/ops/admin/branding');
++    expect(after).toContain('/app/ops/admin/products');
++    expect(after).toContain('/app/ops/admin/pages');
++  });
++
++  it('hides nothing when no predicate is passed (every existing caller)', () => {
++    const withDefault = manageNavGroups(ALL_MODULES, true, false, [])
++      .flatMap((g) => g.items.map((i) => i.to));
++    expect(withDefault).toEqual(rows(NONE_HIDDEN));
++  });
++});

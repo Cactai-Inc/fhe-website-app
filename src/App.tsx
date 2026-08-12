@@ -95,6 +95,7 @@ import NewContractPage from './pages/app/ops/NewContractPage';
 import DealsPage from './pages/app/ops/DealsPage';
 import DealPage from './pages/app/ops/DealPage';
 import AdminFormsPage from './pages/app/ops/admin/AdminFormsPage';
+import AdminPageVisibilityPage from './pages/app/ops/admin/AdminPageVisibilityPage';
 import PaymentReviewPage from './pages/app/ops/PaymentReviewPage';
 import BoardingHubPage from './pages/app/ops/hubs/BoardingHubPage';
 import FacilitiesPage from './pages/app/ops/boarding/FacilitiesPage';
@@ -357,8 +358,14 @@ export function AppRoutes() {
               <Route path="ops/admin/branding" element={<ProtectedRoute requireAdmin><AdminBrandingPage /></ProtectedRoute>} />
               <Route path="ops/admin/products" element={<ProtectedRoute requireAdmin><AdminProductsPage /></ProtectedRoute>} />
               <Route path="ops/admin/forms" element={<ProtectedRoute requireAdmin><AdminFormsPage /></ProtectedRoute>} />
+              {/* TASK-TEXTEDIT — edit template wording without SQL (D13). */}
               <Route path="ops/admin/templates" element={<ProtectedRoute requireAdmin><AdminTemplatesPage /></ProtectedRoute>} />
               <Route path="ops/admin/templates/:templateKey" element={<ProtectedRoute requireAdmin><AdminTemplateEditorPage /></ProtectedRoute>} />
+              {/* TASK-PAGEVIS — where the tenant hides individual pages. requireAdmin,
+                  matching its Settings siblings. This route is never gated by page
+                  visibility itself: set_page_hidden refuses to hide it, so the way back
+                  always exists. */}
+              <Route path="ops/admin/pages" element={<ProtectedRoute requireAdmin><AdminPageVisibilityPage /></ProtectedRoute>} />
               <Route path="ops/superadmin/provision" element={<ProtectedRoute requireSuperAdmin><ProvisionTenantPage /></ProtectedRoute>} />
               <Route path="ops/superadmin/organizations" element={<ProtectedRoute requireSuperAdmin><OrganizationsPage /></ProtectedRoute>} />
               <Route path="ops/superadmin/organizations/:id" element={<ProtectedRoute requireSuperAdmin><TenantDetailPage /></ProtectedRoute>} />

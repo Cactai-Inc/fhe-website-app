@@ -879,6 +879,32 @@ export async function myPropertyTerm(): Promise<PropertyTerm> {
   return data as PropertyTerm;
 }
 
+/** TASK-PAGEVIS — the page_keys this tenant has hidden from its own navigation.
+ *  Mirrors myModules(): current_org()-scoped, SECURITY DEFINER, and it gates
+ *  NOTHING — a hidden page's route still resolves. Keys are the stable slugs in
+ *  src/lib/pageRegistry.ts, never route paths, so a route rename cannot orphan a
+ *  tenant's choice. */
+export async function myHiddenPages(): Promise<string[]> {
+  const { data, error } = await supabase.rpc('my_hidden_pages');
+  if (error) throw error;
+  const rows = (data ?? []) as Array<{ my_hidden_pages: string } | string>;
+  return rows.map((r) => (typeof r === 'string' ? r : r.my_hidden_pages));
+}
+
+/** TASK-PAGEVIS — put a page away (true) or bring it back (false). Returns the
+ *  resulting hidden state, which the caller asserts against what it asked for:
+ *  set_page_hidden RAISES on refusal (non-admin, unknown key shape, or the
+ *  protected page-visibility page), so a silent no-op is not possible. Writes
+ *  only org_page_visibility — never org_modules.enabled. */
+export async function setPageHidden(pageKey: string, hidden: boolean): Promise<boolean> {
+  const { data, error } = await supabase.rpc('set_page_hidden', {
+    p_page_key: pageKey,
+    p_hidden: hidden,
+  });
+  if (error) throw error;
+  return data === true;
+}
+
 export interface OrgPublicConfig {
   org_id: string;
   slug: string;
