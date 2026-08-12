@@ -297,3 +297,20 @@ reporting success.
   signature came off"* with explicit **Accept/Reject**. D14 needs the trigger moved to the
   signature click plus the login check, and the approval model changed to
   **seen-is-approved**.
+- **D15 — A LINKED FILE IS NEVER REMOVED FROM THE SYSTEM (owner, 2026-08-12).** Settles
+  the `TASK-UPLOADS` question about whether a member's "remove" may hard-delete the bytes.
+  **It may not, when the file was linked to a shared item.** Owner: *"a file must remain
+  available if it isnt superseded by a newer one when it was linked to a shared item. so a
+  file added to a contract, a file added to horse record when its a leased horse, etc…
+  must not be removed from the system entirely. it must be able to be restored or at least
+  reviewed by admin in case of discrepancy or dispute."*
+  **Consequences.** (1) **"Remove" is a visibility action, not a destruction action**, for
+  any file with a `file_links` row. Today `removeMyFile()` soft-deletes the row and
+  **hard-deletes the storage object** — that is wrong and must change. (2) **Supersession
+  is the only thing that retires a linked file**, and even then the prior one is retained,
+  exactly as executed documents are. (3) **Admin must be able to review and restore**, so
+  the bytes and the link history survive the member's removal — the reason is dispute
+  resolution, and evidence you deleted is evidence you do not have. (4) Consistent with
+  **D11** (nothing is purged at this stage) and with the standing rule that executed
+  documents are evidence. **An unlinked file the member uploaded and never shared is not
+  covered by this ruling** — decide that separately if it ever matters.
