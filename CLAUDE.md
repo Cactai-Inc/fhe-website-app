@@ -249,3 +249,17 @@ reporting success.
   read-only personalized items are built with **documents**; correspondence emails are
   documents with a delivery channel and live in their own Templates section.
   Full delta: `docs/reference/TEMPLATE-ENGINES-DELTA-2026-08-12.md`.
+- **D13 — THE OWNER MUST BE ABLE TO CHANGE IT WITHOUT A DEVELOPER (2026-08-12).**
+  Owner: *"you are going to build and design all of this, im just going to nudge you in
+  the right direction after seeing things and wanting changes. but i dont want to come
+  back here every time i need to modify something and im not going to climb into the db
+  or git either."*
+  **This is an acceptance criterion on every configuration feature, not an aspiration.**
+  A feature is NOT DONE if changing it requires the owner to (a) open a thread, (b) write
+  SQL or touch the database, or (c) touch git. **If the only way to change a thing is a
+  migration, that thing has no editor and the work is unfinished** — say so in the report
+  rather than calling it shipped.
+  **Corollary for specs:** when a task adds tenant-configurable content — copy, prices,
+  templates, catalog structure, nav arrangement, field vocabularies — it must ship the
+  surface that edits it, or explicitly name the follow-up that will. **Seeding content
+  through a migration and leaving no UI is the pattern this decision exists to stop.**
