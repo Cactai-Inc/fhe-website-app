@@ -787,7 +787,7 @@ export default function Admin() {
       description={selected ? 'Everything about this account, in one place.' : 'Everyone on file — click a card to open their record.'}
       width="full"
       onAdd={!selected ? () => navigate('/app/ops/accounts/new') : undefined}
-      addLabel="Add a new client"
+      addLabel="client"
     >
       {error && <p role="alert" className="form-error mb-4">{error}</p>}
 

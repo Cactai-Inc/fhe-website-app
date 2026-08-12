@@ -1,9 +1,9 @@
 /**
- * OPS-DOCS-QUEUE — the documents-focused "+ Add new" picker.
+ * OPS-DOCS-QUEUE — the documents-focused "+ Add New" picker.
  *
  * Owner ruling 2026-08-11: the queue's own button stays (superseding
  * DOCUMENT_LIBRARY_DESIGN.md §J2, which said to remove it), relabelled
- * "+ Add new", and opens a picker — "a list of cards with the document
+ * "+ Add New", and opens a picker — "a list of cards with the document
  * types," like the global Add New button but documents-focused.
  *
  * Every card's act is DERIVED from whether the template has clause defs
@@ -117,7 +117,7 @@ export function DocumentQueuePicker({ onClose }: { onClose: () => void }) {
       >
         <div className="grid grid-cols-[2.5rem_1fr_2.5rem] items-center p-4 border-b border-green-800/10 bg-cream shrink-0">
           <div />
-          <h2 className="font-serif text-green-800 text-lg text-center">Add new</h2>
+          <h2 className="font-serif text-green-800 text-lg text-center">Add New</h2>
           <button type="button" onClick={onClose} aria-label="Close" className="justify-self-end text-secondary hover:text-green-800">
             <X size={20} />
           </button>
