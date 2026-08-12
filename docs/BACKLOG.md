@@ -74,3 +74,20 @@ behaves differently while these wait).
 - **`ensure_contact_for_profile`'s no-name/no-email fallback** can still mint an
   "Unnamed Contact" row for a profile with neither; the two historical artifacts it
   produced were reference-checked (zero FKs) and deleted 2026-08-02.
+
+---
+
+## GLOBALIZATION SWEEP — recorded 2026-08-12, NOT scheduled
+
+**Owner: note it well, act after the spot checks are finished.** Full measurement:
+`docs/reference/GLOBALIZATION-DEBT-2026-08-12.md`.
+
+The headline, `src/pages/app`, 80 pages: **`PageHeader` 1% · `PageLayout` 11% ·
+`EmptyState` 3% · `DataTable` 23%**. **63 of 80 pages hand-roll their own `<h1>`.**
+And **885 arbitrary Tailwind values across 105 files** — the surface of the trap that has
+already shipped two invisible defects to production.
+
+**Runs AFTER duplicate consolidation** (DUPECENSUS → REVIEWNAV → owner rulings →
+consolidation), so nothing is converted that is about to be retired. **One exception:** the
+885-value audit against the emitted CSS is independent of which pages survive, finds live
+bugs rather than inconsistency, and can run any time.
