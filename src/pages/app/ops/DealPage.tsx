@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Plus, FileText, PencilLine, X, Loader2, Printer, Download, Mail } from 'lucide-react';
+import { PageLayout } from '../../../components/app/PageLayout';
 import { useDocumentTitle } from '../../../lib/hooks';
 import {
   dealDetail, dealDocumentStatus, addDealDocument, dealRecordExport, dealActivity,
@@ -144,13 +145,16 @@ export default function DealPage() {
   const addable = docStatus.filter((s) => !s.present);
 
   return (
-    <div className="max-w-5xl">
+    <PageLayout name="Deal" width="wide">
       <Link to="/app/ops/deals"
         className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-green-800 mb-4">
         <ArrowLeft size={14} /> Deals
       </Link>
 
-      {/* header: the name, its badges, and the record */}
+      {/* the deal's own identity: its name, badges, and the record. This is
+          CONTENT, not the page header — a deal's name is data, not a page
+          title, and the rename control has to be a real element, which
+          PageHeader's title slot (string-only) cannot carry. */}
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           {renaming ? (
@@ -304,6 +308,6 @@ export default function DealPage() {
       {recordOpen && (
         <DealRecordModal dealId={deal.id} name={name} onClose={() => setRecordOpen(false)} />
       )}
-    </div>
+    </PageLayout>
   );
 }
