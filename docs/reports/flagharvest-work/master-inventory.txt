@@ -1,0 +1,1625 @@
+- report: TASK-A11-REPORT.md
+- report: TASK-A11-REPORT.md
+- report: TASK-A11-REPORT.md
+- report: TASK-A11-REPORT.md
+- report: TASK-A11-REPORT.md
+- report: TASK-A11-REPORT.md
+- report: TASK-COUNTFIX-REPORT.md
+- report: TASK-COUNTFIX-REPORT.md
+- report: TASK-COUNTFIX-REPORT.md
+- report: TASK-COUNTFIX-REPORT.md
+- report: TASK-COUNTFIX-REPORT.md
+- report: TASK-COUNTFIX-REPORT.md
+- report: TASK-COUNTFIX-REPORT.md
+- report: TASK-COUNTFIX-REPORT.md
+- report: TASK-COUNTFIX-REPORT.md
+- report: TASK-COUNTFIX-REPORT.md
+- report: TASK-COUNTFIX-REPORT.md
+- report: TASK-COUNTFIX-REPORT.md
+- report: TASK-COUNTFIX-REPORT.md
+- report: TASK-COUNTFIX-REPORT.md
+- report: TASK-COUNTFIX-REPORT.md
+
+[INV batch1.md#1]
+- report: TASK-COUNTFIX-REPORT.md
+- what: myContractDocuments() is retained and annotated but no longer read by anything in the codebase (DealHome, its only consumer, now reads my_documents()).
+- where: src/lib/contracts.ts (myContractDocuments), my_contract_documents RPC
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+- report: TASK-DUPECENSUS-REPORT.md
+
+[INV batch1.md#2]
+- report: TASK-DUPECENSUS-REPORT.md
+- what: HorsesPage — the original horse roster, routed but with zero references; nothing links to it.
+- where: src/pages/app/ops/HorsesPage.tsx, route /app/ops/horses (App.tsx:279)
+
+[INV batch1.md#3]
+- report: TASK-DUPECENSUS-REPORT.md
+- what: OpsHome/OpsDashboard staff landing at /app/ops — routed, no nav entry, reached only if typed.
+- where: src/pages/app/OpsHome.tsx, src/pages/app/ops/OpsDashboard.tsx, route /app/ops (App.tsx:258)
+
+[INV batch1.md#4]
+- report: TASK-DUPECENSUS-REPORT.md
+- what: InstructorHome renders only for isStaff && !isAdmin, and no such account exists in production — otherwise unviewable except via the preview route.
+- where: src/pages/app/InstructorHome.tsx, src/pages/app/ops/InstructorHomePreview.tsx, /app/ops/preview/instructor-home
+
+[INV batch1.md#5]
+- report: TASK-DUPECENSUS-REPORT.md
+- what: ContactsPage retired behind CONTACTS_PAGE_RETIRED; route redirects to /app/admin; nav row removed by ADMINSWEEP X-1 — now URL-only, redirecting.
+- where: src/pages/app/ops/ContactsPage.tsx:523, route /app/ops/contacts
+
+[INV batch1.md#6]
+- report: TASK-DUPECENSUS-REPORT.md
+- what: IntakePage retired behind INTAKE_PAGE_RETIRED (new mid-census); /app/ops/intake renders IntakeRetiredRedirect while true; RequestInbox still present at line 95 behind it.
+- where: src/pages/app/ops/IntakePage.tsx:447, App.tsx:91,289
+
+[INV batch1.md#7]
+- report: TASK-DUPECENSUS-REPORT.md
+- what: Schedule.tsx (/app/schedule) is URL-only — in no nav table; only reached from two DashboardPanel "Coming up" tiles; holds the app's only RSVP surface.
+- where: src/pages/app/Schedule.tsx, route /app/schedule (App.tsx:207)
+
+[INV batch1.md#8]
+- report: TASK-DUPECENSUS-REPORT.md
+- what: Account.tsx (/account) is URL-only, redirects members to /app, and its production audience is 3 synthetic test accounts.
+- where: src/pages/Account.tsx, route /account (App.tsx:177)
+
+[INV batch1.md#9]
+- report: TASK-DUPECENSUS-REPORT.md
+- what: serviceCatalog.ts — a hardcoded "single source of truth" catalog constant with zero importers in src/; only its drift-guard test reads it.
+- where: src/lib/serviceCatalog.ts, test/db/service_catalog.test.ts
+
+[INV batch1.md#10]
+- report: TASK-DUPECENSUS-REPORT.md
+- what: Three dead dashboard count helpers with zero consumers: countContacts, countHorses, countOpenBillableLines (the tail of a KPI grid that lost two tiles).
+- where: src/lib/api.ts:1307, :1316, :1335
+
+[INV batch1.md#11]
+- report: TASK-DUPECENSUS-REPORT.md
+- what: DealHome (/app/deal) and CareHome (/app/care) — purpose-built homes reached by no production account (redirect condition !surfaces.has_feed is never true for anyone).
+- where: src/pages/app/DealHome.tsx, src/pages/app/CareHome.tsx
+
+[INV batch1.md#12]
+- report: TASK-DUPECENSUS-REPORT.md
+- what: StaffPage (/app/ops/employees/staff) — route registered but gated on mod.employees, which is disabled for FHE; renders the locked fallback; uses eight shared kit components against TeamPage's zero.
+- where: src/pages/app/ops/StaffPage.tsx (184 lines), App.tsx:327
+
+[INV batch1.md#13]
+- report: TASK-DUPECENSUS-REPORT.md
+- what: The Directory people page (/app/ops/directory) is a live nav entry to an empty page — contact_type='DIRECTORY' has 0 rows in production.
+- where: /app/ops/directory, src/pages/app/ops/ContactsPage.tsx (mode='directory')
+
+[INV batch1.md#14]
+- report: TASK-DUPECENSUS-REPORT.md
+- what: An inline body-preview block in ContractPage.tsx hidden behind INLINE_BODY_PREVIEW_RETIRED = true (not a page; no route).
+- where: src/pages/app/ContractPage.tsx:86 (guards a block at line 2004)
+
+[INV batch1.md#15]
+- report: TASK-DUPECENSUS-REPORT.md
+- what: Dark module pages rendering locked for FHE: /app/ops/boarding/* (3 pages + hub), /app/ops/barnops/* (3 + hub), /app/ops/employees/* (2 + hub) — modules disabled in org_modules.
+- where: /app/ops/boarding/*, /app/ops/barnops/*, /app/ops/employees/*
+
+[INV batch1.md#16]
+- report: TASK-DUPECENSUS-REPORT.md
+- what: The PDF body renderer has no route and cannot be mounted as a page — REVIEWNAV must compare it by emailing a signed copy, or skip the slot.
+- where: src/lib/documentPdf.ts
+- report: TASK-GOOGLEAUTH-REPORT.md
+- report: TASK-GOOGLEAUTH-REPORT.md
+- report: TASK-GOOGLEAUTH-REPORT.md
+- report: TASK-GOOGLEAUTH-REPORT.md
+- report: TASK-GOOGLEAUTH-REPORT.md
+- report: TASK-GOOGLEAUTH-REPORT.md
+- report: TASK-GOOGLEAUTH-REPORT.md
+- report: TASK-GOOGLEAUTH-REPORT.md
+- report: TASK-GOOGLEAUTH-REPORT.md
+- report: TASK-GOOGLEAUTH-REPORT.md
+- report: TASK-GOOGLEAUTH-REPORT.md
+- report: TASK-INVITEWORKS-REPORT.md
+- report: TASK-INVITEWORKS-REPORT.md
+- report: TASK-INVITEWORKS-REPORT.md
+- report: TASK-INVITEWORKS-REPORT.md
+- report: TASK-INVITEWORKS-REPORT.md
+- report: TASK-INVITEWORKS-REPORT.md
+- report: TASK-INVITEWORKS-REPORT.md
+- report: TASK-INVITEWORKS-REPORT.md
+- report: TASK-INVITEWORKS-REPORT.md
+- report: TASK-INVITEWORKS-REPORT.md
+- report: TASK-INVITEWORKS-REPORT.md
+- report: TASK-INVITEWORKS-REPORT.md
+
+[INV batch1.md#17]
+- report: TASK-INVITEWORKS-REPORT.md
+- what: The proposed no-default-supersede migration is shelved in docs/proposed/ (deliberately outside supabase/migrations/ so no sweep applies it) awaiting owner sign-off.
+- where: docs/proposed/INVITEWORKS-provision-no-default-supersede.sql
+- report: TASK-LEADCLEAN-REPORT.md
+- report: TASK-LEADCLEAN-REPORT.md
+- report: TASK-LEADCLEAN-REPORT.md
+- report: TASK-LEADCLEAN-REPORT.md
+- report: TASK-LEADCLEAN-REPORT.md
+- report: TASK-LEADCLEAN-REPORT.md
+- report: TASK-LEADCLEAN-REPORT.md
+- report: TASK-LEADCLEAN-REPORT.md
+- report: TASK-LEADCLEAN-REPORT.md
+- report: TASK-LEADCLEAN-REPORT.md
+- report: TASK-LEADCLEAN-REPORT.md
+
+[INV batch1.md#18]
+- report: TASK-LEADCLEAN-REPORT.md
+- what: IntakePage retired behind INTAKE_PAGE_RETIRED — nothing deleted, the page still compiles and flipping the boolean restores it whole; the route redirects to /app/dashboard carrying ?request= through because five DB functions and one staff email still write notification links pointing there.
+- where: src/pages/app/ops/IntakePage.tsx (INTAKE_PAGE_RETIRED), submit_public_request, create_gift, redeem_gift, provision_client_invitation, sign_start_register_attempt, api/request-received.ts
+- report: TASK-LEASEFIX-REPORT.md
+- report: TASK-LEASEFIX-REPORT.md
+- report: TASK-LEASEFIX-REPORT.md
+- report: TASK-LEASEFIX-REPORT.md
+- report: TASK-LEASEFIX-REPORT.md
+- report: TASK-LEASEFIX-REPORT.md
+- report: TASK-LEASEFIX-REPORT.md
+- report: TASK-LEASEFIX-REPORT.md
+- report: TASK-LEASEFIX-REPORT.md
+- report: TASK-LEASEFIX-REPORT.md
+- report: TASK-LEASEFIX-REPORT.md
+- report: TASK-LEASEFIX-REPORT.md
+- report: TASK-LEASEFIX-REPORT.md
+- report: TASK-NOGUARD2-REPORT.md
+- report: TASK-NOGUARD2-REPORT.md
+- report: TASK-NOGUARD2-REPORT.md
+- report: TASK-NOGUARD2-REPORT.md
+- report: TASK-NOGUARD2-REPORT.md
+- report: TASK-NOGUARD2-REPORT.md
+- report: TASK-NOGUARD2-REPORT.md
+- report: TASK-NOGUARD2-REPORT.md
+- report: TASK-NOGUARD2-REPORT.md
+- report: TASK-NOGUARD2-REPORT.md
+- report: TASK-NOGUARD2-REPORT.md
+- report: TASK-NOGUARD2-REPORT.md
+- report: TASK-NOGUARD2-REPORT.md
+- report: TASK-NOGUARD2-REPORT.md
+- report: TASK-NOGUARD2-REPORT.md
+- report: TASK-NOGUARD2-REPORT.md
+- report: TASK-NOGUARD2-REPORT.md
+- report: TASK-NOGUARD2-REPORT.md
+- report: TASK-NOGUARD2-REPORT.md
+
+[INV batch1.md#19]
+- report: TASK-NOGUARD2-REPORT.md
+- what: void_signatures_on_edit(uuid) had never fired (0 documents with signatures_voided_at) and had zero callers by four methods — dropped in Phase A.
+- where: void_signatures_on_edit (dropped; body recoverable from six historical migrations)
+
+[INV batch1.md#20]
+- report: TASK-NOGUARD2-REPORT.md
+- what: The gifts subsystem holds 0 rows and no INSERT path into gifts exists in pg_proc, src/ or api/ — the guarded gift functions have no live data to act on.
+- where: gifts table, gift_claim_link, gift_mark_sent, gift_reschedule
+- report: TASK-PROFILE-REPORT.md
+- report: TASK-PROFILE-REPORT.md
+- report: TASK-PROFILE-REPORT.md
+- report: TASK-PROFILE-REPORT.md
+- report: TASK-PROFILE-REPORT.md
+- report: TASK-PROFILE-REPORT.md
+- report: TASK-PROFILE-REPORT.md
+- report: TASK-REQTRIGGER-REPORT.md
+- report: TASK-REQTRIGGER-REPORT.md
+- report: TASK-REQTRIGGER-REPORT.md
+- report: TASK-REQTRIGGER-REPORT.md
+- report: TASK-SQLTRUTH-REPORT.md
+- report: TASK-SQLTRUTH-REPORT.md
+- report: TASK-SQLTRUTH-REPORT.md
+- report: TASK-TITLESWEEP-REPORT.md
+- report: TASK-TITLESWEEP-REPORT.md
+- report: TASK-TITLESWEEP-REPORT.md
+- report: TASK-TITLESWEEP-REPORT.md
+- report: TASK-TOKENAUDIT-REPORT.md
+- report: TASK-TOKENAUDIT-REPORT.md
+- report: TASK-TOKENAUDIT-REPORT.md
+- report: TASK-TOKENAUDIT-REPORT.md
+- report: TASK-TOKENAUDIT-REPORT.md
+- report: TASK-TOKENAUDIT-REPORT.md
+- report: TASK-TOKENAUDIT-REPORT.md
+- report: TASK-TOKENAUDIT-REPORT.md
+- report: TASK-TOKENAUDIT-REPORT.md
+- report: TASK-TOKENAUDIT-REPORT.md
+- report: TASK-TOKENAUDIT-REPORT.md
+- report: TASK-TOKENAUDIT-REPORT.md
+- report: TASK-TOKENAUDIT-REPORT.md
+
+[INV batch1.md#21]
+- report: TASK-TOKENAUDIT-REPORT.md
+- what: The 190 dictionary rows of template_tokens (template_id IS NULL) are read by nothing today — generate_document loops only template-scoped rows; they exist purely for the not-yet-built picker.
+- where: template_tokens WHERE template_id IS NULL (190 rows)
+
+[INV batch1.md#22]
+- report: TASK-TOKENAUDIT-REPORT.md
+- what: 46 DEFINED-BUT-UNUSED tokens no body references (PARTY.* ×7, FHE.* ×7, REQ.* ×4 + 8 ENG intake, 7 order-form fee tokens, and assorted DOC/ORD/ENG/HORSE/CLIENT/ORG singles) — none deleted; picker exit is the owner's call.
+- where: template_tokens (46 rows; full list in report §3)
+
+[INV batch1.md#23]
+- report: TASK-TOKENAUDIT-REPORT.md
+- what: 24 tokens appear only in INACTIVE flat template bodies (HORSE_LEASE / HORSE_PURCHASE_SALE / HORSE_SALE_TRANSFER / RELEASE_HORSE_EXERCISE leftovers) — harmless while those templates stay off.
+- where: contract_templates (inactive bodies), template_tokens
+
+[INV batch1.md#24]
+- report: TASK-TOKENAUDIT-REPORT.md
+- what: MINOR_RIDER — an active flat template body (5,481 bytes) from which no document has ever been generated, with zero scoped token rows; the dictionary doc says it was retired.
+- where: contract_templates (template_key MINOR_RIDER), docs/TOKEN_DICTIONARY.md line 192
+- report: POST_RUN_CLOSEOUT.md
+- report: POST_RUN_CLOSEOUT.md
+- report: POST_RUN_CLOSEOUT.md
+- report: POST_RUN_CLOSEOUT.md
+- report: POST_RUN_CLOSEOUT.md
+- report: POST_RUN_CLOSEOUT.md
+- report: POST_RUN_CLOSEOUT.md
+- report: POST_RUN_CLOSEOUT.md
+- report: POST_RUN_CLOSEOUT.md
+- report: POST_RUN_CLOSEOUT.md
+
+[INV batch2.md#25]
+- report: POST_RUN_CLOSEOUT.md
+- what: A dead nav route and placeholder media are recorded as pre-existing open BACKLOG items, untouched.
+- where: docs/BACKLOG.md
+- report: PROMPT_A_STAGES_4-5.md
+- report: PROMPT_A_STAGES_4-5.md
+- report: PROMPT_A_STAGES_4-5.md
+- report: PROMPT_A_STAGES_4-5.md
+- report: PROMPT_A_STAGES_4-5.md
+- report: PROMPT_A_STAGES_4-5.md
+- report: PROMPT_A_STAGES_4-5.md
+- report: PROMPT_A_STAGES_4-5.md
+- report: PROMPT_A_STAGES_4-5.md
+- report: PROMPT_A_STAGES_4-5.md
+- report: PROMPT_A_STAGES_4-5.md
+- report: PROMPT_A_STAGES_4-5.md
+- report: PROMPT_A_STAGES_4-5.md
+- report: PROMPT_A_STAGES_4-5.md
+- report: PROMPT_A_STAGES_4-5.md
+
+[INV batch2.md#26]
+- report: PROMPT_A_STAGES_4-5.md
+- what: The public-site Account page is described by its own code comment as legacy, serving only signed-in users without an active membership.
+- where: src/pages (Account.tsx, per report: "the public-site `Account.tsx`")
+- report: TASK-A15-REPORT.md
+- report: TASK-A15-REPORT.md
+- report: TASK-A8-REPORT.md
+- report: TASK-A8-REPORT.md
+- report: TASK-A8-REPORT.md
+- report: TASK-A8-REPORT.md
+- report: TASK-A8-REPORT.md
+- report: TASK-B-REPORT.md
+- report: TASK-B-REPORT.md
+- report: TASK-B-REPORT.md
+- report: TASK-B-REPORT.md
+- report: TASK-B-REPORT.md
+- report: TASK-B-REPORT.md
+
+[INV batch2.md#27]
+- report: TASK-B-REPORT.md
+- what: The original task/b-lead-notifications branch sits abandoned pointing at an unrelated R10 commit; its cleanup was left to whoever owns orchestration.
+- where: git branch task/b-lead-notifications, shared checkout fhe-website-app
+- report: TASK-C-REPORT.md
+- report: TASK-C-REPORT.md
+- report: TASK-C-REPORT.md
+- report: TASK-C-REPORT.md
+- report: TASK-C-REPORT.md
+- report: TASK-GIFTCREDITS-REPORT.md
+- report: TASK-GIFTCREDITS-REPORT.md
+- report: TASK-GIFTCREDITS-REPORT.md
+- report: TASK-GIFTCREDITS-REPORT.md
+- report: TASK-GIFTCREDITS-REPORT.md
+- report: TASK-GIFTCREDITS-REPORT.md
+- report: TASK-GIFTCREDITS-REPORT.md
+- report: TASK-GIFTCREDITS-REPORT.md
+- report: TASK-GIFTCREDITS-REPORT.md
+
+[INV batch2.md#28]
+- report: TASK-GIFTCREDITS-REPORT.md
+- what: ensure_gift_buyer_account was written in Stage 4 (2026-07-28) for the gift-creation call site and had been dead code ever since, because nothing ever created a gift to call it on — revived by this task's create_gift.
+- where: ensure_gift_buyer_account (DB function)
+
+[INV batch2.md#29]
+- report: TASK-GIFTCREDITS-REPORT.md
+- what: gifts.order_id is a vestigial unconstrained uuid column read or written by nothing.
+- where: gifts.order_id
+- report: TASK-INQUIRYMAIL-REPORT.md
+- report: TASK-INQUIRYMAIL-REPORT.md
+- report: TASK-PAGEVIS-REPORT.md
+- report: TASK-PAGEVIS-REPORT.md
+- report: TASK-PAGEVIS-REPORT.md
+- report: TASK-PAGEVIS-REPORT.md
+- report: TASK-PAGEVIS-REPORT.md
+- report: TASK-PAGEVIS-REPORT.md
+- report: TASK-PAGEVIS-REPORT.md
+- report: TASK-PAGEVIS-REPORT.md
+- report: TASK-PAGEVIS-REPORT.md
+- report: TASK-PAGEVIS-REPORT.md
+
+[INV batch2.md#30]
+- report: TASK-PAGEVIS-REPORT.md
+- what: The held nav-filter patch (NavItem page keys, 8 module child rows, Page-visibility settings row, the filter clause, and its 10-test file) exists only as an unapplied patch file awaiting HORSEONE's merge.
+- where: docs/reports/PAGEVIS-navfilter.patch, test/ui/pagevis_nav_filter.test.ts
+
+[INV batch2.md#31]
+- report: TASK-PAGEVIS-REPORT.md
+- what: The page-visibility settings page has no nav entry until the patch lands — reachable only by typing its URL.
+- where: /app/ops/admin/pages (AdminPageVisibilityPage.tsx)
+
+[INV batch2.md#32]
+- report: TASK-PAGEVIS-REPORT.md
+- what: mod.brokerage is entitled but its hub is not built — the status tile renders it "Enabled, hub not built", white and not a link.
+- where: org_modules (mod.brokerage), src/pages/app/ops/OpsDashboard.tsx
+- report: TASK-PLUSPASS-REPORT.md
+- report: TASK-PLUSPASS-REPORT.md
+- report: TASK-PLUSPASS-REPORT.md
+- report: TASK-PLUSPASS-REPORT.md
+- report: TASK-PLUSPASS-REPORT.md
+- report: TASK-PLUSPASS-REPORT.md
+- report: TASK-PLUSPASS-REPORT.md
+- report: TASK-PLUSPASS-REPORT.md
+- report: TASK-PLUSPASS-REPORT.md
+- report: TASK-PLUSPASS-REPORT.md
+- report: TASK-R11-REPORT.md
+- report: TASK-R11-REPORT.md
+- report: TASK-R11-REPORT.md
+- report: TASK-R11-REPORT.md
+- report: TASK-R11-REPORT.md
+- report: TASK-R11-REPORT.md
+- report: TASK-R11-REPORT.md
+- report: TASK-R11-REPORT.md
+- report: TASK-R11-REPORT.md
+- report: TASK-REVIEWNAV-REPORT.md
+- report: TASK-REVIEWNAV-REPORT.md
+- report: TASK-REVIEWNAV-REPORT.md
+- report: TASK-REVIEWNAV-REPORT.md
+- report: TASK-REVIEWNAV-REPORT.md
+- report: TASK-REVIEWNAV-REPORT.md
+- report: TASK-REVIEWNAV-REPORT.md
+- report: TASK-REVIEWNAV-REPORT.md
+- report: TASK-REVIEWNAV-REPORT.md
+- report: TASK-REVIEWNAV-REPORT.md
+- report: TASK-REVIEWNAV-REPORT.md
+- report: TASK-REVIEWNAV-REPORT.md
+- report: TASK-REVIEWNAV-REPORT.md
+- report: TASK-REVIEWNAV-REPORT.md
+- report: TASK-REVIEWNAV-REPORT.md
+
+[INV batch2.md#33]
+- report: TASK-REVIEWNAV-REPORT.md
+- what: ContactsPage is retired behind CONTACTS_PAGE_RETIRED = true (its live route redirects to /app/admin); mounted for review only at /app/ops/review/contacts.
+- where: src/pages/app/ops/ContactsPage.tsx:523, /app/ops/contacts, /app/ops/review/contacts
+
+[INV batch2.md#34]
+- report: TASK-REVIEWNAV-REPORT.md
+- what: IntakePage is retired behind INTAKE_PAGE_RETIRED = true (its live route redirects to the dashboard carrying its ?request= param); mounted for review only at /app/ops/review/intake.
+- where: src/pages/app/ops/IntakePage.tsx:447, /app/ops/intake, /app/ops/review/intake
+
+[INV batch2.md#35]
+- report: TASK-REVIEWNAV-REPORT.md
+- what: ContactDossierModal had no route at all (takes a contactId prop); given a review-only mount.
+- where: /app/ops/review/contact-dossier (ContactDossierModal)
+
+[INV batch2.md#36]
+- report: TASK-REVIEWNAV-REPORT.md
+- what: ContactForm is a presentational component with no route of its own; given a review-only mount with an inert submit.
+- where: /app/ops/review/contact-form (ContactForm)
+
+[INV batch2.md#37]
+- report: TASK-REVIEWNAV-REPORT.md
+- what: /app/ops/horses is the 07-01 original horse roster, and the only implementation that resolves breed/colour lookups to names — that feature dies with it if slot A wins.
+- where: /app/ops/horses
+
+[INV batch2.md#38]
+- report: TASK-REVIEWNAV-REPORT.md
+- what: /app/ops/preview/instructor-home is the trainer-home preview; no account exists that can render it with a trainer's own data.
+- where: /app/ops/preview/instructor-home
+
+[INV batch2.md#39]
+- report: TASK-REVIEWNAV-REPORT.md
+- what: /app/schedule is the 06-23 original member time surface, superseded in use by /app/calendar.
+- where: /app/schedule
+
+[INV batch2.md#40]
+- report: TASK-REVIEWNAV-REPORT.md
+- what: The member self-sign Documents row is hidden for staff in the normal nav — the Review section is the only way in for staff.
+- where: /app/documents
+
+[INV batch2.md#41]
+- report: TASK-REVIEWNAV-REPORT.md
+- what: /app/ops/directory is a live nav entry rendering an empty page — zero rows in production.
+- where: /app/ops/directory
+
+[INV batch2.md#42]
+- report: TASK-REVIEWNAV-REPORT.md
+- what: /app/ops/employees/staff renders only the module-locked fallback because mod.employees is off.
+- where: /app/ops/employees/staff
+- report: TASK-ROSTERCARD-REPORT.md
+- report: TASK-ROSTERCARD-REPORT.md
+- report: TASK-ROSTERCARD-REPORT.md
+- report: TASK-ROSTERCARD-REPORT.md
+- report: TASK-ROSTERCARD-REPORT.md
+- report: TASK-ROSTERCARD-REPORT.md
+- report: TASK-ROSTERCARD-REPORT.md
+- report: TASK-ROSTERCARD-REPORT.md
+- report: TASK-ROSTERCARD-REPORT.md
+- report: TASK-ROSTERCARD-REPORT.md
+- report: TASK-ROSTERCARD-REPORT.md
+- report: TASK-ROSTERCARD-REPORT.md
+
+[INV batch2.md#43]
+- report: TASK-ROSTERCARD-REPORT.md
+- what: ContactsPage, DirectoryPage, and LeadsPage remain exported but ContactsPage is retired behind CONTACTS_PAGE_RETIRED = true with its route redirecting to /app/admin — nothing deleted per the standing rule.
+- where: src/pages/app/ops/ContactsPage.tsx (CONTACTS_PAGE_RETIRED), /app/ops/contacts → /app/admin redirect in App.tsx
+
+[INV batch2.md#44]
+- report: TASK-ROSTERCARD-REPORT.md
+- what: task/roster's positional-row presentation (RosterRow/RosterHeader) sits on an unmerged branch, held back and superseded per the owner's 2026-08-10 reversal — not ported, not merged.
+- where: git branch task/roster (RosterRow, RosterHeader)
+- report: TASK-CHECKBOXTIP-REPORT.md
+- report: TASK-CHECKBOXTIP-REPORT.md
+- report: TASK-CHECKBOXTIP-REPORT.md
+- report: TASK-CHECKBOXTIP-REPORT.md
+- report: TASK-CHECKBOXTIP-REPORT.md
+- report: TASK-CHECKBOXTIP-REPORT.md
+- report: TASK-CHECKBOXTIP-REPORT.md
+- report: TASK-FRAMESCROLL-REPORT.md
+- report: TASK-FRAMESCROLL-REPORT.md
+- report: TASK-FRAMESCROLL-REPORT.md
+- report: TASK-FRAMESCROLL-REPORT.md
+- report: TASK-FRAMESCROLL-REPORT.md
+- report: TASK-FRAMESCROLL-REPORT.md
+- report: TASK-FRAMESCROLL-REPORT.md
+- report: TASK-FRAMESCROLL-REPORT.md
+- report: TASK-FRAMESCROLL-REPORT.md
+- report: TASK-FRAMESCROLL-REPORT.md
+- report: TASK-FRAMESCROLL-REPORT.md
+- report: TASK-FRAMESCROLL-REPORT.md
+- report: TASK-FRAMESCROLL-REPORT.md
+- report: TASK-FRAMESCROLL-REPORT.md
+- report: TASK-I-REPORT.md
+- report: TASK-I-REPORT.md
+- report: TASK-I-REPORT.md
+- report: TASK-I-REPORT.md
+- report: TASK-INBOUNDALERT-REPORT.md
+- report: TASK-INBOUNDALERT-REPORT.md
+- report: TASK-INBOUNDALERT-REPORT.md
+- report: TASK-INBOUNDALERT-REPORT.md
+- report: TASK-INBOUNDALERT-REPORT.md
+- report: TASK-INBOUNDALERT-REPORT.md
+- report: TASK-LEASEMAP-REPORT.md
+- report: TASK-LEASEMAP-REPORT.md
+- report: TASK-LEASEMAP-REPORT.md
+- report: TASK-LEASEMAP-REPORT.md
+- report: TASK-LEASEMAP-REPORT.md
+- report: TASK-LEASEMAP-REPORT.md
+- report: TASK-LEASEMAP-REPORT.md
+- report: TASK-LEASEMAP-REPORT.md
+- report: TASK-LEASEMAP-REPORT.md
+- report: TASK-LEASEMAP-REPORT.md
+- report: TASK-LEASEMAP-REPORT.md
+- report: TASK-LEASEMAP-REPORT.md
+- report: TASK-LEASEMAP-REPORT.md
+- report: TASK-LEASEMAP-REPORT.md
+- report: TASK-LEASEMAP-REPORT.md
+- report: TASK-LEASEMAP-REPORT.md
+- report: TASK-LEASEMAP-REPORT.md
+- report: TASK-LEASEMAP-REPORT.md
+- report: TASK-LEASEMAP-REPORT.md
+- report: TASK-LEASEMAP-REPORT.md
+- report: TASK-LEASEMAP-REPORT.md
+- report: TASK-LEASEMAP-REPORT.md
+- report: TASK-LEASEMAP-REPORT.md
+- report: TASK-LEASEMAP-REPORT.md
+- report: TASK-LEASEMAP-REPORT.md
+- report: TASK-LEASEMAP-REPORT.md
+- report: TASK-LEASEMAP-REPORT.md
+- report: TASK-LEASEMAP-REPORT.md
+- report: TASK-LOCFIX-REPORT.md
+- report: TASK-LOCFIX-REPORT.md
+- report: TASK-ONEMENU-PHASE1-PLAN.md
+- report: TASK-ONEMENU-PHASE1-PLAN.md
+- report: TASK-ONEMENU-PHASE1-PLAN.md
+- report: TASK-ONEMENU-PHASE1-PLAN.md
+- report: TASK-ONEMENU-PHASE1-PLAN.md
+- report: TASK-ONEMENU-PHASE1-PLAN.md
+- report: TASK-ONEMENU-PHASE1-PLAN.md
+- report: TASK-ONEMENU-PHASE1-PLAN.md
+- report: TASK-ONEMENU-PHASE1-PLAN.md
+- report: TASK-ONEMENU-PHASE1-PLAN.md
+- report: TASK-ONEMENU-PHASE1-PLAN.md
+- report: TASK-ONEMENU-PHASE1-PLAN.md
+- report: TASK-ONEMENU-PHASE1-PLAN.md
+- report: TASK-ONEMENU-PHASE1-PLAN.md
+- report: TASK-PAGETITLES-REPORT.md
+- report: TASK-PAGETITLES-REPORT.md
+- report: TASK-PAGETITLES-REPORT.md
+- report: TASK-RECORDS-REPORT.md
+- report: TASK-RECORDS-REPORT.md
+- report: TASK-RECORDS-REPORT.md
+- report: TASK-RECORDS-REPORT.md
+- report: TASK-RECORDS-REPORT.md
+- report: TASK-RECORDS-REPORT.md
+- report: TASK-RECORDS-REPORT.md
+- report: TASK-RECORDS-REPORT.md
+- report: TASK-SIGREAD-REPORT.md
+- report: TASK-SIGREAD-REPORT.md
+- report: TASK-SUPERSEDE-REPORT.md
+- report: TASK-SUPERSEDE-REPORT.md
+- report: TASK-SUPERSEDE-REPORT.md
+- report: TASK-SUPERSEDE-REPORT.md
+- report: TASK-TIPTAP-REPORT.md
+- report: TASK-TIPTAP-REPORT.md
+- report: TASK-TIPTAP-REPORT.md
+- report: TASK-TIPTAP-REPORT.md
+- report: TASK-TIPTAP-REPORT.md
+- report: TASK-UIBUILD-LOG.md
+- report: TASK-UIBUILD-LOG.md
+- report: TASK-UIBUILD-LOG.md
+- report: TASK-UIBUILD-LOG.md
+- report: TASK-UIBUILD-LOG.md
+- report: TASK-UIBUILD-LOG.md
+- report: TASK-UIBUILD-LOG.md
+- report: TASK-UIBUILD-LOG.md
+- report: TASK-UIBUILD-LOG.md
+- report: TASK-UIBUILD-LOG.md
+- report: TASK-UIBUILD-LOG.md
+- report: TASK-UIBUILD-LOG.md
+- report: TASK-UIBUILD-LOG.md
+- report: TASK-UIBUILD-LOG.md
+- report: TASK-UIBUILD-LOG.md
+- report: TASK-UIBUILD-LOG.md
+- report: TASK-UIBUILD-LOG.md
+- report: TASK-UIBUILD-LOG.md
+- report: TASK-UIBUILD-LOG.md
+- report: TASK-UIBUILD-LOG.md
+- report: TASK-UIBUILD-LOG.md
+- report: TASK-UIBUILD-LOG.md
+- report: TASK-UIBUILD-LOG.md
+
+[INV batch3.md#45]
+- report: TASK-I-REPORT.md
+- what: SavedPanel's four hardcoded fake "Saved" items (SEED_SAVED) are now gated behind SEED_ENABLED=false, so the section renders its empty state for all real users; no saved/bookmark table exists anywhere.
+- where: src/components/app/AccountPanels.tsx (SavedPanel, SEED_SAVED, SEED_ENABLED)
+
+[INV batch3.md#46]
+- report: TASK-PAGETITLES-REPORT.md
+- what: seed.ts's FEED_VIEW_META.all.description tagline is now dead for the all-view render path (new copy inlined in Home.tsx; seed.ts is documented as temporary preview-only data marked for deletion).
+- where: src/lib/seed.ts (FEED_VIEW_META.all.description), src/pages/app/Home.tsx
+
+[INV batch3.md#47]
+- report: TASK-PAGETITLES-REPORT.md
+- what: SERVICE_TYPES lookup in serviceCatalog.ts has no consumers anywhere in src/ — dead code; its label string was updated anyway to avoid a contradicting copy.
+- where: src/lib/serviceCatalog.ts (SERVICE_TYPES, code HORSE_PURCHASE_ASSISTANCE)
+
+[INV batch3.md#48]
+- report: TASK-RECORDS-REPORT.md
+- what: DirectoryPage and ContactsPage's 'directory' mode survive with no live route pointing at them, and the deprecated DIRECTORY contact_type is still accepted (zero rows).
+- where: src/pages/app/ops/ContactsPage.tsx (DirectoryPage, 'directory' mode), contacts_contact_type_check (DIRECTORY)
+
+[INV batch3.md#49]
+- report: TASK-UIBUILD-LOG.md
+- what: UIO-006 avatar open-state options page — a preview-only rendered comparison (three options) awaiting an owner pick; not app code.
+- where: docs/reference/uio-006-open-state-options.html
+
+[INV batch3.md#50]
+- report: TASK-UIBUILD-LOG.md
+- what: UIO-011 hover-and-green evaluation mockup page — preview-only, nothing in src/ touched; explicitly forbids a decision being made from it by the builder.
+- where: docs/reference/uio-011-hover-and-green-evaluation.html
+
+[INV batch3.md#51]
+- report: TASK-LEASEMAP-REPORT.md
+- what: ARENA_SOLO ("Solo Arena Riding") is a dead option — appears in no conditional_on anywhere in HORSE_LEASE_V2; selecting it only changes printed words.
+- where: HORSE_LEASE_V2, TXN.PERMITTED_ACTIVITIES option ARENA_SOLO
+
+[INV batch3.md#52]
+- report: TASK-LEASEMAP-REPORT.md
+- what: The deductible trigger's OTHER branch clears an explanation field (`<base>_RESP_OTHER`) that does not exist in this template — a dead branch.
+- where: contract_split_deductible_sync (`<base>_RESP_OTHER` branch)
+
+[INV batch3.md#53]
+- report: TASK-LEASEMAP-REPORT.md
+- what: clause_cut_kept is inert on HORSE_LEASE_V2 (cut_name null on every section/clause) and still tests three fields that do not exist here.
+- where: clause_cut_kept; TXN.MORTALITY_INSURANCE_PARTY, TXN.MAJOR_MEDICAL_INSURANCE_PARTY, TXN.LOSS_OF_USE_INSURANCE_PARTY
+
+[INV batch3.md#54]
+- report: TASK-LEASEMAP-REPORT.md
+- what: Most of contract_split_deductible_sync is dead code on this template — it references seven fields that do not exist in HORSE_LEASE_V2.
+- where: contract_split_deductible_sync; TXN.MORT_ELECTED, TXN.MED_COVERAGE, TXN.MORT_LIMIT, TXN.MORT_DEDUCTIBLE, TXN.MED_DEDUCTIBLE, `<base>_RESP_MODE`, `<base>_RESP_OTHER`
+- report: TASK-A8B-REPORT.md
+- report: TASK-A8B-REPORT.md
+- report: TASK-A8B-REPORT.md
+- report: TASK-A8B-REPORT.md
+- report: TASK-A8B-REPORT.md
+- report: TASK-A8B-REPORT.md
+- report: TASK-A8B-REPORT.md
+- report: TASK-A8B-REPORT.md
+- report: TASK-A8B-REPORT.md
+- report: TASK-ACCTEVAL-REPORT.md
+- report: TASK-ACCTEVAL-REPORT.md
+- report: TASK-ACCTEVAL-REPORT.md
+- report: TASK-ACCTEVAL-REPORT.md
+- report: TASK-ACCTEVAL-REPORT.md
+- report: TASK-ACCTEVAL-REPORT.md
+- report: TASK-ACCTEVAL-REPORT.md
+- report: TASK-ACCTEVAL-REPORT.md
+- report: TASK-ACCTEVAL-REPORT.md
+- report: TASK-ACCTEVAL-REPORT.md
+- report: TASK-ACCTEVAL-REPORT.md
+- report: TASK-ACCTEVAL-REPORT.md
+- report: TASK-ACCTEVAL-REPORT.md
+- report: TASK-ACCTEVAL-REPORT.md
+- report: TASK-ACCTEVAL-REPORT.md
+- report: TASK-ACCTEVAL-REPORT.md
+- report: TASK-ACCTEVAL-REPORT.md
+- report: TASK-ACCTEVAL-REPORT.md
+- report: TASK-ACCTEVAL-REPORT.md
+- report: TASK-ACCTEVAL-REPORT.md
+- report: TASK-ACCTEVAL-REPORT.md
+- report: TASK-ACCTEVAL-REPORT.md
+- report: TASK-ACCTEVAL-REPORT.md
+- report: TASK-ACCTEVAL-REPORT.md
+- report: TASK-ACCTEVAL-REPORT.md
+- report: TASK-ACCTEVAL-REPORT.md
+- report: TASK-ACCTEVAL-REPORT.md
+- report: TASK-ACCTEVAL-REPORT.md
+- report: TASK-ACCTEVAL-REPORT.md
+- report: TASK-ACCTEVAL-REPORT.md
+- report: TASK-ACCTEVAL-REPORT.md
+- report: TASK-ACCTEVAL-REPORT.md
+- report: TASK-ACCTEVAL-REPORT.md
+- report: TASK-ADDNEW-REPORT.md
+- report: TASK-ADDNEW-REPORT.md
+- report: TASK-ADDNEW-REPORT.md
+- report: TASK-ADDNEW-REPORT.md
+- report: TASK-ADMINSWEEP-PHASE2.md
+- report: TASK-ADMINSWEEP-PHASE2.md
+- report: TASK-ADMINSWEEP-PHASE2.md
+- report: TASK-ADMINSWEEP-PHASE2.md
+- report: TASK-ADMINSWEEP-PHASE2.md
+- report: TASK-ADMINSWEEP-PHASE2.md
+- report: TASK-ADMINSWEEP-PHASE2.md
+- report: TASK-ADMINSWEEP-PHASE2.md
+- report: TASK-ADMINSWEEP-PHASE2.md
+- report: TASK-ADMINSWEEP-PHASE2.md
+- report: TASK-ADMINSWEEP-PHASE2.md
+- report: TASK-ADMINSWEEP-PHASE2.md
+- report: TASK-BP410-REPORT.md
+- report: TASK-BP410-REPORT.md
+- report: TASK-BP410-REPORT.md
+- report: TASK-BP410-REPORT.md
+- report: TASK-COMPANYFIX-REPORT.md
+- report: TASK-COMPANYFIX-REPORT.md
+- report: TASK-COMPANYFIX-REPORT.md
+- report: TASK-DOCQUEUE-REPORT.md
+- report: TASK-DOCQUEUE-REPORT.md
+- report: TASK-DOCQUEUE-REPORT.md
+- report: TASK-DOCQUEUE-REPORT.md
+- report: TASK-DOCQUEUE-REPORT.md
+- report: TASK-DOCQUEUE-REPORT.md
+- report: TASK-DOCQUEUE-REPORT.md
+- report: TASK-DOCQUEUE-REPORT.md
+- report: TASK-DOCVIS-REPORT.md
+- report: TASK-DOCVIS-REPORT.md
+- report: TASK-DOCVIS-REPORT.md
+- report: TASK-NOGUARD3-REPORT.md
+- report: TASK-NOGUARD3-REPORT.md
+- report: TASK-NOGUARD3-REPORT.md
+- report: TASK-NOGUARD3-REPORT.md
+- report: TASK-NOGUARD3-REPORT.md
+- report: TASK-NOGUARD3-REPORT.md
+- report: TASK-NOGUARD3-REPORT.md
+- report: TASK-NOGUARD3-REPORT.md
+- report: TASK-NOGUARD3-REPORT.md
+- report: TASK-NOGUARD3-REPORT.md
+- report: TASK-NOGUARD3-REPORT.md
+- report: TASK-NOGUARD3-REPORT.md
+- report: TASK-NOGUARD3-REPORT.md
+- report: TASK-NOGUARD3-REPORT.md
+- report: TASK-NOGUARD3-REPORT.md
+- report: TASK-NOGUARD3-REPORT.md
+- report: TASK-NOGUARD3-REPORT.md
+- report: TASK-ONEAUTHOR-REPORT.md
+- report: TASK-ONEAUTHOR-REPORT.md
+- report: TASK-ONEAUTHOR-REPORT.md
+- report: TASK-ONEAUTHOR-REPORT.md
+- report: TASK-ONEAUTHOR-REPORT.md
+- report: TASK-ONEAUTHOR-REPORT.md
+- report: TASK-ONEAUTHOR-REPORT.md
+- report: TASK-ONEAUTHOR-REPORT.md
+- report: TASK-ONEAUTHOR-REPORT.md
+- report: TASK-ONEAUTHOR-REPORT.md
+- report: TASK-ONEHEADER-REPORT.md
+- report: TASK-ONEHEADER-REPORT.md
+- report: TASK-ONEHEADER-REPORT.md
+- report: TASK-ONEHEADER-REPORT.md
+- report: TASK-ONEHEADER-REPORT.md
+- report: TASK-ONEHEADER-REPORT.md
+- report: TASK-ONEHEADER-REPORT.md
+- report: TASK-ONEHEADER-REPORT.md
+- report: TASK-ONEHEADER-REPORT.md
+- report: TASK-ONEHEADER-REPORT.md
+- report: TASK-SENDGUARD-REPORT.md
+- report: TASK-SENDGUARD-REPORT.md
+- report: TASK-SENDGUARD-REPORT.md
+- report: TASK-SENDGUARD-REPORT.md
+- report: TASK-SENDGUARD-REPORT.md
+- report: TASK-SENDGUARD-REPORT.md
+- report: TASK-SENDGUARD-REPORT.md
+- report: TASK-SENDGUARD-REPORT.md
+- report: TASK-SENDGUARD-REPORT.md
+- report: TASK-SENDGUARD-REPORT.md
+- report: TASK-WALLSYNC-REPORT.md
+- report: TASK-WALLSYNC-REPORT.md
+- report: TASK-WALLSYNC-REPORT.md
+- report: TASK-WALLSYNC-REPORT.md
+- report: TASK-WALLSYNC-REPORT.md
+- report: TASK-WALLSYNC-REPORT.md
+- report: TASK-WALLSYNC-REPORT.md
+- report: TASK-WALLSYNC-REPORT.md
+- report: TASK-WALLSYNC-REPORT.md
+
+[INV batch4.md#55]
+- report: TASK-A8B-REPORT.md
+- what: SendCopiesMenu is a new admin 4-option component wired into the executed-doc Manage card; unpushed at time of report.
+- where: src/components/app/SendCopiesMenu.tsx, src/pages/app/ContractPage.tsx
+
+[INV batch4.md#56]
+- report: TASK-ACCTEVAL-REPORT.md
+- what: "Saved items" nav row and panel are permanently empty — gated by SEED_ENABLED hardcoded to false, no save/bookmark control exists.
+- where: src/lib/seed.ts (SEED_ENABLED=false), SavedPanel, my_nav_presence(), PRESENCE_LINKS
+
+[INV batch4.md#57]
+- report: TASK-ACCTEVAL-REPORT.md
+- what: TwoFactorSettings is unreachable — rendered only on /account which redirects members to /app.
+- where: src/pages/Account.tsx (TwoFactorSettings), LoginSecurityCard
+
+[INV batch4.md#58]
+- report: TASK-ACCTEVAL-REPORT.md
+- what: contacts.rider_skill_level column is dead — zero references in src/, api/, or any DB function.
+- where: contacts.rider_skill_level (added 20260804030000_guest_category_promotion_skill.sql)
+
+[INV batch4.md#59]
+- report: TASK-ACCTEVAL-REPORT.md
+- what: contacts.jump_limitations / {{CLIENT.JUMP_LIMITATIONS}} token — appears in 0 template bodies and 0 clause defs; onboarding never collects it.
+- where: contacts.jump_limitations, ContactDossierModal.tsx:54, template_tokens
+
+[INV batch4.md#60]
+- report: TASK-ACCTEVAL-REPORT.md
+- what: profiles columns tour_seen_at, first_dashboard_at, welcome_removed_at, created_from_request_id — no reader/writer (superseded or declared only in types).
+- where: profiles.tour_seen_at, profiles.first_dashboard_at, profiles.welcome_removed_at, profiles.created_from_request_id, lib/types.ts
+
+[INV batch4.md#61]
+- report: TASK-ACCTEVAL-REPORT.md
+- what: contacts fields staff_preferred_contact, zelle_phone, zelle_email, correspondence_email, mobile_number, texts_phone — read by nothing outside the AccountInfoCard that writes them.
+- where: contacts columns; AccountInfoCard.tsx, lib/contact.ts, 20260805120000_task_profile_account_info.sql
+
+[INV batch4.md#62]
+- report: TASK-ACCTEVAL-REPORT.md
+- what: Directory columns hide_email/hide_mobile/hide_whatsapp have no control anywhere yet ship on the wire in every directory response; only dead SeedFallback reads m.mobile/m.whatsapp.
+- where: contacts.hide_email/hide_mobile/hide_whatsapp, member_directory, SeedFallback in CommunityFeed.tsx
+
+[INV batch4.md#63]
+- report: TASK-ACCTEVAL-REPORT.md
+- what: ?section=profile and ?section=documents deep-link values accepted by AccountHub but linked from nowhere.
+- where: AccountHub, PRESENCE_LINKS
+
+[INV batch4.md#64]
+- report: TASK-ADMINSWEEP-PHASE2.md
+- what: InstructorHome landing page is unreachable — renders only when OpsHome sees isAdmin===false, and no MANAGER/EMPLOYEE account exists; now viewable only via an unlinked preview URL.
+- where: InstructorHome, /app/ops/preview/instructor-home (InstructorHomePreview.tsx), OpsHome
+
+[INV batch4.md#65]
+- report: TASK-ADMINSWEEP-PHASE2.md
+- what: OpsDashboard (/app/ops) has been registered and unlinked since it shipped — reachable only by typing the URL; nav entry specified but not applied.
+- where: /app/ops (OpsDashboard), AppLayout.tsx
+
+[INV batch4.md#66]
+- report: TASK-ADDNEW-REPORT.md
+- what: PageHeader aria-label falls back to visible text if addLabel omitted — no page does this today; fallback exists for a future page.
+- where: PageHeader.tsx
+
+[INV batch4.md#67]
+- report: TASK-ONEAUTHOR-REPORT.md
+- what: listContractTemplates() has no callers — dead read path, not deleted.
+- where: src/lib/api.ts:1093 listContractTemplates()
+
+[INV batch4.md#68]
+- report: TASK-ONEAUTHOR-REPORT.md
+- what: The inline "Review the document text" body-preview block retired behind a boolean (not deleted).
+- where: ContractPage.tsx, INLINE_BODY_PREVIEW_RETIRED = true
+
+[INV batch4.md#69]
+- report: TASK-ONEAUTHOR-REPORT.md
+- what: Three lease template forks (_FULL, _SIMPLE, _STANDARD) carry 0 documents each and are byte-identical clones of V2; new FlatDocument.tsx renderer added behind the null-structure branch.
+- where: HORSE_LEASE_FULL, HORSE_LEASE_SIMPLE, HORSE_LEASE_STANDARD; src/components/app/FlatDocument.tsx
+
+[INV batch4.md#70]
+- report: TASK-ONEAUTHOR-REPORT.md
+- what: FACILITY_LICENSE and INDEPENDENT_CONTRACTOR are active/selectable templates with empty bodies and zero clause defs — compose an empty document.
+- where: FACILITY_LICENSE, INDEPENDENT_CONTRACTOR (contract_templates)
+
+[INV batch4.md#71]
+- report: TASK-ONEHEADER-REPORT.md
+- what: CardstockHeader.tsx, header-cardstock.css and public/header-stock.jpg are shelved — no longer imported, emit no CSS, kept byte-identical for restore.
+- where: src/components/app/CardstockHeader.tsx, src/components/app/header-cardstock.css, public/header-stock.jpg, docs/reference/shelved-cardstock-header/README.md
+
+[INV batch4.md#72]
+- report: TASK-ONEHEADER-REPORT.md
+- what: glass.nav theme colour in tailwind.config.js now has no reader after NAV_GLASS removal; left in place.
+- where: tailwind.config.js glass.nav
+
+[INV batch4.md#73]
+- report: TASK-ONEHEADER-REPORT.md
+- what: AppHeader.tsx (new) and app-header.css (new) adopt the login screen's header; verification harness archived as .txt files kept out of build.
+- where: src/components/app/AppHeader.tsx, src/components/app/app-header.css, oneheader-shots/harness.main.tsx.txt, harness.index.html.txt
+
+[INV batch4.md#74]
+- report: TASK-NOGUARD3-REPORT.md
+- what: 23 internal/generate_document helper functions revoked from anon/authenticated in Phase B — each has no browser/api RPC caller (loose grep hits were comments or different functions).
+- where: _provision_purchase_for_offerings, send_executed_document_email, undelivered_executed_documents, document_horse_ids, expand_horse_blocks, and 18 others
+
+[INV batch4.md#75]
+- report: TASK-SENDGUARD-REPORT.md
+- what: §2 migration (compose_document_body / regenerate_document_body / rewritten generate_my_onboarding_documents) is committed unapplied — these functions do not exist in production.
+- where: supabase/migrations/20260810T1400_sendguard_reuse_pending_onboarding_document.sql
+
+[INV batch4.md#76]
+- report: TASK-WALLSYNC-REPORT.md
+- what: The deliberate re-sign workflow (record_template_version_bump, pending_version_decisions, resolve_version_decision, require_resign_from) exists but its 6 queued version-decision events have never been actioned.
+- where: template_version_events, pending_version_decisions(), resolve_version_decision(), require_resign_from()
+- report: PROMPT_A_STAGES_1-3.md
+- report: PROMPT_A_STAGES_1-3.md
+- report: PROMPT_A_STAGES_1-3.md
+- report: PROMPT_A_STAGES_1-3.md
+- report: PROMPT_A_STAGES_1-3.md
+- report: PROMPT_A_STAGES_1-3.md
+- report: PROMPT_A_STAGES_1-3.md
+- report: PROMPT_A_STAGES_1-3.md
+- report: PROMPT_A_STAGES_1-3.md
+- report: PROMPT_A_STAGES_1-3.md
+- report: PROMPT_A_STAGES_1-3.md
+- report: PROMPT_A_STAGES_1-3.md
+- report: PROMPT_A_STAGES_1-3.md
+- report: PROMPT_A_STAGES_1-3.md
+- report: PROMPT_A_STAGES_1-3.md
+- report: TASK-A-PARTY-VERIFY-2-REPORT.md
+- report: TASK-A-PARTY-VERIFY-2-REPORT.md
+- report: TASK-A-PARTY-VERIFY-2-REPORT.md
+- report: TASK-A-PARTY-VERIFY-2-REPORT.md
+- report: TASK-A-PARTY-VERIFY-2-REPORT.md
+- report: TASK-A-PARTY-VERIFY-2-REPORT.md
+- report: TASK-A-PARTY-VERIFY-2-REPORT.md
+- report: TASK-A-PARTY-VERIFY-2-REPORT.md
+- report: TASK-A-PARTY-VERIFY-2-REPORT.md
+- report: TASK-A-PARTY-VERIFY-2-REPORT.md
+- report: TASK-A-PARTY-VERIFY-2-REPORT.md
+- report: TASK-CONTRACTORPHAN-REPORT.md
+- report: TASK-CONTRACTORPHAN-REPORT.md
+- report: TASK-CONTRACTORPHAN-REPORT.md
+- report: TASK-CONTRACTORPHAN-REPORT.md
+- report: TASK-CONTRACTORPHAN-REPORT.md
+- report: TASK-CONTRACTORPHAN-REPORT.md
+- report: TASK-CONTRACTORPHAN-REPORT.md
+- report: TASK-CONTRACTORPHAN-REPORT.md
+- report: TASK-CONTRACTORPHAN-REPORT.md
+- report: TASK-CONTRACTORPHAN-REPORT.md
+- report: TASK-CONTRACTORPHAN-REPORT.md
+- report: TASK-CONTRACTORPHAN-REPORT.md
+- report: TASK-CONTRACTORPHAN-REPORT.md
+- report: TASK-CONTRACTORPHAN-REPORT.md
+- report: TASK-DOCCOLS-REPORT.md
+- report: TASK-DOCCOLS-REPORT.md
+- report: TASK-DOCCOLS-REPORT.md
+- report: TASK-DOCCOLS-REPORT.md
+- report: TASK-DOCCOLS-REPORT.md
+- report: TASK-DOCCOLS-REPORT.md
+- report: TASK-DOCCOLS-REPORT.md
+- report: TASK-DOCCOLS-REPORT.md
+- report: TASK-DOCCOLS-REPORT.md
+- report: TASK-DOCCOLS-REPORT.md
+- report: TASK-DOCCOLS-REPORT.md
+- report: TASK-DOCPACKET-REPORT.md
+- report: TASK-DOCPACKET-REPORT.md
+- report: TASK-DOCPACKET-REPORT.md
+- report: TASK-DOCPACKET-REPORT.md
+- report: TASK-HEADER-REPORT.md
+- report: TASK-HEADER-REPORT.md
+- report: TASK-HEADER-REPORT.md
+- report: TASK-HEADER-REPORT.md
+- report: TASK-HEADER-REPORT.md
+- report: TASK-HEADER-REPORT.md
+- report: TASK-HEADER-REPORT.md
+- report: TASK-HEADER-REPORT.md
+- report: TASK-HEADER-REPORT.md
+- report: TASK-HEADER-REPORT.md
+- report: TASK-HEADER-REPORT.md
+- report: TASK-HEADER-REPORT.md
+- report: TASK-HEADER-REPORT.md
+- report: TASK-HEADER-REPORT.md
+- report: TASK-HEADER-REPORT.md
+- report: TASK-HEADER-REPORT.md
+- report: TASK-HORSEDOCS-REPORT.md
+- report: TASK-HORSEDOCS-REPORT.md
+- report: TASK-HORSEDOCS-REPORT.md
+- report: TASK-HORSEDOCS-REPORT.md
+- report: TASK-HORSEDOCS-REPORT.md
+- report: TASK-HORSEDOCS-REPORT.md
+- report: TASK-INVITEFLOW-REPORT.md
+- report: TASK-INVITEFLOW-REPORT.md
+- report: TASK-INVITEFLOW-REPORT.md
+- report: TASK-INVITEFLOW-REPORT.md
+- report: TASK-INVITEFLOW-REPORT.md
+- report: TASK-INVITEFLOW-REPORT.md
+- report: TASK-PURPOSEFIX-REPORT.md
+- report: TASK-PURPOSEFIX-REPORT.md
+- report: TASK-PURPOSEFIX-REPORT.md
+- report: TASK-PURPOSEFIX-REPORT.md
+- report: TASK-SECFIX-REPORT.md
+- report: TASK-SECFIX-REPORT.md
+- report: TASK-SECFIX-REPORT.md
+- report: TASK-SECFIX-REPORT.md
+- report: TASK-SECFIX-REPORT.md
+- report: TASK-SECFIX-REPORT.md
+- report: TASK-SECFIX-REPORT.md
+- report: TASK-SECFIX-REPORT.md
+- report: TASK-SECFIX-REPORT.md
+- report: TASK-SECFIX-REPORT.md
+- report: TASK-SECFIX-REPORT.md
+- report: TASK-SECFIX2-REPORT.md
+- report: TASK-SECFIX2-REPORT.md
+- report: TASK-SECFIX2-REPORT.md
+- report: TASK-SECFIX2-REPORT.md
+- report: TASK-SECFIX2-REPORT.md
+- report: TASK-SECFIX2-REPORT.md
+- report: TASK-TEXTEDIT-REPORT.md
+- report: TASK-TEXTEDIT-REPORT.md
+- report: TASK-TEXTEDIT-REPORT.md
+- report: TASK-TEXTEDIT-REPORT.md
+- report: TASK-TEXTEDIT-REPORT.md
+- report: TASK-TEXTEDIT-REPORT.md
+- report: TASK-TEXTEDIT-REPORT.md
+- report: TASK-TEXTEDIT-REPORT.md
+- report: TASK-TEXTEDIT-REPORT.md
+- report: TASK-TEXTEDIT-REPORT.md
+- report: TASK-UIPOLISH-REPORT.md
+- report: TASK-UIPOLISH-REPORT.md
+- report: TASK-UIPOLISH-REPORT.md
+
+[INV batch5.md#77]
+- report: PROMPT_A_STAGES_1-3.md
+- what: HORSE_LEASE v1 template — inactive with 0 documents but still carrying 104 body tokens and 98 registry rows; a legacy-retirement candidate requiring an owner decision because retiring it deletes body text.
+- where: contract_templates key HORSE_LEASE (v1), template_tokens
+
+[INV batch5.md#78]
+- report: PROMPT_A_STAGES_1-3.md
+- what: MINOR_RIDER template — active but has produced 0 documents; its GUARDIAN.*/EMERGENCY_CONTACT.* tokens have never been exercised by a real render.
+- where: contract_templates key MINOR_RIDER
+
+[INV batch5.md#79]
+- report: TASK-SECFIX-REPORT.md
+- what: clients_overview view — zero references anywhere in src/ or api/ (checked before revoking anon SELECT).
+- where: public.clients_overview
+
+[INV batch5.md#80]
+- report: TASK-SECFIX-REPORT.md
+- what: service_credits view — zero references in the codebase (and 0 rows at verification time).
+- where: public.service_credits
+
+[INV batch5.md#81]
+- report: TASK-SECFIX-REPORT.md
+- what: memberships view — zero real code references; the only two grep hits are prose comments in api/hard-delete-client.ts about the members table cascade, not view reads.
+- where: public.memberships, api/hard-delete-client.ts:12,48
+
+[INV batch5.md#82]
+- report: TASK-SECFIX2-REPORT.md
+- what: ensure_gift_buyer_account(uuid) — dead code in production: zero callers by grep, pg_proc prosrc scan (with positive control), and pg_depend; gift redemption runs through redeem_gift, which never calls it.
+- where: public.ensure_gift_buyer_account(uuid)
+
+[INV batch5.md#83]
+- report: TASK-SECFIX2-REPORT.md
+- what: member_directory view — now unreadable by every web role and security_invoker=true; its definition is retained purely as documentation of the shape, with nothing depending on it.
+- where: public.member_directory
+
+[INV batch5.md#84]
+- report: TASK-DOCCOLS-REPORT.md
+- what: ContactsPage / the /app/ops/contacts route — retired per TASK-ROSTER; person links go to /app/admin?open= (the Clients page) instead.
+- where: src/pages ContactsPage, route /app/ops/contacts
+
+[INV batch5.md#85]
+- report: TASK-DOCCOLS-REPORT.md
+- what: The org company contact has no reachable record page (contact_type='TEAM' fails admin_client_accounts arm 3's type check by design) — it renders as plain text, not a link.
+- where: contacts (French Heritage Equestrian, is_company=true), admin_client_accounts()
+
+[INV batch5.md#86]
+- report: TASK-TEXTEDIT-REPORT.md
+- what: 59 template_tokens rows whose source_table points at tables that no longer exist — dead source wiring surfaced in the picker with a "source retired" badge, rows deliberately not deleted.
+- where: template_tokens (59 rows with source_live=false)
+
+[INV batch5.md#87]
+- report: TASK-TEXTEDIT-REPORT.md
+- what: HORSE_REPRESENTATION and MEDIA_RELEASE — inactive flat templates with empty bodies.
+- where: contract_templates keys HORSE_REPRESENTATION, MEDIA_RELEASE
+
+[INV batch5.md#88]
+- report: TASK-TEXTEDIT-REPORT.md
+- what: FACILITY_LICENSE and INDEPENDENT_CONTRACTOR — active flat templates whose live bodies are empty (red "empty body" badge in the editor list; drafts exercised then discarded, bodies still empty).
+- where: contract_templates keys FACILITY_LICENSE, INDEPENDENT_CONTRACTOR
+
+[INV batch5.md#89]
+- report: TASK-TEXTEDIT-REPORT.md
+- what: HORSE_LEASE_STANDARD — locked in the editor with a D10 locked_reason (the deactivated redundant lease clone); 0 drafts, version and body md5 unmoved, draft/publish attempts refused.
+- where: contract_templates key HORSE_LEASE_STANDARD
+
+[INV batch5.md#90]
+- report: TASK-A-PARTY-VERIFY-2-REPORT.md
+- what: The page CJ's contract-invite link landed on was reported by the owner as non-functional/"unwired" — unconfirmed, needs live browser evidence.
+- where: contract invite redemption landing page (route not identified in the report)
+
+[INV batch5.md#91]
+- report: TASK-HEADER-REPORT.md
+- what: The checked-in header mockup's drawer and modal behaviour is entirely non-functional — its inline script throws before the DOM nodes exist; only the avatar press physics run in the reference.
+- where: docs/reference/header-mockup.html
+- report: TASK-A-PARTY-VERIFY-REPORT.md
+- report: TASK-A-PARTY-VERIFY-REPORT.md
+- report: TASK-A-PARTY-VERIFY-REPORT.md
+- report: TASK-A-PARTY-VERIFY-REPORT.md
+- report: TASK-A-PARTY-VERIFY-REPORT.md
+- report: TASK-A-PARTY-VERIFY-REPORT.md
+- report: TASK-A-PARTY-VERIFY-REPORT.md
+- report: TASK-A-PARTY-VERIFY-REPORT.md
+- report: TASK-ACCOUNTSURFACE-PHASE1.md
+- report: TASK-ACCOUNTSURFACE-PHASE1.md
+- report: TASK-ACCOUNTSURFACE-PHASE1.md
+- report: TASK-ACCOUNTSURFACE-PHASE1.md
+- report: TASK-ACCOUNTSURFACE-PHASE1.md
+- report: TASK-ACCOUNTSURFACE-PHASE1.md
+- report: TASK-ACCOUNTSURFACE-PHASE1.md
+- report: TASK-ACCOUNTSURFACE-PHASE1.md
+- report: TASK-ACCOUNTSURFACE-PHASE1.md
+- report: TASK-ADDITEM-REPORT.md
+- report: TASK-ADDITEM-REPORT.md
+- report: TASK-ADDITEM-REPORT.md
+- report: TASK-ADDITEM-REPORT.md
+- report: TASK-ADDITEM-REPORT.md
+- report: TASK-ADDITEM-REPORT.md
+- report: TASK-ADDITEM-REPORT.md
+- report: TASK-ADDITEM-REPORT.md
+- report: TASK-ADDITEM-REPORT.md
+- report: TASK-ADDITEM-REPORT.md
+- report: TASK-COSIGN-REPORT.md
+- report: TASK-COSIGN-REPORT.md
+- report: TASK-COSIGN-REPORT.md
+- report: TASK-COSIGN-REPORT.md
+- report: TASK-F3-REPORT.md
+- report: TASK-F3-REPORT.md
+- report: TASK-F3-REPORT.md
+- report: TASK-FACILITYTERM-REPORT.md
+- report: TASK-FACILITYTERM-REPORT.md
+- report: TASK-FACILITYTERM-REPORT.md
+- report: TASK-FACILITYTERM-REPORT.md
+- report: TASK-FACILITYTERM-REPORT.md
+- report: TASK-FACILITYTERM-REPORT.md
+- report: TASK-FACILITYTERM-REPORT.md
+- report: TASK-HORSEINTAKE-REPORT.md
+- report: TASK-HORSEINTAKE-REPORT.md
+- report: TASK-HORSEINTAKE-REPORT.md
+- report: TASK-HORSEINTAKE-REPORT.md
+- report: TASK-HORSEINTAKE-REPORT.md
+- report: TASK-HORSEINTAKE-REPORT.md
+- report: TASK-HORSEINTAKE-REPORT.md
+- report: TASK-HORSEINTAKE-REPORT.md
+- report: TASK-HORSEINTAKE-REPORT.md
+- report: TASK-HORSEINTAKE-REPORT.md
+- report: TASK-HORSEINTAKE-REPORT.md
+- report: TASK-HORSEINTAKE-REPORT.md
+- report: TASK-LEASEFORK-REPORT.md
+- report: TASK-LEASEFORK-REPORT.md
+- report: TASK-LEASEFORK-REPORT.md
+- report: TASK-LEASEFORK-REPORT.md
+- report: TASK-LEASEFORK-REPORT.md
+- report: TASK-LEASEFORK-REPORT.md
+- report: TASK-LEASEFORK-REPORT.md
+- report: TASK-LEASEFORK-REPORT.md
+- report: TASK-LEASEFORK-REPORT.md
+- report: TASK-LEASEFORK-REPORT.md
+- report: TASK-LEASESIMPLE-REPORT.md
+- report: TASK-LEASESIMPLE-REPORT.md
+- report: TASK-LEASESIMPLE-REPORT.md
+- report: TASK-LEASESIMPLE-REPORT.md
+- report: TASK-LEASESIMPLE-REPORT.md
+- report: TASK-MOBILEPASS-REPORT.md
+- report: TASK-MOBILEPASS-REPORT.md
+- report: TASK-MOBILEPASS-REPORT.md
+- report: TASK-MOBILEPASS-REPORT.md
+- report: TASK-MOBILEPASS-REPORT.md
+- report: TASK-MOBILEPASS-REPORT.md
+- report: TASK-NULLUID-REPORT.md
+- report: TASK-NULLUID-REPORT.md
+- report: TASK-NULLUID-REPORT.md
+- report: TASK-NULLUID-REPORT.md
+- report: TASK-NULLUID-REPORT.md
+- report: TASK-NULLUID-REPORT.md
+- report: TASK-NULLUID-REPORT.md
+- report: TASK-NULLUID-REPORT.md
+- report: TASK-NULLUID-REPORT.md
+- report: TASK-NULLUID-REPORT.md
+- report: TASK-NULLUID-REPORT.md
+- report: TASK-NULLUID-REPORT.md
+- report: TASK-NULLUID-REPORT.md
+- report: TASK-NULLUID-REPORT.md
+- report: TASK-ROSTER-REPORT.md
+- report: TASK-ROSTER-REPORT.md
+- report: TASK-ROSTER-REPORT.md
+- report: TASK-ROSTER-REPORT.md
+- report: TASK-ROSTER-REPORT.md
+- report: TASK-ROSTER-REPORT.md
+- report: TASK-SVCPURGE-REPORT.md
+- report: TASK-SVCPURGE-REPORT.md
+- report: TASK-SVCPURGE-REPORT.md
+- report: TASK-SVCPURGE-REPORT.md
+- report: TASK-SVCPURGE-REPORT.md
+- report: TASK-SVCPURGE-REPORT.md
+
+[INV batch6.md#92]
+- report: TASK-ACCOUNTSURFACE-PHASE1.md
+- what: There is no shared PageHeader component anywhere in the codebase — every page hand-rolls its own eyebrow/h1 markup.
+- where: (codebase-wide) — "the app's page header model" is a styling convention, not a component
+
+[INV batch6.md#93]
+- report: TASK-ACCOUNTSURFACE-PHASE1.md
+- what: No /app/stable route exists yet — this task adds My Stable, which today has only an Account panel (StableSection) and no nav page.
+- where: App.tsx route table; StableSection inline in AccountHub.tsx (lines 64-181)
+
+[INV batch6.md#94]
+- report: TASK-MOBILEPASS-REPORT.md
+- what: CardstockHeader.tsx and header-cardstock.css deleted — verified zero real imports, byte-identical to shelved backups; restore is two file copies away.
+- where: src/components/.../CardstockHeader.tsx, header-cardstock.css; backups at docs/reference/shelved-cardstock-header/*.txt
+
+[INV batch6.md#95]
+- report: TASK-MOBILEPASS-REPORT.md
+- what: The floating drawer tab no longer exists (deleted by ONEHEADER/A15); the header's avatar button is the only mobile nav control now.
+- where: AppLayout.tsx:1490 ("THE DRAWER TAB IS GONE"); AppHeader.tsx
+
+[INV batch6.md#96]
+- report: TASK-MOBILEPASS-REPORT.md
+- what: No standalone "notification surface" component and no bell — notifications live on the Dashboard and surface only as a count badge on the nav link.
+- where: AppLayout.tsx (NAV_BADGE); Dashboard page
+
+[INV batch6.md#97]
+- report: TASK-ROSTER-REPORT.md
+- what: ContactsPage retired behind CONTACTS_PAGE_RETIRED = true — nothing deleted; /app/ops/contacts redirects to /app/admin and the nav item is hidden. DirectoryPage and LeadsPage from the same file are NOT retired.
+- where: ContactsPage.tsx (CONTACTS_PAGE_RETIRED flag), AppLayout.tsx nav, /app/ops/contacts route
+
+[INV batch6.md#98]
+- report: TASK-SVCPURGE-REPORT.md
+- what: Six service contract templates deleted from contract_templates (HORSE_TRAINING, HORSE_EXERCISE, HORSEMANSHIP_TRAINING, HORSE_EVALUATION, RIDER_LESSON, RIDER_LESSON_JUMPER) plus 87 template_tokens and 6 template_variants; the six .md files deleted from the repo.
+- where: contract_templates; supabase/contract_templates/{HORSEMANSHIP_TRAINING,HORSE_EVALUATION,HORSE_EXERCISE,HORSE_TRAINING,RIDER_LESSON,RIDER_LESSON_JUMPER}.md
+
+[INV batch6.md#99]
+- report: TASK-SVCPURGE-REPORT.md
+- what: MINOR_RIDER and HORSE_REPRESENTATION — body-less, retired-in-practice template rows still present (unused) in contract_templates.
+- where: contract_templates rows MINOR_RIDER, HORSE_REPRESENTATION
+
+[INV batch6.md#100]
+- report: TASK-LEASEFORK-REPORT.md
+- what: HORSE_LEASE_STANDARD — a fork created with zero documents; later ruled a redundant fourth clone and deactivated per D10 (clause rows retained). Also HORSE_LEASE_FULL/HORSE_LEASE_SIMPLE forks exist byte-identical, unused by any document.
+- where: contract_templates HORSE_LEASE_STANDARD / HORSE_LEASE_FULL / HORSE_LEASE_SIMPLE
+
+[INV batch6.md#101]
+- report: TASK-LEASEFORK-REPORT.md
+- what: The retired flat HORSE_LEASE template (active=false, soft-deleted 2026-08-02) holds 98 orphan contract_field_defs rows with zero sections and zero clauses.
+- where: contract_templates HORSE_LEASE; contract_field_defs
+
+[INV batch6.md#102]
+- report: TASK-SVCPURGE-REPORT.md
+- what: scripts/build-template-load-migration.mjs had one dead entry (POST_SEED_TEMPLATES.RIDER_LESSON) that would re-seed the purged row on a fresh DB — removed.
+- where: scripts/build-template-load-migration.mjs
+
+[INV batch6.md#103]
+- report: TASK-FACILITYTERM-REPORT.md
+- what: seed.ts is otherwise dead in production (SEED_ENABLED = false; file marked "DELETE THIS FILE once the backing RPCs return real rows"); only FEED_VIEW_META renders unconditionally.
+- where: src/.../seed.ts
+
+[INV batch6.md#104]
+- report: TASK-A-PARTY-VERIFY-REPORT.md
+- what: caller_is_document_party RPC already exists and is used correctly elsewhere (document_shares_party_read) but is NOT wired into documents_select / my_documents() — the fix would OR it in.
+- where: caller_is_document_party, document_shares_party_read, documents_select, my_documents()
+- report: TASK-A12-REPORT.md
+- report: TASK-A12-REPORT.md
+- report: TASK-A14-REPORT.md
+- report: TASK-A14-REPORT.md
+- report: TASK-A14-REPORT.md
+- report: TASK-A14-REPORT.md
+- report: TASK-ACCOUNTSURFACE-REPORT.md
+- report: TASK-ACCOUNTSURFACE-REPORT.md
+- report: TASK-ACCOUNTSURFACE-REPORT.md
+- report: TASK-ACCOUNTSURFACE-REPORT.md
+- report: TASK-ACCOUNTSURFACE-REPORT.md
+- report: TASK-ACCOUNTSURFACE-REPORT.md
+- report: TASK-ACCOUNTSURFACE-REPORT.md
+- report: TASK-ACCOUNTSURFACE-REPORT.md
+- report: TASK-ADMINSWEEP-PHASE1.md
+- report: TASK-ADMINSWEEP-PHASE1.md
+- report: TASK-ADMINSWEEP-PHASE1.md
+- report: TASK-ADMINSWEEP-PHASE1.md
+- report: TASK-ADMINSWEEP-PHASE1.md
+- report: TASK-ADMINSWEEP-PHASE1.md
+- report: TASK-ADMINSWEEP-PHASE1.md
+- report: TASK-ADMINSWEEP-PHASE1.md
+- report: TASK-ADMINSWEEP-PHASE1.md
+- report: TASK-ADMINSWEEP-PHASE1.md
+- report: TASK-ADMINSWEEP-PHASE1.md
+- report: TASK-ADMINSWEEP-PHASE1.md
+- report: TASK-ADMINSWEEP-PHASE1.md
+- report: TASK-ADMINSWEEP-PHASE1.md
+- report: TASK-ADMINSWEEP-PHASE1.md
+- report: TASK-ADMINSWEEP-PHASE1.md
+- report: TASK-ADMINSWEEP-PHASE1.md
+- report: TASK-ADMINSWEEP-PHASE1.md
+- report: TASK-ADMINSWEEP-PHASE1.md
+- report: TASK-ADMINSWEEP-PHASE1.md
+- report: TASK-ADMINSWEEP-PHASE1.md
+- report: TASK-BOOKWRITE-REPORT.md
+- report: TASK-BOOKWRITE-REPORT.md
+- report: TASK-BOOKWRITE-REPORT.md
+- report: TASK-BOOKWRITE-REPORT.md
+- report: TASK-BOOKWRITE-REPORT.md
+- report: TASK-BOOKWRITE-REPORT.md
+- report: TASK-BOOKWRITE-REPORT.md
+- report: TASK-BOOKWRITE-REPORT.md
+- report: TASK-BOOKWRITE-REPORT.md
+- report: TASK-BOOKWRITE-REPORT.md
+- report: TASK-BOOKWRITE-REPORT.md
+- report: TASK-BOOKWRITE-REPORT.md
+- report: TASK-C10-REPORT.md
+- report: TASK-C10-REPORT.md
+- report: TASK-C10-REPORT.md
+- report: TASK-C10-REPORT.md
+- report: TASK-C10-REPORT.md
+- report: TASK-C10-REPORT.md
+- report: TASK-C10-REPORT.md
+- report: TASK-C10-REPORT.md
+- report: TASK-EMAILEXTRACT-REPORT.md
+- report: TASK-EMAILEXTRACT-REPORT.md
+- report: TASK-EMAILEXTRACT-REPORT.md
+- report: TASK-EMAILEXTRACT-REPORT.md
+- report: TASK-EMAILEXTRACT-REPORT.md
+- report: TASK-EMAILEXTRACT-REPORT.md
+- report: TASK-EMAILEXTRACT-REPORT.md
+- report: TASK-EMAILEXTRACT-REPORT.md
+- report: TASK-EMAILEXTRACT-REPORT.md
+- report: TASK-EMAILEXTRACT-REPORT.md
+- report: TASK-EMAILEXTRACT-REPORT.md
+- report: TASK-EMAILEXTRACT-REPORT.md
+- report: TASK-EMAILEXTRACT-REPORT.md
+- report: TASK-EMAILEXTRACT-REPORT.md
+- report: TASK-EMAILEXTRACT-REPORT.md
+- report: TASK-GUARDREST-REPORT.md
+- report: TASK-GUARDREST-REPORT.md
+- report: TASK-GUARDREST-REPORT.md
+- report: TASK-GUARDREST-REPORT.md
+- report: TASK-GUARDREST-REPORT.md
+- report: TASK-GUARDREST-REPORT.md
+- report: TASK-GUARDREST-REPORT.md
+- report: TASK-GUARDREST-REPORT.md
+- report: TASK-GUARDREST-REPORT.md
+- report: TASK-GUARDREST-REPORT.md
+- report: TASK-GUARDREST-REPORT.md
+- report: TASK-I1B-REPORT.md
+- report: TASK-I1B-REPORT.md
+- report: TASK-NOGUARD1-ORCHESTRATOR-AUDIT.md
+- report: TASK-NOGUARD1-ORCHESTRATOR-AUDIT.md
+- report: TASK-NOGUARD1-ORCHESTRATOR-AUDIT.md
+- report: TASK-NOGUARD1-ORCHESTRATOR-AUDIT.md
+- report: TASK-NOGUARD1-ORCHESTRATOR-AUDIT.md
+- report: TASK-NOGUARD1-ORCHESTRATOR-AUDIT.md
+- report: TASK-NOGUARD1-ORCHESTRATOR-AUDIT.md
+- report: TASK-NOGUARD1-ORCHESTRATOR-AUDIT.md
+- report: TASK-NOGUARD1-ORCHESTRATOR-AUDIT.md
+- report: TASK-NOGUARD1-ORCHESTRATOR-AUDIT.md
+- report: TASK-NOGUARD1-REPORT.md
+- report: TASK-NOGUARD1-REPORT.md
+- report: TASK-NOGUARD1-REPORT.md
+- report: TASK-NOGUARD1-REPORT.md
+- report: TASK-NOGUARD1-REPORT.md
+- report: TASK-NOGUARD1-REPORT.md
+- report: TASK-NOGUARD1-REPORT.md
+- report: TASK-NOGUARD1-REPORT.md
+- report: TASK-NOGUARD1-REPORT.md
+- report: TASK-NOGUARD1-REPORT.md
+- report: TASK-NOGUARD1-REPORT.md
+- report: TASK-NOGUARD1-REPORT.md
+- report: TASK-NOGUARD1-REPORT.md
+- report: TASK-NOGUARD1-REPORT.md
+- report: TASK-NOGUARD1-REPORT.md
+- report: TASK-NOGUARD1-REPORT.md
+- report: TASK-NOGUARD1-REPORT.md
+- report: TASK-PARTYCTRL-REPORT.md
+- report: TASK-PARTYCTRL-REPORT.md
+- report: TASK-PARTYCTRL-REPORT.md
+- report: TASK-TESTDB-REPORT.md
+- report: TASK-TESTDB-REPORT.md
+- report: TASK-TESTDB-REPORT.md
+- report: TASK-TESTDB-REPORT.md
+- report: TASK-TESTDB-REPORT.md
+- report: TASK-TESTDB-REPORT.md
+- report: TASK-TESTDB-REPORT.md
+- report: TASK-TESTDB-REPORT.md
+- report: TASK-TESTDB-REPORT.md
+- report: TASK-TESTDB-REPORT.md
+- report: TASK-TESTDB-REPORT.md
+- report: TASK-TESTDB-REPORT.md
+
+[INV batch7.md#105]
+- report: TASK-ADMINSWEEP-PHASE1.md
+- what: /app/ops (OpsHome → OpsDashboard/InstructorHome) has no nav entry and is unreachable; two whole surfaces dark, trainers have no home.
+- where: /app/ops, src/pages/app/ops/OpsDashboard.tsx, InstructorHome
+
+[INV batch7.md#106]
+- report: TASK-ADMINSWEEP-PHASE1.md
+- what: /app/ops/horses (HorsesPage, 127 lines) has zero references outside its route — a third unreachable horse surface.
+- where: /app/ops/horses, HorsesPage
+
+[INV batch7.md#107]
+- report: TASK-ADMINSWEEP-PHASE1.md
+- what: /app/ops/availability is a dormant legacy redirect with no nav and no links.
+- where: /app/ops/availability
+
+[INV batch7.md#108]
+- report: TASK-ADMINSWEEP-PHASE1.md
+- what: mod.brokerage is enabled but has no nav entry and no hub page; its entry was removed because it 404'd on an unregistered route.
+- where: mod.brokerage, AppLayout.tsx:331
+
+[INV batch7.md#109]
+- report: TASK-ADMINSWEEP-PHASE1.md
+- what: boarding (×4), barnops (×4), employees (×3) module pages are dark by design because their modules are off (not dead code).
+- where: /app/ops/boarding/{facilities,agreements,charges}, /app/ops/barnops/{resources,consumption,allocation-rules}, /app/ops/employees/{staff,schedule}
+
+[INV batch7.md#110]
+- report: TASK-ADMINSWEEP-PHASE1.md
+- what: The Sales financials backend (8 objects) is written but unapplied to prod and has no client code referencing it.
+- where: supabase/migrations/20260726090000_biz_expenses_and_financials.sql (sales_summary, business_kpis, growth_summary, profit_and_loss, upsert_expense, delete_expense, list_expenses, expense_categories_list)
+
+[INV batch7.md#111]
+- report: TASK-EMAILEXTRACT-REPORT.md
+- what: renderTemplate() in api/_lib/email.ts is now entirely dead (no callers) and still contains D9-forbidden welcome and dunning email wording; kept, not deleted.
+- where: api/_lib/email.ts, renderTemplate
+
+[INV batch7.md#112]
+- report: TASK-NOGUARD1-REPORT.md
+- what: void_signatures_on_edit is dead code — no caller in src/, api/, pg_proc or any trigger — yet anon-executable and voids all signatures on any document.
+- where: void_signatures_on_edit
+
+[INV batch7.md#113]
+- report: TASK-NOGUARD1-REPORT.md
+- what: apply_field_formats, regroup_contract_subjects, seed_cascade_fields are anon-callable contract_fields mutators with no callers anywhere (dead code).
+- where: apply_field_formats, regroup_contract_subjects, seed_cascade_fields
+
+[INV batch7.md#114]
+- report: TASK-NOGUARD1-REPORT.md
+- what: affiliation_reconciliation and wall_onboarding_invariant_violations are unauthenticated full-roster dump functions with no callers (dead code).
+- where: affiliation_reconciliation, wall_onboarding_invariant_violations
+
+[INV batch7.md#115]
+- report: TASK-TESTDB-REPORT.md
+- what: owns_order(uuid) is an orphan SQL function querying the dropped orders table, unreachable by any RLS/function/view/code.
+- where: owns_order(uuid)
+
+[INV batch7.md#116]
+- report: TASK-TESTDB-REPORT.md
+- what: 48 tests across 5 files (plus describe blocks) were deleted because their subjects (transactions, orders, engagements, tier layer, purchase catalog shadow catalogs) are retired/GONE.
+- where: purchase_catalog_matrix.test.ts, client_balance_read.test.ts, settlement_rollup.test.ts, e2e_payment.test.ts, client_self_signing.test.ts
+
+[INV batch7.md#117]
+- report: TASK-ACCOUNTSURFACE-REPORT.md
+- what: The old DocumentsPanel and PaperViewer were removed from AccountPanels.tsx (superseded by DocumentsContent.tsx); SavedPanel is all that remains (67 lines, down from 200).
+- where: AccountPanels.tsx, DocumentsPanel, PaperViewer, DocumentsContent.tsx
+- report: HANDOFF_DEAL_SALE_BUILD_2026-08-04.md
+- report: HANDOFF_DEAL_SALE_BUILD_2026-08-04.md
+- report: HANDOFF_DEAL_SALE_BUILD_2026-08-04.md
+- report: HANDOFF_DEAL_SALE_BUILD_2026-08-04.md
+- report: HANDOFF_DEAL_SALE_BUILD_2026-08-04.md
+- report: HANDOFF_DEAL_SALE_BUILD_2026-08-04.md
+- report: HANDOFF_DEAL_SALE_BUILD_2026-08-04.md
+- report: HANDOFF_DEAL_SALE_BUILD_2026-08-04.md
+- report: HANDOFF_DEAL_SALE_BUILD_2026-08-04.md
+- report: HANDOFF_DEAL_SALE_BUILD_2026-08-04.md
+- report: HANDOFF_DEAL_SALE_BUILD_2026-08-04.md
+- report: HANDOFF_DEAL_SALE_BUILD_2026-08-04.md
+- report: HANDOFF_DEAL_SALE_BUILD_2026-08-04.md
+- report: HANDOFF_DEAL_SALE_BUILD_2026-08-04.md
+- report: HANDOFF_DEAL_SALE_BUILD_2026-08-04.md
+- report: HANDOFF_DEAL_SALE_BUILD_2026-08-04.md
+- report: HANDOFF_DEAL_SALE_BUILD_2026-08-04.md
+- report: HANDOFF_DEAL_SALE_BUILD_2026-08-04.md
+- report: HANDOFF_DEAL_SALE_BUILD_2026-08-04.md
+- report: HANDOFF_DEAL_SALE_BUILD_2026-08-04.md
+- report: TASK-A13-REPORT.md
+- report: TASK-A13-REPORT.md
+- report: TASK-A13-REPORT.md
+- report: TASK-A16-REPORT.md
+- report: TASK-A16-REPORT.md
+- report: TASK-A16-REPORT.md
+- report: TASK-DASHLEADS-REPORT.md
+- report: TASK-DASHLEADS-REPORT.md
+- report: TASK-DASHLEADS-REPORT.md
+- report: TASK-LEASEGATE-PHASE1.md
+- report: TASK-LEASEGATE-PHASE1.md
+- report: TASK-LEASEGATE-PHASE1.md
+- report: TASK-LEASEGATE-PHASE1.md
+- report: TASK-LEASEGATE-PHASE1.md
+- report: TASK-LEASEGATE-PHASE1.md
+- report: TASK-LEASEGATE-PHASE1.md
+- report: TASK-LEASEGATE-PHASE1.md
+- report: TASK-LEASEGATE-PHASE1.md
+- report: TASK-LEASEGATE-PHASE1.md
+- report: TASK-LEASEGATE-PHASE1.md
+- report: TASK-LEASEGATE-PHASE1.md
+- report: TASK-LEASEGATE-PHASE1.md
+- report: TASK-LEASEGATE-PHASE1.md
+- report: TASK-LEASEGATE-PHASE1.md
+- report: TASK-LEASEGATE-PHASE1.md
+- report: TASK-LEASEGATE-PHASE1.md
+- report: TASK-LEASESET-REPORT.md
+- report: TASK-LEASESET-REPORT.md
+- report: TASK-LEASESET-REPORT.md
+- report: TASK-NAVMOTION-REPORT.md
+- report: TASK-NAVMOTION-REPORT.md
+- report: TASK-NAVMOTION-REPORT.md
+- report: TASK-NAVMOTION-REPORT.md
+- report: TASK-NAVMOTION-REPORT.md
+- report: TASK-NAVMOTION-REPORT.md
+- report: TASK-NAVMOTION-REPORT.md
+- report: TASK-NAVMOTION-REPORT.md
+- report: TASK-NAVMOTION-REPORT.md
+- report: TASK-NAVMOTION-REPORT.md
+- report: TASK-NAVMOTION-REPORT.md
+- report: TASK-NAVMOTION-REPORT.md
+- report: TASK-ONEMENU-REPORT.md
+- report: TASK-ONEMENU-REPORT.md
+- report: TASK-ONEMENU-REPORT.md
+- report: TASK-ONEMENU-REPORT.md
+- report: TASK-ONEMENU-REPORT.md
+- report: TASK-ONEMENU-REPORT.md
+- report: TASK-ONEMENU-REPORT.md
+- report: TASK-ONEMENU-REPORT.md
+- report: TASK-PAGEFRAME-REPORT.md
+- report: TASK-PAGEFRAME-REPORT.md
+- report: TASK-PAGEFRAME-REPORT.md
+- report: TASK-PAGEFRAME-REPORT.md
+- report: TASK-PAGEFRAME-REPORT.md
+- report: TASK-PARTYRLS-REPORT.md
+- report: TASK-PARTYRLS-REPORT.md
+- report: TASK-PARTYRLS-REPORT.md
+- report: TASK-PARTYRLS-REPORT.md
+- report: TASK-PARTYRLS-REPORT.md
+- report: TASK-UPLOADS-REPORT.md
+- report: TASK-UPLOADS-REPORT.md
+- report: TASK-UPLOADS-REPORT.md
+- report: TASK-UPLOADS-REPORT.md
+- report: TASK-UPLOADS-REPORT.md
+- report: TASK-UPLOADS-REPORT.md
+- report: TASK-UPLOADS-REPORT.md
+- report: TASK-UPLOADS-REPORT.md
+- report: TASK-UPLOADS-REPORT.md
+- report: TASK-UPLOADS-REPORT.md
+- report: TASK-UPLOADS-REPORT.md
+- report: TASK-UPLOADS-REPORT.md
+- report: TASK-UPLOADS-REPORT.md
+- report: TASK-UPLOADS-REPORT.md
+- report: TASK-UPLOADS-REPORT.md
+- report: TASK-UPLOADS-REPORT.md
+- report: TASK-WALLRETURN-REPORT.md
+- report: TASK-WALLRETURN-REPORT.md
+- report: TASK-WALLRETURN-REPORT.md
+- report: TASK-WALLRETURN-REPORT.md
+- report: TASK-WALLRETURN-REPORT.md
+- report: TASK-WALLRETURN-REPORT.md
+- report: TASK-WALLRETURN-REPORT.md
+
+[INV batch8.md#118]
+- report: HANDOFF_DEAL_SALE_BUILD_2026-08-04.md
+- what: reopen_deal RPC exists in the live DB with no UI caller (replaced by Edit routing).
+- where: public.reopen_deal
+
+[INV batch8.md#119]
+- report: HANDOFF_DEAL_SALE_BUILD_2026-08-04.md
+- what: start_bill_of_sale_standalone RPC has no UI caller and its distinct behavior has never been exercised.
+- where: public.start_bill_of_sale_standalone
+
+[INV batch8.md#120]
+- report: HANDOFF_DEAL_SALE_BUILD_2026-08-04.md
+- what: Two flat sale templates retired — inactive and soft-deleted.
+- where: contract_templates rows HORSE_PURCHASE_SALE, HORSE_SALE_TRANSFER
+
+[INV batch8.md#121]
+- report: TASK-DASHLEADS-REPORT.md
+- what: OpsHome, InstructorHome and OpsDashboard at /app/ops are unreachable from any in-app control — no link, Navigate, or navigate() call targets /app/ops.
+- where: src/pages/app/InstructorHome.tsx, OpsDashboard, OpsHome, route /app/ops (App.tsx)
+
+[INV batch8.md#122]
+- report: TASK-DASHLEADS-REPORT.md
+- what: IntakePage's nav entry was already removed (commit cefaad7); the /app/ops/intake route still builds and is reachable only via links from the new dashboard entries.
+- where: src/pages/app/ops/IntakePage.tsx, route /app/ops/intake
+
+[INV batch8.md#123]
+- report: TASK-LEASEGATE-PHASE1.md
+- what: HORSE_LEASE_STANDARD carries zero documents — all four lease documents sit on HORSE_LEASE_V2; the template is a byte-identical unused fork.
+- where: contract_templates row HORSE_LEASE_STANDARD
+
+[INV batch8.md#124]
+- report: TASK-LEASESET-REPORT.md
+- what: HORSE_LEASE_STANDARD deactivated with its 163 clause rows retained intact; must not receive content updates.
+- where: contract_templates row HORSE_LEASE_STANDARD
+
+[INV batch8.md#125]
+- report: TASK-LEASESET-REPORT.md
+- what: HORSE_LEASE retained as a never-activate historical reference (18,253-char flat body), recorded in the migration comment and HORSE_LEASE.md.
+- where: contract_templates row HORSE_LEASE, supabase/contract_templates/HORSE_LEASE.md
+
+[INV batch8.md#126]
+- report: TASK-ONEMENU-REPORT.md
+- what: PRESENCE_LINKS, MenuLink and the accountMenu are dead-for-tenant — read only by the preserved avatar dropdown that solely superadmin's header still renders, and the presence branch never actually renders even for superadmin (presence always empty for staff).
+- where: src/components/app/AppLayout.tsx (PRESENCE_LINKS, MenuLink, accountMenu, menuOpen, menuRef)
+
+[INV batch8.md#127]
+- report: TASK-PAGEFRAME-REPORT.md
+- what: The retired ContactsPage export is a dead route that still compiles, backed by the same ContactDirectory component as the live DirectoryPage/LeadsPage.
+- where: src/pages/app/ops/ContactsPage.tsx (ContactsPage export)
+
+[INV batch8.md#128]
+- report: TASK-PARTYRLS-REPORT.md
+- what: The document_deliveries party-read policy arm is currently unexercised — no party-facing caller of document_deliveries exists in src/ yet (reserved for the planned stamp-trail feature).
+- where: src/lib/api.ts:1132 (listDeliveries), document_deliveries_select
+
+[INV batch8.md#129]
+- report: TASK-UPLOADS-REPORT.md
+- what: file_links subject_type values `purchase` and `booking` exist in the CHECK but were not requested and have no consuming surface.
+- where: file_links.subject_type CHECK (purchase, booking)
+
+[INV batch8.md#130]
+- report: TASK-UPLOADS-REPORT.md
+- what: The Community → Resources card lists content_resources and now has a working resourceDownloadUrl(), but exposes no download control — the published-guide download path is unreachable from the UI.
+- where: src/lib/communityFeed.ts:211, src/lib/community.ts (resourceDownloadUrl)
