@@ -521,7 +521,9 @@ const ACCOUNTS_GROUP: NavItem[] = [
      half-applied — the page was retired, the nav entry never was. */
   { to: '/app/ops/leads', label: 'Leads', icon: Users },
   { to: '/app/admin', label: 'Clients', icon: Contact },
-  { to: '/app/ops/team', label: 'Team', icon: Contact },
+  /* Team moved to SETTINGS_GROUP below — owner, 2026-08-12: "team moves to
+     configuration section." Who works here is configuration, not a daily
+     people-management surface. */
   { to: '/app/ops/directory', label: 'Directory', icon: BookOpen },
 ];
 /* SERVICING and BUSINESS were folded into Management 2026-07-31 (owner): the
@@ -549,6 +551,27 @@ const MODULES_GROUP: NavItem[] = [
   { to: '/app/ops/employees', label: 'Employees', icon: Contact, module: 'mod.employees' },
 ];
 const SETTINGS_GROUP: NavItem[] = [
+  /* Owner, 2026-08-12: "team moves to configuration section." Arrived here from
+     MANAGEMENT_GROUP.
+
+     It also takes a NEW ICON, and that is not cosmetic: Team carried `Contact`,
+     which the same day's X-1 change gave to Clients — so the two sat in the nav
+     as the same glyph. `UserRound` is unused anywhere in this nav. Deliberately
+     NOT another `Shield`: this group already renders three identical ones, which
+     the icon exercise named as a defect ("eight identical Shield icons").
+
+     NOTE: this group still renders under the heading "Settings" (see navGroups
+     below). The owner has asked for it to become "Configuration", together with
+     a new Templates page — that rename lands with TASK-TEMPLATES, which is
+     blocked on the one-engine-vs-two ruling. Moving Team now is
+     forward-compatible: the group is renamed around it.
+
+     NO `adminOnly`, deliberately, even though every sibling here has it:
+     App.tsx:292 routes `ops/team` behind `requireStaff`, not `requireAdmin`.
+     Gating the nav entry tighter than the route would hide the page from
+     MANAGER/EMPLOYEE staff who can still reach it by URL — a nav that lies
+     about what you have. Move the entry, don't change who can see it. */
+  { to: '/app/ops/team', label: 'Team', icon: UserRound },
   { to: '/app/ops/admin/branding', label: 'Branding', icon: Shield, adminOnly: true },
   { to: '/app/ops/admin/products', label: 'Products', icon: Shield, adminOnly: true },
   { to: '/app/ops/admin/forms', label: 'Forms', icon: Shield, adminOnly: true },
