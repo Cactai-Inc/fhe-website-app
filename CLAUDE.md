@@ -217,3 +217,18 @@ reporting success.
   document.** Owner: *"We dont label the default as that we call it Standard."* Lockstep
   content writes now target **three** keys — `_V2` + `_SIMPLE` + `_FULL`. Full ruling:
   `docs/tasks/TASK-LEASESET-three-leases-and-an-archive.md`.
+- **D11 — Nothing is purged. Accounts are ARCHIVED, and files stay with them
+  (2026-08-11).** Owner: *"If the files are in the system they were used for something…
+  they stay along with the user account in archive. we dont need to purge data at this
+  point in the life of this app… the only thing we would want to do is stop seeing the
+  person's account in the main views, but the files will likely be associated with things
+  that other people still see and the files need to remain visible for them."*
+  **Three consequences.** (1) **A file is never cascade-deleted with its owner.** The
+  uploader-ownership model (`TASK-UPLOADS`) stands; departure does not revoke it, because a
+  file's audience is usually other people. (2) **`purge_account` is the wrong shape for
+  the current stage** — the requirement is to hide an account from main views, not to
+  remove rows. Removal stays available for the owner-run D1 test-identity purge; it is not
+  the answer for a departing real member. (3) **Reevaluate later** — this is explicitly a
+  stage-of-life ruling, not a permanent architecture. Consistent with the standing rules
+  that executed documents are evidence and that retirement means hidden behind a boolean,
+  never deleted.
