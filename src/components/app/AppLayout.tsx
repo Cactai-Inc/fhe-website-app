@@ -1859,7 +1859,30 @@ export default function AppLayout() {
             </nav>
           </aside>
         )}
-        <main className="flex-1 min-w-0 px-4 sm:px-8 xl:px-12 pt-10 sm:py-9 pb-24">
+        {/* FRAMESCROLL backstop, applied by the orchestrator 2026-08-12. `min-w-0`
+            lets this box SHRINK; it does not stop a `overflow: visible` child
+            painting past its edge and widening the document — which is what made
+            `.oh-hdr` (position: sticky, top: 0) scroll horizontally out of the
+            viewport on the Documents page. `DataTable` was the root cause and is
+            fixed; this is the guard against the next wide child.
+
+            It MUST be `clip`, not `hidden`. `overflow: hidden` makes this a scroll
+            container, and every `position: sticky` DESCENDANT would then resolve
+            against it instead of the viewport — `ContractSubheader` is sticky at
+            `top: var(--cs-hdr-h)` inside page content and would stop sticking.
+            `clip` clips without creating a scroll container, so sticky descendants
+            are unaffected, and it is the only value that permits `overflow-y:
+            visible` on the other axis. The two nav rails are SIBLINGS of <main>,
+            not descendants, so they were never at risk.
+
+            Consistent with an existing owner decision, not a new pattern:
+            src/index.css:41-58 records `overflow-x: clip` being REMOVED from
+            <html> on 2026-08-08 because root-level overflow disturbs scroll
+            anchoring — with the instruction "clip it on THAT element rather than
+            on the document root." This is that element. It does not reintroduce
+            the anchoring regression, because <main> never becomes a scroll
+            container under `clip`. */}
+        <main className="flex-1 min-w-0 overflow-x-clip px-4 sm:px-8 xl:px-12 pt-10 sm:py-9 pb-24">
           <CreateModalTriggerContext.Provider value={createModalTrigger}>
             <Outlet />
           </CreateModalTriggerContext.Provider>
