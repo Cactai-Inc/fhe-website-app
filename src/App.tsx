@@ -119,6 +119,8 @@ import AdminModulesPage from './pages/app/ops/admin/AdminModulesPage';
 import AdminRegistryPage from './pages/app/ops/admin/AdminRegistryPage';
 import AdminBrandingPage from './pages/app/ops/admin/AdminBrandingPage';
 import AdminProductsPage from './pages/app/ops/admin/AdminProductsPage';
+import AdminTemplatesPage from './pages/app/ops/admin/AdminTemplatesPage';
+import AdminTemplateEditorPage from './pages/app/ops/admin/AdminTemplateEditorPage';
 /* ── REVIEW SECTION (temporary — TASK-REVIEWNAV, owner 2026-08-11/12) ────────
    The section EMPTIES OUT as pages are accepted; when src/lib/reviewSection.ts
    is empty, delete these two imports, the five `ops/review*` routes below, and
@@ -355,6 +357,8 @@ export function AppRoutes() {
               <Route path="ops/admin/branding" element={<ProtectedRoute requireAdmin><AdminBrandingPage /></ProtectedRoute>} />
               <Route path="ops/admin/products" element={<ProtectedRoute requireAdmin><AdminProductsPage /></ProtectedRoute>} />
               <Route path="ops/admin/forms" element={<ProtectedRoute requireAdmin><AdminFormsPage /></ProtectedRoute>} />
+              <Route path="ops/admin/templates" element={<ProtectedRoute requireAdmin><AdminTemplatesPage /></ProtectedRoute>} />
+              <Route path="ops/admin/templates/:templateKey" element={<ProtectedRoute requireAdmin><AdminTemplateEditorPage /></ProtectedRoute>} />
               <Route path="ops/superadmin/provision" element={<ProtectedRoute requireSuperAdmin><ProvisionTenantPage /></ProtectedRoute>} />
               <Route path="ops/superadmin/organizations" element={<ProtectedRoute requireSuperAdmin><OrganizationsPage /></ProtectedRoute>} />
               <Route path="ops/superadmin/organizations/:id" element={<ProtectedRoute requireSuperAdmin><TenantDetailPage /></ProtectedRoute>} />
