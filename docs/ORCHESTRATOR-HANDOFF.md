@@ -1,3 +1,16 @@
+# SUPERSEDED 2026-08-12 — SPLIT INTO TWO FILES
+
+This file mixed the ROLE (stable) with WHERE THINGS STAND (state, changed daily), and role rules
+were appended on both sides of the state section. That interleaving is why every new
+orchestrator thread had a learning curve.
+
+- **The role** is now `docs/ORCHESTRATOR.md` — rewritten as a spec, not accumulated notes.
+- **The state** is the newest `docs/SESSION-STATUS-<date>.md`.
+
+Retained for history. **Do not read this to learn the role.**
+
+---
+
 # Orchestrator handoff
 
 **You are taking over orchestration of the FHE website app.** This document is
