@@ -263,3 +263,37 @@ reporting success.
   templates, catalog structure, nav arrangement, field vocabularies — it must ship the
   surface that edits it, or explicitly name the follow-up that will. **Seeding content
   through a migration and leaving no UI is the pattern this decision exists to stop.**
+- **D14 — CHANGE REVIEW REPLACES THE LOCK. Signability is gated by COMPLETENESS, not
+  by workflow state (owner, 2026-08-12).** Supersedes the orchestrator's recommendation
+  to keep structural editing blocked during `in_review`. **The owner had already ruled;
+  the lock was removed deliberately.**
+  **1. A document is signable only when every field is complete** — not when it reaches a
+  state. Until then there is nothing to protect, because *"each one constitutes a change
+  when its made and its not until the fields are all completed that the document can be
+  signed anyway."* **Do NOT surface field-by-field edits as reviewable changes.**
+  **2. Once signable, every change is surfaced to the party who did NOT make it.** The
+  flow runs **when they click the signature section, before signing** — and again on
+  login if a completed document changed since they last had it open. **Changes are
+  presented one at a time (`review > next > next`), and BEING SEEN ON SCREEN IS
+  APPROVAL.** No explicit accept step.
+  **3. A signed party may keep editing without removing their signature.** But **the other
+  party's signature must come off for THEM to edit**, because a signer is past the review
+  flow and cannot otherwise be shown the change. Owner's case: *"i reviewed and signed,
+  then we agreed to a change and i need to make it, i make it without the complexity of
+  removing my signature and the other party is forced to see the change when they go to
+  sign."*
+  **4. Once BOTH parties have signed, both must agree to remove signatures before an
+  edit.** The signature was valid for the period in between, **so the signed copy and all
+  data that makes it binding are RETAINED.**
+  **5. The result is a SUPERSEDING VERSION, not a void and not a new document.** The prior
+  one is marked **superseded, never voided**; the new version is the current one and
+  carries **new signatures whose timestamp is when it took effect.** Consistent with the
+  existing supersession spine.
+  **Consequence for `TASK-ADDITEM`'s flagged question: widen all five RPCs to `in_review`**
+  — `add_contract_composition`, `remove_contract_composition`, `add_contract_element`,
+  `propose_clause`, `set_field_included`. **The safeguard is the review flow, not the
+  lock.**
+  **Delta to build:** `ReviewChangesModal.tsx` exists but triggers on *"since this party's
+  signature came off"* with explicit **Accept/Reject**. D14 needs the trigger moved to the
+  signature click plus the login check, and the approval model changed to
+  **seen-is-approved**.
