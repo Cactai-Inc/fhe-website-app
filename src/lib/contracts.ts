@@ -207,6 +207,14 @@ export interface MyContractRow {
   created_at?: string;
 }
 
+/** NO LONGER A LIST READER (COUNTFIX 1.4). `/app/deal` was its only consumer and
+ *  now reads `my_documents()` filtered to `is_contract`, so a member's documents
+ *  have exactly one definition. Kept — not deleted — because the RPC carries
+ *  per-party fields (`my_roles`, `is_originator`, `open_change_requests`,
+ *  `my_archived_at`) that no other reader exposes, and a future
+ *  contracts-specific surface may want them. Two cautions if it is ever wired up
+ *  again: it has NO void filter (it returned two VOIDED leases as agreements
+ *  needing signature), and its staff branch returns the whole org, not "mine". */
 export async function myContractDocuments(): Promise<MyContractRow[]> {
   const { data, error } = await supabase.rpc('my_contract_documents');
   if (error) throw error;

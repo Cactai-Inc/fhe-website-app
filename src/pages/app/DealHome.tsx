@@ -4,26 +4,44 @@ import { fromHere } from '../../lib/linkOrigin';
 import { FileSignature, FileText, CheckCircle2, MessageSquare } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
 import { useAuth } from '../../contexts/AuthContext';
-import { myContractDocuments, type MyContractRow } from '../../lib/contracts';
+import { myDocuments, type MyDocumentRow } from '../../lib/api';
 
 /*
  * ACQUISITION HOME (/app/deal) — the home screen for a buying/selling client.
  * Where their acquisition process stands and their agreements. All agreements
  * live in Documents; this surfaces the ones that need them and links through.
+ *
+ * COUNTFIX 1.4 — ONE READER, ONE DEFINITION. This page used to call
+ * `my_contract_documents()`, a second definition of "the member's documents".
+ * Against `/app/documents` it read 5 vs 11 for one account and 0 vs 6 for three
+ * others, so three members saw "nothing here yet" while their Documents page
+ * listed six, six and four. It also had no void filter, so both of cjzigs@'s
+ * VOIDED leases were rendered under "Agreements that need you" — the page was
+ * asking a member to sign two dead documents.
+ *
+ * It now reads `my_documents()` — the one definition of a member's documents —
+ * and filters it to `is_contract`. The count here is deliberately NARROWER than
+ * `/app/documents`, and the page says so in words: a subset is honest, an
+ * unexplained different number is not.
  */
 export default function DealHome() {
   useDocumentTitle('Acquisition');
   const { profile } = useAuth();
   const location = useLocation();
-  const [docs, setDocs] = useState<MyContractRow[] | null>(null);
+  const [rows, setRows] = useState<MyDocumentRow[] | null>(null);
 
   useEffect(() => {
-    myContractDocuments().then(setDocs).catch(() => setDocs([]));
+    myDocuments().then(setRows).catch(() => setRows([]));
   }, []);
 
   const first = profile?.first_name || profile?.display_name || null;
-  const toSign = (docs ?? []).filter((d) => d.status !== 'EXECUTED');
-  const signed = (docs ?? []).filter((d) => d.status === 'EXECUTED');
+
+  // The contract subset of the member's own documents. `assigned` placeholders
+  // have no document yet (and no contract fields), so they never appear here.
+  const docs = (rows ?? []).filter((d) => d.is_contract && d.document_id);
+  const toSign = docs.filter((d) => d.kind !== 'executed');
+  const signed = docs.filter((d) => d.kind === 'executed');
+  const totalDocs = (rows ?? []).length;
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -71,7 +89,7 @@ export default function DealHome() {
               <li key={d.document_id}>
                 <Link to={`/app/contracts/${d.document_id}`} className="flex items-center justify-between gap-3 bg-white border border-green-800/10 rounded-lg px-4 py-2.5 hover:border-green-800/30 focus-ring">
                   <span className="inline-flex items-center gap-2 text-green-900"><CheckCircle2 size={16} className="text-green-700" /> {d.title}</span>
-                  <span className="text-xs text-muted">Signed</span>
+                  <span className="text-xs text-muted">{d.superseded ? 'Signed · superseded' : 'Signed'}</span>
                 </Link>
               </li>
             ))}
@@ -79,8 +97,21 @@ export default function DealHome() {
         </section>
       )}
 
-      {docs !== null && docs.length === 0 && (
-        <p className="text-sm text-muted">Nothing here yet — your agreements and next steps will appear as your acquisition progresses.</p>
+      {/* COUNTFIX 1.4: this page shows the CONTRACT subset. When it is empty but
+          the member has documents, say which is which — never let two numbers
+          that mean different things sit unexplained on two screens. */}
+      {rows !== null && docs.length === 0 && (
+        <p className="text-sm text-muted">
+          {totalDocs > 0 ? (
+            <>
+              No negotiable agreements yet — your acquisition paperwork will appear here as it
+              progresses. Your other {totalDocs} document{totalDocs === 1 ? '' : 's'} {totalDocs === 1 ? 'is' : 'are'} in{' '}
+              <Link to="/app/documents" className="link-underline">Documents</Link>.
+            </>
+          ) : (
+            <>Nothing here yet — your agreements and next steps will appear as your acquisition progresses.</>
+          )}
+        </p>
       )}
     </div>
   );

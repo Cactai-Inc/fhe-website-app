@@ -652,6 +652,12 @@ export interface MyDocumentRow {
   /** A8B: when the all-parties executed-copy email fired (documents.executed_email_sent_at).
    *  NULL on non-executed rows, and on executed rows the send hasn't happened yet. */
   executed_email_sent_at: string | null;
+  /** COUNTFIX 1.4: the document is a clause-engine CONTRACT (it has
+   *  `contract_fields` rows) — the predicate `my_contract_documents()` selected
+   *  on. `/app/deal` filters this list rather than running a rival query, so the
+   *  two surfaces can never disagree about whether a document exists. An
+   *  `assigned` placeholder has no document, so it is never a contract. */
+  is_contract: boolean;
 }
 export async function myDocuments(): Promise<MyDocumentRow[]> {
   const { data, error } = await supabase.rpc('my_documents');
