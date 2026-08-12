@@ -44,11 +44,14 @@ export default function NewContractPage() {
   const [type, setType] = useState<ContractType>('lease');
   const [contacts, setContacts] = useState<PartyOption[]>([]);
   const [horses, setHorses] = useState<StaffHorseRecord[]>([]);
-  // LEASEFORK: which lease VERSION to author. '' = send no template argument, so
-  // the RPC applies its own DEFAULT — the behaviour every caller had before the
-  // picker existed. Only ever populated for a lease.
+  // LEASEFORK: which lease VERSION to author. Defaults to HORSE_LEASE_V2, the
+  // Standard (D10) — matches the RPC's own DEFAULT, so leaving it untouched is
+  // behaviourally identical to the pre-picker caller. Only ever populated for a
+  // lease. LEASESET: no more '' "Default" option — the owner rejected labelling
+  // the Standard as "Default" ("We dont label the default as that we call it
+  // Standard"), so the picker now names it explicitly instead.
   const [leaseTemplates, setLeaseTemplates] = useState<ContractTemplate[]>([]);
-  const [leaseTemplateKey, setLeaseTemplateKey] = useState('');
+  const [leaseTemplateKey, setLeaseTemplateKey] = useState('HORSE_LEASE_V2');
 
   const [partyA, setPartyA] = useState('');   // lessee / buyer contact id
   const [partyB, setPartyB] = useState('');   // lessor / seller contact id
@@ -233,7 +236,6 @@ export default function NewContractPage() {
           </p>
           <select className="form-input" value={leaseTemplateKey} aria-label="Lease version"
             onChange={(e) => setLeaseTemplateKey(e.target.value)}>
-            <option value="">Default</option>
             {leaseTemplates.map((tpl) => (
               <option key={tpl.id} value={tpl.template_key}>{tpl.title}</option>
             ))}
