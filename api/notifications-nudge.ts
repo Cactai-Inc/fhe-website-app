@@ -27,6 +27,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
 import { resolveTenantEmailIdentity, sendViaProvider, type TenantEmailIdentity } from './_lib/email.js';
+import { renderEmailTemplate } from './_lib/emailTemplates.js';
 
 const GRACE_MINUTES = 30;
 const PER_USER_CAP = 10;
@@ -122,23 +123,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         const n = digest.length;
-        const subject = `You have ${n} ${n === 1 ? 'update' : 'updates'} at ${identity.fromName}`;
-        const items = digest.map((r) => `<li>${escapeHtml(r.title)}</li>`).join('');
-        const footerHtml = identity.footer
-          ? `<hr/><p style="color:#666;font-size:12px;white-space:pre-line">${identity.footer}</p>`
-          : '';
-        const html =
-          `<p>Here's what's waiting for you at ${identity.fromName}:</p>` +
-          `<ul>${items}</ul>` +
-          `<p><a href="${appUrl}">Open the app to catch up</a></p>` +
-          footerHtml;
+        const rendered = await renderEmailTemplate(db, 'NOTIFICATION_DIGEST', {
+          'ORG.BRAND_NAME': identity.fromName,
+          'ORG.FOOTER': identity.footer,
+          'MSG.COUNT': String(n),
+          'MSG.IS_SINGLE': n === 1 ? '1' : '',
+          'MSG.ITEMS': digest.map((r) => escapeHtml(r.title)),
+          'MSG.LINK': appUrl,
+        });
+        // Same posture as a failed send: emailed_at stays NULL and the run retries.
+        if (!rendered) continue;
 
         const sent = await sendViaProvider({
           to: email,
           fromName: identity.fromName,
           fromEmail: identity.fromEmail,
-          subject,
-          html,
+          subject: rendered.subject,
+          html: rendered.html,
         });
         if (!sent.ok) continue; // failed send -> emailed_at stays NULL (retry next run)
 

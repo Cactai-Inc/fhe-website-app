@@ -15,6 +15,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
 import { resolveTenantEmailIdentity, sendViaProvider } from './_lib/email.js';
+import { renderEmailTemplate } from './_lib/emailTemplates.js';
 
 const WINDOW_START = 6;  // 06:00 PT
 const WINDOW_END = 21;   // 21:00 PT (9pm)
@@ -77,18 +78,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!g.org) continue; // need the tenant to resolve the branded from-identity
       try {
         const identity = await resolveTenantEmailIdentity(db, g.org);
-        const list = g.items.length ? `<ul>${g.items.map((i) => `<li>${i}</li>`).join('')}</ul>` : '';
+        const rendered = await renderEmailTemplate(db, 'HOLD_EXPIRED', {
+          'ORG.BRAND_NAME': identity.fromName,
+          'ORG.FOOTER': identity.footer,
+          'PARTY.GREETING_NAME': g.name ?? '',
+          'MSG.ITEMS': g.items,
+        });
+        if (!rendered) continue; // best-effort per recipient, same as a send failure
         const sent = await sendViaProvider({
           to: email,
           fromName: identity.fromName,
           fromEmail: identity.fromEmail,
-          subject: `Your hold has expired — ${identity.fromName}`,
-          html:
-            `<p>${g.name ? `Hi ${g.name},` : 'Hello,'}</p>` +
-            `<p>The 48-hour hold on your requested booking has expired because payment wasn't completed in time.</p>` +
-            list +
-            `<p>No problem — just reply and we'll re-offer new dates with a fresh hold.</p>` +
-            (identity.footer ? `<hr/><p style="color:#666;font-size:12px;white-space:pre-line">${identity.footer}</p>` : ''),
+          subject: rendered.subject,
+          html: rendered.html,
         });
         if (sent.ok) emailed += 1;
       } catch { /* best-effort per recipient */ }

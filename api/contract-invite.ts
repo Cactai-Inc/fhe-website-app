@@ -6,6 +6,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
 import { resolveTenantEmailIdentity, sendViaProvider } from './_lib/email.js';
+import { renderEmailTemplate } from './_lib/emailTemplates.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'method not allowed' });
@@ -97,12 +98,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .or('value.is.null,value.eq.');
     const canFill = ctrl?.can_fill ?? true;
     const needsInfo = canFill && (unfilled?.length ?? 0) > 0;
-    const actions: string[] = [];
-    if (needsInfo) actions.push('add your information');
-    if (ctrl?.can_edit_deal) actions.push('review and edit the terms');
-    else if (ctrl?.can_suggest) actions.push('review and suggest changes');
-    else actions.push('review the terms');
-    const actionPhrase = `${actions.join(', ')}, and sign`;
 
     const { data: inv, error: invErr } = await db.rpc('invite_contract_counterparty', {
       p_document_id: documentId, p_contact_id: party.contact_id, p_email: email,
@@ -122,18 +117,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let identity = { fromName: 'French Heritage Equestrian', fromEmail: '', footer: '' as string | null };
     try { identity = await resolveTenantEmailIdentity(db, doc.org_id); } catch { /* fall back */ }
 
+    // The invitation LANGUAGE — including which of the review phrases appears —
+    // is the CONTRACT_INVITE row; the party's controls arrive as tokens so the
+    // email still never promises an action the controls don't allow.
+    const rendered = await renderEmailTemplate(db, 'CONTRACT_INVITE', {
+      'ORG.BRAND_NAME': identity.fromName,
+      'ORG.FOOTER': identity.footer,
+      'DOC.HAS_TITLE': doc.title != null ? '1' : '',
+      'DOC.TITLE': doc.title ?? '',
+      'DOC.PARTY_NEEDS_INFO': needsInfo ? '1' : '',
+      'DOC.PARTY_CAN_EDIT_DEAL': ctrl?.can_edit_deal ? '1' : '',
+      'DOC.PARTY_CAN_SUGGEST': ctrl?.can_suggest ? '1' : '',
+      'MSG.LINK': link,
+      'MSG.RECIPIENT_EMAIL': email,
+    });
+    // The token was already issued by the RPC above, so this is reported the same
+    // way a provider failure is: the invitation stands, the email did not go.
+    if (!rendered) {
+      return res.status(200).json({ ok: true, emailed: false, reason: 'the CONTRACT_INVITE email template is missing or deactivated' });
+    }
+
     const sent = await sendViaProvider({
       to: email,
       fromName: identity.fromName,
       fromEmail: identity.fromEmail,
-      subject: `A contract is ready for you — ${identity.fromName}`,
-      html:
-        `<p>Hello,</p>` +
-        `<p><strong>${doc.title ?? 'A contract'}</strong> has been prepared for you.</p>` +
-        `<p><a href="${link}">Open the contract</a> — sign in with Google if this is a Gmail address, ` +
-        `or set a password with this email. You'll land directly on the contract to ${actionPhrase}.</p>` +
-        `<p style="color:#666;font-size:12px">This link is personal to ${email} and expires in 14 days.<br/>${link}</p>` +
-        (identity.footer ? `<hr/><p style="color:#666;font-size:12px;white-space:pre-line">${identity.footer}</p>` : ''),
+      subject: rendered.subject,
+      html: rendered.html,
     });
     // The token was issued regardless; report whether the email actually sent so
     // the caller can tell the user if delivery (provider config) failed.

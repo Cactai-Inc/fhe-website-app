@@ -18,6 +18,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
 import { resolveTenantEmailIdentity, sendViaProvider } from './_lib/email.js';
+import { renderEmailTemplate } from './_lib/emailTemplates.js';
 import type { EmailAttachment } from './_lib/email.js';
 import { renderDocumentPdf, pdfFileName } from './_lib/documentPdf.js';
 
@@ -104,22 +105,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const bytes = await renderDocumentPdf(doc.title, doc.merged_body ?? '');
       attachment = { filename: pdfFileName(doc.title), content: bytes, contentType: 'application/pdf' };
       const identity = await resolveTenantEmailIdentity(db, doc.org_id);
-      const footerHtml = identity.footer
-        ? `<hr/><p style="color:#666;font-size:12px;white-space:pre-line">${identity.footer}</p>`
-        : '';
       for (const p of recipients) {
-        const greeting = p.contacts?.first_name ? `Hi ${p.contacts.first_name},` : 'Hello,';
-        const html =
-          `<p>${greeting}</p>` +
-          `<p>The document <strong>${doc.title}</strong> that was shared with you has been withdrawn and removed. ` +
-          `A copy is attached to this email for your records.</p>` +
-          footerHtml;
+        // Rendered per recipient: the greeting names them.
+        const rendered = await renderEmailTemplate(db, 'DOCUMENT_WITHDRAWN', {
+          'ORG.FOOTER': identity.footer,
+          'DOC.TITLE': doc.title,
+          'PARTY.GREETING_NAME': p.contacts?.first_name ?? '',
+        });
+        if (!rendered) continue; // template missing -> no copy sent, logged
         const sent = await sendViaProvider({
           to: p.contacts!.email!,
           fromName: identity.fromName,
           fromEmail: identity.fromEmail,
-          subject: `${doc.title} was withdrawn — copy attached`,
-          html,
+          subject: rendered.subject,
+          html: rendered.html,
           attachments: [attachment],
         });
         if (sent.ok) copiesSent += 1;

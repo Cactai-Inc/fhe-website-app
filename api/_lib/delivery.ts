@@ -26,6 +26,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { resolveTenantEmailIdentity, sendViaProvider } from './email.js';
 import type { EmailAttachment } from './email.js';
+import { renderEmailTemplate } from './emailTemplates.js';
+import type { TokenMap } from './emailTemplates.js';
 import { renderDocumentPdf, pdfFileName, partyPdfFileName } from './documentPdf.js';
 
 const CHANNEL = 'EMAIL';
@@ -57,6 +59,36 @@ export async function renderPartyCopyPdfBytes(doc: { title: string; merged_body:
   return renderDocumentPdf(doc.title, text);
 }
 
+/** The token values a party's "signed and executed" email merges. Split out from
+ *  the send so the byte-identity harness can exercise the mapping without a
+ *  database, and so both callers build the same values from the same inputs. */
+export function partyCopyTokens(
+  doc: { title: string; execution_hash: string | null },
+  recipientFirstName: string | null | undefined,
+  recipientLastName: string | null | undefined,
+  identity: { fromName: string; contactPhone: string | null; contactUrl: string | null; siteUrl: string | null },
+  guardianRecipient?: GuardianRecipient | null,
+): TokenMap {
+  const siteLine = identity.contactUrl || identity.siteUrl;
+  // Tamper-evidence: the template shows a short excerpt of this, never the full
+  // SHA-256 — that stays company-copy-only (DOC.INTEGRITY_HASH).
+  const executionHash = typeof doc.execution_hash === 'string' && doc.execution_hash.trim() !== ''
+    ? doc.execution_hash.trim()
+    : null;
+  return {
+    'DOC.TITLE': doc.title,
+    'DOC.REFERENCE_CODE': executionHash ? executionHash.slice(0, 12) : '',
+    'ORG.BRAND_NAME': identity.fromName,
+    'ORG.PHONE': identity.contactPhone ?? '',
+    'ORG.PHONE_TEL': identity.contactPhone ? identity.contactPhone.replace(/[^+\d]/g, '') : '',
+    'ORG.SITE_LINK': siteLine ?? '',
+    'ORG.SITE_HOST': siteLine ? siteLine.replace(/^https?:\/\//, '') : '',
+    'MSG.IS_GUARDIAN_COPY': guardianRecipient ? '1' : '',
+    'PARTY.GUARDIAN_FIRST_NAME': guardianRecipient?.firstName ?? '',
+    'PARTY.FULL_NAME': [recipientFirstName, recipientLastName].filter(Boolean).join(' '),
+  };
+}
+
 /** Build a party's "signed and executed" email — owner spec (2026-08-02,
  *  revised after comparing against the company-copy style): plain subject
  *  (no personalized greeting — matches the company copy's professional
@@ -68,8 +100,15 @@ export async function renderPartyCopyPdfBytes(doc: { title: string; merged_body:
  *  api/deliver-my-document.ts (the authenticated self-send) — one source of
  *  the party-copy email shape, not two. `pdfBytes` is passed in (rather than
  *  rendered inside) so a multi-recipient caller can render the content once
- *  and reuse it across every party. */
-export function buildPartyCopyEmail(
+ *  and reuse it across every party.
+ *
+ *  EMAILEXTRACT: the wording is now the `DOCUMENT_PARTY_COPY` row. The owner
+ *  spec above is preserved as the seeded content, not as string literals. The
+ *  attachment and its signer-attributed filename stay here — a filename is not
+ *  correspondence. Returns null when the template is missing, so a caller never
+ *  mails a blank in place of a document copy. */
+export async function buildPartyCopyEmail(
+  db: SupabaseClient,
   doc: { title: string; execution_hash: string | null },
   executedAt: Date,
   recipientFirstName: string | null | undefined,
@@ -81,35 +120,13 @@ export function buildPartyCopyEmail(
   // attributed), while the greeting names the guardian and the body names
   // the minor as the subject of the documents, not as addressee.
   guardianRecipient?: GuardianRecipient | null,
-): PartyCopyEmail {
-  const subject = `${doc.title} — signed and executed`;
-
-  const siteLine = identity.contactUrl || identity.siteUrl;
-  const contactHtml =
-    `<p style="font-size:16px;margin-top:16px">` +
-    `<strong>${identity.fromName}</strong>` +
-    (identity.contactPhone ? `<br/><a href="tel:${identity.contactPhone.replace(/[^+\d]/g, '')}" style="color:inherit;text-decoration:none">${identity.contactPhone}</a>` : '') +
-    (siteLine ? `<br/><a href="https://${siteLine.replace(/^https?:\/\//, '')}" style="color:inherit">${siteLine}</a>` : '') +
-    `</p>`;
-
-  // Tamper-evidence: a short reference-code excerpt, not the full SHA-256
-  // (the full hash is company-copy-only — see companyHashHtml below).
-  const executionHash = typeof doc.execution_hash === 'string' && doc.execution_hash.trim() !== ''
-    ? doc.execution_hash.trim()
-    : null;
-  const referenceHtml = executionHash
-    ? `<p style="color:#888;font-size:12px">Reference code: ${executionHash.slice(0, 12)}</p>`
-    : '';
-
-  const introHtml = guardianRecipient
-    ? `<p>Hi ${guardianRecipient.firstName || 'there'},</p>` +
-      `<p>The document <strong>${doc.title}</strong> for ` +
-      `${[recipientFirstName, recipientLastName].filter(Boolean).join(' ') || 'the minor named on this document'} ` +
-      `has been signed and executed. The PDF is attached.</p>`
-    : `<p>Your document <strong>${doc.title}</strong> has been signed and executed. ` +
-      `The PDF is attached.</p>`;
-
-  const html = introHtml + contactHtml + referenceHtml;
+): Promise<PartyCopyEmail | null> {
+  const rendered = await renderEmailTemplate(
+    db,
+    'DOCUMENT_PARTY_COPY',
+    partyCopyTokens(doc, recipientFirstName, recipientLastName, identity, guardianRecipient),
+  );
+  if (!rendered) return null;
 
   const attachments: EmailAttachment[] = [];
   if (pdfBytes) {
@@ -120,7 +137,7 @@ export function buildPartyCopyEmail(
     });
   }
 
-  return { subject, html, attachments };
+  return { subject: rendered.subject, html: rendered.html, attachments };
 }
 
 export class DeliveryError extends Error {
@@ -242,9 +259,6 @@ export async function deliverExecutedDocument(
   const executionHash = typeof doc.execution_hash === 'string' && doc.execution_hash.trim() !== ''
     ? doc.execution_hash.trim()
     : null;
-  const companyHashHtml = executionHash
-    ? `<hr/><p style="color:#666;font-size:12px">Integrity hash (SHA-256): ${executionHash}</p>`
-    : '';
 
   const delivered: Array<{ recipientContactId: string; channel: string; emailed: boolean }> = [];
 
@@ -276,10 +290,11 @@ export async function deliverExecutedDocument(
     }
     if (!toEmail) continue; // no address -> cannot email; skip (no orphan row)
 
-    const partyEmail = buildPartyCopyEmail(
-      doc, executedAt, party.contacts?.first_name, party.contacts?.last_name, identity, partyPdfBytes,
+    const partyEmail = await buildPartyCopyEmail(
+      db, doc, executedAt, party.contacts?.first_name, party.contacts?.last_name, identity, partyPdfBytes,
       guardianRecipient,
     );
+    if (!partyEmail) continue; // template missing -> no send, no delivery row, logged
     const sent = await sendViaProvider({
       to: toEmail,
       fromName: identity.fromName,
@@ -320,16 +335,25 @@ export async function deliverExecutedDocument(
       const bytes = await renderDocumentPdf(doc.title, doc.merged_body);
       companyAttachment = { filename: pdfFileName(doc.title), content: bytes, contentType: 'application/pdf' };
     }
-    const notice = await sendViaProvider({
-      to: identity.contactEmail,
-      fromName: identity.fromName,
-      fromEmail: identity.fromEmail,
-      subject: `${doc.title} — signed and executed (${doc.display_code ?? documentId.slice(0, 8)})`,
-      html: `<p>${signers || 'A signer'} executed <strong>${doc.title}</strong>. The signed PDF is attached.</p>`
-        + companyHashHtml,
-      attachments: companyAttachment ? [companyAttachment] : undefined,
+    const companyEmail = await renderEmailTemplate(db, 'DOCUMENT_COMPANY_COPY', {
+      'DOC.TITLE': doc.title,
+      'DOC.DISPLAY_CODE': doc.display_code ?? documentId.slice(0, 8),
+      'DOC.INTEGRITY_HASH': executionHash ?? '',
+      'PARTY.SIGNERS': signers,
     });
-    companyNotified = notice.ok;
+    // Best-effort by design (step 6's contract): a missing template leaves the
+    // company copy unsent and logged, and never fails the party deliveries above.
+    if (companyEmail) {
+      const notice = await sendViaProvider({
+        to: identity.contactEmail,
+        fromName: identity.fromName,
+        fromEmail: identity.fromEmail,
+        subject: companyEmail.subject,
+        html: companyEmail.html,
+        attachments: companyAttachment ? [companyAttachment] : undefined,
+      });
+      companyNotified = notice.ok;
+    }
   }
 
   return { delivered, companyNotified, status: doc.status };

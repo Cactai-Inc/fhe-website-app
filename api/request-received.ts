@@ -19,6 +19,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
 import { resolveTenantEmailIdentity, sendViaProvider } from './_lib/email.js';
+import { renderEmailTemplate } from './_lib/emailTemplates.js';
 
 /* The ops inbox is org-level config (CONTACT/OPS_INBOX); the literal below is
  * only the last-resort fallback when config is absent — same constant calendar-
@@ -117,51 +118,53 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // production deployments each link to themselves.
     const origin = req.headers.origin || `https://${req.headers.host}`;
 
-    const name = r.contact_name?.trim() || 'A visitor';
+    const rawName = r.contact_name?.trim() ?? '';
     const submittedAt = new Date(r.created_at).toLocaleString('en-US', {
       timeZone: 'America/Los_Angeles', dateStyle: 'medium', timeStyle: 'short',
     });
-    const rows: string[] = [];
-    rows.push(`<li><strong>Email:</strong> ${esc(r.contact_email)}</li>`);
-    if (r.contact_phone) rows.push(`<li><strong>Phone:</strong> ${esc(r.contact_phone)}</li>`);
-    if (r.contact_method) {
-      rows.push(`<li><strong>Prefers:</strong> ${esc(CONTACT_METHOD_LABEL[r.contact_method] ?? r.contact_method)}</li>`);
-    }
-    if (r.category) rows.push(`<li><strong>Interested in:</strong> ${esc(CATEGORY_LABEL[r.category] ?? r.category)}</li>`);
-    if (r.channel) rows.push(`<li><strong>Via:</strong> ${esc(CHANNEL_LABEL[r.channel] ?? r.channel)}</li>`);
-    if (r.entry_location) rows.push(`<li><strong>From:</strong> ${esc(r.entry_location)}</li>`);
-    if (r.subject) rows.push(`<li><strong>Subject:</strong> ${esc(r.subject)}</li>`);
-    if (r.intent) rows.push(`<li><strong>Intent:</strong> ${esc(r.intent)}</li>`);
-    rows.push(`<li><strong>Submitted:</strong> ${esc(submittedAt)}</li>`);
-
     const times = (r.proposed_times ?? []).map(proposedTimeText).filter(Boolean);
-    const availability = times.length
-      ? `<p><strong>Availability:</strong> ${times.map(esc).join('; ')}</p>`
-      : '';
-
     const detailEntries = Object.entries(r.details ?? {}).filter(([, v]) => v != null && String(v).trim() !== '');
-    const details = detailEntries.length
-      ? `<ul style="padding-left:18px">${detailEntries
-          .map(([k, v]) => `<li><strong>${esc(detailLabel(k))}:</strong> ${esc(String(v))}</li>`)
-          .join('')}</ul>`
-      : '';
-
     const notes = (r.notes || '').trim();
+
+    // Every row label ("Phone:", "Interested in:", "Submitted:") is now in the
+    // REQUEST_RECEIVED body, and each optional row is a {{#if}} there — so the
+    // barn can reorder or re-word its own inquiry email without a deploy. What is
+    // still code is the enum→label vocabularies above, which are shared display
+    // labels rather than email prose.
+    const rendered = await renderEmailTemplate(db, 'REQUEST_RECEIVED', {
+      'ORG.FOOTER_HTML': identity.footer ? esc(identity.footer) : '',
+      'MSG.SENDER_NAME': rawName,
+      'MSG.SENDER_NAME_HTML': rawName ? esc(rawName) : '',
+      'MSG.LINK': `${identity.siteUrl ?? origin}/app/ops/intake?request=${r.id}`,
+      'REQ.EMAIL_HTML': esc(r.contact_email),
+      'REQ.PHONE_HTML': r.contact_phone ? esc(r.contact_phone) : '',
+      'REQ.CONTACT_METHOD_HTML': r.contact_method
+        ? esc(CONTACT_METHOD_LABEL[r.contact_method] ?? r.contact_method)
+        : '',
+      'REQ.CATEGORY_HTML': r.category ? esc(CATEGORY_LABEL[r.category] ?? r.category) : '',
+      'REQ.CHANNEL_HTML': r.channel ? esc(CHANNEL_LABEL[r.channel] ?? r.channel) : '',
+      'REQ.ENTRY_LOCATION_HTML': r.entry_location ? esc(r.entry_location) : '',
+      'REQ.SUBJECT_HTML': r.subject ? esc(r.subject) : '',
+      'REQ.INTENT_HTML': r.intent ? esc(r.intent) : '',
+      'REQ.SUBMITTED_AT_HTML': esc(submittedAt),
+      'REQ.AVAILABILITY_HTML': times.length ? times.map(esc).join('; ') : '',
+      'REQ.DETAILS': detailEntries.map(([k, v]) => ({
+        LABEL: esc(detailLabel(k)),
+        VALUE: esc(String(v)),
+      })),
+      'REQ.NOTES_HTML': notes ? esc(notes) : '',
+    });
+    if (!rendered) {
+      return res.status(200).json({ ok: true, emailed: false, reason: 'REQUEST_RECEIVED template missing' });
+    }
 
     const sent = await sendViaProvider({
       to,
       fromName: identity.fromName,
       fromEmail: identity.fromEmail || to,
       replyTo: r.contact_email || undefined,
-      subject: `New inquiry from ${name}`,
-      html:
-        `<p><strong>${esc(name)}</strong> just submitted an inquiry on the website.</p>` +
-        (rows.length ? `<ul style="padding-left:18px">${rows.join('')}</ul>` : '') +
-        availability +
-        details +
-        (notes ? `<p style="white-space:pre-line;border-left:3px solid #ddd;padding-left:12px;color:#333">${esc(notes)}</p>` : '') +
-        `<p><a href="${identity.siteUrl ?? origin}/app/ops/intake?request=${r.id}">Open the Request Inbox</a> to reply.</p>` +
-        (identity.footer ? `<hr/><p style="color:#666;font-size:12px;white-space:pre-line">${esc(identity.footer)}</p>` : ''),
+      subject: rendered.subject,
+      html: rendered.html,
     });
 
     if (!sent.ok) {

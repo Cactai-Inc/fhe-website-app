@@ -15,6 +15,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
 import { resolveTenantEmailIdentity, sendViaProvider } from './_lib/email.js';
+import { renderEmailTemplate } from './_lib/emailTemplates.js';
 
 const OPS_INBOX_FALLBACK = 'hello@fhequestrian.com';
 
@@ -49,9 +50,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .select('display_name, first_name, last_name, email')
       .eq('user_id', sr.user_id as string)
       .maybeSingle();
+    // Just the name — "A member" is wording and lives in the SUPPORT_RECEIVED row.
     const name = (profile?.display_name as string | undefined)
       || [profile?.first_name, profile?.last_name].filter(Boolean).join(' ').trim()
-      || 'A member';
+      || '';
 
     const identity = await resolveTenantEmailIdentity(db, orgId);
     const to = identity.opsInbox || OPS_INBOX_FALLBACK;
@@ -59,21 +61,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const origin = req.headers.origin || `https://${req.headers.host}`;
 
-    const rows: string[] = [];
-    if (profile?.email) rows.push(`<li><strong>Email:</strong> ${esc(profile.email as string)}</li>`);
+    const rendered = await renderEmailTemplate(db, 'SUPPORT_RECEIVED', {
+      'ORG.FOOTER_HTML': identity.footer ? esc(identity.footer) : '',
+      'PARTY.FULL_NAME': name,
+      'PARTY.FULL_NAME_HTML': name ? esc(name) : '',
+      'PARTY.EMAIL_HTML': profile?.email ? esc(profile.email as string) : '',
+      'MSG.SUBJECT_HTML': esc(sr.subject as string),
+      'MSG.BODY_HTML': esc(sr.body as string),
+      'MSG.LINK': `${identity.siteUrl ?? origin}/app/ops/support`,
+    });
+    if (!rendered) {
+      return res.status(200).json({ ok: true, emailed: false, reason: 'SUPPORT_RECEIVED template missing' });
+    }
 
     const sent = await sendViaProvider({
       to,
       fromName: identity.fromName,
       fromEmail: identity.fromEmail || to,
-      subject: `New website inquiry — ${name}`,
-      html:
-        `<p><strong>${esc(name)}</strong> just submitted a support request.</p>` +
-        (rows.length ? `<ul style="padding-left:18px">${rows.join('')}</ul>` : '') +
-        `<p><strong>Subject:</strong> ${esc(sr.subject as string)}</p>` +
-        `<p style="white-space:pre-line;border-left:3px solid #ddd;padding-left:12px;color:#333">${esc(sr.body as string)}</p>` +
-        `<p><a href="${identity.siteUrl ?? origin}/app/ops/support">Open Support</a> to reply.</p>` +
-        (identity.footer ? `<hr/><p style="color:#666;font-size:12px;white-space:pre-line">${esc(identity.footer)}</p>` : ''),
+      subject: rendered.subject,
+      html: rendered.html,
     });
 
     if (!sent.ok) return res.status(200).json({ ok: true, emailed: false, reason: sent.error ?? 'send failed' });

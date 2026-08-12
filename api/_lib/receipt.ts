@@ -11,7 +11,8 @@
  * second send once one has succeeded. The Zelle path can no longer re-send.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { resolveTenantEmailIdentity, renderTemplate, sendViaProvider } from './email.js';
+import { resolveTenantEmailIdentity, sendViaProvider } from './email.js';
+import { renderEmailTemplate } from './emailTemplates.js';
 
 export interface ReceiptResult {
   sent: boolean;
@@ -49,15 +50,28 @@ export async function sendOrderReceipt(
     const amount = Number(order.amount);
 
     const identity = await resolveTenantEmailIdentity(db, order.org_id as string);
-    const tpl = renderTemplate('receipt', { amount: `$${amount.toFixed(2)}` }, identity.fromName);
-    const html = `${tpl.body}\n<hr/><pre style="font-family:inherit">${identity.footer}</pre>`;
+    const rendered = await renderEmailTemplate(db, 'ORDER_RECEIPT', {
+      'ORG.BRAND_NAME': identity.fromName,
+      'ORG.FOOTER': identity.footer,
+      'TXN.AMOUNT': `$${amount.toFixed(2)}`,
+    });
+    // A receipt is provable and single: a missing template is a logged failed
+    // attempt (below), never a silent nothing and never a blank email.
+    if (!rendered) {
+      await db.rpc('log_receipt_send', {
+        p_purchase_id: orderId, p_key: idempotencyKey, p_recipient: to,
+        p_succeeded: false, p_error: 'the ORDER_RECEIPT email template is missing or deactivated',
+        p_message_id: null,
+      });
+      return { sent: false, reason: 'the ORDER_RECEIPT email template is missing or deactivated' };
+    }
 
     const out = await sendViaProvider({
       to,
       fromName: identity.fromName,
       fromEmail: identity.fromEmail,
-      subject: tpl.subject,
-      html,
+      subject: rendered.subject,
+      html: rendered.html,
     });
 
     // 5b: log the attempt either way — a receipt is provable.
