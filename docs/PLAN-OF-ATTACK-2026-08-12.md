@@ -35,7 +35,7 @@ Dashboard work, not a thread's.
 ## LIVE BUGS AND FORCE MULTIPLIERS
 
 **5. `TESTDB` — fix the test harness.**
-**55 of 64 DB test files fail.** Every database claim this session was hand-verified because of
+**60 of 68 DB test files fail, and 601 of 688 tests never run.** Every database claim this session was hand-verified because of
 it. Everything after this is cheaper and safer to trust.
 
 **6. `COUNTFIX` — the five surfaces that disagree about a number.**
