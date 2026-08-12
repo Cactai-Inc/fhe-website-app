@@ -109,7 +109,9 @@ export default function InstructorHome() {
   const [rows, setRows] = useState<Row[] | null>(null);
   const [clientCount, setClientCount] = useState<number | null>(null);
   // Every trainer viewing this page is staff (isTrainer), so the fetch always runs.
-  const requests = useOpenLeads(true);
+  // `.open` only: leads whose person already became a client have retired
+  // themselves out of it (TASK-LEADCLEAN), so this count is real work.
+  const { open: requests } = useOpenLeads(true);
 
   useEffect(() => {
     let active = true;
@@ -141,7 +143,7 @@ export default function InstructorHome() {
         <ActionTile to="/app/ops/lessons" icon={GraduationCap} label="Lessons" sub="Sessions, packages, credits" />
         <ActionTile to="/app/calendar" icon={CalendarDays} label="Availability" sub="Set the times you teach" />
         <ActionTile to="/app/ops/contacts" icon={Contact} label="Clients" sub={clientCount !== null ? `${clientCount} on file` : 'People you service'} />
-        <ActionTile to="/app/ops/intake" icon={Mail} label="Requests" sub={requests.length > 0 ? `${requests.length} to review` : 'Incoming inquiries'} />
+        <ActionTile to="/app/dashboard" icon={Mail} label="Requests" sub={requests.length > 0 ? `${requests.length} to review` : 'Incoming inquiries'} />
       </div>
 
       {/* Today */}
@@ -167,7 +169,7 @@ export default function InstructorHome() {
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2.5">
             <h2 className="font-serif text-green-800 text-lg">Requests</h2>
-            <Link to="/app/ops/intake" className="text-[12px] text-gold-800 font-semibold inline-flex items-center gap-1">All requests <ChevronRight size={13} /></Link>
+            <Link to="/app/dashboard" className="text-[12px] text-gold-800 font-semibold inline-flex items-center gap-1">All requests <ChevronRight size={13} /></Link>
           </div>
           <div className="flex flex-col gap-2">{requests.slice(0, 6).map((r) => <RequestRow key={r.id} r={r} />)}</div>
         </div>

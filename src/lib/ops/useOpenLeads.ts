@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { listBookingRequests, type BookingRequest } from './api-intake';
+import { useCallback, useEffect, useState } from 'react';
+import { listLeadQueue, type BookingRequest, type ConvertedLead } from './api-intake';
 import { listSupportRequests, type SupportRequest } from '../support';
 
 /** One open lead/request, ready to render as a dashboard entry. */
@@ -9,6 +9,19 @@ export interface LeadEntry {
   title: string;
   sub: string;
   to: string;
+  /** The whole booking request behind this entry. Present for booking leads so a
+   *  surface can open the working drawer IN PLACE rather than navigating to a
+   *  page; support entries have none and fall back to `to`. */
+  request?: BookingRequest;
+}
+
+export interface LeadQueueState {
+  /** Cards that still need working — converted leads have already left. */
+  open: LeadEntry[];
+  /** Leads that retired themselves by becoming clients (history, not work). */
+  converted: ConvertedLead[];
+  /** Re-read both sides — call after the drawer changes a request. */
+  reload: () => void;
 }
 
 function bookingEntry(r: BookingRequest): LeadEntry {
@@ -18,7 +31,11 @@ function bookingEntry(r: BookingRequest): LeadEntry {
     when: r.created_at,
     title: r.contact_name || r.contact_email || 'New inquiry',
     sub: summary || 'New booking request',
-    to: `/app/ops/intake?request=${r.id}`,
+    // Fallback destination for surfaces that link rather than expand. The
+    // Inbound page is retired (INTAKE_PAGE_RETIRED), so this is the dashboard,
+    // which opens that lead's drawer from the `request` param.
+    to: `/app/dashboard?request=${r.id}`,
+    request: r,
   };
 }
 
@@ -33,31 +50,43 @@ function supportEntry(s: SupportRequest): LeadEntry {
 }
 
 /**
- * Open leads awaiting staff action — booking requests still `new` plus support
- * requests not yet `resolved`. Deliberately the SAME two conditions
- * `inbound_open_count()` counts for the Dashboard nav badge (AppLayout.tsx),
- * so the dashboard's entry list and its badge number never disagree. Reads
- * `requests`/`support_requests` directly rather than the per-user
- * `notifications` table — no notification pipeline involved, just the rows.
- * `enabled` gates the fetch for callers rendered to non-staff viewers.
+ * The lead queue for staff surfaces: booking requests that are still real work,
+ * plus support requests not yet resolved.
+ *
+ * "Still real work" is NOT restated here — it comes from `listLeadQueue`, which
+ * reads `inbound_queue.already_converted`, the definition the database already
+ * computes on every row. A request whose person is now a client leaves `open`
+ * and appears in `converted` instead: nothing is written, so nothing can drift,
+ * and it is right retroactively for rows that were never closed by hand.
+ *
+ * Deliberately the same predicate `inbound_open_count()` counts for the
+ * Dashboard nav badge (AppLayout.tsx), so the dashboard's entry list and its
+ * badge number never disagree. `enabled` gates the fetch for callers rendered to
+ * non-staff viewers.
  */
-export function useOpenLeads(enabled: boolean): LeadEntry[] {
-  const [entries, setEntries] = useState<LeadEntry[]>([]);
+export function useOpenLeads(enabled: boolean): LeadQueueState {
+  const [open, setOpen] = useState<LeadEntry[]>([]);
+  const [converted, setConverted] = useState<ConvertedLead[]>([]);
+  const [tick, setTick] = useState(0);
+  const reload = useCallback(() => setTick((t) => t + 1), []);
+
   useEffect(() => {
-    if (!enabled) { setEntries([]); return; }
+    if (!enabled) { setOpen([]); setConverted([]); return; }
     let active = true;
     Promise.all([
-      listBookingRequests('new').catch(() => [] as BookingRequest[]),
+      listLeadQueue().catch(() => ({ open: [], converted: [] })),
       listSupportRequests().catch(() => [] as SupportRequest[]),
-    ]).then(([requests, support]) => {
+    ]).then(([leads, support]) => {
       if (!active) return;
       const merged = [
-        ...requests.map(bookingEntry),
+        ...leads.open.map(bookingEntry),
         ...support.filter((s) => s.status !== 'resolved').map(supportEntry),
       ].sort((a, b) => new Date(b.when).getTime() - new Date(a.when).getTime());
-      setEntries(merged);
+      setOpen(merged);
+      setConverted(leads.converted);
     });
     return () => { active = false; };
-  }, [enabled]);
-  return entries;
+  }, [enabled, tick]);
+
+  return { open, converted, reload };
 }

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { fromHere } from '../../lib/linkOrigin';
 import { X, Hand } from 'lucide-react';
 import { myNotifications, consumeNotification, markNotificationRead, type AppNotification } from '../../lib/api';
@@ -15,18 +15,27 @@ import type { CommunityEvent } from '../../lib/community-types';
 import { supabase } from '../../lib/supabase';
 import { useNavigate as useNav } from 'react-router-dom';
 import { useOpenLeads } from '../../lib/ops/useOpenLeads';
+import { LeadWorkDrawer } from './LeadWorkDrawer';
+import type { BookingRequest } from '../../lib/ops/api-intake';
 
 /**
  * DASHBOARD PANEL — the thin, high-value strip above the community feed on the
  * main page. Bands, LIVE-wired and clickable:
- *   "New leads" (staff only) — open booking requests + open support tickets,
- *   read straight from `requests`/`support_requests` (TASK-DASHLEADS: this is
- *   the Inbound queue folded into the dashboard, so staff never need a second
- *   page to see what just came in).
+ *   "New leads" (staff only) — open booking requests + open support tickets.
+ *   TASK-DASHLEADS folded the Inbound queue in here; TASK-LEADCLEAN made this
+ *   the ONLY surface for it (/app/ops/intake is retired) and made the list
+ *   clean itself: a lead whose person already holds a client record leaves the
+ *   open list on its own, derived from `inbound_queue.already_converted`, with
+ *   no status for anyone to remember to set. Those leads are not lost — they
+ *   move to "already became clients" below the band, each linking to the record
+ *   they turned into. No request row is ever deleted.
  *   "Needs your attention" — unread notifications (each links to its target) and
  *   "Coming up" — the next scheduled lessons and community events.
  * Renders nothing when there is truly nothing (no placeholder filler).
  */
+
+/** How many lead cards show before the band collapses the rest behind a count. */
+const LEAD_PREVIEW = 6;
 
 interface Tile {
   id: string;
@@ -43,6 +52,9 @@ interface Tile {
   greeterUserId?: string;
   /** auto-dismiss this tile once it's actually scrolled into view (greetings). */
   dismissOnView?: boolean;
+  /** Handle the CTA HERE instead of navigating to `to` — a lead card opens its
+   *  working drawer in place rather than sending staff to another page. */
+  onActivate?: () => void;
 }
 
 function TileCard({ tile, onDismiss, onOpen }: {
@@ -110,7 +122,11 @@ function TileCard({ tile, onDismiss, onOpen }: {
              sends the reader back HERE after a void/close, rather than to the
              generic documents list. ContractPage validates this and falls back
              on its own if it is ever unusable. */
-          onClick={() => { onOpen?.(); navigate(tile.to, { state: fromHere(location) }); }}
+          onClick={() => {
+            onOpen?.();
+            if (tile.onActivate) { tile.onActivate(); return; }
+            navigate(tile.to, { state: fromHere(location) });
+          }}
           className="inline-flex mt-3 text-[10.5px] tracking-wide uppercase text-white bg-green-800 px-3.5 py-2 rounded-lg font-medium hover:bg-green-700 focus-ring"
         >
           {tile.cta} →
@@ -171,10 +187,30 @@ export function DashboardPanel() {
   const [acqIntake, setAcqIntake] = useState<AcquisitionIntakeState | null>(null);
   const { profile, isStaff } = useAuth();
   const firstName = profile?.first_name || profile?.display_name || null;
-  const leads = useOpenLeads(isStaff);
+  const { open: leads, converted, reload: reloadLeads } = useOpenLeads(isStaff);
+  // The lead being worked, in a drawer over the dashboard. Opening a lead used
+  // to navigate to /app/ops/intake — a page that no longer exists — so the whole
+  // working surface comes here instead (LeadWorkDrawer, the same component the
+  // Inbound page used).
+  const [openLead, setOpenLead] = useState<BookingRequest | null>(null);
+  const [leadsExpanded, setLeadsExpanded] = useState(false);
+  const [convertedOpen, setConvertedOpen] = useState(false);
   const leadTiles: Tile[] = leads.map((l) => ({
     id: l.id, kind: 'lead', title: l.title, sub: l.sub, cta: 'Review', to: l.to, gold: true,
+    onActivate: l.request ? () => setOpenLead(l.request!) : undefined,
   }));
+
+  // Deep link: notification writers emit /app/ops/intake?request=<id>, which the
+  // retirement redirect forwards here. Open that lead's drawer once it has
+  // loaded, so the link still lands on the request rather than on a bare page.
+  const [searchParams] = useSearchParams();
+  const linkedRequest = searchParams.get('request');
+  const autoOpened = useRef<string | null>(null);
+  useEffect(() => {
+    if (!linkedRequest || autoOpened.current === linkedRequest) return;
+    const hit = leads.find((l) => l.request?.id === linkedRequest);
+    if (hit?.request) { autoOpened.current = linkedRequest; setOpenLead(hit.request); }
+  }, [linkedRequest, leads]);
   // Session hide for the member's own live "pending changes" tile (not backed by a
   // notification). Notification tiles are CONSUMED (deleted + logged) instead.
   const [hidden, setHidden] = useState<Set<string>>(new Set());
@@ -317,8 +353,10 @@ export function DashboardPanel() {
     || showPending || !!horseTile || !!acqTile;
   // Empty state: nothing needs attention and nothing's coming up → a warm all-clear
   // greeting (owner directive) instead of hiding the panel entirely.
-  const allCaughtUp = !hasAttention && comingUp.length === 0 && leadTiles.length === 0;
-  const visibleLeads = leadTiles.slice(0, 6);
+  const allCaughtUp = !hasAttention && comingUp.length === 0
+    && leadTiles.length === 0 && converted.length === 0;
+  const visibleLeads = leadsExpanded ? leadTiles : leadTiles.slice(0, LEAD_PREVIEW);
+  const hiddenLeads = leadTiles.length - Math.min(leadTiles.length, LEAD_PREVIEW);
 
   return (
     <div className="rounded-2xl border border-green-800/10 shadow-[0_14px_34px_-14px_rgba(13,33,24,0.22)] bg-gradient-to-br from-white to-cream-100 mb-6 sm:mb-7 p-5 sm:p-6">
@@ -344,13 +382,52 @@ export function DashboardPanel() {
           <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
             {visibleLeads.map((t) => <TileCard key={t.id} tile={t} />)}
           </div>
-          {leadTiles.length > visibleLeads.length && (
-            <button type="button" onClick={() => navigate('/app/ops/intake')}
+          {/* EXPAND, in place. This used to navigate to /app/ops/intake, which
+              showed a differently-filtered list — so "1 more waiting" led to a
+              page with many more, and the destination is now retired anyway.
+              The count is the real remainder of THIS list. */}
+          {hiddenLeads > 0 && (
+            <button type="button" onClick={() => setLeadsExpanded((v) => !v)}
+              aria-expanded={leadsExpanded}
               className="mt-2.5 text-[12px] text-gold-800 font-semibold hover:underline">
-              {leadTiles.length - visibleLeads.length} more waiting →
+              {leadsExpanded ? 'Show fewer' : `Show ${hiddenLeads} more waiting`}
             </button>
           )}
         </>
+      )}
+      {/* Leads that retired themselves — the person is already a client, so the
+          card is out of the open list above. Shown, not hidden: a lead that
+          silently vanishes is its own kind of confusion, and this says what
+          happened and links to who they became. Collapsed by default because it
+          is history, not work. */}
+      {converted.length > 0 && (
+        <div className={visibleLeads.length > 0 ? 'mt-3' : ''}>
+          <button type="button" onClick={() => setConvertedOpen((v) => !v)}
+            aria-expanded={convertedOpen}
+            className="text-[12px] text-muted font-medium hover:text-green-800 focus-ring rounded">
+            {converted.length} {converted.length === 1 ? 'lead' : 'leads'} already became{' '}
+            {converted.length === 1 ? 'a client' : 'clients'} {convertedOpen ? '−' : '+'}
+          </button>
+          {convertedOpen && (
+            <div className="mt-2 flex flex-col gap-1.5">
+              {converted.map((c) => (
+                <div key={c.requestId}
+                  className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 rounded-lg bg-cream-100/60 px-3 py-2">
+                  <span className="text-sm text-green-900 font-medium">{c.name}</span>
+                  <span className="text-[11.5px] text-muted">
+                    enquired {new Date(c.createdAt).toLocaleDateString()} · now a client
+                  </span>
+                  {c.contactId && (
+                    <button type="button" onClick={() => navigate(`/app/admin?open=${c.contactId}`)}
+                      className="ml-auto text-[11.5px] text-gold-800 font-semibold hover:underline">
+                      Open record →
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       )}
       {hasAttention && (
         <>
@@ -394,6 +471,17 @@ export function DashboardPanel() {
             {comingUp.map((t) => <TileCard key={t.id} tile={t} />)}
           </div>
         </>
+      )}
+      {/* The whole lead workflow, over the dashboard: fit checklist, call notes,
+          mark contacted, send as gift, provision + invite, schedule the lesson.
+          The same component the retired Inbound page used — extracted, not
+          rebuilt, so the machinery survived the page. */}
+      {openLead && (
+        <LeadWorkDrawer
+          request={openLead}
+          onClose={() => setOpenLead(null)}
+          onChanged={reloadLeads}
+        />
       )}
     </div>
   );

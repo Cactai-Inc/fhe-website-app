@@ -88,7 +88,7 @@ import OversightPage from './pages/app/ops/OversightPage';
 import ActivityPage from './pages/app/ops/ActivityPage';
 import ContentStorePage from './pages/app/ops/ContentStorePage';
 // Ops / CRM — Wave-7 (intake, payments review, module hubs + module pages)
-import IntakePage from './pages/app/ops/IntakePage';
+import IntakePage, { INTAKE_PAGE_RETIRED, IntakeRetiredRedirect } from './pages/app/ops/IntakePage';
 import TeamPage from './pages/app/ops/TeamPage';
 import AccountInvitePage from './pages/app/ops/AccountInvitePage';
 import NewContractPage from './pages/app/ops/NewContractPage';
@@ -280,7 +280,15 @@ export function AppRoutes() {
               <Route path="ops/horse-records" element={<ProtectedRoute requireStaff><HorseRecordsPage /></ProtectedRoute>} />
               <Route path="ops/documents" element={<ProtectedRoute requireStaff><DocumentsQueuePage /></ProtectedRoute>} />
               <Route path="ops/documents/:id" element={<ProtectedRoute requireStaff><DocumentViewerPage /></ProtectedRoute>} />
-              <Route path="ops/intake" element={<ProtectedRoute requireStaff><IntakePage /></ProtectedRoute>} />
+              {/* RETIRED 2026-08-11 (TASK-LEADCLEAN): the owner ruled the
+                  dashboard is the surface and Inbound goes away. The nav item
+                  was already gone; this closes the route. Redirects rather than
+                  404s so the notification links that still point here land on
+                  the lead's drawer (the `request` param is carried through);
+                  flip the boolean to restore the page. */}
+              <Route path="ops/intake" element={INTAKE_PAGE_RETIRED
+                ? <IntakeRetiredRedirect />
+                : <ProtectedRoute requireStaff><IntakePage /></ProtectedRoute>} />
               <Route path="ops/team" element={<ProtectedRoute requireStaff><TeamPage /></ProtectedRoute>} />
               {/* staff can invite clients; the page hides staff account types for non-admins */}
               <Route path="ops/accounts/new" element={<ProtectedRoute requireStaff><AccountInvitePage /></ProtectedRoute>} />

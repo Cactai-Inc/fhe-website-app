@@ -139,6 +139,79 @@ export async function listInboundQueue(): Promise<InboundQueueRow[]> {
   return (data ?? []) as InboundQueueRow[];
 }
 
+// ─── The lead queue: which cards are still open, and which retired themselves ─
+
+/** A request nobody needs to work anymore, because its person already became a
+ *  client. The row is NOT deleted and NOT restatused — it is the evidence of how
+ *  the relationship started. It just stops being an open card, and carries the
+ *  contact it resolved to so the surface can link to that person's record. */
+export interface ConvertedLead {
+  requestId: string;
+  name: string;
+  email: string | null;
+  /** The contact `inbound_queue` resolved this request to (its own join). */
+  contactId: string | null;
+  createdAt: string;
+  /** The request's stored status, untouched — usually still 'new'. */
+  status: string;
+}
+
+export interface LeadQueue {
+  /** Still real work: not converted, not in a terminal status. */
+  open: BookingRequest[];
+  /** Converted — retired from the open list, kept as history. Newest first. */
+  converted: ConvertedLead[];
+}
+
+/** Statuses that end a request's life in the queue on their own, converted-or-not. */
+const TERMINAL_REQUEST_STATUSES = new Set(['converted', 'expired']);
+
+/**
+ * Split the request inbox into what still needs working and what quietly
+ * finished. **The verdict is `inbound_queue.already_converted` and nothing
+ * else** — the view joins requests → contacts on `contact_id` when it is set and
+ * on lower(email) when it is not, and calls the person converted once that
+ * contact is a CONTACT rather than a LEAD. That definition already existed, is
+ * already delivered to the UI, and is the only one allowed: a second derivation
+ * here is how three surfaces came to disagree in the first place.
+ *
+ * `already_converted` is null when no contact matched at all (a submission from
+ * someone we have no record of) — that is NOT converted, so it stays open.
+ *
+ * Two reads rather than one because the view carries the verdict and the
+ * `requests` table carries `request_selections` (what they actually asked for),
+ * which the card needs to say anything useful.
+ */
+export async function listLeadQueue(): Promise<LeadQueue> {
+  const [queue, requests] = await Promise.all([
+    listInboundQueue(),
+    listBookingRequests(),
+  ]);
+  const byId = new Map(requests.map((r) => [r.id, r]));
+  const open: BookingRequest[] = [];
+  const converted: ConvertedLead[] = [];
+  for (const row of queue) {
+    if (row.already_converted === true) {
+      const full = byId.get(row.id);
+      converted.push({
+        requestId: row.id,
+        name: [row.contact_first_name, row.contact_last_name].filter(Boolean).join(' ')
+          || full?.contact_name || row.contact_email || 'Someone',
+        email: row.contact_email,
+        contactId: row.contact_id,
+        createdAt: row.created_at,
+        status: row.status,
+      });
+      continue;
+    }
+    if (TERMINAL_REQUEST_STATUSES.has(row.status)) continue;
+    const full = byId.get(row.id);
+    if (full) open.push(full);
+  }
+  converted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  return { open, converted };
+}
+
 /** Flip a request to 'contacted' (staff UPDATE policy is the fence). */
 export async function markRequestContacted(id: string): Promise<BookingRequest> {
   const { data, error } = await supabase

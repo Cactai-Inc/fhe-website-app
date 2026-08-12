@@ -1,52 +1,51 @@
 /**
  * OPS-INTAKE — staff intake surfaces (surface `ops`, core — ungated).
  *
- * /app/ops/intake is the INBOUND queue — one chronological list of everything
+ * ⚠ RETIRED 2026-08-11 (TASK-LEADCLEAN) — see INTAKE_PAGE_RETIRED at the bottom.
+ * The owner ruled the dashboard is the surface and Inbound goes away, so
+ * /app/ops/intake now redirects to /app/dashboard. Nothing here is deleted: the
+ * page still builds and flipping the boolean restores it, exactly as
+ * CONTACTS_PAGE_RETIRED did for the Contacts page.
+ *
+ * The WORKING MACHINERY did not retire with the page. It was extracted to
+ * `components/app/LeadWorkDrawer.tsx` — the fit checklist (set_request_checklist),
+ * the staff call-notes timeline, "Mark contacted", ProvisionClientForm, the gift
+ * path, and the schedule-lesson path (findClientForRequest → ScheduleSessionForm)
+ * — and the dashboard's lead card opens that same component. One implementation,
+ * two hosts; retiring a page costs the product nothing.
+ *
+ * /app/ops/intake WAS the INBOUND queue — one chronological list of everything
  * sent to the company. The unified public form (Phase 5) writes every
  * contact / inquiry / booking / kiosk submission into the `requests` table, so
  * there is no separate form-submissions queue anymore; support requests join
- * the same list. A booking row opens the working drawer: contact + requested
- * items, the structured availability (weeks / day prefs / AM-PM prefs / riding
- * experience / visitor notes), the staff call-notes timeline (append_request_note
- * RPC), the LESSON FIT CHECKLIST (set_request_checklist RPC), "Mark contacted",
- * and the checklist-gated "Send confirmation & invite" provisioning form that
- * submits to /api/admin-send-invitation with requestId — server-side the RPC
- * stamps invitations.request_id and flips the request to 'invited'.
+ * the same list.
  */
 import { useCallback, useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { toErrorMessage } from '../../../lib/ops/errors';
-import { DataTable, Modal, StatusBadge, useAsync, useToast } from '../../../lib/ops';
+import { Navigate, useSearchParams } from 'react-router-dom';
+import { DataTable, StatusBadge, useAsync } from '../../../lib/ops';
 import type { Column } from '../../../lib/ops';
 import { useDocumentTitle } from '../../../lib/hooks';
 import {
-  findClientForRequest,
   listBookingRequests,
-  markRequestContacted,
-  appendRequestNote,
-  setRequestChecklist,
   listInboundQueue,
   type InboundQueueRow,
 } from '../../../lib/ops/api-intake';
-import {
-  scheduleLessonSession,
-  listLessonSessionsForRequest,
-  listScheduleHorses,
-} from '../../../lib/ops/api-lessons';
-import type { LessonSession, ScheduleHorseOption } from '../../../lib/ops/api-lessons';
-import { formatSessionWhen } from '../../../lib/formatDateTime';
-import { categoryFieldLabel } from '../../../lib/intakeCategoryFields';
-import { ScheduleSessionForm } from './lessons/ScheduleSessionForm';
-import type { ScheduleSessionFormValues } from './lessons/ScheduleSessionForm';
 import type {
   BookingRequest,
   BookingRequestStatus,
 } from '../../../lib/ops/api-intake';
-import { ProvisionClientForm } from '../../../components/app/ProvisionClientForm';
-import { GiftCreateForm } from '../../../components/app/GiftCreateForm';
+import {
+  LeadWorkDrawer,
+  LESSON_FIT_CHECKLIST,
+  CONTACT_METHOD_LABEL,
+  requestedSummary,
+} from '../../../components/app/LeadWorkDrawer';
 import { listSupportRequests, setSupportStatus, type SupportRequest } from '../../../lib/support';
 import { BookingFieldsSettings } from './BookingFieldsSettings';
-import type { ProposedTime } from '../../../lib/types';
+
+/* Moved to LeadWorkDrawer with the machinery it belongs to; re-exported here so
+ * the original import path keeps working. */
+export { LESSON_FIT_CHECKLIST };
 
 // ════════════════════════════════════════════════════════════════════════════
 // Booking requests — the Request Inbox (Flow A step 2)
@@ -62,58 +61,10 @@ const REQUEST_FILTERS: { id: RequestFilter; label: string }[] = [
   { id: 'ALL', label: 'All' },
 ];
 
-/** The per-service fit checklist (BOOKING_FLOWS_PLAN §1 staff rails). Keys are
- *  what land in the requests.checklist jsonb ({key: boolean}, stored whole via
- *  set_request_checklist); labels are the staff-facing text. "Send confirmation
- *  & invite" stays disabled until every key is true. */
-export const LESSON_FIT_CHECKLIST: { key: string; label: string }[] = [
-  { key: 'spoke_with_client', label: 'Spoke with the client' },
-  { key: 'experience_assessed', label: 'Riding experience assessed' },
-  { key: 'program_identified', label: 'Right program identified' },
-  { key: 'times_discussed', label: 'Date(s)/time(s) discussed' },
-  { key: 'payment_agreed', label: 'Payment method agreed' },
-];
-
-const CONTACT_METHOD_LABEL: Record<string, string> = {
-  text: 'Text', call: 'Call', email: 'Email',
-};
-
-/** The visitor's own words: everything before the appended availability block. */
-const AVAILABILITY_MARKER = '— Availability & experience —';
-function visitorNotes(notes: string | null): string | null {
-  if (!notes) return null;
-  const own = notes.split(AVAILABILITY_MARKER)[0].trim();
-  return own || null;
-}
-
-/** Riding experience travels in the notes block ("Riding experience: 1–2 years"). */
-function ridingExperience(notes: string | null): string | null {
-  const m = notes?.match(/Riding experience:\s*([^\n]+)/);
-  return m ? m[1].trim() : null;
-}
-
-/** Human text for one proposed-times entry: structured week window or legacy {date,time}. */
-function proposedTimeText(t: ProposedTime): string {
-  if (t.label) return t.label;
-  if (t.end) return `${t.date} – ${t.end}`;
-  return t.time ? `${t.date} (${t.time})` : t.date;
-}
-
-/** 'Riding Lessons — 4-Lesson Punch Card; …' from the embedded selections. */
-function requestedSummary(r: BookingRequest): string {
-  const labels = (r.request_selections ?? [])
-    .map((s) => s.label ?? s.offering_slug)
-    .filter((l): l is string => Boolean(l));
-  return labels.length > 0 ? labels.join('; ') : '—';
-}
-
-/** First-space split of the freeform contact_name (same rule as contact heal). */
-function splitContactName(fullName: string): { firstName: string; lastName: string } {
-  const trimmed = fullName.trim();
-  const spaceAt = trimmed.indexOf(' ');
-  if (spaceAt <= 0) return { firstName: trimmed, lastName: '' };
-  return { firstName: trimmed.slice(0, spaceAt), lastName: trimmed.slice(spaceAt + 1).trim() };
-}
+/* LESSON_FIT_CHECKLIST, CONTACT_METHOD_LABEL, requestedSummary, the availability
+ * renderer, the visitor/experience note parsers and the name split all moved to
+ * components/app/LeadWorkDrawer.tsx with the drawer that uses them. Nothing was
+ * dropped — the two of them this table still needs are imported at the top. */
 
 const REQUEST_COLUMNS: Column<BookingRequest>[] = [
   {
@@ -141,82 +92,14 @@ const REQUEST_COLUMNS: Column<BookingRequest>[] = [
   { key: 'status', header: 'Status', render: (r) => <StatusBadge status={r.status} /> },
 ];
 
-/** Structured availability, rendered readably (weeks / times / days / experience). */
-function AvailabilitySection({ request }: { request: BookingRequest }) {
-  const times = request.proposed_times ?? [];
-  const weeks = times.filter((t) => t.date || t.label).map(proposedTimeText);
-  const first = times[0];
-  const experience = ridingExperience(request.notes);
-  return (
-    <section aria-label="Availability & experience">
-      <h3 className="form-label mb-2">Availability &amp; experience</h3>
-      <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        <div>
-          <dt className="text-xs font-sans font-medium text-green-800/70">Preferred weeks</dt>
-          <dd className="text-sm text-green-900">
-            {weeks.length > 0 ? weeks.join('; ') : 'No specific weeks requested'}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-xs font-sans font-medium text-green-800/70">Times</dt>
-          <dd className="text-sm text-green-900">{first?.time || 'No time-of-day preference'}</dd>
-        </div>
-        <div>
-          <dt className="text-xs font-sans font-medium text-green-800/70">Days</dt>
-          <dd className="text-sm text-green-900">{first?.days || 'Not specified'}</dd>
-        </div>
-        <div>
-          <dt className="text-xs font-sans font-medium text-green-800/70">Riding experience</dt>
-          <dd className="text-sm text-green-900">{experience ?? 'Not provided'}</dd>
-        </div>
-      </dl>
-    </section>
-  );
-}
-
-/** Name + email pre-fill carried from a submission into the shared provision
- *  form (category/offerings/paperwork/payment are handled in ProvisionClientForm). */
-interface InviteFormState {
-  firstName: string;
-  lastName: string;
-  email: string;
-}
-
-function inviteFormFor(r: BookingRequest): InviteFormState {
-  // The unified intake stores first/last directly; fall back to the legacy
-  // first-space split only for older rows that predate the split.
-  const split = splitContactName(r.contact_name);
-  return {
-    firstName: r.contact_first_name?.trim() || split.firstName,
-    lastName: r.contact_last_name?.trim() || split.lastName,
-    email: r.contact_email,
-  };
-}
-
 function RequestInbox({ openId }: { openId?: string } = {}) {
   // Inbound focus: auto-open one request when handed an id (runs once per id).
   const [autoOpened, setAutoOpened] = useState<string | null>(null);
   const [rows, setRows] = useState<BookingRequest[]>([]);
   const [statusFilter, setStatusFilter] = useState<RequestFilter>('new');
   const [selected, setSelected] = useState<BookingRequest | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
-  const [noteText, setNoteText] = useState('');
-  const [checklist, setChecklist] = useState<Record<string, boolean>>({});
-  const [inviteOpen, setInviteOpen] = useState(false);
-  const [invite, setInvite] = useState<InviteFormState | null>(null);
-  const [inviteResult, setInviteResult] = useState<{
-    url: string; emailed: boolean; offeringLabel?: string;
-  } | null>(null);
-  const [giftOpen, setGiftOpen] = useState(false);
-  const [horses, setHorses] = useState<ScheduleHorseOption[]>([]);
-  // Schedule-lesson section (invited/converted requests): the provisioned
-  // client resolved via request → invitation → email → contact → client, plus
-  // the sessions already booked from this request.
-  const [requestClientId, setRequestClientId] = useState<string | null>(null);
-  const [requestSessions, setRequestSessions] = useState<LessonSession[]>([]);
 
   const load = useAsync(listBookingRequests);
-  const toast = useToast();
 
   const refresh = useCallback(
     async (filter: RequestFilter) => {
@@ -234,102 +117,10 @@ function RequestInbox({ openId }: { openId?: string } = {}) {
   }, [statusFilter]);
 
   useEffect(() => {
-    listScheduleHorses()
-      .then(setHorses)
-      .catch(() => setHorses([]));
-  }, []);
-
-  const openRequest = (row: BookingRequest) => {
-    setSelected(row);
-    setChecklist(row.checklist ?? {});
-    setNoteText('');
-    setInviteOpen(false);
-    setInvite(inviteFormFor(row));
-    setInviteResult(null);
-    setGiftOpen(false);
-    setActionError(null);
-    setRequestClientId(null);
-    setRequestSessions([]);
-    if (row.status === 'invited' || row.status === 'converted') {
-      findClientForRequest(row.id)
-        .then(setRequestClientId)
-        .catch(() => setRequestClientId(null));
-      listLessonSessionsForRequest(row.id)
-        .then(setRequestSessions)
-        .catch(() => setRequestSessions([]));
-    }
-  };
-
-  const closeDrawer = () => {
-    setSelected(null);
-    setActionError(null);
-  };
-
-  const addNote = useAsync(appendRequestNote);
-  const handleAddNote = async () => {
-    if (!selected || !noteText.trim()) return;
-    setActionError(null);
-    try {
-      const timeline = await addNote.run(selected.id, noteText.trim());
-      setSelected((prev) => (prev ? { ...prev, staff_notes: timeline } : prev));
-      setNoteText('');
-    } catch (err) {
-      setActionError(toErrorMessage(err, 'Could not add the note.'));
-    }
-  };
-
-  const saveChecklist = useAsync(setRequestChecklist);
-  const handleToggleItem = async (key: string) => {
-    if (!selected) return;
-    setActionError(null);
-    const next = { ...checklist, [key]: !checklist[key] };
-    setChecklist(next); // optimistic; a failed save surfaces below
-    try {
-      await saveChecklist.run(selected.id, next);
-    } catch (err) {
-      setActionError(toErrorMessage(err, 'Could not save the checklist.'));
-    }
-  };
-
-  const contact = useAsync(markRequestContacted);
-  const handleMarkContacted = async () => {
-    if (!selected) return;
-    setActionError(null);
-    try {
-      await contact.run(selected.id);
-      setSelected((prev) => (prev ? { ...prev, status: 'contacted' } : prev));
-      toast.success('Request marked contacted.');
-      await refresh(statusFilter);
-    } catch (err) {
-      setActionError(toErrorMessage(err, 'Could not update the request.'));
-    }
-  };
-
-  const scheduleSession = useAsync(scheduleLessonSession);
-  const handleScheduleLesson = async (values: ScheduleSessionFormValues) => {
-    if (!selected) return;
-    setActionError(null);
-    try {
-      await scheduleSession.run({ ...values, request_id: selected.id });
-      toast.success('Lesson scheduled — the request is converted.');
-      // The RPC flipped the request server-side; mirror it locally + refresh.
-      setSelected((prev) => (prev ? { ...prev, status: 'converted' } : prev));
-      setRequestSessions(await listLessonSessionsForRequest(selected.id).catch(() => []));
-      await refresh(statusFilter);
-    } catch (err) {
-      setActionError(toErrorMessage(err, 'Could not schedule the lesson.'));
-    }
-  };
-
-  useEffect(() => {
     if (!openId || autoOpened === openId) return;
     const row = rows.find((r) => r.id === openId);
-    if (row) { setAutoOpened(openId); openRequest(row); }
+    if (row) { setAutoOpened(openId); setSelected(row); }
   }, [openId, rows, autoOpened]);
-
-  const busy = addNote.isPending || contact.isPending;
-  const allChecked = LESSON_FIT_CHECKLIST.every((item) => checklist[item.key] === true);
-  const own = selected ? visitorNotes(selected.notes) : null;
 
   return (
     <div>
@@ -351,18 +142,6 @@ function RequestInbox({ openId }: { openId?: string } = {}) {
         ))}
       </div>
 
-      {toast.toasts.map((t) => (
-        <div
-          key={t.id}
-          role="status"
-          className={`mb-4 rounded px-4 py-2 text-sm ${
-            t.tone === 'error' ? 'bg-red-50 text-red-800' : 'bg-green-50 text-green-900'
-          }`}
-        >
-          {t.message}
-        </div>
-      ))}
-
       {load.isError && (
         <p role="alert" className="form-error mb-4">
           {load.error?.message ?? 'Could not load booking requests.'}
@@ -376,277 +155,18 @@ function RequestInbox({ openId }: { openId?: string } = {}) {
         rowKey={(r) => r.id}
         emptyTitle="No requests"
         emptyMessage="No booking requests in this status."
-        onRowClick={openRequest}
+        onRowClick={setSelected}
       />
 
-      <Modal
-        open={selected !== null}
-        onClose={closeDrawer}
-        title="Booking request"
-        disableBackdropClose={busy}
-      >
-        {selected && (
-          <div className="flex flex-col gap-5">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm font-sans font-medium text-green-900">{selected.contact_name}</p>
-                <p className="text-xs text-green-800/70">
-                  {selected.contact_email}
-                  {selected.contact_phone ? ` · ${selected.contact_phone}` : ''}
-                </p>
-                {selected.contact_method && (
-                  <p className="text-xs text-green-800/70 mt-1">
-                    Prefers: {CONTACT_METHOD_LABEL[selected.contact_method]}
-                  </p>
-                )}
-              </div>
-              <StatusBadge status={selected.status} />
-            </div>
-
-            <section aria-label="Requested items">
-              <h3 className="form-label mb-2">Requested</h3>
-              <p className="text-sm text-green-900">{requestedSummary(selected)}</p>
-            </section>
-
-            {selected.details && Object.keys(selected.details).length > 0 && (
-              <section aria-label="Details">
-                <h3 className="form-label mb-2">Details</h3>
-                <dl className="grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1 text-sm">
-                  {Object.entries(selected.details).map(([k, v]) => (
-                    <div key={k} className="contents">
-                      <dt className="text-green-800/70">{categoryFieldLabel(k)}</dt>
-                      <dd className="text-green-900">{v}</dd>
-                    </div>
-                  ))}
-                </dl>
-              </section>
-            )}
-
-            <AvailabilitySection request={selected} />
-
-            <section aria-label="Visitor notes">
-              <h3 className="form-label mb-2">Visitor notes</h3>
-              {own ? (
-                <p className="text-sm text-green-900 whitespace-pre-wrap">{own}</p>
-              ) : (
-                <p className="text-sm text-green-800/70">No notes from the visitor.</p>
-              )}
-            </section>
-
-            <section aria-label="Staff notes">
-              <h3 className="form-label mb-2">Staff notes</h3>
-              {selected.staff_notes.length === 0 ? (
-                <p className="text-sm text-green-800/70">No notes yet.</p>
-              ) : (
-                <ol className="flex flex-col gap-2">
-                  {selected.staff_notes.map((n, i) => (
-                    <li key={`${n.at}-${i}`} className="border-l-2 border-green-800/15 pl-3">
-                      <p className="text-xs text-green-800/70">
-                        {new Date(n.at).toLocaleString()} · {n.by_name}
-                      </p>
-                      <p className="text-sm text-green-900 whitespace-pre-wrap">{n.note}</p>
-                    </li>
-                  ))}
-                </ol>
-              )}
-              <div className="mt-3 flex gap-2 items-end">
-                <div className="flex-1">
-                  <label htmlFor="request-note" className="sr-only">
-                    Add a note
-                  </label>
-                  <textarea
-                    id="request-note"
-                    rows={2}
-                    className="form-input resize-none"
-                    placeholder="Log a call note…"
-                    value={noteText}
-                    onChange={(e) => setNoteText(e.target.value)}
-                  />
-                </div>
-                <button
-                  type="button"
-                  className="btn-outline-gold text-sm"
-                  disabled={addNote.isPending || !noteText.trim()}
-                  aria-busy={addNote.isPending}
-                  onClick={handleAddNote}
-                >
-                  Add note
-                </button>
-              </div>
-            </section>
-
-            <section aria-label="Lesson fit checklist">
-              <h3 className="form-label mb-2">Lesson fit checklist</h3>
-              <ul className="flex flex-col gap-1.5">
-                {LESSON_FIT_CHECKLIST.map((item) => (
-                  <li key={item.key}>
-                    <label className="flex items-center gap-2 text-sm text-green-900">
-                      <input
-                        type="checkbox"
-                        className="accent-green-800"
-                        checked={checklist[item.key] === true}
-                        onChange={() => handleToggleItem(item.key)}
-                      />
-                      {item.label}
-                    </label>
-                  </li>
-                ))}
-              </ul>
-            </section>
-
-            {/* Schedule lesson — the invited/converted request gets its real
-                date/time booked here (schedule_lesson_session RPC: overlap
-                rejection, request → converted, member notified). */}
-            {(selected.status === 'invited' || selected.status === 'converted') && (
-              <section aria-label="Schedule lesson" className="border-t border-green-800/10 pt-4">
-                <h3 className="form-label mb-2">Schedule lesson</h3>
-                {requestSessions.length > 0 && (
-                  <ul className="flex flex-col gap-1.5 mb-4" data-testid="request-sessions">
-                    {requestSessions.map((s) => (
-                      <li
-                        key={s.id}
-                        className="flex items-center justify-between gap-3 text-sm text-green-900"
-                      >
-                        <span>{formatSessionWhen(s.starts_at, s.ends_at, s.location)}</span>
-                        <StatusBadge status={s.status} />
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                {requestClientId ? (
-                  <ScheduleSessionForm
-                    fixedClientId={requestClientId}
-                    horses={horses}
-                    onSubmit={handleScheduleLesson}
-                    submitting={scheduleSession.isPending}
-                  />
-                ) : (
-                  <p className="text-sm text-green-800/70">
-                    No provisioned client found for this request yet — the booking
-                    form appears once the invitation has provisioned one.
-                  </p>
-                )}
-              </section>
-            )}
-
-            {actionError && (
-              <p role="alert" className="form-error">
-                {actionError}
-              </p>
-            )}
-
-            {inviteResult && (
-              <div className="bg-green-50 border border-green-200 p-4 text-sm">
-                <p className="text-green-800 mb-2">
-                  {inviteResult.offeringLabel
-                    ? `${inviteResult.offeringLabel} provisioned — invitation created`
-                    : 'Invitation created'}
-                  {inviteResult.emailed
-                    ? ' and emailed.'
-                    : '. (Email provider not configured — copy the link below.)'}
-                </p>
-                <code className="block break-all text-xs text-green-900 bg-white border border-green-200 p-2">
-                  {inviteResult.url}
-                </code>
-              </div>
-            )}
-
-            {!inviteResult && (
-              <div className="flex flex-wrap justify-end gap-3">
-                {selected.status === 'new' && (
-                  <button
-                    type="button"
-                    className="btn-outline-gold text-sm"
-                    disabled={busy}
-                    aria-busy={contact.isPending}
-                    onClick={handleMarkContacted}
-                  >
-                    Mark contacted
-                  </button>
-                )}
-                {selected.status !== 'converted' && !inviteOpen && !giftOpen && (
-                  <button
-                    type="button"
-                    className="btn-outline-gold text-sm"
-                    disabled={busy}
-                    onClick={() => setGiftOpen(true)}
-                  >
-                    Send as gift
-                  </button>
-                )}
-                {selected.status !== 'invited' && !inviteOpen && !giftOpen && (
-                  <button
-                    type="button"
-                    className="btn-primary text-sm"
-                    disabled={!allChecked || busy}
-                    title={
-                      allChecked
-                        ? 'Open the confirmation & invitation form'
-                        : 'Complete the lesson fit checklist to enable sending'
-                    }
-                    onClick={() => setInviteOpen(true)}
-                  >
-                    Send confirmation &amp; invite
-                  </button>
-                )}
-              </div>
-            )}
-
-            {giftOpen && (
-              <div className="border-t border-green-800/10 pt-4">
-                <p className="body-text text-sm mb-4">
-                  Turn this inquiry into a gift — pick what they're buying, confirm who it's
-                  for, and get a claim link to send. The recipient redeems it themselves.
-                </p>
-                <GiftCreateForm
-                  requestId={selected.id}
-                  buyerName={selected.contact_name}
-                  buyerEmail={selected.contact_email}
-                  onCreated={() => {
-                    setSelected((prev) => (prev ? { ...prev, status: 'converted' } : prev));
-                    void refresh(statusFilter);
-                    toast.success('Gift created.');
-                  }}
-                />
-                <div className="flex justify-end mt-3">
-                  <button type="button" className="btn-outline-gold text-sm" onClick={() => setGiftOpen(false)}>
-                    Back
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {inviteOpen && !inviteResult && invite && (
-              <div className="border-t border-green-800/10 pt-4">
-                <p className="body-text text-sm mb-4">
-                  Provision what they bought and email the registration invitation — their account
-                  opens straight into onboarding with the paperwork ready to sign.
-                </p>
-                {/* The ONE shared provision form (source='submission'): carries the
-                    request id (links + flips to invited) and the visitor's name. */}
-                <ProvisionClientForm
-                  source="submission"
-                  requestId={selected.id}
-                  email={invite.email}
-                  firstName={invite.firstName}
-                  lastName={invite.lastName}
-                  onProvisioned={(r) => {
-                    setInviteResult({ url: r.registerUrl, emailed: r.emailed, offeringLabel: r.offeringLabel ?? undefined });
-                    setSelected((prev) => (prev ? { ...prev, status: 'invited' } : prev));
-                    void refresh(statusFilter);
-                    toast.success('Confirmation sent — invitation created.');
-                  }}
-                />
-                <div className="flex justify-end mt-3">
-                  <button type="button" className="btn-outline-gold text-sm" onClick={() => setInviteOpen(false)}>
-                    Back
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </Modal>
+      {/* The working drawer — the SAME component the dashboard lead card opens.
+          Its own toasts render inside it now, rather than behind the modal. */}
+      {selected && (
+        <LeadWorkDrawer
+          request={selected}
+          onClose={() => setSelected(null)}
+          onChanged={() => { void refresh(statusFilter); }}
+        />
+      )}
     </div>
   );
 }
@@ -729,14 +249,21 @@ function InboundAttention() {
         </div>
       )}
 
+      {/* TASK-LEADCLEAN: this used to read "{n} already handled, still marked
+          new … clearing them keeps the queue honest" — the software computing
+          the answer and then asking the owner to do the clearing. It no longer
+          asks: the dashboard derives the same `already_converted` and retires
+          those cards on its own. Kept as a statement of fact for anyone who
+          flips INTAKE_PAGE_RETIRED back on. */}
       {stale.length > 0 && (
         <div className="rounded-xl border border-green-800/15 bg-cream-100/60 p-4">
           <p className="text-sm font-medium text-green-900 mb-1">
-            {stale.length} already handled, still marked new
+            {stale.length} already became clients
           </p>
           <p className="text-[12.5px] text-green-800/80">
-            These people are already clients — the work is done, the row was never
-            closed. Clearing them keeps the queue honest.
+            The work is done and the row was never closed by hand. Nothing to do —
+            the dashboard has already retired these cards from its open list, and
+            the requests themselves are kept as history.
           </p>
         </div>
       )}
@@ -902,6 +429,35 @@ export function IntakePage() {
       </div>
     </div>
   );
+}
+
+/** RETIRED behind a boolean, never deleted (standing rule from 86a2c33, and the
+ *  shape CONTACTS_PAGE_RETIRED already uses).
+ *
+ *  Owner ruling 2026-08-11 (TASK-LEADCLEAN): *"inbound goes away. its my
+ *  management dashboard"* — three surfaces (this page, DashboardPanel, and the
+ *  Leads contact list) showed one dataset with three different filters and none
+ *  of them acted on the conversion signal the database was already computing.
+ *  The dashboard won. While this is true, /app/ops/intake redirects to
+ *  /app/dashboard and this page renders nowhere. It is not deleted: the code
+ *  below still compiles, and flipping this to false restores the page whole.
+ *
+ *  The Inbound NAV item was already removed (AppLayout.tsx, UIO-012 item 2);
+ *  this closes the route half of the same retirement. */
+export const INTAKE_PAGE_RETIRED = true;
+
+/**
+ * The retirement redirect, as its own component so deep links survive it.
+ * Several notification writers still emit `/app/ops/intake?request=<id>` links
+ * (submit_public_request, create_gift, redeem_gift, provision_client_invitation,
+ * sign_start_register_attempt) — carrying the `request` param through to the
+ * dashboard keeps every one of those links landing on that lead's drawer rather
+ * than on a bare page. Plain `/app/ops/intake` lands on the dashboard.
+ */
+export function IntakeRetiredRedirect() {
+  const [params] = useSearchParams();
+  const request = params.get('request');
+  return <Navigate to={request ? `/app/dashboard?request=${request}` : '/app/dashboard'} replace />;
 }
 
 export default IntakePage;
