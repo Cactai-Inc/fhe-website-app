@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2, UserPlus } from 'lucide-react';
+import { PageLayout } from '../../../components/app/PageLayout';
 import { useDocumentTitle } from '../../../lib/hooks';
 import { startLeaseContract, startSaleContract, linkContractToPurchase, listLeaseTemplates } from '../../../lib/api';
 import type { ContractTemplate } from '../../../lib/ops/types';
@@ -181,16 +182,15 @@ export default function NewContractPage() {
   );
 
   return (
-    <div className="max-w-5xl">
+    <PageLayout
+      name="New contract"
+      description="The company originates every contract. You can act on behalf of either party — or both — by filling their side and setting their controls below."
+      width="wide"
+    >
       <Link to="/app/ops/documents"
         className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-green-800 mb-4">
         <ArrowLeft size={14} /> Documents
       </Link>
-      <h1 className="font-serif text-2xl text-green-900 mb-1">New contract</h1>
-      <p className="text-sm text-green-800/70 mb-4">
-        The company originates every contract. You can act on behalf of either
-        party — or both — by filling their side and setting their controls below.
-      </p>
 
       {/* both parties must exist as accounts/contacts first */}
       <div className="bg-gold-50 border border-gold-600/40 rounded-lg px-4 py-3 mb-5 flex items-start gap-2.5">
@@ -410,6 +410,6 @@ export default function NewContractPage() {
         Add the parties and the horse above, then Get started — the full contract
         opens for you to fill.
       </p>
-    </div>
+    </PageLayout>
   );
 }
