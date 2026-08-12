@@ -505,9 +505,22 @@ const MANAGEMENT_GROUP: NavItem[] = [
  *   Directory  external providers — farriers, vets, suppliers, organizers
  * Leads moved here from Front desk: it is a list of PEOPLE, not a work queue. */
 const ACCOUNTS_GROUP: NavItem[] = [
-  { to: '/app/ops/leads', label: 'Leads', icon: Contact },
-  { to: '/app/admin', label: 'Clients', icon: Users },
-  { to: '/app/ops/contacts', label: 'Contacts', icon: Contact },
+  /* Owner, 2026-08-12: "contacts routes to clients, switch the icons and remove
+     the contacts nav item and move the clients icon to Leads."
+
+     Three facts made this a cleanup rather than a preference. (1) `Contacts`
+     already resolved to the same place as `Clients` — App.tsx renders
+     `<Navigate to="/app/admin" replace />` for `ops/contacts` whenever
+     CONTACTS_PAGE_RETIRED is true, so the nav carried two entries with one
+     destination. (2) Leads and Contacts carried the SAME `Contact` icon, so the
+     nav showed one glyph twice. (3) Removing the entry loses nothing: the route
+     stays and keeps redirecting, so bookmarks and in-app links still land.
+
+     Leads takes `Users` (Clients' old icon) and Clients takes `Contact`. This is
+     ADMINSWEEP's X-1, whose finding was that the ContactsPage retirement was
+     half-applied — the page was retired, the nav entry never was. */
+  { to: '/app/ops/leads', label: 'Leads', icon: Users },
+  { to: '/app/admin', label: 'Clients', icon: Contact },
   { to: '/app/ops/team', label: 'Team', icon: Contact },
   { to: '/app/ops/directory', label: 'Directory', icon: BookOpen },
 ];
