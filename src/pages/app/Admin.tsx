@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, ChevronRight, Plus, Search, UserRound,
 } from 'lucide-react';
+import { PageLayout } from '../../components/app/PageLayout';
 import { useDocumentTitle } from '../../lib/hooks';
 import { supabase } from '../../lib/supabase';
 import {
@@ -781,20 +782,13 @@ export default function Admin() {
   }, [selectedId]);
 
   return (
-    <div className="max-w-none">
-      <div className="flex items-center justify-between mb-1">
-        <h1 className="font-serif text-2xl text-green-900">Clients</h1>
-        {!selected && (
-          <button type="button" onClick={() => navigate('/app/ops/accounts/new')}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-green-800 text-white text-sm font-medium hover:bg-green-700 focus-ring">
-            <Plus size={15} /> ADD NEW
-          </button>
-        )}
-      </div>
-      <p className="text-sm text-green-800/70 mb-5">
-        {selected ? 'Everything about this account, in one place.' : 'Everyone on file — click a card to open their record.'}
-      </p>
-
+    <PageLayout
+      name="Clients"
+      description={selected ? 'Everything about this account, in one place.' : 'Everyone on file — click a card to open their record.'}
+      width="full"
+      onAdd={!selected ? () => navigate('/app/ops/accounts/new') : undefined}
+      addLabel="Add a new client"
+    >
       {error && <p role="alert" className="form-error mb-4">{error}</p>}
 
       {/* LIST state — a grid of triage cards (TASK-ROSTERCARD). The owner
@@ -1006,6 +1000,6 @@ export default function Admin() {
           )}
         </div>
       )}
-    </div>
+    </PageLayout>
   );
 }

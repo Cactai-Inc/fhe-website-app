@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Check, X, ListPlus } from 'lucide-react';
+import { PageLayout } from '../../../components/app/PageLayout';
 import { useDocumentTitle } from '../../../lib/hooks';
 import {
   listLookupSuggestions, promoteLookupSuggestion, dismissLookupSuggestion,
@@ -45,14 +46,11 @@ export default function LookupReviewPage() {
   }
 
   return (
-    <div className="max-w-3xl">
-      <h1 className="font-serif text-2xl text-green-900 mb-1">Field option review</h1>
-      <p className="text-sm text-muted mb-5">
-        When someone can’t find their answer in a dropdown and types it under “Other,”
-        it lands here. Promote the ones you see often — they become selectable options
-        so nobody has to type them again.
-      </p>
-
+    <PageLayout
+      name="Field option review"
+      description="When someone can’t find their answer in a dropdown and types it under “Other,” it lands here. Promote the ones you see often — they become selectable options so nobody has to type them again."
+      width="narrow"
+    >
       {error && <p role="alert" className="form-error mb-3">{error}</p>}
 
       {loading ? (
@@ -87,6 +85,6 @@ export default function LookupReviewPage() {
           ))}
         </div>
       )}
-    </div>
+    </PageLayout>
   );
 }

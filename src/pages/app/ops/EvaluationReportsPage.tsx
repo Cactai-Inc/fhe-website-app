@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { FileText, Send, Save, Plus } from 'lucide-react';
+import { Send, Save, Plus } from 'lucide-react';
+import { PageLayout } from '../../../components/app/PageLayout';
 import { useDocumentTitle } from '../../../lib/hooks';
 import { StatusBadge } from '../../../lib/ops';
 import { toErrorMessage } from '../../../lib/ops/errors';
@@ -84,15 +85,10 @@ export default function EvaluationReportsPage() {
   }
 
   return (
-    <div className="max-w-4xl">
-      <div className="flex items-center gap-2 mb-1">
-        <FileText size={20} className="text-green-700" />
-        <h1 className="font-serif text-2xl text-green-900">Evaluation reports</h1>
-      </div>
-      <p className="text-sm text-green-800/70 mb-5">
-        Author and deliver horse-evaluation reports. Delivery alerts the client, emails a PDF, and starts the retention window.
-      </p>
-
+    <PageLayout
+      name="Evaluation reports"
+      description="Author and deliver horse-evaluation reports. Delivery alerts the client, emails a PDF, and starts the retention window."
+    >
       {note && <p className="bg-green-50 border border-green-200 text-green-800 text-sm p-3 rounded mb-4">{note}</p>}
 
       {/* Editor */}
@@ -177,6 +173,6 @@ export default function EvaluationReportsPage() {
           ))}
         </ul>
       )}
-    </div>
+    </PageLayout>
   );
 }

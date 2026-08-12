@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Boxes, FileSignature, Plus, CalendarPlus, AlertTriangle } from 'lucide-react';
+import { PageLayout } from '../../components/app/PageLayout';
 import { useDocumentTitle } from '../../lib/hooks';
 import { useAuth } from '../../contexts/AuthContext';
 import { listStableHorses, type StableHorse } from '../../lib/stable';
@@ -15,6 +16,7 @@ import { fetchHorseOnboardingState, type HorseOnboardingState } from '../../lib/
  */
 export default function CareHome() {
   useDocumentTitle('Horse care');
+  const navigate = useNavigate();
   const { profile } = useAuth();
   const [horses, setHorses] = useState<StableHorse[] | null>(null);
   const [state, setState] = useState<HorseOnboardingState | null>(null);
@@ -28,14 +30,12 @@ export default function CareHome() {
   const pendingDocs = state?.pending_horse_docs ?? [];
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <header className="mb-6">
-        <p className="eyebrow">Horse care</p>
-        <h1 className="font-serif text-2xl text-green-900 mt-0.5">
-          {first ? `Welcome, ${first}` : 'Your horse care'}
-        </h1>
-      </header>
-
+    <PageLayout
+      name="Horse care"
+      title={first ? `Welcome, ${first}` : 'Your horse care'}
+      onAdd={() => navigate('/app/horse-intake')}
+      addLabel="Add a horse"
+    >
       {/* documents that gate services */}
       {(pendingDocs.length > 0 || state?.service_blocked) && (
         <section className="bg-gold-50 border border-gold-200 rounded-xl p-5 mb-5">
@@ -74,12 +74,7 @@ export default function CareHome() {
 
       {/* my horses */}
       <section>
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="font-serif text-lg text-green-900">Your horses</h2>
-          <Link to="/app/horse-intake" className="text-sm text-green-800 inline-flex items-center gap-1 hover:text-green-700">
-            <Plus size={15} /> Add a horse
-          </Link>
-        </div>
+        <h2 className="font-serif text-lg text-green-900 mb-2">Your horses</h2>
         {horses === null ? (
           <p className="text-sm text-muted">Loading…</p>
         ) : horses.length === 0 ? (
@@ -98,6 +93,6 @@ export default function CareHome() {
           </ul>
         )}
       </section>
-    </div>
+    </PageLayout>
   );
 }
