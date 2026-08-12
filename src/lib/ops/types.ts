@@ -183,10 +183,49 @@ export interface DocumentRow {
 }
 
 /**
+ * `document_parties.party_role` vocabulary (`document_parties_party_role_check`).
+ * Distinct from `PartyRole` above (which is `signatures`' vocabulary and carries
+ * `COMPANY` instead of `FHE`) — the two tables were given different spellings for
+ * "the org acting as a party" and this type follows `document_parties`, the one
+ * TASK-DOCCOLS reads. Ten of the fourteen have zero rows in production
+ * (2026-08-11): BUYER, SELLER, OWNER, PARENT, GUARDIAN, EMERGENCY_CONTACT,
+ * CONTRACTOR, FACILITY_CONTACT, RIDER, FHE.
+ */
+export type DocumentPartyRole =
+  | 'CLIENT' | 'BUYER' | 'SELLER' | 'LESSOR' | 'LESSEE' | 'OWNER' | 'RIDER'
+  | 'PARTICIPANT' | 'PARENT' | 'GUARDIAN' | 'EMERGENCY_CONTACT'
+  | 'CONTRACTOR' | 'FACILITY_CONTACT' | 'FHE';
+
+/** One `document_parties` row as embedded onto a queue row — the raw material
+ *  `deriveDocumentParties` (`src/lib/ops/partyDisplay.ts`) collapses into
+ *  Party 1 / Party 2. `contact.is_company` is what marks the org acting as a
+ *  party (the company contact has been observed under `LESSEE`, not `FHE` —
+ *  the role actually held varies; company-ness does not). */
+export interface DocumentPartyRow {
+  contact_id: string;
+  party_role: DocumentPartyRole;
+  signer_order: number | null;
+  contact: { first_name: string | null; last_name: string | null; is_company: boolean } | null;
+}
+
+/** One `signatures` row as embedded onto a queue row — raw material for
+ *  Date Signed (`max(signed_at)` over non-deleted rows; there is no
+ *  `documents.signed_at` column). */
+export interface DocumentSignatureRow {
+  signed_at: string | null;
+  deleted_at: string | null;
+}
+
+/**
  * OPS-DOCS-QUEUE row — what the staff work-queue actually renders. A slim
- * projection of `documents` (never `merged_body`) plus the party/horse/type
+ * projection of `documents` (never `merged_body`) plus the party/horse/version
  * the row is already carrying, embedded via a single query
- * (contacts/horses/contract_templates FKs) rather than N+1 lookups.
+ * (contacts/horses/contract_templates/document_parties/signatures FKs) rather
+ * than N+1 lookups. TASK-DOCCOLS (20260811) added `sent_at`/`voided_at`/
+ * `signed_template_version`/`parties`/`signatures`, and widened the `template`
+ * embed to `version` (the current-template fallback for an unsigned doc's
+ * Version column) — `title`/`template_key` dropped from the embed since the
+ * Type column that read them is gone and nothing else in this row used them.
  */
 export interface DocumentQueueRow {
   id: string;
@@ -194,6 +233,9 @@ export interface DocumentQueueRow {
   title: string | null;
   status: string;
   generated_at: string;
+  sent_at: string | null;
+  voided_at: string | null;
+  signed_template_version: number | null;
   contact_id: string | null;
   horse_id: string | null;
   contract_id: string | null;
@@ -204,7 +246,9 @@ export interface DocumentQueueRow {
   current_status: string | null;
   contact: { first_name: string | null; last_name: string | null } | null;
   horse: { registered_name: string | null; nickname: string | null } | null;
-  template: { title: string | null; template_key: string | null } | null;
+  template: { version: number | null } | null;
+  parties: DocumentPartyRow[];
+  signatures: DocumentSignatureRow[];
 }
 
 /**
