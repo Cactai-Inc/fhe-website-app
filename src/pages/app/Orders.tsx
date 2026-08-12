@@ -9,8 +9,8 @@ export default function Orders() {
   useDocumentTitle('My Orders');
   return (
     <div className="max-w-3xl">
-      <p className="eyebrow mb-2">My Orders</p>
-      <h1 className="heading-section text-green-800 mb-8">Your purchases.</h1>
+      <p className="eyebrow mb-2">Orders</p>
+      <h1 className="heading-section text-green-800 mb-8">Everything you've purchased.</h1>
       <OrdersContent />
     </div>
   );

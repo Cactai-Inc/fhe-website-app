@@ -28,8 +28,7 @@ export default function MyPosts() {
       <header className="mb-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="eyebrow">Community</p>
-            <h1 className="font-serif text-green-800 text-3xl font-semibold mt-0.5">My Posts</h1>
+            <p className="eyebrow">My Posts</p>
           </div>
           {surfaces.has_feed && createModal && (
             <PageCreateButton label="Post" onClick={() => createModal.openCreate('post_type')} />

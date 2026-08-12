@@ -12,7 +12,7 @@ export default function MyLessons() {
   return (
     <div className="max-w-3xl">
       <p className="eyebrow mb-2">My Lessons</p>
-      <h1 className="heading-section text-green-800 mb-8">Your lesson credits.</h1>
+      <h1 className="heading-section text-green-800 mb-8">Your riding, at a glance.</h1>
       <MyLessonsContent />
     </div>
   );

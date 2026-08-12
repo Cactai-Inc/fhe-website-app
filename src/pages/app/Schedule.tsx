@@ -83,7 +83,7 @@ export default function Schedule() {
   return (
     <div className="max-w-3xl mx-auto">
       <p className="eyebrow mb-2">Schedule</p>
-      <h1 className="heading-section text-green-800 mb-8">What's coming up.</h1>
+      <h1 className="heading-section text-green-800 mb-8">Here's what's coming up.</h1>
 
       {/* Your lessons — the member's own confirmed sessions, first. */}
       <section aria-label="Your lessons" className="mb-10" data-testid="my-lessons-section">

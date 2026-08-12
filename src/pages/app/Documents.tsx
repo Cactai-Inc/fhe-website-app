@@ -10,8 +10,8 @@ export default function Documents() {
   useDocumentTitle('My Documents');
   return (
     <div className="max-w-3xl mx-auto">
-      <p className="eyebrow mb-2">My Documents</p>
-      <h1 className="heading-section text-green-800 mb-8">Everything you've agreed to.</h1>
+      <p className="eyebrow mb-2">Documents</p>
+      <h1 className="heading-section text-green-800 mb-8">Everything you've agreed to, all in one place.</h1>
       <DocumentsContent />
     </div>
   );
