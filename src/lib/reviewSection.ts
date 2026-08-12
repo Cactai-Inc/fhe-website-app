@@ -162,30 +162,25 @@ export const REVIEW_GROUPS: ReviewGroup[] = [
   },
   {
     key: 'people',
-    title: 'People roster',
-    question: 'Five person-lists, three of them one file in three modes. Which is the people page?',
+    title: 'People (and horse) roster',
+    question: 'The composed Records page vs. the one retired original it absorbed part of. Which is the people page?',
+    /* RESOLVED 2026-08-12 by TASK-RECORDS, exactly as this group's own slot-A
+       warning anticipated: "if it has landed now, this group collapses to the
+       composed page vs slot B." Slots A/C/D (Clients, Leads, Directory) do not
+       reappear as three separate entries — they are three of Records' five
+       tabs now (the other two are Partners, split out of Directory, and
+       Horses). Slot B is untouched: it was ADDED, not moved, and stays the
+       retired 07-01 comparison point. */
     entries: [
       {
-        slot: 'A', label: 'People A · Clients (in use)', to: '/app/admin', incumbent: true,
-        what: 'Admin → the Clients roster. Shows every contact since TASK-ROSTER.',
-        origin: { where: 'AppLayout ACCOUNTS_GROUP — "Clients", icon Contact', moved: true },
-        warn: 'TASK-ONEPEOPLE will roll A/C/D into one tabbed page at /app/ops/contacts. It had not landed when this was built — if it has landed now, this group collapses to the composed page vs slot B.',
+        slot: 'A', label: 'People A · Records (in use)', to: '/app/records', incumbent: true,
+        what: 'RecordsPage — Leads / Clients / Partners / Vendors / Horses, one tab strip over independent renderers (TASK-RECORDS). Composes Admin (Clients) and ContactDirectory (Leads/Partners/Vendors/All) unchanged, plus HorseRecordsPage as a fifth peer tab.',
+        origin: { where: 'AppLayout ACCOUNTS_GROUP — one row, "Records", icon BookOpen (replaces the three-row Clients/Leads/Directory origin below)', moved: true },
       },
       {
         slot: 'B', label: 'People B · retired directory', to: '/app/ops/review/contacts',
         what: 'ContactDirectory in "contacts" mode — the 2026-07-01 original, retired 2026-08-10 when the Clients page won.',
-        warn: 'RETIRED and STILL RETIRED: CONTACTS_PAGE_RETIRED is untouched at `true`, so /app/ops/contacts still redirects to /app/admin. This review route mounts the component behind a banner. Its nav row was removed on 2026-08-12, so there was nothing to move — this one was ADDED.',
-      },
-      {
-        slot: 'C', label: 'People C · Leads', to: '/app/ops/leads',
-        what: 'The same file as B, mode="leads". Reviewing B reviews this implementation.',
-        origin: { where: 'AppLayout ACCOUNTS_GROUP — "Leads", icon Users', moved: true },
-      },
-      {
-        slot: 'D', label: 'People D · Directory (empty)', to: '/app/ops/directory',
-        what: 'The same file as B, mode="directory" — the external rolodex.',
-        origin: { where: 'AppLayout ACCOUNTS_GROUP — "Directory", icon BookOpen', moved: true },
-        warn: 'Zero rows in production. An empty page is the finding, not a broken link.',
+        warn: 'RETIRED and STILL RETIRED: CONTACTS_PAGE_RETIRED is untouched at `true`, so /app/ops/contacts still redirects to /app/records/clients (the redirect target moved with the Clients tab; the constant did not change). This review route mounts the component behind a banner. Its nav row was removed on 2026-08-12, so there was nothing to move — this one was ADDED.',
       },
     ],
   },

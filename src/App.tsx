@@ -72,11 +72,14 @@ import CareHome from './pages/app/CareHome';
 import DealHome from './pages/app/DealHome';
 import VerifyEmailScreen from './components/app/VerifyEmailScreen';
 import { verifyWithPassword, verifyWithGoogle } from './lib/emailChange';
-import Admin from './pages/app/Admin';
+// TASK-RECORDS (2026-08-12): Admin (Clients), LeadsPage and DirectoryPage no
+// longer mount their own routes — they are tabs inside RecordsPage now.
+// Imported there, not here.
+import RecordsPage from './pages/app/RecordsPage';
 // Ops / CRM (staff/admin)
 import OpsHome from './pages/app/OpsHome';
 import InstructorHomePreview from './pages/app/ops/InstructorHomePreview';
-import ContactsPage, { LeadsPage, DirectoryPage, CONTACTS_PAGE_RETIRED } from './pages/app/ops/ContactsPage';
+import ContactsPage, { CONTACTS_PAGE_RETIRED } from './pages/app/ops/ContactsPage';
 import HorsesPage from './pages/app/ops/HorsesPage';
 import HorseRecordsPage from './pages/app/ops/HorseRecordsPage';
 import DocumentsQueuePage from './pages/app/ops/DocumentsQueuePage';
@@ -261,8 +264,15 @@ export function AppRoutes() {
               {/* Negotiated contracts (Update A): owner authoring + counterparty
                   intake→review→sign. Notification links target this route. */}
               <Route path="contracts/:id" element={<ContractPage />} />
-              {/* Admin (additionally requires admin) */}
-              <Route path="admin" element={<ProtectedRoute requireStaff><Admin /></ProtectedRoute>} />
+              {/* TASK-RECORDS (2026-08-12): Records — Leads · Clients · Partners ·
+                  Vendors · Horses, one tab strip over independent renderers.
+                  Supersedes TASK-ONEPEOPLE. /app/records bare = the All tab. */}
+              <Route path="records" element={<ProtectedRoute requireStaff><RecordsPage /></ProtectedRoute>} />
+              <Route path="records/:tab" element={<ProtectedRoute requireStaff><RecordsPage /></ProtectedRoute>} />
+              {/* RETIRED 2026-08-12 (TASK-RECORDS): the Clients page folded into
+                  Records as its own tab. RedirectWithQuery preserves ?open=<id>,
+                  which DashboardPanel and DocumentQueueTable both still send. */}
+              <Route path="admin" element={<RedirectWithQuery to="/app/records/clients" />} />
 
               {/* Ops / CRM — two-operator model (Slice 5). Servicing subset =
                   requireStaff (trainers + admins); total control = requireStaff. */}
@@ -281,12 +291,18 @@ export function AppRoutes() {
               {/* RETIRED 2026-08-10 (TASK-ROSTER, reaffirmed TASK-ROSTERCARD):
                   the Clients page won and now shows every contact. Route
                   redirects rather than 404s so old links land on the winning
-                  page; flip the boolean to restore. */}
+                  page; flip the boolean to restore. Target repointed 2026-08-12
+                  (TASK-RECORDS) to the Clients tab directly — /app/admin itself
+                  now just redirects here too, so this avoids a double hop. */}
               <Route path="ops/contacts" element={CONTACTS_PAGE_RETIRED
-                ? <Navigate to="/app/admin" replace />
+                ? <Navigate to="/app/records/clients" replace />
                 : <ProtectedRoute requireStaff><ContactsPage /></ProtectedRoute>} />
-              <Route path="ops/directory" element={<ProtectedRoute requireStaff><DirectoryPage /></ProtectedRoute>} />
-              <Route path="ops/leads" element={<ProtectedRoute requireStaff><LeadsPage /></ProtectedRoute>} />
+              {/* RETIRED 2026-08-12 (TASK-RECORDS): DIRECTORY split into VENDOR
+                  and PARTNER — zero rows, so this redirects to the nearer of
+                  the two (most of the old blurb — farriers/vets/suppliers —
+                  reads as Vendor; Partner is the narrower new category). */}
+              <Route path="ops/directory" element={<Navigate to="/app/records/vendors" replace />} />
+              <Route path="ops/leads" element={<RedirectWithQuery to="/app/records/leads" />} />
               <Route path="ops/horses" element={<ProtectedRoute requireStaff><HorsesPage /></ProtectedRoute>} />
               <Route path="ops/horse-records" element={<ProtectedRoute requireStaff><HorseRecordsPage /></ProtectedRoute>} />
               <Route path="ops/documents" element={<ProtectedRoute requireStaff><DocumentsQueuePage /></ProtectedRoute>} />

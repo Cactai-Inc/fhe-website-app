@@ -2260,19 +2260,26 @@ export interface DirectoryContact {
   is_company: boolean;
 }
 
-/** The four person-pages. One contact appears on exactly one of them.
+/** The person-pages. One contact appears on exactly one of them.
  *  LEAD      — a potential future client: outreach and campaign target.
  *  CONTACT   — an internal person the business SERVES (client, member, horse
  *              owner, counterparty) who is not part of the company.
  *  TEAM      — the company itself: staff and internal accounts.
- *  DIRECTORY — external people and businesses that PROVIDE something: farriers,
- *              vets, suppliers, service providers, event organizers.
- *  The line that separates LEAD from DIRECTORY: someone we serve who hasn't
- *  bought yet is a LEAD; someone who sells to us is DIRECTORY. */
-export type ContactType = 'LEAD' | 'CONTACT' | 'TEAM' | 'DIRECTORY';
+ *  VENDOR    — external people/businesses you PAY: farriers, vets, feed
+ *              suppliers, haulers.
+ *  PARTNER   — external people/businesses you work ALONGSIDE: referring
+ *              trainers, affiliated barns, event organisers, referral and
+ *              co-marketing relationships.
+ *  DIRECTORY — DEPRECATED (TASK-RECORDS, 2026-08-12): split into VENDOR and
+ *              PARTNER above. Zero rows when retired. Still accepted by the
+ *              column CHECK and by set_contact_type so old data and seeders
+ *              never hard-fail; no longer offered as a choice in the type
+ *              pickers and no page reads it as its own population. */
+export type ContactType = 'LEAD' | 'CONTACT' | 'TEAM' | 'DIRECTORY' | 'VENDOR' | 'PARTNER';
 
 export const CONTACT_TYPE_LABEL: Record<ContactType, string> = {
   LEAD: 'Lead', CONTACT: 'Contact', TEAM: 'Team', DIRECTORY: 'Directory',
+  VENDOR: 'Vendor', PARTNER: 'Partner',
 };
 
 /** Move a contact between the person-pages. Staff only; the RPC validates

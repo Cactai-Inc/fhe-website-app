@@ -173,7 +173,14 @@ export function ContactDossierModal({
                   <div>
                     <p className="text-[11px] uppercase tracking-wide text-muted mb-1.5">Filed under</p>
                     <div className="flex flex-wrap gap-1.5">
-                      {(['LEAD', 'CONTACT', 'DIRECTORY', 'TEAM'] as ContactType[]).map((t) => (
+                      {/* DIRECTORY is deprecated (TASK-RECORDS, 2026-08-12) — split into
+                          VENDOR and PARTNER. Not offered as a fresh pick, but shown if a
+                          contact is already filed there so the picker never hides its own
+                          current state. */}
+                      {([
+                        'LEAD', 'CONTACT', 'VENDOR', 'PARTNER', 'TEAM',
+                        ...(d.standing.contact_type === 'DIRECTORY' ? ['DIRECTORY' as const] : []),
+                      ] as ContactType[]).map((t) => (
                         <button key={t} type="button" onClick={() => void file(t)}
                           className={`text-[11px] px-2.5 py-1 rounded-full border focus-ring ${
                             d.standing.contact_type === t
