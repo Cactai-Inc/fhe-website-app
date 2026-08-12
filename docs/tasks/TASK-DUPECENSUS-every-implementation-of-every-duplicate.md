@@ -163,3 +163,58 @@ implementations nobody reaches. **Say what your ranking is based on.**
 7. **`git diff` shows `docs/` only.**
 
 Report to `docs/reports/TASK-DUPECENSUS-REPORT.md`.
+
+---
+
+# ADDENDUM 2026-08-11 — ALSO PRODUCE THE REVIEW MANIFEST
+
+**Owner:**
+
+> *"we need to find all duplicates in the code, wire them up and make them visible for A/B,
+> A/B/C, or A/B/C/D review by placing them side-by-side in the temporary 'Review' section. move
+> the page link for the currently used page(s) from the current nav panel location to place it
+> in the review section."*
+
+**The census is now the input to a build.** `TASK-REVIEWNAV` consumes what you produce, so the
+report must end with a machine-followable manifest, not only prose.
+
+**This does NOT change your constraint: you still change no code.** `git diff` shows `docs/`
+only. You are writing the shopping list, not doing the shopping.
+
+## The manifest — a final section, one table
+
+One row per **implementation** (not per duplicate), grouped by concept, ordered A / B / C / D
+within each group:
+
+| column | content |
+|---|---|
+| **Group** | the concept, e.g. `Horse roster` |
+| **Slot** | `A`, `B`, `C`, `D` — **A is the one currently in use**, then by creation date |
+| **Label** | what the Review nav entry should read, e.g. `Horses A (in use)`, `Horses B (2026-07-01 original)` — it must be obvious in the nav which is which |
+| **Route** | the URL that reaches it **today** |
+| **Reachable?** | `nav` / `url-only` / **`NEEDS A ROUTE`** / **`RETIRED behind <CONSTANT>`** |
+| **To wire it** | for anything not already reachable: the exact thing REVIEWNAV must do — register a route, flip a boolean, add a nav entry |
+| **Currently in nav at** | the group the live one sits in today, so REVIEWNAV knows what to MOVE |
+
+## Get these right — REVIEWNAV depends on them and cannot re-derive them
+
+- **Name the retirement constant** for anything hidden behind a boolean. `ContactsPage` uses
+  `CONTACTS_PAGE_RETIRED = true` at `ops/ContactsPage.tsx:523`. **Find every one of these** —
+  a retired page is a duplicate that has already lost once, and the owner wants to see it
+  anyway, because losing once is exactly the decision he is re-opening.
+- **Say which implementation is CURRENTLY IN USE**, and how you know (nav entry / the route
+  users actually reach / what other pages link to). Slot A is the incumbent, not the best.
+- **Flag anything with no route at all.** A component with no route is still a duplicate and
+  still needs looking at; REVIEWNAV will have to mount it.
+- **Do not include single-implementation pages.** The Review section is for comparisons. A page
+  with no rival does not belong in it.
+
+## Two known groups, so you can calibrate
+
+- **Horse roster — A/B/C.** `/app/ops/horse-records` (in nav, in use) · `/app/ops/horses`
+  (routed, zero references) · `/app/ops/records` (in nav under Modules, module-gated).
+  **`TASK-HORSEONE` is HELD** pending this review — do not treat its recommendation as settled.
+- **Staff landing — A/B.** `/app/dashboard` (in use) · `/app/ops` (routed, no nav link), plus
+  `/app/ops/preview/instructor-home` which ADMINSWEEP built for exactly this purpose.
+
+**Expect more than these. The point of the census is the ones nobody has named yet.**
