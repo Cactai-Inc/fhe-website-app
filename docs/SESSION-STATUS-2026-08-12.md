@@ -53,8 +53,27 @@ A/B/C it exists to inform.
 
 # 5. THE OWNER'S BROADER QUEUE — recorded 2026-08-12, beyond this repo
 
-**Immediate, and the stated finish line for this project:**
-website — new images · new copy · revised flow · inbound-pathway review · mobile tweaks.
+## ⚠️ THE FINISH LINE IS NOT THE WEBSITE — owner correction, 2026-08-12
+
+> *"the website doesnt matter until ive sent contracts and invites and i cant do that until we
+> finalize the app pages, wiring, features, functions, fields, taxonomy, flows, routing, db, and
+> validated everything by your hand and mine."*
+
+**The order is: app finished and VALIDATED → contracts and invites go out → then the website.**
+An earlier version of this doc had the website as the immediate finish line. **It is last.**
+
+**Two consequences that change what to work on:**
+
+- **Validation is impossible while duplicates exist.** "Does this page work" has no answer while
+  three horse rosters, two staff landing pages and five person-list surfaces are all live and
+  the owner does not know which one he is judging. **Walking the Review section (§4 item 2) is a
+  PRECONDITION for validation, not a tidy-up.**
+- **"Validated by your hand" requires a working test suite.** 60 of 68 DB test files fail and
+  601 of 688 tests never run, so every claim is currently hand-verified with `psql`. **TESTDB is
+  on the critical path, not in the debt pile.**
+
+**Website — LAST, after contracts and invites are out:**
+new images · new copy · revised flow · inbound-pathway review · mobile tweaks.
 
 **Then:** chrome extension → its promo site / SEO → personal website → cactai website → back to
 the platform while the extension is in review.
