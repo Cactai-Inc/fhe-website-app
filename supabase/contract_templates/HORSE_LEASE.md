@@ -2,6 +2,33 @@
 
 **This file no longer holds the lease contract text.** It is kept only as a pointer.
 
+> ## Lockstep writes target THREE keys, not four (owner ruling D10, 2026-08-11)
+>
+> The lease family is **Standard / Simple / Detailed**, one active row each:
+> `HORSE_LEASE_V2` (Standard — titled "Horse Lease Agreement — Standard", holds all
+> 6 live lease documents), `HORSE_LEASE_SIMPLE` ("...Simple"), `HORSE_LEASE_FULL`
+> (Detailed — titled "Horse Lease Agreement — Detailed"). **These three stay
+> byte-identical until the owner modifies Simple or Detailed — that is the ruled
+> state, not a defect.** Any migration that edits clause/field content on the lease
+> must write to all three of `HORSE_LEASE_V2`, `HORSE_LEASE_SIMPLE`,
+> `HORSE_LEASE_FULL` in lockstep (e.g. `template_key IN ('HORSE_LEASE_V2',
+> 'HORSE_LEASE_SIMPLE', 'HORSE_LEASE_FULL')`).
+>
+> `HORSE_LEASE_STANDARD` was a redundant fourth clone (zero documents) and is now
+> `active = false`. **It must NOT receive content updates** — writing to it anyway
+> is how it silently drifts into a stale copy someone could reactivate by mistake.
+> Its 163 clause rows are retained, not deleted, in case the owner ever wants the
+> name reassigned to a different row.
+>
+> `HORSE_LEASE` (below, this file's namesake key) is the pre-clause **original**:
+> retained as historical reference and as a source of wording that could be
+> resurrected if something in the current version is judged worse than the
+> original. It is **never to be activated and never to be used to generate a
+> document.**
+>
+> Full ruling: `docs/tasks/TASK-LEASESET-three-leases-and-an-archive.md`
+> (CLAUDE.md D10).
+
 As of 2026-07-20 the horse lease is built by the **clause authoring engine**, not from
 a flat markdown body. New leases use template_key **`HORSE_LEASE_V2`**, whose content
 lives entirely in the database as structured Section › Clause › Field data. The legacy
