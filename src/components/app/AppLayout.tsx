@@ -6,7 +6,10 @@ import { dmUnreadTotal } from '../../lib/community';
 import {
   CalendarDays, Users, FileText, UserRound, ReceiptText, Shield, LogOut,
   GraduationCap, Home as HomeIcon, Boxes, Contact, LayoutDashboard,
-  ChevronDown, ChevronUp, Plus, LifeBuoy, ShoppingBag, MessageSquare, BookOpen, ListChecks,
+  /* BookOpen left with the Directory row (REVIEW SECTION move, TASK-REVIEWNAV)
+     — it was that row's icon and nothing else in this file used it. Restore the
+     import when Directory comes back out of Review. */
+  ChevronDown, ChevronUp, Plus, LifeBuoy, ShoppingBag, MessageSquare, ListChecks,
   PanelLeftClose, PanelLeftOpen, Activity, Compass, Handshake, Grid3x3, Bookmark,
   Receipt, Eye, Library,
 } from 'lucide-react';
@@ -24,6 +27,13 @@ import { CreateModal, type CreateModalStep } from './CreateModal';
 import { AppHeader } from './AppHeader';
 import { CreateModalTriggerContext } from '../../contexts/CreateModalContext';
 import { captureWallReturnDestination } from '../../lib/wallReturn';
+/* ── REVIEW SECTION (temporary — TASK-REVIEWNAV, owner 2026-08-11/12) ────────
+   One import; the group's whole contents live in that file so adding a page to
+   Review never touches this one. See its header for how to add and how to
+   accept. Four blocks in this file are marked `REVIEW SECTION`: this import,
+   the group in manageNavGroups, and the `note` render in the rail and in the
+   mobile drawer. */
+import { REVIEW_NAV_ITEMS, REVIEW_NOTE } from '../../lib/reviewSection';
 
 /* ── THE NAV PANEL — solid green, cream contents (ONEHEADER §1, owner 2026-08-08)
  *
@@ -444,7 +454,16 @@ function communityHref(key: FeedView): string {
   return key === 'all' ? '/app' : `/app?filter=${key}`;
 }
 
-export interface NavGroup { key: string; label: string; items: NavItem[]; defaultOpen?: boolean }
+export interface NavGroup {
+  key: string;
+  label: string;
+  items: NavItem[];
+  defaultOpen?: boolean;
+  /** One line under the heading. Added for the REVIEW group, which has to say
+   *  what sitting in it MEANS (see REVIEW_NOTE) — no other group uses it, and
+   *  it renders nothing when absent. */
+  note?: string;
+}
 
 /** ROLE ARCHITECTURE (owner spec):
  *  SUPER_ADMIN — the PLATFORM admin; belongs to no tenant. Sees platform
@@ -480,12 +499,20 @@ const MANAGEMENT_GROUP: NavItem[] = [
    *  The content merge (Inbound's booking/support queue folded into the
    *  Dashboard's layout as entries) is its own task — not scoped to this
    *  file, and not attempted here. */
-  { to: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  /* REVIEW SECTION — MOVED OUT, not deleted (TASK-REVIEWNAV, owner: "move the
+     page link for the currently used page(s) from the current nav panel
+     location to place it in the review section"). Two rows LEFT this
+     group for Review:
+       { to: '/app/dashboard',          label: 'Dashboard', icon: LayoutDashboard }
+       { to: '/app/ops/horse-records',  label: 'Horses',    icon: Boxes }
+     Both are incumbents in a duplicate group (staff landing / inbound, and the
+     horse roster) and now live ONLY in the Review group. Put them back here on
+     acceptance. Dashboard's badge is injected by route below, not by table
+     position, so it followed the row and still reads unread + inbound. */
   { to: '/app/ops/support', label: 'Support', icon: LifeBuoy },
   // Servicing folded in 2026-07-31: three links did not justify a heading of
   // their own, and they are day-to-day management like the queues above.
   { to: '/app/ops/lessons', label: 'Lessons', icon: GraduationCap, module: 'mod.lessons' },
-  { to: '/app/ops/horse-records', label: 'Horses', icon: Boxes },
   { to: '/app/ops/documents', label: 'Documents', icon: FileText },
   // A deal is the envelope a transaction lives in — its parties, what each side
   // gives, and the documents that make it real. It sits beside Documents because
@@ -519,12 +546,20 @@ const ACCOUNTS_GROUP: NavItem[] = [
      Leads takes `Users` (Clients' old icon) and Clients takes `Contact`. This is
      ADMINSWEEP's X-1, whose finding was that the ContactsPage retirement was
      half-applied — the page was retired, the nav entry never was. */
-  { to: '/app/ops/leads', label: 'Leads', icon: Users },
-  { to: '/app/admin', label: 'Clients', icon: Contact },
   /* Team moved to SETTINGS_GROUP below — owner, 2026-08-12: "team moves to
      configuration section." Who works here is configuration, not a daily
      people-management surface. */
-  { to: '/app/ops/directory', label: 'Directory', icon: BookOpen },
+
+  /* REVIEW SECTION — ALL THREE MOVED OUT, not deleted (TASK-REVIEWNAV). They
+     are People slots A, C and D of one comparison — three person-lists, two of
+     them the same file in different modes — so the whole group went:
+       { to: '/app/ops/leads',     label: 'Leads',     icon: Users }
+       { to: '/app/admin',         label: 'Clients',   icon: Contact }
+       { to: '/app/ops/directory', label: 'Directory', icon: BookOpen }
+     THIS ARRAY IS NOW EMPTY, so `manageNavGroups`'s length filter drops the
+     "People" heading from the rail entirely until something comes back. That is
+     expected, not a bug — and TASK-ONEPEOPLE is about to replace all three with
+     one tabbed page anyway, which is the decision this review feeds. */
 ];
 /* SERVICING and BUSINESS were folded into Management 2026-07-31 (owner): the
  * goal is fewer headings, not more. Their items live in MANAGEMENT_GROUP above.
@@ -547,7 +582,16 @@ const MODULES_GROUP: NavItem[] = [
   // and 404'd for every staff user with the module on. Re-add with the hub.
   { to: '/app/ops/boarding', label: 'Boarding', icon: HomeIcon, module: 'mod.boarding' },
   { to: '/app/ops/barnops', label: 'Barn Ops', icon: Boxes, module: 'mod.barnops' },
-  { to: '/app/ops/records', label: 'Records', icon: FileText, module: 'mod.horserecords' },
+  /* REVIEW SECTION — MOVED OUT, not deleted (TASK-REVIEWNAV). One row LEFT
+     this group for Review:
+       { to: '/app/ops/records', label: 'Records', icon: FileText, module: 'mod.horserecords' }
+     It is Horses slot C. mod.horserecords is ENABLED for FHE, so it was a live
+     nav row, and the other three modules here are all disabled — meaning this
+     group is now empty for FHE and the "Modules" heading disappears until
+     Records comes back or a module is turned on. Restore the row WITH its
+     `module` key: the Review row deliberately has no module gate (the owner has
+     to be able to reach every implementation), and putting it back ungated
+     would show Records to a tenant that has the module off. */
   { to: '/app/ops/employees', label: 'Employees', icon: Contact, module: 'mod.employees' },
 ];
 const SETTINGS_GROUP: NavItem[] = [
@@ -567,11 +611,21 @@ const SETTINGS_GROUP: NavItem[] = [
      forward-compatible: the group is renamed around it.
 
      NO `adminOnly`, deliberately, even though every sibling here has it:
-     App.tsx:292 routes `ops/team` behind `requireStaff`, not `requireAdmin`.
+     App.tsx routes `ops/team` behind `requireStaff`, not `requireAdmin`.
      Gating the nav entry tighter than the route would hide the page from
      MANAGER/EMPLOYEE staff who can still reach it by URL — a nav that lies
-     about what you have. Move the entry, don't change who can see it. */
-  { to: '/app/ops/team', label: 'Team', icon: UserRound },
+     about what you have. Move the entry, don't change who can see it.
+
+     REVIEW SECTION — MOVED OUT, not deleted (TASK-REVIEWNAV). The row that was
+     here, one day after it arrived:
+       { to: '/app/ops/team', label: 'Team', icon: UserRound }
+     It is Staff roster slot A. ⚠ NOTE THE CONFLICT WITH THE PARAGRAPH ABOVE:
+     the Review group is adminOnly, so while Team sits in Review it IS gated
+     tighter than its route. That is a deliberate, temporary cost of the review
+     being admin-only, and it currently hides the row from nobody —
+     production `profiles.role` holds only ADMIN, SUPER_ADMIN and USER; there is
+     not one MANAGER or EMPLOYEE account in existence. Restore it here WITHOUT
+     `adminOnly` on acceptance, for the reason recorded above. */
   { to: '/app/ops/admin/branding', label: 'Branding', icon: Shield, adminOnly: true },
   { to: '/app/ops/admin/products', label: 'Products', icon: Shield, adminOnly: true },
   { to: '/app/ops/admin/forms', label: 'Forms', icon: Shield, adminOnly: true },
@@ -609,6 +663,36 @@ export function manageNavGroups(
     { key: 'community', label: 'Community', items: visible(COMMUNITY_GROUP) },
     { key: 'modules', label: 'Modules', items: visible(MODULES_GROUP) },
     { key: 'settings', label: 'Settings', items: visible(SETTINGS_GROUP) },
+    /* ── REVIEW SECTION (temporary — TASK-REVIEWNAV, owner 2026-08-11/12) ────
+       Every entry is `adminOnly: true`, so this rides the SAME gate
+       SETTINGS_GROUP's three admin pages already use — no new mechanism — and
+       `visible()` empties the group for anyone else, which the filter below
+       then drops entirely. Last, deliberately: it is the longest group and it
+       is scaffolding; it must not push the day-to-day nav down the rail.
+       OPEN by default despite that, and the reason is not cosmetic: ten live
+       rows MOVED into this group, Dashboard among them, so a collapsed Review
+       would hide the staff dashboard behind a chevron on every page load —
+       `openGroups` is per-mount state and does not persist, so it would collapse
+       again on every navigation.
+
+       THE MOBILE DRAWER GETS IT TOO, deliberately. The owner scoped this to
+       "the nav menu on admin on desktop", and the drawer renders this same
+       array — so the choice was to show it there or filter it out. It shows.
+       Ten live rows MOVED into this group; hiding the group on mobile would
+       take the Dashboard, Clients, Leads, Calendar and Account links off the
+       phone entirely, and a drawer that disagrees with the rail about what
+       exists is a second source of truth — which is the thing this whole
+       section is here to kill.
+       Removing the section: delete this entry, the REVIEW_NAV_ITEMS import, the
+       `note` render in the rail and the drawer, and put back the seven rows the
+       moves above took out. */
+    {
+      key: 'review',
+      label: 'Review',
+      items: visible(REVIEW_NAV_ITEMS),
+      defaultOpen: true,
+      note: REVIEW_NOTE,
+    },
   ];
   return groups.filter((g) => g.items.length > 0);
 }
@@ -1080,8 +1164,14 @@ function ClientNavItems({ bellCount, dmCount, presence, lessonsOn, onNavigate }:
 function StaffNavItems({ dmCount, open = true }: { dmCount: number; open?: boolean }) {
   return (
     <>
-      <RailLink to="/app/calendar" label="Calendar" icon={CalendarDays} open={open} />
-      <RailLink to="/app/catalog" label="Catalog" icon={ShoppingBag} open={open} />
+      {/* REVIEW SECTION — MOVED OUT, not deleted (TASK-REVIEWNAV). Two rows
+          LEFT this block for Review, both incumbents in a duplicate group
+          (Time A, Catalog A):
+            <RailLink to="/app/calendar" label="Calendar" icon={CalendarDays} open={open} />
+            <RailLink to="/app/catalog"  label="Catalog"  icon={ShoppingBag}  open={open} />
+          This block is STAFF-only (members reach both through ClientNavItems,
+          which is untouched), and it renders in the rail and the mobile drawer
+          from this one definition. Put them back here, in this order. */}
       <RailLink to="/app/messages" label="Messages" icon={MessageSquare} badge={dmCount} open={open} />
     </>
   );
@@ -1847,6 +1937,21 @@ export default function AppLayout() {
                     {navGroups.length > 1 && !staffRailPinned && (
                       <div className={`my-1 border-t ${NAV_DIVIDER}`} role="separator" aria-label={g.label} />
                     )}
+                    {/* ── REVIEW SECTION (temporary — TASK-REVIEWNAV) ────────
+                        The group's one-line note, gold so it reads as
+                        scaffolding against a rail of green rows — the same
+                        signal InstructorHomePreview's banner uses rather than a
+                        second visual language for "temporary". It has to be
+                        HERE, in the nav, and not only on the pages: the owner's
+                        rule is that nav position IS the status, so the thing
+                        that says what the position means belongs beside it.
+                        Shown when the group is open (a collapsed group shows no
+                        rows to explain) and only in the pinned rail (the 56px
+                        strip has no room for prose). `note` is set by exactly
+                        one group; every other group renders nothing here. */}
+                    {g.note && staffRailPinned && groupOpen(g) && (
+                      <p className={`${NAV_INSET_ROW} pb-1.5 text-[11px] leading-snug text-gold-800`}>{g.note}</p>
+                    )}
                     {(navGroups.length === 1 || groupOpen(g) || !staffRailPinned) && (
                       <div className="flex flex-col gap-0.5">
                         {g.items.map((it) => <RailLink key={it.to} {...it} open={staffRailPinned} />)}
@@ -1863,9 +1968,17 @@ export default function AppLayout() {
                   avatar-menu sign-out untouched. */}
               {!isSuperAdmin && (
                 <>
-                  <div className="mt-1 flex flex-col gap-0.5">
-                    <AccountNavLink open={staffRailPinned} />
-                  </div>
+                  {/* REVIEW SECTION — MOVED OUT, not deleted (TASK-REVIEWNAV).
+                      What was here:
+                        <div className="mt-1 flex flex-col gap-0.5">
+                          <AccountNavLink open={staffRailPinned} />
+                        </div>
+                      /app/account is Account slot A, the incumbent against the
+                      2026-06-23 original at /account. This is the STAFF rail
+                      only — members get their Account row from ClientNavItems,
+                      untouched. `AccountNavLink` itself is untouched and still
+                      used there; only these two call sites (rail + drawer) went.
+                      Put this block back exactly as written above. */}
                   {/* Owner, 2026-08-07: the collapse toggle sits at the FOOT of
                       the rail, immediately above Sign out, and stays right-
                       justified in BOTH states so it does not move when the rail
@@ -2047,6 +2160,11 @@ export default function AppLayout() {
                 <div className={`mt-2 border-t ${NAV_DIVIDER} pt-2 ${NAV_INSET_ROW} pb-1 text-[10px] tracking-widest uppercase ${NAV_HEADING} font-semibold`}>
                   {g.label}
                 </div>
+                {/* REVIEW SECTION — the same one-line note the rail carries, on
+                    the same conditional. Renders for no other group. */}
+                {g.note && (
+                  <p className={`${NAV_INSET_ROW} pb-1.5 text-[11px] leading-snug text-gold-800`}>{g.note}</p>
+                )}
                 <div className="flex flex-col gap-0.5">
                   {g.items.map((it) => <RailLink key={it.to} {...it} />)}
                 </div>
@@ -2054,12 +2172,14 @@ export default function AppLayout() {
             ))}
             {/* ONEMENU — absorbed from the removed avatar dropdown, staff
                 only (members already end their own list with AccountNavLink
-                above — I6). */}
-            {!isSuperAdmin && showRail && (
-              <div className="mt-1 flex flex-col gap-0.5">
-                <AccountNavLink onNavigate={closeMobileNav} />
-              </div>
-            )}
+                above — I6).
+                REVIEW SECTION — MOVED OUT, not deleted (TASK-REVIEWNAV). What
+                was here, the drawer half of the same move as the rail above:
+                  {!isSuperAdmin && showRail && (
+                    <div className="mt-1 flex flex-col gap-0.5">
+                      <AccountNavLink onNavigate={closeMobileNav} />
+                    </div>
+                  )}                                                        */}
             {!isSuperAdmin && (
               <NavFooter onOpenTour={() => setTourOpen(true)} onSignOut={handleSignOut} onNavigate={closeMobileNav} />
             )}
