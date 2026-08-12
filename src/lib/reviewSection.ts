@@ -138,7 +138,7 @@ export const REVIEW_GROUPS: ReviewGroup[] = [
   {
     key: 'inbound',
     title: 'Inbound work waiting',
-    question: 'Four surfaces counted the same inbound work and disagreed (5 / 5 / 12). Which one is the queue?',
+    question: 'Four surfaces counted the same inbound work and disagreed. They now all read inbound_open_count() (TASK-COUNTFIX 1.1) — which one is the queue?',
     entries: [
       {
         slot: 'A', label: 'Inbound A', to: '/app/dashboard', incumbent: true, navRow: false,
@@ -156,7 +156,7 @@ export const REVIEW_GROUPS: ReviewGroup[] = [
       },
       {
         slot: 'D', label: 'Inbound D', to: '/app/ops', navRow: false,
-        what: 'The Ops KPI tile "Intake to review" — the last surface still using the old definition, which is why it says 12. Same URL as Staff home B.',
+        what: 'The Ops KPI tile, now "Inbound work waiting" — TASK-COUNTFIX 1.1 moved it onto inbound_open_count(), the badge and band\u2019s own definition, so it agrees with them instead of counting seven already-converted leads. Same URL as Staff home B.',
       },
     ],
   },

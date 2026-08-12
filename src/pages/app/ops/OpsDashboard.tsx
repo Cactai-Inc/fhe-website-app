@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import {
   countOpenDocuments,
-  listIntake,
+  inboundOpenCount,
 } from '../../../lib/api';
 import { ModuleGate, useAsync } from '../../../lib/ops';
 import { useModules } from '../../../lib/ops/useModules';
@@ -14,8 +14,8 @@ import { MODULE_HUB_PAGE_KEY, pageByKey } from '../../../lib/pageRegistry';
  * OPS-DASH — Ops home dashboard (surface `ops`, module `core`).
  *
  * Entitlement-aware landing page for staff at `/app/ops`:
- *  - Four RLS-scoped KPI tiles (open engagements, intake to review, documents
- *    awaiting signature, open charges). A tile with a registered screen is a
+ *  - RLS-scoped KPI tiles (inbound work waiting, documents awaiting signature).
+ *    A tile with a registered screen is a
  *    real <Link>; a tile whose screen has not shipped yet renders the SAME
  *    count as a non-navigating status tile (dead links are forbidden). Every
  *    tile renders its resolved count on mount and shows an INLINE error
@@ -43,11 +43,27 @@ import { MODULE_HUB_PAGE_KEY, pageByKey } from '../../../lib/pageRegistry';
  * wrappers are RLS-scoped to current_org().
  */
 
-/** Count-of-pending-intake derived from the real `listIntake` wrapper: the
- *  requests still awaiting staff action ('new'/'contacted'). */
-export async function countPendingIntake(): Promise<number> {
-  const rows = await listIntake();
-  return rows.filter((r) => r.status === 'new' || r.status === 'contacted').length;
+/** Inbound work waiting — THE ONE DEFINITION (COUNTFIX 1.1).
+ *
+ *  This is `inbound_open_count()`, the same server-side count the Dashboard nav
+ *  badge renders and the same predicate `useOpenLeads` lists entries for:
+ *
+ *      inbound_queue rows in this org, status NOT IN ('converted','expired')
+ *      AND NOT already_converted            -- the lead has not become a client
+ *    + support_requests in this org with status <> 'resolved'
+ *
+ *  It used to be its own third definition — every `requests` row with status
+ *  'new' or 'contacted', counted client-side, with no `already_converted` filter
+ *  and no support requests. In production that read **13** where the badge and
+ *  the dashboard read **6**, because it counted seven leads whose person had
+ *  already become a client. A KPI tile telling staff there is work that is
+ *  already done is worse than no tile.
+ *
+ *  TASK-LEADCLEAN deliberately aligned the badge and the dashboard band on this
+ *  predicate; this tile is the last surface to adopt it. If the number ever
+ *  needs to change, change `inbound_open_count()` — not a reader. */
+export async function countInboundOpen(): Promise<number> {
+  return inboundOpenCount();
 }
 
 export interface KpiSpec {
@@ -62,7 +78,7 @@ export interface KpiSpec {
 export interface OpsDashboardProps {
   /** Injected count fns (default = real INT-API-CORE wrappers). */
   counts?: {
-    pendingIntake: () => Promise<number>;
+    inboundOpen: () => Promise<number>;
     draftDocuments: () => Promise<number>;
   };
   /** Injected module-hub route map (default = MODULE_HUB_ROUTES). */
@@ -70,7 +86,7 @@ export interface OpsDashboardProps {
 }
 
 const DEFAULT_COUNTS = {
-  pendingIntake: countPendingIntake,
+  inboundOpen: countInboundOpen,
   draftDocuments: countOpenDocuments,
 };
 
@@ -159,7 +175,10 @@ export default function OpsDashboard({
   const { isPageHidden } = useAuth();
 
   const kpis: KpiSpec[] = [
-    { key: 'intake', label: 'Intake to review', to: '/app/ops/intake', load: counts.pendingIntake },
+    // COUNTFIX 1.1: same number, same words, same destination as the Dashboard
+    // badge and band. `/app/ops/intake` is retired (INTAKE_PAGE_RETIRED) and
+    // redirects to the dashboard — link there directly rather than via a bounce.
+    { key: 'intake', label: 'Inbound work waiting', to: '/app/dashboard', load: counts.inboundOpen },
     { key: 'documents', label: 'Documents awaiting signature', to: '/app/ops/documents', load: counts.draftDocuments },
   ];
 
