@@ -241,18 +241,13 @@ export interface TransactionalTemplate {
  * `email_templates` like every other sender. Nothing calls this function today.
  *
  * ⚠️ TWO OF ITS FOUR CASES ARE D9 VIOLATIONS AND MUST NOT BE WIRED UP.
- * D9 settled that there is NO welcome email and NO dunning email, and that both
- * producers were deleted deliberately. Their TEMPLATE STRINGS survived here:
- *   'signup'  → "Welcome to {brand} — your account is ready."   ← the welcome email
- *   'dunning' → "Payment reminder / You have an outstanding balance." ← the dunning email
- * They have no producer and no caller, so nothing sends them; they are wording
- * looking for a sender. They are NOT extracted into `email_templates` — putting
- * them in a list the owner browses and publishes from is exactly how a settled
- * decision gets quietly reversed. The third dead case, 'contract_executed', was
- * superseded by DOCUMENT_PARTY_COPY (its hardcoded subject was fixed in 2026-08-02's
- * delivery work) and is likewise left alone.
+ * D9 — no welcome email, no dunning email. Their template strings lived here with no
+ * producer and no caller; they were surfaced for the owner and PURGED 2026-08-12 on his
+ * confirmation. They were two one-line scaffold stubs, not authored copy.
  *
- * Deleting this is TASK-EMAILEXTRACT's finding to report, not its change to make.
+ * 'contract_executed' remains and is likewise dead — superseded by DOCUMENT_PARTY_COPY,
+ * whose hardcoded subject was fixed in 2026-08-02's delivery work. Left in place: it is
+ * not D9-forbidden, only unused, and removing it is a separate call.
  */
 export function renderTemplate(
   template: string,
@@ -261,11 +256,11 @@ export function renderTemplate(
 ): TransactionalTemplate {
   const v = (k: string): string => (vars?.[k] == null ? '' : String(vars[k]));
   switch (template) {
-    case 'signup':
-      return {
-        subject: `Welcome to ${fromName}`,
-        body: `<p>Welcome${v('name') ? `, ${v('name')}` : ''} — your account is ready.</p>`,
-      };
+    /* 'signup' and 'dunning' PURGED 2026-08-12, owner-confirmed. D9 says there is no
+       welcome email and no dunning email, and that "both producers are deleted, not
+       dormant" — the wording surviving here was a third dormant thing. Surfaced for the
+       owner's review first (LESSONS: nothing unviewed is deleted, it is surfaced), and
+       it turned out to be two one-line scaffold stubs, not authored copy. */
     case 'contract_executed':
       return {
         subject: `Your contract is executed`,
@@ -275,11 +270,6 @@ export function renderTemplate(
       return {
         subject: `Your receipt from ${fromName}`,
         body: `<p>We received your payment${v('amount') ? ` of ${v('amount')}` : ''}. Thank you.</p>`,
-      };
-    case 'dunning':
-      return {
-        subject: `Payment reminder`,
-        body: `<p>You have an outstanding balance${v('amount') ? ` of ${v('amount')}` : ''}.</p>`,
       };
     default:
       return {
