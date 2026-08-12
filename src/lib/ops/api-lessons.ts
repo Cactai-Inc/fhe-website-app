@@ -145,6 +145,14 @@ export interface ScheduleSessionInput {
   /** The horse the lesson uses (barn horse or the rider's own). Optional at
    *  booking time — staff can attach/correct it later via setBookingHorse. */
   horse_id?: string | null;
+  /** Which service this lesson is. Recorded so the booking says what it is
+   *  rather than leaving the reader to guess from the note. */
+  offering_id?: string | null;
+  /** Who is delivering it. Omitted, the RPC records the acting staff member. */
+  instructor_user_id?: string | null;
+  /** What paid for it. Omitted, the RPC links the client's single purchase with
+   *  an open unit, and records nothing when there is more than one candidate. */
+  purchase_id?: string | null;
 }
 
 /** schedule_lesson_session RPC result (the freshly booked session). */
@@ -156,6 +164,10 @@ export interface ScheduledSessionResult {
   status: LessonSessionStatus;
   location: string | null;
   horse_id: string | null;
+  offering_id: string | null;
+  instructor_user_id: string | null;
+  /** The purchase the booking claimed a fulfillment unit from, if any. */
+  purchase_id: string | null;
   engagement_id: string | null;
   request_id: string | null;
 }
@@ -253,8 +265,13 @@ export async function createLessonCredit(input: LessonCreditInput): Promise<Less
 
 /** Consume `count` credits from a ledger row (a lesson taught). Read-modify-write
  *  with an optimistic guard on the previous remaining value, so two concurrent
- *  consumes cannot double-spend the same credit. The schema has no bookings
- *  linkage/consume RPC — this staff decrement IS the real consumption path. */
+ *  consumes cannot double-spend the same credit.
+ *
+ *  This is the MANUAL staff decrement, for a lesson taught outside the booking
+ *  flow. It is no longer the only consumption path: book_open_slot debits the
+ *  credit and records it on the booking, and the booking claims its fulfillment
+ *  unit from there. Do not call this for a lesson that already has a booking —
+ *  it would double-debit. */
 export async function consumeLessonCredit(id: string, count = 1): Promise<LessonCredit> {
   const { data: row, error: readError } = await supabase
     .from('lesson_credits')
@@ -315,6 +332,9 @@ export async function scheduleLessonSession(
     p_location: input.location ?? null,
     p_notes: input.notes ?? null,
     p_horse_id: input.horse_id ?? null,
+    p_offering_id: input.offering_id ?? null,
+    p_instructor_user_id: input.instructor_user_id ?? null,
+    p_purchase_id: input.purchase_id ?? null,
   });
   if (error) throw error;
   return data as ScheduledSessionResult;

@@ -45,6 +45,7 @@ export interface CalendarItem {
   horse_id?: string | null;
   purchase_id?: string | null;
   offering_id?: string | null;
+  instructor_user_id?: string | null;
   location_id?: string | null;
   address?: string | null;
   price_amount?: number | null;
@@ -139,6 +140,9 @@ export interface CalendarItemInput {
   horse_id?: string | null;
   purchase_id?: string | null;
   offering_id?: string | null;
+  /** Who is delivering it. Omitted on a client-bound lesson/care item, the RPC
+   *  records the acting staff member; availability slots stay unassigned. */
+  instructor_user_id?: string | null;
   location_id?: string | null;
   address?: string | null;
   travel_before_minutes?: number;
@@ -191,6 +195,20 @@ export async function fetchCreditsRoster(): Promise<CreditRosterEntry[]> {
   const { data, error } = await supabase.rpc('credits_roster');
   if (error) throw error;
   return (data ?? []) as CreditRosterEntry[];
+}
+
+/** A staff member a booking can name as the person delivering it. */
+export interface InstructorOption {
+  user_id: string;
+  name: string;
+  title: string | null;
+}
+/** The instructor roster (staff-gated RPC; the platform owner is excluded by
+ *  org boundary, per D1a). */
+export async function fetchInstructorOptions(): Promise<InstructorOption[]> {
+  const { data, error } = await supabase.rpc('instructor_options');
+  if (error) throw error;
+  return (data ?? []) as InstructorOption[];
 }
 
 export interface ClientPurchaseOption {
