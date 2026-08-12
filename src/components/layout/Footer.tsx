@@ -34,8 +34,11 @@ export default function Footer() {
             {[
               { label: 'Home', href: '/' },
               { label: 'Our Story', href: '/story' },
+              // COUNTFIX 1.5: 'Ways to Ride' and 'Book a Lesson' were adjacent
+              // entries both pointing at /shop — two labels, one destination.
+              // The lesson funnel has its own URL; point the second one at it.
               { label: 'Ways to Ride', href: '/shop' },
-              { label: 'Book a Lesson', href: '/shop' },
+              { label: 'Book a Lesson', href: '/lessons' },
               { label: 'Horse Care', href: '/horse' },
               { label: 'Acquisition Support', href: '/acquisition' },
               { label: 'FAQ', href: '/faq' },

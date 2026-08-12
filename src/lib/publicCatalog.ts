@@ -15,7 +15,18 @@ export interface ServiceGroup {
 }
 
 /** Fetch the public catalog for a funnel segment, grouped by service_type in the
- *  order service_types defines. Excludes inquire-only / unpriced grouping rows. */
+ *  order service_types defines.
+ *
+ *  THE DEFINITION (COUNTFIX 1.5): a public catalog item is an ACTIVE offering in
+ *  this segment — the same population `/shop` shows, restricted to one segment.
+ *  Nothing is dropped for being unpriced. This used to filter
+ *  `config_kind !== 'inquire' && price_amount != null`, which silently removed
+ *  every quote-priced SKU; FHE's three acquisition services are all unpriced, so
+ *  `/acquisition` — an entry in the marketing site's primary nav — rendered an
+ *  empty selection area and a disabled "Continue". Price is a PRESENTATION
+ *  matter: an unpriced SKU reads "Inquire for pricing" (ServiceSelector), exactly
+ *  as it already does in OfferingCatalog. The public funnels end in a booking
+ *  REQUEST, not a payment, so an enquiry-priced service is a legitimate selection. */
 export async function fetchPublicCatalog(segment: Segment): Promise<ServiceGroup[]> {
   const [{ data: offRows, error: offErr }, { data: typeRows, error: typeErr }] = await Promise.all([
     supabase.rpc('public_offerings'),
@@ -27,8 +38,7 @@ export async function fetchPublicCatalog(segment: Segment): Promise<ServiceGroup
   if (offErr) throw offErr;
   if (typeErr) throw typeErr;
 
-  const offerings = ((offRows ?? []) as Offering[]).filter(
-    (o) => o.segment === segment && o.config_kind !== 'inquire' && o.price_amount != null);
+  const offerings = ((offRows ?? []) as Offering[]).filter((o) => o.segment === segment);
 
   const byType = new Map<string, Offering[]>();
   for (const o of offerings) {

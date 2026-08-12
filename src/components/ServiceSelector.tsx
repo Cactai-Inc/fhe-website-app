@@ -66,6 +66,11 @@ export default function ServiceSelector({
       <div role="radiogroup" aria-labelledby={groupLabelId} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {group.offerings.map((o) => {
           const selected = isSelected(o.id);
+          // COUNTFIX 1.5: quote-priced SKUs are real services and are now offered
+          // here (fetchPublicCatalog no longer drops them). They read
+          // "Inquire for pricing" — the same wording OfferingCatalog uses on
+          // /shop — instead of formatting a null price as "$0".
+          const onEnquiry = o.price_amount == null;
           const item: CartItem = {
             offeringId: o.id,
             offeringName: o.name,
@@ -75,6 +80,7 @@ export default function ServiceSelector({
             configKind: o.config_kind,
             weeklyFrequency: o.weekly_frequency,
             unitCount: o.unit_count,
+            ...(onEnquiry ? { priceOnEnquiry: true } : {}),
           };
           return (
             <button
@@ -102,8 +108,10 @@ export default function ServiceSelector({
                 </div>
               </div>
               {mechanics(o) && <p className="text-xs font-sans text-muted mb-3 leading-snug">{mechanics(o)}</p>}
-              <p className="text-base font-serif font-medium text-green-800">
-                {formatPrice(o.price_amount ?? 0, (o.price_unit ?? 'flat') as PriceUnit)}
+              <p className={`text-base font-serif font-medium text-green-800${onEnquiry ? ' italic' : ''}`}>
+                {onEnquiry
+                  ? 'Inquire for pricing'
+                  : formatPrice(o.price_amount as number, (o.price_unit ?? 'flat') as PriceUnit)}
               </p>
               {o.note && <p className="text-[10px] font-sans text-gold-ink mt-1">{o.note}</p>}
             </button>
