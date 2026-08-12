@@ -94,14 +94,14 @@ twice.
 
 ---
 
-# ⚠️ PER-PRODUCT IMAGE — RESERVE FOR IT, DO NOT BUILD IT YET
+# PER-PRODUCT IMAGE — APPROVED TO BUILD (owner, 2026-08-12)
 
 **Owner, 2026-08-12:** *"per product image is not something we use yet but it will be soon."*
 
 **Do not add the column or the UI in the current pass. Do not design anything that precludes
 it.** Specifically:
 
-- **`cover_image_url` is on `service_types` (the TILE), not on `offerings` (the product).** Only
+- **BUILD IT (owner, 2026-08-12): "we can add the per product image capability, but dont render a placeholder if it doesnt have a picture dont show one, if it has a picture uploaded to it, show it. simple handling."** No placeholder, no empty frame, no "no image" tile — the element is absent when there is no file. `cover_image_url` is on `service_types` (the TILE), not on `offerings` (the product). Only
   **3 of 14** tiles have one. A per-product image is a **new** field on `offerings`, not a reuse.
 - **When it lands, it goes through the `files` spine** (`TASK-UPLOADS`, merged 2026-08-11) — the
   polymorphic subject table with RLS and signed URLs. **Do not create a product-images bucket.**
