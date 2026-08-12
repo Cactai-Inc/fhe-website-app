@@ -108,7 +108,7 @@ templates, one at a time.
 ## DEBT
 
 **20. `GUARDREST` — the security family.**
-29 bare definer guards · the MANAGER/EMPLOYEE RLS gap (goes live the day `mod.employees` gets a
+**15** bare definer guards (was recorded as 29 — stale) · the MANAGER/EMPLOYEE RLS gap (goes live the day `mod.employees` gets a
 user) · no trigger provisions `profiles` at signup · `anon` holds EXECUTE on three composition
 RPCs.
 
