@@ -156,3 +156,34 @@ first.
 7. No capability that existed on either page is gone.
 
 Report to `docs/reports/TASK-HORSEONE-REPORT.md`.
+
+---
+
+# ⚠️ HELD 2026-08-11 — DO NOT RUN THIS YET
+
+**Owner, 2026-08-11:**
+
+> *"we need to find all duplicates in the code, wire them up and make them visible for A/B,
+> A/B/C, or A/B/C/D review by placing them side-by-side in the temporary 'Review' section."*
+
+**This task consolidates the three horse surfaces down to one. That would delete the A/B/C
+before the owner has looked at it** — on the very case that motivated the review, and the one
+where he most expects to find that *"the UI is nice in the original and the hack ass replacement
+is shoddy."*
+
+**Sequence:** `TASK-DUPECENSUS` → `TASK-REVIEWNAV` → **the owner rules** → this task executes
+the ruling.
+
+**What survives regardless of the ruling**, because it is about URLs and wiring rather than
+which component wins:
+
+- `/app/ops/horse-records` must **redirect**, never 404.
+- Nothing is deleted; the loser retires behind a boolean.
+- The Ownership/Health lanes stay gated on `mod.horserecords`; **the roster does not.**
+- ADMINSWEEP's held nav diff still needs applying.
+
+**What is now provisional:** §"THE SHAPE" names `HorseRecordsPage` as the component to keep and
+`/app/ops/horses` as the URL. **That was the orchestrator's recommendation and the owner's
+initial read — it is no longer settled.** Re-read the owner's ruling from the review before
+implementing, and if he picks differently, the URL decision and the component decision are still
+separable.
