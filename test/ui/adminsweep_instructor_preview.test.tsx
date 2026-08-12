@@ -29,8 +29,12 @@ vi.mock('../../src/lib/ops/api-lessons', () => ({
 vi.mock('../../src/lib/api', () => ({
   listContacts: () => Promise.resolve([]),
 }));
+/* TASK-LEADCLEAN changed this hook's return from a bare LeadEntry[] to
+ * { open, converted, reload } — the converted side is what the dashboard shows
+ * as history. The mock follows the real shape; InstructorHome destructures
+ * `.open`, so returning an array here makes it read `.length` of undefined. */
 vi.mock('../../src/lib/ops/useOpenLeads', () => ({
-  useOpenLeads: () => [],
+  useOpenLeads: () => ({ open: [], converted: [], reload: () => {} }),
 }));
 
 // vitest has no `globals: true` here, so testing-library's auto-cleanup never
