@@ -194,3 +194,64 @@ content_blocks     0
 **`content_resources` is org-scoped and empty.** `TASK-UPLOADS` recorded it as *"precisely the
 owner's requirement that company material be centralized around the tenant not any individual
 staff account."* It is the destination; it has never had a way in.
+
+---
+
+# RULED 2026-08-12 — ARCHIVE, AND EMAILS
+
+## One archive page
+
+**Owner: "one archive page."** Shared across both engines. Settles the open question above.
+
+## Emails are DOCUMENTS with a delivery output
+
+> *"the email templates will use the same concept as a document engine, only difference is the
+> output type"*
+
+**Confirmed.** No third engine. An email template is a Document whose output goes to an inbox
+rather than a page or a signing surface. It shares the prose+tokens model, the condition logic
+and the whole lifecycle. **Emails get their own SECTION inside Templates, not their own engine.**
+
+**Still true and still the first piece of work:** every correspondence email is hardcoded in
+`api/`. They must be **extracted** before any of this can edit them.
+
+---
+
+# SIGN-BY-EMAIL — the goal is right, the mechanism must be a LINK, not a reply
+
+> *"things like signature capture probably dont translate to email very well, but if they do that
+> would be cool i can send the email and the signature block is rendered in the response for them
+> to use and it captures it and they dont need to log into the app to sign a form, we just send it
+> to them as an email they read it in the body, reply and sign before sending..."*
+
+**The outcome — "they don't need to log into the app" — is right and worth building. The
+in-email reply mechanism is not viable.** Three reasons, none of them stylistic:
+
+1. **Email clients strip interactivity.** No forms, no scripts. AMP for Email requires
+   per-sender registration with Google and Yahoo, is unsupported across most clients, and is
+   effectively abandoned. There is no cross-client interactive email.
+2. **A reply is free text.** Consent would be inferred by parsing prose, attributed by a `From`
+   header that is trivially spoofable, with no record of which version the signer read.
+3. **It breaks the evidence chain this app already has.** `signatures` records
+   `signer_user_id`, `signer_contact_id`, `ip_address`, `user_agent`, `signed_at`, `typed_name`
+   and `method`; `documents` carries `execution_hash`. That is attribution, intent and a
+   tamper-evident record. **61 EXECUTED documents already rest on it.** A weaker second path
+   would create two classes of signature with different standing.
+
+## The mechanism that delivers the same outcome
+
+**A one-click signing link in the email.** No password, no account creation. The token opens the
+document; the signature is captured on the signing surface with the **same** evidence as any
+other. This is what DocuSign and Dropbox Sign do, for exactly these reasons.
+
+## It does not exist today — verified 2026-08-12
+
+- **`/sign/:path` is NOT document signing.** It is the sign-**UP** onboarding path
+  (`guest` / `rider` / `horse` / `rider+horse`), showing catalog offerings by segment. The name
+  collides; the function does not.
+- **`record_signature()` requires an authenticated caller** — it raises
+  `'no contact for the signing account'` when `auth.uid()` does not resolve to a contact.
+
+**So signing currently requires logging in.** Closing that is a distinct piece of work — it is
+where signers drop out — and **THE SIGNING FREEZE IS IN FORCE**, so it is design until the owner
+lifts it.
