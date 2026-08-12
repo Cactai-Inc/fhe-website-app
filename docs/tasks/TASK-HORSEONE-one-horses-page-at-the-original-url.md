@@ -102,9 +102,14 @@ change disguised as a nav cleanup, and it is explicitly refused.
 
 - **`:488`** — `Horses` points at `/app/ops/horses`.
 - **`:535`** — the `Records` entry in `MODULES_GROUP`. Its contents are now reachable from
-  Horses, so it goes. **`MODULES_GROUP` then renders empty for FHE** (boarding / barnops /
-  employees are all `enabled = false`) — **that is correct, not a bug.** Confirm the group
-  header does not render as an empty heading.
+  Horses, so it goes.
+
+  **⚠️ AMENDED 2026-08-11 — do NOT assume `MODULES_GROUP` becomes empty.** An earlier version of
+  this section said it would, because boarding / barnops / employees are `enabled = false`
+  today. **The owner is enabling ALL modules for FHE** (see `TASK-PAGEVIS`), which turns on
+  **11 more pages** and fills that group. **Handle both cases:** the group must render its
+  entries when a tenant has them, and must not render a bare heading when it has none. **Do not
+  hardcode either outcome, and do not delete `MODULES_GROUP`.**
 - **Apply ADMINSWEEP Phase 2's held nav diff** — it is written out in
   `docs/reports/TASK-ADMINSWEEP-PHASE2.md` §3 and was deliberately not applied because
   NAVMOTION owned this file. **You are the one thread touching the nav; take both changes so
@@ -144,8 +149,9 @@ first.
 3. `HorsesPage.tsx` is retired behind a boolean, not deleted.
 4. Ownership and Health are reachable per horse from the consolidated page, **still gated on
    `mod.horserecords`**, and the roster itself is **not** gated.
-5. The nav shows one Horses entry, no orphan `Records` entry, and no empty `MODULES_GROUP`
-   heading.
+5. The nav shows one Horses entry and no orphan `Records` entry. `MODULES_GROUP` renders its
+   entries when the tenant has them and renders no bare heading when it has none — **both cases
+   handled, neither hardcoded.**
 6. ADMINSWEEP's held nav diff is applied, or its non-application is explained.
 7. No capability that existed on either page is gone.
 
