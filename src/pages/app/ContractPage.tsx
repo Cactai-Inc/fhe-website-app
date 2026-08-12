@@ -580,6 +580,20 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   // only once locked). To edit a locked doc, the admin UNLOCKS it back to review
   // (see the "Unlock to edit" toggle) — there's no in-place locked editing.
   const editablePhase = state === 'editable' || state === 'editing' || state === 'in_review';
+  /* STRUCTURE is a narrower gate than FIELDS (TASK ADDITEM, 2026-08-12).
+     `set_contract_field` accepts `editable | editing | in_review`, but every
+     RPC that changes the document's SHAPE — add_contract_composition,
+     remove_contract_composition, add_contract_element, propose_clause,
+     set_field_included — accepts only `editable | editing`: once the document
+     is in review with the counterparty you may answer it, not restructure it.
+     `editablePhase` was being used to enable "Add item" anyway, so on a
+     document in review the button was live and the save threw "document is
+     not editable" into an alert at the TOP of a scrolled modal, where the
+     author (looking at the button they had just pressed at the bottom) never
+     saw it. That is the whole of the owner's "insertion of the authored
+     element doesnt show up in the contract after saving it": production holds
+     ZERO author-added rows, so no composition has ever landed. */
+  const structuralPhase = state === 'editable' || state === 'editing';
   const horseConfirmed = !!doc?.horse_section_confirmed_at;
   const isSent = !!doc?.sent_at;
   const isArchived = !!doc?.archived_at;
@@ -1286,8 +1300,12 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                   {bosBusy ? 'Generating…' : `Generate ${(templateConfig.companion_label ?? 'companion document').toLowerCase()}`}
                 </button>
               )}
+              {/* Kept VISIBLE (not hidden) while the document is in review, and
+                  disabled with the reason on hover — a control that vanishes
+                  teaches nothing, and this one used to fail silently instead. */}
               {structure && id && isOwnerSide && editablePhase && (
-                <AddElementButton documentId={id} disabled={!editablePhase}
+                <AddElementButton documentId={id} disabled={!structuralPhase}
+                  disabledReason="This document is in review. Reopen it for editing to add or remove items."
                   className={SUBHEADER_BTN}
                   structure={structure} fields={detail.fields}
                   canAddStructure={isOwnerSide}

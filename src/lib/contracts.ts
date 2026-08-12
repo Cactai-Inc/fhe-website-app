@@ -833,7 +833,19 @@ export interface CompositionSpec {
   section_new?: boolean;
   /** 1-based position among the document's sections; only when section_new. */
   section_position?: number | null;
-  header: { clause_key?: string | null; text?: string | null; position?: number | null };
+  header: {
+    clause_key?: string | null;
+    text?: string | null;
+    /** 1-based position among the section's HEADERS; only when naming a new one. */
+    position?: number | null;
+    /** TASK ADDITEM — 1-based position among the lines the author has ALREADY
+     *  added under `clause_key`; null / out of range = after all of them. The
+     *  RPC renumbers that header's authored lines as one ordered run, which is
+     *  also what stops a second addition colliding with the first (both used to
+     *  start at sort_order 10). Ignored when a new header is being created —
+     *  there is nothing there yet to sit among. */
+    line_position?: number | null;
+  };
   elements: CompositionElement[];
   lines: CompositionLine[];
 }
