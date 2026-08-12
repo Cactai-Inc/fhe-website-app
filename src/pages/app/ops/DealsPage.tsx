@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Plus, Handshake, Loader2, X } from 'lucide-react';
+import { PageLayout } from '../../../components/app/PageLayout';
 import { useDocumentTitle } from '../../../lib/hooks';
 import {
   listDeals, createDeal, addDealDocument, dealLabel,
@@ -224,22 +225,13 @@ export default function DealsPage() {
   useEffect(load, [load]);
 
   return (
-    <div className="max-w-5xl">
-      <div className="flex items-start justify-between gap-3 mb-4">
-        <div>
-          <h1 className="font-serif text-2xl text-green-900 mb-1">Deals</h1>
-          <p className="text-sm text-green-800/70">
-            Every sale and lease, and the documents that make each one real.
-          </p>
-        </div>
-        {rows && rows.length > 0 && (
-          <button type="button" onClick={() => setCreating(true)}
-            className="px-4 py-2 rounded-lg bg-green-800 text-white text-sm font-medium hover:bg-green-700 focus-ring inline-flex items-center gap-2 shrink-0">
-            <Plus size={15} /> New deal
-          </button>
-        )}
-      </div>
-
+    <PageLayout
+      name="Deals"
+      description="Every sale and lease, and the documents that make each one real."
+      width="wide"
+      onAdd={rows && rows.length > 0 ? () => setCreating(true) : undefined}
+      addLabel="New deal"
+    >
       {err && <p role="alert" className="form-error mb-3">{err}</p>}
 
       {rows === null ? (
@@ -286,6 +278,6 @@ export default function DealsPage() {
         <CreateDealModal onClose={() => setCreating(false)}
           onCreated={(id) => navigate(`/app/ops/deals/${id}`)} />
       )}
-    </div>
+    </PageLayout>
   );
 }
