@@ -122,3 +122,75 @@ starting position and the opposite of the contract engine's situation.
    not a side effect of building the Document engine.
 2. **What the two archive pages are.** The owner specified `archive` moves a template "to an
    archive page." One archive or one per engine — not yet ruled.
+
+---
+
+# THE FORM ENGINE HAS TWO EDITABLE HALVES — CAPTURE AND RENDER
+
+**Owner, 2026-08-12:**
+
+> *"i need to be able to edit both, each form has a rendered view that is editable. its input
+> capture, output render, two steps or two tabs or whatever..."*
+
+Driven by a stated need, not a preference:
+
+> *"i want to publish articles and guides, the community feed is sparse and aside from pictures
+> and videos or regurgitated content from social media i have nothing to add without a method to
+> author it. And the formatting structure for an article or guide is going to be the most time
+> consuming part so building it once and reusing it makes sense to me. but when i need to modify
+> the input capture surface i need a place to go to do that"*
+
+## ⚠️ THE LOAD-BEARING RULE: ONE LIST, TWO VIEWS
+
+**Capture and render are two views over the SAME ordered list of parts. They are not two
+structures.**
+
+- **Capture tab** — what each part collects: type, required/optional, condition, repeat.
+- **Render tab** — how each part presents: heading level, full-bleed vs inline, pull-quote
+  treatment, hidden-from-output.
+
+**Build them as two structures and you get a silent drift bug immediately**: a part added in
+capture never appears in the render, a part deleted leaves an orphan in the layout, and nothing
+errors. That is this codebase's single most repeated failure — a surface reporting success while
+doing nothing. **One list. Two sets of attributes.**
+
+## The render tab is NOT a page designer
+
+An ordered list of parts, each with a presentation treatment. **No free canvas, no drag-anywhere
+layout editor.** The owner ruled against one giant authoring tool on efficiency grounds
+(**D12**), and a layout designer puts him back to designing instead of writing.
+
+## Tabs, not steps
+
+Steps imply a sequence you complete once. The owner's primary flow is **editing** — he will
+return to one half or the other repeatedly. Tabs let him open the one he needs.
+
+## Why an article is a FORM and not a DOCUMENT — settled
+
+Owner: *"id say an article or guide would use a form to capture the parts. i would not thing a
+document template is the right thing to use for that…do you agree?"* **Agreed, and it matches
+his own taxonomy** (*"articles are written using forms"*).
+
+A **document** is prose you compose with inputs in the gaps — `HORSE_LEASE_V2` is 163 clauses of
+fixed wording with blanks. A **form** is a set of parts with no prose body. An article's parts
+change every time; its structure does not. **And the signature-block rule proves it** — a
+signature block is document-only, and an article is never signed.
+
+## THE DATA — why this is urgent, not cosmetic
+
+```
+feed_posts        20 rows
+  member_joined   15   ← system-generated, not authored
+  rider_post       5   ← all carry media; average body length 27 characters
+content_posts      0
+content_resources  0   ← designed as the articles/guides home; routed; never had an authoring path
+content_blocks     0
+```
+
+**There is not one authored written post in the system**, and no mechanism to produce one.
+`feed_posts` holds a body blob, one media item and a source link — no structure. The owner's
+*"nothing to add without a method to author it"* is literally the state of the data.
+
+**`content_resources` is org-scoped and empty.** `TASK-UPLOADS` recorded it as *"precisely the
+owner's requirement that company material be centralized around the tenant not any individual
+staff account."* It is the destination; it has never had a way in.

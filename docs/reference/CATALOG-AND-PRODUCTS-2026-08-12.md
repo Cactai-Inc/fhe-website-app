@@ -96,13 +96,18 @@ twice.
 
 # PER-PRODUCT IMAGE — APPROVED TO BUILD (owner, 2026-08-12)
 
-**Owner, 2026-08-12:** *"per product image is not something we use yet but it will be soon."*
+**Owner, 2026-08-12, first:** *"per product image is not something we use yet but it will be
+soon."* **Then, same day — APPROVED TO BUILD:** *"we can add the per product image capability,
+but dont render a placeholder if it doesnt have a picture dont show one, if it has a picture
+uploaded to it, show it. simple handling."*
 
-**Do not add the column or the UI in the current pass. Do not design anything that precludes
-it.** Specifically:
+**Build it. Specifics:**
 
-- **BUILD IT (owner, 2026-08-12): "we can add the per product image capability, but dont render a placeholder if it doesnt have a picture dont show one, if it has a picture uploaded to it, show it. simple handling."** No placeholder, no empty frame, no "no image" tile — the element is absent when there is no file. `cover_image_url` is on `service_types` (the TILE), not on `offerings` (the product). Only
-  **3 of 14** tiles have one. A per-product image is a **new** field on `offerings`, not a reuse.
+- **NO PLACEHOLDER.** No empty frame, no "no image" tile, no grey box. **The element is absent
+  when there is no file** — not present-and-empty. This is the whole of the owner's handling
+  rule and it is the easy thing to get wrong.
+- **It is a NEW field on `offerings`, not a reuse.** `cover_image_url` lives on `service_types`
+  (the TILE), and only **3 of 14** tiles have one.
 - **When it lands, it goes through the `files` spine** (`TASK-UPLOADS`, merged 2026-08-11) — the
   polymorphic subject table with RLS and signed URLs. **Do not create a product-images bucket.**
   Twelve buckets already exist; the missing piece was never storage, it was the binding between
