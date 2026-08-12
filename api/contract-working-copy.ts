@@ -26,6 +26,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
 import { resolveTenantEmailIdentity, sendViaProvider } from './_lib/email.js';
+import { renderEmailTemplate } from './_lib/emailTemplates.js';
 import { renderDocumentPdf, pdfFileName } from './_lib/documentPdf.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -101,17 +102,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const pdf = await renderDocumentPdf(title, banner + (doc.merged_body ?? ''));
 
   const identity = await resolveTenantEmailIdentity(admin, doc.org_id as string);
+  // The banner above stays in code — it is stamped INTO the PDF, which is
+  // evidence about the document's state, not correspondence. The email around it
+  // is the CONTRACT_WORKING_COPY row.
+  const rendered = await renderEmailTemplate(admin, 'CONTRACT_WORKING_COPY', {
+    'DOC.HAS_TITLE': doc.title != null ? '1' : '',
+    'DOC.TITLE': (doc.title as string | null) ?? '',
+    'DOC.DISPLAY_CODE': (doc.display_code as string | null) ?? '',
+    'MSG.GENERATED_AT': when,
+  });
+  if (!rendered) return res.status(502).json({ error: 'could not send the email' });
+
   const sent = await sendViaProvider({
     to,
     fromName: identity.fromName,
     fromEmail: identity.fromEmail,
-    subject: `Working copy — ${doc.title ?? 'Contract'}`,
-    html:
-      `<p>Attached is the current working copy of <strong>${doc.title ?? 'this contract'}</strong>`
-      + `${doc.display_code ? ` (${doc.display_code})` : ''}.</p>`
-      + `<p>It is <strong>not executed</strong> and reflects the contract as of ${when}. `
-      + `Unselected options and empty fields are included on purpose, so anyone advising `
-      + `you can see what is still open.</p>`,
+    subject: rendered.subject,
+    html: rendered.html,
     attachments: [{
       filename: pdfFileName(title),
       content: pdf,

@@ -116,9 +116,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // document title, greeting/body/signature, PDF attachment) — one source,
     // api/_lib/delivery.ts, not a second hand-built template.
     const pdfBytes = await renderPartyCopyPdfBytes(doc);
-    const partyEmail = buildPartyCopyEmail(
-      doc, executedAt, contact?.first_name, contact?.last_name, identity, pdfBytes,
+    const partyEmail = await buildPartyCopyEmail(
+      db, doc, executedAt, contact?.first_name, contact?.last_name, identity, pdfBytes,
     );
+    // The wording is the DOCUMENT_PARTY_COPY row. If it is missing there is
+    // nothing to send — a 502, same shape as a transport refusal, never a blank.
+    if (!partyEmail) return res.status(502).json({ error: 'could not send the email' });
 
     const sent = await sendViaProvider({
       to: email,

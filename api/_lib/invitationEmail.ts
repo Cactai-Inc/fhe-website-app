@@ -5,9 +5,15 @@
  * INVITEWORKS: a RESEND is the same link again, not a new one, so it must be
  * distinguishable in a mailbox from the first send — people triage on the
  * subject line and open ONE message. `kind` drives the subject, not just the
- * body copy. */
+ * body copy.
+ *
+ * EMAILEXTRACT: the wording now lives in the `INVITATION` row of email_templates,
+ * where the owner can change it without a developer (D13). `kind` still drives the
+ * subject — through the MSG.IS_RESEND token — so the resend/first-send distinction
+ * survives, and is now editable rather than compiled in. */
 import type { getSupabaseAdmin } from './supabaseAdmin.js';
 import { resolveTenantEmailIdentity, sendViaProvider } from './email.js';
+import { renderEmailTemplate } from './emailTemplates.js';
 
 export interface ChecklistRow { kind: string; title: string; action: string; done: boolean }
 
@@ -48,47 +54,40 @@ export async function sendInvitationEmail(
     return { ok: false, messageId: null, error: 'no org on the sending account — cannot resolve the sender identity' };
   }
   const identity = await resolveTenantEmailIdentity(db, orgId);
+  // from_address_rule 'invite' on the INVITATION row: the env override, else the
+  // tenant address. Kept in code because it reads an environment variable, which
+  // is deployment configuration rather than content.
   const fromEmail = process.env.INVITE_FROM_EMAIL || identity.fromEmail;
-  const purchaseLine = offeringLabel
-    ? `<p>Your ${offeringLabel} is ready — create your account to sign your documents and get started.</p>`
-    : '';
+
   // ONE email for everything assigned to them: what they'll do when they click.
   const pending = (checklist ?? []).filter((c) => !c.done);
-  const checklistBlock = pending.length
-    ? `<p>When you click the link, here's what we'll ask you to do:</p>` +
-      `<ul style="padding-left:18px">` +
-      pending.map((c) => `<li style="margin:4px 0"><strong>${c.title}</strong> — ${c.action.toLowerCase()}</li>`).join('') +
-      `</ul>` +
-      `<p style="color:#666;font-size:13px">This same checklist will be on your dashboard, ticking itself off as you go.</p>`
-    : '';
 
-  // The subject is the ONLY part of a resend most people ever read. It has to
-  // say "this is the one you already have" without looking like a new invite.
-  const subject = isResend
-    ? `Here's your invitation link again — ${identity.fromName}`
-    : `Your invitation to ${identity.fromName}`;
-
-  const opening = isResend
-    ? `<p>Here's that link again — this is the <strong>same invitation</strong> we sent you
-       before, not a new one. If you still have the first email, either link works.</p>`
-    : `<p>Welcome — we're so glad to have you.</p>`;
+  // The wording — including whether a resend says "same link" and how the expiry
+  // sentence reads — is the INVITATION row in email_templates. What is left here
+  // is the values that wording merges.
+  const rendered = await renderEmailTemplate(db, 'INVITATION', {
+    'ORG.BRAND_NAME': identity.fromName,
+    'ORG.FOOTER': identity.footer,
+    'MSG.IS_RESEND': isResend ? '1' : '',
+    'MSG.OFFERING_LABEL': offeringLabel ?? '',
+    'MSG.CHECKLIST': pending.map((c) => ({ TITLE: c.title, ACTION: c.action.toLowerCase() })),
+    'MSG.LINK': registerUrl,
+    'MSG.EXPIRES_ON': expiresAt
+      ? new Date(expiresAt).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+      : '',
+  });
+  // A missing template is a real failure with a real cause — never a blank email
+  // to a real person, and never a success the operator would walk away believing.
+  if (!rendered) {
+    return { ok: false, messageId: null, error: 'the INVITATION email template is missing or deactivated' };
+  }
 
   const out = await sendViaProvider({
     to,
     fromName: identity.fromName,
     fromEmail,
-    subject,
-    html: `
-      ${opening}
-      ${purchaseLine}
-      ${checklistBlock}
-      <p>Create your account here to join the community. You can sign up with Google
-      or set a password — your choice on the next page:</p>
-      <p><a href="${registerUrl}">${registerUrl}</a></p>
-      <p>${expiresAt
-        ? `This link is valid until <strong>${new Date(expiresAt).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</strong>. If it expires, just reach out and we'll send a fresh one.`
-        : `This link expires soon. If it does, just reach out and we'll send a fresh one.`}</p>
-      <hr/><pre style="font-family:inherit">${identity.footer}</pre>`,
+    subject: rendered.subject,
+    html: rendered.html,
   });
   return out.ok
     ? { ok: true, messageId: out.messageId }

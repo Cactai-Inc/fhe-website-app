@@ -233,7 +233,27 @@ export interface TransactionalTemplate {
   body: string; // inner HTML/text; footer is appended
 }
 
-/** Minimal built-in template registry. {{ORG.*}} footer is appended by the handler. */
+/**
+ * DEAD AS OF TASK-EMAILEXTRACT (2026-08-12) — RETAINED, NOT DELETED.
+ *
+ * This was the old built-in registry. Its only live caller was `_lib/receipt.ts`
+ * (case 'receipt'), which now reads the `ORDER_RECEIPT` row out of
+ * `email_templates` like every other sender. Nothing calls this function today.
+ *
+ * ⚠️ TWO OF ITS FOUR CASES ARE D9 VIOLATIONS AND MUST NOT BE WIRED UP.
+ * D9 settled that there is NO welcome email and NO dunning email, and that both
+ * producers were deleted deliberately. Their TEMPLATE STRINGS survived here:
+ *   'signup'  → "Welcome to {brand} — your account is ready."   ← the welcome email
+ *   'dunning' → "Payment reminder / You have an outstanding balance." ← the dunning email
+ * They have no producer and no caller, so nothing sends them; they are wording
+ * looking for a sender. They are NOT extracted into `email_templates` — putting
+ * them in a list the owner browses and publishes from is exactly how a settled
+ * decision gets quietly reversed. The third dead case, 'contract_executed', was
+ * superseded by DOCUMENT_PARTY_COPY (its hardcoded subject was fixed in 2026-08-02's
+ * delivery work) and is likewise left alone.
+ *
+ * Deleting this is TASK-EMAILEXTRACT's finding to report, not its change to make.
+ */
 export function renderTemplate(
   template: string,
   vars: Record<string, unknown>,

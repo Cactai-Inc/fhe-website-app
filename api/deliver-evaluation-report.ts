@@ -15,6 +15,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
 import { resolveTenantEmailIdentity, sendViaProvider } from './_lib/email.js';
+import { renderEmailTemplate } from './_lib/emailTemplates.js';
 import { renderDocumentPdf, pdfFileName } from './_lib/documentPdf.js';
 import { resolveMinorRecipient, notifyMinorRecipientsSkipped } from './_lib/delivery.js';
 import type { GuardianRecipient } from './_lib/delivery.js';
@@ -86,30 +87,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     if (!toEmail) return res.status(400).json({ error: 'no recipient email' });
 
-    // Render the report PDF (title + body → same document PDF pipeline).
+    // Render the report PDF (title + body → same document PDF pipeline). The
+    // heading is the PDF's, built here because a filename is not correspondence;
+    // the SUBJECT line composes the same two parts from tokens in the template.
     const heading = report.horse_label ? `${report.title} — ${report.horse_label}` : report.title;
     const pdfBytes = await renderDocumentPdf(heading, report.body ?? '');
     const attachment = { filename: pdfFileName(heading), content: pdfBytes, contentType: 'application/pdf' };
 
     const identity = await resolveTenantEmailIdentity(db, report.org_id);
-    const footerHtml = identity.footer
-      ? `<hr/><p style="color:#666;font-size:12px;white-space:pre-line">${identity.footer}</p>`
-      : '';
-    const greeting = guardianRecipient
-      ? (guardianRecipient.firstName ? `Hi ${guardianRecipient.firstName},` : 'Hello,')
-      : 'Hello,';
-    const intro = guardianRecipient
-      ? `<p>A horse evaluation report${report.horse_label ? ` for ${report.horse_label}` : ''} has been prepared for ${minorLabel || 'the account holder'} and is attached to this email.</p>`
-      : action === 'share'
-        ? `<p>A horse evaluation report has been shared with you${report.horse_label ? ` for ${report.horse_label}` : ''}. It's attached to this email.</p>`
-        : `<p>Your horse evaluation report${report.horse_label ? ` for ${report.horse_label}` : ''} is attached to this email.</p>`;
+    // Three voices — buyer's own copy, shared copy, guardian copy — are three
+    // branches of the EVALUATION_REPORT row now, not three ternaries here.
+    const rendered = await renderEmailTemplate(db, 'EVALUATION_REPORT', {
+      'ORG.BRAND_NAME': identity.fromName,
+      'ORG.FOOTER': identity.footer,
+      'DOC.TITLE': report.title,
+      'HORSE.LABEL': report.horse_label ?? '',
+      'PARTY.GREETING_NAME': guardianRecipient ? (guardianRecipient.firstName ?? '') : '',
+      'PARTY.FULL_NAME': guardianRecipient ? (minorLabel ?? '') : '',
+      'MSG.IS_GUARDIAN_COPY': guardianRecipient ? '1' : '',
+      'MSG.IS_SHARE': action === 'share' ? '1' : '',
+    });
+    if (!rendered) return res.status(502).json({ emailed: false, error: 'email send failed' });
 
     const sent = await sendViaProvider({
       to: toEmail,
       fromName: identity.fromName,
       fromEmail: identity.fromEmail,
-      subject: `${heading} — ${identity.fromName}`,
-      html: `<p>${greeting}</p>${intro}<p>Please keep it for your records.</p>${footerHtml}`,
+      subject: rendered.subject,
+      html: rendered.html,
       attachments: [attachment],
     });
     if (!sent.ok) return res.status(502).json({ emailed: false, error: 'email send failed' });

@@ -13,6 +13,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
 import { resolveTenantEmailIdentity, sendViaProvider } from './_lib/email.js';
+import { renderEmailTemplate } from './_lib/emailTemplates.js';
 
 function esc(s: string): string {
   return s.replace(/[&<>"]/g, (c) =>
@@ -59,7 +60,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { data: byC } = await db
       .from('contacts').select('first_name, last_name')
       .eq('id', (doc.voided_by ?? meContact) as string).maybeSingle();
-    const byLabel = [byC?.first_name, byC?.last_name].filter(Boolean).join(' ') || 'The other party';
+    // Just the name. Whether a nameless voider reads as "The other party" is
+    // wording, and wording is the CONTRACT_VOIDED row's business now.
+    const byName = [byC?.first_name, byC?.last_name].filter(Boolean).join(' ');
 
     const { data: others } = await db
       .from('document_parties').select('contact_id')
@@ -72,6 +75,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const link = `${origin}/app/contracts/${documentId}`;
     const note = (doc.void_reason as string | null) ?? null;
 
+    // Rendered once, outside the recipient loop: every other party reads the same
+    // words. The "The other party" fallback now lives in the template, so the
+    // token carries the real name or nothing.
+    const rendered = await renderEmailTemplate(db, 'CONTRACT_VOIDED', {
+      'ORG.FOOTER': identity.footer,
+      'PARTY.FULL_NAME': byName,
+      'PARTY.FULL_NAME_HTML': byName ? esc(byName) : '',
+      'DOC.HAS_TITLE': doc.title != null ? '1' : '',
+      'DOC.TITLE': doc.title ?? '',
+      'DOC.TITLE_HTML': doc.title != null ? esc(String(doc.title)) : '',
+      'MSG.NOTE_HTML': note ? esc(note) : '',
+      'MSG.LINK': link,
+    });
+    if (!rendered) {
+      return res.status(500).json({ error: 'the CONTRACT_VOIDED email template is missing or deactivated' });
+    }
+
     let emailed = 0;
     for (const o of others ?? []) {
       const { data: c } = await db
@@ -83,20 +103,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         to,
         fromName: identity.fromName,
         fromEmail: identity.fromEmail,
-        subject: `${byLabel} voided ${doc.title ?? 'your contract'}`,
-        html:
-          `<p>Hello,</p>` +
-          `<p><strong>${esc(byLabel)}</strong> voided ` +
-          `<strong>${esc(String(doc.title ?? 'your contract'))}</strong>. ` +
-          `It is no longer going ahead.</p>` +
-          (note
-            ? `<p>They left this note:</p><blockquote style="margin:0 0 0 12px;padding-left:12px;border-left:3px solid #ddd;color:#444">${esc(note)}</blockquote>`
-            : `<p>No reason was given.</p>`) +
-          `<p><a href="${link}">Open the contract</a> to keep a copy on your documents page, ` +
-          `or remove it from your view.</p>` +
-          `<p style="color:#666;font-size:12px">Removing it only affects your own documents page — ` +
-          `the record is retained.<br/>${link}</p>` +
-          (identity.footer ? `<hr/><p style="color:#666;font-size:12px;white-space:pre-line">${identity.footer}</p>` : ''),
+        subject: rendered.subject,
+        html: rendered.html,
       });
       if (sent.ok) emailed += 1;
     }

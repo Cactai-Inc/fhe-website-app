@@ -42,6 +42,7 @@ import type { EmailAttachment } from './_lib/email.js';
 import { renderDocumentPdf, pdfFileName } from './_lib/documentPdf.js';
 import { resolveMinorRecipient, notifyMinorRecipientsSkipped } from './_lib/delivery.js';
 import type { GuardianRecipient } from './_lib/delivery.js';
+import { renderEmailTemplate } from './_lib/emailTemplates.js';
 
 const CHANNEL = 'EMAIL';
 const STAFF_ROLES = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EMPLOYEE'];
@@ -205,10 +206,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     );
 
     const titles = docs.map((d) => d.title);
-    const listHtml = `<ul>${titles.map((t) => `<li>${t}</li>`).join('')}</ul>`;
-    const footerHtml = identity.footer
-      ? `<hr/><p style="color:#666;font-size:12px;white-space:pre-line">${identity.footer}</p>`
-      : '';
 
     const delivered: Array<{ email: string; count: number }> = [];
     /** Logging failures collected so they surface in the response + logs
@@ -244,27 +241,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // "send to me" case) is an audit copy, not a party delivery.
       const isMirrorRecipient = targeted && !partyDocsByContact.get(party.contact_id)?.size;
 
-      const greeting = guardianRecipient
-        ? (guardianRecipient.firstName ? `Hi ${guardianRecipient.firstName},` : 'Hello,')
-        : (party.contacts?.first_name ? `Hi ${party.contacts.first_name},` : 'Hello,');
-      const introHtml = guardianRecipient
-        ? `<p>The signed documents for ` +
-          `${[party.contacts?.first_name, party.contacts?.last_name].filter(Boolean).join(' ') || 'the minor named below'} ` +
-          `are attached to this email:</p>`
-        : `<p>Thank you. Your signed documents are attached to this email:</p>`;
-      const html =
-        `<p>${greeting}</p>` +
-        introHtml +
-        listHtml +
-        `<p>Please keep these for your records.</p>` +
-        footerHtml;
+      const rendered = await renderEmailTemplate(db, 'DOCUMENT_SET_PARTY_COPY', {
+        'ORG.BRAND_NAME': identity.fromName,
+        'ORG.FOOTER': identity.footer,
+        'DOC.TITLES': titles,
+        'PARTY.GREETING_NAME': (guardianRecipient ? guardianRecipient.firstName : party.contacts?.first_name) ?? '',
+        'PARTY.FULL_NAME': [party.contacts?.first_name, party.contacts?.last_name].filter(Boolean).join(' '),
+        'MSG.IS_GUARDIAN_COPY': guardianRecipient ? '1' : '',
+      });
+      if (!rendered) continue; // template missing -> no send, no delivery row, logged
 
       const sent = await sendViaProvider({
         to: toEmail,
         fromName: identity.fromName,
         fromEmail: identity.fromEmail,
-        subject: `Your signed documents — ${identity.fromName}`,
-        html,
+        subject: rendered.subject,
+        html: rendered.html,
         attachments: allAttachments,
       });
       if (!sent.ok) continue; // no orphan delivery rows without a successful send
@@ -319,14 +311,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .map((p) => [p.contacts?.first_name, p.contacts?.last_name].filter(Boolean).join(' '))
         .filter(Boolean)
         .join(', ');
-      const notice = await sendViaProvider({
-        to: mirrorTo,
-        fromName: identity.fromName,
-        fromEmail: identity.fromEmail,
-        subject: `Signed document set${signers ? ` — ${signers}` : ''}`,
-        html: `<p>${signers || 'A signer'} executed the following documents (attached):</p>${listHtml}`,
-        attachments: allAttachments,
+      const mirrorEmail = await renderEmailTemplate(db, 'DOCUMENT_SET_COMPANY_COPY', {
+        'DOC.TITLES': titles,
+        'PARTY.SIGNERS': signers,
       });
+      const notice = mirrorEmail
+        ? await sendViaProvider({
+            to: mirrorTo,
+            fromName: identity.fromName,
+            fromEmail: identity.fromEmail,
+            subject: mirrorEmail.subject,
+            html: mirrorEmail.html,
+            attachments: allAttachments,
+          })
+        : { ok: false as const };
       companyNotified = notice.ok;
       if (notice.ok) {
         for (const d of docs) {

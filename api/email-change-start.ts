@@ -24,6 +24,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { promises as dns } from 'node:dns';
 import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
 import { resolveTenantEmailIdentity, sendViaProvider } from './_lib/email.js';
+import { renderEmailTemplate } from './_lib/emailTemplates.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -119,18 +120,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (profile?.org_id) {
         try { identity = await resolveTenantEmailIdentity(db, profile.org_id); } catch { /* fall back */ }
       }
+      const rendered = await renderEmailTemplate(db, 'EMAIL_CHANGE_VERIFY', {
+        'ORG.BRAND_NAME': identity.fromName,
+        'ORG.FOOTER': identity.footer,
+        'PARTY.GREETING_NAME': name ?? '',
+        'MSG.NEW_EMAIL': newEmail,
+        'MSG.LINK': link,
+      });
+      if (!rendered) return res.status(502).json({ error: 'could not send the verification email' });
+
       const sent = await sendViaProvider({
         to: newEmail,
         fromName: identity.fromName,
         fromEmail: identity.fromEmail,
-        subject: `Verify your new email — ${identity.fromName}`,
-        html:
-          `<p>${name ? `Hi ${name},` : 'Hello,'}</p>` +
-          `<p>You asked to change your sign-in email to <strong>${newEmail}</strong>.</p>` +
-          `<p><a href="${link}">Verify this address</a> and sign in with it plus the password you just set to finish the switch. ` +
-          `Your current email keeps working until then.</p>` +
-          `<p style="color:#666;font-size:12px">If the link doesn't open, check your spam folder or paste it into your browser:<br/>${link}</p>` +
-          (identity.footer ? `<hr/><p style="color:#666;font-size:12px;white-space:pre-line">${identity.footer}</p>` : ''),
+        subject: rendered.subject,
+        html: rendered.html,
       });
       if (!sent.ok) return res.status(502).json({ error: 'could not send the verification email' });
       return res.status(200).json({ ok: true, mode });

@@ -17,6 +17,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
 import { resolveTenantEmailIdentity, sendViaProvider } from './_lib/email.js';
+import { renderEmailTemplate } from './_lib/emailTemplates.js';
 
 const TOP_N = 5;
 
@@ -95,7 +96,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // who I am, for the greeting
     const { data: meC } = await db
       .from('contacts').select('first_name, last_name').eq('id', meContact).maybeSingle();
-    const meLabel = [meC?.first_name, meC?.last_name].filter(Boolean).join(' ') || 'The other party';
+    // Just the name — the "The other party" fallback is wording, and lives in the
+    // CONTRACT_CHANGE_REQUESTS row.
+    const meName = [meC?.first_name, meC?.last_name].filter(Boolean).join(' ');
 
     // every OTHER party with an email on file
     const { data: others } = await db
@@ -108,12 +111,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const origin = req.headers.origin || `https://${req.headers.host}`;
     const link = `${origin}/app/contracts/${documentId}`;
 
-    const items = top.map((r) => {
-      const where = r.target_section
-        ? (headings.get(r.target_section as string) ?? (r.target_section as string))
-        : 'The whole document';
-      return `<li style="margin-bottom:8px"><strong>#${r.annotation_number} — ${esc(where)}</strong><br/>${esc(String(r.body ?? ''))}</li>`;
-    }).join('');
+    // Rendered once — every other party reads the same list, in the same
+    // impact order the database already computed.
+    const rendered = await renderEmailTemplate(db, 'CONTRACT_CHANGE_REQUESTS', {
+      'ORG.FOOTER': identity.footer,
+      'PARTY.FULL_NAME': meName,
+      'PARTY.FULL_NAME_HTML': meName ? esc(meName) : '',
+      'DOC.HAS_TITLE': doc.title != null ? '1' : '',
+      'DOC.TITLE': doc.title ?? '',
+      'DOC.TITLE_HTML': doc.title != null ? esc(String(doc.title)) : '',
+      'MSG.COUNT': String(top.length),
+      'MSG.IS_SINGLE': top.length === 1 ? '1' : '',
+      'MSG.ITEMS': top.map((r) => ({
+        NUMBER: String(r.annotation_number),
+        // Whether a request that targets no section reads as "The whole document"
+        // is wording — the template decides, this only says which case it is.
+        HAS_SECTION: r.target_section ? '1' : '',
+        WHERE_HTML: r.target_section
+          ? esc(headings.get(r.target_section as string) ?? (r.target_section as string))
+          : '',
+        BODY_HTML: esc(String(r.body ?? '')),
+      })),
+      'MSG.LINK': link,
+    });
+    if (!rendered) {
+      return res.status(500).json({ error: 'the CONTRACT_CHANGE_REQUESTS email template is missing or deactivated' });
+    }
 
     let emailed = 0;
     for (const o of others ?? []) {
@@ -126,16 +149,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         to,
         fromName: identity.fromName,
         fromEmail: identity.fromEmail,
-        subject: `${meLabel} requested changes to ${doc.title ?? 'your contract'}`,
-        html:
-          `<p>Hello,</p>` +
-          `<p><strong>${esc(meLabel)}</strong> submitted change requests on ` +
-          `<strong>${esc(String(doc.title ?? 'your contract'))}</strong> for your review.</p>` +
-          `<p>The most significant ${top.length === 1 ? 'one is' : `${top.length} are`}:</p>` +
-          `<ol>${items}</ol>` +
-          `<p><a href="${link}">Open the contract</a> to reply to each request and agree or discuss.</p>` +
-          `<p style="color:#666;font-size:12px">The contract cannot be locked for signing until these are resolved.<br/>${link}</p>` +
-          (identity.footer ? `<hr/><p style="color:#666;font-size:12px;white-space:pre-line">${identity.footer}</p>` : ''),
+        subject: rendered.subject,
+        html: rendered.html,
       });
       if (sent.ok) emailed += 1;
     }

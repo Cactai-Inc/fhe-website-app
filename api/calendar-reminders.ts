@@ -15,6 +15,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
 import { resolveTenantEmailIdentity, sendViaProvider, type TenantEmailIdentity } from './_lib/email.js';
+import { renderEmailTemplate } from './_lib/emailTemplates.js';
 
 /** 5d: the ops inbox is org-level config (CONTACT/OPS_INBOX_FALLBACK), not a constant.
  *  The literal below is only the last-resort fallback when config is absent. */
@@ -100,11 +101,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         for (const r of digest) if (r.kind.startsWith('booking_reminder')) opsDigest.push(escapeHtml(r.title));
 
         if (email) {
-          const items = digest.map((r) => `<li>${escapeHtml(r.title)}</li>`).join('');
-          const html = `<p>Calendar update from ${identity.fromName}:</p><ul>${items}</ul>` +
-            `<p><a href="${appUrl}">Open your calendar</a></p>` +
-            (identity.footer ? `<hr/><p style="color:#666;font-size:12px;white-space:pre-line">${identity.footer}</p>` : '');
-          const sent = await sendViaProvider({ to: email, fromName: identity.fromName, fromEmail: identity.fromEmail, subject: `Calendar update — ${identity.fromName}`, html });
+          const rendered = await renderEmailTemplate(db, 'CALENDAR_UPDATE', {
+            'ORG.BRAND_NAME': identity.fromName,
+            'ORG.FOOTER': identity.footer,
+            'MSG.ITEMS': digest.map((r) => escapeHtml(r.title)),
+            'MSG.LINK': appUrl,
+          });
+          // Same posture as a failed send: emailed_at stays NULL, next sweep retries.
+          if (!rendered) continue;
+          const sent = await sendViaProvider({ to: email, fromName: identity.fromName, fromEmail: identity.fromEmail, subject: rendered.subject, html: rendered.html });
           if (!sent.ok) continue;
         }
 
@@ -121,11 +126,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (first?.fromEmail) {
         try {
           const uniq = Array.from(new Set(opsDigest));
-          await sendViaProvider({
-            to: first.opsInbox ?? OPS_INBOX_FALLBACK, fromName: first.fromName, fromEmail: first.fromEmail,
-            subject: `Upcoming sessions (${uniq.length})`,
-            html: `<p>Upcoming calendar items:</p><ul>${uniq.map((t) => `<li>${t}</li>`).join('')}</ul>`,
+          const rendered = await renderEmailTemplate(db, 'CALENDAR_OPS_DIGEST', {
+            'MSG.COUNT': String(uniq.length),
+            'MSG.ITEMS': uniq,
           });
+          if (rendered) {
+            await sendViaProvider({
+              to: first.opsInbox ?? OPS_INBOX_FALLBACK, fromName: first.fromName, fromEmail: first.fromEmail,
+              subject: rendered.subject, html: rendered.html,
+            });
+          }
         } catch (e) { console.error('ops inbox copy', e); }
       }
     }
