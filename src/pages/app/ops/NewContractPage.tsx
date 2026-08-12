@@ -80,9 +80,14 @@ export default function NewContractPage() {
   // Legacy support: an older version revealed the contract inline via ?doc=. Now
   // creation opens the standalone contract page instead, so if we land here with a
   // ?doc= (an old link, a back-nav), redirect to that contract page.
+  //
+  // TASK-DOCQUEUE: the documents picker's "Horse sale" card links here with
+  // ?type=purchase to preselect the sale/purchase type — the picker groups by
+  // contract_kind and this page owns which button that maps to.
   useEffect(() => {
     const legacyDoc = params.get('doc');
-    if (legacyDoc) navigate(`/app/contracts/${legacyDoc}`, { replace: true });
+    if (legacyDoc) { navigate(`/app/contracts/${legacyDoc}`, { replace: true }); return; }
+    if (params.get('type') === 'purchase') setType('purchase');
     // run once on mount only
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

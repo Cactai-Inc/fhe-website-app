@@ -1,37 +1,102 @@
 /**
  * OPS-DOCS-QUEUE — Documents work-queue (surface `ops`, module `core`).
  *
- * Staff opens /app/ops/documents-queue → every in-tenant document across all
- * engagements, filterable by status (DRAFT / SENT / EXECUTED / …) and sorted by
- * generated_at. Each row links into the OPS-DOC-VIEW viewer/signing surface at
- * /app/ops/documents/:id. Backs OPS-DASH's documents tile.
+ * Staff opens /app/ops/documents → every in-tenant document across all
+ * engagements, filterable by status (DRAFT / AWAITING_SIGNATURE / EXECUTED /
+ * VOID) and sorted by generated_at. Each row links into the OPS-DOC-VIEW
+ * viewer/signing surface at /app/ops/documents/:id. Backs OPS-DASH's
+ * documents tile.
  *
  * Real data path: `listDocuments()` (INT-API-CORE → supabase.from('documents'),
  * RLS org-scoped — staff sees all in-tenant documents; a client would see only
- * their own). The status filter narrows the fetched set; changing it re-runs
- * the load so the observable query re-fires. Loading / empty / error / success
- * branches all render — errors are surfaced, never swallowed.
+ * their own) fetches ONCE on mount — RLS scopes the same full set regardless
+ * of which filter is selected, so there's nothing a re-fetch on filter change
+ * would narrow that client-side filtering doesn't already. Loading / empty /
+ * error / success branches all render — errors are surfaced, never swallowed.
+ *
+ * PRESET VIEWS (DOCUMENT_LIBRARY_DESIGN.md §"One flat library", TASK-DOCQUEUE
+ * 20260811): six preset views over the one list — filter presets, not routes
+ * or separate pages (v2 owner ruling: "views are filter presets at most, not
+ * navigation"). Built against today's schema only:
+ *   - Needs attention (default) = AWAITING_SIGNATURE. The spec also wants
+ *     assigned-but-never-generated obligations and expires_on-based items in
+ *     here; neither exists yet (the first needs a contact_required_documents
+ *     cross-reference, the second needs the uploads build) — not built, see
+ *     the task report.
+ *   - Signed library = EXECUTED, non-archived, with a superseded toggle.
+ *     Grouping by template category is not built (no category column yet).
+ *   - By person / By horse = pick from who/what actually has documents,
+ *     derived from the fetched rows (no extra query) — filters this SAME
+ *     list rather than deep-linking to the dossier, which duplicates
+ *     nothing since there's no separate view to keep in sync.
+ *   - Contracts & deals = rows with a contract_id.
+ *   - Drafts, voids & archive = DRAFT/VOID/archived/terminated.
+ * The status filter (below) still narrows independently within whichever
+ * preset is active — that's what the task's acceptance test exercises.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toErrorMessage } from '../../../lib/ops/errors';
 import { Helmet } from 'react-helmet-async';
-import { Link } from 'react-router-dom';
 import {
   listDocuments,
   pendingVersionDecisions, resolveVersionDecision, templatePastSigners,
   type PendingVersionDecision, type PastSigner,
 } from '../../../lib/api';
-import type { DocumentRow } from '../../../lib/ops/types';
+import { contactName } from '../../../lib/ops/types';
+import type { DocumentQueueRow } from '../../../lib/ops/types';
 import { EmptyState } from '../../../lib/ops';
 import {
   DocumentQueueTable,
   type QueueStatusFilter,
 } from '../../../components/ops/documents/DocumentQueueTable';
+import { DocumentQueuePicker } from '../../../components/ops/documents/DocumentQueuePicker';
+
+type Preset = 'NEEDS_ATTENTION' | 'SIGNED' | 'BY_PERSON' | 'BY_HORSE' | 'CONTRACTS' | 'ARCHIVE' | 'ALL';
+
+const PRESETS: { key: Preset; label: string }[] = [
+  { key: 'NEEDS_ATTENTION', label: 'Needs attention' },
+  { key: 'SIGNED', label: 'Signed library' },
+  { key: 'BY_PERSON', label: 'By person' },
+  { key: 'BY_HORSE', label: 'By horse' },
+  { key: 'CONTRACTS', label: 'Contracts & deals' },
+  { key: 'ARCHIVE', label: 'Drafts, voids & archive' },
+  { key: 'ALL', label: 'All documents' },
+];
 
 /** Narrow the in-tenant document set to the selected status (`ALL` = no filter). */
-function filterByStatus(documents: DocumentRow[], status: QueueStatusFilter): DocumentRow[] {
+function filterByStatus(documents: DocumentQueueRow[], status: QueueStatusFilter): DocumentQueueRow[] {
   if (status === 'ALL') return documents;
   return documents.filter((doc) => doc.status === status);
+}
+
+interface PresetOptions {
+  personId: string;
+  horseId: string;
+  showSuperseded: boolean;
+}
+
+/** Each preset narrows to its own row set; the status filter then applies on
+ *  top, same as it always has for "All documents." */
+function presetRows(documents: DocumentQueueRow[], preset: Preset, opts: PresetOptions): DocumentQueueRow[] {
+  switch (preset) {
+    case 'NEEDS_ATTENTION':
+      return documents.filter((d) => d.status === 'AWAITING_SIGNATURE');
+    case 'SIGNED':
+      return documents.filter((d) => d.status === 'EXECUTED' && !d.archived_at
+        && (opts.showSuperseded || d.current_status !== 'superseded'));
+    case 'BY_PERSON':
+      return opts.personId ? documents.filter((d) => d.contact_id === opts.personId) : [];
+    case 'BY_HORSE':
+      return opts.horseId ? documents.filter((d) => d.horse_id === opts.horseId) : [];
+    case 'CONTRACTS':
+      return documents.filter((d) => d.contract_id != null);
+    case 'ARCHIVE':
+      return documents.filter((d) => d.status === 'DRAFT' || d.status === 'VOID'
+        || !!d.archived_at || !!d.terminated_at);
+    case 'ALL':
+    default:
+      return documents;
+  }
 }
 
 /**
@@ -198,20 +263,26 @@ function VersionDecisions() {
 }
 
 export default function DocumentsQueuePage() {
-  const [documents, setDocuments] = useState<DocumentRow[]>([]);
+  const [documents, setDocuments] = useState<DocumentQueueRow[]>([]);
   const [statusFilter, setStatusFilter] = useState<QueueStatusFilter>('ALL');
+  const [preset, setPreset] = useState<Preset>('NEEDS_ATTENTION');
+  const [personId, setPersonId] = useState('');
+  const [horseId, setHorseId] = useState('');
+  const [showSuperseded, setShowSuperseded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
-  /** Re-fetch the in-tenant documents. Keyed off statusFilter so a filter
-   *  change re-fires the query; the status then narrows the rendered rows. */
-  const load = useCallback((status: QueueStatusFilter) => {
+  /** Fetch once — RLS returns the same org-scoped set no matter which filter
+   *  is active, so a filter/preset change narrows client-side rather than
+   *  re-querying. */
+  const load = useCallback(() => {
     let active = true;
     setLoading(true);
     setError(null);
     listDocuments()
       .then((rows) => {
-        if (active) setDocuments(filterByStatus(rows, status));
+        if (active) setDocuments(rows);
       })
       .catch((err: unknown) => {
         if (active) setError(toErrorMessage(err, 'Could not load documents.'));
@@ -224,7 +295,39 @@ export default function DocumentsQueuePage() {
     };
   }, []);
 
-  useEffect(() => load(statusFilter), [load, statusFilter]);
+  useEffect(() => load(), [load]);
+
+  // By-person / By-horse options come from who/what actually has a document
+  // on this already-fetched set — no extra query, and nobody with zero
+  // documents clutters the picker.
+  const personOptions = useMemo(() => {
+    const byId = new Map<string, string>();
+    for (const d of documents) {
+      if (d.contact_id && !byId.has(d.contact_id)) byId.set(d.contact_id, contactName(d.contact) || 'Unnamed');
+    }
+    return [...byId.entries()].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [documents]);
+
+  const horseOptions = useMemo(() => {
+    const byId = new Map<string, string>();
+    for (const d of documents) {
+      if (d.horse_id && !byId.has(d.horse_id)) {
+        byId.set(d.horse_id, d.horse?.nickname || d.horse?.registered_name || 'Unnamed horse');
+      }
+    }
+    return [...byId.entries()].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [documents]);
+
+  const rows = filterByStatus(
+    presetRows(documents, preset, { personId, horseId, showSuperseded }),
+    statusFilter,
+  );
+
+  const emptyCopy = preset === 'BY_PERSON' && !personId
+    ? { title: 'Choose a person', message: 'Pick someone above to see their documents.' }
+    : preset === 'BY_HORSE' && !horseId
+    ? { title: 'Choose a horse', message: 'Pick a horse above to see its documents.' }
+    : undefined;
 
   return (
     <div className="max-w-5xl">
@@ -232,15 +335,58 @@ export default function DocumentsQueuePage() {
         <title>Documents — Work queue</title>
       </Helmet>
       <p className="eyebrow mb-2">Ops</p>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <h1 className="heading-section text-green-800">Documents</h1>
-        <Link to="/app/ops/contracts/new"
+        {/* Owner ruling 2026-08-11: the button stays, relabelled, and opens a
+            documents-focused picker instead of linking straight to contract
+            creation — one document type among many the page handles. */}
+        <button type="button" onClick={() => setPickerOpen(true)}
           className="px-4 py-2 rounded-lg bg-green-800 text-white text-sm font-medium hover:bg-green-700 focus-ring">
-          + New contract
-        </Link>
+          + Add new
+        </button>
       </div>
 
       <VersionDecisions />
+
+      {/* Preset views: filter presets over the one list, not navigation —
+          each just narrows `documents` differently before the status filter
+          (in DocumentQueueTable) applies on top. */}
+      <div className="flex flex-wrap gap-1.5 mb-3">
+        {PRESETS.map((p) => (
+          <button key={p.key} type="button" onClick={() => setPreset(p.key)}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-sans focus-ring ${
+              preset === p.key ? 'bg-green-800 text-white' : 'bg-green-800/10 text-green-800 hover:bg-green-800/20'
+            }`}>
+            {p.label}
+          </button>
+        ))}
+      </div>
+
+      {preset === 'BY_PERSON' && (
+        <div className="mb-4">
+          <select className="form-input max-w-xs" value={personId} aria-label="Choose a person"
+            onChange={(e) => setPersonId(e.target.value)}>
+            <option value="">Choose a person…</option>
+            {personOptions.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        </div>
+      )}
+      {preset === 'BY_HORSE' && (
+        <div className="mb-4">
+          <select className="form-input max-w-xs" value={horseId} aria-label="Choose a horse"
+            onChange={(e) => setHorseId(e.target.value)}>
+            <option value="">Choose a horse…</option>
+            {horseOptions.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
+          </select>
+        </div>
+      )}
+      {preset === 'SIGNED' && (
+        <label className="inline-flex items-center gap-2 text-[12.5px] text-secondary mb-4">
+          <input type="checkbox" className="accent-green-700"
+            checked={showSuperseded} onChange={(e) => setShowSuperseded(e.target.checked)} />
+          Include superseded copies
+        </label>
+      )}
 
       {error ? (
         <div role="alert" className="py-8">
@@ -248,11 +394,17 @@ export default function DocumentsQueuePage() {
         </div>
       ) : (
         <DocumentQueueTable
-          documents={documents}
+          documents={rows}
           loading={loading}
           statusFilter={statusFilter}
           onStatusChange={setStatusFilter}
+          emptyTitle={emptyCopy?.title}
+          emptyMessage={emptyCopy?.message}
         />
+      )}
+
+      {pickerOpen && (
+        <DocumentQueuePicker onClose={() => { setPickerOpen(false); load(); }} />
       )}
     </div>
   );

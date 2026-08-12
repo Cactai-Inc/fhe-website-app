@@ -182,6 +182,44 @@ export interface DocumentRow {
   updated_at: string;
 }
 
+/**
+ * OPS-DOCS-QUEUE row — what the staff work-queue actually renders. A slim
+ * projection of `documents` (never `merged_body`) plus the party/horse/type
+ * the row is already carrying, embedded via a single query
+ * (contacts/horses/contract_templates FKs) rather than N+1 lookups.
+ */
+export interface DocumentQueueRow {
+  id: string;
+  display_code: string | null;
+  title: string | null;
+  status: string;
+  generated_at: string;
+  contact_id: string | null;
+  horse_id: string | null;
+  contract_id: string | null;
+  template_id: string | null;
+  archived_at: string | null;
+  terminated_at: string | null;
+  /** Trigger-maintained; 'superseded' when a newer executed version governs. */
+  current_status: string | null;
+  contact: { first_name: string | null; last_name: string | null } | null;
+  horse: { registered_name: string | null; nickname: string | null } | null;
+  template: { title: string | null; template_key: string | null } | null;
+}
+
+/**
+ * A document type the "+ Add new" picker can offer. `has_clauses` is
+ * DERIVED from whether `contract_clause_defs` rows exist for the key — never
+ * a hardcoded list — and is what decides the card's act: authoring (clause-
+ * composed) vs assign-and-generate (flat, nothing to author).
+ */
+export interface DocumentTypeOption {
+  template_key: string;
+  title: string;
+  contract_kind: string | null;
+  has_clauses: boolean;
+}
+
 /** generate_document(p_engagement_id, p_template_key) → (document_id, merged_body). */
 export interface GeneratedDocument {
   document_id: string;
