@@ -89,7 +89,43 @@ export async function submitRequest(
     p_details: input.details ?? {},
   });
   if (error) throw error;
-  return { requestId: (data as { request_id: string }).request_id };
+  const requestId = (data as { request_id: string }).request_id;
+  alertOpsInbox(requestId);
+  return { requestId };
+}
+
+/**
+ * INBOUNDALERT — tell the barn by email that a lead just came in.
+ *
+ * THIS LIVES HERE, NOT AT A CALL SITE, BECAUSE THAT IS THE DEFECT IT FIXES.
+ * `/api/request-received` has existed since TASK B and was rewritten by
+ * INQUIRYMAIL, but its only caller was `PublicIntakeForm` (the /contact page).
+ * Every real lead in production arrived through Checkout (`channel:'booking'`)
+ * or the kiosk (`channel:'kiosk'`) — 13 of 13 — so the alert email was never
+ * once attempted for a real person. Kit Garcin and Kylie Pinion were both
+ * checkout submissions. Hanging the dispatch off `submitRequest`, the single
+ * RPC wrapper all three intake paths already go through, means a new intake
+ * surface cannot be added without it.
+ *
+ * Fire-and-forget BY DESIGN: a mail outage must never cost a lead, and the
+ * request row is already written and already carries the in-app staff
+ * notification by the time this runs. But un-awaited is not unrecorded — the
+ * endpoint writes a `request_alert_sends` row for every attempt, and a request
+ * with no row at all shows on the dashboard as never-attempted.
+ *
+ * `keepalive: true` is the fix for the abort suspect: without it, a browser is
+ * free to cancel an in-flight fetch when the page navigates or unmounts right
+ * after submit, which is exactly what a confirmation screen does. With it, the
+ * request survives page teardown (the body is a single id, far under the 64KB
+ * keepalive limit).
+ */
+function alertOpsInbox(requestId: string): void {
+  void fetch('/api/request-received', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ requestId }),
+    keepalive: true,
+  }).catch(() => { /* delivery is best-effort; the request is already saved */ });
 }
 
 // ─── Invitations ────────────────────────────────────────────────────────────
