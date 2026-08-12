@@ -139,3 +139,14 @@ output from the watcher and search index — **down to 0.60 GB**.
 is the only fix. `fseventsd` at 0.76 GB is the largest process on the machine — Spotlight and
 fseventsd still index all 19,393 `node_modules` files. **Adding the repo to Spotlight Privacy is
 the durable fix.**
+
+---
+
+# ⚠️ SUPERSEDED 2026-08-12 — THE HANDOFF IS NOW A BATON
+
+State no longer lives here. The respawn document is:
+
+`~/Downloads/claude-code-repo/orchestration/batons/active/FHE-PLAN.md`
+
+The ROLE is `orchestration/charters/L3-PLAN.md`. This file is retained for its FHE-specific
+content, which is still accurate.
