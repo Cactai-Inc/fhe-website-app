@@ -255,3 +255,45 @@ other. This is what DocuSign and Dropbox Sign do, for exactly these reasons.
 **So signing currently requires logging in.** Closing that is a distinct piece of work — it is
 where signers drop out — and **THE SIGNING FREEZE IS IN FORCE**, so it is design until the owner
 lifts it.
+
+---
+
+# ⚠️ THE TOOL FITS THE ARCHITECTURE. THE ARCHITECTURE DOES NOT MOVE FOR THE TOOL.
+
+**Owner, 2026-08-12:** *"we will be modifying what the db has and what the code has separately,
+i like the construction of the architecture i dont want to change it to accommodate this tool
+system."*
+
+**This is a hard constraint on both engines. It forbids the tempting version of this build.**
+
+## FORBIDDEN
+
+- **A new unified `templates` table** replacing or absorbing `contract_templates` and
+  `form_definitions`. There is no grand template schema.
+- **Migrating the 163 lease clauses** into a different structure.
+- **Rewriting the composition model** — `contract_section_defs` / `contract_clause_defs` /
+  `contract_field_defs` / `remerge_contract_from_clauses` / `compose_field_prose` stay as they
+  are. `HORSE_LEASE_V2` is the proof they work.
+- Reshaping `form_definitions.schema` because a new editor would prefer a different jsonb shape.
+
+## REQUIRED
+
+- **The Document engine is an EDITOR OVER the existing `contract_*` tables.** It writes what
+  sixteen `leasefix` migrations have been writing by hand. That is the whole point (**D13**) —
+  the owner should not need SQL to change a clause.
+- **The Form engine is an EDITOR OVER `form_definitions`** and its existing `schema` jsonb.
+- **The shared lifecycle ADDS COLUMNS to the tables that exist** — a real draft/published/
+  archived status, alongside the `version` and `active` both tables already carry. **It does not
+  introduce a new home for templates.**
+- **One archive page reads both tables.** One surface, two sources — not a third table to
+  unify them.
+
+## Why this is the smaller build, not the larger one
+
+The composition machinery, the merge/remerge path, the token dictionary and the field-format
+registry all already work and are exercised by 61 executed documents. **The missing piece has
+only ever been a UI.** Building the editor against what exists is less work than a migration
+plus an editor, and it cannot break the documents already signed.
+
+**This also restates the standing rule from `ORCHESTRATOR-HANDOFF.md`:** improve what exists;
+never build a second implementation alongside it.
