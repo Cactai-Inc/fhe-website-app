@@ -673,3 +673,55 @@ conversation.
 its questions from the record where possible. Bring something to the owner only when it
 genuinely cannot be settled without him. The current focus sets the agenda; a thread finishing
 does not change what the focus is.
+
+---
+
+# IMPROVE THE PAGE THAT EXISTS. DO NOT BUILD A SECOND ONE.
+
+**Owner, 2026-08-11**, on finding three horse surfaces where one was intended:
+
+> *"a claude code thread decided to ignore it rather than modify it and built its own and now we
+> have the duplicate page issue for this like the other issues weve experienced and spent all
+> this time chasing down the wiring issues which were likely a direct result of the new page
+> being made instead of the original one being improved."*
+
+**He is right, and the record proves it.** `HorsesPage` shipped 2026-07-01. Nine days later a
+thread implementing spec H.8 built `HorseRecordsPage` at a second URL rather than improving it.
+`HorsesPage` decayed to zero references and surfaced two months later as a "dead code" finding —
+after real time was spent diagnosing it as if it were a mystery.
+
+**This is not one incident. It is THE recurring structural failure of this project:**
+
+| one concept | how many implementations |
+|---|---|
+| the horse roster | **3** — `/app/ops/horses`, `/app/ops/horse-records`, `/app/ops/records` |
+| the staff landing page | **2** — `DashboardPanel`, `OpsDashboard`/`InstructorHome` |
+| the lead list | **3** — Dashboard, Inbound, Leads |
+| the document renderer | **2** — `ClauseDocument`, `MergedBodyView` |
+| the lease template | **4** identical clones |
+| the catalog | **2** hardcoded shadow copies (deleted) |
+
+Every one of these cost more to reconcile than it would have cost to modify the original. The
+"wiring issues" chased across many sessions were largely **surfaces disagreeing with each
+other**, which is what duplication produces.
+
+## The rule for every task spec from here
+
+**A thread that finds an existing implementation of what it was asked to build MUST stop and
+report, not build alongside it.**
+
+Concretely, put this in the spec:
+
+> **Before you create a page, component, table, RPC or route, search for one that already does
+> this job.** If you find one:
+> 1. **Improving it is the default.** Say what it does today and what you changed.
+> 2. **If it genuinely cannot be improved, say why in the report BEFORE building a replacement**
+>    — and then retire the original in the same change, behind a boolean, so the codebase never
+>    holds two.
+> 3. **Never leave two live implementations of one concept.** That is the defect, independent of
+>    whether either one works.
+
+**The orchestrator's half:** a spec that says "build X" without naming what already does X is
+how this happens. **Measure first, name the incumbent in the spec, and say explicitly whether
+the task is a convergence or a greenfield.** `TASK-ONEAUTHOR` is the model — it opened by
+stating *"This is a CONVERGENCE, not a rebuild"* and gave the line numbers to prove it.
