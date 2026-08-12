@@ -11,6 +11,7 @@ import {
   Receipt, Eye, Library,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { usePrefersReducedMotion } from '../../lib/hooks';
 import { useViewSurfaces } from '../../lib/surfaces';
 import { fetchMyGrantKeys } from '../../lib/grants';
 import {
@@ -77,22 +78,79 @@ const NAV_PANEL = 'bg-cream-25';
  *  row with `underline` on the row), not assumed from the spec. `decoration-2`
  *  and `underline-offset-4` are Tailwind's own scale steps, not arbitrary
  *  values — see T1. */
-const NAV_ROW_IDLE = 'text-green-800 transition-colors duration-320 ease-glide [@media(hover:hover)]:hover:underline [@media(hover:hover)]:hover:decoration-gold-600 [@media(hover:hover)]:hover:decoration-2 [@media(hover:hover)]:hover:underline-offset-4';
-/** selected row: the inversion of the panel. Cream fill, green ink — the same
- *  two colours the other way round, which is what makes it read as selected on a
- *  panel that is itself earth-800 (C5b's old `bg-green-800` active fill would now
- *  be invisible: it IS the panel).
- *  UIO-013 asked for this to become a "light gold" fill, solved the same way
- *  `navfill` was (a compensated blend against the near-white panel), with
- *  the label's contrast checked against the result. Checked, and stopped
- *  here per the order's own instruction: `cream-25` text does not clear
- *  4.5:1 against gold-600 at ANY alpha — 2.66:1 even at 100% (no blend at
- *  all), and every lighter step is worse, not better, since a lighter gold
- *  is a lighter fill and cream-25 is already itself nearly white. There is
- *  no alpha to solve for; the fill and the current text colour are
- *  structurally incompatible. Left unchanged rather than darkening the
- *  label to compensate, which the order explicitly rules out. */
-const NAV_ROW_ACTIVE = 'bg-navfill/80 text-cream-25 font-medium';
+/** NAVMOTION §A — THE HOVER FLICKER, and it was one class in the wrong half.
+ *  Owner: "it renders a color dark first and then it lightens to gold so it
+ *  looks like a flicker in a weird way still… The same mouseover flicker is
+ *  seen on the mobile nav."
+ *
+ *  DIAGNOSIS VERIFIED, not assumed. Tailwind 3.4.17's `transition-colors`
+ *  resolves to `color, background-color, border-color, text-decoration-color,
+ *  fill, stroke` — read out of the installed package's own default theme, not
+ *  from the docs. So `text-decoration-color` is in the transition. In the idle
+ *  state below it was never declared, so it computed to its initial value,
+ *  `currentcolor` — which here is `text-green-800`. On hover:
+ *    - `text-decoration-line: underline` is NOT animatable. It snaps on in one
+ *      frame, painted in whatever the decoration colour is at that instant:
+ *      dark green.
+ *    - `text-decoration-color` IS animatable and IS in the set, so it then eases
+ *      green-800 -> gold-600 across the whole 320ms.
+ *  A dark line that becomes gold. Exactly what the owner described.
+ *
+ *  THE FIX IS `decoration-gold-600` MOVED INTO THE IDLE HALF. The *line* is
+ *  still what toggles — there is no underline until hover — but the colour it
+ *  appears in is already correct, so there is nothing left to transition and no
+ *  first frame to be wrong. Declaring a decoration colour with no decoration
+ *  line paints nothing, so the idle row is visually unchanged.
+ *
+ *  What was deliberately NOT done, because both make it worse: shortening the
+ *  duration (a faster flicker is still a flicker) and dropping
+ *  `transition-colors` (it is doing real work for `text-green-800` and for
+ *  NAV_ICON_IDLE). ONE constant serves the desktop rail AND the mobile drawer,
+ *  so the mobile half of the complaint is fixed by this same edit. */
+const NAV_ROW_IDLE = 'text-green-800 decoration-gold-600 transition-colors duration-320 ease-glide [@media(hover:hover)]:hover:underline [@media(hover:hover)]:hover:decoration-gold-600 [@media(hover:hover)]:hover:decoration-2 [@media(hover:hover)]:hover:underline-offset-4';
+/** NAVMOTION §B — THE SELECTED STATE IS AN UNDERLINE, NOT A FILL.
+ *  Owner: "what do you think about letting the underline be the indicator of the
+ *  selected page in place of the color change? its a nice lightweight look and
+ *  definitely classier than the big green fill, plus every page has a giant title
+ *  on it that tells the user where they are." This supersedes UIO-013's
+ *  resolution of this constant (the `bg-navfill/80` fill it left in place, and
+ *  the whole search for a light-gold fill that could carry cream text — that
+ *  question is now moot, there is no fill to solve for).
+ *
+ *  §B1 — SELECTED IS NOT IDENTICAL TO HOVER, or hovering an unselected row would
+ *  make it look selected and hovering the selected row would show no response at
+ *  all. It is the same idea one notch stronger, on the same two axes:
+ *      hover     gold underline, decoration-2, weight unchanged
+ *      selected  gold underline, decoration-4, font-medium, persistent
+ *  `decoration-4` is the next step ON TAILWIND'S OWN SCALE (0/1/2/4/8) — T1: not
+ *  an arbitrary value. The weight change is what survives a cursor parked on a
+ *  neighbouring row. `underline-offset-4` is shared with hover deliberately, so
+ *  the rule sits on one baseline and hovering a selected row thickens it in
+ *  place instead of moving it.
+ *
+ *  §B2 — THE FILL AND THE INK ARE ONE DECISION, and this is the trap the order
+ *  names. `text-cream-25` is #fdfcfa and NAV_PANEL is `bg-cream-25` — THE SAME
+ *  COLOUR. The cream ink was legible only because the navfill block was painted
+ *  behind it; removing the fill without moving the ink would have made every
+ *  selected label and icon invisible on a near-white panel, at 1.0:1. So the ink
+ *  comes back to the green family and goes one step DARKER than idle, which is
+ *  how emphasis works on a light panel:
+ *      idle label   green-800 (#143321) on cream-25   13.43:1
+ *      selected     green-900 (#0d2118) on cream-25   16.41:1
+ *  Both clear the 4.5:1 floor with room. (Both numbers are this repo's own
+ *  recorded values for those pairs — see tailwind.config.js's cream-25 note and
+ *  the group-heading note further down this file — recomputed here and matching.)
+ *
+ *  THE GOLD RULE ITSELF measures 2.66:1 against cream-25, which is below the
+ *  3:1 non-text floor. That is stated rather than fixed, for two reasons: it is
+ *  the identical gold-600-on-cream-25 pair the HOVER underline has carried since
+ *  UIO-013 and is not introduced here, and selection is redundantly coded — the
+ *  darker ink, `font-medium` and `aria-current="page"` all carry it, so the rule
+ *  is not the sole means of conveying state. If the owner wants the rule itself
+ *  to clear 3:1, `decoration-gold-800` measures 5.58:1 and is a one-token change
+ *  in this constant — but it makes selected a different COLOUR from hover rather
+ *  than a stronger version of it, which is the thing §B1 rules out. */
+const NAV_ROW_ACTIVE = 'text-green-900 font-medium underline decoration-gold-600 decoration-4 underline-offset-4 transition-colors duration-320 ease-glide';
 /** UIO-003, cause 1: this constant had no transition at all, so the icon's
  *  own colour snapped to `cream-25` on `group-hover` roughly 30ms into the
  *  row's 150ms fill transition — visible as a one-frame vanish, proven on
@@ -102,7 +160,71 @@ const NAV_ROW_ACTIVE = 'bg-navfill/80 text-cream-25 font-medium';
  *  was contrasting against — "do not underline the icon" is explicit, and
  *  there is nothing else for the icon to do on hover now. It stays put. */
 const NAV_ICON_IDLE = 'text-green-800/70 transition-colors duration-320 ease-glide';
-const NAV_ICON_ACTIVE = 'text-cream-25';
+/** §B2's other half — the icon moves WITH the fill, not after it. `text-cream-25`
+ *  here was the same #fdfcfa-on-#fdfcfa hole the label was: legible only against
+ *  the navfill block. The icon cannot take an underline ("do not underline the
+ *  icon", and a flex SVG has no glyphs to decorate anyway), so its selected
+ *  signal is TONE — it goes from 70% green-800 to full-strength green-900, which
+ *  is the same direction the label moves and the largest step available without
+ *  inventing a treatment:
+ *      idle icon      green-800/70 -> renders #5a6f62 on cream-25   5.27:1
+ *      selected icon  green-900               on cream-25          16.41:1
+ *  Comfortably past the 3:1 floor for a non-text control, and a 3x luminance
+ *  step against its own idle state.
+ *  KNOWN CONSEQUENCE, flagged rather than papered over: in the COLLAPSED 56px
+ *  staff rail a row is an icon and nothing else, so this tone step is the entire
+ *  selected indicator there — the underline has no text to sit under. That rail
+ *  is the one surface where the fill was doing work the underline cannot take
+ *  over. See docs/reports/TASK-NAVMOTION-REPORT.md. */
+const NAV_ICON_ACTIVE = 'text-green-900 transition-colors duration-320 ease-glide';
+
+/* ── NAVMOTION §H3 — THE NAV'S LEFT ALIGNMENT LINE, IN ONE PLACE ──────────────
+ * Owner, 2026-08-11: "lets add a bit more padding on the left side of the icons
+ * so the button contents move right a bit. that will help with the reach and
+ * balance out the extreme differential we see now where the right side has so
+ * much whitespace and the left side has almost none."
+ *
+ * THIS SUPERSEDES UIO-016 ON TWO OF ITS FOUR PROHIBITIONS. That order solved the
+ * same complaint SYMMETRICALLY — `<nav>` p-2 -> p-3, deliberately not touching
+ * any row — on the reasoning that "changing the container rather than the rows
+ * shifts both sides equally". Evenly is no longer what is wanted: the row spans
+ * the full 216px of inner width and "Dashboard" leaves 100px+ of trailing space,
+ * so a thin left margin sits against a wide right one. So UIO-016's "do not
+ * change any individual row's px-3" and "do not touch the mobile drawer" are
+ * BOTH overridden here. Its other two — do not change `w-60`, do not touch the
+ * collapsed state's `justify-center` — still stand, and H4 below is the second.
+ *
+ * WHY ONE CONSTANT AND NOT NINE EDITS. Three different kinds of element sit on
+ * this edge — the rows, the group headings, and CommunityNav's indented children
+ * — and moving only the rows would drop every heading out of line with the
+ * labels beneath it and leave every child's indent measured from an origin that
+ * had moved. This is the same reason NAV_ROW_IDLE centralised its transition:
+ * per-call-site copies drift back out of step.
+ *
+ * THE CHILD INDENT IS DERIVED, and it has to be written as a literal anyway:
+ * Tailwind's content scanner reads source text, so a class assembled at runtime
+ * emits no rule at all — T1's failure mode arriving by a different road. So the
+ * arithmetic lives here in the comment and the result is a literal:
+ *     row left   pl-5   20px   (icon starts 12px nav padding + 20px = 32px)
+ *     row right  pr-3   12px   unchanged — the asymmetry IS the point
+ *     child      pl-11  44px   = 20px origin + the 24px step pl-9 had over px-3
+ * Both scale steps, neither arbitrary. They are one decision written twice; if
+ * the inset moves, the child moves by the same amount in the same edit.
+ *
+ * §H4 — THE COLLAPSED RAIL IS EXEMPT AND THAT IS NOT OPTIONAL. `justify-center`
+ * centres content in the CONTENT box, which only lands on the row's centre when
+ * left and right padding are equal. In the 56px (`w-14`) strip a larger left
+ * padding would push every icon right by half the difference — 4px — off a
+ * centre line two separate comments in this file already record being brought
+ * back onto. Every row that can collapse gates on its own `open`/`staffRailPinned`
+ * and keeps symmetric `px-3` when it does. */
+const NAV_INSET_L = 'pl-5';
+const NAV_INSET_R = 'pr-3';
+const NAV_INSET_ROW = `${NAV_INSET_L} ${NAV_INSET_R}`;
+const NAV_INSET_CHILD = 'pl-11';
+/** The collapsed 56px rail's symmetric padding — §H4. Named rather than inlined
+ *  so the exemption is visible at every call site that takes it. */
+const NAV_INSET_COLLAPSED = 'px-3';
 /** group headings ("Management", "People", …) — the "section header" the owner
  *  named explicitly.
  *  UIO-012: this and its hover were both leftovers from the green-panel era
@@ -119,6 +241,83 @@ const NAV_DIVIDER = 'border-green-900/12';
 /** badges: solid gold on green-950 ink. The old `bg-gold-600/70 text-white` was
  *  a translucent gold tuned for a light panel; over green-800 it muddies. */
 const NAV_BADGE = 'bg-gold-500 text-green-950';
+
+/* ── NAVMOTION §C / §F — THE DRAWER'S MOTION, AND THE TWO KNOBS ───────────────
+ * Owner: "the mobile nav and the overlay that comes with it are not smooth, they
+ * dont slide in from there respective sides and the effect is a jarring instant
+ * appearance of both surfaces."
+ *
+ * THE ROOT CAUSE WAS NOT A MISSING TRANSITION — IT WAS THAT THERE WAS NOTHING TO
+ * TRANSITION. The whole block was `{mobileNavOpen && ( … )}`: scrim and panel
+ * were UNMOUNTED when closed. A CSS transition cannot run on an element that
+ * does not exist at the start of it, and on close React removed the node before
+ * any exit could play. Both directions were instant by construction.
+ *
+ * `duration-440` was declared in tailwind.config.js with the comment "440 for a
+ * panel crossing the screen", and until this change it was used NOWHERE in
+ * src/. It was written for this and the drawer shipped without it.
+ *   panel in   duration-440 ease-glide      the declared panel length
+ *   panel out  duration-320 ease-glide      a fast exit reads as responsive
+ *   scrim      duration-320, fade, both ways
+ * No new duration or easing token is introduced; all four are declared already.
+ *
+ * MOUNT-BEFORE-ANIMATE, UNMOUNT-AFTER-EXIT. The order allows either a
+ * permanently-mounted panel or unmount-after-exit. Unmount is chosen for a
+ * reason specific to this task: with no browser session to test in, it is the
+ * only one of the two whose inertness claim is provable by READING — closed,
+ * the drawer is not in the DOM, so "nothing inside it is reachable by Tab" is a
+ * fact about the render tree rather than something that has to be observed.
+ * It also disposes of §C0's off-canvas hazard outright: there is no parked panel
+ * at rest to be scrolled to, focused, or announced.
+ *
+ * §C0's ARGUMENT STILL HOLDS AND IS RECORDED, because it is a second independent
+ * reason the drawer belongs on the LEFT (§E) and it should not have to be
+ * rediscovered: browsers do not create scrollable overflow toward the
+ * inline-start edge, so content at negative x in an LTR document is unreachable
+ * by scrolling, while the same panel parked on the RIGHT would extend the
+ * document's scrollable width — which is TASK-FRAMESCROLL's bug arriving from
+ * the other direction while that thread removes it. */
+const DRAWER_ENTER = 'duration-440';
+const DRAWER_EXIT = 'duration-320';
+/** Must equal DRAWER_EXIT. The unmount is a JS timer, so the two are one value
+ *  written twice — change them together or the panel disappears mid-slide. */
+const DRAWER_EXIT_MS = 320;
+
+/** §F — THE SCRIM: KEPT, LIGHTENED, FADED. Removal is a second look, not this
+ *  one. Owner: "im curious to learn why the overlay is part of the ui… im open
+ *  to trying it without the overlay to see how it looks unless there is a
+ *  requirement for accessibility reasons that we cant get rid of it."
+ *
+ *  THE DIRECT ANSWER: no accessibility rule requires a scrim. WCAG mandates none
+ *  and nothing forbids removing it. But it is doing four jobs here and only the
+ *  fourth is decorative — it is the tap-outside-to-close target, it blocks taps
+ *  reaching the page behind, it is the sighted equivalent of the
+ *  `aria-modal="true"` this drawer declares, and it is the ONLY figure-ground
+ *  separation between a `bg-cream-25` panel (#fdfcfa) and a cream page: those are
+ *  ~1.0:1 apart, so without it the edge rests entirely on `shadow-xl`. This repo
+ *  has already paid for that exact arithmetic once — app-header.css records a
+ *  glass drawer tab that resolved to cream-on-cream and "a real user could not
+ *  find the menu".
+ *
+ *  So the read is that the complaint was never that the scrim exists — it is
+ *  that it APPEARED INSTANTLY AT 45%, which is §C's bug wearing a different hat.
+ *  It now fades, and it is lightened one step short of the order's own expected
+ *  landing: green-950 at 30%. `/30` is a built-in opacity step — T1, and this
+ *  file's own history: `bg-navfill/64` and `border-green-900/12` each emitted NO
+ *  RULE AT ALL until the step was declared.
+ *
+ *  TO SEE IT WITHOUT THE SCRIM, set this to 'bg-green-950/0' — one line, and the
+ *  element stays, so tap-outside-to-close and the tap-blocking both survive the
+ *  experiment. Do not delete the div. */
+const SCRIM_TINT = 'bg-green-950/30';
+/** §C2 — the owner asked to see the alternative, so it is one line to see.
+ *  TRUE: the scrim FADES (the room dims). FALSE: it slides in from the left with
+ *  the panel (the room travels).
+ *  Built as a fade because a scrim is a full-viewport layer, so "sliding it in"
+ *  is a wipe across the whole screen — it reads as a second panel arriving and
+ *  pulls the eye off the nav that just opened, which is the opposite of what
+ *  this task is for. Flip it, look, and keep whichever the owner prefers. */
+const SCRIM_ENTERS_AS_FADE = true;
 
 /** Unread-notification count for the Dashboard nav badge. Refreshes on mount and
  *  on every route change (the notifications themselves live on the dashboard now —
@@ -481,7 +680,10 @@ function RailLink({ to, label, icon: Icon, end, badge = 0, open = true }: NavIte
       end={end}
       aria-label={open ? undefined : label}
       className={({ isActive }) =>
-        `group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13.5px] font-sans transition-colors focus-ring ${open ? '' : 'justify-center'} ${
+        /* §H3/§H4: the asymmetric inset when the row has a label to push right;
+           symmetric `px-3` the moment it collapses to an icon, or every icon in
+           the 56px strip slides 4px off the shared centre line. */
+        `group relative flex items-center gap-3 ${open ? NAV_INSET_ROW : NAV_INSET_COLLAPSED} py-2.5 rounded-lg text-[13.5px] font-sans transition-colors focus-ring ${open ? '' : 'justify-center'} ${
           isActive ? NAV_ROW_ACTIVE : NAV_ROW_IDLE
         }`
       }
@@ -491,25 +693,20 @@ function RailLink({ to, label, icon: Icon, end, badge = 0, open = true }: NavIte
           <span className="relative shrink-0">
             <Icon size={17} aria-hidden="true" className={isActive ? NAV_ICON_ACTIVE : NAV_ICON_IDLE} />
             {badge > 0 && !open && (
-              <span className={`absolute -top-1.5 -right-1.5 min-w-[1rem] h-4 px-1 ${NAV_BADGE} ${
-                /* UIO-013: on hover the row is unfilled now (panel colour),
-                   so the badge blending into `cream-25` reads as a hole in
-                   the panel rather than a second accent beside the gold
-                   underline. Scoped to `!isActive` deliberately — the
-                   "selected" restyle is not shipped in this order (see log:
-                   cream text failed 4.5:1 against every light-gold fill I
-                   tried), so a selected row's badge stays untouched; blending
-                   it into the panel while the row itself is still the old
-                   dark green fill would just make it invisible. */
-                !isActive ? '[@media(hover:hover)]:group-hover:bg-cream-25' : ''
-              } text-[10px] leading-4 text-center rounded-full`}>{badge > 9 ? '9+' : badge}</span>
+              <span className={`absolute -top-1.5 -right-1.5 min-w-[1rem] h-4 px-1 ${NAV_BADGE} [@media(hover:hover)]:group-hover:bg-cream-25 text-[10px] leading-4 text-center rounded-full`}>{badge > 9 ? '9+' : badge}</span>
             )}
           </span>
           {open && <span className="flex-1">{label}</span>}
+          {/* UIO-013 blended the badge into `cream-25` on hover so the gold
+              underline is the only accent under the cursor, and scoped that to
+              `!isActive` for a reason it recorded: a selected row still carried
+              the dark navfill block, where a cream badge would have vanished.
+              §B removes that block, so the recorded reason is gone and the
+              exclusion goes with it — selected and idle rows now behave the same
+              under the cursor, which is what the exclusion was working around
+              rather than choosing. */}
           {badge > 0 && open && (
-            <span className={`min-w-[1.25rem] h-5 px-1.5 text-[11px] leading-5 text-center rounded-full ${NAV_BADGE} ${
-              !isActive ? '[@media(hover:hover)]:group-hover:bg-cream-25' : ''
-            }`}>{badge > 9 ? '9+' : badge}</span>
+            <span className={`min-w-[1.25rem] h-5 px-1.5 text-[11px] leading-5 text-center rounded-full ${NAV_BADGE} [@media(hover:hover)]:group-hover:bg-cream-25`}>{badge > 9 ? '9+' : badge}</span>
           )}
           {!open && <NavTooltipLabel label={label} />}
         </>
@@ -550,7 +747,10 @@ function PresenceLink({ to, label, icon: Icon, section, onNavigate }: {
   const isActive = section ? accountSection === section : location.pathname === to;
   return (
     <Link to={to} onClick={onNavigate} aria-current={isActive ? 'page' : undefined}
-      className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans transition-colors focus-ring ${
+      /* §H3: this row only ever renders expanded (the rail and the drawer), so
+         it takes the inset unconditionally — there is no collapsed form of it to
+         exempt. */
+      className={`group flex items-center gap-3 rounded-lg ${NAV_INSET_ROW} py-2.5 text-[13.5px] font-sans transition-colors focus-ring ${
         isActive ? NAV_ROW_ACTIVE : NAV_ROW_IDLE}`}>
       <Icon size={18} aria-hidden="true" className={isActive ? NAV_ICON_ACTIVE : NAV_ICON_IDLE} />
       <span className="whitespace-nowrap flex-1">{label}</span>
@@ -570,7 +770,8 @@ function AccountNavLink({ onNavigate, open = true }: { onNavigate?: () => void; 
   return (
     <Link to="/app/account" onClick={onNavigate} aria-current={isActive ? 'page' : undefined}
       aria-label={open ? undefined : 'Account'}
-      className={`group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans transition-colors focus-ring ${open ? '' : 'justify-center'} ${
+      /* §H3/§H4 — same gate as RailLink: inset expanded, symmetric collapsed. */
+      className={`group relative flex items-center gap-3 rounded-lg ${open ? NAV_INSET_ROW : NAV_INSET_COLLAPSED} py-2.5 text-[13.5px] font-sans transition-colors focus-ring ${open ? '' : 'justify-center'} ${
         isActive ? NAV_ROW_ACTIVE : NAV_ROW_IDLE}`}>
       {/* `shrink-0` — see the note in CommunityNav's collapsed branch. Without it
           the collapsed rail squashes this icon to the ~8px of content box left
@@ -608,8 +809,19 @@ function useActiveAccountSection(): string | null {
  *  hides the sublinks (persisted); it auto-expands while you're on the feed so the
  *  active view stays visible. `open` collapses labels in the rail strip.
  *  `onNavigate` closes the mobile menu. */
-function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
-  open?: boolean; onNavigate?: () => void; indentClass?: string;
+/*  §H3: `indentClass` and `rowInsetClass` both default to the nav's shared
+ *  alignment constants, so the rail and the drawer pick them up without any call
+ *  site restating them. `rowInsetClass` is NEW and exists for exactly one
+ *  reason: this component also renders inside the desktop avatar dropdown
+ *  (`accountMenu`), which §H3 puts explicitly out of scope — "a separate
+ *  floating surface with its own metrics, not the nav's left edge". Those two
+ *  call sites pass the old symmetric values so that surface renders
+ *  byte-identically to before; inside its `px-1` wrapper `px-3` lands its rows
+ *  at 16px, exactly on the `px-4` line its sibling MenuLinks sit on. Taking the
+ *  nav's 20px inset there would have silently knocked this row 8px out of line
+ *  with the menu around it. */
+function CommunityNav({ open = true, onNavigate, indentClass = NAV_INSET_CHILD, rowInsetClass = NAV_INSET_ROW }: {
+  open?: boolean; onNavigate?: () => void; indentClass?: string; rowInsetClass?: string;
 }) {
   const active = useActiveCommunityView();
   // The parent IS the "All" view: it's highlighted (solid) on the full feed, and a
@@ -625,7 +837,9 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
     // I1B — staff rail icon strip: just the parent icon, active whenever on the feed.
     return (
       <Link to="/app" onClick={onNavigate} aria-label="Community Feed" aria-current={onFeed ? 'page' : undefined}
-        className={`group relative flex items-center justify-center rounded-lg px-3 py-2.5 focus-ring ${onFeed ? NAV_ROW_ACTIVE : NAV_ROW_IDLE}`}>
+        /* §H4: this branch IS the collapsed 56px strip — symmetric `px-3`, and
+           it is the one row that says so by construction rather than by gate. */
+        className={`group relative flex items-center justify-center rounded-lg ${NAV_INSET_COLLAPSED} py-2.5 focus-ring ${onFeed ? NAV_ROW_ACTIVE : NAV_ROW_IDLE}`}>
         {/* `shrink-0` is REQUIRED, not decorative. In the 56px collapsed rail the
             nav's p-3 plus this link's px-3 leave ~8px of content box, and without
             flex-shrink:0 the SVG is compressed to fit — which is why this icon and
@@ -657,16 +871,30 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
           Link below carries a group-hover underline instead. `group` stays on
           this div because that underline is still triggered by hovering
           anywhere in the row, toggle button included, matching how the fill
-          covered the same area before. */}
-      <div className={`group relative flex items-center rounded-lg pr-1 transition-colors duration-320 ease-glide ${isAll ? 'bg-navfill/80' : ''}`}>
+          covered the same area before.
+          NAVMOTION §B: the SELECTED pill (`bg-navfill/80`) is gone too. This row
+          splits its background from its ink — the fill lived here, the ink on
+          the Link and the toggle below — which is exactly why §B2's trap has two
+          halves in this component and not one. With the fill removed the whole
+          selected treatment moves to the two ink halves; nothing paints here. */}
+      <div className="group relative flex items-center rounded-lg pr-1 transition-colors duration-320 ease-glide">
         {/* Owner, 2026-08-09: the idle label was `text-cream-100/80` — a palette
             left over from when NAV_PANEL was green. The panel is now cream-25
             (#fdfcfa) and cream-100 (#f5f0e8) is literally the HEADER fill, so
             this row's text was rendering header-colour ink on a near-white
             panel: invisible. Idle now uses the same green ink as NAV_ROW_IDLE,
             which every other row in the rail already had. */}
+        {/* §A, SECOND COPY: the same missing idle decoration colour as
+            NAV_ROW_IDLE, in the group-hover form. `decoration-gold-600` added to
+            the idle half here too — without it this row flickers dark-to-gold
+            exactly like the others, and it is the row at the top of every nav
+            surface in the app.
+            §B2: the selected half was `text-cream-25 font-medium` — #fdfcfa ink
+            that was legible only against the pill removed on the line above. It
+            takes the shared NAV_ROW_ACTIVE now, so this row and every RailLink
+            mark selection the same way instead of two systems. */}
         <Link to="/app" onClick={onNavigate} aria-current={isAll ? 'page' : undefined}
-          className={`flex items-center gap-3 flex-1 min-w-0 px-3 py-2.5 text-[13.5px] font-sans focus-ring rounded-lg transition-colors duration-320 ease-glide ${isAll ? 'text-cream-25 font-medium' : 'text-green-800 [@media(hover:hover)]:group-hover:underline [@media(hover:hover)]:group-hover:decoration-gold-600 [@media(hover:hover)]:group-hover:decoration-2 [@media(hover:hover)]:group-hover:underline-offset-4'}`}>
+          className={`flex items-center gap-3 flex-1 min-w-0 ${rowInsetClass} py-2.5 text-[13.5px] font-sans focus-ring rounded-lg transition-colors duration-320 ease-glide ${isAll ? NAV_ROW_ACTIVE : 'text-green-800 decoration-gold-600 [@media(hover:hover)]:group-hover:underline [@media(hover:hover)]:group-hover:decoration-gold-600 [@media(hover:hover)]:group-hover:decoration-2 [@media(hover:hover)]:group-hover:underline-offset-4'}`}>
           <Users size={18} className={`shrink-0 ${isAll ? NAV_ICON_ACTIVE : NAV_ICON_IDLE}`} />
           <span className="whitespace-nowrap">Community Feed</span>
         </Link>
@@ -693,7 +921,20 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
              UIO-013: that parent fill is gone entirely now, and this is an
              icon-only control with no text to underline — "do not underline
              the icon" — so its idle branch gets no hover treatment at all. */
-          className={`shrink-0 flex items-center justify-center p-1.5 rounded-md focus-ring transition-colors duration-320 ease-glide ${isAll ? 'text-cream-25 hover:bg-cream-25/10' : 'text-green-800/70'}`}>
+          /* NAVMOTION §B2, the trap's THIRD location and the easiest to miss —
+             this control's selected branch was `text-cream-25` too, a cream
+             chevron that was only ever visible because the navfill pill was
+             behind it. With the pill gone it would have been #fdfcfa on #fdfcfa:
+             the toggle would have vanished from the selected row while staying
+             perfectly visible on every unselected one.
+             It takes green ink at the same strength the label does. The paired
+             `hover:bg-cream-25/10` goes with it rather than being re-tuned: it
+             was a LIGHT wash designed to read on a DARK pill, so on the panel it
+             would be cream-on-cream too — and the idle branch beside it carries
+             no hover treatment at all (UIO-013: "do not underline the icon", and
+             nothing else was chosen for it). Removing it makes the two branches
+             agree instead of inventing a fill nobody asked for. */
+          className={`shrink-0 flex items-center justify-center p-1.5 rounded-md focus-ring transition-colors duration-320 ease-glide ${isAll ? 'text-green-900' : 'text-green-800/70'}`}>
           {expanded
             ? <ChevronUp size={18} className="shrink-0 transition-colors duration-320 ease-glide" />
             : <ChevronDown size={18} className="shrink-0 transition-colors duration-320 ease-glide" />}
@@ -706,7 +947,11 @@ function CommunityNav({ open = true, onNavigate, indentClass = 'pl-9' }: {
             const isActive = active === v.key;
             return (
               <Link key={v.key} to={communityHref(v.key)} onClick={onNavigate} aria-current={isActive ? 'page' : undefined}
-                className={`group flex items-center ${indentClass} pr-3 py-1.5 rounded-lg text-[13px] font-sans transition-colors focus-ring ${
+                /* §H3 — the indented children. `indentClass` now defaults to the
+                   DERIVED child inset (44px = the row's new 20px origin + the
+                   24px step it always had over px-3), so the step reads the same
+                   as it did from an origin that has moved. */
+                className={`group flex items-center ${indentClass} ${NAV_INSET_R} py-1.5 rounded-lg text-[13px] font-sans transition-colors focus-ring ${
                   isActive ? NAV_ROW_ACTIVE : NAV_ROW_IDLE}`}>
                 <span className="whitespace-nowrap">{v.label}</span>
               </Link>
@@ -825,16 +1070,19 @@ function NavFooter({ open = true, onOpenTour, onSignOut, onNavigate }: {
 }) {
   return (
     <div className={`mt-2 pt-3 pb-2 border-t ${NAV_DIVIDER} flex flex-col gap-1.5`}>
+      {/* §H3/§H4 — these two are nav rows on the same left edge as the links
+          above them, so they take the same inset and the same collapsed
+          exemption. */}
       <button type="button" onClick={() => { onNavigate?.(); onOpenTour(); }}
         aria-label={open ? undefined : 'App tour'}
-        className={`group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-sans ${NAV_ROW_IDLE} focus-ring ${open ? '' : 'justify-center'}`}>
+        className={`group relative flex items-center gap-3 rounded-lg ${open ? NAV_INSET_ROW : NAV_INSET_COLLAPSED} py-2.5 text-[13.5px] font-sans ${NAV_ROW_IDLE} focus-ring ${open ? '' : 'justify-center'}`}>
         <Compass size={17} aria-hidden="true" className={`shrink-0 ${NAV_ICON_IDLE}`} />
         {open && <span className="flex-1 text-left">App tour</span>}
         {!open && <NavTooltipLabel label="App tour" />}
       </button>
       <button type="button" onClick={() => { onNavigate?.(); onSignOut(); }}
         aria-label={open ? undefined : 'Sign out'}
-        className={`group relative flex items-center gap-3 rounded-lg px-3 py-3 text-[13.5px] font-sans ${NAV_ROW_IDLE} focus-ring w-full pb-[max(0.75rem,env(safe-area-inset-bottom))] ${open ? '' : 'justify-center'}`}>
+        className={`group relative flex items-center gap-3 rounded-lg ${open ? NAV_INSET_ROW : NAV_INSET_COLLAPSED} py-3 text-[13.5px] font-sans ${NAV_ROW_IDLE} focus-ring w-full pb-[max(0.75rem,env(safe-area-inset-bottom))] ${open ? '' : 'justify-center'}`}>
         <LogOut size={17} aria-hidden="true" className={`shrink-0 ${NAV_ICON_IDLE}`} />
         {open && <span className="flex-1 text-left">Sign out</span>}
         {!open && <NavTooltipLabel label="Sign out" />}
@@ -880,7 +1128,7 @@ function ClientRail({ bellCount, dmCount, presence, lessonsOn, onOpenTour, onSig
       <nav className={`sticky top-[var(--cs-hdr-h)] h-[calc(100dvh-var(--cs-hdr-h))] border-r border-green-900/12 ${NAV_PANEL} p-3 overflow-y-auto overflow-x-hidden flex flex-col oh-rail-shadow`}>
         <div className="flex flex-col gap-0.5">
           {/* Community Feed (position 1) with its views nested underneath. */}
-          <CommunityNav indentClass="pl-9" />
+          <CommunityNav />
           <ClientNavItems bellCount={bellCount} dmCount={dmCount} presence={presence} lessonsOn={lessonsOn} />
         </div>
         <NavFooter onOpenTour={onOpenTour} onSignOut={onSignOut} />
@@ -918,6 +1166,125 @@ export default function AppLayout() {
   // (moved there from the content area, owner spec 2026-08-05).
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
+
+  /* ── §C — THE DRAWER'S THREE STATES ────────────────────────────────────────
+   * `mobileNavOpen` is the INTENT and stays the one thing the header's avatar
+   * and every close path touch. The two below are the render:
+   *   drawerMounted  in the DOM at all
+   *   drawerShown    at the open position (transform 0 / scrim opaque)
+   * They have to be separate because both directions need a frame the other
+   * cannot provide: opening needs the panel painted CLOSED once before it can
+   * animate toward open, and closing needs it to still EXIST while it slides
+   * away. `{mobileNavOpen && …}` alone could give neither, which is why both
+   * directions were instant. */
+  const [drawerMounted, setDrawerMounted] = useState(false);
+  const [drawerShown, setDrawerShown] = useState(false);
+  const drawerRef = useRef<HTMLElement | null>(null);
+  const drawerWrapRef = useRef<HTMLDivElement | null>(null);
+  /** Whatever had focus when the drawer opened — §F1's focus return. */
+  const drawerOpenerRef = useRef<HTMLElement | null>(null);
+  /* §C3 — under reduced motion the drawer appears and disappears with no
+   * transform and no fade. That is the CURRENT behaviour and it is correct for
+   * that setting, so it is preserved deliberately rather than merely shortened:
+   * both the paint-a-frame-first delay and the wait-for-the-exit timer below are
+   * skipped outright. (index.css already forces `transition-duration: 0.001ms`
+   * globally under that query, so the CSS half is handled; this is the JS half,
+   * which that rule cannot reach.) */
+  const reducedMotion = usePrefersReducedMotion();
+
+  useEffect(() => {
+    if (mobileNavOpen) {
+      setDrawerMounted(true);
+      if (reducedMotion) { setDrawerShown(true); return; }
+      /* Two frames, not one. The first gets the node into the DOM at
+         `-translate-x-full`; the second is the earliest the browser can have
+         painted it there. Flipping on the same frame it mounts is the classic
+         way to get no animation at all — the two style values collapse into one
+         style recalculation and there is nothing to interpolate between. */
+      let cancelled = false;
+      requestAnimationFrame(() => {
+        if (cancelled) return;
+        requestAnimationFrame(() => { if (!cancelled) setDrawerShown(true); });
+      });
+      return () => { cancelled = true; };
+    }
+    setDrawerShown(false);
+    if (reducedMotion) { setDrawerMounted(false); return; }
+    const t = window.setTimeout(() => setDrawerMounted(false), DRAWER_EXIT_MS);
+    return () => window.clearTimeout(t);
+  }, [mobileNavOpen, reducedMotion]);
+
+  /* CLOSED IS INERT, and translating a panel off-screen does not achieve that on
+   * its own — an off-canvas panel is still in the tab order, still announced,
+   * still hit-testable at its off-screen coordinates. Unmounting settles it at
+   * rest (there is no drawer at all when closed), and `inert` covers the only
+   * window where the node exists but is not open: the ~320ms of the exit.
+   * Set imperatively because React 18 has no `inert` prop — React 19 added it,
+   * and this app is on 18.3.1. */
+  useEffect(() => {
+    const node = drawerWrapRef.current;
+    if (!node) return;
+    if (drawerShown) node.removeAttribute('inert');
+    else node.setAttribute('inert', '');
+  }, [drawerShown, drawerMounted]);
+
+  /* §F1 — the `aria-modal` gap. The drawer has declared
+   * `role="dialog" aria-modal="true"` with NO focus management of any kind:
+   * Escape closed it, a route change closed it, and that was everything. That
+   * combination tells a screen reader the rest of the page is inert when it is
+   * not. Focus moves in on open and returns to whatever opened it on close.
+   * The opener is captured rather than hardcoded so the tenant's avatar and the
+   * superadmin's own nav button both get it from one code path; the
+   * `aria-controls` query is the fallback if that element has gone away. */
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    drawerOpenerRef.current = document.activeElement as HTMLElement | null;
+    return () => {
+      const active = document.activeElement as HTMLElement | null;
+      /* Only reclaim focus if it is still inside the drawer or has fallen to
+         <body> because the element holding it was just removed. If the user has
+         already moved focus somewhere else, yanking it back would be the bug
+         this is meant to prevent, pointing the other way.
+         Containment is tested through the drawer's own id rather than a ref: the
+         ref's value at CLEANUP time is what matters here (at effect time the
+         drawer has not mounted yet and the ref is still null), and reading
+         `ref.current` in a cleanup is exactly what react-hooks warns about. The
+         id is the same node by a route that has no such hazard. */
+      const stillInDrawer = !!active?.closest?.('#app-nav-drawer');
+      if (active && active !== document.body && !stillInDrawer) return;
+      const opener = drawerOpenerRef.current
+        ?? document.querySelector<HTMLElement>('[aria-controls="app-nav-drawer"]');
+      opener?.focus?.();
+    };
+  }, [mobileNavOpen]);
+
+  /* Focus enters on SHOWN, not on mounted: during the entrance frames the
+   * wrapper is still `inert`, and focusing inside an inert subtree does
+   * nothing. The <nav> itself takes focus (it carries `tabIndex={-1}`) rather
+   * than its first link — landing on a container announces the dialog without
+   * announcing "Community Feed, link" as though the user had chosen it. */
+  useEffect(() => { if (drawerShown) drawerRef.current?.focus(); }, [drawerShown]);
+
+  /** The trap. Small on purpose — Tab cycles within the drawer, Shift+Tab wraps
+   *  backwards, and nothing else is intercepted (Escape is handled separately,
+   *  below, and still is). */
+  const onDrawerKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key !== 'Tab') return;
+    const root = drawerRef.current;
+    if (!root) return;
+    const items = Array.from(root.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])',
+    )).filter((el) => el.offsetParent !== null);
+    if (items.length === 0) { e.preventDefault(); root.focus(); return; }
+    const first = items[0];
+    const last = items[items.length - 1];
+    const active = document.activeElement;
+    if (e.shiftKey && (active === first || active === root)) {
+      e.preventDefault(); last.focus();
+    } else if (!e.shiftKey && active === last) {
+      e.preventDefault(); first.focus();
+    }
+  }, []);
 
   // I1B — staff rail collapse (recovered pattern: the old USER ClientRail's
   // pin toggle, removed in TASK I and now rebuilt staff-only per owner ruling
@@ -1146,7 +1513,12 @@ export default function AppLayout() {
           {/* Both operators navigate to the community + catalog to help
               members with what they're seeing — no shopper-only links. */}
           <div className="mt-1 border-t border-green-800/10 pt-2 px-4 pb-1 text-xs uppercase tracking-wide text-secondary/60">Quick access</div>
-          <div className="px-1"><CommunityNav onNavigate={closeMenu} indentClass="pl-9" /></div>
+          {/* §H3: the avatar dropdown is OUT OF SCOPE — "a separate floating
+              surface with its own metrics, not the nav's left edge". The old
+              values are passed explicitly so this surface keeps rendering
+              exactly as it does today: inside `px-1`, `px-3` puts these rows at
+              16px, dead on the `px-4` line its sibling MenuLinks sit on. */}
+          <div className="px-1"><CommunityNav onNavigate={closeMenu} indentClass="pl-9" rowInsetClass="px-3" /></div>
           <button type="button" onClick={() => { closeMenu(); navigate('/app/dashboard'); }}
             className="flex items-center gap-3 px-4 py-2.5 w-full text-sm font-sans text-secondary [@media(hover:hover)]:hover:bg-navfill/64 [@media(hover:hover)]:hover:text-cream-100 focus-ring">
             <LayoutDashboard size={17} /> Dashboard
@@ -1162,7 +1534,12 @@ export default function AppLayout() {
       {!isAdmin && !isSuperAdmin && (
         <>
           <div className="mt-1 border-t border-green-800/10 pt-2 px-4 pb-1 text-xs uppercase tracking-wide text-secondary/60">Quick access</div>
-          <div className="px-1"><CommunityNav onNavigate={closeMenu} indentClass="pl-9" /></div>
+          {/* §H3: the avatar dropdown is OUT OF SCOPE — "a separate floating
+              surface with its own metrics, not the nav's left edge". The old
+              values are passed explicitly so this surface keeps rendering
+              exactly as it does today: inside `px-1`, `px-3` puts these rows at
+              16px, dead on the `px-4` line its sibling MenuLinks sit on. */}
+          <div className="px-1"><CommunityNav onNavigate={closeMenu} indentClass="pl-9" rowInsetClass="px-3" /></div>
           {QUICK.map((q) => {
             const raw = q.badge === 'notifications' ? unreadCount : q.badge === 'messages' ? dmCount : 0;
             const badge = raw > 0 ? raw : 0;
@@ -1250,11 +1627,16 @@ export default function AppLayout() {
             </Link>
             {/* MOBILE NAV BUTTON — kept here, and ONLY here. Desktop (lg+) has
                 the rail instead. */}
+            {/* §F1: `aria-controls` added — it opens the same drawer the
+                tenant's avatar does, so it should say so, and it is what the
+                focus-return fallback queries for when the captured opener has
+                gone away. */}
             <button
               type="button"
               onClick={() => setMobileNavOpen(true)}
               aria-label="Open menu"
               aria-expanded={mobileNavOpen}
+              aria-controls="app-nav-drawer"
               className="lg:hidden p-2 text-green-800 rounded-lg hover:bg-cream-100 focus-ring"
             >
               <PanelLeftOpen size={20} aria-hidden="true" />
@@ -1355,6 +1737,12 @@ export default function AppLayout() {
                      `px-3 py-2.5`, so the icon sat off the shared centre line in
                      the collapsed rail, and the white hover belonged to no other
                      surface in the nav. */
+                  /* §H3/§H4: SYMMETRIC px-3 deliberately. This control is
+                     `justify-center` in BOTH rail states — it is not on the
+                     nav's left alignment line at all — so an asymmetric inset
+                     would not move it right, it would move its centred
+                     icon+label group 4px off the centre this comment above
+                     already records bringing it onto. */
                   className={`group relative w-full flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-[13.5px] font-sans transition-colors ${NAV_ROW_IDLE} focus-ring`}>
                   <Plus size={18} aria-hidden="true" className={`shrink-0 ${NAV_ICON_IDLE}`} />
                   {staffRailPinned && <span className="whitespace-nowrap">Add New</span>}
@@ -1373,7 +1761,7 @@ export default function AppLayout() {
                   Platform still gets one because it is the super-admin's only
                   section; a tenant's rail is self-describing. */}
               {isSuperAdmin && staffRailPinned && (
-                <p className={`px-3 pt-1 pb-2 text-[10px] tracking-widest uppercase ${NAV_HEADING} font-semibold`}>
+                <p className={`${NAV_INSET_ROW} pt-1 pb-2 text-[10px] tracking-widest uppercase ${NAV_HEADING} font-semibold`}>
                   Platform
                 </p>
               )}
@@ -1385,7 +1773,7 @@ export default function AppLayout() {
                 <div className="mb-1">
                   {staffRailPinned && (
                     <button type="button" onClick={() => toggleGroup(APP_PAGES_GROUP.key)}
-                      className={`w-full flex items-center justify-between px-3 py-1.5 text-[10px] tracking-widest uppercase ${NAV_HEADING} font-semibold transition-colors duration-320 ease-glide hover:text-green-900 focus-ring rounded-md`}>
+                      className={`w-full flex items-center justify-between ${NAV_INSET_ROW} py-1.5 text-[10px] tracking-widest uppercase ${NAV_HEADING} font-semibold transition-colors duration-320 ease-glide hover:text-green-900 focus-ring rounded-md`}>
                       {APP_PAGES_GROUP.label}
                       <ChevronDown size={12} className={`transition-transform ${groupOpen(APP_PAGES_GROUP) ? '' : '-rotate-90'}`} />
                     </button>
@@ -1395,7 +1783,7 @@ export default function AppLayout() {
                   )}
                   {(groupOpen(APP_PAGES_GROUP) || !staffRailPinned) && (
                     <div className="flex flex-col gap-0.5 mt-0.5">
-                      <CommunityNav open={staffRailPinned} indentClass="pl-9" />
+                      <CommunityNav open={staffRailPinned} />
                       <StaffNavItems dmCount={dmCount} open={staffRailPinned} />
                     </div>
                   )}
@@ -1414,7 +1802,7 @@ export default function AppLayout() {
                            rendered #f5f0e8 on #fdfcfa, 1.11:1, effectively
                            invisible. On a LIGHT panel emphasis goes darker,
                            not lighter: full-strength green-900, 16.41:1. */
-                        className={`w-full flex items-center justify-between px-3 py-1.5 text-[10px] tracking-widest uppercase ${NAV_HEADING} font-semibold transition-colors duration-320 ease-glide hover:text-green-900 focus-ring rounded-md`}>
+                        className={`w-full flex items-center justify-between ${NAV_INSET_ROW} py-1.5 text-[10px] tracking-widest uppercase ${NAV_HEADING} font-semibold transition-colors duration-320 ease-glide hover:text-green-900 focus-ring rounded-md`}>
                         {g.label}
                         <ChevronDown size={12} className={`transition-transform ${groupOpen(g) ? '' : '-rotate-90'}`} />
                       </button>
@@ -1457,6 +1845,10 @@ export default function AppLayout() {
                      `px-3 py-2.5`, so the icon sat off the shared centre line in
                      the collapsed rail, and the white hover belonged to no other
                      surface in the nav. */
+                  /* §H3/§H4: symmetric px-3, same reason as "Add New" above —
+                     this one is `justify-center` inside a right-justified
+                     wrapper, so it sits on the rail's RIGHT edge and never on
+                     the left line the inset governs. */
                   className={`flex items-center justify-center rounded-lg px-3 py-2.5 ${NAV_ROW_IDLE} focus-ring`}>
                       {staffRailPinned ? <PanelLeftClose size={18} className="shrink-0" /> : <PanelLeftOpen size={18} className="shrink-0" />}
                     </button>
@@ -1502,18 +1894,64 @@ export default function AppLayout() {
           Superadmin never had the tab; it keeps its own mobile nav button and
           its own drawer anchor — see the `isSuperAdmin` checks below. */}
 
-      {mobileNavOpen && (
-        <div className="fixed inset-x-0 bottom-0 top-[var(--cs-hdr-h)] z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
+      {drawerMounted && (
+        <div
+          ref={drawerWrapRef}
+          /* `pointer-events-none` ONLY while not shown — i.e. during the exit,
+             when the panel is on its way out and taps should already be reaching
+             the page again. While OPEN the wrapper stays hit-testable, which is
+             what keeps §F's job 2 (blocking taps to the content behind) working
+             independently of the tint. */
+          className={`fixed inset-x-0 bottom-0 top-[var(--cs-hdr-h)] z-50 lg:hidden ${drawerShown ? '' : 'pointer-events-none'}`}
+          role="dialog" aria-modal="true" aria-label="Menu"
+          onKeyDown={onDrawerKeyDown}
+        >
           {/* MOBILEPASS: this comment previously claimed a black/white scrim per
               B4 (owner, 2026-08-07) — stale. The very next day (7adee89f,
               2026-08-08) the scrim was deliberately moved back to green-950/45
               and the owner said "contrast looks better"
               (OPEN-CHANGE-REQUESTS-2026-08-08.md, C6: "still not settled" but
-              never reverted). Trust the code: green-950/45, not black/white. */}
-          <div className="absolute inset-0 bg-green-950/45" onClick={closeMobileNav} aria-hidden="true" />
+              never reverted).
+              NAVMOTION §F: lightened 45% -> 30% and, more to the point, it now
+              FADES instead of arriving whole. Both knobs — the tint and whether
+              it fades or slides — are named constants at the top of this file.
+              It is still the close target and still the tap blocker; nothing
+              about removing it has been done here, because removal is the second
+              look and this is the first. */}
+          <div
+            className={`absolute inset-0 ${SCRIM_TINT} ${
+              SCRIM_ENTERS_AS_FADE
+                ? `transition-opacity ${DRAWER_EXIT} ease-glide ${drawerShown ? 'opacity-100' : 'opacity-0'}`
+                : `transition-transform ${DRAWER_EXIT} ease-glide ${drawerShown ? 'translate-x-0' : '-translate-x-full'}`
+            }`}
+            onClick={closeMobileNav}
+            aria-hidden="true"
+          />
           <nav
             id="app-nav-drawer"
-            className={`absolute inset-y-0 ${isSuperAdmin ? 'left-0' : 'right-0'} w-72 max-w-[85vw] ${NAV_PANEL} shadow-xl p-3 overflow-y-auto overscroll-contain`}
+            ref={drawerRef}
+            tabIndex={-1}
+            /* §E — THE DRAWER OPENS FROM THE LEFT, FOR EVERYONE, FROM ONE PATH.
+               The `${isSuperAdmin ? 'left-0' : 'right-0'}` conditional is GONE.
+               Owner: "since the desktop uses a left side menu… the app feels off
+               since i have been used to seeing the nav on the left." Superadmin
+               already opened left, so the app was giving three answers across
+               three surfaces — desktop rail left, superadmin drawer left, tenant
+               drawer right — and this makes all three agree while deleting a
+               branch rather than adding one.
+               THE ACCEPTED COST, recorded so it is not rediscovered as a
+               surprise: on a large phone the links are now a reach across from
+               the avatar. The rows are full-width down the whole panel, so the
+               lower ones stay thumb-reachable; the top-left ones are a longer
+               reach than they were. The owner has taken this trade.
+               §C1: `duration-440` — declared in tailwind.config.js as "440 for a
+               panel crossing the screen" and, until this line, used nowhere in
+               src/. The exit is quicker than the entrance (320) because a fast
+               exit reads as responsive where a slow one reads as sluggish; it
+               does not exceed the open duration. */
+            className={`absolute inset-y-0 left-0 w-72 max-w-[85vw] ${NAV_PANEL} shadow-xl p-3 overflow-y-auto overscroll-contain focus:outline-none transition-transform ease-glide ${
+              drawerShown ? `translate-x-0 ${DRAWER_ENTER}` : `-translate-x-full ${DRAWER_EXIT}`
+            }`}
             onClick={(e) => {
               // any real navigation inside closes the drawer
               if ((e.target as HTMLElement).closest('a')) closeMobileNav();
@@ -1537,7 +1975,7 @@ export default function AppLayout() {
             </div>
             {!isSuperAdmin && (
               <div className="flex flex-col gap-0.5 mb-1">
-                <CommunityNav onNavigate={closeMobileNav} indentClass="pl-9" />
+                <CommunityNav onNavigate={closeMobileNav} />
                 {!showRail ? (
                   <ClientNavItems bellCount={unreadCount} dmCount={dmCount} presence={presence} lessonsOn={lessonsOn} onNavigate={closeMobileNav} />
                 ) : (
@@ -1547,7 +1985,7 @@ export default function AppLayout() {
             )}
             {navGroups.map((g) => (
               <div key={g.key}>
-                <div className={`mt-2 border-t ${NAV_DIVIDER} pt-2 px-3 pb-1 text-[10px] tracking-widest uppercase ${NAV_HEADING} font-semibold`}>
+                <div className={`mt-2 border-t ${NAV_DIVIDER} pt-2 ${NAV_INSET_ROW} pb-1 text-[10px] tracking-widest uppercase ${NAV_HEADING} font-semibold`}>
                   {g.label}
                 </div>
                 <div className="flex flex-col gap-0.5">
