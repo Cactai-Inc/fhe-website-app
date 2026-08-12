@@ -100,8 +100,8 @@ export default function AccountHub() {
   return (
     <div className="max-w-6xl mx-auto">
       <header className="mb-4">
-        <p className="eyebrow">Your account</p>
-        <h1 className="font-serif text-green-800 text-3xl font-semibold mt-0.5">Account</h1>
+        <p className="eyebrow">Account</p>
+        <h1 className="font-serif text-green-800 text-3xl font-semibold mt-0.5">Here's everything that's yours.</h1>
       </header>
 
       <div className="grid lg:grid-cols-2 gap-3">
