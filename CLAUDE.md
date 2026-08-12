@@ -205,3 +205,15 @@ reporting success.
   overdue reminders have no business function. Both producers are deleted, not
   dormant. `profiles.payment_reminders` survives as a vestigial column with no
   reader.
+- **D10 — The lease family is Standard / Simple / Detailed, plus an archived original
+  (2026-08-11).** Answers the four-byte-identical-templates question. **`HORSE_LEASE_V2` IS
+  the Standard** — it holds the live lease documents and is every `leasefix` migration's
+  target; it is retitled, never re-keyed. `HORSE_LEASE_SIMPLE` and `HORSE_LEASE_FULL`
+  ("Detailed") are derivatives of it and **stay byte-identical until the owner modifies
+  them — that is the ruled state, not a defect to tidy away.** `HORSE_LEASE_STANDARD` was a
+  redundant fourth clone with zero documents and is deactivated (clause rows retained).
+  `HORSE_LEASE` is the pre-clause **original**: retained as historical reference and as a
+  source of wording that could be resurrected, **never activated, never used to generate a
+  document.** Owner: *"We dont label the default as that we call it Standard."* Lockstep
+  content writes now target **three** keys — `_V2` + `_SIMPLE` + `_FULL`. Full ruling:
+  `docs/tasks/TASK-LEASESET-three-leases-and-an-archive.md`.
