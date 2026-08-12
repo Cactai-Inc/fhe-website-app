@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { FormField } from '../../../../lib/ops';
 import { usePropertyTerm } from '../../../../contexts/BrandProvider';
+import { fetchOfferings } from '../../../../lib/api';
+import type { Offering } from '../../../../lib/types';
+import { fetchInstructorOptions, type InstructorOption } from '../../../../lib/ops/api-calendar';
 import {
   sessionWindow,
   type LessonClientOption,
@@ -15,6 +18,12 @@ import {
  * location (blank = home property) + optional note. Submits the composed
  * timestamptz window — the schedule_lesson_session RPC does the rest
  * (overlap rejection, request conversion, member notification).
+ *
+ * BOOKWRITE: it also captures WHICH SERVICE this is and WHO IS DELIVERING IT.
+ * Both were knowable here and neither was recorded, which is why 17 of the 39
+ * real bookings could not say what they were. The service and instructor lists
+ * are fetched here rather than threaded through props, so neither caller's
+ * shipped layout has to change.
  */
 export const DURATIONS = [30, 45, 60, 90];
 
@@ -25,6 +34,8 @@ export interface ScheduleSessionFormValues {
   location: string | null;
   notes: string | null;
   horse_id: string | null;
+  offering_id: string | null;
+  instructor_user_id: string | null;
 }
 
 export function ScheduleSessionForm({
@@ -53,8 +64,19 @@ export function ScheduleSessionForm({
   const [location, setLocation] = useState('');
   const [note, setNote] = useState('');
   const [horseId, setHorseId] = useState('');
+  const [offeringId, setOfferingId] = useState('');
+  const [instructorId, setInstructorId] = useState('');
+  const [offerings, setOfferings] = useState<Offering[]>([]);
+  const [instructors, setInstructors] = useState<InstructorOption[]>([]);
   const [fieldError, setFieldError] = useState<string | null>(null);
   const propertyTerm = usePropertyTerm();
+
+  useEffect(() => {
+    fetchOfferings()
+      .then((all) => setOfferings(all.filter((o) => o.segment === 'rider' || o.segment === 'horse')))
+      .catch(() => setOfferings([]));
+    fetchInstructorOptions().then(setInstructors).catch(() => setInstructors([]));
+  }, []);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -76,6 +98,8 @@ export function ScheduleSessionForm({
       location: location.trim() || null,
       notes: note.trim() || null,
       horse_id: horseId || null,
+      offering_id: offeringId || null,
+      instructor_user_id: instructorId || null,
     });
   }
 
@@ -159,6 +183,54 @@ export function ScheduleSessionForm({
           />
         )}
       </FormField>
+
+      {offerings.length > 0 && (
+        <FormField
+          label="Service"
+          hint="Which service this lesson is. Recorded on the booking, and used to draw down the right line of the client's order."
+        >
+          {({ id }) => (
+            <select
+              id={id}
+              className="form-input"
+              value={offeringId}
+              onChange={(e) => setOfferingId(e.target.value)}
+              disabled={submitting}
+            >
+              <option value="">Not specified</option>
+              {offerings.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.name}
+                </option>
+              ))}
+            </select>
+          )}
+        </FormField>
+      )}
+
+      {instructors.length > 0 && (
+        <FormField
+          label="Instructor"
+          hint="Who is delivering it. Left unset, the booking records whoever schedules it."
+        >
+          {({ id }) => (
+            <select
+              id={id}
+              className="form-input"
+              value={instructorId}
+              onChange={(e) => setInstructorId(e.target.value)}
+              disabled={submitting}
+            >
+              <option value="">You (whoever schedules it)</option>
+              {instructors.map((s) => (
+                <option key={s.user_id} value={s.user_id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          )}
+        </FormField>
+      )}
 
       {horses.length > 0 && (
         <FormField

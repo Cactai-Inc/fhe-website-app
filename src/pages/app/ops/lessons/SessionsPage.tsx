@@ -14,7 +14,7 @@ import {
   type ScheduleHorseOption,
 } from '../../../../lib/ops/api-lessons';
 import { formatTimeRange } from '../../../../lib/formatDateTime';
-import { ScheduleSessionForm } from './ScheduleSessionForm';
+import { ScheduleSessionForm, type ScheduleSessionFormValues } from './ScheduleSessionForm';
 import { LessonLogEditor } from './LessonLogEditor';
 
 /**
@@ -152,14 +152,10 @@ export function SessionsPage() {
   };
 
   const schedule = useAsync(scheduleLessonSession);
-  const handleSchedule = async (input: {
-    client_id: string;
-    starts_at: string;
-    ends_at: string;
-    location: string | null;
-    notes: string | null;
-    horse_id: string | null;
-  }) => {
+  // BOOKWRITE: was a hand-copied structural duplicate of the form's value type,
+  // which silently omitted every field added to the form. Named type now, so a
+  // new field the form collects cannot be dropped on the way to the RPC.
+  const handleSchedule = async (input: ScheduleSessionFormValues) => {
     setFormError(null);
     try {
       await schedule.run(input);

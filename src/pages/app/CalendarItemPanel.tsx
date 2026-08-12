@@ -9,6 +9,7 @@ import { LessonLogEditor } from './ops/lessons/LessonLogEditor';
 import {
   fetchLocations, addMyLocation,
   fetchClientPurchases,
+  fetchInstructorOptions,
   saveCalendarItem,
   deleteCalendarItem,
   confirmBooking,
@@ -17,6 +18,7 @@ import {
   type CalendarItem,
   type CalendarLocation,
   type ClientPurchaseOption,
+  type InstructorOption,
 } from '../../lib/ops/api-calendar';
 
 /*
@@ -75,6 +77,8 @@ export function CalendarItemPanel({
   const [purchaseId, setPurchaseId] = useState(item?.purchase_id ?? '');
   const [purchases, setPurchases] = useState<ClientPurchaseOption[]>([]);
   const [horseId, setHorseId] = useState(item?.horse_id ?? '');
+  const [instructorId, setInstructorId] = useState(item?.instructor_user_id ?? '');
+  const [instructors, setInstructors] = useState<InstructorOption[]>([]);
   const [isFlexible, setIsFlexible] = useState(item?.is_flexible ?? false);
   const [locationId, setLocationId] = useState(item?.location_id ?? '');
   const [address, setAddress] = useState(item?.address ?? '');
@@ -91,6 +95,7 @@ export function CalendarItemPanel({
       .catch(() => setOfferings([]));
     listLessonClients().then(setClients).catch(() => setClients([]));
     listScheduleHorses().then(setHorses).catch(() => setHorses([]));
+    fetchInstructorOptions().then(setInstructors).catch(() => setInstructors([]));
     fetchLocations().then((locs) => {
       setLocations(locs);
       // No hardcoded placeholder anymore — default to the barn default (or the
@@ -159,6 +164,10 @@ export function CalendarItemPanel({
       purchase_id: type === 'offering' ? purchaseId || null : null,
       horse_id: type === 'offering' || type === 'appointment' ? horseId || null : null,
       offering_id: type === 'offering' ? offeringId || null : null,
+      // BOOKWRITE: who delivers it. Left blank on a client-bound lesson/care
+      // item, the RPC records the acting staff member; an open availability
+      // slot is nobody's yet and stays unassigned.
+      instructor_user_id: type === 'offering' && !isFlexible ? instructorId || null : null,
       location_id: locationId || null,
       address: offsite ? address || selectedLocation?.address || null : null,
       travel_before_minutes: offsite ? Number(travelBefore) || 0 : 0,
@@ -323,6 +332,20 @@ export function CalendarItemPanel({
                       </option>
                     ))}
                   </select>
+                </label>
+              )}
+              {!isFlexible && instructors.length > 0 && (
+                <label className="text-sm">
+                  <span className="form-label">Instructor</span>
+                  <select className="form-input" value={instructorId} onChange={(e) => setInstructorId(e.target.value)}>
+                    <option value="">You (whoever books it)</option>
+                    {instructors.map((s) => (
+                      <option key={s.user_id} value={s.user_id}>{s.name}</option>
+                    ))}
+                  </select>
+                  <span className="text-xs text-green-800/70 mt-1 block">
+                    Who is delivering this. Left as-is, the booking records whoever saved it.
+                  </span>
                 </label>
               )}
               <label className="text-sm">
