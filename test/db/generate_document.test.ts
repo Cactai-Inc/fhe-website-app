@@ -42,7 +42,7 @@ beforeEach(async () => {
     `insert into clients (contact_id) values ($1) returning id`, [clientContact]))[0].id;
 
   const horseId = (await h.q<{ id: string }>(
-    `insert into horses (registered_name, barn_name, breed, sex, current_location)
+    `insert into horses (registered_name, nickname, breed, sex, current_location)
      values ('Thunderbolt','Bolt',$1,'GELDING','Carmel Creek Ranch') returning id`, [breed.code]))[0].id;
 
   engId = (await h.q<{ id: string }>(

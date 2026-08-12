@@ -86,13 +86,13 @@ beforeAll(async () => {
 
   // ---- orgON horses ----
   splitHorse = (await asSuperInOrg<{ id: string }>(orgON,
-    `insert into horses (barn_name) values ('Split') returning id`))[0].id;
+    `insert into horses (nickname) values ('Split') returning id`))[0].id;
   overrideHorse = (await asSuperInOrg<{ id: string }>(orgON,
-    `insert into horses (barn_name) values ('Override') returning id`))[0].id;
+    `insert into horses (nickname) values ('Override') returning id`))[0].id;
   shortHorse = (await asSuperInOrg<{ id: string }>(orgON,
-    `insert into horses (barn_name) values ('Short') returning id`))[0].id;
+    `insert into horses (nickname) values ('Short') returning id`))[0].id;
   noPartyHorse = (await asSuperInOrg<{ id: string }>(orgON,
-    `insert into horses (barn_name) values ('Orphan') returning id`))[0].id;
+    `insert into horses (nickname) values ('Orphan') returning id`))[0].id;
 
   // ---- horse_relationships shares (the single source of truth for the split) ----
   // splitHorse: owner 60 / lessee 40 → sums to 100.

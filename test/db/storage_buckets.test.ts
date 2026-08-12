@@ -36,7 +36,7 @@ async function makeClientWithAssets(email: string) {
     `insert into engagements (client_id, service_type) values ($1,'HORSE_PURCHASE_ASSISTANCE') returning id`,
     [client]))[0].id;
   const horse = (await h.q<{ id: string }>(
-    `insert into horses (barn_name, current_owner_contact_id) values ('Asset',$1) returning id`, [contact]))[0].id;
+    `insert into horses (nickname, current_owner_contact_id) values ('Asset',$1) returning id`, [contact]))[0].id;
   return { uid, contact, client, eng, horse };
 }
 

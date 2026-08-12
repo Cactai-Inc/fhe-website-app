@@ -59,9 +59,9 @@ beforeAll(async () => {
     `insert into contacts (first_name, last_name, email) values ('The', 'Barn', 'barn@e2e.test') returning id`))[0].id;
 
   splitHorse = (await asSuperInOrg<{ id: string }>(orgON,
-    `insert into horses (barn_name) values ('SplitE2E') returning id`))[0].id;
+    `insert into horses (nickname) values ('SplitE2E') returning id`))[0].id;
   orphanHorse = (await asSuperInOrg<{ id: string }>(orgON,
-    `insert into horses (barn_name) values ('OrphanE2E') returning id`))[0].id;
+    `insert into horses (nickname) values ('OrphanE2E') returning id`))[0].id;
 
   // horse_relationships: the single source of truth for the split (owner 60 / lessee 40).
   await asSuperInOrg(orgON,

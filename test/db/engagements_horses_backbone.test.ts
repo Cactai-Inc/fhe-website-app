@@ -49,7 +49,7 @@ describe('human identifiers', () => {
   it('assigns HOR- codes sequentially', async () => {
     await h.asSuperuser();
     const h1 = (await h.q<{ display_code: string }>(
-      `insert into horses (barn_name) values ('Comet') returning display_code`))[0];
+      `insert into horses (nickname) values ('Comet') returning display_code`))[0];
     const h2 = (await h.q<{ display_code: string }>(
       `insert into horses (registered_name) values ('Halley''s Comet') returning display_code`))[0];
     expect(h1.display_code).toMatch(/^HOR-\d{6}$/);
@@ -81,11 +81,11 @@ describe('integrity constraints', () => {
   it('FK-constrains breed/color to the lookups', async () => {
     await h.asSuperuser();
     await expect(
-      h.q(`insert into horses (barn_name, breed) values ('Mystery','NOT_A_BREED')`),
+      h.q(`insert into horses (nickname, breed) values ('Mystery','NOT_A_BREED')`),
     ).rejects.toThrow();
     // a seeded value is accepted
     const ok = await h.q<{ display_code: string }>(
-      `insert into horses (barn_name, breed, color) values ('Valid','HANOVERIAN','GREY') returning display_code`);
+      `insert into horses (nickname, breed, color) values ('Valid','HANOVERIAN','GREY') returning display_code`);
     expect(ok[0].display_code).toMatch(/^HOR-\d{6}$/);
   });
 });
@@ -104,21 +104,21 @@ describe('RLS — client sees own engagements and their horses only', () => {
 
     // (a) a horse Alice owns directly
     const ownedHorse = (await h.q<{ id: string }>(
-      `insert into horses (barn_name, current_owner_contact_id) values ('Bonnie',$1) returning id`,
+      `insert into horses (nickname, current_owner_contact_id) values ('Bonnie',$1) returning id`,
       [aliceContact]))[0].id;
     // (b) a horse Alice does NOT own, but referenced by her engagement
     const engHorse = (await h.q<{ id: string }>(
-      `insert into horses (barn_name) values ('Clyde') returning id`))[0].id;
+      `insert into horses (nickname) values ('Clyde') returning id`))[0].id;
     await h.q(
       `insert into engagements (client_id, service_type, primary_horse_id) values ($1,'HORSE_PURCHASE_ASSISTANCE',$2)`,
       [aliceClient, engHorse]);
     // (c) a stranger's horse, unrelated to Alice
     const strangerHorse = (await h.q<{ id: string }>(
-      `insert into horses (barn_name) values ('Secretariat') returning id`))[0].id;
+      `insert into horses (nickname) values ('Secretariat') returning id`))[0].id;
 
     // Alice sees exactly (a) and (b), never (c).
     await h.asUser(aliceUid);
-    const seen = (await h.q<{ id: string }>(`select id from horses order by barn_name`)).map((r) => r.id);
+    const seen = (await h.q<{ id: string }>(`select id from horses order by nickname`)).map((r) => r.id);
     expect(seen.sort()).toEqual([ownedHorse, engHorse].sort());
     expect(seen).not.toContain(strangerHorse);
     // and exactly her one engagement
@@ -144,7 +144,7 @@ describe('horses are never hard-deletable (append-only / archival)', () => {
     await h.q(`update profiles set contact_id=$1 where user_id=$2`, [ownerContact, ownerUid]);
     await h.q(`insert into clients (contact_id) values ($1)`, [ownerContact]);
     const horse = (await h.q<{ id: string }>(
-      `insert into horses (barn_name, current_owner_contact_id) values ('Permanent',$1) returning id`,
+      `insert into horses (nickname, current_owner_contact_id) values ('Permanent',$1) returning id`,
       [ownerContact]))[0].id;
 
     // Admin (authenticated role) cannot hard-delete: DELETE privilege is revoked.

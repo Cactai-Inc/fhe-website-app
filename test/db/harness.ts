@@ -35,6 +35,24 @@ const SNAPSHOT_DATA_TABLES = new Set([
   'contract_clause_defs',
   'contract_field_defs',
   'template_tokens',
+  // Global platform catalog + lookups, added by TASK-TESTDB. Seeded by
+  // migrations rather than by tenant activity, so the snapshot path (which does
+  // not replay migrations) loaded them empty and broke 21 test files — see the
+  // section header these rows live under in schema_snapshot.sql. PII review:
+  // none of the five has an org_id or any personal data; they hold feature
+  // keys, plan tiers and breed/colour vocabulary.
+  'modules',
+  'tiers',
+  'tier_modules',
+  'horse_breeds',
+  'horse_colors',
+  // Tenant #1's module entitlements — the only per-tenant table here, and the
+  // tenant is the single organization the snapshot already carries. Module keys
+  // and booleans only; no personal data. Without it every has_module()-gated RLS
+  // policy denies and the module suites die in setup.
+  'org_modules',
+  // Global contract-variant registry: no org_id, no personal data.
+  'template_variants',
 ]);
 
 /** Every table an INSERT/COPY statement in the snapshot targets, in the order
@@ -291,8 +309,76 @@ export async function createTestDbFromSnapshot(): Promise<TestDb> {
   // security policy" on the first RLS-covered table it touches — RLS can
   // only be evaluated, not disabled, for roles that don't own the bypass.
   await db.exec('SET row_security = on;');
+  await alignDisplayCodeSequences(db);
 
   return finalizeHarness(db);
+}
+
+/**
+ * Advance every display-code sequence past the codes the snapshot's seed rows
+ * already carry.
+ *
+ * The snapshot is schema + a hand-picked seed-data allowlist, and it contains
+ * NO `setval` statements at all — `pg_dump`'s sequence-restoring calls are not
+ * in the file. So every sequence loads back at its start value while the seeded
+ * rows hold codes already consumed from it. The seeded FHE organization holds
+ * ORG-000001 and `org_code_seq` restarts at 1, so the FIRST organization any
+ * test inserted collided:
+ *
+ *   duplicate key value violates unique constraint "organizations_display_code_key"
+ *
+ * That killed the beforeAll of 21 test files. It is a fixture defect, not a
+ * test-isolation one — each file gets its own private PGlite, so nothing leaks
+ * between them and no two tests were racing for a code.
+ *
+ * Driven off pg_trigger rather than a hardcoded list: `organizations` is the only
+ * seeded table carrying a code today, but seven other tables (bookings, clients,
+ * contacts, contracts, deals, horses, purchases) use the same trigger, and a
+ * future snapshot regeneration that seeds one of them would otherwise reintroduce
+ * this silently.
+ */
+async function alignDisplayCodeSequences(db: PGlite): Promise<void> {
+  await db.exec(/* sql */ `
+    do $$
+    declare
+      t        record;
+      v_prefix text;
+      v_seq    text;
+      v_max    bigint;
+    begin
+      for t in
+        select pg_get_triggerdef(tg.oid) as def, c.relname as tbl
+        from pg_trigger tg
+        join pg_class c on c.oid = tg.tgrelid
+        join pg_proc  p on p.oid = tg.tgfoid
+        where p.proname in ('assign_display_code', 'assign_display_code_yearly')
+          and not tg.tgisinternal
+      loop
+        -- ... EXECUTE FUNCTION public.assign_display_code('ORG-', 'org_code_seq')
+        v_prefix := (regexp_match(t.def, '\\((''|")([^'']*)''\\s*,\\s*''([^'']*)''\\)$'))[2];
+        v_seq    := (regexp_match(t.def, '\\((''|")([^'']*)''\\s*,\\s*''([^'']*)''\\)$'))[3];
+        if v_seq is null or to_regclass('public.' || v_seq) is null then
+          continue;
+        end if;
+
+        -- The counter is always the trailing digit run: ORG-000001 and the
+        -- yearly form ENG-2026-000001 both end in the 6-digit sequence value.
+        execute format(
+          'select coalesce(max((substring(display_code from ''[0-9]+$''))::bigint), 0)
+             from public.%I
+            where display_code like %L
+              and substring(display_code from ''[0-9]+$'') is not null',
+          t.tbl, v_prefix || '%'
+        ) into v_max;
+
+        -- Only when seed rows exist. Leaving an empty table's sequence untouched
+        -- keeps its first nextval() at 1, which is what the tests expect.
+        if v_max > 0 then
+          perform setval(v_seq::regclass, v_max, true);
+        end if;
+      end loop;
+    end $$;
+  `);
 }
 
 /**
