@@ -5,6 +5,7 @@ import { formatPrice } from '../lib/pricing';
 import { fetchPublicCatalog, type ServiceGroup } from '../lib/publicCatalog';
 import { useCart } from '../contexts/CartContext';
 import ServiceSelector from '../components/ServiceSelector';
+import ServiceListState from '../components/ServiceListState';
 import QualifierGroup from '../components/QualifierGroup';
 import Seo from '../components/Seo';
 import { seoForPath } from '../lib/seo';
@@ -22,12 +23,20 @@ export default function BookHorse() {
   const { state, setFunnel, itemCount } = useCart();
   const navigate = useNavigate();
   const [groups, setGroups] = useState<ServiceGroup[]>([]);
+  // COUNTFIX 1.5: a failed fetch and an empty catalog looked identical — both
+  // rendered a blank selection area with no explanation and a dead "Continue".
+  // Distinguish the three states (the pattern Lessons.tsx already uses).
+  const [catalogState, setCatalogState] = useState<'loading' | 'error' | 'ready'>('loading');
 
   useEffect(() => {
     setFunnel('horse');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [setFunnel]);
-  useEffect(() => { fetchPublicCatalog('horse').then(setGroups).catch(() => setGroups([])); }, []);
+  useEffect(() => {
+    fetchPublicCatalog('horse')
+      .then((g) => { setGroups(g); setCatalogState('ready'); })
+      .catch(() => { setGroups([]); setCatalogState('error'); });
+  }, []);
 
   const reason = state.qualifierAnswers['horse_reason'];
 
@@ -92,9 +101,16 @@ export default function BookHorse() {
               Select the services you need for your horse. Each option can be combined — we will tailor further recommendations once we understand your situation.
             </p>
             <div className="flex flex-col gap-8">
-              {groups.map((g) => (
-                <ServiceSelector key={g.code} group={g} category="Horse Care Services" />
-              ))}
+              {catalogState !== 'ready' || groups.length === 0 ? (
+                <ServiceListState
+                  state={catalogState === 'ready' ? 'empty' : catalogState}
+                  emptyLead="Our horse care services are arranged personally rather than booked online. Tell us about your horse and we will take it from there."
+                />
+              ) : (
+                groups.map((g) => (
+                  <ServiceSelector key={g.code} group={g} category="Horse Care Services" />
+                ))
+              )}
             </div>
           </div>
         )}
@@ -160,8 +176,8 @@ export default function BookHorse() {
                       <div>
                         <p className="text-sm font-sans font-medium text-green-900">{item.offeringName}</p>
                       </div>
-                      <p className="text-sm font-serif font-medium text-green-800">
-                        {formatPrice(item.price, item.unit)}
+                      <p className={`text-sm font-serif font-medium text-green-800${item.priceOnEnquiry ? ' italic' : ''}`}>
+                        {item.priceOnEnquiry ? 'Price on enquiry' : formatPrice(item.price, item.unit)}
                       </p>
                     </div>
                   ))}

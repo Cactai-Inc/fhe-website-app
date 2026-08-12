@@ -81,6 +81,9 @@ export function OfferingCatalog({ onCheckout, actionLabel = 'Add' }: { onCheckou
     addItem({
       offeringId: o.id, offeringName: o.name, serviceType: o.service_type,
       price: o.price_amount ?? 0, unit: (o.price_unit ?? 'flat'),
+      // COUNTFIX 1.5: carry "no price" through the cart so checkout says
+      // "Price on enquiry" instead of formatting the 0 placeholder as "$0".
+      ...(o.price_amount == null ? { priceOnEnquiry: true } : {}),
       configKind: o.config_kind, weeklyFrequency: o.weekly_frequency, unitCount: o.unit_count,
     });
   };

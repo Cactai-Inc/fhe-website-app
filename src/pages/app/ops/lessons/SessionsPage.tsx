@@ -2,8 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toErrorMessage } from '../../../../lib/ops/errors';
 import { Modal, ModuleGate, StatusBadge, useAsync, useToast } from '../../../../lib/ops';
 import { useModules } from '../../../../lib/ops/useModules';
+import { Link } from 'react-router-dom';
 import {
   listLessonSessions,
+  countOpenLessonSlots,
   listLessonClients,
   listScheduleHorses,
   scheduleLessonSession,
@@ -50,6 +52,10 @@ export function SessionsPage() {
   const lessonsOn = modules['mod.lessons'] === true;
 
   const [rows, setRows] = useState<LessonSession[]>([]);
+  /** COUNTFIX 1.3: the open-slot count, stated beside the lesson count and never
+   *  merged into it. `null` = not loaded / unavailable, so the line simply omits
+   *  it rather than claiming zero. */
+  const [openSlots, setOpenSlots] = useState<number | null>(null);
   const [clients, setClients] = useState<LessonClientOption[]>([]);
   const [horses, setHorses] = useState<ScheduleHorseOption[]>([]);
   const [filter, setFilter] = useState<SessionFilter>('upcoming');
@@ -72,6 +78,9 @@ export function SessionsPage() {
       setRows(sessions);
       setClients(clientRows);
       setHorses(horseRows);
+      // Non-blocking: the board is about lessons, so a failed slot count leaves
+      // the line off rather than failing the page.
+      countOpenLessonSlots().then(setOpenSlots).catch(() => setOpenSlots(null));
     } catch (err) {
       setLoadError(toErrorMessage(err, 'Could not load lesson sessions.'));
     } finally {
@@ -176,6 +185,19 @@ export function SessionsPage() {
         <div>
           <h1 className="font-serif text-2xl text-green-900">Lesson sessions</h1>
           <p className="text-sm text-green-800/70">Confirmed bookings — complete, cancel, no-show.</p>
+          {/* COUNTFIX 1.3: this board counts LESSONS. Open slots nobody has taken
+              are a different thing and are stated separately, never folded in. */}
+          <p className="text-xs text-green-800/60 mt-1">
+            {rows.length} lesson{rows.length === 1 ? '' : 's'}
+            {openSlots !== null && (
+              <>
+                {' · '}
+                <Link to="/app/calendar" className="link-underline">
+                  {openSlots} open slot{openSlots === 1 ? '' : 's'} on the calendar
+                </Link>
+              </>
+            )}
+          </p>
         </div>
         {lessonsOn && (
           <button

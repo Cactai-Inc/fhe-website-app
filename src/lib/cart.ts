@@ -12,6 +12,10 @@ export interface CartItem {
   serviceType: string | null;
   price: number;
   unit: PriceUnit;
+  /** COUNTFIX 1.5: the offering has NO price (`offerings.price_amount IS NULL`) —
+   *  it is quoted on enquiry. `price` is 0 so totals stay arithmetic, but every
+   *  surface must render "Price on enquiry" rather than "$0". */
+  priceOnEnquiry?: boolean;
   /** Phase 4: the SKU's mechanics bucket — drives the checkout config panel. */
   configKind?: OfferingConfigKind | null;
   /** Recurring SKUs: sessions/week (1/2/3), for the config panel copy. */

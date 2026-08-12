@@ -5,6 +5,7 @@ import { formatPrice } from '../lib/pricing';
 import { fetchPublicCatalog, type ServiceGroup } from '../lib/publicCatalog';
 import { useCart } from '../contexts/CartContext';
 import ServiceSelector from '../components/ServiceSelector';
+import ServiceListState from '../components/ServiceListState';
 
 // Horse-care service_type codes used to gate the horse-care cross-sell note.
 const HORSE_CARE_CODES = ['HORSE_TRAINING', 'HORSE_EXERCISE', 'HORSE_CLIPPING'];
@@ -25,12 +26,20 @@ export default function BookSupport() {
   const { state, setFunnel, itemCount } = useCart();
   const navigate = useNavigate();
   const [groups, setGroups] = useState<ServiceGroup[]>([]);
+  // COUNTFIX 1.5: a failed fetch and an empty catalog looked identical — both
+  // rendered a blank selection area with no explanation and a dead "Continue".
+  // Distinguish the three states (the pattern Lessons.tsx already uses).
+  const [catalogState, setCatalogState] = useState<'loading' | 'error' | 'ready'>('loading');
 
   useEffect(() => {
     setFunnel('support');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [setFunnel]);
-  useEffect(() => { fetchPublicCatalog('acquisition').then(setGroups).catch(() => setGroups([])); }, []);
+  useEffect(() => {
+    fetchPublicCatalog('acquisition')
+      .then((g) => { setGroups(g); setCatalogState('ready'); })
+      .catch(() => { setGroups([]); setCatalogState('error'); });
+  }, []);
 
   const experience   = state.qualifierAnswers['experience'];
   const wantsLessons = state.qualifierAnswers['wants_lessons'];
@@ -99,9 +108,16 @@ export default function BookSupport() {
               Finding the right horse is one of the most significant decisions in an equestrian's life. Our support services provide expert guidance at each stage — from the first search to the final handshake.
             </p>
             <div className="flex flex-col gap-8">
-              {groups.map((g) => (
-                <ServiceSelector key={g.code} group={g} category="Acquisition Support" />
-              ))}
+              {catalogState !== 'ready' || groups.length === 0 ? (
+                <ServiceListState
+                  state={catalogState === 'ready' ? 'empty' : catalogState}
+                  emptyLead="Our acquisition services are arranged personally rather than booked online. Tell us what you are looking for and we will guide the search from there."
+                />
+              ) : (
+                groups.map((g) => (
+                  <ServiceSelector key={g.code} group={g} category="Acquisition Support" />
+                ))
+              )}
             </div>
           </div>
         )}
@@ -178,8 +194,8 @@ export default function BookSupport() {
                       <div>
                         <p className="text-sm font-sans font-medium text-green-900">{item.offeringName}</p>
                       </div>
-                      <p className="text-sm font-serif font-medium text-green-800">
-                        {formatPrice(item.price, item.unit)}
+                      <p className={`text-sm font-serif font-medium text-green-800${item.priceOnEnquiry ? ' italic' : ''}`}>
+                        {item.priceOnEnquiry ? 'Price on enquiry' : formatPrice(item.price, item.unit)}
                       </p>
                     </div>
                   ))}

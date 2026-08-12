@@ -564,8 +564,10 @@ export default function Checkout() {
                               <p className="text-sm font-sans font-medium text-green-900 leading-snug">{item.offeringName}</p>
                             </div>
                             <div className="flex items-center gap-2 flex-shrink-0">
-                              <p className="text-sm font-serif text-green-800">
-                                {formatPrice(item.price, item.unit)}
+                              {/* COUNTFIX 1.5: a quote-priced service carries price 0 as a
+                                  placeholder — never render that as "$0". */}
+                              <p className={`text-sm font-serif text-green-800${item.priceOnEnquiry ? ' italic' : ''}`}>
+                                {item.priceOnEnquiry ? 'Price on enquiry' : formatPrice(item.price, item.unit)}
                               </p>
                               <button
                                 type="button"

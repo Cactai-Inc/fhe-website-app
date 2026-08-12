@@ -5,6 +5,7 @@ import { formatPrice } from '../lib/pricing';
 import { fetchPublicCatalog, type ServiceGroup } from '../lib/publicCatalog';
 import { useCart } from '../contexts/CartContext';
 import ServiceSelector from '../components/ServiceSelector';
+import ServiceListState from '../components/ServiceListState';
 import QualifierGroup from '../components/QualifierGroup';
 import Seo from '../components/Seo';
 import { seoForPath } from '../lib/seo';
@@ -27,12 +28,20 @@ export default function BookRider() {
   const { state, setFunnel, itemCount } = useCart();
   const navigate = useNavigate();
   const [groups, setGroups] = useState<ServiceGroup[]>([]);
+  // COUNTFIX 1.5: a failed fetch and an empty catalog looked identical — both
+  // rendered a blank selection area with no explanation and a dead "Continue".
+  // Distinguish the three states (the pattern Lessons.tsx already uses).
+  const [catalogState, setCatalogState] = useState<'loading' | 'error' | 'ready'>('loading');
 
   useEffect(() => {
     setFunnel('rider');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [setFunnel]);
-  useEffect(() => { fetchPublicCatalog('rider').then(setGroups).catch(() => setGroups([])); }, []);
+  useEffect(() => {
+    fetchPublicCatalog('rider')
+      .then((g) => { setGroups(g); setCatalogState('ready'); })
+      .catch(() => { setGroups([]); setCatalogState('error'); });
+  }, []);
 
   const horsemanship = groups.find((g) => g.code === HORSEMANSHIP_CODE);
   const bookingGroups = groups.filter((g) => g.code !== HORSEMANSHIP_CODE);
@@ -103,9 +112,16 @@ export default function BookRider() {
               Select the service(s) and pricing option that best fits your schedule and goals. You may combine multiple services — we will tailor any add-on recommendations to match.
             </p>
             <div className="flex flex-col gap-8">
-              {bookingGroups.map((g) => (
-                <ServiceSelector key={g.code} group={g} category="Rider Services" />
-              ))}
+              {catalogState !== 'ready' || bookingGroups.length === 0 ? (
+                <ServiceListState
+                  state={catalogState === 'ready' ? 'empty' : catalogState}
+                  emptyLead="Our riding programs are arranged personally rather than booked online. Tell us a little about the rider and we will find the right fit."
+                />
+              ) : (
+                bookingGroups.map((g) => (
+                  <ServiceSelector key={g.code} group={g} category="Rider Services" />
+                ))
+              )}
             </div>
           </div>
         )}
@@ -189,8 +205,8 @@ export default function BookRider() {
                       <div>
                         <p className="text-sm font-sans font-medium text-green-900">{item.offeringName}</p>
                       </div>
-                      <p className="text-sm font-serif font-medium text-green-800">
-                        {formatPrice(item.price, item.unit)}
+                      <p className={`text-sm font-serif font-medium text-green-800${item.priceOnEnquiry ? ' italic' : ''}`}>
+                        {item.priceOnEnquiry ? 'Price on enquiry' : formatPrice(item.price, item.unit)}
                       </p>
                     </div>
                   ))}

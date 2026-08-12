@@ -296,15 +296,50 @@ export async function consumeLessonCredit(id: string, count = 1): Promise<Lesson
 // ─── lesson_sessions — the confirmed-booking spine ───────────────────────────
 
 /** The sessions board (staff RLS), soonest first. Lessons live on the spine
- *  bookings table now (kind='lesson'); mapped to the LessonSession shape. */
+ *  bookings table now (kind='lesson'); mapped to the LessonSession shape.
+ *
+ *  THE ONE DEFINITION (COUNTFIX 1.3): a LESSON is a `bookings` row with
+ *  `kind='lesson'` whose status is NOT `available`. An `available` row is an
+ *  OPEN SLOT the trainer published on the calendar and nobody has taken — it has
+ *  no client, and it is not a lesson.
+ *
+ *  This had no status filter, so all three readers (the staff `/app/schedule`,
+ *  `SessionsPage`, `InstructorHome`) were served **318** rows where **39**
+ *  lessons existed: 279 of them were open slots. The trainer's day read about 5x
+ *  busier than it was. Worse, `lessonSessionFromBooking` upper-cases the status
+ *  into `LessonSessionStatus` — a union of SCHEDULED/COMPLETED/CANCELLED/NO_SHOW
+ *  with no `AVAILABLE` member — so those 279 rows carried a status no label map
+ *  could render. Excluding them here makes that type honest as well.
+ *
+ *  Open slots are not hidden from the app — they are the calendar's subject, and
+ *  `/app/calendar` already renders them (as "Open"). `countOpenLessonSlots()`
+ *  below is their count, deliberately named for what it is. */
 export async function listLessonSessions(): Promise<LessonSession[]> {
   const { data, error } = await supabase
     .from('bookings')
     .select(LESSON_BOOKING_COLS)
     .eq('kind', 'lesson')
+    .neq('status', 'available')
     .order('starts_at', { ascending: true });
   if (error) throw error;
   return ((data ?? []) as unknown as LessonBookingRow[]).map(lessonSessionFromBooking);
+}
+
+/** The COMPLEMENT of `listLessonSessions()`: published lesson slots nobody has
+ *  taken (`kind='lesson' AND status='available'`).
+ *
+ *  A second definition, deliberately, because it is a different thing — and it
+ *  is never called a lesson on screen. It exists so a staff surface can say
+ *  "39 lessons · 279 open slots" instead of quietly folding the slots into the
+ *  lesson count, which is what produced COUNTFIX 1.3. */
+export async function countOpenLessonSlots(): Promise<number> {
+  const { count, error } = await supabase
+    .from('bookings')
+    .select('id', { head: true, count: 'exact' })
+    .eq('kind', 'lesson')
+    .eq('status', 'available');
+  if (error) throw error;
+  return count ?? 0;
 }
 
 /** Sessions booked from one booking request (the IntakePage drawer inline list). */
