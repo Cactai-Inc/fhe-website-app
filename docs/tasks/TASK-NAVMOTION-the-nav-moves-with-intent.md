@@ -140,11 +140,40 @@ you choose:
   that is merely translated off-screen is still in the tab order and still read by a screen
   reader. `visibility: hidden` at the end of the exit, `inert`, or an unmount-after-exit all
   solve it; a bare `translate-x-full` does not.
-- **Nothing may become permanently scrollable off-canvas.** A panel parked at
-  `translate-x-full` outside a clipping context extends the document — which is precisely
-  `TASK-FRAMESCROLL`'s bug, and introducing it here while that thread removes it would be a
-  bad trade. The wrapper is `position: fixed`, which contains it; **verify that holds** and say
-  so in the report.
+- **Nothing may become permanently scrollable off-canvas.** See §C0 — parking it on the LEFT is
+  what makes this safe, and it is not symmetric with parking it on the right.
+
+## C0. THE OWNER'S MECHANISM IS CORRECT — with one correction that matters
+
+> *"the menu can be loaded off screen on the left and then its there but the screen can scroll
+> left so its never visible and when the click happens the animation happens. Right?"*
+
+**Right, and for a better reason than "it happens to work."** Browsers do not create scrollable
+overflow toward the **inline-start** or **block-start** edges. Content sitting at negative `x`
+in a left-to-right document is unreachable by scrolling — there is no left-scroll to expose it.
+(Same rule that makes the old `margin-left: -9999px` off-screen trick work while its
+`margin-right` mirror image does not.) Combined with a `position: fixed` wrapper — positioned
+against the viewport, contributing nothing to document layout — a panel parked at `-100%` on the
+left is genuinely invisible and genuinely unreachable.
+
+**This is a real argument for §E that was not made there: moving the drawer LEFT is what makes
+off-canvas parking safe.** Parked on the right it would extend the document's scrollable width —
+which is precisely `TASK-FRAMESCROLL`'s bug arriving from the other direction while that thread
+removes it. **Record this in the report as a second, independent reason the drawer belongs on
+the left.**
+
+**THE CORRECTION: invisible to the eye is not absent from the app.** A panel translated
+off-screen is still in the DOM — still in the tab order, still announced by a screen reader,
+still hit-testable at its off-screen coordinates. A keyboard user tabbing down the page would
+walk into a menu they cannot see.
+
+**So "loaded off screen and left there" is the right mechanism for the animation and half the
+requirement.** At rest the drawer must also be **inert**: `visibility: hidden` applied at the
+end of the exit, the `inert` attribute, or unmount-after-exit. `visibility` is usually neatest
+here because it can be delayed to land exactly when the outgoing transform finishes — the panel
+stays visible while it slides out and becomes unreachable the instant it arrives.
+
+**Prove it in the report: with the drawer closed, nothing inside it is reachable by Tab.**
 
 ## C1. Use the vocabulary that already exists
 
@@ -212,17 +241,45 @@ Constraints from `app-header.css`, all recorded there with reasons — read them
 - The button already has rest / `:hover` / `:active` / `[aria-expanded='true']` states on a
   documented white-overlay ramp. **Extend that ramp, do not replace it.**
 
-## D2. A one-time hint — bounded, and it stops
+## D2. A ONE-TIME TIP IN A BOX — owner, 2026-08-11. This REPLACES the bounce.
 
-- **Three pulses, roughly two seconds total, then it stops on its own.** Never indefinite.
+> *"Lets show a tip in a box that appears with visual presence to catch the eye that says click
+> for menu. 3-4 seconds should be enough if it pops in a movement oriented way."*
+
+**An earlier draft of this section specified three pulses on the avatar itself. That is
+superseded — build the tip box instead.** The reasoning that produced it still holds and is now
+better served: motion catches the eye, but only words carry the meaning, and an avatar that
+bounces says "press me" without ever saying *what opens*. The box says both.
+
+- **A small callout near the avatar that reads "Click for menu"** (or wording the owner
+  prefers — put the string in one constant). It must visibly point at or attach to the avatar;
+  a floating box in the corner does not tell you *which* control it means.
+- **It pops.** "Movement oriented" — it arrives with a spring/scale-and-settle, not a plain
+  fade. `ease-glide` is the house curve and it is built for exactly this (fast departure, long
+  settle). Entrance is short and lively; the dwell is what does the work.
+- **Visible ~3–4 seconds, then it leaves on its own.** Time the dwell, not the whole animation.
 - **First mobile visit only.** Persist the marker. Follow whatever this app already uses for
   first-run markers — the app tour stamps one (`tourSeen`) — rather than inventing a mechanism.
-- **Any interaction kills it immediately**: touch, click, scroll, or focus.
-- **Skipped entirely under `prefers-reduced-motion`.** Not shortened. Skipped.
+- **Any interaction dismisses it immediately**: touch, click, scroll, or focus. Opening the menu
+  obviously dismisses it, and it never returns.
+- **Under `prefers-reduced-motion`: the box still appears** — it is information, not decoration,
+  and suppressing it would withhold the one thing that explains the control. **Drop the pop and
+  present it plainly.** This is the opposite of §C3's rule and deliberately so.
 - **Never at `lg+`.** There is nothing to discover when the rail is already on screen.
 
-A gentle vertical motion is fine. It must not shift layout — animate `transform`, so nothing
-around it reflows and the header height never changes.
+**It must not shift layout.** Absolutely positioned or a portal, animating `transform`/`opacity`
+only — nothing around it reflows and the header height never changes. It also must not be
+clipped by the header: `.oh-hdr` is `height: var(--cs-hdr-h)` with no `overflow` declared, so a
+box hanging below the header's bottom edge should escape — **verify that rather than assuming
+it**, and note that this file records a portal being required once before because a rail's
+`overflow-x-hidden` clipped a tooltip (`AppLayout.tsx:396`).
+
+**Accessibility:** it is an advisory, not an alert. Do not steal focus and do not trap it. If it
+is announced at all, `role="status"`/polite is the ceiling — a transient tip must never
+interrupt a screen-reader user mid-sentence.
+
+**§D1's permanent caret still stands.** The tip is a first-run teaching moment that leaves; the
+caret is what a returning user reads on day thirty. They do different jobs — build both.
 
 ---
 
@@ -349,6 +406,95 @@ crowding.
 
 ---
 
+# H. THE ROW CONTENTS MOVE RIGHT — an ASYMMETRIC left inset
+
+> **Owner, 2026-08-11:** *"Since its moving left and i asked for this same thing on the desktop
+> nav, lets add a bit more padding on the left side of the icons so the button contents move
+> right a bit. that will help with the reach and balance out the extreme differential we see now
+> where the right side has so much whitespace and the left side has almost none."*
+
+## H1. ⚠️ THIS SUPERSEDES UIO-016. Read that order before you start.
+
+`docs/ui-orders/UIO-016-nav-row-indent.md` is the owner's earlier version of this same request
+(*"nav icons and text too far left relative to nav panel size"*), and it **shipped** on
+2026-08-10. It moved the icon start 20px → 24px by changing the `<nav>` container from `p-2` to
+`p-3`, **deliberately symmetric**: *"Changing the container rather than the rows shifts both
+sides equally, so the hover fill stays symmetrically inset and no row class has to change."*
+
+That solved it evenly, and evenly is not what the owner now wants. Two of UIO-016's explicit
+prohibitions are **overridden by this section**:
+
+- ~~*"Do not change any individual row's `px-3`"*~~ → **the row's LEFT padding is exactly what
+  changes now.**
+- ~~*"Do not touch the mobile drawer"*~~ → **the drawer gets it too**; reach on a left-hand
+  drawer is half the owner's stated reason.
+
+**Say in the report that UIO-016 is superseded on these two points**, so a later thread reading
+that order does not revert this citing it. UIO-016's other two prohibitions — do not change
+`w-60`, do not touch the collapsed state's `justify-center` — **still stand**, and H4 is the
+second of them.
+
+## H2. What is actually being balanced
+
+Measured 2026-08-11. Member rail `w-60` (240px); `<nav>` `p-3` (12px); row `px-3` (12px) — so an
+icon starts **24px** from the panel edge. The row itself spans the full 216px of inner width,
+and a short label like "Dashboard" leaves well over 100px of trailing space inside it. That is
+the differential: a thin left margin against a wide right one.
+
+**Raise the LEFT padding only; leave the right as it is.** Roughly `pl-5`/`pl-6` against an
+unchanged `pr-3` puts the icon at ~32–36px. **Use Tailwind's own scale steps** — T1, twice
+burned. Pick the value that looks right and state the resulting icon offset in the report.
+
+## H3. ONE CONSTANT, AND EVERYTHING ON THE LEFT EDGE MOVES WITH IT
+
+**This is the part that will break if it is done row by row.** The nav's left edge is a shared
+alignment line, and three different kinds of element sit on it:
+
+- **the rows** — `px-3 py-2.5`, at least nine call sites (`484`, `553`, `573`, `628`, `669`,
+  `830`, `837`, `1358`, `1460`)
+- **the group headings** — "MANAGEMENT", "PEOPLE" etc., `px-3 py-1.5` (`1388`, `1417`)
+- **the indented children** — `CommunityNav`'s `indentClass`, default `pl-9`, applied at `709`
+  and passed explicitly at `883`, `1149`, `1165`, `1398`
+
+Change the rows alone and every group heading falls out of line with the labels beneath it, and
+every indented child's step reads wrong because its indent is measured from an origin that
+moved.
+
+**Put the left inset in ONE constant next to `NAV_ROW_IDLE`** and have all three read from it —
+the indents expressed as the constant plus their step, not as a hardcoded `pl-9`. This file
+already establishes the pattern and the reason: `NAV_ROW_IDLE` centralised its transition
+precisely because per-call-site copies *"drift back out of step."* **Derive the full call-site
+list yourself and list it in the report** — the lines above are where to start, not a guarantee
+of completeness.
+
+**Not in scope:** the `px-4` rows in the desktop avatar dropdown (`accountMenu`, ~`1133`–`1211`).
+That is a separate floating surface with its own metrics, not the nav's left edge. **Leave it
+alone and say you did.**
+
+## H4. ⚠️ THE COLLAPSED RAIL IS EXEMPT — asymmetric padding will knock its icons off centre
+
+`staffRailWidthClass` is `w-14` — **56px** — when the staff rail is collapsed, and those rows
+carry `${open ? '' : 'justify-center'}`. `justify-center` centres content in the **content box**,
+which is only centred in the row if the left and right padding are equal. Make the left padding
+larger and every icon in the 56px strip shifts right by half the difference.
+
+That centre line is protected in two places already, by name: the comments at `1355` and `1457`
+both record a control being brought back onto *"the shared centre line in the collapsed rail."*
+**Do not undo that.**
+
+**The asymmetric inset applies to the EXPANDED rail and the mobile drawer only. The collapsed
+`w-14` rail keeps symmetric `px-3`.** State in the report how you gated it, and confirm the
+collapsed icons still sit on one vertical line.
+
+## H5. Check the labels still fit
+
+Every pixel of left inset is a pixel off the label. The rail is 240px (`xl:w-64`, 256px, at the
+widest) and the drawer is `w-72` (288px). **Find the longest nav label in the tree and confirm
+it still fits without wrapping or truncating** at the narrowest expanded width — several rows
+carry `whitespace-nowrap`, so the failure mode is overflow rather than a visible wrap, which is
+`TASK-FRAMESCROLL`'s bug arriving inside a panel that has `overflow-x-hidden`, where it will
+simply be clipped and silently unreadable.
+
 # CONSTRAINTS
 
 - Worktree `~/Downloads/claude-code-repo/wt-navmotion`, branch `task/navmotion`, off
@@ -379,10 +525,14 @@ crowding.
 3. The drawer and the scrim **animate in both directions**; closed, the drawer is inert and
    unreachable by keyboard.
 4. The drawer opens from the **left**, for tenants and superadmin alike, from one code path.
-5. The avatar carries a **permanent** menu cue and a **bounded, one-time** hint that respects
-   reduced motion.
+5. The avatar carries a **permanent** menu cue, and a **one-time tip box** that pops in, says
+   what the control does, dwells 3–4s and leaves on its own.
 6. At 401–600px the marks are **42px** and the wordmark has **stepped down**; at 320px nothing
    collides.
-7. Focus enters the drawer, is trapped, and returns to the avatar on close.
+7. Focus enters the drawer, is trapped, and returns to the avatar on close. **With the drawer
+   closed, nothing inside it is reachable by Tab.**
+8. Nav row contents sit further right on an **asymmetric** left inset driven by **one
+   constant** — rows, group headings and indented children all still on one alignment line —
+   and the **collapsed 56px rail's icons are still centred.**
 
 Report to `docs/reports/TASK-NAVMOTION-REPORT.md`.
