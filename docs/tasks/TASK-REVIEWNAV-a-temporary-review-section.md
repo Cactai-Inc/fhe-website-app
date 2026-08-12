@@ -156,3 +156,90 @@ restructuring, and an eyebrow is part of a page's naming, which is what that pas
 7. Removing the whole thing later is one clearly-marked block.
 
 Report to `docs/reports/TASK-REVIEWNAV-REPORT.md`.
+
+---
+
+# ADDENDUM 2026-08-12 — REVIEW IS A STANDING QUEUE, NOT A ONE-OFF COMPARISON
+
+**Owner, asked what the Review section is actually for:**
+
+> *"the purpose of the temporary review section is so we can put all the duplicate pages or
+> similar pages together next to each other for quick review. **any new pages go here too for
+> review before confirmation and acceptance that they are done and ready for use** (then they
+> move to their new home). the moving of the nav link within the menu list order has only the
+> intention of making it faster and easier to review them and to ensure nothing is forgotten or
+> missed, **once its moved out of the review section its deemed done**. right now i have no way
+> to manage this without keeping a running list manually external to the app interface."*
+
+**Everything above this line still stands. This changes what the section IS, and therefore what
+"done" means for this task.** Read it before building.
+
+## What changes
+
+### 1. Review has TWO intakes, not one
+
+| intake | what enters | when it leaves |
+|---|---|---|
+| **Duplicates** — DUPECENSUS's manifest | every implementation of every duplicated concept | when the owner has picked a winner **and the consolidation has shipped and been accepted** |
+| **New pages** — anything a thread builds | any page that did not exist before | when the owner has looked at it and accepted it |
+
+**The second intake is new and the body of this doc does not contemplate it.** Build the group
+so adding one entry is one line, because entries will be added continuously by other threads —
+not once by this one.
+
+### 2. Nav position IS the status. Say so on the page.
+
+**Out of Review = deemed done.** That is the owner's acceptance signal and there is no other
+one. It follows that:
+
+- **Moving an entry out is a deliberate act with a meaning**, not tidying. The banner copy must
+  say this in one sentence, so nobody — including the owner in three weeks, and including the
+  next thread — reads an empty Review group as "the feature was abandoned" rather than
+  "everything has been accepted."
+- **The re-bucketing pass referenced in §3 above is not a separate future task.** It is what
+  happens one entry at a time, as each is accepted. Keep the origin-group mapping (§3) as a
+  **living table in the report**, not a one-time record — the next thread to accept something
+  needs to know where to put it back.
+
+### 3. "Temporary" applies to the CONTENTS, not the mechanism
+
+§6 above says removing this later must be one commit. **That requirement is now secondary to a
+more important one:**
+
+- **Removing ONE ENTRY must be cheap and obvious** — that is the operation that will actually
+  run, repeatedly, for months.
+- The whole-block removal stays a goal, but **do not trade per-entry simplicity for it.**
+- **Do not write a demolition date into the code.** It has no demolition date; it empties out.
+
+### 4. Scope is ALL of DUPECENSUS's manifest — including the groups already ruled on
+
+**This reverses the scoping question DUPECENSUS raised.** People (`TASK-ONEPEOPLE`) and Horses
+(`TASK-HORSEONE`) have owner rulings but **have not shipped and have not been accepted**, so by
+the rule above they belong in Review. A decision is not an acceptance.
+
+### 5. Consequence for sequencing — REVIEWNAV GOES FIRST
+
+**`TASK-ONEPEOPLE` builds a new page. By this addendum's own rule, a new page goes to Review for
+acceptance. So Review has to exist before ONEPEOPLE lands, or ONEPEOPLE has nowhere to arrive.**
+Same for `TASK-HORSEONE`.
+
+Both also edit `AppLayout.tsx`, which this task owns. **Do not run them concurrently with this
+one** — that is the exact failure mode `docs/reports/TASK-DUPECENSUS-REPORT.md` documents, where
+four threads landed on `main` mid-audit and closed three findings out from under it.
+
+## What this does NOT change
+
+- **Still no page contents change. Still no retirement constant flipped. Still fix nothing.**
+  §4 and §5 above are unaffected — a page tidied on the way into Review is a page the owner
+  cannot judge.
+- **Still MOVE the live entry, do not copy it** (§3).
+- **Still admin-only, still desktop nav, still visibly not-a-live-page** (§1).
+
+## The test this addendum adds
+
+8. **A new page can be added to Review in one line**, and the mechanism for doing so is written
+   down where the next thread will find it.
+9. **The section's own copy states that leaving Review means accepted** — not that the section
+   is scaffolding awaiting deletion.
+10. **The origin-group table is written as a living record** the next accepting thread updates,
+    not as a closed one-time list.
