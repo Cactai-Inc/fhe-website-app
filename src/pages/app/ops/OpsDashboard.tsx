@@ -7,6 +7,8 @@ import {
 } from '../../../lib/api';
 import { ModuleGate, useAsync } from '../../../lib/ops';
 import { useModules } from '../../../lib/ops/useModules';
+import { useAuth } from '../../../contexts/AuthContext';
+import { MODULE_HUB_PAGE_KEY, pageByKey } from '../../../lib/pageRegistry';
 
 /**
  * OPS-DASH — Ops home dashboard (surface `ops`, module `core`).
@@ -23,6 +25,18 @@ import { useModules } from '../../../lib/ops/useModules';
  *    as a navigating <Link>; an enabled module WITHOUT a live hub renders as a
  *    non-navigating "Enabled" status tile; modules the tenant lacks render a
  *    locked (non-linking) fallback.
+ *
+ * TASK-PAGEVIS added the FOURTH condition, and the reason it is a separate
+ * state rather than a variant of "Locked" is that the two mean opposite things:
+ *
+ *    Locked   you do not have this. The PLATFORM owner decides, under Feature
+ *             flags. Nothing you can click changes it.
+ *    Hidden   you have this and chose to put it away. YOU decided, under
+ *             Settings -> Page visibility, and you can undo it there.
+ *
+ * A Hidden tile therefore stays a real <Link>: hiding removes the nav entry, not
+ * the route, and this tile is the way back. Collapsing it into "Locked" would
+ * tell the owner he had lost something he had merely tidied.
  *
  * Count fns are injected (prop, default = the real INT-API-CORE wrappers) so the
  * data seam is testable per §15 without reaching for the network. All four count
@@ -68,15 +82,14 @@ const DEFAULT_COUNTS = {
  * page ships, add its route to App.tsx AND one entry here, e.g.
  *   'mod.brokerage': '/app/ops/brokerage',
  */
-export const MODULE_HUB_ROUTES: Record<string, string> = {
-  // mod.brokerage hub retired with the deal-wizard teardown; the tile renders as
-  // a non-navigating "Enabled" status tile (dead links are forbidden).
-  'mod.lessons': '/app/ops/lessons',
-  'mod.boarding': '/app/ops/boarding',
-  'mod.barnops': '/app/ops/barnops',
-  'mod.horserecords': '/app/ops/records',
-  'mod.employees': '/app/ops/employees',
-};
+export const MODULE_HUB_ROUTES: Record<string, string> = Object.fromEntries(
+  Object.entries(MODULE_HUB_PAGE_KEY)
+    .map(([moduleKey, pageKey]) => [moduleKey, pageByKey(pageKey)?.path])
+    .filter((pair): pair is [string, string] => typeof pair[1] === 'string'),
+);
+// mod.brokerage has no hub page, so the registry yields no entry for it and its
+// tile renders as the non-navigating "Enabled" status tile (dead links are
+// forbidden). That is the same behaviour as the hand-written map this replaced.
 
 /** The module launcher catalog: key + label. Every tile is entitlement-gated;
  *  navigation comes solely from MODULE_HUB_ROUTES. */
@@ -143,6 +156,7 @@ export default function OpsDashboard({
   hubRoutes = MODULE_HUB_ROUTES,
 }: OpsDashboardProps) {
   const modules = useModules();
+  const { isPageHidden } = useAuth();
 
   const kpis: KpiSpec[] = [
     { key: 'intake', label: 'Intake to review', to: '/app/ops/intake', load: counts.pendingIntake },
@@ -170,9 +184,17 @@ export default function OpsDashboard({
 
       <section aria-label="Modules">
         <h2 className="font-serif text-lg text-green-900">Modules</h2>
+        <p className="mt-1 text-sm text-green-800/70">
+          <span className="uppercase tracking-wide text-xs">Locked</span> means your plan does not
+          include it. <span className="uppercase tracking-wide text-xs">Hidden</span> means you
+          have it and put it away — it still opens, and you can bring its menu entry back under{' '}
+          <Link to="/app/ops/admin/pages" className="underline">Settings &rarr; Page visibility</Link>.
+        </p>
         <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {MODULE_TILES.map((tile) => {
             const hubRoute = hubRoutes[tile.moduleKey];
+            const hubPageKey = MODULE_HUB_PAGE_KEY[tile.moduleKey];
+            const hidden = !!hubPageKey && isPageHidden(hubPageKey);
             return (
               <ModuleGate
                 key={tile.moduleKey}
@@ -189,7 +211,20 @@ export default function OpsDashboard({
                   </div>
                 }
               >
-                {hubRoute ? (
+                {hubRoute && hidden ? (
+                  /* Entitled, built, and put away by this tenant. Still a link —
+                     the route resolves and this is the way back. */
+                  <Link
+                    to={hubRoute}
+                    data-testid={`module-${tile.moduleKey}-hidden`}
+                    className="flex items-center justify-between rounded border border-dashed border-green-800/25 bg-cream-100/60 px-5 py-4 hover:border-green-800/50 transition-colors"
+                  >
+                    <span className="font-serif text-green-800/70">{tile.label}</span>
+                    <span className="text-xs uppercase tracking-wide text-green-800/50">
+                      Hidden
+                    </span>
+                  </Link>
+                ) : hubRoute ? (
                   <Link
                     to={hubRoute}
                     data-testid={`module-${tile.moduleKey}-tile`}
