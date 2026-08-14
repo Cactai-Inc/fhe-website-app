@@ -74,7 +74,6 @@ export default function OrderPayment({
   // The unique-cents amount is assigned server-side when the order moves to
   // awaiting_payment. Until then we show the plain total for orientation.
   const zelleAmount = order.unique_amount ?? order.amount;
-  const reference = order.payment_reference ?? '— assigned when you continue —';
   const cardTotal = order.amount * (1 + STRIPE_FEE_RATE);
 
   async function chooseZelle() {
@@ -98,8 +97,17 @@ export default function OrderPayment({
     }
   }
 
-  // If already awaiting payment via Zelle, show the instructions.
-  const showingZelleInstructions = order.status === 'awaiting_payment' && method === 'zelle';
+  // The instructions are only instructions once there is a memo to quote. Keying
+  // this on `status === 'awaiting_payment'` (as it did until PAYLOCK) locked out
+  // every staff-provisioned order: provisioning creates the purchase ALREADY at
+  // awaiting_payment, so this branch rendered on first load — with a memo of
+  // "assigned when you continue" and the only control that assigns it, the
+  // Pay-with-Zelle button below, living in the branch the order could no longer
+  // reach. Keying on the reference itself makes both origins converge on the same
+  // path: no memo -> the button, which calls finalize_purchase_payment and
+  // generates one; memo -> the instructions that quote it.
+  const showingZelleInstructions = !!order.payment_reference && method === 'zelle';
+  const reference = order.payment_reference ?? '';
 
   return (
     <div className="bg-white border border-green-800/10 p-8 mb-8">
@@ -132,7 +140,9 @@ export default function OrderPayment({
               role="radio"
               aria-checked={selected}
               onClick={() => setMethod(opt.value)}
-              disabled={order.status === 'awaiting_payment'}
+              /* Locked once the keys are assigned, not once the status says
+                 awaiting_payment — see showingZelleInstructions below. */
+              disabled={!!order.payment_reference}
               className={`p-4 border text-left transition-all duration-200 focus-ring disabled:opacity-60 ${
                 selected ? 'border-green-800 bg-green-800/5' : 'border-green-800/15 hover:border-green-800/40'
               }`}
@@ -190,7 +200,7 @@ export default function OrderPayment({
         </div>
       )}
 
-      {STRIPE_ENABLED && method === 'stripe' && order.status !== 'awaiting_payment' && (
+      {STRIPE_ENABLED && method === 'stripe' && !order.payment_reference && (
         <div>
           <p className="text-sm font-sans text-muted mb-4">
             Card total with fee: <span className="text-green-900 font-medium">{usd(cardTotal)}</span>

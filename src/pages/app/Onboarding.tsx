@@ -1111,8 +1111,15 @@ export default function Onboarding() {
       {step === 'payment' && (
         <section aria-labelledby="ob-pay-heading">
           <h2 id="ob-pay-heading" className="font-serif text-lg text-green-900 mb-3">Payment</h2>
+          {/* PAYLOCK: this used to read "Complete payment to confirm your
+              booking" — a gate the system does not have. Nothing that writes a
+              booking reads payment state, and this very step ships an "I'll pay
+              later — finish" bypass, so the old sentence contradicted both the
+              database and the button beneath it. */}
           <p className="text-sm text-muted mb-6">
-            Your documents are signed. Complete payment to confirm your booking.
+            Your documents are signed — the last step is payment. Send it below, or
+            finish now and pay later; either way you can book your sessions on the{' '}
+            <Link to="/app/calendar" className="text-green-800 underline">Calendar</Link>.
           </p>
           {payError && <p role="alert" className="form-error mb-4">{payError}</p>}
           {order ? (
