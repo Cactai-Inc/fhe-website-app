@@ -94,12 +94,17 @@ export default function OrderDetail() {
           </div>
         </div>
 
-        {/* Scheduling now lives on the full calendar (Phase 6) — the client
-            books their session there once this is confirmed. */}
+        {/* Scheduling lives on the full calendar. PAYLOCK: this used to read
+            "After payment is confirmed, you'll pick your time…" — which nothing
+            in the system enforces. Credits are granted when the order is created
+            and book_open_slot gates on credits, not on payment_status; no booking
+            writer reads payment state at all. The old sentence also buried the
+            only calendar link inside a wait that does not exist. */}
         {needsPayment && allDocsSigned && (
           <p className="body-text text-sm text-muted">
-            After payment is confirmed, you’ll pick your time on the{' '}
-            <Link to="/app/calendar" className="text-green-800 underline">Calendar</Link>.
+            You can pick your times on the{' '}
+            <Link to="/app/calendar" className="text-green-800 underline">Calendar</Link>
+            {' '}whenever you’re ready — scheduling doesn’t wait on payment.
           </p>
         )}
 
