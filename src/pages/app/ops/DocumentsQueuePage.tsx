@@ -38,7 +38,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toErrorMessage } from '../../../lib/ops/errors';
 import { Helmet } from 'react-helmet-async';
 import {
-  listDocuments,
+  listDocuments, deleteDocuments,
   pendingVersionDecisions, resolveVersionDecision, templatePastSigners,
   type PendingVersionDecision, type PastSigner,
 } from '../../../lib/api';
@@ -297,6 +297,11 @@ export default function DocumentsQueuePage() {
 
   useEffect(() => load(), [load]);
 
+  async function handleDeleteSelected(ids: string[]) {
+    await deleteDocuments(ids);
+    load();
+  }
+
   // By-person / By-horse options come from who/what actually has a document
   // on this already-fetched set — no extra query, and nobody with zero
   // documents clutters the picker.
@@ -400,6 +405,7 @@ export default function DocumentsQueuePage() {
           onStatusChange={setStatusFilter}
           emptyTitle={emptyCopy?.title}
           emptyMessage={emptyCopy?.message}
+          onDeleteSelected={handleDeleteSelected}
         />
       )}
 

@@ -28,6 +28,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Trash2 } from 'lucide-react';
 import { fromHere } from '../../../lib/linkOrigin';
 import { useAuth } from '../../../contexts/AuthContext';
 import { DataTable, StatusBadge } from '../../../lib/ops';
@@ -53,6 +54,11 @@ export interface DocumentQueueTableProps {
    *  "no documents exist." */
   emptyTitle?: string;
   emptyMessage?: string;
+  /** Soft-deletes the given document ids (the page owns the actual mutation +
+   *  reload, same division as `onStatusChange` — this table stays a zero-data-call
+   *  presentational component). Rejecting leaves the selection in place so the
+   *  operator can retry. */
+  onDeleteSelected?: (ids: string[]) => Promise<void>;
 }
 
 function formatDate(value: string | null): string {
@@ -300,6 +306,72 @@ function ColumnMenu({ visible, onToggle, onReset }: ColumnMenuProps) {
   );
 }
 
+/** Header checkbox: checked when every visible row is selected, indeterminate
+ *  (native, so it needs the DOM ref rather than a prop) when only some are. */
+function SelectAllCheckbox({
+  rows, selected, onChange,
+}: { rows: DocumentQueueRow[]; selected: Set<string>; onChange: (next: Set<string>) => void }) {
+  const ref = useRef<HTMLInputElement>(null);
+  const allSelected = rows.length > 0 && rows.every((r) => selected.has(r.id));
+  const someSelected = rows.some((r) => selected.has(r.id));
+
+  useEffect(() => {
+    if (ref.current) ref.current.indeterminate = someSelected && !allSelected;
+  }, [someSelected, allSelected]);
+
+  return (
+    <input
+      ref={ref}
+      type="checkbox"
+      className="accent-green-700 w-[15px] h-[15px]"
+      aria-label="Select all documents"
+      checked={allSelected}
+      onChange={() => onChange(allSelected ? new Set() : new Set(rows.map((r) => r.id)))}
+    />
+  );
+}
+
+/** Appears once at least one row is selected. Two-click confirm — same
+ *  pattern as the lead-delete button on ContactsPage — so a stray click
+ *  can't discard documents. */
+function DeleteSelectedBar({
+  count, onDelete,
+}: { count: number; onDelete: () => Promise<void> }) {
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleClick() {
+    if (!confirming) { setConfirming(true); return; }
+    setBusy(true); setError(null);
+    try {
+      await onDelete();
+      setConfirming(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not delete the selected documents.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5">
+      <span className="text-sm text-red-900">{count} selected</span>
+      {error && <p role="alert" className="form-error text-[12.5px]">{error}</p>}
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => void handleClick()}
+        className={`ml-auto px-3.5 py-1.5 rounded-lg text-xs inline-flex items-center gap-1.5 focus-ring disabled:opacity-50 ${
+          confirming ? 'bg-red-600 text-white hover:bg-red-700' : 'border border-red-300 text-red-700 hover:bg-red-100'
+        }`}
+      >
+        <Trash2 size={13} /> {busy ? 'Deleting…' : confirming ? `Really delete ${count}?` : `Delete selected`}
+      </button>
+    </div>
+  );
+}
+
 export function DocumentQueueTable({
   documents,
   loading,
@@ -307,13 +379,53 @@ export function DocumentQueueTable({
   onStatusChange,
   emptyTitle = 'No documents',
   emptyMessage = 'Documents generated across engagements will appear here.',
+  onDeleteSelected,
 }: DocumentQueueTableProps) {
   const { profile } = useAuth();
   const storageKey = `${COLUMN_STORAGE_PREFIX}${profile?.user_id ?? 'anon'}`;
   const { visible, toggle, reset } = useColumnVisibility(storageKey);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const rows = [...documents].sort(byGeneratedAtDesc);
-  const columns = useMemo(() => COLUMN_DEFS.filter((c) => visible.has(c.key)), [visible]);
+  const rowIdsKey = documents.map((d) => d.id).sort().join(',');
+
+  // Drop stale ids from selection when the underlying set changes (filter
+  // switch, preset switch, or a delete completing) — never carry a selection
+  // forward that points at a row no longer in view.
+  useEffect(() => {
+    const ids = new Set(rowIdsKey ? rowIdsKey.split(',') : []);
+    setSelected((prev) => {
+      let changed = false;
+      const next = new Set<string>();
+      prev.forEach((id) => { if (ids.has(id)) next.add(id); else changed = true; });
+      return changed ? next : prev;
+    });
+  }, [rowIdsKey]);
+
+  const columns = useMemo(() => {
+    const visibleCols = COLUMN_DEFS.filter((c) => visible.has(c.key));
+    if (!onDeleteSelected) return visibleCols;
+    const selectCol: Column<DocumentQueueRow> = {
+      key: '__select',
+      header: <SelectAllCheckbox rows={rows} selected={selected} onChange={setSelected} />,
+      className: 'w-8',
+      render: (row) => (
+        <input
+          type="checkbox"
+          className="accent-green-700 w-[15px] h-[15px]"
+          aria-label={`Select ${row.title ?? row.display_code ?? 'document'}`}
+          checked={selected.has(row.id)}
+          onClick={(e) => e.stopPropagation()}
+          onChange={() => setSelected((prev) => {
+            const next = new Set(prev);
+            if (next.has(row.id)) next.delete(row.id); else next.add(row.id);
+            return next;
+          })}
+        />
+      ),
+    };
+    return [selectCol, ...visibleCols];
+  }, [visible, onDeleteSelected, rows, selected]);
 
   return (
     <div>
@@ -337,6 +449,12 @@ export function DocumentQueueTable({
         </div>
         <ColumnMenu visible={visible} onToggle={toggle} onReset={reset} />
       </div>
+      {onDeleteSelected && selected.size > 0 && (
+        <DeleteSelectedBar
+          count={selected.size}
+          onDelete={() => onDeleteSelected([...selected])}
+        />
+      )}
       <DataTable
         columns={columns}
         rows={rows}

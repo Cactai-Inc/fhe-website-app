@@ -72,13 +72,6 @@ export function ContractNotes({
             <Plus size={13} /> Add a comment
           </button>
         </div>
-        <p className="text-sm text-secondary">
-          Comments are a great way to chat about this contract. Each one is its own
-          chat thread designed to keep things focused and centrally located. Use as
-          many as you need and label them anything you want. You can use Requests to
-          chat about specific contract sections, its layout mirrors the exact
-          contract layout you see below.
-        </p>
       </div>
 
       {err && <p role="alert" className="form-error mb-2">{err}</p>}
