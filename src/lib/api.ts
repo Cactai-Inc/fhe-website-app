@@ -1251,6 +1251,21 @@ export async function listDocuments(): Promise<DocumentQueueRow[]> {
   return (data ?? []) as unknown as DocumentQueueRow[];
 }
 
+/** Soft-delete one or more documents (admin RLS). `documents` is never
+ *  hard-deletable at the DB grant level (§148, migration 12) — DELETE is
+ *  revoked from every role, so this sets `deleted_at`/`deleted_by` the same
+ *  way `deleteContact` does. `listDocuments` already filters `deleted_at IS
+ *  NULL`, so deleted rows simply drop out of the queue on next load. */
+export async function deleteDocuments(ids: string[]): Promise<void> {
+  if (ids.length === 0) return;
+  const { data: auth } = await supabase.auth.getUser();
+  const { error } = await supabase
+    .from('documents')
+    .update({ deleted_at: new Date().toISOString(), deleted_by: auth.user?.id ?? null })
+    .in('id', ids);
+  if (error) throw error;
+}
+
 /**
  * Document types the "+ Add new" picker can offer, with `has_clauses`
  * DERIVED from whether `contract_clause_defs` rows exist for the template —
