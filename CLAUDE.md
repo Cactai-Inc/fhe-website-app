@@ -5,6 +5,25 @@ retired concepts, the migration convention, and the settled owner decisions.
 
 ---
 
+## No subagent delegation
+
+**Do not use the Agent tool or the Workflow tool in this repo unless the owner
+explicitly asks for it.** Do the work directly in this thread — read files, edit
+files, run commands yourself. Do not spawn `Explore`, `general-purpose`, or any
+other subagent for research, search, or execution, even for broad or multi-step
+tasks.
+
+**Why:** a prior session let subagent fan-out run unchecked and burned roughly 5
+hours of usage allowance in about 10 minutes. This is a standing rule, not a
+one-off — it applies to every thread in this repo, not just the one it was
+first raised in.
+
+**How to apply:** author task docs/plans yourself; if a task genuinely needs
+parallel execution, ask the owner first and let them run it in their own
+separate thread, per the existing owner-orchestration workflow.
+
+---
+
 ## Commands
 
 ```bash
