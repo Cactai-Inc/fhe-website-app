@@ -728,7 +728,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
      signed yet`, split three ways only by which message shows — so their
      union collapses to the shared prefix.) */
   const hasSignatureCardContent =
-    (isOwnerSide && state === 'locked' && !counterpartySigned)
+    (isOwnerSide && (state === 'locked' || state === 'in_review') && !counterpartySigned)
     || (state === 'locked' && myRoles.length > 0 && !iSigned)
     || iSigned
     || (isOwnerSide && state === 'locked' && companyPendingRoles.length > 0)
@@ -2052,8 +2052,13 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
               one path: the Send action in the deck above the title.
               "Back to editing" (2026-07-31) and the second "Lock for signing"
               (2026-07-31) were removed from this same row earlier; with the send
-              buttons gone the row exists only for Withdraw / correct. */}
-          {isOwnerSide && state === 'locked' && !counterpartySigned && (
+              buttons gone the row exists only for Withdraw / correct.
+              Also fires from `in_review` (not just `locked`): advanceWorkflow
+              permits `in_review → editable` same as `locked → editable`, and
+              until now there was no button offering it — an owner in review
+              could only edit structure in place (TASK-INREVIEW) or wait for
+              the counterparty, with no way to fully reopen the document. */}
+          {isOwnerSide && (state === 'locked' || state === 'in_review') && !counterpartySigned && (
             <div className="flex flex-wrap items-center gap-2.5 mb-5">
               <button type="button" className="btn-secondary text-xs"
                 onClick={() => void act(() => advanceWorkflow(id!, 'editable'), 'Reopened for corrections.')}>
