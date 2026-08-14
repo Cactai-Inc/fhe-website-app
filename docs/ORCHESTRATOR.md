@@ -2,14 +2,16 @@
 
 > **⚠️ THE ROLE ITSELF IS NO LONGER DEFINED HERE.**
 >
-> **Read `~/Downloads/claude-code-repo/orchestration/charters/L3-PLAN.md` first.** That is the
-> canonical charter for any orchestrator running one plan under one goal. It is a **product
+> **Read `~/Downloads/claude-code-repo/orchestration/rules/L3-PLAN.md` first.** That is the
+> canonical rules file for any orchestrator running one plan under one goal. It is a **product
 > artifact owned by ORCH**; FHE is a consumer of it, not its home (owner ruling, 2026-08-12).
+> (Renamed 2026-08-13 from "charter" to "rules" across the orchestration repo — same file,
+> `charters/` is now `rules/`.)
 >
-> Everything below is retained because it is what the canonical charter was generalised FROM,
+> Everything below is retained because it is what the canonical rules file was generalised FROM,
 > and because the FHE-specific facts in it — the file ownership rules, the D-decisions, the
 > failure-mode instances — are real and still apply. **Where the two ever disagree, the product
-> charter wins.**
+> rules file wins.**
 
 ---
 
