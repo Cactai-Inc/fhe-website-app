@@ -115,7 +115,7 @@ export default function Lessons() {
         <div className="container-site max-w-5xl">
           <div className="text-center mb-12">
             <p className="eyebrow mb-3">Choose your lessons</p>
-            <h2 className="heading-section text-green-800">Single, or save with a pack.</h2>
+            <h2 className="heading-section text-green-800">From Your 1st Ride to Weekly Lessons</h2>
           </div>
 
           {packsState === 'loading' && (
