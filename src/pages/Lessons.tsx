@@ -200,7 +200,6 @@ export default function Lessons() {
                 <div className={gridCls}>
                   {ourHorse.map(card)}
                 </div>
-                {footnote}
                 {ownHorse.length > 0 && (
                   <>
                     <p className="text-center body-text text-lg text-green-800 mt-14 mb-8">
@@ -209,9 +208,10 @@ export default function Lessons() {
                     <div className={gridCls}>
                       {ownHorse.map(card)}
                     </div>
-                    {footnote}
                   </>
                 )}
+                {/* Once, at the bottom, under the last set of cards (owner). */}
+                {footnote}
               </>
             );
           })()}
