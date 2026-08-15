@@ -113,8 +113,12 @@ export default function Lessons() {
       {/* Catalog — price/quantity focused */}
       <section className="bg-cream-50 py-20">
         <div className="container-site max-w-5xl">
-          <div className="text-center mb-12">
-            <p className="eyebrow mb-3">Choose your lessons</p>
+          {/* Owner, screenshot 2026-08-14: the heading sat tight under its
+              eyebrow with a chasm below — air moved above (mb-3→mb-5), the
+              block's bottom margin halved (mb-12→mb-6; the horse-included
+              line below carries its own mb-8). */}
+          <div className="text-center mb-6">
+            <p className="eyebrow mb-5">Choose your lessons</p>
             <h2 className="heading-section text-green-800">From Your 1st Ride to Weekly Lessons</h2>
           </div>
 
