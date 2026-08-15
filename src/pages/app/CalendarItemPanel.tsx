@@ -15,11 +15,16 @@ import {
   confirmBooking,
   requestHorseIntake,
   notifyAppointmentClient,
+  fetchClientMonthlyPlan,
+  setRecurringDay,
+  generateMonthlyLessons,
   type CalendarItem,
   type CalendarLocation,
   type ClientPurchaseOption,
   type InstructorOption,
+  type MonthlyPlan,
 } from '../../lib/ops/api-calendar';
+import { adminSendInvitation } from '../../lib/admin';
 
 /*
  * The staff/admin calendar config panel (Phase 6, Slice 3). Right-side on
@@ -89,6 +94,27 @@ export function CalendarItemPanel({
   const [weeks, setWeeks] = useState('1');
   const [scope, setScope] = useState<'one' | 'future' | 'all'>('one');
 
+  // BOOKLINK B1 — inline "create the client" escape when a lesson needs one.
+  const [newClientOpen, setNewClientOpen] = useState(false);
+  const [newClientFirst, setNewClientFirst] = useState('');
+  const [newClientLast, setNewClientLast] = useState('');
+  const [newClientEmail, setNewClientEmail] = useState('');
+  const [newClientBusy, setNewClientBusy] = useState(false);
+  const [newClientError, setNewClientError] = useState<string | null>(null);
+
+  // BOOKLINK B2 — payment disposition, consulted only if this save ends up
+  // creating a brand-new order (nothing existed to debit).
+  const [paymentMethod, setPaymentMethod] = useState<'zelle' | 'cash'>('zelle');
+  const [paymentState, setPaymentState] = useState<'needs_payment' | 'paid'>('needs_payment');
+
+  // BOOKLINK B4 — the monthly-plan assignment for this client + offering, once
+  // one exists (it's created the first time this booking is saved).
+  const [monthlyPlan, setMonthlyPlan] = useState<MonthlyPlan | null>(null);
+  const [recurringDay, setRecurringDayInput] = useState('');
+  const [monthlyBusy, setMonthlyBusy] = useState(false);
+  const [monthlyError, setMonthlyError] = useState<string | null>(null);
+  const [monthlyResult, setMonthlyResult] = useState<string | null>(null);
+
   useEffect(() => {
     fetchOfferings()
       .then((all) => setOfferings(all.filter((o) => o.segment === 'rider' || o.segment === 'horse')))
@@ -125,6 +151,88 @@ export function CalendarItemPanel({
   }, [clientId]);
 
   const selectedOffering = offerings.find((o) => o.id === offeringId);
+  const isRecurringOffering = selectedOffering?.config_kind === 'recurring';
+
+  // BOOKLINK B4 — the monthly-plan assignment, once one exists for this
+  // client + this recurring offering (created by the first save).
+  useEffect(() => {
+    setMonthlyPlan(null);
+    setMonthlyResult(null);
+    if (!clientId || !isRecurringOffering) return;
+    fetchClientMonthlyPlan(clientId)
+      .then((plan) => {
+        if (plan && plan.offering_id === offeringId) {
+          setMonthlyPlan(plan);
+          setRecurringDayInput(plan.recurring_day ?? '');
+        }
+      })
+      .catch(() => setMonthlyPlan(null));
+  }, [clientId, offeringId, isRecurringOffering]);
+
+  async function createNewClient() {
+    if (!newClientFirst.trim() || !newClientEmail.trim()) {
+      setNewClientError('First name and email are required.');
+      return;
+    }
+    setNewClientBusy(true);
+    setNewClientError(null);
+    try {
+      // BOOKLINK B1: reuse the canonical provisioning spine
+      // (ProvisionClientForm → adminSendInvitation → provision_client_invitation)
+      // rather than a second client-creation path.
+      await adminSendInvitation({
+        email: newClientEmail.trim(),
+        firstName: newClientFirst.trim(),
+        lastName: newClientLast.trim() || undefined,
+        categories: ['GUEST'],
+      });
+      const refreshed = await listLessonClients();
+      setClients(refreshed);
+      const created = refreshed.find(
+        (c) => (c.email ?? '').toLowerCase() === newClientEmail.trim().toLowerCase(),
+      );
+      if (created) setClientId(created.id);
+      setNewClientOpen(false);
+      setNewClientFirst(''); setNewClientLast(''); setNewClientEmail('');
+    } catch (e) {
+      setNewClientError(toErrorMessage(e, 'Could not create the client.'));
+    } finally {
+      setNewClientBusy(false);
+    }
+  }
+
+  async function saveRecurringDay() {
+    if (!monthlyPlan || !recurringDay) return;
+    setMonthlyBusy(true); setMonthlyError(null);
+    try {
+      await setRecurringDay(monthlyPlan.purchase_item_id, recurringDay);
+      const refreshed = await fetchClientMonthlyPlan(clientId);
+      setMonthlyPlan(refreshed);
+    } catch (e) {
+      setMonthlyError(toErrorMessage(e, 'Could not set the recurring day.'));
+    } finally {
+      setMonthlyBusy(false);
+    }
+  }
+
+  async function generateThisMonth() {
+    if (!monthlyPlan) return;
+    setMonthlyBusy(true); setMonthlyError(null); setMonthlyResult(null);
+    try {
+      const res = await generateMonthlyLessons({
+        clientId, purchaseItemId: monthlyPlan.purchase_item_id,
+        startTime: start.slice(11, 16) || '15:00',
+        horseId: horseId || null, locationId: locationId || null,
+      });
+      setMonthlyResult(`${res.created} session${res.created === 1 ? '' : 's'} added, ${res.skipped_existing} already on the calendar.`);
+      const refreshed = await fetchClientMonthlyPlan(clientId);
+      setMonthlyPlan(refreshed);
+    } catch (e) {
+      setMonthlyError(toErrorMessage(e, 'Could not generate this month’s sessions.'));
+    } finally {
+      setMonthlyBusy(false);
+    }
+  }
   const selectedLocation = locations.find((l) => l.id === locationId);
   const offsite = selectedLocation?.is_offsite ?? false;
 
@@ -176,10 +284,24 @@ export function CalendarItemPanel({
       notes: notes.trim() || null,
       recurrence_weeks: !editing ? Number(weeks) || 1 : 1,
       scope: editing && isSeries ? scope : 'one',
+      // BOOKLINK B2: only consulted when this save creates a brand-new order.
+      payment_method: type === 'offering' && !isFlexible ? paymentMethod : null,
+      payment_state: type === 'offering' && !isFlexible ? paymentState : undefined,
     };
   }
 
+  // BOOKLINK B1: a committed (non-draft) lesson needs a client — the same
+  // rule the DB enforces (bookings_lesson_requires_client), checked here so
+  // the panel can say so instead of surfacing a raw constraint error. Horse
+  // (kind='care') bookings are outside B1's scope per the spec's own words.
+  const needsClientToCommit =
+    type === 'offering' && !isFlexible && selectedOffering?.segment !== 'horse' && !clientId;
+
   async function submit(asDraft: boolean) {
+    if (!asDraft && needsClientToCommit) {
+      setError('Pick the client this lesson is for — or create one — before booking it.');
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -314,18 +436,42 @@ export function CalendarItemPanel({
               </label>
               {!isFlexible && (
                 <label className="text-sm">
-                  <span className="form-label">Client</span>
+                  <span className="form-label">
+                    Client{selectedOffering?.segment !== 'horse' ? ' (required to book)' : ''}
+                  </span>
                   <select className="form-input" value={clientId} onChange={(e) => { setClientId(e.target.value); setPurchaseId(''); }}>
                     <option value="">Unassigned</option>
                     {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
+                  {!newClientOpen ? (
+                    <button type="button" className="text-xs text-green-800 underline underline-offset-2 mt-1" onClick={() => setNewClientOpen(true)}>
+                      + New client
+                    </button>
+                  ) : (
+                    <div className="mt-2 p-3 bg-green-800/5 rounded-md flex flex-col gap-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <input className="form-input" placeholder="First name" value={newClientFirst} onChange={(e) => setNewClientFirst(e.target.value)} />
+                        <input className="form-input" placeholder="Last name" value={newClientLast} onChange={(e) => setNewClientLast(e.target.value)} />
+                      </div>
+                      <input className="form-input" type="email" placeholder="Email" value={newClientEmail} onChange={(e) => setNewClientEmail(e.target.value)} />
+                      <div className="flex items-center gap-2">
+                        <button type="button" className="btn-primary text-xs px-3 py-1.5" disabled={newClientBusy} onClick={() => void createNewClient()}>
+                          {newClientBusy ? 'Creating…' : 'Invite & select'}
+                        </button>
+                        <button type="button" className="text-xs text-green-800/70" onClick={() => { setNewClientOpen(false); setNewClientError(null); }}>
+                          Cancel
+                        </button>
+                      </div>
+                      {newClientError && <p role="alert" className="form-error">{newClientError}</p>}
+                    </div>
+                  )}
                 </label>
               )}
               {!isFlexible && clientId && purchases.length > 0 && (
                 <label className="text-sm">
                   <span className="form-label">Assign to purchase</span>
                   <select className="form-input" value={purchaseId} onChange={(e) => setPurchaseId(e.target.value)}>
-                    <option value="">None</option>
+                    <option value="">None — let the system debit or create one</option>
                     {purchases.map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.label}{p.amount != null ? ` — $${p.amount}` : ''}
@@ -333,6 +479,63 @@ export function CalendarItemPanel({
                     ))}
                   </select>
                 </label>
+              )}
+              {!isFlexible && clientId && offeringId && (!editing || !item?.purchase_id) && (
+                <div className="p-3 bg-green-800/5 rounded-md flex flex-col gap-2">
+                  <p className="text-xs text-green-800/70">
+                    Only used if booking this creates a brand-new order — if the client
+                    already has a credit or package covering it, that's simply used.
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className="text-sm">
+                      <span className="form-label">Payment method</span>
+                      <select className="form-input" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value as 'zelle' | 'cash')}>
+                        <option value="zelle">Zelle</option>
+                        <option value="cash">Cash</option>
+                      </select>
+                    </label>
+                    <label className="text-sm">
+                      <span className="form-label">Payment status</span>
+                      <select className="form-input" value={paymentState} onChange={(e) => setPaymentState(e.target.value as 'needs_payment' | 'paid')}>
+                        <option value="needs_payment">Needs to be paid</option>
+                        <option value="paid">Already paid</option>
+                      </select>
+                    </label>
+                  </div>
+                </div>
+              )}
+              {!isFlexible && clientId && isRecurringOffering && (
+                <div className="p-3 bg-green-800/5 rounded-md flex flex-col gap-2">
+                  <p className="form-label mb-0">Monthly plan</p>
+                  {!monthlyPlan ? (
+                    <p className="text-xs text-green-800/70">
+                      Save this booking once to assign the plan, then set the recurring day.
+                    </p>
+                  ) : (
+                    <>
+                      <p className="text-xs text-green-800/70">
+                        {monthlyPlan.month_label}: {monthlyPlan.remaining_this_month ?? '—'} of{' '}
+                        {monthlyPlan.entitled_this_month ?? '—'} left this month.
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <select className="form-input" value={recurringDay} onChange={(e) => setRecurringDayInput(e.target.value)}>
+                          <option value="">Recurring day…</option>
+                          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d) => (
+                            <option key={d} value={d}>{d}</option>
+                          ))}
+                        </select>
+                        <button type="button" className="btn-secondary text-xs px-3 py-1.5 whitespace-nowrap" disabled={monthlyBusy || !recurringDay} onClick={() => void saveRecurringDay()}>
+                          Set day
+                        </button>
+                      </div>
+                      <button type="button" className="btn-primary text-xs px-3 py-1.5 self-start" disabled={monthlyBusy || !monthlyPlan.recurring_day} onClick={() => void generateThisMonth()}>
+                        {monthlyBusy ? 'Working…' : 'Generate this month’s sessions'}
+                      </button>
+                      {monthlyResult && <p className="text-xs text-green-700">{monthlyResult}</p>}
+                      {monthlyError && <p role="alert" className="form-error">{monthlyError}</p>}
+                    </>
+                  )}
+                </div>
               )}
               {!isFlexible && instructors.length > 0 && (
                 <label className="text-sm">

@@ -77,6 +77,40 @@ export async function myLessonsOverview(): Promise<MyLessonsOverview> {
   };
 }
 
+/** BOOKLINK B3: one purchased, still-usable item the member can book against
+ *  — a credit-backed offering they own with a balance left. Feeds the
+ *  offeringId parameter request_open_time already accepts but no client
+ *  surface ever passed (FLOWTRACE item 7). */
+export interface MemberBookableItem {
+  creditId: string;
+  offeringId: string | null;
+  label: string;
+  creditsRemaining: number;
+}
+
+export async function myBookableItems(): Promise<MemberBookableItem[]> {
+  const { data, error } = await supabase
+    .from('lesson_credits')
+    .select('id, offering_id, package_key, credits_remaining, offerings(name)')
+    .is('deleted_at', null)
+    .gt('credits_remaining', 0)
+    .order('purchased_at', { ascending: false });
+  if (error) throw error;
+  type Row = {
+    id: string; offering_id: string | null; package_key: string | null;
+    credits_remaining: number; offerings: { name: string } | { name: string }[] | null;
+  };
+  return ((data ?? []) as Row[]).map((r) => {
+    const offering = Array.isArray(r.offerings) ? r.offerings[0] : r.offerings;
+    return {
+      creditId: r.id,
+      offeringId: r.offering_id,
+      label: offering?.name ?? r.package_key ?? 'Lesson credit',
+      creditsRemaining: Number(r.credits_remaining) || 0,
+    };
+  });
+}
+
 // ─── My lesson sessions (mod.lessons — 20260703120000) ──────────────────────
 
 export type MemberLessonSessionStatus = 'SCHEDULED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
