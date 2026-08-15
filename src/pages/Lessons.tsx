@@ -17,7 +17,15 @@ const usd = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', c
 // The old fallback to `tagline` is gone: tagline now renders under the name.
 function mechanics(o: Offering): string {
   if (o.note) return o.note;
-  if (o.config_kind === 'recurring' && o.weekly_frequency) return `${o.weekly_frequency}× weekly · monthly`;
+  if (o.config_kind === 'recurring' && o.weekly_frequency) {
+    // Riding lessons say what recurs and that the price is a payment cadence
+    // (owner, 2026-08-14): "1× weekly lesson · paid monthly". Other recurring
+    // services (training/exercise/turnout) keep the generic line.
+    if (o.service_type === 'RIDING_LESSON') {
+      return `${o.weekly_frequency}× weekly ${o.weekly_frequency > 1 ? 'lessons' : 'lesson'} · paid monthly`;
+    }
+    return `${o.weekly_frequency}× weekly · monthly`;
+  }
   if (o.config_kind === 'scheduled' && (o.unit_count ?? 1) > 1) return `${o.unit_count} lessons`;
   return '';
 }
