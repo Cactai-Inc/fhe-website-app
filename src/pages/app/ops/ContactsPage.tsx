@@ -507,17 +507,26 @@ function ContactDirectory({ mode }: { mode: DirectoryMode }) {
                   <UserPlus size={13} /> Invite to an account
                 </button>
               )}
-              {mode === 'leads' && isAdmin && (
+              {/* Owner, 2026-08-15: "i need a delete function on the records
+                  page" — built as an ARCHIVE (D11: nothing is purged, only
+                  hidden from main views), everywhere on this shared directory
+                  — was leads-only + admin-only before. deleteContact() itself
+                  was already exactly this: a deleted_at soft-hide, never a
+                  hard DELETE ('documents' proves the pattern the same way —
+                  see deleteDocuments' own comment). Widened to every mode
+                  this component serves; still admin-gated, unchanged from
+                  before. */}
+              {isAdmin && (
                 <button type="button"
                   onClick={async () => {
                     if (!confirmDelete) { setConfirmDelete(true); return; }
                     try {
                       await deleteContact(open.id);
-                      toast.success('Lead deleted.');
+                      toast.success('Archived.');
                       setOpen(null);
                       load();
                     } catch {
-                      toast.error('Could not delete the lead.');
+                      toast.error('Could not archive that record.');
                     }
                   }}
                   className={`px-3.5 py-2 rounded-lg text-xs inline-flex items-center gap-1.5 focus-ring ml-auto ${
@@ -525,7 +534,7 @@ function ContactDirectory({ mode }: { mode: DirectoryMode }) {
                       ? 'bg-red-600 text-white hover:bg-red-700'
                       : 'border border-red-300 text-red-700 hover:bg-red-50'
                   }`}>
-                  <Trash2 size={13} /> {confirmDelete ? 'Really delete?' : 'Delete lead'}
+                  <Trash2 size={13} /> {confirmDelete ? 'Really archive?' : 'Archive'}
                 </button>
               )}
             </div>
