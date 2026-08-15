@@ -80,9 +80,11 @@ export default function Lessons() {
         <div className="container-site max-w-3xl text-center">
           <p className="eyebrow mb-4">Book a lesson</p>
           {/* Owner, 2026-08-14: most visitors are first-time riders — the old
-              "Find your seat again." spoke only to returners. */}
+              "Find your seat again." spoke only to returners. Exact casing and
+              no period, per owner; it also echoes the landing CTA that brought
+              the visitor here. */}
           <h1 className="heading-display text-green-800 mb-6 text-[clamp(2.25rem,5vw,3.5rem)]">
-            Your first ride starts here.
+            Come Ride With Us
           </h1>
           <p className="body-text text-lg leading-relaxed">
             Private instruction at your own pace — one lesson, or a group when you're ready for a
@@ -172,6 +174,12 @@ export default function Lessons() {
             };
             return (
               <>
+                {/* Mirrors the own-horse divider below — the two lines make the
+                    rows read as deliberate sections, no box needed (owner call,
+                    2026-08-14: communicate horse-included once, not per card). */}
+                <p className="text-center body-text text-lg text-green-800 mb-8">
+                  Your riding lesson includes one of our carefully selected horses
+                </p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {ourHorse.map(card)}
                 </div>
