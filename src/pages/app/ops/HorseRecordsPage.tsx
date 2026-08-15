@@ -290,3 +290,12 @@ export default function HorseRecordsPage({ onOpenContact }: { onOpenContact?: (c
     </PageLayout>
   );
 }
+
+/** RETIRED as a standalone route behind a boolean, never deleted (standing
+ *  rule from 86a2c33). Owner, 2026-08-15: "we dont need horses as its own
+ *  page if we have horses on the records page" — this component itself is
+ *  unchanged and still IS the Records "Horses" tab (RecordsPage.tsx renders
+ *  it directly); only the standalone /app/ops/horse-records entry point and
+ *  nav row go away. /app/ops/horse-records now redirects to
+ *  /app/records/horses. */
+export const HORSE_RECORDS_STANDALONE_RETIRED = true;

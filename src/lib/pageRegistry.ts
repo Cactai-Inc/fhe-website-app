@@ -82,10 +82,13 @@ export interface PageEntry {
  *  page can say why a row it offers to hide is not in the rail today, and so
  *  nobody reads the absence as a registry bug. */
 export const PARKED_IN_REVIEW = new Set([
-  'mgmt.dashboard', 'mgmt.horses', 'records.hub', 'settings.team',
+  'mgmt.dashboard', 'records.hub', 'settings.team',
   /* people.leads / people.clients / people.directory REMOVED 2026-08-12
      (TASK-RECORDS) — not restored, superseded. Their one-key replacement,
      people.records, ships directly into ACCOUNTS_GROUP, never parked. */
+  /* mgmt.horses REMOVED 2026-08-15 — the key itself no longer exists in
+     PAGE_REGISTRY (every key in this set must, per this file's own test);
+     it isn't parked in Review, it's genuinely retired. See PAGE_REGISTRY. */
 ]);
 
 /** Display names for the module sections on the settings page. Mirrors
@@ -130,10 +133,11 @@ export const PAGE_REGISTRY: PageEntry[] = [
   { key: 'mgmt.documents', path: '/app/ops/documents', label: 'Documents', group: 'management' },
   { key: 'mgmt.deals', path: '/app/ops/deals', label: 'Deals', group: 'management' },
   { key: 'mgmt.payments_review', path: '/app/ops/payments/review', label: 'Payment review', group: 'management' },
-  {
-    key: 'mgmt.horses', path: '/app/ops/horse-records', label: 'Horses', group: 'management',
-    note: 'TASK-HORSEONE may move this route. The key stays mgmt.horses, so your choice follows it.',
-  },
+  // mgmt.horses RETIRED 2026-08-15 (TASK-HORSEONE's anticipated move happened,
+  // then went further): the standalone Horses page is gone, not moved — its
+  // one nav row was Records' own Horses tab wearing a second hat. people.records
+  // below already covers it ("one key covers all five tabs, Horses included").
+  // Per this file's own convention: retiring a page means deleting the entry.
 
   // ── People ───────────────────────────────────────────────────────────────
   // TASK-RECORDS (2026-08-12): people.leads / people.clients / people.directory

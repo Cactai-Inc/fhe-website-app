@@ -509,11 +509,15 @@ const MANAGEMENT_GROUP: NavItem[] = [
   { to: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   // Moved up from its own "People" heading (owner, 2026-08-15) — Records
   // (the People/Clients/Partners/Vendors/Horses tabs page) now sits directly
-  // above Horses in Management; the People group is gone, not hidden — it
-  // had no other member (ACCOUNTS_GROUP below is kept, empty, for anything
-  // that lands there later; manageNavGroups() drops empty groups already).
+  // in Management; the People group is gone, not hidden — it had no other
+  // member (ACCOUNTS_GROUP below is kept, empty, for anything that lands
+  // there later; manageNavGroups() drops empty groups already).
+  //
+  // The standalone Horses row that used to sit right below this one is
+  // retired (owner, same session: "we dont need horses as its own page if
+  // we have horses on the records page") — Records' own Horses tab, one
+  // click away, is the only entry point now.
   { to: '/app/records', label: 'Records', icon: BookOpen },
-  { to: '/app/ops/horse-records', label: 'Horses', icon: Boxes },
   { to: '/app/ops/support', label: 'Support', icon: LifeBuoy },
   // Servicing folded in 2026-07-31: three links did not justify a heading of
   // their own, and they are day-to-day management like the queues above.

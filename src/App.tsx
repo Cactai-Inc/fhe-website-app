@@ -80,8 +80,8 @@ import RecordsPage from './pages/app/RecordsPage';
 import OpsHome from './pages/app/OpsHome';
 import InstructorHomePreview from './pages/app/ops/InstructorHomePreview';
 import ContactsPage, { CONTACTS_PAGE_RETIRED } from './pages/app/ops/ContactsPage';
-import HorsesPage from './pages/app/ops/HorsesPage';
-import HorseRecordsPage from './pages/app/ops/HorseRecordsPage';
+import HorsesPage, { HORSES_PAGE_RETIRED } from './pages/app/ops/HorsesPage';
+import HorseRecordsPage, { HORSE_RECORDS_STANDALONE_RETIRED } from './pages/app/ops/HorseRecordsPage';
 import DocumentsQueuePage from './pages/app/ops/DocumentsQueuePage';
 import DocumentViewerPage from './pages/app/ops/DocumentViewerPage';
 import ModerationPage from './pages/app/ops/ModerationPage';
@@ -303,8 +303,18 @@ export function AppRoutes() {
                   reads as Vendor; Partner is the narrower new category). */}
               <Route path="ops/directory" element={<Navigate to="/app/records/vendors" replace />} />
               <Route path="ops/leads" element={<RedirectWithQuery to="/app/records/leads" />} />
-              <Route path="ops/horses" element={<ProtectedRoute requireStaff><HorsesPage /></ProtectedRoute>} />
-              <Route path="ops/horse-records" element={<ProtectedRoute requireStaff><HorseRecordsPage /></ProtectedRoute>} />
+              {/* RETIRED 2026-08-15 (owner: "we dont need horses as its own page
+                  if we have horses on the records page") — a third, orphaned
+                  horse-roster implementation, never linked from any nav. */}
+              <Route path="ops/horses" element={HORSES_PAGE_RETIRED
+                ? <Navigate to="/app/records/horses" replace />
+                : <ProtectedRoute requireStaff><HorsesPage /></ProtectedRoute>} />
+              {/* RETIRED 2026-08-15 (owner) — HorseRecordsPage is unchanged and
+                  still IS the Records "Horses" tab; only this standalone entry
+                  point + its nav row go away. */}
+              <Route path="ops/horse-records" element={HORSE_RECORDS_STANDALONE_RETIRED
+                ? <Navigate to="/app/records/horses" replace />
+                : <ProtectedRoute requireStaff><HorseRecordsPage /></ProtectedRoute>} />
               <Route path="ops/documents" element={<ProtectedRoute requireStaff><DocumentsQueuePage /></ProtectedRoute>} />
               <Route path="ops/documents/:id" element={<ProtectedRoute requireStaff><DocumentViewerPage /></ProtectedRoute>} />
               {/* RETIRED 2026-08-11 (TASK-LEADCLEAN): the owner ruled the
