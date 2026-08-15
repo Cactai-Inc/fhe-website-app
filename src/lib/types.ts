@@ -20,7 +20,7 @@ export type RequestStatus = 'new' | 'contacted' | 'invited' | 'expired' | 'conve
 export type InvitationStatus = 'sent' | 'accepted' | 'expired' | 'revoked';
 export type OrderStatus =
   | 'draft' | 'awaiting_payment' | 'paid' | 'cancelled' | 'expired';
-export type PaymentMethod = 'zelle' | 'stripe';
+export type PaymentMethod = 'zelle' | 'stripe' | 'cash';
 export type PaymentStatus =
   | 'pending' | 'matched' | 'confirmed' | 'review' | 'failed' | 'refunded';
 export type BookingStatus =

@@ -7,6 +7,7 @@ import {
   myLessonsOverview, myLessonSessions, myLessonReports, addMyLessonNote,
   type MemberLessonSession, type MemberLessonReport,
 } from '../../lib/ops/api-member';
+import { fetchMyMonthlyPlan, type MonthlyPlan } from '../../lib/ops/api-calendar';
 import { formatSessionWhen } from '../../lib/formatDateTime';
 import { toErrorMessage } from '../../lib/ops/errors';
 import { SessionNotesView } from './SessionNotesView';
@@ -112,6 +113,7 @@ export function MyLessonsContent() {
   const load = useAsync(myLessonsOverview);
   const [sessions, setSessions] = useState<MemberLessonSession[]>([]);
   const [reports, setReports] = useState<MemberLessonReport[]>([]);
+  const [monthlyPlan, setMonthlyPlan] = useState<MonthlyPlan | null>(null);
 
   useEffect(() => {
     if (!lessonsOn) return;
@@ -128,6 +130,9 @@ export function MyLessonsContent() {
       .catch(() => {
         /* the progress section just stays empty */
       });
+    fetchMyMonthlyPlan()
+      .then(setMonthlyPlan)
+      .catch(() => setMonthlyPlan(null));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lessonsOn]);
 
@@ -193,6 +198,26 @@ export function MyLessonsContent() {
             ))}
           </div>
         </section>
+      )}
+
+      {/* BOOKLINK B4 — monthly-plan status, when the client is on one. */}
+      {monthlyPlan && (
+        <div className="bg-white border border-green-800/10 p-6 mb-8" data-testid="monthly-plan">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-sans font-medium text-green-900">{monthlyPlan.offering_name}</p>
+              <p className="text-xs text-muted mt-0.5">
+                {monthlyPlan.recurring_day
+                  ? `Every ${monthlyPlan.recurring_day} — ${monthlyPlan.month_label}`
+                  : `Recurring day not set yet — ${monthlyPlan.month_label}`}
+              </p>
+            </div>
+            <p className="font-serif text-3xl text-green-800 whitespace-nowrap">
+              {monthlyPlan.remaining_this_month ?? '—'}
+              <span className="text-sm text-muted"> / {monthlyPlan.entitled_this_month ?? '—'} left</span>
+            </p>
+          </div>
+        </div>
       )}
 
       {overview && (

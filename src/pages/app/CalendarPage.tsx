@@ -21,6 +21,7 @@ import {
 } from '../../lib/ops/api-calendar';
 import { fetchOfferings, createDraftOrder } from '../../lib/api';
 import type { Offering } from '../../lib/types';
+import { myBookableItems, type MemberBookableItem } from '../../lib/ops/api-member';
 import { toErrorMessage } from '../../lib/ops/errors';
 import { useNavigate, Link } from 'react-router-dom';
 import { listStableHorses, type StableHorse } from '../../lib/stable';
@@ -705,6 +706,16 @@ function RequestTimePanel({ start, onClose, onDone }: { start: Date; onClose: ()
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
+  // BOOKLINK B3 — what the client is booking against, from their own
+  // purchased items (FLOWTRACE item 7: the offeringId parameter already
+  // exists end-to-end; no client surface ever passed it).
+  const [items, setItems] = useState<MemberBookableItem[]>([]);
+  const [itemCreditId, setItemCreditId] = useState('');
+
+  useEffect(() => {
+    myBookableItems().then(setItems).catch(() => setItems([]));
+  }, []);
+
   const weekday = start.toLocaleDateString(undefined, { weekday: 'long' });
   const clock = start.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 
@@ -717,7 +728,8 @@ function RequestTimePanel({ start, onClose, onDone }: { start: Date; onClose: ()
       const composed = recurring
         ? `[Requesting a dedicated weekly slot — every ${weekday} at ${clock}] ${note.trim()}`.trim()
         : note.trim();
-      await requestOpenTime({ startISO: start.toISOString(), endISO, note: composed || undefined });
+      const offeringId = items.find((i) => i.creditId === itemCreditId)?.offeringId ?? null;
+      await requestOpenTime({ startISO: start.toISOString(), endISO, offeringId, note: composed || undefined });
       setDone(true);
       onDone();
     } catch (e) {
@@ -739,6 +751,19 @@ function RequestTimePanel({ start, onClose, onDone }: { start: Date; onClose: ()
         ) : (
           <div className="flex flex-col gap-3">
             <p className="text-sm text-green-900">{formatSessionWhen(start.toISOString())}</p>
+            {items.length > 0 && (
+              <label className="text-sm">
+                <span className="form-label">What are you booking?</span>
+                <select className="form-input" value={itemCreditId} onChange={(e) => setItemCreditId(e.target.value)}>
+                  <option value="">Not sure — staff will help</option>
+                  {items.map((i) => (
+                    <option key={i.creditId} value={i.creditId}>
+                      {i.label} ({i.creditsRemaining} left)
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <label className="text-sm">
               <span className="form-label">Duration</span>
               <select className="form-input" value={duration} onChange={(e) => setDuration(e.target.value)}>

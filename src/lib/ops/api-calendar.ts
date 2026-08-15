@@ -152,6 +152,10 @@ export interface CalendarItemInput {
   recurrence_weeks?: number;
   /** Series edit/delete reach: 'one' | 'future' | 'all'. */
   scope?: 'one' | 'future' | 'all';
+  /** BOOKLINK B2: only consulted when this save ends up creating a brand-new
+   *  order (nothing existed to debit) — ignored otherwise. */
+  payment_method?: 'zelle' | 'cash' | null;
+  payment_state?: 'needs_payment' | 'paid';
 }
 
 export async function saveCalendarItem(input: CalendarItemInput): Promise<{ id: string; series_id: string | null }> {
@@ -362,4 +366,56 @@ export async function fetchRescheduleFee(): Promise<number> {
 export async function setCalendarSettings(rescheduleFee: number): Promise<void> {
   const { error } = await supabase.rpc('set_calendar_settings', { p_reschedule_fee: rescheduleFee });
   if (error) throw error;
+}
+
+// ─── Monthly plans (BOOKLINK B4) ──────────────────────────────────────────────
+
+export interface MonthlyPlan {
+  purchase_id: string;
+  purchase_item_id: string;
+  offering_id: string;
+  offering_name: string;
+  weekly_frequency: number | null;
+  /** 'Mon'..'Sun', or null when not yet set. */
+  recurring_day: string | null;
+  month_label: string;
+  entitled_this_month: number | null;
+  used_this_month: number;
+  remaining_this_month: number | null;
+}
+
+/** Staff: a client's monthly-plan status (the purchase of a recurring
+ *  offering IS the assignment — null when they have none). */
+export async function fetchClientMonthlyPlan(clientId: string): Promise<MonthlyPlan | null> {
+  const { data, error } = await supabase.rpc('client_monthly_plan', { p_client_id: clientId });
+  if (error) throw error;
+  return (data ?? null) as MonthlyPlan | null;
+}
+
+/** The signed-in member's own monthly-plan status. */
+export async function fetchMyMonthlyPlan(): Promise<MonthlyPlan | null> {
+  const { data, error } = await supabase.rpc('my_monthly_plan');
+  if (error) throw error;
+  return (data ?? null) as MonthlyPlan | null;
+}
+
+/** Staff or the plan's own client: set the recurring day of the week. */
+export async function setRecurringDay(purchaseItemId: string, day: string): Promise<void> {
+  const { error } = await supabase.rpc('set_recurring_day', { p_purchase_item_id: purchaseItemId, p_day: day });
+  if (error) throw error;
+}
+
+/** Staff: produce this month's remaining weekly sessions on the calendar for
+ *  a monthly-plan client (idempotent — re-running skips dates already booked). */
+export async function generateMonthlyLessons(input: {
+  clientId: string; purchaseItemId: string; startTime: string; durationMinutes?: number;
+  horseId?: string | null; locationId?: string | null;
+}): Promise<{ series_id: string; created: number; skipped_existing: number; recurring_day: string }> {
+  const { data, error } = await supabase.rpc('generate_monthly_lessons', {
+    p_client_id: input.clientId, p_purchase_item_id: input.purchaseItemId,
+    p_start_time: input.startTime, p_duration_minutes: input.durationMinutes ?? 60,
+    p_horse_id: input.horseId ?? null, p_location_id: input.locationId ?? null,
+  });
+  if (error) throw error;
+  return data as { series_id: string; created: number; skipped_existing: number; recurring_day: string };
 }
