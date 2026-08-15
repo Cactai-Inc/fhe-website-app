@@ -86,8 +86,11 @@ export default function Lessons() {
       {seo && <Seo title={seo.title} description={seo.description} path="/lessons" service={seo.service} />}
 
       {/* Lead content (page leads with words; video reinforces below) */}
-      <section className="bg-cream pt-32 pb-12">
-        <div className="container-site max-w-3xl text-center">
+      {/* pb-12→pb-8: the video sits a touch closer to the intro (owner).
+          max-w-3xl→4xl: the intro paragraph holds to ≤3 lines on desktop
+          (owner); the short centered heading is unaffected by the wider column. */}
+      <section className="bg-cream pt-32 pb-8">
+        <div className="container-site max-w-4xl text-center">
           <p className="eyebrow mb-4">Book a lesson</p>
           {/* Owner, 2026-08-14: most visitors are first-time riders — the old
               "Find your seat again." spoke only to returners. Exact casing and
