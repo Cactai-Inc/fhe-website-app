@@ -724,12 +724,12 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
      This is the exact disjunction of those seven conditions, not a new
      rule — if this is true, at least one child below actually renders;
      if it's false, none of them would, and the section should not either.
-     (Conditions 2/3/4 below share one shape — `locked && has a role && not
+     (The first three below share one shape — `locked && has a role && not
      signed yet`, split three ways only by which message shows — so their
-     union collapses to the shared prefix.) */
+     union collapses to the shared prefix. Withdraw / correct moved to the
+     subheader (2026-08-13) and no longer contributes a disjunct here.) */
   const hasSignatureCardContent =
-    (isOwnerSide && state === 'locked' && !counterpartySigned)
-    || (state === 'locked' && myRoles.length > 0 && !iSigned)
+    (state === 'locked' && myRoles.length > 0 && !iSigned)
     || iSigned
     || (isOwnerSide && state === 'locked' && companyPendingRoles.length > 0)
     || (detail?.signatures.length ?? 0) > 0;
@@ -1303,6 +1303,16 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                   canAddStructure={isOwnerSide}
                   canAddClause={isOwnerSide || (redline?.can_add_clause ?? false)}
                   onAdded={() => void act(async () => {})} />
+              )}
+              {/* Owner-side only: reopens a sent-out document for corrections.
+                  No counterparty equivalent — a party's way to ask for a change
+                  is Comments/Requests, not pulling the document back themselves. */}
+              {isOwnerSide && (state === 'locked' || state === 'in_review') && !counterpartySigned && (
+                <button type="button"
+                  className={`${SUBHEADER_BTN} border-green-800/20 bg-white text-green-900 hover:bg-green-800/5`}
+                  onClick={() => void act(() => advanceWorkflow(id!, 'editable'), 'Reopened for corrections.')}>
+                  <RotateCcw size={13} /> Withdraw / correct
+                </button>
               )}
               {isInactive && (
                 <button type="button"
@@ -2043,25 +2053,6 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         && (state === 'in_review' || state === 'locked' || (detail?.signatures.length ?? 0) > 0)
         && hasSignatureCardContent && (
         <section id="contract-signatures" className="bg-white border border-green-800/10 rounded-xl p-6 scroll-mt-16 mt-6">
-          {/* "Send to Lessor" / "Send to Lessee" removed 2026-08-09 (owner). They
-              called send_contract_to_party, which inserts an in-app notification
-              and stamps sent_at but sends NO EMAIL — while the toast claimed the
-              party "have been notified". A party who was not looking at the app
-              got nothing, and the buttons were indistinguishable from the
-              subheader Send that does email. Notifying a party now has exactly
-              one path: the Send action in the deck above the title.
-              "Back to editing" (2026-07-31) and the second "Lock for signing"
-              (2026-07-31) were removed from this same row earlier; with the send
-              buttons gone the row exists only for Withdraw / correct. */}
-          {isOwnerSide && state === 'locked' && !counterpartySigned && (
-            <div className="flex flex-wrap items-center gap-2.5 mb-5">
-              <button type="button" className="btn-secondary text-xs"
-                onClick={() => void act(() => advanceWorkflow(id!, 'editable'), 'Reopened for corrections.')}>
-                <RotateCcw size={13} /> Withdraw / correct
-              </button>
-            </div>
-          )}
-
           {/* DOCUMENT-BEFORE-CONTRACT (2026-07-29): a party with unsatisfied
               onboarding documents cannot sign. This is the FRIENDLY half — the
               authoritative gate is server-side in record_signature(), so a deep
