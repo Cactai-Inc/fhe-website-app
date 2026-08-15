@@ -37,7 +37,6 @@ import { captureWallReturnDestination } from '../../lib/wallReturn';
    accept. Four blocks in this file are marked `REVIEW SECTION`: this import,
    the group in manageNavGroups, and the `note` render in the rail and in the
    mobile drawer. */
-import { REVIEW_NAV_ITEMS, REVIEW_NOTE } from '../../lib/reviewSection';
 
 /* ── THE NAV PANEL — solid green, cream contents (ONEHEADER §1, owner 2026-08-08)
  *
@@ -503,16 +502,12 @@ const MANAGEMENT_GROUP: NavItem[] = [
    *  The content merge (Inbound's booking/support queue folded into the
    *  Dashboard's layout as entries) is its own task — not scoped to this
    *  file, and not attempted here. */
-  /* REVIEW SECTION — MOVED OUT, not deleted (TASK-REVIEWNAV, owner: "move the
-     page link for the currently used page(s) from the current nav panel
-     location to place it in the review section"). Two rows LEFT this
-     group for Review:
-       { to: '/app/dashboard',          label: 'Dashboard', icon: LayoutDashboard }
-       { to: '/app/ops/horse-records',  label: 'Horses',    icon: Boxes }
-     Both are incumbents in a duplicate group (staff landing / inbound, and the
-     horse roster) and now live ONLY in the Review group. Put them back here on
-     acceptance. Dashboard's badge is injected by route below, not by table
-     position, so it followed the row and still reads unread + inbound. */
+  /* RESTORED 2026-08-15 (owner: "put back all the pages in the nav where they
+     belong… claire is flipping out she cant use the app") — the TASK-REVIEWNAV
+     experiment ends; the duplicate-page ruling now lives in TASK-PAGEMERGE.
+     Dashboard's badge is injected by route below, not by table position. */
+  { to: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/app/ops/horse-records', label: 'Horses', icon: Boxes },
   { to: '/app/ops/support', label: 'Support', icon: LifeBuoy },
   // Servicing folded in 2026-07-31: three links did not justify a heading of
   // their own, and they are day-to-day management like the queues above.
@@ -589,16 +584,9 @@ const MODULES_GROUP: NavItem[] = [
   // and 404'd for every staff user with the module on. Re-add with the hub.
   { to: '/app/ops/boarding', label: 'Boarding', icon: HomeIcon, module: 'mod.boarding' },
   { to: '/app/ops/barnops', label: 'Barn Ops', icon: Boxes, module: 'mod.barnops' },
-  /* REVIEW SECTION — MOVED OUT, not deleted (TASK-REVIEWNAV). One row LEFT
-     this group for Review:
-       { to: '/app/ops/records', label: 'Records', icon: FileText, module: 'mod.horserecords' }
-     It is Horses slot C. mod.horserecords is ENABLED for FHE, so it was a live
-     nav row, and the other three modules here are all disabled — meaning this
-     group is now empty for FHE and the "Modules" heading disappears until
-     Records comes back or a module is turned on. Restore the row WITH its
-     `module` key: the Review row deliberately has no module gate (the owner has
-     to be able to reach every implementation), and putting it back ungated
-     would show Records to a tenant that has the module off. */
+  /* RESTORED 2026-08-15 (Review experiment ended) — WITH its module key, per
+     the removal note: ungated it would show for tenants with the module off. */
+  { to: '/app/ops/records', label: 'Records', icon: FileText, module: 'mod.horserecords' },
   { to: '/app/ops/employees', label: 'Employees', icon: Contact, module: 'mod.employees' },
 ];
 const SETTINGS_GROUP: NavItem[] = [
@@ -623,16 +611,9 @@ const SETTINGS_GROUP: NavItem[] = [
      MANAGER/EMPLOYEE staff who can still reach it by URL — a nav that lies
      about what you have. Move the entry, don't change who can see it.
 
-     REVIEW SECTION — MOVED OUT, not deleted (TASK-REVIEWNAV). The row that was
-     here, one day after it arrived:
-       { to: '/app/ops/team', label: 'Team', icon: UserRound }
-     It is Staff roster slot A. ⚠ NOTE THE CONFLICT WITH THE PARAGRAPH ABOVE:
-     the Review group is adminOnly, so while Team sits in Review it IS gated
-     tighter than its route. That is a deliberate, temporary cost of the review
-     being admin-only, and it currently hides the row from nobody —
-     production `profiles.role` holds only ADMIN, SUPER_ADMIN and USER; there is
-     not one MANAGER or EMPLOYEE account in existence. Restore it here WITHOUT
-     `adminOnly` on acceptance, for the reason recorded above. */
+     RESTORED 2026-08-15 (Review experiment ended) — WITHOUT `adminOnly`, for
+     the reason recorded above. */
+  { to: '/app/ops/team', label: 'Team', icon: UserRound },
   { to: '/app/ops/admin/branding', label: 'Branding', icon: Shield, adminOnly: true },
   { to: '/app/ops/admin/products', label: 'Products', icon: Shield, adminOnly: true },
   { to: '/app/ops/admin/forms', label: 'Forms', icon: Shield, adminOnly: true },
@@ -670,36 +651,11 @@ export function manageNavGroups(
     { key: 'community', label: 'Community', items: visible(COMMUNITY_GROUP) },
     { key: 'modules', label: 'Modules', items: visible(MODULES_GROUP) },
     { key: 'settings', label: 'Settings', items: visible(SETTINGS_GROUP) },
-    /* ── REVIEW SECTION (temporary — TASK-REVIEWNAV, owner 2026-08-11/12) ────
-       Every entry is `adminOnly: true`, so this rides the SAME gate
-       SETTINGS_GROUP's three admin pages already use — no new mechanism — and
-       `visible()` empties the group for anyone else, which the filter below
-       then drops entirely. Last, deliberately: it is the longest group and it
-       is scaffolding; it must not push the day-to-day nav down the rail.
-       OPEN by default despite that, and the reason is not cosmetic: ten live
-       rows MOVED into this group, Dashboard among them, so a collapsed Review
-       would hide the staff dashboard behind a chevron on every page load —
-       `openGroups` is per-mount state and does not persist, so it would collapse
-       again on every navigation.
-
-       THE MOBILE DRAWER GETS IT TOO, deliberately. The owner scoped this to
-       "the nav menu on admin on desktop", and the drawer renders this same
-       array — so the choice was to show it there or filter it out. It shows.
-       Ten live rows MOVED into this group; hiding the group on mobile would
-       take the Dashboard, Clients, Leads, Calendar and Account links off the
-       phone entirely, and a drawer that disagrees with the rail about what
-       exists is a second source of truth — which is the thing this whole
-       section is here to kill.
-       Removing the section: delete this entry, the REVIEW_NAV_ITEMS import, the
-       `note` render in the rail and the drawer, and put back the seven rows the
-       moves above took out. */
-    {
-      key: 'review',
-      label: 'Review',
-      items: visible(REVIEW_NAV_ITEMS),
-      defaultOpen: true,
-      note: REVIEW_NOTE,
-    },
+    /* REVIEW SECTION removed 2026-08-15 (owner: "the menu fixed… back to
+       normal") — every moved row restored to its home above, per each removal
+       note. The review PAGES and routes survive (reviewSection.ts, /app/ops/
+       review) for TASK-PAGEMERGE to compare implementations; only the nav
+       group is gone. */
   ];
   return groups.filter((g) => g.items.length > 0);
 }
@@ -1171,14 +1127,9 @@ function ClientNavItems({ bellCount, dmCount, presence, lessonsOn, onNavigate }:
 function StaffNavItems({ dmCount, open = true }: { dmCount: number; open?: boolean }) {
   return (
     <>
-      {/* REVIEW SECTION — MOVED OUT, not deleted (TASK-REVIEWNAV). Two rows
-          LEFT this block for Review, both incumbents in a duplicate group
-          (Time A, Catalog A):
-            <RailLink to="/app/calendar" label="Calendar" icon={CalendarDays} open={open} />
-            <RailLink to="/app/catalog"  label="Catalog"  icon={ShoppingBag}  open={open} />
-          This block is STAFF-only (members reach both through ClientNavItems,
-          which is untouched), and it renders in the rail and the mobile drawer
-          from this one definition. Put them back here, in this order. */}
+      {/* RESTORED 2026-08-15 (Review experiment ended), in the recorded order. */}
+      <RailLink to="/app/calendar" label="Calendar" icon={CalendarDays} open={open} />
+      <RailLink to="/app/catalog" label="Catalog" icon={ShoppingBag} open={open} />
       <RailLink to="/app/messages" label="Messages" icon={MessageSquare} badge={dmCount} open={open} />
     </>
   );
@@ -1975,17 +1926,11 @@ export default function AppLayout() {
                   avatar-menu sign-out untouched. */}
               {!isSuperAdmin && (
                 <>
-                  {/* REVIEW SECTION — MOVED OUT, not deleted (TASK-REVIEWNAV).
-                      What was here:
-                        <div className="mt-1 flex flex-col gap-0.5">
-                          <AccountNavLink open={staffRailPinned} />
-                        </div>
-                      /app/account is Account slot A, the incumbent against the
-                      2026-06-23 original at /account. This is the STAFF rail
-                      only — members get their Account row from ClientNavItems,
-                      untouched. `AccountNavLink` itself is untouched and still
-                      used there; only these two call sites (rail + drawer) went.
-                      Put this block back exactly as written above. */}
+                  {/* RESTORED 2026-08-15 (Review experiment ended) — exactly as
+                      the removal note recorded it. */}
+                  <div className="mt-1 flex flex-col gap-0.5">
+                    <AccountNavLink open={staffRailPinned} />
+                  </div>
                   {/* Owner, 2026-08-07: the collapse toggle sits at the FOOT of
                       the rail, immediately above Sign out, and stays right-
                       justified in BOTH states so it does not move when the rail
@@ -2179,14 +2124,13 @@ export default function AppLayout() {
             ))}
             {/* ONEMENU — absorbed from the removed avatar dropdown, staff
                 only (members already end their own list with AccountNavLink
-                above — I6).
-                REVIEW SECTION — MOVED OUT, not deleted (TASK-REVIEWNAV). What
-                was here, the drawer half of the same move as the rail above:
-                  {!isSuperAdmin && showRail && (
-                    <div className="mt-1 flex flex-col gap-0.5">
-                      <AccountNavLink onNavigate={closeMobileNav} />
-                    </div>
-                  )}                                                        */}
+                above — I6). RESTORED 2026-08-15 (Review experiment ended) —
+                the drawer half of the same move as the rail above. */}
+            {!isSuperAdmin && showRail && (
+              <div className="mt-1 flex flex-col gap-0.5">
+                <AccountNavLink onNavigate={closeMobileNav} />
+              </div>
+            )}
             {!isSuperAdmin && (
               <NavFooter onOpenTour={() => setTourOpen(true)} onSignOut={handleSignOut} onNavigate={closeMobileNav} />
             )}
