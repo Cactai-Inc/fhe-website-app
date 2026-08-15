@@ -87,9 +87,9 @@ export default function Lessons() {
             Come Ride With Us
           </h1>
           <p className="body-text text-lg leading-relaxed">
-            Private instruction at your own pace — one lesson, or a group when you're ready for a
-            rhythm. Patient, classical teaching that meets you exactly where you are, whether it has
-            been twenty years or this is your first ride.
+            Private instruction at your own pace — one lesson, or a group when you're ready for the
+            challenge. Patient, classical teaching that meets you exactly where you are, whether
+            you're getting back in the saddle or this is your first ride.
           </p>
         </div>
       </section>
