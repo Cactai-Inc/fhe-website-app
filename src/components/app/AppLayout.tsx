@@ -14,7 +14,7 @@ import {
      a fourth glyph. */
   BookOpen,
   ChevronDown, ChevronUp, Plus, LifeBuoy, ShoppingBag, MessageSquare, ListChecks,
-  PanelLeftClose, PanelLeftOpen, Activity, Compass, Handshake, Grid3x3, Bookmark,
+  PanelLeftClose, PanelLeftOpen, Activity, Compass, Grid3x3, Bookmark,
   Receipt, Eye, Library,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -519,14 +519,11 @@ const MANAGEMENT_GROUP: NavItem[] = [
   // click away, is the only entry point now.
   { to: '/app/records', label: 'Records', icon: BookOpen },
   { to: '/app/ops/support', label: 'Support', icon: LifeBuoy },
-  // Servicing folded in 2026-07-31: three links did not justify a heading of
-  // their own, and they are day-to-day management like the queues above.
-  { to: '/app/ops/lessons', label: 'Lessons', icon: GraduationCap, module: 'mod.lessons' },
-  { to: '/app/ops/documents', label: 'Documents', icon: FileText },
-  // A deal is the envelope a transaction lives in — its parties, what each side
-  // gives, and the documents that make it real. It sits beside Documents because
-  // that is what it produces.
-  { to: '/app/ops/deals', label: 'Deals', icon: Handshake },
+  // Lessons, Documents, Deals RETIRED from here 2026-08-15 (owner: "lessons…
+  // is really a records ledger so it should be added to the records page
+  // along with documents, files, and deals") — each is a ledger of records,
+  // not a work queue, so they moved to be Records tabs instead (in that
+  // order, after Horses). Management keeps the actual day-to-day queues.
   // Payment review is a management task; Business is hidden until the reporting
   // and business-ops surfaces that belong there actually exist.
   /* Receipt, not ReceiptText — which My Orders already uses in the member nav.

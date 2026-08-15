@@ -82,7 +82,7 @@ import InstructorHomePreview from './pages/app/ops/InstructorHomePreview';
 import ContactsPage, { CONTACTS_PAGE_RETIRED } from './pages/app/ops/ContactsPage';
 import HorsesPage, { HORSES_PAGE_RETIRED } from './pages/app/ops/HorsesPage';
 import HorseRecordsPage, { HORSE_RECORDS_STANDALONE_RETIRED } from './pages/app/ops/HorseRecordsPage';
-import DocumentsQueuePage from './pages/app/ops/DocumentsQueuePage';
+import DocumentsQueuePage, { DOCUMENTS_QUEUE_STANDALONE_RETIRED } from './pages/app/ops/DocumentsQueuePage';
 import DocumentViewerPage from './pages/app/ops/DocumentViewerPage';
 import ModerationPage from './pages/app/ops/ModerationPage';
 import LookupReviewPage from './pages/app/ops/LookupReviewPage';
@@ -95,7 +95,7 @@ import IntakePage, { INTAKE_PAGE_RETIRED, IntakeRetiredRedirect } from './pages/
 import TeamPage from './pages/app/ops/TeamPage';
 import AccountInvitePage from './pages/app/ops/AccountInvitePage';
 import NewContractPage from './pages/app/ops/NewContractPage';
-import DealsPage from './pages/app/ops/DealsPage';
+import DealsPage, { DEALS_STANDALONE_RETIRED } from './pages/app/ops/DealsPage';
 import DealPage from './pages/app/ops/DealPage';
 import AdminFormsPage from './pages/app/ops/admin/AdminFormsPage';
 import AdminPageVisibilityPage from './pages/app/ops/admin/AdminPageVisibilityPage';
@@ -108,7 +108,7 @@ import BarnopsHubPage from './pages/app/ops/hubs/BarnopsHubPage';
 import ResourcesPage from './pages/app/ops/barnops/ResourcesPage';
 import ConsumptionLogPage from './pages/app/ops/barnops/ConsumptionLogPage';
 import AllocationRulesPage from './pages/app/ops/barnops/AllocationRulesPage';
-import LessonsHubPage from './pages/app/ops/hubs/LessonsHubPage';
+import LessonsHubPage, { LESSONS_HUB_STANDALONE_RETIRED } from './pages/app/ops/hubs/LessonsHubPage';
 import LessonPackagesPage from './pages/app/ops/lessons/LessonPackagesPage';
 import LessonCreditsPage from './pages/app/ops/lessons/LessonCreditsPage';
 import SessionsPage from './pages/app/ops/lessons/SessionsPage';
@@ -315,7 +315,12 @@ export function AppRoutes() {
               <Route path="ops/horse-records" element={HORSE_RECORDS_STANDALONE_RETIRED
                 ? <Navigate to="/app/records/horses" replace />
                 : <ProtectedRoute requireStaff><HorseRecordsPage /></ProtectedRoute>} />
-              <Route path="ops/documents" element={<ProtectedRoute requireStaff><DocumentsQueuePage /></ProtectedRoute>} />
+              {/* RETIRED 2026-08-15 (owner: "documents… should be added to
+                  the records page") — unchanged component, now Records'
+                  own "Documents" tab. */}
+              <Route path="ops/documents" element={DOCUMENTS_QUEUE_STANDALONE_RETIRED
+                ? <Navigate to="/app/records/documents" replace />
+                : <ProtectedRoute requireStaff><DocumentsQueuePage /></ProtectedRoute>} />
               <Route path="ops/documents/:id" element={<ProtectedRoute requireStaff><DocumentViewerPage /></ProtectedRoute>} />
               {/* RETIRED 2026-08-11 (TASK-LEADCLEAN): the owner ruled the
                   dashboard is the surface and Inbound goes away. The nav item
@@ -330,7 +335,12 @@ export function AppRoutes() {
               {/* staff can invite clients; the page hides staff account types for non-admins */}
               <Route path="ops/accounts/new" element={<ProtectedRoute requireStaff><AccountInvitePage /></ProtectedRoute>} />
               <Route path="ops/contracts/new" element={<ProtectedRoute requireStaff><NewContractPage /></ProtectedRoute>} />
-              <Route path="ops/deals" element={<ProtectedRoute requireStaff><DealsPage /></ProtectedRoute>} />
+              {/* RETIRED 2026-08-15 (owner: "deals… should be added to the
+                  records page") — unchanged component, now Records' own
+                  "Deals" tab. */}
+              <Route path="ops/deals" element={DEALS_STANDALONE_RETIRED
+                ? <Navigate to="/app/records/deals" replace />
+                : <ProtectedRoute requireStaff><DealsPage /></ProtectedRoute>} />
               <Route path="ops/deals/:dealId" element={<ProtectedRoute requireStaff><DealPage /></ProtectedRoute>} />
               {/* ops/availability retired — staff manage availability on the full calendar (Phase 6) */}
               <Route path="ops/availability" element={<Navigate to="/app/calendar" replace />} />
@@ -353,7 +363,12 @@ export function AppRoutes() {
               <Route path="ops/barnops/consumption" element={<ProtectedRoute requireStaff><ConsumptionLogPage /></ProtectedRoute>} />
               <Route path="ops/barnops/allocation-rules" element={<ProtectedRoute requireStaff><AllocationRulesPage /></ProtectedRoute>} />
               {/* Lessons = servicing surface (trainers + admins) */}
-              <Route path="ops/lessons" element={<ProtectedRoute requireStaff><LessonsHubPage /></ProtectedRoute>} />
+              {/* RETIRED 2026-08-15 (owner: "lessons… is really a records
+                  ledger so it should be added to the records page") —
+                  unchanged component, now Records' own "Lessons" tab. */}
+              <Route path="ops/lessons" element={LESSONS_HUB_STANDALONE_RETIRED
+                ? <Navigate to="/app/records/lessons" replace />
+                : <ProtectedRoute requireStaff><LessonsHubPage /></ProtectedRoute>} />
               <Route path="ops/lessons/packages" element={<ProtectedRoute requireStaff><LessonPackagesPage /></ProtectedRoute>} />
               <Route path="ops/lessons/credits" element={<ProtectedRoute requireStaff><LessonCreditsPage /></ProtectedRoute>} />
               <Route path="ops/lessons/sessions" element={<ProtectedRoute requireStaff><SessionsPage /></ProtectedRoute>} />

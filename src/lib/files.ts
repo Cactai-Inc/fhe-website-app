@@ -172,6 +172,30 @@ export async function listMyFiles(): Promise<FileRow[]> {
   return (data ?? []) as FileRow[];
 }
 
+/** One file row plus its resolved owner name, for the staff-wide Files ledger. */
+export interface OrgFileRow extends FileRow {
+  owner_name: string | null;
+}
+
+/** Staff: every file in the tenant, contact-owned or company-owned.
+ *  `files_staff_rw` (RLS) already admits any staff member to every row in
+ *  their org — no separate RPC needed, unlike the member-scoped reads above
+ *  which rely on `files_owner_rw` matching the caller's own contact. */
+export async function listOrgFiles(): Promise<OrgFileRow[]> {
+  const { data, error } = await supabase
+    .from('files')
+    .select('*, contacts(first_name, last_name)')
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  type Row = FileRow & { contacts: { first_name: string | null; last_name: string | null } | null };
+  return ((data ?? []) as Row[]).map((r) => {
+    const { contacts, ...rest } = r;
+    const name = contacts ? [contacts.first_name, contacts.last_name].filter(Boolean).join(' ') : '';
+    return { ...rest, owner_name: r.owner_kind === 'org' ? 'The company' : (name || null) };
+  });
+}
+
 /** Upload a file the CALLER owns. */
 export async function uploadMyFile(file: File, title?: string): Promise<FileRow> {
   const { orgId, contactId } = await myOrgAndContact();

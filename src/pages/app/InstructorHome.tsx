@@ -140,7 +140,7 @@ export default function InstructorHome() {
 
       {/* Quick servicing actions */}
       <div className="grid sm:grid-cols-2 gap-2.5 mb-6">
-        <ActionTile to="/app/ops/lessons" icon={GraduationCap} label="Lessons" sub="Sessions, packages, credits" />
+        <ActionTile to="/app/records/lessons" icon={GraduationCap} label="Lessons" sub="Sessions, packages, credits" />
         <ActionTile to="/app/calendar" icon={CalendarDays} label="Availability" sub="Set the times you teach" />
         <ActionTile to="/app/ops/contacts" icon={Contact} label="Clients" sub={clientCount !== null ? `${clientCount} on file` : 'People you service'} />
         <ActionTile to="/app/dashboard" icon={Mail} label="Requests" sub={requests.length > 0 ? `${requests.length} to review` : 'Incoming inquiries'} />
@@ -150,7 +150,7 @@ export default function InstructorHome() {
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2.5">
           <h2 className="font-serif text-green-800 text-lg">Today</h2>
-          <Link to="/app/ops/lessons" className="text-[12px] text-gold-800 font-semibold inline-flex items-center gap-1">All sessions <ChevronRight size={13} /></Link>
+          <Link to="/app/records/lessons" className="text-[12px] text-gold-800 font-semibold inline-flex items-center gap-1">All sessions <ChevronRight size={13} /></Link>
         </div>
         {today.length > 0 ? (
           <div className="flex flex-col gap-2">{today.map((r) => <LessonRow key={r.id} r={r} />)}</div>

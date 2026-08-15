@@ -26,12 +26,24 @@ import {
 const KEY_GRAMMAR = /^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$/;
 
 const appSrc = readFileSync(`${process.cwd()}/src/App.tsx`, 'utf8');
-const registered = new Set<string>(
-  Array.from(appSrc.matchAll(/path="([^"]+)"/g)).map((m) => {
-    const p = m[1];
-    return p.startsWith('/') ? p : `/app/${p}`;
-  }),
-);
+const registeredPaths = Array.from(appSrc.matchAll(/path="([^"]+)"/g)).map((m) => {
+  const p = m[1];
+  return p.startsWith('/') ? p : `/app/${p}`;
+});
+const registered = new Set<string>(registeredPaths);
+
+/** A registry path counts as registered when it exactly matches a route, OR
+ *  is a concrete value of a dynamic route (e.g. `/app/records/lessons` for
+ *  the registered `/app/records/:tab`) — TASK-RECORDS/2026-08-15's Records
+ *  tabs (Horses, Lessons, Documents, Files, Deals) all resolve this way; a
+ *  route with a `:param` segment is not a typo, it is the whole point. */
+const dynamicRoutePatterns = registeredPaths
+  .filter((p) => p.includes('/:'))
+  .map((p) => new RegExp(`^${p.replace(/:[^/]+/g, '[^/]+')}$`));
+
+function isRegistered(path: string): boolean {
+  return registered.has(path) || dynamicRoutePatterns.some((re) => re.test(path));
+}
 
 describe('PAGEVIS — the page registry', () => {
   it('lists every page exactly once, under a unique key', () => {
@@ -61,7 +73,7 @@ describe('PAGEVIS — the page registry', () => {
   it('every registry path is a route App.tsx actually registers', () => {
     for (const p of PAGE_REGISTRY) {
       expect(
-        registered.has(p.path),
+        isRegistered(p.path),
         `"${p.label}" (${p.key}) points at an unregistered route: ${p.path}. `
         + 'If the route moved, update PageEntry.path — and do NOT touch PageEntry.key, '
         + 'or every tenant that hid this page loses that choice.',

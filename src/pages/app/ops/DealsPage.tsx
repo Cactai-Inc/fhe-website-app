@@ -281,3 +281,10 @@ export default function DealsPage() {
     </PageLayout>
   );
 }
+
+/** RETIRED as a standalone route behind a boolean, never deleted (standing
+ *  rule from 86a2c33). Owner, 2026-08-15: "deals… should be added to the
+ *  records page." This component is unchanged and is now the Records
+ *  "Deals" tab directly (RecordsPage.tsx). /app/ops/deals redirects there;
+ *  /app/ops/deals/:dealId (the individual deal's own page) is untouched. */
+export const DEALS_STANDALONE_RETIRED = true;
