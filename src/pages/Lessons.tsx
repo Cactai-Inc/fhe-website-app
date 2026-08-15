@@ -29,10 +29,12 @@ function mechanics(o: Offering): string {
 // it so staff surfaces (orders, admin lists) can tell the two Single Lessons apart.
 const displayName = (name: string) => name.replace(/\s*\(with your horse\)\s*/i, '');
 
-// The prorate/reschedule footnote on the weekly-subscription cards.
-const weeklyFootnote = (freq: number) =>
+// The prorate/reschedule footnote for the weekly-subscription cards — one
+// block below each row (owner, 2026-08-14: not repeated inside the cards),
+// anchored by a * on those cards' descriptions.
+const WEEKLY_FOOTNOTE =
   `* Option to have first month prorated or book all your lessons for the month in the days ` +
-  `remaining. With this program you can ride ${freq}x every week even when there's a 5th week, ` +
+  `remaining. With this program you can ride 1x or 2x every week even when there's a 5th week, ` +
   `plus the freedom to easily reschedule or change your riding day(s) right from your rider ` +
   `companion app (subject to schedule availability, we kindly request 48 hrs notice).`;
 
@@ -146,18 +148,22 @@ export default function Lessons() {
               const title = displayName(o.name);
               // "Punch Card" sits on its own line below "4-Lesson" / "8-Lesson".
               const punch = title.match(/^(.*)\s+Punch Card$/);
-              const footnote = o.config_kind === 'recurring' && o.weekly_frequency
-                ? weeklyFootnote(o.weekly_frequency) : null;
+              // Weekly cards carry the * that anchors the block below the row.
+              const weekly = o.config_kind === 'recurring' && !!o.weekly_frequency;
               return (
                 <button
                   key={o.id}
                   type="button"
                   onClick={() => selectPack(o)}
                   aria-pressed={selected}
-                  className={`relative text-left p-7 border transition-all duration-200 focus-ring bg-white ${
+                  className={`relative flex flex-col items-start text-left p-7 border transition-all duration-200 focus-ring bg-white ${
                     selected ? 'border-green-800 ring-1 ring-green-800/20' : 'border-green-800/15 hover:border-green-800/40'
                   }`}
                 >
+                  {/* flex-col above: a <button> vertically centers its content
+                      by default, so short cards floated mid-row when the grid
+                      stretched them — titles now align along the top edge in
+                      every column count (owner, 2026-08-14). */}
                   {badge && (
                     <span className="absolute top-4 right-4 text-[9px] font-sans font-medium tracking-wider uppercase bg-gold-600 text-green-900 px-2 py-0.5">
                       {badge}
@@ -166,16 +172,23 @@ export default function Lessons() {
                   <h3 className="heading-card text-green-800 mb-1">
                     {punch ? <>{punch[1]}<br />Punch Card</> : title}
                   </h3>
-                  {o.tagline && <p className="text-xs text-muted mb-5">{o.tagline}</p>}
+                  {o.tagline && <p className="text-xs text-muted mb-5">{o.tagline}{weekly && <sup aria-hidden="true">*</sup>}</p>}
                   <p className="font-serif text-4xl text-green-800 mb-1">{usd(o.price_amount ?? 0)}</p>
                   {hint && <p className="text-xs text-gold-ink">{hint}</p>}
                   <span className={`inline-flex items-center gap-1.5 mt-5 text-xs font-sans uppercase tracking-wide ${selected ? 'text-green-800 font-medium' : 'text-muted'}`}>
                     {selected ? <><Check size={13} /> Selected</> : 'Select'}
                   </span>
-                  {footnote && <p className="text-[10px] leading-relaxed text-muted mt-4">{footnote}</p>}
                 </button>
               );
             };
+            // 1 col on phones, 2 on small screens, 3 on desktop (owner: the
+            // missing middle step made tablet widths cramped).
+            const gridCls = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6';
+            const footnote = (
+              <p className="text-xs leading-relaxed text-muted mt-5 max-w-3xl mx-auto">
+                {WEEKLY_FOOTNOTE}
+              </p>
+            );
             return (
               <>
                 {/* Mirrors the own-horse divider below — the two lines make the
@@ -184,17 +197,19 @@ export default function Lessons() {
                 <p className="text-center body-text text-lg text-green-800 mb-8">
                   Your riding lesson includes one of our carefully selected horses
                 </p>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className={gridCls}>
                   {ourHorse.map(card)}
                 </div>
+                {footnote}
                 {ownHorse.length > 0 && (
                   <>
                     <p className="text-center body-text text-lg text-green-800 mt-14 mb-8">
                       Already leasing or own a horse? These lessons are for you
                     </p>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className={gridCls}>
                       {ownHorse.map(card)}
                     </div>
+                    {footnote}
                   </>
                 )}
               </>
