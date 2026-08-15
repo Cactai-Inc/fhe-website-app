@@ -172,7 +172,9 @@ export default function Lessons() {
                   <h3 className="heading-card text-green-800 mb-1">
                     {punch ? <>{punch[1]}<br />Punch Card</> : title}
                   </h3>
-                  {o.tagline && <p className="text-xs text-muted mb-5">{o.tagline}{weekly && <sup aria-hidden="true">*</sup>}</p>}
+                  {/* The anchor reads at a glance: full-size and gold, not a
+                      grey superscript (owner: it was hard to see). */}
+                  {o.tagline && <p className="text-xs text-muted mb-5">{o.tagline}{weekly && <span className="text-gold-ink font-semibold" aria-hidden="true"> *</span>}</p>}
                   <p className="font-serif text-4xl text-green-800 mb-1">{usd(o.price_amount ?? 0)}</p>
                   {hint && <p className="text-xs text-gold-ink">{hint}</p>}
                   <span className={`inline-flex items-center gap-1.5 mt-5 text-xs font-sans uppercase tracking-wide ${selected ? 'text-green-800 font-medium' : 'text-muted'}`}>
