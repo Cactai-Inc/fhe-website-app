@@ -320,55 +320,10 @@ button.oh-avatar:focus-visible {
 @media (min-width: 1024px)   { button.oh-avatar { display: none; } }
 @media (max-width: 1023.98px) { span.oh-avatar  { display: none; } }
 
-/* ============ §D1 — THE PERMANENT MENU CARET (NAVMOTION, owner 2026-08-11) ====
-   "the mobile nav needs a way for the user to know the avatar button is the
-   activation surface." An avatar reads as PROFILE. A caret reads as "this opens
-   something", and unlike the one-time tip (§D2) it is still there on day thirty.
-
-   IT TAKES THE GLYPH'S OWN INK, and that is the whole reason it needs no ramp of
-   its own. The order says "extend that ramp, do not replace it" — the documented
-   white-overlay ramp moves the BACKGROUND (14% rest / 7% hover / 0% pressed) and
-   never the ink, so a caret drawn in `#fdfcfa` rides every step of it for free
-   and carries the ramp's own recorded contrasts unchanged: 8.68:1 at rest,
-   10.92:1 on hover, 13.43:1 pressed. Nothing here re-decides those numbers.
-
-   MOBILE ONLY, in a media query rather than `lg:hidden` — same rule, same
-   reason, as the display split directly above: the outcome must not depend on
-   stylesheet injection order.
-
-   THE GEOMETRY, so it is not re-derived later. The mark is 42px at every width
-   now (§G), so this is one calculation, not four:
-     - `padding-bottom: 7px` on a border-box 42px button leaves a 33px content
-       box, so `place-items: center` lands the glyph 3.5px higher and frees the
-       bottom of the disc. The mark does NOT change size and the font-size ratio
-       the file protects is untouched — only where the glyph sits inside it.
-     - the caret is 8px wide x 5px tall, 6px off the bottom. At that height the
-       42px disc is still 33.8px across, so it clears the ring by ~13px a side.
-   `::after` is safe here where a background pseudo-element was not: the letter
-   is the button's own text content and paints above the element's background,
-   but a pseudo-element is a separate box — it is only a hazard when it has to
-   sit BEHIND the glyph, which this one does not.
-
-   IT ROTATES WITH `aria-expanded`. This is NOT the UIO-006 open-state question
-   and does not answer it: that one is about the FILL, is explicitly left for the
-   owner to see rendered, and is untouched below. A caret that pointed down while
-   the menu it opens is already open would be a defect on arrival, not a deferred
-   decision. */
-@media (max-width: 1023.98px) {
-  button.oh-avatar { position: relative; padding-bottom: 7px; }
-  button.oh-avatar::after {
-    content: '';
-    position: absolute;
-    left: 50%; bottom: 6px;
-    width: 0; height: 0; margin-left: -4px;
-    border-left: 4px solid transparent;
-    border-right: 4px solid transparent;
-    border-top: 5px solid #fdfcfa;            /* cream-25 — the glyph's own ink */
-    pointer-events: none;
-    transition: transform theme('transitionDuration.320') theme('transitionTimingFunction.glide');
-  }
-  button.oh-avatar[aria-expanded='true']::after { transform: rotate(180deg); }
-}
+/* §D1 — THE PERMANENT MENU CARET: REMOVED 2026-08-15, owner: it "looks
+   stupid and doesnt in any way indicate that its a button". The avatar-as-
+   activation-surface problem it was answering stands unsolved; the one-time
+   tip (§D2 below) remains the only affordance. Do not re-add a caret. */
 
 /* ============ §D2 — THE ONE-TIME TIP (NAVMOTION, owner 2026-08-11) ============
    > "Lets show a tip in a box that appears with visual presence to catch the eye
