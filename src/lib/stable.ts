@@ -50,6 +50,11 @@ export interface Vendor {
   shared: boolean;
 }
 
+/** 'contact' = the signed-in member's own gear/supply. 'org' = the tenant's
+ *  (added while acting as the business — D7/act-as-company). Mirrors
+ *  files.owner_kind (D15) — the same distinction, same two values. */
+export type StableItemOwnerKind = 'contact' | 'org';
+
 export interface StableItem {
   id: string;
   kind: StableItemKind;
@@ -57,6 +62,7 @@ export interface StableItem {
   detail: string | null;
   vendor_id: string | null;
   vendor?: Vendor | null;
+  owner_kind: StableItemOwnerKind;
 }
 
 // ── Horses ─────────────────────────────────────────────────────
@@ -105,13 +111,20 @@ function toStableHorse(r: StableHorseRow): StableHorse {
   };
 }
 
-export async function listStableHorses(): Promise<StableHorse[]> {
-  const { data, error } = await supabase.rpc('my_stable_horses');
+/** `asCompany` — omitted (undefined) preserves the RPC's own default (staff
+ *  see the company's stable, everyone else sees their own — D7's "staff
+ *  default to company voice" convention). Pass explicitly to override, e.g.
+ *  a staff member choosing "my own stable" instead. */
+export async function listStableHorses(asCompany?: boolean): Promise<StableHorse[]> {
+  const { data, error } = await supabase.rpc('my_stable_horses', { p_as_company: asCompany ?? null });
   if (error) throw error;
   return ((data ?? []) as StableHorseRow[]).map(toStableHorse);
 }
 
-export async function addStableHorse(input: Partial<StableHorse> & { name: string }): Promise<string> {
+export async function addStableHorse(
+  input: Partial<StableHorse> & { name: string },
+  asCompany?: boolean,
+): Promise<string> {
   const { data, error } = await supabase.rpc('my_stable_add_horse', {
     p_name: input.name,
     p_barn_name: input.nickname ?? null,
@@ -127,6 +140,7 @@ export async function addStableHorse(input: Partial<StableHorse> & { name: strin
     // lost them and polluted a clinical field. There is no discipline column.
     p_markings: input.markings ?? null,
     p_notes: null,
+    p_as_company: asCompany ?? null,
   });
   if (error) throw error;
   return data as string;
@@ -179,11 +193,18 @@ export async function addVendor(input: Partial<Vendor> & { name: string; share?:
 }
 
 // ── Gear + supplies ────────────────────────────────────────────
-export async function listStableItems(kind: StableItemKind): Promise<StableItem[]> {
+// owner_kind (D15's pattern, reused): staff can see BOTH their own personal
+// items and the company's under RLS, so the caller must say which — same
+// exclusive toggle as listStableHorses, not a merged list.
+export async function listStableItems(
+  kind: StableItemKind,
+  ownerKind: StableItemOwnerKind = 'contact',
+): Promise<StableItem[]> {
   const { data, error } = await supabase
     .from('stable_items')
     .select('*, vendor:vendors(*)')
     .eq('kind', kind)
+    .eq('owner_kind', ownerKind)
     .order('created_at', { ascending: true });
   if (error) throw error;
   return (data ?? []) as StableItem[];
@@ -192,11 +213,15 @@ export async function listStableItems(kind: StableItemKind): Promise<StableItem[
 export async function addStableItem(
   kind: StableItemKind,
   input: { name: string; detail?: string | null; vendor_id?: string | null },
+  ownerKind: StableItemOwnerKind = 'contact',
 ): Promise<string> {
   const [user_id, org_id] = await Promise.all([uid(), orgId()]);
   const { data, error } = await supabase
     .from('stable_items')
-    .insert({ user_id, org_id, kind, name: input.name, detail: input.detail ?? null, vendor_id: input.vendor_id ?? null })
+    .insert({
+      user_id, org_id, kind, name: input.name, detail: input.detail ?? null,
+      vendor_id: input.vendor_id ?? null, owner_kind: ownerKind,
+    })
     .select('id').single();
   if (error) throw error;
   return data.id as string;

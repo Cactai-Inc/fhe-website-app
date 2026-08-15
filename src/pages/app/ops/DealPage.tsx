@@ -146,7 +146,7 @@ export default function DealPage() {
 
   return (
     <PageLayout name="Deal" width="wide">
-      <Link to="/app/ops/deals"
+      <Link to="/app/records/deals"
         className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-green-800 mb-4">
         <ArrowLeft size={14} /> Deals
       </Link>

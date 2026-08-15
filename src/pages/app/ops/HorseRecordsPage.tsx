@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { fromHere } from '../../../lib/linkOrigin';
-import { X, PencilLine, FileText, UserRound } from 'lucide-react';
+import { X, PencilLine, FileText, UserRound, Trash2 } from 'lucide-react';
 import { PageLayout } from '../../../components/app/PageLayout';
 import { useDocumentTitle } from '../../../lib/hooks';
 import {
-  staffHorseRecords, staffUpdateHorse, staffAssignHorseParty, staffContactOptions,
+  staffHorseRecords, staffUpdateHorse, staffArchiveHorse, staffAssignHorseParty, staffContactOptions,
   type StaffHorseRecord, type ContactOption,
 } from '../../../lib/horses';
 import { HorseIntakeForm } from '../../../components/app/HorseIntakeForm';
@@ -43,6 +43,7 @@ function EditableRecord({
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [okMsg, setOkMsg] = useState<string | null>(null);
+  const [confirmArchive, setConfirmArchive] = useState(false);
 
   const field = (key: keyof StaffHorseRecord & string, label: string) => (
     <div key={key}>
@@ -83,6 +84,23 @@ function EditableRecord({
       onSaved();
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Could not save.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /* Owner, 2026-08-15: "i need a delete function on the records page" — the
+   * Horses tab had none (Leads/Partners/Vendors/Clients all already did, one
+   * way or another). Archive, not delete (D11: nothing is purged). */
+  async function archive() {
+    if (!confirmArchive) { setConfirmArchive(true); return; }
+    setBusy(true); setErr(null);
+    try {
+      await staffArchiveHorse(r.id);
+      onSaved();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Could not archive.');
+      setConfirmArchive(false);
     } finally {
       setBusy(false);
     }
@@ -203,6 +221,14 @@ function EditableRecord({
                 Generate availability
               </button>
             )}
+            <button type="button" disabled={busy} onClick={() => void archive()}
+              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs focus-ring ml-auto disabled:opacity-60 ${
+                confirmArchive
+                  ? 'bg-red-600 text-white hover:bg-red-700'
+                  : 'border border-red-300 text-red-700 hover:bg-red-50'
+              }`}>
+              <Trash2 size={13} /> {confirmArchive ? 'Really archive?' : 'Archive'}
+            </button>
           </>
         )}
       </div>
@@ -290,3 +316,12 @@ export default function HorseRecordsPage({ onOpenContact }: { onOpenContact?: (c
     </PageLayout>
   );
 }
+
+/** RETIRED as a standalone route behind a boolean, never deleted (standing
+ *  rule from 86a2c33). Owner, 2026-08-15: "we dont need horses as its own
+ *  page if we have horses on the records page" — this component itself is
+ *  unchanged and still IS the Records "Horses" tab (RecordsPage.tsx renders
+ *  it directly); only the standalone /app/ops/horse-records entry point and
+ *  nav row go away. /app/ops/horse-records now redirects to
+ *  /app/records/horses. */
+export const HORSE_RECORDS_STANDALONE_RETIRED = true;

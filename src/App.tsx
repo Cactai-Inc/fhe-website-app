@@ -80,9 +80,9 @@ import RecordsPage from './pages/app/RecordsPage';
 import OpsHome from './pages/app/OpsHome';
 import InstructorHomePreview from './pages/app/ops/InstructorHomePreview';
 import ContactsPage, { CONTACTS_PAGE_RETIRED } from './pages/app/ops/ContactsPage';
-import HorsesPage from './pages/app/ops/HorsesPage';
-import HorseRecordsPage from './pages/app/ops/HorseRecordsPage';
-import DocumentsQueuePage from './pages/app/ops/DocumentsQueuePage';
+import HorsesPage, { HORSES_PAGE_RETIRED } from './pages/app/ops/HorsesPage';
+import HorseRecordsPage, { HORSE_RECORDS_STANDALONE_RETIRED } from './pages/app/ops/HorseRecordsPage';
+import DocumentsQueuePage, { DOCUMENTS_QUEUE_STANDALONE_RETIRED } from './pages/app/ops/DocumentsQueuePage';
 import DocumentViewerPage from './pages/app/ops/DocumentViewerPage';
 import ModerationPage from './pages/app/ops/ModerationPage';
 import LookupReviewPage from './pages/app/ops/LookupReviewPage';
@@ -95,10 +95,11 @@ import IntakePage, { INTAKE_PAGE_RETIRED, IntakeRetiredRedirect } from './pages/
 import TeamPage from './pages/app/ops/TeamPage';
 import AccountInvitePage from './pages/app/ops/AccountInvitePage';
 import NewContractPage from './pages/app/ops/NewContractPage';
-import DealsPage from './pages/app/ops/DealsPage';
+import DealsPage, { DEALS_STANDALONE_RETIRED } from './pages/app/ops/DealsPage';
 import DealPage from './pages/app/ops/DealPage';
 import AdminFormsPage from './pages/app/ops/admin/AdminFormsPage';
 import AdminPageVisibilityPage from './pages/app/ops/admin/AdminPageVisibilityPage';
+import NavGroupCardsPage from './pages/app/ops/NavGroupCardsPage';
 import PaymentReviewPage from './pages/app/ops/PaymentReviewPage';
 import BoardingHubPage from './pages/app/ops/hubs/BoardingHubPage';
 import FacilitiesPage from './pages/app/ops/boarding/FacilitiesPage';
@@ -108,7 +109,7 @@ import BarnopsHubPage from './pages/app/ops/hubs/BarnopsHubPage';
 import ResourcesPage from './pages/app/ops/barnops/ResourcesPage';
 import ConsumptionLogPage from './pages/app/ops/barnops/ConsumptionLogPage';
 import AllocationRulesPage from './pages/app/ops/barnops/AllocationRulesPage';
-import LessonsHubPage from './pages/app/ops/hubs/LessonsHubPage';
+import LessonsHubPage, { LESSONS_HUB_STANDALONE_RETIRED } from './pages/app/ops/hubs/LessonsHubPage';
 import LessonPackagesPage from './pages/app/ops/lessons/LessonPackagesPage';
 import LessonCreditsPage from './pages/app/ops/lessons/LessonCreditsPage';
 import SessionsPage from './pages/app/ops/lessons/SessionsPage';
@@ -303,9 +304,24 @@ export function AppRoutes() {
                   reads as Vendor; Partner is the narrower new category). */}
               <Route path="ops/directory" element={<Navigate to="/app/records/vendors" replace />} />
               <Route path="ops/leads" element={<RedirectWithQuery to="/app/records/leads" />} />
-              <Route path="ops/horses" element={<ProtectedRoute requireStaff><HorsesPage /></ProtectedRoute>} />
-              <Route path="ops/horse-records" element={<ProtectedRoute requireStaff><HorseRecordsPage /></ProtectedRoute>} />
-              <Route path="ops/documents" element={<ProtectedRoute requireStaff><DocumentsQueuePage /></ProtectedRoute>} />
+              {/* RETIRED 2026-08-15 (owner: "we dont need horses as its own page
+                  if we have horses on the records page") — a third, orphaned
+                  horse-roster implementation, never linked from any nav. */}
+              <Route path="ops/horses" element={HORSES_PAGE_RETIRED
+                ? <Navigate to="/app/records/horses" replace />
+                : <ProtectedRoute requireStaff><HorsesPage /></ProtectedRoute>} />
+              {/* RETIRED 2026-08-15 (owner) — HorseRecordsPage is unchanged and
+                  still IS the Records "Horses" tab; only this standalone entry
+                  point + its nav row go away. */}
+              <Route path="ops/horse-records" element={HORSE_RECORDS_STANDALONE_RETIRED
+                ? <Navigate to="/app/records/horses" replace />
+                : <ProtectedRoute requireStaff><HorseRecordsPage /></ProtectedRoute>} />
+              {/* RETIRED 2026-08-15 (owner: "documents… should be added to
+                  the records page") — unchanged component, now Records'
+                  own "Documents" tab. */}
+              <Route path="ops/documents" element={DOCUMENTS_QUEUE_STANDALONE_RETIRED
+                ? <Navigate to="/app/records/documents" replace />
+                : <ProtectedRoute requireStaff><DocumentsQueuePage /></ProtectedRoute>} />
               <Route path="ops/documents/:id" element={<ProtectedRoute requireStaff><DocumentViewerPage /></ProtectedRoute>} />
               {/* RETIRED 2026-08-11 (TASK-LEADCLEAN): the owner ruled the
                   dashboard is the surface and Inbound goes away. The nav item
@@ -320,7 +336,12 @@ export function AppRoutes() {
               {/* staff can invite clients; the page hides staff account types for non-admins */}
               <Route path="ops/accounts/new" element={<ProtectedRoute requireStaff><AccountInvitePage /></ProtectedRoute>} />
               <Route path="ops/contracts/new" element={<ProtectedRoute requireStaff><NewContractPage /></ProtectedRoute>} />
-              <Route path="ops/deals" element={<ProtectedRoute requireStaff><DealsPage /></ProtectedRoute>} />
+              {/* RETIRED 2026-08-15 (owner: "deals… should be added to the
+                  records page") — unchanged component, now Records' own
+                  "Deals" tab. */}
+              <Route path="ops/deals" element={DEALS_STANDALONE_RETIRED
+                ? <Navigate to="/app/records/deals" replace />
+                : <ProtectedRoute requireStaff><DealsPage /></ProtectedRoute>} />
               <Route path="ops/deals/:dealId" element={<ProtectedRoute requireStaff><DealPage /></ProtectedRoute>} />
               {/* ops/availability retired — staff manage availability on the full calendar (Phase 6) */}
               <Route path="ops/availability" element={<Navigate to="/app/calendar" replace />} />
@@ -343,7 +364,12 @@ export function AppRoutes() {
               <Route path="ops/barnops/consumption" element={<ProtectedRoute requireStaff><ConsumptionLogPage /></ProtectedRoute>} />
               <Route path="ops/barnops/allocation-rules" element={<ProtectedRoute requireStaff><AllocationRulesPage /></ProtectedRoute>} />
               {/* Lessons = servicing surface (trainers + admins) */}
-              <Route path="ops/lessons" element={<ProtectedRoute requireStaff><LessonsHubPage /></ProtectedRoute>} />
+              {/* RETIRED 2026-08-15 (owner: "lessons… is really a records
+                  ledger so it should be added to the records page") —
+                  unchanged component, now Records' own "Lessons" tab. */}
+              <Route path="ops/lessons" element={LESSONS_HUB_STANDALONE_RETIRED
+                ? <Navigate to="/app/records/lessons" replace />
+                : <ProtectedRoute requireStaff><LessonsHubPage /></ProtectedRoute>} />
               <Route path="ops/lessons/packages" element={<ProtectedRoute requireStaff><LessonPackagesPage /></ProtectedRoute>} />
               <Route path="ops/lessons/credits" element={<ProtectedRoute requireStaff><LessonCreditsPage /></ProtectedRoute>} />
               <Route path="ops/lessons/sessions" element={<ProtectedRoute requireStaff><SessionsPage /></ProtectedRoute>} />
@@ -382,6 +408,17 @@ export function AppRoutes() {
                   visibility itself: set_page_hidden refuses to hide it, so the way back
                   always exists. */}
               <Route path="ops/admin/pages" element={<ProtectedRoute requireAdmin><AdminPageVisibilityPage /></ProtectedRoute>} />
+              {/* Owner, 2026-08-15: Settings/Modules reached from the Account
+                  page as cards, each opening a real page whose own content is
+                  the SETTINGS_GROUP/MODULES_GROUP items as cards — reusing
+                  manageNavGroups(), the same function the sidebar renders
+                  from, so this can never drift from what the nav shows. */}
+              <Route path="ops/settings" element={<ProtectedRoute requireStaff>
+                <NavGroupCardsPage groupKey="settings" heading="Settings" description="Configuration for how the barn runs." />
+              </ProtectedRoute>} />
+              <Route path="ops/modules" element={<ProtectedRoute requireStaff>
+                <NavGroupCardsPage groupKey="modules" heading="Modules" description="The optional features enabled for this tenant." />
+              </ProtectedRoute>} />
               <Route path="ops/superadmin/provision" element={<ProtectedRoute requireSuperAdmin><ProvisionTenantPage /></ProtectedRoute>} />
               <Route path="ops/superadmin/organizations" element={<ProtectedRoute requireSuperAdmin><OrganizationsPage /></ProtectedRoute>} />
               <Route path="ops/superadmin/organizations/:id" element={<ProtectedRoute requireSuperAdmin><TenantDetailPage /></ProtectedRoute>} />

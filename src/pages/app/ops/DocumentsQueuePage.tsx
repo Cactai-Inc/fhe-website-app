@@ -415,3 +415,11 @@ export default function DocumentsQueuePage() {
     </div>
   );
 }
+
+/** RETIRED as a standalone route behind a boolean, never deleted (standing
+ *  rule from 86a2c33). Owner, 2026-08-15: "documents… should be added to the
+ *  records page." This component is unchanged and is now the Records
+ *  "Documents" tab directly (RecordsPage.tsx). /app/ops/documents redirects
+ *  there; /app/ops/documents/:id (the viewer/signing surface) is untouched —
+ *  it is a detail route, not a ledger listing. */
+export const DOCUMENTS_QUEUE_STANDALONE_RETIRED = true;

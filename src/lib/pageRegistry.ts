@@ -82,10 +82,13 @@ export interface PageEntry {
  *  page can say why a row it offers to hide is not in the rail today, and so
  *  nobody reads the absence as a registry bug. */
 export const PARKED_IN_REVIEW = new Set([
-  'mgmt.dashboard', 'mgmt.horses', 'records.hub', 'settings.team',
+  'mgmt.dashboard', 'records.hub', 'settings.team',
   /* people.leads / people.clients / people.directory REMOVED 2026-08-12
      (TASK-RECORDS) — not restored, superseded. Their one-key replacement,
      people.records, ships directly into ACCOUNTS_GROUP, never parked. */
+  /* mgmt.horses REMOVED 2026-08-15 — the key itself no longer exists in
+     PAGE_REGISTRY (every key in this set must, per this file's own test);
+     it isn't parked in Review, it's genuinely retired. See PAGE_REGISTRY. */
 ]);
 
 /** Display names for the module sections on the settings page. Mirrors
@@ -127,20 +130,25 @@ export const PAGE_REGISTRY: PageEntry[] = [
   // ── Management ───────────────────────────────────────────────────────────
   { key: 'mgmt.dashboard', path: '/app/dashboard', label: 'Dashboard', group: 'management' },
   { key: 'mgmt.support', path: '/app/ops/support', label: 'Support', group: 'management' },
-  { key: 'mgmt.documents', path: '/app/ops/documents', label: 'Documents', group: 'management' },
-  { key: 'mgmt.deals', path: '/app/ops/deals', label: 'Deals', group: 'management' },
   { key: 'mgmt.payments_review', path: '/app/ops/payments/review', label: 'Payment review', group: 'management' },
-  {
-    key: 'mgmt.horses', path: '/app/ops/horse-records', label: 'Horses', group: 'management',
-    note: 'TASK-HORSEONE may move this route. The key stays mgmt.horses, so your choice follows it.',
-  },
+  // mgmt.horses RETIRED 2026-08-15 (TASK-HORSEONE's anticipated move happened,
+  // then went further): the standalone Horses page is gone, not moved — its
+  // one nav row was Records' own Horses tab wearing a second hat. people.records
+  // below already covers it. Per this file's own convention: retiring a page
+  // means deleting the entry.
+  // mgmt.documents / mgmt.deals RETIRED the same day, same reason ("lessons…
+  // is really a records ledger so it should be added to the records page
+  // along with documents, files, and deals") — both are now Records tabs.
+  // lessons.hub is NOT deleted alongside them — see the Modules section
+  // below, it still feeds MODULE_HUB_PAGE_KEY and only needed a path update.
 
   // ── People ───────────────────────────────────────────────────────────────
   // TASK-RECORDS (2026-08-12): people.leads / people.clients / people.directory
   // retired as three keys — Leads, Clients and Directory (split into Partners
-  // and Vendors) are tabs on ONE page now, not three nav rows. One key covers
-  // all five tabs, Horses included, because hiding operates on the nav row and
-  // there is only one.
+  // and Vendors) are tabs on ONE page now, not three nav rows. Horses, Lessons,
+  // Documents, Files and Deals joined them the same way later (2026-08-15) —
+  // one key covers every tab, because hiding operates on the nav row and there
+  // is only one.
   { key: 'people.records', path: '/app/records', label: 'Records', group: 'accounts' },
 
   // ── Community ────────────────────────────────────────────────────────────
@@ -154,7 +162,10 @@ export const PAGE_REGISTRY: PageEntry[] = [
   // ── Modules ──────────────────────────────────────────────────────────────
   // Lessons' hub has always sat in Management rather than Modules; it keeps that
   // home and is listed under its module here so the section is complete.
-  { key: 'lessons.hub', path: '/app/ops/lessons', label: 'Lessons', group: 'management', module: 'mod.lessons' },
+  // MOVED 2026-08-15: /app/ops/lessons -> /app/records/lessons (Records tab).
+  // The key stays lessons.hub — MODULE_HUB_PAGE_KEY reads it by key, not path
+  // (this is exactly the case pageRegistry.ts's own header comment names).
+  { key: 'lessons.hub', path: '/app/records/lessons', label: 'Lessons', group: 'management', module: 'mod.lessons' },
 
   { key: 'boarding.hub', path: '/app/ops/boarding', label: 'Boarding', group: 'modules', module: 'mod.boarding' },
   { key: 'boarding.facilities', path: '/app/ops/boarding/facilities', label: 'Facilities & stalls', group: 'modules', module: 'mod.boarding', parent: 'boarding.hub' },

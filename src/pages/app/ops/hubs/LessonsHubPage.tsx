@@ -105,3 +105,11 @@ export function LessonsHubPage() {
 }
 
 export default LessonsHubPage;
+
+/** RETIRED as a standalone route behind a boolean, never deleted (standing
+ *  rule from 86a2c33). Owner, 2026-08-15: "lessons… is really a records
+ *  ledger so it should be added to the records page." This component is
+ *  unchanged and is now the Records "Lessons" tab directly (RecordsPage.tsx),
+ *  self-gated on mod.lessons exactly as before. /app/ops/lessons redirects
+ *  there. */
+export const LESSONS_HUB_STANDALONE_RETIRED = true;

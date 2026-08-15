@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { X, Loader2, Plus, Check } from 'lucide-react';
 import {
   addStableHorse, addStableItem, addVendor, listVendors,
-  type StableItemKind, type StableOwnership, type Vendor,
+  type StableItemKind, type StableItemOwnerKind, type StableOwnership, type Vendor,
 } from '../../lib/stable';
 import { fetchLocations, addMyLocation, type CalendarLocation } from '../../lib/ops/api-calendar';
 
@@ -179,7 +179,14 @@ function VendorPicker({ value, onChange }: { value: string | null; onChange: (id
   );
 }
 
-export function AddItemModal({ kind, onClose, onDone }: { kind: StableItemKind; onClose: () => void; onDone: () => void }) {
+export function AddItemModal({
+  kind, onClose, onDone, ownerKind = 'contact',
+}: {
+  kind: StableItemKind; onClose: () => void; onDone: () => void;
+  /** 'org' when adding to the business's stable while acting as the company
+   *  (D7) — otherwise the signed-in member's own gear/supply, unchanged. */
+  ownerKind?: StableItemOwnerKind;
+}) {
   const [name, setName] = useState('');
   const [detail, setDetail] = useState('');
   const [vendorId, setVendorId] = useState<string | null>(null);
@@ -190,7 +197,7 @@ export function AddItemModal({ kind, onClose, onDone }: { kind: StableItemKind; 
     if (!name.trim()) { setErr('A name is required.'); return; }
     setBusy(true); setErr(null);
     try {
-      await addStableItem(kind, { name: name.trim(), detail: detail || null, vendor_id: vendorId });
+      await addStableItem(kind, { name: name.trim(), detail: detail || null, vendor_id: vendorId }, ownerKind);
       onDone(); onClose();
     } catch (e) { setErr(e instanceof Error ? e.message : 'Could not save.'); }
     finally { setBusy(false); }

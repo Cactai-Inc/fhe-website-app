@@ -125,3 +125,13 @@ export default function HorsesPage() {
     </div>
   );
 }
+
+/** RETIRED behind a boolean, never deleted (standing rule from 86a2c33). This
+ *  is a THIRD independent horse-roster implementation (its own
+ *  listHorses/createHorse/updateHorse, own HorseTable/HorseForm) — never
+ *  linked from any nav, superseded by HorseRecordsPage since TASK-RECORDS
+ *  (2026-08-12) folded Horses into the Records tab strip. Found and retired
+ *  2026-08-15 while closing out the standalone-Horses-page request — exactly
+ *  the "3 horse rosters" duplication CLAUDE.md names as this project's
+ *  defining failure. /app/ops/horses now redirects to /app/records/horses. */
+export const HORSES_PAGE_RETIRED = true;

@@ -7,6 +7,10 @@ import {
 } from './ops/ContactsPage';
 import Admin from './Admin';
 import HorseRecordsPage from './ops/HorseRecordsPage';
+import LessonsHubPage from './ops/hubs/LessonsHubPage';
+import DocumentsQueuePage from './ops/DocumentsQueuePage';
+import FilesRecordsPage from './ops/FilesRecordsPage';
+import DealsPage from './ops/DealsPage';
 
 /**
  * RECORDS (/app/records) — TASK-RECORDS, owner ruling 2026-08-12: "directories
@@ -25,7 +29,9 @@ import HorseRecordsPage from './ops/HorseRecordsPage';
  * lives in Settings.
  */
 
-type RecordsTab = 'all' | 'leads' | 'clients' | 'partners' | 'vendors' | 'horses';
+type RecordsTab =
+  | 'all' | 'leads' | 'clients' | 'partners' | 'vendors' | 'horses'
+  | 'lessons' | 'documents' | 'files' | 'deals';
 
 const TABS: { id: RecordsTab; label: string }[] = [
   { id: 'all', label: 'All' },
@@ -34,6 +40,15 @@ const TABS: { id: RecordsTab; label: string }[] = [
   { id: 'partners', label: 'Partners' },
   { id: 'vendors', label: 'Vendors' },
   { id: 'horses', label: 'Horses' },
+  // Owner, 2026-08-15: "lessons... is really a records ledger so it should be
+  // added to the records page along with documents, files, and deals" — each
+  // is its own ledger of records, not a work queue, so Management (day-to-day
+  // queues) is the wrong home. Same components, same data, new tab strip —
+  // no second implementation of any of the four.
+  { id: 'lessons', label: 'Lessons' },
+  { id: 'documents', label: 'Documents' },
+  { id: 'files', label: 'Files' },
+  { id: 'deals', label: 'Deals' },
 ];
 const TAB_IDS = new Set<string>(TABS.map((t) => t.id));
 
@@ -89,6 +104,10 @@ export default function RecordsPage() {
       {tab === 'partners' && <PartnersPage />}
       {tab === 'vendors' && <VendorsPage />}
       {tab === 'horses' && <HorseRecordsPage onOpenContact={setCrossContact} />}
+      {tab === 'lessons' && <LessonsHubPage />}
+      {tab === 'documents' && <DocumentsQueuePage />}
+      {tab === 'files' && <FilesRecordsPage />}
+      {tab === 'deals' && <DealsPage />}
 
       {crossContact && (
         <ContactDossierModal contactId={crossContact} onClose={() => setCrossContact(null)} />

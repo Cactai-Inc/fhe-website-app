@@ -14,7 +14,7 @@ import {
      a fourth glyph. */
   BookOpen,
   ChevronDown, ChevronUp, Plus, LifeBuoy, ShoppingBag, MessageSquare, ListChecks,
-  PanelLeftClose, PanelLeftOpen, Activity, Compass, Handshake, Grid3x3, Bookmark,
+  PanelLeftClose, PanelLeftOpen, Activity, Compass, Grid3x3, Bookmark,
   Receipt, Eye, Library,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -401,7 +401,7 @@ function useNavPresence(enabled: boolean): NavPresence {
  * create "+"; calendar; avatar menu (notifications fold into the avatar badge).
  */
 
-interface NavItem {
+export interface NavItem {
   to: string;
   label: string;
   icon: typeof LayoutDashboard;
@@ -507,16 +507,23 @@ const MANAGEMENT_GROUP: NavItem[] = [
      experiment ends; the duplicate-page ruling now lives in TASK-PAGEMERGE.
      Dashboard's badge is injected by route below, not by table position. */
   { to: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/app/ops/horse-records', label: 'Horses', icon: Boxes },
+  // Moved up from its own "People" heading (owner, 2026-08-15) — Records
+  // (the People/Clients/Partners/Vendors/Horses tabs page) now sits directly
+  // in Management; the People group is gone, not hidden — it had no other
+  // member (ACCOUNTS_GROUP below is kept, empty, for anything that lands
+  // there later; manageNavGroups() drops empty groups already).
+  //
+  // The standalone Horses row that used to sit right below this one is
+  // retired (owner, same session: "we dont need horses as its own page if
+  // we have horses on the records page") — Records' own Horses tab, one
+  // click away, is the only entry point now.
+  { to: '/app/records', label: 'Records', icon: BookOpen },
   { to: '/app/ops/support', label: 'Support', icon: LifeBuoy },
-  // Servicing folded in 2026-07-31: three links did not justify a heading of
-  // their own, and they are day-to-day management like the queues above.
-  { to: '/app/ops/lessons', label: 'Lessons', icon: GraduationCap, module: 'mod.lessons' },
-  { to: '/app/ops/documents', label: 'Documents', icon: FileText },
-  // A deal is the envelope a transaction lives in — its parties, what each side
-  // gives, and the documents that make it real. It sits beside Documents because
-  // that is what it produces.
-  { to: '/app/ops/deals', label: 'Deals', icon: Handshake },
+  // Lessons, Documents, Deals RETIRED from here 2026-08-15 (owner: "lessons…
+  // is really a records ledger so it should be added to the records page
+  // along with documents, files, and deals") — each is a ledger of records,
+  // not a work queue, so they moved to be Records tabs instead (in that
+  // order, after Horses). Management keeps the actual day-to-day queues.
   // Payment review is a management task; Business is hidden until the reporting
   // and business-ops surfaces that belong there actually exist.
   /* Receipt, not ReceiptText — which My Orders already uses in the member nav.
@@ -528,41 +535,13 @@ const MANAGEMENT_GROUP: NavItem[] = [
  * plus Horses into ONE row, Records, whose five internal tabs carry the
  * distinctions this comment used to describe: Leads / Clients / Partners /
  * Vendors / Horses. Team is still not here — "that is a business
- * configuration activity" (owner) — it lives in Settings. */
-const ACCOUNTS_GROUP: NavItem[] = [
-  /* Owner, 2026-08-12: "contacts routes to clients, switch the icons and remove
-     the contacts nav item and move the clients icon to Leads."
-
-     Three facts made this a cleanup rather than a preference. (1) `Contacts`
-     already resolved to the same place as `Clients` — App.tsx renders
-     `<Navigate to="/app/admin" replace />` for `ops/contacts` whenever
-     CONTACTS_PAGE_RETIRED is true, so the nav carried two entries with one
-     destination. (2) Leads and Contacts carried the SAME `Contact` icon, so the
-     nav showed one glyph twice. (3) Removing the entry loses nothing: the route
-     stays and keeps redirecting, so bookmarks and in-app links still land.
-
-     Leads takes `Users` (Clients' old icon) and Clients takes `Contact`. This is
-     ADMINSWEEP's X-1, whose finding was that the ContactsPage retirement was
-     half-applied — the page was retired, the nav entry never was. */
-  /* Team moved to SETTINGS_GROUP below — owner, 2026-08-12: "team moves to
-     configuration section." Who works here is configuration, not a daily
-     people-management surface. */
-
-  /* REVIEW SECTION — RESOLVED, not restored (TASK-RECORDS, 2026-08-12). The
-     three rows TASK-REVIEWNAV moved out —
-       { to: '/app/ops/leads',     label: 'Leads',     icon: Users }
-       { to: '/app/admin',         label: 'Clients',   icon: Contact }
-       { to: '/app/ops/directory', label: 'Directory', icon: BookOpen }
-     — do NOT come back as three rows. TASK-ONEPEOPLE, which the REVIEWNAV
-     report named as the pending decision, was superseded by three owner
-     rulings (client is a marker not a type; vendors and partners are
-     separate; horses belong on this page) recorded in TASK-RECORDS. The
-     single row below is that resolution: one page, five tabs (Leads /
-     Clients / Partners / Vendors / Horses), replacing all three old
-     destinations — which is why it takes BookOpen (Directory's old icon,
-     unclaimed) rather than reviving Users or Contact. */
-  { to: '/app/records', label: 'Records', icon: BookOpen },
-];
+ * configuration activity" (owner) — it lives in Settings.
+ *
+ * MOVED 2026-08-15 (owner): Records relocated into MANAGEMENT_GROUP, directly
+ * above Horses — a standalone "People" heading for one row was overhead. This
+ * group is kept, empty, as the landing spot if anything else joins it;
+ * manageNavGroups() already drops empty groups from the rendered rail. */
+const ACCOUNTS_GROUP: NavItem[] = [];
 /* SERVICING and BUSINESS were folded into Management 2026-07-31 (owner): the
  * goal is fewer headings, not more. Their items live in MANAGEMENT_GROUP above.
  * BUSINESS_GROUP returns when there is more in it than a single link. */
@@ -649,8 +628,11 @@ export function manageNavGroups(
     { key: 'management', label: 'Management', items: visible(MANAGEMENT_GROUP), defaultOpen: true },
     { key: 'accounts', label: 'People', items: visible(ACCOUNTS_GROUP), defaultOpen: true },
     { key: 'community', label: 'Community', items: visible(COMMUNITY_GROUP) },
-    { key: 'modules', label: 'Modules', items: visible(MODULES_GROUP) },
+    // Owner, 2026-08-15: "modules last wherever its shown because its really
+    // just for reference and not as important to me as the settings which i
+    // will need to use more frequently." Settings moved ahead of Modules.
     { key: 'settings', label: 'Settings', items: visible(SETTINGS_GROUP) },
+    { key: 'modules', label: 'Modules', items: visible(MODULES_GROUP) },
     /* REVIEW SECTION removed 2026-08-15 (owner: "the menu fixed… back to
        normal") — every moved row restored to its home above, per each removal
        note. The review PAGES and routes survive (reviewSection.ts, /app/ops/

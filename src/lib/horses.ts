@@ -296,6 +296,12 @@ export async function staffUpdateHorse(id: string, patch: Record<string, string>
   if (error) throw new DbError(error, 'Saving the horse');
 }
 
+/** Archive a horse (D11: hidden from staff_horse_records, never purged). */
+export async function staffArchiveHorse(id: string): Promise<void> {
+  const { error } = await supabase.rpc('staff_archive_horse', { p_id: id });
+  if (error) throw new DbError(error, 'Archiving the horse');
+}
+
 export async function staffAssignHorseParty(
   horseId: string, role: 'OWNER' | 'LESSEE', contactId: string | null,
   termStart?: string | null, termEnd?: string | null,

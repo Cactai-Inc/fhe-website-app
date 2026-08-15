@@ -6,8 +6,10 @@ import {
 } from '../../lib/seed';
 import {
   listStableHorses, listStableItems,
-  type StableHorse, type StableItem,
+  type StableHorse, type StableItem, type StableItemOwnerKind,
 } from '../../lib/stable';
+import { companyContactId } from '../../lib/horses';
+import { useAuth } from '../../contexts/AuthContext';
 import { AddItemModal } from './StableEditors';
 import { HorseIntakeForm } from './HorseIntakeForm';
 import { PageCreateButton } from './PageCreateButton';
@@ -28,22 +30,35 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 export function StableSection() {
+  const { isStaff } = useAuth();
+  // D7 — "staff default to company voice": staff land on the business's
+  // stable; personal is the opt-out (same convention FeedComposer/CreateModal
+  // already use for posting as the company). Non-staff never see the toggle.
+  const [asCompany, setAsCompany] = useState(isStaff);
+  const ownerKind: StableItemOwnerKind = asCompany ? 'org' : 'contact';
+  const [companyId, setCompanyId] = useState<string | null>(null);
+  useEffect(() => {
+    if (isStaff) companyContactId().then(setCompanyId).catch(() => setCompanyId(null));
+  }, [isStaff]);
+
   const [horses, setHorses] = useState<StableHorse[] | null>(null);
   const [gear, setGear] = useState<StableItem[] | null>(null);
   const [supplies, setSupplies] = useState<StableItem[] | null>(null);
   const [modal, setModal] = useState<'horse' | 'gear' | 'supply' | null>(null);
 
-  const loadHorses = () => listStableHorses().then(setHorses).catch(() => setHorses([]));
-  const loadGear = () => listStableItems('gear').then(setGear).catch(() => setGear([]));
-  const loadSupplies = () => listStableItems('supply').then(setSupplies).catch(() => setSupplies([]));
+  const loadHorses = () => listStableHorses(asCompany).then(setHorses).catch(() => setHorses([]));
+  const loadGear = () => listStableItems('gear', ownerKind).then(setGear).catch(() => setGear([]));
+  const loadSupplies = () => listStableItems('supply', ownerKind).then(setSupplies).catch(() => setSupplies([]));
 
   useEffect(() => {
     let active = true;
-    listStableHorses().then((h) => active && setHorses(h)).catch(() => active && setHorses([]));
-    listStableItems('gear').then((g) => active && setGear(g)).catch(() => active && setGear([]));
-    listStableItems('supply').then((s) => active && setSupplies(s)).catch(() => active && setSupplies([]));
+    setHorses(null); setGear(null); setSupplies(null);
+    listStableHorses(asCompany).then((h) => active && setHorses(h)).catch(() => active && setHorses([]));
+    listStableItems('gear', ownerKind).then((g) => active && setGear(g)).catch(() => active && setGear([]));
+    listStableItems('supply', ownerKind).then((s) => active && setSupplies(s)).catch(() => active && setSupplies([]));
     return () => { active = false; };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [asCompany]);
 
   // Fall back to seed only when a live list is empty (preview).
   const showHorses = (horses && horses.length > 0)
@@ -67,6 +82,28 @@ export function StableSection() {
 
   return (
     <div className="mt-2.5 mb-1 p-4 bg-cream-100/60 border border-green-800/10 rounded-xl">
+      {/* D7 — act as company. Staff only; a non-staff member has no other
+          stable to switch to. */}
+      {isStaff && (
+        <div className="inline-flex rounded-full bg-green-800/10 p-0.5 mb-3">
+          {([
+            { key: true, label: 'The business' },
+            { key: false, label: 'My own' },
+          ] as const).map((opt) => (
+            <button
+              key={String(opt.key)}
+              type="button"
+              aria-pressed={asCompany === opt.key}
+              onClick={() => setAsCompany(opt.key)}
+              className={`px-3 py-1 rounded-full text-xs font-medium ${
+                asCompany === opt.key ? 'bg-green-800 text-white' : 'text-green-800'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="flex items-center justify-between gap-3">
         <SectionLabel>Horses</SectionLabel>
         <PageCreateButton label="Horse" onClick={() => setModal('horse')} />
@@ -134,14 +171,20 @@ export function StableSection() {
             </div>
             <div className="p-4 sm:p-5 overflow-y-auto overscroll-contain pb-8">
               {/* the standardized record intake (spec H.2/H.3 path 2) — creates the
-                  real horse record with microchip dedup, then refreshes My Stable */}
-              <HorseIntakeForm submitLabel="Add to my stable" onDone={() => { setModal(null); loadHorses(); }} />
+                  real horse record with microchip dedup, then refreshes My Stable.
+                  ownerContactId (staff-only, already supported by this form) is
+                  the company's contact when adding to the business's stable. */}
+              <HorseIntakeForm
+                submitLabel={asCompany ? 'Add to the business stable' : 'Add to my stable'}
+                ownerContactId={asCompany ? (companyId ?? undefined) : undefined}
+                onDone={() => { setModal(null); loadHorses(); }}
+              />
             </div>
           </div>
         </div>
       )}
-      {modal === 'gear' && <AddItemModal kind="gear" onClose={() => setModal(null)} onDone={loadGear} />}
-      {modal === 'supply' && <AddItemModal kind="supply" onClose={() => setModal(null)} onDone={loadSupplies} />}
+      {modal === 'gear' && <AddItemModal kind="gear" ownerKind={ownerKind} onClose={() => setModal(null)} onDone={loadGear} />}
+      {modal === 'supply' && <AddItemModal kind="supply" ownerKind={ownerKind} onClose={() => setModal(null)} onDone={loadSupplies} />}
     </div>
   );
 }
