@@ -34,7 +34,7 @@ const displayName = (name: string) => name.replace(/\s*\(with your horse\)\s*/i,
 // anchored by a * on those cards' descriptions.
 const WEEKLY_FOOTNOTE =
   `* Option to have first month prorated or book all your lessons for the month in the days ` +
-  `remaining. With this program you can ride 1x or 2x every week even when there's a 5th week, ` +
+  `remaining. With this program you can ride every week even when there's a 5th week, ` +
   `plus the freedom to easily reschedule or change your riding day(s) right from your rider ` +
   `companion app (subject to schedule availability, we kindly request 48 hrs notice).`;
 
