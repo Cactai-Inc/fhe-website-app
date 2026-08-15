@@ -100,6 +100,9 @@ export interface Offering {
   unit_count: number | null;
   /** Recurring SKUs: sessions per week (1/2/3). */
   weekly_frequency: number | null;
+  /** Card corner badge text ("Most Popular", "Best Value"). Set → renders as the
+   *  badge; null + is_popular → legacy "Popular". */
+  badge_label: string | null;
 }
 
 export interface ProposedTime {
