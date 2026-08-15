@@ -1,7 +1,7 @@
-import { useCallback, useMemo, type ReactNode } from 'react';
+import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import {
-  clauseConditionMet,
-  type ContractField, type SectionDef,
+  clauseConditionMet, resolvePendingComposition, withdrawPendingComposition,
+  type ContractField, type SectionDef, type RedlinePendingComposition,
 } from '../../lib/contracts';
 import { InlineFieldControl } from './ContractCascade';
 import { ExplainTip } from './ExplainTip';
@@ -642,12 +642,111 @@ export function ClauseProse({
   return <>{blocks}</>;
 }
 
+/** A suggest-tier "Add item" proposal, rendered in place at the header it
+ *  targets (owner spec, verbatim):
+ *   - open:    a highlight box — "{author} suggested adding this to the
+ *              contract, review it carefully and choose one of the options
+ *              below.", then Include / Reject / Revise on the next line,
+ *              then the item itself below. It is temporary until resolved.
+ *   - Include: the box disappears; the item becomes a normal permanent part
+ *              of the contract; the author is notified.
+ *   - Reject:  grayed out, stays visible (never disappears), Reject renders
+ *              as the selected control; the author is notified.
+ *   - Revise:  opens the Requests drawer on this item's section — revision
+ *              is proposed through that surface, not a separate editor here.
+ *  The proposer sees Withdraw instead of the three buttons; anyone who is
+ *  neither the proposer nor eligible to resolve it sees it read-only.
+ *
+ *  Preview scope: renders each line's raw body text, not the merged
+ *  {{TOKEN}} substitution ClauseProse gives an accepted line — the server
+ *  restricts a suggestion to an existing header with no new inline elements
+ *  precisely so this preview never needs the full token/gating machinery.
+ *  Once included, the item renders through the normal pipeline like any
+ *  other authored line. */
+function PendingCompositionBox({
+  pending, isOwnerSide, hasPartyRole, onChanged, onRevise,
+}: {
+  pending: RedlinePendingComposition;
+  isOwnerSide: boolean;
+  hasPartyRole: boolean;
+  onChanged?: () => void;
+  onRevise: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const canResolve = isOwnerSide || (hasPartyRole && !pending.mine);
+  const rejected = pending.status === 'rejected';
+  const who = pending.proposed_by ?? 'The other party';
+
+  async function decide(decision: 'include' | 'reject') {
+    setBusy(true); setErr(null);
+    try { await resolvePendingComposition(pending.id, decision); onChanged?.(); }
+    catch (e) { setErr(e instanceof Error ? e.message : 'That failed.'); }
+    finally { setBusy(false); }
+  }
+  async function withdraw() {
+    setBusy(true); setErr(null);
+    try { await withdrawPendingComposition(pending.id); onChanged?.(); }
+    catch (e) { setErr(e instanceof Error ? e.message : 'That failed.'); }
+    finally { setBusy(false); }
+  }
+
+  const btn = 'text-xs px-3 py-1.5 rounded-lg border disabled:opacity-50 disabled:pointer-events-none';
+  return (
+    <div className={`rounded-lg border-l-4 p-4 ${rejected ? 'border-gray-300 bg-gray-50' : 'border-gold-400 bg-gold-50/60'}`}>
+      <p className="text-[13px] text-gold-900 mb-2">
+        {rejected
+          ? `${who}'s suggestion was not included.`
+          : `${who} suggested adding this to the contract, review it carefully and choose one of the options below.`}
+      </p>
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        {canResolve || rejected ? (
+          <>
+            <button type="button" disabled={busy || rejected}
+              className={`${btn} border-green-800 bg-green-800 text-white`}
+              onClick={() => void decide('include')}>Include</button>
+            <button type="button" disabled={busy || rejected}
+              className={`${btn} ${rejected ? 'bg-red-600 text-white border-red-600' : 'border-red-300 text-red-700 hover:bg-red-50'}`}
+              onClick={() => void decide('reject')}>Reject</button>
+            <button type="button" disabled={busy || rejected}
+              className={`${btn} border-green-800/20 text-green-900 hover:bg-green-800/5`}
+              onClick={onRevise}>Revise</button>
+          </>
+        ) : pending.mine ? (
+          <button type="button" disabled={busy} className="text-xs underline text-secondary"
+            onClick={() => void withdraw()}>Withdraw</button>
+        ) : (
+          <span className="text-xs text-muted">Pending review</span>
+        )}
+      </div>
+      {err && <p role="alert" className="form-error text-[12px] mb-2">{err}</p>}
+      <div className={rejected ? 'opacity-50 grayscale pointer-events-none' : ''}>
+        {pending.spec.lines.map((l, i) => (
+          <p key={i} className="text-[13.5px] leading-[1.9] text-green-950">{l.body}</p>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function ClauseDocument({
-  sections, fields, cb: cbIn,
+  sections, fields, cb: cbIn, isOwnerSide = false, hasPartyRole = false,
+  pendingCompositions = [], onPendingChanged, onRevise,
 }: {
   sections: SectionDef[];
   fields: ContractField[];
   cb: FieldCallbacks;
+  /** Staff/company authoring. */
+  isOwnerSide?: boolean;
+  /** The viewer is one of the document's own parties (not staff, not a
+   *  bystander) — together with isOwnerSide, who may resolve a pending item:
+   *  anyone but the proposer themselves. */
+  hasPartyRole?: boolean;
+  /** Suggest-tier "Add item" proposals awaiting review, from contract_redline_state. */
+  pendingCompositions?: RedlinePendingComposition[];
+  onPendingChanged?: () => void;
+  /** "Revise" — open the Requests drawer scoped to this section. */
+  onRevise?: (sectionKey: string) => void;
 }) {
   // Keep a duration UNIT's stored plurality in step with its paired number:
   // saving a length also re-saves the unit as its singular/plural twin when
@@ -729,7 +828,21 @@ export function ClauseDocument({
     conditional_on: import('../../lib/contracts').FieldConditional | null;
     caption: string | null;      // authored gold-caption override
     ord1: number; ord2: number;
+    /** A suggest-tier proposal targeting this header, rendered in place
+     *  instead of a normal item — see PendingCompositionBox below. */
+    pending?: RedlinePendingComposition;
   };
+  /** Pending proposals anchored to this header, sorted after its real lines
+   *  (a high ord2 sentinel) — where they'd really land is only resolved for
+   *  real once accepted; until then "right after the existing content" is
+   *  close enough to be legible and never wrong about WHICH header. */
+  const pendingFor = useCallback((headerKey: string, ord1: number): RenderItem[] =>
+    pendingCompositions
+      .filter((p) => p.spec.header?.clause_key === headerKey)
+      .map((p, i) => ({
+        clauseKey: `pending:${p.id}`, heading: null, body: null,
+        conditional_on: null, caption: null, ord1, ord2: 1_000_000 + i, pending: p,
+      })), [pendingCompositions]);
   const lineItems = useCallback((headerKey: string, ord1: number): RenderItem[] =>
     (customLinesByHeader.get(headerKey) ?? []).map((l) => ({
       clauseKey: l.field_key, heading: null, body: l.body ?? '',
@@ -771,6 +884,7 @@ export function ClauseDocument({
           conditional_on: c.conditional_on, caption: null, ord1, ord2: 0,
         });
         items.push(...lineItems(c.clause_key, ord1));
+        items.push(...pendingFor(c.clause_key, ord1));
       }
       for (const h of headersFor(s.section_key)) {
         items.push({
@@ -778,6 +892,7 @@ export function ClauseDocument({
           conditional_on: null, caption: null, ord1: h.sort_order, ord2: 0,
         });
         items.push(...lineItems(h.field_key, h.sort_order));
+        items.push(...pendingFor(h.field_key, h.sort_order));
       }
       items.sort((a, b) => a.ord1 - b.ord1 || a.ord2 - b.ord2);
       secs.push({ key: s.section_key, sectionKey: s.section_key, heading: s.heading, ord: s.sort_order * 1000, items });
@@ -791,13 +906,14 @@ export function ClauseDocument({
           conditional_on: null, caption: null, ord1: h.sort_order, ord2: 0,
         });
         items.push(...lineItems(h.field_key, h.sort_order));
+        items.push(...pendingFor(h.field_key, h.sort_order));
       }
       items.sort((a, b) => a.ord1 - b.ord1 || a.ord2 - b.ord2);
       secs.push({ key: `custom-section:${name}`, sectionKey: name, heading: cs.label ?? name, ord: cs.sort_order, items });
     }
     secs.sort((a, b) => a.ord - b.ord);
     return secs;
-  }, [sections, customRows, customSectionRows, lineItems]);
+  }, [sections, customRows, customSectionRows, lineItems, pendingFor]);
 
   const renderCustom = (f: ContractField, num: string) => (
     <OwnedField key={f.field_key} f={f} cb={cb} block>
@@ -865,6 +981,16 @@ export function ClauseDocument({
             </h2>
             <div className="flex flex-col gap-4">
               {clausesToShow.map((clause) => {
+                // A suggest-tier proposal renders as its own review box — it
+                // never enters the numbering/gating machinery below, since it
+                // isn't part of the composed document until included.
+                if (clause.pending) {
+                  return (
+                    <PendingCompositionBox key={clause.clauseKey} pending={clause.pending}
+                      isOwnerSide={isOwnerSide} hasPartyRole={hasPartyRole}
+                      onChanged={onPendingChanged} onRevise={() => onRevise?.(section.sectionKey)} />
+                  );
+                }
                 const gatedOff = !clauseConditionMet(clause.conditional_on, valueByKey);
                 /* NUMBERING DERIVES FROM HEADINGS (R11, owner ruling 2026-08-04;
                    supersedes the "every rendered clause consumes a number" rule).
