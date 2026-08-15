@@ -21,10 +21,12 @@ function mechanics(o: Offering): string {
     // Riding lessons say what recurs and that the price is a payment cadence
     // (owner, 2026-08-14): "1× weekly lesson · paid monthly". Other recurring
     // services (training/exercise/turnout) keep the generic line.
+    // Plain "x", matching the card titles ("1x Weekly Lesson") — the gold line
+    // and the title should read as one voice, not "1x" vs "1×".
     if (o.service_type === 'RIDING_LESSON') {
-      return `${o.weekly_frequency}× weekly ${o.weekly_frequency > 1 ? 'lessons' : 'lesson'} · paid monthly`;
+      return `${o.weekly_frequency}x weekly ${o.weekly_frequency > 1 ? 'lessons' : 'lesson'} · paid monthly`;
     }
-    return `${o.weekly_frequency}× weekly · monthly`;
+    return `${o.weekly_frequency}x weekly · monthly`;
   }
   if (o.config_kind === 'scheduled' && (o.unit_count ?? 1) > 1) return `${o.unit_count} lessons`;
   return '';

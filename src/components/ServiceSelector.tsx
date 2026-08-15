@@ -35,7 +35,8 @@ export default function ServiceSelector({
 
   // The SKU's mechanics, shown as a small hint (replaces the old tier description).
   const mechanics = (o: ServiceGroup['offerings'][number]): string => {
-    if (o.config_kind === 'recurring' && o.weekly_frequency) return `${o.weekly_frequency}× weekly · monthly`;
+    // Plain "x" matches the offering names ("1x Weekly Lesson") — same voice.
+    if (o.config_kind === 'recurring' && o.weekly_frequency) return `${o.weekly_frequency}x weekly · monthly`;
     if (o.config_kind === 'scheduled' && (o.unit_count ?? 1) > 1) return `${o.unit_count} sessions`;
     return o.tagline ?? '';
   };
