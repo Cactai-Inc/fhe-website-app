@@ -401,7 +401,7 @@ function useNavPresence(enabled: boolean): NavPresence {
  * create "+"; calendar; avatar menu (notifications fold into the avatar badge).
  */
 
-interface NavItem {
+export interface NavItem {
   to: string;
   label: string;
   icon: typeof LayoutDashboard;
@@ -628,8 +628,11 @@ export function manageNavGroups(
     { key: 'management', label: 'Management', items: visible(MANAGEMENT_GROUP), defaultOpen: true },
     { key: 'accounts', label: 'People', items: visible(ACCOUNTS_GROUP), defaultOpen: true },
     { key: 'community', label: 'Community', items: visible(COMMUNITY_GROUP) },
-    { key: 'modules', label: 'Modules', items: visible(MODULES_GROUP) },
+    // Owner, 2026-08-15: "modules last wherever its shown because its really
+    // just for reference and not as important to me as the settings which i
+    // will need to use more frequently." Settings moved ahead of Modules.
     { key: 'settings', label: 'Settings', items: visible(SETTINGS_GROUP) },
+    { key: 'modules', label: 'Modules', items: visible(MODULES_GROUP) },
     /* REVIEW SECTION removed 2026-08-15 (owner: "the menu fixed… back to
        normal") — every moved row restored to its home above, per each removal
        note. The review PAGES and routes survive (reviewSection.ts, /app/ops/

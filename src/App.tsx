@@ -99,6 +99,7 @@ import DealsPage, { DEALS_STANDALONE_RETIRED } from './pages/app/ops/DealsPage';
 import DealPage from './pages/app/ops/DealPage';
 import AdminFormsPage from './pages/app/ops/admin/AdminFormsPage';
 import AdminPageVisibilityPage from './pages/app/ops/admin/AdminPageVisibilityPage';
+import NavGroupCardsPage from './pages/app/ops/NavGroupCardsPage';
 import PaymentReviewPage from './pages/app/ops/PaymentReviewPage';
 import BoardingHubPage from './pages/app/ops/hubs/BoardingHubPage';
 import FacilitiesPage from './pages/app/ops/boarding/FacilitiesPage';
@@ -407,6 +408,17 @@ export function AppRoutes() {
                   visibility itself: set_page_hidden refuses to hide it, so the way back
                   always exists. */}
               <Route path="ops/admin/pages" element={<ProtectedRoute requireAdmin><AdminPageVisibilityPage /></ProtectedRoute>} />
+              {/* Owner, 2026-08-15: Settings/Modules reached from the Account
+                  page as cards, each opening a real page whose own content is
+                  the SETTINGS_GROUP/MODULES_GROUP items as cards — reusing
+                  manageNavGroups(), the same function the sidebar renders
+                  from, so this can never drift from what the nav shows. */}
+              <Route path="ops/settings" element={<ProtectedRoute requireStaff>
+                <NavGroupCardsPage groupKey="settings" heading="Settings" description="Configuration for how the barn runs." />
+              </ProtectedRoute>} />
+              <Route path="ops/modules" element={<ProtectedRoute requireStaff>
+                <NavGroupCardsPage groupKey="modules" heading="Modules" description="The optional features enabled for this tenant." />
+              </ProtectedRoute>} />
               <Route path="ops/superadmin/provision" element={<ProtectedRoute requireSuperAdmin><ProvisionTenantPage /></ProtectedRoute>} />
               <Route path="ops/superadmin/organizations" element={<ProtectedRoute requireSuperAdmin><OrganizationsPage /></ProtectedRoute>} />
               <Route path="ops/superadmin/organizations/:id" element={<ProtectedRoute requireSuperAdmin><TenantDetailPage /></ProtectedRoute>} />

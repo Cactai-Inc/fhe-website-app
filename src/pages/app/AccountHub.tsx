@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   UserRound, Bell, ShieldCheck, Grid3x3, GraduationCap, Bookmark, FileText, Boxes,
-  ShoppingBag, Gift, Paperclip, ChevronRight,
+  ShoppingBag, Gift, Paperclip, ChevronRight, Settings, Layers,
 } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
 import { SavedPanel } from '../../components/app/AccountPanels';
@@ -17,7 +17,7 @@ import {
 } from '../../components/app/profile/ProfileAndPreferences';
 import { useAuth } from '../../contexts/AuthContext';
 import { consumeGoogleLinkReturn } from '../../lib/googleLink';
-import { Navigate, useSearchParams } from 'react-router-dom';
+import { Navigate, useSearchParams, Link } from 'react-router-dom';
 
 /**
  * ACCOUNT HUB (/app/account) — the "me" surface for every user type, reached from
@@ -63,6 +63,32 @@ function Row({
       </span>
       <ChevronRight size={18} className={`text-muted shrink-0 transition-transform ${open ? 'rotate-90' : ''}`} />
     </button>
+  );
+}
+
+/** Owner, 2026-08-15: Settings/Modules/Stable "are their own pages as they
+ *  already are" — this page's own stated rule ("anything reached from the
+ *  NAV opens its own page; anything on the ACCOUNT page expands in place")
+ *  is deliberately crossed here, on the owner's direct instruction, for rows
+ *  whose content already lives at a real route. Same look as Row, no expand
+ *  state — a plain navigation. */
+function NavRow({
+  icon: Icon, title, sub, to,
+}: { icon: typeof UserRound; title: string; sub?: string; to: string }) {
+  return (
+    <Link
+      to={to}
+      className="w-full flex items-center justify-between px-5 py-5 bg-white border border-green-800/10 rounded-xl hover:border-green-800/25 hover:shadow-[0_10px_24px_-16px_rgba(13,33,24,0.25)] transition-all focus-ring text-left"
+    >
+      <span className="flex items-center gap-4 min-w-0">
+        <span className="w-11 h-11 rounded-lg bg-cream-100 grid place-items-center text-green-700 shrink-0"><Icon size={20} /></span>
+        <span className="min-w-0">
+          <span className="block text-[15px] font-medium text-green-900">{title}</span>
+          {sub && <span className="block text-[12.5px] text-muted mt-0.5">{sub}</span>}
+        </span>
+      </span>
+      <ChevronRight size={18} className="text-muted shrink-0" />
+    </Link>
   );
 }
 
@@ -129,6 +155,22 @@ export default function AccountHub() {
         <Row icon={ShieldCheck} title="My Login" sub="Sign-in email, password & Google" onClick={() => toggle('login')} open={open === 'login'} />
         {open === 'login' && <div className="lg:col-span-2"><MyLoginContent /></div>}
 
+        {/* Owner, 2026-08-15: "modules and settings should all be inside of
+            the account page... just show them as cards that open the page
+            when clicked." Staff-only — these are operator surfaces. My
+            Stable joins them for the same reason it was unreachable for
+            staff before today: useNavPresence (the sidebar's own "My
+            Stable" link) is disabled entirely for staff
+            (`useNavPresence(!isStaff)` in AppLayout.tsx), so this was the
+            only door. Settings ranked first ("i will need to use more
+            frequently"); Modules last ("really just for reference"). */}
+        {isStaff && (
+          <>
+        <NavRow icon={Boxes} title="My Stable" sub="The business's horses, gear, and supplies" to="/app/stable" />
+        <NavRow icon={Settings} title="Settings" sub="Team, branding, products & forms" to="/app/ops/settings" />
+          </>
+        )}
+
         {!isStaff && (
           <>
 
@@ -161,6 +203,13 @@ export default function AccountHub() {
         <Row icon={Gift} title="My Gifts" sub="Gifts you can use" onClick={() => toggle('gifts')} open={open === 'gifts'} />
         {open === 'gifts' && <div className="lg:col-span-2"><GiftsContent /></div>}
           </>
+        )}
+
+        {/* Last, deliberately (owner: "modules last wherever its shown
+            because its really just for reference and not as important to me
+            as the settings"). */}
+        {isStaff && (
+          <NavRow icon={Layers} title="Modules" sub="The optional features enabled for this tenant" to="/app/ops/modules" />
         )}
       </div>
     </div>
