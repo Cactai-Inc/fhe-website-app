@@ -86,7 +86,10 @@ export default function Landing() {
             {/* Eyebrow / location — enlarged and brightened so it is clearly
                 readable over the hero (was too faint). */}
             <p className="qs-rise qs-delay-1 mb-6 sm:mb-8 font-sans font-medium tracking-widest uppercase text-gold-300 text-sm sm:text-base [text-shadow:0_1px_12px_rgba(0,0,0,0.6)]">
-              Carmel Creek Ranch · Coastal San Diego
+              {/* Each phrase is unbreakable: narrow screens wrap at the
+                  separator only — never mid-phrase ("San" / "Diego"). */}
+              <span className="whitespace-nowrap">Carmel Creek Ranch</span> ·{' '}
+              <span className="whitespace-nowrap">Coastal San Diego</span>
             </p>
 
             {/* Headline — reduced from a screen-dominating clamp so it is
