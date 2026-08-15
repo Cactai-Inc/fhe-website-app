@@ -1,7 +1,7 @@
 # TASK-BOOKLINK REPORT — bookings linked to client + item, debited/ordered, monthly plans real
 
 **Base:** `origin/main` @ `9f9ba9e`, worktree `~/Downloads/claude-code-repo/wt-booklink`,
-branch `task/booklink`. Three migrations applied live to prod this session (dry-run in
+branch `task/booklink`. Four migrations applied live to prod this session (dry-run in
 `BEGIN…ROLLBACK` first, applied, verified with a query — every claim below is proven against
 production, not simulated). **Do not push; the orchestrator merges.**
 
@@ -9,7 +9,13 @@ production, not simulated). **Do not push; the orchestrator merges.**
 supabase/migrations/20260815T1500_booklink_b1b5_client_required_and_backfill.sql
 supabase/migrations/20260815T1600_booklink_b2_debit_or_create.sql
 supabase/migrations/20260815T1700_booklink_b4_monthly_plans.sql
+supabase/migrations/20260815T1800_booklink_b5_maddie_is_madeline.sql
 ```
+
+**Owner ruling landed mid-session: "maddie is madeline."** The 4th migration links "Maddie 7/8"
+and "Maddie 8/8" to Madeline Do's client row (`e275f036…`) — the nickname candidate this report
+flagged rather than guessed. Confirmed live: both rows now carry that `client_id`. **Only
+"Audrey 2/4" (Slater vs Brennan) remains open** of the original 3 flagged rows.
 
 Frontend, same worktree, not yet pushed: `src/pages/app/CalendarItemPanel.tsx`,
 `src/pages/app/CalendarPage.tsx`, `src/components/app/MyLessonsContent.tsx`,
@@ -77,14 +83,15 @@ guard (`v_had_cats OR NOT v_existing`) skips `apply_category_documents` — no o
 assigned, no email sent, silent backfill only. Proven: `SELECT count(*)` for all 3 new client
 rows above, live in prod.
 
-**3 rows deliberately left unlinked, flagged for the owner** (never guess a link):
+**3 rows initially left unlinked, flagged for the owner** (never guess a link):
 - **"Maddie 7/8" / "Maddie 8/8"** (`5b4ebb51…`, `a7fae8f9…`) — spec says this name "matches
   nothing." Re-checked this session: a contact **"Madeline Do" does exist with a client row**
   (`e275f036…`), and "Maddie" is a common nickname for Madeline — but a nickname match is not an
-  unambiguous one. **Candidate flagged, not linked.**
+  unambiguous one, so it was flagged rather than linked. **Owner confirmed "maddie is madeline"
+  mid-session** — the 4th migration (`20260815T1800`) links both rows to `e275f036…`. Proven live.
 - **"Audrey 2/4"** (`a2351861…`) — exactly the two candidates the spec names: Audrey Slater (has
   a client row, `13a59482…`) vs Audrey Brennan (contact only, no client row). **Owner ruling
-  pending, not linked.**
+  still pending, not linked.** The only row of the original 14 still open.
 
 # B2 — staff picks the item; the system does the accounting
 
@@ -230,8 +237,8 @@ SELECT id, client_id, account_contact_id, account_user_id, notes
 
 # FLAGGED, NOT FIXED
 
-- **"Maddie" nickname candidate (Madeline Do) and "Audrey 2/4" (Slater vs Brennan)** — 3 rows,
-  owner ruling needed. See B5.
+- **"Audrey 2/4" (Slater vs Brennan)** — 1 row, owner ruling still needed. ("Maddie" was resolved
+  mid-session — see B5.)
 - **`mark_purchase_paid` has no standalone staff UI** — grant + guard fixed (FLOWTRACE item 13
   half-closed), but there's still no "mark this existing order paid" button outside a fresh
   booking's create-new-order path.
@@ -275,5 +282,5 @@ request path, ledger unification.
    refused with the no-carryover message; reschedule within the same month — confirm it works.
 7. Melanie O'Mea-Smith's calendar (or the staff view of it) — confirm her 6 backfilled lessons
    show as hers, not grey "unavailable" blocks.
-8. Decide "Maddie" (Madeline Do?) and "Audrey 2/4" (Slater or Brennan?) — the 2 owner rulings
-   B5 left open.
+8. Decide "Audrey 2/4" (Slater or Brennan?) — the one owner ruling B5 still has open. ("Maddie
+   is Madeline" was confirmed and linked mid-session.)
