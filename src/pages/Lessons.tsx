@@ -175,8 +175,11 @@ export default function Lessons() {
                       by default, so short cards floated mid-row when the grid
                       stretched them — titles now align along the top edge in
                       every column count (owner, 2026-08-14). */}
+                  {/* top-2/right-2 (was 4): hugging the corner clears the badge
+                      fully above the title's line — the longer weekly titles
+                      were crowding it (owner, 2026-08-15). */}
                   {badge && (
-                    <span className="absolute top-4 right-4 text-[9px] font-sans font-medium tracking-wider uppercase bg-gold-600 text-green-900 px-2 py-0.5">
+                    <span className="absolute top-2 right-2 text-[9px] font-sans font-medium tracking-wider uppercase bg-gold-600 text-green-900 px-2 py-0.5">
                       {badge}
                     </span>
                   )}
