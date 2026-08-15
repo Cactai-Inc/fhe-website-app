@@ -79,8 +79,13 @@ export default function Landing() {
         {/* Filmic grain — tasteful, static, very light. */}
         <div className="qs-grain absolute inset-0 pointer-events-none" aria-hidden="true" />
 
-        {/* ── Centered hero content ─────────────────────────────────────── */}
-        <div className="relative z-10 h-full w-full flex items-center justify-center px-5 sm:px-8">
+        {/* ── Hero content ──────────────────────────────────────────────────
+            Phones: bottom-anchored — the CTA sits ~13% up from the bottom edge
+            (owner spec 2026-08-14), which drops the whole text block below the
+            riders' faces instead of across them (centered content on a tall
+            phone viewport landed the eyebrow right on the faces).
+            sm+: centered, exactly as before. */}
+        <div className="relative z-10 h-full w-full flex items-end pb-[13dvh] sm:items-center sm:pb-0 justify-center px-5 sm:px-8">
           <div className="w-full max-w-4xl text-center mx-auto">
 
             {/* Eyebrow / location — enlarged and brightened so it is clearly
@@ -94,10 +99,12 @@ export default function Landing() {
 
             {/* Headline — reduced from a screen-dominating clamp so it is
                 commanding but balanced, leaving the eyebrow + CTA visible. */}
-            <h1 className="qs-rise qs-delay-2 heading-display text-white leading-[1.08] tracking-[-0.01em] [text-wrap:balance] [overflow-wrap:break-word] text-[clamp(1.9rem,5vw,3.75rem)] [text-shadow:0_2px_24px_rgba(0,0,0,0.55)]">
+            {/* Phones: each sentence wraps to two lines (four total), so the
+                leading opens to 1.18 and the gold sentence gets its own block
+                with breathing room; sm+ keeps the original tight 1.08. */}
+            <h1 className="qs-rise qs-delay-2 heading-display text-white leading-[1.18] sm:leading-[1.08] tracking-[-0.01em] [text-wrap:balance] [overflow-wrap:break-word] text-[clamp(1.9rem,5vw,3.75rem)] [text-shadow:0_2px_24px_rgba(0,0,0,0.55)]">
               Join Our Riding Community
-              <br />
-              <em className="text-gold-300 not-italic">California Days Are Made For This</em>
+              <em className="block mt-2 sm:mt-1 text-gold-300 not-italic">California Days Are Made For This</em>
             </h1>
 
             {/* CTA — the ONLY action on the landing, so it is enlarged and made
