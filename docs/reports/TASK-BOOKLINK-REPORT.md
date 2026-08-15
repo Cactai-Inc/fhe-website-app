@@ -21,6 +21,17 @@ except one `react-hooks/exhaustive-deps` on a pre-existing effect I didn't touch
 inside `BEGIN … ROLLBACK` for anything exploratory, applied-and-reverified for anything real.
 Every render claim is listed NOT VERIFIED with a numbered owner checklist at the end.
 
+**CREDITFIX landed in prod concurrently with this session** (task/creditfix, `ef3fa71`,
+unpushed — the exact "whoever runs first, the other must not double-mint" coordination the spec
+flagged). Re-checked live, after CREDITFIX: its new minting logic in
+`_provision_purchase_for_offerings` is scoped `AND o.config_kind = 'scheduled'` — it does not
+touch recurring offerings. Re-ran both `_debit_or_create_for_booking` branches against the
+current (post-CREDITFIX) function bodies: the Single Lesson (`scheduled`) path still mints and
+consumes a credit correctly; the 1x Weekly Lesson (`recurring`) path still mints **zero**
+`lesson_credits` rows. B4's design — entitlement as a date-scoped query, never touching that
+minting path — holds exactly as designed, confirmed against the actual post-CREDITFIX state, not
+just the pre-CREDITFIX state this was designed against.
+
 ---
 
 # B1 — the pointer becomes required
