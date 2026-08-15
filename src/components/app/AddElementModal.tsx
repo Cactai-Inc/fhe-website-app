@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Plus, ChevronUp, ChevronDown, Trash2, ListFilter, ToggleLeft, Type as TypeIcon } from 'lucide-react';
 import {
-  addContractComposition, proposeClause, removeContractComposition,
+  addContractComposition, proposeClause, proposeContractComposition, removeContractComposition,
   type CompositionElement, type CompositionLine, type CompositionSpec,
   type ContractField, type FieldConditional, type TemplateStructure,
 } from '../../lib/contracts';
@@ -401,7 +401,7 @@ function LineControls({ up, down, del, canDel }: {
 
 export function AddElementButton({
   structure, fields, documentId, disabled, disabledReason, onAdded,
-  canAddStructure = true, canAddClause = false, className,
+  canAddStructure = true, canAddClause = false, canApplyDirectly = true, className,
 }: {
   structure: TemplateStructure;
   fields: ContractField[];
@@ -414,6 +414,11 @@ export function AddElementButton({
   onAdded: () => void;
   canAddStructure?: boolean;
   canAddClause?: boolean;
+  /** Edit-tier (document_party_controls.can_edit_deal, or staff): submitting
+   *  applies immediately. Suggest-tier (can_suggest): stages for the actual
+   *  counterparty to review, and is restricted to an existing section/header
+   *  with no new elements — the server enforces this too. */
+  canApplyDirectly?: boolean;
   /** Lets a caller impose its own sizing. The subheader passes SUBHEADER_BTN so
    *  this control matches the row: with its own hardcoded classes it had no
    *  whitespace-nowrap, so "Add item" wrapped to two lines, and it sized itself
@@ -440,7 +445,7 @@ export function AddElementButton({
       </button>
       {open && (
         <AddElementModal structure={structure} fields={fields} documentId={documentId}
-          canAddStructure={canAddStructure} canAddClause={canAddClause}
+          canAddStructure={canAddStructure} canAddClause={canAddClause} canApplyDirectly={canApplyDirectly}
           onClose={() => setOpen(false)}
           onAdded={onAdded} />
       )}
@@ -449,7 +454,7 @@ export function AddElementButton({
 }
 
 function AddElementModal({
-  structure, fields, documentId, onClose, onAdded, canAddStructure, canAddClause,
+  structure, fields, documentId, onClose, onAdded, canAddStructure, canAddClause, canApplyDirectly,
 }: {
   structure: TemplateStructure;
   fields: ContractField[];
@@ -458,6 +463,7 @@ function AddElementModal({
   onAdded: () => void;
   canAddStructure: boolean;
   canAddClause: boolean;
+  canApplyDirectly: boolean;
 }) {
   const modes: Mode[] = [
     ...(canAddStructure ? (['compose'] as Mode[]) : []),
@@ -760,8 +766,8 @@ function AddElementModal({
     try {
       if (mode === 'clause') {
         if (!clauseText.trim()) throw new Error('Write the clause to propose.');
-        await proposeClause(documentId, clauseText.trim());
-        setAdded((a) => [...a, 'Clause proposed']);
+        const { applied } = await proposeClause(documentId, clauseText.trim());
+        setAdded((a) => [...a, applied ? 'Clause added' : 'Clause proposed']);
         setClauseText('');
         clearDraft(documentId);
         onAdded();
@@ -823,8 +829,15 @@ function AddElementModal({
           : { clause_key: headerKey, line_position: linePos === '' ? null : Number(linePos) },
         elements, lines,
       };
-      await addContractComposition(documentId, spec);
-      setAdded((a) => [...a, `${creatingHeader ? newHeader.trim() : (section?.headers.find((h) => h.key === headerKey)?.words ?? 'Item')} — ${lines.length} line(s)`]);
+      if (canApplyDirectly) {
+        await addContractComposition(documentId, spec);
+      } else {
+        await proposeContractComposition(documentId, spec);
+      }
+      const itemLabel = creatingHeader ? newHeader.trim() : (section?.headers.find((h) => h.key === headerKey)?.words ?? 'Item');
+      setAdded((a) => [...a, canApplyDirectly
+        ? `${itemLabel} — ${lines.length} line(s)`
+        : `${itemLabel} — ${lines.length} line(s), suggested for review`]);
       // reset the content row; keep the section so the author can keep building
       resetContent();
       onAdded();
@@ -975,14 +988,22 @@ function AddElementModal({
             <span className="form-label">New clause</span>
             <textarea rows={4} className="form-input resize-y" value={clauseText} onChange={(e) => setClauseText(e.target.value)}
               placeholder="Write the clause you want to propose. It's highlighted for the other party to accept or reject." />
-            <p className="form-hint">Proposed clauses don't change the contract until accepted — they appear under Proposed changes for review.</p>
+            <p className="form-hint">
+              {canApplyDirectly
+                ? 'This adds directly to the contract.'
+                : 'Proposed clauses don\'t change the contract until accepted — they appear under Proposed changes for review.'}
+            </p>
           </div>
         ) : (
           <div className="flex flex-col gap-5">
             {/* ── ROW 1 — SECTION ─────────────────────────────────────────── */}
             <div>
-              <p className="form-hint mb-1">Which section does this belong in? Pick one, or name a new section and choose its number.</p>
-              <div className="grid sm:grid-cols-2 gap-3">
+              <p className="form-hint mb-1">
+                {canApplyDirectly
+                  ? 'Which section does this belong in? Pick one, or name a new section and choose its number.'
+                  : 'Which section does this belong in? A suggestion goes into an existing section.'}
+              </p>
+              <div className={canApplyDirectly ? 'grid sm:grid-cols-2 gap-3' : ''}>
                 <label className="block">
                   <span className="form-label">Section</span>
                   <select className="form-input" value={creatingSection ? '' : sectionKey} disabled={creatingSection}
@@ -990,11 +1011,13 @@ function AddElementModal({
                     {docSections.map((s) => <option key={s.key} value={s.key}>{s.number}. {s.heading}</option>)}
                   </select>
                 </label>
-                <label className="block">
-                  <span className="form-label">…or a new section</span>
-                  <input className="form-input" value={newSection} onChange={(e) => setNewSection(e.target.value)}
-                    placeholder="e.g. Special Provisions" />
-                </label>
+                {canApplyDirectly && (
+                  <label className="block">
+                    <span className="form-label">…or a new section</span>
+                    <input className="form-input" value={newSection} onChange={(e) => setNewSection(e.target.value)}
+                      placeholder="e.g. Special Provisions" />
+                  </label>
+                )}
               </div>
               {creatingSection && (
                 <label className="block mt-2 max-w-[16rem]">
@@ -1012,10 +1035,11 @@ function AddElementModal({
             {/* ── ROW 2 — HEADER ──────────────────────────────────────────── */}
             <div>
               <p className="form-hint mb-1">
-                Which item inside that section? Add to an existing one, or name a new header —
-                a header is what carries the number.
+                {canApplyDirectly
+                  ? 'Which item inside that section? Add to an existing one, or name a new header — a header is what carries the number.'
+                  : 'Which item inside that section? A suggestion goes into an existing one.'}
               </p>
-              <div className="grid sm:grid-cols-2 gap-3">
+              <div className={canApplyDirectly ? 'grid sm:grid-cols-2 gap-3' : ''}>
                 <label className="block">
                   <span className="form-label">Header</span>
                   <select className="form-input" value={creatingHeader ? '' : headerKey} disabled={creatingHeader}
@@ -1024,11 +1048,13 @@ function AddElementModal({
                     {(section?.headers ?? []).length === 0 && <option value="">— none yet —</option>}
                   </select>
                 </label>
-                <label className="block">
-                  <span className="form-label">…or a new header</span>
-                  <input className="form-input" value={newHeader} onChange={(e) => setNewHeader(e.target.value)}
-                    placeholder="e.g. Turnout" />
-                </label>
+                {canApplyDirectly && (
+                  <label className="block">
+                    <span className="form-label">…or a new header</span>
+                    <input className="form-input" value={newHeader} onChange={(e) => setNewHeader(e.target.value)}
+                      placeholder="e.g. Turnout" />
+                  </label>
+                )}
               </div>
               {creatingHeader && !creatingSection && (
                 <label className="block mt-2 max-w-[16rem]">
@@ -1065,17 +1091,20 @@ function AddElementModal({
             {/* ── ROW 3 — CONTENT ─────────────────────────────────────────── */}
             <div>
               <p className="form-hint mb-1">
-                Write the content. Each line stands on its own; a condition reveals only the lines inside it.
-                Place a dropdown, buttons or a text field right where it belongs in the sentence.
+                {canApplyDirectly
+                  ? 'Write the content. Each line stands on its own; a condition reveals only the lines inside it. Place a dropdown, buttons or a text field right where it belongs in the sentence.'
+                  : 'Write the content. Each line stands on its own. A suggestion is plain text — no new questions.'}
               </p>
-              <div className="flex flex-wrap gap-1.5 mb-2">
-                <button type="button" className="inline-flex items-center gap-1 text-[12px] border border-gold-400/60 text-gold-800 rounded-lg px-2.5 py-1 hover:bg-gold-50 focus-ring"
-                  onClick={() => insertElement('select')}><ListFilter size={12} /> Dropdown</button>
-                <button type="button" className="inline-flex items-center gap-1 text-[12px] border border-gold-400/60 text-gold-800 rounded-lg px-2.5 py-1 hover:bg-gold-50 focus-ring"
-                  onClick={() => insertElement('buttons')}><ToggleLeft size={12} /> Buttons</button>
-                <button type="button" className="inline-flex items-center gap-1 text-[12px] border border-gold-400/60 text-gold-800 rounded-lg px-2.5 py-1 hover:bg-gold-50 focus-ring"
-                  onClick={() => insertElement('text')}><TypeIcon size={12} /> Text field</button>
-              </div>
+              {canApplyDirectly && (
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  <button type="button" className="inline-flex items-center gap-1 text-[12px] border border-gold-400/60 text-gold-800 rounded-lg px-2.5 py-1 hover:bg-gold-50 focus-ring"
+                    onClick={() => insertElement('select')}><ListFilter size={12} /> Dropdown</button>
+                  <button type="button" className="inline-flex items-center gap-1 text-[12px] border border-gold-400/60 text-gold-800 rounded-lg px-2.5 py-1 hover:bg-gold-50 focus-ring"
+                    onClick={() => insertElement('buttons')}><ToggleLeft size={12} /> Buttons</button>
+                  <button type="button" className="inline-flex items-center gap-1 text-[12px] border border-gold-400/60 text-gold-800 rounded-lg px-2.5 py-1 hover:bg-gold-50 focus-ring"
+                    onClick={() => insertElement('text')}><TypeIcon size={12} /> Text field</button>
+                </div>
+              )}
 
               <div className="flex flex-col gap-2">
                 {stack.map((entry, i) => entry.kind === 'line' ? (

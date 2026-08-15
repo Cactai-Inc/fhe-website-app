@@ -157,11 +157,15 @@ function HorseGate({ documentId, onAttached }: { documentId: string; onAttached:
 /** Redlining: propose an edit (staged, highlighted) or add a free-text clause,
  *  gated by the party's controls; the owner/staff accept or reject. */
 function RedlineSection({
-  documentId, redline, isOwnerSide, onChanged,
+  documentId, redline, isOwnerSide, hasPartyRole, onChanged,
 }: {
   documentId: string;
   redline: RedlineState;
   isOwnerSide: boolean;
+  /** The viewer is one of the document's own parties (not staff, not a
+   *  bystander) — together with isOwnerSide, who may resolve a proposal:
+   *  anyone but the proposer themselves (peer approval, not staff-only). */
+  hasPartyRole: boolean;
   onChanged: () => void;
 }) {
   const [err, setErr] = useState<string | null>(null);
@@ -188,7 +192,7 @@ function RedlineSection({
     <section className="bg-white border border-green-800/10 rounded-xl p-5 mb-4">
       <h2 className="font-serif text-lg text-green-900 mb-1">Proposed changes</h2>
       <p className="text-[12.5px] text-muted mb-4">
-        Proposed edits and new clauses are highlighted here until the owner accepts or rejects them.
+        Proposed edits and new clauses are highlighted here until the other party accepts or rejects them.
       </p>
 
       {/* pending edits */}
@@ -203,7 +207,7 @@ function RedlineSection({
             <span className="font-medium bg-gold-100 px-1 rounded">{p.proposed_value || '—'}</span>
           </p>
           <div className="flex gap-2 mt-2">
-            {isOwnerSide ? (
+            {isOwnerSide || (hasPartyRole && !p.mine) ? (
               <>
                 <button type="button" className="btn-primary text-xs" disabled={busy}
                   onClick={() => void run(() => resolveFieldEdit(documentId, p.field_key, true))}>Accept</button>
@@ -213,7 +217,7 @@ function RedlineSection({
             ) : p.mine ? (
               <button type="button" className="text-xs underline text-secondary" disabled={busy}
                 onClick={() => void run(() => withdrawFieldEdit(documentId, p.field_key))}>Withdraw</button>
-            ) : <span className="text-xs text-muted">Pending owner review</span>}
+            ) : <span className="text-xs text-muted">Pending review</span>}
           </div>
         </div>
       ))}
@@ -226,7 +230,7 @@ function RedlineSection({
           </p>
           <p className="text-sm text-green-900 whitespace-pre-line">{a.body}</p>
           <div className="flex gap-2 mt-2">
-            {isOwnerSide ? (
+            {isOwnerSide || (hasPartyRole && !a.mine) ? (
               <>
                 <button type="button" className="btn-primary text-xs" disabled={busy}
                   onClick={() => void run(() => resolveClause(a.id, true))}>Accept</button>
@@ -236,7 +240,7 @@ function RedlineSection({
             ) : a.mine ? (
               <button type="button" className="text-xs underline text-secondary" disabled={busy}
                 onClick={() => void run(() => withdrawClause(a.id))}>Withdraw</button>
-            ) : <span className="text-xs text-muted">Pending owner review</span>}
+            ) : <span className="text-xs text-muted">Pending review</span>}
           </div>
         </div>
       ))}
@@ -1296,12 +1300,14 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                   {bosBusy ? 'Generating…' : `Generate ${(templateConfig.companion_label ?? 'companion document').toLowerCase()}`}
                 </button>
               )}
-              {structure && id && isOwnerSide && editablePhase && (
+              {structure && id && editablePhase
+                && (isOwnerSide || (redline?.can_edit_deal ?? false) || (redline?.can_suggest ?? false)) && (
                 <AddElementButton documentId={id}
                   className={SUBHEADER_BTN}
                   structure={structure} fields={detail.fields}
-                  canAddStructure={isOwnerSide}
+                  canAddStructure={isOwnerSide || (redline?.can_edit_deal ?? false) || (redline?.can_suggest ?? false)}
                   canAddClause={isOwnerSide || (redline?.can_add_clause ?? false)}
+                  canApplyDirectly={isOwnerSide || (redline?.can_edit_deal ?? false)}
                   onAdded={() => void act(async () => {})} />
               )}
               {/* Owner-side only: reopens a sent-out document for corrections.
@@ -1589,6 +1595,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           documentId={id!}
           redline={redline}
           isOwnerSide={isOwnerSide}
+          hasPartyRole={myRoles.length > 0}
           onChanged={() => void load({ blank: false })}
         />
       )}
@@ -1836,6 +1843,15 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         <ClauseDocument
           sections={structure.sections}
           fields={detail.fields}
+          isOwnerSide={isOwnerSide}
+          hasPartyRole={myRoles.length > 0}
+          pendingCompositions={redline?.pending_compositions ?? []}
+          onPendingChanged={() => void load({ blank: false })}
+          /* Scoped-to-section deep link is out of scope here — drawer
+             open/closed lives entirely in ContractSubheader (one owner, one
+             set, per that component's own note), so "Revise" scrolls up to
+             where Requests lives rather than reaching into its state. */
+          onRevise={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           cb={{
             editable: editablePhase,
             authorView: isOwnerSide && editablePhase,

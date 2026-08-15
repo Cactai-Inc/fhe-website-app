@@ -35,10 +35,13 @@ export function roleLabel(r: string): string {
    two-line rows per party made the card taller than the contract section above
    it. */
 const ROWS: { key: keyof PartyControlValues; label: string }[] = [
+  // Also governs the subheader's "+ Add item" button (ContractPage): edit
+  // applies directly, suggest stages for the other party to include or
+  // reject, in place, where the author put it.
   { key: 'can_edit_deal', label: 'Can edit deal terms' },
   { key: 'can_suggest', label: 'Can suggest changes' },
-  // Gates the subheader's "+ Add item" button (ContractPage: canAddClause).
-  { key: 'can_add_clause', label: 'Can add new items' },
+  // A separate, narrower grant — only the free-text "Propose a clause" tab.
+  { key: 'can_add_clause', label: 'Can propose new clauses' },
 ];
 
 export function PartyControlsCard({

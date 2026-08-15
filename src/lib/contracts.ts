@@ -73,6 +73,8 @@ export interface ContractField {
   custom_kind?: 'section' | 'header' | 'line' | 'element' | null;
   /** Prose of a `line` row — same {{TOKEN}} convention as a template clause body. */
   body?: string | null;
+  /** Who authored this row (any custom_kind) — only they, or staff, may edit/remove it. */
+  added_by_contact_id?: string | null;
 }
 
 /** A party choice, with the sub-inputs revealed by CARE_PROVIDER / SHARED. */
@@ -554,11 +556,22 @@ export interface RedlineAddendum {
   id: string; item_number: number; body: string; status: string;
   proposed_by_role: string | null; proposed_by: string | null; mine: boolean; created_at: string;
 }
+/** A suggest-tier party's proposed "Add item" — `spec` is the same
+ *  `CompositionSpec` shape `add_contract_composition`/`proposeContractComposition`
+ *  take. `status` is `'open'` (awaiting review) or `'rejected'` (grayed-out,
+ *  stays visible) — an accepted one becomes an ordinary contract_fields row
+ *  and drops out of this list. */
+export interface RedlinePendingComposition {
+  id: string; spec: CompositionSpec; status: 'open' | 'rejected';
+  proposed_by_role: string | null; proposed_by: string | null; mine: boolean; created_at: string;
+}
 export interface RedlineState {
   field_proposals: RedlineFieldProposal[];
   addenda: RedlineAddendum[];
+  pending_compositions: RedlinePendingComposition[];
   can_suggest: boolean;
   can_add_clause: boolean;
+  can_edit_deal: boolean;
 }
 export async function contractRedlineState(documentId: string): Promise<RedlineState> {
   const { data, error } = await supabase.rpc('contract_redline_state', { p_document_id: documentId });
@@ -577,9 +590,16 @@ export async function withdrawFieldEdit(documentId: string, fieldKey: string): P
   const { error } = await supabase.rpc('withdraw_field_edit', { p_document_id: documentId, p_field_key: fieldKey });
   if (error) throw error;
 }
-export async function proposeClause(documentId: string, body: string): Promise<void> {
-  const { error } = await supabase.rpc('propose_clause', { p_document_id: documentId, p_body: body });
+/** Edit-tier callers apply immediately (`applied: true`); suggest-tier stages
+ *  as an open addendum for the counterparty to resolve — the server decides
+ *  which, from the caller's own party controls. */
+export async function proposeClause(documentId: string, body: string): Promise<{
+  addendumId: string; itemNumber: number; applied: boolean;
+}> {
+  const { data, error } = await supabase.rpc('propose_clause', { p_document_id: documentId, p_body: body });
   if (error) throw error;
+  const d = data as { addendum_id: string; item_number: number; applied: boolean };
+  return { addendumId: d.addendum_id, itemNumber: d.item_number, applied: d.applied };
 }
 export async function resolveClause(addendumId: string, accept: boolean): Promise<void> {
   const { error } = await supabase.rpc('resolve_clause', { p_addendum_id: addendumId, p_accept: accept });
@@ -869,13 +889,43 @@ export async function addContractComposition(documentId: string, spec: Compositi
   return data as { section: string; header_key: string; element_keys: Record<string, string>; created: string[] };
 }
 /** Remove an authored item. A header takes its lines and elements with it; a
- *  section takes everything the author added to it. */
+ *  section takes everything the author added to it. Author or staff only. */
 export async function removeContractComposition(documentId: string, fieldKey: string): Promise<number> {
   const { data, error } = await supabase.rpc('remove_contract_composition', {
     p_document_id: documentId, p_field_key: fieldKey,
   });
   if (error) throw error;
   return (data ?? 0) as number;
+}
+/** Reopen an already-added item and replace it with a new spec. Author or
+ *  staff only — mints a new field_key, the old one stops existing. */
+export async function updateContractComposition(documentId: string, fieldKey: string, spec: CompositionSpec): Promise<{
+  section: string; header_key: string; element_keys: Record<string, string>; created: string[];
+}> {
+  const { data, error } = await supabase.rpc('update_contract_composition', {
+    p_document_id: documentId, p_field_key: fieldKey, p_spec: spec as unknown as Record<string, unknown>,
+  });
+  if (error) throw error;
+  return data as { section: string; header_key: string; element_keys: Record<string, string>; created: string[] };
+}
+/** Suggest-tier's staged path — must target an existing section+header, no
+ *  new elements (the server enforces and explains this). */
+export async function proposeContractComposition(documentId: string, spec: CompositionSpec): Promise<{ pendingId: string }> {
+  const { data, error } = await supabase.rpc('propose_contract_composition', {
+    p_document_id: documentId, p_spec: spec as unknown as Record<string, unknown>,
+  });
+  if (error) throw error;
+  return { pendingId: (data as { pending_id: string }).pending_id };
+}
+/** Include or reject a pending item — the actual counterparty (or staff),
+ *  never the proposer themselves. */
+export async function resolvePendingComposition(pendingId: string, decision: 'include' | 'reject'): Promise<void> {
+  const { error } = await supabase.rpc('resolve_pending_composition', { p_pending_id: pendingId, p_decision: decision });
+  if (error) throw error;
+}
+export async function withdrawPendingComposition(pendingId: string): Promise<void> {
+  const { error } = await supabase.rpc('withdraw_pending_composition', { p_pending_id: pendingId });
+  if (error) throw error;
 }
 
 /** The format registry (read-only) — powers the add-field modal's type picker and
