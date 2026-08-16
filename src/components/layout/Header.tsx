@@ -36,8 +36,9 @@ import { useCart } from '../../contexts/CartContext';
  * Say Hello moves to the right corner (below); Member Area and Sign In leave the
  * header entirely and live in the footer only. */
 const NAV_LINKS = [
-  // Owner, 2026-08-16: the nav label is Community (the route stays /story).
-  { label: 'Community', href: '/story' },
+  // Owner, 2026-08-16: 'Our Community' — bare 'Community' read as the in-app
+  // members' community rather than the story of the place. Route stays /story.
+  { label: 'Our Community', href: '/story' },
   { label: 'Horse Care Services', href: '/horse' },
   { label: 'Find a Horse', href: '/acquisition' },
   { label: 'Book a Lesson', href: '/lessons' },
