@@ -221,7 +221,7 @@ export default function Lessons() {
                 {ownHorse.length > 0 && (
                   <>
                     <p className="text-center body-text text-lg text-green-800 mt-14 mb-8">
-                      Already leasing or own a horse? These lessons are for you
+                      Already leasing or own a horse? These lessons are for you.
                     </p>
                     <div className={gridCls}>
                       {ownHorse.map(card)}
