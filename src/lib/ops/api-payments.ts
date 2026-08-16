@@ -1,11 +1,17 @@
-/* LANE-2 data wrappers — core payments review queue (Zelle).
+/* LANE-2 data wrappers — core payments review queue (Zelle + client claims).
  *
  * Read paths over `payment_notifications` (admin-read RLS; rows are written
  * server-side by api/_lib/reconcile.ts with the service role) plus the
  * candidate-purchase lookup over `purchases` by unique_amount / payment_reference —
  * the same two matching keys the server reconciler uses — so staff get manual
- * matching context. Payment CONFIRMATION stays server-side (reconcile /
- * Stripe webhook); nothing here writes payments or `purchases`.
+ * matching context. Automatic Zelle matching stays server-side (reconcile /
+ * Stripe webhook); nothing here writes that path.
+ *
+ * CASHCONFIRM — client-reported claims (report_my_payment, either method) are a
+ * SEPARATE queue read directly off `purchases` (staff already have full RLS
+ * read/write there via purchases_staff_all). Confirming/declining a claim calls
+ * confirm_payment_claim / decline_payment_claim, which settle through the
+ * existing mark_purchase_paid spine — one payment spine, not two (D6).
  */
 import { supabase } from '../supabase';
 
@@ -115,4 +121,98 @@ export async function dismissNotification(id: string): Promise<PaymentNotificati
     );
   }
   return row;
+}
+
+/* ── CASHCONFIRM — client-reported claims (zelle or cash) ─────────────────── */
+
+export type ClaimStatus = 'pending' | 'confirmed' | 'declined';
+export type ClientReportedMethod = 'zelle' | 'cash';
+
+export interface PaymentClaim {
+  id: string;
+  display_code: string | null;
+  amount: number;
+  buyer_name: string | null;
+  client_reported_method: ClientReportedMethod;
+  client_reported_reference: string | null;
+  client_reported_at: string;
+  client_claim_status: ClaimStatus;
+  client_claim_decline_reason: string | null;
+}
+
+interface PaymentClaimRow {
+  id: string;
+  display_code: string | null;
+  amount: number;
+  client_reported_method: ClientReportedMethod;
+  client_reported_reference: string | null;
+  client_reported_at: string;
+  client_claim_status: ClaimStatus;
+  client_claim_decline_reason: string | null;
+  buyer: { first_name: string | null; last_name: string | null } | null;
+}
+
+/** Claims in one bucket, newest first. Reads `purchases` directly — staff
+ *  already have full RLS access there (purchases_staff_all); no RPC needed. */
+export async function listPaymentClaims(status: ClaimStatus): Promise<PaymentClaim[]> {
+  const { data, error } = await supabase
+    .from('purchases')
+    .select(
+      'id, display_code, amount, client_reported_method, client_reported_reference, ' +
+        'client_reported_at, client_claim_status, client_claim_decline_reason, ' +
+        'buyer:buyer_contact_id(first_name, last_name)',
+    )
+    .eq('client_claim_status', status)
+    .order('client_reported_at', { ascending: false });
+  if (error) throw error;
+  return ((data ?? []) as unknown as PaymentClaimRow[]).map((r) => ({
+    id: r.id,
+    display_code: r.display_code,
+    amount: r.amount,
+    buyer_name: [r.buyer?.first_name, r.buyer?.last_name].filter(Boolean).join(' ') || null,
+    client_reported_method: r.client_reported_method,
+    client_reported_reference: r.client_reported_reference,
+    client_reported_at: r.client_reported_at,
+    client_claim_status: r.client_claim_status,
+    client_claim_decline_reason: r.client_claim_decline_reason,
+  }));
+}
+
+/**
+ * Confirm a pending claim: settles through confirm_payment_claim (which itself
+ * calls mark_purchase_paid — the same spine a matched Zelle payment uses), then
+ * best-effort triggers the same receipt email Stripe/Zelle confirmation sends.
+ * The receipt call never blocks or fails the confirmation — it is fire-and-log,
+ * mirroring the "a receipt must never fail a payment confirmation" contract in
+ * api/_lib/receipt.ts.
+ */
+export async function confirmPaymentClaim(purchaseId: string): Promise<void> {
+  const { error } = await supabase.rpc('confirm_payment_claim', { p_purchase_id: purchaseId });
+  if (error) throw error;
+
+  try {
+    const { data: sess } = await supabase.auth.getSession();
+    const bearer = sess?.session?.access_token;
+    if (!bearer) return;
+    await fetch('/api/send-order-receipt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${bearer}` },
+      body: JSON.stringify({ purchaseId }),
+    });
+  } catch {
+    /* best-effort: receipt_sends still gets a failed-attempt row server-side
+       when the call reaches it; a network failure before that is not fatal to
+       the confirmation, which has already succeeded. */
+  }
+}
+
+/** Decline a pending claim that never arrived. `payment_status` is untouched —
+ *  a claim never set it — and the claim row is retained (D11), only its
+ *  resolution changes. A reason is required. */
+export async function declinePaymentClaim(purchaseId: string, reason: string): Promise<void> {
+  const { error } = await supabase.rpc('decline_payment_claim', {
+    p_purchase_id: purchaseId,
+    p_reason: reason,
+  });
+  if (error) throw error;
 }
