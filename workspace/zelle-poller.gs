@@ -106,9 +106,16 @@ function parseZelle_(subject, body) {
   var confMatch = text.match(/\bConfirmation\b\s*[:\n]\s*([A-Za-z0-9]{6,})/i);
   if (confMatch) confirmation = confMatch[1].trim();
 
-  // Explicit FH-code reference, if the payer used one (memo passthrough).
+  // Explicit reference code, if the payer typed one into the memo. The real
+  // shape (finalize_purchase_payment, PAYLOCK 2026-08-13) is
+  // <BRAND-SHORT-NAME-UPPERCASED-ALNUM-ONLY>-<6 hex chars>, e.g.
+  // "FRENCHHERITAGEEQUESTRIAN-973960" for this org's config_values BRAND/
+  // SHORT_NAME ("French Heritage Equestrian") — NOT "FH-XXXXXX". A hardcoded
+  // "FH-" prefix would never match a real generated reference for this org;
+  // matching the general shape instead means this keeps working if the brand
+  // short name ever changes.
   var reference = null;
-  var refMatch = text.match(/\b(FH-[A-Z0-9]{4,6})\b/);
+  var refMatch = text.match(/\b([A-Z][A-Z0-9]{1,30}-[A-F0-9]{6})\b/);
   if (refMatch) reference = refMatch[1];
 
   return {
