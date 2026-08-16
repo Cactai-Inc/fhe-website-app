@@ -29,8 +29,11 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  *  a real number formatted oddly than reject it. Ten digits somewhere is enough. */
 const PHONE_DIGITS_RE = /\d/g;
 
-type SignPath = 'guest' | 'rider' | 'horse' | 'rider+horse';
-const VALID_PATHS: SignPath[] = ['guest', 'rider', 'horse', 'rider+horse'];
+/** `deal` (§1b) shares this page's form and send-state screen but not its meaning:
+ *  the other four provision a new client, `deal` claims a contract that already
+ *  exists and activates the account that makes it reachable. */
+type SignPath = 'guest' | 'rider' | 'horse' | 'rider+horse' | 'deal';
+const VALID_PATHS: SignPath[] = ['guest', 'rider', 'horse', 'rider+horse', 'deal'];
 
 /** The four outcomes /api/sign-start reports. */
 type SendStatus = 'sent' | 'send_failed' | 'rate_limited' | 'unavailable';
@@ -45,14 +48,17 @@ const WELCOME_COPY: Record<SignPath, string> = {
   rider: "Welcome to French Heritage Equestrian — let's get you set up to start taking riding lessons.",
   horse: "Welcome to French Heritage Equestrian — let's get you and your horse set up for care services.",
   'rider+horse': "Welcome to French Heritage Equestrian — let's get you and your horse set up for riding lessons.",
+  deal: "Let's get you to your contract.",
 };
 
-/** Which catalog segments this path shows offerings from. */
+/** Which catalog segments this path shows offerings from. `deal` shows none — the
+ *  person is not shopping, they are here for a document that already exists. */
 const PATH_SEGMENTS: Record<SignPath, Segment[]> = {
   guest: ['rider', 'horse'],
   rider: ['rider'],
   horse: ['horse'],
   'rider+horse': ['rider', 'horse'],
+  deal: [],
 };
 
 function normalizePath(raw: string | undefined): SignPath | null {
@@ -114,7 +120,7 @@ function DeliverabilityPanel({ brand }: { brand: ReturnType<typeof useBrand> }) 
  * plainly that no email went out, because telling somebody to go look for a
  * message we never sent is how a signup dies quietly.
  */
-function SendStateScreen({ outcome, email }: { outcome: SendOutcome; email: string }) {
+function SendStateScreen({ outcome, email, isDeal }: { outcome: SendOutcome; email: string; isDeal: boolean }) {
   const [helping, setHelping] = useState(false);
   const [helped, setHelped] = useState<boolean | null>(null);
 
@@ -142,13 +148,22 @@ function SendStateScreen({ outcome, email }: { outcome: SendOutcome; email: stri
     <div className="bg-white border border-green-800/10 p-8" role="status" aria-live="polite">
       {sent && (
         <>
+          {/* §1b: the deal wording never confirms that a contract exists for this
+              address — that would make a public form an oracle for who we have
+              deals with. It says what we did, and the escape hatch below reaches
+              a human for anyone it did not work for. */}
           <p className="flex items-start gap-2.5 text-green-800 font-medium mb-3">
             <CheckCircle2 size={20} className="shrink-0 mt-px" aria-hidden="true" />
-            <span>Your activation email is on its way to {email}.</span>
+            <span>
+              {isDeal
+                ? `If a contract is waiting on ${email}, we've just emailed you the link to it.`
+                : `Your activation email is on its way to ${email}.`}
+            </span>
           </p>
           <p className="body-text text-sm mb-3">
-            Go to your email, find the message from us, and click the link inside to activate
-            your account.
+            {isDeal
+              ? 'Go to your email, find the message from us, and click the link inside — it opens your contract and sets up your account at the same time.'
+              : 'Go to your email, find the message from us, and click the link inside to activate your account.'}
           </p>
           <p className="body-text text-sm text-muted mb-6">
             If you don&apos;t see it, check your spam or junk folder — first-time emails often
@@ -353,7 +368,7 @@ export default function SignStart() {
         </div>
       </section>
 
-      {!outcome && (
+      {!outcome && path !== 'deal' && (
         <section className="bg-cream-50 py-10">
           <div className="container-site max-w-2xl">
             <h2 className="heading-card text-green-800 mb-4">{catalogHeading}</h2>
@@ -388,9 +403,15 @@ export default function SignStart() {
       <section className="bg-cream-50 pb-10">
         <div className="container-site max-w-md">
           {outcome ? (
-            <SendStateScreen outcome={outcome} email={email.trim()} />
+            <SendStateScreen outcome={outcome} email={email.trim()} isDeal={path === 'deal'} />
           ) : (
             <form onSubmit={submit} className="bg-white border border-green-800/10 p-8" noValidate>
+              {path === 'deal' && (
+                <p className="body-text text-sm text-secondary mb-5">
+                  Use the email address we have for you on the contract — that&apos;s how we
+                  find it.
+                </p>
+              )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
                 <div>
                   <label className="form-label" htmlFor="sign-first">First name *</label>

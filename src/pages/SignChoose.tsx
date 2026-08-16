@@ -11,14 +11,14 @@
  *
  * The deep links keep working and skip this page entirely.
  *
- * THE FIFTH OPTION. The owner's list has five: guest · rider · rider + horse owner
- * · horse owner · DEAL PARTY. The first four map to standing categories that
- * already carry a document set (category_document_requirements holds Guest, Rider
- * and Horse owner — verified, 12 rows). There is no DEAL_PARTY category and no
- * document set behind it, so provisioning one would create an account whose
- * onboarding is empty. Rather than build a door into an empty room, this option
- * routes to the inquiry the deal flow actually starts from, and the missing
- * definition is an open owner question in the task report.
+ * THE FIFTH OPTION IS NOT A FUNNEL. The first four map to standing categories that
+ * carry a document set (category_document_requirements holds Guest, Rider and Horse
+ * owner — verified, 12 rows) and provision a new client. `deal` does the opposite:
+ * the contract already exists and the person is already a party to it; what they
+ * lack is an ACCOUNT, without which the document is unreachable. So `deal` CLAIMS —
+ * it matches their email to an accountless document party and mints the same
+ * CONTRACT invitation staff issue from the contract page, which on activation
+ * creates the account and lands them on their document in one flow (§1b).
  */
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
@@ -69,13 +69,14 @@ const CHOICES: Choice[] = [
     pick: 'Pick this if this is about your horse and not about you riding.',
   },
   {
-    to: '/contact?topic=deal',
-    eyebrow: 'Buying or selling',
-    title: 'I’m buying or selling a horse with you',
+    to: '/sign/deal',
+    eyebrow: 'A deal with us',
+    title: 'I have a contract with you to sign',
     body:
-      'Purchases, sales, leases and the paperwork that goes with them. These are set up ' +
-      'for you rather than started from a form, because the documents depend on the deal.',
-    pick: 'Tell us about it and we’ll send you everything to sign.',
+      'A purchase, a sale or a lease that’s already been drawn up — and you need to get ' +
+      'to it. We’ll match your email to your contract and set up your account at the ' +
+      'same time.',
+    pick: 'Pick this if we’ve told you a contract is waiting for you.',
   },
 ];
 

@@ -36,6 +36,8 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createHash } from 'node:crypto';
 import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
 import { sendInvitationEmail, recordInvitationDelivery } from './_lib/invitationEmail.js';
+import { resolveTenantEmailIdentity, sendViaProvider } from './_lib/email.js';
+import { renderEmailTemplate } from './_lib/emailTemplates.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -45,6 +47,13 @@ const PATH_CATEGORIES: Record<string, string[]> = {
   horse: ['HORSE_OWNER'],
   'rider+horse': ['RIDER', 'HORSE_OWNER'],
 };
+
+/** ONBOARD §1b — `deal` is the fifth chooser option and does NOT provision a new
+ *  client. It CLAIMS an existing contract: the visitor's email is matched against
+ *  document parties who have no account yet, and a match mints the same CONTRACT
+ *  invitation staff issue from the contract page, so activation creates the
+ *  account and lands them on their document in one flow. */
+const DEAL_PATH = 'deal';
 
 function sha256(s: string): string {
   return createHash('sha256').update(s).digest('hex');
@@ -73,8 +82,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // that percent-encoded it (rider%2Bhorse) arrives here already decoded by
   // the framework, so both forms normalize to the same lookup key.
   const path = ((body.path as string) || '').trim().toLowerCase();
+  const isDeal = path === DEAL_PATH;
   const categories = PATH_CATEGORIES[path];
-  if (!categories) return res.status(400).json({ error: 'unknown path' });
+  if (!categories && !isDeal) return res.status(400).json({ error: 'unknown path' });
 
   const email = ((body.email as string) || '').trim().toLowerCase();
   const confirmEmail = ((body.confirmEmail as string) || '').trim().toLowerCase();
@@ -113,12 +123,98 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (attemptErr) throw attemptErr;
     const allowed = Boolean((attempt as { allowed?: boolean } | null)?.allowed);
 
+    // `status` is what the VISITOR is told. `emailSent` is what actually happened.
+    // They diverge in exactly one place — a `deal` attempt that matched no
+    // contract — and keeping them as separate variables is what stops the
+    // deliberately neutral answer from also lying to the people who run the place.
     let status: SendStatus = allowed ? 'unavailable' : 'rate_limited';
+    let emailSent = false;
     let invitationId: string | null = null;
     let sendError: string | null = null;
     let messageId: string | null = null;
 
-    if (allowed && orgId) {
+    if (allowed && isDeal) {
+      // ── §1b: claim, don't provision ───────────────────────────────────────
+      // The response below is IDENTICAL whether or not a contract was found, and
+      // this branch is the reason that matters: answering differently would turn
+      // a public form into an oracle for "does this person have a contract with
+      // you". The person who legitimately gets no email is served by the "I never
+      // received it" link on the next screen, which reaches a human — that escape
+      // hatch is what makes a deliberately uninformative response humane.
+      const { data: match, error: matchErr } = await db.rpc('find_claimable_contract', {
+        p_email: email,
+      });
+      if (matchErr) throw matchErr;
+      const claim = (Array.isArray(match) ? match[0] : match) as {
+        found?: boolean; document_id?: string; contact_id?: string; org_id?: string; title?: string;
+      } | null;
+
+      if (claim?.found && claim.document_id && claim.contact_id) {
+        // What they typed goes on the contact the contract already points at —
+        // blanks only, so a self-service form never overwrites staff's record.
+        await db.rpc('fill_claimant_details', {
+          p_contact_id: claim.contact_id,
+          p_first_name: firstName || null,
+          p_last_name: lastName || null,
+          p_phone: phone || null,
+        });
+
+        // The SAME invitation staff mint from the contract page. Activation
+        // redeems it through redeem_contract_invitation, which promotes the
+        // contact to an account and lands them on the document — one flow, and
+        // not a second claim mechanism.
+        const { data: inv, error: invErr } = await db.rpc('invite_contract_counterparty', {
+          p_document_id: claim.document_id,
+          p_contact_id: claim.contact_id,
+          p_email: email,
+        });
+        if (invErr) throw invErr;
+        const token = (inv as { token: string; invitation_id: string }).token;
+        invitationId = (inv as { invitation_id: string }).invitation_id;
+
+        const origin = req.headers.origin || `https://${req.headers.host}`;
+        const link = `${origin}/activate?token=${token}&kind=contract`;
+        const identity = await resolveTenantEmailIdentity(db, claim.org_id ?? orgId ?? '');
+        const rendered = await renderEmailTemplate(db, 'CONTRACT_INVITE', {
+          'ORG.BRAND_NAME': identity.fromName,
+          'ORG.FOOTER': identity.footer,
+          'DOC.HAS_TITLE': claim.title ? '1' : '',
+          'DOC.TITLE': claim.title ?? '',
+          // The claimant has not seen their controls yet, so the email makes no
+          // promise about what they may edit — it only gets them to the document.
+          'DOC.PARTY_NEEDS_INFO': '',
+          'DOC.PARTY_CAN_EDIT_DEAL': '',
+          'DOC.PARTY_CAN_SUGGEST': '',
+          'MSG.LINK': link,
+          'MSG.RECIPIENT_EMAIL': email,
+        });
+        const sent = rendered
+          ? await sendViaProvider({
+              to: email,
+              fromName: identity.fromName,
+              fromEmail: identity.fromEmail,
+              subject: rendered.subject,
+              html: rendered.html,
+            })
+          : { ok: false as const, messageId: null, error: 'the CONTRACT_INVITE email template is missing or deactivated' };
+        await recordInvitationDelivery(db, invitationId, {
+          ok: sent.ok, messageId: sent.messageId ?? null,
+          ...(sent.ok ? {} : { error: sent.error ?? 'the email transport rejected the send' }),
+        });
+        emailSent = sent.ok;
+        status = sent.ok ? 'sent' : 'send_failed';
+        sendError = sent.ok ? null : (sent.error ?? 'the email transport rejected the send');
+        messageId = sent.messageId ?? null;
+      } else {
+        // No claimable contract. The VISITOR is told the same thing a match is
+        // told (see above). The attempt row is told the truth, so staff reading
+        // it — or handling the support alert this person is about to raise — see
+        // that a deal claim matched nothing rather than that an email bounced.
+        status = 'sent';
+        emailSent = false;
+        sendError = 'no claimable contract matched this address — nothing was sent';
+      }
+    } else if (allowed && orgId) {
       const { data, error: rpcErr } = await db.rpc('provision_client_invitation', {
         p_email: email,
         p_first_name: firstName || null,
@@ -142,6 +238,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const registerUrl = `${origin}/activate?token=${out.token}`;
       const sent = await sendInvitationEmail(db, { orgId, to: email, registerUrl });
       await recordInvitationDelivery(db, out.invitation_id, sent);
+      emailSent = sent.ok;
       status = sent.ok ? 'sent' : 'send_failed';
       sendError = sent.ok ? null : (sent.error ?? 'the email transport rejected the send');
       messageId = sent.messageId;
@@ -159,9 +256,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         p_last_name: lastName || null,
         p_phone: phone || null,
         p_path: path,
-        p_categories: categories,
+        p_categories: categories ?? null,
         p_invitation_id: invitationId,
-        p_email_ok: status === 'sent',
+        p_email_ok: emailSent,
         p_email_error: sendError,
         p_message_id: messageId,
         p_rate_limited: !allowed,
