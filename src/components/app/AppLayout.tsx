@@ -636,9 +636,18 @@ export function manageNavGroups(
     { key: 'management', label: 'Management', items: visible(MANAGEMENT_GROUP), defaultOpen: true },
     { key: 'accounts', label: 'People', items: visible(ACCOUNTS_GROUP), defaultOpen: true },
     { key: 'community', label: 'Community', items: visible(COMMUNITY_GROUP) },
-    // Owner, 2026-08-15: "modules last wherever its shown because its really
-    // just for reference and not as important to me as the settings which i
-    // will need to use more frequently." Settings moved ahead of Modules.
+    /* Settings and Modules stay in THIS array and are filtered out of the
+       SIDEBAR at the render site below — they are not nav rows any more (owner
+       2026-08-15: "modules and settings should all be inside of the account
+       page", then on finding them still there: "the settings and modules
+       sections are still in the nav and they still show pages").
+
+       They cannot simply be deleted here: /app/ops/settings and /app/ops/modules
+       render their own contents by calling this same manageNavGroups() and
+       looking themselves up BY KEY (NavGroupCardsPage:35, App.tsx:425-429).
+       Removing the entries would blank both pages — the destination and the
+       discarded nav row are fed by one source, deliberately, "so this can never
+       drift from what the nav shows". */
     { key: 'settings', label: 'Settings', items: visible(SETTINGS_GROUP) },
     { key: 'modules', label: 'Modules', items: visible(MODULES_GROUP) },
     /* REVIEW SECTION removed 2026-08-15 (owner: "the menu fixed… back to
