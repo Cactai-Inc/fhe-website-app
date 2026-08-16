@@ -5,8 +5,8 @@ import { fetchOfferings } from '../../lib/api';
 import type { Offering } from '../../lib/types';
 import { listLessonClients, listScheduleHorses } from '../../lib/ops/api-lessons';
 import type { LessonClientOption, ScheduleHorseOption } from '../../lib/ops/api-lessons';
-import { LessonLogEditor } from './ops/lessons/LessonLogEditor';
 import { BookingItemSwap } from '../../components/app/BookingItemSwap';
+import { SessionActivityForm } from './ops/lessons/SessionActivityForm';
 import {
   fetchLocations, addMyLocation,
   fetchClientPurchases,
@@ -732,7 +732,7 @@ export function CalendarItemPanel({
           {/* A1 — log + report for a real serviced booking (lesson or horse-care) */}
           {editing && item?.id && (item.kind === 'lesson' || item.kind === 'care') && (
             <div className="pt-1">
-              <LessonLogEditor bookingId={item.id} initialReport={item.notes} />
+              <SessionActivityForm bookingId={item.id} />
             </div>
           )}
 

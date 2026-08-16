@@ -458,6 +458,134 @@ export async function getBookingReport(bookingId: string): Promise<BookingReport
   return data as BookingReport;
 }
 
+// ─── The activity form, one instance per booking (LESSONFORM) ────────────────
+
+/** One field of a form_definitions schema. `checklist` fields carry
+ *  `source: 'activity_checklists'` and take their options from the booking's own
+ *  service checklist, resolved server-side — never from the definition, so the
+ *  checklist stays editable where it lives. */
+export interface BookingFormField {
+  key: string;
+  type: 'radio' | 'checklist' | 'textarea' | 'text' | string;
+  label: string;
+  options?: string[];
+  option_labels?: string[];
+  help?: string;
+  required?: boolean;
+  /** 'staff' = the instructor's working record; 'client' = the rider sees it. */
+  visibility?: 'staff' | 'client';
+  source?: string;
+}
+
+export interface BookingFormDefinition {
+  form_key: string;
+  title: string;
+  purpose: string | null;
+  version: number;
+  schema: { sections: { heading: string; fields: BookingFormField[] }[] };
+}
+
+/** The answers, keyed by the definition's field keys. */
+export interface BookingFormAnswers {
+  attendance?: string;
+  activities?: string[];
+  log_text?: string;
+  report?: string;
+  [key: string]: string | string[] | undefined;
+}
+
+/** The INSTANCE — the row that is linked to the booking, moves with it on a
+ *  reschedule, and is retired (or deleted, if blank) when the booking dies. */
+export interface BookingFormInstance {
+  id: string;
+  status: 'open' | 'submitted' | 'retired';
+  answers: BookingFormAnswers;
+  /** Nothing has been written in — the form records nothing yet. */
+  blank: boolean;
+  submitted_at: string | null;
+  retired_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** booking_form() — the instance, its definition, and the live checklist. */
+export interface BookingFormView {
+  booking_id: string;
+  kind: string;
+  starts_at: string | null;
+  ends_at: string | null;
+  booking_status: string;
+  service_type: string | null;
+  checklist: string[];
+  definition: BookingFormDefinition | null;
+  /** null when Claire discarded it, or when a form does not apply. Not an error. */
+  form: BookingFormInstance | null;
+  /** cancel_lesson_session owns the no_show transition and takes only a
+   *  SCHEDULED lesson, so the option is offered only when it would work. */
+  can_mark_no_show: boolean;
+}
+
+/** One row of the forms backlog (lesson_forms). */
+export interface LessonFormRow {
+  form_id: string;
+  booking_id: string;
+  starts_at: string;
+  ends_at: string;
+  client_id: string | null;
+  client_name: string | null;
+  service_type: string | null;
+  booking_kind: string;
+  booking_status: string;
+  form_status: 'open' | 'submitted' | 'retired';
+  has_answers: boolean;
+  submitted_at: string | null;
+}
+
+export type LessonFormScope = 'todo' | 'past' | 'upcoming' | 'retired' | 'all';
+
+/** The form instance for one booking, with its definition and live checklist. */
+export async function getBookingForm(bookingId: string): Promise<BookingFormView> {
+  const { data, error } = await supabase.rpc('booking_form', { p_booking_id: bookingId });
+  if (error) throw error;
+  return data as BookingFormView;
+}
+
+/** Save answers (shallow-merged server-side, so a partial save never wipes a
+ *  field it did not mention). `submit` marks the form finished. */
+export async function saveBookingForm(
+  bookingId: string,
+  answers: BookingFormAnswers,
+  submit = false,
+): Promise<BookingFormView> {
+  const { data, error } = await supabase.rpc('save_booking_form', {
+    p_booking_id: bookingId,
+    p_answers: answers,
+    p_submit: submit,
+  });
+  if (error) throw error;
+  return data as BookingFormView;
+}
+
+/** Discard a form Claire does not want to fill in. A blank one is deleted; one
+ *  that has been written in is retired and kept (D11). The booking is untouched. */
+export async function discardBookingForm(
+  bookingId: string,
+): Promise<{ booking_id: string; outcome: 'deleted' | 'retired' | 'none' }> {
+  const { data, error } = await supabase.rpc('discard_booking_form', {
+    p_booking_id: bookingId,
+  });
+  if (error) throw error;
+  return data as { booking_id: string; outcome: 'deleted' | 'retired' | 'none' };
+}
+
+/** The backlog. 'todo' = lessons that have already happened whose form nobody
+ *  has finished — the list the owner asked for. */
+export async function listLessonForms(scope: LessonFormScope = 'todo'): Promise<LessonFormRow[]> {
+  const { data, error } = await supabase.rpc('lesson_forms', { p_scope: scope });
+  if (error) throw error;
+  return (data ?? []) as LessonFormRow[];
+}
+
 /** Mark a lesson taught; by default debits the oldest credit row with balance. */
 export async function completeLessonSession(
   sessionId: string,
