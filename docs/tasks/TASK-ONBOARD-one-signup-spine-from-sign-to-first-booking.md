@@ -84,9 +84,10 @@ actual call site before changing anything.** This is §4's core bug.
 # THE BUILD
 
 ## 1 — `/sign` becomes a chooser
-- `/sign` (no path) currently does not exist — only `/sign/:path`. Add the chooser page: **four**
+- `/sign` (no path) currently does not exist — only `/sign/:path`. Add the chooser page: **five**
   options, each explained in the owner's words so a visitor can self-identify: **guest · rider ·
-  rider + horse owner · horse owner**.
+  rider + horse owner · horse owner · deal**. The first four are document-signing funnels; the
+  fifth behaves differently (§1b).
 - **`deal` IS a chooser option** — a fifth button, but it behaves differently from the other
   four. See §1b. (Corrected 2026-08-15: an earlier draft dropped it entirely; the owner's ruling
   was that it is not a *document-signing funnel* like the others, not that the entry disappears.)
@@ -116,6 +117,11 @@ The server looks for a document party whose contact email matches **and** who ha
   anything on the assumption that real accountless parties exist today**, and do not report
   their existence as a finding (per the standing "empty is not a finding" rule — this feature is
   for the flow going forward, not for a backlog of stranded people).
+- **THERE HAS ONLY EVER BEEN ONE REAL CONTRACT — Sarah Morgan's — AND IT WAS CANCELLED**
+  (owner, 2026-08-15). Every other contract-shaped row in prod is a test artifact. So: there is
+  no live deal population, no stranded counterparties, and **nothing here is a data-repair job.**
+  Build the flow for the first real deal that comes after this ships. Do not treat any existing
+  contract row as a live case, and do not "fix" test data.
 - **`/api/contract-invite` + `invite_contract_counterparty` + `redeem_contract_invitation`
   already exist**: staff-issued token, branded register link, redeem lands the counterparty on
   the contract. **That is the STAFF-INITIATED version of this same outcome.**
