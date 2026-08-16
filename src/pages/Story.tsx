@@ -121,7 +121,8 @@ export default function Story() {
       <section className="bg-cream">
         <div className="container-site pt-32 pb-16 sm:pt-40 sm:pb-24">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
-            <Reveal className="lg:col-span-6">
+            {/* Text narrows to 5 of 12 (owner, 2026-08-16) so the image can take 7. */}
+            <Reveal className="lg:col-span-5">
               <p className="eyebrow mb-6">Our Story</p>
               <h1 className="heading-display text-green-900 text-[clamp(2.5rem,6.5vw,4.75rem)]">
                 Coastal Air &amp;
@@ -158,14 +159,18 @@ export default function Story() {
               </div>
             </Reveal>
 
-            {/* SWAP: Section 1 hero — the place, coastal setting establishing shot
-                (new image/video, owner to provide). Green textural band for now. */}
-            <Reveal className="lg:col-span-6" delay={120}>
-              {/* Trail — the coastal establishing shot this slot was reserved for,
-                  and the literal subject of the headline beside it ("trails
-                  without end"). Keeps the placeholder's responsive aspect ratios. */}
+            {/* Section 1 — the arena, the same world the landing hero shows.
+                Owner, 2026-08-16: "adjust the page split so the head of the first
+                horse is visible… widening the image and reduce the width of the
+                text section a little." The column goes 6→7 and the text 6→5, but
+                the real culprit was the frame: a 4:5 PORTRAIT box on a 1408x768
+                landscape photo crops ~65% of its width, which is what cut the
+                first horse. The frame is now 3:2 at every width — close to the
+                photo's own shape, so almost nothing is lost sideways and nothing
+                is cropped vertically. */}
+            <Reveal className="lg:col-span-7" delay={120}>
               <div
-                className="aspect-[4/5] sm:aspect-[3/2] lg:aspect-[4/5] overflow-hidden bg-green-900"
+                className="aspect-[3/2] overflow-hidden bg-green-900"
                 style={{
                   backgroundImage: `url('${HERO_A}')`,
                   backgroundSize: 'cover',
