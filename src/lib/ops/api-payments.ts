@@ -126,6 +126,12 @@ export async function dismissNotification(id: string): Promise<PaymentNotificati
 
 /* ── ZELLECLOSE Z3: "who owes money and who has paid?" ─────────────────── */
 
+/** ClaimStatus mirrors TASK-CASHCONFIRM's `client_claim_status` enum (its
+ *  migration is already live in prod — coordination note in
+ *  `api/orders-mark-paid.ts`). This page does not own that state machine;
+ *  it only reads it so staff aren't blind to a pending claim from here. */
+export type ClaimStatus = 'none' | 'pending' | 'confirmed' | 'declined';
+
 export interface OrderRow {
   id: string;
   amount: number;
@@ -137,6 +143,7 @@ export interface OrderRow {
   unique_amount: number | null;
   client_reported_method: string | null;
   client_reported_at: string | null;
+  client_claim_status: ClaimStatus;
   paid_at: string | null;
   created_at: string;
   buyerName: string;
@@ -154,6 +161,7 @@ interface RawOrderRow {
   unique_amount: number | null;
   client_reported_method: string | null;
   client_reported_at: string | null;
+  client_claim_status: ClaimStatus;
   paid_at: string | null;
   created_at: string;
   contacts: { first_name: string | null; last_name: string | null } | null;
@@ -162,7 +170,7 @@ interface RawOrderRow {
 
 const ORDER_COLS = `id, amount, amount_paid, status, payment_status, payment_method,
   payment_reference, unique_amount, client_reported_method, client_reported_at,
-  paid_at, created_at,
+  client_claim_status, paid_at, created_at,
   contacts:buyer_contact_id ( first_name, last_name ),
   purchase_items ( label )`;
 
@@ -201,11 +209,16 @@ export async function listPaidOrders(limit = 25): Promise<OrderRow[]> {
 export interface MarkOrderPaidResult {
   status: 'paid' | 'already_paid';
   receipt: { sent: boolean; reason?: string };
+  /** True when this settled a pending CASHCONFIRM claim (via
+   *  confirm_payment_claim) rather than a fresh mark_purchase_paid call —
+   *  the method/reference passed in were not what actually got used. */
+  claimConfirmed: boolean;
 }
 
 /** The one staff-manual "mark this existing order paid" entry point — server
- *  half is `/api/orders-mark-paid` (reuses mark_purchase_paid + the receipt
- *  trail; never a second write path). */
+ *  half is `/api/orders-mark-paid` (reuses mark_purchase_paid — or, when a
+ *  claim is pending, confirm_payment_claim — plus the receipt trail; never a
+ *  second write path). */
 export async function markOrderPaid(
   purchaseId: string,
   method: 'zelle' | 'cash',
@@ -221,5 +234,9 @@ export async function markOrderPaid(
   });
   const json = (await res.json().catch(() => ({}))) as Partial<MarkOrderPaidResult> & { error?: string };
   if (!res.ok) throw new Error(json.error || 'Could not mark this order paid.');
-  return { status: (json.status as MarkOrderPaidResult['status']) ?? 'paid', receipt: json.receipt ?? { sent: false } };
+  return {
+    status: (json.status as MarkOrderPaidResult['status']) ?? 'paid',
+    receipt: json.receipt ?? { sent: false },
+    claimConfirmed: json.claimConfirmed ?? false,
+  };
 }

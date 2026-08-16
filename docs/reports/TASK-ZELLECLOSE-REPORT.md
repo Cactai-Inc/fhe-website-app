@@ -1,11 +1,28 @@
 # TASK ZELLECLOSE REPORT — a Zelle payment arrives and the system notices
 
-**Base:** `origin/main` @ `cfd77d6`, working directly in
-`~/Downloads/claude-code-repo/fhe-website-app` (no worktree). Real prod DB
+**Base:** `origin/main` @ `cfd77d6`, branch `task/zelleclose`, worktree
+`~/Downloads/claude-code-repo/wt-zelleclose` (started in the canonical
+checkout by mistake — the repo's own pre-commit hook caught it before
+anything committed; recovered via `git stash` into a proper worktree, no work
+lost — see the note at the very end). Real prod DB
 (`db.lrstswfxfsezdmvkvukc.supabase.co`) queried directly via `psql` throughout
 — every exploratory claim below ran inside `BEGIN … ROLLBACK`; every applied
 change is a real, verified write, listed explicitly. **Do not push; the
 orchestrator merges.**
+
+**⚠ READ BEFORE MERGING — coordination with TASK-CASHCONFIRM, found mid-session:**
+`task/cashconfirm` (commit `e872633`) landed a fourth "Client claims" bucket
+on this exact page, and **its migration is already live in the same prod DB**
+(`purchases.client_claim_status`, `confirm_payment_claim`,
+`decline_payment_claim` all confirmed present). Full detail in its own
+section below — summary: (1) no DB-level collision, `mark_purchase_paid`
+itself was left untouched by CASHCONFIRM; (2) a real correctness bug would
+have existed if I'd shipped my "Orders" bucket blind to that — fixed, see
+below; (3) a **git merge conflict is expected** on
+`src/pages/app/ops/PaymentReviewPage.tsx` and `src/lib/ops/api-payments.ts` —
+both branches independently added a 4th bucket the same way. Trivial to
+reconcile (union the two bucket types, keep both sections) but real —
+flagging so it isn't a surprise at merge time.
 
 ```
 supabase/migrations/20260813T1200_paylock_finalize_payment_keys_on_buyer_contact.sql   (APPLIED — see Z1; this file already existed on main, unapplied)
@@ -254,6 +271,82 @@ flagged, not built, in that report. Built now:
 
 ---
 
+# COORDINATION WITH TASK-CASHCONFIRM — found live, mid-session, handled
+
+Neither task doc anticipated the other running the same day. `task/cashconfirm`
+(commit `e872633`, its own report `docs/reports/TASK-CASHCONFIRM-REPORT.md`)
+owns the **client-claim** path: a buyer clicks "I paid cash/Zelle" on
+`OrderPayment.tsx` (`report_my_payment`, pre-existing, untouched by either
+task), which sets `client_reported_method`/`client_claim_status='pending'`;
+staff then **confirm or decline** the claim via a new `confirm_payment_claim`
+/ `decline_payment_claim` pair. **Its migration is already applied to the
+same prod DB this session used** — confirmed directly:
+
+```sql
+select column_name from information_schema.columns
+ where table_name='purchases' and column_name like 'client_claim%';
+ -- client_claim_status, client_claim_resolved_by, client_claim_resolved_at, client_claim_decline_reason
+select proname from pg_proc where proname in ('confirm_payment_claim','decline_payment_claim');
+ -- both present
+```
+
+**Why this matters for Z3**: my "Orders" bucket's Zelle/Cash buttons were
+originally written to call `mark_purchase_paid` directly, unconditionally.
+Had that shipped as-is, a staff member using **my** bucket on a purchase that
+already had a **pending client claim** (CASHCONFIRM's queue) would have
+settled the order correctly — but left `client_claim_status` stuck on
+`'pending'` forever: an orphaned claim, permanently visible in CASHCONFIRM's
+"Client claims" queue as unresolved, on an order that was in fact already
+paid. Not a crash, not data loss — a quiet, permanent inconsistency between
+two staff-facing queues describing the same order. Exactly the class of bug
+this whole task is about eliminating elsewhere.
+
+**Fixed**: `api/orders-mark-paid.ts` now checks `client_claim_status` first.
+Pending → calls `confirm_payment_claim` (CASHCONFIRM's own function — the
+claim-aware wrapper around `mark_purchase_paid`, using the claim's own
+reported method/reference rather than whatever was clicked in my UI). No
+claim, or an already-resolved one → the original direct `mark_purchase_paid`
+call, unchanged. Either branch still ends in the same `sendOrderReceipt` call
+— one receipt call site regardless of which settlement path fired. The
+"Orders" bucket UI now shows `(claim pending — see Client claims)` next to
+the client's report and swaps the Zelle/Cash choice for a single "Confirm
+claim (as reported)" button in that case, so the method choice isn't offered
+where it wouldn't actually be honored.
+
+**Proved live**, same transaction, both halves of the coordination:
+
+```sql
+-- Claire reports a cash claim on her real order
+select report_my_payment('1fce288f-…', 'cash', NULL);
+select client_claim_status, client_reported_method from purchases where id='1fce288f-…';
+ pending | cash
+
+-- staff uses the (now claim-aware) Orders-bucket action → confirm_payment_claim, not mark_purchase_paid directly
+select confirm_payment_claim('1fce288f-…');
+ -> {"method": "cash", "confirmed": true, "settlement": "paid"}
+select status, payment_status, client_claim_status, payment_method, client_claim_resolved_by from purchases where id='1fce288f-…';
+ paid | paid | confirmed | cash | b45a5503-… (the staff member)
+-- client_claim_status = 'confirmed', not stuck on 'pending' — no orphan
+```
+
+`ROLLBACK` confirmed, Claire's real row unaffected.
+
+**What is NOT fixed, and is the orchestrator's to resolve at merge time**: a
+straightforward **git merge conflict**. Both branches independently added a
+4th bucket to `PaymentReviewPage.tsx` the same way —
+`type Bucket = PaymentNotificationStatus | 'claims'` (CASHCONFIRM) vs.
+`type Bucket = PaymentNotificationStatus | 'orders'` (this task), same
+`BUCKETS` array, same file region. `src/lib/ops/api-payments.ts` collides too
+(both added new exports after `dismissNotification`). Textually real, not
+semantically hard: the merged result should be
+`PaymentNotificationStatus | 'claims' | 'orders'`, both bucket entries kept,
+both sections rendered — the two features are complementary (CASHCONFIRM
+surfaces claims that need a yes/no; this task's Orders bucket surfaces every
+outstanding order, claimed or not, for a direct settlement) and, per the
+proof above, now correctly claim-aware of each other where they overlap.
+
+---
+
 # THE TEST THIS TASK NAMED — status
 
 1. **A real order produces a memo + unique amount, shown as query output.**
@@ -338,8 +431,9 @@ flagged, not built, in that report. Built now:
 
 # OWNER CHECKLIST — every render claim above, NOT VERIFIED, to run in a browser
 
-1. Open `/app/ops/payments/review` as staff — confirm the 4 tabs (Needs
-   review / Unmatched / Matched / **Orders**, new) all render.
+1. Open `/app/ops/payments/review` as staff — confirm the tabs render (4 on
+   this branch alone: Needs review / Unmatched / Matched / **Orders**; 5 once
+   merged with `task/cashconfirm`'s "Client claims" — see COORDINATION above).
 2. On the **Orders** tab, confirm "Outstanding" lists the 3 real unpaid
    purchases (Claire Bourdon $1,000, Gabriella Olenik $460, and the $420 one)
    with correct buyer names and amounts owed.
@@ -356,3 +450,18 @@ flagged, not built, in that report. Built now:
 6. As a provisioned buyer (e.g. re-run Claire's flow for real, not rolled
    back), reach the Pay-with-Zelle screen and confirm a memo + amount now
    render — this was structurally impossible before this session's Z1 fix.
+
+---
+
+**Process note**: this session started by running `git checkout -b
+task/zelleclose` directly in the canonical checkout (`fhe-website-app/`, not
+a worktree). The repo's own pre-commit hook blocked the commit with a
+CANONICAL CHECKOUT warning before anything landed. Recovered cleanly —
+`git stash push -u`, `git checkout main` (canonical checkout confirmed clean
+afterward), `git worktree add ~/Downloads/claude-code-repo/wt-zelleclose -b
+task/zelleclose origin/main`, `git stash apply` inside the new worktree, then
+committed there. No work lost; `npm install` run fresh in the worktree (not
+symlinked). Same trap CASHCONFIRM's own report hit and recovered from the
+same way — worth someone eventually asking why this keeps happening on the
+first `git checkout -b` of a session rather than relying on every thread
+independently rediscovering the hook.

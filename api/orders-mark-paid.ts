@@ -14,8 +14,23 @@
  *      (`sendOrderReceipt` — provable via `receipt_sends`, never a silent
  *      second confirmation channel).
  *
+ * COORDINATION (found live in prod while building this, not anticipated by
+ * either task doc): TASK CASHCONFIRM (branch task/cashconfirm, its migration
+ * already applied to prod) added `purchases.client_claim_status` +
+ * `confirm_payment_claim` — a client's own "I paid" report, confirmed by
+ * staff. If this endpoint called `mark_purchase_paid` directly on a purchase
+ * with a PENDING claim, the order would settle but the claim would be
+ * orphaned forever (`client_claim_status` stuck on 'pending', never resolved,
+ * invisible to CASHCONFIRM's "Client claims" queue as anything but an
+ * eternally-open item). So: a pending claim routes through
+ * `confirm_payment_claim` instead — the exact function CASHCONFIRM's own UI
+ * calls — which settles via `mark_purchase_paid` internally AND resolves the
+ * claim in one write. No claim (or a resolved one) uses `mark_purchase_paid`
+ * directly, as before. Still one spine either way — `confirm_payment_claim`
+ * is not a competing path, it's the claim-aware wrapper around the same one.
+ *
  * Body: { purchaseId: string, method: 'zelle' | 'cash', reference?: string }
- * -> 200 { status: 'paid' | 'already_paid', receipt: { sent, reason? } }
+ * -> 200 { status: 'paid' | 'already_paid', receipt: { sent, reason? }, claimConfirmed: boolean }
  * -> 400 bad body; 401 no/bad bearer; 403 not staff; 404 unknown purchase
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
@@ -63,22 +78,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       || ['ADMIN', 'SUPER_ADMIN', 'MANAGER', 'EMPLOYEE'].includes(profile?.role ?? '');
     if (!isStaff) return res.status(403).json({ error: 'forbidden' });
 
-    const { data: order } = await db.from('purchases').select('id, amount').eq('id', purchaseId).maybeSingle();
+    const { data: order } = await db.from('purchases')
+      .select('id, amount, client_claim_status').eq('id', purchaseId).maybeSingle();
     if (!order) return res.status(404).json({ error: 'order not found' });
 
     const asUser = callerClient(bearer);
-    const { data: status, error: rpcErr } = await asUser.rpc('mark_purchase_paid', {
-      p_purchase_id: purchaseId,
-      p_amount: order.amount,
-      p_reference: reference,
-      p_method: method,
-    });
-    if (rpcErr) return res.status(400).json({ error: rpcErr.message });
+    const hasPendingClaim = order.client_claim_status === 'pending';
+
+    let status: string | null;
+    if (hasPendingClaim) {
+      // CASHCONFIRM's claim-aware settlement — resolves client_claim_status
+      // in the same write, using the claim's own reported method/reference
+      // rather than whatever was picked in this UI (staff is confirming what
+      // the client already said, not re-declaring it).
+      const { data, error: rpcErr } = await asUser.rpc('confirm_payment_claim', { p_purchase_id: purchaseId });
+      if (rpcErr) return res.status(400).json({ error: rpcErr.message });
+      status = (data as { settlement?: string })?.settlement ?? null;
+    } else {
+      const { data, error: rpcErr } = await asUser.rpc('mark_purchase_paid', {
+        p_purchase_id: purchaseId,
+        p_amount: order.amount,
+        p_reference: reference,
+        p_method: method,
+      });
+      if (rpcErr) return res.status(400).json({ error: rpcErr.message });
+      status = data as string;
+    }
 
     // Same provable trail an automatic match gets — never a silent second path.
-    const receipt = status === 'paid' ? await sendOrderReceipt(db, purchaseId) : { sent: false, reason: status as string };
+    const receipt = status === 'paid' ? await sendOrderReceipt(db, purchaseId) : { sent: false, reason: status ?? 'unknown' };
 
-    return res.status(200).json({ status, receipt });
+    return res.status(200).json({ status, receipt, claimConfirmed: hasPendingClaim });
   } catch (err) {
     console.error('orders-mark-paid error', err);
     return res.status(500).json({ error: 'could not mark this order paid' });

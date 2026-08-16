@@ -99,12 +99,13 @@ export function PaymentReviewPage() {
   const markPaid = async (order: OrderRow, method: 'zelle' | 'cash') => {
     try {
       const result = await markOrderPaid(order.id, method);
+      const verb = result.claimConfirmed ? 'Confirmed the client’s claim' : `Marked paid (${method})`;
       toast.success(
         result.status === 'already_paid'
           ? 'That order was already marked paid.'
           : result.receipt.sent
-            ? `Marked paid (${method}) — receipt sent.`
-            : `Marked paid (${method}) — receipt NOT sent (${result.receipt.reason ?? 'unknown reason'}).`,
+            ? `${verb} — receipt sent.`
+            : `${verb} — receipt NOT sent (${result.receipt.reason ?? 'unknown reason'}).`,
       );
       await refreshOrders();
     } catch (err) {
@@ -153,26 +154,44 @@ export function PaymentReviewPage() {
       key: 'reported',
       header: 'Client says',
       render: (r) =>
-        r.client_reported_method
-          ? `${r.client_reported_method === 'cash' ? 'Cash' : 'Zelle'} — ${
-              r.client_reported_at ? formatReceived(r.client_reported_at) : 'reported'
-            }`
-          : '—',
+        r.client_reported_method ? (
+          <span>
+            {r.client_reported_method === 'cash' ? 'Cash' : 'Zelle'} —{' '}
+            {r.client_reported_at ? formatReceived(r.client_reported_at) : 'reported'}
+            {r.client_claim_status === 'pending' && (
+              <span className="ml-1 text-amber-700">(claim pending — see Client claims)</span>
+            )}
+          </span>
+        ) : (
+          '—'
+        ),
     },
     { key: 'status', header: 'Status', render: (r) => <StatusBadge status={r.payment_status} /> },
     {
       key: 'actions',
       header: 'Mark paid',
-      render: (r) => (
-        <div className="flex gap-2">
-          <AsyncButton className="btn-secondary" pendingLabel="Marking…" onClick={() => markPaid(r, 'zelle')}>
-            Zelle
+      render: (r) =>
+        r.client_claim_status === 'pending' ? (
+          // TASK CASHCONFIRM already has a claim open on this order (its own
+          // "Client claims" bucket) — confirm it as reported rather than
+          // offering a method choice that wouldn't be the one actually used.
+          <AsyncButton
+            className="btn-secondary"
+            pendingLabel="Confirming…"
+            onClick={() => markPaid(r, (r.client_reported_method as 'zelle' | 'cash') ?? 'zelle')}
+          >
+            Confirm claim ({r.client_reported_method ?? 'reported'})
           </AsyncButton>
-          <AsyncButton className="btn-secondary" pendingLabel="Marking…" onClick={() => markPaid(r, 'cash')}>
-            Cash
-          </AsyncButton>
-        </div>
-      ),
+        ) : (
+          <div className="flex gap-2">
+            <AsyncButton className="btn-secondary" pendingLabel="Marking…" onClick={() => markPaid(r, 'zelle')}>
+              Zelle
+            </AsyncButton>
+            <AsyncButton className="btn-secondary" pendingLabel="Marking…" onClick={() => markPaid(r, 'cash')}>
+              Cash
+            </AsyncButton>
+          </div>
+        ),
     },
   ];
 
