@@ -128,18 +128,51 @@ export default function Story() {
       {/* ══ SECTION 1 · The place — "Coastal Air & Endless Trails" ══
           Establish the coastal world she belongs to. IMAGE: new establishing
           shot (placeholder green band for now). */}
-      <section className="bg-cream">
-        <div className="container-site pt-32 pb-16 sm:pt-40 sm:pb-24">
+      {/* Section jump nav (owner, 2026-08-16: "add the scroll buttons so the
+          sections use hooks and the user can navigate between them without
+          scrolling if they want"). Plain anchors — `scroll-behavior: smooth` is
+          already set globally in index.css, and each target carries scroll-mt-24
+          so the fixed header never covers the heading it lands on. Hidden on
+          phones, where a short scroll beats a row of small tap targets. */}
+      <nav aria-label="Jump to a section" className="hidden sm:block bg-cream pt-28 lg:pt-32">
+        <div className="container-site flex flex-wrap gap-x-7 gap-y-2">
+          {[
+            { label: 'The Place', href: '#the-place' },
+            { label: 'What You\u2019ll Find', href: '#what-youll-find' },
+            { label: 'The Community', href: '#the-community' },
+            { label: 'The Ways In', href: '#the-ways-in' },
+          ].map((l) => (
+            <a
+              key={l.href}
+              href={l.href}
+              className="text-[11px] font-sans tracking-widest uppercase text-muted hover:text-green-900 border-b border-transparent hover:border-gold-600 pb-0.5 transition-colors focus-ring"
+            >
+              {l.label}
+            </a>
+          ))}
+        </div>
+      </nav>
+
+      <section id="the-place" className="bg-cream scroll-mt-24">
+        <div className="container-site pt-10 pb-16 sm:pt-12 sm:pb-24">
           {/* items-start (was items-center): the owner wants the image aligned
               with the TOP of the first paragraph, not floated to the middle. */}
+          {/* Owner, 2026-08-16: the title kept colliding with the image. Cause:
+              `whitespace-nowrap` on a heading inside a 5-of-12 column — it cannot
+              wrap, so it simply overflowed under the photograph. The heading now
+              sits ABOVE the grid at full width, where one line always fits, and
+              the columns below carry only the copy and the image. */}
+          <Reveal className="mb-10 sm:mb-12">
+            <p className="eyebrow mb-6">Our Story</p>
+            <h1 className="heading-display text-green-900 text-[clamp(2.1rem,5vw,3.75rem)]">
+              Coastal Air &amp; Endless Trails
+            </h1>
+          </Reveal>
+
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
             {/* Text narrows to 5 of 12 (owner, 2026-08-16) so the image can take 7. */}
             <Reveal className="lg:col-span-5">
-              <p className="eyebrow mb-6">Our Story</p>
-              <h1 className="heading-display text-green-900 text-[clamp(1.75rem,3.6vw,2.9rem)] lg:whitespace-nowrap">
-                Coastal Air &amp; Endless Trails
-              </h1>
-              <div className="mt-8 space-y-6 max-w-xl">
+              <div className="space-y-6 max-w-xl">
                 <p className="body-text text-lg">
                   We are a community of riders who love all things equestrian
                   &mdash; and this is the place we&rsquo;re grateful to call home for us
@@ -199,7 +232,7 @@ export default function Story() {
           Deep-green full-bleed band — ALL text on-dark (light on green).
           data-header-tone="dark": header over this green band → white nav.
           IMAGE: horse in the stable at golden hour / sunset. */}
-      <section data-header-tone="dark" className="relative bg-green-900 overflow-hidden">
+      <section id="what-youll-find" data-header-tone="dark" className="relative bg-green-900 overflow-hidden scroll-mt-24">
         <div className="grid grid-cols-1 lg:grid-cols-2">
           {/* SWAP: Section 2 — horse in the stable at golden hour / sunset
               (owner to provide). Green textural placeholder for now. */}
@@ -265,7 +298,7 @@ export default function Story() {
           name, its too close to the other section") — this follows the
           full-bleed green band, which has no bottom padding of its own, so the
           eyebrow was sitting almost on the seam. */}
-      <section className="bg-cream">
+      <section id="the-community" className="bg-cream scroll-mt-24">
         <div className="container-site pt-32 pb-16 sm:pt-40 sm:pb-24">
           <Reveal className="max-w-3xl">
             <p className="eyebrow mb-6">The Community</p>
@@ -330,7 +363,7 @@ export default function Story() {
 
           {/* The ways in — refined preview, informational with a path (carries
               the onward link to /shop now that S4 is image-only). */}
-          <div className="mt-20 sm:mt-28">
+          <div id="the-ways-in" className="mt-20 sm:mt-28 scroll-mt-24">
             <div className="rule-gold" />
             {/* Owner, 2026-08-16 (flipped): the mosaic "steals the show", so the
                 CARDS now take the prominent right column where the photos were,
@@ -377,7 +410,9 @@ export default function Story() {
             {/* The four photographs, as a quiet strip beneath the cards.
                 Decorative — each is described in context earlier on the page. */}
             <div className="mt-12 sm:mt-16 grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4" aria-hidden="true">
-              {[HERO_A, STABLES, TRAIL, HERO_B].map((src, i) => (
+              {/* Trail last (owner, 2026-08-16) — it is the image that completes the
+                  story, so it closes the strip. */}
+              {[HERO_A, STABLES, HERO_B, TRAIL].map((src, i) => (
                 <div
                   key={i}
                   className="aspect-[4/3] overflow-hidden bg-green-900"
