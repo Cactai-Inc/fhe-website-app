@@ -11,6 +11,7 @@ import ServiceListState from '../components/ServiceListState';
 const HORSE_CARE_CODES = ['HORSE_TRAINING', 'HORSE_EXERCISE', 'HORSE_CLIPPING'];
 import QualifierGroup from '../components/QualifierGroup';
 import Seo from '../components/Seo';
+import SelectionBar from '../components/SelectionBar';
 import { seoForPath } from '../lib/seo';
 
 const STEPS = [
@@ -71,7 +72,9 @@ export default function BookSupport() {
   return (
     <>
       <Seo title={SEO.title} description={SEO.description} path="/acquisition" service={SEO.service} />
-    <div className="min-h-screen bg-cream pt-24 pb-20">
+    {/* pb-36: room for the floating SelectionBar so it can never cover the
+        last card (the bar is ~80px incl. safe-area). */}
+    <div className="min-h-screen bg-cream pt-24 pb-36">
       {/* Owner, 2026-08-16: was max-w-3xl (768px) — a "skinny screen" width, and
           with three columns it left only ~250px of text per card, which is what
           broke the italic taglines into one word per line. This page carries the
@@ -284,6 +287,11 @@ export default function BookSupport() {
         )}
       </div>
     </div>
+
+    {/* Floating selection bar — step 0 only, where the choosing happens. It
+        calls handleNext, the SAME handler the page's own Continue button uses,
+        so there is one path forward, not two. */}
+    {step === 0 && <SelectionBar onContinue={handleNext} disabled={!canProceedStep0} />}
     </>
   );
 }

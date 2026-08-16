@@ -8,6 +8,7 @@ import ServiceSelector from '../components/ServiceSelector';
 import ServiceListState from '../components/ServiceListState';
 import QualifierGroup from '../components/QualifierGroup';
 import Seo from '../components/Seo';
+import SelectionBar from '../components/SelectionBar';
 import { seoForPath } from '../lib/seo';
 
 const STEPS = [
@@ -64,7 +65,9 @@ export default function BookHorse() {
   return (
     <>
       <Seo title={SEO.title} description={SEO.description} path="/horse" service={SEO.service} />
-    <div className="min-h-screen bg-cream pt-24 pb-20">
+    {/* pb-36: room for the floating SelectionBar so it can never cover the
+        last card (the bar is ~80px incl. safe-area). */}
+    <div className="min-h-screen bg-cream pt-24 pb-36">
       {/* Owner, 2026-08-16: this page read as "designed for a skinny screen".
           Cause: `container-site` is already max-w-7xl (1280px), and this
           max-w-3xl override cut it to 768px — narrower than a tablet in
@@ -232,6 +235,11 @@ export default function BookHorse() {
         )}
       </div>
     </div>
+
+    {/* Floating selection bar — step 0 only, where the choosing happens. It
+        calls handleNext, the SAME handler the page's own Continue button uses,
+        so there is one path forward, not two. */}
+    {step === 0 && <SelectionBar onContinue={handleNext} disabled={!canProceedStep0} />}
     </>
   );
 }
