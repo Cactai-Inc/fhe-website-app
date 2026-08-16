@@ -1,4 +1,3 @@
-import { Check } from 'lucide-react';
 import { formatPrice, type PriceUnit } from '../lib/pricing';
 import type { ServiceGroup } from '../lib/publicCatalog';
 import { useCart } from '../contexts/CartContext';
@@ -102,16 +101,14 @@ export default function ServiceSelector({
                   Popular
                 </span>
               )}
-              <div className="flex items-start justify-between gap-3 mb-2">
-                <span className="text-sm font-sans font-medium text-green-900 pr-8">{o.name}</span>
-                <div
-                  aria-hidden="true"
-                  className={`w-4 h-4 rounded-full border flex-shrink-0 flex items-center justify-center mt-0.5 transition-colors ${
-                    selected ? 'bg-green-800 border-green-800' : 'border-green-800/30'
-                  }`}
-                >
-                  {selected && <Check size={10} className="text-white" />}
-                </div>
+              {/* Owner, 2026-08-16: the radio/checkmark dot is gone — "just
+                  remove those they are a nuisance." Selection still reads
+                  clearly from the card's own selected styling
+                  (selectable-card-selected), and it is still announced properly
+                  to assistive tech by role="radio" + aria-checked on the button
+                  itself, so nothing is lost semantically. */}
+              <div className="mb-2">
+                <span className="text-sm font-sans font-medium text-green-900">{o.name}</span>
               </div>
               {mechanics(o) && <p className="text-xs font-sans text-muted mb-3 leading-snug">{mechanics(o)}</p>}
               <p className={`text-base font-serif font-medium text-green-800${onEnquiry ? ' italic' : ''}`}>

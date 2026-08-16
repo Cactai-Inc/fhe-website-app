@@ -72,12 +72,12 @@ export default function BookSupport() {
     <>
       <Seo title={SEO.title} description={SEO.description} path="/acquisition" service={SEO.service} />
     <div className="min-h-screen bg-cream pt-24 pb-20">
-      {/* Owner, 2026-08-16: this page read as "designed for a skinny screen".
-          Cause: `container-site` is already max-w-7xl (1280px), and this
-          max-w-3xl override cut it to 768px — narrower than a tablet in
-          landscape. max-w-5xl (1024px) gives the cards room to sit side by side
-          without the copy running to uncomfortable line lengths. */}
-      <div className="container-site max-w-5xl">
+      {/* Owner, 2026-08-16: was max-w-3xl (768px) — a "skinny screen" width, and
+          with three columns it left only ~250px of text per card, which is what
+          broke the italic taglines into one word per line. This page carries the
+          widest content on the site (three vertical cards side by side), so it
+          takes container-site's own max-w-7xl: ~325px of text per column. */}
+      <div className="container-site">
 
         {/* Step indicator */}
         <div className="mb-12">
