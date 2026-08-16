@@ -7,15 +7,20 @@ import {
   listPaymentNotifications,
   findCandidateOrders,
   dismissNotification,
+  listPaymentClaims,
+  confirmPaymentClaim,
+  declinePaymentClaim,
   type PaymentNotification,
   type PaymentNotificationStatus,
   type CandidateOrder,
+  type PaymentClaim,
+  type ClaimStatus,
 } from '../../../lib/ops/api-payments';
 import { useDocumentTitle } from '../../../lib/hooks';
 
 /**
- * OPS-PAY-REVIEW — the Zelle payment review queue (core payments, NOT
- * module-gated; the route enforces admin).
+ * OPS-PAY-REVIEW — the payment review queue (core payments, NOT module-gated;
+ * the route enforces admin).
  *
  * Staff opens /app/ops/payments/review → the 'review' bucket of
  * payment_notifications (server reconciliation routes ambiguous /
@@ -24,15 +29,24 @@ import { useDocumentTitle } from '../../../lib/hooks';
  * context plus candidate awaiting_payment orders looked up by the SAME keys
  * the server matcher used (unique_amount, then payment_reference), each
  * linking to its order page. 'Dismiss' closes the item without confirming
- * anything (terminal status; see api-payments.dismissNotification).
- * Payment CONFIRMATION is intentionally absent: it stays server-side
- * (reconcile / webhook) and is never triggered from this UI.
+ * anything (terminal status; see api-payments.dismissNotification). Automatic
+ * matching CONFIRMATION is intentionally absent from this bucket: it stays
+ * server-side (reconcile / webhook) and is never triggered from this UI.
+ *
+ * CASHCONFIRM — a FOURTH bucket, 'Client claims', added alongside the three
+ * above (not a replacement): client-reported claims (report_my_payment,
+ * either zelle or cash) that DO get a staff confirm/decline button here,
+ * because unlike a Zelle notification a claim has no automatic settlement
+ * path at all. See ClaimsQueue below.
  */
 
-const BUCKETS: { key: PaymentNotificationStatus; label: string }[] = [
+type Bucket = PaymentNotificationStatus | 'claims';
+
+const BUCKETS: { key: Bucket; label: string }[] = [
   { key: 'review', label: 'Needs review' },
   { key: 'unmatched', label: 'Unmatched' },
   { key: 'matched', label: 'Matched' },
+  { key: 'claims', label: 'Client claims' },
 ];
 
 function formatReceived(iso: string): string {
@@ -42,7 +56,7 @@ function formatReceived(iso: string): string {
 
 export function PaymentReviewPage() {
   useDocumentTitle('Payment review');
-  const [bucket, setBucket] = useState<PaymentNotificationStatus>('review');
+  const [bucket, setBucket] = useState<Bucket>('review');
   const [rows, setRows] = useState<PaymentNotification[]>([]);
   const [selected, setSelected] = useState<PaymentNotification | null>(null);
   const [candidates, setCandidates] = useState<CandidateOrder[]>([]);
@@ -52,7 +66,8 @@ export function PaymentReviewPage() {
   const toast = useToast();
 
   const refresh = useCallback(
-    async (status: PaymentNotificationStatus) => {
+    async (status: Bucket) => {
+      if (status === 'claims') return; // ClaimsQueue fetches its own rows
       const data = await load.run(status);
       setRows(data);
     },
@@ -106,8 +121,10 @@ export function PaymentReviewPage() {
         <p className="eyebrow mb-2">Ops · Payments</p>
         <h1 className="heading-section text-green-800">Payment review</h1>
         <p className="mt-1 text-sm text-green-800/70">
-          Zelle notifications the server could not auto-match. Confirmation itself happens
-          server-side — this queue is for context and triage only.
+          Zelle notifications the server could not auto-match — confirmation for those happens
+          server-side, this queue is context and triage only. Client-reported claims (Zelle or
+          cash) are different: they are a buyer's own word that they paid, and staff confirm or
+          decline them right here.
         </p>
       </header>
 
@@ -141,88 +158,307 @@ export function PaymentReviewPage() {
         </div>
       ))}
 
+      {bucket === 'claims' ? (
+        <ClaimsQueue toast={toast} />
+      ) : (
+        <>
+          {load.isError ? (
+            <p role="alert" className="form-error text-sm">
+              {load.error?.message ?? 'Could not load payment notifications.'}
+            </p>
+          ) : (
+            <DataTable
+              columns={columns}
+              rows={rows}
+              rowKey={(r) => r.id}
+              loading={load.isPending && rows.length === 0}
+              onRowClick={openMatchPanel}
+              emptyTitle="Queue is clear"
+              emptyMessage="No notifications in this bucket."
+            />
+          )}
+
+          {selected && (
+            <section
+              aria-label="Manual matching"
+              data-testid="match-panel"
+              className="rounded border border-green-800/15 bg-white p-5 space-y-4"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="font-serif text-lg text-green-900">Manual matching</h2>
+                  <p className="text-sm text-green-800/70">
+                    {selected.parsed_sender ?? 'Unknown sender'} ·{' '}
+                    <Money amount={selected.parsed_amount} />
+                    {selected.parsed_reference ? ` · ref ${selected.parsed_reference}` : ''}
+                  </p>
+                  {selected.raw_subject && (
+                    <p className="mt-1 text-sm text-green-900">{selected.raw_subject}</p>
+                  )}
+                  {selected.raw_body && (
+                    <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap rounded bg-green-800/5 p-3 text-xs text-green-900">
+                      {selected.raw_body}
+                    </pre>
+                  )}
+                </div>
+                {selected.status !== 'matched' && (
+                  <AsyncButton
+                    className="btn-secondary"
+                    pendingLabel="Dismissing…"
+                    onClick={() => dismiss(selected)}
+                  >
+                    Dismiss
+                  </AsyncButton>
+                )}
+              </div>
+
+              <div>
+                <h3 className="form-label mb-2">Candidate orders (awaiting payment)</h3>
+                {matches.isPending ? (
+                  <p className="text-sm text-green-800/70" data-testid="candidates-loading">
+                    Searching…
+                  </p>
+                ) : matches.isError ? (
+                  <p role="alert" className="form-error text-sm">
+                    {matches.error?.message ?? 'Could not search for candidate orders.'}
+                  </p>
+                ) : candidates.length === 0 ? (
+                  <p className="text-sm text-green-800/70" data-testid="candidates-empty">
+                    No awaiting-payment order matches this amount or reference.
+                  </p>
+                ) : (
+                  <ul className="divide-y divide-green-800/10">
+                    {candidates.map((order) => (
+                      <li key={order.id} className="flex items-center justify-between gap-4 py-2.5">
+                        <div className="text-sm text-green-900">
+                          <Money amount={order.unique_amount ?? order.total} />
+                          {order.payment_reference ? ` · ref ${order.payment_reference}` : ''}
+                          <span className="ml-2 text-green-800/60">
+                            created {formatReceived(order.created_at)}
+                          </span>
+                        </div>
+                        <Link className="link-underline text-sm" to={`/order/${order.id}`}>
+                          Open order
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </section>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+/**
+ * CASHCONFIRM — client-reported claims (either zelle or cash), a bucket alongside
+ * the notification queue above, not a replacement for it. Self-contained: fetches
+ * its own rows for a claim-status sub-bucket (pending/confirmed/declined),
+ * confirms through confirm_payment_claim (→ mark_purchase_paid, the same spine a
+ * matched Zelle payment settles through), or declines with a required reason.
+ * `toast` is shared with the parent page so both queues render through one
+ * toast strip.
+ */
+const CLAIM_BUCKETS: { key: ClaimStatus; label: string }[] = [
+  { key: 'pending', label: 'Pending' },
+  { key: 'confirmed', label: 'Confirmed' },
+  { key: 'declined', label: 'Declined' },
+];
+
+function formatClaimed(iso: string): string {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? iso : d.toLocaleString();
+}
+
+function ClaimsQueue({ toast }: { toast: ReturnType<typeof useToast> }) {
+  const [claimBucket, setClaimBucket] = useState<ClaimStatus>('pending');
+  const [claims, setClaims] = useState<PaymentClaim[]>([]);
+  const [selected, setSelected] = useState<PaymentClaim | null>(null);
+  const [showDecline, setShowDecline] = useState(false);
+  const [declineReason, setDeclineReason] = useState('');
+
+  const load = useAsync(listPaymentClaims);
+
+  const refresh = useCallback(
+    async (status: ClaimStatus) => {
+      const data = await load.run(status);
+      setClaims(data);
+    },
+    [load],
+  );
+
+  useEffect(() => {
+    setSelected(null);
+    setShowDecline(false);
+    setDeclineReason('');
+    refresh(claimBucket).catch(() => {
+      /* surfaced via load.isError */
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [claimBucket]);
+
+  const confirm = async (row: PaymentClaim) => {
+    try {
+      await confirmPaymentClaim(row.id);
+      toast.success(
+        `Marked paid — ${row.client_reported_method === 'cash' ? 'cash' : 'Zelle'}.`,
+      );
+      setSelected(null);
+      await refresh(claimBucket);
+    } catch (err) {
+      toast.error(toErrorMessage(err, 'Could not confirm the payment.'));
+    }
+  };
+
+  const decline = async (row: PaymentClaim) => {
+    const reason = declineReason.trim();
+    if (!reason) return;
+    try {
+      await declinePaymentClaim(row.id, reason);
+      toast.success('Claim declined.');
+      setSelected(null);
+      setShowDecline(false);
+      setDeclineReason('');
+      await refresh(claimBucket);
+    } catch (err) {
+      toast.error(toErrorMessage(err, 'Could not decline the claim.'));
+    }
+  };
+
+  const columns: Column<PaymentClaim>[] = [
+    { key: 'claimed', header: 'Claimed', render: (r) => formatClaimed(r.client_reported_at) },
+    { key: 'buyer', header: 'Buyer', render: (r) => r.buyer_name ?? '—' },
+    { key: 'order', header: 'Order', render: (r) => r.display_code ?? '—' },
+    { key: 'amount', header: 'Amount', render: (r) => <Money amount={r.amount} /> },
+    {
+      key: 'method',
+      header: 'Method',
+      render: (r) => (r.client_reported_method === 'cash' ? 'Cash' : 'Zelle'),
+    },
+    { key: 'reference', header: 'Reference', render: (r) => r.client_reported_reference ?? '—' },
+  ];
+  if (claimBucket === 'declined') {
+    columns.push({
+      key: 'reason',
+      header: 'Reason',
+      render: (r) => r.client_claim_decline_reason ?? '—',
+    });
+  }
+
+  return (
+    <div className="space-y-6">
+      <nav aria-label="Claim buckets" className="flex gap-2">
+        {CLAIM_BUCKETS.map((b) => (
+          <button
+            key={b.key}
+            type="button"
+            aria-pressed={claimBucket === b.key}
+            className={`rounded-full px-4 py-1.5 text-sm border transition-colors ${
+              claimBucket === b.key
+                ? 'border-green-800 bg-green-800 text-white'
+                : 'border-green-800/20 bg-white text-green-900 hover:border-green-800/40'
+            }`}
+            onClick={() => setClaimBucket(b.key)}
+          >
+            {b.label}
+          </button>
+        ))}
+      </nav>
+
       {load.isError ? (
         <p role="alert" className="form-error text-sm">
-          {load.error?.message ?? 'Could not load payment notifications.'}
+          {load.error?.message ?? 'Could not load payment claims.'}
         </p>
       ) : (
         <DataTable
           columns={columns}
-          rows={rows}
+          rows={claims}
           rowKey={(r) => r.id}
-          loading={load.isPending && rows.length === 0}
-          onRowClick={openMatchPanel}
+          loading={load.isPending && claims.length === 0}
+          onRowClick={claimBucket === 'pending' ? (row) => setSelected(row) : undefined}
           emptyTitle="Queue is clear"
-          emptyMessage="No notifications in this bucket."
+          emptyMessage={
+            claimBucket === 'pending'
+              ? 'No client-reported claims waiting on staff.'
+              : 'Nothing here yet.'
+          }
         />
       )}
 
       {selected && (
         <section
-          aria-label="Manual matching"
-          data-testid="match-panel"
+          aria-label="Confirm or decline claim"
+          data-testid="claim-panel"
           className="rounded border border-green-800/15 bg-white p-5 space-y-4"
         >
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h2 className="font-serif text-lg text-green-900">Manual matching</h2>
-              <p className="text-sm text-green-800/70">
-                {selected.parsed_sender ?? 'Unknown sender'} · <Money amount={selected.parsed_amount} />
-                {selected.parsed_reference ? ` · ref ${selected.parsed_reference}` : ''}
-              </p>
-              {selected.raw_subject && (
-                <p className="mt-1 text-sm text-green-900">{selected.raw_subject}</p>
-              )}
-              {selected.raw_body && (
-                <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap rounded bg-green-800/5 p-3 text-xs text-green-900">
-                  {selected.raw_body}
-                </pre>
-              )}
-            </div>
-            {selected.status !== 'matched' && (
-              <AsyncButton
-                className="btn-secondary"
-                pendingLabel="Dismissing…"
-                onClick={() => dismiss(selected)}
-              >
-                Dismiss
-              </AsyncButton>
-            )}
+          <div>
+            <h2 className="font-serif text-lg text-green-900">
+              {selected.buyer_name ?? 'Unknown buyer'} · <Money amount={selected.amount} />
+            </h2>
+            <p className="text-sm text-green-800/70">
+              Says they paid by {selected.client_reported_method === 'cash' ? 'cash' : 'Zelle'}
+              {selected.client_reported_reference
+                ? ` · ref ${selected.client_reported_reference}`
+                : ''}
+              {' · claimed '}
+              {formatClaimed(selected.client_reported_at)}
+            </p>
+            <p className="mt-2 text-xs text-green-800/60">
+              This is a claim, not a confirmed payment — the buyer said this; staff have not
+              verified it yet.
+            </p>
           </div>
 
-          <div>
-            <h3 className="form-label mb-2">Candidate orders (awaiting payment)</h3>
-            {matches.isPending ? (
-              <p className="text-sm text-green-800/70" data-testid="candidates-loading">
-                Searching…
-              </p>
-            ) : matches.isError ? (
-              <p role="alert" className="form-error text-sm">
-                {matches.error?.message ?? 'Could not search for candidate orders.'}
-              </p>
-            ) : candidates.length === 0 ? (
-              <p className="text-sm text-green-800/70" data-testid="candidates-empty">
-                No awaiting-payment order matches this amount or reference.
-              </p>
-            ) : (
-              <ul className="divide-y divide-green-800/10">
-                {candidates.map((order) => (
-                  <li key={order.id} className="flex items-center justify-between gap-4 py-2.5">
-                    <div className="text-sm text-green-900">
-                      <Money amount={order.unique_amount ?? order.total} />
-                      {order.payment_reference ? ` · ref ${order.payment_reference}` : ''}
-                      <span className="ml-2 text-green-800/60">
-                        created {formatReceived(order.created_at)}
-                      </span>
-                    </div>
-                    <Link className="link-underline text-sm" to={`/order/${order.id}`}>
-                      Open order
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+          {!showDecline ? (
+            <div className="flex gap-2">
+              <AsyncButton
+                className="btn-primary"
+                pendingLabel="Confirming…"
+                onClick={() => confirm(selected)}
+              >
+                Confirm payment
+              </AsyncButton>
+              <button type="button" className="btn-secondary" onClick={() => setShowDecline(true)}>
+                Decline
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <label className="form-label" htmlFor="decline-reason">
+                Why is this claim being declined?
+              </label>
+              <textarea
+                id="decline-reason"
+                className="form-input"
+                rows={2}
+                value={declineReason}
+                onChange={(e) => setDeclineReason(e.target.value)}
+              />
+              <div className="flex gap-2">
+                <AsyncButton
+                  className="btn-primary"
+                  pendingLabel="Declining…"
+                  disabled={!declineReason.trim()}
+                  onClick={() => decline(selected)}
+                >
+                  Confirm decline
+                </AsyncButton>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => {
+                    setShowDecline(false);
+                    setDeclineReason('');
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </section>
       )}
     </div>
