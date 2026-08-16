@@ -124,10 +124,8 @@ export default function Story() {
             {/* Text narrows to 5 of 12 (owner, 2026-08-16) so the image can take 7. */}
             <Reveal className="lg:col-span-5">
               <p className="eyebrow mb-6">Our Story</p>
-              <h1 className="heading-display text-green-900 text-[clamp(2.5rem,6.5vw,4.75rem)]">
-                Coastal Air &amp;
-                <br />
-                Endless Trails
+              <h1 className="heading-display text-green-900 text-[clamp(2rem,4.4vw,3.4rem)] [text-wrap:balance]">
+                Coastal Air &amp; Endless Trails
               </h1>
               <div className="mt-8 space-y-6 max-w-xl">
                 <p className="body-text text-lg">
@@ -214,25 +212,26 @@ export default function Story() {
               <Reveal>
                 <p className="eyebrow-on-dark mb-6">What You&rsquo;ll Find</p>
                 <h2 className="font-display font-medium text-white text-[clamp(2rem,4.5vw,3.5rem)] leading-[1.1]">
-                  New friends.
+                  New Friends
                   <br />
-                  New adventures.
+                  New Adventures
                   <br />
-                  <span className="text-gold-300">A new you.</span>
+                  {/* Same gold as every other accent on the page (gold-300). */}
+                  <span className="text-gold-300">A New You</span>
                 </h2>
                 <div className="mt-8 space-y-5">
-                  <p className="text-on-dark-soft body-text text-lg">
+                  <p className="text-white body-text text-lg">
                     You come for the riding. What you keep is everything around it
                     — the women who become your people, the standing plans, the
                     text thread that carries on long after you have untacked.
                   </p>
-                  <p className="text-on-dark-soft body-text text-lg">
+                  <p className="text-white body-text text-lg">
                     And it is an adventure. Trails you had never taken, a canter
                     that finally clicks, a horse who learns your voice. Small brave
                     things, one after another, until they add up to something that
                     feels a lot like courage.
                   </p>
-                  <p className="text-on-dark-soft body-text text-lg">
+                  <p className="text-white body-text text-lg">
                     Somewhere in the middle of all of it, you notice you have
                     changed. Steadier. Lighter. More yourself than you have been in
                     a long while. That is the part no one warns you about — and the
@@ -250,14 +249,18 @@ export default function Story() {
           belonging as the emotional payoff. Editorial craft — big heritage
           headline, a pulled quote, then a warm image. On cream (light ground),
           so all text is dark-on-light (correct). Followed by the Ways In. */}
+      {/* pt-20/28 → pt-32/40 (owner, 2026-08-16: "needs space above the section
+          name, its too close to the other section") — this follows the
+          full-bleed green band, which has no bottom padding of its own, so the
+          eyebrow was sitting almost on the seam. */}
       <section className="bg-cream">
-        <div className="container-site pt-20 pb-16 sm:pt-28 sm:pb-24">
+        <div className="container-site pt-32 pb-16 sm:pt-40 sm:pb-24">
           <Reveal className="max-w-3xl">
             <p className="eyebrow mb-6">The Community</p>
-            <h2 className="heading-display text-green-900 text-[clamp(2.35rem,5.8vw,4.25rem)]">
-              You will not
-              <br />
-              ride alone.
+            {/* One line, title case, no period (owner). The clamp comes down
+                because the line is now ~24 chars instead of two short ones. */}
+            <h2 className="heading-display text-green-900 text-[clamp(1.9rem,4.2vw,3.2rem)] [text-wrap:balance]">
+              You Will Not Ride Alone
             </h2>
           </Reveal>
 
@@ -317,18 +320,46 @@ export default function Story() {
               the onward link to /shop now that S4 is image-only). */}
           <div className="mt-20 sm:mt-28">
             <div className="rule-gold" />
-            <Reveal className="max-w-2xl mt-12 sm:mt-16 mb-10 sm:mb-14">
-              <p className="eyebrow mb-5">The Ways In</p>
-              <h3 className="heading-section text-green-900">
-                Find the way that fits you.
-              </h3>
-              <p className="body-text mt-6 text-lg">
-                However you begin — a first lesson, a standing place in the
-                community, care for a horse of your own — there is a clear path
-                in, arranged personally. Explore what feels right, and we will
-                meet you there.
-              </p>
-            </Reveal>
+            {/* Owner, 2026-08-16: "it needs something to tie it all together and
+                make the section a bit taller… a mosaic of the images used so it
+                shows all 4 photos… making the text section narrower."
+                So: the intro narrows to 5 of 12 columns and a 2x2 mosaic of the
+                page's own four photographs sits beside it. That does three things
+                at once — it ties the section to the story above it, it makes the
+                block tall enough that the closing beat stays below the fold, and
+                it gives the copy a shape instead of a wide orphaned paragraph.
+                The mosaic is decorative (the images are all described in context
+                above), so it is aria-hidden rather than repeating four labels. */}
+            <div className="mt-12 sm:mt-16 mb-10 sm:mb-14 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
+              <Reveal className="lg:col-span-5">
+                <p className="eyebrow mb-5">The Ways In</p>
+                <h3 className="heading-section text-green-900">
+                  Find the way that fits you.
+                </h3>
+                <p className="body-text mt-6 text-lg">
+                  However you begin — a first lesson, a standing place in the
+                  community, care for a horse of your own — there is a clear path
+                  in, arranged personally. Explore what feels right, and we will
+                  meet you there.
+                </p>
+              </Reveal>
+
+              <Reveal className="lg:col-span-7" delay={120}>
+                <div className="grid grid-cols-2 gap-3 sm:gap-4" aria-hidden="true">
+                  {[HERO_A, STABLES, TRAIL, HERO_B].map((src, i) => (
+                    <div
+                      key={i}
+                      className="aspect-[4/3] overflow-hidden bg-green-900"
+                      style={{
+                        backgroundImage: `url('${src}')`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                      }}
+                    />
+                  ))}
+                </div>
+              </Reveal>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
               {WAYS_IN.map((w, i) => (
