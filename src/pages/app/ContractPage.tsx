@@ -317,6 +317,11 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   // of buttons. The page no longer asks for a drawer programmatically: the only
   // caller was Add-a-Comment, which is gone.
   const [openRequestCount, setOpenRequestCount] = useState(0);
+  /** "Revise" on a pending item — drives both ContractSubheader's openRequest
+   *  (opens the Requests drawer) and ContractChangeRequests' openSectionRequest
+   *  (pre-opens that section's row), off one shared nonce so a second Revise on
+   *  the same section still re-fires even if the row was closed since. */
+  const [reviseRequest, setReviseRequest] = useState<{ sectionKey: string; nonce: number } | null>(null);
   const [voidModal, setVoidModal] = useState(false);
   /** Feedback for the party-controls rules, shown beside those controls. It is
    *  cleared whenever the controls reload, so a message never outlives the state
@@ -1158,6 +1163,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       {showDeck && id && !isExecuted && (
         <ContractSubheader
           viewers={viewers}
+          openRequest={reviseRequest ? { key: 'requests', nonce: reviseRequest.nonce } : undefined}
           /* WHICH SURFACES THIS DOCUMENT CAN HAVE (TASK ONEAUTHOR).
              The drawer machinery is already generic — every one of these just
              watches `changeKey` and does not care what kind of document it is.
@@ -1187,6 +1193,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                   refreshKey={changeKey}
                   onCount={setOpenRequestCount}
                   onChanged={() => { void load({ blank: false }); }}
+                  openSectionRequest={reviseRequest ? { key: reviseRequest.sectionKey, nonce: reviseRequest.nonce } : undefined}
                   inDrawer
                 />
               ),
@@ -1843,15 +1850,12 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         <ClauseDocument
           sections={structure.sections}
           fields={detail.fields}
+          documentId={id!}
           isOwnerSide={isOwnerSide}
           hasPartyRole={myRoles.length > 0}
           pendingCompositions={redline?.pending_compositions ?? []}
-          onPendingChanged={() => void load({ blank: false })}
-          /* Scoped-to-section deep link is out of scope here — drawer
-             open/closed lives entirely in ContractSubheader (one owner, one
-             set, per that component's own note), so "Revise" scrolls up to
-             where Requests lives rather than reaching into its state. */
-          onRevise={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          onChanged={() => void load({ blank: false })}
+          onRevise={(sectionKey) => setReviseRequest((cur) => ({ sectionKey, nonce: (cur?.nonce ?? 0) + 1 }))}
           cb={{
             editable: editablePhase,
             authorView: isOwnerSide && editablePhase,
@@ -2223,6 +2227,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                 refreshKey={changeKey}
                 onCount={setOpenRequestCount}
                 onChanged={() => { void load({ blank: false }); }}
+                openSectionRequest={reviseRequest ? { key: reviseRequest.sectionKey, nonce: reviseRequest.nonce } : undefined}
               />
             </div>
           )}
