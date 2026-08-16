@@ -115,7 +115,7 @@ export default function Story() {
     <>
       <Seo title={seo.title} description={seo.description} path="/story" />
 
-      {/* ══ SECTION 1 · The place — "Coastal air, and trails without end." ══
+      {/* ══ SECTION 1 · The place — "Coastal Air & Endless Trails" ══
           Establish the coastal world she belongs to. IMAGE: new establishing
           shot (placeholder green band for now). */}
       <section className="bg-cream">
@@ -124,9 +124,9 @@ export default function Story() {
             <Reveal className="lg:col-span-6">
               <p className="eyebrow mb-6">Our Story</p>
               <h1 className="heading-display text-green-900 text-[clamp(2.5rem,6.5vw,4.75rem)]">
-                Coastal air,
+                Coastal Air &amp;
                 <br />
-                and trails without end.
+                Endless Trails
               </h1>
               <div className="mt-8 space-y-6 max-w-xl">
                 <p className="body-text text-lg">
