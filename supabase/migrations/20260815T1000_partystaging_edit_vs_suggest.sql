@@ -671,12 +671,13 @@ BEGIN
     FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
    WHERE n.nspname = 'public' AND p.proname = 'contract_document_detail';
   IF v_src IS NULL THEN RAISE EXCEPTION 'contract_document_detail not found'; END IF;
-  IF position('''added_by_contact_id''' in v_src) > 0 THEN RETURN; END IF;   -- already patched
+  IF position('''added_by_me''' in v_src) > 0 THEN RETURN; END IF;   -- already patched
   v_src := replace(v_src,
 $old$          'custom_kind', cf.custom_kind, 'body', cf.body,$old$,
 $new$          'custom_kind', cf.custom_kind, 'body', cf.body,
-          'added_by_contact_id', cf.added_by_contact_id,$new$);
-  IF position('''added_by_contact_id''' in v_src) = 0 THEN
+          'added_by_contact_id', cf.added_by_contact_id,
+          'added_by_me', cf.added_by_contact_id IS NOT NULL AND cf.added_by_contact_id = current_contact_id(),$new$);
+  IF position('''added_by_me''' in v_src) = 0 THEN
     RAISE EXCEPTION 'contract_document_detail rewrite did not match its anchor';
   END IF;
   EXECUTE v_src;

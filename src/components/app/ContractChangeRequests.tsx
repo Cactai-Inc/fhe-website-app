@@ -291,7 +291,7 @@ function Thread({
 }
 
 export function ContractChangeRequests({
-  documentId, canRequest, onChanged, onCount, refreshKey, inDrawer = false,
+  documentId, canRequest, onChanged, onCount, refreshKey, inDrawer = false, openSectionRequest,
 }: {
   documentId: string;
   /** False once the document is locked/executed/void — the DB refuses anyway. */
@@ -301,6 +301,12 @@ export function ContractChangeRequests({
   refreshKey?: number;
   /** Rendered inside the contract subheader's drawer, which already scrolls. */
   inDrawer?: boolean;
+  /** Lets a caller pre-open one tree row (e.g. "Revise" on a pending item) —
+   *  same {key, nonce} shape as ContractSubheader's openRequest, so a second
+   *  request for the SAME key still re-fires (the row may have been closed
+   *  since). Purely additive to the existing open Set: never closes anything
+   *  else, never disturbs a row's own toggle state. */
+  openSectionRequest?: { key: string; nonce: number };
 }) {
   const [tree, setTree] = useState<SectionTreeNode[] | null>(null);
   const [entries, setEntries] = useState<ContractChangeRequestEntry[] | null>(null);
@@ -325,6 +331,13 @@ export function ContractChangeRequests({
   useEffect(() => { load(); }, [load, refreshKey]);
   useEffect(() => { contractSectionTree(documentId).then(setTree).catch(() => setTree([])); }, [documentId]);
   useEffect(() => { myCommentIdentity(documentId).then(setMyContactId).catch(() => setMyContactId(null)); }, [documentId]);
+  useEffect(() => {
+    if (!openSectionRequest) return;
+    const { key } = openSectionRequest;
+    setOpen((s) => (s.has(key) ? s : new Set(s).add(key)));
+    setLastOpened(key);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openSectionRequest?.key, openSectionRequest?.nonce]);
 
   const { roots, repliesByParent, draftFor } = useMemo(() => {
     const all = entries ?? [];
