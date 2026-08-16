@@ -395,17 +395,27 @@ export default function Story() {
           visual bookend, the place looking toward the hills.
           The image band keeps `aria-hidden` (it is decorative again, and its own
           aria-label describes it); the sentence lives in real text above. */}
+      {/* Owner, 2026-08-16: the padding here was symmetric (py-20/28/32), so the
+          space BELOW the line matched the space above it and pushed the image
+          away. The top keeps its breathing room; the bottom is cut to a third,
+          so the photograph sits close under the words.
+          `leading-tight` (not the display default) opens the two stacked lines a
+          little without letting them drift apart. */}
       <section className="bg-cream">
-        <div className="container-site py-20 sm:py-28 lg:py-32">
-          <p className="heading-display text-green-900 text-center mx-auto max-w-3xl [text-wrap:balance] text-[clamp(1.6rem,3.6vw,2.6rem)]">
+        <div className="container-site pt-20 pb-8 sm:pt-28 sm:pb-10 lg:pt-32 lg:pb-12">
+          <p className="heading-display leading-tight text-green-900 text-center mx-auto max-w-3xl [text-wrap:balance] text-[clamp(1.6rem,3.6vw,2.6rem)]">
             Friendship &amp; Adventure at French Heritage Equestrian
           </p>
         </div>
       </section>
 
+      {/* Height trimmed (70vh → 58vh on desktop) so this whole closing beat —
+          the line plus the image — lands inside one viewport, with the image's
+          bottom edge meeting the footer at the fold, per the owner's reference
+          screenshot. */}
       <section
         data-header-tone="dark"
-        className="relative bg-green-900 overflow-hidden h-[52vh] sm:h-[62vh] lg:h-[70vh]"
+        className="relative bg-green-900 overflow-hidden h-[46vh] sm:h-[52vh] lg:h-[58vh]"
         aria-hidden="true"
       >
         {/* Hero B — the bookend: the place, toward the hills. */}
