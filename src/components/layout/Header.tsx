@@ -31,11 +31,15 @@ import { useCart } from '../../contexts/CartContext';
 // One nav, consistent everywhere. The rider funnel is reached via the big
 // central CTA + Our Story, so the nav surfaces the OTHER offerings (no
 // redundant "Ride With Us"), and adds the previously-missing horse services.
+/* Owner, 2026-08-16: Book a Lesson takes Say Hello's place in the main nav —
+ * booking is the thing a visitor came to do, so it belongs in the primary row.
+ * Say Hello moves to the right corner (below); Member Area and Sign In leave the
+ * header entirely and live in the footer only. */
 const NAV_LINKS = [
   { label: 'Our Story', href: '/story' },
   { label: 'Horse Care Services', href: '/horse' },
   { label: 'Find a Horse', href: '/acquisition' },
-  { label: 'Say Hello', href: '/contact' },
+  { label: 'Book a Lesson', href: '/lessons' },
 ];
 
 export default function Header() {
@@ -260,26 +264,15 @@ export default function Header() {
           {/* Cart — top-right on desktop. */}
           {cart('hidden md:inline-flex')}
 
-          {/* Member entrance — signed-in members only. */}
-          {user && (
-            <Link
-              to="/app"
-              className={`hidden md:inline-flex text-[11px] font-sans tracking-widest uppercase transition-colors duration-[400ms] focus-ring-dark ${heroShadow} ${
-                overDark ? 'text-gold-300 hover:text-gold-200' : 'text-gold-800 hover:text-gold-900'
-              }`}
-            >
-              Member Area
-            </Link>
-          )}
-
-          {!user && (
-            <Link
-              to="/login"
-              className={`hidden md:inline-flex items-center min-h-[44px] text-[11px] font-sans tracking-widest uppercase transition-colors duration-[400ms] focus-ring-dark ${subtleText} ${heroShadow}`}
-            >
-              Sign In
-            </Link>
-          )}
+          {/* Say Hello — the right corner. Member Area and Sign In used to sit
+              here; both moved to the footer (owner, 2026-08-16), so a first-time
+              visitor sees one way in and no account chrome. */}
+          <Link
+            to="/contact"
+            className={`hidden md:inline-flex items-center min-h-[44px] text-[11px] font-sans tracking-widest uppercase transition-colors duration-[400ms] focus-ring-dark ${subtleText} ${heroShadow}`}
+          >
+            Say Hello
+          </Link>
 
           {/* Mobile menu button (nav links only — the cart is NOT in here). */}
           <button
@@ -314,6 +307,19 @@ export default function Header() {
                 {link.label}
               </Link>
             ))}
+            {/* Say Hello — the mobile equivalent of the desktop right corner. */}
+            <Link
+              to="/contact"
+              className="text-sm font-sans tracking-widest uppercase text-white/85 hover:text-white transition-colors focus-ring-dark"
+            >
+              Say Hello
+            </Link>
+
+            {/* Account entrance stays HERE but not in the desktop bar (owner,
+                2026-08-16): "mobile menu can have sign in on it because there is
+                plenty of room and getting to the footer on a mobile device is
+                much larger amount of scrolling." The desktop footer is a short
+                scroll; a phone footer is not. */}
             {user ? (
               <Link
                 to="/app"

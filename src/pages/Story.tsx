@@ -87,16 +87,13 @@ function Reveal({
 /* Owner, 2026-08-16: Membership is dropped — there is no membership product
  * (D4 defers it) — and each card points at its own category page rather than
  * the generic /shop.
- *   Riding Lessons   → /lessons     (the rider funnel)
- *   Horse Leasing    → /acquisition (HORSE_LEASE_IN/OUT_ASSISTANCE live there)
- *   Horse Purchasing → /acquisition (HORSE_PURCHASE/SALE_ASSISTANCE, Finder, Evaluation)
- *   Horse Care       → /horse       (training, exercise, clipping)
- * ⚠️ Leasing and purchasing BOTH resolve to /acquisition today: all six of those
- * services sit in the `acquisition` segment and that page renders the segment
- * whole, with no per-category filter. The two cards are therefore honest about
- * where they go, but they land on the same page. Splitting them needs either a
- * filter param on /acquisition or two dedicated pages — flagged to the owner,
- * not invented here. */
+ *   Riding Lessons   → /lessons     (Book a Lesson — the rider funnel)
+ *   Horse Leasing    → /acquisition (Find a Horse)
+ *   Horse Purchasing → /acquisition (Find a Horse)
+ *   Horse Care       → /horse       (Horse Care Services)
+ * Owner ruling 2026-08-16: leasing and purchasing BOTH go to Find a Horse. They
+ * share a destination deliberately — every lease/purchase/sale/finder service
+ * lives in the `acquisition` segment and that page shows them together. */
 const WAYS_IN = [
   {
     name: 'Riding Lessons',
