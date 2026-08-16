@@ -85,7 +85,13 @@ export default function Landing() {
             riders' faces instead of across them (centered content on a tall
             phone viewport landed the eyebrow right on the faces).
             sm+: centered, exactly as before. */}
-        <div className="relative z-10 h-full w-full flex items-end pb-[13dvh] sm:items-center sm:pb-0 justify-center px-5 sm:px-8">
+        {/* Owner, 2026-08-16: on desktop the block moves DOWN a little — the
+            "Carmel Creek Ranch" line should land slightly above where "Join Our
+            Riding Community" sits today. `sm:items-center` centred the whole
+            block; adding a top offset on the same centred axis pushes it down
+            without disturbing the phone layout (which stays bottom-anchored at
+            13dvh, owner spec 2026-08-14). */}
+        <div className="relative z-10 h-full w-full flex items-end pb-[13dvh] sm:items-center sm:pb-0 justify-center px-5 sm:px-8 sm:pt-[14vh]">
           <div className="w-full max-w-4xl text-center mx-auto">
 
             {/* Eyebrow / location — enlarged and brightened so it is clearly
