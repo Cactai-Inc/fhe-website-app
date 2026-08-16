@@ -6,6 +6,7 @@ import type { Offering } from '../../lib/types';
 import { listLessonClients, listScheduleHorses } from '../../lib/ops/api-lessons';
 import type { LessonClientOption, ScheduleHorseOption } from '../../lib/ops/api-lessons';
 import { BookingItemSwap } from '../../components/app/BookingItemSwap';
+import { FeeChooser } from '../../components/app/FeeChooser';
 import { SessionActivityForm } from './ops/lessons/SessionActivityForm';
 import {
   fetchLocations, addMyLocation,
@@ -22,11 +23,13 @@ import {
   setRecurringPlanEnd,
   setRecurringDay,
   generateMonthlyLessons,
+  fetchBookingFeeCharges,
   type CalendarItem,
   type CalendarLocation,
   type ClientPurchaseOption,
   type InstructorOption,
   type MonthlyPlan,
+  type BookingFeeCharge,
 } from '../../lib/ops/api-calendar';
 import { adminSendInvitation } from '../../lib/admin';
 
@@ -69,6 +72,18 @@ export function CalendarItemPanel({
   const [error, setError] = useState<string | null>(null);
   const done = useRef(false); // submitted/deleted → don't autosave a draft on close
   const [intakeSent, setIntakeSent] = useState(false); // A4 — horse-intake request sent to client
+
+  // FEECHOICE F3 — staff can charge a no-show/late-start fee on a booking with
+  // no reschedule request at all. Same chooser F1 uses on REVIEWQ's decision
+  // surface, just without a computed amount (nothing computed outside a
+  // reschedule ask).
+  const [showFeeChooser, setShowFeeChooser] = useState(false);
+  const [feeCharges, setFeeCharges] = useState<BookingFeeCharge[]>([]);
+  const loadFeeCharges = () => {
+    if (!item?.id) return;
+    fetchBookingFeeCharges(item.id).then(setFeeCharges).catch(() => setFeeCharges([]));
+  };
+  useEffect(loadFeeCharges, [item?.id]);
 
   const initialStart = item?.starts_at ?? defaultStart?.toISOString() ?? new Date().toISOString();
   const initialEnd =
@@ -733,6 +748,37 @@ export function CalendarItemPanel({
           {editing && item?.id && (item.kind === 'lesson' || item.kind === 'care') && (
             <div className="pt-1">
               <SessionActivityForm bookingId={item.id} />
+            </div>
+          )}
+
+          {/* FEECHOICE F3 — a no-show or late-start fee, applied directly to
+              this booking, no reschedule request required. */}
+          {editing && item?.id && (item.kind === 'lesson' || item.kind === 'care') && (
+            <div className="pt-1 flex flex-col gap-2">
+              {feeCharges.filter((c) => !c.superseded_by).length > 0 && (
+                <ul className="text-xs text-green-800/70 flex flex-col gap-0.5">
+                  {feeCharges.filter((c) => !c.superseded_by).map((c) => (
+                    <li key={c.id}>
+                      {c.policy_wording} — ${c.amount.toFixed(2)}
+                      {c.reason ? ` — ${c.reason}` : ''}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {!showFeeChooser ? (
+                <button type="button" className="btn-secondary text-xs px-3 py-1.5 self-start" onClick={() => setShowFeeChooser(true)}>
+                  Apply a fee
+                </button>
+              ) : (
+                <FeeChooser
+                  bookingId={item.id}
+                  onCancel={() => setShowFeeChooser(false)}
+                  onApplied={() => {
+                    setShowFeeChooser(false);
+                    loadFeeCharges();
+                  }}
+                />
+              )}
             </div>
           )}
 
