@@ -50,15 +50,23 @@ export default function Landing() {
         className="fixed inset-0 h-[100dvh] w-full overflow-x-hidden overflow-y-hidden bg-green-950"
       >
 
-        {/* Still background image — no animation. Positioned to hold the riders
-            and the coastline in frame across aspect ratios. */}
+        {/* Still background image — no animation.
+            PHONES (owner, 2026-08-16: "plenty of vertical height to scale it so
+            that the three horses and riders are fully in frame before cropping"):
+            `cover` on a 390x844 viewport scales the 1408x768 photo to 1547px wide
+            to fill the height — showing only 25% of its width, which is what cut
+            the outer two riders. `auto 100%`→ no; the fix is to size by WIDTH
+            (`100% auto`), so the whole frame is in shot at 390x213, and anchor it
+            high (`center 22%`) so the riders sit in the upper half where the
+            image actually is. The green ground below is the same `bg-green-950`
+            the scrim already blends into, so the band reads as deliberate
+            darkness under a sunset, not a missing image.
+            sm+ RETURNS TO `cover` — on wider viewports the aspect gap is small
+            (a laptop letterboxes only ~115px), so cover fills the frame with a
+            negligible crop, exactly as it did before. */}
         <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage: `url('${HERO_IMG}')`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center 32%',
-          }}
+          className="absolute inset-0 bg-green-950 bg-no-repeat [background-size:100%_auto] [background-position:center_22%] sm:[background-size:cover] sm:[background-position:center_32%]"
+          style={{ backgroundImage: `url('${HERO_IMG}')` }}
           role="img"
           aria-label="Three riders on horseback at a coastal San Diego ranch, at sunset."
         />
