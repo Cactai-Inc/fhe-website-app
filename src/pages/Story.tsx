@@ -133,11 +133,13 @@ export default function Story() {
           shot (placeholder green band for now). */}
       <section className="bg-cream">
         <div className="container-site pt-32 pb-16 sm:pt-40 sm:pb-24">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+          {/* items-start (was items-center): the owner wants the image aligned
+              with the TOP of the first paragraph, not floated to the middle. */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
             {/* Text narrows to 5 of 12 (owner, 2026-08-16) so the image can take 7. */}
             <Reveal className="lg:col-span-5">
               <p className="eyebrow mb-6">Our Story</p>
-              <h1 className="heading-display text-green-900 text-[clamp(2rem,4.4vw,3.4rem)] [text-wrap:balance]">
+              <h1 className="heading-display text-green-900 text-[clamp(1.75rem,3.6vw,2.9rem)] lg:whitespace-nowrap">
                 Coastal Air &amp; Endless Trails
               </h1>
               <div className="mt-8 space-y-6 max-w-xl">
@@ -412,7 +414,7 @@ export default function Story() {
           little without letting them drift apart. */}
       <section className="bg-cream">
         <div className="container-site pt-20 pb-8 sm:pt-28 sm:pb-10 lg:pt-32 lg:pb-12">
-          <p className="heading-display leading-tight text-green-900 text-center mx-auto max-w-3xl [text-wrap:balance] text-[clamp(1.6rem,3.6vw,2.6rem)]">
+          <p className="heading-display leading-[1.2] text-green-900 text-center mx-auto max-w-4xl [text-wrap:balance] text-[clamp(1.9rem,4.4vw,3.2rem)]">
             Friendship &amp; Adventure at French Heritage Equestrian
           </p>
         </div>
@@ -424,7 +426,7 @@ export default function Story() {
           screenshot. */}
       <section
         data-header-tone="dark"
-        className="relative bg-green-900 overflow-hidden h-[46vh] sm:h-[52vh] lg:h-[58vh]"
+        className="relative bg-green-900 overflow-hidden h-[58vh] sm:h-[64vh] lg:h-[70vh]"
         aria-hidden="true"
       >
         {/* Hero B — the bookend: the place, toward the hills. */}
