@@ -30,6 +30,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import { fromHere } from '../../../lib/linkOrigin';
+import { documentHref } from '../../../lib/documentHref';
 import { useAuth } from '../../../contexts/AuthContext';
 import { DataTable, StatusBadge } from '../../../lib/ops';
 import type { Column } from '../../../lib/ops';
@@ -132,7 +133,7 @@ const COLUMN_DEFS: Column<DocumentQueueRow>[] = [
       <Link
         // Contract/deal docs open the full contract workspace (fill, send, sign,
         // archive, delete); other docs open the read-only viewer.
-        to={row.contract_id ? `/app/contracts/${row.id}` : `/app/ops/documents/${row.id}`}
+        to={documentHref(row)}
         /* RETURN-TO-ORIGIN: back to the ops documents queue, not the member
            documents list. COLUMN_DEFS is module-level so there is no hook here —
            this surface has one fixed home, so naming it is exact, not a guess. */

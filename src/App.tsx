@@ -39,7 +39,7 @@ import Register from './pages/Register';
 import RegisterComplete from './pages/RegisterComplete';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
-import Account from './pages/Account';
+import Account, { ACCOUNT_PAGE_RETIRED } from './pages/Account';
 import OrderDetail from './pages/OrderDetail';
 // Member app
 import Home from './pages/app/Home';
@@ -113,7 +113,7 @@ import LessonsHubPage, { LESSONS_HUB_STANDALONE_RETIRED } from './pages/app/ops/
 import LessonPackagesPage from './pages/app/ops/lessons/LessonPackagesPage';
 import LessonCreditsPage from './pages/app/ops/lessons/LessonCreditsPage';
 import SessionsPage from './pages/app/ops/lessons/SessionsPage';
-import RecordsHubPage from './pages/app/ops/hubs/RecordsHubPage';
+import RecordsHubPage, { RECORDS_HUB_RETIRED } from './pages/app/ops/hubs/RecordsHubPage';
 import HorsePartiesPage from './pages/app/ops/records/HorsePartiesPage';
 import HorseHealthPage from './pages/app/ops/records/HorseHealthPage';
 import EmployeesHubPage from './pages/app/ops/hubs/EmployeesHubPage';
@@ -189,7 +189,11 @@ export function AppRoutes() {
               <Route path="/reset-password" element={<ResetPassword />} />
 
               {/* Signed-in but outside the member app */}
-              <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
+              {/* TASK-PAGEMERGE: retired — its one real capability (2FA) is now
+                  ported to /app/account's My Login section. */}
+              <Route path="/account" element={ACCOUNT_PAGE_RETIRED
+                ? <Navigate to="/app" replace />
+                : <ProtectedRoute><Account /></ProtectedRoute>} />
               <Route path="/order/:id" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
             </Route>
 
@@ -373,7 +377,12 @@ export function AppRoutes() {
               <Route path="ops/lessons/packages" element={<ProtectedRoute requireStaff><LessonPackagesPage /></ProtectedRoute>} />
               <Route path="ops/lessons/credits" element={<ProtectedRoute requireStaff><LessonCreditsPage /></ProtectedRoute>} />
               <Route path="ops/lessons/sessions" element={<ProtectedRoute requireStaff><SessionsPage /></ProtectedRoute>} />
-              <Route path="ops/records" element={<ProtectedRoute requireStaff><RecordsHubPage /></ProtectedRoute>} />
+              {/* TASK-PAGEMERGE: RecordsHubPage's own roster is retired (a third
+                  listing of the same horses); its two lane routes below are
+                  unaffected and keep resolving. */}
+              <Route path="ops/records" element={RECORDS_HUB_RETIRED
+                ? <Navigate to="/app/records/horses" replace />
+                : <ProtectedRoute requireStaff><RecordsHubPage /></ProtectedRoute>} />
               <Route path="ops/records/horses/:horseId/parties" element={<ProtectedRoute requireStaff><HorsePartiesPage /></ProtectedRoute>} />
               <Route path="ops/records/horses/:horseId/health" element={<ProtectedRoute requireStaff><HorseHealthPage /></ProtectedRoute>} />
               <Route path="ops/employees" element={<ProtectedRoute requireStaff><EmployeesHubPage /></ProtectedRoute>} />

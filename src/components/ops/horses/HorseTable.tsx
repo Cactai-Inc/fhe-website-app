@@ -1,6 +1,6 @@
 import { DataTable } from '../../../lib/ops';
 import type { Column } from '../../../lib/ops';
-import { contactName } from '../../../lib/ops/types';
+import { contactName, lookupName } from '../../../lib/ops/types';
 import type { Horse, LookupCode, Contact } from '../../../lib/ops/types';
 
 /**
@@ -16,11 +16,6 @@ export interface HorseTableProps {
   owners: Contact[];
   loading?: boolean;
   onRowClick: (horse: Horse) => void;
-}
-
-function lookupName(list: LookupCode[], code: string | null): string {
-  if (!code) return '—';
-  return list.find((l) => l.code === code)?.display_name ?? code;
 }
 
 export function HorseTable({ horses, breeds, colors, owners, loading, onRowClick }: HorseTableProps) {

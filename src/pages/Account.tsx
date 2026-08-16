@@ -193,3 +193,16 @@ export default function Account() {
     </div>
   );
 }
+
+/** RETIRED behind a boolean, never deleted (standing rule from 86a2c33).
+ *  TASK-PAGEMERGE (DUPECENSUS 3.1, "/account vs /app/account — two account
+ *  pages"): this page's own comment already said where it was headed ("it
+ *  should be /app/account", owner 2026-07-03) — it just kept resolving for
+ *  the one audience left, signed-in non-members, of which production has
+ *  three, all synthetic test accounts (zz-test-buyer/cobuyer/seller). Its one
+ *  real capability nothing else exposed, <TwoFactorSettings/>, is ported to
+ *  AccountHub's My Login section (LoginSecurityCard.tsx) BEFORE this flag
+ *  flips — verify that landed first if this is ever the thing under review.
+ *  /account now redirects to /app for everyone, extending the isMember-only
+ *  redirect this page already had above. */
+export const ACCOUNT_PAGE_RETIRED = true;

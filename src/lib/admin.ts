@@ -727,7 +727,10 @@ export async function adminClientAccounts(): Promise<ClientAccountRow[]> {
 //  provision_client_invitation. The DB function was dropped in 20260803110000.)
 
 export interface ClientItems {
-  documents: { id: string; title: string | null; workflow_state: string | null; status: string; created_at: string }[];
+  documents: {
+    id: string; title: string | null; workflow_state: string | null; status: string; created_at: string;
+    contract_id: string | null;
+  }[];
 }
 
 export async function adminClientItems(clientId: string): Promise<ClientItems> {

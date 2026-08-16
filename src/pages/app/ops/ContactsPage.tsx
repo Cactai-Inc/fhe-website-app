@@ -224,8 +224,20 @@ function ContactDirectory({ mode }: { mode: DirectoryMode }) {
   }
   useEffect(load, [mode]);
 
+  // TASK-PAGEMERGE (DUPECENSUS 2.3/2.4): creating from a filtered page (e.g.
+  // "New lead" on Leads) wrote a bare CONTACT row with no contact_type, so the
+  // new person never appeared on the page that created them. `ContactInput`
+  // has no contact_type column to write in the same insert (RLS scopes writes
+  // to specific columns), so it is set as a second step through the same
+  // `setContactType` RPC the "Unfiled" filing control already uses. 'all' has
+  // no MODE_TYPE (it is every filed type at once), so a create from there is
+  // left unfiled, same as before.
   const save = useAsync(async (input: ContactInput, existing: DirectoryContact | null) => {
-    return existing ? updateContact(existing.id, input) : createContact(input);
+    if (existing) return updateContact(existing.id, input);
+    const created = await createContact(input);
+    const type = MODE_TYPE[mode];
+    if (type) await setContactType(created.id, type);
+    return created;
   });
 
   // Only the people-we-serve page has varied relationships worth filtering
