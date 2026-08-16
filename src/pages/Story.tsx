@@ -130,20 +130,30 @@ export default function Story() {
               </h1>
               <div className="mt-8 space-y-6 max-w-xl">
                 <p className="body-text text-lg">
-                  Carmel Creek Ranch is tucked into the coastal hills near Torrey
-                  Pines, close enough that the ocean breeze finds the arena by
-                  mid-morning. The world here is open: room to breathe, and light
-                  that softens everything it touches.
+                  We are a community of riders who love all things equestrian
+                  &mdash; and this is the place we&rsquo;re grateful to call home for us
+                  and our horses.
                 </p>
                 <p className="body-text text-lg">
-                  The arena opens straight onto the trails. Ride out and they
-                  wind toward the water, past fields that roll gold as the day
-                  begins to cool. It is the kind of place that asks you to slow
-                  down the moment you turn in the gate.
+                  French Heritage Equestrian resides at Carmel Creek Ranch, a
+                  beautiful equestrian facility tucked into the majestic foothills
+                  of coastal San Diego overlooking Torrey Pines beach &mdash; where
+                  you can enjoy the ocean breeze and vivid sunset skies.
                 </p>
                 <p className="body-text text-lg">
-                  We are a community of women who ride here for the plain love of
-                  it — and this is the place we keep coming back to.
+                  Our location features two arenas: a standard size riding arena
+                  perched on a bluff overlooking the Pacific, and a Grand Prix size
+                  arena with plenty of fences and a competition grade watering
+                  system. Both arenas are carefully maintained, including daily
+                  grooming to ensure optimal riding conditions year round.
+                </p>
+                <p className="body-text text-lg">
+                  As if that&rsquo;s not reason enough to fall in love with the grounds
+                  at CCR, it&rsquo;s one of the only locations in coastal San Diego with
+                  trailhead access right from the stable doors. Enjoy miles of
+                  interconnected trails winding through the Pe&ntilde;asquitos preserve,
+                  from the 5 all the way to the 15, with a wide variety of terrain
+                  and sights to see along the way.
                 </p>
               </div>
             </Reveal>
