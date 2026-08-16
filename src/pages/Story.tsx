@@ -366,7 +366,7 @@ export default function Story() {
           aria-label describes it); the sentence lives in real text above. */}
       <section className="bg-cream">
         <div className="container-site py-20 sm:py-28 lg:py-32">
-          <p className="heading-display text-green-900 text-center mx-auto max-w-4xl [text-wrap:balance] text-[clamp(1.9rem,5vw,3.5rem)]">
+          <p className="heading-display text-green-900 text-center mx-auto max-w-3xl [text-wrap:balance] text-[clamp(1.6rem,3.6vw,2.6rem)]">
             Friendship &amp; Adventure at French Heritage Equestrian
           </p>
         </div>
