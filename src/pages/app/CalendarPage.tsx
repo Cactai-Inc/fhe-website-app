@@ -36,6 +36,7 @@ import { CalendarItemPanel } from './CalendarItemPanel';
 import { CalendarSettingsPanel } from './CalendarSettingsPanel';
 import { SessionNotesView } from '../../components/app/SessionNotesView';
 import { BookingItemSwap } from '../../components/app/BookingItemSwap';
+import { FeeChooser } from '../../components/app/FeeChooser';
 
 /*
  * CP-CALENDAR — the one full-page calendar for client/staff/admin (Phase 6,
@@ -1067,6 +1068,10 @@ function RequestsBar({ onDecided }: { onDecided: () => void }) {
   const [proposingId, setProposingId] = useState<string | null>(null);
   const [proposeStart, setProposeStart] = useState('');
   const [proposeEnd, setProposeEnd] = useState('');
+  // FEECHOICE F1 — approving a reschedule/cancel/defer request opens the fee
+  // chooser first (computed / a different policy fee / waived); the chooser's
+  // own Apply button is what actually triggers the approval below.
+  const [decidingFeeId, setDecidingFeeId] = useState<string | null>(null);
 
   const load = useCallback(() => {
     fetchOpenChangeRequests().then(setReqs).catch(() => setReqs([]));
@@ -1147,13 +1152,30 @@ function RequestsBar({ onDecided }: { onDecided: () => void }) {
                 </span>
               ) : (
                 <span className="flex gap-1">
-                  <button type="button" className="btn-primary text-xs" disabled={busy === r.id} onClick={() => void decide(r.id, true, !!r.fee_amount && !r.fee_paid)}>
-                    {r.fee_amount && !r.fee_paid ? 'Approve + waive' : 'Approve'}
+                  <button
+                    type="button" className="btn-primary text-xs" disabled={busy === r.id}
+                    onClick={() => setDecidingFeeId((cur) => (cur === r.id ? null : r.id))}
+                  >
+                    Decide
                   </button>
                   <button type="button" className="btn-secondary text-xs" disabled={busy === r.id} onClick={() => void decide(r.id, false)}>Reject</button>
                 </span>
               )}
             </div>
+            {decidingFeeId === r.id && (
+              <div className="pt-2 border-t border-orange-100">
+                <FeeChooser
+                  bookingId={r.booking_id}
+                  changeId={r.id}
+                  computedAmount={r.fee_amount ?? 0}
+                  onCancel={() => setDecidingFeeId(null)}
+                  onApplied={(result) => {
+                    setDecidingFeeId(null);
+                    void decide(r.id, true, result.fee_kind === 'waived');
+                  }}
+                />
+              </div>
+            )}
             {proposingId === r.id && (
               <div className="flex flex-wrap items-end gap-2 pt-2 border-t border-orange-100">
                 <label className="text-xs">

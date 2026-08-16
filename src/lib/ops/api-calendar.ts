@@ -420,6 +420,72 @@ export async function markChangeFeePaid(changeId: string, paid = true): Promise<
   if (error) throw error;
 }
 
+/** FEECHOICE — the three-way choice staff make on a booking's fee: the
+ *  computed reschedule amount, a named policy fee (no-show / late-start), a
+ *  staff-entered custom amount, or a waiver. Every choice other than
+ *  'computed' requires a reason (server-enforced). */
+export type FeeKind = 'computed' | 'no_show' | 'late_start_before' | 'late_start_after' | 'custom' | 'waived';
+
+export interface BookingFeeCharge {
+  id: string;
+  booking_id: string;
+  change_request_id: string | null;
+  purchase_id: string | null;
+  fee_kind: FeeKind;
+  policy_clause: string | null;
+  policy_wording: string;
+  amount: number;
+  reason: string | null;
+  decided_by: string;
+  decided_at: string;
+  superseded_by: string | null;
+  created_at: string;
+}
+
+/** Prior fee decisions on this booking (newest first) — an active charge has
+ *  `superseded_by === null`; a corrected one points at its replacement. */
+export async function fetchBookingFeeCharges(bookingId: string): Promise<BookingFeeCharge[]> {
+  const { data, error } = await supabase
+    .from('booking_fee_charges')
+    .select('*')
+    .eq('booking_id', bookingId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as BookingFeeCharge[];
+}
+
+export interface ApplyBookingFeeResult {
+  charge_id: string;
+  purchase_id: string;
+  amount: number;
+  fee_kind: FeeKind;
+}
+
+/** Record the fee staff decided on a booking. It settles through the one
+ *  payment spine (mark_purchase_paid) — a non-zero amount lands as an ordinary
+ *  awaiting-payment order the client can claim (Zelle/cash) exactly like any
+ *  other purchase; zero settles immediately. Pass `supersedes` to correct a
+ *  prior charge rather than leaving two active charges for the same decision. */
+export async function applyBookingFee(input: {
+  bookingId: string;
+  feeKind: FeeKind;
+  changeId?: string | null;
+  amount?: number | null;
+  reason?: string | null;
+  supersedes?: string | null;
+}): Promise<ApplyBookingFeeResult> {
+  const { data, error } = await supabase.rpc('apply_booking_fee', {
+    p_booking_id: input.bookingId,
+    p_fee_kind: input.feeKind,
+    p_change_id: input.changeId ?? null,
+    p_amount: input.amount ?? null,
+    p_reason: input.reason?.trim() || null,
+    p_supersedes: input.supersedes ?? null,
+  });
+  if (error) throw error;
+  return data as ApplyBookingFeeResult;
+}
+
 /** A client requests an arbitrary open time for a new booking (→ pending). */
 export async function requestOpenTime(input: {
   startISO: string; endISO: string; offeringId?: string | null; horseId?: string | null; note?: string;

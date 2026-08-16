@@ -99,7 +99,7 @@ export default function Lessons() {
               no period, per owner; it also echoes the landing CTA that brought
               the visitor here. */}
           <h1 className="heading-display text-green-800 mb-6 text-[clamp(2.25rem,5vw,3.5rem)]">
-            Come Ride With Us
+            Start Riding With Us
           </h1>
           <p className="body-text text-lg leading-relaxed">
             Private instruction at your own pace — one lesson, or a group when you're ready for the
