@@ -11,13 +11,15 @@ import {
   scheduleLessonSession,
   completeLessonSession,
   cancelLessonSession,
+  listLessonForms,
   type LessonSession,
   type LessonClientOption,
   type ScheduleHorseOption,
+  type LessonFormRow,
 } from '../../../../lib/ops/api-lessons';
 import { formatTimeRange } from '../../../../lib/formatDateTime';
 import { ScheduleSessionForm, type ScheduleSessionFormValues } from './ScheduleSessionForm';
-import { LessonLogEditor } from './LessonLogEditor';
+import { SessionActivityForm } from './SessionActivityForm';
 
 /**
  * OPS-LESSON-SESSIONS — the confirmed-booking board (module mod.lessons,
@@ -33,13 +35,20 @@ import { LessonLogEditor } from './LessonLogEditor';
  * + duration 30/45/60/90 + location + note) → schedule_lesson_session; the RPC
  * rejects overlapping SCHEDULED sessions server-side and the message surfaces
  * in the form.
+ *
+ * LESSONFORM adds a fourth filter — FORMS TO FILL IN — which is the backlog the
+ * owner asked for: every lesson that has ALREADY HAPPENED whose activity form
+ * nobody has finished (lesson_forms('todo')), most recent first. It is a
+ * different query from the session list, not a client-side slice of it, because
+ * "has a form outstanding" is a fact about the form and not about the booking.
  */
-type SessionFilter = 'upcoming' | 'past' | 'all';
+type SessionFilter = 'upcoming' | 'past' | 'all' | 'forms';
 
 const FILTERS: { id: SessionFilter; label: string }[] = [
   { id: 'upcoming', label: 'Upcoming' },
   { id: 'past', label: 'Past' },
   { id: 'all', label: 'All' },
+  { id: 'forms', label: 'Forms to fill in' },
 ];
 
 /** '2:00 – 3:00 PM EDT' for one session row (full time window with zone). */
@@ -58,6 +67,9 @@ export function SessionsPage() {
   const [openSlots, setOpenSlots] = useState<number | null>(null);
   const [clients, setClients] = useState<LessonClientOption[]>([]);
   const [horses, setHorses] = useState<ScheduleHorseOption[]>([]);
+  /** LESSONFORM: the outstanding-form backlog. Its own query (lesson_forms), so
+   *  the count is a fact about forms and is never inferred from the session list. */
+  const [forms, setForms] = useState<LessonFormRow[]>([]);
   const [filter, setFilter] = useState<SessionFilter>('upcoming');
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -81,6 +93,7 @@ export function SessionsPage() {
       // Non-blocking: the board is about lessons, so a failed slot count leaves
       // the line off rather than failing the page.
       countOpenLessonSlots().then(setOpenSlots).catch(() => setOpenSlots(null));
+      listLessonForms('todo').then(setForms).catch(() => setForms([]));
     } catch (err) {
       setLoadError(toErrorMessage(err, 'Could not load lesson sessions.'));
     } finally {
@@ -99,8 +112,10 @@ export function SessionsPage() {
   );
 
   // Upcoming: hasn't ended yet, soonest first. Past: ended, most recent first.
+  // 'forms' is served by its own query, not by slicing this list.
   const visible = useMemo(() => {
     const now = Date.now();
+    if (filter === 'forms') return [];
     if (filter === 'upcoming') {
       return rows.filter((s) => new Date(s.ends_at).getTime() >= now);
     }
@@ -197,6 +212,20 @@ export function SessionsPage() {
                 </Link>
               </>
             )}
+            {/* COUNTFIX discipline: a third distinct thing, counted by its own
+                query and never folded into either of the other two. */}
+            {forms.length > 0 && (
+              <>
+                {' · '}
+                <button
+                  type="button"
+                  className="link-underline"
+                  onClick={() => setFilter('forms')}
+                >
+                  {forms.length} form{forms.length === 1 ? '' : 's'} to fill in
+                </button>
+              </>
+            )}
           </p>
         </div>
         {lessonsOn && (
@@ -250,7 +279,48 @@ export function SessionsPage() {
           </p>
         )}
 
-        {loading && rows.length === 0 ? (
+        {filter === 'forms' ? (
+          /* LESSONFORM — the backlog. Every lesson she has taught whose form is
+             still open, most recent first. An unfilled form is not an error
+             state: she can fill it in, or delete it, straight from this row. */
+          forms.length === 0 ? (
+            <p className="text-sm text-green-800/70" data-testid="forms-empty">
+              No activity forms outstanding. A form appears here once a lesson has
+              happened and nobody has finished its form yet.
+            </p>
+          ) : (
+            <ul className="flex flex-col gap-2" data-testid="forms-list">
+              {forms.map((f) => (
+                <li
+                  key={f.form_id}
+                  className="bg-white border border-green-800/10 p-4 flex flex-wrap items-start justify-between gap-3"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-sans font-medium text-green-900">
+                      {f.client_name ?? clientName(f.client_id ?? '')}
+                    </p>
+                    <p className="text-xs text-green-800/70 mt-0.5">
+                      {formatTimeRange(f.starts_at, f.ends_at)}
+                      {f.service_type ? ` · ${f.service_type.replace(/_/g, ' ').toLowerCase()}` : ''}
+                    </p>
+                    <p className="text-xs text-green-800/60 mt-0.5">
+                      {f.has_answers ? 'Started, not finished' : 'Not started'}
+                    </p>
+                    <div className="mt-1">
+                      <SessionActivityForm
+                        bookingId={f.booking_id}
+                        onChanged={() => {
+                          void listLessonForms('todo').then(setForms).catch(() => undefined);
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <StatusBadge status={f.booking_status} />
+                </li>
+              ))}
+            </ul>
+          )
+        ) : loading && rows.length === 0 ? (
           <p className="text-sm text-green-800/70">Loading…</p>
         ) : groups.length === 0 ? (
           <p className="text-sm text-green-800/70" data-testid="sessions-empty">
@@ -280,12 +350,14 @@ export function SessionsPage() {
                           <p className="text-xs text-green-900/80 mt-1 italic line-clamp-2">“{s.notes}”</p>
                         )}
                         <div className="mt-1">
-                          <LessonLogEditor
+                          <SessionActivityForm
                             bookingId={s.id}
-                            initialReport={s.notes}
                             onReportChange={(note) =>
                               setRows((prev) => prev.map((x) => (x.id === s.id ? { ...x, notes: note || null } : x)))
                             }
+                            onChanged={() => {
+                              void listLessonForms('todo').then(setForms).catch(() => undefined);
+                            }}
                           />
                         </div>
                       </div>

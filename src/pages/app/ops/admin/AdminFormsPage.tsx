@@ -17,7 +17,15 @@ import {
  * "what users must fill in" picture lives on one page.
  */
 
-const AUDIENCE_LABEL: Record<string, string> = { CLIENT: 'Client-facing', STAFF: 'Staff' };
+const AUDIENCE_LABEL: Record<string, string> = {
+  CLIENT: 'Client-facing',
+  STAFF: 'Staff',
+  // LESSONFORM: the audience the internal forms have always carried — the
+  // engagement worksheets, and now the session activity form. The page already
+  // rendered them (it maps over whatever audiences come back); they just showed
+  // the raw enum as their heading.
+  COMPANY: 'Internal — staff fill these in',
+};
 
 function FormCard({ form }: { form: AdminFormDefinition }) {
   const [open, setOpen] = useState(false);
