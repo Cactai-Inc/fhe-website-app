@@ -23,8 +23,8 @@ import { seoForPath } from '../lib/seo';
  * Gentle fade-up on scroll via IntersectionObserver; reduced-motion users get
  * everything static and present (CSS .qs-reveal guard).
  */
-const HERO_A = '/reference-images/Hero_A.png';  // the arena — landing hero's world (S3)
-const HERO_B = '/reference-images/Hero_B.png';  // the place, toward the hills (S4 bookend)
+const HERO_A = '/images/Hero_A.png';  // the arena — landing hero's world (S3)
+const HERO_B = '/images/Hero_B.png';  // the place, toward the hills (S4 bookend)
 
 /* Lightweight scroll-reveal wrapper. Adds `qs-in` when the element first
  * enters the viewport. SSR-safe: if IntersectionObserver is unavailable (or

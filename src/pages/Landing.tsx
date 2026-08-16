@@ -21,7 +21,7 @@ import Header from '../components/layout/Header';
  * <html>; on unmount we remove it. The rest of the site scrolls normally.
  * SSR/prerender-safe — the effect only touches document in the browser.
  */
-const HERO_IMG = '/reference-images/Hero_A.png';
+const HERO_IMG = '/images/Hero_A.png';
 
 export default function Landing() {
   const seo = seoForPath('/')!;

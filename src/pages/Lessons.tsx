@@ -8,7 +8,7 @@ import type { Offering } from '../lib/types';
 import Seo from '../components/Seo';
 import { seoForPath } from '../lib/seo';
 
-const LESSON_POSTER = '/reference-images/Hero_A.png';
+const LESSON_POSTER = '/images/Hero_A.png';
 const usd = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(n);
 
 // The gold line under the price. Owner, 2026-08-14: this line pertains to the
