@@ -2,7 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { fromHere } from '../../lib/linkOrigin';
 import { X, Hand, MailWarning } from 'lucide-react';
-import { myNotifications, consumeNotification, markNotificationRead, type AppNotification } from '../../lib/api';
+import {
+  myNotifications, consumeNotification, markNotificationRead, myProfileCompletion,
+  type AppNotification, type ProfileCompletion,
+} from '../../lib/api';
 import { sayHiBack } from '../../lib/communityFeed';
 import { timeOfDayWord } from '../../lib/formatDateTime';
 import { useAuth } from '../../contexts/AuthContext';
@@ -195,6 +198,7 @@ export function DashboardPanel() {
   const [pendingChanges, setPendingChanges] = useState(0);
   const [horse, setHorse] = useState<HorseOnboardingState | null>(null);
   const [acqIntake, setAcqIntake] = useState<AcquisitionIntakeState | null>(null);
+  const [profileState, setProfileState] = useState<ProfileCompletion | null>(null);
   const { profile, isStaff } = useAuth();
   const firstName = profile?.first_name || profile?.display_name || null;
   const { open: leads, converted, reload: reloadLeads } = useOpenLeads(isStaff);
@@ -305,6 +309,30 @@ export function DashboardPanel() {
     return () => { active = false; };
   }, []);
 
+  // ONBOARD §5 — "they have a notice to complete their profile which when clicked
+  // takes them to the profile page". Its own effect, keyed on isStaff, so the
+  // staff case skips the call entirely rather than making the main load depend on
+  // a value that arrives late. Staff have no onboarding profile to complete.
+  useEffect(() => {
+    if (isStaff) { setProfileState(null); return; }
+    let active = true;
+    myProfileCompletion().then((p) => { if (active) setProfileState(p); }).catch(() => {});
+    return () => { active = false; };
+  }, [isStaff]);
+
+  const profileTile: Tile | null = profileState && !profileState.complete
+    ? {
+        id: 'complete-profile',
+        kind: 'your profile',
+        title: 'Complete your profile',
+        sub: profileState.missing.length > 0
+          ? `We still need ${profileState.missing.join(', ')}.`
+          : 'A few details are still missing.',
+        cta: 'Complete profile',
+        to: '/app/account?section=profile',
+      }
+    : null;
+
   // The horse documents are their own persistent item — shown until they're
   // signed (or until a horse is added, when one is needed). The "your service
   // won't begin" warning shows ONLY when a horse-care service has been purchased
@@ -363,7 +391,7 @@ export function DashboardPanel() {
   const showPending = pendingChanges > 0 && !hidden.has('pending-changes');
 
   const hasAttention = attention.length > 0 || checklist.length > 0 || suggestBooking
-    || showPending || !!horseTile || !!acqTile;
+    || showPending || !!horseTile || !!acqTile || !!profileTile;
   // Empty state: nothing needs attention and nothing's coming up → a warm all-clear
   // greeting (owner directive) instead of hiding the panel entirely.
   const allCaughtUp = !hasAttention && comingUp.length === 0
@@ -446,6 +474,7 @@ export function DashboardPanel() {
         <>
           <p className={`text-[10px] tracking-widest uppercase text-gold-800 font-semibold mb-3 ${visibleLeads.length > 0 ? 'mt-5' : ''}`}>Needs your attention</p>
           <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+            {profileTile && <TileCard tile={profileTile} />}
             {horseTile && <TileCard tile={horseTile} />}
             {acqTile && <TileCard tile={acqTile} />}
             {checklist.length > 0 && <ChecklistCard rows={checklist} />}

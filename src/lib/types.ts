@@ -174,6 +174,12 @@ export interface Order {
   unique_amount: number | null;
   paid_at: string | null;
   created_at: string;
+  /** ONBOARD §6 — the buyer's own CLAIM that they have paid (or will pay cash).
+   *  Never a confirmation: payment_status above is still the only truth, and only
+   *  staff reconciliation writes it. */
+  client_reported_method: 'zelle' | 'cash' | null;
+  client_reported_reference: string | null;
+  client_reported_at: string | null;
   items?: OrderItem[];
 }
 

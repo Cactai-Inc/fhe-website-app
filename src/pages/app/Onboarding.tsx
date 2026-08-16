@@ -12,7 +12,6 @@ import {
   attachPurchaseHorse,
   setMyOnboardingHorses,
   fetchMyCategories,
-  myUnreadCount,
   myDocuments,
   markTourSeen,
   myNameConfirmationState,
@@ -405,9 +404,15 @@ export default function Onboarding() {
       navigate(wallReturnTo, { replace: true });
       return;
     }
-    let unread = 0;
-    try { unread = await myUnreadCount(); } catch { /* default to community */ }
-    navigate(unread > 0 ? '/app/dashboard' : '/app', { replace: true });
+    // ONBOARD §5. Owner: "the user is taken to a page where they see their
+    // account. they see their dashboard the onboarding modal and they have a
+    // notice to complete their profile … then they can go to the community feed."
+    // The dashboard is the landing, unconditionally — it is where the profile
+    // notice and the checklist live. This used to route a member with zero unread
+    // notifications straight past it to the community feed, which is precisely
+    // the member who has just finished signing and still owes us their details.
+    // The feed is one nav click away from here.
+    navigate('/app/dashboard', { replace: true });
   }
 
   const upd = (key: keyof ProfileFormFields) =>

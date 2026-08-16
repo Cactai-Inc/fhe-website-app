@@ -2437,6 +2437,47 @@ export async function markTourSeen(formFactor: TourFormFactor = currentTourFormF
   if (error) throw error;
 }
 
+// ─── Profile completion (ONBOARD §5) ────────────────────────────────────────
+export interface ProfileCompletion {
+  complete: boolean;
+  /** What is still blank, in words — so the notice can say why. */
+  missing: string[];
+}
+
+/** Reads contact_profile_complete(), the SAME predicate the onboarding wizard
+ *  uses for its own "your details" step, so the wizard and the dashboard notice
+ *  cannot disagree about whether somebody is done. */
+export async function myProfileCompletion(): Promise<ProfileCompletion> {
+  const { data, error } = await supabase.rpc('my_profile_completion');
+  if (error) throw error;
+  const d = (data ?? {}) as Partial<ProfileCompletion>;
+  return { complete: d.complete !== false, missing: Array.isArray(d.missing) ? d.missing : [] };
+}
+
+// ─── The buyer's own payment report (ONBOARD §6) ────────────────────────────
+/**
+ * "I sent it" / "I'm paying cash" — a CLAIM, not a confirmation.
+ *
+ * Zelle gives us no callback, so the only signal before the bank email arrives is
+ * the buyer saying so. This records that they said it (with the confirmation
+ * number if they typed one — blank is fine, by owner instruction) and alerts
+ * staff. It cannot and does not settle the order: payment_status is only ever
+ * written by staff reconciliation.
+ */
+export async function reportMyPayment(
+  purchaseId: string,
+  method: 'zelle' | 'cash',
+  reference?: string | null,
+): Promise<{ recorded: boolean; reason?: string }> {
+  const { data, error } = await supabase.rpc('report_my_payment', {
+    p_purchase_id: purchaseId,
+    p_method: method,
+    p_reference: reference?.trim() || null,
+  });
+  if (error) throw error;
+  return (data ?? { recorded: false }) as { recorded: boolean; reason?: string };
+}
+
 // ─── Signed-copies delivery state (ONBOARD §4) ──────────────────────────────
 export interface ExecutedDeliveryState {
   /** the caller's executed documents */
