@@ -18,9 +18,10 @@ import type { ReleaseTemplateKey, SignReleaseResult } from '../lib/ops/api-publi
  *   4. Emergency Medical Auth    (HUMAN_EMERGENCY_MEDICAL)
  *
  * Each sign is a real sign_release call → its own EXECUTED documents row (logged,
- * findable in ops). After the final sign we deliver an emailed copy of EVERY
- * signed document (best-effort /api/deliver-document per doc) and show one
- * combined done screen. This flow is independent of the /release kiosk.
+ * findable in ops). Every call passes `hold_set`, so nothing is emailed until the
+ * run finishes; after the final sign ONE POST to /api/deliver-documents delivers
+ * every signed document as PDF attachments on a single email (ONBOARD §4), and
+ * shows one combined done screen. This flow is independent of the /release kiosk.
  *
  * Required: first name, last name, email, and a typed signature matching the
  * name. Everything medical (DOB, address, emergency contacts) is optional —
@@ -184,6 +185,11 @@ export default function DocsParticipantFlow() {
         // just signed the rules doc as step 1 of this same flow).
         rules_acknowledged: true,
         esign_consent: esignOk,
+        // ONBOARD §4: four signatures, ONE email. Without this each call
+        // delivered its own document in-process AND the execution trigger fired
+        // its own send — four emails (plus four company mirrors) for one sitting.
+        // The endpoint holds delivery; the batched POST below is the only send.
+        hold_set: true,
         dob: dob || null,
         address_line1: address1.trim() || null,
         address_line2: address2.trim() || null,

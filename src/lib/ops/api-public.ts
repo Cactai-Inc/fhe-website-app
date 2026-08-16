@@ -112,6 +112,11 @@ export interface SignReleaseInput {
   emergency_contact_2_phone?: string | null;
   /** Optional explicit tenant (multi-tenant kiosks); defaults server-side. */
   org_id?: string;
+  /** ONBOARD §4: this signature is one step of a MULTI-document run. The endpoint
+   *  opens a delivery hold and skips its per-document email, so the run ends in
+   *  ONE email carrying every signed PDF instead of one email per document.
+   *  Set by /docs/release-participant; the single-document kiosk leaves it off. */
+  hold_set?: boolean;
 }
 
 export interface SignReleaseResult {
@@ -161,6 +166,7 @@ export async function signRelease(input: SignReleaseInput): Promise<SignReleaseR
     emergency_contact_2_phone: input.emergency_contact_2_phone ?? null,
   };
   if (input.org_id) body.org_id = input.org_id;
+  if (input.hold_set) body.hold_set = true;
   const res = await fetch('/api/sign-release', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

@@ -343,6 +343,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
+    // ONBOARD §4: this WAS the send for the whole set, so close the hold the
+    // trigger opened. Without it a client-flushed set still reads as "held" and
+    // the backstop sweep would mail the same documents a second time. A TARGETED
+    // send is a staff re-send, not an execution event — it must not stamp
+    // executed_email_sent_at (see the A8B contract above), so it is excluded.
+    if (!targeted && delivered.length > 0) {
+      const { error: markErr } = await db.rpc('mark_document_set_delivered', {
+        p_document_ids: documentIds,
+      });
+      if (markErr) {
+        console.error('could not close the delivery hold', { documentIds, error: markErr.message });
+        logFailures.push(`hold-release: ${markErr.message}`);
+      }
+    }
+
     // Logging failures ride back in the response so a caller (and the
     // verification harness) can see them rather than inferring silence.
     return res.status(200).json({

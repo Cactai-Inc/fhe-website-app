@@ -29,10 +29,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const db = getSupabaseAdmin();
+
+    // ONBOARD §4 backstop, FIRST: a signing run that was abandoned part-way
+    // leaves executed documents deliberately held for a signature that never
+    // came. Flush them (as one email each per person) before looking for
+    // undelivered ones, so the alert sweep below does not shout about a
+    // delivery this run is about to make.
+    const { data: flushed, error: flushErr } =
+      await db.rpc('flush_held_executed_document_emails', { p_hold_minutes: 30 });
+    if (flushErr) console.error('delivery-sweep: hold flush failed', flushErr);
+    const released = (flushed ?? []) as Array<{ contact_id: string; documents: number }>;
+
     const { data, error } = await db.rpc('sweep_undelivered_executed_documents');
     if (error) throw error;
     const alerted = (data ?? []) as Array<{ document_id: string; org_id: string; missing_count: number }>;
-    return res.status(200).json({ alerted: alerted.length, documents: alerted });
+    return res.status(200).json({
+      alerted: alerted.length,
+      documents: alerted,
+      heldSetsFlushed: released.length,
+      heldSets: released,
+    });
   } catch (err) {
     console.error('delivery-sweep error', err);
     return res.status(500).json({ error: 'delivery sweep failed' });

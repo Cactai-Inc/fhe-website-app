@@ -17,6 +17,7 @@ import {
   markTourSeen,
   myNameConfirmationState,
   myNavPresence,
+  pollDeliveryConfirmed,
   type OnboardingProfileInput,
   type OnboardingPurchase,
   type OnboardingState,
@@ -549,35 +550,21 @@ export default function Onboarding() {
       // a PDF (unified single-send), then pay (sign-before-pay). If already paid,
       // skip straight to done. Delivery is best-effort — never blocks the flow.
       if (!next.documents.some((d) => d.status !== 'EXECUTED')) {
-        const documentIds = next.documents.map((d) => d.document_id).filter(Boolean);
-        // TRUTHFUL DELIVERY (2026-07-29): the send is still non-blocking — the
-        // documents are executed and stored regardless, and a mail failure must
-        // never trap someone in the flow. But we now RECORD the outcome so the
-        // done step can only claim delivery when it actually happened.
+        // ONBOARD §4. This used to POST /api/deliver-documents itself. It was a
+        // SECOND sender racing the database: the execution trigger had already
+        // mailed (and written a document_deliveries row for) each document one
+        // at a time, so this call found every recipient already delivered,
+        // returned an empty `delivered` array, and the done step then honestly
+        // reported "we could not confirm" — while the member's inbox held one
+        // email per document. The trigger now HOLDS the set and sends it as one
+        // email when the last signature lands, so there is nothing left to send
+        // from here.
+        //
+        // TRUTHFUL DELIVERY (2026-07-29) is preserved as a READ: poll for the
+        // delivery rows /api/deliver-documents writes, so the done step still
+        // only claims delivery that actually happened. `null` = still waiting.
         setEmailed(null);
-        void fetch('/api/deliver-documents', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ documentIds }),
-        })
-          // A 200 is NOT proof of delivery. The endpoint skips a recipient with
-          // no email on file (`if (!email) continue`) and — more importantly —
-          // skips one whose provider send failed (`if (!sent.ok) continue`),
-          // still returning 200. Its `delivered` array is the real record: one
-          // entry per recipient that actually received the mail. Read that, so
-          // a total send failure cannot present as success.
-          .then(async (r) => {
-            if (!r.ok) return setEmailed(false);
-            try {
-              const body = await r.json() as { delivered?: unknown[] };
-              setEmailed(Array.isArray(body.delivered) && body.delivered.length > 0);
-            } catch {
-              // 200 but an unreadable body — we cannot prove delivery, so we
-              // do not claim it.
-              setEmailed(false);
-            }
-          })
-          .catch(() => setEmailed(false));
+        void pollDeliveryConfirmed().then(setEmailed);
 
         if (next.purchase && !next.purchase.paid) {
           await enterPayment();
