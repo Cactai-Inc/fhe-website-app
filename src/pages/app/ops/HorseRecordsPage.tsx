@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { fromHere } from '../../../lib/linkOrigin';
-import { X, PencilLine, FileText, UserRound, Trash2 } from 'lucide-react';
+import { X, PencilLine, FileText, UserRound, Trash2, HeartPulse, Handshake } from 'lucide-react';
 import { PageLayout } from '../../../components/app/PageLayout';
 import { useDocumentTitle } from '../../../lib/hooks';
 import {
@@ -11,6 +11,9 @@ import {
 import { HorseIntakeForm } from '../../../components/app/HorseIntakeForm';
 import { companyContactId } from '../../../lib/horses';
 import { generateLeaseAvailability } from '../../../lib/ops/api-lease';
+import { listHorseBreeds, listHorseColors } from '../../../lib/api';
+import { lookupName } from '../../../lib/ops/types';
+import type { LookupCode } from '../../../lib/ops/types';
 
 /**
  * STAFF HORSE RECORDS (spec H.8, /app/ops/horse-records) — the staff side of the
@@ -23,9 +26,9 @@ import { generateLeaseAvailability } from '../../../lib/ops/api-lease';
 const input = 'w-full px-3 py-2 rounded-lg border border-green-800/15 text-sm text-green-900 focus-ring bg-white';
 
 function EditableRecord({
-  r, contacts, onSaved, onOpenContact,
+  r, contacts, breeds, colors, onSaved, onOpenContact,
 }: {
-  r: StaffHorseRecord; contacts: ContactOption[]; onSaved: () => void;
+  r: StaffHorseRecord; contacts: ContactOption[]; breeds: LookupCode[]; colors: LookupCode[]; onSaved: () => void;
   /** TASK-RECORDS (2026-08-12): when composed inside the Records page, opens the
    *  owner/lessee's dossier in place instead of leaving the tab — "a horse links
    *  to its people … without leaving the page." Undefined on the standalone
@@ -45,7 +48,13 @@ function EditableRecord({
   const [okMsg, setOkMsg] = useState<string | null>(null);
   const [confirmArchive, setConfirmArchive] = useState(false);
 
-  const field = (key: keyof StaffHorseRecord & string, label: string) => (
+  /* TASK-PAGEMERGE (DUPECENSUS 2.1): breed/color are lookup CODES
+   * (horses.breed → horse_breeds, horses.color → horse_colors), and this page
+   * was rendering the raw code — the one thing the retired HorsesPage did
+   * that this one didn't. `displayValue`, when given, overrides only the
+   * read-mode text; the edit-mode input still edits the raw code, same as
+   * HorsesPage's own edit form does. */
+  const field = (key: keyof StaffHorseRecord & string, label: string, displayValue?: string) => (
     <div key={key}>
       <p className="text-[10.5px] tracking-wide uppercase text-muted font-semibold mb-0.5">{label}</p>
       {editing ? (
@@ -53,7 +62,7 @@ function EditableRecord({
           defaultValue={(r[key] as string | number | null) ?? ''}
           onChange={(e) => setPatch((p) => ({ ...p, [key]: e.target.value }))} />
       ) : (
-        <p className="text-sm text-green-900">{String(r[key] ?? '—')}</p>
+        <p className="text-sm text-green-900">{displayValue ?? String(r[key] ?? '—')}</p>
       )}
     </div>
   );
@@ -111,8 +120,8 @@ function EditableRecord({
       <div className="grid sm:grid-cols-3 gap-3 mb-3">
         {field('registered_name', 'Registered name')}
         {field('nickname', 'Barn name')}
-        {field('breed', 'Breed')}
-        {field('color', 'Color')}
+        {field('breed', 'Breed', lookupName(breeds, r.breed))}
+        {field('color', 'Color', lookupName(colors, r.color))}
         {field('markings', 'Markings')}
         {field('sex', 'Sex')}
         {field('height', 'Height')}
@@ -125,6 +134,22 @@ function EditableRecord({
         <div>
           <p className="text-[10.5px] tracking-wide uppercase text-muted font-semibold mb-0.5">Microchip</p>
           <p className="text-sm text-green-900">{r.microchip_id ?? '—'}</p>
+        </div>
+        <div>
+          {/* TASK-PAGEMERGE (DUPECENSUS 2.1): the two record lanes RecordsHubPage
+              owned and this page didn't — the horse_relationships ownership
+              ledger and the health log + care team. RecordsHubPage's own
+              roster is retired in favor of this tab; these links are what
+              carries across. */}
+          <p className="text-[10.5px] tracking-wide uppercase text-muted font-semibold mb-0.5">Records</p>
+          <p className="text-sm text-green-900 inline-flex items-center gap-3">
+            <Link to={`/app/ops/records/horses/${r.id}/parties`} className="inline-flex items-center gap-1 text-gold-800 underline underline-offset-2">
+              <Handshake size={13} /> Ownership
+            </Link>
+            <Link to={`/app/ops/records/horses/${r.id}/health`} className="inline-flex items-center gap-1 text-gold-800 underline underline-offset-2">
+              <HeartPulse size={13} /> Health
+            </Link>
+          </p>
         </div>
         <div>
           <p className="text-[10.5px] tracking-wide uppercase text-muted font-semibold mb-0.5">Documents</p>
@@ -242,13 +267,15 @@ export default function HorseRecordsPage({ onOpenContact }: { onOpenContact?: (c
   useDocumentTitle('Horse records');
   const [rows, setRows] = useState<StaffHorseRecord[] | null>(null);
   const [contacts, setContacts] = useState<ContactOption[]>([]);
+  const [breeds, setBreeds] = useState<LookupCode[]>([]);
+  const [colors, setColors] = useState<LookupCode[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(() => {
-    Promise.all([staffHorseRecords(), staffContactOptions()])
-      .then(([r, c]) => { setRows(r); setContacts(c); setError(null); })
+    Promise.all([staffHorseRecords(), staffContactOptions(), listHorseBreeds(), listHorseColors()])
+      .then(([r, c, b, cl]) => { setRows(r); setContacts(c); setBreeds(b); setColors(cl); setError(null); })
       .catch(() => setError('Could not load horse records.'));
   }, []);
   useEffect(() => { load(); }, [load]);
@@ -279,7 +306,8 @@ export default function HorseRecordsPage({ onOpenContact }: { onOpenContact?: (c
                     )}
                   </p>
                   <p className="text-[11.5px] text-muted">
-                    {[r.breed, r.sex, r.height, r.color].filter(Boolean).join(' · ') || 'No description yet'}
+                    {[lookupName(breeds, r.breed), r.sex, r.height, lookupName(colors, r.color)]
+                      .filter((v) => v && v !== '—').join(' · ') || 'No description yet'}
                   </p>
                 </div>
                 <div className="text-right shrink-0">
@@ -293,7 +321,7 @@ export default function HorseRecordsPage({ onOpenContact }: { onOpenContact?: (c
               </div>
             </button>
             {openId === r.id && (
-              <EditableRecord r={r} contacts={contacts} onSaved={load} onOpenContact={onOpenContact} />
+              <EditableRecord r={r} contacts={contacts} breeds={breeds} colors={colors} onSaved={load} onOpenContact={onOpenContact} />
             )}
           </div>
         ))}

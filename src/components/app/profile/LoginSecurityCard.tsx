@@ -9,6 +9,7 @@ import {
 import { startGoogleChange, startPasswordChange } from '../../../lib/emailChange';
 import { EmailChangeModal } from '../EmailChangeModal';
 import { SectionCard } from './SectionCard';
+import { TwoFactorSettings } from '../../auth/TwoFactorSettings';
 
 /** Standalone change-password (auth-level update on the live session — distinct
  *  from the email-change flow's own password seam). Modal, explicit close (X),
@@ -221,6 +222,11 @@ export function LoginSecurityCard() {
         <Row title="Login" sub={user?.email ?? undefined} onClick={() => setEmailOpen(true)} />
         <Row title="Password" sub="Set or change your password" onClick={() => setPasswordOpen(true)} />
         <GoogleSignInRow userId={user?.id} accountEmail={user?.email ?? null} />
+        {/* TASK-PAGEMERGE (DUPECENSUS 1.4/3.1): the only mount of this component
+            was the retired /account page — every real member was redirected away
+            from it before it rendered, so two-step verification was reachable by
+            nobody. This is the port; /account itself retires below it. */}
+        <TwoFactorSettings />
       </div>
 
       {passwordOpen && <ChangePasswordModal onClose={() => setPasswordOpen(false)} />}

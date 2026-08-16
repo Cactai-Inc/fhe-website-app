@@ -15,7 +15,7 @@ import {
   BookOpen,
   ChevronDown, ChevronUp, Plus, LifeBuoy, ShoppingBag, MessageSquare, ListChecks,
   PanelLeftClose, PanelLeftOpen, Activity, Compass, Grid3x3, Bookmark,
-  Receipt, Eye, Library,
+  Receipt, Eye, Library, NotebookPen,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePrefersReducedMotion } from '../../lib/hooks';
@@ -31,13 +31,6 @@ import { CreateModal, type CreateModalStep } from './CreateModal';
 import { AppHeader } from './AppHeader';
 import { CreateModalTriggerContext } from '../../contexts/CreateModalContext';
 import { captureWallReturnDestination } from '../../lib/wallReturn';
-/* ── REVIEW SECTION (temporary — TASK-REVIEWNAV, owner 2026-08-11/12) ────────
-   One import; the group's whole contents live in that file so adding a page to
-   Review never touches this one. See its header for how to add and how to
-   accept. Four blocks in this file are marked `REVIEW SECTION`: this import,
-   the group in manageNavGroups, and the `note` render in the rail and in the
-   mobile drawer. */
-
 /* ── THE NAV PANEL — solid green, cream contents (ONEHEADER §1, owner 2026-08-08)
  *
  * The green glass is DROPPED. It was not a tuning problem, and the arithmetic
@@ -563,9 +556,16 @@ const MODULES_GROUP: NavItem[] = [
   // and 404'd for every staff user with the module on. Re-add with the hub.
   { to: '/app/ops/boarding', label: 'Boarding', icon: HomeIcon, module: 'mod.boarding' },
   { to: '/app/ops/barnops', label: 'Barn Ops', icon: Boxes, module: 'mod.barnops' },
-  /* RESTORED 2026-08-15 (Review experiment ended) — WITH its module key, per
-     the removal note: ungated it would show for tenants with the module off. */
-  { to: '/app/ops/records', label: 'Records', icon: FileText, module: 'mod.horserecords' },
+  /* REMOVED 2026-08-15 (TASK-PAGEMERGE, same session as the RESTORED note this
+     replaces) — this row and MANAGEMENT_GROUP's "Records" row above were two
+     nav entries reading "Records" at once (module-gated here, unconditional
+     above), landing on two different pages: this one was RecordsHubPage's own
+     roster, a THIRD listing of the same horses the Records page's Horses tab
+     already shows. Not a re-add of a retired row (rule 5) — the concept this
+     row pointed at no longer has a page of its own; RecordsHubPage is retired
+     (RECORDS_HUB_RETIRED) and /app/ops/records now redirects into Records.
+     Its two unique lane links (Ownership, Health) moved to the Horses tab's
+     per-record "Records" row — see HorseRecordsPage.tsx. */
   { to: '/app/ops/employees', label: 'Employees', icon: Contact, module: 'mod.employees' },
 ];
 const SETTINGS_GROUP: NavItem[] = [
@@ -579,10 +579,10 @@ const SETTINGS_GROUP: NavItem[] = [
      the icon exercise named as a defect ("eight identical Shield icons").
 
      NOTE: this group still renders under the heading "Settings" (see navGroups
-     below). The owner has asked for it to become "Configuration", together with
-     a new Templates page — that rename lands with TASK-TEMPLATES, which is
-     blocked on the one-engine-vs-two ruling. Moving Team now is
-     forward-compatible: the group is renamed around it.
+     below). The owner has asked for it to become "Configuration" — that rename
+     is still unclaimed; D12 (2026-08-12) already settled the one-engine-vs-two
+     ruling this comment used to say TASK-TEMPLATES was blocked on, so nothing
+     blocks it now.
 
      NO `adminOnly`, deliberately, even though every sibling here has it:
      App.tsx routes `ops/team` behind `requireStaff`, not `requireAdmin`.
@@ -596,6 +596,14 @@ const SETTINGS_GROUP: NavItem[] = [
   { to: '/app/ops/admin/branding', label: 'Branding', icon: Shield, adminOnly: true },
   { to: '/app/ops/admin/products', label: 'Products', icon: Shield, adminOnly: true },
   { to: '/app/ops/admin/forms', label: 'Forms', icon: Shield, adminOnly: true },
+  /* TASK-PAGEMERGE (2026-08-15): AdminTemplatesPage (TASK-TEXTEDIT) had no
+     permanent nav row — it only ever had one in the Review section, and
+     ab45b18 removed Review's nav group same-day, leaving the page reachable
+     by URL only. Placed here per reviewSection.ts's own note, written when
+     the page was built: "on acceptance its nav row belongs in SETTINGS_GROUP
+     beside Forms." NotebookPen, not another Shield — this group already has
+     three identical Shield glyphs (the icon exercise's named defect). */
+  { to: '/app/ops/admin/templates', label: 'Templates', icon: NotebookPen, adminOnly: true },
 ];
 
 // kept for compatibility with anything importing MANAGE_NAV

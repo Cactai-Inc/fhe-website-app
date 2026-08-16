@@ -14,6 +14,7 @@ import {
 } from '../../lib/admin';
 import { contactAddress, formatAddress, type ContactAddress } from '../../lib/api';
 import { docDisplay, docDisplayLabel } from '../../lib/documentStatus';
+import { documentHref } from '../../lib/documentHref';
 import { ProvisionClientForm } from '../../components/app/ProvisionClientForm';
 import { InviteResultPanel } from '../../components/app/InviteResultPanel';
 import { InvitationHistoryPanel } from '../../components/app/InvitationHistoryPanel';
@@ -231,6 +232,7 @@ interface AdminDocRow {
   workflow_state: string | null;
   created_at: string | null;
   wall_gating: boolean;
+  contract_id: string | null;
 }
 
 function adminDocRowToListRow(r: AdminDocRow): ListRow {
@@ -245,7 +247,10 @@ function adminDocRowToListRow(r: AdminDocRow): ListRow {
     badge: notStarted ? 'Not started'
       : assigned ? 'Awaiting signature'
       : docDisplayLabel(r.status, r.workflow_state),
-    href: (notStarted || assigned) ? undefined : `/app/ops/documents/${r.id}`,
+    // TASK-PAGEMERGE (DUPECENSUS 2.7): was unconditionally /app/ops/documents,
+    // sending the 8 contract-backed documents to the read-only viewer instead
+    // of the authoring page DocumentQueueTable already sends them to.
+    href: (notStarted || assigned) ? undefined : documentHref(r),
   };
 }
 
@@ -515,7 +520,8 @@ function PendingClientView({ row, onChanged }: { row: ClientAccountRow; onChange
           <p className="text-sm text-muted">Nothing attached yet.</p>
         )}
         {items && items.documents.map((d) => (
-          <button key={d.id} type="button" onClick={() => navigate(`/app/ops/documents/${d.id}`)}
+          // TASK-PAGEMERGE (DUPECENSUS 2.7): was unconditionally /app/ops/documents.
+          <button key={d.id} type="button" onClick={() => navigate(documentHref(d))}
             className="w-full flex items-center justify-between gap-3 border-b border-green-800/[0.06] py-2 text-left hover:bg-cream-100/50">
             <span className="text-sm text-green-900">{d.title ?? 'Document'}</span>
             <span className="text-xs text-muted">{docDisplayLabel(d.status, d.workflow_state)}</span>

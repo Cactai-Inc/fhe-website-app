@@ -92,28 +92,13 @@ export interface ReviewGroup {
  *  constants and the production ids were all re-checked, per that report's own
  *  warning that it goes stale within hours). */
 export const REVIEW_GROUPS: ReviewGroup[] = [
-  {
-    key: 'horses',
-    title: 'Horse roster',
-    question: 'Three horse lists. Which one is the horse page?',
-    entries: [
-      {
-        slot: 'A', label: 'Horses A · in use', to: '/app/ops/horse-records', incumbent: true,
-        what: 'HorseRecordsPage. The roster staff use today — PageLayout, filters, the record drawer.',
-        origin: { where: 'AppLayout MANAGEMENT_GROUP — "Horses", icon Boxes', moved: true },
-      },
-      {
-        slot: 'B', label: 'Horses B · 07-01 original', to: '/app/ops/horses',
-        what: 'HorsesPage, the 2026-07-01 original. Routed, but nothing has linked to it since. It is the only one that resolves breed/colour lookups to names.',
-      },
-      {
-        slot: 'C', label: 'Horses C · Records hub', to: '/app/ops/records',
-        what: 'RecordsHubPage — the module surface: a third roster plus the parties/health lanes.',
-        origin: { where: 'AppLayout MODULES_GROUP — "Records", icon FileText, module mod.horserecords', moved: true },
-        warn: 'Gated on mod.horserecords, which is ENABLED for FHE — so this is a live page today, not a dark one.',
-      },
-    ],
-  },
+  /* ACCEPTED 2026-08-15 (TASK-PAGEMERGE) — 'horses' group removed. All three
+     slots now redirect into the Records page's Horses tab (HORSE_RECORDS_
+     STANDALONE_RETIRED, HORSES_PAGE_RETIRED, RECORDS_HUB_RETIRED), so the
+     comparison this group asked for is moot on production. Slot B's breed/
+     colour lookup and slot C's Ownership/Health lane links were harvested
+     into HorseRecordsPage (the surviving component) before this entry was
+     deleted, per the "delete its entry object" acceptance step above. */
   {
     key: 'staff-home',
     title: 'Staff landing page',
@@ -197,27 +182,15 @@ export const REVIEW_GROUPS: ReviewGroup[] = [
       {
         slot: 'B', label: 'Contact editor B · 4-field form', to: '/app/ops/review/contact-form',
         what: 'ContactForm — the 2026-07-01 original: 4 fields, FormField primitives, real inline validation.',
-        warn: 'Submit is inert on this review mount only (the component is unmodified; the review page passes a handler that refuses). Its real create path does not set contact_type, so anything made through it lands on /app/admin rather than the page it was created from — DUPECENSUS reported that; it is not fixed here.',
+        warn: 'Submit is inert on this review mount only (the component is unmodified; the review page passes a handler that refuses). Its real create path (ContactsPage.tsx\'s `save`) FIXED 2026-08-15 (TASK-PAGEMERGE): a create now sets contact_type via the same setContactType RPC the Unfiled filing control uses, so a contact made from Leads lands on Leads. This group stays open — the bigger consolidation DUPECENSUS recommended (retire ContactForm, rebuild its create path on ContactDossierModal\'s update_contact_record RPC) was not attempted.',
       },
     ],
   },
-  {
-    key: 'account',
-    title: 'Account surface',
-    question: 'Two account pages. Is the old one worth anything?',
-    entries: [
-      {
-        slot: 'A', label: 'Account A · in use', to: '/app/account', incumbent: true,
-        what: 'AccountHub — the consolidated Profile & Preferences surface.',
-        origin: { where: 'AppLayout — the AccountNavLink row at the foot of the staff rail and in the mobile drawer (ONEMENU, 2026-08-07)', moved: true },
-      },
-      {
-        slot: 'B', label: 'Account B · 06-23 original', to: '/account',
-        what: 'The 2026-06-23 original, outside the app chrome.',
-        warn: 'It redirects any member to /app before it renders — you will be bounced. That IS the finding; nothing was changed to stop it.',
-      },
-    ],
-  },
+  /* ACCEPTED 2026-08-15 (TASK-PAGEMERGE) — 'account' group removed. Slot B's
+     one real capability, <TwoFactorSettings/>, was unreachable for every real
+     member (it redirected them away before rendering) — ported into
+     AccountHub's My Login section (LoginSecurityCard.tsx) before /account was
+     flagged ACCOUNT_PAGE_RETIRED and pointed at /app. */
   {
     key: 'time',
     title: 'Member time surface',
@@ -330,18 +303,10 @@ export const REVIEW_GROUPS: ReviewGroup[] = [
       },
     ],
   },
-  {
-    key: 'templates',
-    title: 'Template wording editor',
-    question: 'New page (TASK-TEXTEDIT): can you change lease wording end-to-end — draft, publish, version — without SQL?',
-    entries: [
-      {
-        slot: 'A', label: 'Templates · new', to: '/app/ops/admin/templates',
-        what: 'AdminTemplatesPage — every contract template, clause-composed and flat, with draft → publish → version and the token picker. On acceptance its nav row belongs in SETTINGS_GROUP beside Forms.',
-        warn: 'Edits are REAL: drafts are harmless (live text untouched), but Publish bumps the live template version. The three live lease templates save and publish together by design.',
-      },
-    ],
-  },
+  /* ACCEPTED 2026-08-15 (TASK-PAGEMERGE) — 'templates' group removed.
+     AdminTemplatesPage was never a duplicate — it just had nowhere permanent
+     to live once Review's nav group went. It now has the SETTINGS_GROUP row
+     this entry's own `what` said it was owed. */
 ];
 
 /** The one sentence the section has to say about itself, per the owner's rule

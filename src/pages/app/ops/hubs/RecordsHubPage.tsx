@@ -100,3 +100,19 @@ export function RecordsHubPage() {
 }
 
 export default RecordsHubPage;
+
+/** RETIRED behind a boolean, never deleted (standing rule from 86a2c33).
+ *  TASK-PAGEMERGE (DUPECENSUS 2.1, "Horse roster — THREE implementations"):
+ *  this roster was a third listing of the same 4 horses HorseRecordsPage
+ *  (the Records "Horses" tab) and HorsesPage already showed, reachable from
+ *  a SECOND "Records" nav row (Modules → Records) sitting next to the real
+ *  one (Management → Records) — the exact "two rows, one concept" defect
+ *  CLAUDE.md names as this project's recurring failure. Its two unique
+ *  capabilities — the Ownership and Health lane links — are carried across
+ *  into HorseRecordsPage's per-horse "Records" row; the lane ROUTES
+ *  themselves (`/app/ops/records/horses/:id/parties`, `/health`) are
+ *  untouched and keep resolving regardless of this flag. Owner instruction
+ *  covering this: "put back all the pages in the nav where they belong now
+ *  WITH THIS MERGE" (2026-08-15) — the nav row for this page is removed as
+ *  part of the merge, not moved without instruction. */
+export const RECORDS_HUB_RETIRED = true;

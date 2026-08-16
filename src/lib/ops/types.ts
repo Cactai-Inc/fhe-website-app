@@ -113,6 +113,15 @@ export interface LookupCode {
   sort_order: number;
 }
 
+/** Resolve a horse breed/color CODE to its display name. Shared so every
+ *  horse surface resolves the same way — HorseRecordsPage was rendering the
+ *  raw code until TASK-PAGEMERGE (DUPECENSUS 2.1: HorsesPage, via HorseTable,
+ *  was the only one that did this). */
+export function lookupName(list: LookupCode[], code: string | null): string {
+  if (!code) return '—';
+  return list.find((l) => l.code === code)?.display_name ?? code;
+}
+
 // ─── Engagements & stages ────────────────────────────────────────────────────
 
 export interface Engagement {
