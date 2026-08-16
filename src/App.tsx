@@ -24,6 +24,7 @@ import Services from './pages/Services';
 import Contact from './pages/Contact';
 import Lessons from './pages/Lessons';
 import SignStart from './pages/SignStart';
+import SignChoose from './pages/SignChoose';
 import Gift from './pages/Gift';
 import Redeem from './pages/Redeem';
 import Release from './pages/Release';
@@ -166,7 +167,11 @@ export function AppRoutes() {
               <Route path="/lessons" element={<Lessons />} />
               {/* TASK C — public self-onboarding funnels (/sign/guest, /sign/rider,
                   /sign/horse, /sign/rider+horse); ':path' also captures the
-                  percent-encoded rider%2Bhorse form. */}
+                  percent-encoded rider%2Bhorse form.
+                  ONBOARD §1: /sign itself is the chooser those four hang off. It
+                  did not exist, and nothing on the site linked to the deep links,
+                  so the whole funnel was unreachable. Deep links skip the chooser. */}
+              <Route path="/sign" element={<SignChoose />} />
               <Route path="/sign/:path" element={<SignStart />} />
               {/* Public /membership join removed (Slice 4): membership is by
                   invitation via the app, not a public funnel. */}

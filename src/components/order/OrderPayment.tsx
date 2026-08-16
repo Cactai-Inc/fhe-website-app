@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Landmark, CreditCard, Copy, Check, Smartphone } from 'lucide-react';
+import { Landmark, CreditCard, Copy, Check, Smartphone, Banknote } from 'lucide-react';
 import QRCode from 'qrcode';
-import { markAwaitingPayment, configValue } from '../../lib/api';
+import { markAwaitingPayment, configValue, reportMyPayment } from '../../lib/api';
 import { startStripeCheckout } from '../../lib/payments';
 import { BRAND } from '../../lib/brand';
 import type { Order, OrderItem, Payment, PaymentMethod } from '../../lib/types';
@@ -43,6 +43,108 @@ function CopyRow({ label, display, copyValue }: { label: string; display: string
 // Flip to true after the Stripe account + webhook are live — see SETUP.md.
 const STRIPE_ENABLED = false;
 const STRIPE_FEE_RATE = 0.03;
+
+/**
+ * ONBOARD §6 — "I've sent it" and "I'll pay cash".
+ *
+ * Zelle has no callback, so between the buyer sending money and the bank email
+ * arriving there is a gap where the only thing that exists is the buyer's word.
+ * This captures that word, with an OPTIONAL confirmation number (owner: "if they
+ * leave it blank thats ok"), and hands it to staff to reconcile.
+ *
+ * It is worded as a claim everywhere it appears — here, in the staff notification,
+ * and on the order's status trail — because report_my_payment deliberately does
+ * not touch payment_status. A member cannot settle their own order.
+ */
+function ReportPaymentPanel({
+  orderId,
+  reportedMethod,
+  reportedAt,
+  onChange,
+}: {
+  orderId: string;
+  reportedMethod: string | null;
+  reportedAt: string | null;
+  onChange: () => void;
+}) {
+  const [reference, setReference] = useState('');
+  const [busy, setBusy] = useState<'zelle' | 'cash' | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function report(method: 'zelle' | 'cash') {
+    setBusy(method);
+    setError(null);
+    try {
+      await reportMyPayment(orderId, method, method === 'zelle' ? reference : null);
+      onChange();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not record that. Please try again.');
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  if (reportedAt) {
+    return (
+      <div className="mt-5 pt-5 border-t border-green-800/10">
+        <p className="text-sm font-sans text-green-800 bg-green-50 border border-green-200 p-4">
+          {reportedMethod === 'cash'
+            ? 'Thanks — we’ve noted that you’re paying cash. We’ll settle it with you at the ranch.'
+            : 'Thanks — we’ve noted that you sent the payment. We’ll confirm it as soon as it lands on our side.'}
+        </p>
+        <button
+          type="button"
+          onClick={() => void report(reportedMethod === 'cash' ? 'zelle' : 'cash')}
+          disabled={busy !== null}
+          className="mt-3 text-xs font-sans text-muted underline hover:text-green-800 focus-ring"
+        >
+          {reportedMethod === 'cash' ? 'Actually, I sent it by Zelle' : 'Actually, I’ll pay cash'}
+        </button>
+        {error && <p className="form-error mt-2" role="alert">{error}</p>}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-5 pt-5 border-t border-green-800/10">
+      <p className="text-sm font-sans font-medium text-green-900 mb-1">Already sent it?</p>
+      <p className="text-xs font-sans text-muted mb-3 leading-relaxed">
+        Let us know and we’ll watch for it. A confirmation number helps us match it faster,
+        but you can leave it blank.
+      </p>
+      <label className="form-label" htmlFor="payment-confirmation">
+        Confirmation number (optional)
+      </label>
+      <input
+        id="payment-confirmation"
+        className="form-input mb-3"
+        value={reference}
+        onChange={(e) => setReference(e.target.value)}
+        autoComplete="off"
+      />
+      <div className="flex flex-col sm:flex-row gap-2">
+        <button
+          type="button"
+          onClick={() => void report('zelle')}
+          disabled={busy !== null}
+          className="btn-primary flex-1 justify-center"
+        >
+          {busy === 'zelle' ? 'Recording…' : 'I’ve sent the payment'}
+        </button>
+        <button
+          type="button"
+          onClick={() => void report('cash')}
+          disabled={busy !== null}
+          className="btn-secondary flex-1 justify-center inline-flex items-center gap-2"
+        >
+          <Banknote size={15} aria-hidden="true" />
+          {busy === 'cash' ? 'Recording…' : 'I’m paying cash'}
+        </button>
+      </div>
+      {error && <p className="form-error mt-2" role="alert">{error}</p>}
+    </div>
+  );
+}
 
 export default function OrderPayment({
   order,
@@ -197,6 +299,18 @@ export default function OrderPayment({
               {working ? 'Preparing…' : 'Pay with Zelle'}
             </button>
           )}
+
+          {/* ONBOARD §6. Rendered whether or not the Zelle memo has been issued:
+              the cash button must be reachable from the payment page itself
+              ("they need to be able to have an option on the payment page"), and
+              somebody who pays from their bank without pressing our button still
+              needs a way to tell us. */}
+          <ReportPaymentPanel
+            orderId={order.id}
+            reportedMethod={order.client_reported_method}
+            reportedAt={order.client_reported_at}
+            onChange={onChange}
+          />
         </div>
       )}
 

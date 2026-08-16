@@ -2437,6 +2437,90 @@ export async function markTourSeen(formFactor: TourFormFactor = currentTourFormF
   if (error) throw error;
 }
 
+// ─── Profile completion (ONBOARD §5) ────────────────────────────────────────
+export interface ProfileCompletion {
+  complete: boolean;
+  /** What is still blank, in words — so the notice can say why. */
+  missing: string[];
+}
+
+/** Reads contact_profile_complete(), the SAME predicate the onboarding wizard
+ *  uses for its own "your details" step, so the wizard and the dashboard notice
+ *  cannot disagree about whether somebody is done. */
+export async function myProfileCompletion(): Promise<ProfileCompletion> {
+  const { data, error } = await supabase.rpc('my_profile_completion');
+  if (error) throw error;
+  const d = (data ?? {}) as Partial<ProfileCompletion>;
+  return { complete: d.complete !== false, missing: Array.isArray(d.missing) ? d.missing : [] };
+}
+
+// ─── The buyer's own payment report (ONBOARD §6) ────────────────────────────
+/**
+ * "I sent it" / "I'm paying cash" — a CLAIM, not a confirmation.
+ *
+ * Zelle gives us no callback, so the only signal before the bank email arrives is
+ * the buyer saying so. This records that they said it (with the confirmation
+ * number if they typed one — blank is fine, by owner instruction) and alerts
+ * staff. It cannot and does not settle the order: payment_status is only ever
+ * written by staff reconciliation.
+ */
+export async function reportMyPayment(
+  purchaseId: string,
+  method: 'zelle' | 'cash',
+  reference?: string | null,
+): Promise<{ recorded: boolean; reason?: string }> {
+  const { data, error } = await supabase.rpc('report_my_payment', {
+    p_purchase_id: purchaseId,
+    p_method: method,
+    p_reference: reference?.trim() || null,
+  });
+  if (error) throw error;
+  return (data ?? { recorded: false }) as { recorded: boolean; reason?: string };
+}
+
+// ─── Signed-copies delivery state (ONBOARD §4) ──────────────────────────────
+export interface ExecutedDeliveryState {
+  /** the caller's executed documents */
+  total: number;
+  /** how many have a real EMAIL delivery row addressed to them */
+  delivered: number;
+  /** executed but deliberately not mailed yet (a signing run still in progress) */
+  held: number;
+}
+
+export async function myExecutedDeliveryState(): Promise<ExecutedDeliveryState> {
+  const { data, error } = await supabase.rpc('my_executed_delivery_state');
+  if (error) throw error;
+  const d = (data ?? {}) as Partial<ExecutedDeliveryState>;
+  return { total: Number(d.total ?? 0), delivered: Number(d.delivered ?? 0), held: Number(d.held ?? 0) };
+}
+
+/**
+ * Wait for the combined signed-copies email to actually land a delivery row.
+ *
+ * The send is a queued pg_net POST that renders N PDFs and talks to SMTP — the
+ * endpoint's own comment measures it at 6–8 seconds — so the answer is not
+ * available the instant the last signature is recorded. This polls for it and
+ * returns what is TRUE, never an optimistic yes: `false` means we could not
+ * confirm delivery within the window, which is exactly what the done step should
+ * tell the member.
+ */
+export async function pollDeliveryConfirmed(
+  attempts = 10,
+  intervalMs = 2500,
+): Promise<boolean> {
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const s = await myExecutedDeliveryState();
+      if (s.total > 0 && s.delivered >= s.total) return true;
+    } catch {
+      /* a read failure is not a delivery failure — keep waiting */
+    }
+    await new Promise((r) => setTimeout(r, intervalMs));
+  }
+  return false;
+}
+
 // ─── The contact dossier (staff) ────────────────────────────────────────────
 /** Everything known about one person.
  *

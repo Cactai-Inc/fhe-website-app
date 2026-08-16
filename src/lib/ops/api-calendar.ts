@@ -231,11 +231,72 @@ export async function fetchClientPurchases(clientId: string): Promise<ClientPurc
 // ─── Client booking + change flow (Slice 4) ──────────────────────────────────
 
 /** A client claims a flexible-open block. Throws NO_CREDITS when a lesson slot
- *  needs a credit the client doesn't have (the UI then prompts to purchase). */
-export async function bookOpenSlot(bookingId: string, horseId?: string | null): Promise<{ status: string; kind: string }> {
-  const { data, error } = await supabase.rpc('book_open_slot', { p_booking_id: bookingId, p_horse_id: horseId ?? null });
+ *  needs a credit the client doesn't have (the UI then prompts to purchase).
+ *
+ *  ONBOARD §7 — `creditId` is the purchased item the member picked ("select what
+ *  they are requesting that slot for from the items they purchased"). When it is
+ *  given, that credit is the one debited and no other; when it is omitted the
+ *  server falls back to its existing preference order. FLOWTRACE §9 flagged that
+ *  the parameter existed end to end and no client surface ever passed it. */
+export async function bookOpenSlot(
+  bookingId: string,
+  horseId?: string | null,
+  creditId?: string | null,
+): Promise<{ status: string; kind: string }> {
+  const { data, error } = await supabase.rpc('book_open_slot', {
+    p_booking_id: bookingId,
+    p_horse_id: horseId ?? null,
+    p_credit_id: creditId ?? null,
+  });
   if (error) throw error;
   return data as { status: string; kind: string };
+}
+
+/** ONBOARD §7 — while a booking is still a REQUEST, the member just edits it.
+ *  Nothing has been agreed, so there is no fee and no second approval step.
+ *  Throws NOT_PENDING once staff have confirmed it (use requestBookingChange). */
+export async function updateMyPendingBooking(
+  bookingId: string, newStartISO: string, newEndISO: string,
+): Promise<{ status: string; starts_at: string; ends_at: string }> {
+  const { data, error } = await supabase.rpc('update_my_pending_booking', {
+    p_booking_id: bookingId, p_new_start: newStartISO, p_new_end: newEndISO,
+  });
+  if (error) throw error;
+  return data as { status: string; starts_at: string; ends_at: string };
+}
+
+/** Withdraw a request that was never confirmed — the credit comes straight back. */
+export async function withdrawMyPendingBooking(
+  bookingId: string,
+): Promise<{ status: string; credit_refunded: boolean }> {
+  const { data, error } = await supabase.rpc('withdraw_my_pending_booking', { p_booking_id: bookingId });
+  if (error) throw error;
+  return data as { status: string; credit_refunded: boolean };
+}
+
+/** ONBOARD §7 — the tiered change-fee schedule, as data. Empty until the owner
+ *  enters it in the calendar settings panel, in which case the incumbent flat
+ *  reschedule fee still applies. */
+export interface ChangeFeeTier {
+  id: string;
+  hours_before: number;
+  fee_amount: number;
+  label: string | null;
+  active: boolean;
+}
+
+export async function fetchChangeFeeSchedule(): Promise<ChangeFeeTier[]> {
+  const { data, error } = await supabase.rpc('booking_change_fee_schedule');
+  if (error) throw error;
+  return (data ?? []) as ChangeFeeTier[];
+}
+
+export async function setChangeFeeSchedule(rows: Array<{
+  hours_before: number; fee_amount: number; label?: string | null;
+}>): Promise<number> {
+  const { data, error } = await supabase.rpc('set_booking_change_fee_schedule', { p_rows: rows });
+  if (error) throw error;
+  return Number(data ?? 0);
 }
 
 export type ChangeKind = 'reschedule' | 'cancel' | 'defer';
@@ -245,6 +306,9 @@ export interface ChangeResult {
   fee_amount: number | null;
   phone_required: boolean;
   kind: ChangeKind;
+  /** Echoed back when a fee applied, so the confirmation can say which way the
+   *  client said they were settling it (ONBOARD §7). */
+  fee_method?: 'zelle' | 'cash' | null;
 }
 
 /** Request a reschedule / cancel / defer on a booking. Returns the fee owed +
@@ -257,6 +321,14 @@ export async function requestBookingChange(input: {
   /** 'one' | 'future' | 'all' | 'weeks:N' (recurring series reach). */
   scope?: string;
   note?: string;
+  /** ONBOARD §7 — how the client is settling the change fee. The server REFUSES
+   *  a chargeable change without it ("the booking doesnt submit to us until they
+   *  confirm they made the payment with zelle or say they will pay cash"), so a
+   *  missing value throws FEE_CONFIRMATION_REQUIRED rather than creating a row
+   *  nobody follows up. A claim, not a payment: fee_paid still only moves via
+   *  markChangeFeePaid. */
+  feeMethod?: 'zelle' | 'cash' | null;
+  feeReference?: string | null;
 }): Promise<ChangeResult> {
   const { data, error } = await supabase.rpc('request_booking_change', {
     p_booking_id: input.bookingId,
@@ -265,6 +337,8 @@ export async function requestBookingChange(input: {
     p_new_end: input.newEnd ?? null,
     p_scope: input.scope ?? 'one',
     p_note: input.note ?? null,
+    p_fee_method: input.feeMethod ?? null,
+    p_fee_reference: input.feeReference?.trim() || null,
   });
   if (error) throw error;
   return data as ChangeResult;

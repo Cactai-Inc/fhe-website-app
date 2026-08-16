@@ -21,6 +21,17 @@
  * Delivery is best-effort exactly as it was before: a delivery failure is
  * logged but never fails the response — the signer's executed document is
  * already recorded regardless of whether the email send succeeds.
+ *
+ * ONBOARD §4 — `hold_set: true`. The guided participant flow
+ * (/docs/release-participant) signs FOUR documents through four calls to this
+ * endpoint, and each call used to deliver its own document in-process: four
+ * separate emails for one sitting, which is the bug the owner reported. That
+ * flow now sets `hold_set`, which (a) opens a delivery hold for this signer so
+ * the DB's per-document execution trigger holds too, and (b) skips the
+ * in-process single-document send. The flow's existing final POST to
+ * /api/deliver-documents with the FULL id list is then the one and only send,
+ * and it closes the hold. The one-document kiosk (/release) does not set it and
+ * is completely unchanged.
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
@@ -34,6 +45,13 @@ function anonClient() {
   return createClient(url, anon, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
+}
+
+/** Single-tenant resolution — the same fallback sign-start.ts uses when a
+ *  service-role call has no current_org() and the body named no tenant. */
+async function singleOrgId(db: ReturnType<typeof getSupabaseAdmin>): Promise<string | null> {
+  const { data } = await db.from('organizations').select('id').limit(2);
+  return data && data.length === 1 ? (data[0].id as string) : null;
 }
 
 interface SignReleaseResult {
@@ -86,6 +104,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     };
     if (typeof body.org_id === 'string' && body.org_id) rpcParams.p_org = body.org_id;
 
+    const holdSet = body.hold_set === true;
+    const signerEmail = typeof body.email === 'string' ? body.email.trim() : '';
+
+    // The hold has to exist BEFORE the signature executes the document, because
+    // the execution trigger reads it. Opened on the email, since the contact row
+    // is created by the RPC we are about to call.
+    if (holdSet && signerEmail) {
+      try {
+        const db = getSupabaseAdmin();
+        const orgId = typeof body.org_id === 'string' && body.org_id
+          ? body.org_id
+          : await singleOrgId(db);
+        await db.rpc('open_document_delivery_hold', {
+          p_org: orgId,
+          p_contact_id: null,
+          p_email: signerEmail,
+          p_source: 'participant-flow',
+        });
+      } catch (holdErr) {
+        // A hold we could not open means the old behaviour (a mail per document),
+        // not a failed signature. Log it and carry on.
+        console.error('sign-release: could not open the delivery hold', holdErr);
+      }
+    }
+
     const anon = anonClient();
     const { data, error } = await anon.rpc('sign_release', rpcParams);
     if (error) return res.status(400).json({ error: error.message });
@@ -93,16 +136,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Server-side delivery, in-process (no HTTP hop, no unauthenticated call
     // to /api/deliver-document). Best-effort: never fails the signed result.
-    try {
-      const db = getSupabaseAdmin();
-      await deliverExecutedDocument(db, result.document_id);
-    } catch (deliveryErr) {
-      if (!(deliveryErr instanceof DeliveryError)) {
-        console.error('sign-release: delivery failed', deliveryErr);
+    // SKIPPED for a held set — the caller delivers the whole set in one email.
+    if (!holdSet) {
+      try {
+        const db = getSupabaseAdmin();
+        await deliverExecutedDocument(db, result.document_id);
+      } catch (deliveryErr) {
+        if (!(deliveryErr instanceof DeliveryError)) {
+          console.error('sign-release: delivery failed', deliveryErr);
+        }
+        // DeliveryError (e.g. race on status) is also swallowed here — the
+        // signed document is already safely recorded either way, matching the
+        // pre-hardening .catch(() => {}) best-effort semantics.
       }
-      // DeliveryError (e.g. race on status) is also swallowed here — the
-      // signed document is already safely recorded either way, matching the
-      // pre-hardening .catch(() => {}) best-effort semantics.
     }
 
     return res.status(200).json(result);
