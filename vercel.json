@@ -18,6 +18,10 @@
     {
       "path": "/api/delivery-sweep",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/mint-monthly-allotments",
+      "schedule": "20 8 * * *"
     }
   ],
   "rewrites": [

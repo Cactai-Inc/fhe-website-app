@@ -258,7 +258,7 @@ describe('AFTER the migration — the mint table the task brief specifies', () =
 describe('my_horse_onboarding_state — twin-key purchase lookup (regression guard)', () => {
   it('resolves a contact-keyed (provisioned, no buyer_user_id) horse purchase', async () => {
     await h.asSuperuser();
-    const { contact, client } = await makeContactAndClient('horsegate@creditfix.test', 'Horsegate');
+    const { contact } = await makeContactAndClient('horsegate@creditfix.test', 'Horsegate');
     const uid = await h.createAuthUser({ email: 'horsegate@creditfix.test', org });
 
     // a provisioned horse-care purchase exactly as _provision_purchase_for_offerings

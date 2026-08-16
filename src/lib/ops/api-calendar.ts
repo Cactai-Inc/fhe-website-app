@@ -474,32 +474,42 @@ export async function setCalendarSettings(rescheduleFee: number): Promise<void> 
 // ─── Monthly plans (BOOKLINK B4) ──────────────────────────────────────────────
 
 export interface MonthlyPlan {
+  /** CREDITALIGN: the allotment row itself. entitled/used/remaining below ARE this
+   *  row's numbers — the panel and the booking path can no longer disagree. */
+  credit_id: string;
   purchase_id: string;
   purchase_item_id: string;
   offering_id: string;
   offering_name: string;
+  segment: string;
   weekly_frequency: number | null;
   /** 'Mon'..'Sun', or null when not yet set. */
   recurring_day: string | null;
+  period_start: string;
+  /** The month boundary: after this the allotment is gone and does not carry over. */
+  expires_at: string;
+  /** Set when staff have stopped the plan; it will not roll into another month. */
+  plan_ends_on: string | null;
   month_label: string;
-  entitled_this_month: number | null;
+  entitled_this_month: number;
   used_this_month: number;
-  remaining_this_month: number | null;
+  remaining_this_month: number;
 }
 
-/** Staff: a client's monthly-plan status (the purchase of a recurring
- *  offering IS the assignment — null when they have none). */
-export async function fetchClientMonthlyPlan(clientId: string): Promise<MonthlyPlan | null> {
+/** Staff: every current-month plan a client holds — lessons AND horse care.
+ *  CREDITALIGN: was a single plan or null; a client can hold several (prod: Training
+ *  1x Weekly + Exercise 1x Weekly on one order). Empty array when they have none. */
+export async function fetchClientMonthlyPlans(clientId: string): Promise<MonthlyPlan[]> {
   const { data, error } = await supabase.rpc('client_monthly_plan', { p_client_id: clientId });
   if (error) throw error;
-  return (data ?? null) as MonthlyPlan | null;
+  return (data ?? []) as MonthlyPlan[];
 }
 
-/** The signed-in member's own monthly-plan status. */
-export async function fetchMyMonthlyPlan(): Promise<MonthlyPlan | null> {
+/** The signed-in member's own current-month plans, both segments. */
+export async function fetchMyMonthlyPlans(): Promise<MonthlyPlan[]> {
   const { data, error } = await supabase.rpc('my_monthly_plan');
   if (error) throw error;
-  return (data ?? null) as MonthlyPlan | null;
+  return (data ?? []) as MonthlyPlan[];
 }
 
 /** Staff or the plan's own client: set the recurring day of the week. */
@@ -513,12 +523,79 @@ export async function setRecurringDay(purchaseItemId: string, day: string): Prom
 export async function generateMonthlyLessons(input: {
   clientId: string; purchaseItemId: string; startTime: string; durationMinutes?: number;
   horseId?: string | null; locationId?: string | null;
-}): Promise<{ series_id: string; created: number; skipped_existing: number; recurring_day: string }> {
+}): Promise<GeneratedMonth> {
   const { data, error } = await supabase.rpc('generate_monthly_lessons', {
     p_client_id: input.clientId, p_purchase_item_id: input.purchaseItemId,
     p_start_time: input.startTime, p_duration_minutes: input.durationMinutes ?? 60,
     p_horse_id: input.horseId ?? null, p_location_id: input.locationId ?? null,
   });
   if (error) throw error;
-  return data as { series_id: string; created: number; skipped_existing: number; recurring_day: string };
+  return data as GeneratedMonth;
+}
+
+export interface GeneratedMonth {
+  series_id: string;
+  created: number;
+  skipped_existing: number;
+  /** CREDITALIGN: generating a session SPENDS one allotment credit, so the generator
+   *  stops when the month's entitlement is used up rather than writing sessions
+   *  nobody paid for. This is how many dates it had to leave alone. */
+  skipped_no_entitlement: number;
+  recurring_day: string;
+  kind: 'lesson' | 'care';
+}
+
+/** Staff: stop a recurring plan. The month already bought is untouched — this only
+ *  stops it rolling into the next one (D13: no migration to cancel a plan). */
+export async function setRecurringPlanEnd(purchaseItemId: string, endsOn: string | null): Promise<void> {
+  const { error } = await supabase.rpc('set_recurring_plan_end', {
+    p_purchase_item_id: purchaseItemId, p_date: endsOn,
+  });
+  if (error) throw error;
+}
+
+// ─── The item swap (CREDITALIGN A2) ──────────────────────────────────────────
+
+export interface BookingItemOption {
+  credit_id: string;
+  label: string;
+  offering_id: string | null;
+  purchase_id: string | null;
+  segment: string | null;
+  remaining: number;
+  period_start: string | null;
+  expires_at: string | null;
+}
+
+export interface BookingItemOptions {
+  booking_id: string;
+  kind: string | null;
+  status: string;
+  /** Whether THIS caller may swap right now (client: only while pending). */
+  can_swap: boolean;
+  /** Why not, in words the member can read. Null when can_swap is true. */
+  reason: string | null;
+  current: Omit<BookingItemOption, 'segment' | 'period_start'> | null;
+  options: BookingItemOption[];
+}
+
+/** What this booking is charged against, and what it could be charged against
+ *  instead. Staff and the booking's own client both read the same answer. */
+export async function fetchBookingItemOptions(bookingId: string): Promise<BookingItemOptions> {
+  const { data, error } = await supabase.rpc('booking_item_options', { p_booking_id: bookingId });
+  if (error) throw error;
+  return data as BookingItemOptions;
+}
+
+/** Re-charge a booking to a different purchased item: the old item gets its credit
+ *  back, the new one is debited, in one transaction. Throws with a readable reason
+ *  (NO_ENTITLEMENT / ITEM_EXPIRED / WRONG_SERVICE / NOT_PENDING) when refused. */
+export async function swapBookingItem(
+  bookingId: string, creditId: string,
+): Promise<{ to_label: string; from_label: string | null; refunded: boolean; by: string }> {
+  const { data, error } = await supabase.rpc('swap_booking_item', {
+    p_booking_id: bookingId, p_credit_id: creditId,
+  });
+  if (error) throw error;
+  return data as { to_label: string; from_label: string | null; refunded: boolean; by: string };
 }

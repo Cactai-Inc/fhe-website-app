@@ -7,7 +7,7 @@ import {
   myLessonsOverview, myLessonSessions, myLessonReports, addMyLessonNote,
   type MemberLessonSession, type MemberLessonReport,
 } from '../../lib/ops/api-member';
-import { fetchMyMonthlyPlan, type MonthlyPlan } from '../../lib/ops/api-calendar';
+import { fetchMyMonthlyPlans, type MonthlyPlan } from '../../lib/ops/api-calendar';
 import { formatSessionWhen } from '../../lib/formatDateTime';
 import { toErrorMessage } from '../../lib/ops/errors';
 import { SessionNotesView } from './SessionNotesView';
@@ -113,7 +113,7 @@ export function MyLessonsContent() {
   const load = useAsync(myLessonsOverview);
   const [sessions, setSessions] = useState<MemberLessonSession[]>([]);
   const [reports, setReports] = useState<MemberLessonReport[]>([]);
-  const [monthlyPlan, setMonthlyPlan] = useState<MonthlyPlan | null>(null);
+  const [monthlyPlans, setMonthlyPlans] = useState<MonthlyPlan[]>([]);
 
   useEffect(() => {
     if (!lessonsOn) return;
@@ -130,9 +130,9 @@ export function MyLessonsContent() {
       .catch(() => {
         /* the progress section just stays empty */
       });
-    fetchMyMonthlyPlan()
-      .then(setMonthlyPlan)
-      .catch(() => setMonthlyPlan(null));
+    fetchMyMonthlyPlans()
+      .then(setMonthlyPlans)
+      .catch(() => setMonthlyPlans([]));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lessonsOn]);
 
@@ -212,23 +212,34 @@ export function MyLessonsContent() {
         </section>
       )}
 
-      {/* BOOKLINK B4 — monthly-plan status, when the client is on one. */}
-      {monthlyPlan && (
-        <div className="bg-white border border-green-800/10 p-6 mb-8" data-testid="monthly-plan">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-sans font-medium text-green-900">{monthlyPlan.offering_name}</p>
-              <p className="text-xs text-muted mt-0.5">
-                {monthlyPlan.recurring_day
-                  ? `Every ${monthlyPlan.recurring_day} — ${monthlyPlan.month_label}`
-                  : `Recurring day not set yet — ${monthlyPlan.month_label}`}
-              </p>
+      {/* BOOKLINK B4 + CREDITALIGN — every plan the member holds this month, lessons
+          AND horse care, with the numbers read straight off the allotment they book
+          against. A month does not carry over, so the card says when it ends. */}
+      {monthlyPlans.length > 0 && (
+        <div className="flex flex-col gap-3 mb-8" data-testid="monthly-plan">
+          {monthlyPlans.map((plan) => (
+            <div key={plan.credit_id} className="bg-white border border-green-800/10 p-6">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-sans font-medium text-green-900">{plan.offering_name}</p>
+                  <p className="text-xs text-muted mt-0.5">
+                    {plan.recurring_day
+                      ? `Every ${plan.recurring_day} — ${plan.month_label}`
+                      : `Recurring day not set yet — ${plan.month_label}`}
+                  </p>
+                  <p className="text-xs text-muted mt-0.5">
+                    This month&rsquo;s sessions don&rsquo;t roll over — they&rsquo;re yours until{' '}
+                    {new Date(plan.expires_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}.
+                    {plan.plan_ends_on && ' Your plan ends after this month.'}
+                  </p>
+                </div>
+                <p className="font-serif text-3xl text-green-800 whitespace-nowrap">
+                  {plan.remaining_this_month}
+                  <span className="text-sm text-muted"> / {plan.entitled_this_month} left</span>
+                </p>
+              </div>
             </div>
-            <p className="font-serif text-3xl text-green-800 whitespace-nowrap">
-              {monthlyPlan.remaining_this_month ?? '—'}
-              <span className="text-sm text-muted"> / {monthlyPlan.entitled_this_month ?? '—'} left</span>
-            </p>
-          </div>
+          ))}
         </div>
       )}
 
