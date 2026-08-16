@@ -18,7 +18,8 @@ import AppLayout from './components/app/AppLayout';
 import Landing from './pages/Landing';
 import About from './pages/About';
 import Story from './pages/Story';
-import Shop from './pages/Shop';
+// Shop (the public catalog) is hidden — see the /shop route below. The page
+// file is untouched; restoring it is this import plus one route line.
 import Faq from './pages/Faq';
 import Services from './pages/Services';
 import Contact from './pages/Contact';
@@ -156,7 +157,14 @@ export function AppRoutes() {
             <Route element={<Layout />}>
               <Route path="/about" element={<About />} />
               <Route path="/story" element={<Story />} />
-              <Route path="/shop" element={<Shop />} />
+              {/* Owner, 2026-08-16: "hide this catalog externally for now."
+                  A web visitor should be funnelled to the thing they came for,
+                  not handed a browsable list that invites comparison — the
+                  catalog stays right for in-app use, where someone already knows
+                  what they want. The route REDIRECTS rather than 404s so any
+                  existing link or bookmark lands on the rider funnel, and Shop
+                  stays mounted in the bundle so un-hiding is one line. */}
+              <Route path="/shop" element={<Navigate to="/lessons" replace />} />
               <Route path="/faq" element={<Faq />} />
               <Route path="/services" element={<Services />} />
               <Route path="/contact" element={<Contact />} />

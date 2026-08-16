@@ -48,8 +48,10 @@ export default function ServiceListState({
         <span className="hidden sm:inline text-green-800/25" aria-hidden="true">
           ·
         </span>
-        <Link to="/shop" className="link-underline">
-          Browse everything we offer
+        {/* Was /shop (now hidden, owner 2026-08-16) — the rider funnel is the
+            closest honest destination for "what else do you offer". */}
+        <Link to="/lessons" className="link-underline">
+          See our riding lessons
         </Link>
       </div>
     </div>

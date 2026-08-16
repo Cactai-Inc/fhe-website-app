@@ -34,10 +34,10 @@ export default function Footer() {
             {[
               { label: 'Home', href: '/' },
               { label: 'Our Story', href: '/story' },
-              // COUNTFIX 1.5: 'Ways to Ride' and 'Book a Lesson' were adjacent
-              // entries both pointing at /shop — two labels, one destination.
-              // The lesson funnel has its own URL; point the second one at it.
-              { label: 'Ways to Ride', href: '/shop' },
+              // Owner, 2026-08-16: the public catalog (/shop) is hidden — a web
+              // visitor is funnelled straight to the thing they came for, not
+              // shown a browsable list that invites comparison. 'Ways to Ride'
+              // pointed there and is gone; the three funnels below ARE the ways.
               { label: 'Book a Lesson', href: '/lessons' },
               { label: 'Horse Care', href: '/horse' },
               { label: 'Acquisition Support', href: '/acquisition' },
