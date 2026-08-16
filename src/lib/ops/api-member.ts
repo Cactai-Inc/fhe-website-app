@@ -28,6 +28,18 @@ export interface MemberLessonCredit {
   credits_total: number;
   credits_remaining: number;
   purchased_at: string;
+  /** CREDITALIGN: a monthly allotment stops being spendable at month end. NULL on a
+   *  session pack, which never expires. */
+  expires_at: string | null;
+  /** First day of the billing month an allotment covers; NULL on a pack. */
+  period_start: string | null;
+}
+
+/** CREDITALIGN: is this credit still spendable today? The same rule the server
+ *  enforces in book_open_slot — kept in one place so no surface counts an expired
+ *  allotment toward "what can I book?". */
+export function creditIsLive(c: { expires_at: string | null }): boolean {
+  return c.expires_at == null || new Date(c.expires_at).getTime() > Date.now();
 }
 
 /** A purchasable pack from the tenant's catalog (price stays behind the registry). */
@@ -52,7 +64,7 @@ export async function myLessonsOverview(): Promise<MyLessonsOverview> {
   const [creditRes, pkgRes] = await Promise.all([
     supabase
       .from('lesson_credits')
-      .select('id, package_key, credits_total, credits_remaining, purchased_at')
+      .select('id, package_key, credits_total, credits_remaining, purchased_at, expires_at, period_start')
       .is('deleted_at', null)
       .order('purchased_at', { ascending: false }),
     supabase
@@ -73,7 +85,11 @@ export async function myLessonsOverview(): Promise<MyLessonsOverview> {
   return {
     credits,
     packages: (pkgRes.data ?? []) as MemberLessonPackage[],
-    creditsRemaining: credits.reduce((sum, c) => sum + c.credits_remaining, 0),
+    // CREDITALIGN: an expired monthly allotment is still shown in the list (it is part
+    // of the member's history) but is NOT part of "what I can book".
+    creditsRemaining: credits
+      .filter(creditIsLive)
+      .reduce((sum, c) => sum + c.credits_remaining, 0),
   };
 }
 
@@ -86,29 +102,40 @@ export interface MemberBookableItem {
   offeringId: string | null;
   label: string;
   creditsRemaining: number;
+  /** CREDITALIGN: set on a monthly allotment — after this it is gone and does not
+   *  carry over, so the picker must not offer it and the copy should say when. */
+  expiresAt: string | null;
+  segment: string | null;
 }
 
 export async function myBookableItems(): Promise<MemberBookableItem[]> {
   const { data, error } = await supabase
     .from('lesson_credits')
-    .select('id, offering_id, package_key, credits_remaining, offerings(name)')
+    .select('id, offering_id, package_key, credits_remaining, expires_at, offerings(name, segment)')
     .is('deleted_at', null)
     .gt('credits_remaining', 0)
     .order('purchased_at', { ascending: false });
   if (error) throw error;
   type Row = {
     id: string; offering_id: string | null; package_key: string | null;
-    credits_remaining: number; offerings: { name: string } | { name: string }[] | null;
+    credits_remaining: number; expires_at: string | null;
+    offerings: { name: string; segment: string } | { name: string; segment: string }[] | null;
   };
-  return ((data ?? []) as Row[]).map((r) => {
-    const offering = Array.isArray(r.offerings) ? r.offerings[0] : r.offerings;
-    return {
-      creditId: r.id,
-      offeringId: r.offering_id,
-      label: offering?.name ?? r.package_key ?? 'Lesson credit',
-      creditsRemaining: Number(r.credits_remaining) || 0,
-    };
-  });
+  return ((data ?? []) as Row[])
+    // CREDITALIGN: last month's allotment is not bookable — book_open_slot would
+    // refuse it with NO_CREDITS, so offering it would be a lie.
+    .filter(creditIsLive)
+    .map((r) => {
+      const offering = Array.isArray(r.offerings) ? r.offerings[0] : r.offerings;
+      return {
+        creditId: r.id,
+        offeringId: r.offering_id,
+        label: offering?.name ?? r.package_key ?? 'Lesson credit',
+        creditsRemaining: Number(r.credits_remaining) || 0,
+        expiresAt: r.expires_at,
+        segment: offering?.segment ?? null,
+      };
+    });
 }
 
 // ─── My lesson sessions (mod.lessons — 20260703120000) ──────────────────────

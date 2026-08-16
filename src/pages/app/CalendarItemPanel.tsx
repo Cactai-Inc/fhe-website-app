@@ -6,6 +6,7 @@ import type { Offering } from '../../lib/types';
 import { listLessonClients, listScheduleHorses } from '../../lib/ops/api-lessons';
 import type { LessonClientOption, ScheduleHorseOption } from '../../lib/ops/api-lessons';
 import { LessonLogEditor } from './ops/lessons/LessonLogEditor';
+import { BookingItemSwap } from '../../components/app/BookingItemSwap';
 import {
   fetchLocations, addMyLocation,
   fetchClientPurchases,
@@ -17,7 +18,8 @@ import {
   decideBookingChange,
   requestHorseIntake,
   notifyAppointmentClient,
-  fetchClientMonthlyPlan,
+  fetchClientMonthlyPlans,
+  setRecurringPlanEnd,
   setRecurringDay,
   generateMonthlyLessons,
   type CalendarItem,
@@ -161,12 +163,13 @@ export function CalendarItemPanel({
     setMonthlyPlan(null);
     setMonthlyResult(null);
     if (!clientId || !isRecurringOffering) return;
-    fetchClientMonthlyPlan(clientId)
-      .then((plan) => {
-        if (plan && plan.offering_id === offeringId) {
-          setMonthlyPlan(plan);
-          setRecurringDayInput(plan.recurring_day ?? '');
-        }
+    // CREDITALIGN: a client can hold several plans (prod PUR-000059 carries two);
+    // this panel is about the one matching the offering on screen.
+    fetchClientMonthlyPlans(clientId)
+      .then((plans) => {
+        const plan = plans.find((p) => p.offering_id === offeringId) ?? null;
+        setMonthlyPlan(plan);
+        setRecurringDayInput(plan?.recurring_day ?? '');
       })
       .catch(() => setMonthlyPlan(null));
   }, [clientId, offeringId, isRecurringOffering]);
@@ -208,8 +211,8 @@ export function CalendarItemPanel({
     setMonthlyBusy(true); setMonthlyError(null);
     try {
       await setRecurringDay(monthlyPlan.purchase_item_id, recurringDay);
-      const refreshed = await fetchClientMonthlyPlan(clientId);
-      setMonthlyPlan(refreshed);
+      const refreshed = await fetchClientMonthlyPlans(clientId);
+      setMonthlyPlan(refreshed.find((p) => p.offering_id === offeringId) ?? null);
     } catch (e) {
       setMonthlyError(toErrorMessage(e, 'Could not set the recurring day.'));
     } finally {
@@ -226,15 +229,40 @@ export function CalendarItemPanel({
         startTime: start.slice(11, 16) || '15:00',
         horseId: horseId || null, locationId: locationId || null,
       });
-      setMonthlyResult(`${res.created} session${res.created === 1 ? '' : 's'} added, ${res.skipped_existing} already on the calendar.`);
-      const refreshed = await fetchClientMonthlyPlan(clientId);
-      setMonthlyPlan(refreshed);
+      // CREDITALIGN: generating SPENDS the allotment, so the honest report includes
+      // the dates it had to leave alone because the month was used up.
+      setMonthlyResult(
+        `${res.created} session${res.created === 1 ? '' : 's'} added, `
+        + `${res.skipped_existing} already on the calendar`
+        + (res.skipped_no_entitlement > 0
+            ? `, ${res.skipped_no_entitlement} skipped — this month's allotment is used up.`
+            : '.'));
+      const refreshed = await fetchClientMonthlyPlans(clientId);
+      setMonthlyPlan(refreshed.find((p) => p.offering_id === offeringId) ?? null);
     } catch (e) {
       setMonthlyError(toErrorMessage(e, 'Could not generate this month’s sessions.'));
     } finally {
       setMonthlyBusy(false);
     }
   }
+  /** D13 — stopping a plan is a button here, not a migration. The month already
+   *  bought stands; this only stops it rolling into the next one. */
+  async function stopPlan() {
+    if (!monthlyPlan) return;
+    setMonthlyBusy(true); setMonthlyError(null); setMonthlyResult(null);
+    try {
+      const ending = monthlyPlan.plan_ends_on ? null : new Date().toISOString().slice(0, 10);
+      await setRecurringPlanEnd(monthlyPlan.purchase_item_id, ending);
+      const refreshed = await fetchClientMonthlyPlans(clientId);
+      setMonthlyPlan(refreshed.find((p) => p.offering_id === offeringId) ?? null);
+      setMonthlyResult(ending ? 'Plan stopped — it will not roll into next month.' : 'Plan resumed.');
+    } catch (e) {
+      setMonthlyError(toErrorMessage(e, 'Could not change the plan end.'));
+    } finally {
+      setMonthlyBusy(false);
+    }
+  }
+
   const selectedLocation = locations.find((l) => l.id === locationId);
   const offsite = selectedLocation?.is_offsite ?? false;
 
@@ -535,8 +563,11 @@ export function CalendarItemPanel({
                   ) : (
                     <>
                       <p className="text-xs text-green-800/70">
-                        {monthlyPlan.month_label}: {monthlyPlan.remaining_this_month ?? '—'} of{' '}
-                        {monthlyPlan.entitled_this_month ?? '—'} left this month.
+                        {monthlyPlan.month_label}: {monthlyPlan.remaining_this_month} of{' '}
+                        {monthlyPlan.entitled_this_month} left this month — the allotment
+                        expires {new Date(monthlyPlan.expires_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} and
+                        does not carry over.
+                        {monthlyPlan.plan_ends_on && ` Plan ends ${monthlyPlan.plan_ends_on}.`}
                       </p>
                       <div className="flex items-center gap-2">
                         <select className="form-input" value={recurringDay} onChange={(e) => setRecurringDayInput(e.target.value)}>
@@ -551,6 +582,10 @@ export function CalendarItemPanel({
                       </div>
                       <button type="button" className="btn-primary text-xs px-3 py-1.5 self-start" disabled={monthlyBusy || !monthlyPlan.recurring_day} onClick={() => void generateThisMonth()}>
                         {monthlyBusy ? 'Working…' : 'Generate this month’s sessions'}
+                      </button>
+                      <button type="button" className="text-xs text-red-700 self-start py-1 hover:underline"
+                        disabled={monthlyBusy} onClick={() => void stopPlan()}>
+                        {monthlyPlan.plan_ends_on ? 'Resume this plan' : 'Stop this plan after this month'}
                       </button>
                       {monthlyResult && <p className="text-xs text-green-700">{monthlyResult}</p>}
                       {monthlyError && <p role="alert" className="form-error">{monthlyError}</p>}
@@ -684,6 +719,15 @@ export function CalendarItemPanel({
             {type === 'appointment' && <span className="form-hint">Shown as the appointment’s title on the client’s calendar (e.g. “Vet — spring shots”).</span>}
             <textarea rows={2} className="form-input resize-none" value={notes} onChange={(e) => setNotes(e.target.value)} />
           </label>
+
+          {/* CREDITALIGN A2 — staff may re-charge a booking to a different purchased
+              item at any time, including after it is confirmed. Same component and
+              same server rules the member's own panel uses. */}
+          {editing && item?.id && clientId && (item.kind === 'lesson' || item.kind === 'care') && (
+            <div className="pt-1">
+              <BookingItemSwap bookingId={item.id} onChanged={onSaved} />
+            </div>
+          )}
 
           {/* A1 — log + report for a real serviced booking (lesson or horse-care) */}
           {editing && item?.id && (item.kind === 'lesson' || item.kind === 'care') && (

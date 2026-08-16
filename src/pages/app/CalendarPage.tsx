@@ -35,6 +35,7 @@ import { formatSessionWhen, formatTimeRange } from '../../lib/formatDateTime';
 import { CalendarItemPanel } from './CalendarItemPanel';
 import { CalendarSettingsPanel } from './CalendarSettingsPanel';
 import { SessionNotesView } from '../../components/app/SessionNotesView';
+import { BookingItemSwap } from '../../components/app/BookingItemSwap';
 
 /*
  * CP-CALENDAR — the one full-page calendar for client/staff/admin (Phase 6,
@@ -752,6 +753,10 @@ function DetailPanel({ item, onClose, onChanged, onBuy }: { item: CalendarItem; 
             <p className="text-sm bg-cream-100 border border-green-800/10 p-3 rounded">
               We haven’t confirmed this yet, so it’s still yours to change — no fee.
             </p>
+            {/* CREDITALIGN A2 — while it is still a request, the member can also change
+                WHICH purchased item it is charged against. Server-gated: once we
+                confirm, the same control explains that we will move it for them. */}
+            <BookingItemSwap bookingId={item.id} onChanged={onChanged} />
             {mode === 'view' ? (
               <>
                 <button type="button" className="btn-secondary w-full justify-center" onClick={() => setMode('reschedule')}>
@@ -782,6 +787,7 @@ function DetailPanel({ item, onClose, onChanged, onBuy }: { item: CalendarItem; 
 
         {!done && canChange && mode === 'view' && (
           <div className="flex flex-col gap-2">
+            <BookingItemSwap bookingId={item.id} onChanged={onChanged} />
             <button type="button" className="btn-secondary w-full justify-center" onClick={() => setMode('reschedule')}>Reschedule</button>
             <button type="button" className="btn-secondary w-full justify-center" disabled={busy} onClick={() => void change('defer')}>Defer (get a credit)</button>
             <button type="button" className="text-sm text-red-700 py-2 hover:bg-red-50 rounded" disabled={busy} onClick={() => void change('cancel')}>Cancel this booking</button>
