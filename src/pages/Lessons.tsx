@@ -109,14 +109,24 @@ export default function Lessons() {
         </div>
       </section>
 
-      {/* Video — rider taking instruction from a trainer */}
-      <section className="bg-cream pb-16">
+      {/* Video — rider taking instruction from a trainer.
+          PHONES (owner, 2026-08-16, with screenshots): the riders read too small
+          and too much empty foreground sand sat under them. The frame goes to 5:4
+          — a little taller than 16:9, NOT portrait — and `object-cover` then
+          crops to the riders rather than shrinking them, anchored at 42% so the
+          bottom edge lands near the fence line instead of halfway down the arena.
+          Wide is right here (the owner's zoom keeps both outer riders and the
+          palms); only the empty sand goes.
+          The gap below was a whole band of cream between the photo and "CHOOSE
+          YOUR LESSONS": pb-16 → pb-6 on phones, and the next section's py-20
+          → pt-10 on phones (see below). sm+ untouched. */}
+      <section className="bg-cream pb-6 sm:pb-16">
         <div className="container-site">
-          <div className="relative overflow-hidden aspect-video max-w-4xl mx-auto bg-green-900">
+          <div className="relative overflow-hidden aspect-[5/4] sm:aspect-video max-w-4xl mx-auto bg-green-900">
             {reducedMotion ? (
-              <img src={LESSON_POSTER} alt="A rider in a lesson with a trainer" className="w-full h-full object-cover" />
+              <img src={LESSON_POSTER} alt="Three riders on horseback at the ranch" className="w-full h-full object-cover [object-position:center_42%]" />
             ) : (
-              <video className="w-full h-full object-cover" autoPlay muted loop playsInline preload="metadata" poster={LESSON_POSTER}>
+              <video className="w-full h-full object-cover [object-position:center_42%]" autoPlay muted loop playsInline preload="metadata" poster={LESSON_POSTER}>
                 <source src="/lessons.webm" type="video/webm" />
                 <source src="/lessons.mp4" type="video/mp4" />
               </video>
@@ -126,7 +136,9 @@ export default function Lessons() {
       </section>
 
       {/* Catalog — price/quantity focused */}
-      <section className="bg-cream-50 py-20">
+      {/* pt trimmed on phones — the owner's screenshot showed a large cream
+          band between the photo and this heading. sm+ keeps py-20. */}
+      <section className="bg-cream-50 pt-10 pb-20 sm:py-20">
         <div className="container-site max-w-5xl">
           {/* Owner, screenshot 2026-08-14: the heading sat tight under its
               eyebrow with a chasm below — air moved above (mb-3→mb-5), the

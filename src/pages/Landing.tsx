@@ -50,40 +50,17 @@ export default function Landing() {
         className="fixed inset-0 h-[100dvh] w-full overflow-x-hidden overflow-y-hidden bg-green-950"
       >
 
-        {/* Still background image — no animation.
-            PHONES — the arithmetic, so this is not re-guessed a third time.
-            The photo is 1408x768 (aspect 1.83); a phone is ~390x844 (aspect
-            0.46). `cover` fills the HEIGHT, which blows the width to 1547px and
-            shows only 25% of the image — that is what cut the outer two riders.
-            Sizing by width (100%) keeps every rider but renders just 213px tall,
-            leaving two thirds of the screen empty. NEITHER IS ACCEPTABLE, and no
-            crop of this image can do both: the three riders span ~58% of its
-            width, so covering a phone with them intact would need 1775px of
-            image height and there are only 768.
-            The compromise: 165% width. The riders (x≈300..1120) still fit inside
-            the visible 62%, and the photo fills ~40% of the screen height, with
-            `center 30%` putting the horses just above the headline. Below it the
-            same `bg-green-950` the scrim already fades into, plus a gradient so
-            the photo DISSOLVES into the dark rather than ending on a hard edge —
-            that hard line, not the darkness, was what read as broken.
-            sm+ RETURNS TO `cover` — a laptop's aspect gap is ~115px, so cover
-            fills the frame with a negligible crop, exactly as before. */}
+        {/* Still background image — no animation. Positioned to hold the riders
+            and the coastline in frame across aspect ratios. */}
         <div
-          className="absolute inset-0 bg-green-950 bg-no-repeat [background-size:165%_auto] [background-position:center_30%] sm:[background-size:cover] sm:[background-position:center_32%]"
-          style={{ backgroundImage: `url('${HERO_IMG}')` }}
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `url('${HERO_IMG}')`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center 32%',
+          }}
           role="img"
           aria-label="Three riders on horseback at a coastal San Diego ranch, at sunset."
-        />
-
-        {/* PHONE ONLY — the dissolve. The photo stops ~40% down the screen; without
-            this it ends on a hard horizontal line. This fades the last stretch of
-            it into the same bg-green-950 underneath, so the lower screen reads as
-            shadow under a sunset. Hidden at sm+, where `cover` fills the frame and
-            there is no edge to hide. */}
-        <div
-          className="absolute inset-x-0 top-[26%] h-[22%] sm:hidden pointer-events-none"
-          style={{ background: 'linear-gradient(to bottom, rgba(10,26,15,0) 0%, rgba(10,26,15,0.85) 70%, #0a1a0f 100%)' }}
-          aria-hidden="true"
         />
 
         {/* Rich green scrim — a bold, layered gradient that darkens the frame
