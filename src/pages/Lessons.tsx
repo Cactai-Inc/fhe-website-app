@@ -124,9 +124,9 @@ export default function Lessons() {
         <div className="container-site">
           <div className="relative overflow-hidden aspect-[5/4] sm:aspect-video max-w-4xl mx-auto bg-green-900">
             {reducedMotion ? (
-              <img src={LESSON_POSTER} alt="Three riders on horseback at the ranch" className="w-full h-full object-cover [object-position:center_42%]" />
+              <img src={LESSON_POSTER} alt="Three riders on horseback at the ranch" className="w-full h-full object-cover [object-position:center_42%] sm:[object-position:center_center]" />
             ) : (
-              <video className="w-full h-full object-cover [object-position:center_42%]" autoPlay muted loop playsInline preload="metadata" poster={LESSON_POSTER}>
+              <video className="w-full h-full object-cover [object-position:center_42%] sm:[object-position:center_center]" autoPlay muted loop playsInline preload="metadata" poster={LESSON_POSTER}>
                 <source src="/lessons.webm" type="video/webm" />
                 <source src="/lessons.mp4" type="video/mp4" />
               </video>
