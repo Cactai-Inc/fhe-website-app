@@ -338,3 +338,19 @@ describe('the in_review widening is preserved, not reverted by this migration', 
     })])).rejects.toThrow(/not editable/);
   });
 });
+
+describe('contract_document_detail exposes added_by_me for the edit/remove affordance', () => {
+  it('the author sees added_by_me true on their own item; the other party sees false', async () => {
+    await h.asUser(lessorUid);
+    const [{ detail: asLessor }] = await h.q<{ detail: { fields: { field_key: string; body: string | null; added_by_me: boolean }[] } }>(
+      `select contract_document_detail($1) as detail`, [docId]);
+    const lessorRow = asLessor.fields.find((f) => f.body === 'edit-tier line');
+    expect(lessorRow?.added_by_me).toBe(true);
+
+    await h.asUser(lesseeUid);
+    const [{ detail: asLessee }] = await h.q<{ detail: { fields: { field_key: string; body: string | null; added_by_me: boolean }[] } }>(
+      `select contract_document_detail($1) as detail`, [docId]);
+    const lesseeRow = asLessee.fields.find((f) => f.body === 'edit-tier line');
+    expect(lesseeRow?.added_by_me).toBe(false);
+  });
+});

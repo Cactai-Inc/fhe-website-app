@@ -1,6 +1,8 @@
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
+import { Pencil, Trash2 } from 'lucide-react';
 import {
-  clauseConditionMet, resolvePendingComposition, withdrawPendingComposition,
+  clauseConditionMet, removeContractComposition, resolvePendingComposition,
+  updateContractComposition, withdrawPendingComposition,
   type ContractField, type SectionDef, type RedlinePendingComposition,
 } from '../../lib/contracts';
 import { InlineFieldControl } from './ContractCascade';
@@ -729,13 +731,47 @@ function PendingCompositionBox({
   );
 }
 
+/** Small pencil/trash pair for an author-owned custom row (section, header,
+ *  or line) — visible to its author or staff. Edit is offered only for a
+ *  plain line (see the note on ClauseDocument's edit state above); a
+ *  header/section gets remove only, since removing one cascades to
+ *  everything the author added under it. Declared at module scope, not
+ *  inside ClauseDocument's render body — this file's own AddElementModal
+ *  comment (S2) already documents why an inline-declared component remounts
+ *  its whole subtree every render. */
+function AuthorItemControls({
+  f, canEdit, isOwnerSide, busy, onEdit, onRemove,
+}: {
+  f: ContractField;
+  canEdit: boolean;
+  isOwnerSide: boolean;
+  busy: boolean;
+  onEdit: (f: ContractField) => void;
+  onRemove: (f: ContractField) => void;
+}) {
+  if (!f.custom_kind || !(isOwnerSide || f.added_by_me)) return null;
+  return (
+    <span className="inline-flex items-center gap-1 ml-1.5 align-middle">
+      {canEdit && (
+        <button type="button" disabled={busy} aria-label="Edit"
+          className="text-muted hover:text-green-800 disabled:opacity-40"
+          onClick={() => onEdit(f)}><Pencil size={12} /></button>
+      )}
+      <button type="button" disabled={busy} aria-label="Remove"
+        className="text-muted hover:text-red-700 disabled:opacity-40"
+        onClick={() => onRemove(f)}><Trash2 size={12} /></button>
+    </span>
+  );
+}
+
 export function ClauseDocument({
-  sections, fields, cb: cbIn, isOwnerSide = false, hasPartyRole = false,
-  pendingCompositions = [], onPendingChanged, onRevise,
+  sections, fields, cb: cbIn, documentId, isOwnerSide = false, hasPartyRole = false,
+  pendingCompositions = [], onChanged, onRevise,
 }: {
   sections: SectionDef[];
   fields: ContractField[];
   cb: FieldCallbacks;
+  documentId: string;
   /** Staff/company authoring. */
   isOwnerSide?: boolean;
   /** The viewer is one of the document's own parties (not staff, not a
@@ -744,10 +780,50 @@ export function ClauseDocument({
   hasPartyRole?: boolean;
   /** Suggest-tier "Add item" proposals awaiting review, from contract_redline_state. */
   pendingCompositions?: RedlinePendingComposition[];
-  onPendingChanged?: () => void;
+  /** A pending item was resolved, or an already-added item was edited/removed. */
+  onChanged?: () => void;
   /** "Revise" — open the Requests drawer scoped to this section. */
   onRevise?: (sectionKey: string) => void;
 }) {
+  /* Author-only edit/remove of an already-added item (owner requirement — a
+     prerequisite for the suggest/edit split, not optional). Edit is scoped to
+     a LINE's raw text only: reconstructing the full chip/condition authoring
+     state from a flat contract_fields row is real additional work left for a
+     later pass, and isn't needed for the common case of fixing a typo or
+     tightening wording. Section/header removal cascades (server-enforced);
+     line removal deletes just that one row. */
+  const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [editText, setEditText] = useState('');
+  const [itemBusy, setItemBusy] = useState(false);
+  const [itemErr, setItemErr] = useState<string | null>(null);
+
+  function startEdit(f: ContractField) {
+    setEditingKey(f.field_key);
+    setEditText(f.body ?? '');
+    setItemErr(null);
+  }
+  async function saveEdit(f: ContractField) {
+    if (!editText.trim()) { setItemErr('The line needs some text.'); return; }
+    setItemBusy(true); setItemErr(null);
+    try {
+      await updateContractComposition(documentId, f.field_key, {
+        section: f.section ?? '', section_new: false,
+        header: { clause_key: f.clause_key ?? undefined },
+        elements: [], lines: [{ body: editText.trim(), conditional_on: f.conditional_on ?? null, caption: f.guidance ?? null }],
+      });
+      setEditingKey(null);
+      onChanged?.();
+    } catch (e) { setItemErr(e instanceof Error ? e.message : 'Could not save that.'); }
+    finally { setItemBusy(false); }
+  }
+  async function removeItem(f: ContractField) {
+    if (!window.confirm(f.custom_kind === 'section' ? 'Remove this whole section?'
+      : f.custom_kind === 'header' ? 'Remove this item and everything under it?' : 'Remove this line?')) return;
+    setItemBusy(true); setItemErr(null);
+    try { await removeContractComposition(documentId, f.field_key); onChanged?.(); }
+    catch (e) { setItemErr(e instanceof Error ? e.message : 'Could not remove that.'); }
+    finally { setItemBusy(false); }
+  }
   // Keep a duration UNIT's stored plurality in step with its paired number:
   // saving a length also re-saves the unit as its singular/plural twin when
   // needed, so the stored value (and the composed text) always agree ("1 month",
@@ -988,10 +1064,14 @@ export function ClauseDocument({
                   return (
                     <PendingCompositionBox key={clause.clauseKey} pending={clause.pending}
                       isOwnerSide={isOwnerSide} hasPartyRole={hasPartyRole}
-                      onChanged={onPendingChanged} onRevise={() => onRevise?.(section.sectionKey)} />
+                      onChanged={onChanged} onRevise={() => onRevise?.(section.sectionKey)} />
                   );
                 }
                 const gatedOff = !clauseConditionMet(clause.conditional_on, valueByKey);
+                // Only ever set for an author-added section/header/line — a
+                // template clause's clauseKey never resolves to a row with
+                // custom_kind, so AuthorItemControls no-ops for it below.
+                const authoredField = fieldByKey.get(clause.clauseKey);
                 /* NUMBERING DERIVES FROM HEADINGS (R11, owner ruling 2026-08-04;
                    supersedes the "every rendered clause consumes a number" rule).
                    A number is an ENFORCEABLE cross-reference, so it may exist only
@@ -1132,12 +1212,36 @@ export function ClauseDocument({
                             {clauseRequired && (
                               <ExplainTip text="Needs an answer before signing" underline={false} className="text-gold-700">*</ExplainTip>
                             )}
+                            {isHeader && authoredField && (
+                              <AuthorItemControls f={authoredField} canEdit={false} isOwnerSide={isOwnerSide}
+                                busy={itemBusy} onEdit={startEdit} onRemove={(f) => void removeItem(f)} />
+                            )}
                           </p>
                         );
                       })()}
-                      {clause.body
-                        ? <ClauseProse body={clause.body} fieldByKey={fieldByKey} valueByKey={valueByKey} cb={cb} />
-                        : null}
+                      {!isHeader && clause.body && editingKey === clause.clauseKey ? (
+                        <div className="mb-1">
+                          <textarea rows={2} className="form-input resize-y text-[13.5px]"
+                            value={editText} onChange={(e) => setEditText(e.target.value)} />
+                          {itemErr && <p role="alert" className="form-error text-[12px] mt-1">{itemErr}</p>}
+                          <div className="flex gap-2 mt-1.5">
+                            <button type="button" className="btn-primary text-xs" disabled={itemBusy}
+                              onClick={() => authoredField && void saveEdit(authoredField)}>Save</button>
+                            <button type="button" className="text-xs underline text-secondary" disabled={itemBusy}
+                              onClick={() => setEditingKey(null)}>Cancel</button>
+                          </div>
+                        </div>
+                      ) : clause.body ? (
+                        <div className="flex items-start gap-1">
+                          <div className="flex-1 min-w-0">
+                            <ClauseProse body={clause.body} fieldByKey={fieldByKey} valueByKey={valueByKey} cb={cb} />
+                          </div>
+                          {!isHeader && authoredField && (
+                            <AuthorItemControls f={authoredField} canEdit isOwnerSide={isOwnerSide}
+                              busy={itemBusy} onEdit={startEdit} onRemove={(f) => void removeItem(f)} />
+                          )}
+                        </div>
+                      ) : null}
                       {/* Non-gate orphan fields. When the clause is active, its gate
                           control (if any) renders here too so it stays in place. */}
                       {(gatedOff ? previewFields : orphanFields).length > 0 && (

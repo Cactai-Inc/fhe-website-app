@@ -84,12 +84,57 @@ actual call site before changing anything.** This is §4's core bug.
 # THE BUILD
 
 ## 1 — `/sign` becomes a chooser
-- `/sign` (no path) currently does not exist — only `/sign/:path`. Add the chooser page: five
+- `/sign` (no path) currently does not exist — only `/sign/:path`. Add the chooser page: **five**
   options, each explained in the owner's words so a visitor can self-identify: **guest · rider ·
-  rider + horse owner · horse owner · deal party**. (`SignStart` today knows guest/rider/horse/
-  rider+horse — **`deal party` is new**; establish what documents/flow it maps to before building
-  it, and if that is not yet defined, ship the other four and report it as an owner question.)
+  rider + horse owner · horse owner · deal**. The first four are document-signing funnels; the
+  fifth behaves differently (§1b).
+- **`deal` IS a chooser option** — a fifth button, but it behaves differently from the other
+  four. See §1b. (Corrected 2026-08-15: an earlier draft dropped it entirely; the owner's ruling
+  was that it is not a *document-signing funnel* like the others, not that the entry disappears.)
 - Existing `/sign/:path` deep links keep working — they skip the chooser.
+
+## 1b — `deal`: claim an existing contract AND activate an account in one flow
+
+**Owner, 2026-08-15, verbatim:**
+
+> *"signing without an account isnt possible, they have no way to access the document. that was
+> the point of adding them to /sign flow so they can click deal, enter their information, and if
+> the contract matching that email exists and they dont have an account yet they can claim the
+> contract and establish their active account in one flow."*
+
+**The behavior:** the visitor clicks **deal**, enters first/last/phone/email (same form as §2).
+The server looks for a document party whose contact email matches **and** who has no account yet.
+- **Match found** → they claim it: the account is created/activated through the one spine and the
+  contract becomes reachable to them, in that single flow. From there they land on the document.
+- **No match** → the same neutral, non-enumerating response the other paths give. **Never reveal
+  whether a contract or an email exists** — this endpoint is public and unauthenticated, so it is
+  an enumeration oracle if built carelessly. Rate-limit it exactly as `/api/sign-start` does.
+
+**MEASURED (prod, 2026-08-15) — read this correctly:**
+- 50 of 131 `document_parties` have no linked account, 46 with an email. **THE OWNER HAS
+  CONFIRMED THESE ARE ALL TEST RECORDS.** They are NOT a live population waiting to claim
+  contracts, and they are NOT a backfill target. Use them as fixtures if useful; **do not build
+  anything on the assumption that real accountless parties exist today**, and do not report
+  their existence as a finding (per the standing "empty is not a finding" rule — this feature is
+  for the flow going forward, not for a backlog of stranded people).
+- **THERE HAS ONLY EVER BEEN ONE REAL CONTRACT — Sarah Morgan's — AND IT WAS CANCELLED**
+  (owner, 2026-08-15). Every other contract-shaped row in prod is a test artifact. So: there is
+  no live deal population, no stranded counterparties, and **nothing here is a data-repair job.**
+  Build the flow for the first real deal that comes after this ships. Do not treat any existing
+  contract row as a live case, and do not "fix" test data.
+- **`/api/contract-invite` + `invite_contract_counterparty` + `redeem_contract_invitation`
+  already exist**: staff-issued token, branded register link, redeem lands the counterparty on
+  the contract. **That is the STAFF-INITIATED version of this same outcome.**
+- **`record_signature` has no `auth.uid() IS NULL` guard — this is a red herring, do not build on
+  it.** The owner is correct that signing without an account is impossible in practice: the
+  document is unreachable without one. Access, not the signature RPC, is the gate.
+
+**So this is one outcome with two initiation points** — exactly the pattern the rest of this task
+follows. Staff invite the counterparty (built), *or* the counterparty self-claims from `/sign`
+(new). **Both must converge on the same spine (D5) and the same redemption path
+(`redeem_contract_invitation`) — do not write a second account-creation or claim mechanism.**
+Also establish and report whether staff can actually *trigger* `/api/contract-invite` from a real
+screen today, or whether it is another built-but-unreachable endpoint.
 
 ## 2 — capture first name, last name, phone, email
 - Today `SignStart` is deliberately email-only ("no name capture … captured at first-login
@@ -165,6 +210,7 @@ actual call site before changing anything.** This is §4's core bug.
 2. Clicking "I never received it" produces a support alert with a diagnostic, **an owner dashboard
    notice AND an owner email**, both proven by query, plus a user-facing confirmation.
 3. Activation → the right onboarding flow for the chosen option.
+3b. `deal` on /sign: a visitor whose email matches an accountless document party claims the contract AND activates an account in one flow, through the existing spine and redemption path; a non-match returns the same neutral response (no enumeration), rate-limited. Staff-initiated /api/contract-invite reaches the same outcome, and whether staff can trigger it from a real screen is reported either way.
 4. Completing onboarding sends **exactly one** email containing **every** signed document —
    prove the count (one send row, N attachments), and name the call site that used to be wrong.
 5. The user lands on their account with the onboarding modal and a profile-completion notice.

@@ -75,6 +75,8 @@ export interface ContractField {
   body?: string | null;
   /** Who authored this row (any custom_kind) — only they, or staff, may edit/remove it. */
   added_by_contact_id?: string | null;
+  /** Server-computed: added_by_contact_id resolves to the current viewer. */
+  added_by_me?: boolean;
 }
 
 /** A party choice, with the sub-inputs revealed by CARE_PROVIDER / SHARED. */
