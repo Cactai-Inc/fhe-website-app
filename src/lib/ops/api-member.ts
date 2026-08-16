@@ -113,7 +113,7 @@ export async function myBookableItems(): Promise<MemberBookableItem[]> {
 
 // ─── My lesson sessions (mod.lessons — 20260703120000) ──────────────────────
 
-export type MemberLessonSessionStatus = 'SCHEDULED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
+export type MemberLessonSessionStatus = 'PENDING' | 'SCHEDULED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
 
 /** One of the member's own confirmed lesson sessions (my_lesson_sessions RPC). */
 export interface MemberLessonSession {

@@ -17,7 +17,11 @@ import {
   fetchRescheduleFee,
   fetchOpenChangeRequests,
   decideBookingChange,
+  confirmBooking,
+  proposeBookingTime,
+  fetchMyPendingChanges,
   type OpenChangeRequest,
+  type MyPendingChange,
 } from '../../lib/ops/api-calendar';
 import { fetchOfferings, createDraftOrder } from '../../lib/api';
 import type { Offering } from '../../lib/types';
@@ -301,6 +305,7 @@ export default function CalendarPage() {
       )}
 
       {isStaff && <RequestsBar onDecided={() => void load()} />}
+      {!isStaff && <MyProposedTimes onDecided={() => void load()} />}
 
       {error && <p role="alert" className="form-error mb-3">{error}</p>}
 
@@ -869,22 +874,63 @@ function PurchaseLessonsPanel({ onClose }: { onClose: () => void }) {
   );
 }
 
-/** Staff inbox of pending client change requests, shown atop the calendar. */
+/** Staff inbox of everything awaiting a decision — client-raised reschedule/
+ *  cancel/defer asks AND fresh booking requests (REVIEWQ R1/R2), reusing the
+ *  same booking_change_requests-backed queue rather than minting a second
+ *  page. A 'new' row gets three actions (confirm/decline/propose another
+ *  time); a row already countered by staff (awaiting_client) shows a
+ *  waiting note instead — the ball is in the client's court. */
 function RequestsBar({ onDecided }: { onDecided: () => void }) {
   const [reqs, setReqs] = useState<OpenChangeRequest[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
+  const [proposingId, setProposingId] = useState<string | null>(null);
+  const [proposeStart, setProposeStart] = useState('');
+  const [proposeEnd, setProposeEnd] = useState('');
 
   const load = useCallback(() => {
     fetchOpenChangeRequests().then(setReqs).catch(() => setReqs([]));
   }, []);
   useEffect(() => { load(); }, [load]);
 
-  async function decide(id: string, approve: boolean, waive = false) {
+  async function decide(id: string, approve: boolean, waive = false, reason?: string) {
     setBusy(id);
     try {
-      await decideBookingChange(id, approve, waive);
+      await decideBookingChange(id, approve, waive, reason);
       load();
       onDecided();
+    } finally { setBusy(null); }
+  }
+
+  async function confirmNew(bookingId: string, changeId: string) {
+    setBusy(changeId);
+    try {
+      await confirmBooking(bookingId);
+      load();
+      onDecided();
+    } finally { setBusy(null); }
+  }
+
+  function declineNew(id: string) {
+    const reason = window.prompt('Reason for declining (shown to the client)?') ?? undefined;
+    void decide(id, false, false, reason);
+  }
+
+  function startPropose(id: string) {
+    setProposingId((cur) => (cur === id ? null : id));
+    setProposeStart('');
+    setProposeEnd('');
+  }
+
+  async function sendProposal(bookingId: string, changeId: string) {
+    if (!proposeStart || !proposeEnd) return;
+    setBusy(changeId);
+    try {
+      await proposeBookingTime(bookingId, new Date(proposeStart).toISOString(), new Date(proposeEnd).toISOString());
+      setProposingId(null);
+      load();
+      onDecided();
+    } catch (e) {
+      window.alert(toErrorMessage(e, 'Could not propose that time.'));
     } finally { setBusy(null); }
   }
 
@@ -894,20 +940,106 @@ function RequestsBar({ onDecided }: { onDecided: () => void }) {
       <p className="form-label mb-2">Pending requests ({reqs.length})</p>
       <ul className="flex flex-col gap-2">
         {reqs.map((r) => (
-          <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 text-sm bg-white border border-orange-100 rounded p-2">
+          <li key={r.id} className="flex flex-col gap-2 text-sm bg-white border border-orange-100 rounded p-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-green-900">
+                <strong>{r.kind === 'new' ? 'New request' : <span className="capitalize">{r.kind}</span>}</strong> · {r.client_name || 'Client'} ·{' '}
+                {(r.kind === 'reschedule' || r.awaiting_client) && r.proposed_starts_at
+                  ? `→ ${formatSessionWhen(r.proposed_starts_at)}`
+                  : formatSessionWhen(r.starts_at)}
+                {r.fee_amount ? ` · $${r.fee_amount}${r.fee_paid ? ' paid' : ' unpaid'}` : ''}
+                {r.phone_required ? ' · 📞 call required' : ''}
+              </span>
+              {r.awaiting_client ? (
+                <span className="text-xs text-muted italic whitespace-nowrap">Waiting on client's response</span>
+              ) : r.kind === 'new' ? (
+                <span className="flex gap-1">
+                  <button type="button" className="btn-primary text-xs" disabled={busy === r.id} onClick={() => void confirmNew(r.booking_id, r.id)}>
+                    Confirm
+                  </button>
+                  <button type="button" className="btn-secondary text-xs" disabled={busy === r.id} onClick={() => declineNew(r.id)}>
+                    Decline
+                  </button>
+                  <button type="button" className="btn-secondary text-xs" disabled={busy === r.id} onClick={() => startPropose(r.id)}>
+                    Propose time
+                  </button>
+                </span>
+              ) : (
+                <span className="flex gap-1">
+                  <button type="button" className="btn-primary text-xs" disabled={busy === r.id} onClick={() => void decide(r.id, true, !!r.fee_amount && !r.fee_paid)}>
+                    {r.fee_amount && !r.fee_paid ? 'Approve + waive' : 'Approve'}
+                  </button>
+                  <button type="button" className="btn-secondary text-xs" disabled={busy === r.id} onClick={() => void decide(r.id, false)}>Reject</button>
+                </span>
+              )}
+            </div>
+            {proposingId === r.id && (
+              <div className="flex flex-wrap items-end gap-2 pt-2 border-t border-orange-100">
+                <label className="text-xs">
+                  <span className="form-label">New start</span>
+                  <input type="datetime-local" className="form-input" value={proposeStart} onChange={(e) => setProposeStart(e.target.value)} />
+                </label>
+                <label className="text-xs">
+                  <span className="form-label">New end</span>
+                  <input type="datetime-local" className="form-input" value={proposeEnd} onChange={(e) => setProposeEnd(e.target.value)} />
+                </label>
+                <button
+                  type="button"
+                  className="btn-primary text-xs"
+                  disabled={busy === r.id || !proposeStart || !proposeEnd}
+                  onClick={() => void sendProposal(r.booking_id, r.id)}
+                >
+                  Send
+                </button>
+                <button type="button" className="btn-secondary text-xs" onClick={() => setProposingId(null)}>Cancel</button>
+              </div>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** Client's own view of a staff-proposed counter-time (REVIEWQ R2) — the
+ *  reversed direction of RequestsBar above: staff already decided (proposed
+ *  a different time), and it's this member's turn to accept/decline it. */
+function MyProposedTimes({ onDecided }: { onDecided: () => void }) {
+  const [changes, setChanges] = useState<MyPendingChange[]>([]);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const load = useCallback(() => {
+    fetchMyPendingChanges().then(setChanges).catch(() => setChanges([]));
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  async function respond(id: string, approve: boolean) {
+    setBusy(id);
+    try {
+      await decideBookingChange(id, approve);
+      load();
+      onDecided();
+    } finally { setBusy(null); }
+  }
+
+  const proposed = changes.filter((c) => c.awaiting_client);
+  if (proposed.length === 0) return null;
+  return (
+    <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-3">
+      <p className="form-label mb-2">We proposed a different time</p>
+      <ul className="flex flex-col gap-2">
+        {proposed.map((c) => (
+          <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 text-sm bg-white border border-orange-100 rounded p-2">
             <span className="text-green-900">
-              <strong className="capitalize">{r.kind}</strong> · {r.client_name || 'Client'} ·{' '}
-              {r.kind === 'reschedule' && r.proposed_starts_at
-                ? `→ ${formatSessionWhen(r.proposed_starts_at)}`
-                : formatSessionWhen(r.starts_at)}
-              {r.fee_amount ? ` · $${r.fee_amount}${r.fee_paid ? ' paid' : ' unpaid'}` : ''}
-              {r.phone_required ? ' · 📞 call required' : ''}
+              {c.proposed_starts_at ? formatSessionWhen(c.proposed_starts_at) : 'a new time'}
             </span>
             <span className="flex gap-1">
-              <button type="button" className="btn-primary text-xs" disabled={busy === r.id} onClick={() => void decide(r.id, true, !!r.fee_amount && !r.fee_paid)}>
-                {r.fee_amount && !r.fee_paid ? 'Approve + waive' : 'Approve'}
+              <button type="button" className="btn-primary text-xs" disabled={busy === c.id} onClick={() => void respond(c.id, true)}>
+                Accept
               </button>
-              <button type="button" className="btn-secondary text-xs" disabled={busy === r.id} onClick={() => void decide(r.id, false)}>Reject</button>
+              <button type="button" className="btn-secondary text-xs" disabled={busy === c.id} onClick={() => void respond(c.id, false)}>
+                Decline
+              </button>
             </span>
           </li>
         ))}

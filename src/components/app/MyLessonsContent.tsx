@@ -138,8 +138,11 @@ export function MyLessonsContent() {
 
   const overview = load.data;
   const now = Date.now();
+  // REVIEWQ R1: a requested-but-not-yet-confirmed lesson (PENDING) is still an
+  // upcoming lesson from the client's point of view — it must not silently
+  // vanish from this list just because the company hasn't decided yet.
   const upcoming = sessions.filter(
-    (s) => s.status === 'SCHEDULED' && new Date(s.ends_at).getTime() >= now,
+    (s) => (s.status === 'SCHEDULED' || s.status === 'PENDING') && new Date(s.ends_at).getTime() >= now,
   );
 
   return (
@@ -173,10 +176,19 @@ export function MyLessonsContent() {
                       )}
                     </div>
                   </div>
-                  <span className="bg-green-800 text-white text-xs font-sans px-2 py-0.5 tracking-wide whitespace-nowrap">
-                    SCHEDULED
+                  <span
+                    className={
+                      s.status === 'PENDING'
+                        ? 'bg-orange-50 border border-orange-400 text-orange-800 text-xs font-sans px-2 py-0.5 tracking-wide whitespace-nowrap'
+                        : 'bg-green-800 text-white text-xs font-sans px-2 py-0.5 tracking-wide whitespace-nowrap'
+                    }
+                  >
+                    {s.status === 'PENDING' ? 'REQUESTED' : 'SCHEDULED'}
                   </span>
                 </div>
+                {s.status === 'PENDING' && (
+                  <p className="text-xs text-muted mt-2">Waiting on our team to confirm this time.</p>
+                )}
                 <SessionNotesView bookingId={s.id} startsAt={s.starts_at} />
               </div>
             ))}
