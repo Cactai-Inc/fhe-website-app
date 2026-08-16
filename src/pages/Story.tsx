@@ -24,6 +24,8 @@ import { seoForPath } from '../lib/seo';
  * everything static and present (CSS .qs-reveal guard).
  */
 const HERO_A = '/images/Hero_A.png';  // the arena — landing hero's world (S3)
+const STABLES = '/images/Stables.png'; // S2 — the stable at golden hour
+const TRAIL   = '/images/Trail.png';   // S1 — the coastal establishing shot
 const HERO_B = '/images/Hero_B.png';  // the place, toward the hills (S4 bookend)
 
 /* Lightweight scroll-reveal wrapper. Adds `qs-in` when the element first
@@ -101,25 +103,6 @@ const WAYS_IN = [
   },
 ];
 
-/* A deep-green textural placeholder band — stands in for real media at a swap
- * slot until the owner provides it. NOT stock, NOT Hero A/B. */
-function GreenPlaceholder({ label, className = '' }: { label: string; className?: string }) {
-  return (
-    <div className={`relative overflow-hidden ${className}`}>
-      <div
-        className="absolute inset-0 bg-gradient-to-br from-green-800 via-green-900 to-green-950"
-        aria-hidden="true"
-      />
-      <div className="qs-grain absolute inset-0 opacity-[0.06]" aria-hidden="true" />
-      <div className="pointer-events-none absolute inset-0 border border-gold-600/25" aria-hidden="true" />
-      <div className="absolute inset-0 flex items-center justify-center px-6 text-center">
-        <p className="text-on-dark-soft text-[11px] font-sans tracking-widest uppercase max-w-xs leading-relaxed">
-          {label}
-        </p>
-      </div>
-    </div>
-  );
-}
 
 export default function Story() {
   const seo = seoForPath('/story')!;
@@ -164,9 +147,18 @@ export default function Story() {
             {/* SWAP: Section 1 hero — the place, coastal setting establishing shot
                 (new image/video, owner to provide). Green textural band for now. */}
             <Reveal className="lg:col-span-6" delay={120}>
-              <GreenPlaceholder
-                label="Section 1 — the place: coastal establishing shot (image / video coming)"
-                className="aspect-[4/5] sm:aspect-[3/2] lg:aspect-[4/5]"
+              {/* Trail — the coastal establishing shot this slot was reserved for,
+                  and the literal subject of the headline beside it ("trails
+                  without end"). Keeps the placeholder's responsive aspect ratios. */}
+              <div
+                className="aspect-[4/5] sm:aspect-[3/2] lg:aspect-[4/5] overflow-hidden bg-green-900"
+                style={{
+                  backgroundImage: `url('${TRAIL}')`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                }}
+                role="img"
+                aria-label="A trail along the coast at Carmel Creek Ranch."
               />
             </Reveal>
           </div>
@@ -183,9 +175,17 @@ export default function Story() {
           {/* SWAP: Section 2 — horse in the stable at golden hour / sunset
               (owner to provide). Green textural placeholder for now. */}
           <div className="order-1 lg:order-none">
-            <GreenPlaceholder
-              label="Section 2 — horse in the stable at golden hour / sunset (image coming)"
-              className="min-h-[340px] lg:min-h-[620px] h-full"
+            {/* Stables — exactly what this slot was reserved for. Full-bleed
+                inside the dark band, same min-heights the placeholder set. */}
+            <div
+              className="min-h-[340px] lg:min-h-[620px] h-full bg-green-900"
+              style={{
+                backgroundImage: `url('${STABLES}')`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+              }}
+              role="img"
+              aria-label="The stables at Carmel Creek Ranch at golden hour."
             />
           </div>
 
@@ -333,15 +333,16 @@ export default function Story() {
         </div>
       </section>
 
-      {/* ══ SECTION 4 · Visual closer — image only (owner spec) ═══════════
-          The image does all the work: no headline, no copy, no CTA. Hero B is
-          the bookend — the place looking toward the hills, above the footer.
-          (The onward path to /shop lives in Section 3's Ways In preview.)
+      {/* ══ SECTION 4 · Visual closer ═════════════════════════════════════
+          Hero B is the bookend — the place looking toward the hills, above the
+          footer. Owner, 2026-08-16: it now carries one line over the image.
+          `aria-hidden` was REMOVED with that change — it was correct while this
+          band was purely decorative, but hiding a real sentence from screen
+          readers would be a defect. The image keeps its own aria-label.
           data-header-tone="dark": header over this dark image band → white nav. */}
       <section
         data-header-tone="dark"
         className="relative bg-green-900 overflow-hidden h-[52vh] sm:h-[62vh] lg:h-[70vh]"
-        aria-hidden="true"
       >
         {/* Hero B — the bookend: the place, toward the hills. */}
         <div
@@ -358,6 +359,16 @@ export default function Story() {
             bottom to settle into the footer. No text sits here. */}
         <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-green-950/45 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-green-950/55 to-transparent" />
+
+        {/* The one line over the closer. A dedicated scrim behind it (not a
+            heavier full-band overlay) keeps the photograph bright while holding
+            the type well past 4.5:1. */}
+        <div className="absolute inset-0 flex items-center justify-center px-6">
+          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-40 bg-green-950/35" aria-hidden="true" />
+          <p className="relative heading-display text-white text-center [text-wrap:balance] text-[clamp(1.6rem,4.5vw,3rem)] [text-shadow:0_2px_20px_rgba(0,0,0,0.6)] max-w-4xl">
+            Discover Friendship &amp; Adventure at French Heritage Equestrian
+          </p>
+        </div>
       </section>
     </>
   );
