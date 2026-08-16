@@ -213,7 +213,7 @@ export default function Lessons() {
                     rows read as deliberate sections, no box needed (owner call,
                     2026-08-14: communicate horse-included once, not per card). */}
                 <p className="text-center body-text text-lg text-green-800 mb-8">
-                  Your riding lesson includes one of our carefully selected horses
+                  Your riding lesson includes one of our carefully selected horses.
                 </p>
                 <div className={gridCls}>
                   {ourHorse.map(card)}
