@@ -262,7 +262,10 @@ export default function Lessons() {
           )}
 
           <p className="text-center mt-10">
-            <Link to="/about" className="link-underline">Read our story <ArrowRight size={12} aria-hidden="true" /></Link>
+            {/* Owner, 2026-08-16: was /about — a stale page from before the
+                community page existed, and one that needs rebuilding. This is
+                the community page (route /story, labelled Community in nav). */}
+            <Link to="/story" className="link-underline">Learn about our community <ArrowRight size={12} aria-hidden="true" /></Link>
           </p>
         </div>
       </section>
