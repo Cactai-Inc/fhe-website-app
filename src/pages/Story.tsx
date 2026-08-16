@@ -23,10 +23,14 @@ import { seoForPath } from '../lib/seo';
  * Gentle fade-up on scroll via IntersectionObserver; reduced-motion users get
  * everything static and present (CSS .qs-reveal guard).
  */
-const HERO_A = '/images/Hero_A.png';  // the arena — landing hero's world (S3)
+/* Owner, 2026-08-16 — the narrative order down this page:
+ *   S1 the arena (the same shot the landing hero uses) → S2 the stables →
+ *   S3 the trail, which completes the story. Hero B remains the closing bookend
+ *   beneath the final line. */
+const HERO_A  = '/images/Hero_A.png';  // S1 — the arena, the landing hero's world
 const STABLES = '/images/Stables.png'; // S2 — the stable at golden hour
-const TRAIL   = '/images/Trail.png';   // S1 — the coastal establishing shot
-const HERO_B = '/images/Hero_B.png';  // the place, toward the hills (S4 bookend)
+const TRAIL   = '/images/Trail.png';   // S3 — the trail; the story's completion
+const HERO_B  = '/images/Hero_B.png';  // S4 — the bookend, toward the hills
 
 /* Lightweight scroll-reveal wrapper. Adds `qs-in` when the element first
  * enters the viewport. SSR-safe: if IntersectionObserver is unavailable (or
@@ -153,12 +157,12 @@ export default function Story() {
               <div
                 className="aspect-[4/5] sm:aspect-[3/2] lg:aspect-[4/5] overflow-hidden bg-green-900"
                 style={{
-                  backgroundImage: `url('${TRAIL}')`,
+                  backgroundImage: `url('${HERO_A}')`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
                 }}
                 role="img"
-                aria-label="A trail along the coast at Carmel Creek Ranch."
+                aria-label="Riders in the arena at Carmel Creek Ranch, coastal San Diego."
               />
             </Reveal>
           </div>
@@ -247,17 +251,17 @@ export default function Story() {
                 framed with a gold hairline and a soft edge-scrim. */}
             <Reveal className="lg:col-span-7 order-2 lg:order-none" delay={100}>
               <figure className="relative aspect-[4/5] sm:aspect-[16/10] overflow-hidden">
-                {/* SWAP: Section 3 — women riding together, laughing, English
-                    attire, real joy (reuses the Hero A arena world for now). */}
+                {/* Section 3 — the trail. Owner: this is what "completes the
+                    story" — the arena and the stables lead here, to riding out. */}
                 <div
                   className="absolute inset-0"
                   style={{
-                    backgroundImage: `url('${HERO_A}')`,
+                    backgroundImage: `url('${TRAIL}')`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center 30%',
                   }}
                   role="img"
-                  aria-label="Women riding together at Carmel Creek Ranch, coastal San Diego — friends in the arena."
+                  aria-label="Riding the trail beyond Carmel Creek Ranch, coastal San Diego."
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-green-950/35 via-transparent to-transparent" aria-hidden="true" />
                 <div className="pointer-events-none absolute inset-0 border border-gold-600/30" aria-hidden="true" />
@@ -333,16 +337,27 @@ export default function Story() {
         </div>
       </section>
 
-      {/* ══ SECTION 4 · Visual closer ═════════════════════════════════════
-          Hero B is the bookend — the place looking toward the hills, above the
-          footer. Owner, 2026-08-16: it now carries one line over the image.
-          `aria-hidden` was REMOVED with that change — it was correct while this
-          band was purely decorative, but hiding a real sentence from screen
-          readers would be a defect. The image keeps its own aria-label.
-          data-header-tone="dark": header over this dark image band → white nav. */}
+      {/* ══ SECTION 4 · The closing beat ═══════════════════════════════════
+          Owner, 2026-08-16: the line is centered ABOVE the image with room to
+          breathe, "so it looks like the final section in the narrative being
+          told on this page" — not a caption laid over a photograph. So the
+          section is now two parts: a cream band carrying the line at the same
+          generous rhythm the sections above use, then Hero B beneath it as the
+          visual bookend, the place looking toward the hills.
+          The image band keeps `aria-hidden` (it is decorative again, and its own
+          aria-label describes it); the sentence lives in real text above. */}
+      <section className="bg-cream">
+        <div className="container-site py-20 sm:py-28 lg:py-32">
+          <p className="heading-display text-green-900 text-center mx-auto max-w-4xl [text-wrap:balance] text-[clamp(1.9rem,5vw,3.5rem)]">
+            Friendship &amp; Adventure at French Heritage Equestrian
+          </p>
+        </div>
+      </section>
+
       <section
         data-header-tone="dark"
         className="relative bg-green-900 overflow-hidden h-[52vh] sm:h-[62vh] lg:h-[70vh]"
+        aria-hidden="true"
       >
         {/* Hero B — the bookend: the place, toward the hills. */}
         <div
@@ -359,16 +374,6 @@ export default function Story() {
             bottom to settle into the footer. No text sits here. */}
         <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-green-950/45 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-green-950/55 to-transparent" />
-
-        {/* The one line over the closer. A dedicated scrim behind it (not a
-            heavier full-band overlay) keeps the photograph bright while holding
-            the type well past 4.5:1. */}
-        <div className="absolute inset-0 flex items-center justify-center px-6">
-          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-40 bg-green-950/35" aria-hidden="true" />
-          <p className="relative heading-display text-white text-center [text-wrap:balance] text-[clamp(1.6rem,4.5vw,3rem)] [text-shadow:0_2px_20px_rgba(0,0,0,0.6)] max-w-4xl">
-            Discover Friendship &amp; Adventure at French Heritage Equestrian
-          </p>
-        </div>
       </section>
     </>
   );
