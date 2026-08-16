@@ -84,26 +84,39 @@ function Reveal({
 }
 
 /* The refined preview of the ways in — informational-with-a-path, not a catalog. */
+/* Owner, 2026-08-16: Membership is dropped — there is no membership product
+ * (D4 defers it) — and each card points at its own category page rather than
+ * the generic /shop.
+ *   Riding Lessons   → /lessons     (the rider funnel)
+ *   Horse Leasing    → /acquisition (HORSE_LEASE_IN/OUT_ASSISTANCE live there)
+ *   Horse Purchasing → /acquisition (HORSE_PURCHASE/SALE_ASSISTANCE, Finder, Evaluation)
+ *   Horse Care       → /horse       (training, exercise, clipping)
+ * ⚠️ Leasing and purchasing BOTH resolve to /acquisition today: all six of those
+ * services sit in the `acquisition` segment and that page renders the segment
+ * whole, with no per-category filter. The two cards are therefore honest about
+ * where they go, but they land on the same page. Splitting them needs either a
+ * filter param on /acquisition or two dedicated pages — flagged to the owner,
+ * not invented here. */
 const WAYS_IN = [
   {
     name: 'Riding Lessons',
     line: 'Come as you are — steady, patient teaching at the pace the horse sets.',
-    href: '/shop',
+    href: '/lessons',
   },
   {
-    name: 'Membership',
-    line: 'A standing place in the community, and a regular rhythm to your week.',
-    href: '/shop',
+    name: 'Horse Leasing',
+    line: 'Ride the same horse every week, without owning one yet. We arrange the lease.',
+    href: '/acquisition',
+  },
+  {
+    name: 'Horse Purchasing',
+    line: 'When you are ready for one to call yours, we search, evaluate, and advise.',
+    href: '/acquisition',
   },
   {
     name: 'Horse Care',
     line: 'Training, exercise, and clipping when a horse of your own arrives.',
-    href: '/shop',
-  },
-  {
-    name: 'Finding a Horse',
-    line: 'When you are ready for one to call yours, we search, evaluate, and advise.',
-    href: '/acquisition',
+    href: '/horse',
   },
 ];
 
@@ -320,48 +333,25 @@ export default function Story() {
               the onward link to /shop now that S4 is image-only). */}
           <div className="mt-20 sm:mt-28">
             <div className="rule-gold" />
-            {/* Owner, 2026-08-16: "it needs something to tie it all together and
-                make the section a bit taller… a mosaic of the images used so it
-                shows all 4 photos… making the text section narrower."
-                So: the intro narrows to 5 of 12 columns and a 2x2 mosaic of the
-                page's own four photographs sits beside it. That does three things
-                at once — it ties the section to the story above it, it makes the
-                block tall enough that the closing beat stays below the fold, and
-                it gives the copy a shape instead of a wide orphaned paragraph.
-                The mosaic is decorative (the images are all described in context
-                above), so it is aria-hidden rather than repeating four labels. */}
-            <div className="mt-12 sm:mt-16 mb-10 sm:mb-14 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
+            {/* Owner, 2026-08-16 (flipped): the mosaic "steals the show", so the
+                CARDS now take the prominent right column where the photos were,
+                and the photographs drop to a quiet strip below — present, tying
+                the section together, but no longer the loudest thing here. */}
+            <div className="mt-12 sm:mt-16 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
               <Reveal className="lg:col-span-5">
                 <p className="eyebrow mb-5">The Ways In</p>
                 <h3 className="heading-section text-green-900">
                   Find the way that fits you.
                 </h3>
                 <p className="body-text mt-6 text-lg">
-                  However you begin — a first lesson, a standing place in the
-                  community, care for a horse of your own — there is a clear path
-                  in, arranged personally. Explore what feels right, and we will
-                  meet you there.
+                  However you begin — a first lesson, a horse to ride each week,
+                  one of your own to care for — there is a clear path in, arranged
+                  personally. Explore what feels right, and we will meet you there.
                 </p>
               </Reveal>
 
               <Reveal className="lg:col-span-7" delay={120}>
-                <div className="grid grid-cols-2 gap-3 sm:gap-4" aria-hidden="true">
-                  {[HERO_A, STABLES, TRAIL, HERO_B].map((src, i) => (
-                    <div
-                      key={i}
-                      className="aspect-[4/3] overflow-hidden bg-green-900"
-                      style={{
-                        backgroundImage: `url('${src}')`,
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center',
-                      }}
-                    />
-                  ))}
-                </div>
-              </Reveal>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 lg:gap-6">
               {WAYS_IN.map((w, i) => (
                 <Reveal as="div" key={w.name} delay={i * 70}>
                   <Link
@@ -381,7 +371,26 @@ export default function Story() {
                   </Link>
                 </Reveal>
               ))}
+                </div>
+              </Reveal>
             </div>
+
+            {/* The four photographs, as a quiet strip beneath the cards.
+                Decorative — each is described in context earlier on the page. */}
+            <div className="mt-12 sm:mt-16 grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4" aria-hidden="true">
+              {[HERO_A, STABLES, TRAIL, HERO_B].map((src, i) => (
+                <div
+                  key={i}
+                  className="aspect-[4/3] overflow-hidden bg-green-900"
+                  style={{
+                    backgroundImage: `url('${src}')`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                  }}
+                />
+              ))}
+            </div>
+
           </div>
         </div>
       </section>
