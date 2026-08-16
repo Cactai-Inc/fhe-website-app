@@ -19,6 +19,7 @@ const RSVP_OPTIONS: { value: RsvpStatus; label: string }[] = [
 
 /** Member-friendly status labels for a lesson session. */
 const SESSION_STATUS_LABEL: Record<MemberLessonSession['status'], string> = {
+  PENDING: 'Requested',
   SCHEDULED: 'Scheduled',
   COMPLETED: 'Completed',
   CANCELLED: 'Cancelled',
@@ -26,6 +27,7 @@ const SESSION_STATUS_LABEL: Record<MemberLessonSession['status'], string> = {
 };
 
 const SESSION_STATUS_CLASS: Record<MemberLessonSession['status'], string> = {
+  PENDING: 'bg-orange-50 border border-orange-400 text-orange-800',
   SCHEDULED: 'bg-green-800 text-white',
   COMPLETED: 'bg-green-800/10 text-green-800',
   CANCELLED: 'bg-red-50 text-red-800',

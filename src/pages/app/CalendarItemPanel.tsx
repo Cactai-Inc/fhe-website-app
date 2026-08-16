@@ -13,6 +13,8 @@ import {
   saveCalendarItem,
   deleteCalendarItem,
   confirmBooking,
+  fetchOpenChangeRequests,
+  decideBookingChange,
   requestHorseIntake,
   notifyAppointmentClient,
   fetchClientMonthlyPlan,
@@ -347,6 +349,25 @@ export function CalendarItemPanel({
     } finally { setBusy(false); }
   }
 
+  /** REVIEWQ R3 — a decline needs the open request row's id, not just the
+   *  booking's; the panel only has the booking, so it looks its own request
+   *  up the same way the queue (RequestsBar) does. */
+  async function decline() {
+    if (!item?.id) return;
+    const reason = window.prompt('Reason for declining (shown to the client)?') ?? undefined;
+    setBusy(true); setError(null);
+    try {
+      const reqs = await fetchOpenChangeRequests();
+      const cr = reqs.find((r) => r.booking_id === item.id && r.kind === 'new' && !r.awaiting_client);
+      if (!cr) throw new Error('No open request found for this booking.');
+      await decideBookingChange(cr.id, false, false, reason);
+      done.current = true;
+      onSaved();
+    } catch (e) {
+      setError(toErrorMessage(e, 'Could not decline.'));
+    } finally { setBusy(false); }
+  }
+
   async function sendHorseIntake() {
     if (!item?.id) return;
     setBusy(true); setError(null);
@@ -677,9 +698,14 @@ export function CalendarItemPanel({
         {/* actions */}
         <div className="p-4 border-t border-green-800/10 flex items-center gap-2 sticky bottom-0 bg-cream">
           {item?.status === 'pending' && (
-            <button type="button" className="btn-primary justify-center" disabled={busy} onClick={() => void confirm()}>
-              Confirm request
-            </button>
+            <>
+              <button type="button" className="btn-primary justify-center" disabled={busy} onClick={() => void confirm()}>
+                Confirm request
+              </button>
+              <button type="button" className="text-sm text-red-700 px-3 py-2 hover:bg-red-50 rounded-md" disabled={busy} onClick={() => void decline()}>
+                Decline
+              </button>
+            </>
           )}
           <button type="button" className="btn-primary flex-1 justify-center" disabled={busy} onClick={() => void submit(false)}>
             {busy ? 'Saving…' : 'Submit'}

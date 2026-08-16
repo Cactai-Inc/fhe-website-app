@@ -270,16 +270,26 @@ export async function requestBookingChange(input: {
   return data as ChangeResult;
 }
 
+/** REVIEWQ: 'new' is a fresh client-made booking request (book_open_slot /
+ *  requestOpenTime) awaiting the company's first decision — same table, same
+ *  decide path as reschedule/cancel/defer, not a new queue. */
+export type RequestKind = ChangeKind | 'new';
+
 export interface OpenChangeRequest {
   id: string;
   booking_id: string;
-  kind: ChangeKind;
+  kind: RequestKind;
   proposed_starts_at: string | null;
   proposed_ends_at: string | null;
   fee_amount: number | null;
   fee_paid: boolean;
   phone_required: boolean;
   note: string | null;
+  /** Staff-authored note — a decline reason, or a note on a proposed time. */
+  staff_note: string | null;
+  /** true when staff already proposed a counter-time and it's the client's
+   *  turn to decide — staff has nothing left to do on this row but wait. */
+  awaiting_client: boolean;
   created_at: string;
   client_name: string;
   starts_at: string;
@@ -293,9 +303,11 @@ export async function fetchOpenChangeRequests(): Promise<OpenChangeRequest[]> {
 export interface MyPendingChange {
   id: string;
   booking_id: string;
-  kind: ChangeKind;
+  kind: RequestKind;
   status: string;
   proposed_starts_at: string | null;
+  proposed_ends_at: string | null;
+  awaiting_client: boolean;
   fee_amount: number | null;
   fee_paid: boolean;
   phone_required: boolean;
@@ -307,9 +319,26 @@ export async function fetchMyPendingChanges(): Promise<MyPendingChange[]> {
   return (data ?? []) as MyPendingChange[];
 }
 
-export async function decideBookingChange(changeId: string, approve: boolean, waiveFee = false): Promise<void> {
-  const { error } = await supabase.rpc('decide_booking_change', { p_change_id: changeId, p_approve: approve, p_waive_fee: waiveFee });
+/** Decide a request — staff deciding a client's ask (approve/reject), or the
+ *  client deciding a staff-proposed counter-time (awaiting_client rows only,
+ *  where `reason` has no effect). `reason` is shown to the client on a
+ *  genuine decline of a fresh request (REVIEWQ R3). */
+export async function decideBookingChange(changeId: string, approve: boolean, waiveFee = false, reason?: string): Promise<void> {
+  const { error } = await supabase.rpc('decide_booking_change', {
+    p_change_id: changeId, p_approve: approve, p_waive_fee: waiveFee, p_reason: reason ?? null,
+  });
   if (error) throw error;
+}
+
+/** Staff counters a pending request with a different time (REVIEWQ R2). The
+ *  client then accepts/declines it via decideBookingChange on the same
+ *  change id — no new table, no new decision path. */
+export async function proposeBookingTime(bookingId: string, newStartISO: string, newEndISO: string, note?: string): Promise<{ change_id: string }> {
+  const { data, error } = await supabase.rpc('propose_booking_time', {
+    p_booking_id: bookingId, p_new_start: newStartISO, p_new_end: newEndISO, p_note: note ?? null,
+  });
+  if (error) throw error;
+  return data as { change_id: string };
 }
 
 export async function markChangeFeePaid(changeId: string, paid = true): Promise<void> {
