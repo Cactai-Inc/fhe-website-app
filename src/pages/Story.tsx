@@ -246,7 +246,10 @@ export default function Story() {
             </h2>
           </Reveal>
 
-          <div className="mt-12 sm:mt-16 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+          {/* mt-12/16 → mt-6/8 (owner, 2026-08-16: "the gap between the text and
+              the image below it is too large"). The headline and the image are
+              one beat, not two sections. */}
+          <div className="mt-6 sm:mt-8 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
             {/* Image treatment — women riding together (Hero A world revisited),
                 framed with a gold hairline and a soft edge-scrim. */}
             <Reveal className="lg:col-span-7 order-2 lg:order-none" delay={100}>
