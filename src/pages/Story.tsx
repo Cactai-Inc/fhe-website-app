@@ -128,31 +128,6 @@ export default function Story() {
       {/* ══ SECTION 1 · The place — "Coastal Air & Endless Trails" ══
           Establish the coastal world she belongs to. IMAGE: new establishing
           shot (placeholder green band for now). */}
-      {/* Section jump nav (owner, 2026-08-16: "add the scroll buttons so the
-          sections use hooks and the user can navigate between them without
-          scrolling if they want"). Plain anchors — `scroll-behavior: smooth` is
-          already set globally in index.css, and each target carries scroll-mt-24
-          so the fixed header never covers the heading it lands on. Hidden on
-          phones, where a short scroll beats a row of small tap targets. */}
-      <nav aria-label="Jump to a section" className="hidden sm:block bg-cream pt-28 lg:pt-32">
-        <div className="container-site flex flex-wrap gap-x-7 gap-y-2">
-          {[
-            { label: 'The Place', href: '#the-place' },
-            { label: 'What You\u2019ll Find', href: '#what-youll-find' },
-            { label: 'The Community', href: '#the-community' },
-            { label: 'The Ways In', href: '#the-ways-in' },
-          ].map((l) => (
-            <a
-              key={l.href}
-              href={l.href}
-              className="text-[11px] font-sans tracking-widest uppercase text-muted hover:text-green-900 border-b border-transparent hover:border-gold-600 pb-0.5 transition-colors focus-ring"
-            >
-              {l.label}
-            </a>
-          ))}
-        </div>
-      </nav>
-
       <section id="the-place" className="bg-cream scroll-mt-24">
         <div className="container-site pt-10 pb-16 sm:pt-12 sm:pb-24">
           {/* items-start (was items-center): the owner wants the image aligned
@@ -169,69 +144,66 @@ export default function Story() {
             </h1>
           </Reveal>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
-            {/* Text narrows to 5 of 12 (owner, 2026-08-16) so the image can take 7. */}
-            <Reveal className="lg:col-span-5">
-              <div className="space-y-6 max-w-xl">
-                <p className="body-text text-lg">
+          {/* NEWSPAPER WRAP (owner, 2026-08-16: "the text in the last paragraph
+              still doesnt flow under the image"). A grid CANNOT do this — its
+              columns are separate boxes, so text can never cross beneath a
+              sibling. Only a FLOAT lets the copy run past the bottom of the
+              image and fill the full width, which is exactly the effect asked
+              for. Float applies at lg+ only; below that the image sits above the
+              text as a normal block. */}
+          <Reveal>
+            <div
+              className="lg:float-right lg:w-[52%] lg:ml-12 mb-8 lg:mb-6 aspect-[3/2] overflow-hidden bg-green-900"
+              style={{
+                backgroundImage: `url('${HERO_A}')`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+              }}
+              role="img"
+              aria-label="Riders in the arena at Carmel Creek Ranch, coastal San Diego."
+            />
+            <p className="body-text text-lg mb-6">
                   We are a community of riders who love all things equestrian
                   &mdash; and this is the place we&rsquo;re grateful to call home for us
                   and our horses.
-                </p>
-                <p className="body-text text-lg">
+            </p>
+            <p className="body-text text-lg mb-6">
                   French Heritage Equestrian resides at Carmel Creek Ranch, a
                   beautiful equestrian facility tucked into the majestic foothills
                   of coastal San Diego overlooking Torrey Pines beach &mdash; where
                   you can enjoy the ocean breeze and vivid sunset skies.
-                </p>
-                <p className="body-text text-lg">
+            </p>
+            <p className="body-text text-lg mb-6">
                   Our location features two arenas: a standard size riding arena
                   perched on a bluff overlooking the Pacific, and a Grand Prix size
                   arena with plenty of fences and a competition grade watering
                   system. Both arenas are carefully maintained, including daily
                   grooming to ensure optimal riding conditions year round.
-                </p>
-                <p className="body-text text-lg">
+            </p>
+            <p className="body-text text-lg mb-6">
                   As if that&rsquo;s not reason enough to fall in love with the grounds
                   at CCR, it&rsquo;s one of the only locations in coastal San Diego with
                   trailhead access right from the stable doors. Enjoy miles of
                   interconnected trails winding through the Pe&ntilde;asquitos preserve,
                   from the 5 all the way to the 15, with a wide variety of terrain
                   and sights to see along the way.
-                </p>
-              </div>
-            </Reveal>
+            </p>
+            {/* Clears the float so the section's own bottom edge sits below the
+                image even when the copy is shorter than it. */}
+            <div className="clear-both" />
 
-            {/* Section 1 — the arena, the same world the landing hero shows.
-                Owner, 2026-08-16: "adjust the page split so the head of the first
-                horse is visible… widening the image and reduce the width of the
-                text section a little." The column goes 6→7 and the text 6→5, but
-                the real culprit was the frame: a 4:5 PORTRAIT box on a 1408x768
-                landscape photo crops ~65% of its width, which is what cut the
-                first horse. The frame is now 3:2 at every width — close to the
-                photo's own shape, so almost nothing is lost sideways and nothing
-                is cropped vertically. */}
-            <Reveal className="lg:col-span-7" delay={120}>
-              <div
-                className="aspect-[3/2] overflow-hidden bg-green-900"
-                style={{
-                  backgroundImage: `url('${HERO_A}')`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                }}
-                role="img"
-                aria-label="Riders in the arena at Carmel Creek Ranch, coastal San Diego."
-              />
-            </Reveal>
-          </div>
+            {/* Owner, 2026-08-16: a continue link at the END of each section,
+                not a nav row at the top. Plain anchors — smooth scrolling is
+                global and every target carries scroll-mt-24. */}
+            <p className="mt-10">
+              <a href="#what-youll-find" className="link-underline">
+                What you&rsquo;ll find here <ArrowRight size={13} aria-hidden="true" />
+              </a>
+            </p>
+          </Reveal>
         </div>
       </section>
 
-      {/* ══ SECTION 2 · Transformation — "New friends. New adventures. A new you." ══
-          What she GAINS: friendships, the adventure of it, who she becomes.
-          Deep-green full-bleed band — ALL text on-dark (light on green).
-          data-header-tone="dark": header over this green band → white nav.
-          IMAGE: horse in the stable at golden hour / sunset. */}
       <section id="what-youll-find" data-header-tone="dark" className="relative bg-green-900 overflow-hidden scroll-mt-24">
         <div className="grid grid-cols-1 lg:grid-cols-2">
           {/* SWAP: Section 2 — horse in the stable at golden hour / sunset
@@ -283,6 +255,13 @@ export default function Story() {
                     part you will be most grateful for.
                   </p>
                 </div>
+
+                {/* Continue — on-dark styling, this section is the green band. */}
+                <p className="mt-9">
+                  <a href="#the-community" className="inline-flex items-center gap-2 text-sm font-sans tracking-widest uppercase text-gold-300 hover:text-gold-200 border-b border-gold-600/40 hover:border-gold-300 pb-0.5 transition-colors focus-ring-dark">
+                    Meet the community <ArrowRight size={13} aria-hidden="true" />
+                  </a>
+                </p>
               </Reveal>
             </div>
           </div>
@@ -363,6 +342,13 @@ export default function Story() {
 
           {/* The ways in — refined preview, informational with a path (carries
               the onward link to /shop now that S4 is image-only). */}
+          {/* Continue out of The Community and into The Ways In. */}
+          <p className="mt-10">
+            <a href="#the-ways-in" className="link-underline">
+              See the ways in <ArrowRight size={13} aria-hidden="true" />
+            </a>
+          </p>
+
           <div id="the-ways-in" className="mt-20 sm:mt-28 scroll-mt-24">
             <div className="rule-gold" />
             {/* Owner, 2026-08-16 (flipped): the mosaic "steals the show", so the
