@@ -84,12 +84,33 @@ actual call site before changing anything.** This is §4's core bug.
 # THE BUILD
 
 ## 1 — `/sign` becomes a chooser
-- `/sign` (no path) currently does not exist — only `/sign/:path`. Add the chooser page: five
+- `/sign` (no path) currently does not exist — only `/sign/:path`. Add the chooser page: **four**
   options, each explained in the owner's words so a visitor can self-identify: **guest · rider ·
-  rider + horse owner · horse owner · deal party**. (`SignStart` today knows guest/rider/horse/
-  rider+horse — **`deal party` is new**; establish what documents/flow it maps to before building
-  it, and if that is not yet defined, ship the other four and report it as an owner question.)
+  rider + horse owner · horse owner**.
+- **"Deal party" is NOT one of the chooser options** (owner ruling 2026-08-15: *"fine dont include
+  deal party"*). It is a different entry shape — see §1b.
 - Existing `/sign/:path` deep links keep working — they skip the chooser.
+
+## 1b — the contract counterparty who has no account yet
+
+**Owner, 2026-08-15:** *"they need to be able to be added to a contract before they have an
+account and then need to be able to sign a contract and create an account in one step. so this
+would be a path for them to do that if they need it."*
+
+**MEASURED — most of this exists; establish what is actually missing before building:**
+- **A party without an account is already normal**: 50 of 131 `document_parties` rows have no
+  linked account. Being added to a contract pre-account already works.
+- **`/api/contract-invite` already exists**: staff-only, calls `invite_contract_counterparty`,
+  emails a branded register link carrying a token; the register flow redeems it via
+  `redeem_contract_invitation` **and lands the counterparty on the contract**. That is the
+  sign-and-create-account-in-one-step path, already built.
+- **`record_signature` does not hard-require auth** (no `auth.uid() IS NULL` guard).
+
+**So the likely gap is reachability and sequence, not capability — the same story as the funnels.**
+Determine and report: (a) can staff actually trigger `/api/contract-invite` from a screen, or is
+it another built-but-unreachable endpoint; (b) does the counterparty land on the contract *and*
+get a real account, or only one of the two; (c) is the account they get in the right shape (the
+one spine, D5). **Fix the gap you find. Do not rebuild the invite path that exists.**
 
 ## 2 — capture first name, last name, phone, email
 - Today `SignStart` is deliberately email-only ("no name capture … captured at first-login
@@ -165,6 +186,7 @@ actual call site before changing anything.** This is §4's core bug.
 2. Clicking "I never received it" produces a support alert with a diagnostic, **an owner dashboard
    notice AND an owner email**, both proven by query, plus a user-facing confirmation.
 3. Activation → the right onboarding flow for the chosen option.
+3b. A contract counterparty with no account can be invited from a real staff screen, signs, and ends up with an account through the one spine — or the specific gap is named with evidence.
 4. Completing onboarding sends **exactly one** email containing **every** signed document —
    prove the count (one send row, N attachments), and name the call site that used to be wrong.
 5. The user lands on their account with the onboarding modal and a profile-completion notice.
