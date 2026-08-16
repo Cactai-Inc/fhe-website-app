@@ -64,7 +64,12 @@ export default function ServiceSelector({
         <p className="text-xs font-sans font-medium tracking-wide uppercase text-gold-ink mb-3">{label}</p>
       )}
 
-      <div role="radiogroup" aria-labelledby={groupLabelId} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {/* Two columns is right for a group of several offerings (Riding Lesson
+          has 9, Horse Exercise 6). A group holding ONE offering — every
+          acquisition service — must not sit in a 2-col grid, or the lone card
+          renders half width. Single-offering groups go full width so they fill
+          the vertical column BookSupport now places them in. */}
+      <div role="radiogroup" aria-labelledby={groupLabelId} className={`grid gap-3 ${group.offerings.length > 1 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}>
         {group.offerings.map((o) => {
           const selected = isSelected(o.id);
           // COUNTFIX 1.5: quote-priced SKUs are real services and are now offered

@@ -107,7 +107,13 @@ export default function BookSupport() {
             <p className="body-text mb-10">
               Finding the right horse is one of the most significant decisions in an equestrian's life. Our support services provide expert guidance at each stage — from the first search to the final handshake.
             </p>
-            <div className="flex flex-col gap-8">
+            {/* Owner, 2026-08-16: "a progressive approach from left to right, not
+                from top to bottom which signals escalation and impossible to see
+                all at one time." Each acquisition service is its own group with a
+                single offering, so stacking them read as tiers. Three columns on
+                desktop puts them side by side as parallel choices, all visible at
+                once; they stack on phones, where there is no other option. */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-start">
               {catalogState !== 'ready' || groups.length === 0 ? (
                 <ServiceListState
                   state={catalogState === 'ready' ? 'empty' : catalogState}
