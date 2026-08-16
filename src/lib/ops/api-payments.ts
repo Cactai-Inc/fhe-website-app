@@ -4,8 +4,15 @@
  * server-side by api/_lib/reconcile.ts with the service role) plus the
  * candidate-purchase lookup over `purchases` by unique_amount / payment_reference —
  * the same two matching keys the server reconciler uses — so staff get manual
- * matching context. Payment CONFIRMATION stays server-side (reconcile /
- * Stripe webhook); nothing here writes payments or `purchases`.
+ * matching context. Automatic payment CONFIRMATION stays server-side (reconcile
+ * / Stripe webhook).
+ *
+ * TASK ZELLECLOSE Z3 additions: `listOutstandingOrders` / `listPaidOrders`
+ * answer "who owes money and who has paid?" directly off `purchases`
+ * (`purchases_staff_all` RLS — has_staff_access(), no new RPC needed for reads).
+ * `markOrderPaid` is the one staff-manual-confirm entry point — it calls
+ * `/api/orders-mark-paid`, which reuses `mark_purchase_paid` + the receipt
+ * trail (`api/_lib/receipt.ts`), never a second write path.
  */
 import { supabase } from '../supabase';
 
@@ -115,4 +122,104 @@ export async function dismissNotification(id: string): Promise<PaymentNotificati
     );
   }
   return row;
+}
+
+/* ── ZELLECLOSE Z3: "who owes money and who has paid?" ─────────────────── */
+
+export interface OrderRow {
+  id: string;
+  amount: number;
+  amount_paid: number;
+  status: string;
+  payment_status: 'unpaid' | 'pending' | 'paid';
+  payment_method: string | null;
+  payment_reference: string | null;
+  unique_amount: number | null;
+  client_reported_method: string | null;
+  client_reported_at: string | null;
+  paid_at: string | null;
+  created_at: string;
+  buyerName: string;
+  items: string;
+}
+
+interface RawOrderRow {
+  id: string;
+  amount: number;
+  amount_paid: number;
+  status: string;
+  payment_status: 'unpaid' | 'pending' | 'paid';
+  payment_method: string | null;
+  payment_reference: string | null;
+  unique_amount: number | null;
+  client_reported_method: string | null;
+  client_reported_at: string | null;
+  paid_at: string | null;
+  created_at: string;
+  contacts: { first_name: string | null; last_name: string | null } | null;
+  purchase_items: { label: string | null }[] | null;
+}
+
+const ORDER_COLS = `id, amount, amount_paid, status, payment_status, payment_method,
+  payment_reference, unique_amount, client_reported_method, client_reported_at,
+  paid_at, created_at,
+  contacts:buyer_contact_id ( first_name, last_name ),
+  purchase_items ( label )`;
+
+function toOrderRow(r: RawOrderRow): OrderRow {
+  const buyerName = [r.contacts?.first_name, r.contacts?.last_name].filter(Boolean).join(' ').trim() || 'Unknown buyer';
+  const items = (r.purchase_items ?? []).map((i) => i.label).filter(Boolean).join(', ') || 'Order';
+  const { contacts: _contacts, purchase_items: _items, ...rest } = r;
+  return { ...rest, buyerName, items };
+}
+
+/** Orders that owe money — awaiting_payment/sent, unpaid or partially paid.
+ *  Excludes draft (not a real commitment yet) and void. */
+export async function listOutstandingOrders(): Promise<OrderRow[]> {
+  const { data, error } = await supabase
+    .from('purchases')
+    .select(ORDER_COLS)
+    .in('status', ['awaiting_payment', 'sent'])
+    .in('payment_status', ['unpaid', 'pending'])
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map((r) => toOrderRow(r as unknown as RawOrderRow));
+}
+
+/** Recently paid orders, newest first. */
+export async function listPaidOrders(limit = 25): Promise<OrderRow[]> {
+  const { data, error } = await supabase
+    .from('purchases')
+    .select(ORDER_COLS)
+    .eq('payment_status', 'paid')
+    .order('paid_at', { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data ?? []).map((r) => toOrderRow(r as unknown as RawOrderRow));
+}
+
+export interface MarkOrderPaidResult {
+  status: 'paid' | 'already_paid';
+  receipt: { sent: boolean; reason?: string };
+}
+
+/** The one staff-manual "mark this existing order paid" entry point — server
+ *  half is `/api/orders-mark-paid` (reuses mark_purchase_paid + the receipt
+ *  trail; never a second write path). */
+export async function markOrderPaid(
+  purchaseId: string,
+  method: 'zelle' | 'cash',
+  reference?: string,
+): Promise<MarkOrderPaidResult> {
+  const { data: sess } = await supabase.auth.getSession();
+  const bearer = sess?.session?.access_token;
+  if (!bearer) throw new Error('You need to be signed in.');
+  const res = await fetch('/api/orders-mark-paid', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${bearer}` },
+    body: JSON.stringify({ purchaseId, method, reference }),
+  });
+  const json = (await res.json().catch(() => ({}))) as Partial<MarkOrderPaidResult> & { error?: string };
+  if (!res.ok) throw new Error(json.error || 'Could not mark this order paid.');
+  return { status: (json.status as MarkOrderPaidResult['status']) ?? 'paid', receipt: json.receipt ?? { sent: false } };
 }

@@ -35,10 +35,19 @@ export async function reconcileNotification(
   db: SupabaseClient,
   n: ParsedNotification,
 ): Promise<ReconcileOutcome> {
+  // ZELLECLOSE: payment_notifications.org_id was never set (single-tenant
+  // today, but the column — and the RLS org-boundary policy that gates staff
+  // WRITES to this table, e.g. dismiss — both key on it). Deployment is single-
+  // org; resolving "the org" the same way the rest of this codebase's
+  // single-tenant fallbacks do (cf. test/db harness setup).
+  const { data: orgRow } = await db.from('organizations').select('id').order('created_at').limit(1).maybeSingle();
+  const orgId = (orgRow?.id as string | undefined) ?? null;
+
   // Record the raw notification first (audit trail).
   const { data: notif } = await db
     .from('payment_notifications')
     .insert({
+      org_id: orgId,
       source_inbox: n.sourceInbox ?? null,
       raw_subject: n.rawSubject ?? null,
       raw_body: n.rawBody ?? null,
@@ -51,9 +60,23 @@ export async function reconcileNotification(
     .single();
   const notificationId = notif?.id as string | undefined;
 
+  // ZELLECLOSE (FLOWTRACE item 14b): the review branch used to only flip a
+  // status column nobody was watching — "a payment nobody can find is worse
+  // than no automation" (LESSONS.md). Every route into review now also alerts
+  // staff, same channel as every other payment event (notify_staff ->
+  // Dashboard needs-attention band + Payment review, already in nav).
   const toReview = async (reason: string): Promise<ReconcileOutcome> => {
     if (notificationId) {
       await db.from('payment_notifications').update({ status: 'review' }).eq('id', notificationId);
+    }
+    if (orgId) {
+      const who = n.sender ? `from ${n.sender}` : 'from an unknown sender';
+      await db.rpc('notify_staff', {
+        p_org: orgId,
+        p_kind: 'payment_review',
+        p_title: `Unmatched Zelle payment $${n.amount.toFixed(2)} ${who} needs review — ${reason}`,
+        p_link: '/app/ops/payments/review',
+      });
     }
     return { result: 'review', reason };
   };
@@ -88,7 +111,7 @@ export async function reconcileNotification(
     // name, email, or phone appearing in the notification. Any one is a match;
     // none → internal review. Amount is only a tiebreaker when the identity
     // matches MORE THAN ONE open fee.
-    const feeOutcome = await matchRescheduleFee(db, n, notificationId);
+    const feeOutcome = await matchRescheduleFee(db, n, notificationId, orgId);
     if (feeOutcome) return feeOutcome;
     return toReview('no matching pending purchase or fee');
   }
@@ -163,6 +186,7 @@ async function matchRescheduleFee(
   db: SupabaseClient,
   n: ParsedNotification,
   notificationId: string | undefined,
+  orgId: string | null,
 ): Promise<ReconcileOutcome | null> {
   const { data } = await db.rpc('pending_fee_candidates');
   const candidates = (data ?? []) as FeeCandidate[];
@@ -180,6 +204,14 @@ async function matchRescheduleFee(
     const byAmount = hits.filter((c) => Number(c.fee_amount) === n.amount);
     if (byAmount.length !== 1) {
       if (notificationId) await db.from('payment_notifications').update({ status: 'review' }).eq('id', notificationId);
+      if (orgId) {
+        await db.rpc('notify_staff', {
+          p_org: orgId,
+          p_kind: 'payment_review',
+          p_title: `Unmatched Zelle payment $${n.amount.toFixed(2)} needs review — ambiguous fee: multiple payers match`,
+          p_link: '/app/ops/payments/review',
+        });
+      }
       return { result: 'review', reason: 'ambiguous fee: multiple payers match' };
     }
     hits = byAmount;

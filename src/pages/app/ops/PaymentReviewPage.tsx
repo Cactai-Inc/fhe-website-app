@@ -7,9 +7,13 @@ import {
   listPaymentNotifications,
   findCandidateOrders,
   dismissNotification,
+  listOutstandingOrders,
+  listPaidOrders,
+  markOrderPaid,
   type PaymentNotification,
   type PaymentNotificationStatus,
   type CandidateOrder,
+  type OrderRow,
 } from '../../../lib/ops/api-payments';
 import { useDocumentTitle } from '../../../lib/hooks';
 
@@ -25,14 +29,22 @@ import { useDocumentTitle } from '../../../lib/hooks';
  * the server matcher used (unique_amount, then payment_reference), each
  * linking to its order page. 'Dismiss' closes the item without confirming
  * anything (terminal status; see api-payments.dismissNotification).
- * Payment CONFIRMATION is intentionally absent: it stays server-side
- * (reconcile / webhook) and is never triggered from this UI.
+ * Automatic payment CONFIRMATION stays server-side (reconcile / webhook) and
+ * is never triggered from the notification buckets below.
+ *
+ * TASK ZELLECLOSE Z3 added the 'orders' bucket — "who owes money and who has
+ * paid?" — direct off `purchases`, with the one staff-manual "mark paid"
+ * action (zelle/cash), reusing mark_purchase_paid via /api/orders-mark-paid
+ * (same spine automatic matching uses, not a second one).
  */
 
-const BUCKETS: { key: PaymentNotificationStatus; label: string }[] = [
+type Bucket = PaymentNotificationStatus | 'orders';
+
+const BUCKETS: { key: Bucket; label: string }[] = [
   { key: 'review', label: 'Needs review' },
   { key: 'unmatched', label: 'Unmatched' },
   { key: 'matched', label: 'Matched' },
+  { key: 'orders', label: 'Orders' },
 ];
 
 function formatReceived(iso: string): string {
@@ -42,13 +54,17 @@ function formatReceived(iso: string): string {
 
 export function PaymentReviewPage() {
   useDocumentTitle('Payment review');
-  const [bucket, setBucket] = useState<PaymentNotificationStatus>('review');
+  const [bucket, setBucket] = useState<Bucket>('review');
   const [rows, setRows] = useState<PaymentNotification[]>([]);
   const [selected, setSelected] = useState<PaymentNotification | null>(null);
   const [candidates, setCandidates] = useState<CandidateOrder[]>([]);
+  const [outstanding, setOutstanding] = useState<OrderRow[]>([]);
+  const [paid, setPaid] = useState<OrderRow[]>([]);
 
   const load = useAsync(listPaymentNotifications);
   const matches = useAsync(findCandidateOrders);
+  const outstandingLoad = useAsync(listOutstandingOrders);
+  const paidLoad = useAsync(listPaidOrders);
   const toast = useToast();
 
   const refresh = useCallback(
@@ -59,14 +75,42 @@ export function PaymentReviewPage() {
     [load],
   );
 
+  const refreshOrders = useCallback(async () => {
+    const [o, p] = await Promise.all([outstandingLoad.run(), paidLoad.run()]);
+    setOutstanding(o);
+    setPaid(p);
+  }, [outstandingLoad, paidLoad]);
+
   useEffect(() => {
     setSelected(null);
     setCandidates([]);
+    if (bucket === 'orders') {
+      refreshOrders().catch(() => {
+        /* surfaced via outstandingLoad.isError / paidLoad.isError */
+      });
+      return;
+    }
     refresh(bucket).catch(() => {
       /* surfaced via load.isError */
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bucket]);
+
+  const markPaid = async (order: OrderRow, method: 'zelle' | 'cash') => {
+    try {
+      const result = await markOrderPaid(order.id, method);
+      toast.success(
+        result.status === 'already_paid'
+          ? 'That order was already marked paid.'
+          : result.receipt.sent
+            ? `Marked paid (${method}) — receipt sent.`
+            : `Marked paid (${method}) — receipt NOT sent (${result.receipt.reason ?? 'unknown reason'}).`,
+      );
+      await refreshOrders();
+    } catch (err) {
+      toast.error(toErrorMessage(err, 'Could not mark this order paid.'));
+    }
+  };
 
   const openMatchPanel = async (row: PaymentNotification) => {
     setSelected(row);
@@ -85,7 +129,8 @@ export function PaymentReviewPage() {
       toast.success('Notification dismissed.');
       setSelected(null);
       setCandidates([]);
-      await refresh(bucket);
+      // dismiss is only reachable from a notification row (bucket !== 'orders')
+      await refresh(bucket as PaymentNotificationStatus);
     } catch (err) {
       toast.error(toErrorMessage(err, 'Could not dismiss the notification.'));
     }
@@ -100,14 +145,55 @@ export function PaymentReviewPage() {
     { key: 'status', header: 'Status', render: (r) => <StatusBadge status={r.status} /> },
   ];
 
+  const outstandingColumns: Column<OrderRow>[] = [
+    { key: 'buyer', header: 'Who', render: (r) => r.buyerName },
+    { key: 'items', header: 'For', render: (r) => r.items },
+    { key: 'owed', header: 'Owes', render: (r) => <Money amount={r.amount - r.amount_paid} /> },
+    {
+      key: 'reported',
+      header: 'Client says',
+      render: (r) =>
+        r.client_reported_method
+          ? `${r.client_reported_method === 'cash' ? 'Cash' : 'Zelle'} — ${
+              r.client_reported_at ? formatReceived(r.client_reported_at) : 'reported'
+            }`
+          : '—',
+    },
+    { key: 'status', header: 'Status', render: (r) => <StatusBadge status={r.payment_status} /> },
+    {
+      key: 'actions',
+      header: 'Mark paid',
+      render: (r) => (
+        <div className="flex gap-2">
+          <AsyncButton className="btn-secondary" pendingLabel="Marking…" onClick={() => markPaid(r, 'zelle')}>
+            Zelle
+          </AsyncButton>
+          <AsyncButton className="btn-secondary" pendingLabel="Marking…" onClick={() => markPaid(r, 'cash')}>
+            Cash
+          </AsyncButton>
+        </div>
+      ),
+    },
+  ];
+
+  const paidColumns: Column<OrderRow>[] = [
+    { key: 'buyer', header: 'Who', render: (r) => r.buyerName },
+    { key: 'items', header: 'For', render: (r) => r.items },
+    { key: 'amount', header: 'Paid', render: (r) => <Money amount={r.amount} /> },
+    { key: 'method', header: 'Method', render: (r) => r.payment_method ?? '—' },
+    { key: 'reference', header: 'Reference', render: (r) => r.payment_reference ?? '—' },
+    { key: 'paid_at', header: 'Paid at', render: (r) => (r.paid_at ? formatReceived(r.paid_at) : '—') },
+  ];
+
   return (
     <div className="max-w-5xl space-y-6">
       <header>
         <p className="eyebrow mb-2">Ops · Payments</p>
         <h1 className="heading-section text-green-800">Payment review</h1>
         <p className="mt-1 text-sm text-green-800/70">
-          Zelle notifications the server could not auto-match. Confirmation itself happens
-          server-side — this queue is for context and triage only.
+          {bucket === 'orders'
+            ? 'Who owes money and who has paid. Automatic Zelle matches land here already reconciled — this is where staff settle everything else (zelle or cash), with the same provable trail.'
+            : 'Zelle notifications the server could not auto-match. Automatic confirmation happens server-side — this queue is for context and triage only.'}
         </p>
       </header>
 
@@ -141,7 +227,44 @@ export function PaymentReviewPage() {
         </div>
       ))}
 
-      {load.isError ? (
+      {bucket === 'orders' ? (
+        <div className="space-y-8">
+          <section>
+            <h2 className="form-label mb-2">Outstanding — who owes money</h2>
+            {outstandingLoad.isError ? (
+              <p role="alert" className="form-error text-sm">
+                {outstandingLoad.error?.message ?? 'Could not load outstanding orders.'}
+              </p>
+            ) : (
+              <DataTable
+                columns={outstandingColumns}
+                rows={outstanding}
+                rowKey={(r) => r.id}
+                loading={outstandingLoad.isPending && outstanding.length === 0}
+                emptyTitle="Nobody owes anything"
+                emptyMessage="No orders are awaiting payment."
+              />
+            )}
+          </section>
+          <section>
+            <h2 className="form-label mb-2">Recently paid</h2>
+            {paidLoad.isError ? (
+              <p role="alert" className="form-error text-sm">
+                {paidLoad.error?.message ?? 'Could not load paid orders.'}
+              </p>
+            ) : (
+              <DataTable
+                columns={paidColumns}
+                rows={paid}
+                rowKey={(r) => r.id}
+                loading={paidLoad.isPending && paid.length === 0}
+                emptyTitle="No payments yet"
+                emptyMessage="Nothing has been marked paid yet."
+              />
+            )}
+          </section>
+        </div>
+      ) : load.isError ? (
         <p role="alert" className="form-error text-sm">
           {load.error?.message ?? 'Could not load payment notifications.'}
         </p>
@@ -157,7 +280,7 @@ export function PaymentReviewPage() {
         />
       )}
 
-      {selected && (
+      {bucket !== 'orders' && selected && (
         <section
           aria-label="Manual matching"
           data-testid="match-panel"
