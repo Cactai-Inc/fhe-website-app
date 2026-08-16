@@ -17,6 +17,8 @@ import {
   fetchRescheduleFee,
   fetchOpenChangeRequests,
   decideBookingChange,
+  updateMyPendingBooking,
+  withdrawMyPendingBooking,
   type OpenChangeRequest,
 } from '../../lib/ops/api-calendar';
 import { fetchOfferings, createDraftOrder } from '../../lib/api';
@@ -130,6 +132,8 @@ export default function CalendarPage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [requesting, setRequesting] = useState<Date | null>(null);
   const [buying, setBuying] = useState(false); // A5 — client lesson-purchase panel
+  // ONBOARD §7 — the member's own balances, on the page they book from.
+  const [myCredits, setMyCredits] = useState<MemberBookableItem[]>([]);
 
   const isStaff = data?.role === 'staff';
 
@@ -159,6 +163,15 @@ export default function CalendarPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // ONBOARD §7 — reloaded alongside the calendar, so a booking that spends a
+  // credit is reflected in the strip without a page refresh.
+  useEffect(() => {
+    if (isStaff || !data) return;
+    let active = true;
+    myBookableItems().then((r) => { if (active) setMyCredits(r); }).catch(() => {});
+    return () => { active = false; };
+  }, [isStaff, data]);
 
   // staff revenue (this week + this month) + credits roster
   useEffect(() => {
@@ -297,6 +310,23 @@ export default function CalendarPage() {
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {/* ONBOARD §7 — "they see the available credits for the items they
+          purchased". Staff had a credits roster here for everybody; the member
+          could not see their own balance anywhere on the page they book from. */}
+      {!isStaff && myCredits.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          <span className="inline-flex items-center gap-1.5 text-sm text-green-900">
+            <Wallet size={15} className="text-gold-ink" aria-hidden="true" /> Your credits
+          </span>
+          {myCredits.map((c) => (
+            <span key={c.creditId}
+              className="text-xs bg-white border border-green-800/15 rounded-full px-3 py-1 text-green-900">
+              {c.label} · <strong>{c.creditsRemaining}</strong>
+            </span>
+          ))}
         </div>
       )}
 
@@ -498,25 +528,42 @@ function DetailPanel({ item, onClose, onChanged, onBuy }: { item: CalendarItem; 
   const [horses, setHorses] = useState<StableHorse[]>([]);
   const [horseId, setHorseId] = useState('');
   const [docsGate, setDocsGate] = useState<string[] | null>(null);
+  // ONBOARD §7 — "select what they are requesting that slot for from the items
+  // they purchased". The chosen credit is the one debited; without this the
+  // server picked whatever sorted first (FLOWTRACE §9).
+  const [items, setItems] = useState<MemberBookableItem[]>([]);
+  const [creditId, setCreditId] = useState('');
+  // The fee gate's affordances — the same shape as the order payment screen, on
+  // purpose: one way to say "I paid", wherever the money comes up.
+  const [feeMethod, setFeeMethod] = useState<'zelle' | 'cash' | null>(null);
+  const [feeReference, setFeeReference] = useState('');
 
   useEffect(() => { fetchRescheduleFee().then(setFee).catch(() => setFee(0)); }, []);
   useEffect(() => {
     if (!isCare && !isLesson) return;
     listStableHorses().then(setHorses).catch(() => setHorses([]));
   }, [isCare, isLesson]);
+  useEffect(() => {
+    if (item.status !== 'available') return;
+    myBookableItems().then(setItems).catch(() => setItems([]));
+  }, [item.status]);
 
   const isAvailable = item.status === 'available';
   const isMine = !!item.is_mine;
-  const canChange = isMine && ['scheduled', 'confirmed', 'pending'].includes(item.status);
+  // ONBOARD §7: a booking still waiting on us is EDITABLE, not "changeable by
+  // request" — nothing has been agreed, so there is nothing to renegotiate.
+  const isPending = isMine && item.status === 'pending';
+  const canChange = isMine && ['scheduled', 'confirmed'].includes(item.status);
   const hoursOut = (new Date(item.starts_at).getTime() - Date.now()) / 3_600_000;
   const feeNow = hoursOut < 48 ? fee : 0;
   const phoneRequired = hoursOut < 24;
   const durationMs = item.ends_at ? new Date(item.ends_at).getTime() - new Date(item.starts_at).getTime() : 3_600_000;
+  const feeSettled = feeNow <= 0 || feeMethod !== null;
 
   async function book() {
     setBusy(true); setError(null); setNoCredits(false); setDocsGate(null);
     try {
-      await bookOpenSlot(item.id, (isCare || isLesson) ? horseId || null : null);
+      await bookOpenSlot(item.id, (isCare || isLesson) ? horseId || null : null, creditId || null);
       onChanged();
     } catch (e) {
       const msg = e instanceof Error ? e.message : '';
@@ -529,24 +576,63 @@ function DetailPanel({ item, onClose, onChanged, onBuy }: { item: CalendarItem; 
     } finally { setBusy(false); }
   }
 
+  /** Still pending: move it outright. No request, no fee, no waiting. */
+  async function editPending() {
+    setBusy(true); setError(null);
+    try {
+      const start = new Date(newStart);
+      await updateMyPendingBooking(
+        item.id, start.toISOString(), new Date(start.getTime() + durationMs).toISOString());
+      setDone('Updated — we’ll confirm your time shortly.');
+      onChanged();
+    } catch (e) {
+      setError(toErrorMessage(e, 'Could not update your request.'));
+    } finally { setBusy(false); }
+  }
+
+  async function withdrawPending() {
+    setBusy(true); setError(null);
+    try {
+      const r = await withdrawMyPendingBooking(item.id);
+      setDone(r.credit_refunded
+        ? 'Withdrawn — your credit is back on your account.'
+        : 'Withdrawn.');
+      onChanged();
+    } catch (e) {
+      setError(toErrorMessage(e, 'Could not withdraw your request.'));
+    } finally { setBusy(false); }
+  }
+
   async function change(kind: 'reschedule' | 'cancel' | 'defer') {
     setBusy(true); setError(null);
     try {
+      const common = {
+        bookingId: item.id,
+        scope: item.series_id ? scope : undefined,
+        // Only a reschedule can attract a fee, and only inside the window.
+        feeMethod: kind === 'reschedule' && feeNow > 0 ? feeMethod : null,
+        feeReference: kind === 'reschedule' && feeNow > 0 ? feeReference : null,
+      };
       const payload =
         kind === 'reschedule'
-          ? { bookingId: item.id, kind, newStart: new Date(newStart).toISOString(), newEnd: new Date(new Date(newStart).getTime() + durationMs).toISOString(), scope: item.series_id ? scope : undefined }
-          : { bookingId: item.id, kind, scope: item.series_id ? scope : undefined };
+          ? { ...common, kind, newStart: new Date(newStart).toISOString(), newEnd: new Date(new Date(newStart).getTime() + durationMs).toISOString() }
+          : { ...common, kind };
       const r = await requestBookingChange(payload);
       setDone(
-        r.phone_required
-          ? 'Request submitted — a phone call is required to confirm this change. We’ll call you.'
-          : r.fee_amount
-            ? `Request submitted — a $${r.fee_amount} fee applies; we’ll confirm once it’s settled.`
+        r.fee_amount
+          ? `Request submitted — we’ve noted the $${r.fee_amount} fee${
+              r.fee_method === 'cash' ? ' as cash at the ranch' : ' as sent by Zelle'
+            }. We’ll confirm once it’s settled.`
+          : r.phone_required
+            ? 'Request submitted — a phone call is required to confirm this change. We’ll call you.'
             : 'Request submitted — pending confirmation.',
       );
       onChanged();
     } catch (e) {
-      setError(toErrorMessage(e, 'Could not submit your request.'));
+      const msg = e instanceof Error ? e.message : '';
+      setError(msg.includes('FEE_CONFIRMATION_REQUIRED')
+        ? 'Please tell us how you’re paying the change fee before we can submit this.'
+        : toErrorMessage(e, 'Could not submit your request.'));
     } finally { setBusy(false); }
   }
 
@@ -588,6 +674,26 @@ function DetailPanel({ item, onClose, onChanged, onBuy }: { item: CalendarItem; 
 
         {!done && isAvailable && (
           <div className="flex flex-col gap-3">
+            {/* ONBOARD §7 — the credits the member actually holds, and which one
+                this booking is against. Shown before the horse picker because it
+                is the first question the owner's flow asks. */}
+            {items.length > 0 ? (
+              <label className="text-sm">
+                <span className="form-label">What are you booking?</span>
+                <select className="form-input" value={creditId} onChange={(e) => setCreditId(e.target.value)}>
+                  <option value="">Use my next available credit</option>
+                  {items.map((i) => (
+                    <option key={i.creditId} value={i.creditId}>
+                      {i.label} — {i.creditsRemaining} left
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : (
+              <p className="text-xs text-muted">
+                You have no credits left. Booking this time will prompt you to buy.
+              </p>
+            )}
             {isCare && (
               <label className="text-sm">
                 <span className="form-label">Which horse is this for?</span>
@@ -632,6 +738,43 @@ function DetailPanel({ item, onClose, onChanged, onBuy }: { item: CalendarItem; 
           </div>
         )}
 
+        {/* ONBOARD §7 — "until that is confirmed by us it stays pending and its
+            fully editable by the user until its confirmed." No request, no fee,
+            no approval round-trip: the member moves their own request, or takes
+            it back and keeps the credit. */}
+        {!done && isPending && (
+          <div className="flex flex-col gap-3">
+            <p className="text-sm bg-cream-100 border border-green-800/10 p-3 rounded">
+              We haven’t confirmed this yet, so it’s still yours to change — no fee.
+            </p>
+            {mode === 'view' ? (
+              <>
+                <button type="button" className="btn-secondary w-full justify-center" onClick={() => setMode('reschedule')}>
+                  Change the time
+                </button>
+                <button type="button" className="text-sm text-red-700 py-2 hover:bg-red-50 rounded"
+                  disabled={busy} onClick={() => void withdrawPending()}>
+                  Withdraw this request
+                </button>
+              </>
+            ) : (
+              <>
+                <label className="text-sm">
+                  <span className="form-label">New time</span>
+                  <input type="datetime-local" className="form-input" value={newStart} onChange={(e) => setNewStart(e.target.value)} />
+                </label>
+                <div className="flex gap-2">
+                  <button type="button" className="btn-primary flex-1 justify-center" disabled={busy || !newStart}
+                    onClick={() => void editPending()}>
+                    {busy ? 'Saving…' : 'Save the new time'}
+                  </button>
+                  <button type="button" className="btn-secondary" onClick={() => setMode('view')}>Back</button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
         {!done && canChange && mode === 'view' && (
           <div className="flex flex-col gap-2">
             <button type="button" className="btn-secondary w-full justify-center" onClick={() => setMode('reschedule')}>Reschedule</button>
@@ -661,18 +804,43 @@ function DetailPanel({ item, onClose, onChanged, onBuy }: { item: CalendarItem; 
             )}
             {(feeNow > 0 || phoneRequired) && (
               <div className="bg-orange-50 border border-orange-300 text-orange-900 text-xs p-2 rounded">
-                {feeNow > 0 && <p>A ${feeNow} reschedule fee applies (inside 48 hours).</p>}
+                {feeNow > 0 && <p>A ${feeNow} change fee applies to this time.</p>}
                 {phoneRequired && <p>Inside 24 hours — a phone call is required to confirm.</p>}
               </div>
             )}
+            {/* ONBOARD §7 — "the booking doesnt submit to us until they confirm
+                they made the payment with zelle or say they will pay cash". The
+                gate is enforced server-side too (request_booking_change throws
+                FEE_CONFIRMATION_REQUIRED), so this is the affordance, not the
+                rule. Same shape as the order payment screen: Zelle with an
+                optional confirmation number, or cash. */}
             {feeNow > 0 && payShown && (
-              <div className="bg-white border border-green-800/15 rounded p-3 text-sm">
-                <p className="font-medium text-green-900 mb-1">Pay the ${feeNow} reschedule fee</p>
-                <p className="text-green-900/80">
-                  Send <strong>${feeNow}</strong> via Zelle to <strong>hello@fhequestrian.com</strong>, memo
-                  “reschedule”. Your request submits now and is confirmed once the payment is recognized
-                  (staff can also waive it).
+              <div className="bg-white border border-green-800/15 rounded p-3 text-sm flex flex-col gap-2">
+                <p className="font-medium text-green-900">Settling the ${feeNow} change fee</p>
+                <p className="text-green-900/80 text-xs">
+                  Send <strong>${feeNow}</strong> via Zelle to <strong>hello@fhequestrian.com</strong>,
+                  memo “reschedule” — or pay cash at the ranch. Either way, tell us which below;
+                  we’ll confirm the change once it’s settled (staff can also waive it).
                 </p>
+                <label className="text-xs">
+                  <span className="form-label">Confirmation number (optional)</span>
+                  <input className="form-input" value={feeReference} disabled={feeMethod === 'cash'}
+                    onChange={(e) => setFeeReference(e.target.value)} />
+                </label>
+                <div className="flex gap-2">
+                  <button type="button"
+                    className={feeMethod === 'zelle' ? 'btn-primary flex-1 justify-center' : 'btn-secondary flex-1 justify-center'}
+                    aria-pressed={feeMethod === 'zelle'}
+                    onClick={() => setFeeMethod('zelle')}>
+                    I’ve sent it by Zelle
+                  </button>
+                  <button type="button"
+                    className={feeMethod === 'cash' ? 'btn-primary flex-1 justify-center' : 'btn-secondary flex-1 justify-center'}
+                    aria-pressed={feeMethod === 'cash'}
+                    onClick={() => { setFeeMethod('cash'); setFeeReference(''); }}>
+                    I’ll pay cash
+                  </button>
+                </div>
               </div>
             )}
             <div className="flex gap-2">
@@ -681,12 +849,19 @@ function DetailPanel({ item, onClose, onChanged, onBuy }: { item: CalendarItem; 
                   Continue to payment
                 </button>
               ) : (
-                <button type="button" className="btn-primary flex-1 justify-center" disabled={busy || !newStart} onClick={() => void change('reschedule')}>
-                  {busy ? 'Submitting…' : feeNow > 0 ? 'I’ve sent it — submit' : 'Submit request'}
+                <button type="button" className="btn-primary flex-1 justify-center"
+                  disabled={busy || !newStart || !feeSettled}
+                  onClick={() => void change('reschedule')}>
+                  {busy ? 'Submitting…' : feeNow > 0 ? 'Submit my change' : 'Submit request'}
                 </button>
               )}
               <button type="button" className="btn-secondary" onClick={() => { setMode('view'); setPayShown(false); }}>Back</button>
             </div>
+            {feeNow > 0 && payShown && !feeSettled && (
+              <p className="text-xs text-muted">
+                Pick Zelle or cash above — we can’t submit the change until we know.
+              </p>
+            )}
           </div>
         )}
 
