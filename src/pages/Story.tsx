@@ -469,17 +469,24 @@ export default function Story() {
           little without letting them drift apart. */}
       <section id="what-we-deliver" className="bg-cream">
         <div className="container-site pt-20 pb-8 sm:pt-28 sm:pb-10 lg:pt-32 lg:pb-12">
-          <p className="heading-display leading-[1.2] text-green-900 text-center mx-auto max-w-4xl [text-wrap:balance] text-[clamp(1.9rem,4.4vw,3.2rem)]">
-            Friendship &amp; Adventure at French Heritage Equestrian
-          </p>
+          {/* Owner, 2026-08-16: the back link moves BESIDE the title — level
+              with its second line — instead of sitting under it, so it adds no
+              height and the image can come back up.
+              The title stays centred on the section (mx-auto on its own box, so
+              the link does not shift it), and the link is absolutely positioned
+              on the left at lg+. Below lg there is no room beside a wrapping
+              title, so it falls back to a normal line under it. */}
+          <div className="relative">
+            <p className="heading-display leading-[1.2] text-green-900 text-center mx-auto max-w-4xl [text-wrap:balance] text-[clamp(1.9rem,4.4vw,3.2rem)]">
+              Friendship &amp; Adventure at French Heritage Equestrian
+            </p>
 
-          {/* The way back up — this is the last section, so the only onward
-              move is a return. Centered under the line, above the image. */}
-          <p className="mt-8 text-center">
-            <a href="#our-services" className="link-underline">
-              <ArrowUp size={13} aria-hidden="true" /> Back to services
-            </a>
-          </p>
+            <p className="mt-6 text-center lg:mt-0 lg:absolute lg:left-0 lg:bottom-0 lg:text-left">
+              <a href="#our-services" className="link-underline">
+                <ArrowUp size={13} aria-hidden="true" /> Back to services
+              </a>
+            </p>
+          </div>
         </div>
       </section>
 
