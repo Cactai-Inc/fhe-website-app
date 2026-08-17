@@ -133,7 +133,7 @@ export default function Story() {
           #beyond-the-arena / #our-services / #what-we-deliver in the address
           bar, so an id that disagrees with its heading is a visible defect, not
           an internal detail. Rename them together. */}
-      <section id="our-story" className="bg-cream scroll-mt-24">
+      <section id="our-story" className="bg-cream">
         {/* pt-10 → pt-32 (owner, 2026-08-16): the jump nav used to sit above this
             section and carried the clearance under the fixed header; removing it
             left the eyebrow rendering behind the nav bar. */}
@@ -289,7 +289,12 @@ export default function Story() {
           name, its too close to the other section") — this follows the
           full-bleed green band, which has no bottom padding of its own, so the
           eyebrow was sitting almost on the seam. */}
-      <section id="beyond-the-arena" className="bg-cream scroll-mt-24">
+      {/* Owner, 2026-08-16: jumping here left the green panel still visible.
+          Cause: this section carries 128px of its OWN top padding (pt-32), and
+          scroll-mt-24 added another 96px on top — so the browser stopped ~224px
+          short of the section's real top edge. The section's padding already
+          clears the fixed nav, so the offset is removed rather than reduced. */}
+      <section id="beyond-the-arena" className="bg-cream">
         <div className="container-site pt-32 pb-16 sm:pt-40 sm:pb-24">
           <Reveal className="max-w-3xl">
             <p className="eyebrow mb-6">Beyond The Arena</p>
@@ -454,7 +459,7 @@ export default function Story() {
           so the photograph sits close under the words.
           `leading-tight` (not the display default) opens the two stacked lines a
           little without letting them drift apart. */}
-      <section id="what-we-deliver" className="bg-cream scroll-mt-24">
+      <section id="what-we-deliver" className="bg-cream">
         <div className="container-site pt-20 pb-8 sm:pt-28 sm:pb-10 lg:pt-32 lg:pb-12">
           <p className="heading-display leading-[1.2] text-green-900 text-center mx-auto max-w-4xl [text-wrap:balance] text-[clamp(1.9rem,4.4vw,3.2rem)]">
             Friendship &amp; Adventure at French Heritage Equestrian
