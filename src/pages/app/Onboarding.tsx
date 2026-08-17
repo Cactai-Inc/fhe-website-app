@@ -30,8 +30,10 @@ import { BodyWithSignatures } from '../../components/ops/documents/MergedBodyVie
 import { toErrorMessage } from '../../lib/ops/errors';
 import { useDocumentTitle } from '../../lib/hooks';
 import { listStableHorses, type StableHorse } from '../../lib/stable';
+import type { HorseIntakePayload } from '../../lib/horses';
 import { HorseIntakeForm } from '../../components/app/HorseIntakeForm';
 import { ActivationOrderPanel } from '../../components/app/ActivationOrderPanel';
+import { SameHorseAsk } from '../../components/app/SameHorseAsk';
 import { AppOverviewModal } from '../../components/app/AppOverviewModal';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePropertyTerm } from '../../contexts/BrandProvider';
@@ -243,6 +245,11 @@ export default function Onboarding() {
   // 'collect' = the add/choose loop; 'decide' = combined-vs-split, only shown
   // once they have more than one horse in hand.
   const [horsePhase, setHorsePhase] = useState<'collect' | 'decide'>('collect');
+  // CAREPATH §C10b — what the client already told us about a horse of THEIRS on
+  // the inquiry, once they have confirmed the horse they are adding is that one.
+  // `null` = not asked yet; `{}` = asked and it is a different horse (or there
+  // was nothing to ask about). NEVER assumed either way.
+  const [horsePrefill, setHorsePrefill] = useState<Partial<HorseIntakePayload> | null>(null);
   const [bindingHorses, setBindingHorses] = useState(false);
   const [horseError, setHorseError] = useState<string | null>(null);
   const horseNameOf = (id: string) =>
@@ -988,7 +995,13 @@ export default function Onboarding() {
                 stay blank — you can finish the rest later without holding up the
                 horses you have ready.
               </p>
-              <HorseIntakeForm submitLabel="Save &amp; continue" onDone={(id) => void horseCompleted(id)} />
+              {/* §C10b — ask before prefilling, and only from `client_horse`. */}
+              {horsePrefill === null ? (
+                <SameHorseAsk onAnswered={setHorsePrefill} />
+              ) : (
+                <HorseIntakeForm submitLabel="Save &amp; continue" prefill={horsePrefill}
+                  onDone={(id) => void horseCompleted(id)} />
+              )}
               {chosenHorseIds.length > 0 && (
                 <button type="button" onClick={() => setShowNewHorseForm(false)}
                   className="mt-2 text-xs text-muted underline underline-offset-2">

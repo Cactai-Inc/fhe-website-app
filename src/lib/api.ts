@@ -2670,3 +2670,25 @@ export async function listOrderBookings(purchaseId: string): Promise<OrderBookin
   if (error) throw error;
   return (data ?? []) as OrderBooking[];
 }
+
+/** CAREPATH §C10b — the caller's own inquiry answers, GROUPED BY SUBJECT.
+ *
+ * ⚠️ An order can name THREE different horses: the one they own or lease
+ * (`client_horse`), one being evaluated (`evaluated_horse`), and one they hope
+ * to buy (`sought_horse`). ONLY `client_horse` may ever prefill a horse record.
+ * The grouping is what makes that rule enforceable rather than a convention —
+ * you cannot reach the wrong animal's answers without naming the wrong subject.
+ *
+ * A client who answered "not yet — I'd like help finding one" has their answers
+ * filed under `sought_horse`, so `client_horse` is empty and the intake form is
+ * blank, with nothing asked. */
+export type InquiryAnswersBySubject = Partial<Record<
+  'person' | 'client_horse' | 'evaluated_horse' | 'sought_horse',
+  Record<string, string>
+>>;
+
+export async function myInquiryAnswers(): Promise<InquiryAnswersBySubject> {
+  const { data, error } = await supabase.rpc('my_inquiry_answers');
+  if (error) throw error;
+  return (data ?? {}) as InquiryAnswersBySubject;
+}

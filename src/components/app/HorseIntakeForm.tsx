@@ -440,7 +440,7 @@ const PATCHABLE_KEYS: (keyof HorseIntakePayload)[] = [
 const TYPED_KEYS = new Set<keyof HorseIntakePayload>(HORSE_SENTINEL_UNSAFE_KEYS);
 
 export function HorseIntakeForm({
-  onDone, submitLabel = 'Add horse', ownerContactId, horseId,
+  onDone, submitLabel = 'Add horse', ownerContactId, horseId, prefill,
 }: {
   /** Fires on created OR match_found (both attach an id); pending-review shows in-form. */
   onDone: (horseId: string) => void;
@@ -453,10 +453,22 @@ export function HorseIntakeForm({
    *  what's on file, completes the required fields, and every field autosaves
    *  on blur (partial progress survives a skip). */
   horseId?: string;
+  /** CAREPATH §C10b — the overlapping fields already answered on the INQUIRY,
+   *  seeded into a NEW record so the client is not asked twice for what they
+   *  told us a week ago.
+   *
+   *  ⚠️ ONLY REACHES HERE AFTER THE CLIENT SAID "yes, this is that horse". The
+   *  caller asks; this form never assumes (§C10b: "we dont assume the inquiry
+   *  about horse clipping and the inquiry about evaluation… are related to the
+   *  same horse"). Values are ordinary editable field values — visible, and
+   *  corrected in place if we got it wrong. Ignored in EDIT mode: a record on
+   *  file is a stronger source than an inquiry. */
+  prefill?: Partial<HorseIntakePayload>;
 }) {
   const { isStaff } = useAuth();
   const propertyTerm = usePropertyTerm();
-  const [f, setF] = useState<HorseIntakePayload>({ is_leased: 'no' });
+  const [f, setF] = useState<HorseIntakePayload>(
+    () => (horseId ? { is_leased: 'no' } : { is_leased: 'no', ...(prefill ?? {}) }));
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
