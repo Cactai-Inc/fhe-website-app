@@ -1,5 +1,12 @@
 # TASK THREEFORMS — one shape for all three funnels, with a real confirmation at step 3
 
+> ⚠️ **SUPERSEDED FOR THE HORSE-CARE FUNNEL by `TASK-CAREPATH` (2026-08-16).** The owner reviewed
+> horse care and specified that lane in full detail — four steps, a Continue Shopping modal, a
+> personal-information-only submit screen, lead + horse-owner + order on submission, staff
+> provisioning, then activation. **Build `CAREPATH` first.** Acquisition and lessons follow as their
+> own specs. What survives here is **F1b (the combined mixed-cart form)**, which remains unbuilt and
+> is explicitly out of scope for `CAREPATH`.
+
 **Owner, 2026-08-16, verbatim:**
 
 > *"switching to this format for all three is ideal, the only difference is that aquisition support
