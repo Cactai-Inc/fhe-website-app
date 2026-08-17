@@ -36,6 +36,21 @@ export interface InvitationEmailInput {
   offeringLabel?: string | null;
   checklist?: ChecklistRow[];
   expiresAt?: string | null;
+  /**
+   * LESSONREQUEST §L3 — the lesson slot agreed on the phone, already in words.
+   *
+   * Owner ruling, 2026-08-17: *"One message, one link, and the agreed date and
+   * time in writing at the top. A second email is a second thing that can fail
+   * independently."* So there is no confirmation email — this line is it.
+   *
+   * ⚠️ ALREADY FORMATTED, DELIBERATELY. No table in this database carries a
+   * tenant timezone, and this code runs on a UTC serverless runtime, so
+   * formatting an instant here would tell the client their 4pm lesson is at
+   * 11pm. The string is composed in the staff member's own browser, in the
+   * barn's own timezone, from the very picker they agreed the time in — so what
+   * the client reads is what the person who booked it saw.
+   */
+  agreedTime?: string | null;
 }
 
 /** Invitation email via the shared transport (Google SMTP first, Resend dormant),
@@ -44,7 +59,7 @@ export async function sendInvitationEmail(
   db: ReturnType<typeof getSupabaseAdmin>,
   input: InvitationEmailInput,
 ): Promise<InvitationSendResult> {
-  const { orgId, to, registerUrl, offeringLabel, checklist, expiresAt } = input;
+  const { orgId, to, registerUrl, offeringLabel, checklist, expiresAt, agreedTime } = input;
   const isResend = input.kind === 'resend';
 
   // No org = no brand identity = no from-address. That is a real failure with a
@@ -69,6 +84,7 @@ export async function sendInvitationEmail(
     'ORG.BRAND_NAME': identity.fromName,
     'ORG.FOOTER': identity.footer,
     'MSG.IS_RESEND': isResend ? '1' : '',
+    'MSG.AGREED_TIME': agreedTime ?? '',
     'MSG.OFFERING_LABEL': offeringLabel ?? '',
     'MSG.CHECKLIST': pending.map((c) => ({ TITLE: c.title, ACTION: c.action.toLowerCase() })),
     'MSG.LINK': registerUrl,

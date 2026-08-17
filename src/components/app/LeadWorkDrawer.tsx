@@ -37,6 +37,9 @@ import type { ScheduleSessionFormValues } from '../../pages/app/ops/lessons/Sche
 import { ProvisionClientForm } from './ProvisionClientForm';
 import { LeadOrderPanel } from './LeadOrderPanel';
 import { GiftCreateForm } from './GiftCreateForm';
+import { AgreedLessonPanel, agreedLessonFrom } from './AgreedLessonPanel';
+import { emptySessionFields, type SessionFieldsValue } from './SessionFields';
+import { useAuth } from '../../contexts/AuthContext';
 import type { ProposedTime } from '../../lib/types';
 
 /** The per-service fit checklist (BOOKING_FLOWS_PLAN §1 staff rails). Keys are
@@ -163,6 +166,8 @@ export function LeadWorkDrawer({ request, onClose, onChanged }: LeadWorkDrawerPr
   const [invite, setInvite] = useState<InviteFormState>(() => inviteFormFor(request));
   const [inviteResult, setInviteResult] = useState<{
     url: string; emailed: boolean; offeringLabel?: string;
+    /** §L3 — set iff the act reported it actually booked the lesson. */
+    agreedSlot?: string;
   } | null>(null);
   const [giftOpen, setGiftOpen] = useState(false);
   const [horses, setHorses] = useState<ScheduleHorseOption[]>([]);
@@ -171,8 +176,13 @@ export function LeadWorkDrawer({ request, onClose, onChanged }: LeadWorkDrawerPr
   // the sessions already booked from this request.
   const [requestClientId, setRequestClientId] = useState<string | null>(null);
   const [requestSessions, setRequestSessions] = useState<LessonSession[]>([]);
+  // LESSONREQUEST §L3 — the slot agreed on the call. Held HERE rather than
+  // inside ProvisionClientForm so the ranges the visitor gave can sit beside
+  // the picker; the form only carries it into the one act.
+  const [agreedFields, setAgreedFields] = useState<SessionFieldsValue>(emptySessionFields);
 
   const toast = useToast();
+  const { user } = useAuth();
 
   // Reset when the host swaps in a different lead (same mount, new row).
   useEffect(() => {
@@ -186,6 +196,7 @@ export function LeadWorkDrawer({ request, onClose, onChanged }: LeadWorkDrawerPr
     setActionError(null);
     setRequestClientId(null);
     setRequestSessions([]);
+    setAgreedFields(emptySessionFields());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [request.id]);
 
@@ -201,11 +212,19 @@ export function LeadWorkDrawer({ request, onClose, onChanged }: LeadWorkDrawerPr
     listLessonSessionsForRequest(selected.id)
       .then((s) => { if (active) setRequestSessions(s); })
       .catch(() => { if (active) setRequestSessions([]); });
+    return () => { active = false; };
+  }, [scheduleReady, selected.id]);
+
+  // The horse roster is needed BEFORE provisioning now — §L3's agreed-time
+  // panel offers it on the pre-invitation path, where `scheduleReady` is false
+  // by definition. Fetched once per open drawer rather than per section.
+  useEffect(() => {
+    let active = true;
     listScheduleHorses()
       .then((h) => { if (active) setHorses(h); })
       .catch(() => { if (active) setHorses([]); });
     return () => { active = false; };
-  }, [scheduleReady, selected.id]);
+  }, []);
 
   const changed = useCallback((next: BookingRequest) => {
     setSelected(next);
@@ -266,6 +285,10 @@ export function LeadWorkDrawer({ request, onClose, onChanged }: LeadWorkDrawerPr
   const busy = addNote.isPending || contact.isPending;
   const allChecked = LESSON_FIT_CHECKLIST.every((item) => checklist[item.key] === true);
   const own = visitorNotes(selected.notes);
+  // §L3 — null until a date and a start time are both set, which is what makes
+  // the agreed time OPTIONAL: an inquiry that is not ready to be booked still
+  // gets its invitation, exactly as before.
+  const agreedLesson = agreedLessonFrom(agreedFields, user?.id ?? null);
 
   return (
     <Modal open onClose={onClose} title="Booking request" disableBackdropClose={busy}>
@@ -441,6 +464,17 @@ export function LeadWorkDrawer({ request, onClose, onChanged }: LeadWorkDrawerPr
                 ? ' and emailed.'
                 : '. (Email provider not configured — copy the link below.)'}
             </p>
+            {/* §L3 — say whether the lesson was actually booked, from what the
+                act REPORTED, never from what was sent to it. */}
+            {inviteResult.agreedSlot && (
+              <p className="text-green-800 mb-2">
+                Their first lesson is booked for{' '}
+                <span className="font-medium">{inviteResult.agreedSlot}</span>
+                {inviteResult.emailed
+                  ? ' — the invitation email says so at the top.'
+                  : ' — but the email did not go out, so tell them yourself.'}
+              </p>
+            )}
             <code className="block break-all text-xs text-green-900 bg-white border border-green-200 p-2">
               {inviteResult.url}
             </code>
@@ -514,23 +548,46 @@ export function LeadWorkDrawer({ request, onClose, onChanged }: LeadWorkDrawerPr
         {inviteOpen && !inviteResult && (
           <div className="border-t border-green-800/10 pt-4">
             <p className="body-text text-sm mb-4">
-              Provision what they bought and email the registration invitation — their account
-              opens straight into onboarding with the paperwork ready to sign.
+              Set the time you agreed on the call, provision what they bought, and email the
+              registration invitation — one action. Their account opens straight into onboarding
+              with the paperwork ready to sign, and the lesson already on the calendar.
             </p>
             {/* The ONE shared provision form (source='submission'): carries the
-                request id (links + flips to invited) and the visitor's name. */}
+                request id (links + flips to invited) and the visitor's name.
+                §L3 puts the agreed-time panel INSIDE it, above the fields, so
+                one button does the whole act — the order confirms, the lead
+                promotes, the lesson is booked and the invite sends together. */}
             <ProvisionClientForm
               source="submission"
               requestId={selected.id}
               email={invite.email}
               firstName={invite.firstName}
               lastName={invite.lastName}
+              agreedLesson={agreedLesson}
               onProvisioned={(r) => {
-                setInviteResult({ url: r.registerUrl, emailed: r.emailed, offeringLabel: r.offeringLabel ?? undefined });
+                setInviteResult({
+                  url: r.registerUrl,
+                  emailed: r.emailed,
+                  offeringLabel: r.offeringLabel ?? undefined,
+                  // From what the act RETURNED, not from what we sent it.
+                  agreedSlot: r.agreedLesson && agreedLesson ? agreedLesson.display : undefined,
+                });
                 changed({ ...selected, status: 'invited' });
-                toast.success('Confirmation sent — invitation created.');
+                toast.success(
+                  r.agreedLesson
+                    ? 'Lesson booked, confirmation sent — invitation created.'
+                    : 'Confirmation sent — invitation created.',
+                );
               }}
-            />
+            >
+              <AgreedLessonPanel
+                proposedTimes={selected.proposed_times}
+                ridingExperience={ridingExperience(selected.notes)}
+                value={agreedFields}
+                onChange={setAgreedFields}
+                horses={horses}
+              />
+            </ProvisionClientForm>
             <div className="flex justify-end mt-3">
               <button type="button" className="btn-outline-gold text-sm" onClick={() => setInviteOpen(false)}>
                 Back

@@ -103,6 +103,39 @@ interface ProvisionResult {
   categories: string[];
   amount: number;
   labels: string[];
+  /** LESSONREQUEST §L3 — present iff the act also booked the agreed lesson. */
+  agreed_lesson: { booking_id: string; starts_at: string; ends_at: string } | null;
+}
+
+/**
+ * LESSONREQUEST §L3 — the slot staff agreed on the phone.
+ *
+ * `starts_at`/`ends_at` are the authority and go to the database. `display` is
+ * the same slot in the words the staff member saw, and it is what the client
+ * reads in the email: this schema has no tenant timezone column anywhere, so
+ * anything formatted on the server renders UTC and a 4pm lesson would reach the
+ * client as 11pm. Nothing here is trusted for authorization — the endpoint is
+ * already staff-gated above, and the RPC re-checks the org on every id.
+ */
+interface AgreedLessonBody {
+  starts_at?: unknown; ends_at?: unknown;
+  offering_id?: unknown; horse_id?: unknown; instructor_user_id?: unknown;
+  location?: unknown; notes?: unknown; display?: unknown;
+}
+
+function readAgreedLesson(v: unknown): { rpc: Record<string, string>; display: string } | null {
+  if (!v || typeof v !== 'object') return null;
+  const a = v as AgreedLessonBody;
+  const str = (x: unknown) => (typeof x === 'string' ? x.trim() : '');
+  const starts = str(a.starts_at);
+  const ends = str(a.ends_at);
+  if (!starts || !ends) return null;
+  const rpc: Record<string, string> = { starts_at: starts, ends_at: ends };
+  for (const k of ['offering_id', 'horse_id', 'instructor_user_id', 'location', 'notes'] as const) {
+    const val = str(a[k]);
+    if (val) rpc[k] = val;
+  }
+  return { rpc, display: str(a.display) };
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -162,6 +195,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   //   'regenerate'  deliberate replacement — retire the prior live link.
   // The caller says which; nothing here infers it from "an invitation exists".
   const mode = body.mode === 'regenerate' ? 'regenerate' : 'new';
+
+  // LESSONREQUEST §L3 — the agreed slot, when the caller set one.
+  const agreed = readAgreedLesson(body.agreedLesson);
 
   try {
     const db = await at('auth', async () => getSupabaseAdmin());
@@ -234,6 +270,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           p_request_id: requestId,
           p_org_id: orgId,
           p_partial_amount: partialAmount,
+          // §L3: null keeps this call byte-identical to what it always did.
+          p_agreed_lesson: agreed ? agreed.rpc : null,
         });
         if (rpcErr) throw rpcErr;
         return (Array.isArray(data) ? data[0] : data) as ProvisionResult;
@@ -260,7 +298,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // The invitation row is committed by now, so a delivery failure cannot roll
       // it back — but it MUST come back as a failure, with its reason, or the
       // operator walks away believing a person was emailed who never was.
-      const sent = await sendInvitationEmail(db, { orgId, to: email, registerUrl, offeringLabel });
+      // §L3, owner ruling: ONE message, with the agreed slot in writing at the
+      // top. Only named when the RPC actually booked something — the caller's
+      // `display` string alone is never enough to make that claim.
+      const agreedTime = out.agreed_lesson && agreed?.display ? agreed.display : null;
+      const sent = await sendInvitationEmail(db, {
+        orgId, to: email, registerUrl, offeringLabel, agreedTime,
+      });
       await recordInvitationDelivery(db, out.invitation_id, sent);
       return res.status(200).json({
         registerUrl,
@@ -272,6 +316,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         purchaseId: out.purchase_id,
         amount: out.amount,
         offeringLabel,
+        agreedLesson: out.agreed_lesson ?? null,
       });
     }
 

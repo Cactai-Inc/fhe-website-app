@@ -24,7 +24,7 @@ repo/DB state, and the owner's own use.
 |---|---|---|
 | 1 | **`ASKRIGHT`** — what is asked, of whom, on which page | ✅ **MERGED** `bf45d1b` |
 | 2 | **`CAREPATH`** — horse-care inquiry → order → provisioning → activation | ✅ **MERGED** `1de6599`, 7 migrations applied to prod |
-| 3 | **`LESSONREQUEST`** — inquiry → agreed time → activation → payment → app | **NEXT — ready to run** |
+| 3 | **`LESSONREQUEST`** — inquiry → agreed time → activation → payment → app | ✅ **BUILT** on `task/lessonrequest`, 4 migrations applied to prod — awaiting merge |
 | 4 | **`GIFTPATH`** — gifts stay a conversation | **ready — may run alongside LESSONREQUEST** |
 | 5 | **`SESSIONBOOK`** — `/lessons` becomes a purchase flow for members | ready; **last** |
 
@@ -54,6 +54,7 @@ provision does not match it yet.**
 | **`INTAKE_HORSE_*` forms have no surface** — five paper-form imports nothing can reach | `ASKRIGHT` §A7 (reported) | owner: are they the fulfilment forms? |
 | **Horse-owner vs deal-client** — resolved in `CAREPATH` §C10a: the grant is a DOCUMENT TRIGGER and documents follow the ORDER, not a horse record | merged | — |
 | ⚠️ **A weekly ×2 item can still only take ONE weekday** — `CAREPATH` test 10 deliberately unmet; the writer beneath is the credit arithmetic CREDITALIGN reverted three times | `CAREPATH` report; shape of fix recorded | **overlaps `TASK-CAREPLANS` — do them together** |
+| 🔴 **THERE IS NO TENANT TIMEZONE, AND CLIENTS ARE BEING TOLD THE WRONG TIMES.** No table in the database carries one, so every server-side `to_char()` over a timestamptz renders **UTC**: `confirm_booking` tells a client their 4pm lesson *"on Aug 26, 11:00 PM is confirmed"*. **12 live functions** do it — `confirm_booking`, `schedule_lesson_session`, `decide_booking_change`, `cancel_lesson_session`, `book_open_slot`, `request_open_time`, `request_booking_change`, `swap_booking_item`, `withdraw_my_pending_booking`, `appointment_notify`, `calendar_reminder_sweep`, `request_horse_intake`. Several are client-facing notifications. **Pre-existing, live, not caused by any wave-1 task.** The honest fix is a tenant timezone setting **with an editor** (D13), not a hardcoded constant | `LESSONREQUEST` report §5, F1 | **nothing — ready to spec.** Needs its own task; LESSONREQUEST worked around it by formatting the agreed slot in the staff member's browser |
 
 ---
 
