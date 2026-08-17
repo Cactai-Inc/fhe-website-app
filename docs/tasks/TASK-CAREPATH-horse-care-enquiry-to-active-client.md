@@ -185,27 +185,31 @@ very SKUs, and a service_type change now would collide with it. Instead **let a 
 the offering where it differs from its service_type**, falling back to the service_type set
 otherwise. **The existing subject model is unchanged** — turnout questions are still `client_horse`.
 
-### The turnout set — shared six, then these
-⚠️ **PROPOSED — confirm with the owner before building.** He specified training, clipping and
-exercise by hand; turnout was hidden inside exercise and never got its own list.
+### The turnout set — OWNER-CONFIRMED, 2026-08-17
 
 | # | question |
 |---|---|
 | 1–6 | **the shared horse block, unchanged** (own/lease · how long · age · breed · behaviour · injuries) |
-| 7 | Does the horse turn out alone, or with other horses? |
-| 8 | Has the horse had any issues with turnout — fencing, gates, or getting out? |
-| 9 | **Free text** — any special requirements (sheets or blankets, boots, limits on time out) |
-| 10 | *(weekly only)* What is bringing you to our turnout services? |
-| 11 | *(weekly only)* Approximately how long will you need these services? |
+| 7 | **Has the horse had any issues with turnout — fencing, gates, or getting out?** |
+| 8 | *(weekly only)* What is bringing you to our turnout services? |
+| 9 | *(weekly only)* Approximately how long will you need these services? |
 
-- **Questions 7–9 REPLACE exercise's riding-history and prior-training questions** — they must not
+**This is the shortest set in the catalog, deliberately.** Two proposals were cut by the owner:
+
+- ⚠️ **"Alone or with other horses?" — DELETED. Never re-add it.** Owner: *"we always turnout
+  alone."* It is not a preference to collect; it is how the barn operates, so asking implies a
+  choice that does not exist.
+- **A free-text box — DELETED.** Training, clipping and exercise each have one; **turnout does
+  not.** Question 7 already carries the only thing worth writing down.
+
+- **Question 7 REPLACES exercise's riding-history and prior-training questions** — they must not
   both appear.
-- **10 and 11 gate on `config_kind = 'recurring'`**, exactly as exercise's do (`ASKRIGHT` §A3) —
+- **8 and 9 gate on `config_kind = 'recurring'`**, exactly as exercise's do (`ASKRIGHT` §A3) —
   the à la carte `Turnout Session` gets neither.
 
-**Test:** selecting **Turnout Session** asks the shared six plus 7–9 and **is never asked about
-riding or prior training**; **Turnout 1x Weekly** additionally asks 10–11; and **Exercise** offerings
-are **unchanged**.
+**Test:** **Turnout Session** asks the shared six **plus question 7 only** — never about riding,
+prior training, turnout companions, or special requirements; **Turnout 1x Weekly** additionally asks
+8–9; and **Exercise** offerings are **unchanged**.
 
 ## C2 — the submission page carries the selections, Continue Shopping, and the form
 
