@@ -413,81 +413,19 @@ age range* is asking them to describe a horse sitting in front of them.
   order, and it must not be something staff infer by noticing two sections describe the same animal.
   **Report where you made it visible.**
 
-## A3e — ⚠️ LEASE IS NOT OWN, AND THE DATABASE CANNOT TELL THEM APART
+## A3e — ~~LEASE IS NOT OWN, AND THE DATABASE CANNOT TELL THEM APART~~ **WITHDRAWN**
 
-**Owner, 2026-08-16:** *"lease is not own but our system doesnt differentiate."*
-
-**Measured, and he is right** (`main`, verify before building):
-- `horses.current_owner_contact_id` is a **single FK to one contact** — the only ownership
-  representation on a horse record.
-- `my_stable_horses` derives `is_owner` as `current_owner_contact_id = current_contact_id()`.
-- **There is no lease relationship on the horse record.** Lease *contracts* exist
-  (`HORSE_LEASE*` templates), but nothing on the horse says "this person leases me."
-
-**So a leased horse has two bad options today:** point `current_owner_contact_id` at the lessee — a
-false ownership claim, and the wrong answer when the real owner must authorise care — or leave it
-pointing elsewhere, in which case **the horse never appears in the lessee's stable at all**.
-
-### What THIS task must do
-1. **Capture own and lease as DISTINCT values**, never a merged "yes". The inquiry must record
-   *which*, because everything downstream depends on it — who authorises services, who signs, and
-   whether "buy the horse I lease" is even possible.
-2. **The subject is `client_horse`** — renamed from the earlier `own_horse`, which presumed ownership
-   the client may not have; the rename is applied throughout this document. Use a neutral name
-   — **`client_horse`** (the horse this client is bringing us), with own-vs-lease as an *answer*,
-   not as the subject's identity.3. **§A3c's inference still holds and gets sharper:** own **or** lease of the serviced horse both
-   prefill *"do you currently own or lease a horse?"* as yes. **They must not collapse into each
-   other beyond that.**
-
-### What this task must NOT do
-⚠️ **Do not change the horses schema here.** Adding a lease relationship touches `horses`, RLS,
-`my_stable_horses`, staff horse records and the lease contract engine. **That is its own task.**
-
-**Report it as a finding**, with: what the inquiry now captures, where that answer lands, and the
-fact that **`CAREPATH` §C10's horse intake will have nowhere faithful to put it.** Say so plainly —
-a known gap recorded is worth more than a schema change made in the wrong task.
-
-## A3f — WHICH HORSE IS THE CARE FOR? ASK, ONCE, WHEN BOTH CATEGORIES ARE PRESENT
-
-**Owner, 2026-08-16:**
-> *"current horse, or horse they are acquiring are two viable options for why they would add those
-> two together, so they might have a horse they own and are also looking to buy another horse, or
-> they are leasing a horse and looking to lease or buy another one, or they are planning to get a
-> horse and they want our help and they know it needs training and/or a hair clipping."*
-
-**A cart holding horse care AND acquisition has four legitimate readings**, and the software cannot
-tell them apart:
-
-| # | the situation | `client_horse` vs `sought_horse` |
-|---|---|---|
-| 1 | owns a horse, looking to buy another | **different horses** |
-| 2 | leases a horse, looking to lease or buy another | **different horses** |
-| 3 | **has no horse yet** — wants help finding one, and knows it will need training and/or clipping | **same horse, which does not exist yet** |
-| 4 | wants to buy **the horse they currently lease** (§A3d) | **same horse, already in hand** |
-
-**Guessing between these gets the client's own horse confused with a horse they do not own.**
-Per the owner's standing rule — *"we can ask them if it is"* — **ask.**
-
-### ⚠️ ADD NO QUESTION FOR THIS. THE CONVERSATION RESOLVES IT.
-
-**Owner, 2026-08-16 — the ruling:**
-> *"we allow it as a unified inbound order inquiry but we have to split it once we know the
-> specifics, and we dont need the questions to capture that entirely or they start becoming too
-> numerous, so we just figure out or clarify it when we are talking with them."*
-
-**Do NOT add a disambiguating question.** Four readings would need several questions to separate
-properly, and the form would grow past the point where a stranger finishes it. **The inquiry is
-allowed to arrive ambiguous.**
-
-**The one signal already collected is enough:** the horse block's *"Do you own or lease the horse?"*
-with its **"Not yet — I'd like help finding one"** option (§A3b). That single answer tells staff a
-horse may not exist, and it costs no extra question because it is asked anyway.
-
-**Everything else is settled on the call**, and the system's job is only to **let staff split the
-order afterwards and hold one half as a draft** — built in `CAREPATH` §C5c, **not here**.
-
-⚠️ **A mixed cart is therefore NEVER blocked, warned about, or routed differently at inquiry time.**
-It submits as one unified inquiry like any other.
+> ⚠️ **THIS FINDING WAS WRONG. Corrected 2026-08-17 by the CAREPATH thread, verified by the
+> orchestrator.** `horses` already carries **`lessee_contact_id`, `lessee_name_text`, `lease_start`,
+> `lease_end`, `sublease_allowed`**; `horse_relationships` and `my_stable_horses` both carry a
+> lessee, and the horse intake already asks OWNER vs LESSEE.
+>
+> **The orchestrator asserted a schema gap after looking at `current_owner_contact_id` alone and
+> never surveying the rest of the table.** There is no lease-representation gap and **no schema task
+> is needed.** Capturing own-vs-lease is a matter of writing to the columns that already exist.
+>
+> What survives: **own and lease are still distinct values and must be recorded as such**, and the
+> subject is still named `client_horse` because the client may hold either relationship.
 
 ### Horse Training — after the shared block
 | # | question |

@@ -22,17 +22,16 @@ repo/DB state, and the owner's own use.
 
 | # | task | state |
 |---|---|---|
-| 1 | **`ASKRIGHT`** — what is asked, of whom, on which page | **ready; all owner questions answered** |
-| 2 | **`CAREPATH`** — horse-care inquiry → order → provisioning → activation | ready; **holds until ASKRIGHT merges** |
-| 3 | **`LESSONREQUEST`** — inquiry → agreed time → activation → payment → app | ready; after CAREPATH |
-| 4 | **`GIFTPATH`** — gifts stay a conversation | ready; anytime after CAREPATH |
+| 1 | **`ASKRIGHT`** — what is asked, of whom, on which page | ✅ **MERGED** `bf45d1b` |
+| 2 | **`CAREPATH`** — horse-care inquiry → order → provisioning → activation | ✅ **MERGED** `1de6599`, 7 migrations applied to prod |
+| 3 | **`LESSONREQUEST`** — inquiry → agreed time → activation → payment → app | **NEXT — ready to run** |
+| 4 | **`GIFTPATH`** — gifts stay a conversation | **ready — may run alongside LESSONREQUEST** |
 | 5 | **`SESSIONBOOK`** — `/lessons` becomes a purchase flow for members | ready; **last** |
 
 **Cancelled / retired by wave 1:** `RIDERQUALIFY` (rider questions already on the form),
 `THREEFORMS` (fully superseded), `FUNNELDOORS` (superseded earlier).
 
-**Running alongside, no code overlap:** `HARVESTCLOSE` — reconcile the 975 flagged items into a
-keep/remove sheet.
+✅ **`HARVESTCLOSE` done** — 975 flags → 535 items on `DECIDE.md`, awaiting the owner's keep/remove pass.
 
 ---
 
@@ -51,9 +50,10 @@ provision does not match it yet.**
 | **The two pricing algorithms** — finder (fee ↔ duration ↔ volume) and assistance (fixed fee from budget band) | same design record §4 | **owner: not yet designed** |
 | **Deal-client provisioning + fulfilment forms** — what staff fill in for a search or an evaluation | same design record §4 | owner |
 | **Contract flow walked end to end** — author → send → sign → execute → deliver on real data | same design record §5 | needs its own task |
-| **Lease is not own** — `horses` has one owner FK and no lease relationship, so a lessee is either falsely an owner or absent from their own stable | `ASKRIGHT` §A3e (reported, not built) | needs its own task |
+| ~~Lease is not own~~ **WITHDRAWN 2026-08-17 — the finding was wrong.** `horses` already carries `lessee_contact_id`, `lease_start`, `lease_end`; `horse_relationships` and `my_stable_horses` carry a lessee; the intake already asks OWNER/LESSEE. **No task needed.** | `ASKRIGHT` §A3e | — |
 | **`INTAKE_HORSE_*` forms have no surface** — five paper-form imports nothing can reach | `ASKRIGHT` §A7 (reported) | owner: are they the fulfilment forms? |
-| **Horse-owner vs deal-client has no home** — `contact_type` lacks both; `deals` needs a `contract_id` | `CAREPATH` §C10a (thread reports its approach) | decide after CAREPATH reports |
+| **Horse-owner vs deal-client** — resolved in `CAREPATH` §C10a: the grant is a DOCUMENT TRIGGER and documents follow the ORDER, not a horse record | merged | — |
+| ⚠️ **A weekly ×2 item can still only take ONE weekday** — `CAREPATH` test 10 deliberately unmet; the writer beneath is the credit arithmetic CREDITALIGN reverted three times | `CAREPATH` report; shape of fix recorded | **overlaps `TASK-CAREPLANS` — do them together** |
 
 ---
 
