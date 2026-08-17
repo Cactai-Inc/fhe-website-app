@@ -354,6 +354,8 @@ export interface AdminInviteResult {
   categories?: string[];
   purchaseId?: string | null;
   amount?: number;
+  /** LESSONREQUEST §L3 — the lesson this act booked, when one was agreed. */
+  agreedLesson?: { booking_id: string; starts_at: string; ends_at: string } | null;
 }
 
 /**
@@ -384,6 +386,19 @@ export async function adminSendInvitation(
     role?: 'USER' | 'MANAGER' | 'ADMIN';
     /** Agreed start date (YYYY-MM-DD): puts the invite on the 48-hour claim-and-pay window. */
     scheduledFor?: string;
+    /**
+     * LESSONREQUEST §L3 — the slot agreed on the phone. Sending it makes this
+     * ONE act also book the lesson (through the incumbent
+     * `schedule_lesson_session` writer) and name it at the top of the
+     * invitation email. Omit it and the act behaves exactly as it always has.
+     */
+    agreedLesson?: {
+      starts_at: string; ends_at: string;
+      offering_id?: string; horse_id?: string; instructor_user_id?: string;
+      location?: string; notes?: string;
+      /** The slot in the barn's own words — see AgreedLessonPanel. */
+      display: string;
+    };
     /**
      * Does minting this token RETIRE the link they may already be holding?
      * 'new' (default) leaves any prior live link working; 'regenerate' is the

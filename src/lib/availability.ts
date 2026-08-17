@@ -127,6 +127,122 @@ export function availabilityText(sel: AvailabilitySelection): string {
   return lines.join('\n');
 }
 
+// ─── Reading the ranges back (LESSONREQUEST §L3) ────────────────────────────
+//
+// Staff choosing the agreed time need to SEE what the visitor offered, and an
+// out-of-range choice has to be visible rather than silent. That means reading
+// `proposed_times` back into the same shape it was written from.
+//
+// ⚠️ THE PROSE IS PARSED, AND NO SECOND COLUMN IS ADDED. `days` and `time` are
+// written by `daysSummary()` and `timePreferenceSummary()` directly above — a
+// closed vocabulary this file owns both ends of, not free text — so this is a
+// round-trip, not a guess. The alternative (writing structured copies of the
+// same facts into the same jsonb) creates two representations that can disagree,
+// and there are 5 live production rows that would only ever have the prose.
+// `parseProposedTimes` is asserted against every producer output in the tests.
+
+/** What the visitor offered, read back out of `requests.proposed_times`. */
+export interface OfferedAvailability {
+  weeks: { startISO: string; endISO: string; label: string }[];
+  /** `null` = they said any day. Otherwise 0 (Sun) … 6 (Sat). Empty = unstated. */
+  days: number[] | null;
+  /** `null` when they expressed no time-of-day preference at all. */
+  prefs: TimePreferences | null;
+}
+
+const DAY_INDEX: Record<string, number> = Object.fromEntries(
+  DAY_SHORT.map((d, i) => [d, i]),
+);
+
+/** The inverse of `availabilityEntries` — tolerant of legacy `{date, time}` rows. */
+export function parseProposedTimes(entries: ProposedTime[] | null | undefined): OfferedAvailability {
+  const list = entries ?? [];
+  const weeks = list
+    .filter((e) => e.date && e.end)
+    .map((e) => ({ startISO: e.date, endISO: e.end as string, label: e.label ?? `${e.date} – ${e.end}` }));
+
+  // Every entry carries the same global prefs/days (one selection, one entry per
+  // week), so the first is representative. A legacy row has neither.
+  const first = list[0];
+
+  let days: number[] | null = [];
+  const daysText = first?.days?.trim() ?? '';
+  if (daysText === 'Open to any day of the week') {
+    days = null;
+  } else if (daysText && daysText !== 'Not specified') {
+    days = daysText.split(',').map((d) => DAY_INDEX[d.trim()]).filter((n) => n !== undefined);
+  }
+
+  let prefs: TimePreferences | null = null;
+  const timeText = first?.time?.trim() ?? '';
+  if (timeText && timeText !== 'No time-of-day preference') {
+    const part = (label: string) => {
+      const seg = timeText.split(' · ').find((s) => s.startsWith(label));
+      return { am: Boolean(seg?.includes('AM')), pm: Boolean(seg?.includes('PM')) };
+    };
+    const wd = part('Weekdays');
+    const we = part('Weekends');
+    if (wd.am || wd.pm || we.am || we.pm) {
+      prefs = { weekdayAm: wd.am, weekdayPm: wd.pm, weekendAm: we.am, weekendPm: we.pm };
+    }
+  }
+
+  return { weeks, days, prefs };
+}
+
+/**
+ * Where a staff-chosen slot falls OUTSIDE what the visitor offered — one plain
+ * sentence per mismatch, empty when it sits inside their availability.
+ *
+ * ⚠️ THIS NEVER BLOCKS. §L3: the phone call is what decides, and the visitor may
+ * perfectly well have agreed to something they never listed. Its whole job is to
+ * stop staff picking an impossible time WITHOUT NOTICING — an out-of-range
+ * choice must be visible, not forbidden.
+ */
+export function agreedTimeWarnings(
+  offered: OfferedAvailability,
+  startsAt: Date | null,
+): string[] {
+  if (!startsAt || Number.isNaN(startsAt.getTime())) return [];
+  const out: string[] = [];
+  const iso = toISODate(startsAt);
+  const dow = startsAt.getDay();
+  const isWeekend = dow === 0 || dow === 6;
+  const isAm = startsAt.getHours() < 12;
+
+  if (offered.weeks.length > 0 && !offered.weeks.some((w) => iso >= w.startISO && iso <= w.endISO)) {
+    out.push(
+      offered.weeks.length === 1
+        ? `That date is outside the week they offered (${offered.weeks[0].label}).`
+        : `That date is outside the ${offered.weeks.length} weeks they offered.`,
+    );
+  }
+
+  if (offered.days !== null && offered.days.length > 0 && !offered.days.includes(dow)) {
+    out.push(
+      `They did not offer ${DAY_SHORT[dow]} — they said ${offered.days
+        .slice()
+        .sort((a, b) => a - b)
+        .map((d) => DAY_SHORT[d])
+        .join(', ')}.`,
+    );
+  }
+
+  if (offered.prefs) {
+    const ok = isWeekend
+      ? (isAm ? offered.prefs.weekendAm : offered.prefs.weekendPm)
+      : (isAm ? offered.prefs.weekdayAm : offered.prefs.weekdayPm);
+    if (!ok) {
+      out.push(
+        `They did not offer ${isWeekend ? 'weekend' : 'weekday'} ${isAm ? 'mornings' : 'afternoons'} `
+          + `— they said ${timePreferenceSummary(offered.prefs)}.`,
+      );
+    }
+  }
+
+  return out;
+}
+
 /** Structured JSON for the requests.proposed_times jsonb column — one entry per
  *  selected week (superset of the legacy {date, time} shape). */
 export function availabilityEntries(sel: AvailabilitySelection): ProposedTime[] {

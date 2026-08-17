@@ -7,6 +7,7 @@ import {
 } from '../../lib/admin';
 import { fetchOfferings } from '../../lib/api';
 import { InviteResultPanel } from './InviteResultPanel';
+import type { AgreedLesson } from './AgreedLessonPanel';
 import type { Offering, Segment } from '../../lib/types';
 
 /**
@@ -76,11 +77,26 @@ export interface ProvisionClientFormProps {
   onProvisioned?: (result: AdminInviteResult) => void;
   /** Hide the built-in result panel (host shows its own, e.g. the client page link). */
   hideResult?: boolean;
+  /**
+   * LESSONREQUEST §L3 — the slot staff agreed on the phone, when they set one.
+   *
+   * It rides on THIS submission rather than a second button, because setting
+   * the time and issuing the link are one act (CAREPATH §C5b): the order
+   * confirms, the lead promotes, the lesson is booked and the invitation sends
+   * together, or none of it does. Two RPCs can half-succeed, and there is no
+   * good half to be left holding.
+   *
+   * The panel that produces it lives in the host (`LeadWorkDrawer`), not here,
+   * so this form stays the same field set for all three of its sources.
+   */
+  agreedLesson?: AgreedLesson | null;
+  /** Rendered above the fields — the host's own sections for this invite. */
+  children?: React.ReactNode;
 }
 
 export function ProvisionClientForm({
   source, contactId, requestId, email: emailProp,
-  firstName, lastName, onProvisioned, hideResult,
+  firstName, lastName, onProvisioned, hideResult, agreedLesson, children,
 }: ProvisionClientFormProps) {
   const emailLocked = Boolean(emailProp);
   const [email, setEmail] = useState(emailProp ?? '');
@@ -211,6 +227,7 @@ export function ProvisionClientForm({
         ...(payStatus === 'partial' ? { partialAmount: Number(partialAmount) || 0 } : {}),
         ...(payStatus !== 'unpaid' ? { paymentMethod } : {}),
         ...(notes.trim() ? { notes: notes.trim() } : {}),
+        ...(agreedLesson ? { agreedLesson } : {}),
       });
       setResult({ url: r.registerUrl, emailed: r.emailed, emailError: r.emailError, email: email.trim() });
       onProvisioned?.(r);
@@ -225,13 +242,17 @@ export function ProvisionClientForm({
     }
   }
 
-  const primaryLabel = source === 'submission' ? 'Convert & send invitation'
+  // §L3 — the button says what the one act actually does. When a time was set
+  // it books the lesson too, and the label must not hide that.
+  const primaryLabel = agreedLesson ? 'Book the lesson & send invitation'
+    : source === 'submission' ? 'Convert & send invitation'
     : source === 'contact' ? 'Provision & send invitation'
     : 'Create & send invitation';
 
   return (
     <>
       <form onSubmit={submit}>
+        {children}
         <Field label="Email">
           <input type="email" required className="form-input" value={email}
             disabled={emailLocked}

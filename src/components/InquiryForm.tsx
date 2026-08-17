@@ -181,6 +181,18 @@ export default function InquiryForm({ onSubmitted, children }: InquiryFormProps)
       // They travel twice: structured into `requests.details`, and as ordered
       // prose in the notes (jsonb does not preserve key order).
       const submission = buildSubmission(state.items, state.qualifierAnswers, state.answerOrigins);
+      // LESSONREQUEST §L1 — riding experience becomes STRUCTURED, not only prose.
+      // It already travelled inside the notes block, where the only way to read
+      // it back was a regex (`LeadWorkDrawer.ridingExperience`), which is not
+      // something a server-side requirement check can be built on. It now goes
+      // into `requests.details` as well, alongside the page-2 answers — the same
+      // deliberate duplication those answers already have, for the same reason
+      // (jsonb does not preserve key order, so the notes copy stays the ordered
+      // one staff read). Lessons only: the field itself is lesson-gated.
+      const experienceText = EXPERIENCE_OPTIONS.find((o) => o.value === experience)?.text;
+      if (showLessonFields && experienceText) {
+        submission.details['Riding experience (years)'] = experienceText;
+      }
       const combinedNotes = capNotes([
         form.notes.trim(),
         submission.notesBlock ? `— Your answers —\n${submission.notesBlock}` : '',

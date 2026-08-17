@@ -1,15 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { FormField } from '../../../../lib/ops';
-import { usePropertyTerm } from '../../../../contexts/BrandProvider';
-import { fetchOfferings } from '../../../../lib/api';
-import type { Offering } from '../../../../lib/types';
-import { fetchInstructorOptions, type InstructorOption } from '../../../../lib/ops/api-calendar';
+import type { LessonClientOption, ScheduleHorseOption } from '../../../../lib/ops/api-lessons';
 import {
-  sessionWindow,
-  type LessonClientOption,
-  type ScheduleHorseOption,
-} from '../../../../lib/ops/api-lessons';
+  SessionFields,
+  emptySessionFields,
+  sessionFieldsWindow,
+  DURATIONS,
+  type SessionFieldsValue,
+} from '../../../../components/app/SessionFields';
 
 /**
  * The lesson-booking form shared by the ops SessionsPage modal and the
@@ -21,11 +20,16 @@ import {
  *
  * BOOKWRITE: it also captures WHICH SERVICE this is and WHO IS DELIVERING IT.
  * Both were knowable here and neither was recorded, which is why 17 of the 39
- * real bookings could not say what they were. The service and instructor lists
- * are fetched here rather than threaded through props, so neither caller's
- * shipped layout has to change.
+ * real bookings could not say what they were.
+ *
+ * LESSONREQUEST §L3: the FIELDS themselves moved to `components/app/
+ * SessionFields.tsx`, because the agreed-time panel inside the one act asks for
+ * exactly the same eight facts with a different frame (no client picker, no
+ * submit of its own). What is left here is the frame: the client picker, the
+ * validation, and the submit. The props and the submitted shape are unchanged,
+ * so both existing callers are untouched.
  */
-export const DURATIONS = [30, 45, 60, 90];
+export { DURATIONS };
 
 export interface ScheduleSessionFormValues {
   client_id: string;
@@ -58,25 +62,8 @@ export function ScheduleSessionForm({
   error?: string | null;
 }) {
   const [clientId, setClientId] = useState(fixedClientId ?? '');
-  const [date, setDate] = useState('');
-  const [time, setTime] = useState('');
-  const [duration, setDuration] = useState('60');
-  const [location, setLocation] = useState('');
-  const [note, setNote] = useState('');
-  const [horseId, setHorseId] = useState('');
-  const [offeringId, setOfferingId] = useState('');
-  const [instructorId, setInstructorId] = useState('');
-  const [offerings, setOfferings] = useState<Offering[]>([]);
-  const [instructors, setInstructors] = useState<InstructorOption[]>([]);
+  const [fields, setFields] = useState<SessionFieldsValue>(emptySessionFields);
   const [fieldError, setFieldError] = useState<string | null>(null);
-  const propertyTerm = usePropertyTerm();
-
-  useEffect(() => {
-    fetchOfferings()
-      .then((all) => setOfferings(all.filter((o) => o.segment === 'rider' || o.segment === 'horse')))
-      .catch(() => setOfferings([]));
-    fetchInstructorOptions().then(setInstructors).catch(() => setInstructors([]));
-  }, []);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -85,21 +72,21 @@ export function ScheduleSessionForm({
       setFieldError('Pick a client.');
       return;
     }
-    if (!date || !time) {
+    const window = sessionFieldsWindow(fields);
+    if (!window) {
       setFieldError('Pick a date and a start time.');
       return;
     }
     setFieldError(null);
-    const window = sessionWindow(date, time, Number(duration));
     await onSubmit({
       client_id: client,
       starts_at: window.starts_at,
       ends_at: window.ends_at,
-      location: location.trim() || null,
-      notes: note.trim() || null,
-      horse_id: horseId || null,
-      offering_id: offeringId || null,
-      instructor_user_id: instructorId || null,
+      location: fields.location.trim() || null,
+      notes: fields.note.trim() || null,
+      horse_id: fields.horseId || null,
+      offering_id: fields.offeringId || null,
+      instructor_user_id: fields.instructorId || null,
     });
   }
 
@@ -127,147 +114,7 @@ export function ScheduleSessionForm({
         </FormField>
       )}
 
-      <div className="grid grid-cols-2 gap-4">
-        <FormField label="Date" required>
-          {({ id }) => (
-            <input
-              id={id}
-              type="date"
-              className="form-input"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              disabled={submitting}
-            />
-          )}
-        </FormField>
-        <FormField label="Start time" required>
-          {({ id }) => (
-            <input
-              id={id}
-              type="time"
-              className="form-input"
-              value={time}
-              onChange={(e) => setTime(e.target.value)}
-              disabled={submitting}
-            />
-          )}
-        </FormField>
-      </div>
-
-      <FormField label="Duration">
-        {({ id }) => (
-          <select
-            id={id}
-            className="form-input"
-            value={duration}
-            onChange={(e) => setDuration(e.target.value)}
-            disabled={submitting}
-          >
-            {DURATIONS.map((d) => (
-              <option key={d} value={d}>
-                {d} minutes
-              </option>
-            ))}
-          </select>
-        )}
-      </FormField>
-
-      <FormField label="Location" hint="Leave blank for the home property.">
-        {({ id }) => (
-          <input
-            id={id}
-            className="form-input"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            disabled={submitting}
-          />
-        )}
-      </FormField>
-
-      {offerings.length > 0 && (
-        <FormField
-          label="Service"
-          hint="Which service this lesson is. Recorded on the booking, and used to draw down the right line of the client's order."
-        >
-          {({ id }) => (
-            <select
-              id={id}
-              className="form-input"
-              value={offeringId}
-              onChange={(e) => setOfferingId(e.target.value)}
-              disabled={submitting}
-            >
-              <option value="">Not specified</option>
-              {offerings.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.name}
-                </option>
-              ))}
-            </select>
-          )}
-        </FormField>
-      )}
-
-      {instructors.length > 0 && (
-        <FormField
-          label="Instructor"
-          hint="Who is delivering it. Left unset, the booking records whoever schedules it."
-        >
-          {({ id }) => (
-            <select
-              id={id}
-              className="form-input"
-              value={instructorId}
-              onChange={(e) => setInstructorId(e.target.value)}
-              disabled={submitting}
-            >
-              <option value="">You (whoever schedules it)</option>
-              {instructors.map((s) => (
-                <option key={s.user_id} value={s.user_id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-          )}
-        </FormField>
-      )}
-
-      {horses.length > 0 && (
-        <FormField
-          label="Horse"
-          hint={`The horse for this lesson (${propertyTerm.term} horse or the rider's own). Internal tracking — not shown to the client. You can set or change this later.`}
-        >
-          {({ id }) => (
-            <select
-              id={id}
-              className="form-input"
-              value={horseId}
-              onChange={(e) => setHorseId(e.target.value)}
-              disabled={submitting}
-            >
-              <option value="">No horse yet</option>
-              {horses.map((h) => (
-                <option key={h.id} value={h.id}>
-                  {h.name}
-                </option>
-              ))}
-            </select>
-          )}
-        </FormField>
-      )}
-
-      <FormField label="Lesson note (optional)">
-        {({ id }) => (
-          <textarea
-            id={id}
-            rows={2}
-            className="form-input resize-none"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            disabled={submitting}
-          />
-        )}
-      </FormField>
+      <SessionFields value={fields} onChange={setFields} horses={horses} disabled={submitting} />
 
       {(fieldError || error) && (
         <p role="alert" className="form-error mb-4">
