@@ -80,6 +80,7 @@ export default function ServiceSelector({
           const item: CartItem = {
             offeringId: o.id,
             offeringName: o.name,
+            offeringSlug: o.slug,
             serviceType: o.service_type,
             // The catalog's own display_name for the service_type — page 2's
             // section headings and the inquire wording both read it, so

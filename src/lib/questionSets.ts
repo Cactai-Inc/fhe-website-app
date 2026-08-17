@@ -285,6 +285,24 @@ export interface QuestionSet {
   serviceType: string;
   /** Fallback heading, used only if the cart item carries no display name. */
   fallbackTitle: string;
+  /**
+   * CAREPATH §C1c — A PER-OFFERING OVERRIDE, NOT A NEW service_type.
+   *
+   * `HORSE_EXERCISE` holds two different services: Exercise and Turnout. Keying
+   * only by service_type asks a turnout buyer what riding the horse has done —
+   * nobody rides a horse to turn it out. When present, this set claims the
+   * offerings whose `offerings.slug` starts with this prefix, and the
+   * service_type set keeps the rest.
+   *
+   * ⚠️ TURNOUT IS THE ONLY OFFENDER. Every other service_type holds variants of
+   * one service. Do not generalise this beyond the case it was built for, and
+   * do NOT change Turnout's service_type — `CAREPLANS` (wave 2) restructures
+   * these very SKUs and a service_type change now would collide with it.
+   *
+   * The prefix is a catalog IDENTIFIER (slug), never a name. The four live
+   * turnout SKUs are `riding-turnout` and `riding-turnout--item-*`.
+   */
+  offeringSlugPrefix?: string;
   questions: QuestionDef[];
 }
 
@@ -293,7 +311,22 @@ export interface QuestionSet {
  *  `client_purchases` table and has no bearing on the catalog. The exercise
  *  reason/duration pair is weekly-only by the owner's explicit ruling. */
 function hasRecurringExercise(items: CartItem[]): boolean {
-  return items.some((i) => i.serviceType === 'HORSE_EXERCISE' && i.configKind === 'recurring');
+  return items.some((i) =>
+    i.serviceType === 'HORSE_EXERCISE' && i.configKind === 'recurring' && !isTurnout(i));
+}
+
+/** CAREPATH §C1c — the slug family the turnout override claims. */
+export const TURNOUT_SLUG_PREFIX = 'riding-turnout';
+
+/** Is this cart item one of the turnout SKUs? Catalog slug, never the name. */
+function isTurnout(item: CartItem): boolean {
+  return (item.offeringSlug ?? '').startsWith(TURNOUT_SLUG_PREFIX);
+}
+
+/** §C1c questions 8–9 gate on `config_kind = 'recurring'`, exactly as exercise's
+ *  do — the à la carte `Turnout Session` gets neither. */
+function hasRecurringTurnout(items: CartItem[]): boolean {
+  return items.some((i) => isTurnout(i) && i.configKind === 'recurring');
 }
 
 export const SETS: QuestionSet[] = [
@@ -366,6 +399,52 @@ export const SETS: QuestionSet[] = [
       },
     ],
   },
+  {
+    // ── CAREPATH §C1c — TURNOUT, niched down. Owner-confirmed 2026-08-17.
+    //
+    // The SHORTEST set in the catalog, deliberately. Two proposals were cut by
+    // the owner and must not come back:
+    //   • "Alone or with other horses?" — DELETED, NEVER RE-ADD. "we always
+    //     turnout alone." It is how the barn operates, not a preference; asking
+    //     implies a choice that does not exist.
+    //   • A free-text box — DELETED. Training, clipping and exercise each have
+    //     one; turnout does not. Question 7 carries the only thing worth
+    //     writing down.
+    // Question 7 REPLACES exercise's riding-history and prior-training
+    // questions — they must never both appear.
+    serviceType: 'HORSE_EXERCISE',
+    offeringSlugPrefix: TURNOUT_SLUG_PREFIX,
+    fallbackTitle: 'Turnout',
+    questions: [
+      ...HORSE_BLOCK,
+      yesNo('turnout_issues', 'client_horse',
+        'Has the horse had any issues with turnout — fencing, gates, or getting out?',
+        'Tell us what happened', horseExists),
+      {
+        id: 'turnout_reason', subject: 'client_horse',
+        question: 'What is bringing you to our turnout services?',
+        kind: 'choice', layout: 'wide', appliesWhen: hasRecurringTurnout,
+        options: [
+          { value: 'traveling', label: 'I will be travelling and need my horse looked after' },
+          { value: 'injured', label: 'I am recovering from an injury' },
+          { value: 'regular-care', label: 'I need ongoing turnout support' },
+          { value: 'temporary', label: 'Temporary situation — I need short-term coverage' },
+          { value: 'other', label: 'Something else' },
+        ],
+      },
+      {
+        id: 'turnout_duration', subject: 'client_horse',
+        question: 'Approximately how long will you need these services?',
+        kind: 'choice', layout: 'compact', appliesWhen: hasRecurringTurnout,
+        options: [
+          { value: '1-2-weeks', label: '1–2 weeks' },
+          { value: '1-month', label: '1 month' },
+          { value: '2-3-months', label: '2–3 months' },
+          { value: 'ongoing', label: 'Ongoing' },
+        ],
+      },
+    ],
+  },
   { serviceType: 'HORSE_FINDER', fallbackTitle: 'Horse Finder', questions: ACQUISITION_BLOCK },
   {
     serviceType: 'HORSE_PURCHASE_ASSISTANCE',
@@ -418,7 +497,39 @@ export const SETS: QuestionSet[] = [
   },
 ];
 
-const SET_BY_TYPE = new Map(SETS.map((s) => [s.serviceType, s]));
+/** The identity of a set once offering-scoped overrides exist: the service_type,
+ *  narrowed by the slug prefix when the set only claims part of that type. This
+ *  is what a page-2 SECTION is keyed by, so Exercise and Turnout render as two
+ *  sections rather than one merged block (§C1c). */
+function setKey(s: QuestionSet): string {
+  return s.offeringSlugPrefix ? `${s.serviceType}::${s.offeringSlugPrefix}` : s.serviceType;
+}
+
+const SET_BY_KEY = new Map(SETS.map((s) => [setKey(s), s]));
+/** Sets that claim only part of their service_type, most specific first. */
+const SCOPED_SETS = SETS.filter((s) => s.offeringSlugPrefix)
+  .sort((a, b) => (b.offeringSlugPrefix!.length - a.offeringSlugPrefix!.length));
+const PLAIN_SET_BY_TYPE = new Map(
+  SETS.filter((s) => !s.offeringSlugPrefix).map((s) => [s.serviceType, s]));
+
+/**
+ * The set this cart item asks from — an offering-scoped override where one
+ * claims it, otherwise its service_type's own set (§C1c).
+ *
+ * An item carrying no slug (a cart persisted before `offeringSlug` existed)
+ * falls back to the service_type set, which is the pre-§C1c behaviour and never
+ * an error.
+ */
+export function setForItem(item: CartItem): QuestionSet | null {
+  if (!item.serviceType) return null;
+  const slug = item.offeringSlug ?? '';
+  if (slug) {
+    const scoped = SCOPED_SETS.find(
+      (s) => s.serviceType === item.serviceType && slug.startsWith(s.offeringSlugPrefix!));
+    if (scoped) return scoped;
+  }
+  return PLAIN_SET_BY_TYPE.get(item.serviceType) ?? null;
+}
 
 /** Does anything in the cart carry a question set? Page 2 exists when this is
  *  true and is skipped when it is false — a lessons-only order skips it because
@@ -430,7 +541,7 @@ export function cartHasQuestions(items: CartItem[]): boolean {
 /** Cart items whose service_type has no set — they ask nothing, and they are
  *  reported rather than silently given someone else's questions. */
 export function unmappedItems(items: CartItem[]): CartItem[] {
-  return items.filter((i) => !i.serviceType || !SET_BY_TYPE.has(i.serviceType));
+  return items.filter((i) => setForItem(i) === null);
 }
 
 // ─── Assembly ───────────────────────────────────────────────────────────────
@@ -444,9 +555,17 @@ export interface AssembledSection {
 }
 
 /** The heading the visitor sees for a service's section: the live catalog's own
- *  display name, so renaming a service in the DB renames the section. */
-function titleFor(serviceType: string, items: CartItem[], set: QuestionSet): string {
-  const named = items.find((i) => i.serviceType === serviceType && i.serviceTypeName);
+ *  display name, so renaming a service in the DB renames the section.
+ *
+ *  §C1c EXCEPTION: an offering-scoped set cannot take that name — every turnout
+ *  SKU's service_type display_name is "Horse Exercise", so reading it would
+ *  print two identical headings for two different services. Those sets carry
+ *  their own `fallbackTitle`. ⚠️ That heading is therefore CODE, not catalog
+ *  (D13): renaming "Turnout" needs a one-line edit here until `CAREPLANS`
+ *  restructures these SKUs. Reported, not hidden. */
+function titleFor(items: CartItem[], set: QuestionSet): string {
+  if (set.offeringSlugPrefix) return set.fallbackTitle;
+  const named = items.find((i) => i.serviceType === set.serviceType && i.serviceTypeName);
   return named ? serviceDisplayName(named) : set.fallbackTitle;
 }
 
@@ -467,20 +586,24 @@ export const SHARED_SECTION_TITLE = 'First, a few details';
  * questions of their own are dropped rather than rendered empty.
  */
 export function assembleSections(items: CartItem[]): AssembledSection[] {
-  // Distinct service_types with a set, in cart (= pick) order.
-  const orderedTypes: string[] = [];
+  // Distinct SETS in the cart, in cart (= pick) order. Keyed by set rather than
+  // by service_type, so §C1c's turnout override is its own section and Exercise
+  // keeps its own — one service_type, two services, two sections.
+  const orderedKeys: string[] = [];
   for (const item of items) {
-    const t = item.serviceType;
-    if (t && SET_BY_TYPE.has(t) && !orderedTypes.includes(t)) orderedTypes.push(t);
+    const set = setForItem(item);
+    if (!set) continue;
+    const k = setKey(set);
+    if (!orderedKeys.includes(k)) orderedKeys.push(k);
   }
-  if (orderedTypes.length === 0) return [];
+  if (orderedKeys.length === 0) return [];
 
-  // Each set's questions, after the per-SKU filter (exercise weekly-only pair).
-  const perType = orderedTypes.map((t) => {
-    const set = SET_BY_TYPE.get(t)!;
+  // Each set's questions, after the per-SKU filter (the weekly-only pairs).
+  const perType = orderedKeys.map((k) => {
+    const set = SET_BY_KEY.get(k)!;
     return {
-      type: t,
-      title: titleFor(t, items, set),
+      type: k,
+      title: titleFor(items, set),
       questions: set.questions.filter((q) => !q.appliesWhen || q.appliesWhen(items)),
     };
   });

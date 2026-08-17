@@ -9,6 +9,14 @@ import type { OfferingLineConfig } from './api';
 export interface CartItem {
   offeringId: string;
   offeringName: string;
+  /** CAREPATH §C1c — the catalog's own `offerings.slug`. A question set may key
+   *  on the OFFERING where it differs from its service_type (turnout inside
+   *  HORSE_EXERCISE), and the slug is the catalog identifier that says which
+   *  SKU this is. NEVER the offering NAME: names changed on 2026-08-15 and
+   *  name-parsing has broken credit minting three times. Optional because a
+   *  cart persisted in sessionStorage before this existed will not carry it —
+   *  such an item simply falls back to its service_type set. */
+  offeringSlug?: string | null;
   serviceType: string | null;
   /** ASKRIGHT: the service_type's own display_name from the live catalog, so
    *  page 2's section headings and the inquire wording name the service the way
