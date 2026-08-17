@@ -134,10 +134,13 @@ export default function Story() {
           bar, so an id that disagrees with its heading is a visible defect, not
           an internal detail. Rename them together. */}
       <section id="our-story" className="bg-cream">
-        {/* pt-10 → pt-32 (owner, 2026-08-16): the jump nav used to sit above this
-            section and carried the clearance under the fixed header; removing it
-            left the eyebrow rendering behind the nav bar. */}
-        <div className="container-site pt-32 pb-16 sm:pt-40 sm:pb-24">
+        {/* pt-32/40 → pt-24/28 (owner, 2026-08-16: "a lot of room under the nav
+            and above the eyebrow"). It went to pt-32 when the jump nav was
+            removed, to stop the eyebrow rendering behind the fixed bar — that
+            needed ~76px of clearance, not 128. 96px keeps it clear and lifts the
+            whole section, so the copy and the Continue link land in the first
+            screenful. */}
+        <div className="container-site pt-24 pb-16 sm:pt-28 sm:pb-24">
           {/* items-start (was items-center): the owner wants the image aligned
               with the TOP of the first paragraph, not floated to the middle. */}
           {/* Owner, 2026-08-16: the title kept colliding with the image. Cause:
@@ -161,7 +164,7 @@ export default function Story() {
               text as a normal block. */}
           <Reveal>
             <div
-              className="lg:float-right lg:w-[52%] lg:ml-12 mb-8 lg:mb-6 aspect-[3/2] overflow-hidden bg-green-900"
+              className="lg:float-right lg:w-[48%] lg:ml-8 mb-8 lg:mb-6 aspect-[3/2] overflow-hidden bg-green-900"
               style={{
                 backgroundImage: `url('${HERO_A}')`,
                 backgroundSize: 'cover',
@@ -203,7 +206,9 @@ export default function Story() {
             {/* Owner, 2026-08-16: a continue link at the END of each section,
                 not a nav row at the top. Plain anchors — smooth scrolling is
                 global and every target carries scroll-mt-24. */}
-            <p className="mt-10">
+            {/* mt-10 → mt-6 (owner, 2026-08-16): with the copy pulled up by the
+                wider column, this brings the link into the first screenful. */}
+            <p className="mt-6">
               <a href="#what-youll-find" className="link-underline">
                 Continue <ArrowRight size={13} aria-hidden="true" />
               </a>
