@@ -3,13 +3,16 @@ import { useAuth } from '../../contexts/AuthContext';
 import { MapPin, Phone, Mail } from 'lucide-react';
 import { BRAND } from '../../lib/brand';
 
+const MAP_EMBED_SRC =
+  'https://www.google.com/maps?q=Carmel+Creek+Ranch,+San+Diego,+CA&output=embed';
+
 export default function Footer() {
   const { user } = useAuth();
   return (
-    <footer className="bg-green-900 text-white">
+    <footer id="site-footer" className="bg-green-900 text-white">
 
       {/* Main footer */}
-      <div className="container-site py-16 grid grid-cols-1 md:grid-cols-3 gap-12 lg:gap-16">
+      <div className="container-site py-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-10">
 
         {/* Brand column */}
         <div>
@@ -33,7 +36,7 @@ export default function Footer() {
           <nav className="flex flex-col gap-3" aria-label="Footer">
             {[
               { label: 'Home', href: '/' },
-              { label: 'Our Story', href: '/story' },
+              { label: 'Our Community', href: '/story' },
               // Owner, 2026-08-16: the public catalog (/shop) is hidden — a web
               // visitor is funnelled straight to the thing they came for, not
               // shown a browsable list that invites comparison. 'Ways to Ride'
@@ -52,6 +55,13 @@ export default function Footer() {
                 {link.label}
               </Link>
             ))}
+            {/* Was a discreet bottom-bar link (F2); now an ordinary nav item. */}
+            <Link
+              to={user ? '/app' : '/login'}
+              className="text-sm font-sans text-white/[0.7] hover:text-white transition-colors focus-ring-dark"
+            >
+              {user ? 'Member area' : 'Member sign-in'}
+            </Link>
           </nav>
         </div>
 
@@ -94,25 +104,33 @@ export default function Footer() {
             </p>
           </div>
         </div>
+
+        {/* Map */}
+        <div className="rounded-lg overflow-hidden border border-white/10 aspect-[4/3] md:aspect-auto md:h-full min-h-[220px]">
+          <iframe
+            src={MAP_EMBED_SRC}
+            title="Map showing Carmel Creek Ranch, San Diego, CA"
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            className="w-full h-full border-0"
+          />
+        </div>
       </div>
 
       {/* Bottom bar */}
       <div className="border-t border-white/10">
-        <div className="container-site py-5 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs font-sans text-white/[0.6]">
+        <div className="container-site py-5 grid grid-cols-1 sm:grid-cols-3 items-center gap-2 text-center sm:text-left">
+          <p className="text-xs font-sans text-white/[0.6] sm:justify-self-start">
+            {/* Cactai URL not yet supplied (F4) — wrap in <a href={CACTAI_URL}
+                target="_blank" rel="noopener noreferrer"> once the owner provides it. */}
+            Designed, Built &amp; Maintained by Cactai Inc.
+          </p>
+          <p className="text-xs font-sans text-white/[0.6] sm:justify-self-center">
             &copy; {new Date().getFullYear()} French Heritage Equestrian. All rights reserved.
           </p>
-          <div className="flex items-center gap-5">
-            <p className="text-xs font-sans text-white/[0.6]">San Diego, California</p>
-            {/* Discreet member entrance — invite-only, intentionally low-key.
-                Signed-in members get the door straight into the app. */}
-            <Link
-              to={user ? '/app' : '/login'}
-              className="text-xs font-sans text-white/[0.45] hover:text-white/80 transition-colors focus-ring-dark"
-            >
-              {user ? 'Member area' : 'Member sign-in'}
-            </Link>
-          </div>
+          <p className="text-xs font-sans text-white/[0.6] sm:justify-self-end">
+            San Diego, California
+          </p>
         </div>
       </div>
 
