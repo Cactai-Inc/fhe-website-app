@@ -6,6 +6,7 @@ import { useCart } from '../contexts/CartContext';
 import { fetchPublicCatalog, type ServiceGroup } from '../lib/publicCatalog';
 import type { Offering } from '../lib/types';
 import Seo from '../components/Seo';
+import SelectionBar from '../components/SelectionBar';
 import { seoForPath } from '../lib/seo';
 
 const LESSON_POSTER = '/images/Hero_A.png';
@@ -138,7 +139,9 @@ export default function Lessons() {
       {/* Catalog — price/quantity focused */}
       {/* pt trimmed on phones — the owner's screenshot showed a large cream
           band between the photo and this heading. sm+ keeps py-20. */}
-      <section className="bg-cream-50 pt-10 pb-20 sm:py-20">
+      {/* pb-36 at the foot: room for the floating SelectionBar so it can never
+          cover the last card. */}
+      <section className="bg-cream-50 pt-10 pb-36 sm:pt-20 sm:pb-36">
         <div className="container-site max-w-5xl">
           {/* Owner, screenshot 2026-08-14: the heading sat tight under its
               eyebrow with a chasm below — air moved above (mb-3→mb-5), the
@@ -261,6 +264,9 @@ export default function Lessons() {
             <p className="text-xs text-center text-muted mt-3">Choose a lesson option to continue.</p>
           )}
 
+          {/* The floating bar belongs here too — this is where lessons are
+              chosen. Unlike the three-step funnels, /lessons goes straight to
+              checkout, so the bar calls that same navigate. */}
           <p className="text-center mt-10">
             {/* Owner, 2026-08-16: was /about — a stale page from before the
                 community page existed, and one that needs rebuilding. This is
@@ -269,6 +275,10 @@ export default function Lessons() {
           </p>
         </div>
       </section>
+
+    {itemCount > 0 && (
+      <SelectionBar onContinue={() => navigate('/checkout')} label="Continue to Booking Request" />
+    )}
     </>
   );
 }
