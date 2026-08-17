@@ -4,8 +4,9 @@
 the credit-minting maths that shipped on 2026-08-16 — three things that have each broken this
 project before.
 
-⚠️ **BLOCKED ON OWNER ANSWERS — see §OWNER QUESTIONS. Do not start the pricing half without them.**
-The structural half (§P2–P4) can proceed once Q2 is answered.
+✅ **FULLY UNBLOCKED (2026-08-17). Every owner question is answered.** ⚠️ **And the answer to the
+pricing one is: CHANGE NO PRICES AT ALL.** Owner: *"im not supplying any price revisions."* Every
+number in the catalog stays exactly as it is — this task touches structure only.
 
 **HOW TO RUN:** everything is in this file · verify every measurement before building ·
 report to `docs/reports/TASK-CAREPLANS-REPORT.md` · commit, **do not push** · no subagents ·
@@ -185,7 +186,13 @@ and it is what catches a five-week month being silently rounded down to four.
 
 # THE BUILD
 
-## P1 — acquisition carries no pricing
+## P1 — acquisition carries no pricing ✅ **ALREADY DONE — VERIFY ONLY**
+
+⚠️ **`CAREPATH` §C1d did this on 2026-08-17.** Verified against prod: `HORSE_EVALUATION`,
+`HORSE_FINDER` and `HORSE_PURCHASE_ASSISTANCE` each have **0 priced offerings**. **Confirm it still
+holds and move on — do not redo it.** The original wording follows for context.
+
+### (original, now historical)
 - **Every acquisition offering is price-on-inquiry.** Clear the price rather than setting zero, so
   the public surface renders **"Price on inquiry"** (`ServiceSelector` keys off a null price).
 - Provisioning already survives null prices (`20260816T2800_provision_handles_quote_priced_offerings`
@@ -392,10 +399,10 @@ second one.
 
 # OWNER QUESTIONS — answer before building
 
-1. ~~The care prices~~ **ANSWERED STRUCTURALLY (2026-08-16): PER SESSION, two tiers, no volume
-   discount — and CHANGE NO NUMBERS YET.** *"i dont have the prices yet, leave whatever we have in
-   place for now."* See §P5. **Still to come from the owner: the actual figures**, and they are
-   **not** required to build P2–P4.
+1. ~~The care prices~~ ⚠️ **CLOSED (2026-08-17). NO REVISIONS ARE COMING.** Owner: *"im not
+   supplying any price revisions."* **Every existing price stays byte-identical.** The rate model
+   still governs how the structure must work (per session, two tiers, **no volume discount** — §P5),
+   but **not one number changes in this task.** Do not ask again.
 2. ~~Are riding lessons in scope?~~ ⚠️ **ANSWERED — NO. LESSONS ARE OUT OF SCOPE ENTIRELY.**
    Owner, 2026-08-16: *"lessons are not in scope for this, we leave those exactly as designed."*
    **`/lessons` keeps `1x Weekly Lesson` and `2x Weekly Lesson` as separate cards**, keeps its copy,
