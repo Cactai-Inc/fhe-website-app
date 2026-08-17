@@ -194,7 +194,94 @@ cart that holds a Finder and an Evaluation at once.
 - **Free text is never required.** These are "anything else" boxes; a required one blocks a sale.
 - ⚠️ **Trim and bound free-text length** before it reaches the RPC.
 
-## A6 — report the overlap with `form_definitions`, do not merge it
+## A6 — ONE WORD FOR THE ACT: **inquire**. "Booking" only when it is on the calendar.
+
+**Owner's ruling, 2026-08-16, and his reasoning:**
+
+> *"request a service is a bit more finite, like they are committing to it blindly without having all
+> the details… inquire keeps it premium and honors the uncertainty."*
+
+> *"inquire about booking for lessons. inquire about {service name} service for horse care and
+> acquisition."*
+
+**Why this is right, and not merely a tone preference:** a horse-care or acquisition client does not
+yet know what they are buying — price is on inquiry and the scope gets shaped on the call. "Request"
+would have them committing to something undefined. **"Inquire" is accurate about their state of
+knowledge, not just softer.**
+
+**THE GOVERNING RULE — testable:**
+> **"Book" / "booking" may only describe something that exists on the calendar.** A submission is
+> never a booking: staff call, agree the time, and only then is there a calendar entry.
+
+**"Request" as user-facing copy is retired.** (Internal identifiers keep the word — see scope below.)
+
+### The wording, by funnel
+
+| funnel | the act |
+|---|---|
+| **Lessons** | **Inquire about booking** |
+| **Horse care** | **Inquire about {service name} service** |
+| **Acquisition** | **Inquire about {service name} service** |
+
+⚠️ **`{service name}` needs a rule when more than one service is selected.** Name the single service
+when there is one; fall back to a plural form when there are several. **Propose the exact fallback
+strings in the report and let the owner confirm** — do not invent them silently.
+
+### ⚠️ `inquiryLabel()` ALREADY DOES THIS — update it, do NOT collapse it
+`src/lib/inquiry.ts` is already category-aware and already produces
+`"Inquire about this lesson"` / `"…this service"` / `"Inquire about finding your horse"`. **It was
+built for exactly this ruling.** Keep the helper and the per-category variation; change the strings
+to the owner's wording above and extend it to name the service where it currently says "this
+service".
+
+### What is there today — five words for one act on a single journey (measured 2026-08-16, verify)
+
+| file | line | today | becomes |
+|---|---|---|---|
+| `Lessons.tsx` | 280 | `label="Continue to Booking Request"` | `Continue to Inquiry` |
+| `Checkout.tsx` | 55 | `useDocumentTitle('Send an Inquiry')` | keep — already correct |
+| `Checkout.tsx` | 298 | `'Send us your inquiry'` (signed out) | `Your Inquiry` |
+| `Checkout.tsx` | 546 | `'Your inquiry'` | `Your Inquiry` (title case) |
+| `Checkout.tsx` | 264 | `'Your request is empty'` | `Your inquiry is empty` |
+| `lib/inquiry.ts` | `inquiryLabel()` | `"Inquire about this lesson"` … | owner's wording, above |
+| `Confirmation.tsx` | — | `"Your note just landed"` / `"You Reached Out"` | `Your Inquiry Is With Us` |
+| `OfferingCatalog.tsx` | 28, 182 | `'Inquire for pricing'` / `'Inquire'` | `Price on inquiry` |
+| `BookHorse` `BookRider` `BookSupport` `Checkout` | — | `'Price on enquiry'` | `Price on inquiry` |
+
+⚠️ **Two spellings are live at once** — `"Price on enquiry"` (British) beside `"Inquire"`
+(American), sometimes on one screen. **Standardise on the American spelling throughout**, since the
+chosen act word is *inquire*.
+
+**Scope discipline:**
+- **The nav does not change.** *Book a Lesson*, *Horse Care Services*, *Find a Horse* stay exactly as
+  they are — confirmed twice. A nav item names the destination; it does not claim a calendar entry.
+- `state.inquirySummary`, `InquiryCategory`, `intent: 'inquiry'`, the `requests` table and
+  `submit_public_request` are **internal identifiers, not copy — leave every one of them alone.**
+  Renaming code here would collide with three queued tasks for no user-visible gain.
+- **`Shop.tsx:56` (`actionLabel="Inquire"`)** is on the hidden `/shop` route, which redirects to
+  `/lessons`. Already correct; **do not spend time reviving the page.**
+
+## A6b — ⚠️ ONLY THE LESSONS FUNNEL HAS A DATE PICKER
+
+**Owner, 2026-08-16:** *"we are removing the date selection from the form on the step 4 page of the
+submission for horse care, the only flow with a date selection portion is the lessons page. and that
+is by design."*
+
+**This reverses what `TASK-THREEFORMS` said** (it gave horse care a date picker) and it **changes
+`TASK-CAREPATH`'s submit screen.** The client never proposes a horse-care date; **staff set it on
+the call**, which is already `CAREPATH` §C7 — so the two now agree, and the client is never asked
+for a date they cannot know is available.
+
+| funnel | client picks a date? |
+|---|---|
+| **Lessons** | ✅ yes — the only one |
+| **Horse care** | ❌ no — staff schedule after the conversation |
+| **Acquisition** | ❌ no — nothing to schedule |
+
+**Remove any horse-care date/availability control from the submit screen** and confirm nothing else
+depended on it. **`proposed_times` stays in use for lessons only.**
+
+## A7 — report the overlap with `form_definitions`, do not merge it
 The pre-sale answers duplicate part of each post-sale intake form (breed, age, behaviour, medical).
 **Report the overlap per service.** Do **not** rewire the intake forms in this task —
 `CAREPATH` §C10 owns the intake moment. **This is a finding to hand over, not work to do here.**

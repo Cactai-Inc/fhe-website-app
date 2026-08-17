@@ -171,7 +171,18 @@ the first**, not only step 2. Relabel it to **`Back`** for all of them; step 0 k
 - Reuse the project's existing modal/dialog component. **Do not write a new one** — check
   `src/components/` first; `CreateModal` and others exist.
 
-## C4 — the submit screen collects PERSONAL INFORMATION ONLY
+## C4 — the submit screen collects PERSONAL INFORMATION ONLY, and NO DATE
+
+⚠️ **Owner, 2026-08-16:** *"we are removing the date selection from the form on the step 4 page of
+the submission for horse care, the only flow with a date selection portion is the lessons page. and
+that is by design."* **The horse-care client never picks a date.** Staff set it on the call (§C7).
+`proposed_times` is a lessons-only concern. `ASKRIGHT` §A6b carries the same ruling.
+
+⚠️ **The act word is "inquire", not "request"** (`ASKRIGHT` §A6). For horse care the wording is
+**"Inquire about {service name} service"**. If `ASKRIGHT` has merged, the copy is already correct —
+**do not re-word it here.** The step-3 primary button the owner originally called
+*"Continue to Submit Request"* becomes **"Continue to Inquiry"** under that ruling.
+
 Owner: *"the form should collect their personal information only."*
 
 **Keep:** first name, last name, email, phone, preferred contact method, and a free-text notes box

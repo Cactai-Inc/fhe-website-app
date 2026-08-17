@@ -1,5 +1,10 @@
 # TASK THREEFORMS — one shape for all three funnels, with a real confirmation at step 3
 
+> ⚠️ **THE DATE-PICKER RULE BELOW IS WRONG.** Owner, 2026-08-16: **only the LESSONS funnel has a
+> date picker.** Horse care does NOT — staff set the date on the call. Acquisition never did.
+> Every table in this file that gives horse care a date/availability control is superseded by
+> `TASK-ASKRIGHT` §A6b. **The act word is "inquire", not "request"** — see `ASKRIGHT` §A6.
+>
 > ⚠️ **SUPERSEDED FOR THE HORSE-CARE FUNNEL by `TASK-CAREPATH` (2026-08-16).** The owner reviewed
 > horse care and specified that lane in full detail — four steps, a Continue Shopping modal, a
 > personal-information-only submit screen, lead + horse-owner + order on submission, staff
