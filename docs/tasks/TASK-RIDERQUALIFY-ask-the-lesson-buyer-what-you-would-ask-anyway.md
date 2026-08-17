@@ -85,11 +85,14 @@ nothing else of value.
 # OWNER QUESTIONS — ask before building
 1. **Which questions?** All three from `/book/rider`, or just *"do you own or lease a horse?"*
    The more asked, the more friction on a buyer who has already decided.
-2. ~~**Where in the flow?**~~ **ANSWERED by the owner, 2026-08-16 — do not re-ask.** Every funnel now
-   uses one flow: **selection page → questions (page 2) → the shared submission form → one inquiry**
-   (`TASK-ASKRIGHT` §A0). **The rider questions go on page 2, like every other offering's.** Once
-   this task merges, a lessons-only order gains a page 2 where today it has none.
-   **Build them as an `ASKRIGHT` question set keyed to the lesson offerings** — subject `person`
-   (§A2b) — **not as a bespoke step on `/lessons`.**
+2. ~~**Where in the flow?**~~ **ANSWERED by the owner, 2026-08-16 — do not re-ask.**
+   ⚠️ **The rider questions go ON THE SUBMISSION FORM, not on a separate questions page.**
+   Owner: *"there are no question for lesson booking flow, they all live on the form."* A
+   lessons-only order stays **two pages** — choose, then the form — and **that speed is deliberate**
+   (the owner called the lesson flow "great, its fast"). **Adding a questions page to the lesson path
+   is a regression, not an improvement.**
+   The questions still follow `TASK-ASKRIGHT`'s rules — subject `person` (§A2b), so they merge with
+   the same question asked by an evaluation or a horse search in a mixed order — they simply
+   **render on the form** rather than on the questions page.
 
 Report to `docs/reports/TASK-RIDERQUALIFY-REPORT.md`. Do not push; the orchestrator merges.

@@ -108,10 +108,24 @@ selection page  →  QUESTIONS (page 2)  →  [review]  →  THE FORM  →  one 
    /acquisition      has questions         only           form            whole order
 ```
 
-### Page 2 is conditional on CONTENT, never on which page they came from
+### ⚠️ THE LESSON PATH HAS NO QUESTIONS AT ALL — by design
+**Owner, 2026-08-16:** *"there are no question for lesson booking flow, they all live on the form
+which is technically page 2 but that is the submission page, page 3 on the other flows."*
+
+**Everything the lesson buyer tells us lives on the form.** A lessons-only order is **two pages**:
+
+| | lessons-only | horse care / acquisition |
+|---|---|---|
+| page 1 | choose | choose |
+| page 2 | **the form** (submission) | the questions |
+| page 3 | — | **the form** (submission) |
+
+**The lesson flow's speed is a feature the owner has praised. Do not add a page to it.**
+
+### The questions page is conditional on CONTENT, not on entry point
 - **It appears when any offering in the cart has a question set** — full stop.
-- **Lessons alone goes straight to the form today because lessons has no questions yet**, not
-  because `/lessons` is special. **Do not hardcode "the lessons page skips page 2."**
+- **A lessons-only order skips it because lessons has no question set**, not because `/lessons` is
+  special. **Do not hardcode "the lessons page skips the questions page."**
 - ⚠️ **The case the owner is calling out:** a visitor holding **horse care or acquisition items who
   presses Continue on `/lessons`** must still be shown page 2 for those offerings' questions before
   the form. **This is the bug this section exists to prevent.**
@@ -313,6 +327,52 @@ horse while asking us to find another for training.
   the question sets, **list them in the report for the owner to rule on** — a wrong inference is
   worse than a repeated question, because the client never sees the question that would have caught
   it.
+
+## A3d — THE FULL THREE-CATEGORY ORDER, AND THE HORSE THAT IS BOTH
+
+**Owner, 2026-08-16:**
+> *"its likely they are leasing and they want help with exercising it but they also want to take
+> lessons and they are ready to buy a horse, this is a very real scenario that we need to be able to
+> handle."*
+> *"they might want to buy the horse they are leasing even."*
+
+**Treat a three-category order as NORMAL, not as an edge case.** Lessons + horse care + acquisition
+in one cart is the scenario this whole design must survive. It is also the case that proves §A0:
+whichever page they started on, they get the questions for everything they chose, then **one** form,
+then **one** inquiry.
+
+### What that order renders
+
+| section | subject | contents |
+|---|---|---|
+| **About you** | `person` | equestrian experience, whether they own or lease a horse — **asked once for all three** |
+| **Horse Exercise** | `own_horse` | the leased horse: how long, age, breed, behaviour, injuries, riding history, prior training, goals (+ reason & duration if the weekly SKU) |
+| **Acquisition** | `sought_horse` | lease/buy, horses already considering, breed, age range, budget, boarding, intended use |
+| **Riding Lesson** | `person` | rider questions — **on the form, not here** (§A0) |
+
+**They lease rather than own, so §A3b's gate is satisfied and the horse questions ARE asked** — the
+horse exists. And per §A3c, leasing prefills *"do you currently own or lease a horse?"* as **yes**.
+
+### ⚠️ `own_horse` and `sought_horse` MAY BE THE SAME HORSE
+
+**This breaks the assumption in §A2b that the two subjects are always different animals.** When the
+client wants to buy the horse they currently lease, asking for their *preferred breed* and *preferred
+age range* is asking them to describe a horse sitting in front of them.
+
+**Required handling:**
+- The acquisition question *"Have you found any horses you are already considering?"* must offer an
+  answer meaning **the horse I already have with you** — proposed wording **"Yes — the horse I
+  currently lease"**, shown **only when a horse-care section established that they lease or own one**.
+  ⚠️ **Confirm the exact wording with the owner.**
+- Choosing it **links the two subjects**: the sought horse *is* the leased horse. **Suppress or
+  prefill** the preference questions that are now answered — **breed** and **age range** at minimum —
+  following §A3c's rules (visible, editable, derived-until-touched, recorded as derived).
+- **Do not merge the two subjects wholesale.** Budget, boarding location and intended use are still
+  real questions with real answers. **Only the attributes of the horse itself are known.**
+- **The link must be legible to staff.** Someone reading this inquiry has to see *"they want to buy
+  the horse they are leasing from us"* immediately — that is the single most important fact in the
+  order, and it must not be something staff infer by noticing two sections describe the same animal.
+  **Report where you made it visible.**
 
 ### Horse Training — after the shared block
 | # | question |
@@ -559,6 +619,15 @@ The pre-sale answers duplicate part of each post-sale intake form (breed, age, b
     Prove both halves: change the source and watch it update; edit the derived answer, change the
     source again, and watch it hold.
 4p. **Staff can tell a derived answer from a given one** — name where that distinction is stored.
+4q. ⚠️ **THE OWNER'S FULL SCENARIO** (§A3d): leasing a horse, wants exercise for it, wants lessons,
+    and is ready to buy. All three sections render, *About you* is asked **once**, the lesson
+    questions are **on the form**, and it produces **one** inquiry. Prove it from each of the three
+    entry pages.
+4r. **Buying the horse they lease:** choosing *"the horse I currently lease"* links the subjects,
+    prefills or suppresses **breed and age range**, and **leaves budget, boarding and intended use
+    still asked.**
+4s. **That link is legible to staff on the inquiry** — name where. A reader must not have to notice
+    that two sections happen to describe the same animal.
 5. **Horse Finder** and **Acquisition Assistance** ask the nine-question set; the experience question
    carries the new wording, **no help line**, and the original four options.
 6. **Horse Evaluation** asks its own eight, with the **three** experience options — proving options
