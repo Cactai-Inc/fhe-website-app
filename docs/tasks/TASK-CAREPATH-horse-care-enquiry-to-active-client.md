@@ -377,6 +377,26 @@ path. **Do not write a second booking writer.**
 - **Find the existing horse-intake surface and form definitions** (`form_definitions` exists;
   `ONBOARD` reported a per-document trigger here) and reuse them. **Do not build a third horse
   intake** — this project already had 3 horse rosters.
+### ⚠️ ASK WHETHER IT IS THE SAME HORSE — NEVER ASSUME IT
+**Owner, 2026-08-16:** *"we dont assume the inquiry about horse clipping and the inquiry about
+evaluation or any of the acquisition services are related to the same horse… we can ask them if it
+is before asking them to fill it in."*
+
+An order can name **three different horses**: the one they own or lease (`client_horse`), one being
+evaluated (`evaluated_horse`), and one they hope to buy (`sought_horse`).
+
+- Before the intake form is filled, **ask whether the horse being added is the one from their
+  inquiry.** **Yes → prefill** the overlapping fields (age, breed, behaviour, health) from the
+  `client_horse` answers, editable. **No → a blank form.**
+- **Only `client_horse` answers may ever prefill.** `evaluated_horse` and `sought_horse` answers
+  describe *different animals* — **never use them to prefill anything.**
+- If the order carried no `client_horse` answers, **ask nothing and show a blank form.**
+- Prefilled values follow `ASKRIGHT` §A3c's rules: visible, editable, recorded as derived.
+
+⚠️ **There is no "post-sale" form.** The activation intake is `HorseIntakeForm.tsx` and it runs
+*before* the payment page. The `INTAKE_HORSE_*` rows in `form_definitions` have **no surface** and
+are **not** to be wired up here — report them, nothing more.
+
 - ⚠️ **Own-vs-lease has nowhere faithful to land** (`ASKRIGHT` §A3e): `horses.current_owner_contact_id`
   is the only relationship a horse record carries. **Do not falsify ownership for a lessee** —
   report the gap and state exactly where you parked the answer until the schema task exists.

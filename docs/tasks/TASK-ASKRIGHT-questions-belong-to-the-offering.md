@@ -653,10 +653,20 @@ for a date they cannot know is available.
 **Remove any horse-care date/availability control from the submit screen** and confirm nothing else
 depended on it. **`proposed_times` stays in use for lessons only.**
 
-## A7 — report the overlap with `form_definitions`, do not merge it
-The pre-sale answers duplicate part of each post-sale intake form (breed, age, behaviour, medical).
-**Report the overlap per service.** Do **not** rewire the intake forms in this task —
-`CAREPATH` §C10 owns the intake moment. **This is a finding to hand over, not work to do here.**
+## A7 — the `form_definitions` intake forms have NO SURFACE — report, do not wire
+
+⚠️ **Terminology correction (owner, 2026-08-16): there is no "post-sale" form.** The only horse
+intake that runs is `HorseIntakeForm.tsx` **during activation**, which happens *before* the payment
+page. Use **"inquiry answers"** and **"activation intake"**. Do not use pre-sale/post-sale anywhere.
+
+**Measured on `main`:** `form_definitions` is read only by the admin forms listing
+(`admin_form_definitions`) and by `SessionActivityForm` (which uses `ACTIVITY_SESSION`).
+**Nothing references `INTAKE_HORSE_CLIPPING`, `INTAKE_HORSE_EXERCISE`, `INTAKE_HORSE_EVALUATION`,
+`INTAKE_HORSE_FINDER` or `INTAKE_HORSE_LEASE_IN`** — they are paper-form imports with no surface.
+
+**Report this as a finding: five intake definitions exist as data with no way to reach them.**
+Do **not** wire them up, and do not treat them as the activation intake. **This is a hand-over,
+not work.**
 
 ---
 
@@ -758,9 +768,13 @@ The pre-sale answers duplicate part of each post-sale intake form (breed, age, b
    - *Injuries or current health issues* → Yes / No, with a text box appearing on Yes
    - Same Yes/No-plus-detail shape for *prior training*, *issues being clipped*, and
      *horses already considering*.
-2. **Should the pre-sale answers pre-fill the post-sale intake form?** Today a client would give
-   breed, age, behaviour and medical history at step 2, then again at intake. Carrying them over is
-   a real saving, but it is CAREPATH §C10's territory — say whether you want it and I will place it.
+2. ~~Should the inquiry answers pre-fill the activation intake?~~ **ANSWERED (owner, 2026-08-16):
+   ASK, NEVER ASSUME.** *"we can ask them if it is before asking them to fill it in."* The horses in
+   an order are **not assumed to be the same animal** — a clipping inquiry, an evaluation and an
+   acquisition each concern a different horse. So at activation the client is asked whether the
+   horse they are adding **is** the one from their inquiry; **yes prefills, no gives a blank form.**
+   Only `client_horse` answers may ever prefill — **never `evaluated_horse` or `sought_horse`.**
+   **Built in `CAREPATH` §C10, not here.**
 3. ~~Are `how_many_horses` and `wants_lessons` being dropped?~~ **ANSWERED — YES, delete both**
    (owner, 2026-08-16). See §A4: Continue Shopping replaces the lessons cross-sell.
 4. ~~Ask the experience question once, or per set?~~ **ANSWERED (2026-08-16): it is ONE question —
