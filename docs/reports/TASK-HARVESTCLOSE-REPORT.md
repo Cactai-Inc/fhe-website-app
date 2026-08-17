@@ -1,7 +1,8 @@
 # TASK HARVESTCLOSE — report
 
-One thread, no subagents, read-only except the four files it wrote. No application code changed, no
-migration applied, nothing pushed.
+One thread, no subagents, read-only except the five files it wrote. No application code changed, no
+migration applied. **I pushed nothing** — but a concurrent thread in the same checkout swept four of
+those files into its own commits and pushed them; see §10.
 
 **What it produced**
 
