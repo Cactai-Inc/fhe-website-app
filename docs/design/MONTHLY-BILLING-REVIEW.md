@@ -60,7 +60,28 @@ forbidden from building a biller (§P6). This is where the design waits until it
 | recurring entitlement | `CREDITALIGN`'s monthly roll re-mints monthly allotments and expires them at the month boundary |
 | a recurring **charge** | ⚠️ **Not established.** Entitlement rolling is not the same as money moving. **Confirm before assuming either way.** |
 
-**So the missing pieces are: something that runs on a date, the review surface, and the send.**
+## 3b. ESTABLISHED BY `TASK-CAREPLANS`, 2026-08-17 (§P6 asked; here is the answer)
+
+**THERE IS NO BILLER. Nothing in this system raises a recurring charge.** Measured on prod:
+
+| what was looked for | what is there |
+|---|---|
+| a function that creates a charge for a later month | **none.** Every `%bill%`/`%invoice%`/`%charge%`/`%dunning%`/`%prorat%` function in `public` was listed and read. |
+| `billing_next_due(start, cadence, after)` | **exists, and has ZERO callers** — no function, no `src/`, no `api/`. A date helper left over from the lease work, not a cycle. |
+| `resolve_consumption_billing` | real and wired, but it is **barn-ops consumption** (feed/bedding allocations resolved into billable lines). Nothing to do with a monthly plan. |
+| a scheduler | the one added since this doc was written is **Vercel cron**, not `pg_cron`: `vercel.json` runs `/api/mint-monthly-allotments` daily at `20 8 * * *`. **So §3's "biggest unknown" is answered — there IS something that runs on a date, and it is outside the database.** A billing run can ride the same shape. |
+| proration in code | **only as copy.** `src/pages/Lessons.tsx` carries the owner's footnote; `CREDITALIGN`'s m2/m4 prorate the ENTITLEMENT by counting the weekday occurrences left in the window. **Nothing prorates a price.** |
+
+**So the money is handled by hand today and only the entitlement rolls** — which is exactly what §4's
+"entitlement and money are separate" trap says to keep true. **`TASK-CAREPLANS` built no biller.**
+
+**One thing this changes for whoever builds it.** `CAREPLANS` makes a monthly line's `quantity` equal
+the number of days staff chose, so the line's amount is `weekly rate × days` and the order total is
+already correct for the plan as configured — **the billing run has a number to bill and does not need
+to recompute one.** It also refuses to change `quantity` on an order whose `payment_status` is
+already `paid`, so a scheduling change can never silently re-price something that has been settled.
+
+**So the missing pieces are: the review surface and the send.**
 ⚠️ **The absence of any scheduler is the biggest unknown here** — it decides whether this is a DB
 job, an external trigger, or a staff-initiated "run this month's billing" button. **A staff-pressed
 button is worth serious consideration**: the owner wants a human in the loop anyway, and it removes
