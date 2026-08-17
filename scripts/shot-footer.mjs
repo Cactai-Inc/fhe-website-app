@@ -37,6 +37,10 @@ for (let i = 0; i < 10; i++) {
   if (height === prevHeight) break;
   prevHeight = height;
 }
+// Nested iframes (e.g. a Google Maps embed) settle after the outer
+// document's own network/layout does, since their content loads via their
+// own internal requests after the outer frame paints.
+await new Promise((r) => setTimeout(r, 1500));
 await page.screenshot({ path: out });
 await browser.close();
 console.log('wrote', out);

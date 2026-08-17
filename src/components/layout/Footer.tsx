@@ -1,25 +1,24 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { MapPin, Phone, Mail, ExternalLink } from 'lucide-react';
+import { MapPin, Phone, Mail, Clock } from 'lucide-react';
 import { BRAND } from '../../lib/brand';
 
-// Live `locations` row for Carmel Creek Ranch (id 2d771cea-…, verified
-// against prod, 2026-08-17): address_line1 "11600 Clews Ranch Road", San
-// Diego, CA 92130 — differs from an older migration comment that said
-// "11500", so this is taken from the DB, not that file. "Ste A" per the
-// owner (2026-08-17): the Google listing carries a suite letter CCR's own
-// address doesn't.
-const MAP_QUERY = 'French Heritage Equestrian, 11600 Clews Ranch Road, Ste A, San Diego, CA 92130';
+// Address per Google's OWN verified listing card (confirmed by rendering
+// the embed standalone and reading its info popup, 2026-08-17): "11500
+// Clews Ranch Rd Ste A, San Diego, CA 92130". This does NOT match the
+// `locations` table's `address_line1` ("11600 Clews Ranch Road", row
+// 2d771cea-…) — a real discrepancy between the DB and the Google Business
+// Profile, flagged for the owner rather than silently written to the DB
+// (out of scope for a presentation-only task). Using Google's own number
+// here since it's what Google needs to keep matching its own listing.
+// Owner, 2026-08-17: this is still the mailing/geocoded address, which
+// Google pins at the building — NOT where visitors are actually routed
+// (the property's real entrance is off the CA-56 Carmel Creek Rd exit, an
+// immediate right turn at the FHE/CCR sign). Awaiting exact coordinates for
+// that arrival point; using the verified business address+name until then,
+// which at least resolves to the real listing rather than a bare geocode.
+const MAP_QUERY = 'French Heritage Equestrian, 11500 Clews Ranch Rd Ste A, San Diego, CA 92130';
 const MAP_EMBED_SRC = `https://www.google.com/maps?q=${encodeURIComponent(MAP_QUERY)}&output=embed`;
-// Universal Maps URL (google.com/maps/search) — on a phone with the Google
-// Maps app installed this opens the app itself (iOS treats it as a
-// universal link); otherwise it opens Google Maps in the browser. Either
-// way the visitor lands on the business listing with Google's own
-// Directions button, not a page we built. If the owner has the Business
-// Profile's own share link (a maps.app.goo.gl/… or a `cid=` URL), swapping
-// it in here is a one-line change — that would point more precisely at the
-// verified listing than a name+address search does.
-const MAPS_LISTING_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(MAP_QUERY)}`;
 
 export default function Footer() {
   const { user } = useAuth();
@@ -110,6 +109,10 @@ export default function Footer() {
                 {BRAND.email}
               </a>
             </div>
+            <div className="flex items-center gap-3">
+              <Clock size={16} className="text-gold-400 flex-shrink-0" aria-hidden="true" />
+              <p className="text-sm font-sans text-white/[0.7]">8:00 AM – 7:00 PM, 7 days a week</p>
+            </div>
           </div>
 
           <div className="mt-8 pt-8 border-t border-white/10">
@@ -120,30 +123,16 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Map — tap opens the listing in Google/Apple Maps for directions;
-            the iframe underneath is a non-interactive visual preview. */}
-        <div className="relative rounded-lg overflow-hidden border border-white/10 aspect-[4/3] md:aspect-auto md:h-full min-h-[220px]">
+        {/* Map — Google's own embed: zoomable/pannable, and its built-in
+            "Open in Maps" control is the offer-to-open-Maps affordance. */}
+        <div className="border border-white/10 aspect-[4/3] md:aspect-auto md:h-full min-h-[220px]">
           <iframe
             src={MAP_EMBED_SRC}
             title="Map showing French Heritage Equestrian at Carmel Creek Ranch, San Diego, CA"
             loading="lazy"
             referrerPolicy="no-referrer-when-downgrade"
-            tabIndex={-1}
-            aria-hidden="true"
-            className="w-full h-full border-0 pointer-events-none"
+            className="w-full h-full border-0"
           />
-          <a
-            href={MAPS_LISTING_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="absolute inset-0 focus-ring-dark"
-            aria-label="Open French Heritage Equestrian in Maps for directions"
-          >
-            <span className="absolute bottom-2 right-2 inline-flex items-center gap-1.5 bg-green-950/90 text-gold-300 text-[11px] font-sans tracking-wide px-2.5 py-1.5 rounded">
-              <ExternalLink size={12} aria-hidden="true" />
-              Get Directions
-            </span>
-          </a>
         </div>
       </div>
 

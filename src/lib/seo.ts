@@ -50,7 +50,7 @@ export const ROUTE_SEO: RouteSeo[] = [
     path: '/',
     title: 'French Heritage Equestrian — Hunter/Jumper Lessons & Training | Coastal San Diego',
     description:
-      'A community of women who ride for the love of it. Classical European hunter/jumper riding lessons, horse care, and acquisition support at Carmel Creek Ranch in coastal San Diego.',
+      'Join our community of riders, where camaraderie, enjoyment, and a love for horses come together.',
     indexable: true,
     priority: 1.0,
   },

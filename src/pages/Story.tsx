@@ -174,8 +174,8 @@ export default function Story() {
               aria-label="Riders in the arena at Carmel Creek Ranch, coastal San Diego."
             />
             <p className="body-text text-lg mb-6">
-              We are a community of riders who love all things equestrian. This is
-              the place we&rsquo;re grateful to call home for us and our horses.
+              Join our community of riders, where camaraderie, enjoyment, and a
+              love for horses come together.
             </p>
             <p className="body-text text-lg mb-6">
                   French Heritage Equestrian resides at Carmel Creek Ranch, a
