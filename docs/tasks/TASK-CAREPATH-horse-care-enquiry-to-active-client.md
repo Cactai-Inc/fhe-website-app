@@ -123,15 +123,30 @@ the authenticated purchase path and weakening it would expose order creation to 
 
 # THE BUILD
 
-## C1 — the step tracker tells the truth: FOUR steps
-- `STEPS` becomes four: **Select Services · Tell Us More · Review · Your Details**.
-- Every eyebrow follows (`Step 1 of 4` … `Step 4 of 4`). Fix the same off-by-one in
-  `BookSupport.tsx` **only if it does not conflict with the acquisition task queued behind this
-  one** — if in doubt, leave acquisition alone and report it.
-- **Whether step 4 stays at `/checkout` or becomes a fourth step inside `BookHorse` is the
-  builder's call**, but the tracker must be visible and correct on it either way. Prefer keeping it
-  in-page: the cart, the selections and the qualifier answers are all already in `CartContext`
-  there, and `/checkout` carries lesson-specific baggage this buyer must not see.
+## C1 — THREE steps, and the tracker tells the truth
+
+**Owner, 2026-08-16:** *"the questions page is an insert in between the selection and the submission
+with the form"* and *"the form page is always the submission page."*
+
+**There is no separate Review screen.** It is absorbed into the submission page.
+
+| step | horse care | lessons |
+|---|---|---|
+| 1 | Select Services | Select |
+| 2 | **Tell Us More** — the questions (`ASKRIGHT`) | — *(no questions)* |
+| 3 | **Your Details** — the submission page: selections, Continue Shopping, the form, Send Inquiry | step **2** for lessons |
+
+- `STEPS` becomes **three**: **Select Services · Tell Us More · Your Details**, with eyebrows
+  `Step 1 of 3` … `Step 3 of 3`.
+- ⚠️ **The count is not fixed — it is derived.** The questions page appears only when something in
+  the cart has questions (`ASKRIGHT` §A0), so a cart with no question sets shows **two** steps.
+  **Do not hardcode 3.** The tracker must count the pages that will actually be shown.
+- **Keep the submission page in-page rather than sending them to `/checkout`** — the cart,
+  selections and answers already live in `CartContext`, and `/checkout` carries lesson-specific
+  fields this buyer must not see. **The form component itself is shared** (`ASKRIGHT` §A0); it is
+  the *route* that stays put.
+- Fix the same off-by-one in `BookSupport.tsx` **only if it does not conflict with the acquisition
+  task queued behind this one** — if in doubt, leave acquisition alone and report it.
 
 ## C1b — the back control says "Back", not "Previous"
 Owner, 2026-08-16: *"keep the 'previous' button relabeled as 'Back' on step 2 page."*
@@ -148,13 +163,20 @@ the first**, not only step 2. Relabel it to **`Back`** for all of them; step 0 k
 - `Checkout.tsx:294` says `Back to Selection`. **Do not change it here** — it is shared with the
   lesson funnel.
 
-## C2 — step 3 loses the false line and gains two buttons
-- **Delete** the *"That's everything we need for now…"* paragraph (`BookHorse.tsx:202-205`).
-- Step 3 shows the selection summary (which is good today) and then **two buttons**:
-  1. **`Continue Shopping`** — opens the category modal (C3).
-  2. **`Continue to Submit Request`** — the primary; replaces *"Continue to Booking Request"*.
-- The primary keeps `btn-primary` styling; `Continue Shopping` is the secondary. **The floating
-  `SelectionBar` must not present a competing third path** — check what it renders at this step.
+## C2 — the submission page carries the selections, Continue Shopping, and the form
+
+The old Review screen's content moves here, so the final page shows, in order:
+
+1. **The selection summary** — the existing markup at `BookHorse.tsx:176-194` is good; move it.
+2. **`Continue Shopping`** — opens the category modal (C3). Secondary styling.
+3. **The form** — personal information only (C4), the shared component.
+4. **`Send Inquiry`** — the primary submit (`ASKRIGHT` §A6 owns the wording).
+
+- ⚠️ **Delete** the *"That's everything we need for now…"* paragraph (`BookHorse.tsx:202-205`). It was
+  false where it stood and there is no longer a page for it.
+- **The floating `SelectionBar` must not present a competing path on this page** — check what it
+  renders here and suppress it if it duplicates the submit.
+- **One submission** — a mixed cart still produces a single inquiry (`ASKRIGHT` §A0).
 
 ## C3 — the Continue Shopping modal
 - Asks **which category they want to see**, showing exactly three options:
@@ -312,12 +334,17 @@ path. **Do not write a second booking writer.**
 ---
 
 # THE TEST THIS MUST PASS
-1. The horse-care tracker reads **Step 1 of 4 … Step 4 of 4**, and no screen is unnumbered.
+1. The horse-care tracker reads **Step 1 of 3 … Step 3 of 3**, and no screen is unnumbered.
+1b. **The count is derived, not hardcoded** — a cart whose offerings have no question set shows
+    **two** steps, and the questions page is skipped. Prove the tracker follows.
+1c. ⚠️ **Lessons plus horse care in one order inserts the questions page** even when the visitor
+    started on `/lessons` — owner: *"when the lessons are part of the order with any of the other
+    two the questions page gets inserted."* (`ASKRIGHT` §A0 owns this; prove it still holds here.)
 2. The *"That's everything we need for now"* line is gone.
-2b. The back control reads **`Back`** on steps 2, 3 and 4, and **`Back to Services`** on step 1 —
-    the word `Previous` appears nowhere in the horse-care funnel.
-3. Step 3 offers **Continue Shopping** and **Continue to Submit Request**, and no competing third
-   path.
+2b. The back control reads **`Back`** on every step past the first, and **`Back to Services`** on
+    step 1 — the word `Previous` appears nowhere in the horse-care funnel.
+3. The **submission page** carries the selection summary, **Continue Shopping**, the form and
+   **Send Inquiry** — in that order, with no competing path from the floating bar.
 4. The modal shows the three categories, has **both** a Back button and an ✕, and choosing one
    navigates there **with the cart intact** — prove the items survive.
 5. The submit screen asks for personal information only. **A horse-care buyer is never asked their

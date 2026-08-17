@@ -374,6 +374,40 @@ age range* is asking them to describe a horse sitting in front of them.
   order, and it must not be something staff infer by noticing two sections describe the same animal.
   **Report where you made it visible.**
 
+## A3e — ⚠️ LEASE IS NOT OWN, AND THE DATABASE CANNOT TELL THEM APART
+
+**Owner, 2026-08-16:** *"lease is not own but our system doesnt differentiate."*
+
+**Measured, and he is right** (`main`, verify before building):
+- `horses.current_owner_contact_id` is a **single FK to one contact** — the only ownership
+  representation on a horse record.
+- `my_stable_horses` derives `is_owner` as `current_owner_contact_id = current_contact_id()`.
+- **There is no lease relationship on the horse record.** Lease *contracts* exist
+  (`HORSE_LEASE*` templates), but nothing on the horse says "this person leases me."
+
+**So a leased horse has two bad options today:** point `current_owner_contact_id` at the lessee — a
+false ownership claim, and the wrong answer when the real owner must authorise care — or leave it
+pointing elsewhere, in which case **the horse never appears in the lessee's stable at all**.
+
+### What THIS task must do
+1. **Capture own and lease as DISTINCT values**, never a merged "yes". The inquiry must record
+   *which*, because everything downstream depends on it — who authorises services, who signs, and
+   whether "buy the horse I lease" is even possible.
+2. **Rename the subject.** `own_horse` presumes ownership the client may not have. Use a neutral name
+   — **`client_horse`** (the horse this client is bringing us), with own-vs-lease as an *answer*,
+   not as the subject's identity. **Apply the rename throughout §A2b, §A3b, §A3c and §A3d.**
+3. **§A3c's inference still holds and gets sharper:** own **or** lease of the serviced horse both
+   prefill *"do you currently own or lease a horse?"* as yes. **They must not collapse into each
+   other beyond that.**
+
+### What this task must NOT do
+⚠️ **Do not change the horses schema here.** Adding a lease relationship touches `horses`, RLS,
+`my_stable_horses`, staff horse records and the lease contract engine. **That is its own task.**
+
+**Report it as a finding**, with: what the inquiry now captures, where that answer lands, and the
+fact that **`CAREPATH` §C10's horse intake will have nowhere faithful to put it.** Say so plainly —
+a known gap recorded is worth more than a schema change made in the wrong task.
+
 ### Horse Training — after the shared block
 | # | question |
 |---|---|
