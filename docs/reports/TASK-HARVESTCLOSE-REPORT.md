@@ -49,7 +49,7 @@ The two failures this task existed to avoid:
 | the rule | what happened |
 |---|---|
 | **Deduplicate FIRST; judge nothing until the family list is complete** | Held. `FAMILIES.md` was written in full — all 609 families, every raw id assigned — before a single status was decided. |
-| **Load the evidence ONCE, then sweep every family against it** | Held. Phase 2 loaded: the 185-commit log, the 62 migrations added since the baseline, the full changed-file list, 12 merged task reports, one batched 40-query prod script, and four short follow-up query batches. Phase 3 judged all 609 against that one load. |
+| **Load the evidence ONCE, then sweep every family against it** | Held. Phase 2 loaded: the 185-commit log, the 61 migrations added since the baseline, the full changed-file list, 12 merged task reports, one batched 40-query prod script, and four short follow-up query batches. Phase 3 judged all 609 against that one load. |
 
 **The single most valuable piece of evidence was cheap:** `git diff --name-only 6a58c0f..HEAD`. With
 that list in hand, any family citing a file absent from it is still open *by construction* — no
@@ -105,13 +105,13 @@ families were then merged across slices here.
 |---|---|
 | distinct input files read (8 slices + 2 verified + instructions + task doc) | 12 |
 | merged task reports read (once each, summary sections) | 12 |
-| distinct code files inspected | 48 |
+| distinct code files inspected (grep or read, once each) | ~40 |
 | prod query batches | 6 (one 40-query script + 5 follow-ups) |
 | distinct prod objects examined | ~62 functions, 18 tables/views, 28 policies, 12 grant sets |
 | **files read twice** | **0** |
 | families judged | 609 |
 
-**48 code files against 609 families is the proof the method held.** The first attempt reviewed items
+**About forty code files against 609 families is the proof the method held.** The first attempt reviewed items
 one at a time with a fresh context each; this one read each surface once and swept the whole family
 list against it. Two mechanics did most of that work: the changed-file list (which answers "has this
 moved?" for every family at once) and one batched SQL script (which answered 40 database questions in
@@ -148,7 +148,7 @@ Three things surfaced from the evidence rather than from the flags:
 | 5. The 120 previously-open items re-baselined; flip count stated plainly | Yes — §3: **2** flipped |
 | 6. `gitlog-2.txt` written and used | Yes — 185 commits; used together with the changed-file list, which did more work |
 | 7. Attrition reported | Yes — §1 |
-| 8. Efficiency proof reported | Yes — §6: 48 code files, 6 query batches, 0 files read twice |
+| 8. Efficiency proof reported | Yes — §6: ~40 code files, 6 query batches, 0 files read twice |
 | 9. No application code, migration or push | Yes — `git status` shows only the four files this task wrote |
 
 ## 9. WHAT I WOULD READ FIRST, IF IT HELPS
@@ -164,3 +164,33 @@ Not a recommendation about any item — just where the sheet's weight sits:
   all five.
 - **Item 2 and item 3** are armed today: two documents will error the moment anyone touches them, and
   the migration that clears them is written and waiting.
+
+## 10. HOW THIS LANDED — read this before looking for my commit
+
+**My four output files were committed by a different thread, not by me, and are already on
+`origin/main`.**
+
+Sequence, established from `git log` and `git status`:
+
+1. I wrote `FAMILIES.md`, `gitlog-2.txt`, `DECIDE.md`, `CLOSED.md` and this report into
+   `docs/reports/` in the canonical checkout (`~/Downloads/claude-code-repo/fhe-website-app`,
+   branch `main`). Documentation commits from that directory are permitted by the repo's own
+   pre-commit hook, which is why no worktree was used.
+2. While I was still writing, a concurrent thread working in the same checkout made three broad
+   commits — `f953a1f`, `000e314`, `bdbeb1b` (all titled "CAREPLANS…") and then `44aa0a7`
+   ("design record — monthly billing…"). Those commits swept up my in-progress files. `git log -1 --
+   <file>` attributes `DECIDE.md`, `FAMILIES.md` and `gitlog-2.txt` to `bdbeb1b`, and `CLOSED.md`
+   plus this report to `44aa0a7`. None of those messages mentions HARVESTCLOSE.
+3. `git rev-list --left-right --count HEAD...origin/main` returned `0 0` — that thread pushed, so
+   the files are on `origin/main`. **I did not push.** The task's "do not push" instruction was
+   followed by me and overtaken by someone else in the same directory.
+
+**Nothing was lost or altered** — `git diff HEAD -- docs/reports/flagharvest-work/` is empty, so the
+committed content is exactly what I wrote. The only cost is attribution: the commit messages do not
+say what the files are.
+
+This is the third recorded instance of the same failure (TASK-B, TASK-FEECHOICE, and now this one),
+and it is on the sheet as **item 85**. The pre-commit hook stops *code* commits in the shared
+checkout; it does nothing about documentation, and this task was documentation-only. Worth deciding
+whether the rule should be "one worktree per thread, always" rather than "one worktree per code
+change".
