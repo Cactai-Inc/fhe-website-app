@@ -266,17 +266,30 @@ entitlement configuration around; **if the new shape is no more editable than th
 is still locked out of his own catalog** and will be back asking for a migration to change a number
 he should be able to type.
 
-- **At minimum, add `unit_count` to the editor** — it is the one-time half of §P0's formula and the
-  owner's most likely edit.
-- **Whatever replaces `weekly_frequency`** must be editable too, unless it moves entirely to staff
-  provisioning (§P3) — **in which case say so plainly, because then the catalog stops carrying it
-  at all and the editor gap closes by deletion rather than by addition.**
-- ⚠️ **`config_kind` decides which half of the formula applies.** Editable or not, **state your
-  choice and the reason** — an owner who can flip a SKU between one-time and recurring can also
-  break every plan built on it, so "deliberately not editable" is a legitimate answer.
-- **Prove a real round trip**: change a value in the editor, confirm it persists and takes effect.
-  `adminUpdateOffering` now carries `assertWrote` (CAREPATH §C1d) so an RLS-blocked write can no
-  longer look like a saved one — **use that, and prove a NULL price clears rather than erroring.**
+### ⚠️ OWNER RULING, 2026-08-17: *"the non editable components need to be updated."*
+**This is not optional and there is no escape hatch. Make them editable.**
+
+| field | requirement |
+|---|---|
+| **`unit_count`** | **Editable.** How many lessons a package gives. The owner's most likely edit — a 4-pack becoming a 5-pack must not need a developer. |
+| **`config_kind`** | **Editable**, one-time vs recurring — **with the guard below.** |
+| **`weekly_frequency`** *(or whatever replaces it)* | **Editable** while the catalog still carries it. **If §P3 moves it wholly to staff provisioning, the catalog no longer has it and there is nothing to expose — say so explicitly; that is the only acceptable reason for its absence.** |
+
+**Add them to `OfferingInput` and to the form.** `adminUpdateOffering` passes the patch straight
+through, so the database side needs nothing — **this is form fields and a type.**
+
+⚠️ **`config_kind` needs a guard, not a lock.** Flipping a SKU between one-time and recurring changes
+which half of §P0's formula applies, and doing that to a SKU with live purchases would rewrite what
+existing clients are owed. **Make it editable, and prevent (or clearly warn on) a change to an
+offering that has purchase lines against it.** Report which you chose. **Do not resolve this by
+leaving the field uneditable** — that is the problem this ruling exists to fix.
+
+- **Label them in the owner's language, not the column's.** He should read *"How many lessons"*, not
+  *`unit_count`*.
+- **Prove a real round trip** for each field: change it in the editor, confirm it persists **and
+  takes effect** in the formula. `adminUpdateOffering` now carries `assertWrote` (CAREPATH §C1d), so
+  an RLS-blocked write can no longer masquerade as a saved one — **use it, and prove a NULL price
+  clears rather than erroring.**
 
 ## P3 — staff choose the DAYS, and quantity follows
 At provisioning (`CAREPATH` §C7 is the surface), staff set:
@@ -422,9 +435,13 @@ second one.
 7. A **fixed-week plan stops** when its weeks elapse; an **indefinite plan keeps re-minting monthly**
    and stops on cancellation, through the existing cancellation path.
 8. No offering name is parsed anywhere in the new code.
-8b. ⚠️ **The owner can edit what the new structure delivers, not just what it costs** (§P2c) —
-    prove a real round trip through `AdminProductsPage`, including `unit_count`. If entitlement moved
-    entirely to staff provisioning, say so and prove the catalog no longer carries it.
+8b. ⚠️ **`unit_count` and `config_kind` are EDITABLE in `AdminProductsPage`** (§P2c, owner-ruled) —
+    prove a round trip for each: change it, confirm it persists **and changes what the formula
+    computes**. Labels read in the owner's language, not column names.
+8c. **`config_kind` is guarded, not locked** — changing it on an offering with live purchase lines is
+    prevented or clearly warned. **State which.** An uneditable field fails this test.
+8d. **`weekly_frequency` is editable while the catalog carries it** — or the report states plainly
+    that §P3 removed it from the catalog entirely, with proof.
 9. ⚠️ **NO price changed** — prove every care and lesson price is byte-identical to `main`
    (acquisition's clearing to null under §P1 is the sole exception).
 9b. **No volume-break logic exists anywhere** — 1×, 2× and 3× weekly all use the same per-session
