@@ -1,7 +1,13 @@
 # TASK FOOTER — a map beside Find Us, sign-in in the nav, and the credit line
 
 **RUN WITH: Sonnet 5 · thinking ON · effort MEDIUM.** Presentation only — no data, no RPCs, no
-migrations. Small enough that the orchestrator may simply build it.
+migrations.
+
+**DEFAULTS THE OWNER HAS NOT OVERRIDDEN — build on these, do not block:**
+- **`San Diego, California` stays** on the right of the last line (owner question 1, unanswered).
+- **Use a Carmel Creek Ranch pin**, not a street address (owner question 2, unanswered) — the
+  footer's own *"2.5 miles from Torrey Pines Beach"* suggests the imprecision is deliberate.
+- **The Cactai URL does not exist yet.** Plain text, ready for an `href`. **Do not invent one.**
 
 **Owner, 2026-08-17:**
 > *"we need the google map embed in the footer to the right of the find us block. the find us block
@@ -10,8 +16,11 @@ migrations. Small enough that the orchestrator may simply build it.
 > side needs to read 'Designed, Built & Maintained by Cactai Inc.' I'll give you a url later so it
 > links to the page on my website where i talk about the project."*
 
-# WHAT IS THERE NOW (`src/components/layout/Footer.tsx`, measured 2026-08-17)
+# WHAT IS THERE NOW (`src/components/layout/Footer.tsx`, **re-measured after wave 1**, 2026-08-17)
 - **A 3-column grid** (`md:grid-cols-3`): **Brand** · **Navigation** · **Find Us**.
+- ⚠️ **`GIFTPATH` added `Gift a Service` → `/gift` to the Navigation list since this task was
+  written.** **Keep it.** Sign-in joins that same list (§F2), so the nav grows to eight items —
+  check it still reads well at that length rather than assuming the old six.
 - **Find Us** holds address, phone, email, then a licensed-&-insured note below a rule.
 - **The bottom bar** carries the copyright on the left, and on the right: `San Diego, California`
   plus the member sign-in link (`Member sign-in` / `Member area` when signed in).
