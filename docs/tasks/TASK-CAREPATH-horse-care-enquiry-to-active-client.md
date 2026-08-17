@@ -164,6 +164,49 @@ the first**, not only step 2. Relabel it to **`Back`** for all of them; step 0 k
 - `Checkout.tsx:294` says `Back to Selection`. **Do not change it here** — it is shared with the
   lesson funnel.
 
+## C1c — ⚠️ TURNOUT NEEDS ITS OWN QUESTIONS — niche down
+
+**Owner, 2026-08-17:** *"yes you are correct we need to niche down for things like turnout."*
+
+**Measured on `main`:** `HORSE_EXERCISE` contains **two different services** —
+`Exercise 1x Weekly · Exercise 2x Weekly · Exercise Session` **and**
+`Turnout 1x Weekly · Turnout 2x Weekly · Turnout Session`.
+
+`ASKRIGHT` (merged) keys question sets by `service_type`, so **a turnout buyer is asked what riding
+the horse has done with them and before them, and whether it has had prior training.** Nobody rides
+a horse to turn it out.
+
+⚠️ **Turnout is the ONLY offender.** Every other service_type holds variants of a single service —
+clip scopes, lesson counts, session-vs-weekly. **Do not generalise a solution beyond this case.**
+
+### The fix — a per-offering override, NOT a new service_type
+**Do not change `Turnout*`'s `service_type`.** `CAREPLANS` (wave 2) is going to restructure these
+very SKUs, and a service_type change now would collide with it. Instead **let a question set key on
+the offering where it differs from its service_type**, falling back to the service_type set
+otherwise. **The existing subject model is unchanged** — turnout questions are still `client_horse`.
+
+### The turnout set — shared six, then these
+⚠️ **PROPOSED — confirm with the owner before building.** He specified training, clipping and
+exercise by hand; turnout was hidden inside exercise and never got its own list.
+
+| # | question |
+|---|---|
+| 1–6 | **the shared horse block, unchanged** (own/lease · how long · age · breed · behaviour · injuries) |
+| 7 | Does the horse turn out alone, or with other horses? |
+| 8 | Has the horse had any issues with turnout — fencing, gates, or getting out? |
+| 9 | **Free text** — any special requirements (sheets or blankets, boots, limits on time out) |
+| 10 | *(weekly only)* What is bringing you to our turnout services? |
+| 11 | *(weekly only)* Approximately how long will you need these services? |
+
+- **Questions 7–9 REPLACE exercise's riding-history and prior-training questions** — they must not
+  both appear.
+- **10 and 11 gate on `config_kind = 'recurring'`**, exactly as exercise's do (`ASKRIGHT` §A3) —
+  the à la carte `Turnout Session` gets neither.
+
+**Test:** selecting **Turnout Session** asks the shared six plus 7–9 and **is never asked about
+riding or prior training**; **Turnout 1x Weekly** additionally asks 10–11; and **Exercise** offerings
+are **unchanged**.
+
 ## C2 — the submission page carries the selections, Continue Shopping, and the form
 
 The old Review screen's content moves here, so the final page shows, in order:
