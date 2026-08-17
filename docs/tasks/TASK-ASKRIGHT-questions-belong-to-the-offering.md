@@ -485,8 +485,8 @@ approach we should use for the acquisition services."*
 | 2 | **Which best matches your equestrian experience?** |
 | 3 | Have you found any horses you are already considering? |
 | 4 | Are there specific breeds you prefer? |
-| 5 | Is there a specific age range you prefer? |
-| 6 | Do you have a specific budget range? |
+| 5 | Is there a specific age range you prefer? — **bands, Owner Q6** |
+| 6 | Do you have a specific budget range? — **bands, Owner Q6** |
 | 7 | Do you have a location for boarding already selected? |
 | 8 | What do you plan to use the horse for? |
 | 9 | **Free text** — anything else you would like us to know |
@@ -773,7 +773,11 @@ The pre-sale answers duplicate part of each post-sale intake form (breed, age, b
 5. **Horse Evaluation Q1 "Location"** — the location of the horse being evaluated, or the client's
    own area? *(The Q7/Q8 half of this question is **ANSWERED**: both stay — Q7 is riding ability so
    the horse matches the rider; Q8 is ownership experience. Different facts.)*
-6. **Budget and age range on the Finder set** — free text, or bands you want offered?
+6. ~~Budget and age range on the Finder set~~ **ANSWERED (owner, 2026-08-16) — BANDS, and these are
+   the real numbers. Do not substitute your own; an earlier guess was 5× too high.**
+
+   **Budget:** `$2–5k` · `$5–7k` · `$7–10k` · `$10k+` · **`Not sure`**
+   **Age range:** `3–5` · `5–7` · `7–10` · `10+` · **`No preference`**
 8. ~~Move riding experience from the form to page 2?~~ **ANSWERED — NO. The form is untouched**
    (owner: *"the rider questions are already on the lesson form. there is nothing to add."*). The
    premise was wrong anyway: the form asks **riding skill in YEARS**; the acquisition sets ask

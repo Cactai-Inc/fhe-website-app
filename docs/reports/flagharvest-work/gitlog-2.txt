@@ -1,0 +1,185 @@
+2bd731f docs: HARVESTCLOSE — resume at dedup, then ONE loaded context and a single sweep
+4d0521b docs: HARVESTCLOSE — corrected to the owner's stated goal and deliverable
+cc5af34 docs: HARVESTCLOSE — finish the flag harvest in one thread, cheapest-evidence-first
+a8d4dd4 wip(flagharvest): verified-UI + inventory-B + inventory parts committed as they land
+96aeed9 wip(flagharvest): extraction pass complete — 975 raw items + 130 inventory entries from all 104 reports, domain slices staged
+337cc1e merge task/feechoice — F3 standalone booking fee + report
+0704021 docs: ASKRIGHT — the ownership framing is builder context, never UI copy
+2b97acb docs: owner corrections — experience question is OWNERSHIP everywhere; Continue to Submit Inquiry; client confirmed; void reading confirmed
+4dd11e8 docs: full-set review pass (Fable) — every 2026-08-16 ruling reconciled across the six flow docs
+c84a60f docs: C5b order model (owner ruling); rider questions already on the form, RIDERQUALIFY premise dead
+ef2e8b5 docs: ASKRIGHT A0 — one form page, one component, configuration derived from the cart
+5baaf95 docs: three steps not four — questions page is an insert; A3e lease is not own
+e3db811 docs: lessons has no questions page; A3d the three-category order and the horse that is both
+4f47704 docs: ASKRIGHT A3c — inferred answers, one-way and visible
+746951a docs: A0 one flow/one form/one submission; A3b the horse may not exist yet
+e875359 docs: ASKRIGHT A2b — step 2 is assembled on the click, answers held by subject
+939b524 docs: ASKRIGHT A2 — the shared section is derived from the cart, then one section per offering
+da390b4 docs: lessons collects availability RANGES, not a date — corrects LESSONREQUEST's approve-the-slot step
+fa92626 docs: inquire is the act word; only lessons has a date picker
+49b5bfd docs: ASKRIGHT — questions belong to the offering, not the funnel
+9c2d011 docs: CAREPATH — record the run settings (Opus 5, thinking on, high effort)
+ddcdd98 docs: CAREPATH — lift run protocol to the top so the file is fully self-contained
+1114b7a docs: CAREPATH C1b — back control reads Back, not Previous
+b507b70 docs: CAREPATH — horse-care enquiry to active client, the owner's full lane spec
+0548e33 docs: session status 2026-08-16 — what shipped, the four-task flow program in sequence, and what is blocked on the owner
+53b3056 docs: THREEFORMS — one shape for all three funnels, plus the combined category-separated form for a mixed cart
+982cc45 docs: LESSONREQUEST spec — enquiry to booked paid first lesson; the only missing link is staff approving/amending the requested slot
+0d67d04 docs: RIDERQUALIFY spec — lessons asks nothing while the other funnels qualify; the rider questions already exist on an orphaned page
+775dd13 gift: options reflect what people actually buy — lesson packages lead, 'help me choose' is a real answer
+a6b310a gift: lead with a gift certificate, drop the membership option that has no product behind it, add 'not sure yet'
+444b7b5 docs: ONECHECKOUT becomes GIFTPATH — gifts stay a conversation, no gift checkout (owner: 'i want the chance to talk to a person buying a gift')
+9844f92 lessons: the floating selection bar was missing from /lessons — the one page where lessons are actually chosen
+f042ad0 docs: ONECHECKOUT — owner rulings on giftable scope (horse_included=true only) and buyer-scheduled claim email that does not wait on payment
+2321976 docs: ONECHECKOUT spec — /gift is a lead form not a checkout; fold gifting into the one real checkout
+ab7976d lessons: 'Buy as a gift' loses the trailing 'instead'
+9e39cd6 story: Beyond The Arena's scroll point moves up 10px (negative scroll-margin, content unchanged)
+3a75f0e story: split the opening sentence, widen the wrapped column slightly, tighten the Continue gap; nav: Say Hello is an outlined gold button that fills on hover
+663697d nav: back/forward keeps the browser's restored scroll position — Back from a service or nav link returns to the section you left, not the top
+dbb7cdc story: back-to-services sits beside the closing title, level with its last line, so the image moves back up
+75566e4 story: trim ~15px of top padding above Beyond The Arena
+047bdf0 story: a little padding back above the eyebrow — pt-24/28 lifted section 1 too far
+7f1962c story: restore the section 1 image width — the copy was never constrained by it
+9732768 story: section 1 text column widens and the section lifts under the nav, bringing the copy and Continue link into the first screenful
+278bd05 story: drop the redundant scroll offset on padded sections — their own top padding already clears the nav, so the offset stopped jumps 96px short
+07ae72d story: drop the gold rule above Our Services and close the gap the Continue link already provided
+ecfbd9b story: 'What we deliver' link into an anchored closing section with a back-to-services link; anchor ids renamed to match their eyebrows since they show in the URL
+2c04a20 story: 'The Ways In' becomes 'Our Services' / 'We Serve Every Stage Of Your Equestrian Journey'
+a7bef09 story: section 3 becomes 'Beyond The Arena' / 'Endless Trails & Time With Friends'
+7ab1b0b story: continue links just say Continue; the full-bleed green section scrolls flush to the top, behind the nav
+cce0f11 story: eyebrow reads Our Community and clears the fixed header again; section 3 image sits above its text on mobile
+1cb4964 story: top jump nav removed for a continue link at the end of each section; section 1 uses a real float so the last paragraph wraps under the image
+729a755 nav: 'Our Community' — bare 'Community' was ambiguous against the in-app community
+0ccd2cd funnels: a floating selection bar appears once something is picked — calls the page's own Continue handler, not a second path to checkout
+c82ff7c acquisition: full-width container (3 cols in 1024px left ~250px of text, breaking taglines); service cards drop the selection dot
+126c5f8 horse care + acquisition: content widens 768px -> 1024px (a max-w-3xl override was cutting container-site's 1280px to less than a landscape tablet)
+9b7b6e3 lessons: the closing link reads 'Learn about our community' and goes to the community page, not the stale /about
+6cd7fdd nav: 'Our Story' becomes 'Community' in the site nav (route unchanged)
+7f9bb2c docs: SESSIONBOOK spec — /lessons becomes purchase-flow when signed in, and hides own-horse lessons from members with no horse
+4392bd3 acquisition: three services side by side as vertical cards — stacked rows read as escalating tiers, not parallel choices
+f5c6659 landing: desktop hero text and CTA sit lower — the location line lands just above where the headline was
+25040d4 story: heading spans full width above the grid (nowrap in a 5-col box was overflowing under the image); Trail closes the photo strip; section jump nav with anchored targets
+17b2da3 nav: Book a Lesson joins the main links, Say Hello moves to the right corner; account links leave the desktop bar but stay in the mobile menu
+e54ad06 shop: hide the public catalog — /shop redirects to the rider funnel, footer link removed; web visitors go straight to lessons, horse care, or acquisition
+3ab3beb story: section 1 title on one line and image top-aligned to the first paragraph; closing text restored to size with the image back to 70vh
+ba1c28b story: flip The Ways In — cards take the prominent column, photos become a quiet strip below; Membership dropped, four cards link to their own category pages
+30d58e3 story: closing beat fits one viewport — bottom gap cut to a third, line spacing opened, image height trimmed
+7666d58 story: legible white copy + title case in the green band; space above The Community and a one-line headline; a 2x2 photo mosaic ties The Ways In together and gives it height
+fe57484 story: closing line sized as a closing beat rather than competing with the section headlines
+e54d8ec images: commit Stables, Trail and Mountains — they were on disk but never staged, so sections 2 and 3 rendered as empty boxes in production
+f0b1315 story: section 1 image gets a wider column (7/5) and a 3:2 frame — the 4:5 portrait box was cropping 56% of the photo's width and cutting the first horse
+32ad922 story: section 1 copy rewritten (owner) — the ranch, the two arenas, and trailhead access
+31591e4 story: section 1 headline is 'Coastal Air & Endless Trails' on two lines
+cd56dda story: tighten the gap between the section-3 headline and its image
+ae7a0a8 story: image order Hero_A/Stables/Trail — the trail completes the story; closing line centered on its own band above the bookend image
+b1bc8e6 story: Trail into section 1, Stables into section 2, a closing line over the final image; placeholder component retired
+1df79a3 lessons: scope the crop anchor to phones — object-position had no breakpoint and was shifting the desktop video too
+451ca9b revert(landing): hero back to cover — the phone crop and dissolve cut a band through the horses; lessons: tighter 5:4 crop on phones, gap to the cards halved
+6009364 landing: phone hero crops wider (165%) with the bottom pulled up, and dissolves into the dark instead of ending on a hard line
+b8d6ad2 landing: phones size the hero by width so all three riders stay in frame (cover showed only 25% of it); sm+ unchanged
+486dfc4 docs: TASK-FEECHOICE report
+2747aec copy: period on the horse-included divider line
+69d9e51 copy: period on the own-horse divider line
+25f6792 feechoice: F3 — apply a no-show/late-start fee directly to a booking, same chooser as F1
+b2d1fb3 docs: DEPENDENT spec — guardian is the buyer, dependent is the rider; commerce path has no guardian concept today
+526d813 copy: Evaluation Lesson gold line describes the extended format (owner wording, applied to prod)
+2393f0f rulings: horse one-off services mint tagged credits; policy package expiry defers to the catalog; lessons headline 'Start Riding With Us'
+770372b docs: RECORDSELECT spec — DataTable gains selection; row + bulk Archive on every Records tab
+0927fb2 images: new hero photos at /images/Hero_A|B.png; all 7 references repointed, superseded originals removed
+1667e37 fix: quote-priced offerings can be provisioned again (NOT NULL violation blocked the whole acquisition lane)
+01f54e2 merge: LESSONFORM — one activity form per booking, follows on reschedule, retires on cancel
+463480d merge: CREDITALIGN — recurring plans mint real entitlement, shop checkout mints at all, booking item swap
+a48fe65 lessonform: one activity form per booking, linked by booking_id so it moves on reschedule
+e037e09 docs: TASK-CREDITALIGN report
+4e80a29 creditalign: weekly/monthly plans produce real entitlement, and a booking's item can be swapped
+289a6a9 docs: LESSONFORM spec — one form instance per booking that moves on reschedule, dies on cancel, regenerates on replacement; no-show is recorded here
+63e9518 docs: FEECHOICE spec — staff apply, substitute, or waive the reschedule fee; no-show and late-start land here
+d5a463c fees: load the reschedule bands from the signed Company Policies doc (48h/$10, 24h/$20, 8h/$30); no-show and late-start stay staff-applied
+a6dd516 merge: ZELLECLOSE — inbound Zelle path documented, unmatched payments alert staff, one settlement helper
+e11cec1 merge: CASHCONFIRM — cash claims land in the staff queue and confirm exactly like Zelle
+ade364b security: receipt RPCs are service-role only (CASHCONFIRM flagged; unguarded and anon-reachable)
+2eb6177 zelleclose: coordinate with TASK-CASHCONFIRM's live claim-status schema
+1216eef zelleclose: a Zelle payment arrives and the system notices
+e872633 cashconfirm: cash claims confirm exactly like Zelle
+cfd77d6 docs: CREDITALIGN spec — recurring SKUs mint zero credits (10 SKUs, both segments); plus booked/pending item swap
+ce0ba2f docs: CASHCONFIRM spec — cash claims land in the staff queue and confirm exactly like zelle
+aa81995 nav: document why Settings/Modules stay in manageNavGroups (the pages render from it by key)
+2a7f55d merge: ONBOARD — one signup spine /sign→email→activate→onboard→account→order→pay→book; §4 one-email fix (trigger race), deal self-claim, anon hole closed
+0993027 onboard: report, and force book_open_slot back to one signature
+2c9f752 onboard §1b: deal claims an existing contract and activates the account in one flow
+45aff34 merge: PAGEMERGE — horses duplicate-nav fix, 2 real defects, orphaned Templates page
+f54803f merge: REVIEWQ — bookings land pending; company confirm/decline/propose; decline refunds the credit; delete retires instead of destroying
+fcdc5ba Merge commit 'c80047c' into task/onboard
+3eaa077 onboard: close the anon grants M1 left, and guard the one function behind them
+8774b75 onboard §7: book against a chosen item, edit while pending, and a fee schedule that is data
+c80047c docs: ONBOARD - five chooser options incl. deal; record that Sarah Morgan's cancelled contract was the only real one, everything else is test data
+f7c3b9a docs: ONBOARD 1b - deal is a chooser option that claims a contract + activates an account in one flow; accountless parties are test data, not a live population
+47861d5 onboard §5/§6: land on the dashboard with a profile notice; the buyer can say they paid
+37d4c4c onboard §1/§2/§3: /sign becomes a chooser, captures four fields, and shows the real send state
+570aea1 onboard §4: one email for the whole signed set, not one per document
+c5d27cd docs: ONBOARD - drop deal-party from the chooser; add the pre-account contract counterparty path (mostly built, likely unreachable)
+91cc180 merge: PARTYSTAGING follow-up — author edit/remove of added items, Revise deep-link, added_by_me
+5e9f4e2 docs: TASK-REVIEWQ report
+c0b3226 reviewq: a booking is REQUESTED until the company says otherwise
+43c145d docs: ONBOARD spec - the whole signup spine, owner's words verbatim; supersedes FUNNELDOORS
+ae663a0 pagemerge: horses duplicate-nav fix, 2 real defects, orphaned Templates page
+d609f7c feat(contracts): author-only edit/remove of added items, and a real Revise deep-link
+9deb682 partystaging: revoke direct anon grants the migration left on four RPCs
+851c9c5 docs: four task specs - REVIEWQ, FUNNELDOORS, PAGEMERGE, ZELLECLOSE (all measured against prod 2026-08-15)
+7276623 merge: DOCSCONTRACT — party-controls-driven add-item (edit applies, suggest stages for peer approval)
+c1b29a5 merge: CREDITFIX — credits mint from unit_count, not a name regex (already applied to prod)
+450ac04 Merge branch 'task/navreorder-people-above-horses' into integration/final-merge-check
+8f32375 Merge branch 'task/booklink' into integration/final-merge-check
+58d47ee account: Settings + Modules as cards, staff-only; My Stable reachable at last
+f254a6f stable: My Stable becomes act-as-company aware (D7), horses + gear/supplies
+4824a9b records: an Archive function on the Records page (owner, 2026-08-15)
+c9534d0 records: Lessons, Documents, Files, Deals become Records tabs (in that order)
+bb9f655 nav: retire the standalone Horses pages, Records' own tab is the only entry
+60b13b2 nav: Records moves into Management, directly above Horses (owner)
+f2f9e5c BOOKLINK B5: owner ruling — "Audrey 2/4" is Audrey Slater; B5 complete
+42cff88 BOOKLINK B5: owner ruling — "maddie is madeline"
+4f36153 feat(contracts): party-controls-driven add-item -- edit applies, suggest stages for peer approval
+155fe93 BOOKLINK report: confirm no collision with concurrently-landed CREDITFIX
+751de4f BOOKLINK: bookings linked to client+item, debited/ordered, monthly plans real
+ef3fa71 creditfix: mint lesson_credits from unit_count, not a name regex
+ece89d6 header: remove the mobile avatar caret (owner)
+ab45b18 nav: menu back to normal - every Review-moved row restored to its home
+9f9ba9e docs: BOOKLINK spec - bookings linked+debited, cash method, monthly plans with no carryover (owner design verbatim)
+11aa592 merge: DOCSCONTRACT follow-ups - in_review reopen button, Withdraw/correct moved to the subheader
+2339414 lessons+selector: punctuation standardized (punch-card periods, prod) and 'Nx' typography unified with titles
+4512458 lessons: Single Lesson cards - gold 'Per lesson'; own-horse drops 'with your horse' both places (owner)
+3f54d3e lessons: all weekly titles carry Lesson(s) (prod); badges hug the card corner clear of the title line
+676e31e lessons: intro column widens to 4xl (paragraph <=3 lines on desktop); video tucks closer to the intro (pb-12->pb-8)
+76a2166 lessons: '1x Weekly Lesson' title (prod); gold line '1x weekly lesson(s) - paid monthly' for riding lessons only
+3fea4b4 lessons: footnote opens 'First month can be prorated' (owner wording)
+30b974c lessons: weekly cards' footnote asterisk is full-size gold, not a grey superscript (owner: hard to see)
+b158441 lessons: the asterisk footnote prints once, under the last card row (owner)
+e8cc82b lessons: own-horse weekly descriptions match the our-horse pair (owner: row divider carries the distinction)
+d3c3ddd lessons: footnote reads 'you can ride every week' (owner wording)
+b9dbc7c lessons: 4-Lesson Punch Card badge returns as 'Very Popular' (owner wording, prod applied)
+82f109a lessons: top-aligned cards, 2-col breakpoint, footnote as one block per row
+ee89102 lessons: punch-card taglines - 'to be used within N days of purchase' (owner wording, prod applied)
+103d8cc lessons: Evaluation Lesson gold line - extended format description (owner wording, prod applied)
+7e1b965 lessons: heading spacing rebalanced (air above, half below); Evaluation Lesson $170 in prod
+81ca62a lessons: intro copy - 'getting back in the saddle' + 'ready for the challenge' (owner wording)
+8e71c0d lessons: section heading 'From Your 1st Ride to Weekly Lessons' (owner wording, exact)
+d6b782a lessons: 'Come Ride With Us' headline + horse-included section line; 4-pack badge off
+1676ab9 fix(landing): phone hero layout - text off the riders' faces
+00856b6 fix(landing): hero location line wraps at the separator, never mid-phrase, on narrow screens
+a774aaf lessons: owner-directed page rewrite for live traffic
+ef9cd64 docs: fix ORCHESTRATOR.md pointer after orchestration repo's charter->rules rename
+763a1ec fix(contracts): move Withdraw / correct into the subheader
+d8ea42b merge: COMMENTSEED — starter comment title is plain "Comment 1"
+96dc347 fix: seed the starter comment with a plain title, not onboarding copy
+d199f5a fix(contracts): add the missing in_review -> editable reopen button
+7da269f merge: DOCSCONTRACT — documents-queue bulk delete + stale add-item gate fix
+9672441 feat(documents,contracts): bulk-delete queue rows, drop stale add-item gate
+c0940bb docs: CLAUDE.md — standing rule against subagent delegation
+152d88b merge: PAYLOCK — provisioned buyers can now reach and generate their Zelle memo
+ff6a4a3 test(paylock): prove the memo lock, and that the migration unlocks it
+4817323 fix(paylock): a provisioned buyer can reach the Zelle memo and generate it
+395082d docs: FLOWTRACE — invite→fulfilment traced end to end; every owner observation mechanized, categorized, costed
+c6b51b6 docs: INTAKE-ACCTPAGE — owner's account-page spec captured verbatim, queued not authored
+2d801a2 chore(d9): purge the welcome and dunning template strings, owner-confirmed; FLOWTRACE spec; owner test-run record
+b54dc0c merge: INREVIEW — authoring works during review (D14)
+6ec3310 INREVIEW: widen five authoring RPCs to accept in_review (D14)
