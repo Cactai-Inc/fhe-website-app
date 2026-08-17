@@ -7,16 +7,34 @@ import { useCart } from '../contexts/CartContext';
 import ServiceSelector from '../components/ServiceSelector';
 import ServiceListState from '../components/ServiceListState';
 import QuestionSections from '../components/QuestionSections';
+import InquiryForm from '../components/InquiryForm';
+import ContinueShoppingModal from '../components/ContinueShoppingModal';
 import { cartHasQuestions } from '../lib/questionSets';
 import Seo from '../components/Seo';
 import SelectionBar from '../components/SelectionBar';
 import { seoForPath } from '../lib/seo';
 
-const STEPS = [
-  { label: 'Select Services' },
-  { label: 'Tell Us More' },
-  { label: 'Review & Continue' },
-];
+/**
+ * THE HORSE-CARE FUNNEL — CAREPATH §C1/§C1b/§C2.
+ *
+ * ⚠️ THE STEP COUNT IS DERIVED, NEVER HARDCODED. Until 2026-08-17 this page
+ * declared three steps, printed "Step 3 of 3" on the review screen, and then
+ * navigated to `/checkout` — a FOURTH screen the tracker never admitted to, and
+ * one that asked a horse owner how many years they had been riding.
+ *
+ * There are now three pages, and the third IS the submission:
+ *   1. Select Services
+ *   2. Tell Us More      — the questions, and ONLY when the cart asks something
+ *   3. Your Details      — selections + Continue Shopping + the shared form
+ *
+ * Step 2 exists when something in the CART carries a question set (ASKRIGHT
+ * §A0), so a cart holding only lesson items shows TWO steps and the tracker
+ * counts two. The eyebrow, the circles and the labels all read the same derived
+ * list, so they cannot disagree with each other.
+ */
+const SELECT_STEP = { id: 'select', label: 'Select Services' } as const;
+const QUESTIONS_STEP = { id: 'questions', label: 'Tell Us More' } as const;
+const DETAILS_STEP = { id: 'details', label: 'Your Details' } as const;
 
 const SEO = seoForPath('/horse')!;
 
@@ -25,6 +43,7 @@ export default function BookHorse() {
   const { state, setFunnel, itemCount } = useCart();
   const navigate = useNavigate();
   const [groups, setGroups] = useState<ServiceGroup[]>([]);
+  const [shopOpen, setShopOpen] = useState(false);
   // COUNTFIX 1.5: a failed fetch and an empty catalog looked identical — both
   // rendered a blank selection area with no explanation and a dead "Continue".
   // Distinguish the three states (the pattern Lessons.tsx already uses).
@@ -42,24 +61,29 @@ export default function BookHorse() {
 
   // ASKRIGHT — step 2 exists when something in the CART asks something, never
   // because of which page this is. A cart holding only lesson items (picked on
-  // /lessons, then wandered here) has nothing to ask, so the step is skipped
-  // rather than rendered empty.
+  // /lessons, then wandered here) has nothing to ask, so the step is not just
+  // skipped — it is not counted.
   const hasQuestions = cartHasQuestions(state.items);
+  const STEPS = hasQuestions
+    ? [SELECT_STEP, QUESTIONS_STEP, DETAILS_STEP]
+    : [SELECT_STEP, DETAILS_STEP];
+  const total = STEPS.length;
+  // Clamp: emptying the cart on the last page can shorten the list underneath us.
+  const current = Math.min(step, total - 1);
+  const stage = STEPS[current].id;
 
   const canProceedStep0 = itemCount > 0;
 
   function handleNext() {
-    if (step < STEPS.length - 1) {
-      setStep((s) => (s === 0 && !hasQuestions ? 2 : s + 1));
+    if (current < total - 1) {
+      setStep(current + 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else {
-      navigate('/checkout');
     }
   }
 
   function handleBack() {
-    if (step > 0) {
-      setStep((s) => (s === 2 && !hasQuestions ? 0 : s - 1));
+    if (current > 0) {
+      setStep(current - 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
       navigate('/');
@@ -79,23 +103,24 @@ export default function BookHorse() {
           without the copy running to uncomfortable line lengths. */}
       <div className="container-site max-w-5xl">
 
-        {/* Step indicator */}
+        {/* Step indicator — reads the DERIVED list, so it can never claim a
+            page that will not be shown. */}
         <div className="mb-12">
           <ol className="flex items-center gap-3 mb-6">
             {STEPS.map((s, i) => (
-              <li key={i} className="flex items-center gap-3">
+              <li key={s.id} className="flex items-center gap-3">
                 <div
-                  aria-current={i === step ? 'step' : undefined}
-                  className={i < step ? 'step-complete' : i === step ? 'step-active' : 'step-inactive'}
+                  aria-current={i === current ? 'step' : undefined}
+                  className={i < current ? 'step-complete' : i === current ? 'step-active' : 'step-inactive'}
                 >
-                  {i < step ? <Check size={12} /> : i + 1}
+                  {i < current ? <Check size={12} /> : i + 1}
                 </div>
                 <span className={`text-xs font-sans tracking-wide hidden sm:block ${
-                  i === step ? 'text-green-800 font-medium' : 'text-muted'
+                  i === current ? 'text-green-800 font-medium' : 'text-muted'
                 }`}>
                   {s.label}
                 </span>
-                {i < STEPS.length - 1 && (
+                {i < total - 1 && (
                   <div className="w-8 h-px bg-green-800/15 hidden sm:block" />
                 )}
               </li>
@@ -104,10 +129,10 @@ export default function BookHorse() {
           <div className="rule-gold" />
         </div>
 
-        {/* Step 0: Select Services */}
-        {step === 0 && (
+        {/* Step 1: Select Services */}
+        {stage === 'select' && (
           <div>
-            <p className="eyebrow mb-3">Step 1 of 3</p>
+            <p className="eyebrow mb-3">Step 1 of {total}</p>
             <h1 className="heading-section text-green-800 mb-3">Horse Care Services</h1>
             <p className="body-text mb-10">
               Select the services you need for your horse. Each option can be combined — we will tailor further recommendations once we understand your situation.
@@ -127,16 +152,16 @@ export default function BookHorse() {
           </div>
         )}
 
-        {/* Step 1: the questions the CART implies.
+        {/* Step 2: the questions the CART implies.
             Until 2026-08-17 this step was two hardcoded blocks asking every
             horse-care buyer what was "bringing them to our horse care services"
             and for how many months — so someone booking a single clip was asked
             whether they were travelling or recovering from an injury. Those two
             blocks now live in the HORSE_EXERCISE set, weekly SKUs only, which is
             the only place they were ever true. */}
-        {step === 1 && (
+        {stage === 'questions' && (
           <div>
-            <p className="eyebrow mb-3">Step 2 of 3</p>
+            <p className="eyebrow mb-3">Step 2 of {total}</p>
             <h1 className="heading-section text-green-800 mb-3">Tell Us More</h1>
             <p className="body-text mb-10">
               A bit of context helps us ensure your horse is in the best possible hands.
@@ -146,17 +171,26 @@ export default function BookHorse() {
           </div>
         )}
 
-        {/* Step 2: Review */}
-        {step === 2 && (
+        {/* Step 3 (or 2): YOUR DETAILS — the submission page.
+            §C2's order is fixed: the selection summary, Continue Shopping, the
+            shared form, then the inquiryLabel() submit. The old Review screen is
+            gone; its summary is the block below.
+
+            ⚠️ The "That's everything we need for now. We'll be in touch…" line
+            that used to close this screen is DELETED. It was false the moment
+            the next screen asked for a name, an email and a phone number — and
+            there is no longer a next screen for it to be false about. */}
+        {stage === 'details' && (
           <div>
-            <p className="eyebrow mb-3">Step 3 of 3</p>
-            <h1 className="heading-section text-green-800 mb-3">Review Your Selection</h1>
+            <p className="eyebrow mb-3">Step {total} of {total}</p>
+            <h1 className="heading-section text-green-800 mb-3">Your Details</h1>
             <p className="body-text mb-8">
-              Here is what you have selected. When we speak, we will confirm scheduling and discuss anything else your horse may need.
+              Tell us who you are and we will call to talk through your horse's needs
+              and confirm scheduling.
             </p>
 
-            {/* Selected summary */}
-            <div className="bg-white border border-green-800/10 p-8 mb-8">
+            {/* 1 — the selection summary (the old Review screen's markup) */}
+            <div className="bg-white border border-green-800/10 p-8 mb-6">
               <p className="eyebrow mb-5">Your Selection</p>
               {state.items.length === 0 ? (
                 <p className="text-sm font-sans text-muted italic">No services selected yet.</p>
@@ -174,47 +208,65 @@ export default function BookHorse() {
                   ))}
                 </div>
               )}
+
+              {/* 2 — Continue Shopping. Secondary styling: the primary path on
+                  this page is the submit, and there must be exactly one of
+                  those. The cart survives the jump (§C3). */}
+              <div className="mt-6 pt-6 border-t border-green-800/[0.08]">
+                <button
+                  type="button"
+                  className="btn-outline-gold text-sm"
+                  onClick={() => setShopOpen(true)}
+                >
+                  Continue Shopping
+                </button>
+                <p className="text-xs font-sans text-muted mt-2">
+                  Add lessons or acquisition services — your selections stay in your inquiry.
+                </p>
+              </div>
             </div>
 
-            {/*
-              Per ux-synthesis gating: the horse-care funnel carries NO cross-sells.
-              An owner who needs care already knows what she wants; surfacing lessons or
-              support here is premature and clutters the review. Anything else relevant
-              is raised on the call.
-            */}
-            <p className="text-sm font-sans text-muted italic">
-              That's everything we need for now. We'll be in touch to confirm scheduling and
-              discuss how your horse is doing.
-            </p>
+            {/* 3 + 4 — the ONE shared form, and its inquiryLabel() submit. */}
+            <InquiryForm onSubmitted={() => navigate('/confirmation')} />
           </div>
         )}
 
-        {/* Navigation */}
-        <div className="flex items-center justify-between mt-12 pt-8 border-t border-green-800/10">
+        {/* Navigation. §C1b: the back control reads "Back" on every step past
+            the first — "Previous" appears nowhere in this funnel. The forward
+            button lives here only while there IS a next page; on the submission
+            page the form's own submit is the single way forward, so no
+            competing primary is rendered. */}
+        <div className={`flex items-center justify-between mt-12 pt-8 border-t border-green-800/10 ${
+          stage === 'details' ? 'justify-start' : ''
+        }`}>
           <button
             type="button"
             onClick={handleBack}
             className="inline-flex items-center gap-2 text-sm font-sans text-secondary hover:text-green-800 transition-colors focus-ring"
           >
             <ArrowLeft size={16} />
-            {step === 0 ? 'Back to Services' : 'Previous'}
+            {current === 0 ? 'Back to Services' : 'Back'}
           </button>
 
-          <button
-            type="button"
-            onClick={handleNext}
-            // Nothing on the questions step is required (§A5): these shape the
-            // conversation, they do not qualify anyone, and a required answer
-            // blocks a sale.
-            disabled={step === 0 ? !canProceedStep0 : false}
-            className="btn-primary"
-          >
-            {step === STEPS.length - 1 ? 'Continue to Submit Inquiry' : 'Continue'}
-            <ArrowRight size={16} />
-          </button>
+          {stage !== 'details' && (
+            <button
+              type="button"
+              onClick={handleNext}
+              // Nothing on the questions step is required (§A5): these shape the
+              // conversation, they do not qualify anyone, and a required answer
+              // blocks a sale.
+              disabled={current === 0 ? !canProceedStep0 : false}
+              className="btn-primary"
+            >
+              {/* §C2/§A6: the questions page's forward button names the page it
+                  actually leads to. */}
+              {stage === 'questions' ? 'Continue to Submit Inquiry' : 'Continue'}
+              <ArrowRight size={16} />
+            </button>
+          )}
         </div>
 
-        {step === 0 && !canProceedStep0 && (
+        {stage === 'select' && !canProceedStep0 && (
           <p className="text-xs font-sans text-center text-muted mt-3">
             Select at least one service to continue.
           </p>
@@ -222,10 +274,13 @@ export default function BookHorse() {
       </div>
     </div>
 
-    {/* Floating selection bar — step 0 only, where the choosing happens. It
+    {/* Floating selection bar — step 1 only, where the choosing happens. It
         calls handleNext, the SAME handler the page's own Continue button uses,
-        so there is one path forward, not two. */}
-    {step === 0 && <SelectionBar onContinue={handleNext} disabled={!canProceedStep0} />}
+        so there is one path forward, not two. §C2 requires it NOT to present a
+        competing path on the submission page, and it does not render there. */}
+    {stage === 'select' && <SelectionBar onContinue={handleNext} disabled={!canProceedStep0} />}
+
+    <ContinueShoppingModal open={shopOpen} onClose={() => setShopOpen(false)} />
     </>
   );
 }

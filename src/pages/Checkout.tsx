@@ -1,34 +1,30 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, X } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
-import type { ContactMethod } from '../lib/supabase';
-import { submitRequest, createDraftOrder } from '../lib/api';
+import { createDraftOrder } from '../lib/api';
 import { ensureHorseDocuments } from '../lib/horses';
 import { HorseCareSelect } from '../components/app/HorseCareSelect';
-import { fetchIntakeRequirements } from '../lib/ops/api-public';
-import type { RequestCategory } from '../lib/types';
+import InquiryForm from '../components/InquiryForm';
+import ContinueShoppingModal from '../components/ContinueShoppingModal';
 import { formatPrice } from '../lib/pricing';
-import { inquiryLabel, hasLessonItem } from '../lib/inquiry';
-import { buildSubmission } from '../lib/questionSets';
-import {
-  EXPERIENCE_OPTIONS,
-  availabilityEntries,
-  availabilityText,
-  type AvailabilitySelection,
-  type ExperienceValue,
-} from '../lib/availability';
-import AvailabilityPicker, { useAvailabilityPicker } from '../components/AvailabilityPicker';
 import { useDocumentTitle } from '../lib/hooks';
 
-interface FormState {
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone: string;
-  notes: string;
-}
+/**
+ * THE SUBMISSION PAGE, AS A ROUTE.
+ *
+ * CAREPATH §C2 moved the horse-care funnel's submission page IN-PAGE (BookHorse
+ * step 3), because sending that visitor to a fourth screen was the confusion the
+ * owner named. `/checkout` stays put for the lessons and acquisition funnels,
+ * and renders the SAME `InquiryForm` component — it is the ROUTE that differs,
+ * never the form. There is one form component and one submit path in the
+ * product; see `components/InquiryForm.tsx`.
+ *
+ * What lives here and NOT in the shared form: the signed-in member's purchase
+ * branch (a member does not send an inquiry — they open a draft order and go to
+ * the order hub) and the cart summary rail.
+ */
 
 const FUNNEL_LABELS: Record<string, string> = {
   rider: 'Rider Services',
@@ -43,115 +39,21 @@ const FUNNEL_BACK: Record<string, string> = {
   support: '/acquisition',
 };
 
-const CONTACT_OPTIONS: { value: ContactMethod; label: string }[] = [
-  { value: 'text', label: 'Text' },
-  { value: 'call', label: 'Call' },
-  { value: 'email', label: 'Email' },
-];
-
-/** `requests.notes` carries a 4000-character CHECK constraint server-side, and
- *  the notes now hold the visitor's own note, their page-2 answers and (for
- *  lessons) their availability. Capping here turns a would-be RPC exception —
- *  raised after they pressed submit, losing the inquiry — into a slightly
- *  shortened note. The structured copy in `requests.details` is never truncated
- *  by this. */
-function capNotes(text: string): string {
-  const MAX = 3900;
-  return text.length <= MAX ? text : `${text.slice(0, MAX)}\n…(truncated)`;
-}
-
 const usd = (n: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(n);
 
 export default function Checkout() {
   useDocumentTitle('Send an Inquiry');
   const { state, removeItem, subtotal, clearCart, inquirySummary, setItemConfig } = useCart();
-  // Warm, category-aware label for the submit action + heading, personalized to
-  // what the visitor actually chose (never "cart"/"selection"). See lib/inquiry.
-  const inquiryCta = inquiryLabel(state.items);
   const { user } = useAuth();
   const navigate = useNavigate();
   // Horse-care purchases require choosing the horse(s) so each has a Care Release.
   const isHorseCare = state.funnel === 'horse';
-  /**
-   * ASKRIGHT §A0/§A6b — THE ONE FORM, CONFIGURED BY THE CART.
-   *
-   * There is exactly one form page in every flow and exactly one form
-   * component; "which form" is a configuration of it, derived from what is in
-   * the cart rather than from which funnel the visitor came through. Name,
-   * email, phone, contact method and notes are always shown. The availability
-   * ranges and the riding-experience question appear when a LESSON is in the
-   * cart, because lessons are the only thing a client can propose times for —
-   * owner, 2026-08-16: "the only flow with a date selection portion is the
-   * lessons page. and that is by design." Staff set horse-care times on the
-   * call, so the client is never asked for a date they cannot know is free.
-   *
-   * A mixed cart shows the UNION: a lesson plus horse care gets the
-   * availability block, because a lesson is present. It is not either/or.
-   */
-  const showLessonFields = hasLessonItem(state.items);
   const [careHorses, setCareHorses] = useState<string[]>([]);
-  const [form, setForm] = useState<FormState>({
-    first_name: '',
-    last_name: '',
-    email: '',
-    phone: '',
-    notes: '',
-  });
-  const [contactMethod, setContactMethod] = useState<ContactMethod>('text');
-  const [experience, setExperience] = useState<ExperienceValue | null>(null);
-  // Availability — shared picker state (weeks / days / AM-PM), extracted so
-  // the member "book more" page (Flow D) collects the identical structure.
-  const picker = useAvailabilityPicker();
-  const [errors, setErrors] = useState<Partial<FormState>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  // Which extra fields a booking submission requires is owner-configured
-  // (intake_requirements, channel='booking') — read it so this form enforces
-  // the same rules the unified public form does.
-  const [bookingReq, setBookingReq] = useState<Record<string, boolean>>({ phone: true });
-  useEffect(() => {
-    let active = true;
-    fetchIntakeRequirements('booking')
-      .then((r) => active && setBookingReq(r))
-      .catch(() => {});
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  function buildAvailability(): AvailabilitySelection {
-    return { ...picker.buildSelection(), ridingExperience: experience };
-  }
-
-  const firstNameRef = useRef<HTMLInputElement>(null);
-  const emailRef = useRef<HTMLInputElement>(null);
-  const phoneRef = useRef<HTMLInputElement>(null);
+  const [shopOpen, setShopOpen] = useState(false);
   const errorBannerRef = useRef<HTMLDivElement>(null);
-
-  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-    if (errors[name as keyof FormState]) {
-      setErrors((prev) => ({ ...prev, [name]: undefined }));
-    }
-  }
-
-  function validate(): Partial<FormState> {
-    const newErrors: Partial<FormState> = {};
-    if (!form.first_name.trim()) newErrors.first_name = 'First name is required';
-    if (!form.last_name.trim()) newErrors.last_name = 'Last name is required';
-    if (!form.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      newErrors.email = 'Please enter a valid email';
-    }
-    // phone + message are required only when the owner configured them for the
-    // booking channel (base fields above are always required).
-    if (bookingReq.phone && !form.phone.trim()) newErrors.phone = 'Phone number is required';
-    if (bookingReq.message && !form.notes.trim()) newErrors.notes = 'Please add a note';
-    return newErrors;
-  }
 
   // Authenticated, invited members advance into the purchase flow instead of
   // sending a request: a draft order is created and they go to the order hub
@@ -197,102 +99,6 @@ export default function Checkout() {
     }
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    // Signed-in member → purchase flow (no request form needed).
-    if (user) {
-      await handleStartPurchase();
-      return;
-    }
-    const newErrors = validate();
-    setErrors(newErrors);
-    if (Object.keys(newErrors).length > 0) {
-      // Move focus to the first errored field so keyboard/SR users are oriented.
-      if (newErrors.first_name) firstNameRef.current?.focus();
-      else if (newErrors.email) emailRef.current?.focus();
-      else if (newErrors.phone) phoneRef.current?.focus();
-      return;
-    }
-    // Owner-configured booking requirements for the structured fields this page
-    // owns (availability + rider experience).
-    const avail = buildAvailability();
-    const hasAvailability =
-      avail.weeks.length > 0 || avail.anyDay || avail.days.length > 0 ||
-      avail.prefs.weekdayAm || avail.prefs.weekdayPm || avail.prefs.weekendAm || avail.prefs.weekendPm;
-    if (showLessonFields && bookingReq.availability && !hasAvailability) {
-      setSubmitError('Please share when you’re available.');
-      requestAnimationFrame(() => errorBannerRef.current?.focus());
-      return;
-    }
-    if (showLessonFields && bookingReq.experience && !experience) {
-      setSubmitError('Please tell us the rider’s experience level.');
-      requestAnimationFrame(() => errorBannerRef.current?.focus());
-      return;
-    }
-    if (state.items.length === 0) return;
-
-    setSubmitting(true);
-    setSubmitError(null);
-
-    try {
-      // Structured availability travels twice: as JSON in the proposed_times
-      // jsonb column AND as a clean human-readable block appended to the notes.
-      const availability = buildAvailability();
-      const availabilityBlock = showLessonFields ? availabilityText(availability) : '';
-      // ASKRIGHT §A5 — the page-2 answers, for the offerings STILL in the cart.
-      // They travel twice, exactly as availability already does: structured into
-      // `requests.details` through the RPC's existing p_details jsonb, and as
-      // ordered prose appended to the notes. Both are needed — jsonb does not
-      // preserve key order, and the notes block is where staff read the answers
-      // in the order they were asked.
-      const submission = buildSubmission(state.items, state.qualifierAnswers, state.answerOrigins);
-      const combinedNotes = capNotes([
-        form.notes.trim(),
-        submission.notesBlock ? `— Your answers —\n${submission.notesBlock}` : '',
-        availabilityBlock ? `— Availability & experience —\n${availabilityBlock}` : '',
-      ].filter(Boolean).join('\n\n'));
-      // Primary: write a structured request + selections (architecture-flow-spec).
-      // Cart checkout is the 'booking' channel with purchase intent; the category
-      // follows the cart's funnel.
-      const funnelCategory: RequestCategory =
-        state.funnel === 'horse' ? 'horse_care' : state.funnel === 'support' ? 'acquisition' : 'lessons';
-      await submitRequest(
-        {
-          first_name: form.first_name.trim(),
-          last_name: form.last_name.trim(),
-          contact_email: form.email.trim(),
-          contact_phone: form.phone.trim(),
-          contact_method: contactMethod,
-          proposed_times: showLessonFields ? availabilityEntries(availability) : [],
-          notes: combinedNotes || undefined,
-          details: submission.details,
-          category: funnelCategory,
-          channel: 'booking',
-          entry_location: 'checkout',
-          intent: 'purchase',
-        },
-        state.items.map((i) => ({
-          offering_slug: i.offeringId,
-          label: i.offeringName,
-        })),
-      );
-
-      // Remember the chosen contact method for the confirmation copy.
-      try {
-        window.sessionStorage.setItem('fhe-contact-method', contactMethod);
-      } catch { /* ignore */ }
-      clearCart();
-      navigate('/confirmation');
-    } catch (err) {
-      console.error(err);
-      setSubmitError('Something went wrong sending your booking request. Please try again or reach us directly.');
-      // Announce + focus the banner.
-      requestAnimationFrame(() => errorBannerRef.current?.focus());
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
   // If cart is empty and no funnel, redirect
   if (state.items.length === 0 && !state.funnel) {
     return (
@@ -315,8 +121,6 @@ export default function Checkout() {
       </div>
     );
   }
-
-  const hasErrors = Object.keys(errors).length > 0;
 
   return (
     <div className="min-h-screen bg-cream pt-24 pb-20">
@@ -350,7 +154,7 @@ export default function Checkout() {
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-10 lg:gap-14">
 
-          {/* ── Left: member purchase panel OR guest contact form ── */}
+          {/* ── Left: member purchase panel OR the one shared inquiry form ── */}
           <div className="lg:col-span-3">
             {user ? (
               <div className="bg-white border border-green-800/10 p-8">
@@ -381,208 +185,18 @@ export default function Checkout() {
                 </button>
               </div>
             ) : (
-            <form onSubmit={handleSubmit} noValidate>
-              <p className="text-xs font-sans text-muted mb-4">Fields marked * are required.</p>
-              <div className="bg-white border border-green-800/10 p-8 mb-6">
-                <h2 className="font-serif font-medium text-green-800 text-xl mb-6">Your Information</h2>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  {/* First name */}
-                  <div>
-                    <label className="form-label" htmlFor="first_name">First Name *</label>
-                    <input
-                      ref={firstNameRef}
-                      id="first_name"
-                      name="first_name"
-                      type="text"
-                      required
-                      value={form.first_name}
-                      onChange={handleChange}
-                      aria-invalid={!!errors.first_name}
-                      aria-describedby={errors.first_name ? 'first_name-error' : undefined}
-                      className={`form-input ${errors.first_name ? 'form-input-error' : ''}`}
-                      placeholder="First name"
-                      autoComplete="given-name"
-                    />
-                    {errors.first_name && (
-                      <p id="first_name-error" className="form-error">{errors.first_name}</p>
-                    )}
-                  </div>
-
-                  {/* Last name */}
-                  <div>
-                    <label className="form-label" htmlFor="last_name">Last Name *</label>
-                    <input
-                      id="last_name"
-                      name="last_name"
-                      type="text"
-                      value={form.last_name}
-                      onChange={handleChange}
-                      aria-invalid={!!errors.last_name}
-                      aria-describedby={errors.last_name ? 'last_name-error' : undefined}
-                      className={`form-input ${errors.last_name ? 'form-input-error' : ''}`}
-                      placeholder="Last name"
-                      autoComplete="family-name"
-                    />
-                    {errors.last_name && (
-                      <p id="last_name-error" className="form-error">{errors.last_name}</p>
-                    )}
-                  </div>
-
-                  {/* Email */}
-                  <div>
-                    <label className="form-label" htmlFor="email">Email Address *</label>
-                    <input
-                      ref={emailRef}
-                      id="email"
-                      name="email"
-                      type="email"
-                      required
-                      value={form.email}
-                      onChange={handleChange}
-                      aria-invalid={!!errors.email}
-                      aria-describedby={errors.email ? 'email-error' : undefined}
-                      className={`form-input ${errors.email ? 'form-input-error' : ''}`}
-                      placeholder="your@email.com"
-                      autoComplete="email"
-                    />
-                    {errors.email && (
-                      <p id="email-error" className="form-error">{errors.email}</p>
-                    )}
-                  </div>
-
-                  {/* Phone */}
-                  <div>
-                    <label className="form-label" htmlFor="phone">Phone Number *</label>
-                    <input
-                      ref={phoneRef}
-                      id="phone"
-                      name="phone"
-                      type="tel"
-                      required
-                      value={form.phone}
-                      onChange={handleChange}
-                      aria-invalid={!!errors.phone}
-                      aria-describedby={errors.phone ? 'phone-error' : undefined}
-                      className={`form-input ${errors.phone ? 'form-input-error' : ''}`}
-                      placeholder="858-555-0000"
-                      autoComplete="tel"
-                    />
-                    {errors.phone && (
-                      <p id="phone-error" className="form-error">{errors.phone}</p>
-                    )}
-                  </div>
+              <>
+                {/* §C3 — the same Continue Shopping control the horse-care
+                    submission page carries, so a lessons or acquisition visitor
+                    can build a mixed cart from here too. Secondary styling: the
+                    form's submit is the only primary on this page. */}
+                <div className="mb-6">
+                  <button type="button" className="btn-outline-gold text-sm" onClick={() => setShopOpen(true)}>
+                    Continue Shopping
+                  </button>
                 </div>
-
-                {/* Preferred contact method */}
-                <fieldset className="mt-6">
-                  <legend className="form-label mb-2">How should we reach you?</legend>
-                  <div role="radiogroup" aria-label="Preferred contact method" className="grid grid-cols-3 gap-3">
-                    {CONTACT_OPTIONS.map((opt) => {
-                      const selected = contactMethod === opt.value;
-                      return (
-                        <button
-                          key={opt.value}
-                          type="button"
-                          role="radio"
-                          aria-checked={selected}
-                          onClick={() => setContactMethod(opt.value)}
-                          className={`py-3 px-4 border text-sm font-sans text-center transition-all duration-200 focus-ring ${
-                            selected
-                              ? 'border-green-800 bg-green-800/5 text-green-900 font-medium'
-                              : 'border-green-800/15 bg-white text-secondary hover:border-green-800/40'
-                          }`}
-                        >
-                          {opt.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </fieldset>
-
-                {/* Riding experience — single-select, in YEARS. A DIFFERENT
-                    FACT from the acquisition sets' "Which best matches your
-                    equestrian experience?", which is about owning horses: a
-                    lesson-plus-evaluation order legitimately answers both, and
-                    the two are never merged or deduped. */}
-                {showLessonFields && (
-                <fieldset className="mt-6">
-                  <legend className="form-label mb-2">Riding experience (years)</legend>
-                  <div role="radiogroup" aria-label="Riding experience in years" className="grid grid-cols-5 gap-2 sm:gap-3">
-                    {EXPERIENCE_OPTIONS.map((opt) => {
-                      const selected = experience === opt.value;
-                      return (
-                        <button
-                          key={opt.value}
-                          type="button"
-                          role="radio"
-                          aria-checked={selected}
-                          onClick={() => setExperience(opt.value)}
-                          className={`py-3 px-2 border text-sm font-sans text-center transition-all duration-200 focus-ring ${
-                            selected
-                              ? 'border-green-800 bg-green-800/5 text-green-900 font-medium'
-                              : 'border-green-800/15 bg-white text-secondary hover:border-green-800/40'
-                          }`}
-                        >
-                          {opt.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </fieldset>
-                )}
-
-                {/* Availability — shared picker (weeks / days / AM-PM).
-                    RANGES, never a date picker: the visitor describes when they
-                    are free and staff choose the actual time on the call. */}
-                {showLessonFields && <AvailabilityPicker picker={picker} />}
-
-                {/* Notes */}
-                <div className="mt-5">
-                  <label className="form-label" htmlFor="notes">
-                    Anything you would like us to know?
-                  </label>
-                  <textarea
-                    id="notes"
-                    name="notes"
-                    value={form.notes}
-                    onChange={handleChange}
-                    rows={4}
-                    className="form-input resize-none"
-                    placeholder="Where you are in your riding, what you are hoping for, any questions at all…"
-                  />
-                </div>
-              </div>
-
-              {/* Validation summary (announced) */}
-              <div aria-live="assertive" role={hasErrors ? 'alert' : undefined}>
-                {hasErrors && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 text-sm font-sans px-5 py-3 mb-6">
-                    Please correct the highlighted fields above.
-                  </div>
-                )}
-              </div>
-
-              {submitError && (
-                <div
-                  ref={errorBannerRef}
-                  tabIndex={-1}
-                  role="alert"
-                  className="bg-red-50 border border-red-200 text-red-700 text-sm font-sans px-5 py-4 mb-6 focus:outline-none"
-                >
-                  {submitError}
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={submitting || state.items.length === 0}
-                className="btn-primary w-full justify-center"
-              >
-                {submitting ? 'Sending…' : inquiryCta}
-                {!submitting && <ArrowRight size={16} />}
-              </button>
-            </form>
+                <InquiryForm onSubmitted={() => navigate('/confirmation')} />
+              </>
             )}
           </div>
 
@@ -680,6 +294,8 @@ export default function Checkout() {
 
         </div>
       </div>
+
+      <ContinueShoppingModal open={shopOpen} onClose={() => setShopOpen(false)} />
     </div>
   );
 }

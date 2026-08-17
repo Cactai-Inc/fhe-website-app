@@ -59,10 +59,17 @@ export async function fetchServiceCategories(): Promise<ServiceCategory[]> {
 
 // ─── Unauthenticated request flow ───────────────────────────────────────────
 
+/** CAREPATH §C6/§C6b — what the two inquiry emails actually did.
+ *  `null` = the attempt has not reported yet. NEVER assume success. */
+export interface InquirySendOutcome {
+  staff: boolean | null;
+  buyer: boolean | null;
+}
+
 export async function submitRequest(
   input: RequestInput,
   selections: RequestSelectionInput[],
-): Promise<{ requestId: string }> {
+): Promise<{ requestId: string; sends: Promise<InquirySendOutcome> }> {
   // Routed through the SECURITY DEFINER submit_public_request RPC: a raw anon
   // insert into requests/request_selections fails the RESTRICTIVE org_boundary
   // RLS (org_id resolves NULL for an anon browser), and a function-based column
@@ -90,43 +97,70 @@ export async function submitRequest(
   });
   if (error) throw error;
   const requestId = (data as { request_id: string }).request_id;
-  alertOpsInbox(requestId);
-  return { requestId };
+  return { requestId, sends: dispatchInquiryEmails(requestId) };
 }
 
 /**
- * INBOUNDALERT — tell the barn by email that a lead just came in.
+ * CAREPATH §C6 — BOTH inquiry emails, dispatched together, each reporting what
+ * it actually did.
  *
- * THIS LIVES HERE, NOT AT A CALL SITE, BECAUSE THAT IS THE DEFECT IT FIXES.
- * `/api/request-received` has existed since TASK B and was rewritten by
- * INQUIRYMAIL, but its only caller was `PublicIntakeForm` (the /contact page).
- * Every real lead in production arrived through Checkout (`channel:'booking'`)
- * or the kiosk (`channel:'kiosk'`) — 13 of 13 — so the alert email was never
- * once attempted for a real person. Kit Garcin and Kylie Pinion were both
- * checkout submissions. Hanging the dispatch off `submitRequest`, the single
- * RPC wrapper all three intake paths already go through, means a new intake
- * surface cannot be added without it.
+ * The staff alert has fired from here since INBOUNDALERT; the buyer's own copy
+ * of what they submitted is new (§C6: *"the submitter should get an email with
+ * the information they sent us"*). Neither is awaited by the caller's critical
+ * path — the request row is already written and the visitor must never wait on
+ * a mail provider — but the returned promise carries the real outcome so §C6b's
+ * confirmation screen can say what happened instead of assuming it.
  *
- * Fire-and-forget BY DESIGN: a mail outage must never cost a lead, and the
- * request row is already written and already carries the in-app staff
- * notification by the time this runs. But un-awaited is not unrecorded — the
- * endpoint writes a `request_alert_sends` row for every attempt, and a request
- * with no row at all shows on the dashboard as never-attempted.
- *
- * `keepalive: true` is the fix for the abort suspect: without it, a browser is
- * free to cancel an in-flight fetch when the page navigates or unmounts right
- * after submit, which is exactly what a confirmation screen does. With it, the
- * request survives page teardown (the body is a single id, far under the 64KB
- * keepalive limit).
+ * ⚠️ Both endpoints write a per-attempt row server-side (`request_alert_sends`,
+ * discriminated by `kind`). THAT is the durable record; this promise is only
+ * what to tell the person who is still on the page. Two real leads were lost to
+ * a fire-and-forget send that could not report failure.
  */
-function alertOpsInbox(requestId: string): void {
-  void fetch('/api/request-received', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ requestId }),
-    keepalive: true,
-  }).catch(() => { /* delivery is best-effort; the request is already saved */ });
+function dispatchInquiryEmails(requestId: string): Promise<InquirySendOutcome> {
+  return Promise.all([
+    postSend('/api/request-received', requestId),
+    postSend('/api/inquiry-confirmation', requestId),
+  ]).then(([staff, buyer]) => ({ staff, buyer }));
 }
+
+/** POST one send endpoint and report its own answer. `null` on any transport
+ *  failure — "we could not confirm", which is not the same as "it failed", and
+ *  is never the same as "it worked".
+ *
+ *  `keepalive: true` is the fix for the abort suspect: without it, a browser is
+ *  free to cancel an in-flight fetch when the page navigates right after
+ *  submit, which is exactly what a confirmation screen does. */
+async function postSend(url: string, requestId: string): Promise<boolean | null> {
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requestId }),
+      keepalive: true,
+    });
+    if (!res.ok) return null;
+    const body = (await res.json()) as { emailed?: boolean };
+    return typeof body.emailed === 'boolean' ? body.emailed : null;
+  } catch {
+    return null;
+  }
+}
+
+/* INBOUNDALERT's `alertOpsInbox` lived here and is now `dispatchInquiryEmails`
+ * above. THE REASON IT LIVES IN THIS FILE IS UNCHANGED AND STILL THE POINT:
+ * `/api/request-received` has existed since TASK B, but its only caller was
+ * `PublicIntakeForm` (the /contact page), while every real lead arrived through
+ * Checkout or the kiosk — 13 of 13 — so the alert was never once attempted for
+ * a real person. Hanging the dispatch off `submitRequest`, the single RPC
+ * wrapper all three intake paths share, means a new intake surface cannot be
+ * added without it. The buyer's confirmation now rides the same seam for the
+ * same reason.
+ *
+ * What changed: the dispatch is no longer fire-and-FORGET, only
+ * fire-and-DON'T-BLOCK. The caller's critical path never waits on a mail
+ * provider, but the outcome is now returned so §C6b's confirmation screen can
+ * report it instead of assuming it.
+ */
 
 // ─── Invitations ────────────────────────────────────────────────────────────
 
