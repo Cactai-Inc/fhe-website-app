@@ -102,27 +102,27 @@ Saturday + Sunday selected, in a month with 5 Sundays and 4 Saturdays
 ```
 
 **What this means for the build:**
-- **`rate × periods` computes an ALLOWANCE, not a timetable.** Sum the occurrences of *each* selected
-  weekday in the month — 5 + 4 = 9 — and mint that many credits for the month.
-- **Booking is then ordinary credit redemption.** The cap enforces itself: no credit, no booking.
-  **Do not add a second "days per week" check** — that would re-impose the very restriction the owner
-  is removing.
-- **Moving a booking must not change the allowance.** Cancel returns the credit, rebook consumes it.
-  The month's total is fixed the moment it is minted.
+- **`rate × periods` computes HOW MANY BOOKINGS TO GENERATE** — sum the occurrences of *each* selected
+  weekday in the month, 5 + 4 = 9. ⚠️ **It does NOT mint 9 credits; see the mechanism below.**
+- **The client may then move any of those 9 to any date.** **Do not add a "days per week" check** —
+  that would re-impose the very restriction the owner is removing.
+- **The month's total can never grow**, however many times a lesson is moved.
 
 ⚠️ **`generate_monthly_lessons` IS THE PROBLEM, and it must change.** Measured: it reads a single
 `config.recurring_day`, loops the month with `CONTINUE WHEN to_char(d,'Dy') <> v_day`, **inserts a
 booking for every occurrence and debits a credit each time.** That is a schedule lock — precisely
 what this ruling forbids.
 
-### ⚠️ THE MECHANISM — OWNER-RULED 2026-08-17. Generation stays.
+### ⚠️ THE MECHANISM — OWNER-RULED 2026-08-17. **THIS IS THE FINAL SHAPE.**
 > *"it needs to mint the credits based on the applied bookings that auto generate, and then the
 > rescheduling adds a credit back temporarily until its rebooked."*
-
-⚠️ **REFINED BY THE OWNER, 2026-08-17 — THIS IS THE FINAL SHAPE. It is simpler than "mint 9 credits".**
+>
 > *"so the month starts with applied bookings auto generated and NO CREDITS. if they cancel a booking
 > they get a credit that expires at the end of the month. they can reschedule it at any time until
 > then."*
+
+**Read the second quote as governing.** An earlier orchestrator draft had the month opening with 9
+bookings **and** 9 credits held against them; that is **wrong** and simply doubles the bookkeeping.
 
 **THE BOOKINGS ARE THE ENTITLEMENT. A CREDIT IS ONLY EVER THE RESIDUE OF A CANCELLATION.**
 
