@@ -298,7 +298,11 @@ export default function Story() {
           scroll-mt-24 added another 96px on top — so the browser stopped ~224px
           short of the section's real top edge. The section's padding already
           clears the fixed nav, so the offset is removed rather than reduced. */}
-      <section id="beyond-the-arena" className="bg-cream">
+      {/* scroll-mt -10px (owner, 2026-08-16: "move the scroll point up another
+          10px"). A NEGATIVE scroll-margin moves only where the browser stops on
+          a jump — the section's own padding, and everything visible, is
+          untouched. Changing the padding instead would have moved the content. */}
+      <section id="beyond-the-arena" className="bg-cream scroll-mt-[-10px]">
         {/* pt-32/40 → pt-28/36 (owner, 2026-08-16: reduce the top padding by
             ~15px). 128→112px, and 160→144px on desktop; Tailwind's scale steps
             in 16px, which is the nearest available move. */}
