@@ -1,4 +1,32 @@
-# TASK HARVESTCLOSE — finish the flag harvest, cheaply, and hand back a ranked defect queue
+# TASK HARVESTCLOSE — reconcile every flagged item, machine-close what is dead, hand the owner a decision sheet
+
+## WHY THIS EXISTS — the owner's own statement of the goal (2026-08-16)
+
+> *"the entire reason that thread was made was to review everything every thread has reported as
+> remaining, unresolved, needing further study, being an issue, or for some reason flagged. the goal
+> of the thread was to reconcile all 975 items to deduplicate, then review the remaining against the
+> latest code and remove any already resolved or superseded/no longer relevant. the remaining items
+> are the ones to review manually to keep or remove and the final list of kept items will go into
+> the to-do list queue."*
+
+**The pipeline, in his words:**
+
+```
+975 flagged items  →  DEDUPLICATE  →  machine-close what the code says is
+   (all 104 reports)   (all of them,     already resolved / superseded /
+                        one family list)  no longer relevant
+                                              ↓
+                              WHAT SURVIVES = the owner's manual
+                              keep-or-remove pass  ← THIS TASK'S DELIVERABLE
+                                              ↓
+                              what he KEEPS becomes the to-do queue
+```
+
+⚠️ **You are producing the sheet he makes that pass on — you are NOT producing the to-do list.**
+Nothing becomes a to-do until the owner keeps it. **Do not pre-decide what stays**, and do not
+quietly drop an item because it looks minor: **your only licence to remove something is factual
+evidence that it is resolved, superseded, or no longer relevant.** Everything else survives to his
+pass, however small.
 
 **RUN WITH: Opus 5 · thinking ON · effort HIGH. ONE thread. NO subagents — that is not a style
 preference, it is the rule that was broken last time and it cost the owner ~$50 and a 5-hour
@@ -70,14 +98,25 @@ Build these once, in memory, and reuse for every judgement afterwards:
 2. **The migration filename list** (`supabase/migrations/`), which is dated and task-named.
 3. **The 11 merged task reports** named above — each states what it fixed. **Read each once.**
 
-## Phase 2 — dedupe ACROSS slices before verifying anything
-`verified-UI.md` and `verified-IDENTITY.md` **already list ~25 cross-slice duplicates** in their
-summaries (UI-24 ↔ identity spine; UI-39/40 ↔ DB-MISC; ID-33/61/58/63/72 ↔ SEC; ID-66→74 ↔
-DB-MISC; ID-94/95/96/98 ↔ DOCFLOW, and more).
+## Phase 2 — RECONCILE ALL 975 INTO ONE FAMILY LIST, before verifying anything
+**This is the owner's "reconcile all 975 items to deduplicate" step, and it is the whole spine of
+the task.** Deduplication happens in **both** directions:
 
-- **Build ONE cross-slice family list first.** A fact verified once is verified for every slice it
-  appears in. **Verifying the same fact three times is the exact waste this task exists to avoid.**
-- Merge only same-fact items; similar is not same.
+- **WITHIN each of the six unverified slices** — the same finding recurs across reports in different
+  wording. (This step is already done for UI, 72→51, and IDENTITY, 109→99. **The six others have
+  never had it.**)
+- **ACROSS all eight slices** — `verified-UI.md` and `verified-IDENTITY.md` already name ~25
+  cross-slice duplicates in their summaries (UI-24 ↔ identity spine; UI-39/40 ↔ DB-MISC;
+  ID-33/61/58/63/72 ↔ SEC; ID-66→74 ↔ DB-MISC; ID-94/95/96/98 ↔ DOCFLOW, and more).
+
+**The product of this phase is ONE numbered family list covering all 975 items** — not eight slice
+lists. A fact verified once is verified everywhere it appears; **verifying the same fact three times
+is the exact waste this task exists to avoid.**
+
+- Merge only **same-fact** items. Similar is not same.
+- **Every source report stays listed on the family** — that is how the owner sees an item raised
+  five separate times and judges it accordingly.
+- **State the collapse:** 975 raw → N families.
 
 ## Phase 3 — bulk-close from Phase 1 evidence, no code reading
 Sweep **all 914 families** (794 new + 120 previously-open) against the commit log, migration list
@@ -100,25 +139,47 @@ Only for what survives Phase 3.
 
 ---
 
-# THE OUTPUT — a queue the owner can act on, not a report to admire
+# THE OUTPUT — TWO FILES
 
-**`docs/reports/flagharvest-work/QUEUE.md`** — every surviving family, **ranked**, using the
-existing cost-rank scale:
+## 1. `docs/reports/flagharvest-work/DECIDE.md` — **the deliverable.** The owner's keep/remove sheet.
 
-> **1** live defect · **2** security / data-integrity · **3** blocking or owner-decision-owed ·
-> **4** unviewed inventory · **5** correctness / consistency · **6** cosmetic / cleanup
+**Everything that survived machine-closing, and nothing else.** Optimised for one thing: the owner
+going down the list saying *keep* or *remove* **without opening a single file.**
 
-Each entry keeps the established format: `item · sources · raised · status · evidence ·
-decision-note · recommendation`.
+**Format — one block per family, tight enough to judge at a glance:**
 
-**Lead the queue with a one-screen summary:** how many families, the status split, and **the
-rank-1 and rank-2 items listed by title** — that is the part the owner will act on first.
+```
+### <NN>. <plain-language title>
+what:     <ONE sentence a non-developer can act on — no jargon, no file paths in this line>
+where:    <surface or area — "Clients page", "booking emails", "horse records">
+raised:   <N reports, earliest date>  ·  sources: <report files>
+checked:  <what you verified and what you found — file:line or SQL + result>
+rank:     <1–6>
+if kept:  <what doing it would involve, one line>
+```
+
+- **Group by rank**, most severe first: **1** live defect · **2** security / data-integrity ·
+  **3** blocking or owner-decision-owed · **4** unviewed inventory · **5** correctness /
+  consistency · **6** cosmetic / cleanup.
+- **`what:` is the line the decision gets made on.** Write it for the owner, not for a developer.
+  An item he cannot understand in one read is an item he cannot decide on.
+- **Raised-five-times is a signal** — surface the count, it tells him what kept coming back.
+- **No recommendations to keep or drop.** State the facts; the pass is his.
+
+**Head the file with a one-screen summary:** 975 raw → N families → M machine-closed → **K awaiting
+his decision**, the rank split of those K, and **every rank-1 and rank-2 item by title**.
+
+## 2. `docs/reports/flagharvest-work/CLOSED.md` — the audit trail
+
+Every family removed by machine-closing, with its evidence — **commit hash or migration filename,
+and confirmation the fix is real.** One line each is fine. This exists so the owner can spot-check
+that nothing live was closed on a bad reading, and so no item silently vanishes.
 
 ⚠️ **A decision (D1–D15) is NEVER a reason to close or drop an item** — the owner's standing rule.
-If a decision bears on it, note it in `decision-note` and keep the status purely factual.
+If a decision bears on it, note it and keep the status purely factual.
 
-⚠️ **You do not fix anything.** Recommendations only. Items that deserve their own task get named
-as such in the summary.
+⚠️ **You fix nothing, and you build no to-do list.** `DECIDE.md` feeds the owner's manual pass; only
+what he keeps becomes the queue.
 
 ---
 
@@ -134,10 +195,12 @@ as such in the summary.
 - **Change no code, apply no migration, push nothing.**
 
 # THE TEST THIS MUST PASS
-1. `QUEUE.md` exists, ranked, covering **all eight slices** — the six newly verified plus the two
-   re-baselined.
-2. **Cross-slice duplicates appear ONCE**, listing every source report — state how many families
-   collapsed.
+1. `DECIDE.md` and `CLOSED.md` both exist, together accounting for **all 975 items** — every raw
+   item is either in a surviving family or in a closed one. **Nothing may vanish unaccounted for.**
+2. **All 975 are reconciled into ONE family list**, deduped **within and across** slices, each family
+   listing every source report — state the collapse (975 → N).
+2b. `DECIDE.md` is ordered by rank and every `what:` line is **plain language a non-developer can
+    decide on** — no file paths, no function names in that line.
 3. Every CLOSED family names **a commit hash or migration filename**, and confirms the fix is real.
 4. Every STILL OPEN family shows **what was checked** — file:line, or SQL text plus result.
 5. The 120 previously-open UI/IDENTITY items are **re-baselined against the 180 new commits**, with
