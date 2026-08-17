@@ -79,7 +79,7 @@ export function OfferingCatalog({ onCheckout, actionLabel = 'Add' }: { onCheckou
 
   const add = (o: Offering) => {
     addItem({
-      offeringId: o.id, offeringName: o.name, serviceType: o.service_type,
+      offeringId: o.id, offeringName: o.name, offeringSlug: o.slug, serviceType: o.service_type,
       price: o.price_amount ?? 0, unit: (o.price_unit ?? 'flat'),
       // COUNTFIX 1.5: carry "no price" through the cart so checkout says
       // "Price on inquiry" instead of formatting the 0 placeholder as "$0".

@@ -27,6 +27,11 @@ const CATEGORY_SEGMENTS: Record<string, Segment[]> = {
   Guest: ['acquisition'],
   Rider: ['rider', 'acquisition'],
   'Horse owner': ['horse', 'acquisition'],
+  // CAREPATH §C10a — a DEAL CLIENT buys acquisition services and nothing that
+  // needs a horse on our records. Offering them a horse-care SKU here would
+  // create the very order that summons the paperwork this category exists to
+  // avoid.
+  'Deal client': ['acquisition'],
 };
 // Standing token → display label (reverse of CATEGORY_TOKEN) for preselection.
 const TOKEN_TO_DISPLAY: Record<string, string> = {

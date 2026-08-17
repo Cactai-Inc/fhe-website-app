@@ -98,6 +98,7 @@ export default function Lessons() {
     toggleItem({
       offeringId: o.id,
       offeringName: o.name,
+      offeringSlug: o.slug,
       serviceType: o.service_type,
       serviceTypeName: typeName,
       price: o.price_amount ?? 0,

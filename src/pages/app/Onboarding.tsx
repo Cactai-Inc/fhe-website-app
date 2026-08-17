@@ -30,7 +30,10 @@ import { BodyWithSignatures } from '../../components/ops/documents/MergedBodyVie
 import { toErrorMessage } from '../../lib/ops/errors';
 import { useDocumentTitle } from '../../lib/hooks';
 import { listStableHorses, type StableHorse } from '../../lib/stable';
+import type { HorseIntakePayload } from '../../lib/horses';
 import { HorseIntakeForm } from '../../components/app/HorseIntakeForm';
+import { ActivationOrderPanel } from '../../components/app/ActivationOrderPanel';
+import { SameHorseAsk } from '../../components/app/SameHorseAsk';
 import { AppOverviewModal } from '../../components/app/AppOverviewModal';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePropertyTerm } from '../../contexts/BrandProvider';
@@ -61,7 +64,12 @@ import { consumeWallReturnDestination } from '../../lib/wallReturn';
  *      is attached) + where the signed copies live.
  */
 
-type Step = 'details' | 'horse' | 'sign' | 'payment' | 'done';
+// CAREPATH §C9 — 'order' is the FIRST screen after sign-in. Owner: "they see
+// their order information page with the booking information if we added it to
+// the calendar and they click continue or they click a button that says 'notify
+// staff this isnt correct'… either way they are taken to the screen where they
+// add their horse's information."
+type Step = 'order' | 'details' | 'horse' | 'sign' | 'payment' | 'done';
 
 /** The plain profile fields (the name, minor toggle + fields are tracked apart). */
 type ProfileFormFields = Omit<
@@ -130,9 +138,15 @@ function PurchaseCard({ purchase, riderName }: { purchase: OnboardingPurchase; r
 }
 
 /** Step header: which of the three steps we're on. */
-function Steps({ current, showHorse }: { current: Step; showHorse: boolean }) {
+function Steps({ current, showHorse, showOrder }: { current: Step; showHorse: boolean; showOrder: boolean }) {
   const steps: { id: Step; label: string }[] = [
+    // §C9 — only when there IS an order to show; a member re-invited with no
+    // purchase must not be walked past an empty screen.
+    ...(showOrder ? [{ id: 'order' as Step, label: 'Your order' }] : []),
     { id: 'details', label: 'Your details' },
+    // §C10a — the horse step is skipped ENTIRELY for a client whose order
+    // carries no horse-related purchase. An unanswerable form tells them we
+    // were not listening.
     ...(showHorse ? [{ id: 'horse' as Step, label: 'Your horse' }] : []),
     { id: 'sign', label: 'Review & sign' },
     { id: 'payment', label: 'Payment' },
@@ -231,6 +245,11 @@ export default function Onboarding() {
   // 'collect' = the add/choose loop; 'decide' = combined-vs-split, only shown
   // once they have more than one horse in hand.
   const [horsePhase, setHorsePhase] = useState<'collect' | 'decide'>('collect');
+  // CAREPATH §C10b — what the client already told us about a horse of THEIRS on
+  // the inquiry, once they have confirmed the horse they are adding is that one.
+  // `null` = not asked yet; `{}` = asked and it is a different horse (or there
+  // was nothing to ask about). NEVER assumed either way.
+  const [horsePrefill, setHorsePrefill] = useState<Partial<HorseIntakePayload> | null>(null);
   const [bindingHorses, setBindingHorses] = useState(false);
   const [horseError, setHorseError] = useState<string | null>(null);
   const horseNameOf = (id: string) =>
@@ -357,6 +376,8 @@ export default function Onboarding() {
           }));
         }
         if (!s.needed) setStep('done');
+        // §C9 — the order screen comes FIRST when there is an order to show.
+        else if (s.purchase?.purchase_id) setStep('order');
         // 3f: the input form ALWAYS renders, prefilled, even when nothing is
         // missing — the person confirms or corrects, then advances.
         // Re-attestation is part of what the new signature means; no skip.
@@ -620,7 +641,19 @@ export default function Onboarding() {
     <div className="max-w-3xl">
       <p className="eyebrow mb-2">Welcome aboard</p>
       <h1 className="heading-section text-green-800 mb-6">Let's get you set up.</h1>
-      <Steps current={step} showHorse={step === 'horse' || (state?.horse_needed ?? false)} />
+      <Steps
+        current={step}
+        showHorse={step === 'horse' || (state?.horse_needed ?? false)}
+        showOrder={Boolean(state?.purchase?.purchase_id)}
+      />
+
+      {/* ── §C9: Your order ─────────────────────────────────────────────── */}
+      {step === 'order' && state?.purchase?.purchase_id && (
+        <ActivationOrderPanel
+          purchaseId={state.purchase.purchase_id}
+          onContinue={() => setStep('details')}
+        />
+      )}
 
       {/* ── Step 1: Your details ─────────────────────────────────────────── */}
       {step === 'details' && (
@@ -962,7 +995,13 @@ export default function Onboarding() {
                 stay blank — you can finish the rest later without holding up the
                 horses you have ready.
               </p>
-              <HorseIntakeForm submitLabel="Save &amp; continue" onDone={(id) => void horseCompleted(id)} />
+              {/* §C10b — ask before prefilling, and only from `client_horse`. */}
+              {horsePrefill === null ? (
+                <SameHorseAsk onAnswered={setHorsePrefill} />
+              ) : (
+                <HorseIntakeForm submitLabel="Save &amp; continue" prefill={horsePrefill}
+                  onDone={(id) => void horseCompleted(id)} />
+              )}
               {chosenHorseIds.length > 0 && (
                 <button type="button" onClick={() => setShowNewHorseForm(false)}
                   className="mt-2 text-xs text-muted underline underline-offset-2">

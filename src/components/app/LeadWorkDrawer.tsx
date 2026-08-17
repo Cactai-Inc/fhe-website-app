@@ -35,6 +35,7 @@ import { categoryFieldLabel } from '../../lib/intakeCategoryFields';
 import { ScheduleSessionForm } from '../../pages/app/ops/lessons/ScheduleSessionForm';
 import type { ScheduleSessionFormValues } from '../../pages/app/ops/lessons/ScheduleSessionForm';
 import { ProvisionClientForm } from './ProvisionClientForm';
+import { LeadOrderPanel } from './LeadOrderPanel';
 import { GiftCreateForm } from './GiftCreateForm';
 import type { ProposedTime } from '../../lib/types';
 
@@ -312,6 +313,10 @@ export function LeadWorkDrawer({ request, onClose, onChanged }: LeadWorkDrawerPr
             </dl>
           </section>
         )}
+
+        {/* CAREPATH §C6 — the submission AND the order, together, on the one
+            lead page. Before §C5 an inquiry had no order to show. */}
+        <LeadOrderPanel requestId={selected.id} />
 
         <AvailabilitySection request={selected} />
 

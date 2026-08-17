@@ -363,3 +363,76 @@ export async function findOrCreateContactByEmail(
   if (error) throw error;
   return (data as { id: string }).id;
 }
+
+// ─── CAREPATH §C5/§C5c/§C6 — the ORDER(S) an inquiry opened ─────────────────
+
+/** One line on an inquiry's order. `voided_at` set = cancelled but retained. */
+export interface RequestOrderItem {
+  id: string;
+  label: string;
+  price_amount: number | null;
+  price_unit: string | null;
+  quantity: number;
+  offering_id: string | null;
+  /** From the CATALOG — what shape of schedule this line needs (§C7). */
+  config_kind: string | null;
+  /** From the CATALOG. The `2x` is how the owner DESCRIBES a weekly item; this
+   *  is where the number actually lives. Never parsed from the name. */
+  weekly_frequency: number | null;
+  unit_count: number | null;
+  voided_at: string | null;
+  void_reason: string | null;
+}
+
+export interface RequestOrder {
+  id: string;
+  display_code: string | null;
+  status: string;
+  /** 'enquiry' = opened by a website inquiry and awaiting the call;
+   *  'awaiting_horse' = held (§C5c). NULL on a staff-made draft. */
+  current_status: string | null;
+  current_status_label: string | null;
+  amount: number;
+  payment_status: string;
+  created_at: string;
+  notes: string | null;
+  items: RequestOrderItem[];
+}
+
+/** Every order this inquiry opened — TWO of them after a §C5c split. */
+export async function listRequestOrders(requestId: string): Promise<RequestOrder[]> {
+  const { data, error } = await supabase.rpc('request_orders', { p_request_id: requestId });
+  if (error) throw error;
+  return (data ?? []) as RequestOrder[];
+}
+
+/** §C5c — move chosen lines into a SECOND order on the same inquiry. A staff
+ *  action, taken after the call; nothing splits automatically at submission. */
+export async function splitRequestOrder(
+  purchaseId: string, itemIds: string[], reason?: string,
+): Promise<{ purchase_id: string; moved: number }> {
+  const { data, error } = await supabase.rpc('split_purchase', {
+    p_purchase_id: purchaseId, p_item_ids: itemIds, p_reason: reason ?? null,
+  });
+  if (error) throw error;
+  return data as { purchase_id: string; moved: number };
+}
+
+/** §C5c — hold an order as a draft that owes nothing and schedules nothing. It
+ *  wakes by itself when a horse appears for this client. */
+export async function holdOrderForHorse(purchaseId: string, reason?: string): Promise<void> {
+  const { error } = await supabase.rpc('hold_purchase_for_horse', {
+    p_purchase_id: purchaseId, p_reason: reason ?? null,
+  });
+  if (error) throw error;
+}
+
+/** §C5b rule 6 — cancel ONE line. The order total recomputes, and the order
+ *  itself voids when the last live line goes. The line is retained, never
+ *  deleted: what was asked for is evidence. */
+export async function voidOrderItem(itemId: string, reason?: string): Promise<void> {
+  const { error } = await supabase.rpc('void_purchase_item', {
+    p_item_id: itemId, p_reason: reason ?? null,
+  });
+  if (error) throw error;
+}

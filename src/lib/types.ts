@@ -164,6 +164,9 @@ export interface Invitation {
  *  `Order` so importing UI keeps its shape; the columns are the purchases ones. */
 export interface Order {
   id: string;
+  /** The order number, 'PUR-000001' (assigned by the purchases_assign_code
+   *  trigger). Nullable only for rows that predate it. */
+  display_code: string | null;
   buyer_user_id: string;
   status: OrderStatus;
   payment_method: PaymentMethod | null;

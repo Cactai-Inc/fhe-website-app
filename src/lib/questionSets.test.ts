@@ -35,14 +35,22 @@ function item(
   serviceType: string,
   serviceTypeName: string,
   configKind: CartItem['configKind'] = 'scheduled',
+  offeringSlug?: string,
 ): CartItem {
-  return { offeringId, offeringName, serviceType, serviceTypeName, price: 0, unit: 'flat', configKind };
+  return {
+    offeringId, offeringName, serviceType, serviceTypeName,
+    price: 0, unit: 'flat', configKind, offeringSlug,
+  };
 }
 
 const CLIP_FULL_BODY = item('o1', 'Full Body Clip', 'HORSE_CLIPPING', 'Horse Clipping');
 const TRAINING_SESSION = item('o2', 'Training Session', 'HORSE_TRAINING', 'Horse Training');
-const EXERCISE_ALACARTE = item('o3', 'Exercise Session', 'HORSE_EXERCISE', 'Horse Exercise', 'scheduled');
-const EXERCISE_WEEKLY = item('o4', 'Exercise 1x Weekly', 'HORSE_EXERCISE', 'Horse Exercise', 'recurring');
+const EXERCISE_ALACARTE = item('o3', 'Exercise Session', 'HORSE_EXERCISE', 'Horse Exercise', 'scheduled', 'horse-exercise--item-980e2dc9');
+const EXERCISE_WEEKLY = item('o4', 'Exercise 1x Weekly', 'HORSE_EXERCISE', 'Horse Exercise', 'recurring', 'horse-exercise--item-73441c62');
+// CAREPATH §C1c — turnout lives inside HORSE_EXERCISE but is a different
+// service. Live slugs, queried from production 2026-08-17.
+const TURNOUT_SESSION = item('o9', 'Turnout Session', 'HORSE_EXERCISE', 'Horse Exercise', 'scheduled', 'riding-turnout--item-95804137');
+const TURNOUT_WEEKLY = item('o10', 'Turnout 1x Weekly', 'HORSE_EXERCISE', 'Horse Exercise', 'recurring', 'riding-turnout--item-e8f8fb83');
 const EVALUATION = item('o5', 'Horse Evaluation', 'HORSE_EVALUATION', 'Horse Evaluation', 'intake_evaluation');
 const FINDER = item('o6', 'Horse Finder', 'HORSE_FINDER', 'Horse Finder', 'intake_finder');
 const ASSISTANCE = item('o7', 'Acquisition Assistance', 'HORSE_PURCHASE_ASSISTANCE', 'Acquisition Assistance', 'document_transaction');
@@ -622,10 +630,18 @@ describe('the sets are keyed to the LIVE catalog', () => {
   // Queried from production 2026-08-17: these are every service_type that has
   // an active offering, in the two segments that ask questions.
   it('every set keys to a real, active service_type', () => {
-    expect(SETS.map((s) => s.serviceType).sort()).toEqual([
+    // §C1c: HORSE_EXERCISE now carries TWO sets — the service_type's own, and
+    // turnout's offering-scoped override. Distinct types, not distinct sets.
+    expect([...new Set(SETS.map((s) => s.serviceType))].sort()).toEqual([
       'HORSE_CLIPPING', 'HORSE_EVALUATION', 'HORSE_EXERCISE',
       'HORSE_FINDER', 'HORSE_PURCHASE_ASSISTANCE', 'HORSE_TRAINING',
     ]);
+  });
+
+  it('exactly one set is offering-scoped, and it is turnout', () => {
+    const scoped = SETS.filter((s) => s.offeringSlugPrefix);
+    expect(scoped.map((s) => s.offeringSlugPrefix)).toEqual(['riding-turnout']);
+    expect(scoped[0].serviceType).toBe('HORSE_EXERCISE');
   });
 
   it('section headings come from the catalog, so renaming a service renames them', () => {
@@ -636,5 +652,90 @@ describe('the sets are keyed to the LIVE catalog', () => {
   it('a cart persisted before display names existed still gets a sane heading', () => {
     const legacy = { ...CLIP_FULL_BODY, serviceTypeName: undefined };
     expect(sectionTitles([legacy])).toEqual(['Horse Clipping']);
+  });
+});
+
+/*
+ * ─── CAREPATH §C1c — TURNOUT NEEDS ITS OWN QUESTIONS ────────────────────────
+ *
+ * Numbered to §C1c's own test: "Turnout Session asks the shared six plus
+ * question 7 only — never about riding, prior training, turnout companions, or
+ * special requirements; Turnout 1x Weekly additionally asks 8–9; and Exercise
+ * offerings are unchanged."
+ */
+describe('C1c — turnout is its own service inside HORSE_EXERCISE', () => {
+  const SHARED_SIX = [
+    'client_horse.own_or_lease', 'client_horse.how_long', 'client_horse.age',
+    'client_horse.breed', 'client_horse.behaviour', 'client_horse.injuries',
+  ];
+
+  it('Turnout Session asks the shared six plus the turnout question ONLY', () => {
+    expect(askedKeys([TURNOUT_SESSION])).toEqual([
+      ...SHARED_SIX, 'client_horse.turnout_issues',
+    ]);
+  });
+
+  it('a turnout buyer is never asked about riding or prior training', () => {
+    const asked = askedKeys([TURNOUT_WEEKLY]);
+    expect(asked).not.toContain('client_horse.riding_history');
+    expect(asked).not.toContain('client_horse.prior_training');
+  });
+
+  it('turnout has NO free-text box and NO companions question — both cut by the owner', () => {
+    const set = SETS.find((s) => s.offeringSlugPrefix === 'riding-turnout')!;
+    expect(set.questions.some((q) => q.kind === 'long_text')).toBe(false);
+    const text = set.questions.map((q) => q.question.toLowerCase()).join(' ');
+    for (const banned of ['alone', 'other horses', 'companion', 'special request', 'requirement']) {
+      expect(text).not.toContain(banned);
+    }
+  });
+
+  it('Turnout 1x Weekly additionally asks reason and duration; the session gets neither', () => {
+    expect(askedKeys([TURNOUT_WEEKLY])).toEqual([
+      ...SHARED_SIX, 'client_horse.turnout_issues',
+      'client_horse.turnout_reason', 'client_horse.turnout_duration',
+    ]);
+    const session = askedKeys([TURNOUT_SESSION]);
+    expect(session).not.toContain('client_horse.turnout_reason');
+    expect(session).not.toContain('client_horse.turnout_duration');
+  });
+
+  it('Exercise offerings are UNCHANGED — 9 a la carte, 11 weekly', () => {
+    expect(askedKeys([EXERCISE_ALACARTE])).toHaveLength(9);
+    expect(askedKeys([EXERCISE_WEEKLY])).toHaveLength(11);
+    expect(askedKeys([EXERCISE_ALACARTE])).not.toContain('client_horse.turnout_issues');
+  });
+
+  it("a weekly TURNOUT does not switch on EXERCISE's reason/duration pair", () => {
+    // The two pairs are distinct keys on purpose; a cart holding weekly turnout
+    // and an a la carte exercise session must not inherit exercise's weekly-only
+    // questions from turnout's recurrence.
+    const asked = askedKeys([TURNOUT_WEEKLY, EXERCISE_ALACARTE]);
+    expect(asked).not.toContain('client_horse.reason');
+    expect(asked).not.toContain('client_horse.duration');
+    expect(asked).toContain('client_horse.turnout_reason');
+  });
+
+  it('exercise + turnout render as TWO sections, sharing the six', () => {
+    expect(sectionTitles([EXERCISE_ALACARTE, TURNOUT_SESSION]))
+      .toEqual(['First, a few details', 'Horse Exercise', 'Turnout']);
+    // The shared six are asked once, under the shared heading.
+    expect(questionsOf([EXERCISE_ALACARTE, TURNOUT_SESSION], 'shared')).toEqual(SHARED_SIX);
+  });
+
+  it('an item with no slug (a cart persisted before C1c) still gets its service_type set', () => {
+    const legacy = { ...TURNOUT_SESSION, offeringSlug: undefined };
+    expect(askedKeys([legacy])).toEqual(askedKeys([EXERCISE_ALACARTE]));
+  });
+
+  it('turnout answers reach the submission under their own section', () => {
+    const { details } = buildSubmission(
+      [TURNOUT_SESSION],
+      { 'client_horse.own_or_lease': 'own', 'client_horse.turnout_issues': 'yes',
+        'client_horse.turnout_issues__detail': 'He leans on gates.' },
+      {},
+    );
+    expect(details['Your horse — Has the horse had any issues with turnout — fencing, gates, or getting out?'])
+      .toContain('He leans on gates.');
   });
 });
