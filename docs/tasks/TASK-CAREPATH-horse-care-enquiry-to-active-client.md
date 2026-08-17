@@ -388,11 +388,18 @@ contact method."*
 When staff open the lead they see the submission and the order, have the conversation, and then
 schedule. **The date control depends on the item:**
 
+⚠️ **SUPERSEDED IN PART BY `TASK-CAREPLANS` (owner, 2026-08-16).** The 1x/2x shapes below are being
+retired: a care service will offer only **à la carte** or **weekly**, and staff will choose **the
+days of the week** — with quantity derived from them, plus **N weeks or indefinite until cancelled**.
+**Build this section to the table below only if `CAREPLANS` has not merged; otherwise follow
+`CAREPLANS`.** Either way the principle is unchanged: **staff set the schedule, the catalog supplies
+the numbers, and nothing is parsed from a name.**
+
 | item shape | what staff pick |
 |---|---|
-| single item | **a date** |
-| weekly item | **a day of the week** |
-| weekly item, quantity 2 (`2x`) | **two days of the week** |
+| single / à la carte item | **a date** |
+| weekly item | **the day(s) of the week** — one or several; quantity follows |
+| any weekly plan | **plus how long: N weeks, or indefinite until cancelled** |
 
 ⚠️ **A SERVICE FOR A HORSE THAT DOES NOT EXIST YET IS NOT SCHEDULED HERE — IT IS IN HELD ORDER B**
 (§C5c). Staff schedule only what belongs to a horse that exists. Order B carries no dates until the
