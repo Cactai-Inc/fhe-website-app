@@ -437,7 +437,7 @@ export async function adminSendInvitation(
 // offerings via fetchOfferings (active only). This admin reach sees BOTH
 // published and unpublished rows and writes through offerings_admin_write RLS,
 // so an edit here lands at every visibility point immediately.
-import type { Offering, Segment, PriceUnitDb, PurchaseType } from './types';
+import type { Offering, Segment, PriceUnitDb, PurchaseType, OfferingConfigKind } from './types';
 
 export interface OfferingInput {
   segment: Segment;
@@ -455,6 +455,33 @@ export interface OfferingInput {
   active?: boolean;
   sort_order?: number;
   price_model?: import('./types').PriceModel | null;
+  // CAREPLANS §P2c, owner-ruled 2026-08-17 ("the non editable components need to
+  // be updated"): the three fields that decide what an offering DELIVERS. The
+  // editor could change what a product costs but not what it gives, so turning a
+  // 4-pack into a 5-pack took a developer. D13 says that means it had no editor.
+  /** How many sessions a one-time package gives (a 4-pack is 4). */
+  unit_count?: number | null;
+  /** The catalog's DEFAULT number of days a week. Staff choose the actual days at
+   *  provisioning and those decide the entitlement — this pre-fills the picker. */
+  weekly_frequency?: number | null;
+  /** One-time vs monthly plan: which half of the entitlement formula applies. */
+  config_kind?: OfferingConfigKind | null;
+}
+
+export interface OfferingUsage {
+  offering_id: string;
+  /** Purchase lines that are not voided and whose order is not deleted. */
+  live_lines: number;
+  bookings: number;
+}
+
+/** How many orders and bookings point at each offering. The editor needs this to
+ *  warn before a change to `config_kind` rewrites what existing clients are owed
+ *  (CAREPLANS §P2c: guarded, not locked). */
+export async function adminOfferingUsage(): Promise<Map<string, OfferingUsage>> {
+  const { data, error } = await supabase.rpc('admin_offering_usage');
+  if (error) throw error;
+  return new Map(((data ?? []) as OfferingUsage[]).map((u) => [u.offering_id, u]));
 }
 
 export async function adminListOfferings(): Promise<Offering[]> {

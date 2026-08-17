@@ -41,13 +41,14 @@ const money = (n: number | null): string => {
 };
 
 /** What shape of schedule this line needs (§C7) — read from the CATALOG's
- *  `config_kind` / `weekly_frequency`, never parsed from the offering name. */
+ *  `config_kind` / `weekly_frequency`, never parsed from the offering name.
+ *  CAREPLANS: the frequency is no longer baked into the SKU. Staff choose the days
+ *  of the week when they provision the plan and the quantity follows from them; the
+ *  catalog number below is the starting point, not the answer. */
 function scheduleShape(it: RequestOrderItem): string | null {
   if (it.config_kind === 'recurring') {
     const n = it.weekly_frequency ?? 1;
-    return n > 1
-      ? `Weekly — staff pick ${n} days of the week, plus how long`
-      : 'Weekly — staff pick the day of the week, plus how long';
+    return `Weekly — staff choose the days of the week (normally ${n}), plus how long it runs`;
   }
   if (it.config_kind === 'scheduled') return 'One session — staff pick a date';
   return null;

@@ -21,7 +21,7 @@ import {
   notifyAppointmentClient,
   fetchClientMonthlyPlans,
   setRecurringPlanEnd,
-  setRecurringDay,
+  setRecurringDays,
   generateMonthlyLessons,
   fetchBookingFeeCharges,
   type CalendarItem,
@@ -129,7 +129,12 @@ export function CalendarItemPanel({
   // BOOKLINK B4 — the monthly-plan assignment for this client + offering, once
   // one exists (it's created the first time this booking is saved).
   const [monthlyPlan, setMonthlyPlan] = useState<MonthlyPlan | null>(null);
-  const [recurringDay, setRecurringDayInput] = useState('');
+  // CAREPLANS §P3: staff pick the DAYS (plural) and how long the plan runs. The
+  // days decide how many sessions the month holds; they are not a rule the client
+  // is then held to — any of those sessions can move to any date.
+  const [planDays, setPlanDays] = useState<string[]>([]);
+  const [planWeeks, setPlanWeeks] = useState<string>('');
+  const [planIndefinite, setPlanIndefinite] = useState(true);
   const [monthlyBusy, setMonthlyBusy] = useState(false);
   const [monthlyError, setMonthlyError] = useState<string | null>(null);
   const [monthlyResult, setMonthlyResult] = useState<string | null>(null);
@@ -184,7 +189,11 @@ export function CalendarItemPanel({
       .then((plans) => {
         const plan = plans.find((p) => p.offering_id === offeringId) ?? null;
         setMonthlyPlan(plan);
-        setRecurringDayInput(plan?.recurring_day ?? '');
+        setPlanDays(plan?.recurring_days?.length
+          ? plan.recurring_days
+          : (plan?.recurring_day ? [plan.recurring_day] : []));
+        setPlanWeeks(plan?.plan_weeks != null ? String(plan.plan_weeks) : '');
+        setPlanIndefinite(plan ? plan.indefinite : true);
       })
       .catch(() => setMonthlyPlan(null));
   }, [clientId, offeringId, isRecurringOffering]);
@@ -221,15 +230,26 @@ export function CalendarItemPanel({
     }
   }
 
-  async function saveRecurringDay() {
-    if (!monthlyPlan || !recurringDay) return;
-    setMonthlyBusy(true); setMonthlyError(null);
+  async function savePlanDays() {
+    if (!monthlyPlan || planDays.length === 0) return;
+    setMonthlyBusy(true); setMonthlyError(null); setMonthlyResult(null);
     try {
-      await setRecurringDay(monthlyPlan.purchase_item_id, recurringDay);
+      const weeks = Number(planWeeks);
+      const res = await setRecurringDays(
+        monthlyPlan.purchase_item_id, planDays,
+        planIndefinite ? { indefinite: true }
+          : Number.isFinite(weeks) && weeks > 0 ? { weeks } : {});
+      setMonthlyResult(
+        `${res.entitled_this_month ?? 0} session${res.entitled_this_month === 1 ? '' : 's'} this month`
+        + ` from ${planDays.length} day${planDays.length === 1 ? '' : 's'} a week`
+        + (res.indefinite ? ', running until cancelled.' : `, ending ${res.plan_ends_on}.`)
+        + (res.quantity_locked
+            ? ' The order is already paid, so its quantity was left alone — change it on the order if the price should move.'
+            : ` The order now bills ${res.quantity} × the weekly rate.`));
       const refreshed = await fetchClientMonthlyPlans(clientId);
       setMonthlyPlan(refreshed.find((p) => p.offering_id === offeringId) ?? null);
     } catch (e) {
-      setMonthlyError(toErrorMessage(e, 'Could not set the recurring day.'));
+      setMonthlyError(toErrorMessage(e, 'Could not set the plan’s days.'));
     } finally {
       setMonthlyBusy(false);
     }
@@ -573,7 +593,7 @@ export function CalendarItemPanel({
                   <p className="form-label mb-0">Monthly plan</p>
                   {!monthlyPlan ? (
                     <p className="text-xs text-green-800/70">
-                      Save this booking once to assign the plan, then set the recurring day.
+                      Save this booking once to assign the plan, then choose the days it runs on.
                     </p>
                   ) : (
                     <>
@@ -582,17 +602,61 @@ export function CalendarItemPanel({
                         {monthlyPlan.entitled_this_month} left this month — the allotment
                         expires {new Date(monthlyPlan.expires_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} and
                         does not carry over.
-                        {monthlyPlan.plan_ends_on && ` Plan ends ${monthlyPlan.plan_ends_on}.`}
+                        {monthlyPlan.plan_ends_on
+                          ? ` Plan ends ${monthlyPlan.plan_ends_on}.`
+                          : ' The plan runs until it is cancelled.'}
+                        {monthlyPlan.recurring_days.length > 0 && (
+                          ` Set up on ${monthlyPlan.recurring_days.join(', ')} — that is how many sessions`
+                          + ' the month holds, not where they have to sit.')}
                       </p>
-                      <div className="flex items-center gap-2">
-                        <select className="form-input" value={recurringDay} onChange={(e) => setRecurringDayInput(e.target.value)}>
-                          <option value="">Recurring day…</option>
-                          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d) => (
-                            <option key={d} value={d}>{d}</option>
-                          ))}
-                        </select>
-                        <button type="button" className="btn-secondary text-xs px-3 py-1.5 whitespace-nowrap" disabled={monthlyBusy || !recurringDay} onClick={() => void saveRecurringDay()}>
-                          Set day
+                      {/* CAREPLANS §P3 — which days, and for how long. The day
+                          count IS the frequency and the quantity; the client is
+                          free to move any session to any date afterwards. */}
+                      <div>
+                        <p className="text-xs text-green-800/70 mb-1">Which days of the week</p>
+                        <div className="flex flex-wrap gap-1">
+                          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d) => {
+                            const on = planDays.includes(d);
+                            return (
+                              <button
+                                key={d} type="button" aria-pressed={on}
+                                className={`text-xs px-2.5 py-1.5 border rounded-md ${on
+                                  ? 'bg-green-800 text-white border-green-800'
+                                  : 'bg-white text-green-900 border-green-800/20 hover:border-green-800/50'}`}
+                                onClick={() => setPlanDays((prev) => (
+                                  prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]))}
+                              >{d}</button>
+                            );
+                          })}
+                        </div>
+                        {planDays.length > 0 && monthlyPlan.weekly_frequency != null
+                          && monthlyPlan.weekly_frequency !== planDays.length && (
+                          <p className="text-xs text-gold-ink mt-1">
+                            {monthlyPlan.offering_name} normally runs {monthlyPlan.weekly_frequency}{' '}
+                            day{monthlyPlan.weekly_frequency === 1 ? '' : 's'} a week and you have
+                            chosen {planDays.length}. That is allowed — the days you pick are what
+                            this client gets.
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <label className="inline-flex items-center gap-2 text-xs text-green-900">
+                          <input type="checkbox" className="accent-green-700" checked={planIndefinite}
+                            onChange={(e) => setPlanIndefinite(e.target.checked)} />
+                          Until they cancel
+                        </label>
+                        {!planIndefinite && (
+                          <label className="inline-flex items-center gap-2 text-xs text-green-900">
+                            for
+                            <input type="number" min="1" step="1" className="form-input w-20 py-1"
+                              value={planWeeks} onChange={(e) => setPlanWeeks(e.target.value)} />
+                            weeks
+                          </label>
+                        )}
+                        <button type="button" className="btn-secondary text-xs px-3 py-1.5 whitespace-nowrap"
+                          disabled={monthlyBusy || planDays.length === 0 || (!planIndefinite && !planWeeks)}
+                          onClick={() => void savePlanDays()}>
+                          Set days
                         </button>
                       </div>
                       <button type="button" className="btn-primary text-xs px-3 py-1.5 self-start" disabled={monthlyBusy || !monthlyPlan.recurring_day} onClick={() => void generateThisMonth()}>

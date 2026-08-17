@@ -68,7 +68,7 @@ export type PurchaseType = 'one_time' | 'subscription' | 'deposit_retainer';
  *  and the provisioning flow. NOT a tier — every offering is its own SKU. */
 export type OfferingConfigKind =
   | 'scheduled'            // ad-hoc: buy N units, book 1..N specific date/times
-  | 'recurring'            // monthly 1x/2x/3x weekly: fixed weekday+time series
+  | 'recurring'            // monthly plan: staff choose the days, the month's sessions follow
   | 'intake_finder'        // Find-a-Horse: 0 purchase config, unlocks a criteria form
   | 'intake_evaluation'    // Horse Evaluation: 0 purchase config, unlocks an intake form
   | 'document_transaction' // Transaction Assistance: config is of the documents

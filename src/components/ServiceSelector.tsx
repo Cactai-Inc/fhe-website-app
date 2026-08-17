@@ -34,6 +34,11 @@ export default function ServiceSelector({
 
   // The SKU's mechanics, shown as a small hint (replaces the old tier description).
   const mechanics = (o: ServiceGroup['offerings'][number]): string => {
+    // CAREPLANS: a care service offers exactly two shapes — à la carte, or weekly
+    // — and the frequency is no longer part of what the customer picks, so the
+    // hint must not print "1x". Rider SKUs keep their voice: the lesson cards are
+    // deliberately still 1x/2x and are out of this task's scope.
+    if (o.config_kind === 'recurring' && o.segment === 'horse') return 'Weekly · we agree the days with you';
     // Plain "x" matches the offering names ("1x Weekly Lesson") — same voice.
     if (o.config_kind === 'recurring' && o.weekly_frequency) return `${o.weekly_frequency}x weekly · monthly`;
     if (o.config_kind === 'scheduled' && (o.unit_count ?? 1) > 1) return `${o.unit_count} sessions`;
