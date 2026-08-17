@@ -447,6 +447,57 @@ pointing elsewhere, in which case **the horse never appears in the lessee's stab
 fact that **`CAREPATH` §C10's horse intake will have nowhere faithful to put it.** Say so plainly —
 a known gap recorded is worth more than a schema change made in the wrong task.
 
+## A3f — WHICH HORSE IS THE CARE FOR? ASK, ONCE, WHEN BOTH CATEGORIES ARE PRESENT
+
+**Owner, 2026-08-16:**
+> *"current horse, or horse they are acquiring are two viable options for why they would add those
+> two together, so they might have a horse they own and are also looking to buy another horse, or
+> they are leasing a horse and looking to lease or buy another one, or they are planning to get a
+> horse and they want our help and they know it needs training and/or a hair clipping."*
+
+**A cart holding horse care AND acquisition has four legitimate readings**, and the software cannot
+tell them apart:
+
+| # | the situation | `client_horse` vs `sought_horse` |
+|---|---|---|
+| 1 | owns a horse, looking to buy another | **different horses** |
+| 2 | leases a horse, looking to lease or buy another | **different horses** |
+| 3 | **has no horse yet** — wants help finding one, and knows it will need training and/or clipping | **same horse, which does not exist yet** |
+| 4 | wants to buy **the horse they currently lease** (§A3d) | **same horse, already in hand** |
+
+**Guessing between these gets the client's own horse confused with a horse they do not own.**
+Per the owner's standing rule — *"we can ask them if it is"* — **ask.**
+
+### The disambiguating question
+When the cart contains **at least one horse-care item AND at least one acquisition item**, ask
+**once**, in the shared first section:
+
+> **"Is the {service} for a horse you have now, or for the horse we help you find?"**
+>
+> - **A horse I have now**
+> - **The horse you help me find**
+> - **Different horses — more than one** *(escape hatch)*
+
+⚠️ **Confirm this wording with the owner.** Ask it **once for the order**, not per service.
+
+### What each answer does
+
+| answer | horse-care questions | how the order reads |
+|---|---|---|
+| **A horse I have now** | asked normally, subject `client_horse` | care is for an existing horse |
+| **The horse you help me find** | ⚠️ **SUPPRESSED** — §A3b: there is no horse, so age, breed, behaviour, injuries and prior training have no answers | **the care service attaches to the `sought_horse`** and cannot be scheduled until the horse is acquired |
+| **Different horses — more than one** | asked normally (they do have one) | flag for staff: more than one horse is in play — **do not build a multi-horse picker; the call resolves it** |
+
+⚠️ **Do not ask this question when only one category is present** — with no acquisition item there is
+nothing to confuse, and §A3b's own gate already covers a care-only client who has no horse yet.
+
+### The operational consequence — say it plainly on the order
+**A care service for a horse that does not exist yet CANNOT BE SCHEDULED.** Staff cannot put
+clipping on the calendar for a horse nobody has bought. `CAREPATH` §C7 has staff choose a date, day,
+or two days when provisioning — **that step must not be reachable for a service attached to a
+`sought_horse`.** The order must show it as **awaiting the horse**, and this must be obvious to
+whoever opens the lead. **Report where you made it visible.**
+
 ### Horse Training — after the shared block
 | # | question |
 |---|---|
@@ -723,6 +774,13 @@ not work.**
     horse **suppresses** the age/breed/behaviour/injury/prior-training questions instead of showing
     unanswerable fields, the order records that the horse is still to be acquired, and those answers
     are **not** filed as describing a horse the client already owns.
+4k2. ⚠️ **§A3f — the disambiguating question appears when horse care AND acquisition share a cart**,
+    once for the order, never per service, and **never when only one category is present.**
+4k3. **"The horse you help me find"** suppresses the horse questions, attaches the care service to
+    the `sought_horse`, and makes the order read **awaiting the horse** — and **§C7's date/day
+    picker is NOT reachable for that service.** Prove the scheduling block.
+4k4. **"A horse I have now"** and **"Different horses"** both ask the horse questions normally; the
+    latter flags staff that more than one horse is in play, with **no multi-horse picker built.**
 4l. The two ownership questions — the rider's *"a horse"* and horse care's *"the horse"* — **remain
     separate**, and a client who owns one horse while seeking another can answer them differently.
 4m. **The inference works and is visible** (§A3c): a client who owns or leases the horse they want

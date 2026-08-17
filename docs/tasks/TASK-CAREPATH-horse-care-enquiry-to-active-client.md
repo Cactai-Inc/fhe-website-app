@@ -343,6 +343,11 @@ schedule. **The date control depends on the item:**
 | weekly item | **a day of the week** |
 | weekly item, quantity 2 (`2x`) | **two days of the week** |
 
+⚠️ **A SERVICE FOR A HORSE THAT DOES NOT EXIST YET CANNOT BE SCHEDULED** (`ASKRIGHT` §A3f). When the
+client said the care is for *"the horse you help me find"*, the service attaches to the sought horse
+— **this date/day picker must not be reachable for it**, and the order must read **awaiting the
+horse** wherever staff see it. Scheduling becomes possible only once the horse is acquired.
+
 **The quantity must come from the catalog, never from parsing the offering name.** Names changed on
 2026-08-15 and name-parsing broke credit minting three separate times. `CREDITALIGN` established
 minting from `unit_count`; **find the same authoritative field and use it.** The `2x` is how the
