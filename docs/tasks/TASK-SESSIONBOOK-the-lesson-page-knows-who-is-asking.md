@@ -1,5 +1,20 @@
 # TASK SESSIONBOOK — Book a Lesson knows whether you are signed in, and whether you own a horse
 
+**RUN WITH: Sonnet 5 · thinking ON · effort HIGH — LAST in the flow program**, after `ASKRIGHT`,
+`CAREPATH` and `LESSONREQUEST` have merged (they restructure the funnels and the shared form this
+page hands off to).
+
+> ⚠️ **RECONCILE WITH THE 2026-08-16 FLOW RULINGS before building:**
+> - **The signed-in path is a real PURCHASE** (`createDraftOrder`, member checkout) — the *inquire*
+>   vocabulary (`ASKRIGHT` §A6) belongs to the signed-OUT flow only. Member-facing controls may say
+>   **Book**: for a member it lands as a real order/calendar entry, which is exactly when "book" is
+>   the honest word (`CAREPATH` §C5b's rule).
+> - **Signed out, `/lessons` is TWO pages** — select, then the shared submission form. There is no
+>   questions page for lessons (`ASKRIGHT` §A0) and none may be added here.
+> - **`horse_included` carries NULLs in the wider catalog** (8 true / 4 false / 14 null, measured
+>   2026-08-16). Exclude with an explicit `= false` test, never `!= true`, and re-verify the
+>   lesson-segment values live before trusting the 3/6 split below.
+
 **Owner, 2026-08-16, verbatim:**
 
 > *"we need to have session awareness, so when im in an authenticated session and i click the

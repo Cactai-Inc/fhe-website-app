@@ -1,16 +1,14 @@
 # TASK THREEFORMS — one shape for all three funnels, with a real confirmation at step 3
 
-> ⚠️ **THE DATE-PICKER RULE BELOW IS WRONG.** Owner, 2026-08-16: **only the LESSONS funnel has a
-> date picker.** Horse care does NOT — staff set the date on the call. Acquisition never did.
-> Every table in this file that gives horse care a date/availability control is superseded by
-> `TASK-ASKRIGHT` §A6b. **The act word is "inquire", not "request"** — see `ASKRIGHT` §A6.
->
-> ⚠️ **SUPERSEDED FOR THE HORSE-CARE FUNNEL by `TASK-CAREPATH` (2026-08-16).** The owner reviewed
-> horse care and specified that lane in full detail — four steps, a Continue Shopping modal, a
-> personal-information-only submit screen, lead + horse-owner + order on submission, staff
-> provisioning, then activation. **Build `CAREPATH` first.** Acquisition and lessons follow as their
-> own specs. What survives here is **F1b (the combined mixed-cart form)**, which remains unbuilt and
-> is explicitly out of scope for `CAREPATH`.
+> ⚠️ **FULLY SUPERSEDED — DO NOT RUN THIS TASK (2026-08-16, final).** Every live piece now has a
+> better home; this file remains as history only:
+> **F1** (one step-2 form) → `ASKRIGHT` §A0/§A1 · **F1b** (mixed cart) → `ASKRIGHT` §A2/§A2b ·
+> **F2** (the confirmation screen) → `CAREPATH` §C6b · **F3** (retire the data-collection page) →
+> `ASKRIGHT` §A0 (one shared form) · **F4** (what a submission produces) → `CAREPATH` §C5/§C5b.
+> The date/availability tables below are **WRONG** — only lessons collects availability, as RANGES,
+> never dates (`ASKRIGHT` §A6b) — and the act word is **inquire** (§A6). The owner question at the
+> bottom is answered by the new architecture: acquisition submits through the same shared
+> submission page; there is no separate `/checkout` step for anyone.
 
 **Owner, 2026-08-16, verbatim:**
 

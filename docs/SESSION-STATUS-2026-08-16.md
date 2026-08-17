@@ -3,6 +3,15 @@
 **Written before a context compaction.** State only. `main` = `53b3056`, clean, pushed.
 Supersedes `SESSION-STATUS-2026-08-12.md`.
 
+> **ADDENDUM 2026-08-16 (late) — the flow program below was re-specced after this doc was written.**
+> Current truth lives in the task docs. Sequence: **`ASKRIGHT`** (questions, subjects, inquiry
+> wording — runs FIRST) → **`CAREPATH`** (horse-care flow + §C5b order model — thread live, holds
+> until ASKRIGHT merges) → **`LESSONREQUEST`** → **`SESSIONBOOK`** (last); `GIFTPATH` anytime after
+> CAREPATH. **`RIDERQUALIFY` is CANCELLED; `THREEFORMS` is fully superseded.** Standing rulings:
+> the act word is **inquire**; only lessons collects availability (RANGES, never dates); one shared
+> submission form, union-configured by the cart; every submission opens one draft enquiry-order,
+> nothing owed until confirm + promote + invite, which are one act.
+
 ---
 
 # 1. WHAT SHIPPED TODAY (all merged to main, deployed)

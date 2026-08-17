@@ -1,5 +1,8 @@
 # TASK LESSONREQUEST — a lesson enquiry becomes a booked, paid first lesson
 
+**RUN WITH: Opus 5 · thinking ON · effort HIGH — after `CAREPATH` merges** (this task reuses its
+order model §C5b and its provisioning seam).
+
 **Owner, 2026-08-16, verbatim — this is the flow:**
 
 > *"for lessons, this is the most important place to collect information about the person, the same
@@ -51,8 +54,9 @@ way until payment.
 - The lesson path presents the same fields the contact form does, at step 2. **They already exist
   in `Checkout.tsx`** — the task is to make the rider path collect them deliberately rather than as
   a byproduct of checkout, and to make sure a signed-out lesson buyer cannot slip past them.
-- **Coordinate with `RIDERQUALIFY` and `SESSIONBOOK`** — all three touch this page. A signed-in
-  member must not be re-asked what is already on file.
+- **Coordinate with `SESSIONBOOK`** — both touch this page (`RIDERQUALIFY` is CANCELLED; the form
+  already carries the rider information and nothing is added to it). A signed-in member must not be
+  re-asked what is already on file.
 
 ## L2 — step 3 submits an inquiry carrying AVAILABILITY RANGES
 
@@ -82,6 +86,9 @@ approve-this-slot button; there is no slot to approve.**
   (`REVIEWQ`'s decision path and `BOOKLINK`'s client+item linkage), never a new one.**
 - The booking should land `pending` per `REVIEWQ`, and become confirmed on approval. **Establish
   the exact status transition and state it.**
+- ⚠️ **Setting the agreed time and issuing the activation link is `CAREPATH` §C5b's ONE ACT**: the
+  enquiry-order `draft` → `awaiting_payment`, the lead promotes to client, and the invite sends —
+  together, never separately.
 - **Then issue the activation link** through `provision_client_invitation(p_request_id => …)`, which
   already accepts the request id. That is the seam this whole task turns on.
 
@@ -95,9 +102,10 @@ any break you find rather than patching around it.
 - **`proposed_times` is what the visitor WANTED, not what was agreed.** Do not overwrite it with
   the agreed time — keep the ask and the agreement distinguishable, or the phone conversation
   becomes unauditable.
-- **A request is not a purchase.** Payment happens at step 6, after activation. Do not create a
-  paid order at step 3.
-- **`RIDERQUALIFY` and `SESSIONBOOK` both touch `/lessons`.** Sequence deliberately.
+- **Submission creates the DRAFT enquiry-order of `CAREPATH` §C5b — never a paid one.** Everything
+  is an order (owner ruling), but nothing is owed until staff confirm; payment happens at step 6,
+  after activation.
+- **`SESSIONBOOK` also touches `/lessons`** (`RIDERQUALIFY` is cancelled). Sequence deliberately.
 - **Migrations never contain `BEGIN`/`COMMIT`**; dry-run and **prove the rollback**.
 - **`REVOKE … FROM PUBLIC` does not remove a direct grant** — prove with `has_function_privilege()`.
 - `assertWrote()` on every write; RLS silently zeroes UPDATEs.

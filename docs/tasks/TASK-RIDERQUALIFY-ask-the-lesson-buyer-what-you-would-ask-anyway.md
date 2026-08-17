@@ -1,5 +1,12 @@
 # TASK RIDERQUALIFY — the lesson buyer answers what you would ask on the call anyway
 
+> ⚠️ **CANCELLED — DO NOT RUN. Owner, 2026-08-16:** *"the rider questions are already on the lesson
+> form. there is nothing to add and no separate questions for them."* The submission form already
+> carries riding experience (years), the notes prompt and availability — that IS the rider
+> information. Lessons never gain a questions page (`TASK-ASKRIGHT` §A0), and nothing is added to
+> the form for riders. **Nothing below is to be built.** The one surviving housekeeping item —
+> retiring the orphaned `/book/rider` behind a redirect — moves to the orchestrator's cleanup list.
+
 **Owner, 2026-08-16:**
 
 > *"they are giving us information ahead of the call that we would initially ask anyway."*
@@ -85,14 +92,7 @@ nothing else of value.
 # OWNER QUESTIONS — ask before building
 1. **Which questions?** All three from `/book/rider`, or just *"do you own or lease a horse?"*
    The more asked, the more friction on a buyer who has already decided.
-2. ~~**Where in the flow?**~~ **ANSWERED by the owner, 2026-08-16 — do not re-ask.**
-   ⚠️ **The rider questions go ON THE SUBMISSION FORM, not on a separate questions page.**
-   Owner: *"there are no question for lesson booking flow, they all live on the form."* A
-   lessons-only order stays **two pages** — choose, then the form — and **that speed is deliberate**
-   (the owner called the lesson flow "great, its fast"). **Adding a questions page to the lesson path
-   is a regression, not an improvement.**
-   The questions still follow `TASK-ASKRIGHT`'s rules — subject `person` (§A2b), so they merge with
-   the same question asked by an evaluation or a horse search in a mixed order — they simply
-   **render on the form** rather than on the questions page.
+2. ~~**Where in the flow?**~~ **MOOT — the task is cancelled (see the banner).** Nothing is added
+   anywhere: the form already carries the rider information, and the lesson flow stays two pages.
 
 Report to `docs/reports/TASK-RIDERQUALIFY-REPORT.md`. Do not push; the orchestrator merges.

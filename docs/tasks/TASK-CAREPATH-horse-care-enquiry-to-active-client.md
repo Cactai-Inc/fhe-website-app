@@ -134,7 +134,7 @@ with the form"* and *"the form page is always the submission page."*
 |---|---|---|
 | 1 | Select Services | Select |
 | 2 | **Tell Us More** — the questions (`ASKRIGHT`) | — *(no questions)* |
-| 3 | **Your Details** — the submission page: selections, Continue Shopping, the form, Send Inquiry | step **2** for lessons |
+| 3 | **Your Details** — the submission page: selections, Continue Shopping, the form, the `inquiryLabel()` submit | step **2** for lessons |
 
 - `STEPS` becomes **three**: **Select Services · Tell Us More · Your Details**, with eyebrows
   `Step 1 of 3` … `Step 3 of 3`.
@@ -156,7 +156,8 @@ Owner, 2026-08-16: *"keep the 'previous' button relabeled as 'Back' on step 2 pa
 the first**, not only step 2. Relabel it to **`Back`** for all of them; step 0 keeps
 `Back to Services`.
 
-- The new step 4 inherits the same control, so it must read `Back` too.
+- Applies to every step of the **three-step structure (§C1)** past the first — the questions page
+  and the submission page both read `Back`.
 - `BookSupport.tsx:269` carries the identical expression. **Leave it for the acquisition task**
   unless that task is not yet queued when you build — flag it rather than reaching into a lane
   another thread owns.
@@ -170,7 +171,11 @@ The old Review screen's content moves here, so the final page shows, in order:
 1. **The selection summary** — the existing markup at `BookHorse.tsx:176-194` is good; move it.
 2. **`Continue Shopping`** — opens the category modal (C3). Secondary styling.
 3. **The form** — personal information only (C4), the shared component.
-4. **`Send Inquiry`** — the primary submit (`ASKRIGHT` §A6 owns the wording).
+4. **The primary submit**, worded by `inquiryLabel()` per `ASKRIGHT` §A6 — *"Inquire about
+   {service name} service"* for a horse-care order. **Never a generic "Send Inquiry" or "Submit".**
+
+**The questions page's forward button** (step 2 → step 3) reads **`Continue to Inquiry`** — the same
+label `ASKRIGHT` §A6 gives the equivalent controls elsewhere.
 
 - ⚠️ **Delete** the *"That's everything we need for now…"* paragraph (`BookHorse.tsx:202-205`). It was
   false where it stood and there is no longer a page for it.
@@ -231,12 +236,16 @@ configuration, not deletion, so the lesson task can switch them back on.
 Owner: *"they are categorized as a lead, a horse owner, and an order is opened with the item(s)
 selected."*
 
-1. **A lead** — the `requests` row from `submit_public_request`, with `p_category` set to horse
-   care and the step-2 qualifier answers carried in `p_details`. **Verify the answers actually
-   land**; `p_details` exists but confirm the client passes them.
-2. **A horse owner** — categorized as such. **Find the existing representation** (see the directory
-   migration above) and use it. **If no honest anonymous-side representation exists, do not invent
-   a column** — record it in the request and report exactly where staff will read it.
+1. **A lead** — and the lead is the PERSON, not the row (owner taxonomy, 2026-08-02: a lead has
+   identity + intent and no account yet). The `requests` row from `submit_public_request` is the
+   intent envelope, with `p_category` set to horse care and the step-2 answers in `p_details`;
+   the captured contact is the lead — **verify the `requests_capture_contact` trigger fires on
+   this path, and that the answers actually land.**
+2. **A horse owner OR LESSEE — capture WHICH** (`ASKRIGHT` §A3e: lease is not own, and the horses
+   schema cannot yet tell them apart). **Find the existing representation** (see the directory
+   migration above); **if no honest representation exists, do not invent a column** — record
+   own-vs-lease in the request and report exactly where staff will read it. **Never falsify
+   ownership for a lessee.**
 3. **An order with the selected items.** ⚠️ **This is the piece that does not exist.**
    `createDraftOrder` is authenticated-only. Options, in order of preference:
    - extend `submit_public_request` (already SECURITY DEFINER, already receives `p_selections`) to
@@ -310,6 +319,22 @@ ops-board distinction.
   emails send, with a per-attempt row recording the outcome.** If the buyer email cannot be proven,
   say so — do not print "we've emailed you" from an optimistic assumption.
 
+## C6b — the confirmation screen after the submit: show what happened, honestly
+*(Absorbs `THREEFORMS` F2 — that task no longer runs.)*
+
+**Owner (earlier ruling, verbatim):** *"page 3 shows them the confirmation of the items they
+selected for their order, the things they input and selected on their form, and a confirmation of
+the email sent to us and them and that we try to respond within a few hours using their preferred
+contact method."*
+
+- **The items chosen** — price-on-inquiry items show no number.
+- **Every answer they gave**, so they can see what was submitted on their behalf.
+- **The send status of BOTH emails** (C6), and **the reply promise names their chosen method** —
+  "we'll text you", never a generic line.
+- ⚠️ **Only claim what happened.** No optimistic "we've emailed you" — the send must be confirmed
+  via C6's per-attempt row. **Two real leads were lost to a fire-and-forget send.** A failed send
+  is reported honestly, with another way to reach us.
+
 ## C7 — staff provision the service, with the right date shape
 When staff open the lead they see the submission and the order, have the conversation, and then
 schedule. **The date control depends on the item:**
@@ -330,6 +355,8 @@ path. **Do not write a second booking writer.**
 
 ## C8 — promotion to client, and the activation flow
 - Staff send the activation link **by email**; the lead is **promoted to client**.
+- ⚠️ **This is §C5b's ONE ACT**: the same moment confirms the order (`draft` → `awaiting_payment`),
+  promotes the lead, and sends the invite. **Never one without the others.**
 - Issue it through **`provision_client_invitation(p_request_id => …)`** — it already accepts the
   request id. **Do not build a second provisioning path.**
 - **Verify, do not rebuild** (`ONBOARD` built this): activation → password **or Google OAuth** →
@@ -352,6 +379,9 @@ path. **Do not write a second booking writer.**
 - **Find the existing horse-intake surface and form definitions** (`form_definitions` exists;
   `ONBOARD` reported a per-document trigger here) and reuse them. **Do not build a third horse
   intake** — this project already had 3 horse rosters.
+- ⚠️ **Own-vs-lease has nowhere faithful to land** (`ASKRIGHT` §A3e): `horses.current_owner_contact_id`
+  is the only relationship a horse record carries. **Do not falsify ownership for a lessee** —
+  report the gap and state exactly where you parked the answer until the schema task exists.
 - Then documents, then app overview, then the item detail page **with the booking information**.
 
 ---
@@ -388,8 +418,12 @@ path. **Do not write a second booking writer.**
 2. The *"That's everything we need for now"* line is gone.
 2b. The back control reads **`Back`** on every step past the first, and **`Back to Services`** on
     step 1 — the word `Previous` appears nowhere in the horse-care funnel.
-3. The **submission page** carries the selection summary, **Continue Shopping**, the form and
-   **Send Inquiry** — in that order, with no competing path from the floating bar.
+3. The **submission page** carries the selection summary, **Continue Shopping**, the form and the
+   `inquiryLabel()` submit (*"Inquire about {service name} service"*) — in that order, with no
+   competing path from the floating bar.
+3b. After submitting, the **confirmation screen** shows the items, every answer given, and the
+    honest send status of both emails, naming their chosen contact method (C6b) — including the
+    failure path.
 4. The modal shows the three categories, has **both** a Back button and an ✕, and choosing one
    navigates there **with the cart intact** — prove the items survive.
 5. The submit screen asks for personal information only. **A horse-care buyer is never asked their

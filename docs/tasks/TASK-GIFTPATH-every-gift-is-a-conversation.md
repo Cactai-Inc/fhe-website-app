@@ -1,5 +1,8 @@
 # TASK GIFTPATH — every gift is a conversation, not a self-serve purchase
 
+**RUN WITH: Sonnet 5 · thinking ON · effort MEDIUM — after `CAREPATH` merges** (CAREPATH
+restructures `/horse` and `/acquisition`, the pages where P1 adds the gift links).
+
 **This SUPERSEDES the earlier ONECHECKOUT plan** (folding gifting into `Checkout.tsx`). That is
 no longer the design. **Do not build a gift checkout.**
 
