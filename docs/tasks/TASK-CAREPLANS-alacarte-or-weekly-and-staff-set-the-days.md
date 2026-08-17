@@ -115,15 +115,37 @@ Saturday + Sunday selected, in a month with 5 Sundays and 4 Saturdays
 booking for every occurrence and debits a credit each time.** That is a schedule lock — precisely
 what this ruling forbids.
 
-**Two options; state which you chose and why:**
-1. **Stop generating bookings** — mint the month's credits and let the client book. Simplest, and it
-   matches how every other credit already behaves.
-2. **Keep generation as a moveable convenience** — pre-book the selected weekdays, but every one is
-   freely cancellable and rebookable to any date, with the credit returning to the pool.
+### ⚠️ THE MECHANISM — OWNER-RULED 2026-08-17. Generation stays.
+> *"it needs to mint the credits based on the applied bookings that auto generate, and then the
+> rescheduling adds a credit back temporarily until its rebooked."*
 
-**Option 2 is likely what staff want** (a plan that arrives already on the calendar), **but it is
-only acceptable if those bookings are genuinely movable.** A pre-generated booking the client cannot
-move is the current behaviour wearing a new name.
+**Credits and generated bookings are minted in LOCKSTEP.** The month's bookings auto-generate across
+**all** the selected weekdays, and the credit count *is* that set of bookings — 5 Sundays + 4
+Saturdays generates 9 bookings and 9 credits, each booking holding one.
+
+```
+provision        →  9 bookings auto-generated, 9 credits minted, 9 held
+client reschedules  →  credit returns to the pool, TEMPORARILY unheld
+client rebooks      →  credit consumed again, on whatever date they chose
+month ends          →  anything still unbooked expires (CREDITALIGN's rule)
+```
+
+- **The credit is never lost in the gap.** Between cancelling and rebooking it sits available — that
+  is the whole point of "temporarily".
+- **Rebooking is unconstrained by the original weekday** (§the ruling above). The credit does not
+  remember which Saturday it came from.
+- **The allowance never grows.** A refund-then-rebook is one credit moving, never a second one
+  appearing. **Prove a reschedule loop cannot inflate the month's total.**
+
+**✅ The round trip ALREADY EXISTS — extend it, do not rebuild it.** Measured:
+`_refund_booking_credit` is live and called by **`decide_booking_change`, `delete_calendar_item`,
+`swap_booking_item` and `withdraw_my_pending_booking`**; `_debit_or_create_for_booking` is the
+consuming half. **The gap is only that `generate_monthly_lessons` handles ONE weekday.**
+
+⚠️ **`mint_recurring_allotments` also exists** and is the monthly minting seam. **Establish how it
+and `generate_monthly_lessons` divide the work before changing either** — minting the allowance in
+one and the bookings in the other is how a month ends up with 9 credits and 4 bookings, or worse,
+9 bookings and 4 credits.
 
 ### ⚠️ THE ONE THING THAT CANNOT COLLAPSE TO MULTIPLICATION
 **A calendar month holds FOUR OR FIVE occurrences of any given weekday.** A 1× weekly plan owes
@@ -315,7 +337,13 @@ second one.
     on weekdays that were never selected — **and is stopped only at the 10th.** Prove both halves:
     the freedom, and the cap.
 5c. **Moving or cancelling a booking never changes the month's allowance** — cancel returns the
-    credit, rebooking consumes it, the total is fixed at mint.
+    credit, rebooking consumes it, the total is fixed at mint. ⚠️ **Run a reschedule loop several
+    times over and prove the month's total never inflates.**
+5c2. **Bookings and credits are minted in lockstep** — 5 Sundays + 4 Saturdays produces **9 bookings
+    AND 9 credits**, not one count in `bookings` and a different one in `lesson_credits`. Query both
+    sides.
+5c3. **A rescheduled credit is available in the gap** — prove it is spendable between the cancel and
+    the rebook, and that it lands on a date the original weekday pattern never included.
 5d. **No "days per week" restriction exists anywhere in the new code** — prove it by booking a
     distribution that violates the original weekday pattern and watching it succeed.
 6. **Existing recurring plans compute the SAME allotment before and after** — query output both
