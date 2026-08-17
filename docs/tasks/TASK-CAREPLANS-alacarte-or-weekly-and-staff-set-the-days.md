@@ -56,6 +56,49 @@ confirms whether lessons are in or out of scope. Assume OUT until told otherwise
 
 ---
 
+# P0 — THE GOVERNING FORMULA. Everything below must satisfy this one rule.
+
+**Owner, 2026-08-17:** *"why cant we use quantity as the multiplier… either we do everything on a
+weekly basis… you compute both values and they need to match based on the calendar month, and you
+use the purchase date to start the weeks for everything else."*
+
+**He is right, and for one-time items the system already works this way.** Measured on the live
+catalog: `scheduled` SKUs carry `unit_count` (Punch Cards **4** and **8**, everything else **1**);
+`recurring` SKUs carry `weekly_frequency` (**1** or **2**). `lesson_credits` already has
+`credits_total`, `period_start` and `expires_at`.
+
+**ONE FORMULA, TWO CONFIGURATIONS:**
+
+```
+credits = rate × periods
+
+ONE-TIME    rate = unit_count            periods = 1
+            window = expiry days from the PURCHASE DATE      (4-pack 60d, 8-pack 120d)
+
+RECURRING   rate = HOW MANY DAYS STAFF CHOSE   periods = occurrences of those days
+            window = the CALENDAR MONTH                      in that month
+```
+
+**What changes:** for recurring, `rate` stops being `weekly_frequency` read from the catalog and
+becomes **the count of days staff actually selected** (§P3). Two days chosen *is* rate 2 — which
+**dissolves the 2× gap (§P2b) as a side effect rather than as a separate fix.**
+
+### ⚠️ THE ONE THING THAT CANNOT COLLAPSE TO MULTIPLICATION
+**A calendar month holds FOUR OR FIVE occurrences of any given weekday.** A 1× weekly plan owes
+**5 credits in a five-Tuesday month**, not 4.
+
+**This is a written promise on the live site** — the owner's own lessons footnote: *"you can ride
+every week even when there's a 5th week."* It is the entire reason `_recurring_allotment` counts
+weekday occurrences instead of assuming 4. **Never replace that count with a constant 4.**
+
+⚠️ **Note also: 2× weekly is 2 credits PER WEEK — 8–10 a month — not 2 per month.** The owner's
+message contains the phrase "2 credits per month"; building to that would under-mint tenfold.
+
+### The test this formula creates — and it is the strongest one in the task
+**Prove EVERY existing package and plan computes identically under the single formula**, before and
+after, as query output on both sides. That is a better regression than checking SKUs one at a time,
+and it is what catches a five-week month being silently rounded down to four.
+
 # THE BUILD
 
 ## P1 — acquisition carries no pricing
