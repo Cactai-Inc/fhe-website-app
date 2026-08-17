@@ -18,15 +18,15 @@ repo/DB state, and the owner's own use.
 
 ---
 
-# WAVE 1 — the visitor's path, in the order they walk it *(in flight)*
+# WAVE 1 — the visitor's path ✅ **COMPLETE 2026-08-17**
 
 | # | task | state |
 |---|---|---|
 | 1 | **`ASKRIGHT`** — what is asked, of whom, on which page | ✅ **MERGED** `bf45d1b` |
 | 2 | **`CAREPATH`** — horse-care inquiry → order → provisioning → activation | ✅ **MERGED** `1de6599`, 7 migrations applied to prod |
 | 3 | **`LESSONREQUEST`** — inquiry → agreed time → activation → payment → app | ✅ **BUILT** on `task/lessonrequest`, 4 migrations applied to prod — awaiting merge |
-| 4 | **`GIFTPATH`** — gifts stay a conversation | **ready — may run alongside LESSONREQUEST** |
-| 5 | **`SESSIONBOOK`** — `/lessons` becomes a purchase flow for members | ready; **last** |
+| 4 | **`GIFTPATH`** — gifts stay a conversation | ✅ **MERGED** `8b11182` — found gift enquiries never alerted anyone |
+| 5 | **`SESSIONBOOK`** — `/lessons` becomes a purchase flow for members | ✅ **MERGED** `5b9a184` |
 
 **Cancelled / retired by wave 1:** `RIDERQUALIFY` (rider questions already on the form),
 `THREEFORMS` (fully superseded), `FUNNELDOORS` (superseded earlier).
@@ -65,6 +65,19 @@ provision does not match it yet.**
 | **Footer: map beside Find Us, sign-in into the nav, credit line left / copyright centred** | `TASK-FOOTER` | the Cactai URL (later); two small owner questions. **Buildable now without them** |
 | Footer nav still says "Our Story" | folded into `TASK-FOOTER` §F5 | — |
 | `/about` still reachable from the footer, needs rebuild | not specced | owner |
+
+# ⚠️ WAVE 1 IS BUILT BUT NOT WALKED
+
+**Not one wave-1 screen has been opened in a browser.** Three live checklists are stacked and all
+turn on the same unproven thing — **that emails actually send**:
+- `TASK-LESSONREQUEST-REPORT.md` §6 — 9 steps; **item 5 proves the invitation carries the agreed
+  time**, which is also the first real test of the timezone fix.
+- `TASK-GIFTPATH-REPORT.md` — 4 items; a gift enquiry has never alerted anyone, so this is the first
+  time it should.
+- `TASK-CAREPATH-REPORT.md` §7 — 18 steps; item 10 is the live email.
+
+**Build environment cannot do this**: no non-placeholder Supabase credentials, and the mail endpoints
+are Vercel functions unreachable from psql. **It needs the owner, in a browser, on the deployed site.**
 
 # WAVE 3+ — known, not yet in a wave
 
