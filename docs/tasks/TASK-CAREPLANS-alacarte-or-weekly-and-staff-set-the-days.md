@@ -83,6 +83,48 @@ RECURRING   rate = HOW MANY DAYS STAFF CHOSE   periods = occurrences of those da
 becomes **the count of days staff actually selected** (§P3). Two days chosen *is* rate 2 — which
 **dissolves the 2× gap (§P2b) as a side effect rather than as a separate fix.**
 
+### ⚠️ THE SELECTED DAYS ARE AN ENTITLEMENT BASIS, **NOT A SCHEDULE**
+
+**Owner, 2026-08-17 — this is the ruling that shapes the whole task:**
+> *"it needs to allow moving any monthly plan to any day in the month. it cannot restrict to a
+> specific number of days per week and lock in on that. a person needs to be able to schedule any
+> amount of days per week but not exceed their monthly total calculated based on the number of their
+> selected days in the month. so if there are 5 sundays and 4 saturdays in the month and those are
+> their selected days they get 9 lessons that month."*
+
+**The chosen weekdays exist ONLY to compute a number.** Once that number is known, the client books
+**freely** — any days, any distribution across the month, several in one week and none the next.
+
+```
+Saturday + Sunday selected, in a month with 5 Sundays and 4 Saturdays
+        →  allowance = 9 lessons that month
+        →  bookable on ANY 9 days the client likes
+```
+
+**What this means for the build:**
+- **`rate × periods` computes an ALLOWANCE, not a timetable.** Sum the occurrences of *each* selected
+  weekday in the month — 5 + 4 = 9 — and mint that many credits for the month.
+- **Booking is then ordinary credit redemption.** The cap enforces itself: no credit, no booking.
+  **Do not add a second "days per week" check** — that would re-impose the very restriction the owner
+  is removing.
+- **Moving a booking must not change the allowance.** Cancel returns the credit, rebook consumes it.
+  The month's total is fixed the moment it is minted.
+
+⚠️ **`generate_monthly_lessons` IS THE PROBLEM, and it must change.** Measured: it reads a single
+`config.recurring_day`, loops the month with `CONTINUE WHEN to_char(d,'Dy') <> v_day`, **inserts a
+booking for every occurrence and debits a credit each time.** That is a schedule lock — precisely
+what this ruling forbids.
+
+**Two options; state which you chose and why:**
+1. **Stop generating bookings** — mint the month's credits and let the client book. Simplest, and it
+   matches how every other credit already behaves.
+2. **Keep generation as a moveable convenience** — pre-book the selected weekdays, but every one is
+   freely cancellable and rebookable to any date, with the credit returning to the pool.
+
+**Option 2 is likely what staff want** (a plan that arrives already on the calendar), **but it is
+only acceptable if those bookings are genuinely movable.** A pre-generated booking the client cannot
+move is the current behaviour wearing a new name.
+
 ### ⚠️ THE ONE THING THAT CANNOT COLLAPSE TO MULTIPLICATION
 **A calendar month holds FOUR OR FIVE occurrences of any given weekday.** A 1× weekly plan owes
 **5 credits in a five-Tuesday month**, not 4.
@@ -267,8 +309,15 @@ second one.
 3. Retired SKUs still resolve for existing orders — **prove an executed order referencing one still
    reads correctly.**
 4. Staff can select **one, two, or more days**, plus **N weeks or indefinite**.
-5. **Quantity is derived from the chosen days** — show the formula and a worked example (e.g. 2 days
-   × 4 weeks).
+5. **The allowance is derived from the chosen days** — show the formula and **the owner's worked
+   example: Saturday + Sunday in a month with 5 Sundays and 4 Saturdays = 9 lessons.**
+5b. ⚠️ **A client can book those 9 on ANY days of the month** — three in one week, none the next,
+    on weekdays that were never selected — **and is stopped only at the 10th.** Prove both halves:
+    the freedom, and the cap.
+5c. **Moving or cancelling a booking never changes the month's allowance** — cancel returns the
+    credit, rebooking consumes it, the total is fixed at mint.
+5d. **No "days per week" restriction exists anywhere in the new code** — prove it by booking a
+    distribution that violates the original weekday pattern and watching it succeed.
 6. **Existing recurring plans compute the SAME allotment before and after** — query output both
    sides. This is the regression that matters most.
 7. A **fixed-week plan stops** when its weeks elapse; an **indefinite plan keeps re-minting monthly**
