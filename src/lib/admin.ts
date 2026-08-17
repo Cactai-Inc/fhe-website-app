@@ -482,8 +482,16 @@ export async function adminCreateOffering(input: OfferingInput): Promise<Offerin
 }
 
 export async function adminUpdateOffering(id: string, patch: Partial<OfferingInput>): Promise<void> {
-  const { error } = await supabase.from('offerings').update(patch).eq('id', id);
-  if (error) throw error;
+  // CAREPATH §C1d: the catalog editor is the surface D13 makes the owner's own
+  // (prices, including clearing one back to NULL for "Price on inquiry"). It
+  // reported "Offering updated — live everywhere it appears" off `error` alone,
+  // and RLS filtering an UPDATE to zero rows is not an error — so a blocked
+  // price change looked identical to a saved one. `null` in the patch is a real
+  // value and clears the column; the guard is about the write landing at all.
+  assertWrote(
+    await supabase.from('offerings').update(patch).eq('id', id).select('id'),
+    'This offering',
+  );
 }
 
 // ─── Provision-first client accounts ─────────────────────────────────────────
