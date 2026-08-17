@@ -75,6 +75,33 @@ confirms whether lessons are in or out of scope. Assume OUT until told otherwise
 - **`weekly_frequency` stops being the customer's choice.** Whether the column survives as a default
   is the builder's call — **state which and why.**
 
+## P2b — ⚠️ THIS TASK ABSORBS THE 2× WEEKLY GAP. IT IS THE SAME PROBLEM.
+
+**`CAREPATH` left test 10 deliberately unmet (report §4, G1): a weekly ×2 item can be given only ONE
+day of the week.** Do not fix that separately — **it is this task.**
+
+**Why they are one job:** the gap exists because `offerings.weekly_frequency` says "2" while the
+writer stores a single day. **P3 removes `weekly_frequency` as the input entirely** — the days staff
+choose *become* the frequency. Fixing the ×2 case first would build day-plurality keyed to
+`weekly_frequency`, and then P3 would tear that out. **That means crossing the entitlement
+arithmetic twice, in the area `CREDITALIGN` was reverted three times.** Cross it once.
+
+**Measured 2026-08-17: ZERO purchase lines exist against any 2× SKU.** Nobody is under-served today,
+so there is no pressure to patch ahead of doing it properly. **Verify that is still true before you
+start** — if someone has been sold a 2× plan since, say so, because they are being scheduled half of
+what they bought.
+
+### The shape, as `CAREPATH` recorded it
+- **`config.recurring_days text[]`**, with the existing singular `config.recurring_day` kept as a
+  **read fallback** so live 1× plans keep working untouched.
+- **`generate_monthly_lessons` loops the array** instead of filtering `to_char(d,'Dy') <> v_day`.
+- **The month's entitlement trues against `array_length(days,1) × weeks`**, not `weeks`.
+- ⚠️ **The entitlement arithmetic is the dangerous half** — the scheduler is the easy part.
+  `set_recurring_day`, `generate_monthly_lessons`, `client_monthly_plan` and `_recurring_allotment`
+  all move together. **Regression-prove existing 1× plans compute identically (§THE TEST #6).**
+- **The current failure is under-scheduling, never over-minting** — it books too little rather than
+  granting credits nobody paid for. **Keep that direction if you must ship partially.**
+
 ## P3 — staff choose the DAYS, and quantity follows
 At provisioning (`CAREPATH` §C7 is the surface), staff set:
 1. **Which days of the week** — one or several. ⚠️ **`recurring_day` is SINGULAR today**; this needs
