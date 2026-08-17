@@ -83,22 +83,32 @@ four statuses and output format are RETAINED):
 
 # THE METHOD — this is the point of the task
 
-**The owner's rule, verbatim:** *"the thread that evaluates if something was done reads the code
-one time and then checks all 65 things… its not checking and reading the code 65 times
-individually."*
+## Why the first attempt was inefficient — the owner's diagnosis (2026-08-16)
 
-**Work in this order. Each phase is cheaper than the one after it, so anything a cheap phase
-resolves must never reach an expensive one.**
+> *"that thread running a full review of each of the 975 items without deduplicating first and
+> without using a single stored context memory entry so all of them were reviewed in one pass was
+> why that thread was super inefficient… the list of items being collected to review them was step 1
+> and knowing the tally was 975 told me that part ran properly. the deduplicate was not done
+> properly, and that should be where things pickup. then we have the list of items and we review
+> them against the code together in a single pass to see what is still really unresolved and
+> possibly which of those is no longer something to resolve."*
 
-## Phase 1 — refresh the cheap evidence, ONCE (no per-item work)
-Build these once, in memory, and reuse for every judgement afterwards:
-1. **A fresh commit log** for the full window (`git log --oneline` from `6a58c0f` to `HEAD`, 180
-   commits) — replaces the stale `gitlog.txt`. **Write it to
-   `docs/reports/flagharvest-work/gitlog-2.txt`.**
-2. **The migration filename list** (`supabase/migrations/`), which is dated and task-named.
-3. **The 11 merged task reports** named above — each states what it fixed. **Read each once.**
+**Two failures, and the fix for each:**
 
-## Phase 2 — RECONCILE ALL 975 INTO ONE FAMILY LIST, before verifying anything
+| what went wrong | the rule now |
+|---|---|
+| items were reviewed **before** being deduplicated, so the same fact was investigated many times | **Deduplicate FIRST. Nothing is judged until the family list is complete.** |
+| each item was reviewed with its **own** context load, instead of one context serving all of them | **Load the evidence ONCE, then sweep every family against it in a single pass.** |
+
+**⚠️ COLLECTION IS DONE AND ACCEPTED. The 975 tally is correct and confirms step 1 ran properly.
+RESUME AT DEDUPLICATION.** Do not re-collect, do not re-extract, do not reopen the 104 reports.
+
+## Phase 1 — DEDUPLICATE (the resume point, and the spine of the task)
+**Nothing is verified in this phase.** Produce **ONE numbered family list covering all 975 items**
+— see the reconciliation rules below. This must be complete before any judging begins, because
+every duplicate left in the list is an investigation paid for twice.
+
+### The reconciliation rules — all 975 into one family list
 **This is the owner's "reconcile all 975 items to deduplicate" step, and it is the whole spine of
 the task.** Deduplication happens in **both** directions:
 
@@ -118,24 +128,50 @@ is the exact waste this task exists to avoid.**
   five separate times and judges it accordingly.
 - **State the collapse:** 975 raw → N families.
 
-## Phase 3 — bulk-close from Phase 1 evidence, no code reading
-Sweep **all 914 families** (794 new + 120 previously-open) against the commit log, migration list
-and the 11 reports. Anything demonstrably fixed closes here, citing **a commit hash or migration
-filename**. **Expect this to close a large fraction. Do not read application code in this phase.**
+## Phase 2 — LOAD THE EVIDENCE ONCE
+Build the whole picture **before judging anything**, and reuse it for every family. This is the
+"single stored context" the first attempt lacked.
 
-## Phase 4 — ONE grounding read per domain, then batch-judge
-Only for what survives Phase 3.
-- For each domain, **read the relevant code and query prod ONCE** — build the picture, then judge
-  **every remaining item in that domain against it**.
-- **Never re-read the same file for a second item.** If two items concern one file, they are judged
-  in the same pass.
-- Prod SQL: `psql "$(head -1 .env.db)" -tAc "<SQL>"`, **SELECT only**. ⚠️ `auth.uid()` is NULL on
-  that connection, so RLS-gated RPCs legitimately return zero rows — **query `pg_policies`,
-  `pg_proc`, `information_schema` directly and never conclude "broken" from an empty RPC result.**
+1. **A fresh commit log** — `git log --oneline` from `6a58c0f` to `HEAD` (180 commits). Write it to
+   `docs/reports/flagharvest-work/gitlog-2.txt`. Replaces the stale `gitlog.txt`.
+2. **The migration filename list** (`supabase/migrations/`) — dated and task-named.
+3. **The 11 merged task reports** named above — each states what it fixed. **Read each once.**
+4. **The code and prod surfaces the family list actually touches** — derived from the families, so
+   you read what is needed and nothing else. **Read each file once; query each object once.**
+   - Prod SQL: `psql "$(head -1 .env.db)" -tAc "<SQL>"`, **SELECT only**. ⚠️ `auth.uid()` is NULL on
+     that connection, so RLS-gated RPCs legitimately return zero rows — **query `pg_policies`,
+     `pg_proc`, `information_schema` directly and never conclude "broken" from an empty RPC result.**
 
-## Phase 5 — re-baseline the two already-verified slices
-**Only their OPEN items** (39 UI + 81 IDENTITY) get re-checked against the 180 new commits — a
-**delta check, not a fresh pass.** Their CLOSED/SUPERSEDED entries stand.
+## Phase 3 — ONE SWEEP: judge every family against the loaded evidence
+**A single pass over the family list.** For each family assign one factual status:
+
+- **RESOLVED** — a later commit or migration demonstrably fixed it. **Name the hash or filename and
+  confirm the fix is real.** "Probably fixed" is not a status.
+- **SUPERSEDED** — the thing it concerned no longer exists (file deleted, table retired, page
+  removed). Show it is gone.
+- **STILL OPEN** — you checked current code or prod and it is still there. Show what you checked.
+- **CANNOT DETERMINE** — respectable; a guess is not. Say what you tried.
+
+**⚠️ Do not go back for more context per item.** If a family needs a surface you did not load,
+note it and batch those together for **one** follow-up read at the end of the sweep — never a
+read per item.
+
+### The fourth bucket the owner asked for: *"no longer something to resolve"*
+Some items will be **STILL OPEN yet pointless** — the surface they concern is being redesigned out
+from under them. ⚠️ **The flow program now in flight rewrites `/lessons`, `/horse`, `/acquisition`,
+the checkout and the questions/submission pages** (`ASKRIGHT`, `CAREPATH`, `LESSONREQUEST`,
+`SESSIONBOOK`; `RIDERQUALIFY` cancelled, `THREEFORMS` retired). An item about a screen that is
+being replaced next week is technically open and practically moot.
+
+**Mark these `STILL OPEN — MOOT?`, with one line saying which in-flight task overtakes it.**
+**Do NOT remove them yourself** — this is a judgement, not a fact, and the owner makes it on his
+pass. Flagging them is what saves him time; deciding for him is what loses his trust.
+
+## Phase 4 — fold in the two already-verified slices
+Their **within-slice dedup is reusable input** to Phase 1 — do not redo it. Their **OPEN items
+(39 UI + 81 IDENTITY) are families like any other** and go through the same single sweep, since
+they were judged 180 commits ago. Their CLOSED/SUPERSEDED entries **stand** — spot-check a handful
+cheaply against the commit log rather than re-verifying them.
 
 ---
 
@@ -155,8 +191,12 @@ where:    <surface or area — "Clients page", "booking emails", "horse records"
 raised:   <N reports, earliest date>  ·  sources: <report files>
 checked:  <what you verified and what you found — file:line or SQL + result>
 rank:     <1–6>
+moot?:    <blank, or: which in-flight task overtakes this and why>
 if kept:  <what doing it would involve, one line>
 ```
+
+**Put every `STILL OPEN — MOOT?` family in its own section at the top**, before the ranked groups.
+Those are the fastest decisions on the sheet and clearing them shrinks everything below.
 
 - **Group by rank**, most severe first: **1** live defect · **2** security / data-integrity ·
   **3** blocking or owner-decision-owed · **4** unviewed inventory · **5** correctness /
@@ -186,9 +226,11 @@ what he keeps becomes the queue.
 # TRAPS
 - **NO subagents. One thread.** The cost incident that motivated this task was caused by fan-out
   where each agent re-read the same context.
-- **Do not re-extract from the 104 reports** — start from the slices.
-- **Do not verify the same fact twice** across slices (Phase 2 exists to prevent it).
-- **Do not read code in Phase 3**, and **do not re-read a file per item in Phase 4.**
+- **Do not re-extract from the 104 reports** — collection is done; resume at deduplication.
+- **Do not judge anything before the family list is complete** (Phase 1 precedes Phase 3, always).
+- **Do not re-read a file or re-query an object for a second family.** Load once in Phase 2, sweep
+  once in Phase 3. Missing surfaces are batched into ONE follow-up read, never a read per item.
+- **Do not remove a MOOT item yourself** — flag it and let the owner decide.
 - **Never cite the PGlite suite as proof anything is broken** — ~46 files are red on `main` today.
 - **"Probably fixed" is not a status.** Name the commit or migration, and confirm the fix is real.
 - **CANNOT DETERMINE is respectable**; a guess is not.
@@ -206,8 +248,11 @@ what he keeps becomes the queue.
 5. The 120 previously-open UI/IDENTITY items are **re-baselined against the 180 new commits**, with
    the count that flipped to closed stated plainly.
 6. `gitlog-2.txt` is written and used.
-7. **Report the phase-by-phase attrition** — families entering and leaving Phases 3, 4 and 5. This
-   is how the owner sees the method worked.
-8. No application code, migration or push.
+7. **Report the attrition:** 975 raw → N families after dedup → M resolved/superseded →
+   **K on the owner's sheet**, of which J are flagged MOOT. This is how he sees the method worked.
+8. **Report the efficiency proof:** the number of distinct files read and prod objects queried, and
+   confirmation that **no file was read twice**. If that number is anywhere near the family count,
+   the method was not followed.
+9. No application code, migration or push.
 
 Report to `docs/reports/TASK-HARVESTCLOSE-REPORT.md`. Do not push; the orchestrator merges.
