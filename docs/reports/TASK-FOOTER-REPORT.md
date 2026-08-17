@@ -152,9 +152,17 @@ relocated and re-styled, so the signed-in behavior claim rests on "the logic
 was not touched," not on a fresh screenshot — the owner should confirm once
 signed in.
 
-Nav now reads eight items at this length (Home, Our Community, Book a Lesson,
-Horse Care, Acquisition Support, Gift a Service, FAQ, Member sign-in) — see
-screenshots, it holds up fine in a single column on all three widths tested.
+Nav now reads eight items at this length — see screenshots, it holds up fine
+in a single column on all three widths tested.
+
+**Later, owner (2026-08-17): "center align the footer nav entries and move
+faq to the last position."** `nav` gained `items-center text-center`
+(flex-column, so this centers every link on the column's own axis, not the
+page's). FAQ moved out of the mapped array and became its own `<Link>` after
+the sign-in item — sign-in was already the last item post-F2, so "last
+position" now means Home, Our Community, Book a Lesson, Horse Care,
+Acquisition Support, Gift a Service, Member sign-in, **FAQ**. Confirmed in
+the refreshed `footer-desktop.png`/`footer-mobile.png`.
 
 ## F3 — the last line, three parts: DONE
 

@@ -49,7 +49,7 @@ export default function Footer() {
         {/* Navigation */}
         <div>
           <p className="eyebrow-on-dark mb-5">Navigation</p>
-          <nav className="flex flex-col gap-3" aria-label="Footer">
+          <nav className="flex flex-col items-center gap-3 text-center" aria-label="Footer">
             {[
               { label: 'Home', href: '/' },
               { label: 'Our Community', href: '/story' },
@@ -61,7 +61,6 @@ export default function Footer() {
               { label: 'Horse Care', href: '/horse' },
               { label: 'Acquisition Support', href: '/acquisition' },
               { label: 'Gift a Service', href: '/gift' },
-              { label: 'FAQ', href: '/faq' },
             ].map((link) => (
               <Link
                 key={link.label}
@@ -77,6 +76,13 @@ export default function Footer() {
               className="text-sm font-sans text-white/[0.7] hover:text-white transition-colors focus-ring-dark"
             >
               {user ? 'Member area' : 'Member sign-in'}
+            </Link>
+            {/* Owner, 2026-08-17: FAQ moved to the last position. */}
+            <Link
+              to="/faq"
+              className="text-sm font-sans text-white/[0.7] hover:text-white transition-colors focus-ring-dark"
+            >
+              FAQ
             </Link>
           </nav>
         </div>
