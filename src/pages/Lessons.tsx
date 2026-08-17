@@ -3,11 +3,15 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Check, Gift } from 'lucide-react';
 import { usePrefersReducedMotion } from '../lib/hooks';
 import { useCart } from '../contexts/CartContext';
+import { useAuth } from '../contexts/AuthContext';
 import { fetchPublicCatalog, type ServiceGroup } from '../lib/publicCatalog';
 import { cartHasQuestions } from '../lib/questionSets';
+import { listStableHorses } from '../lib/stable';
 import type { Offering } from '../lib/types';
 import Seo from '../components/Seo';
 import SelectionBar from '../components/SelectionBar';
+import ServiceSelector from '../components/ServiceSelector';
+import ServiceListState from '../components/ServiceListState';
 import { seoForPath } from '../lib/seo';
 
 const LESSON_POSTER = '/images/Hero_A.png';
@@ -54,10 +58,39 @@ export default function Lessons() {
   const seo = seoForPath('/lessons');
   const reducedMotion = usePrefersReducedMotion();
   const { state, toggleItem, isSelected, itemCount, setFunnel } = useCart();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [packs, setPacks] = useState<Offering[]>([]);
   const [packsState, setPacksState] = useState<'loading' | 'error' | 'ready'>('loading');
   const [typeName, setTypeName] = useState<string | null>(null);
+  // The full RIDING_LESSON group (packs/typeName above are the marketing page's
+  // flattened view of the same fetch) — the signed-in purchase-flow branch needs
+  // the whole ServiceGroup shape to hand to ServiceSelector, the same component
+  // /horse and /acquisition already render their cards with.
+  const [group, setGroup] = useState<ServiceGroup | null>(null);
+
+  /**
+   * SESSIONBOOK §S2 — "does this member have a horse" (owned OR leased).
+   * `my_stable_horses` already unions ownership, lessee and active
+   * horse_relationships rows (verified live, 2026-08-17) — a non-empty result
+   * IS the answer, so no second "do I own ANY horse" check is needed.
+   * Only fetched when signed in; signed-out visitors keep seeing everything and
+   * never call this.
+   */
+  const [hasHorse, setHasHorse] = useState(false);
+  const [horseState, setHorseState] = useState<'loading' | 'ready'>('loading');
+  useEffect(() => {
+    if (!user) { setHorseState('ready'); return; }
+    let active = true;
+    setHorseState('loading');
+    listStableHorses()
+      .then((horses) => { if (active) { setHasHorse(horses.length > 0); setHorseState('ready'); } })
+      // Fail OPEN (show every lesson) rather than closed — the same convention
+      // AuthContext's hiddenPages uses: a failed read should show MORE, not hide
+      // lessons a horse-owning member is entitled to.
+      .catch(() => { if (active) { setHasHorse(true); setHorseState('ready'); } });
+    return () => { active = false; };
+  }, [user]);
 
   /**
    * ASKRIGHT §A0 — THE CROSS-ENTRY CASE.
@@ -81,7 +114,8 @@ export default function Lessons() {
   useEffect(() => {
     fetchPublicCatalog('rider')
       .then((groups: ServiceGroup[]) => {
-        const lessons = groups.find((g) => g.code === 'RIDING_LESSON');
+        const lessons = groups.find((g) => g.code === 'RIDING_LESSON') ?? null;
+        setGroup(lessons);
         setPacks(lessons?.offerings ?? []);
         // The catalog's own display name for the service, carried on the cart
         // item so any surface that names the service says what the owner named
@@ -91,7 +125,7 @@ export default function Lessons() {
       })
       // A fetch failure used to silently render an empty grid — the page
       // looked like the business sells nothing. Surface it instead.
-      .catch(() => { setPacks([]); setPacksState('error'); });
+      .catch(() => { setPacks([]); setGroup(null); setPacksState('error'); });
   }, []);
 
   function selectPack(o: Offering) {
@@ -111,6 +145,70 @@ export default function Lessons() {
     <>
       {seo && <Seo title={seo.title} description={seo.description} path="/lessons" service={seo.service} />}
 
+      {user ? (
+        <>
+        {/* SESSIONBOOK — SIGNED IN.
+            Owner, 2026-08-16: "when im in an authenticated session and i click
+            the book a lesson page link it opens a page that is formatted like
+            the horse care and find a horse pages... and the focus is on the
+            purchase flow like those other pages use, not a marketing approach."
+            No hero, no video, no marketing copy — straight to the same
+            ServiceSelector card component /horse and /acquisition render their
+            step-1 cards with. This is composition, not a second page: it shares
+            the catalog fetch, the cart and the `nextStep` spine the signed-out
+            branch below already uses, so Continue still lands on `/checkout`,
+            which already branches signed-in members into the member purchase
+            panel (`createDraftOrder`). No second purchase path is added here. */}
+        <div className="min-h-screen bg-cream pt-24 pb-36">
+          <div className="container-site max-w-5xl">
+            <div className="mb-10">
+              <p className="eyebrow mb-3">Book a Lesson</p>
+              <h1 className="heading-section text-green-800 mb-3">Choose Your Lessons</h1>
+              <p className="body-text">
+                Select the lesson option that fits your schedule. You're signed in, so this goes
+                straight to your order — nothing is charged until you confirm.
+              </p>
+            </div>
+
+            {(() => {
+              if (packsState === 'error') return <ServiceListState state="error" />;
+              if (packsState === 'loading' || horseState === 'loading') return <ServiceListState state="loading" />;
+              // S2 — hide the own-horse lessons (`horse_included = false`) from a
+              // member with no horse on record. `hasHorse` already covers owned
+              // OR leased (`my_stable_horses` unions both); a member who owns or
+              // leases sees BOTH sets — hiding the our-horse lessons would block
+              // them from booking a school-horse lesson (owner-confirmed,
+              // 2026-08-17). Explicit `=== false` test, never `!= true` —
+              // `horse_included` carries NULLs elsewhere in the catalog.
+              const offerings = hasHorse
+                ? (group?.offerings ?? [])
+                : (group?.offerings ?? []).filter((o) => o.horse_included !== false);
+              if (!group || offerings.length === 0) {
+                return (
+                  <ServiceListState
+                    state="empty"
+                    emptyLead="We don't have a lesson option available for you right now — reach out and we will help you find the right fit."
+                  />
+                );
+              }
+              return <ServiceSelector group={{ ...group, offerings }} category="Rider Services" />;
+            })()}
+
+            <div className="mt-12 flex items-center justify-center">
+              <button type="button" onClick={() => navigate(nextStep)} disabled={itemCount === 0} className="btn-primary">
+                Continue
+                <ArrowRight size={16} />
+              </button>
+            </div>
+            {itemCount === 0 && (
+              <p className="text-xs text-center text-muted mt-3">Choose a lesson option to continue.</p>
+            )}
+          </div>
+        </div>
+        <SelectionBar onContinue={() => navigate(nextStep)} />
+        </>
+      ) : (
+        <>
       {/* Lead content (page leads with words; video reinforces below) */}
       {/* pb-12→pb-8: the video sits a touch closer to the intro (owner).
           max-w-3xl→4xl: the intro paragraph holds to ≤3 lines on desktop
@@ -305,6 +403,8 @@ export default function Lessons() {
         label={nextStep === '/checkout' ? 'Continue to Submit Inquiry' : 'Continue'}
       />
     )}
+        </>
+      )}
     </>
   );
 }
