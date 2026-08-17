@@ -287,11 +287,11 @@ export default function Story() {
       <section id="the-community" className="bg-cream scroll-mt-24">
         <div className="container-site pt-32 pb-16 sm:pt-40 sm:pb-24">
           <Reveal className="max-w-3xl">
-            <p className="eyebrow mb-6">The Community</p>
+            <p className="eyebrow mb-6">Beyond The Arena</p>
             {/* One line, title case, no period (owner). The clamp comes down
                 because the line is now ~24 chars instead of two short ones. */}
             <h2 className="heading-display text-green-900 text-[clamp(1.9rem,4.2vw,3.2rem)] [text-wrap:balance]">
-              You Will Not Ride Alone
+              Endless Trails &amp; Time With Friends
             </h2>
           </Reveal>
 
@@ -350,7 +350,7 @@ export default function Story() {
 
           {/* The ways in — refined preview, informational with a path (carries
               the onward link to /shop now that S4 is image-only). */}
-          {/* Continue out of The Community and into The Ways In. */}
+          {/* Continue out of Beyond The Arena and into The Ways In. */}
           <p className="mt-10">
             <a href="#the-ways-in" className="link-underline">
               Continue <ArrowRight size={13} aria-hidden="true" />
