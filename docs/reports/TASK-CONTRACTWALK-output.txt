@@ -1,0 +1,1040 @@
+Pager usage is off.
+Output format is aligned.
+Timing is off.
+################ BASELINE (outside txn) ################
+             t              | n  
+----------------------------+----
+ auth.users                 | 12
+ contact_required_documents | 25
+ contacts                   | 24
+ contract_fields            |  0
+ contracts                  |  0
+ document_parties           | 78
+ documents                  | 57
+ groups                     | 15
+ horse_relationships        |  1
+ horses                     |  1
+ invitations                | 15
+ members                    | 12
+ net.http_request_queue     |  0
+ notifications              | 44
+ profiles                   |  9
+ signatures                 | 51
+(16 rows)
+
+BEGIN
+CREATE TABLE
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+                 put                  |                 put                  |                 put                  |                 put                  |            put            |            put            
+--------------------------------------+--------------------------------------+--------------------------------------+--------------------------------------+---------------------------+---------------------------
+ e656f20b-ef43-4725-9029-19e7f0190d9c | b45a5503-89bc-489a-b012-c7fbf5c09632 | cccc0000-0000-4000-8000-00000000c001 | cccc0000-0000-4000-8000-00000000c002 | cw-lessee@example.invalid | cw-lessor@example.invalid
+(1 row)
+
+INSERT 0 2
+
+################ IMPERSONATION MECHANISM ################
+set_config(request.jwt.claims, {"sub":<user>,"role":"authenticated"}, is_local=true)
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "b45a5503-89bc-489a-b012-c7fbf5c09632", "role" : "authenticated"}
+(1 row)
+
+               auth_uid               |   auth_role   | staff |                 org                  |            acting_contact            
+--------------------------------------+---------------+-------+--------------------------------------+--------------------------------------
+ b45a5503-89bc-489a-b012-c7fbf5c09632 | authenticated | t     | e656f20b-ef43-4725-9029-19e7f0190d9c | 75475f66-8950-4f13-832c-5471070737f8
+(1 row)
+
+
+################ W1 — PROVISION A DEAL CLIENT ################
+--- W1a: EXACTLY what ProvisionClientForm sends for "Deal client" when the
+---      prefilled paperwork checkbox list is left UNTOUCHED (templateKeys omitted).
+---      CATEGORY_TOKEN["Deal client"] === "GUEST", so the RPC receives {GUEST}.
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "b45a5503-89bc-489a-b012-c7fbf5c09632", "role" : "authenticated"}
+(1 row)
+
+psql:/private/tmp/claude-504/-Users-Cactai/8fa614f7-4c52-4474-9e38-1a0761d8c21d/scratchpad/cw/walk.sql:74: NOTICE:  table "_wanted" does not exist, skipping
+ provisioned 
+-------------
+ t
+(1 row)
+
+                                 provision_result                                 
+----------------------------------------------------------------------------------
+ {                                                                               +
+     "token": "e2dff03ee9734ff4b062a80c82a634728c216cf91c454ea898200699f217b12b",+
+     "amount": 0,                                                                +
+     "labels": [                                                                 +
+     ],                                                                          +
+     "client_id": "73158d32-3e2d-4875-8ba1-8d656675e4fa",                        +
+     "categories": [                                                             +
+         "GUEST"                                                                 +
+     ],                                                                          +
+     "contact_id": "6af6dc05-f1b4-415f-a2e5-a70a643c180a",                       +
+     "request_id": null,                                                         +
+     "purchase_id": null,                                                        +
+     "agreed_lesson": null,                                                      +
+     "invitation_id": "0ab75c69-5d92-4b74-84e3-66bea7249781",                    +
+     "confirmed_orders": [                                                       +
+     ]                                                                           +
+ }
+(1 row)
+
+                 put                  |                               put                                |                 put                  
+--------------------------------------+------------------------------------------------------------------+--------------------------------------
+ 6af6dc05-f1b4-415f-a2e5-a70a643c180a | e2dff03ee9734ff4b062a80c82a634728c216cf91c454ea898200699f217b12b | 0ab75c69-5d92-4b74-84e3-66bea7249781
+(1 row)
+
+--- the contact that was created:
+                  id                  | contact_type | first_name | last_name  |           email           
+--------------------------------------+--------------+------------+------------+---------------------------
+ 6af6dc05-f1b4-415f-a2e5-a70a643c180a | CONTACT      | Walker     | Dealclient | cw-lessee@example.invalid
+(1 row)
+
+--- clients row (the D8 CLIENT marker):
+              contact_id              |         source         | client_marked | customer_marked 
+--------------------------------------+------------------------+---------------+-----------------
+ 6af6dc05-f1b4-415f-a2e5-a70a643c180a | provisioned invitation | t             | f
+(1 row)
+
+--- groups rows — task doc claims GUEST:
+              contact_id              | group_type 
+--------------------------------------+------------
+ 6af6dc05-f1b4-415f-a2e5-a70a643c180a | GUEST
+(1 row)
+
+--- contact_required_documents — task doc claims RELEASE_GENERAL AND NOTHING ELSE:
+   template_key   
+------------------
+ COMPANY_POLICIES
+ FACILITY_RULES
+ RELEASE_GENERAL
+(3 rows)
+
+--- what the ADMIN SAW on screen for "Deal client" (category_document_defaults):
+  category   |  template_key   |               title               
+-------------+-----------------+-----------------------------------
+ Deal client | RELEASE_GENERAL | General Visitor Liability Release
+(1 row)
+
+--- what "GUEST" resolves to in category_document_requirements (what the RPC used):
+ category |   template_key   
+----------+------------------
+ Guest    | COMPANY_POLICIES
+ Guest    | FACILITY_RULES
+ Guest    | RELEASE_GENERAL
+(3 rows)
+
+--- the invitation:
+                  id                  |           email           | status |          expires_at           | days_valid | categories | template_keys | anchored | token_len 
+--------------------------------------+---------------------------+--------+-------------------------------+------------+------------+---------------+----------+-----------
+ 0ab75c69-5d92-4b74-84e3-66bea7249781 | cw-lessee@example.invalid | sent   | 2026-08-24 11:48:39.403453-07 |          7 | {GUEST}    |               | t        |        64
+(1 row)
+
+ org_expiry_days 
+-----------------
+               7
+(1 row)
+
+
+--- W1b: a RESEND — same person, this time the admin TOUCHED the checkbox list
+---      so templateKeys = {RELEASE_GENERAL} is sent explicitly.
+ provisioned2 
+--------------
+ t
+(1 row)
+
+                               put                                |                 put                  
+------------------------------------------------------------------+--------------------------------------
+ abaec5430be944f29ad2c2b5b0f0191db8cb024e05ca4ab299cd7469ab1de987 | 2d11615a-7a38-4a48-b339-10471ffdf77d
+(1 row)
+
+--- invitations for this person now (prior superseded?):
+                  id                  |   status   |          expires_at           |   template_keys   
+--------------------------------------+------------+-------------------------------+-------------------
+ 0ab75c69-5d92-4b74-84e3-66bea7249781 | superseded | 2026-08-24 11:48:39.403453-07 | 
+ 2d11615a-7a38-4a48-b339-10471ffdf77d | sent       | 2026-08-24 11:48:39.403453-07 | {RELEASE_GENERAL}
+(2 rows)
+
+--- contact_required_documents after the admin-touched path:
+   template_key   
+------------------
+ COMPANY_POLICIES
+ FACILITY_RULES
+ RELEASE_GENERAL
+(3 rows)
+
+
+################ W2 — REDEEM, AND THE FAILURE MODES ################
+--- W2 fail A: EXPIRED token
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "cccc0000-0000-4000-8000-00000000c001", "role" : "authenticated"}
+(1 row)
+
+SAVEPOINT
+UPDATE 1
+psql:/private/tmp/claude-504/-Users-Cactai/8fa614f7-4c52-4474-9e38-1a0761d8c21d/scratchpad/cw/walk.sql:126: ERROR:  invitation is not valid or has expired
+CONTEXT:  PL/pgSQL function redeem_invitation(text) line 19 at RAISE
+ROLLBACK
+
+--- W2 fail B: SUPERSEDED token — the client clicks the link in the FIRST email
+psql:/private/tmp/claude-504/-Users-Cactai/8fa614f7-4c52-4474-9e38-1a0761d8c21d/scratchpad/cw/walk.sql:131: ERROR:  invitation is not valid or has expired
+CONTEXT:  PL/pgSQL function redeem_invitation(text) line 19 at RAISE
+
+--- W2 fail C: signed in with a DIFFERENT email than the invitation names
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "cccc0000-0000-4000-8000-00000000c002", "role" : "authenticated"}
+(1 row)
+
+psql:/private/tmp/claude-504/-Users-Cactai/8fa614f7-4c52-4474-9e38-1a0761d8c21d/scratchpad/cw/walk.sql:136: ERROR:  this invitation was issued to a different email address
+CONTEXT:  PL/pgSQL function redeem_invitation(text) line 22 at RAISE
+
+--- W2 fail D: not signed in at all
+ be 
+----
+ 
+(1 row)
+
+psql:/private/tmp/claude-504/-Users-Cactai/8fa614f7-4c52-4474-9e38-1a0761d8c21d/scratchpad/cw/walk.sql:141: ERROR:  sign in before redeeming an invitation
+CONTEXT:  PL/pgSQL function redeem_invitation(text) line 12 at RAISE
+
+--- W2 SUCCESS: live token, signed in as the invited email
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "cccc0000-0000-4000-8000-00000000c001", "role" : "authenticated"}
+(1 row)
+
+ redeemed 
+----------
+ t
+(1 row)
+
+
+--- W2 fail E: the SAME link clicked a second time
+psql:/private/tmp/claude-504/-Users-Cactai/8fa614f7-4c52-4474-9e38-1a0761d8c21d/scratchpad/cw/walk.sql:150: ERROR:  invitation is not valid or has expired
+CONTEXT:  PL/pgSQL function redeem_invitation(text) line 19 at RAISE
+
+--- proof of redemption:
+               user_id                |           email           | has_org |              contact_id              | role 
+--------------------------------------+---------------------------+---------+--------------------------------------+------
+ cccc0000-0000-4000-8000-00000000c001 | cw-lessee@example.invalid | t       | 6af6dc05-f1b4-415f-a2e5-a70a643c180a | USER
+(1 row)
+
+               user_id                | status 
+--------------------------------------+--------
+ cccc0000-0000-4000-8000-00000000c001 | active
+(1 row)
+
+                  id                  |   status   | redeemed 
+--------------------------------------+------------+----------
+ 0ab75c69-5d92-4b74-84e3-66bea7249781 | superseded | f
+ 2d11615a-7a38-4a48-b339-10471ffdf77d | redeemed   | t
+(2 rows)
+
+              contact_id              | group_type 
+--------------------------------------+------------
+ 6af6dc05-f1b4-415f-a2e5-a70a643c180a | GUEST
+(1 row)
+
+
+################ W3 — THE FIRST SCREEN AFTER ACTIVATION ################
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "cccc0000-0000-4000-8000-00000000c001", "role" : "authenticated"}
+(1 row)
+
+                         onboarding_state                         
+------------------------------------------------------------------
+ {                                                               +
+     "minor": null,                                              +
+     "needed": true,                                             +
+     "purchase": null,                                           +
+     "documents": [                                              +
+         {                                                       +
+             "title": "Company Policies",                        +
+             "status": "MISSING",                                +
+             "document_id": null,                                +
+             "template_key": "COMPANY_POLICIES"                  +
+         },                                                      +
+         {                                                       +
+             "title": "Facility Rules and Safety Acknowledgment",+
+             "status": "MISSING",                                +
+             "document_id": null,                                +
+             "template_key": "FACILITY_RULES"                    +
+         },                                                      +
+         {                                                       +
+             "title": "General Visitor Liability Release",       +
+             "status": "MISSING",                                +
+             "document_id": null,                                +
+             "template_key": "RELEASE_GENERAL"                   +
+         }                                                       +
+     ],                                                          +
+     "horse_needed": false,                                      +
+     "profile_complete": false                                   +
+ }
+(1 row)
+
+        wall_state         
+---------------------------
+ {                        +
+     "wall": true,        +
+     "staff": false,      +
+     "pending": 3,        +
+     "staff_banner": false+
+ }
+(1 row)
+
+--- the four profile fields that gate completion:
+ profile_complete_before 
+-------------------------
+ f
+(1 row)
+
+UPDATE 1
+ profile_complete_after 
+------------------------
+ t
+(1 row)
+
+ docs_still_needed | horse_needed | profile_complete 
+-------------------+--------------+------------------
+ t                 | f            | t
+(1 row)
+
+
+################ W4 — CREATE THE LEASE AND ATTACH PARTIES ################
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "b45a5503-89bc-489a-b012-c7fbf5c09632", "role" : "authenticated"}
+(1 row)
+
+INSERT 0 1
+                 put                  
+--------------------------------------
+ 36bec108-946b-4e20-b366-eda798abb12e
+(1 row)
+
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+                 put                  
+--------------------------------------
+ 0447b1db-f116-4208-a271-0e2e8b63e8fd
+(1 row)
+
+ lease_started 
+---------------
+ t
+(1 row)
+
+                     start_lease_result                     
+------------------------------------------------------------
+ {                                                         +
+     "contract_id": "fd65eb55-e5f0-414b-bb21-cc833e8628be",+
+     "document_id": "068e5b87-230f-458c-a142-6a19b4765595",+
+     "template_key": "HORSE_LEASE_V2",                     +
+     "fields_seeded": 114                                  +
+ }
+(1 row)
+
+                 put                  |                 put                  
+--------------------------------------+--------------------------------------
+ 068e5b87-230f-458c-a142-6a19b4765595 | fd65eb55-e5f0-414b-bb21-cc833e8628be
+(1 row)
+
+--- the document:
+  display_code  |              title               |       status       | workflow_state | horse_attached |  template_key  | anchored_on_lessee 
+----------------+----------------------------------+--------------------+----------------+----------------+----------------+--------------------
+ DOC-RNASZMGATR | Horse Lease Agreement — Standard | AWAITING_SIGNATURE | editable       | t              | HORSE_LEASE_V2 | t
+(1 row)
+
+--- its parties:
+ party_role | is_signer | signer_order |        who        | is_company 
+------------+-----------+--------------+-------------------+------------
+ LESSEE     | t         |            1 | Walker Dealclient | f
+ LESSOR     | t         |            2 | Olive Lessor      | f
+(2 rows)
+
+--- fields seeded:
+ total | required | required_empty 
+-------+----------+----------------
+   121 |       31 |             27
+(1 row)
+
+--- THE REQUIRED FIELD LIST, BY NAME:
+ owner_role |           field_key            |                              label                               |       seeded       |    gate     
+------------+--------------------------------+------------------------------------------------------------------+--------------------+-------------
+ LESSOR     | TXN.OTHERS_ALLOWED_OTHER       | Other persons allowed                                            | (empty)            | conditional
+ LESSOR     | LESSOR.PARTY_TYPE              | Lessor is an                                                     | INDIVIDUAL         | always
+ LESSEE     | LESSEE.PARTY_TYPE              | Lessee is an                                                     | INDIVIDUAL         | always
+ DEAL       | TXN.LEASE_PURPOSE              | Purpose of the lease                                             | (empty)            | always
+ LESSOR     | HORSE.REGISTERED_NAME          | Registered name                                                  | Contractwalk Probe | always
+ LESSEE     | LESSEE.ENTITY_SIGNER_NAME      | Signing individual — name                                        | (empty)            | conditional
+ LESSOR     | TXN.INJURY_HISTORY             | Has anyone been seriously injured by the Horse's direct actions? | (empty)            | always
+ DEAL       | TXN.LEASE_TERM_TYPE            | Term type                                                        | (empty)            | always
+ LESSOR     | TXN.LEASE_TYPE                 | Lease type                                                       | PARTIAL            | always
+ DEAL       | TXN.PERMITTED_ACTIVITIES       | Permitted activities                                             | (empty)            | always
+ LESSEE     | LESSEE.ENTITY_SIGNER_TITLE     | Signing individual — title                                       | (empty)            | conditional
+ LESSOR     | TXN.INJURY_HISTORY_DETAILS     | Injury history details                                           | (empty)            | conditional
+ DEAL       | TXN.LEASE_START                | Lease start date                                                 | (empty)            | always
+ LESSOR     | LESSOR.ENTITY_SIGNER_NAME      | Signing individual — name                                        | (empty)            | conditional
+ LESSOR     | LESSOR.ENTITY_SIGNER_TITLE     | Signing individual — title                                       | (empty)            | conditional
+ LESSOR     | TXN.PROTECTIVE_EQUIPMENT_OTHER | Other protective equipment                                       | (empty)            | conditional
+ LESSOR     | TXN.MED_DED_RESP               | Medical deductible responsibility                                | (empty)            | conditional
+ LESSOR     | TXN.MORT_DED_RESP              | Mortality deductible responsibility                              | (empty)            | conditional
+ LESSOR     | TXN.RIDER_AIDS_PROHIBITED      | Lessor prohibits the use of rider aids                           | (empty)            | always
+ DEAL       | TXN.RIDER_AIDS                 | Prohibited rider aids                                            | (empty)            | conditional
+ LESSOR     | TXN.RIDER_AIDS_OTHER           | Other prohibited rider aid                                       | (empty)            | conditional
+ LESSOR     | TXN.GL_LESSOR_COVERAGE         | Lessor                                                           | (empty)            | always
+ LESSOR     | TXN.GL_LESSOR_REQUIRES         | Lessor requires of Lessee                                        | (empty)            | always
+ LESSOR     | TXN.GL_NO_REQ_ALLOCATION       | Third-party liability costs                                      | (empty)            | conditional
+ LESSOR     | TXN.GL_LESSEE_STATUS           | Lessee                                                           | (empty)            | always
+ LESSOR     | TXN.CCC_REQUIRED               | Lessor requires of Lessee                                        | (empty)            | conditional
+ LESSOR     | TXN.CCC_LESSEE_STATUS          | Lessee                                                           | (empty)            | conditional
+ LESSOR     | TXN.MORT_ELECTION              | Mortality insurance                                              | (empty)            | always
+ LESSOR     | TXN.MORT_COST_RESP             | Cost of the policy                                               | (empty)            | conditional
+ LESSOR     | TXN.MED_INCLUDED               | Medical coverage is included on the mortality policy             | (empty)            | conditional
+ LESSOR     | TXN.MED_COST_RESP              | Cost of the medical component                                    | (empty)            | conditional
+(31 rows)
+
+
+################ W5 — SIX ATTEMPTS TO SIGN TOO EARLY ################
+
+===== GATE 1 — no auth.uid()
+ be 
+----
+ 
+(1 row)
+
+psql:/private/tmp/claude-504/-Users-Cactai/8fa614f7-4c52-4474-9e38-1a0761d8c21d/scratchpad/cw/walk.sql:228: ERROR:  authentication required
+CONTEXT:  PL/pgSQL function lock_and_sign_contract(uuid,text,text,boolean) line 6 at RAISE
+
+===== GATE 2 — workflow_state the signer may not act on
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "b45a5503-89bc-489a-b012-c7fbf5c09632", "role" : "authenticated"}
+(1 row)
+
+SAVEPOINT
+ moved_to 
+----------
+ editing
+(1 row)
+
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "cccc0000-0000-4000-8000-00000000c001", "role" : "authenticated"}
+(1 row)
+
+psql:/private/tmp/claude-504/-Users-Cactai/8fa614f7-4c52-4474-9e38-1a0761d8c21d/scratchpad/cw/walk.sql:236: ERROR:  document is not ready to sign (workflow_state=editing); lock it first
+CONTEXT:  PL/pgSQL function lock_and_sign_contract(uuid,text,text,boolean) line 13 at RAISE
+ROLLBACK
+ state_restored 
+----------------
+ editable
+(1 row)
+
+
+===== GATE 3 — an open change request
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "cccc0000-0000-4000-8000-00000000c001", "role" : "authenticated"}
+(1 row)
+
+SAVEPOINT
+ raised 
+--------
+ t
+(1 row)
+
+                                                                                                              submitted                                                                                                              
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ {"top": [{"body": "Can we start a week later?", "heading": "The whole document", "impact_rank": 80, "target_section": "Term", "annotation_number": 1}], "submitted": 1, "notify_parties": ["36bec108-946b-4e20-b366-eda798abb12e"]}
+(1 row)
+
+ open_change_requests 
+----------------------
+                    1
+(1 row)
+
+psql:/private/tmp/claude-504/-Users-Cactai/8fa614f7-4c52-4474-9e38-1a0761d8c21d/scratchpad/cw/walk.sql:249: ERROR:  cannot sign: 1 open change request(s) remain; resolve or lock first
+CONTEXT:  PL/pgSQL function lock_and_sign_contract(uuid,text,text,boolean) line 20 at RAISE
+ROLLBACK
+
+===== GATE 4 — required fields still empty (nothing filled yet)
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "cccc0000-0000-4000-8000-00000000c001", "role" : "authenticated"}
+(1 row)
+
+psql:/private/tmp/claude-504/-Users-Cactai/8fa614f7-4c52-4474-9e38-1a0761d8c21d/scratchpad/cw/walk.sql:255: ERROR:  cannot sign: 27 required field(s) still empty
+CONTEXT:  PL/pgSQL function lock_and_sign_contract(uuid,text,text,boolean) line 26 at RAISE
+
+--- Now fill only the required fields the UI actually SHOWS (gate-aware),
+--- i.e. what an admin who cleared every on-screen blocker would have.
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "b45a5503-89bc-489a-b012-c7fbf5c09632", "role" : "authenticated"}
+(1 row)
+
+UPDATE 2
+UPDATE 1
+UPDATE 2
+UPDATE 1
+UPDATE 1
+UPDATE 7
+--- WHAT THE SCREEN SAYS (contract_lock_blockers — the gate-aware check the UI renders):
+                                   on_screen_blockers                                    
+-----------------------------------------------------------------------------------------
+ [                                                                                      +
+     {                                                                                  +
+         "code": "horse_unconfirmed",                                                   +
+         "message": "The horse information has not been confirmed by the Lessor"        +
+     },                                                                                 +
+     {                                                                                  +
+         "code": "onboarding_documents",                                                +
+         "message": "Onboarding documents must be completed first by: Walker Dealclient"+
+     }                                                                                  +
+ ]
+(1 row)
+
+--- WHAT THE SIGN GATE COUNTS (the naive check inside lock_and_sign_contract):
+ naive_required_empty 
+----------------------
+                   17
+(1 row)
+
+           field_key            |                        label                         | is_conditional 
+--------------------------------+------------------------------------------------------+----------------
+ LESSEE.ENTITY_SIGNER_NAME      | Signing individual — name                            | t
+ LESSEE.ENTITY_SIGNER_TITLE     | Signing individual — title                           | t
+ LESSOR.ENTITY_SIGNER_NAME      | Signing individual — name                            | t
+ LESSOR.ENTITY_SIGNER_TITLE     | Signing individual — title                           | t
+ TXN.CCC_LESSEE_STATUS          | Lessee                                               | t
+ TXN.CCC_REQUIRED               | Lessor requires of Lessee                            | t
+ TXN.GL_NO_REQ_ALLOCATION       | Third-party liability costs                          | t
+ TXN.INJURY_HISTORY_DETAILS     | Injury history details                               | t
+ TXN.MED_COST_RESP              | Cost of the medical component                        | t
+ TXN.MED_DED_RESP               | Medical deductible responsibility                    | t
+ TXN.MED_INCLUDED               | Medical coverage is included on the mortality policy | t
+ TXN.MORT_COST_RESP             | Cost of the policy                                   | t
+ TXN.MORT_DED_RESP              | Mortality deductible responsibility                  | t
+ TXN.OTHERS_ALLOWED_OTHER       | Other persons allowed                                | t
+ TXN.PROTECTIVE_EQUIPMENT_OTHER | Other protective equipment                           | t
+ TXN.RIDER_AIDS                 | Prohibited rider aids                                | t
+ TXN.RIDER_AIDS_OTHER           | Other prohibited rider aid                           | t
+(17 rows)
+
+--- the sign attempt with a clean screen:
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "cccc0000-0000-4000-8000-00000000c001", "role" : "authenticated"}
+(1 row)
+
+psql:/private/tmp/claude-504/-Users-Cactai/8fa614f7-4c52-4474-9e38-1a0761d8c21d/scratchpad/cw/walk.sql:283: ERROR:  cannot sign: 17 required field(s) still empty
+CONTEXT:  PL/pgSQL function lock_and_sign_contract(uuid,text,text,boolean) line 26 at RAISE
+
+--- To REACH gates 5 and 6 at all, gate 4 must first be cleared, which means
+--- filling the 17 fields the UI hides. Done inside a savepoint and undone after,
+--- so the rest of the walk runs from the realistic (UI-complete) state.
+SAVEPOINT
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "b45a5503-89bc-489a-b012-c7fbf5c09632", "role" : "authenticated"}
+(1 row)
+
+UPDATE 17
+ naive_required_empty_now 
+--------------------------
+                        0
+(1 row)
+
+
+===== GATE 5 — LESSEE.PARTY_TYPE contradicts the party record
+SAVEPOINT
+UPDATE 1
+ lessee_contact_is_company 
+---------------------------
+ f
+(1 row)
+
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "cccc0000-0000-4000-8000-00000000c001", "role" : "authenticated"}
+(1 row)
+
+psql:/private/tmp/claude-504/-Users-Cactai/8fa614f7-4c52-4474-9e38-1a0761d8c21d/scratchpad/cw/walk.sql:303: ERROR:  cannot sign: LESSEE.PARTY_TYPE contradicts the Lessee party record (person vs company) — correct the field or the contact record
+CONTEXT:  PL/pgSQL function lock_and_sign_contract(uuid,text,text,boolean) line 37 at RAISE
+ROLLBACK
+
+===== GATE 6 — the horse section is not confirmed by the Lessor
+ horse_section_confirmed_at 
+----------------------------
+ 
+(1 row)
+
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "cccc0000-0000-4000-8000-00000000c001", "role" : "authenticated"}
+(1 row)
+
+psql:/private/tmp/claude-504/-Users-Cactai/8fa614f7-4c52-4474-9e38-1a0761d8c21d/scratchpad/cw/walk.sql:310: ERROR:  cannot sign: the horse information has not been confirmed by the Lessor
+CONTEXT:  PL/pgSQL function lock_and_sign_contract(uuid,text,text,boolean) line 44 at RAISE
+
+--- WHO satisfies gate 6? the LESSEE tries:
+psql:/private/tmp/claude-504/-Users-Cactai/8fa614f7-4c52-4474-9e38-1a0761d8c21d/scratchpad/cw/walk.sql:314: ERROR:  only the Lessor (or staff) may confirm the horse information
+CONTEXT:  PL/pgSQL function confirm_horse_section(uuid) line 21 at RAISE
+
+--- undo the artificial fill; back to the realistic UI-complete state:
+ROLLBACK
+ naive_required_empty_restored 
+-------------------------------
+                            17
+(1 row)
+
+
+################ W6 — THE REAL PRODUCTION PATH TO A SIGNATURE ################
+--- The UI renders the sign button ONLY when workflow_state = locked
+--- (ContractPage.tsx: state === "locked" && myRoles.length > 0 && !iSigned).
+--- So the live gate is advance_document_workflow(...,"locked") -> contract_lock_blockers.
+
+--- step 1: the LESSOR confirms the horse section
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "cccc0000-0000-4000-8000-00000000c002", "role" : "authenticated"}
+(1 row)
+
+                                confirmed                                 
+--------------------------------------------------------------------------
+ {                                                                       +
+     "document_id": "068e5b87-230f-458c-a142-6a19b4765595",              +
+     "horse_section_confirmed_at": "2026-08-17T11:48:39.403453-07:00",   +
+     "horse_section_confirmed_by": "36bec108-946b-4e20-b366-eda798abb12e"+
+ }
+(1 row)
+
+--- blockers now:
+                              blockers_after_horse_confirm                               
+-----------------------------------------------------------------------------------------
+ [                                                                                      +
+     {                                                                                  +
+         "code": "onboarding_documents",                                                +
+         "message": "Onboarding documents must be completed first by: Walker Dealclient"+
+     }                                                                                  +
+ ]
+(1 row)
+
+
+--- step 2: try to LOCK with the deal client still owing onboarding paperwork
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "b45a5503-89bc-489a-b012-c7fbf5c09632", "role" : "authenticated"}
+(1 row)
+
+psql:/private/tmp/claude-504/-Users-Cactai/8fa614f7-4c52-4474-9e38-1a0761d8c21d/scratchpad/cw/walk.sql:338: ERROR:  cannot lock: Onboarding documents must be completed first by: Walker Dealclient
+CONTEXT:  PL/pgSQL function advance_document_workflow(uuid,text) line 99 at RAISE
+
+--- step 3: the deal client does their onboarding paperwork (the wall)
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "cccc0000-0000-4000-8000-00000000c001", "role" : "authenticated"}
+(1 row)
+
+        wall_before        
+---------------------------
+ {                        +
+     "wall": true,        +
+     "staff": false,      +
+     "pending": 3,        +
+     "staff_banner": false+
+ }
+(1 row)
+
+                           generated                            
+----------------------------------------------------------------
+ [                                                             +
+     {                                                         +
+         "title": "Company Policies",                          +
+         "status": "DRAFT",                                    +
+         "document_id": "6b64b889-bc49-4eac-99d3-c50ece66e421",+
+         "template_key": "COMPANY_POLICIES"                    +
+     },                                                        +
+     {                                                         +
+         "title": "Facility Rules and Safety Acknowledgment",  +
+         "status": "DRAFT",                                    +
+         "document_id": "7ac509df-c597-4d77-9a34-4d97831b1553",+
+         "template_key": "FACILITY_RULES"                      +
+     },                                                        +
+     {                                                         +
+         "title": "General Visitor Liability Release",         +
+         "status": "DRAFT",                                    +
+         "document_id": "4753e69a-6cab-4a16-b981-6034d709dfd2",+
+         "template_key": "RELEASE_GENERAL"                     +
+     }                                                         +
+ ]
+(1 row)
+
+--- the generated onboarding documents and the role this member signs in:
+   template_key   | status | workflow_state |      my_roles      
+------------------+--------+----------------+--------------------
+ COMPANY_POLICIES | DRAFT  | editable       | CLIENT,PARTICIPANT
+ FACILITY_RULES   | DRAFT  | editable       | CLIENT,PARTICIPANT
+ RELEASE_GENERAL  | DRAFT  | editable       | CLIENT,PARTICIPANT
+(3 rows)
+
+--- sign each of them (record_signature — the onboarding wall's own door):
+UPDATE 3
+   template_key   |  status  
+------------------+----------
+ COMPANY_POLICIES | EXECUTED
+ FACILITY_RULES   | EXECUTED
+ RELEASE_GENERAL  | EXECUTED
+(3 rows)
+
+        wall_after         
+---------------------------
+ {                        +
+     "wall": false,       +
+     "staff": false,      +
+     "pending": 0,        +
+     "staff_banner": false+
+ }
+(1 row)
+
+
+--- step 4: NOW the lease can be locked
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "b45a5503-89bc-489a-b012-c7fbf5c09632", "role" : "authenticated"}
+(1 row)
+
+ blockers_now 
+--------------
+ [           +
+ ]
+(1 row)
+
+              put              
+-------------------------------
+ 2026-08-17 11:48:39.403453-07
+(1 row)
+
+ locked 
+--------
+ locked
+(1 row)
+
+--- who was told the contract is ready to sign:
+      kind       |                                              title                                              |                          link                           |          to_whom          
+-----------------+-------------------------------------------------------------------------------------------------+---------------------------------------------------------+---------------------------
+ party_signed    | Company Policies — fully executed; signed by Walker Dealclient (CLIENT)                         | /app/ops/documents/6b64b889-bc49-4eac-99d3-c50ece66e421 | admin@fhequestrian.com
+ party_signed    | Company Policies — fully executed; signed by Walker Dealclient (CLIENT)                         | /app/ops/documents/6b64b889-bc49-4eac-99d3-c50ece66e421 | hello@fhequestrian.com
+ party_signed    | Facility Rules and Safety Acknowledgment — fully executed; signed by Walker Dealclient (CLIENT) | /app/ops/documents/7ac509df-c597-4d77-9a34-4d97831b1553 | admin@fhequestrian.com
+ party_signed    | Facility Rules and Safety Acknowledgment — fully executed; signed by Walker Dealclient (CLIENT) | /app/ops/documents/7ac509df-c597-4d77-9a34-4d97831b1553 | hello@fhequestrian.com
+ party_signed    | General Visitor Liability Release — fully executed; signed by Walker Dealclient (CLIENT)        | /app/ops/documents/4753e69a-6cab-4a16-b981-6034d709dfd2 | admin@fhequestrian.com
+ party_signed    | General Visitor Liability Release — fully executed; signed by Walker Dealclient (CLIENT)        | /app/ops/documents/4753e69a-6cab-4a16-b981-6034d709dfd2 | hello@fhequestrian.com
+ contract_locked | Horse Lease Agreement — Standard is ready to sign                                               | /app/contracts/068e5b87-230f-458c-a142-6a19b4765595     | cw-lessee@example.invalid
+ contract_locked | Horse Lease Agreement — Standard is ready to sign                                               | /app/contracts/068e5b87-230f-458c-a142-6a19b4765595     | cw-lessor@example.invalid
+(8 rows)
+
+--- pending signature rows seeded at lock:
+ party_role | pending 
+------------+---------
+ LESSEE     | t
+ LESSOR     | t
+(2 rows)
+
+
+--- PROOF that a LOCKED document skips gates 3-6 entirely: blank a required
+--- field, then sign anyway. (savepointed, undone immediately)
+SAVEPOINT
+UPDATE 1
+UPDATE 1
+ required_empty_while_locked 
+-----------------------------
+                          18
+(1 row)
+
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "cccc0000-0000-4000-8000-00000000c001", "role" : "authenticated"}
+(1 row)
+
+   signed_anyway    
+--------------------
+ AWAITING_SIGNATURE
+(1 row)
+
+ROLLBACK
+
+--- step 5: THE LESSEE SIGNS (for real)
+              put              
+-------------------------------
+ 2026-08-17 11:48:39.403453-07
+(1 row)
+
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "cccc0000-0000-4000-8000-00000000c001", "role" : "authenticated"}
+(1 row)
+
+ status_after_lessee 
+---------------------
+ AWAITING_SIGNATURE
+(1 row)
+
+--- signature rows:
+ party_role |    typed_name     | sealed | has_account | method 
+------------+-------------------+--------+-------------+--------
+ LESSEE     | Walker Dealclient | t      | t           | TYPED
+ LESSOR     |                   | f      | f           | TYPED
+(2 rows)
+
+--- document state — must NOT be executed yet:
+       status       | workflow_state | effective_date | has_hash 
+--------------------+----------------+----------------+----------
+ AWAITING_SIGNATURE | locked         |                | f
+(1 row)
+
+--- the admin party_signed notification:
+      kind       |                                              title                                              |                          link                           |          to_whom          
+-----------------+-------------------------------------------------------------------------------------------------+---------------------------------------------------------+---------------------------
+ party_signed    | Company Policies — fully executed; signed by Walker Dealclient (CLIENT)                         | /app/ops/documents/6b64b889-bc49-4eac-99d3-c50ece66e421 | admin@fhequestrian.com
+ party_signed    | Company Policies — fully executed; signed by Walker Dealclient (CLIENT)                         | /app/ops/documents/6b64b889-bc49-4eac-99d3-c50ece66e421 | hello@fhequestrian.com
+ party_signed    | Facility Rules and Safety Acknowledgment — fully executed; signed by Walker Dealclient (CLIENT) | /app/ops/documents/7ac509df-c597-4d77-9a34-4d97831b1553 | admin@fhequestrian.com
+ party_signed    | Facility Rules and Safety Acknowledgment — fully executed; signed by Walker Dealclient (CLIENT) | /app/ops/documents/7ac509df-c597-4d77-9a34-4d97831b1553 | hello@fhequestrian.com
+ party_signed    | General Visitor Liability Release — fully executed; signed by Walker Dealclient (CLIENT)        | /app/ops/documents/4753e69a-6cab-4a16-b981-6034d709dfd2 | admin@fhequestrian.com
+ party_signed    | General Visitor Liability Release — fully executed; signed by Walker Dealclient (CLIENT)        | /app/ops/documents/4753e69a-6cab-4a16-b981-6034d709dfd2 | hello@fhequestrian.com
+ contract_locked | Horse Lease Agreement — Standard is ready to sign                                               | /app/contracts/068e5b87-230f-458c-a142-6a19b4765595     | cw-lessee@example.invalid
+ contract_locked | Horse Lease Agreement — Standard is ready to sign                                               | /app/contracts/068e5b87-230f-458c-a142-6a19b4765595     | cw-lessor@example.invalid
+ party_signed    | Horse Lease Agreement — Standard — signed by Walker Dealclient (LESSEE)                         | /app/ops/documents/068e5b87-230f-458c-a142-6a19b4765595 | admin@fhequestrian.com
+ party_signed    | Horse Lease Agreement — Standard — signed by Walker Dealclient (LESSEE)                         | /app/ops/documents/068e5b87-230f-458c-a142-6a19b4765595 | hello@fhequestrian.com
+(10 rows)
+
+
+################ W7 — THE LESSOR SIGNS (EXECUTION) ################
+--- EMAIL BOUNDARY: pre-stamp executed_email_sent_at so documents_send_executed_email
+--- takes its no-op branch and NOTHING is queued to pg_net at all.
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "b45a5503-89bc-489a-b012-c7fbf5c09632", "role" : "authenticated"}
+(1 row)
+
+UPDATE 1
+ pg_net_queue_before 
+---------------------
+                   0
+(1 row)
+
+              put              
+-------------------------------
+ 2026-08-17 11:48:39.403453-07
+(1 row)
+
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "cccc0000-0000-4000-8000-00000000c002", "role" : "authenticated"}
+(1 row)
+
+ status_after_lessor 
+---------------------
+ EXECUTED
+(1 row)
+
+ pg_net_queue_after 
+--------------------
+                  0
+(1 row)
+
+--- execution proof:
+  status  | workflow_state | effective_date |    execution_hash     | signed_template_version | mail_error 
+----------+----------------+----------------+-----------------------+-------------------------+------------
+ EXECUTED | executed       | 2026-08-17     | f3b99f0ed18b11d54a9a… |                       3 | (none)
+(1 row)
+
+--- template version frozen against the live template version:
+ signed_template_version | template_version_now |  template_key  
+-------------------------+----------------------+----------------
+                       3 |                    3 | HORSE_LEASE_V2
+(1 row)
+
+--- signatures:
+ party_role |    typed_name     | sealed 
+------------+-------------------+--------
+ LESSEE     | Walker Dealclient | t
+ LESSOR     | Olive Lessor      | t
+(2 rows)
+
+--- notifications from the execution act (who got told what):
+       kind        |                                              title                                              |                          link                           |          to_whom          
+-------------------+-------------------------------------------------------------------------------------------------+---------------------------------------------------------+---------------------------
+ party_signed      | Company Policies — fully executed; signed by Walker Dealclient (CLIENT)                         | /app/ops/documents/6b64b889-bc49-4eac-99d3-c50ece66e421 | admin@fhequestrian.com
+ party_signed      | Company Policies — fully executed; signed by Walker Dealclient (CLIENT)                         | /app/ops/documents/6b64b889-bc49-4eac-99d3-c50ece66e421 | hello@fhequestrian.com
+ party_signed      | Facility Rules and Safety Acknowledgment — fully executed; signed by Walker Dealclient (CLIENT) | /app/ops/documents/7ac509df-c597-4d77-9a34-4d97831b1553 | admin@fhequestrian.com
+ party_signed      | Facility Rules and Safety Acknowledgment — fully executed; signed by Walker Dealclient (CLIENT) | /app/ops/documents/7ac509df-c597-4d77-9a34-4d97831b1553 | hello@fhequestrian.com
+ party_signed      | General Visitor Liability Release — fully executed; signed by Walker Dealclient (CLIENT)        | /app/ops/documents/4753e69a-6cab-4a16-b981-6034d709dfd2 | admin@fhequestrian.com
+ party_signed      | General Visitor Liability Release — fully executed; signed by Walker Dealclient (CLIENT)        | /app/ops/documents/4753e69a-6cab-4a16-b981-6034d709dfd2 | hello@fhequestrian.com
+ party_signed      | Horse Lease Agreement — Standard — signed by Walker Dealclient (LESSEE)                         | /app/ops/documents/068e5b87-230f-458c-a142-6a19b4765595 | admin@fhequestrian.com
+ party_signed      | Horse Lease Agreement — Standard — signed by Walker Dealclient (LESSEE)                         | /app/ops/documents/068e5b87-230f-458c-a142-6a19b4765595 | hello@fhequestrian.com
+ document_executed | Horse Lease Agreement — Standard is signed                                                      | /app/documents                                          | cw-lessee@example.invalid
+ party_signed      | Horse Lease Agreement — Standard — fully executed; signed by Olive Lessor (LESSOR)              | /app/ops/documents/068e5b87-230f-458c-a142-6a19b4765595 | admin@fhequestrian.com
+ party_signed      | Horse Lease Agreement — Standard — fully executed; signed by Olive Lessor (LESSOR)              | /app/ops/documents/068e5b87-230f-458c-a142-6a19b4765595 | hello@fhequestrian.com
+(11 rows)
+
+--- were the earlier per-party ready-to-sign alerts resolved? (resolution = DELETE)
+ contract_link_alerts_remaining 
+--------------------------------
+                              0
+(1 row)
+
+ action |         event         | n 
+--------+-----------------------+---
+ DELETE | notification_resolved | 2
+(1 row)
+
+
+################ W8 — THE LEASE EFFECTS ################
+  registered_name   | nickname | owner_is_lessor | lessee_is_lessee | lease_start | lease_end 
+--------------------+----------+-----------------+------------------+-------------+-----------
+ Contractwalk Probe | Probe    | t               | t                | 2026-08-17  | 
+(1 row)
+
+--- horse_relationships:
+ relationship |     party      | term_start | term_end | active | from_this_lease 
+--------------+----------------+------------+----------+--------+-----------------
+ LESSEE       | LESSEE contact | 2026-08-17 |          | t      | t
+(1 row)
+
+--- THE LESSEE'S STABLE:
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "cccc0000-0000-4000-8000-00000000c001", "role" : "authenticated"}
+(1 row)
+
+  registered_name   | nickname | is_owner | lease_start | lease_end 
+--------------------+----------+----------+-------------+-----------
+ Contractwalk Probe | Probe    | f        | 2026-08-17  | 
+(1 row)
+
+--- THE LESSOR'S STABLE:
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "cccc0000-0000-4000-8000-00000000c002", "role" : "authenticated"}
+(1 row)
+
+  registered_name   | nickname | is_owner 
+--------------------+----------+----------
+ Contractwalk Probe | Probe    | t
+(1 row)
+
+--- horse documents the lease bundled (ensure_horse_documents at lock):
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "b45a5503-89bc-489a-b012-c7fbf5c09632", "role" : "authenticated"}
+(1 row)
+
+    template_key     |       status       | workflow_state | on_this_deal 
+---------------------+--------------------+----------------+--------------
+ HORSE_EMERGENCY_VET | AWAITING_SIGNATURE | editable       | t
+ HORSE_LEASE_V2      | EXECUTED           | executed       | t
+ RELEASE_HORSE_CARE  | AWAITING_SIGNATURE | editable       | t
+(3 rows)
+
+--- deal_autocomplete_on_execution — the contracts row:
+ status |   segment   | horse_linked |           terms           
+--------+-------------+--------------+---------------------------
+ draft  | acquisition | t            | {"deal_side": "LEASE_IN"}
+(1 row)
+
+--- apply_document_supersession — anything marked superseded?
+ superseded_docs 
+-----------------
+               0
+(1 row)
+
+--- groups after execution (derive_affiliations via the doc trigger):
+  who   | group_type  
+--------+-------------
+ lessee | GUEST
+ lessor | HORSE_OWNER
+(2 rows)
+
+--- the lessee's document list (my_documents) — does the lease show?
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "cccc0000-0000-4000-8000-00000000c001", "role" : "authenticated"}
+(1 row)
+
+ my_documents_rows 
+-------------------
+                 4
+(1 row)
+
+--- lease_end / term_end are NULL — is TXN.LEASE_END even required?
+      field_key      | required |   value    
+---------------------+----------+------------
+ TXN.LEASE_START     | t        | 2026-08-17
+ TXN.LEASE_TERM_TYPE | t        | FIXED
+ TXN.LEASE_END       | f        | (empty)
+(3 rows)
+
+
+################ W9 — WHAT ADMIN SEES, STAGE BY STAGE ################
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "b45a5503-89bc-489a-b012-c7fbf5c09632", "role" : "authenticated"}
+(1 row)
+
+--- the document timeline admin reads (status_events):
+    status     | detail |          created_at           
+---------------+--------+-------------------------------
+ signed        |        | 2026-08-17 11:48:39.403453-07
+ ready_to_sign |        | 2026-08-17 11:48:39.403453-07
+ assigned      |        | 2026-08-17 11:48:39.403453-07
+(3 rows)
+
+--- every notification this whole walk produced, by kind and recipient:
+       kind        |          to_whom          | n 
+-------------------+---------------------------+---
+ document_executed | cw-lessee@example.invalid | 1
+ party_signed      | admin@fhequestrian.com    | 5
+ party_signed      | hello@fhequestrian.com    | 5
+(3 rows)
+
+--- the lease document as the ops list sees it:
+  display_code  |              title               |  status  | workflow_state | current_status | signed | signers 
+----------------+----------------------------------+----------+----------------+----------------+--------+---------
+ DOC-RNASZMGATR | Horse Lease Agreement — Standard | EXECUTED | executed       | signed         |      2 |       2
+(1 row)
+
+
+################ END OF WALK — ROLLING BACK ################
+ROLLBACK
+
+################ POST-ROLLBACK CENSUS (must equal baseline) ################
+             t              | n  
+----------------------------+----
+ auth.users                 | 12
+ contact_required_documents | 25
+ contacts                   | 24
+ contract_fields            |  0
+ contracts                  |  0
+ document_parties           | 78
+ documents                  | 57
+ groups                     | 15
+ horse_relationships        |  1
+ horses                     |  1
+ invitations                | 15
+ members                    | 12
+ net.http_request_queue     |  0
+ notifications              | 44
+ profiles                   |  9
+ signatures                 | 51
+(16 rows)
+
