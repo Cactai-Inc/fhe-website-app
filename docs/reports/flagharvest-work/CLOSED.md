@@ -78,12 +78,17 @@ CLOSED in `verified-IDENTITY.md` (14): ID-04 · ID-06 · ID-08 · ID-12 · ID-25
 · ID-53 · ID-79 · ID-80 · ID-81 · ID-83 · ID-92.
 SUPERSEDED in `verified-IDENTITY.md` (2): ID-13 the intake page · ID-78 the long modules group.
 
-**The re-baseline result, stated plainly: of the 120 items those two slices had marked OPEN, 4
-flipped to closed** — ID-82 (staff account link, C29), ID-16 (single RSVP control, C30), UI-05's
-code half (C31 group) and UI-24 remains open. The other 116 were re-checked against the changed-file
-list and are on the sheet. Four of the five files the biggest UI families point at
-(`PostModal.tsx`, `SessionNotesView.tsx`, `HorseIntakeForm.tsx`, `seed.ts`, `tailwind.config.js`)
-were **not touched** in those 185 commits, which is why so few flipped.
+**The re-baseline result, stated plainly: of the 120 items those two slices had marked OPEN, exactly
+2 flipped to closed** — ID-82 (staff have no personal account link → C29) and ID-16 (one page holds
+the only RSVP control → C30). One more changed materially without closing: ID-69's null-client
+bookings went from 294 to 279 and the lesson-booking constraint was validated, so the shape of the
+question changed (item 142). The other 117 are on the sheet.
+
+**Why so few flipped:** the 185 commits are almost entirely credits, bookings, payments, checkout and
+website copy. Five of the files the largest UI/identity families point at — `PostModal.tsx`,
+`SessionNotesView.tsx`, `HorseIntakeForm.tsx`, `seed.ts`, `tailwind.config.js` — appear **nowhere** in
+`git diff --name-only 6a58c0f..HEAD`. Those families are still open by construction, not by
+assumption.
 
 ## C. Folded, not closed — 13 duplicate pointers
 

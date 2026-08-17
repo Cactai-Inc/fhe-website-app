@@ -169,9 +169,12 @@ second one.
   hand while only the entitlement rolls? **Report the truth — do not assume a biller exists.**
 - **The money and the sessions are separate concerns.** Entitlement re-minting is `CREDITALIGN`'s and
   must keep working regardless of what is decided about billing.
-- ⚠️ **If no biller exists, DO NOT BUILD ONE HERE.** Report it as wave-2 work with this rhythm
-  attached. Building a payment scheduler inside a catalog-configuration task is how this project got
-  its three duplicate credit-minting paths.
+- ⚠️ **If no biller exists, DO NOT BUILD ONE HERE.** Report it as wave-2 work. Building a payment
+  scheduler inside a catalog-configuration task is how this project got its three duplicate
+  credit-minting paths.
+- ⚠️ **The full billing design — including the owner's human-in-the-loop review — is already
+  written up in `docs/design/MONTHLY-BILLING-REVIEW.md`.** Read it so your structure does not
+  contradict it, and **add your findings to it** rather than restating them. **Build none of it.**
 
 # TRAPS
 - **Do not delete retired SKUs** — executed orders point at them.
