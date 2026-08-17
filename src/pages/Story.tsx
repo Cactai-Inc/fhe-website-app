@@ -300,7 +300,10 @@ export default function Story() {
           short of the section's real top edge. The section's padding already
           clears the fixed nav, so the offset is removed rather than reduced. */}
       <section id="beyond-the-arena" className="bg-cream">
-        <div className="container-site pt-32 pb-16 sm:pt-40 sm:pb-24">
+        {/* pt-32/40 → pt-28/36 (owner, 2026-08-16: reduce the top padding by
+            ~15px). 128→112px, and 160→144px on desktop; Tailwind's scale steps
+            in 16px, which is the nearest available move. */}
+        <div className="container-site pt-28 pb-16 sm:pt-36 sm:pb-24">
           <Reveal className="max-w-3xl">
             <p className="eyebrow mb-6">Beyond The Arena</p>
             {/* One line, title case, no period (owner). The clamp comes down
