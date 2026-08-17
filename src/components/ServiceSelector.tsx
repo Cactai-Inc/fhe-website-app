@@ -73,13 +73,18 @@ export default function ServiceSelector({
           const selected = isSelected(o.id);
           // COUNTFIX 1.5: quote-priced SKUs are real services and are now offered
           // here (fetchPublicCatalog no longer drops them). They read
-          // "Inquire for pricing" — the same wording OfferingCatalog uses on
-          // /shop — instead of formatting a null price as "$0".
+          // "Price on inquiry" — the same wording OfferingCatalog uses, and
+          // the one American spelling (ASKRIGHT §A6) — instead of formatting a
+          // null price as "$0".
           const onEnquiry = o.price_amount == null;
           const item: CartItem = {
             offeringId: o.id,
             offeringName: o.name,
             serviceType: o.service_type,
+            // The catalog's own display_name for the service_type — page 2's
+            // section headings and the inquire wording both read it, so
+            // renaming a service in the DB renames them (D13).
+            serviceTypeName: group.name,
             price: o.price_amount ?? 0,
             unit: (o.price_unit ?? 'flat') as PriceUnit,
             configKind: o.config_kind,
@@ -113,7 +118,7 @@ export default function ServiceSelector({
               {mechanics(o) && <p className="text-xs font-sans text-muted mb-3 leading-snug">{mechanics(o)}</p>}
               <p className={`text-base font-serif font-medium text-green-800${onEnquiry ? ' italic' : ''}`}>
                 {onEnquiry
-                  ? 'Inquire for pricing'
+                  ? 'Price on inquiry'
                   : formatPrice(o.price_amount as number, (o.price_unit ?? 'flat') as PriceUnit)}
               </p>
               {o.note && <p className="text-[10px] font-sans text-gold-ink mt-1">{o.note}</p>}

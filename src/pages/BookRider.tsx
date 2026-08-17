@@ -209,7 +209,7 @@ export default function BookRider() {
                         <p className="text-sm font-sans font-medium text-green-900">{item.offeringName}</p>
                       </div>
                       <p className={`text-sm font-serif font-medium text-green-800${item.priceOnEnquiry ? ' italic' : ''}`}>
-                        {item.priceOnEnquiry ? 'Price on enquiry' : formatPrice(item.price, item.unit)}
+                        {item.priceOnEnquiry ? 'Price on inquiry' : formatPrice(item.price, item.unit)}
                       </p>
                     </div>
                   ))}
@@ -281,7 +281,7 @@ export default function BookRider() {
             disabled={step === 0 ? !canProceedStep0 : step === 1 ? !canProceedStep1 : false}
             className="btn-primary"
           >
-            {step === STEPS.length - 1 ? 'Continue to Booking Request' : 'Continue'}
+            {step === STEPS.length - 1 ? 'Continue to Submit Inquiry' : 'Continue'}
             <ArrowRight size={16} />
           </button>
         </div>

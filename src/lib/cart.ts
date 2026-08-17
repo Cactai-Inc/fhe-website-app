@@ -10,6 +10,12 @@ export interface CartItem {
   offeringId: string;
   offeringName: string;
   serviceType: string | null;
+  /** ASKRIGHT: the service_type's own display_name from the live catalog, so
+   *  page 2's section headings and the inquire wording name the service the way
+   *  the owner named it — renaming it in the DB renames both. Optional because
+   *  a cart persisted before this existed will not carry it; the fallback
+   *  humanizes the CODE (identity, stable), never the offering name. */
+  serviceTypeName?: string | null;
   price: number;
   unit: PriceUnit;
   /** COUNTFIX 1.5: the offering has NO price (`offerings.price_amount IS NULL`) —
@@ -24,6 +30,23 @@ export interface CartItem {
   unitCount?: number | null;
   /** Captured per-line scheduling/config intent (carried to purchase_items.config). */
   config?: OfferingLineConfig;
+}
+
+/**
+ * What to CALL the service this item belongs to.
+ *
+ * The live catalog's `service_types.display_name`, carried on the item at
+ * selection time. The fallback humanizes the service_type CODE — identity,
+ * stable, and safe — and never the offering NAME: names changed on 2026-08-15
+ * and name-parsing has broken credit minting three separate times.
+ */
+export function serviceDisplayName(item: CartItem): string {
+  if (item.serviceTypeName) return item.serviceTypeName;
+  const code = item.serviceType ?? '';
+  if (!code) return 'this service';
+  return code.toLowerCase().split('_')
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
 }
 
 // ─── Inquiry summary (group by billing cadence) ───────────────────────────

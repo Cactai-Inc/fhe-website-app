@@ -13,6 +13,14 @@ interface QualifierGroupProps {
   options: QualifierOption[];
   /** Grid column behaviour. "wide" = 1/2 cols, "compact" = 3/4 cols for short labels. */
   layout?: 'wide' | 'compact';
+  /**
+   * ASKRIGHT §A3c — this answer was concluded from an earlier one, and the
+   * string names which. A derived answer is SHOWN answered, never hidden:
+   * "deciding for someone invisibly is not premium — it is a wrong answer they
+   * never got to catch." Selecting anything clears the marker and the answer
+   * becomes theirs.
+   */
+  derivedFrom?: string;
 }
 
 /**
@@ -27,6 +35,7 @@ export default function QualifierGroup({
   help,
   options,
   layout = 'wide',
+  derivedFrom,
 }: QualifierGroupProps) {
   const { state, setQualifier } = useCart();
   const current = state.qualifierAnswers[qualifierKey];
@@ -44,6 +53,11 @@ export default function QualifierGroup({
         {question}
       </h3>
       {help && <p className="text-sm font-sans text-muted mb-5">{help}</p>}
+      {derivedFrom && (
+        <p className="text-xs font-sans text-gold-ink mb-4 italic">
+          We filled this in from your answer to “{derivedFrom}” — change it if we got it wrong.
+        </p>
+      )}
       <div role="radiogroup" aria-labelledby={labelId} className={gridClass}>
         {options.map((opt) => {
           const selected = current === opt.value;

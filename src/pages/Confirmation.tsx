@@ -18,7 +18,7 @@ function readContactMethod(): string {
 }
 
 export default function Confirmation() {
-  useDocumentTitle('We Are So Glad You Reached Out');
+  useDocumentTitle('Your Inquiry Is With Us');
   const method = readContactMethod();
   const methodPhrase = METHOD_PHRASE[method] || 'however you asked us to reach you';
 
@@ -33,14 +33,19 @@ export default function Confirmation() {
           </div>
         </div>
 
-        <p className="eyebrow mb-4">Your note just landed</p>
+        <p className="eyebrow mb-4">Your inquiry is with us</p>
         <h1 className="heading-display text-green-800 mb-6 text-[clamp(2rem,5vw,3rem)]">
           We Are So Glad<br />
           <em className="text-gold-ink not-italic">You Reached Out</em>
         </h1>
 
+        {/* ASKRIGHT §A6 — "your note just landed" becomes the owner's phrase,
+            which now sits in the eyebrow above and the document title. The warm
+            two-line display heading is left alone deliberately: it contains
+            neither retired word ("request", "booking") and it is the brand's
+            own voice at the one moment a stranger has just trusted us. */}
         <p className="body-text mb-4">
-          Your note just landed with us, and one of us will be in touch today, usually within the
+          It just landed with us, and one of us will be in touch today, usually within the
           hour, {methodPhrase}. In the meantime, consider this a standing invitation.
         </p>
         <p className="body-text text-sm text-muted mb-12">

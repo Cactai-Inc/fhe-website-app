@@ -10,7 +10,17 @@ export type { CartItem, CadenceGroup } from '../lib/cart';
 interface CartState {
   items: CartItem[];
   funnel: FunnelType | null;
+  /** THE answer store — one map, keyed `subject.questionId` (ASKRIGHT §A2b).
+   *  There is no second store: free text, choices and follow-up detail boxes
+   *  all land here. */
   qualifierAnswers: Record<string, string>;
+  /** ASKRIGHT §A3c — which answers the SYSTEM concluded rather than the visitor
+   *  giving. Metadata about `qualifierAnswers`, not a parallel copy of it: a key
+   *  is present only while its answer is still derived and untouched, and the
+   *  value names the question it was derived from, so staff can tell a
+   *  conclusion from something typed. The moment the visitor edits the answer
+   *  themselves the entry is deleted and the answer is theirs for good. */
+  answerOrigins: Record<string, string>;
 }
 
 type CartAction =
@@ -20,6 +30,8 @@ type CartAction =
   | { type: 'TOGGLE_ITEM'; item: CartItem }
   | { type: 'SET_ITEM_CONFIG'; offeringId: string; config: CartItem['config'] }
   | { type: 'SET_QUALIFIER'; key: string; value: string }
+  | { type: 'SET_DERIVED_QUALIFIER'; key: string; value: string; because: string }
+  | { type: 'WITHDRAW_DERIVED'; key: string }
   | { type: 'CLEAR_CART' };
 
 interface CartContextValue {
@@ -30,6 +42,13 @@ interface CartContextValue {
   toggleItem: (item: CartItem) => void;
   setItemConfig: (offeringId: string, config: CartItem['config']) => void;
   setQualifier: (key: string, value: string) => void;
+  /** Write an answer the system concluded (ASKRIGHT §A3c). Refuses to overwrite
+   *  an answer the visitor has given or edited — the implication runs one way
+   *  and never over the top of a person. */
+  setDerivedQualifier: (key: string, value: string, because: string) => void;
+  /** The implication no longer concludes anything: drop the derived answer,
+   *  but only while it is still untouched. */
+  withdrawDerived: (key: string) => void;
   clearCart: () => void;
   isSelected: (offeringId: string) => boolean;
   subtotal: number;
@@ -44,6 +63,7 @@ const initialState: CartState = {
   items: [],
   funnel: null,
   qualifierAnswers: {},
+  answerOrigins: {},
 };
 
 const STORAGE_KEY = 'fhe-cart-v1';
@@ -58,6 +78,7 @@ function loadInitialState(): CartState {
       items: Array.isArray(parsed.items) ? parsed.items : [],
       funnel: parsed.funnel ?? null,
       qualifierAnswers: parsed.qualifierAnswers ?? {},
+      answerOrigins: parsed.answerOrigins ?? {},
     };
   } catch {
     return initialState;
@@ -104,11 +125,39 @@ function cartReducer(state: CartState, action: CartAction): CartState {
           i.offeringId === action.offeringId ? { ...i, config: action.config } : i),
       };
 
-    case 'SET_QUALIFIER':
+    case 'SET_QUALIFIER': {
+      // The visitor touched it, so it is theirs: the derived marker comes off
+      // and no later implication may overwrite it (ASKRIGHT §A3c).
+      const { [action.key]: _dropped, ...origins } = state.answerOrigins;
       return {
         ...state,
         qualifierAnswers: { ...state.qualifierAnswers, [action.key]: action.value },
+        answerOrigins: origins,
       };
+    }
+
+    case 'SET_DERIVED_QUALIFIER': {
+      const answered = (state.qualifierAnswers[action.key] ?? '') !== '';
+      const isDerived = action.key in state.answerOrigins;
+      // Only fill a blank, or refresh a derived answer the visitor has not
+      // edited. Anything they gave themselves is never overwritten.
+      if (answered && !isDerived) return state;
+      if (state.qualifierAnswers[action.key] === action.value && isDerived) return state;
+      return {
+        ...state,
+        qualifierAnswers: { ...state.qualifierAnswers, [action.key]: action.value },
+        answerOrigins: { ...state.answerOrigins, [action.key]: action.because },
+      };
+    }
+
+    case 'WITHDRAW_DERIVED': {
+      // The source changed and no longer proves anything. Withdraw the
+      // conclusion — but only if it is still a conclusion.
+      if (!(action.key in state.answerOrigins)) return state;
+      const { [action.key]: _origin, ...origins } = state.answerOrigins;
+      const { [action.key]: _answer, ...answers } = state.qualifierAnswers;
+      return { ...state, qualifierAnswers: answers, answerOrigins: origins };
+    }
 
     case 'CLEAR_CART':
       return initialState;
@@ -158,6 +207,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'SET_QUALIFIER', key, value });
   }, []);
 
+  const setDerivedQualifier = useCallback((key: string, value: string, because: string) => {
+    dispatch({ type: 'SET_DERIVED_QUALIFIER', key, value, because });
+  }, []);
+
+  const withdrawDerived = useCallback((key: string) => {
+    dispatch({ type: 'WITHDRAW_DERIVED', key });
+  }, []);
+
   const clearCart = useCallback(() => {
     dispatch({ type: 'CLEAR_CART' });
   }, []);
@@ -192,6 +249,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         toggleItem,
         setItemConfig,
         setQualifier,
+        setDerivedQualifier,
+        withdrawDerived,
         clearCart,
         isSelected,
         subtotal,

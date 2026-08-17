@@ -10,7 +10,8 @@ import { HorseCareSelect } from '../components/app/HorseCareSelect';
 import { fetchIntakeRequirements } from '../lib/ops/api-public';
 import type { RequestCategory } from '../lib/types';
 import { formatPrice } from '../lib/pricing';
-import { inquiryLabel } from '../lib/inquiry';
+import { inquiryLabel, hasLessonItem } from '../lib/inquiry';
+import { buildSubmission } from '../lib/questionSets';
 import {
   EXPERIENCE_OPTIONS,
   availabilityEntries,
@@ -48,6 +49,17 @@ const CONTACT_OPTIONS: { value: ContactMethod; label: string }[] = [
   { value: 'email', label: 'Email' },
 ];
 
+/** `requests.notes` carries a 4000-character CHECK constraint server-side, and
+ *  the notes now hold the visitor's own note, their page-2 answers and (for
+ *  lessons) their availability. Capping here turns a would-be RPC exception —
+ *  raised after they pressed submit, losing the inquiry — into a slightly
+ *  shortened note. The structured copy in `requests.details` is never truncated
+ *  by this. */
+function capNotes(text: string): string {
+  const MAX = 3900;
+  return text.length <= MAX ? text : `${text.slice(0, MAX)}\n…(truncated)`;
+}
+
 const usd = (n: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(n);
 
@@ -61,6 +73,23 @@ export default function Checkout() {
   const navigate = useNavigate();
   // Horse-care purchases require choosing the horse(s) so each has a Care Release.
   const isHorseCare = state.funnel === 'horse';
+  /**
+   * ASKRIGHT §A0/§A6b — THE ONE FORM, CONFIGURED BY THE CART.
+   *
+   * There is exactly one form page in every flow and exactly one form
+   * component; "which form" is a configuration of it, derived from what is in
+   * the cart rather than from which funnel the visitor came through. Name,
+   * email, phone, contact method and notes are always shown. The availability
+   * ranges and the riding-experience question appear when a LESSON is in the
+   * cart, because lessons are the only thing a client can propose times for —
+   * owner, 2026-08-16: "the only flow with a date selection portion is the
+   * lessons page. and that is by design." Staff set horse-care times on the
+   * call, so the client is never asked for a date they cannot know is free.
+   *
+   * A mixed cart shows the UNION: a lesson plus horse care gets the
+   * availability block, because a lesson is present. It is not either/or.
+   */
+  const showLessonFields = hasLessonItem(state.items);
   const [careHorses, setCareHorses] = useState<string[]>([]);
   const [form, setForm] = useState<FormState>({
     first_name: '',
@@ -190,12 +219,12 @@ export default function Checkout() {
     const hasAvailability =
       avail.weeks.length > 0 || avail.anyDay || avail.days.length > 0 ||
       avail.prefs.weekdayAm || avail.prefs.weekdayPm || avail.prefs.weekendAm || avail.prefs.weekendPm;
-    if (bookingReq.availability && !hasAvailability) {
+    if (showLessonFields && bookingReq.availability && !hasAvailability) {
       setSubmitError('Please share when you’re available.');
       requestAnimationFrame(() => errorBannerRef.current?.focus());
       return;
     }
-    if (bookingReq.experience && !experience) {
+    if (showLessonFields && bookingReq.experience && !experience) {
       setSubmitError('Please tell us the rider’s experience level.');
       requestAnimationFrame(() => errorBannerRef.current?.focus());
       return;
@@ -209,11 +238,19 @@ export default function Checkout() {
       // Structured availability travels twice: as JSON in the proposed_times
       // jsonb column AND as a clean human-readable block appended to the notes.
       const availability = buildAvailability();
-      const availabilityBlock = availabilityText(availability);
-      const combinedNotes = [
+      const availabilityBlock = showLessonFields ? availabilityText(availability) : '';
+      // ASKRIGHT §A5 — the page-2 answers, for the offerings STILL in the cart.
+      // They travel twice, exactly as availability already does: structured into
+      // `requests.details` through the RPC's existing p_details jsonb, and as
+      // ordered prose appended to the notes. Both are needed — jsonb does not
+      // preserve key order, and the notes block is where staff read the answers
+      // in the order they were asked.
+      const submission = buildSubmission(state.items, state.qualifierAnswers, state.answerOrigins);
+      const combinedNotes = capNotes([
         form.notes.trim(),
+        submission.notesBlock ? `— Your answers —\n${submission.notesBlock}` : '',
         availabilityBlock ? `— Availability & experience —\n${availabilityBlock}` : '',
-      ].filter(Boolean).join('\n\n');
+      ].filter(Boolean).join('\n\n'));
       // Primary: write a structured request + selections (architecture-flow-spec).
       // Cart checkout is the 'booking' channel with purchase intent; the category
       // follows the cart's funnel.
@@ -226,8 +263,9 @@ export default function Checkout() {
           contact_email: form.email.trim(),
           contact_phone: form.phone.trim(),
           contact_method: contactMethod,
-          proposed_times: availabilityEntries(availability),
+          proposed_times: showLessonFields ? availabilityEntries(availability) : [],
           notes: combinedNotes || undefined,
+          details: submission.details,
           category: funnelCategory,
           channel: 'booking',
           entry_location: 'checkout',
@@ -261,7 +299,7 @@ export default function Checkout() {
       <div className="min-h-screen bg-cream flex items-center justify-center pt-24 pb-20">
         <div className="text-center max-w-sm">
           <p className="eyebrow mb-4">Nothing selected yet</p>
-          <h2 className="heading-card text-green-800 mb-4">Your request is empty</h2>
+          <h2 className="heading-card text-green-800 mb-4">Your inquiry is empty</h2>
           <p className="body-text text-sm mb-8">Pick a lesson option to get started.</p>
           <Link to="/lessons" className="btn-primary focus-ring">
             Book a Lesson
@@ -295,7 +333,7 @@ export default function Checkout() {
           </Link>
           <p className="eyebrow mb-2">{user ? 'Your order' : 'Almost there'}</p>
           <h1 className="heading-section text-green-800">
-            {user ? 'Review & Continue' : 'Send us your inquiry'}
+            {user ? 'Review & Continue' : 'Your Inquiry'}
           </h1>
           {!user && (
             <p className="body-text text-sm mt-3">
@@ -462,7 +500,12 @@ export default function Checkout() {
                   </div>
                 </fieldset>
 
-                {/* Riding experience — single-select, in years */}
+                {/* Riding experience — single-select, in YEARS. A DIFFERENT
+                    FACT from the acquisition sets' "Which best matches your
+                    equestrian experience?", which is about owning horses: a
+                    lesson-plus-evaluation order legitimately answers both, and
+                    the two are never merged or deduped. */}
+                {showLessonFields && (
                 <fieldset className="mt-6">
                   <legend className="form-label mb-2">Riding experience (years)</legend>
                   <div role="radiogroup" aria-label="Riding experience in years" className="grid grid-cols-5 gap-2 sm:gap-3">
@@ -487,9 +530,12 @@ export default function Checkout() {
                     })}
                   </div>
                 </fieldset>
+                )}
 
-                {/* Availability — shared picker (weeks / days / AM-PM) */}
-                <AvailabilityPicker picker={picker} />
+                {/* Availability — shared picker (weeks / days / AM-PM).
+                    RANGES, never a date picker: the visitor describes when they
+                    are free and staff choose the actual time on the call. */}
+                {showLessonFields && <AvailabilityPicker picker={picker} />}
 
                 {/* Notes */}
                 <div className="mt-5">
@@ -543,7 +589,7 @@ export default function Checkout() {
           {/* ── Right: Request summary ── */}
           <div className="lg:col-span-2">
             <div className="bg-white border border-green-800/10 p-7 sticky top-28">
-              <h2 className="font-serif font-medium text-green-800 text-xl mb-6">Your inquiry</h2>
+              <h2 className="font-serif font-medium text-green-800 text-xl mb-6">Your Inquiry</h2>
 
               {state.items.length === 0 ? (
                 <p className="text-sm font-sans text-muted italic mb-6">No services selected.</p>
@@ -567,7 +613,7 @@ export default function Checkout() {
                               {/* COUNTFIX 1.5: a quote-priced service carries price 0 as a
                                   placeholder — never render that as "$0". */}
                               <p className={`text-sm font-serif text-green-800${item.priceOnEnquiry ? ' italic' : ''}`}>
-                                {item.priceOnEnquiry ? 'Price on enquiry' : formatPrice(item.price, item.unit)}
+                                {item.priceOnEnquiry ? 'Price on inquiry' : formatPrice(item.price, item.unit)}
                               </p>
                               <button
                                 type="button"

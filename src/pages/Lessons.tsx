@@ -4,6 +4,7 @@ import { ArrowRight, Check, Gift } from 'lucide-react';
 import { usePrefersReducedMotion } from '../lib/hooks';
 import { useCart } from '../contexts/CartContext';
 import { fetchPublicCatalog, type ServiceGroup } from '../lib/publicCatalog';
+import { cartHasQuestions } from '../lib/questionSets';
 import type { Offering } from '../lib/types';
 import Seo from '../components/Seo';
 import SelectionBar from '../components/SelectionBar';
@@ -52,10 +53,25 @@ const WEEKLY_FOOTNOTE =
 export default function Lessons() {
   const seo = seoForPath('/lessons');
   const reducedMotion = usePrefersReducedMotion();
-  const { toggleItem, isSelected, itemCount, setFunnel } = useCart();
+  const { state, toggleItem, isSelected, itemCount, setFunnel } = useCart();
   const navigate = useNavigate();
   const [packs, setPacks] = useState<Offering[]>([]);
   const [packsState, setPacksState] = useState<'loading' | 'error' | 'ready'>('loading');
+  const [typeName, setTypeName] = useState<string | null>(null);
+
+  /**
+   * ASKRIGHT §A0 — THE CROSS-ENTRY CASE.
+   *
+   * Owner, 2026-08-16: "if there are horse care or acquisition items in the
+   * cart and they click the continue button from the lessons page it needs to
+   * still show the page 2 for the questions related to the other services
+   * before the form is shown."
+   *
+   * This page is NOT hardcoded to skip the questions page. It asks the cart.
+   * A lessons-only order goes straight to the form because nothing in it asks
+   * anything — which is a fact about riding lessons, not about /lessons.
+   */
+  const nextStep = cartHasQuestions(state.items) ? '/questions' : '/checkout';
 
   // This is the rider path — keeps the booking-request page's back link honest.
   useEffect(() => {
@@ -65,7 +81,12 @@ export default function Lessons() {
   useEffect(() => {
     fetchPublicCatalog('rider')
       .then((groups: ServiceGroup[]) => {
-        setPacks(groups.find((g) => g.code === 'RIDING_LESSON')?.offerings ?? []);
+        const lessons = groups.find((g) => g.code === 'RIDING_LESSON');
+        setPacks(lessons?.offerings ?? []);
+        // The catalog's own display name for the service, carried on the cart
+        // item so any surface that names the service says what the owner named
+        // it — never an offering name, never a hardcoded string.
+        setTypeName(lessons?.name ?? null);
         setPacksState('ready');
       })
       // A fetch failure used to silently render an empty grid — the page
@@ -78,6 +99,7 @@ export default function Lessons() {
       offeringId: o.id,
       offeringName: o.name,
       serviceType: o.service_type,
+      serviceTypeName: typeName,
       price: o.price_amount ?? 0,
       unit: (o.price_unit ?? 'flat'),
       configKind: o.config_kind, weeklyFrequency: o.weekly_frequency, unitCount: o.unit_count,
@@ -251,8 +273,8 @@ export default function Lessons() {
 
           {/* Actions — the single primary step forward */}
           <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <button type="button" onClick={() => navigate('/checkout')} disabled={itemCount === 0} className="btn-primary">
-              Continue to Booking Request
+            <button type="button" onClick={() => navigate(nextStep)} disabled={itemCount === 0} className="btn-primary">
+              {nextStep === '/checkout' ? 'Continue to Submit Inquiry' : 'Continue'}
               <ArrowRight size={16} />
             </button>
             <Link to="/gift?item=lessons" className="inline-flex items-center gap-2 text-sm font-sans text-secondary hover:text-green-800 transition-colors focus-ring">
@@ -265,8 +287,8 @@ export default function Lessons() {
           )}
 
           {/* The floating bar belongs here too — this is where lessons are
-              chosen. Unlike the three-step funnels, /lessons goes straight to
-              checkout, so the bar calls that same navigate. */}
+              chosen. It calls the same `nextStep` the button above does, so
+              there is one path forward, not two. */}
           <p className="text-center mt-10">
             {/* Owner, 2026-08-16: was /about — a stale page from before the
                 community page existed, and one that needs rebuilding. This is
@@ -277,7 +299,10 @@ export default function Lessons() {
       </section>
 
     {itemCount > 0 && (
-      <SelectionBar onContinue={() => navigate('/checkout')} label="Continue to Booking Request" />
+      <SelectionBar
+        onContinue={() => navigate(nextStep)}
+        label={nextStep === '/checkout' ? 'Continue to Submit Inquiry' : 'Continue'}
+      />
     )}
     </>
   );

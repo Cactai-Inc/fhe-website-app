@@ -34,6 +34,7 @@ import BookRider from './pages/BookRider';
 import BookHorse from './pages/BookHorse';
 import BookSupport from './pages/BookSupport';
 import Checkout from './pages/Checkout';
+import Questions from './pages/Questions';
 import Confirmation from './pages/Confirmation';
 import NotFound from './pages/NotFound';
 import Login from './pages/Login';
@@ -192,6 +193,12 @@ export function AppRoutes() {
               <Route path="/book/rider" element={<BookRider />} />
               <Route path="/book/horse" element={<BookHorse />} />
               <Route path="/book/support" element={<BookSupport />} />
+              {/* ASKRIGHT §A0 — page 2 for a cart whose visitor did not come
+                  through a funnel that has one (the /lessons cross-entry case).
+                  It redirects straight to /checkout when nothing in the cart
+                  asks anything, so the questions page is conditional on CONTENT
+                  and never on entry point. */}
+              <Route path="/questions" element={<Questions />} />
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/confirmation" element={<Confirmation />} />
               <Route path="/login" element={<Login />} />
