@@ -135,12 +135,28 @@ questions to the lesson path. Under this architecture they belong on page 2 like
 which **answers RIDERQUALIFY's open owner question about where in the flow they go**. Once it
 merges, a lessons-only order **will** have a page 2. Note this in your report.
 
-### There is ONE submission form, and it is the lessons form
+### ONE form page, ONE form component, configuration decided by the cart
+
+**Owner, 2026-08-16:** *"the form for lessons contains the same information that the form on the
+other two collect so there is only one form page regardless of what they select, its just a matter
+of which form."*
+
+- **There is exactly one form page in every flow** — the last one. Never two, never a per-category
+  variant page.
 - **`Checkout.tsx`'s form is the superset** — it already collects first/last name, email, phone,
   preferred contact method, notes, and availability. **It becomes THE form for all three funnels.
   Do not write a second one.**
-- **Always shown:** name, email, phone, preferred contact method, notes.
-- **Lessons only:** the `AvailabilityPicker` ranges (§A6b).
+- **"Which form" is a CONFIGURATION of that one component, derived from the cart** — not a choice
+  between separate forms:
+
+| field | shown when |
+|---|---|
+| name, email, phone, preferred contact method, notes | **always** |
+| the `AvailabilityPicker` ranges (§A6b) | **a lesson is in the cart** |
+| rider questions (`RIDERQUALIFY`, once merged) | **a lesson is in the cart** |
+
+- **A mixed cart shows the union** — a lesson plus horse care gets the availability block, because a
+  lesson is present. **It is not either/or.**
 - ⚠️ **Riding experience is in the wrong place and should move to page 2.** It sits on the form today
   as *"Riding experience (years)"*, but *"Which best matches your equestrian experience?"* is a
   **`person`-subject page-2 question** for Horse Evaluation and Horse Finder (§A4). Left as it is,
