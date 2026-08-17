@@ -164,6 +164,46 @@ the first**, not only step 2. Relabel it to **`Back`** for all of them; step 0 k
 - `Checkout.tsx:294` says `Back to Selection`. **Do not change it here** — it is shared with the
   lesson funnel.
 
+## C1d — ⚠️ TWO DATA FIXES, OWNER-RULED 2026-08-17
+
+### 1. Only three services are price-on-inquiry. Everything else carries a price.
+**Owner:** *"evaluation, search, and acquisition assistance are not to be priced online, in the
+catalog in app, only priced on inquiry. everything else has a price. some are correct, some are not,
+these should be editable in the catalog editor in the app."*
+
+**Clear the price (set NULL, never 0) on every offering in:**
+`HORSE_EVALUATION` · `HORSE_FINDER` · `HORSE_PURCHASE_ASSISTANCE`
+
+**Measured — three are wrongly priced today and must be cleared:**
+`Lease Evaluation 225.00` · `Pre-Purchase Evaluation 275.00` · `Search Retainer 350.00`
+
+**Everything else keeps its price** — clipping (85/110/200), exercise (55/200/390), turnout
+(25/100/200), training, lessons. ⚠️ **The owner says some of those numbers are wrong but has not
+supplied corrections — change none of them.** He edits them himself in the catalog editor.
+
+**Confirm the catalog editor can do this**: `AdminProductsPage` already edits `price_amount`, and
+the public surface renders "Price on inquiry" from a NULL. **Verify a NULL round-trips through the
+editor** — if the editor cannot clear a price back to NULL, that is the actual bug to fix.
+
+### 2. Own-horse lessons must trigger the horse documents — today they do not
+**Measured in `derive_affiliations`:** `HORSE_OWNER` is granted on signatures, an owned horse, an
+invitation category, **or `EXISTS (SELECT 1 FROM pur WHERE seg = 'horse')`**.
+
+⚠️ **But own-horse lessons carry `segment = 'rider'`, not `'horse'`:**
+`1x Weekly Lesson (With your horse)` · `2x Weekly Lessons (With your horse)` ·
+`Single Lesson (With your horse)` — all `segment = rider`, `horse_included = false`.
+
+**So a client riding their own horse in lessons never triggers the horse liability and vet
+authorisation documents** — precisely the paperwork that buyer needs. The owner's rule names them
+explicitly: *"or lessons with their horse in the initial order."*
+
+- **Fix by keying on `horse_included = false`**, not by moving the offerings between segments —
+  segment drives the funnels and `SESSIONBOOK`'s filtering.
+- ⚠️ **`horse_included` has 8 true / 4 false / 14 NULL** — test `= false` explicitly, **never
+  `!= true`**, or every NULL offering starts summoning horse documents.
+- **Prove it both ways:** an own-horse lesson buyer receives the horse documents; an
+  our-horse lesson buyer receives none.
+
 ## C1c — ⚠️ TURNOUT NEEDS ITS OWN QUESTIONS — niche down
 
 **Owner, 2026-08-17:** *"yes you are correct we need to niche down for things like turnout."*
@@ -493,13 +533,29 @@ path. **Do not write a second booking writer.**
 > their horse isnt in our system during onboarding, which an acquisition client wouldnt have one
 > they would add, so they are deal client category."*
 
-**"Horse owner" is EARNED BY HAVING A HORSE IN THE SYSTEM — it is not declared on a form.** Two
-client categories come out of onboarding:
+⚠️ **CORRECTED 2026-08-17 — the orchestrator had this backwards.** An earlier draft said horse-owner
+status is *earned by having a horse*. **It is not.**
+
+**Owner:** *"we grant horse owner to someone without a horse so it triggers the intake form and
+auth/liability docs related to horses when they onboard if there are purchases related to the horse
+or lessons with their horse in the initial order. if not they should be skipping the docs related to
+horse ownership, and only add the horse related docs when an offering that needs them is added."*
+
+**THE RULE: DOCUMENTS FOLLOW THE ORDER, NOT A HORSE RECORD.**
+- The `HORSE_OWNER` grant is **a document trigger**, not a description of reality. Granting it to
+  someone with no horse yet is **correct and deliberate** — it is what summons the horse intake form
+  and the horse auth/liability documents.
+- **An order with no horse-related purchase gets NONE of those documents.**
+- **Adding such an offering later adds the documents then.** Onboarding is not the only moment.
+- ⚠️ **Do NOT change `derive_affiliations` to require a horse.** That was considered and rejected by
+  the owner; it would suppress the documents for exactly the clients who need them.
+
+Two client categories still come out of onboarding, but they are decided by **what was bought**:
 
 | category | who | onboarding |
 |---|---|---|
-| **horse-owner client** | a horse of theirs exists in our system | **completes the horse intake** |
-| **deal client** | no horse of theirs exists yet — acquisition clients, and horse-care clients whose service is for the horse we are finding them (`ASKRIGHT` §A3f) | **NO horse intake — there is nothing to add.** Their care services live in **held order B** (§C5c) until the horse exists |
+| **horse-owner client** | their order contains a horse-related purchase — horse care, **or a lesson on their own horse** | **completes the horse intake + horse auth/liability documents** |
+| **deal client** | the order contains no horse-related purchase — acquisition only, or care for the horse we are finding them (§C5c splits that into held order B) | **NO horse intake and NO horse documents** — only the general liability waiver |
 
 ⚠️ **This breaks the straight line in §C10.** A client with no horse must **not** be shown "add your
 horse's information" — it is an unanswerable form and it tells them we were not listening.
