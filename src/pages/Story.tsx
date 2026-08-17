@@ -350,7 +350,7 @@ export default function Story() {
 
           {/* The ways in — refined preview, informational with a path (carries
               the onward link to /shop now that S4 is image-only). */}
-          {/* Continue out of Beyond The Arena and into The Ways In. */}
+          {/* Continue out of Beyond The Arena and into Our Services. */}
           <p className="mt-10">
             <a href="#the-ways-in" className="link-underline">
               Continue <ArrowRight size={13} aria-hidden="true" />
@@ -365,9 +365,9 @@ export default function Story() {
                 the section together, but no longer the loudest thing here. */}
             <div className="mt-12 sm:mt-16 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
               <Reveal className="lg:col-span-5">
-                <p className="eyebrow mb-5">The Ways In</p>
+                <p className="eyebrow mb-5">Our Services</p>
                 <h3 className="heading-section text-green-900">
-                  Find the way that fits you.
+                  We Serve Every Stage Of Your Equestrian Journey
                 </h3>
                 <p className="body-text mt-6 text-lg">
                   However you begin — a first lesson, a horse to ride each week,
