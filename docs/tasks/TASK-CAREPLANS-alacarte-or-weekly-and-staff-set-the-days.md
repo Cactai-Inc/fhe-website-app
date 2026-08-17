@@ -24,7 +24,7 @@ every DB claim is query output, render claims marked **NOT VERIFIED** with an ow
 
 **Three changes:**
 1. **Acquisition services carry NO pricing** — every one is price-on-inquiry.
-2. **Care service prices are adjusted** — ⚠️ **numbers pending, Owner Question 1.**
+2. ~~Care service prices are adjusted~~ ⚠️ **CANCELLED — the owner is supplying no revisions. NO PRICE CHANGES.**
 3. **Weekly care is ONE option, not 1x/2x.** The customer picks **à la carte or weekly**; **staff
    choose the days of the week**, and **the quantity follows from that**, along with **how many
    weeks — or indefinitely until cancelled.**
@@ -51,9 +51,10 @@ month-boundary expiry, `set_recurring_day`). **This task modifies work that is d
 itself the third attempt at credit minting.** Read its report at
 `docs/reports/TASK-CREDITALIGN-REPORT.md` **before touching any of it.**
 
-⚠️ **The lessons funnel deliberately keeps `1x Weekly Lesson` / `2x Weekly Lesson` as distinct
-cards** — the owner designed that page on 2026-08-15/16 and approved the copy. **Owner Question 2
-confirms whether lessons are in or out of scope. Assume OUT until told otherwise.**
+⚠️ **LESSONS ARE OUT OF SCOPE — owner-confirmed.** `/lessons` keeps `1x Weekly Lesson` and
+`2x Weekly Lesson` as distinct cards, with their copy, prices and `weekly_frequency` untouched. If a
+change to the recurring maths alters a lesson SKU's behaviour, **that is a defect in your change** —
+see §THE TEST.
 
 ---
 
