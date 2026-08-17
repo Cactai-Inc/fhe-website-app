@@ -164,7 +164,7 @@ export default function Story() {
               text as a normal block. */}
           <Reveal>
             <div
-              className="lg:float-right lg:w-[48%] lg:ml-8 mb-8 lg:mb-6 aspect-[3/2] overflow-hidden bg-green-900"
+              className="lg:float-right lg:w-[52%] lg:ml-12 mb-8 lg:mb-6 aspect-[3/2] overflow-hidden bg-green-900"
               style={{
                 backgroundImage: `url('${HERO_A}')`,
                 backgroundSize: 'cover',
