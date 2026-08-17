@@ -202,3 +202,187 @@ checked:  Prod clause defs unchanged since the report; the three activities stil
 rank:     5
 moot?:    The permitted-use reorganisation already specified for the lease supersedes this wording.
 if kept:  Fold into that reorganisation rather than doing it alone.
+
+---
+
+# RANK 1 — LIVE DEFECTS
+
+### 1. A Sign button that always fails
+what:     Staff are offered a Sign button for every unsigned party, but pressing it errors for anyone who is not the company.
+where:    Staff app — document viewer
+raised:   2 reports, earliest 2026-08-05 · sources: TASK-ONEAUTHOR-REPORT.md, TASK-COSIGN-REPORT.md
+checked:  src/components/ops/documents/SigningPanel.tsx still renders a row per unsigned party; record_signature in prod still admits staff only for the org's own company contact. Unchanged since the report.
+rank:     1
+moot?:
+if kept:  Either hide the button unless the caller may sign, or widen who may sign on a party's behalf.
+
+### 2. Two documents will error the moment anyone signs them
+what:     Two documents ready to sign point at a contract record that no longer exists, so signing either one fails outright.
+where:    Staff app — Beaumont's horse documents
+raised:   3 reports, earliest 2026-08-10 · sources: TASK-SUPERSEDE-REPORT.md, TASK-CONTRACTORPHAN-REPORT.md, TASK-GUARDREST-REPORT.md
+checked:  Prod: `select count(*) from documents d where d.contract_id is not null and not exists (select 1 from contracts c where c.id=d.contract_id)` → **2**. Still armed.
+rank:     1
+moot?:
+if kept:  Choose: clear the contract link on those two, or delete and regenerate them.
+
+### 3. …and any other staff action on those two aborts too
+what:     It is not only signing — archiving or editing those two documents fails the same way.
+where:    Staff app — same two documents
+raised:   1 report, 2026-08-11 · sources: TASK-CONTRACTORPHAN-REPORT.md
+checked:  Same two rows as item 2; the foreign key is still validated, so the abort condition is unchanged.
+rank:     1
+moot?:
+if kept:  Fixed by the same decision as item 2.
+
+### 4. One member, two different document counts
+what:     A member's paperwork count reads 13 on one page and 5 on another, both labelled the same to them.
+where:    Member app — My Documents vs the acquisition home
+raised:   1 report, 2026-08-12 · sources: TASK-DUPECENSUS-REPORT.md
+checked:  Both readers still exist and count different populations (my_documents vs my_contract_documents in prod); the void filter was added to the second but the population difference stands.
+rank:     1
+moot?:
+if kept:  Decide which number a member should see, then have one reader serve both pages.
+
+### 5. A blank insurance answer prints as a promise
+what:     Leave an insurance status blank and the lease prints a sentence that reads as though the Lessee promised coverage.
+where:    Lease document — insurance section
+raised:   1 report, 2026-08-07 · sources: TASK-LEASEMAP-REPORT.md
+checked:  Prod clause bodies and the composer are unchanged since the report; six fields behave this way.
+rank:     1
+moot?:
+if kept:  Either refuse to compose a blank status or print an explicit "not stated".
+
+### 6. Every lease ends a sentence mid-air
+what:     A money sentence prints on every lease even when the value is optional, leaving "…fair market value of." with nothing after it.
+where:    Lease document — limitation of liability
+raised:   1 report, 2026-08-07 · sources: TASK-LEASEMAP-REPORT.md
+checked:  Unchanged in prod clause defs; the clause is unconditional.
+rank:     1
+moot?:
+if kept:  Gate the clause on the value being present, or make the value required.
+
+### 7. An active template would print raw placeholders to a signer
+what:     One live contract template has a full body and no field wiring at all — generating it would show a signer raw {{…}} text.
+where:    Templates — Minor Rider
+raised:   2 reports, earliest 2026-08-01 · sources: TASK-TOKENAUDIT-REPORT.md, PROMPT_A_STAGES_1-3.md
+checked:  Prod: MINOR_RIDER `active = t`, body 5,481 bytes, **0** token rows. No document has ever been generated from it.
+rank:     1
+moot?:
+if kept:  Deactivate it, or wire its 26 fields.
+
+### 8. Two more active templates are completely empty
+what:     Two templates staff can pick are marked active with no body text at all.
+where:    Templates — Facility License, Independent Contractor
+raised:   2 reports, earliest 2026-08-11 · sources: TASK-ONEAUTHOR-REPORT.md, TASK-TEXTEDIT-REPORT.md
+checked:  Prod: both `active = t`, body length **0**.
+rank:     1
+moot?:
+if kept:  Deactivate both, or write the bodies in the wording editor.
+
+### 9. The retainer and representation agreements cannot be completed
+what:     The money terms on two active agreements have nowhere to come from, so those documents can never be finished.
+where:    Templates — Search Retainer, Transaction Representation
+raised:   1 report, 2026-08-12 · sources: TASK-TOKENAUDIT-REPORT.md
+checked:  Prod: the four fee tokens exist in active bodies with no field feeding them; unchanged.
+rank:     1
+moot?:
+if kept:  Wire the four values, or take both templates out of the picker until they are.
+
+### 10. Draft money renders as a bare number — FIXED, verify wording
+what:     Editing a draft re-composed money amounts as plain numbers instead of currency.
+where:    Any clause-built document while editing
+raised:   1 report, 2026-08-02 · sources: PROMPT_A_STAGES_4-5.md
+checked:  Prod: the re-compose function now calls the money formatter (`prosrc ~ 'fmt_money'` → true). The defect as reported is gone; nobody has looked at the rendered output.
+rank:     1
+moot?:
+if kept:  One screenshot of a draft with money in it.
+
+### 11. New people land on the wrong list
+what:     Add someone from the Leads, Vendors or Partners tab and they are filed as a plain contact, so they appear on the Clients list instead.
+where:    Staff app — Records (all people tabs)
+raised:   4 reports, earliest 2026-08-12 · sources: TASK-DUPECENSUS-REPORT.md, TASK-REVIEWNAV-REPORT.md, TASK-RECORDS-REPORT.md
+checked:  src/components/ops/contacts/ContactForm.tsx still sends no type (grep for contact_type → 0 hits) and src/lib/api.ts:1028 is a bare insert; the column default is 'CONTACT'. Unchanged.
+rank:     1
+moot?:
+if kept:  Pass the tab's type into the create call — one line plus the form's prop.
+
+### 12. Every row of the instructor's day says "Client"
+what:     The instructor's list of today's lessons shows "Client" as the person on every single row.
+where:    Staff app — instructor home
+raised:   1 report, 2026-08-11 · sources: TASK-ADMINSWEEP-PHASE2.md
+checked:  src/pages/app/InstructorHome.tsx:45 still returns `who: 'Client'` literally.
+rank:     1
+moot?:
+if kept:  Join the person's name into that reader; the sibling mapper already does it.
+
+### 13. Editing a booking wipes its links
+what:     Editing part of a calendar booking silently clears its client, purchase, offering and horse.
+where:    Staff app — Calendar
+raised:   1 report, 2026-08-12 · sources: TASK-BOOKWRITE-REPORT.md
+checked:  Prod: save_calendar_item's update still assigns all four keys flat, with no coalesce (`client_id = coalesce` → false).
+rank:     1
+moot?:
+if kept:  Only overwrite a key the caller actually sent.
+
+### 14. Contact preferences save on every keystroke and hide failures
+what:     Typing in a contact-preference field saves on every character, and a failed save is discarded silently while the screen keeps the new value.
+where:    Member app — Profile & preferences
+raised:   1 report, 2026-08-06 · sources: TASK-ACCTEVAL-REPORT.md
+checked:  src/components/app/profile/ProfileCard.tsx:130 still swallows the error; the fields still write on change, not on blur.
+rank:     1
+moot?:
+if kept:  Save on blur, and show the failure.
+
+### 15. A failed read reads as "you're all caught up"
+what:     If the dashboard cannot load something, it shows the reassuring empty state instead of an error.
+where:    Member app — Dashboard
+raised:   2 reports, earliest 2026-08-12 · sources: TASK-DUPECENSUS-REPORT.md, TASK-COUNTFIX-REPORT.md
+checked:  src/components/app/DashboardPanel.tsx still has 10 `.catch(() => …)` reads and no loading or error state.
+rank:     1
+moot?:
+if kept:  One loading flag and one error branch, copied from the ops dashboard.
+
+### 16. "Review & sign paperwork" goes nowhere
+what:     A primary button on the calendar goes to a page that does not exist.
+where:    Member app — Calendar
+raised:   1 report, 2026-08-12 · sources: TASK-DUPECENSUS-REPORT.md
+checked:  src/pages/app/CalendarPage.tsx:732 links to /app/contracts; src/App.tsx registers only `contracts/:id`. Still a 404.
+rank:     1
+moot?:
+if kept:  Point it at My Documents.
+
+### 17. A cancelled lesson still reads as Scheduled
+what:     Lesson status labels never match, so a cancelled lesson shows as Scheduled on the instructor's page.
+where:    Staff app — instructor home
+raised:   1 report, 2026-08-11 · sources: TASK-ADMINSWEEP-PHASE2.md
+checked:  src/pages/app/InstructorHome.tsx:36 keys the chip map in lower case and :84 looks up the raw status; statuses are stored upper case.
+rank:     1
+moot?:
+if kept:  Normalise the case at the lookup.
+
+### 18. The gift "Resend" button has never sent an email
+what:     Pressing Resend on a gift stamps a date and sends nothing, because no gift email exists anywhere.
+where:    Staff app — Gifts
+raised:   1 report, 2026-08-11 · sources: TASK-GIFTCREDITS-REPORT.md
+checked:  No gift email path exists in api/ or src/ (unchanged); prod gifts table still holds 0 rows so nobody has been affected yet.
+rank:     1
+moot?:
+if kept:  Build the gift email, or remove the button until it exists.
+
+### 19. Activating an account wipes the person's standing categories
+what:     When a person's account is activated, their rider/owner categories are deleted and re-derived — anyone whose categories were not derivable loses them.
+where:    Identity — account activation
+raised:   1 report, 2026-08 · sources: TASK-HORSEINTAKE-REPORT.md
+checked:  Prod: 12 of the 18 people holding category rows have no account yet, and the sole writer (apply_affiliations) deletes before re-deriving. Same exposure as reported.
+rank:     1
+moot?:
+if kept:  Make the re-derivation additive, or prove every category is derivable before activation.
+
+### 20. Breed and colour cannot take a typed-in value
+what:     "Other (enter manually)" for a horse's breed or colour can only fail — the columns only accept values from a list.
+where:    Member app — horse intake
+raised:   1 report, 2026-08 · sources: TASK-HORSEINTAKE-REPORT.md
+checked:  Prod: both columns are still foreign keys into the lookup tables.
+rank:     1
+moot?:    The flow program rewrites /horse — but the database change stands either way.
+if kept:  Allow a free-text value alongside the lookup, in the database.

@@ -317,6 +317,43 @@ ops-board distinction.
   emails send, with a per-attempt row recording the outcome.** If the buyer email cannot be proven,
   say so — do not print "we've emailed you" from an optimistic assumption.
 
+## C5c — CARE FOR A HORSE THEY DO NOT HAVE YET → SPLIT INTO TWO ORDERS
+
+**Owner, 2026-08-16:**
+> *"yes we need to log a horse they have if they buy care services, but if they are buying them for a
+> horse they dont already have because they are getting our help buying that horse we would split
+> them into two separate orders so they onboard with the deal path and the general liability waiver
+> only and then we would process the order for the care services when they actually have the horse
+> for us to do the work with and they would be prompted to complete the intake form, the documents,
+> and make payment for those services."*
+
+**When `ASKRIGHT` §A3f answered *"the horse you help me find"*, the submission's single order is
+SPLIT at the confirm-promote-invite act (§C5b) into:**
+
+| | order A — acquisition | order B — the care services |
+|---|---|---|
+| **at confirmation** | `awaiting_payment`, proceeds normally | **stays `draft`**, with a status event meaning **awaiting the horse** — nothing owed, nothing scheduled |
+| **onboarding** | the **deal path**: activate → order screen → **general liability waiver only** (§C10a) | **not part of this activation at all** |
+| **later, once the horse exists** | — | **wakes up**: the client is prompted to complete the **horse intake form**, the **documents**, and **make payment** for those services |
+
+**Rules:**
+- **The split happens once, at confirmation** — before the invite goes out, because the invite is
+  what starts the deal-path onboarding. **Never split at submission**; the inquiry is one thing
+  until staff have had the conversation.
+- **Both orders trace to the same inquiry** — one `requests` row, two orders. **Prove the link
+  survives**, or staff lose the story of why order B exists.
+- **Order B is never `awaiting_payment` while the horse is missing.** Nothing is owed for work that
+  cannot begin. It moves to `awaiting_payment` **only when the horse exists** and the client is
+  prompted.
+- **Use the §C5b vocabulary** — `draft` plus a status event. **No new `purchases.status` value.**
+- ⚠️ **What wakes order B is a HORSE APPEARING for that client**, not the acquisition order closing —
+  they may buy privately, or we may find one fast. **Key the wake-up on the horse, not the deal.**
+- ⚠️ **Do NOT build the acquisition lane here.** Order A's own flow is a later task. **This task owns
+  the split and order B's held state**; report exactly where order A is handed off.
+
+**This supersedes the earlier "cannot be scheduled" treatment** — a held second order is the
+owner's mechanism, not a blocked line item inside one order.
+
 ## C6b — the confirmation screen after the submit: show what happened, honestly
 *(Absorbs `THREEFORMS` F2 — that task no longer runs.)*
 
@@ -343,10 +380,9 @@ schedule. **The date control depends on the item:**
 | weekly item | **a day of the week** |
 | weekly item, quantity 2 (`2x`) | **two days of the week** |
 
-⚠️ **A SERVICE FOR A HORSE THAT DOES NOT EXIST YET CANNOT BE SCHEDULED** (`ASKRIGHT` §A3f). When the
-client said the care is for *"the horse you help me find"*, the service attaches to the sought horse
-— **this date/day picker must not be reachable for it**, and the order must read **awaiting the
-horse** wherever staff see it. Scheduling becomes possible only once the horse is acquired.
+⚠️ **A SERVICE FOR A HORSE THAT DOES NOT EXIST YET IS NOT SCHEDULED HERE — IT IS IN HELD ORDER B**
+(§C5c). Staff schedule only what belongs to a horse that exists. Order B carries no dates until the
+horse appears and the client completes intake, documents and payment.
 
 **The quantity must come from the catalog, never from parsing the offering name.** Names changed on
 2026-08-15 and name-parsing broke credit minting three separate times. `CREDITALIGN` established
@@ -395,7 +431,7 @@ client categories come out of onboarding:
 | category | who | onboarding |
 |---|---|---|
 | **horse-owner client** | a horse of theirs exists in our system | **completes the horse intake** |
-| **deal client** | no horse of theirs exists yet — acquisition clients, and horse-care clients whose service is for the horse we are finding them (`ASKRIGHT` §A3f) | **NO horse intake — there is nothing to add** |
+| **deal client** | no horse of theirs exists yet — acquisition clients, and horse-care clients whose service is for the horse we are finding them (`ASKRIGHT` §A3f) | **NO horse intake — there is nothing to add.** Their care services live in **held order B** (§C5c) until the horse exists |
 
 ⚠️ **This breaks the straight line in §C10.** A client with no horse must **not** be shown "add your
 horse's information" — it is an unanswerable form and it tells them we were not listening.
@@ -532,6 +568,15 @@ are **not** to be wired up here — report them, nothing more.
     prove a horse-care buyer with no horse lands as a deal client.
 12d. **The inquiry answers are retrievable per contact and per subject** (§C10b) — prove they can
     populate a downstream form rather than sitting in a text blob.
+12e. ⚠️ **THE SPLIT** (§C5c): an inquiry mixing acquisition with care for the sought horse produces
+    **two orders from one `requests` row** at confirmation — never at submission. Order A goes
+    `awaiting_payment`; **order B stays `draft` + awaiting-the-horse, owing nothing, scheduled
+    nothing.** Prove both orders trace back to the one inquiry.
+12f. **Order B wakes on a HORSE APPEARING for that client** — not on the acquisition order closing —
+    and only then prompts intake, documents and payment, moving to `awaiting_payment`. Prove the
+    trigger is the horse.
+12g. **No new `purchases.status` value was added** for any of this — `draft` plus status events, per
+    §C5b. Prove the constraint is unchanged.
 13. **`Notify staff this isn't correct` provably reaches a human**, and the client still proceeds.
 14. Mixed-cart behaviour at the submit screen is **reported honestly**, whatever it is.
 15. Every DB claim is query output. Render claims are marked **NOT VERIFIED** with a numbered
