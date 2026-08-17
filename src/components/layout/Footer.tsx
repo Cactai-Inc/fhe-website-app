@@ -1,10 +1,26 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { MapPin, Phone, Mail } from 'lucide-react';
+import { MapPin, Phone, Mail, Clock } from 'lucide-react';
 import { BRAND } from '../../lib/brand';
 
-const MAP_EMBED_SRC =
-  'https://www.google.com/maps?q=Carmel+Creek+Ranch,+San+Diego,+CA&output=embed';
+// Owner, 2026-08-17: the geocoded business address (11500 Clews Ranch Rd
+// Ste A — Google's own number; the `locations` table's "11600" doesn't
+// match the real Business Profile, flagged separately, DB left untouched)
+// pins at the building, but that is NOT where visitors should be routed —
+// there are two forks in the road and, without the pin at the actual
+// turn-in, people get lost. The owner dropped a pin at the real arrival
+// point (right off the CA-56 Carmel Creek Rd exit, the immediate right
+// turn at the FHE/CCR sign), first as a maps.app.goo.gl link (resolved to
+// 32.939204,-117.219696), then confirmed with the Plus Code read straight
+// off their own Maps app — "WQQJ+M4 San Diego, California" — which
+// resolves to 32.9391875,-117.2196875, a few meters from the first
+// reading, same spot. Using the Plus Code itself as the query since it's
+// what the owner is actually looking at. A bare-location pin like this has
+// no business-name label/info card (unlike the address+name query above
+// did), which is the right trade here: accurate turn-by-turn over a pretty
+// pin.
+const MAP_QUERY = 'WQQJ+M4 San Diego, California';
+const MAP_EMBED_SRC = `https://www.google.com/maps?q=${encodeURIComponent(MAP_QUERY)}&output=embed`;
 
 export default function Footer() {
   const { user } = useAuth();
@@ -33,7 +49,7 @@ export default function Footer() {
         {/* Navigation */}
         <div>
           <p className="eyebrow-on-dark mb-5">Navigation</p>
-          <nav className="flex flex-col gap-3" aria-label="Footer">
+          <nav className="flex flex-col items-center gap-3 text-center" aria-label="Footer">
             {[
               { label: 'Home', href: '/' },
               { label: 'Our Community', href: '/story' },
@@ -45,7 +61,6 @@ export default function Footer() {
               { label: 'Horse Care', href: '/horse' },
               { label: 'Acquisition Support', href: '/acquisition' },
               { label: 'Gift a Service', href: '/gift' },
-              { label: 'FAQ', href: '/faq' },
             ].map((link) => (
               <Link
                 key={link.label}
@@ -61,6 +76,13 @@ export default function Footer() {
               className="text-sm font-sans text-white/[0.7] hover:text-white transition-colors focus-ring-dark"
             >
               {user ? 'Member area' : 'Member sign-in'}
+            </Link>
+            {/* Owner, 2026-08-17: FAQ moved to the last position. */}
+            <Link
+              to="/faq"
+              className="text-sm font-sans text-white/[0.7] hover:text-white transition-colors focus-ring-dark"
+            >
+              FAQ
             </Link>
           </nav>
         </div>
@@ -95,6 +117,10 @@ export default function Footer() {
                 {BRAND.email}
               </a>
             </div>
+            <div className="flex items-center gap-3">
+              <Clock size={16} className="text-gold-400 flex-shrink-0" aria-hidden="true" />
+              <p className="text-sm font-sans text-white/[0.7]">8:00 AM – 7:00 PM, 7 days a week</p>
+            </div>
           </div>
 
           <div className="mt-8 pt-8 border-t border-white/10">
@@ -105,11 +131,12 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Map */}
-        <div className="rounded-lg overflow-hidden border border-white/10 aspect-[4/3] md:aspect-auto md:h-full min-h-[220px]">
+        {/* Map — Google's own embed: zoomable/pannable, and its built-in
+            "Open in Maps" control is the offer-to-open-Maps affordance. */}
+        <div className="border border-white/10 aspect-[4/3] md:aspect-auto md:h-full min-h-[220px]">
           <iframe
             src={MAP_EMBED_SRC}
-            title="Map showing Carmel Creek Ranch, San Diego, CA"
+            title="Map showing French Heritage Equestrian at Carmel Creek Ranch, San Diego, CA"
             loading="lazy"
             referrerPolicy="no-referrer-when-downgrade"
             className="w-full h-full border-0"

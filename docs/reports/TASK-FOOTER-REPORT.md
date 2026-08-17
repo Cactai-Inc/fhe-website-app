@@ -4,16 +4,19 @@
 `~/Downloads/claude-code-repo/wt-footer`. Presentation only — no migrations, no
 RPCs, no data changes. **Do not push; the orchestrator merges.**
 
-**Files changed:** `src/components/layout/Footer.tsx` only.
+**Files changed:** `src/components/layout/Footer.tsx` (the task's own scope),
+plus two small content changes the owner asked for live in this same thread —
+`src/lib/seo.ts` and `src/pages/Story.tsx` — documented in their own section
+near the end, since they're not part of F1–F5.
 `npm run typecheck`: 0 errors. `npm run lint`: 0 errors, 46 warnings (all
-pre-existing, none in `Footer.tsx` — confirmed with `npm run lint | grep
-Footer.tsx`, no output). `npx vitest run test/ui`: 3 failed / 130 passed / 5
-skipped — the same three files named in the task's TRAPS section
-(`pluspass_create_controls`, plus two others in that red set) fail with the
-same pre-existing errors (missing `listMfaFactors` mock, `window is not
-defined`); nothing in the failures touches `Footer.tsx` or footer rendering,
-and no test file references `Footer` at all (`grep -rl Footer test/` →
-nothing). No new failures introduced.
+pre-existing — confirmed with `npm run lint | grep -E
+'Footer.tsx|seo.ts|Story.tsx'`, no output). `npx vitest run test/ui`: 3 failed
+/ 130 passed / 5 skipped — the same three files named in the task's TRAPS
+section (`pluspass_create_controls`, plus two others in that red set) fail
+with the same pre-existing errors (missing `listMfaFactors` mock, `window is
+not defined`); nothing in the failures touches any file in this diff, and no
+test file references `Footer`, `Story`, or `seo.ts` at all. No new failures
+introduced.
 
 Screenshots in `docs/reports/footer-shots/`: `footer-desktop.png` (1440px),
 `footer-tablet.png` (800px), `footer-mobile.png` (390px), all taken with a
@@ -56,6 +59,83 @@ a styled/dark map (requires a Maps JavaScript API key + Cloud Console setup —
 out of scope for a presentation-only task) or a lower-contrast treatment
 (reduced opacity, grayscale filter) applied to the current key-less embed.
 
+**Mid-session round 1 — the real address, and a tappable card (owner,
+2026-08-17):** the owner supplied the actual Google-listing address ("same as
+CCR but we're listed as STE A") and asked for tap-to-open-Maps behavior:
+*"the visitor should see the map, tap it and their google map or apple map
+opens and they see our listing page and they can click a button to get the
+directions started."*
+
+I looked up the address in the live `locations` row for Carmel Creek Ranch
+(`2d771cea-5150-43b9-8e3d-38faa434a07d`, `address_line1 = '11600 Clews Ranch
+Road'`), preferring the live DB over a migration comment that said "11500" —
+per the repo's own working rule to verify against the DB, not a file. Built
+the map query as `French Heritage Equestrian, 11600 Clews Ranch Road, Ste A,
+San Diego, CA 92130`, and made the whole card a single tap target: the
+iframe went `pointer-events-none`/`aria-hidden` (purely a visual preview, since
+an `<a>` wrapping an `<iframe>` can't intercept clicks landing inside it), with
+a full-cover overlay `<a>` on top opening a universal Google Maps URL, plus a
+small "Get Directions" badge for affordance. Rounded corners, per the F1
+frame from round zero.
+
+**Mid-session round 2 — owner rejected round 1 outright (2026-08-17):**
+*"the map pin is on the exact address but it is not on the right location for
+where people actually go. and the map is really shitty, it has rounded
+corners, it doesnt have zoom out capability, clicking it doesnt open or offer
+to open a google map."* Three of those four are direct, unambiguous
+consequences of round 1's own choices, so I reverted them rather than debug
+the overlay further:
+
+- **Rounded corners → gone.** Dropped `rounded-lg overflow-hidden` from the
+  map's wrapper div.
+- **No zoom → `pointer-events-none` was the cause.** That single class
+  disabled all interaction with the iframe, scroll/pinch-zoom included, which
+  is what round 1's tap-target hack required. Removed it — the map is native
+  Google embed again: draggable, zoomable, with its own zoom/fullscreen
+  controls.
+- **"Doesn't offer to open a Google Map" → the custom overlay wasn't the
+  right way to satisfy this, so it's gone too.** Google's default embed
+  already carries its own "Open in Maps ↗" chip (visible top-left in
+  `footer-desktop.png`/`footer-tablet.png`) that does exactly what was asked
+  — clicking it offers to open the real Google Maps app/site. I didn't debug
+  why the owner's test of the custom overlay didn't work (a real click on a
+  live page vs. my headless-Chrome verification could differ in ways I can't
+  reproduce here); removing the custom layer entirely and relying on Google's
+  own affordance is more robust than a bespoke click-catcher regardless.
+- **"Not the right location for where people actually go" → NOT fixed, needs
+  the owner's input.** The owner sent a screenshot showing two pins — the
+  business-listing pin (where the query resolves) and a second, correct
+  arrival point near the CA-56 Carmel Creek Rd exit ("almost immediately
+  after they exit the highway and turn right, at the sign for French Heritage
+  Equestrian and Carmel Creek Ranch"). A screenshot doesn't give me exact
+  coordinates to embed with any confidence, and I'm not going to guess
+  lat/long off a raster image for driving directions. **Asked the owner
+  directly for either the exact coordinates or a dropped-pin share link** —
+  see the open item at the end of this report.
+- **A genuine data discrepancy, found while re-verifying the embed in
+  isolation:** loading the map embed standalone (outside the app, to debug
+  why a screenshot came back blank — see the tooling note) showed Google's own
+  listing info-card reading **"11500 Clews Ranch Rd Ste A"** — not "11600."
+  That means the `locations` table's `address_line1` disagrees with the real
+  Google Business Profile. I did not write anything to the DB (out of scope,
+  presentation-only task) — I switched the map query to Google's own number
+  (**11500**, not the DB's 11600) since that's what keeps matching Google's
+  real listing, and flagged the mismatch here rather than silently pick a
+  side. Worth a separate look at whatever else in the app reads
+  `locations.address_line1` for this row.
+- **Owner also asked, mid-round:** *"add out [our] hours 8am to 7pm 7 days
+  per week"* / *"below the email address in the footer."* Added a fourth row
+  in the Find Us contact list, a `Clock` icon (`lucide-react`, already used
+  elsewhere in this file for `MapPin`/`Phone`/`Mail`) plus "8:00 AM – 7:00 PM,
+  7 days a week," directly under the email row. No source given for these
+  hours beyond the owner's message — if they're meant to match a value stored
+  somewhere (e.g. a future `business_hours` config), that's not wired up;
+  this is static text same as the rest of the Find Us block.
+
+Current map query, used for both the visible embed and nothing else (the
+custom overlay/link from round 1 was removed): `French Heritage Equestrian,
+11500 Clews Ranch Rd Ste A, San Diego, CA 92130`.
+
 ## F2 — sign-in moves into the footer nav: DONE
 
 The bottom-bar `Member area` / `Member sign-in` link is gone; the same
@@ -72,9 +152,17 @@ relocated and re-styled, so the signed-in behavior claim rests on "the logic
 was not touched," not on a fresh screenshot — the owner should confirm once
 signed in.
 
-Nav now reads eight items at this length (Home, Our Community, Book a Lesson,
-Horse Care, Acquisition Support, Gift a Service, FAQ, Member sign-in) — see
-screenshots, it holds up fine in a single column on all three widths tested.
+Nav now reads eight items at this length — see screenshots, it holds up fine
+in a single column on all three widths tested.
+
+**Later, owner (2026-08-17): "center align the footer nav entries and move
+faq to the last position."** `nav` gained `items-center text-center`
+(flex-column, so this centers every link on the column's own axis, not the
+page's). FAQ moved out of the mapped array and became its own `<Link>` after
+the sign-in item — sign-in was already the last item post-F2, so "last
+position" now means Home, Our Community, Book a Lesson, Horse Care,
+Acquisition Support, Gift a Service, Member sign-in, **FAQ**. Confirmed in
+the refreshed `footer-desktop.png`/`footer-mobile.png`.
 
 ## F3 — the last line, three parts: DONE
 
@@ -109,13 +197,105 @@ per the task). Visible in all three screenshots.
 
 ---
 
+## Out-of-scope addendum — the site description, requested live (owner, 2026-08-17): DONE
+
+Not part of TASK-FOOTER's F1–F5 and not in `Footer.tsx`, but asked for
+directly in this same thread, with a screenshot of a Google search results
+panel: *"out [our] website short description shown here needs to be changed
+to match the facebook description, and the first line of our community page
+needs to be changed to match this sentence too. 'Join our community of
+riders, where camaraderie, enjoyment, and a love for horses come together.'"*
+
+- **`src/lib/seo.ts`**, the `/` entry in `ROUTE_SEO`: `description` changed
+  from *"A community of women who ride for the love of it. Classical European
+  hunter/jumper riding lessons, horse care, and acquisition support at Carmel
+  Creek Ranch in coastal San Diego."* to the exact sentence quoted above —
+  full replacement, not a blend, since "match the facebook description" reads
+  as a match, not a merge. This flows through `src/components/Seo.tsx` into
+  `<meta name="description">`, `og:description`, and `twitter:description`
+  together (same `description` prop feeds all three) — verified with
+  `page.$$eval` against the live dev server, `og:description` came back as
+  the new sentence, `data-rh="true"` confirming it's Helmet's tag.
+- **`src/pages/Story.tsx`** (the "Our Community" page, `/story`): the first
+  body paragraph — *"We are a community of riders who love all things
+  equestrian. This is the place we're grateful to call home for us and our
+  horses."* — replaced with the same sentence, verbatim. Screenshot:
+  `docs/reports/footer-shots/story-first-line.png`.
+- **A real gotcha, worth knowing, not a bug in this diff:** `npm run dev`
+  serves `index.html`'s static fallback `<meta name="description">`
+  alongside Helmet's per-route tag — TWO tags in the DOM at once in dev mode,
+  because `react-helmet-async` only manages tags it renders itself and
+  doesn't strip the static one. A naive `document.querySelector` (or a quick
+  view-source in dev) grabs the *first* one — the stale static text — which
+  looks like the edit didn't take even though it did. **This is dev-only.**
+  `scripts/prerender.mjs` (used by `npm run build`) explicitly strips the
+  static `<title>`/`<meta name="description">` from each route's output
+  before injecting Helmet's version (`out.replace(/<meta
+  name="description"[^>]*>/, '')`), so the real built site has exactly one,
+  correct, per-route tag. Mentioning this because it cost real time to
+  diagnose and would trip up anyone else checking this change with a quick
+  dev-server view-source instead of a build.
+- **No source given for "the facebook description"** beyond the owner's own
+  quoted sentence and the attached screenshot — I used exactly what was
+  quoted, not the (slightly longer, truncated in the screenshot) live
+  Facebook page text, since the owner typed out the specific sentence they
+  wanted.
+
+---
+
 ## Owner questions (unresolved, built on the stated defaults)
 
 1. Does `San Diego, California` stay on the right of the last line? — kept,
    per DEFAULTS.
-2. Carmel Creek Ranch pin vs. exact address? — pin, per DEFAULTS. It resolves
-   to a real, correctly-placed pin (see screenshots) so this is ready to ship
-   as-is if the owner confirms the default.
+2. Carmel Creek Ranch pin vs. exact address? — **superseded twice over**: the
+   owner's round-2 feedback said the geocoded address pin wasn't where
+   visitors are routed, then supplied the actual arrival-point coordinates —
+   see RESOLVED below, this is now a bare coordinate pin, not an address
+   search at all.
+
+## RESOLVED — the map pin's location (owner, 2026-08-17)
+
+The owner explained the geocoded/business-name pin sits "just up the road"
+from the real arrival point, further down, past two forks a first-time
+visitor can't navigate without the pin in the right spot — then sent a
+`maps.app.goo.gl/…` share link for a pin they'd dropped at the actual
+turn-in.
+
+**I did not eyeball coordinates off the earlier screenshot.** I resolved the
+share link with a real headless Chrome (redirect chain lands on
+`https://www.google.com/maps/place/32°56'21.1"N+117°13'10.9"W/@32.939204,
+-117.219696,17z/…` — read the lat/long directly off Google's own resolved
+page, Plus Code `WQQJ+M4M San Diego, California`). Screenshotting that
+resolved location confirmed it visually against the owner's own screenshot:
+right off CA-56, at the "Carmel Creek Ranch" label, before the fork onto Shaw
+Vly Rd — the same spot, not a lookalike.
+
+**Then the owner sent a second, independent confirmation**: the Plus Code
+read directly off their own Maps app / Google Business page, "WQQJ+M4 San
+Diego, California," and said it's "the official listing on our map from our
+google page." I resolved that too rather than assume it matched — it lands
+at `32.9391875,-117.2196875`, a few meters from the share-link reading, same
+physical spot. Since the owner is looking at the Plus Code specifically (and
+called it the official one), `MAP_QUERY` in `Footer.tsx` is now the Plus Code
+string itself, `'WQQJ+M4 San Diego, California'`, rather than either raw
+lat/long pair — same location either way, but this is literally what's on
+their own listing.
+
+Trade-off worth knowing either way: Google's key-less embed only shows the
+rich "French Heritage Equestrian" info card (star rating, business name,
+etc.) for a query that resolves to an actual Place; both the coordinate pair
+and the Plus Code get a plain, unlabeled red pin with no info card (confirmed
+by rendering the embed standalone — the popup just reads "WQQJ+M4 / WQQJ+M4,
+San Diego, CA, USA," not the business name). **That's the right trade for
+this specific ask** — getting a first-time visitor to the correct fork beats
+a nicer-looking pin in the wrong spot — but flagging it in case the owner
+would rather have both, which would mean correcting the Business Profile's
+own listing pin in Google's system (a change only they can make there, not
+something this embed's query string can do).
+
+Confirmed in the refreshed `footer-desktop.png`/`footer-mobile.png`: the red
+pin sits south of the "Carmel Creek Ranch" label, at the fork, matching the
+owner's own screenshot — not on the building.
 
 ## Render claims — NOT VERIFIED without the owner's own eyes on it
 
