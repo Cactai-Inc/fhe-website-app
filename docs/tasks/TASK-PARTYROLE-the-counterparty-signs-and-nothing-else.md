@@ -46,23 +46,30 @@ release** — because they were *there*, not because of what they signed on.
 |---|---|
 | never comes to the property | **none** |
 | already boards with you | **none new** — they signed long ago |
-| **comes on site** — delivers, views, collects | ⚠️ **`RELEASE_GENERAL` and NOTHING ELSE** |
+| **comes on site** — delivers, views, collects | usually **`RELEASE_GENERAL`** — **staff's call, not a rule** |
 
-### ⚠️ THE CEILING: a Party NEVER signs policies or rules
+### ⚠️ NOTHING IS REQUIRED — BUT ANYTHING MAY BE APPLIED
 **Owner, 2026-08-17:** *"but still not required to sign the policies or rules document."*
+**And, decisively:** *"so we can apply a document or set to them but we dont have a requirement to
+do so."*
 
-**`RELEASE_GENERAL` is the MAXIMUM a Party can ever be asked for — not a floor.**
-**`COMPANY_POLICIES` and `FACILITY_RULES` are never theirs, on site or not.**
+**Read those together and the rule is DISCRETION, not a whitelist:**
 
-**Why the distinction holds:** the release covers **being on the property and getting hurt** — that
-applies to anyone who walks in, for any reason, for five minutes. Policies and rules govern **an
-ongoing relationship with the business** — how you book, cancel, pay, conduct yourself as a client.
-**A man delivering a horse has no ongoing relationship to govern.** He needs the liability cover and
-nothing more.
+| | |
+|---|---|
+| **the requirement** | **NONE. A Party is never obliged to sign anything by the system.** |
+| **the default** | **`{}`** — provisioning one assigns zero documents |
+| **the capability** | **staff may apply ANY document or set**, case by case |
+| **the expected case** | nothing; occasionally `RELEASE_GENERAL` when they come on site |
 
-⚠️ **So a Party's possible document set is exactly two states: `{}` or `{RELEASE_GENERAL}`.**
-**Anything else is a defect.** Build the default as `{}` and make the release the one thing staff can
-add.
+⚠️ **DO NOT BUILD A WHITELIST OR A CEILING.** An earlier draft of this task said a Party could only
+ever hold `RELEASE_GENERAL` and that policies or rules would be a defect. **That was the
+orchestrator over-reading "not required" as "prohibited" — it is withdrawn.** Constraining what
+staff may apply would be a second mistake in the same place as the first.
+
+**What the build owes is a default of nothing and a control that honestly does what staff ask** —
+including applying the standard three to a Party if that is genuinely what the situation calls for.
+**The judgement is theirs; the system's job is to have no opinion.**
 
 ⚠️ **THE SYSTEM CANNOT KNOW WHICH.** Whether someone will set foot on the property is a fact only
 staff hold. **So `Party` supplies a DEFAULT of none, and staff add what the situation warrants.**
@@ -201,9 +208,10 @@ and invited like anyone else — **they simply arrive at a contract instead of a
 4b. **The Tiz Love case, end to end**: a seller who never visits is provisioned with zero documents;
     the same seller, delivering the horse, is provisioned with `RELEASE_GENERAL` and nothing else.
     ⚠️ **Prove it on synthetic records — never against the real `Tiz` row.**
-4c. ⚠️ **THE CEILING HOLDS**: a Party can never end up holding `COMPANY_POLICIES` or
-    `FACILITY_RULES`. Prove the only two reachable states are `{}` and `{RELEASE_GENERAL}` — and
-    that no default, fallback or category path can widen it.
+4c. ⚠️ **NOTHING IS MANDATORY, EVERYTHING IS PERMITTED**: prove a Party defaults to `{}`, that no
+    code path ever *requires* a document of them, **and that staff can apply any document or set —
+    including the standard three — when they choose to.** A build that restricts what staff may
+    apply fails this test just as surely as one that assigns documents unasked.
 5. A Party can be **added to a lease as LESSOR or SELLER**, and the document **locks** with no
    onboarding paperwork outstanding — **prove the empty-set case.**
 6. A Party can sign, and execution applies the lease effects as normal.
