@@ -46,7 +46,23 @@ release** — because they were *there*, not because of what they signed on.
 |---|---|
 | never comes to the property | **none** |
 | already boards with you | **none new** — they signed long ago |
-| **comes on site** — delivers, views, collects | **`RELEASE_GENERAL`**, at least |
+| **comes on site** — delivers, views, collects | ⚠️ **`RELEASE_GENERAL` and NOTHING ELSE** |
+
+### ⚠️ THE CEILING: a Party NEVER signs policies or rules
+**Owner, 2026-08-17:** *"but still not required to sign the policies or rules document."*
+
+**`RELEASE_GENERAL` is the MAXIMUM a Party can ever be asked for — not a floor.**
+**`COMPANY_POLICIES` and `FACILITY_RULES` are never theirs, on site or not.**
+
+**Why the distinction holds:** the release covers **being on the property and getting hurt** — that
+applies to anyone who walks in, for any reason, for five minutes. Policies and rules govern **an
+ongoing relationship with the business** — how you book, cancel, pay, conduct yourself as a client.
+**A man delivering a horse has no ongoing relationship to govern.** He needs the liability cover and
+nothing more.
+
+⚠️ **So a Party's possible document set is exactly two states: `{}` or `{RELEASE_GENERAL}`.**
+**Anything else is a defect.** Build the default as `{}` and make the release the one thing staff can
+add.
 
 ⚠️ **THE SYSTEM CANNOT KNOW WHICH.** Whether someone will set foot on the property is a fact only
 staff hold. **So `Party` supplies a DEFAULT of none, and staff add what the situation warrants.**
@@ -185,6 +201,9 @@ and invited like anyone else — **they simply arrive at a contract instead of a
 4b. **The Tiz Love case, end to end**: a seller who never visits is provisioned with zero documents;
     the same seller, delivering the horse, is provisioned with `RELEASE_GENERAL` and nothing else.
     ⚠️ **Prove it on synthetic records — never against the real `Tiz` row.**
+4c. ⚠️ **THE CEILING HOLDS**: a Party can never end up holding `COMPANY_POLICIES` or
+    `FACILITY_RULES`. Prove the only two reachable states are `{}` and `{RELEASE_GENERAL}` — and
+    that no default, fallback or category path can widen it.
 5. A Party can be **added to a lease as LESSOR or SELLER**, and the document **locks** with no
    onboarding paperwork outstanding — **prove the empty-set case.**
 6. A Party can sign, and execution applies the lease effects as normal.
