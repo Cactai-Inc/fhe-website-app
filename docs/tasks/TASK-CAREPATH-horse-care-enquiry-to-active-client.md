@@ -8,6 +8,19 @@ The work is step 3 onward. Acquisition and lessons follow, then the blended vers
 described one generic shape for all three; the owner has now specified this lane in detail. Build
 what is here. Where the two disagree, this document wins.
 
+**HOW TO RUN THIS TASK — read before starting:**
+- **Everything you need is in this file.** Verify the measurements in §WHAT WAS MEASURED against
+  live code and the database before building on them — they were taken at `main = 0548e33` and this
+  project's task docs have gone stale within hours.
+- **Three decisions are gated on the owner** (§OWNER QUESTIONS, at the end). **Read them now, not
+  after building.** Ask, then build the parts they gate.
+- **Report to `docs/reports/TASK-CAREPATH-REPORT.md`. Commit your work; do NOT push. The
+  orchestrator merges.**
+- **Never self-report "done" without evidence.** Every DB claim is query output pasted into the
+  report; every render claim is marked **NOT VERIFIED** with a numbered click-through checklist for
+  the owner.
+- **Do not spawn subagents for this build.** One thread, one task.
+
 ---
 
 # THE OWNER'S FLOW, VERBATIM (2026-08-16)
