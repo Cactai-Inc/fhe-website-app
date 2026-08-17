@@ -262,21 +262,32 @@ resolved location confirmed it visually against the owner's own screenshot:
 right off CA-56, at the "Carmel Creek Ranch" label, before the fork onto Shaw
 Vly Rd — the same spot, not a lookalike.
 
-`MAP_QUERY` in `Footer.tsx` is now the bare coordinate pair `32.939204,
--117.219696` instead of the name+address string. Trade-off worth knowing:
-Google's key-less embed only shows the rich "French Heritage Equestrian"
-info card (star rating, "Open in Maps" chip position, etc.) for a query that
-resolves to an actual Place; a bare `lat,lng` gets a plain unlabeled red pin
-with no info card. **That's the right trade for this specific ask** —
-getting a first-time visitor to the correct fork beats a nicer-looking pin
-in the wrong spot — but flagging it explicitly in case the owner would
-rather have both (which would need the Business Profile's own pin corrected
-in Google's system, a change only they can make there, not something this
-embed's query string can do).
+**Then the owner sent a second, independent confirmation**: the Plus Code
+read directly off their own Maps app / Google Business page, "WQQJ+M4 San
+Diego, California," and said it's "the official listing on our map from our
+google page." I resolved that too rather than assume it matched — it lands
+at `32.9391875,-117.2196875`, a few meters from the share-link reading, same
+physical spot. Since the owner is looking at the Plus Code specifically (and
+called it the official one), `MAP_QUERY` in `Footer.tsx` is now the Plus Code
+string itself, `'WQQJ+M4 San Diego, California'`, rather than either raw
+lat/long pair — same location either way, but this is literally what's on
+their own listing.
+
+Trade-off worth knowing either way: Google's key-less embed only shows the
+rich "French Heritage Equestrian" info card (star rating, business name,
+etc.) for a query that resolves to an actual Place; both the coordinate pair
+and the Plus Code get a plain, unlabeled red pin with no info card (confirmed
+by rendering the embed standalone — the popup just reads "WQQJ+M4 / WQQJ+M4,
+San Diego, CA, USA," not the business name). **That's the right trade for
+this specific ask** — getting a first-time visitor to the correct fork beats
+a nicer-looking pin in the wrong spot — but flagging it in case the owner
+would rather have both, which would mean correcting the Business Profile's
+own listing pin in Google's system (a change only they can make there, not
+something this embed's query string can do).
 
 Confirmed in the refreshed `footer-desktop.png`/`footer-mobile.png`: the red
-pin now sits south of the "Carmel Creek Ranch" label, matching the owner's
-own screenshot exactly, not on the building.
+pin sits south of the "Carmel Creek Ranch" label, at the fork, matching the
+owner's own screenshot — not on the building.
 
 ## Render claims — NOT VERIFIED without the owner's own eyes on it
 

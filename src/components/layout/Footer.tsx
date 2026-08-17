@@ -10,13 +10,16 @@ import { BRAND } from '../../lib/brand';
 // there are two forks in the road and, without the pin at the actual
 // turn-in, people get lost. The owner dropped a pin at the real arrival
 // point (right off the CA-56 Carmel Creek Rd exit, the immediate right
-// turn at the FHE/CCR sign) and shared it as a maps.app.goo.gl link, which
-// resolves to these exact coordinates — verified by loading the link and
-// reading its resolved lat/long directly off Google's own page, not
-// estimated from the shared screenshot. A bare-coordinate pin has no
-// business-name label/info card (unlike the address+name query above did),
-// which is the right trade here: accurate turn-by-turn over a pretty pin.
-const MAP_QUERY = '32.939204,-117.219696';
+// turn at the FHE/CCR sign), first as a maps.app.goo.gl link (resolved to
+// 32.939204,-117.219696), then confirmed with the Plus Code read straight
+// off their own Maps app — "WQQJ+M4 San Diego, California" — which
+// resolves to 32.9391875,-117.2196875, a few meters from the first
+// reading, same spot. Using the Plus Code itself as the query since it's
+// what the owner is actually looking at. A bare-location pin like this has
+// no business-name label/info card (unlike the address+name query above
+// did), which is the right trade here: accurate turn-by-turn over a pretty
+// pin.
+const MAP_QUERY = 'WQQJ+M4 San Diego, California';
 const MAP_EMBED_SRC = `https://www.google.com/maps?q=${encodeURIComponent(MAP_QUERY)}&output=embed`;
 
 export default function Footer() {
