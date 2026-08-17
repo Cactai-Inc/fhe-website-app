@@ -19,7 +19,7 @@ import Seo from '../components/Seo';
 const GIFT_ITEMS: { value: string; label: string }[] = [
   { value: 'lessons', label: 'Riding lessons — a 4 or 8 lesson package' },
   { value: 'lesson_single', label: 'A single riding lesson' },
-  { value: 'certificate', label: 'A gift certificate, amount up to you' },
+  { value: 'certificate', label: 'A Gift Certificate' },
   { value: 'horse', label: 'Horse care services' },
   { value: 'acquisition', label: 'Help finding or buying a horse' },
   { value: 'unsure', label: "Not sure yet — I'd like help choosing" },
