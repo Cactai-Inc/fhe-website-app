@@ -403,6 +403,11 @@ export default function Story() {
               {WAYS_IN.map((w, i) => (
                 <Reveal as="div" key={w.name} delay={i * 70}>
                   <Link
+                    /* `state` records where the visitor left from. With the
+                       browser's own back-restoration now respected (see
+                       ScrollToTop), Back returns to this section rather than the
+                       top of the page. */
+                    state={{ from: '/story#our-services' }}
                     to={w.href}
                     className="group block h-full bg-white border border-green-800/10 p-7 transition-all duration-300 hover:shadow-xl hover:shadow-green-900/10 hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-800 focus-visible:ring-offset-2"
                   >
