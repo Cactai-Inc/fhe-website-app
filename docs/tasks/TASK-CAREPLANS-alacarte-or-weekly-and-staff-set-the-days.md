@@ -119,23 +119,43 @@ what this ruling forbids.
 > *"it needs to mint the credits based on the applied bookings that auto generate, and then the
 > rescheduling adds a credit back temporarily until its rebooked."*
 
-**Credits and generated bookings are minted in LOCKSTEP.** The month's bookings auto-generate across
-**all** the selected weekdays, and the credit count *is* that set of bookings — 5 Sundays + 4
-Saturdays generates 9 bookings and 9 credits, each booking holding one.
+⚠️ **REFINED BY THE OWNER, 2026-08-17 — THIS IS THE FINAL SHAPE. It is simpler than "mint 9 credits".**
+> *"so the month starts with applied bookings auto generated and NO CREDITS. if they cancel a booking
+> they get a credit that expires at the end of the month. they can reschedule it at any time until
+> then."*
+
+**THE BOOKINGS ARE THE ENTITLEMENT. A CREDIT IS ONLY EVER THE RESIDUE OF A CANCELLATION.**
 
 ```
-provision        →  9 bookings auto-generated, 9 credits minted, 9 held
-client reschedules  →  credit returns to the pool, TEMPORARILY unheld
-client rebooks      →  credit consumed again, on whatever date they chose
-month ends          →  anything still unbooked expires (CREDITALIGN's rule)
+month starts   →  9 bookings auto-generated across the selected weekdays
+                  ZERO credits minted
+client cancels →  ONE credit appears, expiring at the END OF THAT MONTH
+client rebooks →  the credit is consumed, on ANY date they choose
+month ends     →  any credit still unspent EXPIRES — that lesson is lost
 ```
 
-- **The credit is never lost in the gap.** Between cancelling and rebooking it sits available — that
-  is the whole point of "temporarily".
-- **Rebooking is unconstrained by the original weekday** (§the ruling above). The credit does not
-  remember which Saturday it came from.
-- **The allowance never grows.** A refund-then-rebook is one credit moving, never a second one
-  appearing. **Prove a reschedule loop cannot inflate the month's total.**
+- ⚠️ **Do NOT mint an allowance up front.** There is no "9 credits" row at provisioning. The count of
+  generated bookings *is* the month's entitlement; nothing needs to state it separately.
+- **A credit is created BY the cancellation**, not returned from a pool that was never filled.
+- **It expires at the end of the month it was cancelled in**, in line with `CREDITALIGN`'s
+  month-boundary rule — a cancelled lesson does not survive into the next month.
+- **Rebooking is unconstrained by the original weekday.** The credit does not remember which Saturday
+  it came from.
+- **The month's total can never grow.** Cancel-then-rebook is one lesson moving. **Prove a repeated
+  reschedule loop cannot manufacture a tenth lesson.**
+
+### ⚠️ THE DOUBLE-MINT HAZARD — the single most dangerous thing in this task
+`CREDITALIGN` built **`mint_recurring_allotments`**, which mints a monthly allotment for recurring
+plans, **and** `generate_monthly_lessons` creates the bookings. **Under this ruling only the second
+should run for these plans.**
+
+**If both fire, the client gets 9 bookings AND 9 credits — double the entitlement they paid for.**
+That is an over-mint, the exact failure direction `CAREPATH` noted the current code is safely on the
+right side of.
+
+**Establish exactly which seam mints what, before changing either.** State it in the report as a
+before/after table, and **prove with query output that a freshly provisioned monthly plan has N
+bookings and ZERO credit rows.**
 
 **✅ The round trip ALREADY EXISTS — extend it, do not rebuild it.** Measured:
 `_refund_booking_credit` is live and called by **`decide_booking_change`, `delete_calendar_item`,
@@ -339,11 +359,13 @@ second one.
 5c. **Moving or cancelling a booking never changes the month's allowance** — cancel returns the
     credit, rebooking consumes it, the total is fixed at mint. ⚠️ **Run a reschedule loop several
     times over and prove the month's total never inflates.**
-5c2. **Bookings and credits are minted in lockstep** — 5 Sundays + 4 Saturdays produces **9 bookings
-    AND 9 credits**, not one count in `bookings` and a different one in `lesson_credits`. Query both
-    sides.
-5c3. **A rescheduled credit is available in the gap** — prove it is spendable between the cancel and
-    the rebook, and that it lands on a date the original weekday pattern never included.
+5c2. ⚠️ **A freshly provisioned monthly plan has N bookings and ZERO credit rows** — query both
+    sides. **If `mint_recurring_allotments` also fires, the client has double the entitlement they
+    paid for.** This is the over-mint hazard; prove it does not happen.
+5c3. **A credit exists only after a cancellation**, expires at that month's end, and is spendable on
+    any date until then — prove the expiry and prove it does not roll into the next month.
+5c4. **The rebooked lesson lands on a date the original weekday pattern never included** — prove the
+    freedom is real, not nominal.
 5d. **No "days per week" restriction exists anywhere in the new code** — prove it by booking a
     distribution that violates the original weekday pattern and watching it succeed.
 6. **Existing recurring plans compute the SAME allotment before and after** — query output both
