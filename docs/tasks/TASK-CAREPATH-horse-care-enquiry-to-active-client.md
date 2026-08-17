@@ -382,6 +382,63 @@ path. **Do not write a second booking writer.**
 - **Find the existing horse-intake surface and form definitions** (`form_definitions` exists;
   `ONBOARD` reported a per-document trigger here) and reuse them. **Do not build a third horse
   intake** — this project already had 3 horse rosters.
+### ⚠️ C10a — NOT EVERY CLIENT IS A HORSE OWNER. THE INTAKE BRANCHES.
+
+**Owner, 2026-08-16:**
+> *"a person coming to us for help finding a horse is a client but they are not a horse owner if
+> their horse isnt in our system during onboarding, which an acquisition client wouldnt have one
+> they would add, so they are deal client category."*
+
+**"Horse owner" is EARNED BY HAVING A HORSE IN THE SYSTEM — it is not declared on a form.** Two
+client categories come out of onboarding:
+
+| category | who | onboarding |
+|---|---|---|
+| **horse-owner client** | a horse of theirs exists in our system | **completes the horse intake** |
+| **deal client** | no horse of theirs exists yet — acquisition clients, and horse-care clients whose service is for the horse we are finding them (`ASKRIGHT` §A3f) | **NO horse intake — there is nothing to add** |
+
+⚠️ **This breaks the straight line in §C10.** A client with no horse must **not** be shown "add your
+horse's information" — it is an unanswerable form and it tells them we were not listening.
+**Skip that step entirely.**
+
+**Owner, 2026-08-16 — what a deal client's onboarding actually is:**
+> *"for them there is only a general liability waiver to complete and then we go do the evaluation
+> or help with the contract or whatever they are seeking our services for."*
+
+**A deal client's onboarding is: activate → order screen → GENERAL LIABILITY WAIVER → done.**
+No horse intake, and **no horse-dependent documents** — the horse-specific paperwork belongs to a
+horse that does not exist yet. Then staff go and do the work they were engaged for.
+
+⚠️ **Find the existing general liability waiver and use it** — do not author a new document.
+`EVALUATION_LIABILITY_WAIVER` and other release/waiver templates exist in the contract engine;
+**name the one you used and prove it is the right one.** If the document set assigned at activation
+is driven by a rule or trigger (`ONBOARD` found a per-document trigger here), **that rule is what
+changes** — a deal client gets exactly one document.
+
+⚠️ **A horse-care order can produce a deal client.** If §A3f's answer was *"the horse you help me
+find"*, they bought care but own nothing yet. **Category follows the horse, not the service bought.**
+
+**Measured — there is no home for this today, so do NOT invent one:**
+`contacts.contact_type` allows only `LEAD · CONTACT · TEAM · DIRECTORY · VENDOR · PARTNER` — no
+horse-owner or deal-client value. The `deals` table exists but **requires a `contract_id`
+(NOT NULL)**, and an acquisition inquiry has no contract yet, so a deal row cannot represent this
+either. **Report how you expressed the distinction and what it cost.** A derived category (does a
+horse exist for this contact?) is likely right and needs no schema change — **prove it and say so.**
+
+### C10b — the answers must FEED FORWARD, not die in the request
+**Owner:** *"we collect the information from them on the acquisition or horse care intake. that
+information then goes into the form used for an evaluation or a contract, or in the case of horse
+care it goes into the form for their horse intake form."*
+
+The inquiry answers are **the first draft of the client's file**, not a one-time filter:
+- **horse care →** the horse intake form (via the same-horse question below)
+- **acquisition →** the evaluation form and the contract *(that lane is a later task — **do not build
+  it here**)*
+
+**So store the answers structurally**, keyed by question and subject (`ASKRIGHT` §A2b), retrievable
+per contact. ⚠️ **Answers flattened into a notes blob cannot feed anything** — if `p_details` is the
+store, confirm it holds them as addressable keys, and **say so in the report.**
+
 ### ⚠️ ASK WHETHER IT IS THE SAME HORSE — NEVER ASSUME IT
 **Owner, 2026-08-16:** *"we dont assume the inquiry about horse clipping and the inquiry about
 evaluation or any of the acquisition services are related to the same horse… we can ask them if it
@@ -467,6 +524,14 @@ are **not** to be wired up here — report them, nothing more.
 12. Following the link end to end reaches: password/OAuth → order page **with booking** → horse
     information → documents → app overview → item detail **with booking**. Prove each, **or report
     the break rather than patching around it.**
+12b. ⚠️ **A DEAL CLIENT'S PATH IS DIFFERENT** (§C10a): a client with no horse in the system —
+    including a horse-care client whose service is for the horse we are finding them — is **never
+    shown the horse intake**, completes **only the general liability waiver**, and reaches the app
+    without horse-dependent documents. **Name the waiver used** and prove no horse form appeared.
+12c. **The client category is derived from whether a horse exists**, not from what they bought —
+    prove a horse-care buyer with no horse lands as a deal client.
+12d. **The inquiry answers are retrievable per contact and per subject** (§C10b) — prove they can
+    populate a downstream form rather than sitting in a text blob.
 13. **`Notify staff this isn't correct` provably reaches a human**, and the client still proceeds.
 14. Mixed-cart behaviour at the submit screen is **reported honestly**, whatever it is.
 15. Every DB claim is query output. Render claims are marked **NOT VERIFIED** with a numbered
