@@ -8,6 +8,11 @@ The work is step 3 onward. Acquisition and lessons follow, then the blended vers
 described one generic shape for all three; the owner has now specified this lane in detail. Build
 what is here. Where the two disagree, this document wins.
 
+**RUN WITH: Opus 5 · thinking ON · effort HIGH.** Not a Sonnet task: §C5 creates an
+anonymously-reachable order path (a security boundary), and §C8–C10 require verifying a long
+existing chain end to end rather than rebuilding it — the failure mode is a thread that reports
+"done" for work it only assumed.
+
 **HOW TO RUN THIS TASK — read before starting:**
 - **Everything you need is in this file.** Verify the measurements in §WHAT WAS MEASURED against
   live code and the database before building on them — they were taken at `main = 0548e33` and this
