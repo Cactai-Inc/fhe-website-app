@@ -237,6 +237,47 @@ what they bought.
 - **The current failure is under-scheduling, never over-minting** — it books too little rather than
   granting credits nobody paid for. **Keep that direction if you must ship partially.**
 
+## P2c — ⚠️ THE OWNER MUST BE ABLE TO EDIT WHAT THIS TASK CREATES
+
+**Owner, 2026-08-17:** *"we have a surface in the app for changing catalog contents, including
+prices."* **That surface is `AdminProductsPage` → `adminUpdateOffering`, and it is why he is
+supplying no price revisions — he sets them himself.**
+
+⚠️ **MEASURED: the editor can change what a product COSTS but not what it DELIVERS.**
+
+`OfferingInput` exposes `segment · name · tagline · description · service_type · price_amount ·
+price_unit · price_min · price_model · purchase_type · horse_included · is_popular · note · active ·
+sort_order`.
+
+**It does NOT expose the three fields that decide entitlement:**
+
+| field | what it controls | editable? |
+|---|---|---|
+| `unit_count` | how many lessons a package gives (4-pack = 4) | ❌ |
+| `weekly_frequency` | how many sessions a week | ❌ |
+| `config_kind` | one-time vs recurring | ❌ |
+
+**So changing a 4-Lesson Punch Card to 5 lessons currently requires a developer.** The owner's
+control surface stops exactly where the money starts.
+
+### The requirement
+**Whatever structure P2–P4 creates MUST be editable through that same surface.** This task moves
+entitlement configuration around; **if the new shape is no more editable than the old one, the owner
+is still locked out of his own catalog** and will be back asking for a migration to change a number
+he should be able to type.
+
+- **At minimum, add `unit_count` to the editor** — it is the one-time half of §P0's formula and the
+  owner's most likely edit.
+- **Whatever replaces `weekly_frequency`** must be editable too, unless it moves entirely to staff
+  provisioning (§P3) — **in which case say so plainly, because then the catalog stops carrying it
+  at all and the editor gap closes by deletion rather than by addition.**
+- ⚠️ **`config_kind` decides which half of the formula applies.** Editable or not, **state your
+  choice and the reason** — an owner who can flip a SKU between one-time and recurring can also
+  break every plan built on it, so "deliberately not editable" is a legitimate answer.
+- **Prove a real round trip**: change a value in the editor, confirm it persists and takes effect.
+  `adminUpdateOffering` now carries `assertWrote` (CAREPATH §C1d) so an RLS-blocked write can no
+  longer look like a saved one — **use that, and prove a NULL price clears rather than erroring.**
+
 ## P3 — staff choose the DAYS, and quantity follows
 At provisioning (`CAREPATH` §C7 is the surface), staff set:
 1. **Which days of the week** — one or several. ⚠️ **`recurring_day` is SINGULAR today**; this needs
@@ -381,6 +422,9 @@ second one.
 7. A **fixed-week plan stops** when its weeks elapse; an **indefinite plan keeps re-minting monthly**
    and stops on cancellation, through the existing cancellation path.
 8. No offering name is parsed anywhere in the new code.
+8b. ⚠️ **The owner can edit what the new structure delivers, not just what it costs** (§P2c) —
+    prove a real round trip through `AdminProductsPage`, including `unit_count`. If entitlement moved
+    entirely to staff provisioning, say so and prove the catalog no longer carries it.
 9. ⚠️ **NO price changed** — prove every care and lesson price is byte-identical to `main`
    (acquisition's clearing to null under §P1 is the sole exception).
 9b. **No volume-break logic exists anywhere** — 1×, 2× and 3× weekly all use the same per-session
