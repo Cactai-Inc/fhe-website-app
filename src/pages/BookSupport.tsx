@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Check, ArrowRight, ArrowLeft } from 'lucide-react';
 import { formatPrice } from '../lib/pricing';
 import { fetchPublicCatalog, type ServiceGroup } from '../lib/publicCatalog';
@@ -9,7 +9,8 @@ import ServiceListState from '../components/ServiceListState';
 
 // Horse-care service_type codes used to gate the horse-care cross-sell note.
 const HORSE_CARE_CODES = ['HORSE_TRAINING', 'HORSE_EXERCISE', 'HORSE_CLIPPING'];
-import QualifierGroup from '../components/QualifierGroup';
+import QuestionSections from '../components/QuestionSections';
+import { cartHasQuestions } from '../lib/questionSets';
 import Seo from '../components/Seo';
 import SelectionBar from '../components/SelectionBar';
 import { seoForPath } from '../lib/seo';
@@ -42,18 +43,18 @@ export default function BookSupport() {
       .catch(() => { setGroups([]); setCatalogState('error'); });
   }, []);
 
-  const experience   = state.qualifierAnswers['experience'];
-  const wantsLessons = state.qualifierAnswers['wants_lessons'];
-
   const anyHorseCareSelected = state.items.some(
     (i) => i.serviceType && HORSE_CARE_CODES.includes(i.serviceType));
 
+  // See BookHorse: the step exists when the CART asks something, not because of
+  // which page this is.
+  const hasQuestions = cartHasQuestions(state.items);
+
   const canProceedStep0 = itemCount > 0;
-  const canProceedStep1 = !!experience;
 
   function handleNext() {
     if (step < STEPS.length - 1) {
-      setStep((s) => s + 1);
+      setStep((s) => (s === 0 && !hasQuestions ? 2 : s + 1));
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
       navigate('/checkout');
@@ -62,7 +63,7 @@ export default function BookSupport() {
 
   function handleBack() {
     if (step > 0) {
-      setStep((s) => s - 1);
+      setStep((s) => (s === 2 && !hasQuestions ? 0 : s - 1));
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
       navigate('/');
@@ -145,45 +146,14 @@ export default function BookSupport() {
               A few questions help us shape the right experience for you — and ensure we recommend only what is genuinely relevant.
             </p>
 
-            <QualifierGroup
-              qualifierKey="experience"
-              question="How would you describe your equestrian experience?"
-              help="We want to match our guidance to your actual background."
-              options={[
-                { value: 'first-horse', label: 'This will be my first horse' },
-                { value: 'returning', label: 'I owned a horse in the past' },
-                { value: 'experienced', label: 'I am an experienced horse owner' },
-                { value: 'professional', label: 'I ride professionally or competitively' },
-              ]}
-            />
-
-            {experience && (
-              <QualifierGroup
-                qualifierKey="how_many_horses"
-                question="How many horses are you considering?"
-                layout="compact"
-                options={[
-                  { value: 'one', label: 'One' },
-                  { value: 'two', label: 'Two' },
-                  { value: 'three-plus', label: 'Three or more' },
-                  { value: 'not-sure', label: 'Not sure yet' },
-                ]}
-              />
-            )}
-
-            {experience && (
-              <QualifierGroup
-                qualifierKey="wants_lessons"
-                question="Are you interested in riding lessons or training once your horse is here?"
-                help="Many of our clients combine acquisition support with an ongoing lessons program."
-                layout="wide"
-                options={[
-                  { value: 'yes', label: 'Yes, definitely' },
-                  { value: 'maybe', label: 'Possibly, interested to learn more' },
-                  { value: 'no', label: 'Not at this stage' },
-                ]}
-              />
-            )}
+            {/* Until 2026-08-17 this step asked every acquisition buyer how many
+                horses they were considering buying — including someone booking
+                an evaluation on a horse they already own. `how_many_horses` and
+                `wants_lessons` are DELETED (owner-confirmed): the first is
+                rarely actionable, and the second is replaced by Continue
+                Shopping, which turns the same intent into a real cart line
+                rather than a recorded intention. */}
+            <QuestionSections />
           </div>
         )}
 
@@ -209,7 +179,7 @@ export default function BookSupport() {
                         <p className="text-sm font-sans font-medium text-green-900">{item.offeringName}</p>
                       </div>
                       <p className={`text-sm font-serif font-medium text-green-800${item.priceOnEnquiry ? ' italic' : ''}`}>
-                        {item.priceOnEnquiry ? 'Price on enquiry' : formatPrice(item.price, item.unit)}
+                        {item.priceOnEnquiry ? 'Price on inquiry' : formatPrice(item.price, item.unit)}
                       </p>
                     </div>
                   ))}
@@ -224,7 +194,7 @@ export default function BookSupport() {
               shown here — they belong post-acquisition, not in this booking flow.
               The only in-funnel guidance is the natural search→evaluation→brokering path.
             */}
-            {!anyHorseCareSelected && experience && (
+            {!anyHorseCareSelected && (
               <div className="mb-6 bg-white border border-green-800/10 p-6">
                 <p className="text-xs font-sans font-medium tracking-wide uppercase text-gold-ink mb-3">
                   What happens after you reach out
@@ -238,23 +208,9 @@ export default function BookSupport() {
               </div>
             )}
 
-            {/* Lessons interest is captured for the conversation, surfaced as a note (not a pricing card). */}
-            {(wantsLessons === 'yes' || wantsLessons === 'maybe') && (
-              <div className="mb-6 bg-gold-50 border border-gold-200 p-5">
-                <p className="text-xs font-sans font-medium tracking-wide uppercase text-gold-ink mb-1">
-                  Noted for our conversation
-                </p>
-                <p className="text-sm font-sans text-secondary">
-                  {wantsLessons === 'yes'
-                    ? "You mentioned you're interested in lessons — wonderful. We'll tell you all about our riding programs when we speak."
-                    : "You expressed possible interest in lessons. We'd be glad to tell you more when we talk — no commitment needed."}
-                </p>
-                <Link to="/services" className="link-underline mt-4">
-                  Explore the ways to ride with us
-                  <ArrowRight size={12} />
-                </Link>
-              </div>
-            )}
+            {/* The "Noted for our conversation" lessons panel went with
+                `wants_lessons`: it existed to acknowledge a recorded intention,
+                and Continue Shopping now puts a real lesson in the cart instead. */}
           </div>
         )}
 
@@ -272,10 +228,10 @@ export default function BookSupport() {
           <button
             type="button"
             onClick={handleNext}
-            disabled={step === 0 ? !canProceedStep0 : step === 1 ? !canProceedStep1 : false}
+            disabled={step === 0 ? !canProceedStep0 : false}
             className="btn-primary"
           >
-            {step === STEPS.length - 1 ? 'Continue to Booking Request' : 'Continue'}
+            {step === STEPS.length - 1 ? 'Continue to Submit Inquiry' : 'Continue'}
             <ArrowRight size={16} />
           </button>
         </div>

@@ -11,7 +11,7 @@
  *   horse   → HORSE SERVICES (HORSE_TRAINING, HORSE_EXERCISE, HORSE_CLIPPING)
  *   support → ACQUISITION    (HORSE_FINDER, HORSE_EVALUATION, *_ASSISTANCE)
  */
-import type { CartItem } from './cart';
+import { serviceDisplayName, type CartItem } from './cart';
 
 /** The three inquiry buckets, mapped from the offering's catalog segment. */
 export type InquiryCategory = 'lessons' | 'horse' | 'acquisition';
@@ -62,37 +62,68 @@ export function inquiryCategories(items: CartItem[]): Set<InquiryCategory> {
   return set;
 }
 
-/**
- * Warm, boutique-register label for the inquiry submit action, personalized to
- * the category of the chosen items and singular/plural-aware by count within the
- * relevant framing. Never says "cart" / "checkout" / "selection" / "submit".
+/** The lesson service_types, listed explicitly.
  *
- *   only lessons      → "Inquire about this lesson"  / "…these lessons"
- *   only horse svcs    → "Inquire about this service" / "…these services"
- *   only acquisition   → "Inquire about finding your horse"
- *   mixed (2+ buckets) → "Inquire about these bookings and services"
- *   empty (defensive)  → "Inquire"
+ *  NOT `categoryForServiceType(...) === 'lessons'`: that function DEFAULTS to
+ *  'lessons' so wording is never blank, which would make any unrecognised
+ *  offering look like a lesson. The submission form's availability block and
+ *  riding-experience question are gated on this (§A0/§A6b), and gating them on
+ *  a default would show a lesson's date ranges to a horse-care buyer — the
+ *  exact thing the owner removed. */
+const LESSON_SERVICE_TYPES = new Set([
+  'RIDING_LESSON', 'JUMPER_TRAINING', 'HORSEMANSHIP_TRAINING',
+  'riding-lesson', 'hunter-jumper', 'horsemanship',
+]);
+
+/** Is a lesson in the cart? The one condition the submission form varies on.
+ *  A mixed cart shows the UNION — a lesson plus horse care gets the
+ *  availability block, because a lesson is present. It is not either/or. */
+export function hasLessonItem(items: CartItem[]): boolean {
+  return items.some((i) => i.serviceType != null && LESSON_SERVICE_TYPES.has(i.serviceType));
+}
+
+/**
+ * Label for the submit action — ASKRIGHT §A6.
+ *
+ * ONE WORD FOR THE ACT: **inquire**. Owner, 2026-08-16: "request a service is a
+ * bit more finite, like they are committing to it blindly without having all
+ * the details… inquire keeps it premium and honors the uncertainty." And the
+ * governing rule, which is testable: **"book"/"booking" may only describe
+ * something that exists on the calendar.** A submission is never a booking —
+ * staff call, agree a time, and only then is there a calendar entry. Which is
+ * why the lessons wording says "inquire about BOOKING": the booking is the
+ * thing being inquired about, not the thing being done.
+ *
+ *   lessons only        → "Inquire about booking"
+ *   one other service   → "Inquire about {service name} service"
+ *   several services    → "Inquire about these services"          ← proposed
+ *   lessons + services  → "Inquire about booking and these services"  ← proposed
+ *   empty (defensive)   → "Inquire"
+ *
+ * The last two are the multi-service fallbacks the owner asked to be proposed
+ * rather than invented silently; they are the only strings here that are not
+ * his own words.
  */
 export function inquiryLabel(items: CartItem[]): string {
   if (items.length === 0) return 'Inquire';
 
-  const categories = inquiryCategories(items);
-
-  if (categories.size > 1) {
-    return 'Inquire about these bookings and services';
+  const lesson = hasLessonItem(items);
+  // Distinct SERVICES, not distinct offerings: two clipping SKUs are one
+  // service and must not read as "these services".
+  const otherServices = new Map<string, CartItem>();
+  for (const i of items) {
+    if (i.serviceType && !LESSON_SERVICE_TYPES.has(i.serviceType) && !otherServices.has(i.serviceType)) {
+      otherServices.set(i.serviceType, i);
+    }
   }
 
-  const [only] = categories;
-  const many = items.length > 1;
+  if (otherServices.size === 0) return lesson ? 'Inquire about booking' : 'Inquire';
 
-  switch (only) {
-    case 'lessons':
-      return many ? 'Inquire about these lessons' : 'Inquire about this lesson';
-    case 'horse':
-      return many ? 'Inquire about these services' : 'Inquire about this service';
-    case 'acquisition':
-      return 'Inquire about finding your horse';
-    default:
-      return 'Inquire';
+  if (otherServices.size === 1) {
+    const [only] = otherServices.values();
+    const named = `Inquire about ${serviceDisplayName(only)} service`;
+    return lesson ? `Inquire about booking and ${serviceDisplayName(only)} service` : named;
   }
+
+  return lesson ? 'Inquire about booking and these services' : 'Inquire about these services';
 }

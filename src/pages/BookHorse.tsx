@@ -6,7 +6,8 @@ import { fetchPublicCatalog, type ServiceGroup } from '../lib/publicCatalog';
 import { useCart } from '../contexts/CartContext';
 import ServiceSelector from '../components/ServiceSelector';
 import ServiceListState from '../components/ServiceListState';
-import QualifierGroup from '../components/QualifierGroup';
+import QuestionSections from '../components/QuestionSections';
+import { cartHasQuestions } from '../lib/questionSets';
 import Seo from '../components/Seo';
 import SelectionBar from '../components/SelectionBar';
 import { seoForPath } from '../lib/seo';
@@ -39,14 +40,17 @@ export default function BookHorse() {
       .catch(() => { setGroups([]); setCatalogState('error'); });
   }, []);
 
-  const reason = state.qualifierAnswers['horse_reason'];
+  // ASKRIGHT — step 2 exists when something in the CART asks something, never
+  // because of which page this is. A cart holding only lesson items (picked on
+  // /lessons, then wandered here) has nothing to ask, so the step is skipped
+  // rather than rendered empty.
+  const hasQuestions = cartHasQuestions(state.items);
 
   const canProceedStep0 = itemCount > 0;
-  const canProceedStep1 = !!reason;
 
   function handleNext() {
     if (step < STEPS.length - 1) {
-      setStep((s) => s + 1);
+      setStep((s) => (s === 0 && !hasQuestions ? 2 : s + 1));
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
       navigate('/checkout');
@@ -55,7 +59,7 @@ export default function BookHorse() {
 
   function handleBack() {
     if (step > 0) {
-      setStep((s) => s - 1);
+      setStep((s) => (s === 2 && !hasQuestions ? 0 : s - 1));
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
       navigate('/');
@@ -123,7 +127,13 @@ export default function BookHorse() {
           </div>
         )}
 
-        {/* Step 1: Qualifier */}
+        {/* Step 1: the questions the CART implies.
+            Until 2026-08-17 this step was two hardcoded blocks asking every
+            horse-care buyer what was "bringing them to our horse care services"
+            and for how many months — so someone booking a single clip was asked
+            whether they were travelling or recovering from an injury. Those two
+            blocks now live in the HORSE_EXERCISE set, weekly SKUs only, which is
+            the only place they were ever true. */}
         {step === 1 && (
           <div>
             <p className="eyebrow mb-3">Step 2 of 3</p>
@@ -132,34 +142,7 @@ export default function BookHorse() {
               A bit of context helps us ensure your horse is in the best possible hands.
             </p>
 
-            <QualifierGroup
-              qualifierKey="horse_reason"
-              question="What is bringing you to our horse care services?"
-              help="Choose the option that best describes your situation."
-              options={[
-                { value: 'traveling', label: 'I will be travelling and need my horse looked after' },
-                { value: 'injured', label: 'I am recovering from an injury' },
-                { value: 'training', label: 'I want professional training for my horse' },
-                { value: 'regular-care', label: 'I need ongoing care and turnout support' },
-                { value: 'temporary', label: 'Temporary situation — I need short-term coverage' },
-                { value: 'other', label: 'Something else' },
-              ]}
-            />
-
-            {reason && (
-              <QualifierGroup
-                qualifierKey="horse_duration"
-                question="Approximately how long will you need these services?"
-                help="This helps us recommend the right plan."
-                layout="compact"
-                options={[
-                  { value: '1-2-weeks', label: '1–2 weeks' },
-                  { value: '1-month', label: '1 month' },
-                  { value: '2-3-months', label: '2–3 months' },
-                  { value: 'ongoing', label: 'Ongoing' },
-                ]}
-              />
-            )}
+            <QuestionSections />
           </div>
         )}
 
@@ -185,7 +168,7 @@ export default function BookHorse() {
                         <p className="text-sm font-sans font-medium text-green-900">{item.offeringName}</p>
                       </div>
                       <p className={`text-sm font-serif font-medium text-green-800${item.priceOnEnquiry ? ' italic' : ''}`}>
-                        {item.priceOnEnquiry ? 'Price on enquiry' : formatPrice(item.price, item.unit)}
+                        {item.priceOnEnquiry ? 'Price on inquiry' : formatPrice(item.price, item.unit)}
                       </p>
                     </div>
                   ))}
@@ -220,10 +203,13 @@ export default function BookHorse() {
           <button
             type="button"
             onClick={handleNext}
-            disabled={step === 0 ? !canProceedStep0 : step === 1 ? !canProceedStep1 : false}
+            // Nothing on the questions step is required (§A5): these shape the
+            // conversation, they do not qualify anyone, and a required answer
+            // blocks a sale.
+            disabled={step === 0 ? !canProceedStep0 : false}
             className="btn-primary"
           >
-            {step === STEPS.length - 1 ? 'Continue to Booking Request' : 'Continue'}
+            {step === STEPS.length - 1 ? 'Continue to Submit Inquiry' : 'Continue'}
             <ArrowRight size={16} />
           </button>
         </div>
