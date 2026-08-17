@@ -6,9 +6,10 @@ import {
   type Product, type ProductPrice,
 } from '../../../../lib/api';
 import {
-  adminListOfferings, adminCreateOffering, adminUpdateOffering, type OfferingInput,
+  adminListOfferings, adminCreateOffering, adminUpdateOffering, adminOfferingUsage,
+  type OfferingInput, type OfferingUsage,
 } from '../../../../lib/admin';
-import type { Offering, Segment, PriceUnitDb, PurchaseType, PriceModel } from '../../../../lib/types';
+import type { Offering, Segment, PriceUnitDb, PurchaseType, PriceModel, OfferingConfigKind } from '../../../../lib/types';
 import { formatPriceModel } from '../../../../lib/priceModel';
 
 /**
@@ -245,7 +246,21 @@ const EMPTY_OFFERING: OfferingInput = {
   segment: 'rider', name: '', tagline: '', description: '', service_type: '',
   price_amount: null, price_unit: null, price_min: null, purchase_type: null,
   horse_included: null, is_popular: false, note: '', active: true, sort_order: 0,
+  unit_count: null, weekly_frequency: null, config_kind: null,
 };
+
+// CAREPLANS §P2c. Labelled in the owner's language, not the column's — he should
+// read "How many sessions", never `unit_count`.
+const CONFIG_KINDS: { value: OfferingConfigKind; label: string; hint: string }[] = [
+  { value: 'scheduled', label: 'One-time — sessions they book',
+    hint: 'A single session or a pack. "How many sessions" below is what they get.' },
+  { value: 'recurring', label: 'Monthly plan — weekly, billed monthly',
+    hint: 'Staff choose the days of the week at provisioning; the month’s sessions follow from them.' },
+  { value: 'intake_evaluation', label: 'Evaluation — we deliver a report', hint: '' },
+  { value: 'intake_finder', label: 'Search — we go and find a horse', hint: '' },
+  { value: 'document_transaction', label: 'Transaction — a document gets executed', hint: '' },
+  { value: 'inquire', label: 'Enquiry only — nothing is delivered until we talk', hint: '' },
+];
 
 function PriceModelBuilder({ value, onChange }: { value: PriceModel; onChange: (v: PriceModel) => void }) {
   const set = <K extends keyof PriceModel>(k: K, v: PriceModel[K]) => onChange({ ...value, [k]: v });
@@ -313,9 +328,19 @@ function PriceModelBuilder({ value, onChange }: { value: PriceModel; onChange: (
 }
 
 function OfferingForm({
-  value, onChange,
-}: { value: OfferingInput; onChange: (v: OfferingInput) => void }) {
+  value, onChange, usage, originalOfferingConfigKind,
+}: {
+  value: OfferingInput; onChange: (v: OfferingInput) => void;
+  /** How many live orders and bookings already point at this offering. */
+  usage?: OfferingUsage; originalOfferingConfigKind?: OfferingConfigKind | null;
+}) {
   const set = <K extends keyof OfferingInput>(k: K, v: OfferingInput[K]) => onChange({ ...value, [k]: v });
+  const sold = (usage?.live_lines ?? 0) + (usage?.bookings ?? 0);
+  // Guarded, not locked (§P2c): changing what an offering DELIVERS after people
+  // have bought it changes what those clients are owed. The operator is told, and
+  // then allowed — the owner ruled that leaving the field uneditable is not an answer.
+  const kindChanged = originalOfferingConfigKind !== undefined
+    && (value.config_kind ?? null) !== (originalOfferingConfigKind ?? null);
   return (
     <div className="grid sm:grid-cols-2 gap-3">
       <FormField label="Name" required hint="The slug is generated from segment + name, collision-free">
@@ -393,6 +418,66 @@ function OfferingForm({
           </FormField>
         </>
       )}
+      {/* ── What this offering DELIVERS (CAREPLANS §P2c) ────────────────────
+          These three decide entitlement. Until now the editor could change what a
+          product cost but not what it gave, so a 4-pack becoming a 5-pack needed a
+          migration — D13 says a thing with no editor is unfinished. */}
+      <div className="sm:col-span-2 border border-green-800/10 rounded-lg p-4 bg-cream-100/40">
+        <p className="form-label mb-1">What they get</p>
+        <p className="text-[12px] text-muted mb-3">
+          This is what the offering delivers, and the credits it hands out are worked
+          out from it. Nothing here is read from the name.
+        </p>
+        <div className="grid sm:grid-cols-3 gap-3">
+          <label className="text-sm sm:col-span-3">
+            <span className="block text-[12px] text-muted mb-1">How it is delivered</span>
+            <select className="form-input" value={value.config_kind ?? ''}
+              onChange={(e) => set('config_kind', (e.target.value || null) as OfferingConfigKind | null)}>
+              <option value="">— not set —</option>
+              {CONFIG_KINDS.map((k) => <option key={k.value} value={k.value}>{k.label}</option>)}
+            </select>
+            {CONFIG_KINDS.find((k) => k.value === value.config_kind)?.hint && (
+              <span className="text-[12px] text-muted mt-1 block">
+                {CONFIG_KINDS.find((k) => k.value === value.config_kind)?.hint}
+              </span>
+            )}
+          </label>
+          {value.config_kind === 'scheduled' && (
+            <label className="text-sm">
+              <span className="block text-[12px] text-muted mb-1">How many sessions</span>
+              <input type="number" min="0" step="1" className="form-input"
+                value={value.unit_count ?? ''}
+                onChange={(e) => set('unit_count', e.target.value === '' ? null : Number(e.target.value))} />
+              <span className="text-[12px] text-muted mt-1 block">A single session is 1; a 4-pack is 4.</span>
+            </label>
+          )}
+          {value.config_kind === 'recurring' && (
+            <label className="text-sm">
+              <span className="block text-[12px] text-muted mb-1">Days a week, normally</span>
+              <input type="number" min="1" max="7" step="1" className="form-input"
+                value={value.weekly_frequency ?? ''}
+                onChange={(e) => set('weekly_frequency', e.target.value === '' ? null : Number(e.target.value))} />
+              <span className="text-[12px] text-muted mt-1 block">
+                The starting point staff see. What a client actually gets is the days
+                chosen for them when the plan is set up.
+              </span>
+            </label>
+          )}
+        </div>
+        {kindChanged && sold > 0 && (
+          <p role="alert" className="text-[13px] text-red-700 mt-3">
+            {sold} order line{sold === 1 ? '' : 's'} and booking{sold === 1 ? '' : 's'} already
+            point at this offering. Changing how it is delivered changes what those
+            clients are owed — their existing sessions are not recalculated. Save only
+            if that is what you mean.
+          </p>
+        )}
+        {kindChanged && sold === 0 && (
+          <p className="text-[13px] text-green-800/70 mt-3">
+            Nothing has been sold against this offering yet, so changing it is safe.
+          </p>
+        )}
+      </div>
       <FormField label="Lesson horse" hint="Riding lessons only">
         {({ id, errorClass }) => (
           <select id={id} className={`form-input ${errorClass}`}
@@ -443,8 +528,12 @@ function CatalogTab() {
   const [form, setForm] = useState<OfferingInput>(EMPTY_OFFERING);
   const [formError, setFormError] = useState<string | null>(null);
 
+  const [usage, setUsage] = useState<Map<string, OfferingUsage>>(new Map());
+
   const load = () => {
     adminListOfferings().then(setRows).catch(() => setError('Could not load the catalog.'));
+    // Best-effort: the editor still works without it, it just cannot warn.
+    adminOfferingUsage().then(setUsage).catch(() => setUsage(new Map()));
   };
   useEffect(load, []);
 
@@ -458,6 +547,8 @@ function CatalogTab() {
       price_min: row.price_min, purchase_type: row.purchase_type, horse_included: row.horse_included,
       is_popular: row.is_popular, note: row.note, active: row.active, sort_order: row.sort_order,
       price_model: row.price_model,
+      unit_count: row.unit_count, weekly_frequency: row.weekly_frequency,
+      config_kind: row.config_kind as OfferingConfigKind | null,
     });
     setFormError(null); setEditing(row); setCreating(false);
   }
@@ -526,7 +617,11 @@ function CatalogTab() {
             Slug <code>{editing.slug}</code> stays stable so existing links keep working.
           </p>
         )}
-        <OfferingForm value={form} onChange={setForm} />
+        <OfferingForm
+          value={form} onChange={setForm}
+          usage={editing ? usage.get(editing.id) : undefined}
+          originalOfferingConfigKind={editing ? (editing.config_kind as OfferingConfigKind | null) : undefined}
+        />
       </Modal>
     </div>
   );

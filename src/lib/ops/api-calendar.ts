@@ -549,8 +549,17 @@ export interface MonthlyPlan {
   offering_name: string;
   segment: string;
   weekly_frequency: number | null;
-  /** 'Mon'..'Sun', or null when not yet set. */
+  /** 'Mon'..'Sun', or null when not yet set. CAREPLANS: kept as the first of
+   *  `recurring_days` so surfaces written before the plural existed still read. */
   recurring_day: string | null;
+  /** CAREPLANS §P3: the days staff chose. These decide HOW MANY sessions the month
+   *  holds — they are not a schedule the client is held to. Empty on a plan set up
+   *  before this task, which still computes from `weekly_frequency`. */
+  recurring_days: string[];
+  /** How many weeks the plan runs, or null when it runs until cancelled. */
+  plan_weeks: number | null;
+  /** True when the plan runs indefinitely (plan_ends_on is null). */
+  indefinite: boolean;
   period_start: string;
   /** The month boundary: after this the allotment is gone and does not carry over. */
   expires_at: string;
@@ -578,10 +587,45 @@ export async function fetchMyMonthlyPlans(): Promise<MonthlyPlan[]> {
   return (data ?? []) as MonthlyPlan[];
 }
 
-/** Staff or the plan's own client: set the recurring day of the week. */
+/** Staff or the plan's own client: set the recurring day of the week.
+ *  Superseded by `setRecurringDays` — kept because it is still the writer for a
+ *  single-day plan and its arithmetic is the one every existing plan computes with. */
 export async function setRecurringDay(purchaseItemId: string, day: string): Promise<void> {
   const { error } = await supabase.rpc('set_recurring_day', { p_purchase_item_id: purchaseItemId, p_day: day });
   if (error) throw error;
+}
+
+export interface RecurringDaysResult {
+  recurring_days: string[];
+  plan_ends_on: string | null;
+  plan_weeks: number | null;
+  indefinite: boolean;
+  quantity: number;
+  /** True when the order is already paid, so the quantity was left as it was
+   *  rather than re-pricing something someone has already settled. */
+  quantity_locked: boolean;
+  catalog_default: number | null;
+  /** The chosen day count differs from the SKU's default. Surfaced, never
+   *  corrected — staff may mean it (CAREPLANS §P2c). */
+  differs_from_catalog: boolean;
+  entitled_this_month: number | null;
+}
+
+/** CAREPLANS §P3 — staff choose the DAYS and how long the plan runs; the quantity
+ *  follows from the days and the month's entitlement is their occurrences in it.
+ *  `weeks` and `indefinite` are exclusive; passing neither leaves the duration alone. */
+export async function setRecurringDays(
+  purchaseItemId: string, days: string[],
+  duration: { weeks: number } | { indefinite: true } | Record<string, never> = {},
+): Promise<RecurringDaysResult> {
+  const { data, error } = await supabase.rpc('set_recurring_days', {
+    p_purchase_item_id: purchaseItemId,
+    p_days: days,
+    p_weeks: 'weeks' in duration ? duration.weeks : null,
+    p_indefinite: 'indefinite' in duration ? true : null,
+  });
+  if (error) throw error;
+  return data as RecurringDaysResult;
 }
 
 /** Staff: produce this month's remaining weekly sessions on the calendar for
@@ -608,6 +652,8 @@ export interface GeneratedMonth {
    *  nobody paid for. This is how many dates it had to leave alone. */
   skipped_no_entitlement: number;
   recurring_day: string;
+  /** Every day the generator laid sessions down on. */
+  recurring_days: string[];
   kind: 'lesson' | 'care';
 }
 
