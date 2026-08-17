@@ -336,10 +336,11 @@ owns. **Report this hand-off rather than building it here.**
 **Never run an implication backwards.** That is the error §A3b exists to prevent: someone owning a
 horse while asking us to find another for training.
 
-⚠️ **What the implication prefills — CORRECTED BY THE OWNER, 2026-08-16.** *"Which best matches
-your equestrian experience?"* asks about **ownership / caretaking / leasing experience EVERYWHERE
-it appears** — Finder, Assistance and Evaluation alike. Owner: *"the hint is in the answers."* It
-is NOT a riding question; riding ability is Evaluation Q7's separate job. So the prefill target is
+⚠️ **What the implication prefills — CORRECTED BY THE OWNER, 2026-08-16.** *(Builder context, not
+UI copy — the question renders as its owner-given wording alone; see §A4.)* *"Which best matches
+your equestrian experience?"* is about possession experience **everywhere it appears** — Finder,
+Assistance and Evaluation alike. Owner: *"the hint is in the answers."* It is NOT a riding
+question; riding ability is Evaluation Q7's separate job. So the prefill target is
 the experience question **wherever the assembled form asks it**: when the `client_horse` section
 establishes that the client owns or leases the horse being serviced, the experience answer
 prefills to **"currently own or lease"** — owner: *"if they are currently leasing or an owner
@@ -496,11 +497,22 @@ So: **new question text, DELETE the help line** (*"We want to match our guidance
 background."*), **keep the four existing options unchanged** (but see Owner Question 4 — the
 unified list may replace them).
 
-⚠️ **What this question MEANS (owner, 2026-08-16):** **ownership / caretaking / leasing
-experience — NOT riding ability.** It is **the same question Evaluation asks as its Q8**. Per §A2:
-when a Finder/Assistance item and an Evaluation are in the cart together it is asked **once, in
-the shared first batch**; when only one offering carries it, it sits **under that offering's
-heading**.
+### ⚠️ BUILDER CONTEXT — NOT UI COPY. NEVER RENDER ANY OF THIS.
+
+**The visible text is exactly the owner's wording and nothing else:**
+> **"Which best matches your equestrian experience?"** — **no help line, no subtitle, no
+> parenthetical, no clarifier.** The answer options carry the meaning; the owner: *"the hint is in
+> the answers."*
+
+**For your understanding only:** this question measures ownership / caretaking / leasing
+experience, not riding ability. That is **why** it is the same question Evaluation asks as its Q8,
+and why Evaluation Q7 (riding level) is separate and stays. **Do not put that explanation on the
+screen** — no words such as "ownership", "caretaking" or "leasing experience" may appear in the
+question label or beneath it.
+
+Per §A2: when a Finder/Assistance item and an Evaluation are in the cart together the question is
+asked **once, in the shared first batch**; when only one offering carries it, it sits **under that
+offering's heading**.
 
 ⚠️ **`how_many_horses` and `wants_lessons` are absent from the owner's list.** The list reads as
 complete and replacing. **Do not delete them until Owner Question 3 is answered** — `wants_lessons`
