@@ -362,8 +362,12 @@ export default function Story() {
             </a>
           </p>
 
-          <div id="our-services" className="mt-20 sm:mt-28 scroll-mt-24">
-            <div className="rule-gold" />
+          {/* Owner, 2026-08-16: the gold rule is gone and the gap above closes
+              (mt-20/28 → mt-10/12). The Continue link already ends the section
+              above, so the rule plus that margin were stacking two separators on
+              top of the link's own mt-10. `scroll-mt-24` is untouched — the hook
+              still lands in the same place, only the space above it shrinks. */}
+          <div id="our-services" className="mt-10 sm:mt-12 scroll-mt-24">
             {/* Owner, 2026-08-16 (flipped): the mosaic "steals the show", so the
                 CARDS now take the prominent right column where the photos were,
                 and the photographs drop to a quiet strip below — present, tying
