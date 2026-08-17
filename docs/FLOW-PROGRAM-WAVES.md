@@ -57,6 +57,14 @@ provision does not match it yet.**
 
 ---
 
+# WEBSITE WORK — independent of the flow program, no collisions
+
+| what | where | blocked on |
+|---|---|---|
+| **Footer: map beside Find Us, sign-in into the nav, credit line left / copyright centred** | `TASK-FOOTER` | the Cactai URL (later); two small owner questions. **Buildable now without them** |
+| Footer nav still says "Our Story" | folded into `TASK-FOOTER` §F5 | — |
+| `/about` still reachable from the footer, needs rebuild | not specced | owner |
+
 # WAVE 3+ — known, not yet in a wave
 
 - **`DEPENDENT`** — guardian buys, dependent rides. **Blocked on four owner answers.** Gabriella
