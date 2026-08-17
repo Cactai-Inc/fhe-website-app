@@ -34,8 +34,11 @@ back end anticipated this; the front end never connected to it.**
 
 ## G1 — one checkout, with a "this is a gift" choice
 - `Checkout.tsx` gains a gift toggle. Off (the default) is exactly today's flow — do not change
-  it. On, the form additionally collects **recipient name**, **recipient email (optional)**, and
-  **a message**.
+  it. On, the form additionally collects **recipient name**, **recipient email (optional)**,
+  **a message**, and **the delivery date** the claim email should send on (owner ruling 2, below).
+- **The toggle only appears when every item in the cart is giftable** (`horse_included = true`,
+  ruling 1). Measured 2026-08-16: 8 active offerings are `true`, 4 are `false`, and **14 are
+  `null`** — so the predicate must be `= true`, never `!= false`.
 - The order is created by the **same `createDraftOrder` path** as any other purchase. A gift is
   the same purchase with a recipient attached — **not a second write path** (D6: one spine).
 - The buyer pays through the existing payment flow. **This is the thing that does not work
@@ -54,8 +57,9 @@ back end anticipated this; the front end never connected to it.**
   — **enumerate them**). They should lead into the unified flow.
 - **`/gift` REDIRECTS, it is not deleted** — bookmarks and any printed/shared link must still
   land somewhere sensible, the same treatment `/shop` got on 2026-08-16.
-- **The existing `requests`-based gift enquiries in prod are real leads.** Do not delete or
-  migrate them without an owner ruling; report how many there are.
+- **Measured 2026-08-16: prod holds ZERO gift enquiries** (`requests where notes like 'GIFT%'`),
+  so there is no migration burden and nothing real is stranded in that notes field. Re-check
+  before you act — a lead could arrive between this spec and the build.
 
 ## G4 — say what happened to the three "routes"
 The owner's mental model is three checkouts. Your report should state plainly what each actually
@@ -88,11 +92,40 @@ was and where it ended up:
 6. Existing `requests`-based gift leads are untouched, and counted in the report.
 7. Every DB claim is query output; render claims **NOT VERIFIED** with a numbered owner checklist.
 
-# OWNER QUESTIONS — ask, do not guess
-1. Can a gift be bought for something requiring a horse (own-horse lessons, horse care), or is
-   gifting limited to services the recipient can use without one?
-2. Does the recipient get the claim email immediately on purchase, or only once payment is
-   confirmed? (Payment is Zelle/cash and confirmed by hand — so "immediately" means before you
-   have the money.)
+# OWNER RULINGS — settled 2026-08-16, do not re-ask
+
+**1. Gifting is limited to services the recipient can use without a horse.**
+> *"i dont think we need to enable the gifting of a horse care item unless the recipient has a
+> horse at ccr which is not something we need to worry about trying to accomodate. we can instead
+> use a contact form from a link on the product page. 'gift our services to the horse lover in
+> your life'."*
+
+- **Giftable = riding lessons on our horses.** Concretely: `horse_included = true` offerings in
+  the rider segment. Horse-care services and own-horse lessons are NOT giftable through checkout,
+  because the recipient would need a horse stabled at CCR for the gift to be usable.
+- **Do not filter on names or segment guesswork** — `horse_included` is the column, the same axis
+  `SESSIONBOOK` uses. A horse-care SKU has `horse_included = null`, not `false`; verify the exact
+  values before writing the predicate.
+- **The non-giftable services get a contact-form link instead**, on the product page:
+  *"Gift our services to the horse lover in your life."* That is a lead, not a purchase — it can
+  reuse the existing `requests` path (which is all `/gift` ever did). This is the one legitimate
+  place that lead form survives.
+
+**2. The recipient's claim email is scheduled by the buyer, and does not wait on payment.**
+> *"the recipient gets their claim email on the date the buyer specifies. we wont prevent the
+> email from going out to the recipient if payment isnt confirmed. the service will not be
+> rendered until its paid for and we control that on our end so its not an issue that software
+> needs to control strictly."*
+
+- **Checkout collects a DELIVERY DATE** for the gift. The claim email sends on that date — not on
+  purchase, not on payment confirmation.
+- **Payment state does not gate the email.** The owner controls delivery of the service itself
+  in person; the software does not need to enforce it. Do not build a payment gate here.
+- **This needs a scheduled sender**, not a fire-and-forget call at checkout. Establish what
+  already exists (`delivery-sweep.ts` and the cron/queue machinery in `api/`) and reuse it —
+  **one row per send attempt, provable**, per the standing rule that a notification path which
+  cannot answer "did it send?" will fail silently.
+- Sensible guards to confirm with the owner only if they block you: a date in the past, and
+  whether the buyer can change the date after purchase.
 
 Report to `docs/reports/TASK-ONECHECKOUT-REPORT.md`. Do not push; the orchestrator merges.
