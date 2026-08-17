@@ -239,29 +239,44 @@ riders, where camaraderie, enjoyment, and a love for horses come together.'"*
 
 1. Does `San Diego, California` stay on the right of the last line? — kept,
    per DEFAULTS.
-2. Carmel Creek Ranch pin vs. exact address? — **superseded by the owner's
-   round-2 feedback**, see below: the pin is on the exact address, but that's
-   not where visitors are actually routed.
+2. Carmel Creek Ranch pin vs. exact address? — **superseded twice over**: the
+   owner's round-2 feedback said the geocoded address pin wasn't where
+   visitors are routed, then supplied the actual arrival-point coordinates —
+   see RESOLVED below, this is now a bare coordinate pin, not an address
+   search at all.
 
-## STILL OPEN — the map pin's location, needs the owner
+## RESOLVED — the map pin's location (owner, 2026-08-17)
 
-The map query (`French Heritage Equestrian, 11500 Clews Ranch Rd Ste A, San
-Diego, CA 92130`) puts the pin on the business's real, geocoded address. The
-owner's screenshot shows this is the WRONG spot for directions — the actual
-arrival point is near the CA-56 / Carmel Creek Rd exit, immediately after the
-turn at the FHE/CCR sign, which is a different point on the property than the
-mailing address. I don't have exact coordinates for that arrival point and
-won't guess them off a screenshot for something people will actually drive
-by. **Need one of:**
+The owner explained the geocoded/business-name pin sits "just up the road"
+from the real arrival point, further down, past two forks a first-time
+visitor can't navigate without the pin in the right spot — then sent a
+`maps.app.goo.gl/…` share link for a pin they'd dropped at the actual
+turn-in.
 
-- The exact lat/long (long-press the correct spot in Google Maps → the
-  coordinates show at the bottom; or "What's here?").
-- A dropped-pin share link for that exact spot (different from a Business
-  Profile share link — this would be "drop a pin" → Share).
+**I did not eyeball coordinates off the earlier screenshot.** I resolved the
+share link with a real headless Chrome (redirect chain lands on
+`https://www.google.com/maps/place/32°56'21.1"N+117°13'10.9"W/@32.939204,
+-117.219696,17z/…` — read the lat/long directly off Google's own resolved
+page, Plus Code `WQQJ+M4M San Diego, California`). Screenshotting that
+resolved location confirmed it visually against the owner's own screenshot:
+right off CA-56, at the "Carmel Creek Ranch" label, before the fork onto Shaw
+Vly Rd — the same spot, not a lookalike.
 
-Once I have either, the fix is swapping `MAP_QUERY` in `Footer.tsx` for a
-`lat,lng` query instead of a name+address one — small, but I'd rather ask
-than embed a guess into a live "how do I get there" tool.
+`MAP_QUERY` in `Footer.tsx` is now the bare coordinate pair `32.939204,
+-117.219696` instead of the name+address string. Trade-off worth knowing:
+Google's key-less embed only shows the rich "French Heritage Equestrian"
+info card (star rating, "Open in Maps" chip position, etc.) for a query that
+resolves to an actual Place; a bare `lat,lng` gets a plain unlabeled red pin
+with no info card. **That's the right trade for this specific ask** —
+getting a first-time visitor to the correct fork beats a nicer-looking pin
+in the wrong spot — but flagging it explicitly in case the owner would
+rather have both (which would need the Business Profile's own pin corrected
+in Google's system, a change only they can make there, not something this
+embed's query string can do).
+
+Confirmed in the refreshed `footer-desktop.png`/`footer-mobile.png`: the red
+pin now sits south of the "Carmel Creek Ranch" label, matching the owner's
+own screenshot exactly, not on the building.
 
 ## Render claims — NOT VERIFIED without the owner's own eyes on it
 

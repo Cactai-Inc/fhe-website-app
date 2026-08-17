@@ -3,21 +3,20 @@ import { useAuth } from '../../contexts/AuthContext';
 import { MapPin, Phone, Mail, Clock } from 'lucide-react';
 import { BRAND } from '../../lib/brand';
 
-// Address per Google's OWN verified listing card (confirmed by rendering
-// the embed standalone and reading its info popup, 2026-08-17): "11500
-// Clews Ranch Rd Ste A, San Diego, CA 92130". This does NOT match the
-// `locations` table's `address_line1` ("11600 Clews Ranch Road", row
-// 2d771cea-…) — a real discrepancy between the DB and the Google Business
-// Profile, flagged for the owner rather than silently written to the DB
-// (out of scope for a presentation-only task). Using Google's own number
-// here since it's what Google needs to keep matching its own listing.
-// Owner, 2026-08-17: this is still the mailing/geocoded address, which
-// Google pins at the building — NOT where visitors are actually routed
-// (the property's real entrance is off the CA-56 Carmel Creek Rd exit, an
-// immediate right turn at the FHE/CCR sign). Awaiting exact coordinates for
-// that arrival point; using the verified business address+name until then,
-// which at least resolves to the real listing rather than a bare geocode.
-const MAP_QUERY = 'French Heritage Equestrian, 11500 Clews Ranch Rd Ste A, San Diego, CA 92130';
+// Owner, 2026-08-17: the geocoded business address (11500 Clews Ranch Rd
+// Ste A — Google's own number; the `locations` table's "11600" doesn't
+// match the real Business Profile, flagged separately, DB left untouched)
+// pins at the building, but that is NOT where visitors should be routed —
+// there are two forks in the road and, without the pin at the actual
+// turn-in, people get lost. The owner dropped a pin at the real arrival
+// point (right off the CA-56 Carmel Creek Rd exit, the immediate right
+// turn at the FHE/CCR sign) and shared it as a maps.app.goo.gl link, which
+// resolves to these exact coordinates — verified by loading the link and
+// reading its resolved lat/long directly off Google's own page, not
+// estimated from the shared screenshot. A bare-coordinate pin has no
+// business-name label/info card (unlike the address+name query above did),
+// which is the right trade here: accurate turn-by-turn over a pretty pin.
+const MAP_QUERY = '32.939204,-117.219696';
 const MAP_EMBED_SRC = `https://www.google.com/maps?q=${encodeURIComponent(MAP_QUERY)}&output=embed`;
 
 export default function Footer() {
