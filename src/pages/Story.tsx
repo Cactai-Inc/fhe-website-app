@@ -140,7 +140,7 @@ export default function Story() {
             needed ~76px of clearance, not 128. 96px keeps it clear and lifts the
             whole section, so the copy and the Continue link land in the first
             screenful. */}
-        <div className="container-site pt-24 pb-16 sm:pt-28 sm:pb-24">
+        <div className="container-site pt-28 pb-16 sm:pt-32 sm:pb-24">
           {/* items-start (was items-center): the owner wants the image aligned
               with the TOP of the first paragraph, not floated to the middle. */}
           {/* Owner, 2026-08-16: the title kept colliding with the image. Cause:
