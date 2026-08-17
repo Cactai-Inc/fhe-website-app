@@ -8,6 +8,12 @@ The work is step 3 onward. Acquisition and lessons follow, then the blended vers
 described one generic shape for all three; the owner has now specified this lane in detail. Build
 what is here. Where the two disagree, this document wins.
 
+⚠️ **`TASK-ASKRIGHT` RUNS FIRST.** Step 2's questions are wrong in production today — every
+horse-care buyer is asked the exercise-service questions, so a clipping customer is asked how many
+months of turnout support they need. `ASKRIGHT` makes the questions belong to the offering. **This
+task does not touch what step 2 asks**; it owns the step tracker, the buttons, the modal, the submit
+screen and everything after submission. If `ASKRIGHT` has not merged, stop and say so.
+
 **RUN WITH: Opus 5 · thinking ON · effort HIGH.** Not a Sonnet task: §C5 creates an
 anonymously-reachable order path (a security boundary), and §C8–C10 require verifying a long
 existing chain end to end rather than rebuilding it — the failure mode is a thread that reports
