@@ -46,12 +46,14 @@ const CATEGORY_LABEL: Record<string, string> = {
   acquisition: 'Buying or selling a horse',
   media: 'Media / press',
   partnership: 'Partnership / sponsorship',
+  gift: 'Gift enquiry',
 };
 const CHANNEL_LABEL: Record<string, string> = {
   contact: 'Contact form',
   inquiry: 'Inquiry form',
   booking: 'Booking request',
   kiosk: 'Kiosk',
+  gift: 'Gift form',
 };
 const CONTACT_METHOD_LABEL: Record<string, string> = {
   text: 'Text', call: 'Call', email: 'Email',

@@ -122,10 +122,11 @@ export type RequestCategory =
   | 'horse_care'
   | 'acquisition'
   | 'media'
-  | 'partnership';
+  | 'partnership'
+  | 'gift';
 
 /** Which public form the request came in through. */
-export type RequestChannel = 'contact' | 'inquiry' | 'booking' | 'kiosk';
+export type RequestChannel = 'contact' | 'inquiry' | 'booking' | 'kiosk' | 'gift';
 
 export interface RequestInput {
   /** First + last are the canonical split; last name is required server-side. */

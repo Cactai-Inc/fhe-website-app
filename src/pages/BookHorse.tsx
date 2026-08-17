@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Check, ArrowRight, ArrowLeft } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Check, ArrowRight, ArrowLeft, Gift } from 'lucide-react';
 import { formatPrice } from '../lib/pricing';
 import { fetchPublicCatalog, type ServiceGroup } from '../lib/publicCatalog';
 import { useCart } from '../contexts/CartContext';
@@ -249,20 +249,30 @@ export default function BookHorse() {
           </button>
 
           {stage !== 'details' && (
-            <button
-              type="button"
-              onClick={handleNext}
-              // Nothing on the questions step is required (§A5): these shape the
-              // conversation, they do not qualify anyone, and a required answer
-              // blocks a sale.
-              disabled={current === 0 ? !canProceedStep0 : false}
-              className="btn-primary"
-            >
-              {/* §C2/§A6: the questions page's forward button names the page it
-                  actually leads to. */}
-              {stage === 'questions' ? 'Continue to Submit Inquiry' : 'Continue'}
-              <ArrowRight size={16} />
-            </button>
+            <div className="flex items-center gap-6">
+              {/* TASK-GIFTPATH — reachable from horse care, not just lessons.
+                  Owner's wording, verbatim. */}
+              {stage === 'select' && (
+                <Link to="/gift?item=horse" className="inline-flex items-center gap-2 text-sm font-sans text-secondary hover:text-green-800 transition-colors focus-ring">
+                  <Gift size={15} aria-hidden="true" />
+                  Gift our services to the horse lover in your life
+                </Link>
+              )}
+              <button
+                type="button"
+                onClick={handleNext}
+                // Nothing on the questions step is required (§A5): these shape the
+                // conversation, they do not qualify anyone, and a required answer
+                // blocks a sale.
+                disabled={current === 0 ? !canProceedStep0 : false}
+                className="btn-primary"
+              >
+                {/* §C2/§A6: the questions page's forward button names the page it
+                    actually leads to. */}
+                {stage === 'questions' ? 'Continue to Submit Inquiry' : 'Continue'}
+                <ArrowRight size={16} />
+              </button>
+            </div>
           )}
         </div>
 
