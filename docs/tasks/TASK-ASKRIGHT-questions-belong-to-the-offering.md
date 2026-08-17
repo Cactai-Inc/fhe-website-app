@@ -514,14 +514,16 @@ Per §A2: when a Finder/Assistance item and an Evaluation are in the cart togeth
 asked **once, in the shared first batch**; when only one offering carries it, it sits **under that
 offering's heading**.
 
-⚠️ **`how_many_horses` and `wants_lessons` are absent from the owner's list.** The list reads as
-complete and replacing. **Do not delete them until Owner Question 3 is answered** — `wants_lessons`
-is a cross-sell.
+⚠️ **`how_many_horses` and `wants_lessons` are DELETED — owner-confirmed, 2026-08-16.** Both are
+absent from his list deliberately. `how_many_horses` is rarely actionable; `wants_lessons` is
+**replaced by the Continue Shopping modal** (`CAREPATH` §C3), which converts the same intent into a
+real cart line instead of a recorded intention. **Remove both question blocks.** Report whether any
+stored answers exist for them in prod before dropping the surface.
 
 ### Horse Evaluation — its own set
 | # | question |
 |---|---|
-| 1 | Location |
+| 1 | **Where is the horse located?** (owner-confirmed wording — the horse's location, not the client's) |
 | 2 | Age |
 | 3 | Breed |
 | 4 | How is the horse currently being used? |
@@ -759,9 +761,8 @@ The pre-sale answers duplicate part of each post-sale intake form (breed, age, b
 2. **Should the pre-sale answers pre-fill the post-sale intake form?** Today a client would give
    breed, age, behaviour and medical history at step 2, then again at intake. Carrying them over is
    a real saving, but it is CAREPATH §C10's territory — say whether you want it and I will place it.
-3. **Are `how many horses are you considering?` and `are you interested in lessons?` being dropped
-   from acquisition?** They are not in your new list. The second is a cross-sell, so I would rather
-   you deleted it deliberately than have me infer it.
+3. ~~Are `how_many_horses` and `wants_lessons` being dropped?~~ **ANSWERED — YES, delete both**
+   (owner, 2026-08-16). See §A4: Continue Shopping replaces the lessons cross-sell.
 4. ~~Ask the experience question once, or per set?~~ **ANSWERED (2026-08-16): it is ONE question —
    ownership / caretaking / leasing experience — asked ONCE** (shared batch when two or more
    offerings carry it; under the single offering's heading otherwise). **Remaining: the ONE option
@@ -770,9 +771,10 @@ The pre-sale answers duplicate part of each post-sale intake form (breed, age, b
    currently own or lease). One question asked once needs one list. **I recommend the
    possession-pure trio** — "rides professionally" answers a riding question, and your earlier
    "choices are good as is" predates the same-question ruling — but this is your call.
-5. **Horse Evaluation Q1 "Location"** — the location of the horse being evaluated, or the client's
-   own area? *(The Q7/Q8 half of this question is **ANSWERED**: both stay — Q7 is riding ability so
-   the horse matches the rider; Q8 is ownership experience. Different facts.)*
+5. ~~Horse Evaluation Q1 "Location"~~ **ANSWERED (owner, 2026-08-16): it is THE HORSE'S location —
+   render it as "Where is the horse located?"** That is where the evaluation happens and what drives
+   travel. *(The Q7/Q8 half is also answered: both stay — Q7 is riding ability so the horse matches
+   the rider; Q8 is ownership experience. Different facts.)*
 6. ~~Budget and age range on the Finder set~~ **ANSWERED (owner, 2026-08-16) — BANDS, and these are
    the real numbers. Do not substitute your own; an earlier guess was 5× too high.**
 
