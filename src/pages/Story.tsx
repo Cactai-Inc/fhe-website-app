@@ -129,7 +129,10 @@ export default function Story() {
           Establish the coastal world she belongs to. IMAGE: new establishing
           shot (placeholder green band for now). */}
       <section id="the-place" className="bg-cream scroll-mt-24">
-        <div className="container-site pt-10 pb-16 sm:pt-12 sm:pb-24">
+        {/* pt-10 → pt-32 (owner, 2026-08-16): the jump nav used to sit above this
+            section and carried the clearance under the fixed header; removing it
+            left the eyebrow rendering behind the nav bar. */}
+        <div className="container-site pt-32 pb-16 sm:pt-40 sm:pb-24">
           {/* items-start (was items-center): the owner wants the image aligned
               with the TOP of the first paragraph, not floated to the middle. */}
           {/* Owner, 2026-08-16: the title kept colliding with the image. Cause:
@@ -138,7 +141,7 @@ export default function Story() {
               sits ABOVE the grid at full width, where one line always fits, and
               the columns below carry only the copy and the image. */}
           <Reveal className="mb-10 sm:mb-12">
-            <p className="eyebrow mb-6">Our Story</p>
+            <p className="eyebrow mb-6">Our Community</p>
             <h1 className="heading-display text-green-900 text-[clamp(2.1rem,5vw,3.75rem)]">
               Coastal Air &amp; Endless Trails
             </h1>
@@ -294,7 +297,8 @@ export default function Story() {
           <div className="mt-6 sm:mt-8 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
             {/* Image treatment — women riding together (Hero A world revisited),
                 framed with a gold hairline and a soft edge-scrim. */}
-            <Reveal className="lg:col-span-7 order-2 lg:order-none" delay={100}>
+            {/* order-1 on mobile: image above the text, matching sections 1 and 2. */}
+            <Reveal className="lg:col-span-7 order-1 lg:order-none" delay={100}>
               <figure className="relative aspect-[4/5] sm:aspect-[16/10] overflow-hidden">
                 {/* Section 3 — the trail. Owner: this is what "completes the
                     story" — the arena and the stables lead here, to riding out. */}
