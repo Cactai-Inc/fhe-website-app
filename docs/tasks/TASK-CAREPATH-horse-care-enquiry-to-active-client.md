@@ -109,6 +109,21 @@ the authenticated purchase path and weakening it would expose order creation to 
   in-page: the cart, the selections and the qualifier answers are all already in `CartContext`
   there, and `/checkout` carries lesson-specific baggage this buyer must not see.
 
+## C1b — the back control says "Back", not "Previous"
+Owner, 2026-08-16: *"keep the 'previous' button relabeled as 'Back' on step 2 page."*
+
+**Measured:** `BookHorse.tsx:217` is a single expression —
+`{step === 0 ? 'Back to Services' : 'Previous'}` — so **`Previous` is the label on every step past
+the first**, not only step 2. Relabel it to **`Back`** for all of them; step 0 keeps
+`Back to Services`.
+
+- The new step 4 inherits the same control, so it must read `Back` too.
+- `BookSupport.tsx:269` carries the identical expression. **Leave it for the acquisition task**
+  unless that task is not yet queued when you build — flag it rather than reaching into a lane
+  another thread owns.
+- `Checkout.tsx:294` says `Back to Selection`. **Do not change it here** — it is shared with the
+  lesson funnel.
+
 ## C2 — step 3 loses the false line and gains two buttons
 - **Delete** the *"That's everything we need for now…"* paragraph (`BookHorse.tsx:202-205`).
 - Step 3 shows the selection summary (which is good today) and then **two buttons**:
@@ -254,6 +269,8 @@ path. **Do not write a second booking writer.**
 # THE TEST THIS MUST PASS
 1. The horse-care tracker reads **Step 1 of 4 … Step 4 of 4**, and no screen is unnumbered.
 2. The *"That's everything we need for now"* line is gone.
+2b. The back control reads **`Back`** on steps 2, 3 and 4, and **`Back to Services`** on step 1 —
+    the word `Previous` appears nowhere in the horse-care funnel.
 3. Step 3 offers **Continue Shopping** and **Continue to Submit Request**, and no competing third
    path.
 4. The modal shows the three categories, has **both** a Back button and an ✕, and choosing one
