@@ -4,11 +4,19 @@ import { Gift as GiftIcon, ArrowRight } from 'lucide-react';
 import { requestGift } from '../lib/gifts';
 import Seo from '../components/Seo';
 
+/* Owner, 2026-08-16: a gift certificate leads, because it is what a stranger
+ * buying for a rider most often wants — they know the person, not the catalogue.
+ * 'Rider community membership' is GONE: there is no membership product (D4
+ * defers it), and it was removed from the Story cards on 2026-08-15 for the same
+ * reason — offering it here would promise something that cannot be sold.
+ * 'Not sure yet' is deliberate: this form exists so the owner can talk to the
+ * buyer, so "I don't know" must be a first-class answer rather than a dead end. */
 const GIFT_ITEMS: { value: string; label: string }[] = [
+  { value: 'certificate', label: 'Gift certificate (any amount)' },
   { value: 'lessons', label: 'Riding lessons' },
-  { value: 'membership', label: 'Rider community membership' },
   { value: 'horse', label: 'Horse care' },
   { value: 'acquisition', label: 'Acquisition support' },
+  { value: 'unsure', label: 'Not sure yet — help me choose' },
 ];
 
 export default function Gift() {
