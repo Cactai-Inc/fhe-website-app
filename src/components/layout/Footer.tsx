@@ -1,10 +1,25 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { MapPin, Phone, Mail } from 'lucide-react';
+import { MapPin, Phone, Mail, ExternalLink } from 'lucide-react';
 import { BRAND } from '../../lib/brand';
 
-const MAP_EMBED_SRC =
-  'https://www.google.com/maps?q=Carmel+Creek+Ranch,+San+Diego,+CA&output=embed';
+// Live `locations` row for Carmel Creek Ranch (id 2d771cea-…, verified
+// against prod, 2026-08-17): address_line1 "11600 Clews Ranch Road", San
+// Diego, CA 92130 — differs from an older migration comment that said
+// "11500", so this is taken from the DB, not that file. "Ste A" per the
+// owner (2026-08-17): the Google listing carries a suite letter CCR's own
+// address doesn't.
+const MAP_QUERY = 'French Heritage Equestrian, 11600 Clews Ranch Road, Ste A, San Diego, CA 92130';
+const MAP_EMBED_SRC = `https://www.google.com/maps?q=${encodeURIComponent(MAP_QUERY)}&output=embed`;
+// Universal Maps URL (google.com/maps/search) — on a phone with the Google
+// Maps app installed this opens the app itself (iOS treats it as a
+// universal link); otherwise it opens Google Maps in the browser. Either
+// way the visitor lands on the business listing with Google's own
+// Directions button, not a page we built. If the owner has the Business
+// Profile's own share link (a maps.app.goo.gl/… or a `cid=` URL), swapping
+// it in here is a one-line change — that would point more precisely at the
+// verified listing than a name+address search does.
+const MAPS_LISTING_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(MAP_QUERY)}`;
 
 export default function Footer() {
   const { user } = useAuth();
@@ -105,15 +120,30 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Map */}
-        <div className="rounded-lg overflow-hidden border border-white/10 aspect-[4/3] md:aspect-auto md:h-full min-h-[220px]">
+        {/* Map — tap opens the listing in Google/Apple Maps for directions;
+            the iframe underneath is a non-interactive visual preview. */}
+        <div className="relative rounded-lg overflow-hidden border border-white/10 aspect-[4/3] md:aspect-auto md:h-full min-h-[220px]">
           <iframe
             src={MAP_EMBED_SRC}
-            title="Map showing Carmel Creek Ranch, San Diego, CA"
+            title="Map showing French Heritage Equestrian at Carmel Creek Ranch, San Diego, CA"
             loading="lazy"
             referrerPolicy="no-referrer-when-downgrade"
-            className="w-full h-full border-0"
+            tabIndex={-1}
+            aria-hidden="true"
+            className="w-full h-full border-0 pointer-events-none"
           />
+          <a
+            href={MAPS_LISTING_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="absolute inset-0 focus-ring-dark"
+            aria-label="Open French Heritage Equestrian in Maps for directions"
+          >
+            <span className="absolute bottom-2 right-2 inline-flex items-center gap-1.5 bg-green-950/90 text-gold-300 text-[11px] font-sans tracking-wide px-2.5 py-1.5 rounded">
+              <ExternalLink size={12} aria-hidden="true" />
+              Get Directions
+            </span>
+          </a>
         </div>
       </div>
 

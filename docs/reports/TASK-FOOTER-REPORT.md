@@ -56,6 +56,63 @@ a styled/dark map (requires a Maps JavaScript API key + Cloud Console setup —
 out of scope for a presentation-only task) or a lower-contrast treatment
 (reduced opacity, grayscale filter) applied to the current key-less embed.
 
+**Mid-session addition — the real address, and a tappable card (owner,
+2026-08-17):** the owner supplied the actual Google-listing address ("same as
+CCR but we're listed as STE A") and asked for tap-to-open-Maps behavior:
+*"the visitor should see the map, tap it and their google map or apple map
+opens and they see our listing page and they can click a button to get the
+directions started."*
+
+- **Address, verified against prod, not the migration file.** The
+  `locations` row for Carmel Creek Ranch
+  (`2d771cea-5150-43b9-8e3d-38faa434a07d`) has `address_line1 = '11600 Clews
+  Ranch Road'` — the migration comment in
+  `20260803010001_horse_location_multiline.sql` says "11500", which is
+  **wrong**; I queried the live row directly (`psql`, read-only `SELECT`, no
+  write) rather than trust the file, per the repo's working rule. Query now
+  used for both the embed and the outbound link:
+  `French Heritage Equestrian, 11600 Clews Ranch Road, Ste A, San Diego, CA
+  92130`. **This did not touch the `locations` table or any other data** —
+  presentation-only, per the task; the visible "Find Us" text block still
+  reads the deliberately-imprecise "Carmel Creek Ranch, San Diego, CA," only
+  the map's own query string changed.
+- **The query resolves to the real verified listing**, not a generic pin —
+  visible in `footer-desktop.png`/`footer-mobile.png` as a red marker
+  labeled "French Heritage Equestrian" (the earlier screenshots, before this
+  address, showed an unlabeled generic pin). That's a good sign the Business
+  Profile at that address is real and findable.
+- **Tap-to-open, built as an overlay, not a wrapped iframe.** An `<a>`
+  wrapping an `<iframe>` doesn't work — clicks landing inside the iframe's
+  boundary go to the iframe's own content (panning the map, or its tiny
+  built-in "Open in Maps" chip), not the outer link. So the iframe is now
+  `pointer-events-none` and purely a visual preview
+  (`aria-hidden`, `tabIndex={-1}`); a full-cover `<a
+  className="absolute inset-0">` sits on top and is the actual single tap
+  target for the whole card, with a small "Get Directions" badge
+  (bottom-right, visible in both screenshots) as a visual affordance so it
+  doesn't read as a dead embed. `target="_blank" rel="noopener noreferrer"`.
+- **The link is a universal Google Maps URL**
+  (`google.com/maps/search/?api=1&query=…`), not a scheme-specific one. On a
+  phone with the Google Maps app installed, iOS/Android both treat
+  `google.com/maps` links as a universal/app link and hand off to the app
+  directly; without the app installed it opens Google Maps in the browser.
+  Either way the visitor lands on Google's own listing page with Google's own
+  Directions button — I did not build a directions button, because Google's
+  is the "real" one the owner is describing. I did not build an
+  Apple-Maps-specific path (`maps://` / UA-sniffing to pick a scheme) — that
+  would add real complexity for a presentation-only task, and the universal
+  URL already produces the described experience (tap → app opens → their
+  listing → Directions) on the platforms most visitors carry. Flagging in
+  case the owner wants Apple Maps as an explicit alternate, not just Safari's
+  own handoff behavior.
+- **If the owner has the Business Profile's own share link** (a
+  `maps.app.goo.gl/…` short link, or a full `…?cid=…` URL, from the "Share"
+  button on their own listing), that would point more precisely at the exact
+  verified card than a name+address search does, and swapping it into
+  `MAPS_LISTING_URL` in `Footer.tsx` is a one-line change — I used the
+  search-query form because I don't have that link, not because it's the
+  better choice.
+
 ## F2 — sign-in moves into the footer nav: DONE
 
 The bottom-bar `Member area` / `Member sign-in` link is gone; the same
