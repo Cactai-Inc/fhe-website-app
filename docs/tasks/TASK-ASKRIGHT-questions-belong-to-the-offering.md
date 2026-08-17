@@ -134,6 +134,53 @@ first six genuinely merge. But across categories they do not:
 questions merge, **and report the keying scheme you chose.** When in doubt, keep them separate — a
 duplicated question is a small annoyance; a merged one produces a wrong answer staff will act on.
 
+## A2b — PAGE 2 IS ASSEMBLED ON THE CLICK, AND ANSWERS ARE HELD
+
+**Owner, 2026-08-16:**
+> *"page 2 is truly a dynamic page that is made to order so to speak constructed on the click based
+> on the selections made. and the system needs to hold the information so its not asking the same
+> information when they pick a lesson, an evaluation, and a horse training offering in the same
+> order."*
+
+**There is no static step-2 page for any funnel.** It is assembled from the cart at render time.
+
+### Every question declares a SUBJECT — that is the keying scheme
+
+This is the rule that makes "don't ask twice" safe. **Two questions merge only when they are the
+same question about the same subject.** Four subjects cover the current catalog:
+
+| subject | what it is | merges across |
+|---|---|---|
+| `person` | the buyer / rider themselves | **everything** — all three categories |
+| `own_horse` | the horse the client already has | horse care (training, clipping, exercise) |
+| `evaluated_horse` | a specific horse being assessed | Horse Evaluation only |
+| `sought_horse` | preferences for a horse not yet owned | Horse Finder, Acquisition Assistance |
+
+**Age and breed appear under three different subjects and must never merge across them.** The
+client's own horse is 12 and a warmblood; the horse being evaluated is 6 and a thoroughbred; the
+horse they hope to buy should be 8–12 and any breed. **One `breed` key would destroy all three.**
+
+### The owner's worked example — lesson + evaluation + horse training in one order
+
+| section | subject | contents |
+|---|---|---|
+| **1. About you** | `person` | equestrian experience / riding level, whether they own or lease a horse — **asked once, serves all three** |
+| **2. Horse Training** | `own_horse` | how long they have had the horse, its age, breed, behaviour, injuries, riding history, prior training, goals |
+| **3. Horse Evaluation** | `evaluated_horse` | location, age, breed, current use, planned use, concerns |
+| **4. Riding Lesson** | `person` | whatever rider questions remain after section 1 |
+
+**Age and breed are asked twice here — correctly** — because they are two different horses. The
+experience question is asked **once**, because there is only one person.
+
+### Holding the answers
+- Answers persist in the **existing** `state.qualifierAnswers` store, keyed by **subject + question**.
+  **Do not add a second store.**
+- **Adding an offering later** (via CAREPATH's Continue Shopping modal) **extends** the form with
+  that offering's new section and **never re-asks anything already answered.**
+- **Removing an offering** hides its section but **retains its answers**, so re-adding it does not
+  make the visitor type everything again.
+- **Only answers for offerings still in the cart are submitted.**
+
 ### What this produces for horse care
 **Questions 1–6 are identical across training, clipping and exercise** — same six, same horse. So a
 cart with any two of them shows one shared section of six, then a section per service.
@@ -371,6 +418,11 @@ The pre-sale answers duplicate part of each post-sale intake form (breed, age, b
 4d. A cart mixing categories does **not** merge questions that merely look alike — prove that
     training's *breed of your horse* and the finder's *preferred breed* stay separate, and **state
     the keying scheme** that guarantees it.
+4e. **The owner's example — a lesson, an evaluation and horse training in one order** — renders
+    exactly: one *About you* section, then a section per offering. **The experience question appears
+    once. Age and breed appear twice, under the two different horses.**
+4f. **Adding an offering after answering extends the form and re-asks nothing.** Removing one hides
+    its section, keeps its answers for a re-add, and **submits only what is still in the cart.**
 5. **Horse Finder** and **Acquisition Assistance** ask the nine-question set; the experience question
    carries the new wording, **no help line**, and the original four options.
 6. **Horse Evaluation** asks its own eight, with the **three** experience options — proving options
@@ -409,5 +461,11 @@ The pre-sale answers duplicate part of each post-sale intake form (breed, age, b
    own area? And **Q7 "current riding level"** sits close to **Q8 "equestrian experience"**; confirm
    you want both.
 6. **Budget and age range on the Finder set** — free text, or bands you want offered?
+7. **One near-merge needs your ruling.** Horse training asks *"do you own or lease **the** horse?"*
+   (the specific horse coming for training). The rider path asks *"do you currently own or lease **a**
+   horse?"* (`owns_horse`, already built on `/book/rider`). **Same answer in practice, different
+   subject in principle** — `own_horse` versus `person`. Treat them as one question asked once in the
+   *About you* section, or keep them separate? **I would merge them**; someone bringing a horse for
+   training plainly owns or leases one, and asking twice in one order looks careless.
 
 Report to `docs/reports/TASK-ASKRIGHT-REPORT.md`. Do not push; the orchestrator merges.
