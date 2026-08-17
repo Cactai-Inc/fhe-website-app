@@ -278,6 +278,42 @@ because there is no horse.
 **Staff collect the horse's details after acquisition**, through the intake surface `CAREPATH` §C10
 owns. **Report this hand-off rather than building it here.**
 
+## A3c — INFERRED ANSWERS: prefill what one answer already proves
+
+**Owner, 2026-08-16:**
+> *"in the case that they are asked if they are owner or leasing the horse they want a servce for and
+> then they also have acquisition offering in their cart, we can auto select that they currently own
+> or lease. and this is where a site feels premium."*
+
+**§A3b keeps the two ownership questions separate. This section connects them without merging them.**
+
+### The rule is an IMPLICATION, and it runs ONE WAY ONLY
+
+| if | then | not the reverse |
+|---|---|---|
+| the client **owns or leases the horse** they want serviced (`own_horse`) | they **currently own or lease a horse** (`person`) — **prefill it** | owning *a* horse does **not** mean they own *the* one they want serviced — they may be seeking a second |
+
+**Never run an implication backwards.** That is the error §A3b exists to prevent: someone owning a
+horse while asking us to find another for training.
+
+### How a prefilled answer must behave
+- **It is shown answered, never hidden.** The visitor sees the answer and can see it is filled in.
+  Deciding for someone invisibly is not premium — it is a wrong answer they never got to catch.
+- **It stays editable.** Changing it is an ordinary interaction with no warning or friction.
+- **It tracks its source until touched.** If the client changes the horse-care answer to *"not yet"*,
+  a still-untouched derived answer **updates with it**. Once the visitor has edited the derived
+  answer themselves, **it is theirs and must never be overwritten.**
+- **Record that it was derived rather than given.** Staff reading the inquiry should be able to tell
+  what the client actually typed from what the system concluded. **Report where you stored that
+  distinction.**
+
+### Scope
+- **Build the mechanism generally**, then apply it to the one rule above.
+- ⚠️ **Do not invent further inferences.** If you find other candidate implications while building
+  the question sets, **list them in the report for the owner to rule on** — a wrong inference is
+  worse than a repeated question, because the client never sees the question that would have caught
+  it.
+
 ### Horse Training — after the shared block
 | # | question |
 |---|---|
@@ -515,6 +551,14 @@ The pre-sale answers duplicate part of each post-sale intake form (breed, age, b
     are **not** filed as describing a horse the client already owns.
 4l. The two ownership questions — the rider's *"a horse"* and horse care's *"the horse"* — **remain
     separate**, and a client who owns one horse while seeking another can answer them differently.
+4m. **The inference works and is visible** (§A3c): a client who owns the horse they want serviced,
+    and who also holds an acquisition item, finds *"do you currently own or lease a horse?"*
+    **already answered** — visibly, and editable.
+4n. **The inference is one-way** — owning *a* horse never prefills owning *the* serviced horse.
+4o. **A derived answer follows its source until the visitor edits it**, and **never afterwards**.
+    Prove both halves: change the source and watch it update; edit the derived answer, change the
+    source again, and watch it hold.
+4p. **Staff can tell a derived answer from a given one** — name where that distinction is stored.
 5. **Horse Finder** and **Acquisition Assistance** ask the nine-question set; the experience question
    carries the new wording, **no help line**, and the original four options.
 6. **Horse Evaluation** asks its own eight, with the **three** experience options — proving options
