@@ -939,3 +939,1051 @@ checked:  Prod: still executable by anon and authenticated.
 rank:     2
 moot?:
 if kept:  Low risk (the token is the credential) — decide whether to guard or accept.
+
+---
+
+# RANK 3 — BLOCKED, OR OWED A DECISION FROM YOU
+
+### 82. Whether Google sign-in linking is switched on is unknown
+what:     Nobody knows whether the setting that lets an existing account add Google sign-in is switched on, and it has never been tested.
+where:    Login and security
+raised:   6 reports, earliest 2026-08-11 · sources: TASK-GOOGLEAUTH-REPORT.md, TASK-ACCOUNTSURFACE-REPORT.md
+checked:  The setting lives in the hosting dashboard, not in the repo or the database; the control itself now reads the server's identity list correctly.
+rank:     3
+moot?:
+if kept:  Two minutes signed in settles it.
+
+### 83. Whether the password survives after adding Google is unruled
+what:     Adding Google sign-in currently leaves the password working, and no control removes it — that was a guess, not a ruling.
+where:    Login and security
+raised:   1 report, 2026-08-11 · sources: TASK-GOOGLEAUTH-REPORT.md
+checked:  The security card still keeps both; unchanged in substance.
+rank:     3
+moot?:
+if kept:  Say yes and it is already built; say no and it needs a removal control.
+
+### 84. Eight test files are blocked on a retired helper
+what:     Eight test files cannot run because their setup uses a function that was retired, while the things they test are live.
+where:    Tests
+raised:   1 report, 2026-08-12 · sources: TASK-TESTDB-REPORT.md
+checked:  Unchanged; the retired helper is still referenced by those fixtures.
+rank:     3
+moot?:
+if kept:  Rewrite the fixtures onto the current spine, or lose that coverage deliberately.
+
+### 85. Parallel threads in one folder keep losing work
+what:     Several sessions working in the same folder have repeatedly overwritten or mis-attributed each other's work.
+where:    Process
+raised:   8 reports, earliest 2026-08-04 · sources: TASK-B-REPORT.md, TASK-A8B-REPORT.md, TASK-COUNTFIX-REPORT.md, TASK-CONTRACTORPHAN-REPORT.md, TASK-LEASEFIX-REPORT.md
+checked:  A pre-commit hook now blocks code commits in the shared folder (.git/fhe-hooks/pre-commit, 2026-08-10) and it caught one thread this week — but a different thread still swept another's files into its commit on 2026-08-16.
+rank:     3
+moot?:
+if kept:  Make the worktree rule the first line of every task doc, or block more than commits.
+
+### 86. The dry-run wrapper does not always dry-run
+what:     Four times, a migration's own transaction defeated the house dry-run and applied the change for real.
+where:    Process — migrations
+raised:   4 reports, earliest 2026-08-02 · sources: TASK-C-REPORT.md, TASK-R11-REPORT.md, TASK-SENDGUARD-REPORT.md, TASK-INVITEFLOW-REPORT.md
+checked:  Nothing prevents it; the convention in CLAUDE.md does not mention the failure mode.
+rank:     3
+moot?:
+if kept:  One sentence in the convention: a migration must not contain its own COMMIT.
+
+### 87. The member directory is open to any account holder, not just members
+what:     Anyone with an account can read the member directory, while the other community features require active membership.
+where:    Community — directory
+raised:   1 report, 2026-08-07 · sources: TASK-SECFIX2-REPORT.md
+checked:  Prod: the function's only gates are "signed in" and "not suspended". Your access ruling says community access is by account, so this may be correct — the drift is with the other ten tables.
+rank:     3
+moot?:
+if kept:  Decide which rule is right, then make all eleven agree.
+
+### 88. There is no way for staff to see what a party sees
+what:     Nobody can preview a document as the other party, which is why every party-visibility question stays open.
+where:    Staff app — documents
+raised:   1 report, 2026-08-04 · sources: TASK-A-PARTY-VERIFY-REPORT.md
+checked:  No such capability exists in src/ (unchanged).
+rank:     3
+moot?:
+if kept:  A staff-only "view as" lens — it would close several other items on this sheet.
+
+### 89. You cannot create an instructor account
+what:     The team screen can only invite administrators, so the instructor role the security work made real cannot be granted without a developer.
+where:    Staff app — Team
+raised:   1 report, 2026-08-12 · sources: TASK-GUARDREST-REPORT.md
+checked:  Unchanged; the invite path still sends admin only.
+rank:     3
+moot?:
+if kept:  A role picker on the invite form.
+
+### 90. A horse's owner cannot read a file someone else uploaded
+what:     A vet certificate uploaded by one member is not readable by the horse's owner.
+where:    Files
+raised:   1 report, 2026-08-11 · sources: TASK-UPLOADS-REPORT.md
+checked:  No cross-member read policy exists (unchanged).
+rank:     3
+moot?:
+if kept:  One policy arm plus a matching storage rule, before the horse-record file UI.
+
+### 91. Members cannot attach a file to a record
+what:     Only staff can put a file onto a horse or contract record; a member cannot.
+where:    Files
+raised:   1 report, 2026-08-11 · sources: TASK-UPLOADS-REPORT.md
+checked:  Prod policy list: the link table has an owner-read and an owner-unlink policy, no member-create arm.
+rank:     3
+moot?:
+if kept:  A per-subject permission check that does not exist yet.
+
+### 92. Nine places that should show files show none
+what:     Files exist but none of the nine records that should display them do (deal, contract, horse, stable, lessons, catalog, leads, directory, community).
+where:    Files
+raised:   1 report, 2026-08-11 · sources: TASK-UPLOADS-REPORT.md
+checked:  Unchanged — the surfaces were deliberately not built; each has a listed layout and permission question.
+rank:     3
+moot?:
+if kept:  Pick which two or three matter and build those.
+
+### 93. Members cannot download a published company guide
+what:     The community resources card has no download control, so a published guide cannot be opened.
+where:    Community — resources
+raised:   1 report, 2026-08-11 · sources: TASK-UPLOADS-REPORT.md
+checked:  Unchanged; the reader exists, the control does not.
+rank:     3
+moot?:
+if kept:  The smallest remaining piece of the company-files loop.
+
+### 94. Removing an account leaves its files ownerless
+what:     The removal routine knows nothing about files, so a departing member's files are left pointing at nobody.
+where:    Files, accounts
+raised:   1 report, 2026-08-11 · sources: TASK-UPLOADS-REPORT.md
+checked:  Unchanged. Your later ruling says accounts are archived, not purged, which changes the question rather than answering it.
+rank:     3
+moot?:
+if kept:  Say where a departing member's files go.
+
+### 95. Who owns a lead's file
+what:     A lead has no account, so a file "owned" by that lead is readable by nobody as theirs.
+where:    Files — leads
+raised:   1 report, 2026-08-11 · sources: TASK-UPLOADS-REPORT.md
+checked:  Unchanged.
+rank:     3
+moot?:
+if kept:  One ruling: org-owned, or staff-only.
+
+### 96. Whether directory files belong to the business
+what:     A farrier's insurance certificate that the stable holds is probably the business's file, not the farrier's — unconfirmed.
+where:    Files — directory
+raised:   1 report, 2026-08-11 · sources: TASK-UPLOADS-REPORT.md
+checked:  Unchanged.
+rank:     3
+moot?:
+if kept:  One ruling before the directory file UI is built.
+
+### 97. What a lesson file attaches to
+what:     Whether a lesson file belongs to the package, the session or the credit must be decided before any are stored.
+where:    Files — lessons
+raised:   1 report, 2026-08-11 · sources: TASK-UPLOADS-REPORT.md
+checked:  Unchanged; re-pointing later is a data migration.
+rank:     3
+moot?:
+if kept:  One ruling.
+
+### 98. The signed-document card's history trail was never built
+what:     The specified trail on a signed document (created, sent, signed, sent to you) was never built.
+where:    Member app — documents
+raised:   1 report, 2026-08-06 · sources: TASK-A-PARTY-VERIFY-2-REPORT.md
+checked:  Unchanged; the delivery table now has a party-read arm, so the data is reachable.
+rank:     3
+moot?:
+if kept:  A card change plus one extra column on the member's reader.
+
+### 99. Your own invite link landed on a page that did not work
+what:     You reported your own contract invite link landing on a page that did nothing, and it was never reproduced or explained.
+where:    Contract invitations
+raised:   1 report, 2026-08-06 · sources: TASK-A-PARTY-VERIFY-2-REPORT.md
+checked:  No reproduction exists; nothing in the tree records a cause.
+rank:     3
+moot?:
+if kept:  Needs you to click it again with the browser console open.
+
+### 100. Direct navigation to an app URL failed in your browser
+what:     Typing or pasting an app address failed in your Chrome session but worked in Safari, and the cause was never found.
+where:    App — startup
+raised:   1 report, 2026-08-06 · sources: TASK-A-PARTY-VERIFY-2-REPORT.md
+checked:  Suspected auth-bootstrap hang; unproven, and nothing since has re-tested it.
+rank:     3
+moot?:
+if kept:  One live reproduction with devtools open — if it still happens, it is the most user-visible item on this sheet.
+
+### 101. The company as a signing party cannot be verified at all
+what:     When the company is a party to a document, no login can ever be that party, so that side can never be checked.
+where:    Contracts — company party
+raised:   2 reports, earliest 2026-08-04 · sources: TASK-A-PARTY-VERIFY-REPORT.md, TASK-PARTYRLS-REPORT.md
+checked:  Structural and unchanged: no account can equal the company contact, and the shared staff login bypasses party gating.
+rank:     3
+moot?:
+if kept:  This is what the "view as" lens in item 88 would solve.
+
+### 102. Kiosk signers have no route to their own document
+what:     Someone who signs at the kiosk gets a contact record with no login and no way to reach the document they signed.
+where:    Kiosk — /release
+raised:   2 reports, earliest 2026-08-02 · sources: POST_RUN_CLOSEOUT.md
+checked:  Unchanged; the promotion path and short URLs were deferred by you to a separate task that was never written.
+rank:     3
+moot?:
+if kept:  The deferred kiosk-to-account task.
+
+### 103. Kiosk signatures raise no staff alert
+what:     When someone signs at the kiosk, no notification of any kind is raised.
+where:    Kiosk — /release
+raised:   1 report, 2026-08-04 · sources: TASK-A16-REPORT.md
+checked:  Prod: the kiosk signing function still raises no notification; the party-signed alert covers only the in-app path.
+rank:     3
+moot?:
+if kept:  One call, copied from the in-app path.
+
+### 104. The sessionless release flow stopped at your gate
+what:     Hardening the release flow hit your stop-and-show gate; three options were written and nothing was applied.
+where:    Kiosk — /release
+raised:   1 report, 2026-08-02 · sources: PROMPT_A_STAGES_4-5.md
+checked:  api/sign-release.ts has changed since (other work) but the authorization question is unanswered.
+rank:     3
+moot?:
+if kept:  Pick one of the three options.
+
+### 105. The horse-scoped supersession still has to answer the blank-horse case
+what:     Superseding a horse document now respects the horse, but what happens when the old document names no horse is unanswered.
+where:    Documents — horse paperwork
+raised:   1 report, 2026-08-10 · sources: TASK-HORSEDOCS-REPORT.md
+checked:  Prod: the function is now horse-scoped (see CLOSED.md); the blank-horse case means one person keeps two live documents per template.
+rank:     3
+moot?:
+if kept:  One rule for the blank case.
+
+### 106. The cleanup of the two broken documents is written and unapplied
+what:     The migration that removes the two broken documents exists, dry-run, and was deliberately not applied because you were going to remove them yourself.
+where:    Documents
+raised:   2 reports, earliest 2026-08-11 · sources: TASK-CONTRACTORPHAN-REPORT.md
+checked:  Prod: the two documents are still there (item 2). Removing them will regenerate two fresh replacements on the next horse-document run.
+rank:     3
+moot?:
+if kept:  Apply it, or do it yourself — but items 2 and 3 stay live until one of those happens.
+
+### 107. The kiosk page should be labelled destructive in the review list
+what:     The kiosk signing page signs a real document, and the review list does not warn about that.
+where:    Staff app — Review
+raised:   1 report, 2026-08-12 · sources: TASK-DUPECENSUS-REPORT.md
+checked:  src/lib/reviewSection.ts has changed since the baseline; the warning is still absent for that slot.
+rank:     3
+moot?:
+if kept:  One sentence in the review list.
+
+### 108. The documents page's management functions were never started
+what:     Filters, sorting, multi-select, delete and the "send" wording on the documents page were never built.
+where:    Staff app — Documents
+raised:   1 report, 2026-08-04 · sources: HANDOFF_DEAL_SALE_BUILD_2026-08-04.md
+checked:  Partly overtaken: the queue now has presets and column control. Multi-select and delete arrived on the Records tabs, not here.
+rank:     3
+moot?:
+if kept:  Re-specify against what the queue has become.
+
+### 109. The templates tab from the design was never built
+what:     The full version-control workflow for templates was never attempted.
+where:    Staff app — Documents/Templates
+raised:   1 report, 2026-08-11 · sources: TASK-DOCQUEUE-REPORT.md
+checked:  A wording editor now exists under Review; the version-control workflow does not.
+rank:     3
+moot?:
+if kept:  A separate, much larger spec.
+
+### 110. Where flat documents should open is your call
+what:     Simple documents open in one editor only by typed URL; routing them all there would lose the send/mail panel the other viewer has.
+where:    Staff app — documents
+raised:   1 report, 2026-08-11 · sources: TASK-ONEAUTHOR-REPORT.md
+checked:  Unchanged.
+rank:     3
+moot?:
+if kept:  One decision, then a one-line routing change.
+
+### 111. No real transaction has ever filled in the insurance section
+what:     The whole insurance section has never been completed by a real lease — all twenty-two fields are empty on every current document.
+where:    Lease documents
+raised:   2 reports, earliest 2026-08-02 · sources: TASK-LEASEMAP-REPORT.md, PROMPT_A_STAGES_4-5.md
+checked:  Prod: the one executed lease predates the model and the live drafts are empty.
+rank:     3
+moot?:
+if kept:  Fill one in on a test document — it would settle a dozen items below.
+
+### 112. Nothing records whether proof of insurance was ever provided
+what:     Four clauses say proof of coverage will be provided on request, and there is no field, upload, date or status anywhere to record it.
+where:    Lease documents
+raised:   1 report, 2026-08-07 · sources: TASK-LEASEMAP-REPORT.md
+checked:  Unchanged.
+rank:     3
+moot?:
+if kept:  One field and one upload slot.
+
+### 113. Full versus partial lease never reaches the insurance section
+what:     Whether a lease is full or partial — the distinction you were worried about — is invisible to every rule in the insurance section.
+where:    Lease documents
+raised:   1 report, 2026-08-07 · sources: TASK-LEASEMAP-REPORT.md
+checked:  Unchanged.
+rank:     3
+moot?:
+if kept:  Wire the lease type into those gates.
+
+### 114. The vocabulary has no word for "cannot get cover"
+what:     A Lessee who cannot lawfully obtain a cover has only bad options: say something untrue, promise the impossible, leave the document unsignable, or drop the requirement.
+where:    Lease documents
+raised:   2 reports, earliest 2026-08-07 · sources: TASK-LEASEMAP-REPORT.md, TASK-LEASEGATE-PHASE1.md
+checked:  Unchanged.
+rank:     3
+moot?:
+if kept:  Add the missing status word, then decide what it prints.
+
+### 115. The insurance rules as written would break your live arrangement
+what:     The proposed insurance rules would make your existing no-insurance client arrangement impossible to execute.
+where:    Lease documents
+raised:   1 report, 2026-08-07 · sources: TASK-LEASEGATE-PHASE1.md
+checked:  Unchanged and unbuilt — the thread stopped here deliberately.
+rank:     3
+moot?:
+if kept:  Answer what replaces the waiver, then the rules can be built.
+
+### 116. Two of the proposed rules contradict each other
+what:     Two of the proposed insurance rules cancel each other out when tested against the live rule engine.
+where:    Lease documents
+raised:   1 report, 2026-08-07 · sources: TASK-LEASEGATE-PHASE1.md
+checked:  Verified against the live evaluator at the time; unchanged.
+rank:     3
+moot?:
+if kept:  Same answer as item 115.
+
+### 117. The proposed rules would land on a template no document uses
+what:     The planned rules were aimed at a template no document is on, so no new lease would get them.
+where:    Lease templates
+raised:   1 report, 2026-08-07 · sources: TASK-LEASEGATE-PHASE1.md
+checked:  Prod: that template is now inactive; new leases still start from the live one.
+rank:     3
+moot?:
+if kept:  Aim the work at the live template.
+
+### 118. Whether the signing block should be stricter
+what:     The rule that blocks signing on unresolved insurance already exists; the question is whether a promise should be enough to clear it.
+where:    Lease documents
+raised:   2 reports, earliest 2026-08-07 · sources: TASK-LEASEGATE-PHASE1.md
+checked:  Prod: the blocker still clears on a promise rather than a policy.
+rank:     3
+moot?:
+if kept:  One decision.
+
+### 119. Nothing forces the value the rules would require
+what:     Even with the rules built, nothing sets the required value, and an empty required field blocks signing.
+where:    Lease documents
+raised:   2 reports, earliest 2026-08-07 · sources: TASK-LEASEGATE-PHASE1.md
+checked:  Unchanged.
+rank:     3
+moot?:
+if kept:  Part of the same design.
+
+### 120. The form side of the same design was never done
+what:     The editing form would need the same "not eligible" treatment as the document, and that design does not exist.
+where:    Contracts — editor
+raised:   2 reports, earliest 2026-08-07 · sources: TASK-LEASEGATE-PHASE1.md
+checked:  Unchanged.
+rank:     3
+moot?:
+if kept:  Part of the same design.
+
+### 121. The "not eligible" control was written against a frozen file
+what:     The change that would show a field as not eligible was written but never compiled, because the file was frozen at the time.
+where:    Contracts — editor
+raised:   1 report, 2026-08-07 · sources: TASK-LEASEGATE-PHASE1.md
+checked:  That file has since been edited by other work, so the freeze no longer applies.
+rank:     3
+moot?:
+if kept:  Re-derive the change against today's file.
+
+### 122. Whether the Lessor's own coverage should gate anything
+what:     The Lessor's own-coverage answer currently affects nothing, deliberately.
+where:    Lease documents
+raised:   1 report, 2026-08-10 · sources: TASK-LEASEFIX-REPORT.md
+checked:  Prod: still gates nothing.
+rank:     3
+moot?:
+if kept:  One decision.
+
+### 123. Three insurance clauses still say "pending legal review"
+what:     Three insurance clauses carry placeholder text instead of real language.
+where:    Lease documents
+raised:   1 report, 2026-08-02 · sources: PROMPT_A_STAGES_4-5.md
+checked:  Prod clause bodies unchanged; the signing block is what stops a placeholder reaching a signed document.
+rank:     3
+moot?:
+if kept:  Real wording from you or Claire.
+
+### 124. A staged rule change is waiting on a coherence ruling
+what:     A set of deductible rules is written and staged, and must not be applied until the insurance section is coherent.
+where:    Lease documents
+raised:   3 reports, earliest 2026-08-01 · sources: PROMPT_A_STAGES_1-3.md, PROMPT_A_STAGES_4-5.md
+checked:  Unchanged and unapplied.
+rank:     3
+moot?:
+if kept:  Apply after items 111-120 are answered, not before.
+
+### 125. The "not required" checkbox assumes you are always the Lessor
+what:     A carve-out that lets staff tick "not required" assumes the stable is the Lessor, which is not true for a lease in the other direction.
+where:    Lease documents
+raised:   1 report, 2026-08-06 · sources: TASK-A-PARTY-VERIFY-2-REPORT.md
+checked:  Unchanged.
+rank:     3
+moot?:
+if kept:  Decide whether staff may ever fill the other party's exclusive fields.
+
+### 126. Four lease templates are identical copies
+what:     The Standard, Simple and Detailed leases are byte-identical, so every wording change is written four times.
+where:    Templates — leases
+raised:   4 reports, earliest 2026-08-11 · sources: TASK-ONEAUTHOR-REPORT.md, TASK-LEASESET-REPORT.md, TASK-DUPECENSUS-REPORT.md
+checked:  Prod: the three active leases are still identical; the fourth clone is now inactive. This is your ruled state (D10) — it stays until you modify one.
+rank:     3
+moot?:
+if kept:  Nothing, unless you want the Simple lease to actually differ — which is item 127's worksheet.
+
+### 127. The simple lease's content decision is blank
+what:     The worksheet that decides what a simple lease contains has an empty keep-or-cut column on all 144 rows.
+where:    Templates — simple lease
+raised:   1 report, 2026-08 · sources: TASK-LEASESIMPLE-REPORT.md
+checked:  Unchanged; you and Claire are the only people who can fill it.
+rank:     3
+moot?:
+if kept:  144 keep/cut decisions, or a shorter starting list.
+
+### 128. Retiring the original lease deletes body text
+what:     The original lease is inactive but still holds its full body and 98 orphan field rows; retiring it properly deletes wording that might be wanted back.
+where:    Templates — original lease
+raised:   4 reports, earliest 2026-08-01 · sources: PROMPT_A_STAGES_1-3.md, TASK-LEASEFORK-REPORT.md
+checked:  Prod: still inactive with an 18,253-byte body and 0 documents.
+rank:     3
+moot?:
+if kept:  Your ruling already says keep it as reference — this item is asking whether the orphan field rows go.
+
+### 129. Twelve simple documents were never converted to the clause engine
+what:     Twelve documents are still flat text rather than built from clauses, so they cannot be edited the way the leases can.
+where:    Templates
+raised:   1 report, 2026-08-11 · sources: TASK-ONEAUTHOR-REPORT.md
+checked:  Unchanged; the four negotiated commercial agreements were recommended first.
+rank:     3
+moot?:
+if kept:  Three to five sessions, sequenced by value.
+
+### 130. The bill of sale cannot be started on its own
+what:     There is no way to author a bill of sale by itself — it has no card and no entry point.
+where:    Staff app — new document
+raised:   2 reports, earliest 2026-08-04 · sources: TASK-DOCQUEUE-REPORT.md, HANDOFF_DEAL_SALE_BUILD_2026-08-04.md
+checked:  Prod: the standalone starter function exists and has no caller anywhere in src/.
+rank:     3
+moot?:
+if kept:  One card wired to the function that already exists.
+
+### 131. The sale agreement was kept live without a decision
+what:     After the bill of sale became the main instrument, the older sale agreement was kept live anyway, without sign-off.
+where:    Templates — sale
+raised:   1 report, 2026-08-04 · sources: HANDOFF_DEAL_SALE_BUILD_2026-08-04.md
+checked:  Prod: still active.
+rank:     3
+moot?:
+if kept:  Keep or retire — one flag.
+
+### 132. The sworn affidavit does not exist
+what:     The affidavit that absorbed the notary requirement has no content, no template and nowhere for the notary block.
+where:    Templates — sale
+raised:   1 report, 2026-08-04 · sources: HANDOFF_DEAL_SALE_BUILD_2026-08-04.md
+checked:  Prod: no such template exists.
+rank:     3
+moot?:
+if kept:  Wording first, then a template.
+
+### 133. Two placeholders both mean "the document id"
+what:     Two differently-named placeholders both print the document id; one of the two names is wrong.
+where:    Templates — placeholders
+raised:   2 reports, earliest 2026-08-12 · sources: TASK-TOKENAUDIT-REPORT.md, TASK-TEXTEDIT-REPORT.md
+checked:  Prod, re-checked today: both rows still map to the same column. Unused, so nothing breaks yet.
+rank:     3
+moot?:
+if kept:  Rename one, or repoint it at the order number.
+
+### 134. Seventeen placeholders always print blank
+what:     Seventeen placeholders about an enquiry always print blank, because the questions they read were never built.
+where:    Templates — placeholders
+raised:   1 report, 2026-08-12 · sources: TASK-TOKENAUDIT-REPORT.md
+checked:  Prod: unchanged; their notes already say "do not place".
+rank:     3
+moot?:    ASKRIGHT builds the questions these would read.
+if kept:  Build or retire once ASKRIGHT lands.
+
+### 135. Several placeholders are duplicates of each other
+what:     Three sets of placeholders print identical output under different names, which is how a document ends up inconsistent.
+where:    Templates — placeholders
+raised:   1 report, 2026-08-12 · sources: TASK-TOKENAUDIT-REPORT.md
+checked:  Prod: all still present (360 rows today, up from 307).
+rank:     3
+moot?:
+if kept:  Hide the duplicates from the picker; keep the rows.
+
+### 136. Placeholder descriptions can only be edited in the database
+what:     The descriptions that explain each placeholder are stored in the database with no screen to edit them.
+where:    Templates — placeholders
+raised:   1 report, 2026-08-12 · sources: TASK-TOKENAUDIT-REPORT.md
+checked:  Unchanged; the picker reads them, nothing writes them.
+rank:     3
+moot?:
+if kept:  A small editor — this is the pattern your no-developer rule exists to stop.
+
+### 137. Half of one authoring change was not built
+what:     The "collapse a switched-off clause to its title" half of an authoring change was deliberately not built.
+where:    Contracts — editor
+raised:   1 report, 2026-08-04 · sources: TASK-R11-REPORT.md
+checked:  Unchanged.
+rank:     3
+moot?:
+if kept:  Confirm that is what you meant, then it is a small change.
+
+### 138. Four people appear on no list
+what:     You, Claire, the company and the platform company are filed as "team" and no screen lists them.
+where:    Staff app — Records
+raised:   1 report, 2026-08-12 · sources: TASK-DUPECENSUS-REPORT.md
+checked:  Prod: still 4 team-typed contacts; the Records "all" tab still excludes them and the Team screen reads accounts, not contacts.
+rank:     3
+moot?:
+if kept:  Either a Team tab that reads contacts, or accept that they live in configuration.
+
+### 139. Whether working a lead should mark it converted
+what:     Scheduling a lesson for a lead is the only thing that would mark the enquiry converted, and it has never happened.
+where:    Staff app — Leads
+raised:   1 report, 2026-08-11 · sources: TASK-LEADCLEAN-REPORT.md
+checked:  Prod, re-run: statuses are contacted 6, expired 1, new 9 — still no converted row.
+rank:     3
+moot?:    LESSONREQUEST owns request-to-first-lesson and will decide this by building it.
+if kept:  One line, or let LESSONREQUEST answer it.
+
+### 140. Nothing that converts a lead files them correctly
+what:     Whatever turns a worked lead into a client does not set their type or go through the account spine.
+where:    Staff app — Leads
+raised:   1 report, 2026-08-10 · sources: TASK-ROSTER-REPORT.md
+checked:  Prod: no automated path writes the type; the manual filing control is still the only writer. Same root as item 11.
+rank:     3
+moot?:
+if kept:  Fix with item 11 — one change serves both.
+
+### 141. Bare contacts are not flagged as un-contacted
+what:     A person with no client record gets no "not yet invited" flag even though nobody has reached out to them either.
+where:    Staff app — Clients
+raised:   1 report, 2026-08-11 · sources: TASK-ROSTERCARD-REPORT.md
+checked:  src/lib/admin.ts has changed since the baseline but still defines the three kinds with no bare-contact flag.
+rank:     3
+moot?:
+if kept:  One flag, same shape as the pending one.
+
+### 142. What a staff-created booking should carry
+what:     279 of 319 bookings have no client and 318 have no purchase — the ledger records almost no links, and what a staff-created booking should carry is unruled.
+where:    Bookings
+raised:   4 reports, earliest 2026-08-11 · sources: TASK-GUARDREST-REPORT.md, TASK-BOOKWRITE-REPORT.md, TASK-ADMINSWEEP-PHASE1.md
+checked:  Prod, re-run: 319 bookings, 279 with no client (was 294 — the lesson bookings were linked and the constraint validated by the booking work), 318 with no purchase.
+rank:     3
+moot?:
+if kept:  Decide what a NULL client means; the backfill of the rest was recommended against.
+
+### 143. The wording editor lives under a temporary menu
+what:     The screen that edits document wording sits under the temporary Review section instead of Settings.
+where:    Staff app — Templates
+raised:   1 report, 2026-08-12 · sources: TASK-TEXTEDIT-REPORT.md
+checked:  src/lib/reviewSection.ts still owns its nav entry; no Settings row exists.
+rank:     3
+moot?:
+if kept:  One line, once you accept the page.
+
+### 144. Whether the staff menu was meant to go green
+what:     The staff menu was made green as an interpretation, and reverting it now means forking the shared styling.
+where:    Staff app — navigation
+raised:   1 report, 2026-08-08 · sources: TASK-ONEHEADER-REPORT.md
+checked:  Unchanged; the constants are shared by five components.
+rank:     3
+moot?:
+if kept:  One look at a screen and a yes or no.
+
+### 145. Members have no way to create anything from the chrome
+what:     A regular member has no create button anywhere in the header or menu.
+where:    Member app
+raised:   2 reports, earliest 2026-08-06 · sources: TASK-HEADER-REPORT.md, TASK-UPLOADS-REPORT.md
+checked:  Unchanged; the create control is staff-side only.
+rank:     3
+moot?:
+if kept:  Decide what a member can create, then one button.
+
+### 146. Whether members should see a Lessons menu row
+what:     The member Lessons row is built and switched on, awaiting a yes or no.
+where:    Member app — navigation
+raised:   1 report, 2026-08-05 · sources: TASK-UIPOLISH-REPORT.md
+checked:  Prod: the lessons module is on, so every member sees it today.
+rank:     3
+moot?:
+if kept:  One line either way.
+
+### 147. The account page's section order was never chosen
+what:     The ten rows on the account page are in the order they happened to be in, not an order you picked.
+where:    Member app — Account
+raised:   1 report, 2026-08-05 · sources: TASK-ACCOUNTSURFACE-REPORT.md
+checked:  Unchanged; no ordering decision is recorded anywhere.
+rank:     3
+moot?:
+if kept:  Ten rows, one ranking.
+
+### 148. My Posts has no create control inside the account page
+what:     The inline version of My Posts has no "new post" control; only the full page does.
+where:    Member app — Account
+raised:   1 report, 2026-08-05 · sources: TASK-ACCOUNTSURFACE-REPORT.md
+checked:  Unchanged.
+rank:     3
+moot?:
+if kept:  One button.
+
+### 149. The identity design's phased build does not exist
+what:     None of the five phases of the identity design were built.
+where:    Identity
+raised:   1 report, 2026-08-06 · sources: TASK-ACCTEVAL-REPORT.md
+checked:  Prod: the named columns and tables are still absent, and the index the design marks removed is still there.
+rank:     3
+moot?:
+if kept:  Decide whether that design is still the plan before anything cites it again.
+
+### 150. Review menu rows cannot be hidden, on purpose
+what:     The temporary Review rows are deliberately absent from the page-visibility list, because their position is their status.
+where:    Staff app — Review
+raised:   1 report, 2026-08-12 · sources: TASK-PAGEVIS-REPORT.md
+checked:  src/lib/pageRegistry.ts still records the deliberate exclusion.
+rank:     3
+moot?:
+if kept:  Confirm you are content not to be able to hide one; it self-resolves when Review empties.
+
+### 151. The route table belongs to nobody
+what:     The file that lists every page in the app has no owner and no merge rule, and it is where parallel work collides.
+where:    Codebase — App.tsx
+raised:   1 report, 2026-08-11 · sources: TASK-ADMINSWEEP-PHASE2.md
+checked:  It has changed since the baseline and still carries no ownership note; the layout file has one.
+rank:     3
+moot?:
+if kept:  A header comment naming it shared, and the merge rule.
+
+### 152. One 130KB file holds fifteen open items
+what:     The main layout file is 130KB and fifteen items on this sheet point into it, so every one of them is a merge risk.
+where:    Codebase — AppLayout.tsx
+raised:   1 report, 2026-08-08 · sources: TASK-ONEHEADER-REPORT.md
+checked:  Measured today: 130,405 bytes. Still one file.
+rank:     3
+moot?:
+if kept:  A scheduled split with a merge freeze — never alongside other work.
+
+### 153. The menu's dimensions are recorded nowhere
+what:     The mobile menu's size was to be changed "per the owner" and no number exists anywhere, so it was not built.
+where:    Member app — mobile menu
+raised:   1 report, 2026-08-08 · sources: TASK-ONEHEADER-REPORT.md
+checked:  Still at the original width; no dimension recorded in any document.
+rank:     3
+moot?:
+if kept:  One number, or close it as "current width accepted".
+
+### 154. The euthanasia change: new records only or all
+what:     Whether the euthanasia-authorization change applies to existing horses or only new ones was never answered, and the form change waits behind it.
+where:    Horses
+raised:   2 reports, 2026-08 · sources: TASK-HORSEINTAKE-REPORT.md
+checked:  Prod, re-run: all 4 horses are option B, so nothing needs migrating today — it becomes a migration the first time someone records an A.
+rank:     3
+moot?:
+if kept:  Free to answer now; costs a migration later.
+
+### 155. The three material languages were correctly not built
+what:     Giving the header, menu and buttons three distinct materials was not built, and its premise changed when the header was replaced.
+where:    Design
+raised:   1 report, 2026-08-08 · sources: TASK-MOBILEPASS-REPORT.md
+checked:  Not built (grep → 0 hits in src/); the header it described is shelved.
+rank:     3
+moot?:
+if kept:  Re-specify before building — the current doc describes a header that is gone.
+
+### 156. Sign out is only in the avatar menu
+what:     Sign out is reachable only through the avatar menu, for every role, on every device.
+where:    App — navigation
+raised:   1 report, 2026-08-07 · sources: TASK-ONEMENU-PHASE1-PLAN.md
+checked:  The mobile menu now carries a footer with sign out; the desktop dropdown is still the only desktop route.
+rank:     3
+moot?:
+if kept:  A desktop replacement, if you want the dropdown gone.
+
+### 157. Three menu recommendations were never confirmed
+what:     Three decisions about the menu were answered as recommendations, and the next phase was to build against them.
+where:    App — navigation
+raised:   1 report, 2026-08-07 · sources: TASK-ONEMENU-PHASE1-PLAN.md
+checked:  No sign-off is recorded; the work continued anyway.
+rank:     3
+moot?:
+if kept:  Confirm or overrule the three.
+
+### 158. Is the avatar a button or a decoration
+what:     One place treats the avatar as a live control and a commit message rules it inert; the two readings produce different components.
+where:    App — header
+raised:   1 report, 2026-08-07 · sources: TASK-ONEMENU-PHASE1-PLAN.md
+checked:  Today the tenant avatar is an inert monogram; the contradiction was never reconciled in writing.
+rank:     3
+moot?:
+if kept:  One sentence settles it.
+
+### 159. Should the header shrink on scroll
+what:     The header was built at a fixed height as the safer default; whether it should shrink as you scroll is your call.
+where:    App — header
+raised:   1 report, 2026-08-08 · sources: TASK-ONEHEADER-REPORT.md
+checked:  Still fixed height.
+rank:     3
+moot?:
+if kept:  One decision.
+
+### 160. The third header question was never asked
+what:     A third question about the header was cut off mid-sentence in the task doc and nobody ever asked you what it was.
+where:    App — header
+raised:   1 report, 2026-08-08 · sources: TASK-ONEHEADER-REPORT.md
+checked:  Still unknown.
+rank:     3
+moot?:
+if kept:  Say what it was, or drop it.
+
+### 161. Hiding a page still does not hide its menu row
+what:     The page-visibility screen changes a status tile but not the menu, because the change to the menu was held.
+where:    Staff app — page visibility
+raised:   2 reports, earliest 2026-08-12 · sources: TASK-PAGEVIS-REPORT.md
+checked:  The layout file has changed since for other reasons; the held patch is still not applied, so hiding a page still does not remove its row.
+rank:     3
+moot?:
+if kept:  Apply the proven patch, then item 162's rule follows.
+
+### 162. If those child rows are rejected, the hiding rule must change
+what:     Hiding a section without child menu rows would strand its child pages, so the two decisions are joined.
+where:    Staff app — page visibility
+raised:   1 report, 2026-08-12 · sources: TASK-PAGEVIS-REPORT.md
+checked:  Unchanged.
+rank:     3
+moot?:
+if kept:  Decide with item 161.
+
+### 163. Three app pages cannot be hidden at all
+what:     Messages, Calendar and Catalog are written directly into the menu rather than listed, so the visibility screen has no row to remove.
+where:    Staff app — page visibility
+raised:   1 report, 2026-08-12 · sources: TASK-PAGEVIS-REPORT.md
+checked:  Unchanged in the layout file.
+rank:     3
+moot?:
+if kept:  Restructure that block into a list.
+
+### 164. Accepting a page out of Review needs a developer
+what:     Moving a page out of the Review section is a code change, not a button — which conflicts with your no-developer rule.
+where:    Staff app — Review
+raised:   1 report, 2026-08-12 · sources: TASK-REVIEWNAV-REPORT.md
+checked:  Unchanged.
+rank:     3
+moot?:
+if kept:  Accept it (the acceptance work is the re-bucketing itself), or name a real follow-up.
+
+### 165. You cannot switch a module off yourself
+what:     Every module is on, and only the platform screen can switch one off — you can only hide its pages.
+where:    Staff app — modules
+raised:   1 report, 2026-08-12 · sources: TASK-PAGEVIS-REPORT.md
+checked:  Prod: all six modules enabled; the module screen still requires the platform account.
+rank:     3
+moot?:
+if kept:  A tenant-side module switch, if you want one.
+
+### 166. Eleven pages still use the old big title
+what:     Eleven member pages still carry the old large green title instead of the new page frame.
+where:    Member app
+raised:   1 report, 2026-08-05 · sources: TASK-PAGETITLES-REPORT.md
+checked:  Unchanged for those pages.
+rank:     3
+moot?:
+if kept:  Rule whether the new default extends to them, then it is mechanical.
+
+### 167. The contract page was left out of the page frame
+what:     The document page was deliberately not converted to the shared page frame, because forcing it would reintroduce an old width bug.
+where:    Staff app — document page
+raised:   1 report, 2026-08-11 · sources: TASK-PAGEFRAME-REPORT.md
+checked:  Unchanged; the page is 128KB with its own header.
+rank:     3
+moot?:
+if kept:  A real design call about that page's header.
+
+### 168. The avatar's open state looks the same as pressed
+what:     When the avatar menu is open the avatar looks identical to being pressed; three rendered options were prepared for you to pick from.
+where:    App — header
+raised:   2 reports, earliest 2026-08-10 · sources: TASK-UIBUILD-LOG.md, TASK-NAVMOTION-REPORT.md
+checked:  Unchanged; the options file still exists in docs/reference/.
+rank:     3
+moot?:
+if kept:  Look at three pictures and pick one.
+
+### 169. One overflow fix is still unmade in the document editor
+what:     A label that never wraps sits inside a narrow grid cell in the document editor, which can push the page sideways on a phone.
+where:    Contracts — editor
+raised:   2 reports, earliest 2026-08-11 · sources: TASK-FRAMESCROLL-REPORT.md
+checked:  Half is fixed: the grid now has a zero minimum. The never-wrap label is still there (ClauseDocument.tsx:563).
+rank:     3
+moot?:
+if kept:  One class.
+
+### 170. A frozen file was edited before anyone knew it was frozen
+what:     A file that was off limits was edited without knowing, and the edit was left in place pending your ruling.
+where:    Contracts — editor
+raised:   1 report, 2026-08-10 · sources: TASK-LEASEFIX-REPORT.md
+checked:  That file has since been edited by other work, so the freeze is no longer in force.
+rank:     3
+moot?:
+if kept:  Nothing to do — the freeze lapsed.
+
+### 171. Fields you cannot edit are greyed out as well as explained
+what:     Fields belonging to the other party are both dimmed and explained by a tooltip; you said you preferred the tooltip instead of greying out.
+where:    Contracts — editor
+raised:   1 report, 2026-08-06 · sources: TASK-CHECKBOXTIP-REPORT.md
+checked:  Dimming is still applied.
+rank:     3
+moot?:
+if kept:  One line to remove the dimming.
+
+### 172. Two account sections need a design decision before expanding
+what:     My Lessons and Documents cannot be expanded inline on the account page without a decision about their network calls and height.
+where:    Member app — Account
+raised:   1 report, 2026-08-07 · sources: TASK-ACCOUNTSURFACE-PHASE1.md
+checked:  Unchanged.
+rank:     3
+moot?:
+if kept:  One decision each.
+
+### 173. An unfinished added item is saved per browser
+what:     A half-written added clause is kept in the browser, not the account, so two staff on one document keep separate drafts.
+where:    Contracts — add item
+raised:   1 report, 2026-08-12 · sources: TASK-ADDITEM-REPORT.md
+checked:  Unchanged.
+rank:     3
+moot?:
+if kept:  A server-side draft is a separate spec.
+
+### 174. Staff have no landing page
+what:     Two staff landing pages exist and neither is reachable, so an instructor lands nowhere.
+where:    Staff app
+raised:   6 reports, earliest 2026-08-11 · sources: TASK-ADMINSWEEP-PHASE1.md, TASK-ADMINSWEEP-PHASE2.md, TASK-DASHLEADS-REPORT.md, TASK-DUPECENSUS-REPORT.md
+checked:  Both pages still exist; the instructor preview route is still the only way to see one, and no menu row points at either.
+rank:     3
+moot?:
+if kept:  Pick one, wire it, retire the other. Your earlier word was "wire up, don't retire".
+
+### 175. The lead-alert address can only be changed in the database
+what:     Every lead alert goes to one address that has no editing screen — changing it needs a developer.
+where:    Notifications
+raised:   1 report, 2026-08-12 · sources: TASK-INBOUNDALERT-REPORT.md
+checked:  Prod: the value is still in configuration with no screen reading or writing it.
+rank:     3
+moot?:
+if kept:  One field on the branding screen.
+
+### 176. Two missed leads were never followed up
+what:     Two enquiries were missed before alerts existed, and nobody went back to them.
+where:    Leads
+raised:   1 report, 2026-08-12 · sources: TASK-INBOUNDALERT-REPORT.md
+checked:  Prod: both still sit in the queue with no alert record.
+rank:     3
+moot?:
+if kept:  Yours to act on, not a code change.
+
+### 177. The support email cannot arrive until a branch merges
+what:     The support-request email points at an endpoint that only exists on an unmerged branch.
+where:    Email — support
+raised:   1 report, 2026-08-04 · sources: TASK-B-REPORT.md
+checked:  The endpoint file exists on main today, so this may be resolved — but no send has ever been confirmed (see item 32 group).
+rank:     3
+moot?:
+if kept:  Send one support request and check it arrives.
+
+### 178. Email wording still cannot be edited without a developer
+what:     The email wording is out of the code and into the database, but there is still no screen to edit it.
+where:    Email — templates
+raised:   2 reports, earliest 2026-08-12 · sources: TASK-EMAILEXTRACT-REPORT.md, TASK-TEXTEDIT-REPORT.md
+checked:  Prod: the editing functions exist; no page calls them for emails.
+rank:     3
+moot?:
+if kept:  An Emails tab on the templates screen — named as the follow-up when this was built.
+
+### 179. Whether "contacted" leads count as open
+what:     The open-lead count now includes leads someone has already contacted, which is a one-line change if you wanted "untouched only".
+where:    Staff app — Leads
+raised:   1 report, 2026-08-11 · sources: TASK-LEADCLEAN-REPORT.md
+checked:  Prod: the counting rule is unchanged.
+rank:     3
+moot?:
+if kept:  One line either way.
+
+### 180. Two enquiries are still not linked to a person
+what:     Two enquiries have no person attached, left that way deliberately; whether they and future ones get linked is unanswered.
+where:    Leads
+raised:   2 reports, earliest 2026-08-12 · sources: TASK-REQTRIGGER-REPORT.md, TASK-LEADCLEAN-REPORT.md
+checked:  Prod, re-run: 2 of 16 enquiries have no person — down from every row, since the trigger now works.
+rank:     3
+moot?:
+if kept:  A two-row backfill.
+
+### 181. A held migration must be applied in the right order
+what:     A parked invitation migration must be applied only after the front end deploys, or regenerating a link would leave two live links.
+where:    Identity — invitations
+raised:   1 report, 2026-08-11 · sources: TASK-INVITEWORKS-REPORT.md
+checked:  Still parked (see item 76).
+rank:     3
+moot?:
+if kept:  Sequence it with item 76.
+
+### 182. Four decisions in the deal build were never signed off
+what:     Four decisions were made without sign-off: removing hand-entry of a co-buyer, auto-generating documents on deal creation, a fallback deal name, and excluding voided documents from the export.
+where:    Deals
+raised:   4 reports, 2026-08-04 · sources: HANDOFF_DEAL_SALE_BUILD_2026-08-04.md
+checked:  All four are still in the code as described.
+rank:     3
+moot?:
+if kept:  Confirm or reverse each; the first one deletes a capability you asked for.
+
+### 183. The deal-workflow inventory was requested twice and never produced
+what:     The document another thread was blocked on was asked for twice and never written.
+where:    Deals
+raised:   1 report, 2026-08-04 · sources: HANDOFF_DEAL_SALE_BUILD_2026-08-04.md
+checked:  No such document exists in docs/.
+rank:     3
+moot?:
+if kept:  Decide whether it is still needed.
+
+### 184. The deal-record button exists in only one place
+what:     The button that produces a deal record is only on the deal page, not on the list or on a person's or horse's record.
+where:    Deals
+raised:   1 report, 2026-08-04 · sources: HANDOFF_DEAL_SALE_BUILD_2026-08-04.md
+checked:  Unchanged.
+rank:     3
+moot?:
+if kept:  Three more placements.
+
+### 185. Test accounts, contacts and documents are still in production
+what:     Several test accounts, contacts, purchases and documents were deliberately left in production waiting for your word.
+where:    Production data
+raised:   7 reports, earliest 2026-08-02 · sources: TASK-INVITEWORKS-REPORT.md, TASK-INVITEFLOW-REPORT.md, POST_RUN_CLOSEOUT.md, HANDOFF_DEAL_SALE_BUILD_2026-08-04.md
+checked:  Prod: the test identities and their rows are still present, per your standing rule that the purge is owner-run.
+rank:     3
+moot?:
+if kept:  One purge run, when you say.
+
+### 186. Two duplicate contacts are deliberately not merged
+what:     A duplicate pair of contacts for the same person is left unmerged because one of them is a live party on a draft.
+where:    Identity
+raised:   1 report, 2026-08-01 · sources: PROMPT_A_STAGES_1-3.md
+checked:  Unchanged.
+rank:     3
+moot?:
+if kept:  Merge after that draft is resolved.
+
+### 187. One person holds two blank-horse drafts
+what:     One client holds two drafts that name no horse, and the supersession rule you settle will govern what happens to them.
+where:    Documents
+raised:   1 report, 2026-08-10 · sources: TASK-SUPERSEDE-REPORT.md
+checked:  Prod: the supersession is now horse-scoped, which makes item 105's blank-horse question the deciding one.
+rank:     3
+moot?:
+if kept:  Answer item 105 and this follows.
+
+### 188. Two whole phases of the hardening plan were never started
+what:     The last two phases of an earlier hardening plan (insurance and legacy retirement) were never begun, and their gates still stand.
+where:    Database
+raised:   1 report, 2026-08-01 · sources: PROMPT_A_STAGES_1-3.md
+checked:  Unchanged.
+rank:     3
+moot?:
+if kept:  Re-scope against what has landed since — much of it has been overtaken.
+
+### 189. Everything one audit found outside the fix's scope is untouched
+what:     An audit's findings that were outside the fix task's scope were never picked up by anything.
+where:    Security
+raised:   1 report, 2026-08-07 · sources: TASK-SECFIX-REPORT.md
+checked:  Those findings are items 35-44 on this sheet — this family is the pointer, not new work.
+rank:     3
+moot?:
+if kept:  Nothing extra — it is covered above.
+
+### 190. A written refactor is dry-run and unapplied
+what:     A refactor that stops duplicate document generation is written and proven and was deliberately not applied.
+where:    Documents — onboarding
+raised:   1 report, 2026-08-10 · sources: TASK-SENDGUARD-REPORT.md
+checked:  Prod: the migration file exists in the journal; the reuse path it describes is not in the live function.
+rank:     3
+moot?:
+if kept:  Review and apply, or discard it.
+
+### 191. Whether staff may override a refusal to send
+what:     When the system refuses to send a document for signing, whether staff may override is unanswered — the recommendation was "ask for a re-signature" rather than a "send anyway" button.
+where:    Contracts
+raised:   1 report, 2026-08-10 · sources: TASK-SENDGUARD-REPORT.md
+checked:  Unchanged.
+rank:     3
+moot?:
+if kept:  One decision; a "send anyway" button would silently answer six other questions.
+
+### 192. What happens to a child's records if the guardian is removed
+what:     If a guardian is deleted or merged, what happens to the minor's records was left out of scope.
+where:    Identity — minors
+raised:   1 report, 2026-08-04 · sources: TASK-C10-REPORT.md
+checked:  Unchanged.
+rank:     3
+moot?:
+if kept:  One rule.
+
+### 193. The kiosk does not check age before a release is signed
+what:     The kiosk does not detect that the signer is a minor before they sign a release.
+where:    Kiosk
+raised:   1 report, 2026-08-04 · sources: TASK-C10-REPORT.md
+checked:  Unchanged; the form's date-of-birth check was not touched.
+rank:     3
+moot?:
+if kept:  One check at the kiosk.
+
+### 194. The barn-ops module rename was deferred
+what:     Renaming the barn-ops module family to your chosen word was deferred because the file was contended.
+where:    Staff app — barn ops
+raised:   2 reports, 2026-08 · sources: TASK-FACILITYTERM-REPORT.md
+checked:  Prod: the module key is unchanged; the internal-key-forever question is unanswered.
+rank:     3
+moot?:
+if kept:  Confirm the key stays internal, then the visible words are already data.
+
+### 195. Confirm the word for the property
+what:     The system was set up using "ranch" as your word for the property, taken from a sentence you wrote rather than a confirmation.
+where:    Tenant settings
+raised:   1 report, 2026-08 · sources: TASK-FACILITYTERM-REPORT.md
+checked:  Prod: the term is stored as configured.
+rank:     3
+moot?:
+if kept:  One word.
+
+### 196. The onboarding packet's name is an open pick
+what:     The name shown for the onboarding packet is a default nobody chose.
+where:    Staff app — client documents
+raised:   1 report, 2026-08-11 · sources: TASK-DOCPACKET-REPORT.md
+checked:  Unchanged — one string.
+rank:     3
+moot?:
+if kept:  Pick a name.
+
+### 197. One account's phone number has a third writer
+what:     A staff editor writes a phone number directly onto an account, which is why an old column could not be retired.
+where:    Identity
+raised:   1 report, 2026-08-02 · sources: PROMPT_A_STAGES_4-5.md
+checked:  Unchanged; the platform account still has no contact-side path.
+rank:     3
+moot?:
+if kept:  Either give that account a contact row or accept the third writer.
