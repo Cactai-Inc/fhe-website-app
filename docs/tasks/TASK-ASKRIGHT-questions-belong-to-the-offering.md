@@ -803,8 +803,7 @@ not work.**
 
 # OWNER QUESTIONS — ask before building, do not assume
 
-1. **Answer options for the shared horse block.** You gave the questions, not the choices. Proposed —
-   confirm or correct:
+1. **ANSWERED (owner, 2026-08-16) — these are the option sets. Build them.**
    - *Own or lease* → Own · Lease · Neither yet
    - *How long have you had the horse* → Less than 6 months · 6–12 months · 1–3 years · 3+ years
    - *Age* → short text (a number)
