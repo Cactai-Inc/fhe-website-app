@@ -130,10 +130,10 @@ which is technically page 2 but that is the submission page, page 3 on the other
   presses Continue on `/lessons`** must still be shown page 2 for those offerings' questions before
   the form. **This is the bug this section exists to prevent.**
 
-⚠️ **`TASK-RIDERQUALIFY` consequence — flag it, do not build it here.** That queued task adds rider
-questions to the lesson path. Under this architecture they belong on page 2 like everyone else's,
-which **answers RIDERQUALIFY's open owner question about where in the flow they go**. Once it
-merges, a lessons-only order **will** have a page 2. Note this in your report.
+⚠️ **`TASK-RIDERQUALIFY` is CANCELLED — owner, 2026-08-16:** *"the rider questions are already on
+the lesson form. there is nothing to add and no separate questions for them."* The form already
+carries riding experience (years), the open notes prompt and availability — that IS the rider
+information. **Lessons never gain a questions page, and nothing is added to the form for riders.**
 
 ### ONE form page, ONE form component, configuration decided by the cart
 
@@ -153,10 +153,14 @@ of which form."*
 |---|---|
 | name, email, phone, preferred contact method, notes | **always** |
 | the `AvailabilityPicker` ranges (§A6b) | **a lesson is in the cart** |
-| rider questions (`RIDERQUALIFY`, once merged) | **a lesson is in the cart** |
+| riding experience (years) — **already on the form; do not move or duplicate it** | **a lesson is in the cart** |
 
 - **A mixed cart shows the union** — a lesson plus horse care gets the availability block, because a
   lesson is present. **It is not either/or.**
+- ⚠️ **The form's riding-experience question and the acquisition sets' experience question are
+  DIFFERENT FACTS — never merge or dedupe them.** The form asks **riding skill in years**; Horse
+  Finder / Evaluation ask **horse-ownership history** ("first horse / owned in the past / currently
+  own"). A lesson + evaluation order legitimately answers both.
 - ⚠️ **Riding experience is in the wrong place and should move to page 2.** It sits on the form today
   as *"Riding experience (years)"*, but *"Which best matches your equestrian experience?"* is a
   **`person`-subject page-2 question** for Horse Evaluation and Horse Finder (§A4). Left as it is,

@@ -250,6 +250,51 @@ selected."*
    The order is a **draft/unpaid** record of intent. **No payment happens here** — payment is at
    the end of activation, per the owner's flow.
 
+## C5b — THE ORDER MODEL — OWNER'S RULING (2026-08-16). This answers Owner Question 1.
+
+**Owner, verbatim:**
+> *"everything is considered an order. and a canceled order for anything just voids that item from
+> the order unless its the only order. the selections themselves dont create anything until the user
+> submits and since we capture their name and email address with the order its not anonymous, its
+> just classified as a lead until we promote it to customer so there is nothing owed until the order
+> is confirmed and the lead is promoted. that happens all at the same time when we send the invite to
+> activate their account."*
+
+### The rules
+
+1. **Everything is an order.** One submission = one order carrying its line items, alongside the one
+   `requests` row (§C5). Not a quote, not a wishlist, not a category-specific record type.
+2. **Selections create NOTHING until submit.** The cart is client state. **No DB row per selection,
+   no cart persistence, no abandoned-cart table.** The first write is the submission.
+3. **The submission is identified, not anonymous.** Name + email arrive with the order, so in
+   taxonomy terms the person is a **LEAD** (identity + intent, no account yet — the owner's
+   authoritative ladder, 2026-08-02). ⚠️ **The Postgres role is still `anon`** — every security
+   requirement in §C5 stands unchanged. "Not anonymous" is a taxonomy statement, not a grants one.
+4. **Nothing is owed on an unconfirmed order.** No payment surface, receipt, reminder or balance may
+   treat it as payable.
+5. **Confirmation, lead promotion, and the activation invite are ONE act, at ONE moment.** There is
+   no state where the order is confirmed but the person is still a lead, or vice versa. Promotion
+   for a service buyer lands them as **CLIENT** per the owner's taxonomy (the ruling says "customer"
+   loosely; his 2026-08-02 ladder is authoritative: client = services, customer = goods).
+6. **Cancellation is per ITEM.** Cancelling any item **voids that line item** and the order total
+   recomputes. **Cancelling the only item voids the whole order.** *(Read from "unless its the only
+   order" — flag if you read it differently.)* ⚠️ **Check whether `purchase_items` can represent a
+   voided line at all** — if it has no status/void column, that is a small migration this task must
+   include, dry-run + rollback proven.
+
+### The status mapping — existing vocabulary, no constraint change
+
+| moment | `purchases.status` | owed? |
+|---|---|---|
+| submission | **`draft`** + an **'Enquiry — awaiting call' status event** from the order vocab (filterable on the ops board, distinct from a staff-made draft) | nothing |
+| confirm + promote + invite (one act) | **`awaiting_payment`** | now owed |
+| activation payment page | **`paid`** | settled |
+| item cancelled | line item void; order **`void`** when the last item goes | — |
+
+**Do not add a `requested` status to the constraint** — every surface that switches on purchase
+status would need to learn it. The lead-ness lives on the **person**; the status event carries the
+ops-board distinction.
+
 ## C6 — everything is visible on the lead page, and two emails go out
 - **The lead page must show the submission AND the order** — the personal details, the step-2
   qualifier answers, and the selected items. Owner: *"We should see all of this on the lead page for
