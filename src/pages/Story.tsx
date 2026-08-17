@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, ArrowUp } from 'lucide-react';
 import Seo from '../components/Seo';
 import { seoForPath } from '../lib/seo';
 
@@ -128,7 +128,12 @@ export default function Story() {
       {/* ══ SECTION 1 · The place — "Coastal Air & Endless Trails" ══
           Establish the coastal world she belongs to. IMAGE: new establishing
           shot (placeholder green band for now). */}
-      <section id="the-place" className="bg-cream scroll-mt-24">
+      {/* Anchor ids mirror the on-screen eyebrows (owner, 2026-08-16) — they
+          are PUBLIC: every jump puts #our-story / #what-youll-find /
+          #beyond-the-arena / #our-services / #what-we-deliver in the address
+          bar, so an id that disagrees with its heading is a visible defect, not
+          an internal detail. Rename them together. */}
+      <section id="our-story" className="bg-cream scroll-mt-24">
         {/* pt-10 → pt-32 (owner, 2026-08-16): the jump nav used to sit above this
             section and carried the clearance under the fixed header; removing it
             left the eyebrow rendering behind the nav bar. */}
@@ -265,7 +270,7 @@ export default function Story() {
 
                 {/* Continue — on-dark styling, this section is the green band. */}
                 <p className="mt-9">
-                  <a href="#the-community" className="inline-flex items-center gap-2 text-sm font-sans tracking-widest uppercase text-gold-300 hover:text-gold-200 border-b border-gold-600/40 hover:border-gold-300 pb-0.5 transition-colors focus-ring-dark">
+                  <a href="#beyond-the-arena" className="inline-flex items-center gap-2 text-sm font-sans tracking-widest uppercase text-gold-300 hover:text-gold-200 border-b border-gold-600/40 hover:border-gold-300 pb-0.5 transition-colors focus-ring-dark">
                     Continue <ArrowRight size={13} aria-hidden="true" />
                   </a>
                 </p>
@@ -284,7 +289,7 @@ export default function Story() {
           name, its too close to the other section") — this follows the
           full-bleed green band, which has no bottom padding of its own, so the
           eyebrow was sitting almost on the seam. */}
-      <section id="the-community" className="bg-cream scroll-mt-24">
+      <section id="beyond-the-arena" className="bg-cream scroll-mt-24">
         <div className="container-site pt-32 pb-16 sm:pt-40 sm:pb-24">
           <Reveal className="max-w-3xl">
             <p className="eyebrow mb-6">Beyond The Arena</p>
@@ -352,12 +357,12 @@ export default function Story() {
               the onward link to /shop now that S4 is image-only). */}
           {/* Continue out of Beyond The Arena and into Our Services. */}
           <p className="mt-10">
-            <a href="#the-ways-in" className="link-underline">
+            <a href="#our-services" className="link-underline">
               Continue <ArrowRight size={13} aria-hidden="true" />
             </a>
           </p>
 
-          <div id="the-ways-in" className="mt-20 sm:mt-28 scroll-mt-24">
+          <div id="our-services" className="mt-20 sm:mt-28 scroll-mt-24">
             <div className="rule-gold" />
             {/* Owner, 2026-08-16 (flipped): the mosaic "steals the show", so the
                 CARDS now take the prominent right column where the photos were,
@@ -419,6 +424,13 @@ export default function Story() {
               ))}
             </div>
 
+            {/* Continue out of Our Services into the closing section. */}
+            <p className="mt-12 sm:mt-16">
+              <a href="#what-we-deliver" className="link-underline">
+                What we deliver <ArrowRight size={13} aria-hidden="true" />
+              </a>
+            </p>
+
           </div>
         </div>
       </section>
@@ -438,10 +450,18 @@ export default function Story() {
           so the photograph sits close under the words.
           `leading-tight` (not the display default) opens the two stacked lines a
           little without letting them drift apart. */}
-      <section className="bg-cream">
+      <section id="what-we-deliver" className="bg-cream scroll-mt-24">
         <div className="container-site pt-20 pb-8 sm:pt-28 sm:pb-10 lg:pt-32 lg:pb-12">
           <p className="heading-display leading-[1.2] text-green-900 text-center mx-auto max-w-4xl [text-wrap:balance] text-[clamp(1.9rem,4.4vw,3.2rem)]">
             Friendship &amp; Adventure at French Heritage Equestrian
+          </p>
+
+          {/* The way back up — this is the last section, so the only onward
+              move is a return. Centered under the line, above the image. */}
+          <p className="mt-8 text-center">
+            <a href="#our-services" className="link-underline">
+              <ArrowUp size={13} aria-hidden="true" /> Back to services
+            </a>
           </p>
         </div>
       </section>
