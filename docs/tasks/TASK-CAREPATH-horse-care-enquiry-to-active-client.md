@@ -178,6 +178,10 @@ the submission for horse care, the only flow with a date selection portion is th
 that is by design."* **The horse-care client never picks a date.** Staff set it on the call (§C7).
 `proposed_times` is a lessons-only concern. `ASKRIGHT` §A6b carries the same ruling.
 
+⚠️ **Note what the lessons funnel actually collects, so it is not copied here by mistake:** it is
+`AvailabilityPicker` — **preference RANGES** (weekday/weekend AM–PM, weeks, days of the week), not a
+calendar date. **Horse care collects neither.**
+
 ⚠️ **The act word is "inquire", not "request"** (`ASKRIGHT` §A6). For horse care the wording is
 **"Inquire about {service name} service"**. If `ASKRIGHT` has merged, the copy is already correct —
 **do not re-word it here.** The step-3 primary button the owner originally called

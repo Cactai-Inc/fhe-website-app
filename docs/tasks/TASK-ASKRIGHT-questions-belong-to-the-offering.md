@@ -261,7 +261,21 @@ chosen act word is *inquire*.
 - **`Shop.tsx:56` (`actionLabel="Inquire"`)** is on the hidden `/shop` route, which redirects to
   `/lessons`. Already correct; **do not spend time reviving the page.**
 
-## A6b — ⚠️ ONLY THE LESSONS FUNNEL HAS A DATE PICKER
+## A6b — ⚠️ ONLY LESSONS COLLECTS AVAILABILITY — AND IT IS RANGES, NOT A CALENDAR
+
+**Owner, 2026-08-16:** *"the submission for lessons doesnt have a calendar type date picker, they
+have ranges for every factor in the date and time selection."*
+
+**Measured and confirmed:** `src/components/AvailabilityPicker.tsx` — legend *"When could you come
+out?"* — collects **preference ranges, never a specific appointment**:
+- **weekday AM / PM** and **weekend AM / PM** toggles,
+- **multi-select weeks** (paginated, `WEEKS_PER_PAGE = 4`),
+- **day-of-week** toggles, plus an "any day" option.
+
+**Nowhere in any spec should this be called a date picker.** The visitor never names a slot — they
+describe when they are free, and staff choose the actual time on the call. **This is precisely why
+"inquire" is the honest word for this funnel too.**
+
 
 **Owner, 2026-08-16:** *"we are removing the date selection from the form on the step 4 page of the
 submission for horse care, the only flow with a date selection portion is the lessons page. and that
