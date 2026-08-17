@@ -273,10 +273,31 @@ he should be able to type.
 |---|---|
 | **`unit_count`** | **Editable.** How many lessons a package gives. The owner's most likely edit — a 4-pack becoming a 5-pack must not need a developer. |
 | **`config_kind`** | **Editable**, one-time vs recurring — **with the guard below.** |
-| **`weekly_frequency`** *(or whatever replaces it)* | **Editable** while the catalog still carries it. **If §P3 moves it wholly to staff provisioning, the catalog no longer has it and there is nothing to expose — say so explicitly; that is the only acceptable reason for its absence.** |
+| **`weekly_frequency`** | **Editable. ⚠️ AND IT STAYS IN THE CATALOG — owner-ruled, 2026-08-17: "we cant let it do that."** §P3 changes what the arithmetic *reads*; **it does NOT license deleting the field.** |
 
 **Add them to `OfferingInput` and to the form.** `adminUpdateOffering` passes the patch straight
 through, so the database side needs nothing — **this is form fields and a type.**
+
+### ⚠️ NO CATALOG FIELD MAY BE DROPPED BY THIS TASK
+**Owner, 2026-08-17, on the possibility of `weekly_frequency` disappearing: *"we cant let it do
+that."*** The catalog is his control surface. **A task may add to it; it may not shrink it.**
+**Do not drop, rename, or stop populating `weekly_frequency`, `unit_count` or `config_kind`.**
+
+**So how do the catalog value and the staff-chosen days coexist?** They are not rivals:
+
+| | role |
+|---|---|
+| **`weekly_frequency` (catalog)** | **the default** — what this SKU normally means, owner-set, and what **pre-fills** the day picker at provisioning |
+| **the days staff select (§P3)** | **the actual entitlement for this client** — it is what the formula counts |
+
+- **The days win for the arithmetic** — that is the owner's ruling, and it is what makes 5 Sundays +
+  4 Saturdays equal 9.
+- **The catalog value is not overwritten by a staff choice.** One client's Tuesday-and-Thursday plan
+  must never edit the SKU everyone else buys.
+- ⚠️ **Show staff a mismatch rather than silently allowing it.** If the SKU says 2 and staff pick 3
+  days, that may be deliberate — **surface it, do not block it, and never correct it quietly.**
+- ⚠️ **This reconciliation is the orchestrator's reading, not a direct owner quote. Confirm it before
+  building on it.**
 
 ⚠️ **`config_kind` needs a guard, not a lock.** Flipping a SKU between one-time and recurring changes
 which half of §P0's formula applies, and doing that to a SKU with live purchases would rewrite what
@@ -440,8 +461,11 @@ second one.
     computes**. Labels read in the owner's language, not column names.
 8c. **`config_kind` is guarded, not locked** — changing it on an offering with live purchase lines is
     prevented or clearly warned. **State which.** An uneditable field fails this test.
-8d. **`weekly_frequency` is editable while the catalog carries it** — or the report states plainly
-    that §P3 removed it from the catalog entirely, with proof.
+8d. ⚠️ **`weekly_frequency` is STILL IN THE CATALOG and is editable** — owner-ruled. Prove the column
+    still exists, is still populated, and round-trips through the editor. **A task that deleted it
+    has failed this test.**
+8e. **The staff-chosen days drive the arithmetic while the catalog value stays intact** — prove that
+    provisioning one client's plan does not alter the SKU other clients buy.
 9. ⚠️ **NO price changed** — prove every care and lesson price is byte-identical to `main`
    (acquisition's clearing to null under §P1 is the sole exception).
 9b. **No volume-break logic exists anywhere** — 1×, 2× and 3× weekly all use the same per-session
