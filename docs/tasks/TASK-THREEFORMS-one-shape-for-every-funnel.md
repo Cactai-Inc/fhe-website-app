@@ -65,7 +65,12 @@ picked up later at `/checkout`, which is why their step 2 looks so thin.
 - **The date/time picker appears for lessons and horse care only.** Acquisition submits without
   one — owner's ruling, and it is right: there is nothing to schedule yet.
 
-## F1b — A MIXED CART GETS ONE COMBINED, CATEGORY-SEPARATED FORM
+## F1b — A MIXED CART GETS ONE COMBINED FORM
+
+> ⚠️ **SUPERSEDED BY `TASK-ASKRIGHT` §A2 (2026-08-16).** The owner has since specified this
+> precisely, and it is **per OFFERING, not per category**: an initial section holding the questions
+> that overlap across everything selected, then **one section per offering** with its remaining
+> questions. Build it from `ASKRIGHT`. What follows is the earlier, coarser sketch.
 
 **Owner, 2026-08-16:**
 > *"this means if a person selects something from each category we need to generate a combined but

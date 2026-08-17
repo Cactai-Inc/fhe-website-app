@@ -97,9 +97,46 @@ on 2026-08-15 and name-parsing broke credit minting three separate times.
 - **An offering with no defined set asks nothing** — it must not silently fall back to the exercise
   questions, which is precisely today's defect.
 
-## A2 — one shared "About Your Horse" block, asked ONCE
-**Questions 1–6 are identical across training, clipping and exercise.** They describe the horse, not
-the service. **Ask them once**, even when the cart holds two horse-care services.
+## A2 — THE SHARED SECTION IS DERIVED FROM THE CART, THEN ONE SECTION PER OFFERING
+
+**Owner, 2026-08-16:**
+> *"it needs to collect the information from the list on all question lists, but it needs to separate
+> out the overlapping information into an initial section, then each offering is its own section with
+> additional questions."*
+
+**This is the rule; the tables below are just what it produces for the known offerings.**
+
+**The shape of step 2, for ANY combination in the cart:**
+
+1. **An initial shared section** — every question that appears in **more than one** of the selected
+   offerings' lists, asked **once**.
+2. **Then one section per selected offering**, each carrying **only that offering's remaining
+   questions**, under that offering's name.
+
+**Rules that fall out of it:**
+- **Every question from every selected offering's list is collected** — nothing is dropped because
+  another offering was also chosen. The shared section removes *repetition*, never *coverage*.
+- **Sections are ordered by the order the visitor picked the offerings**, so the screen mirrors their
+  own path.
+- **One offering selected → no shared section.** Do not render an empty or single-purpose "shared"
+  header; its questions simply are its section.
+- **The shared section is computed, not hardcoded.** A new offering with its own list must slot in
+  without anyone editing a shared-block constant.
+
+⚠️ **THE TRAP: overlap means the SAME question about the SAME subject, not a similar label.**
+Within horse care, training / clipping / exercise all ask about **the client's own horse**, so their
+first six genuinely merge. But across categories they do not:
+- Training's *"What breed is the horse?"* is about **the horse they own**.
+- Horse Finder's *"Are there specific breeds you prefer?"* is about **a horse they might buy**.
+- Horse Evaluation's *"Breed"* is about **the horse being evaluated**, which may be neither.
+
+**Merging those would corrupt the answers.** Key the shared section so that only genuinely identical
+questions merge, **and report the keying scheme you chose.** When in doubt, keep them separate — a
+duplicated question is a small annoyance; a merged one produces a wrong answer staff will act on.
+
+### What this produces for horse care
+**Questions 1–6 are identical across training, clipping and exercise** — same six, same horse. So a
+cart with any two of them shows one shared section of six, then a section per service.
 
 | # | question |
 |---|---|
@@ -325,7 +362,15 @@ The pre-sale answers duplicate part of each post-sale intake form (breed, age, b
 2. Selecting **training alone** asks the shared six plus its three.
 3. Selecting the **weekly exercise** offering asks all eleven; the **à la carte** exercise offering
    asks nine — **name the catalog field that decides it.**
-4. Selecting **two horse-care services** asks the shared six **once**, then each service's extras.
+4. Selecting **two horse-care services** renders: one shared section of the six, **once**, then a
+   named section per service with only its extras — and **every question from both lists is present
+   exactly once**. Prove coverage, not just de-duplication.
+4b. Selecting **one** offering renders **no** shared section.
+4c. Selecting offerings whose lists **do not overlap** renders no shared section, and every
+    question still appears.
+4d. A cart mixing categories does **not** merge questions that merely look alike — prove that
+    training's *breed of your horse* and the finder's *preferred breed* stay separate, and **state
+    the keying scheme** that guarantees it.
 5. **Horse Finder** and **Acquisition Assistance** ask the nine-question set; the experience question
    carries the new wording, **no help line**, and the original four options.
 6. **Horse Evaluation** asks its own eight, with the **three** experience options — proving options
