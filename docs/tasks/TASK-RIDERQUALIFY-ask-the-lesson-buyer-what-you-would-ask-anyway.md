@@ -85,8 +85,11 @@ nothing else of value.
 # OWNER QUESTIONS — ask before building
 1. **Which questions?** All three from `/book/rider`, or just *"do you own or lease a horse?"*
    The more asked, the more friction on a buyer who has already decided.
-2. **Where in the flow?** Before the cards (shapes what they are shown — pairs naturally with
-   `SESSIONBOOK`'s own-horse filtering), or after selection and before checkout (the pattern the
-   other two funnels use)?
+2. ~~**Where in the flow?**~~ **ANSWERED by the owner, 2026-08-16 — do not re-ask.** Every funnel now
+   uses one flow: **selection page → questions (page 2) → the shared submission form → one inquiry**
+   (`TASK-ASKRIGHT` §A0). **The rider questions go on page 2, like every other offering's.** Once
+   this task merges, a lessons-only order gains a page 2 where today it has none.
+   **Build them as an `ASKRIGHT` question set keyed to the lesson offerings** — subject `person`
+   (§A2b) — **not as a bespoke step on `/lessons`.**
 
 Report to `docs/reports/TASK-RIDERQUALIFY-REPORT.md`. Do not push; the orchestrator merges.

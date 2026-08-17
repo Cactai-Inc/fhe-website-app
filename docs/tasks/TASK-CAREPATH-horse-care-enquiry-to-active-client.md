@@ -189,6 +189,12 @@ calendar date. **Horse care collects neither.**
 
 Owner: *"the form should collect their personal information only."*
 
+⚠️ **THERE IS ONLY ONE SUBMISSION FORM, SHARED BY ALL THREE FUNNELS** (`ASKRIGHT` §A0). Owner:
+*"the lesson submission form has all the information that the other forms will collect so there is
+only one form on the final submission page… and its one submission to us for review."*
+**`Checkout.tsx`'s form is that form. Do not build a horse-care-specific one** — configure the
+shared one. A mixed order produces **one** `requests` row, never one per category.
+
 **Keep:** first name, last name, email, phone, preferred contact method, and a free-text notes box
 with a **horse-care-appropriate placeholder** (not the riding one).
 

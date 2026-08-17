@@ -88,6 +88,57 @@ on 2026-08-15 and name-parsing broke credit minting three separate times.
 
 # THE BUILD
 
+## A0 — ONE FLOW, ONE FORM, ONE SUBMISSION — WHATEVER PAGE THEY STARTED ON
+
+**Owner, 2026-08-16:**
+> *"the lesson submission form has all the information that the other forms will collect so there is
+> only one form on the final submission page, the flow would be that the questions get asked between
+> the selection page and the submission page no matter where they continue to submission from, since
+> the lessons page doesnt use a page 2 it goes straight to the form if there are horse care or
+> acquisition items in the cart and they click the continue button from the lessons page it needs to
+> still show the page 2 for the questions related to the other services before the form is shown and
+> then the form is sufficient for all the offerings. and its one submission to us for review."*
+
+**The flow, identical from every entry point:**
+
+```
+selection page  →  QUESTIONS (page 2)  →  [review]  →  THE FORM  →  one inquiry
+   /lessons          shown when ANY        horse care    one shared      one requests
+   /horse            selected offering     & acquisition  submission      row for the
+   /acquisition      has questions         only           form            whole order
+```
+
+### Page 2 is conditional on CONTENT, never on which page they came from
+- **It appears when any offering in the cart has a question set** — full stop.
+- **Lessons alone goes straight to the form today because lessons has no questions yet**, not
+  because `/lessons` is special. **Do not hardcode "the lessons page skips page 2."**
+- ⚠️ **The case the owner is calling out:** a visitor holding **horse care or acquisition items who
+  presses Continue on `/lessons`** must still be shown page 2 for those offerings' questions before
+  the form. **This is the bug this section exists to prevent.**
+
+⚠️ **`TASK-RIDERQUALIFY` consequence — flag it, do not build it here.** That queued task adds rider
+questions to the lesson path. Under this architecture they belong on page 2 like everyone else's,
+which **answers RIDERQUALIFY's open owner question about where in the flow they go**. Once it
+merges, a lessons-only order **will** have a page 2. Note this in your report.
+
+### There is ONE submission form, and it is the lessons form
+- **`Checkout.tsx`'s form is the superset** — it already collects first/last name, email, phone,
+  preferred contact method, notes, and availability. **It becomes THE form for all three funnels.
+  Do not write a second one.**
+- **Always shown:** name, email, phone, preferred contact method, notes.
+- **Lessons only:** the `AvailabilityPicker` ranges (§A6b).
+- ⚠️ **Riding experience is in the wrong place and should move to page 2.** It sits on the form today
+  as *"Riding experience (years)"*, but *"Which best matches your equestrian experience?"* is a
+  **`person`-subject page-2 question** for Horse Evaluation and Horse Finder (§A4). Left as it is,
+  **someone ordering a lesson and an evaluation answers their own experience twice in one order** —
+  exactly the duplication §A2b exists to kill. **Recommend relocating it; confirm with the owner
+  (Owner Question 8) before moving it.**
+
+### One submission, not one per category
+- A mixed order produces **ONE `requests` row** carrying every offering and every answer — *"one
+  submission to us for review."*
+- **Never split a mixed cart into several inquiries.** Staff review one thing.
+
 ## A1 — questions attach to the offering
 - The step-2 question set is **derived from what is in the cart**, not hardcoded per page.
 - Key it to the **catalog identity you verified** (`service_type` code, or offering slug where two
@@ -152,7 +203,7 @@ same question about the same subject.** Four subjects cover the current catalog:
 | subject | what it is | merges across |
 |---|---|---|
 | `person` | the buyer / rider themselves | **everything** — all three categories |
-| `own_horse` | the horse the client already has | horse care (training, clipping, exercise) |
+| `own_horse` | the horse the client already has | horse care (training, clipping, exercise) — **but see §A3b: it may not exist yet** |
 | `evaluated_horse` | a specific horse being assessed | Horse Evaluation only |
 | `sought_horse` | preferences for a horse not yet owned | Horse Finder, Acquisition Assistance |
 
@@ -198,6 +249,34 @@ cart with any two of them shows one shared section of six, then a section per se
 silently; propose and confirm.
 
 ## A3 — the service-specific questions
+
+## A3b — ⚠️ THE HORSE MAY NOT EXIST YET
+
+**Owner, 2026-08-16:**
+> *"not necessarily, they can be asking for training on a horse they are asking us to help them
+> acquire."*
+
+**A horse-care order does not imply the client has a horse.** Someone can order **Horse Finder +
+Horse Training** together: find me a horse, then train it. In that order, the training questions —
+**age, breed, behaviour issues, injuries, prior training, riding history** — have **no answer**,
+because there is no horse.
+
+**Consequences, all three of which must be built:**
+
+1. **The two ownership questions do NOT merge.** *"Do you currently own or lease a horse?"*
+   (`person`, rider path) and *"Do you own or lease the horse?"* (the horse coming for care) can
+   legitimately differ — a client may own one horse and be seeking another for training. **Keep them
+   separate.**
+2. **Question 1 gates questions 2–6.** It needs an option covering *the horse does not exist yet* —
+   proposed wording **"Not yet — I'd like help finding one"** (⚠️ **confirm exact wording with the
+   owner**). When chosen, **suppress the remaining horse questions rather than showing unanswerable
+   fields**, and record that the horse is yet to be acquired.
+3. **The subject shifts.** With no horse, the care questions are not about `own_horse` — they concern
+   the `sought_horse` the acquisition service will find. **Do not silently file the answers under
+   `own_horse`**, or staff will later read them as describing a horse the client already has.
+
+**Staff collect the horse's details after acquisition**, through the intake surface `CAREPATH` §C10
+owns. **Report this hand-off rather than building it here.**
 
 ### Horse Training — after the shared block
 | # | question |
@@ -423,6 +502,19 @@ The pre-sale answers duplicate part of each post-sale intake form (breed, age, b
     once. Age and breed appear twice, under the two different horses.**
 4f. **Adding an offering after answering extends the form and re-asks nothing.** Removing one hides
     its section, keeps its answers for a re-add, and **submits only what is still in the cart.**
+4g. ⚠️ **THE CROSS-ENTRY CASE.** A cart holding a **horse-care or acquisition item** whose visitor
+    presses **Continue on `/lessons`** is shown **page 2 with those offerings' questions** before the
+    form. Prove it from the lessons page specifically — this is the defect §A0 exists to prevent.
+4h. **Lessons alone still goes straight to the form** — and prove the skip is because **nothing in
+    the cart has questions**, not because the page is hardcoded to skip.
+4i. **One mixed order = ONE `requests` row** carrying every offering and every answer. Query output.
+4j. **All three funnels reach the SAME submission form component** — prove no second form exists.
+4k. ⚠️ **Horse Finder + Horse Training in one order** (§A3b): answering *"not yet"* to owning the
+    horse **suppresses** the age/breed/behaviour/injury/prior-training questions instead of showing
+    unanswerable fields, the order records that the horse is still to be acquired, and those answers
+    are **not** filed as describing a horse the client already owns.
+4l. The two ownership questions — the rider's *"a horse"* and horse care's *"the horse"* — **remain
+    separate**, and a client who owns one horse while seeking another can answer them differently.
 5. **Horse Finder** and **Acquisition Assistance** ask the nine-question set; the experience question
    carries the new wording, **no help line**, and the original four options.
 6. **Horse Evaluation** asks its own eight, with the **three** experience options — proving options
@@ -461,11 +553,15 @@ The pre-sale answers duplicate part of each post-sale intake form (breed, age, b
    own area? And **Q7 "current riding level"** sits close to **Q8 "equestrian experience"**; confirm
    you want both.
 6. **Budget and age range on the Finder set** — free text, or bands you want offered?
-7. **One near-merge needs your ruling.** Horse training asks *"do you own or lease **the** horse?"*
-   (the specific horse coming for training). The rider path asks *"do you currently own or lease **a**
-   horse?"* (`owns_horse`, already built on `/book/rider`). **Same answer in practice, different
-   subject in principle** — `own_horse` versus `person`. Treat them as one question asked once in the
-   *About you* section, or keep them separate? **I would merge them**; someone bringing a horse for
-   training plainly owns or leases one, and asking twice in one order looks careless.
+8. **Move riding experience from the form to page 2?** It is asked on the submission form today as
+   *"Riding experience (years)"*, while page 2 asks *"Which best matches your equestrian
+   experience?"* for evaluations and horse searches. **A lesson + evaluation order currently asks the
+   same person about their experience twice.** I recommend one `person` question on page 2 — but the
+   form's version is in **years** and page 2's is in **bands**, so tell me which you would rather
+   keep.
+7. ~~One near-merge needs your ruling.~~ **ANSWERED — the two ownership questions stay SEPARATE.**
+   See §A3b. (The orchestrator proposed merging them on the assumption that anyone booking training
+   owns the horse. **The owner corrected it:** *"not necessarily, they can be asking for training on
+   a horse they are asking us to help them acquire."*)
 
 Report to `docs/reports/TASK-ASKRIGHT-REPORT.md`. Do not push; the orchestrator merges.
