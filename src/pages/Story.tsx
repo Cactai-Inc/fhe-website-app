@@ -164,7 +164,7 @@ export default function Story() {
               text as a normal block. */}
           <Reveal>
             <div
-              className="lg:float-right lg:w-[52%] lg:ml-12 mb-8 lg:mb-6 aspect-[3/2] overflow-hidden bg-green-900"
+              className="lg:float-right lg:w-[50%] lg:ml-10 mb-8 lg:mb-6 aspect-[3/2] overflow-hidden bg-green-900"
               style={{
                 backgroundImage: `url('${HERO_A}')`,
                 backgroundSize: 'cover',
@@ -174,9 +174,8 @@ export default function Story() {
               aria-label="Riders in the arena at Carmel Creek Ranch, coastal San Diego."
             />
             <p className="body-text text-lg mb-6">
-                  We are a community of riders who love all things equestrian
-                  &mdash; and this is the place we&rsquo;re grateful to call home for us
-                  and our horses.
+              We are a community of riders who love all things equestrian. This is
+              the place we&rsquo;re grateful to call home for us and our horses.
             </p>
             <p className="body-text text-lg mb-6">
                   French Heritage Equestrian resides at Carmel Creek Ranch, a
@@ -206,9 +205,9 @@ export default function Story() {
             {/* Owner, 2026-08-16: a continue link at the END of each section,
                 not a nav row at the top. Plain anchors — smooth scrolling is
                 global and every target carries scroll-mt-24. */}
-            {/* mt-10 → mt-6 (owner, 2026-08-16): with the copy pulled up by the
-                wider column, this brings the link into the first screenful. */}
-            <p className="mt-6">
+            {/* mt-6 → mt-4: with "skies." pulled onto the line above, the copy
+                is a line shorter and the link clears the fold. */}
+            <p className="mt-4">
               <a href="#what-youll-find" className="link-underline">
                 Continue <ArrowRight size={13} aria-hidden="true" />
               </a>

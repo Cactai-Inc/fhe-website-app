@@ -144,7 +144,6 @@ export default function Header() {
     ? 'text-white/90 hover:text-white'
     : 'text-green-800 hover:text-green-950';
   const wordmarkText = overDark ? 'text-white' : 'text-green-900';
-  const subtleText = overDark ? 'text-white/60 hover:text-white/90' : 'text-green-800/70 hover:text-green-900';
   // The gold accent underline reads on both surfaces (deeper gold on light).
   const underline = overDark ? 'bg-gold-300' : 'bg-gold-700';
 
@@ -269,9 +268,19 @@ export default function Header() {
           {/* Say Hello — the right corner. Member Area and Sign In used to sit
               here; both moved to the footer (owner, 2026-08-16), so a first-time
               visitor sees one way in and no account chrome. */}
+          {/* Owner, 2026-08-16: outlined in gold, and the outline FILLS gold on
+              hover with the label flipping to the dark green so it reads against
+              the fill. `overDark` swaps the resting ink between the light gold
+              (over the hero) and the deep gold (over cream pages) — the border
+              and the fill are the same gold in both, so the button looks like one
+              control everywhere. */}
           <Link
             to="/contact"
-            className={`hidden md:inline-flex items-center min-h-[44px] text-[11px] font-sans tracking-widest uppercase transition-colors duration-[400ms] focus-ring-dark ${subtleText} ${heroShadow}`}
+            className={`hidden md:inline-flex items-center min-h-[40px] px-4 border text-[11px] font-sans tracking-widest uppercase transition-colors duration-300 focus-ring-dark hover:bg-gold-600 hover:text-green-950 hover:border-gold-600 ${heroShadow} ${
+              overDark
+                ? 'border-gold-300/70 text-gold-300'
+                : 'border-gold-700/60 text-gold-800'
+            }`}
           >
             Say Hello
           </Link>
