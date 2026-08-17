@@ -327,8 +327,20 @@ ops-board distinction.
 > for us to do the work with and they would be prompted to complete the intake form, the documents,
 > and make payment for those services."*
 
-**When `ASKRIGHT` §A3f answered *"the horse you help me find"*, the submission's single order is
-SPLIT at the confirm-promote-invite act (§C5b) into:**
+**Owner, 2026-08-16 — how the split is triggered:**
+> *"we allow it as a unified inbound order inquiry but we have to split it once we know the
+> specifics… we just figure out or clarify it when we are talking with them. and our system needs to
+> be able to split the orders and keep something as a draft."*
+
+⚠️ **THE SPLIT IS A STAFF ACTION, NOT AN AUTOMATIC CONSEQUENCE OF AN ANSWER.** The inquiry arrives
+unified and may be ambiguous; **no question on the form decides this** (`ASKRIGHT` §A3f adds none).
+Staff learn the specifics on the call and **choose** to split.
+
+**So build two capabilities, and let staff decide when to use them:**
+1. **Split an order** — move selected line items out into a second order on the same inquiry.
+2. **Hold an order as a draft** — it owes nothing and schedules nothing until released.
+
+**The common case they serve, and the shape it takes:**
 
 | | order A — acquisition | order B — the care services |
 |---|---|---|
@@ -337,9 +349,11 @@ SPLIT at the confirm-promote-invite act (§C5b) into:**
 | **later, once the horse exists** | — | **wakes up**: the client is prompted to complete the **horse intake form**, the **documents**, and **make payment** for those services |
 
 **Rules:**
-- **The split happens once, at confirmation** — before the invite goes out, because the invite is
-  what starts the deal-path onboarding. **Never split at submission**; the inquiry is one thing
-  until staff have had the conversation.
+- **Staff split at or before confirmation** — the invite must go out against the right order, since
+  it starts the deal-path onboarding. **Never split automatically at submission.**
+- **Splitting must be possible for any order, for any reason staff have** — this scenario is the
+  reason it is being built, not the limit of its use. **Do not hard-code it to the
+  acquisition-plus-care case.**
 - **Both orders trace to the same inquiry** — one `requests` row, two orders. **Prove the link
   survives**, or staff lose the story of why order B exists.
 - **Order B is never `awaiting_payment` while the horse is missing.** Nothing is owed for work that
@@ -568,10 +582,13 @@ are **not** to be wired up here — report them, nothing more.
     prove a horse-care buyer with no horse lands as a deal client.
 12d. **The inquiry answers are retrievable per contact and per subject** (§C10b) — prove they can
     populate a downstream form rather than sitting in a text blob.
-12e. ⚠️ **THE SPLIT** (§C5c): an inquiry mixing acquisition with care for the sought horse produces
-    **two orders from one `requests` row** at confirmation — never at submission. Order A goes
-    `awaiting_payment`; **order B stays `draft` + awaiting-the-horse, owing nothing, scheduled
-    nothing.** Prove both orders trace back to the one inquiry.
+12e. ⚠️ **THE SPLIT IS A STAFF ACTION** (§C5c): staff can move selected line items into a second
+    order on the same inquiry, and hold an order as a draft that owes and schedules nothing.
+    **Prove it is staff-initiated, works for any order rather than only the acquisition case, and
+    that both orders trace back to the one `requests` row.** Order A goes `awaiting_payment`;
+    held order B stays `draft`.
+12e2. **A mixed inquiry submits unified and unblocked**, with no extra question and no special
+    routing — the ambiguity is allowed and the call resolves it.
 12f. **Order B wakes on a HORSE APPEARING for that client** — not on the acquisition order closing —
     and only then prompts intake, documents and payment, moving to `awaiting_payment`. Prove the
     trigger is the horse.

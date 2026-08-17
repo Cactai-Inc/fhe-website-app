@@ -468,35 +468,26 @@ tell them apart:
 **Guessing between these gets the client's own horse confused with a horse they do not own.**
 Per the owner's standing rule — *"we can ask them if it is"* — **ask.**
 
-### The disambiguating question
-When the cart contains **at least one horse-care item AND at least one acquisition item**, ask
-**once**, in the shared first section:
+### ⚠️ ADD NO QUESTION FOR THIS. THE CONVERSATION RESOLVES IT.
 
-> **"Is the {service} for a horse you have now, or for the horse we help you find?"**
->
-> - **A horse I have now**
-> - **The horse you help me find**
-> - **Different horses — more than one** *(escape hatch)*
+**Owner, 2026-08-16 — the ruling:**
+> *"we allow it as a unified inbound order inquiry but we have to split it once we know the
+> specifics, and we dont need the questions to capture that entirely or they start becoming too
+> numerous, so we just figure out or clarify it when we are talking with them."*
 
-⚠️ **Confirm this wording with the owner.** Ask it **once for the order**, not per service.
+**Do NOT add a disambiguating question.** Four readings would need several questions to separate
+properly, and the form would grow past the point where a stranger finishes it. **The inquiry is
+allowed to arrive ambiguous.**
 
-### What each answer does
+**The one signal already collected is enough:** the horse block's *"Do you own or lease the horse?"*
+with its **"Not yet — I'd like help finding one"** option (§A3b). That single answer tells staff a
+horse may not exist, and it costs no extra question because it is asked anyway.
 
-| answer | horse-care questions | how the order reads |
-|---|---|---|
-| **A horse I have now** | asked normally, subject `client_horse` | care is for an existing horse |
-| **The horse you help me find** | ⚠️ **SUPPRESSED** — §A3b: there is no horse, so age, breed, behaviour, injuries and prior training have no answers | **the care service attaches to the `sought_horse`** and cannot be scheduled until the horse is acquired |
-| **Different horses — more than one** | asked normally (they do have one) | flag for staff: more than one horse is in play — **do not build a multi-horse picker; the call resolves it** |
+**Everything else is settled on the call**, and the system's job is only to **let staff split the
+order afterwards and hold one half as a draft** — built in `CAREPATH` §C5c, **not here**.
 
-⚠️ **Do not ask this question when only one category is present** — with no acquisition item there is
-nothing to confuse, and §A3b's own gate already covers a care-only client who has no horse yet.
-
-### The operational consequence — say it plainly on the order
-**A care service for a horse that does not exist yet CANNOT BE SCHEDULED.** Staff cannot put
-clipping on the calendar for a horse nobody has bought. `CAREPATH` §C7 has staff choose a date, day,
-or two days when provisioning — **that step must not be reachable for a service attached to a
-`sought_horse`.** The order must show it as **awaiting the horse**, and this must be obvious to
-whoever opens the lead. **Report where you made it visible.**
+⚠️ **A mixed cart is therefore NEVER blocked, warned about, or routed differently at inquiry time.**
+It submits as one unified inquiry like any other.
 
 ### Horse Training — after the shared block
 | # | question |
@@ -774,13 +765,9 @@ not work.**
     horse **suppresses** the age/breed/behaviour/injury/prior-training questions instead of showing
     unanswerable fields, the order records that the horse is still to be acquired, and those answers
     are **not** filed as describing a horse the client already owns.
-4k2. ⚠️ **§A3f — the disambiguating question appears when horse care AND acquisition share a cart**,
-    once for the order, never per service, and **never when only one category is present.**
-4k3. **"The horse you help me find"** suppresses the horse questions, attaches the care service to
-    the `sought_horse`, and makes the order read **awaiting the horse** — and **§C7's date/day
-    picker is NOT reachable for that service.** Prove the scheduling block.
-4k4. **"A horse I have now"** and **"Different horses"** both ask the horse questions normally; the
-    latter flags staff that more than one horse is in play, with **no multi-horse picker built.**
+4k2. ⚠️ **§A3f — NO disambiguating question exists.** A cart mixing horse care and acquisition
+    submits as one unified inquiry, unblocked and unwarned, asking **nothing extra**. Prove no
+    question was added and no special routing occurs.
 4l. The two ownership questions — the rider's *"a horse"* and horse care's *"the horse"* — **remain
     separate**, and a client who owns one horse while seeking another can answer them differently.
 4m. **The inference works and is visible** (§A3c): a client who owns or leases the horse they want
