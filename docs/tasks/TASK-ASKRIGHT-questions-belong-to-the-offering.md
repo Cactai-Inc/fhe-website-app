@@ -249,10 +249,16 @@ horse they hope to buy should be 8–12 and any breed. **One `breed` key would d
 
 | section | subject | contents |
 |---|---|---|
-| **1. About you** | `person` | the evaluation set's person questions — current riding level, equestrian experience (§A3c may prefill its "Currently own or lease a horse" option from the training section's answer) — **asked once** |
-| **2. Horse Training** | `client_horse` | how long they have had the horse, its age, breed, behaviour, injuries, riding history, prior training, goals |
-| **3. Horse Evaluation** | `evaluated_horse` | location, age, breed, current use, planned use, concerns |
-| **4. Riding Lesson** | — | **no page-2 questions** — rider info (experience in years, notes, availability) lives on the form (§A0) |
+| **1. Horse Training** | `client_horse` | how long they have had the horse, its age, breed, behaviour, injuries, riding history, prior training, goals |
+| **2. Horse Evaluation** | `evaluated_horse` + `person` | location, age, breed, current use, planned use, concerns — **plus its person questions (riding level, equestrian experience), under this heading because no other offering in this cart asks them** (§A2) |
+| **3. Riding Lesson** | — | **no page-2 questions** — rider info (experience in years, notes, availability) lives on the form (§A0) |
+
+**No shared section renders in this cart** — age and breed appear in both lists but describe
+**different horses** (`client_horse` vs `evaluated_horse`), so they do not merge. The "don't ask
+the same information" the owner wants is delivered by **§A3c**: training's *"I own/lease the
+horse"* prefills the evaluation experience answer to **"currently own or lease"**. **Add a Finder
+to this cart and the experience question moves up into the shared first batch** — two offerings
+would then ask it.
 
 **Age and breed are asked twice here — correctly** — because they are two different horses. The
 experience question is asked **once**, because there is only one person.
@@ -330,14 +336,16 @@ owns. **Report this hand-off rather than building it here.**
 **Never run an implication backwards.** That is the error §A3b exists to prevent: someone owning a
 horse while asking us to find another for training.
 
-⚠️ **Where the person-level possession question actually lives (RIDERQUALIFY is cancelled):** the
-only built instance is **Horse Evaluation's** *"Which best matches your equestrian experience?"* —
-its third option, **"Currently own or lease a horse"**, is what this implication prefills.
-**Do NOT prefill the Finder/Assistance experience question**: its options are experience *levels*
-(first horse / owned in the past / experienced / professional), and possession does not determine
-level — someone leasing their first horse currently leases AND is on their first horse. **If the
-assembled form contains no person-level possession question, the implication has no target — do
-not invent a question to give it one.**
+⚠️ **What the implication prefills — CORRECTED BY THE OWNER, 2026-08-16.** *"Which best matches
+your equestrian experience?"* asks about **ownership / caretaking / leasing experience EVERYWHERE
+it appears** — Finder, Assistance and Evaluation alike. Owner: *"the hint is in the answers."* It
+is NOT a riding question; riding ability is Evaluation Q7's separate job. So the prefill target is
+the experience question **wherever the assembled form asks it**: when the `client_horse` section
+establishes that the client owns or leases the horse being serviced, the experience answer
+prefills to **"currently own or lease"** — owner: *"if they are currently leasing or an owner
+their answer is that they currently own or lease,"* never "first horse". (The single unified
+option list is Owner Question 4.) If the assembled form contains no experience question, the
+implication has no target — do not invent a question to give it one.
 
 ### How a prefilled answer must behave
 - **It is shown answered, never hidden.** The visitor sees the answer and can see it is filled in.
@@ -374,15 +382,14 @@ then **one** inquiry.
 
 | section | subject | contents |
 |---|---|---|
-| **About you** | `person` | the acquisition set's experience question — **asked once for the whole order** |
 | **Horse Exercise** | `client_horse` | the leased horse: how long, age, breed, behaviour, injuries, riding history, prior training, goals (+ reason & duration if the weekly SKU) |
-| **Acquisition** | `sought_horse` | lease/buy, horses already considering, breed, age range, budget, boarding, intended use |
+| **Acquisition** | `sought_horse` + `person` | the experience question — **under this heading (no other offering here asks it, §A2), prefilled to "currently own or lease" per §A3c** since they lease the exercise horse — then lease/buy, horses already considering, breed, age range, budget, boarding, intended use |
 | **Riding Lesson** | — | **no page-2 questions** — the form carries the rider info (§A0) |
 
 **They lease rather than own, so §A3b's gate is satisfied and the horse questions ARE asked** — the
-horse exists. ⚠️ §A3c's implication holds in principle here, but **its only built target is
-Evaluation Q8, which is not in this cart** — and the Finder experience question must NOT be
-prefilled (its options are levels, not possession). **So in this exact order, nothing is prefilled.**
+horse exists. And per §A3c as the owner corrected it, the experience question — an **ownership**
+question everywhere it appears — prefills to **"currently own or lease"**, because they lease the
+exercise horse.
 
 ### ⚠️ `client_horse` and `sought_horse` MAY BE THE SAME HORSE
 
@@ -486,7 +493,14 @@ approach we should use for the acquisition services."*
 **Q2 is the existing `experience` block.** Owner: *"this is currently question 1 so we just need to
 change the question and remove the second line of text, the choices for answers are good as is."*
 So: **new question text, DELETE the help line** (*"We want to match our guidance to your actual
-background."*), **keep the four existing options unchanged.**
+background."*), **keep the four existing options unchanged** (but see Owner Question 4 — the
+unified list may replace them).
+
+⚠️ **What this question MEANS (owner, 2026-08-16):** **ownership / caretaking / leasing
+experience — NOT riding ability.** It is **the same question Evaluation asks as its Q8**. Per §A2:
+when a Finder/Assistance item and an Evaluation are in the cart together it is asked **once, in
+the shared first batch**; when only one offering carries it, it sits **under that offering's
+heading**.
 
 ⚠️ **`how_many_horses` and `wants_lessons` are absent from the owner's list.** The list reads as
 complete and replacing. **Do not delete them until Owner Question 3 is answered** — `wants_lessons`
@@ -504,12 +518,16 @@ is a cross-sell.
 | 7 | What is your current riding level? |
 | 8 | **Which best matches your equestrian experience?** |
 
-⚠️ **Q8 is the same question text as the Finder set's Q2 but with DIFFERENT options**, per the owner:
-**First horse · Owned or leased a horse in the past · Currently own or lease a horse.**
+⚠️ **Q8 is THE SAME QUESTION as the Finder set's Q2** (owner, 2026-08-16): ownership / caretaking /
+leasing experience, with the possession-pure options he dictated here — **First horse · Owned or
+leased a horse in the past · Currently own or lease a horse.**
 
-**This proves options belong to the question SET, not to a global key.** A single global
-`experience` constant cannot serve both. **Build accordingly**, and see Owner Question 4 for the
-cart that holds a Finder and an Evaluation at once.
+**Q7 is a DIFFERENT fact and both stay** (owner-confirmed): Q7 is riding ability, so a horse suited
+only to an advanced rider is never recommended to a beginner — that is its whole purpose. Never
+merge Q7 with Q8, and never merge either with the form's riding-experience-in-years.
+
+When Finder/Assistance and Evaluation share a cart, the experience question is asked **once in the
+shared first batch** (§A2). The single unified option list is **Owner Question 4**.
 
 ## A5 — free-text answers, stored in the existing place
 - Build the free-text sibling to `QualifierGroup` (single-line and multi-line).
@@ -562,9 +580,9 @@ service".
 
 | file | line | today | becomes |
 |---|---|---|---|
-| `Lessons.tsx` | 280 | `label="Continue to Booking Request"` | `Continue to Inquiry` |
-| `BookHorse.tsx` | 226 | `'Continue to Booking Request'` (last-step button) | `Continue to Inquiry` |
-| `BookSupport.tsx` | 278 | `'Continue to Booking Request'` (last-step button) | `Continue to Inquiry` |
+| `Lessons.tsx` | 280 | `label="Continue to Booking Request"` | `Continue to Submit Inquiry` |
+| `BookHorse.tsx` | 226 | `'Continue to Booking Request'` (last-step button) | `Continue to Submit Inquiry` |
+| `BookSupport.tsx` | 278 | `'Continue to Booking Request'` (last-step button) | `Continue to Submit Inquiry` |
 | `Checkout.tsx` | 55 | `useDocumentTitle('Send an Inquiry')` | keep — already correct |
 | `Checkout.tsx` | 298 | `'Send us your inquiry'` (signed out) | `Your Inquiry` |
 | `Checkout.tsx` | 546 | `'Your inquiry'` | `Your Inquiry` (title case) |
@@ -661,10 +679,13 @@ The pre-sale answers duplicate part of each post-sale intake form (breed, age, b
     training's *breed of your horse* and the finder's *preferred breed* stay separate, and **state
     the keying scheme** that guarantees it.
 4e. **The owner's example — a lesson, an evaluation and horse training in one order** — renders
-    exactly: one *About you* section, then a section per offering **that has page-2 questions**
-    (training and evaluation — lessons contributes none; its rider info stays on the form). **The
-    experience question appears once. Age and breed appear twice — `client_horse` vs
-    `evaluated_horse`, two different animals.**
+    exactly **two sections** (training, then evaluation — lessons contributes none; its rider info
+    stays on the form) and **no shared section**. **The experience question appears once, under
+    Evaluation, prefilled per §A3c when training answered own/lease. Age and breed appear twice —
+    `client_horse` vs `evaluated_horse`, two different animals — correctly.**
+4e2. **Finder + Evaluation in one cart:** the experience question — the SAME ownership question in
+    both sets — is asked **once, in the shared first batch**, with the unified option list (Owner
+    Question 4).
 4f. **Adding an offering after answering extends the form and re-asks nothing.** Removing one hides
     its section, keeps its answers for a re-add, and **submits only what is still in the cart.**
 4g. ⚠️ **THE CROSS-ENTRY CASE.** A cart holding a **horse-care or acquisition item** whose visitor
@@ -680,18 +701,19 @@ The pre-sale answers duplicate part of each post-sale intake form (breed, age, b
     are **not** filed as describing a horse the client already owns.
 4l. The two ownership questions — the rider's *"a horse"* and horse care's *"the horse"* — **remain
     separate**, and a client who owns one horse while seeking another can answer them differently.
-4m. **The inference works and is visible** (§A3c): a client who owns the horse they want serviced,
-    and who also holds an acquisition item, finds *"do you currently own or lease a horse?"*
-    **already answered** — visibly, and editable.
+4m. **The inference works and is visible** (§A3c): a client who owns or leases the horse they want
+    serviced, and who also holds an acquisition item, finds the equestrian-experience question
+    **already answered "currently own or lease"** — visibly, and editable.
 4n. **The inference is one-way** — owning *a* horse never prefills owning *the* serviced horse.
 4o. **A derived answer follows its source until the visitor edits it**, and **never afterwards**.
     Prove both halves: change the source and watch it update; edit the derived answer, change the
     source again, and watch it hold.
 4p. **Staff can tell a derived answer from a given one** — name where that distinction is stored.
 4q. ⚠️ **THE OWNER'S FULL SCENARIO** (§A3d): leasing a horse, wants exercise for it, wants lessons,
-    and is ready to buy. The exercise and acquisition sections render, *About you* is asked
-    **once**, lessons adds **nothing to page 2** (its rider info is on the form), and it produces
-    **one** inquiry. Prove it from each of the three entry pages.
+    and is ready to buy. The exercise and acquisition sections render, the experience question
+    appears **once under Acquisition, prefilled to "currently own or lease"**, lessons adds
+    **nothing to page 2** (its rider info is on the form), and it produces **one** inquiry. Prove
+    it from each of the three entry pages.
 4r. **Buying the horse they lease:** choosing *"the horse I currently lease"* links the subjects,
     prefills or suppresses **breed and age range**, and **leaves budget, boarding and intended use
     still asked.**
@@ -728,12 +750,17 @@ The pre-sale answers duplicate part of each post-sale intake form (breed, age, b
 3. **Are `how many horses are you considering?` and `are you interested in lessons?` being dropped
    from acquisition?** They are not in your new list. The second is a cross-sell, so I would rather
    you deleted it deliberately than have me infer it.
-4. **A cart holding both a Horse Finder and a Horse Evaluation** hits the same experience question
-   with two different option sets. Ask it once with the four Finder options, once with the three
-   Evaluation options, or once with a merged set?
+4. ~~Ask the experience question once, or per set?~~ **ANSWERED (2026-08-16): it is ONE question —
+   ownership / caretaking / leasing experience — asked ONCE** (shared batch when two or more
+   offerings carry it; under the single offering's heading otherwise). **Remaining: the ONE option
+   list.** The built Finder ships four (first horse / owned in the past / experienced owner / rides
+   professionally); you dictated the Evaluation trio (first horse / owned or leased in the past /
+   currently own or lease). One question asked once needs one list. **I recommend the
+   possession-pure trio** — "rides professionally" answers a riding question, and your earlier
+   "choices are good as is" predates the same-question ruling — but this is your call.
 5. **Horse Evaluation Q1 "Location"** — the location of the horse being evaluated, or the client's
-   own area? And **Q7 "current riding level"** sits close to **Q8 "equestrian experience"**; confirm
-   you want both.
+   own area? *(The Q7/Q8 half of this question is **ANSWERED**: both stay — Q7 is riding ability so
+   the horse matches the rider; Q8 is ownership experience. Different facts.)*
 6. **Budget and age range on the Finder set** — free text, or bands you want offered?
 8. ~~Move riding experience from the form to page 2?~~ **ANSWERED — NO. The form is untouched**
    (owner: *"the rider questions are already on the lesson form. there is nothing to add."*). The

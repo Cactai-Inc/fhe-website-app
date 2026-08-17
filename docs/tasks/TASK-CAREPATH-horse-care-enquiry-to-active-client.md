@@ -174,7 +174,7 @@ The old Review screen's content moves here, so the final page shows, in order:
 4. **The primary submit**, worded by `inquiryLabel()` per `ASKRIGHT` §A6 — *"Inquire about
    {service name} service"* for a horse-care order. **Never a generic "Send Inquiry" or "Submit".**
 
-**The questions page's forward button** (step 2 → step 3) reads **`Continue to Inquiry`** — the same
+**The questions page's forward button** (step 2 → step 3) reads **`Continue to Submit Inquiry`** — the same
 label `ASKRIGHT` §A6 gives the equivalent controls elsewhere.
 
 - ⚠️ **Delete** the *"That's everything we need for now…"* paragraph (`BookHorse.tsx:202-205`). It was
@@ -212,7 +212,7 @@ calendar date. **Horse care collects neither.**
 ⚠️ **The act word is "inquire", not "request"** (`ASKRIGHT` §A6). For horse care the wording is
 **"Inquire about {service name} service"**. If `ASKRIGHT` has merged, the copy is already correct —
 **do not re-word it here.** The step-3 primary button the owner originally called
-*"Continue to Submit Request"* becomes **"Continue to Inquiry"** under that ruling.
+*"Continue to Submit Request"* becomes **"Continue to Submit Inquiry"** under that ruling.
 
 Owner: *"the form should collect their personal information only."*
 
@@ -283,11 +283,9 @@ selected."*
    treat it as payable.
 5. **Confirmation, lead promotion, and the activation invite are ONE act, at ONE moment.** There is
    no state where the order is confirmed but the person is still a lead, or vice versa. Promotion
-   for a service buyer lands them as **CLIENT** per the owner's taxonomy (the ruling says "customer"
-   loosely; his 2026-08-02 ladder is authoritative: client = services, customer = goods).
+   lands them as **CLIENT** (owner-confirmed, 2026-08-16).
 6. **Cancellation is per ITEM.** Cancelling any item **voids that line item** and the order total
-   recomputes. **Cancelling the only item voids the whole order.** *(Read from "unless its the only
-   order" — flag if you read it differently.)* ⚠️ **Check whether `purchase_items` can represent a
+   recomputes. **Cancelling the only item voids the whole order** (owner-confirmed reading, 2026-08-16). ⚠️ **Check whether `purchase_items` can represent a
    voided line at all** — if it has no status/void column, that is a small migration this task must
    include, dry-run + rollback proven.
 
