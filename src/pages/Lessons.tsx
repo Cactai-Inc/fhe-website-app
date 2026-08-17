@@ -254,7 +254,7 @@ export default function Lessons() {
             </button>
             <Link to="/gift?item=lessons" className="inline-flex items-center gap-2 text-sm font-sans text-secondary hover:text-green-800 transition-colors focus-ring">
               <Gift size={15} aria-hidden="true" />
-              Buy as a gift instead
+              Buy as a gift
             </Link>
           </div>
           {itemCount === 0 && (
