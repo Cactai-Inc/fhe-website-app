@@ -43,7 +43,8 @@ provision does not match it yet.**
 
 | what | where it lives | blocked on |
 |---|---|---|
-| **Care plans: à la carte or weekly, staff pick the days, quantity follows** — retires the 1x/2x SKUs, moves frequency out of the catalog | `TASK-CAREPLANS` | **owner: the care prices, and what a weekly price attaches to; whether lessons are in scope; how indefinite plans bill** |
+| **Care plans: à la carte or weekly, staff pick the days, quantity follows** — retires the 1x/2x SKUs, moves frequency out of the catalog | `TASK-CAREPLANS` | **structural half is UNBLOCKED** (rate is per-session, two tiers, no volume discount; change no numbers yet). Still open: **are lessons in scope**, and **who raises the monthly charge** |
+| **Staff-built monthly plan** — several care items, one fixed monthly price that is NOT the line sum, recurring until cancelled, paid monthly. No `plans`/`bundles` table exists | `TASK-CAREPLANS` §P5 (report, not build) | likely **one piece of work with per-order-line pricing** |
 | **Acquisition carries no pricing** | `TASK-CAREPLANS` §P1 | ready |
 | **Per-order-line pricing** — staff record what a client was quoted; today price can only be set catalog-wide, so quoted orders sit at 0 | `docs/design/ACQUISITION-PRICING-AND-FULFILMENT.md` §3 | nothing — **needs no algorithm; ready to spec** |
 | **The two pricing algorithms** — finder (fee ↔ duration ↔ volume) and assistance (fixed fee from budget band) | same design record §4 | **owner: not yet designed** |

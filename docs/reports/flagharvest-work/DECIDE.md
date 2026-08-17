@@ -3300,3 +3300,748 @@ checked:  Not re-derived this pass; the two migration files are in the journal.
 rank:     5
 moot?:
 if kept:  Two queries would settle it.
+
+---
+
+# RANK 6 — COSMETIC, CLEANUP, AND RECORD-ONLY
+
+Most of these are records of a decision or an incident rather than work. They are here because the
+rule was that nothing gets dropped without evidence — not because they need doing.
+
+### 343. Small wording and label leftovers (one family, seven places)
+what:     Seven small wording leftovers: a marketing page still says "The Facility", seed copy says "around the stables", one page's title and its heading disagree in capitals, the greeting has no word for late night while another surface says "night", an eyebrow says "Ops", and a lucide icon replaced a literal plus.
+where:    Public site, member app
+raised:   8 reports, earliest 2026-08-05 · sources: TASK-FACILITYTERM-REPORT.md, TASK-ACCOUNTSURFACE-PHASE1.md, TASK-PAGETITLES-REPORT.md, TASK-REVIEWNAV-REPORT.md, TASK-ADDNEW-REPORT.md
+checked:  All still present today (About.tsx:120, seed.ts:35, formatDateTime.ts:26 vs DashboardHome.tsx:17).
+rank:     6
+moot?:
+if kept:  A single wording sweep.
+
+### 344. A dead theme colour and a dead read path
+what:     A colour defined in the styling config has no user, and one data-reading function has no caller.
+where:    Codebase
+raised:   2 reports, earliest 2026-08-08 · sources: TASK-ONEHEADER-REPORT.md, TASK-ONEAUTHOR-REPORT.md
+checked:  Both still present; the colour's only trace is a comment explaining why it existed.
+rank:     6
+moot?:
+if kept:  Delete both, keep the comment.
+
+### 345. Four visual judgement calls awaiting a glance
+what:     Four small visual choices were made by reasoning: the hover fill percentage, the press animation, the divider colour, and the home-screen icon's font.
+where:    App — header and navigation
+raised:   4 reports, 2026-08-10 · sources: TASK-UIBUILD-LOG.md
+checked:  All four unchanged; two divider weights coexist next to a constant that exists to prevent that.
+rank:     6
+moot?:
+if kept:  One look at a screen answers all four.
+
+### 346. Two menu-styling leftovers
+what:     The avatar menu still uses the old hover fill in eight places, and one menu item has no room for a badge.
+where:    App — navigation
+raised:   2 reports, earliest 2026-08-04 · sources: TASK-UIBUILD-LOG.md, TASK-B-REPORT.md
+checked:  Both unchanged; two hover languages coexist.
+rank:     6
+moot?:
+if kept:  Sweep the eight.
+
+### 347. A page name may wrap on the narrowest phone
+what:     "Horse records" may wrap onto two lines at 320px, which would look wrong rather than break anything.
+where:    Staff app — horse records
+raised:   1 report, 2026-08-12 · sources: TASK-ADDNEW-REPORT.md
+checked:  The exact arrangement is unchanged; unfalsifiable without a screen.
+rank:     6
+moot?:
+if kept:  Fold into item 200.
+
+### 348. Four navigation records that need no action
+what:     Four recorded facts: the dormant availability redirect, the divider added to only one menu, an unchanged comment, and the animation deliberately not built.
+where:    App — navigation
+raised:   4 reports, earliest 2026-08-10 · sources: TASK-ADMINSWEEP-PHASE1.md, TASK-UIBUILD-LOG.md, TASK-NAVMOTION-REPORT.md
+checked:  All four confirmed unchanged.
+rank:     6
+moot?:
+if kept:  Nothing to do — records.
+
+### 349. Menu state does not survive a reload
+what:     Which menu groups are open is forgotten on reload, unlike two other menu preferences.
+where:    App — navigation
+raised:   1 report, 2026-08-10 · sources: TASK-UIBUILD-LOG.md
+checked:  Unchanged.
+rank:     6
+moot?:
+if kept:  One stored preference.
+
+### 350. The one-time menu tip is per-device
+what:     The "click for menu" tip is remembered per browser, not per account, so clearing a browser shows it again.
+where:    App — header
+raised:   1 report, 2026-08-11 · sources: TASK-NAVMOTION-REPORT.md
+checked:  Unchanged.
+rank:     6
+moot?:
+if kept:  One column, if it matters.
+
+### 351. Seven menu rows share one icon
+what:     The whole settings group carries the same shield icon, and one module row carries the clients icon.
+where:    App — navigation
+raised:   4 reports, earliest 2026-08-11 · sources: TASK-ADMINSWEEP-PHASE1.md, TASK-TEXTEDIT-REPORT.md, TASK-MOBILEPASS-REPORT.md
+checked:  Confirmed today: seven rows still share the shield. The earlier duplicate pair was fixed.
+rank:     6
+moot?:
+if kept:  Blocked on the menu restructure it was deferred behind — or just pick seven icons.
+
+### 352. Most icon assignments could not be applied
+what:     Most of a planned icon exercise could not be applied because it depended on page merges that do not exist.
+where:    App — navigation
+raised:   1 report, 2026-08-08 · sources: TASK-ONEHEADER-REPORT.md
+checked:  Five were applied; the rest wait on the merges.
+rank:     6
+moot?:
+if kept:  Re-derive after any page merge.
+
+### 353. A menu diff that was specified and never applied
+what:     A one-row menu change was written out and never applied because it duplicated what another thread was removing.
+where:    Staff app — navigation
+raised:   1 report, 2026-08-11 · sources: TASK-ADMINSWEEP-PHASE2.md
+checked:  Unchanged.
+rank:     6
+moot?:
+if kept:  Re-derive against today's menu.
+
+### 354. The dropdown's height still assumes the old header
+what:     The account dropdown's maximum height was calculated for a shorter header, so it can overflow by about twelve pixels.
+where:    App — header
+raised:   1 report, 2026-08-06 · sources: TASK-HEADER-REPORT.md
+checked:  Unchanged; it scrolls internally, so it is cosmetic.
+rank:     6
+moot?:
+if kept:  One number.
+
+### 355. The menu appears instantly while its tab slides
+what:     The mobile menu appears instantly while the tab that opens it slides, so the pair does not read as one motion.
+where:    App — mobile menu
+raised:   1 report, 2026-08-06 · sources: TASK-HEADER-REPORT.md
+checked:  Unchanged.
+rank:     6
+moot?:
+if kept:  One transition.
+
+### 356. The checked-in header mockup is broken
+what:     The reference mockup for the header does not work — its script runs before the page exists.
+where:    Reference files
+raised:   1 report, 2026-08-06 · sources: TASK-HEADER-REPORT.md
+checked:  Unchanged.
+rank:     6
+moot?:
+if kept:  Fix or delete the reference.
+
+### 357. The moved menu costs thumb reach, knowingly
+what:     Moving the menu to the left made the top links a longer reach on a large phone; you took that trade explicitly.
+where:    App — mobile menu
+raised:   1 report, 2026-08-11 · sources: TASK-NAVMOTION-REPORT.md
+checked:  Unchanged and recorded in the code.
+rank:     6
+moot?:
+if kept:  Nothing — confirm on a phone, revert one class if you change your mind.
+
+### 358. Two page-width judgements flagged for veto
+what:     Four pages had their maximum width rounded up to the nearest available size, and three create controls arguably should read "Add New".
+where:    Whole app
+raised:   2 reports, earliest 2026-08-11 · sources: TASK-PAGEFRAME-REPORT.md, TASK-ADDNEW-REPORT.md
+checked:  Unchanged.
+rank:     6
+moot?:
+if kept:  Veto or accept.
+
+### 359. Two temporary menu states, recorded
+what:     The team row is temporarily restricted more tightly than its page, and two retirement switches were deliberately left on.
+where:    Staff app — navigation
+raised:   2 reports, 2026-08-12 · sources: TASK-REVIEWNAV-REPORT.md
+checked:  Both unchanged; neither hides anything from anyone today.
+rank:     6
+moot?:
+if kept:  Restore on acceptance — records.
+
+### 360. Two menu rows highlight at once on the dashboard
+what:     On the dashboard two menu rows both look selected, because one of them is the same page with a suffix.
+where:    Staff app — Review
+raised:   1 report, 2026-08-12 · sources: TASK-REVIEWNAV-REPORT.md
+checked:  Unchanged; recorded rather than worked around.
+rank:     6
+moot?:
+if kept:  Self-resolves when Review empties.
+
+### 361. Two more records about a shelved design
+what:     Twelve findings against the shelved header are closed with it, and its stylesheet was left in place rather than deleted line by line.
+where:    Design — shelved header
+raised:   5 reports, earliest 2026-08-06 · sources: TASK-HEADER-REPORT.md, TASK-BP410-REPORT.md, TASK-ONEMENU-PHASE1-PLAN.md, TASK-ONEHEADER-REPORT.md
+checked:  The files are deleted and the source is preserved under docs/reference/.
+rank:     6
+moot?:
+if kept:  Attach the twelve to that reference folder so they are not rediscovered.
+
+### 362. The header names a font directly
+what:     The header names its font directly rather than using the app's font setting, so it will not pick up a nicer face on a Mac.
+where:    App — header
+raised:   1 report, 2026-08-06 · sources: TASK-HEADER-REPORT.md
+checked:  Unchanged.
+rank:     6
+moot?:
+if kept:  One decision.
+
+### 363. Three tooltip wording records
+what:     A trailing full stop was added to your quoted tooltip, unknown roles fall back to generic wording, and five delete controls were deliberately left as plain tooltips.
+where:    Contracts — editor
+raised:   3 reports, earliest 2026-08-06 · sources: TASK-CHECKBOXTIP-REPORT.md, TASK-TIPTAP-REPORT.md
+checked:  All three unchanged.
+rank:     6
+moot?:
+if kept:  Trivial either way.
+
+### 364. Eight process records about how work landed
+what:     Eight records: a stale branch point, a misleading branch name, a dead migration kept in the journal, a spec found outside the repo, grants applied in two passes, sequence numbers burned by rolled-back proofs, a review loop the orchestrator never closed, and a branch deliberately not pushed.
+where:    Process
+raised:   9 reports, earliest 2026-08-02 · sources: POST_RUN_CLOSEOUT.md, TASK-C10-REPORT.md, TASK-LEASEFIX-REPORT.md, TASK-NAVMOTION-REPORT.md, TASK-BOOKWRITE-REPORT.md, TASK-LEASESET-REPORT.md, TASK-NOGUARD3-REPORT.md
+checked:  All confirmed as recorded; none is actionable now.
+rank:     6
+moot?:
+if kept:  Nothing to do — records.
+
+### 365. "Test the content, not the commit" — a lesson worth keeping
+what:     A thread twice told you work had not landed when it had, because it checked commit identifiers instead of file contents.
+where:    Process
+raised:   3 reports, 2026-08-10 · sources: TASK-LEASEFIX-REPORT.md
+checked:  Confirmed; the lesson is in no standing document.
+rank:     6
+moot?:
+if kept:  One line in CLAUDE.md.
+
+### 366. The lint warning count in CLAUDE.md is wrong
+what:     The documented count of code warnings is stale — it says about twenty-six and the real number is thirty-six to thirty-nine.
+where:    Documentation
+raised:   12 reports, earliest 2026-08-05 · sources: TASK-TITLESWEEP-REPORT.md, TASK-PLUSPASS-REPORT.md, TASK-UIBUILD-LOG.md, TASK-A8B-REPORT.md, TASK-MOBILEPASS-REPORT.md, TASK-PAGEFRAME-REPORT.md, TASK-UPLOADS-REPORT.md, TASK-NAVMOTION-REPORT.md, TASK-ADDITEM-REPORT.md, TASK-PURPOSEFIX-REPORT.md, TASK-DOCCOLS-REPORT.md
+checked:  Twelve separate threads have re-measured and reported this. The number in CLAUDE.md is still ~26.
+rank:     6
+moot?:
+if kept:  One number — and it stops a twelfth thread reporting it.
+
+### 367. Twenty-eight corrections to task-document premises
+what:     Twenty-eight separate corrections where a task document's stated facts were wrong and the thread corrected them in its report: wrong file names, wrong counts, wrong causes, wrong line numbers, a column that does not exist, a contradiction in a brief.
+where:    Process — task documents
+raised:   28 reports, earliest 2026-08-01 · sources: 28 task reports (see FAMILIES.md F654 for the list)
+checked:  Each was verified by the thread that raised it; none needs action now. Their value is the pattern: task documents go stale within hours.
+rank:     6
+moot?:
+if kept:  Nothing to do — this is the strongest argument for "derive, never copy".
+
+### 368. A settled decision recorded twice about the platform account
+what:     Two records confirm the platform account was correctly left without a business, exactly as ruled.
+where:    Identity
+raised:   2 reports, earliest 2026-08-11 · sources: TASK-GOOGLEAUTH-REPORT.md
+checked:  Prod: still no business attached, which is correct.
+rank:     6
+moot?:
+if kept:  Nothing to do — record.
+
+### 369. Historic invitation records were left as they are
+what:     Older stacked invitation records were not rewritten, because rewriting their history would be inventing it.
+where:    Identity — invitations
+raised:   1 report, 2026-08-11 · sources: TASK-INVITEWORKS-REPORT.md
+checked:  Prod: unchanged.
+rank:     6
+moot?:
+if kept:  Nothing to do — record.
+
+### 370. A correction that keeps being re-alarmed about
+what:     An alarming "thirteen invitations never redeemed" figure was twelve test sends plus one real address, and it keeps being rediscovered.
+where:    Identity — invitations
+raised:   1 report, 2026-08-11 · sources: TASK-INVITEWORKS-REPORT.md
+checked:  Prod: the shape is unchanged; six of the seven expired are test identities.
+rank:     6
+moot?:
+if kept:  Nothing to do — but item 58 is the real one underneath it.
+
+### 371. Two email-wording leftovers from a settled decision
+what:     The wording for the welcome and overdue emails still exists in the renderer even though both were deliberately deleted, and that renderer is now entirely unused.
+where:    Email
+raised:   2 reports, 2026-08-12 · sources: TASK-EMAILEXTRACT-REPORT.md
+checked:  Unchanged; deliberately kept rather than reversing your decision.
+rank:     6
+moot?:
+if kept:  Delete both when convenient.
+
+### 372. Three email-extraction records
+what:     Three records: a new placeholder namespace created against instruction, fallback wording moved into the templates, and a corrected count of how many emails exist.
+where:    Email
+raised:   3 reports, 2026-08-12 · sources: TASK-EMAILEXTRACT-REPORT.md
+checked:  All three as recorded.
+rank:     6
+moot?:
+if kept:  Nothing to do — records.
+
+### 373. Two email-path records
+what:     The deliverability panel resolves the inbox on the client rather than the server, and a minor-rejection branch in the invite endpoint cannot be reached.
+where:    Email
+raised:   2 reports, earliest 2026-08-04 · sources: TASK-C-REPORT.md, TASK-C10-REPORT.md
+checked:  Both unchanged.
+rank:     6
+moot?:
+if kept:  Nothing to do — records.
+
+### 374. Reminder senders that were deliberately not touched
+what:     The reminder emails were left alone, and a minor with no account is already incidentally unreachable there.
+where:    Email — reminders
+raised:   1 report, 2026-08-04 · sources: TASK-C10-REPORT.md
+checked:  Unchanged.
+rank:     6
+moot?:
+if kept:  Nothing to do — record.
+
+### 375. Two stale references to the retired enquiry page
+what:     A dashboard tile and a staff email both still say "open the request inbox", pointing at a page that has been retired (both still work via a redirect).
+where:    Staff app, email
+raised:   1 report, 2026-08-11 · sources: TASK-LEADCLEAN-REPORT.md
+checked:  Unchanged.
+rank:     6
+moot?:
+if kept:  Two strings.
+
+### 376. A guard with no data to exercise it
+what:     A safety check in a backfill has never met the situation it guards against, so it is proven only by a test.
+where:    Leads
+raised:   1 report, 2026-08-11 · sources: TASK-LEADCLEAN-REPORT.md
+checked:  Unchanged.
+rank:     6
+moot?:
+if kept:  Nothing to do — record.
+
+### 377. Two horse-record cosmetics
+what:     The horse-records page builds its own dialog beside the app's shared one, and the records hub tells staff to go to a screen the app does not link to.
+where:    Staff app — horse records
+raised:   2 reports, 2026-08-12 · sources: TASK-DUPECENSUS-REPORT.md
+checked:  The hub page has changed since; the message and the hand-rolled dialog are still as described.
+rank:     6
+moot?:
+if kept:  Two small changes.
+
+### 378. Two record-page navigation asymmetries
+what:     A horse link on a person's record leaves the page while a person link on a horse's record opens in place, and the dossier shows the same horse information twice.
+where:    Staff app — Records
+raised:   2 reports, 2026-08-12 · sources: TASK-RECORDS-REPORT.md
+checked:  Both unchanged.
+rank:     6
+moot?:
+if kept:  Two small changes.
+
+### 379. Two roster cosmetics
+what:     Credits are shown as one total rather than itemised, and the old "active first" sort order was lost in a page port.
+where:    Staff app — Clients
+raised:   2 reports, earliest 2026-08-10 · sources: TASK-ROSTERCARD-REPORT.md, TASK-ROSTER-REPORT.md
+checked:  The itemised data is still carried; the sort still has two keys and no active-first.
+rank:     6
+moot?:
+if kept:  Two small changes.
+
+### 380. Three roster judgement calls, recorded
+what:     Three judgement calls on the client cards: how the status ring is derived, showing "Client" as a fixed word on a pair badge, and how far the service columns scale.
+where:    Staff app — Clients
+raised:   3 reports, earliest 2026-08-10 · sources: TASK-ROSTERCARD-REPORT.md, TASK-ROSTER-REPORT.md
+checked:  All three unchanged.
+rank:     6
+moot?:
+if kept:  Nothing to do — records.
+
+### 381. The gifts heading covers both directions
+what:     The gifts page heading covers both received and given; splitting them needs a structural change because the component is shared.
+where:    Member app — Gifts
+raised:   1 report, 2026-08-05 · sources: TASK-TITLESWEEP-REPORT.md
+checked:  Unchanged.
+rank:     6
+moot?:
+if kept:  One structural change for one heading.
+
+### 382. An account row's icon was changed
+what:     One account row's icon was deliberately changed and never acknowledged.
+where:    Member app — Account
+raised:   1 report, 2026-08-05 · sources: TASK-ACCOUNTSURFACE-REPORT.md
+checked:  Unchanged.
+rank:     6
+moot?:
+if kept:  Nothing to do — record.
+
+### 383. An order opens outside the app shell
+what:     Opening an order from the account leaves the app shell for a public-site page.
+where:    Member app — Orders
+raised:   1 report, 2026-08-07 · sources: TASK-ACCOUNTSURFACE-PHASE1.md
+checked:  Unchanged.
+rank:     6
+moot?:
+if kept:  One route.
+
+### 384. Two account deep links have no links to them
+what:     Two links that open a specific account section exist and nothing anywhere uses them.
+where:    Member app — Account
+raised:   1 report, 2026-08-06 · sources: TASK-ACCTEVAL-REPORT.md
+checked:  Unchanged.
+rank:     6
+moot?:
+if kept:  Use them or drop them.
+
+### 385. One inert review mount, by design
+what:     One page in the review section has a deliberately dead submit button, because its real save path has the filing defect in item 11.
+where:    Staff app — Review
+raised:   1 report, 2026-08-12 · sources: TASK-REVIEWNAV-REPORT.md
+checked:  Unchanged.
+rank:     6
+moot?:
+if kept:  Self-resolves with item 11.
+
+### 386. A retired function still names two retired templates
+what:     One database function still tests two retired template names in a branch that can never match.
+where:    Database
+raised:   1 report, 2026-08-06 · sources: TASK-SVCPURGE-REPORT.md
+checked:  Prod, checked today: both retired names are still in the body.
+rank:     6
+moot?:
+if kept:  Cosmetic; needs a function rewrite, which is why it was skipped.
+
+### 387. A function that queries a deleted table
+what:     One old function still queries a table that was removed; nothing calls it, so it is cleanup rather than breakage.
+where:    Database
+raised:   2 reports, 2026-08-12 · sources: TASK-TESTDB-REPORT.md
+checked:  Prod, checked today: the function still exists and is still granted to both public roles.
+rank:     6
+moot?:
+if kept:  Drop it.
+
+### 388. A vestigial column left by a deleted table
+what:     A gift record still carries a reference column whose relationship was removed with an old table.
+where:    Gifts
+raised:   1 report, 2026-08-11 · sources: TASK-GIFTCREDITS-REPORT.md
+checked:  Unchanged.
+rank:     6
+moot?:
+if kept:  Drop the column.
+
+### 389. A deal function nothing calls
+what:     A function that reopens a deal exists in the database and nothing in the app calls it.
+where:    Deals
+raised:   1 report, 2026-08-04 · sources: HANDOFF_DEAL_SALE_BUILD_2026-08-04.md
+checked:  Unchanged.
+rank:     6
+moot?:
+if kept:  Wire it or drop it.
+
+### 390. The deal activity list is assembled on demand
+what:     The deal activity list is composed from other tables when read, so anything not already recorded elsewhere never appears.
+where:    Deals
+raised:   1 report, 2026-08-04 · sources: HANDOFF_DEAL_SALE_BUILD_2026-08-04.md
+checked:  Unchanged.
+rank:     6
+moot?:
+if kept:  A real activity table, if the log matters.
+
+### 391. Four contract-composition records
+what:     Four records from the authoring work: a new function unnamed in the spec, a combined call instead of many, two new columns, and a punctuation rule scoped to added clauses only.
+where:    Contracts — authoring
+raised:   4 reports, 2026-08-04 · sources: TASK-R11-REPORT.md
+checked:  All four as recorded.
+rank:     6
+moot?:
+if kept:  Nothing to do — records.
+
+### 392. The bill of sale's numbering changed visibly
+what:     The bill of sale now numbers its sections differently — acceptable for a short document but a visible change.
+where:    Sale documents
+raised:   1 report, 2026-08-04 · sources: TASK-R11-REPORT.md
+checked:  Unchanged.
+rank:     6
+moot?:
+if kept:  Look at one and accept or revert.
+
+### 393. Four template-inventory records
+what:     Four records: two inactive templates with empty bodies, two body-less retired templates still present, an inline preview retired behind a switch rather than deleted, and a lease version bumped twice by a proof.
+where:    Templates
+raised:   4 reports, earliest 2026-08-06 · sources: TASK-TEXTEDIT-REPORT.md, TASK-SVCPURGE-REPORT.md, TASK-ONEAUTHOR-REPORT.md
+checked:  Prod, checked today: all four confirmed exactly as recorded.
+rank:     6
+moot?:
+if kept:  Nothing to do — records.
+
+### 394. Four template-purge records
+what:     Four records from deleting six unused contract templates: an extra deletion beyond the list (contents preserved in a comment), a slightly wrong premise in the task, the deletes reporting zero as expected, and the business intent taken on trust.
+where:    Templates
+raised:   4 reports, 2026-08-06 · sources: TASK-SVCPURGE-REPORT.md
+checked:  All four as recorded.
+rank:     6
+moot?:
+if kept:  Nothing to do — records.
+
+### 395. Three placeholder-inventory records
+what:     Three records: the retired fee placeholders that could be hidden from the picker, the re-pointing recommendations left undone, and one lease template that renders correctly with no placeholder rows at all.
+where:    Templates — placeholders
+raised:   3 reports, earliest 2026-08-01 · sources: TASK-TOKENAUDIT-REPORT.md, PROMPT_A_STAGES_1-3.md
+checked:  Prod, checked today: 360 placeholder rows; the lease templates still have none of their own.
+rank:     6
+moot?:
+if kept:  Nothing to do — records.
+
+### 396. Two clone-scope records
+what:     Two records: the four tables copied when a template is cloned are enough today but not in general, and a seventh related table was missing from an inventory.
+where:    Templates
+raised:   2 reports, 2026-08-07 · sources: TASK-LEASEFORK-REPORT.md
+checked:  Both as recorded.
+rank:     6
+moot?:
+if kept:  Nothing to do — records.
+
+### 397. Three document-queue records
+what:     Three records: the default view changed from all documents to the five awaiting signature, the "by person" preset filters in place rather than opening a dossier, and the contract column shows a raw identifier you asked to replace with parties.
+where:    Staff app — Documents
+raised:   3 reports, earliest 2026-08-06 · sources: TASK-DOCQUEUE-REPORT.md, TASK-A-PARTY-VERIFY-2-REPORT.md
+checked:  The parties column now exists; the raw contract column and the two behaviours are unchanged.
+rank:     6
+moot?:
+if kept:  One column can go.
+
+### 398. Four document-queue corrections, recorded
+what:     Four corrections: two arithmetic fixes, a company marker that has no rows, and the reason a status was unreachable.
+where:    Staff app — Documents
+raised:   4 reports, 2026-08-11 · sources: TASK-DOCCOLS-REPORT.md, TASK-DOCQUEUE-REPORT.md
+checked:  All four as recorded.
+rank:     6
+moot?:
+if kept:  Nothing to do — records.
+
+### 399. The company contact shows as plain text
+what:     The company shows as unlinked text in the parties column because it has no record page of its own.
+where:    Staff app — Documents
+raised:   1 report, 2026-08-11 · sources: TASK-DOCCOLS-REPORT.md
+checked:  Unchanged; deliberate rather than emitting a dead link.
+rank:     6
+moot?:
+if kept:  Give the company a record page, or accept.
+
+### 400. Column choices stored per browser
+what:     Which document columns you show is remembered per browser rather than on your account, as a display preference.
+where:    Staff app — Documents
+raised:   1 report, 2026-08-11 · sources: TASK-DOCCOLS-REPORT.md
+checked:  Unchanged.
+rank:     6
+moot?:
+if kept:  Nothing to do — record.
+
+### 401. Two delivery records
+what:     Two records: the company mirror is skipped for targeted sends, and the send panel was left out of the document menu because it lives on another route.
+where:    Documents — delivery
+raised:   3 reports, 2026-08-04 · sources: TASK-A8B-REPORT.md
+checked:  Both unchanged.
+rank:     6
+moot?:
+if kept:  Nothing to do — records.
+
+### 402. A one-line revert is available on a notification change
+what:     A staff broadcast was folded into the new party-signed alert; a one-line revert restores the old two-notification behaviour.
+where:    Notifications
+raised:   3 reports, 2026-08-04 · sources: TASK-A16-REPORT.md
+checked:  Unchanged.
+rank:     6
+moot?:
+if kept:  Confirm the fold or revert it.
+
+### 403. The 6-hour guard is in a different place than a task assumed
+what:     A duplicate-send guard was described as protecting invitations; it protects signed-document delivery instead.
+where:    Email
+raised:   1 report, 2026-08-12 · sources: TASK-EMAILEXTRACT-REPORT.md
+checked:  As recorded.
+rank:     6
+moot?:
+if kept:  Nothing to do — record.
+
+### 404. Two lease-effect records
+what:     Two records: the stamping of a lease's effects deliberately skipped generating the horse paperwork, and there is no way to re-run those effects for a lease executed before the mechanism existed.
+where:    Documents — lease effects
+raised:   2 reports, 2026-08-04 · sources: TASK-A11-REPORT.md
+checked:  Prod: unchanged.
+rank:     6
+moot?:
+if kept:  One wrapper function, if an old lease ever needs it.
+
+### 405. Two contact-count records
+what:     Two records: a count in a task document disagreed with production, and the earlier horse-document counts included deleted rows.
+where:    Records
+raised:   2 reports, 2026-08-12 · sources: TASK-RECORDS-REPORT.md, TASK-COUNTFIX-REPORT.md
+checked:  Prod today: 19 contacts, 3 leads, 4 team.
+rank:     6
+moot?:
+if kept:  Nothing to do — records.
+
+### 406. Two self-corrections about categories
+what:     Two claims were withdrawn: one person's categories healed themselves after 45 minutes, and nine riders were never at risk.
+where:    Identity
+raised:   1 report, 2026-08-10 · sources: TASK-INVITEFLOW-REPORT.md
+checked:  As recorded.
+rank:     6
+moot?:
+if kept:  Nothing to do — records.
+
+### 407. The premature send on a real lease is accepted
+what:     A document was sent to both parties earlier than intended on a real client's lease, and you accepted it as a live negotiation.
+where:    Documents
+raised:   1 report, 2026-08-06 · sources: TASK-A-PARTY-VERIFY-2-REPORT.md
+checked:  As ruled; the document is untouched.
+rank:     6
+moot?:
+if kept:  Nothing to do — record.
+
+### 408. A booking status filing choice, recorded
+what:     Bookings are filed in the status history under a different type name, deliberately, so nobody "fixes" it into a regression.
+where:    Bookings
+raised:   1 report, 2026-08-12 · sources: TASK-BOOKWRITE-REPORT.md
+checked:  Prod: unchanged.
+rank:     6
+moot?:
+if kept:  Nothing to do — record.
+
+### 409. A cascade that was disarmed, recorded
+what:     A booking's link to its purchase was changed so that deleting a purchase no longer destroys the booking history.
+where:    Bookings
+raised:   1 report, 2026-08-12 · sources: TASK-BOOKWRITE-REPORT.md
+checked:  Prod: as recorded.
+rank:     6
+moot?:
+if kept:  Nothing to do — record.
+
+### 410. The intentionally-public functions were confirmed untouched
+what:     The functions that are meant to be reachable without signing in (gift redemption, the public catalogue) were confirmed untouched.
+where:    Security
+raised:   1 report, 2026-08-10 · sources: TASK-NOGUARD2-REPORT.md
+checked:  Prod: still reachable, as intended.
+rank:     6
+moot?:
+if kept:  Nothing to do — record.
+
+### 411. Corrections to the security audits' own numbers
+what:     Five corrections to counts inside the security audits — seven not nine, nineteen not fifteen, and three revised totals.
+where:    Security
+raised:   5 reports, earliest 2026-08-08 · sources: TASK-NOGUARD2-REPORT.md, TASK-GUARDREST-REPORT.md, TASK-NOGUARD1-ORCHESTRATOR-AUDIT.md
+checked:  All as recorded.
+rank:     6
+moot?:
+if kept:  Nothing to do — records.
+
+### 412. Two dead-code cleanups already identified
+what:     Two functions were confirmed dead: one gift helper nothing calls at all, and one whose public grant is harmless for a different reason than stated.
+where:    Security
+raised:   3 reports, 2026-08-07 · sources: TASK-SECFIX-REPORT.md, TASK-SECFIX2-REPORT.md
+checked:  Prod: the gift helper is closed; the other is unchanged and harmless.
+rank:     6
+moot?:
+if kept:  Nothing to do — records.
+
+### 413. A false alarm, chased down and disproved
+what:     One security check looked like it had locked someone out; the cause was the test query itself.
+where:    Security
+raised:   1 report, 2026-08-07 · sources: TASK-SECFIX-REPORT.md
+checked:  As recorded.
+rank:     6
+moot?:
+if kept:  Nothing to do — record.
+
+### 414. Two storage cleanups
+what:     Two cleanups: one file record now carries the same path twice, and staff have no personal files area.
+where:    Files
+raised:   2 reports, 2026-08-11 · sources: TASK-UPLOADS-REPORT.md
+checked:  Both unchanged.
+rank:     6
+moot?:
+if kept:  One column can collapse; the staff area is a decision.
+
+### 415. Sign-start behaviour records
+what:     Three records: the rate limit is a tumbling window rather than a rolling one, the signing route sits inside the public chrome, and a genuine database failure returns a server error rather than a bland success.
+where:    Kiosk — sign start
+raised:   3 reports, 2026-08-04 · sources: TASK-C-REPORT.md
+checked:  All three unchanged.
+rank:     6
+moot?:
+if kept:  Nothing to do — records.
+
+### 416. Party-control default records
+what:     Two records: party permissions were defaulted uniformly rather than per role, and one backfill included documents beyond the intended scope.
+where:    Contracts — party controls
+raised:   2 reports, 2026-08-04 · sources: TASK-PARTYCTRL-REPORT.md
+checked:  Both as recorded.
+rank:     6
+moot?:
+if kept:  Nothing to do — records.
+
+### 417. Three tracker-status records
+what:     Three tracker entries were left marked partial or not-verified because they belong to work that never got its browser pass.
+where:    Documentation — build tracker
+raised:   3 reports, earliest 2026-08-04 · sources: TASK-PARTYCTRL-REPORT.md, TASK-DOCVIS-REPORT.md, TASK-F3-REPORT.md
+checked:  Unchanged; they resolve with item 198.
+rank:     6
+moot?:
+if kept:  Nothing to do — records.
+
+### 418. One lease line left in place beside its replacement
+what:     A line inside one card was left alongside a newer card that partly repeats it, deliberately.
+where:    Member app — horse page
+raised:   1 report, 2026-08-04 · sources: TASK-A12-REPORT.md
+checked:  Unchanged.
+rank:     6
+moot?:
+if kept:  One look.
+
+### 419. Three event-log vocabulary deviations
+what:     Three parts of the document event log differ from its specification because the data to support them does not exist.
+where:    Contracts — event log
+raised:   3 reports, 2026-08-04 · sources: TASK-A14-REPORT.md
+checked:  All three as recorded.
+rank:     6
+moot?:
+if kept:  Nothing to do — records.
+
+### 420. The Simple lease's protective classifications are hand judgements
+what:     The classification of which lease clauses are protective was read by hand, not computed — and a clause wrongly classified is the damaging case.
+where:    Templates — simple lease
+raised:   1 report, 2026-08 · sources: TASK-LEASESIMPLE-REPORT.md
+checked:  Unchanged; explicitly not legal advice.
+rank:     6
+moot?:
+if kept:  Have Claire read the column before it is used.
+
+### 421. A worktree redirect judgement, recorded
+what:     The old directory address redirects to Vendors rather than Partners, by judgement about what the old page contained.
+where:    Staff app — Records
+raised:   1 report, 2026-08-12 · sources: TASK-RECORDS-REPORT.md
+checked:  Unchanged.
+rank:     6
+moot?:
+if kept:  Nothing to do — record.
+
+### 422. Comments-only mentions of the old facility word
+what:     Several code comments still use the old word for the property; changing them is churn with no user-visible effect.
+where:    Codebase
+raised:   1 report, 2026-08 · sources: TASK-FACILITYTERM-REPORT.md
+checked:  Unchanged.
+rank:     6
+moot?:
+if kept:  Nothing to do — record.
+
+### 423. The mobile menu's collapsible sections were deferred by you
+what:     Making the staff menu sections collapsible on mobile was deferred by you until after the menu restructure.
+where:    Staff app — mobile menu
+raised:   1 report, 2026-08-08 · sources: TASK-MOBILEPASS-REPORT.md
+checked:  Unchanged, as deferred.
+rank:     6
+moot?:
+if kept:  After the restructure.
+
+### 424. The account panel version of documents is behind the full page
+what:     The documents panel inside the account page cannot sign, cannot email a copy and does not show pending paperwork, unlike the full page.
+where:    Member app — Account
+raised:   1 report, 2026-08-07 · sources: TASK-ACCOUNTSURFACE-PHASE1.md
+checked:  Unchanged.
+rank:     6
+moot?:
+if kept:  Either bring it up to the page, or link out to the page.

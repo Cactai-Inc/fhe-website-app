@@ -97,9 +97,50 @@ At provisioning (`CAREPATH` §C7 is the surface), staff set:
   allotments expire monthly and re-mint. An indefinite plan should keep doing exactly that — **prove
   it, and prove a fixed-week plan stops minting when its weeks are up.**
 
-## P5 — care pricing
-⚠️ **Blocked on Owner Question 1.** When the numbers arrive: update the catalog only, take no other
-liberties, and **prove every changed price against the owner's stated list in the report.**
+## P5 — care pricing: THE MODEL IS SETTLED, THE NUMBERS ARE NOT
+
+**Owner, 2026-08-16:**
+> *"i dont have the prices yet, leave whatever we have in place for now. i can say this, ala carte is
+> always more than a recurring weekly customer price and we typically dont discount if they buy 2x or
+> 3x per week vs 1x — the discount comes from being weekly vs being ala carte. but we have been known
+> to create a monthly plan that consists of multiple care service items and we provide a fixed
+> monthly price that recurs until cancelled and its paid monthly."*
+
+⚠️ **CHANGE NO PRICES IN THIS TASK.** Leave every existing number exactly as it is. This section
+records the **shape** the structure must support so P2–P4 do not build something the real numbers
+cannot fit.
+
+### The rate model
+- **The rate is PER SESSION**, and there are **two tiers**: à la carte, and weekly.
+- **À la carte is always the higher per-session rate.**
+- ⚠️ **There is NO volume discount.** 1×, 2× and 3× a week all use **the same weekly per-session
+  rate** — *"we typically dont discount if they buy 2x or 3x per week vs 1x."*
+  **The discount comes from the TIER (weekly vs à la carte), never from the quantity.**
+- **This confirms P3's design:** cost = weekly per-session rate × sessions, and sessions come from
+  the days chosen. **Do not build volume-break logic — there is none.**
+
+### ⚠️ A THIRD SHAPE: the staff-built monthly plan
+> *"a monthly plan that consists of multiple care service items… a fixed monthly price that recurs
+> until cancelled and its paid monthly."*
+
+| | |
+|---|---|
+| what | **several care items bundled into one plan** |
+| price | **ONE fixed monthly price — NOT the sum of the line items** |
+| cadence | **recurs until cancelled, paid monthly** |
+| built by | **staff**, case by case — it is not a catalog SKU a visitor can pick |
+
+**Measured: there is no home for this.** No `plans` / `subscriptions` / `bundles` table exists;
+`config_kind` allows only `scheduled · recurring · intake_finder · intake_evaluation ·
+document_transaction · inquire`. The `recurring` kind plus `CREDITALIGN`'s monthly roll already
+handle *recurrence*; **what is missing is a fixed plan price that overrides the sum of its items.**
+
+- **Report how you would express it — do NOT build it in this task** unless the structure falls out
+  for free. It needs the same capability as the quoted-price gap in
+  `docs/design/ACQUISITION-PRICING-AND-FULFILMENT.md` §3: **a price recorded on the order rather
+  than in the catalog.** Those two should very likely be **one piece of work**; say so if you agree.
+- ⚠️ **The entitlement must still be right.** A bundle's monthly price is fixed, but the client is
+  owed the sessions in it — **the allotment maths (P3) must not be driven by the price.**
 
 ---
 
@@ -131,26 +172,29 @@ liberties, and **prove every changed price against the owner's stated list in th
 7. A **fixed-week plan stops** when its weeks elapse; an **indefinite plan keeps re-minting monthly**
    and stops on cancellation, through the existing cancellation path.
 8. No offering name is parsed anywhere in the new code.
-9. Care prices match the owner's list exactly (once Q1 is answered).
+9. ⚠️ **NO price changed** — prove every care and lesson price is byte-identical to `main`
+   (acquisition's clearing to null under §P1 is the sole exception).
+9b. **No volume-break logic exists anywhere** — 1×, 2× and 3× weekly all use the same per-session
+    rate. Prove the cost formula is `rate × sessions` with no quantity tiers.
+9c. **The staff-built monthly bundle is REPORTED, not built** (§P5) — with a stated view on whether
+    it is the same work as per-order-line pricing.
 10. Every DB claim is query output; render claims **NOT VERIFIED** with a numbered owner checklist.
 
 ---
 
 # OWNER QUESTIONS — answer before building
 
-1. **The care prices.** *"needs to be adjusted"* — I need the actual numbers, per service, and for
-   the weekly shape I need to know **what the price is attached to**:
-   - **per session** (so 2 days/week costs twice 1 day/week — the natural fit for "quantity follows
-     from the days"), or
-   - **a flat weekly/monthly rate** regardless of how many days?
-   This decides whether the catalog stores a unit price or a plan price, so it must be settled first.
+1. ~~The care prices~~ **ANSWERED STRUCTURALLY (2026-08-16): PER SESSION, two tiers, no volume
+   discount — and CHANGE NO NUMBERS YET.** *"i dont have the prices yet, leave whatever we have in
+   place for now."* See §P5. **Still to come from the owner: the actual figures**, and they are
+   **not** required to build P2–P4.
 2. **Are riding lessons in scope?** `/lessons` currently sells **1x Weekly Lesson** and **2x Weekly
    Lesson** as separate cards, which you designed and approved on 2026-08-15/16. Do they collapse to
    à la carte + weekly like care, or **stay as they are**? *(Assuming they stay unless you say
    otherwise.)*
-3. **Indefinite plans and payment.** A plan running "until cancelled" bills repeatedly. Is that a
-   monthly invoice you raise, the same monthly credit cycle `CREDITALIGN` already runs, or something
-   you handle by hand? **This decides whether anything new is built or the existing monthly cycle
-   simply continues.**
+3. **Indefinite plans and payment — PARTLY ANSWERED.** The owner confirms a plan *"recurs until
+   cancelled and its paid monthly."* **Still open: is the monthly charge raised by the existing
+   monthly cycle, or invoiced by hand?** `CREDITALIGN`'s monthly roll already re-mints entitlement
+   each month — **the question is only about the money, not the sessions.**
 
 Report to `docs/reports/TASK-CAREPLANS-REPORT.md`. Do not push; the orchestrator merges.
