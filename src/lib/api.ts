@@ -2622,3 +2622,51 @@ export async function updateContactRecord(
   if (error) throw error;
   return data as ContactDossier;
 }
+
+/** CAREPATH §C9 — the client says the order they were just shown is wrong.
+ *
+ * ⚠️ IT MUST PROVABLY REACH A HUMAN (the same standard as §C6's emails), so the
+ * RPC returns how many staff it actually notified and writes a `client_flagged`
+ * event on the order's own timeline. The screen reports that number rather than
+ * assuming the message landed.
+ *
+ * ⚠️ IT DOES NOT BLOCK THE CLIENT. Owner: "either way they are taken to the
+ * screen." The flag goes to staff while the client carries on. */
+export async function reportOrderIncorrect(
+  purchaseId: string, note?: string,
+): Promise<{ recipients: number }> {
+  const { data, error } = await supabase.rpc('report_order_incorrect', {
+    p_purchase_id: purchaseId, p_note: note ?? null,
+  });
+  if (error) throw error;
+  return (data ?? { recipients: 0 }) as { recipients: number };
+}
+
+/** CAREPATH §C9 — the bookings staff put on the calendar for this order.
+ *
+ * The activation order screen shows "their order information, INCLUDING THE
+ * BOOKING if staff put one on the calendar", and the item detail page at the
+ * end of onboarding shows the same. Empty is a real and common answer: staff
+ * schedule on the call, and a client may activate before that happens. The
+ * screen says "we will confirm the timing with you" rather than inventing one. */
+export interface OrderBooking {
+  id: string;
+  display_code: string | null;
+  starts_at: string | null;
+  ends_at: string | null;
+  all_day: boolean | null;
+  location: string | null;
+  status: string | null;
+  offering_id: string | null;
+}
+
+export async function listOrderBookings(purchaseId: string): Promise<OrderBooking[]> {
+  const { data, error } = await supabase
+    .from('bookings')
+    .select('id, display_code, starts_at, ends_at, all_day, location, status, offering_id')
+    .eq('purchase_id', purchaseId)
+    .is('deleted_at', null)
+    .order('starts_at', { ascending: true, nullsFirst: false });
+  if (error) throw error;
+  return (data ?? []) as OrderBooking[];
+}
