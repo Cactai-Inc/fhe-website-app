@@ -4,19 +4,24 @@ import { Gift as GiftIcon, ArrowRight } from 'lucide-react';
 import { requestGift } from '../lib/gifts';
 import Seo from '../components/Seo';
 
-/* Owner, 2026-08-16: a gift certificate leads, because it is what a stranger
- * buying for a rider most often wants — they know the person, not the catalogue.
- * 'Rider community membership' is GONE: there is no membership product (D4
+/* Owner, 2026-08-16: "what is most common is a spouse or parent purchasing a
+ * riding 4 or 8 lesson punch card for someone… its not about the money or the
+ * exact item, thats why i want to speak with the person because we will help
+ * them make the decision."
+ *
+ * So this list is NOT a product picker — it is a starting point for that
+ * conversation. The common case leads, the packs are named because that is what
+ * people actually buy, and "help me choose" is a real answer rather than a dead
+ * end. 'Rider community membership' is gone: there is no membership product (D4
  * defers it), and it was removed from the Story cards on 2026-08-15 for the same
- * reason — offering it here would promise something that cannot be sold.
- * 'Not sure yet' is deliberate: this form exists so the owner can talk to the
- * buyer, so "I don't know" must be a first-class answer rather than a dead end. */
+ * reason — offering it here would promise something that cannot be sold. */
 const GIFT_ITEMS: { value: string; label: string }[] = [
-  { value: 'certificate', label: 'Gift certificate (any amount)' },
-  { value: 'lessons', label: 'Riding lessons' },
-  { value: 'horse', label: 'Horse care' },
-  { value: 'acquisition', label: 'Acquisition support' },
-  { value: 'unsure', label: 'Not sure yet — help me choose' },
+  { value: 'lessons', label: 'Riding lessons — a 4 or 8 lesson package' },
+  { value: 'lesson_single', label: 'A single riding lesson' },
+  { value: 'certificate', label: 'A gift certificate, amount up to you' },
+  { value: 'horse', label: 'Horse care services' },
+  { value: 'acquisition', label: 'Help finding or buying a horse' },
+  { value: 'unsure', label: "Not sure yet — I'd like help choosing" },
 ];
 
 export default function Gift() {
@@ -72,7 +77,7 @@ export default function Gift() {
           ) : (
             <form onSubmit={submit} className="bg-white border border-green-800/10 p-8">
               <div className="mb-5">
-                <label className="form-label" htmlFor="g-item">What would you like to gift?</label>
+                <label className="form-label" htmlFor="g-item">What do you have in mind?</label>
                 <select id="g-item" className="form-input" value={itemType} onChange={(e) => setItemType(e.target.value)}>
                   {GIFT_ITEMS.map((i) => <option key={i.value} value={i.value}>{i.label}</option>)}
                 </select>
