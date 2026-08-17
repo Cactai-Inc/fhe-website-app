@@ -499,11 +499,19 @@ export async function adminUpdateOffering(id: string, patch: Partial<OfferingInp
  *  Stored as contact tags — visible on the directory and account views. */
 /** The ONLY account-category options (stackable). Lessee/Lessor/Buyer/Seller
  *  are contextual record-roles (lease/sale contracts), never account categories. */
-export const CLIENT_CATEGORIES = ['Guest', 'Rider', 'Horse owner'] as const;
+export const CLIENT_CATEGORIES = ['Guest', 'Rider', 'Horse owner', 'Deal client'] as const;
 
-/** Display category → standing role token (what the provisioning RPCs accept). */
+/** Display category → standing role token (what the provisioning RPCs accept).
+ *
+ *  CAREPATH §C10a — 'Deal client' maps to GUEST. It is a DOCUMENT category, not
+ *  a new standing affiliation: `groups.group_type` allows only GUEST / RIDER /
+ *  HORSE_OWNER / PARENT_GUARDIAN, and inventing a fifth would have to be taught
+ *  to `derive_affiliations`, `apply_affiliations` and ~10 RLS-bearing surfaces
+ *  for no gain. What actually differs is the paperwork, and that is keyed on the
+ *  DISPLAY category in `category_document_requirements`: a deal client signs the
+ *  general liability waiver and nothing else, while Guest signs three. */
 export const CATEGORY_TOKEN: Record<string, string> = {
-  Guest: 'GUEST', Rider: 'RIDER', 'Horse owner': 'HORSE_OWNER',
+  Guest: 'GUEST', Rider: 'RIDER', 'Horse owner': 'HORSE_OWNER', 'Deal client': 'GUEST',
 };
 
 /** Signed-contact detection: the account category implied by a contact's already
