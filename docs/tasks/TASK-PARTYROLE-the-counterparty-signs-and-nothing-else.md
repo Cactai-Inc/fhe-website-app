@@ -93,6 +93,68 @@ cited as a case to reason about, not a fixture to test on.
 
 ---
 
+# ⚠️ THE GENERAL PRINCIPLE — CATEGORIES PROPOSE, STAFF DISPOSE
+
+**Owner, 2026-08-17:**
+> *"the horse owner requirements have to be malleable too, because they are allowing us to care for
+> their horse so we need the vet auth and liability release documents signed — but not something that
+> relates to them as a rider, just as a person who owns the horse releasing us of liability for
+> caring for their horse."*
+
+**This is not a Party rule. It governs every category.** A category's document set is a **sensible
+default**, never a locked requirement, and **staff can adjust it for any person.**
+
+## Horse owner is carrying a rider's document
+**Measured — the current set:**
+`COMPANY_POLICIES · FACILITY_RULES · HORSE_EMERGENCY_VET · RELEASE_HORSE_CARE · RELEASE_PARTICIPANT`
+
+**And what those templates actually are:**
+
+| template | title | whose document |
+|---|---|---|
+| `HORSE_EMERGENCY_VET` | Horse Emergency Veterinary Authorization | **the horse's owner** ✅ |
+| `RELEASE_HORSE_CARE` | Horse Handling and Routine Care Liability Release | **the horse's owner** ✅ |
+| `RELEASE_PARTICIPANT` | **Participant** Liability Release | ⚠️ **the RIDER** — wrong set |
+
+**A horse owner who boards a horse and never sits on it is being asked to sign a participant
+release.** The owner's line is exact: *"not something that relates to them as a rider, just as a
+person who owns the horse."*
+
+**So: remove `RELEASE_PARTICIPANT` from the Horse owner default.** It already belongs to **Rider**
+(`COMPANY_POLICIES · FACILITY_RULES · HUMAN_EMERGENCY_MEDICAL · RELEASE_PARTICIPANT`), and
+**the categories stack** — an owner who also rides is given both categories and receives it from the
+Rider set. **That is the mechanism; nothing is lost.**
+
+⚠️ **EXISTING HORSE OWNERS — do not damage them.** Removing it from the default must not:
+- **touch a signed or executed `RELEASE_PARTICIPANT`** — executed documents are never swept
+  (standing rule, 2026-07-29);
+- **silently strip an outstanding requirement** from someone who does ride and genuinely owes it.
+
+### ✅ MEASURED ON PROD 2026-08-17 — this change is SAFE. Nobody is affected.
+**Five contacts hold `RELEASE_PARTICIPANT`, and NOT ONE of them is a Horse owner:**
+
+| who | categories | signed? |
+|---|---|---|
+| Madeline Do | RIDER | ✅ executed |
+| Rachel Engelhorn | RIDER | ✅ executed |
+| Gabriella Olenik | RIDER | outstanding |
+| Anita Tackette | ⚠️ **none** | outstanding |
+| Mary Richardson | ⚠️ **none** | outstanding |
+
+**The only `HORSE_OWNER` in production is Sarah Morgan, and she does not hold it.** So removing it
+from the Horse owner default **changes nothing for anyone alive today** — the three riders keep it
+through the Rider set, and the two executed ones are untouchable regardless.
+
+⚠️ **BUT NOTE THE ANOMALY: Anita Tackette and Mary Richardson hold the requirement with NO category
+at all.** Their requirement cannot have come from a category rule, and nothing will maintain it.
+**Report where it came from — do not delete it, and do not "tidy" them.** Mary's twelve draft
+documents are the owner's open question already.
+
+⚠️ `apply_category_documents` **deletes** rows outside the wanted set — so an unrelated re-provision
+could strip these people as a side effect. **That is the danger this section exists to prevent.**
+
+---
+
 # WHAT WAS MEASURED (2026-08-17 — verify, then build)
 
 ## The live bug: a Deal client silently gets three documents
@@ -217,7 +279,14 @@ and invited like anyone else — **they simply arrive at a contract instead of a
 6. A Party can sign, and execution applies the lease effects as normal.
 7. **A Party is never assigned a horse-owner document set** — prove it, since that is the trap.
 8. State whether a Party is gated on `contact_profile_complete`, and if so which fields.
-9. Every DB claim is query output; render claims **NOT VERIFIED** with a numbered owner checklist.
+9. ⚠️ **`RELEASE_PARTICIPANT` is out of the Horse owner default** — prove a newly provisioned Horse
+   owner receives `COMPANY_POLICIES · FACILITY_RULES · HORSE_EMERGENCY_VET · RELEASE_HORSE_CARE` and
+   **no participant release.**
+9b. **A person who owns a horse AND rides still receives it**, through the Rider set — prove the
+    categories stack rather than compete.
+9c. ⚠️ **No existing contact loses a requirement or a signature.** Re-check the five holders after
+    the change: two executed, three outstanding, none of them Horse owners. **All five unchanged.**
+10. Every DB claim is query output; render claims **NOT VERIFIED** with a numbered owner checklist.
 
 # OWNER QUESTION
 **Does a Party get a portal account with an app to log into, or only enough to sign?** They need an
