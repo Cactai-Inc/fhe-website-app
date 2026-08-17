@@ -200,14 +200,18 @@ export default function Story() {
                 global and every target carries scroll-mt-24. */}
             <p className="mt-10">
               <a href="#what-youll-find" className="link-underline">
-                What you&rsquo;ll find here <ArrowRight size={13} aria-hidden="true" />
+                Continue <ArrowRight size={13} aria-hidden="true" />
               </a>
             </p>
           </Reveal>
         </div>
       </section>
 
-      <section id="what-youll-find" data-header-tone="dark" className="relative bg-green-900 overflow-hidden scroll-mt-24">
+      {/* NO scroll-mt here (owner, 2026-08-16): this is a full-bleed image and
+          green panel, and it is meant to sit BEHIND the translucent nav — the
+          offset was stopping it 6rem short. Text-led sections keep their offset
+          so a heading never lands under the bar. */}
+      <section id="what-youll-find" data-header-tone="dark" className="relative bg-green-900 overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-2">
           {/* SWAP: Section 2 — horse in the stable at golden hour / sunset
               (owner to provide). Green textural placeholder for now. */}
@@ -262,7 +266,7 @@ export default function Story() {
                 {/* Continue — on-dark styling, this section is the green band. */}
                 <p className="mt-9">
                   <a href="#the-community" className="inline-flex items-center gap-2 text-sm font-sans tracking-widest uppercase text-gold-300 hover:text-gold-200 border-b border-gold-600/40 hover:border-gold-300 pb-0.5 transition-colors focus-ring-dark">
-                    Meet the community <ArrowRight size={13} aria-hidden="true" />
+                    Continue <ArrowRight size={13} aria-hidden="true" />
                   </a>
                 </p>
               </Reveal>
@@ -349,7 +353,7 @@ export default function Story() {
           {/* Continue out of The Community and into The Ways In. */}
           <p className="mt-10">
             <a href="#the-ways-in" className="link-underline">
-              See the ways in <ArrowRight size={13} aria-hidden="true" />
+              Continue <ArrowRight size={13} aria-hidden="true" />
             </a>
           </p>
 
