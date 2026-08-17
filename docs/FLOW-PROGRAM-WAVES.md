@@ -49,7 +49,7 @@ provision does not match it yet.**
 | **Per-order-line pricing** — staff record what a client was quoted; today price can only be set catalog-wide, so quoted orders sit at 0 | `docs/design/ACQUISITION-PRICING-AND-FULFILMENT.md` §3 | nothing — **needs no algorithm; ready to spec** |
 | **The two pricing algorithms** — finder (fee ↔ duration ↔ volume) and assistance (fixed fee from budget band) | same design record §4 | **owner: not yet designed** |
 | **Deal-client provisioning + fulfilment forms** — what staff fill in for a search or an evaluation | same design record §4 | owner |
-| **Contract flow walked end to end** — author → send → sign → execute → deliver on real data | same design record §5 | needs its own task |
+| **Contract flow walked end to end** — invitation → activation → the six signing gates → execution → the lease effects | ✅ **`TASK-CONTRACTWALK`** — written 2026-08-17, ready to run. Zero contracts in prod makes this the cleanest possible moment | ready |
 | ~~Lease is not own~~ **WITHDRAWN 2026-08-17 — the finding was wrong.** `horses` already carries `lessee_contact_id`, `lease_start`, `lease_end`; `horse_relationships` and `my_stable_horses` carry a lessee; the intake already asks OWNER/LESSEE. **No task needed.** | `ASKRIGHT` §A3e | — |
 | **`INTAKE_HORSE_*` forms have no surface** — five paper-form imports nothing can reach | `ASKRIGHT` §A7 (reported) | owner: are they the fulfilment forms? |
 | **Horse-owner vs deal-client** — resolved in `CAREPATH` §C10a: the grant is a DOCUMENT TRIGGER and documents follow the ORDER, not a horse record | merged | — |
@@ -62,8 +62,7 @@ provision does not match it yet.**
 
 | what | where | blocked on |
 |---|---|---|
-| **Footer: map beside Find Us, sign-in into the nav, credit line left / copyright centred** | `TASK-FOOTER` | the Cactai URL (later); two small owner questions. **Buildable now without them** |
-| Footer nav still says "Our Story" | folded into `TASK-FOOTER` §F5 | — |
+| ✅ **Footer** — map beside Find Us, sign-in in the nav, credit line left / copyright truly centred | `TASK-FOOTER` | **MERGED** `9a35e27`. Owner to eyeball the light map tiles and the signed-in variant; Cactai URL still to come |
 | `/about` still reachable from the footer, needs rebuild | not specced | owner |
 
 # ⚠️ WAVE 1 IS BUILT BUT NOT WALKED
