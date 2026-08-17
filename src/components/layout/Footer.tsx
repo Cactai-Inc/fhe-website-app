@@ -48,7 +48,7 @@ export default function Footer() {
 
         {/* Navigation */}
         <div>
-          <p className="eyebrow-on-dark mb-5">Navigation</p>
+          <p className="eyebrow-on-dark mb-5 text-center">Navigation</p>
           <nav className="flex flex-col items-center gap-3 text-center" aria-label="Footer">
             {[
               { label: 'Home', href: '/' },
@@ -126,7 +126,6 @@ export default function Footer() {
           <div className="mt-8 pt-8 border-t border-white/10">
             <p className="text-xs font-sans text-white/[0.6] leading-relaxed">
               Fully licensed &amp; insured equestrian business.
-              <br />Operating at Carmel Creek Ranch, San Diego, CA.
             </p>
           </div>
         </div>
@@ -155,9 +154,12 @@ export default function Footer() {
           <p className="text-xs font-sans text-white/[0.6] sm:justify-self-center">
             &copy; {new Date().getFullYear()} French Heritage Equestrian. All rights reserved.
           </p>
-          <p className="text-xs font-sans text-white/[0.6] sm:justify-self-end">
-            San Diego, California
-          </p>
+          {/* Third grid track intentionally left empty (owner, 2026-08-17:
+              dropped "San Diego, California" here — redundant with Find Us
+              and the LocalBusiness JSON-LD, no SEO value from bare footer
+              text). Keeping the 3-track grid, not collapsing to 2 columns,
+              is what keeps the copyright on the page's true centre line. */}
+          <div aria-hidden="true" className="hidden sm:block" />
         </div>
       </div>
 
