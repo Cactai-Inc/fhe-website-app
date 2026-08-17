@@ -41,8 +41,9 @@ export default function Footer() {
             </p>
           </div>
           <p className="text-sm font-sans text-white/[0.7] leading-relaxed max-w-xs">
-            A family-run hunter/jumper ranch and community, rooted in classical European
-            horsemanship, offering lessons, horse care, and acquisition support in coastal San Diego.
+            A family-run equestrian program and community featuring classical European style
+            riding and jumper training, offering lessons, horse care and acquisition services
+            in coastal San Diego.
           </p>
         </div>
 

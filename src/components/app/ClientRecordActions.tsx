@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import {
   categoryDocumentDefaults, getContactRequiredDocuments, setContactRequiredDocuments,
+  onboardingTemplateOptions,
   adminAttachOfferings, staffAssignableTemplates, staffAssignDocuments,
   type CategoryDocDefault, type AssignableTemplate, type AssignDocumentsResult,
 } from '../../lib/admin';
@@ -363,22 +364,38 @@ export function AttachOfferingPanel({ contactId, onAttached }: { contactId: stri
 
 export function PaperworkEditor({ contactId }: { contactId: string }) {
   const [defaults, setDefaults] = useState<CategoryDocDefault[]>([]);
+  const [allTemplates, setAllTemplates] = useState<{ template_key: string; title: string }[]>([]);
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [saved, setSaved] = useState(true);
 
   useEffect(() => {
     categoryDocumentDefaults().then(setDefaults).catch(() => setDefaults([]));
+    onboardingTemplateOptions().then(setAllTemplates).catch(() => setAllTemplates([]));
     getContactRequiredDocuments(contactId).then((keys) => setChecked(new Set(keys))).catch(() => {});
   }, [contactId]);
 
+  // ⚠️ PARTYROLE §4c — the list is EVERY onboarding document, and the categories
+  // are a note on the row rather than the source of the row. Built from the
+  // defaults alone it showed 7 of the 9 and silently withheld two from staff; on
+  // a contact with no category — a Lessor, a Seller — the whole editor was the
+  // union of nothing, so the one surface that can apply a document to a
+  // counterparty offered none. `set_contact_required_documents` REPLACES the set,
+  // so this control already moves in both directions; what it lacked was reach.
   const templates = (() => {
+    const cats = new Map<string, string[]>();
+    for (const d of defaults) cats.set(d.template_key, [...(cats.get(d.template_key) ?? []), d.category]);
     const m = new Map<string, { title: string; categories: string[] }>();
-    for (const d of defaults) {
-      const t = m.get(d.template_key) ?? { title: d.title, categories: [] };
-      t.categories.push(d.category);
-      m.set(d.template_key, t);
+    for (const t of allTemplates) {
+      m.set(t.template_key, { title: t.title, categories: cats.get(t.template_key) ?? [] });
     }
-    return Array.from(m.entries()).map(([key, v]) => ({ key, ...v }));
+    // A key already assigned to this contact stays visible even if it is not in
+    // the onboarding class — never hide paperwork somebody actually owes.
+    for (const d of defaults) {
+      if (!m.has(d.template_key)) m.set(d.template_key, { title: d.title, categories: cats.get(d.template_key) ?? [] });
+    }
+    return Array.from(m.entries())
+      .map(([key, v]) => ({ key, ...v }))
+      .sort((a, b) => a.title.localeCompare(b.title));
   })();
 
   async function toggle(key: string) {
@@ -410,7 +427,9 @@ export function PaperworkEditor({ contactId }: { contactId: string }) {
               checked={checked.has(t.key)} onChange={() => void toggle(t.key)} />
             <span className="min-w-0">
               <span className={`block text-[14px] leading-snug ${checked.has(t.key) ? 'text-green-900 font-medium' : 'text-secondary'}`}>{t.title}</span>
-              <span className="block text-[11.5px] text-muted mt-0.5">Suggested for {t.categories.join(', ')}</span>
+              <span className="block text-[11.5px] text-muted mt-0.5">
+                {t.categories.length > 0 ? `Suggested for ${t.categories.join(', ')}` : 'Not suggested by any category — apply when the situation calls for it'}
+              </span>
             </span>
           </label>
         ))}

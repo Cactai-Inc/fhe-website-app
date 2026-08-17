@@ -165,6 +165,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const singleOffering = typeof body.offeringId === 'string' ? body.offeringId.trim() : '';
   if (singleOffering && !offeringIds.includes(singleOffering)) offeringIds.push(singleOffering);
   const templateKeys = toStrArray(body.templateKeys);
+  // PARTYROLE 2026-08-17 — AN EXPLICITLY EMPTY SELECTION IS NOT AN ABSENT ONE.
+  // `provision_client_invitation` already distinguishes them: a non-null
+  // `p_template_keys` assigns exactly what it is given (an empty array assigns
+  // NOTHING and skips the category defaults), while NULL means "fall through to
+  // whatever the category requires". This endpoint collapsed both into NULL, so
+  // staff who unticked every document silently got the category's full set back —
+  // the control could only ever add. The distinction is the SHAPE OF THE FIELD,
+  // not its length: an array that arrived is an instruction, even when empty.
+  const templateKeysGiven = Array.isArray(body.templateKeys);
   const firstName = ((body.firstName as string) || '').trim();
   const lastName = ((body.lastName as string) || '').trim();
   const title = ((body.title as string) || '').trim();
@@ -263,7 +272,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           p_last_name: lastName || null,
           p_categories: categories,
           p_offering_ids: offeringIds,
-          p_template_keys: templateKeys.length > 0 ? templateKeys : null,
+          p_template_keys: templateKeysGiven ? templateKeys : null,
           p_mark_paid: paymentStatus === 'paid',
           p_payment_method: ((body.paymentMethod as string) || '').trim() || null,
           p_notes: ((body.notes as string) || '').trim() || null,

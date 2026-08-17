@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { toErrorMessage } from '../../lib/ops/errors';
 import {
   adminSendInvitation, categoryDocumentDefaults, suggestedCategoryForContact,
+  onboardingTemplateOptions, matchesCategoryToken,
   CLIENT_CATEGORIES, CATEGORY_TOKEN, type CategoryDocDefault,
   type AdminInviteResult,
 } from '../../lib/admin';
@@ -103,6 +104,9 @@ export function ProvisionClientForm({
   const [categories, setCategories] = useState<string[]>([]);
   const [defaults, setDefaults] = useState<CategoryDocDefault[]>([]);
   const [docChecked, setDocChecked] = useState<Set<string> | null>(null);
+  /** Every document staff MAY apply — not only what the categories suggest. */
+  const [allTemplates, setAllTemplates] = useState<{ template_key: string; title: string }[]>([]);
+  const [addingDoc, setAddingDoc] = useState(false);
   const [offerings, setOfferings] = useState<Offering[]>([]);
   const [offeringIds, setOfferingIds] = useState<string[]>([]);
   const [payStatus, setPayStatus] = useState<'unpaid' | 'partial' | 'paid'>('unpaid');
@@ -118,6 +122,7 @@ export function ProvisionClientForm({
 
   useEffect(() => {
     categoryDocumentDefaults().then(setDefaults).catch(() => setDefaults([]));
+    onboardingTemplateOptions().then(setAllTemplates).catch(() => setAllTemplates([]));
     fetchOfferings().then(setOfferings).catch(() => setOfferings([]));
   }, []);
 
@@ -133,18 +138,46 @@ export function ProvisionClientForm({
       .catch(() => {});
   }, [contactId]);
 
+  // ⚠️ PARTYROLE §R1 — THE SCREEN RESOLVES DOCUMENTS THE WAY THE RPC DOES.
+  //
+  // This used to match `d.category === c` on the DISPLAY label, while
+  // `apply_category_documents` matches on the TOKEN the submit below sends. For
+  // 'Deal client' — the one label whose token is not its own name — the two
+  // disagreed: the form promised the single 'Deal client' requirements row while
+  // the database resolved GUEST and wrote Guest's three. Going through
+  // CATEGORY_TOKEN makes the disagreement structurally impossible rather than
+  // fixing one instance of it, so a future label that reuses a token cannot
+  // reintroduce the bug. (The dead 'Deal client' row itself is retired in
+  // migration 20260817T1800; the owner ruled the three CORRECT — a deal client is
+  // your client, arriving at the property.)
   const derivedDocKeys = useMemo(() => {
     const keys = new Set<string>();
-    for (const d of defaults) if (categories.includes(d.category)) keys.add(d.template_key);
+    for (const c of categories) {
+      const token = CATEGORY_TOKEN[c];
+      if (!token) continue;
+      for (const d of defaults) if (matchesCategoryToken(d.category, token)) keys.add(d.template_key);
+    }
     return keys;
   }, [defaults, categories]);
-  const titleFor = (key: string) => defaults.find((d) => d.template_key === key)?.title ?? key;
+  const titleFor = (key: string) =>
+    defaults.find((d) => d.template_key === key)?.title
+    ?? allTemplates.find((t) => t.template_key === key)?.title
+    ?? key;
   const effectiveDocs = docChecked ?? derivedDocKeys;
   const shownDocKeys = useMemo(() => {
     const s = new Set(derivedDocKeys);
     if (docChecked) docChecked.forEach((k) => s.add(k));
     return Array.from(s);
   }, [derivedDocKeys, docChecked]);
+  // What staff can still REACH FOR: every onboarding template not already on the
+  // list above. The owner's rule is that nothing is required of a counterparty
+  // and everything is permitted, so this is deliberately not filtered by category
+  // — a seller who is delivering the horse needs the general release, and their
+  // category suggests nothing at all.
+  const addableTemplates = useMemo(
+    () => allTemplates.filter((t) => !shownDocKeys.includes(t.template_key)),
+    [allTemplates, shownDocKeys],
+  );
 
   const allowedSegments = useMemo(() => {
     const s = new Set<Segment>();
@@ -285,7 +318,10 @@ export function ProvisionClientForm({
                 this — adjust as needed; the invitation email lists it.
               </p>
               {shownDocKeys.length === 0 ? (
-                <p className="text-sm text-muted">No documents for this category yet.</p>
+                <p className="text-sm text-muted">
+                  Nothing will be assigned — they'll activate straight into whatever
+                  they were invited for. Add a document below if this one needs it.
+                </p>
               ) : (
                 <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
                   {shownDocKeys.map((key) => {
@@ -307,6 +343,41 @@ export function ProvisionClientForm({
                       </label>
                     );
                   })}
+                </div>
+              )}
+
+              {/* ⚠️ PARTYROLE §4c — NOTHING IS MANDATORY, EVERYTHING IS PERMITTED.
+                  The checkboxes above are the SUGGESTION; this is the reach. A
+                  control built only from category defaults can subtract but never
+                  add outside them, which is useless for the case the owner named:
+                  a seller who never visits owes nothing, and the same seller
+                  delivering the horse owes the general release. The judgement is
+                  staff's; the system has no opinion, so nothing here is filtered
+                  by category. */}
+              {addableTemplates.length > 0 && (
+                <div className="mt-3">
+                  {!addingDoc ? (
+                    <button type="button" onClick={() => setAddingDoc(true)}
+                      className="text-sm text-green-800 underline underline-offset-2">
+                      + Add another document
+                    </button>
+                  ) : (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <select className="form-input w-auto max-w-full text-sm" defaultValue=""
+                        onChange={(e) => {
+                          if (!e.target.value) return;
+                          toggleDoc(e.target.value);
+                          setAddingDoc(false);
+                        }}>
+                        <option value="">Choose a document…</option>
+                        {addableTemplates.map((t) => (
+                          <option key={t.template_key} value={t.template_key}>{t.title}</option>
+                        ))}
+                      </select>
+                      <button type="button" onClick={() => setAddingDoc(false)}
+                        className="text-sm text-muted px-2">Cancel</button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
