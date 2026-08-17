@@ -144,6 +144,35 @@ handle *recurrence*; **what is missing is a fixed plan price that overrides the 
 
 ---
 
+## P6 — THE BILLING RHYTHM for monthly items
+
+**Owner, 2026-08-16:**
+> *"the intention with monthly items is they are prorated or billed in full on the first purchase and
+> then billed every month on the last day of the month prior."*
+
+| moment | what happens |
+|---|---|
+| **first purchase** | **prorated OR billed in full** — a choice made at purchase, not a fixed rule |
+| **every month after** | billed **on the last day of the PRIOR month** — i.e. paid **in advance** of the month it covers |
+| **until** | cancelled |
+
+⚠️ **This is billing in ADVANCE.** The charge for September is raised on 31 August. **A cycle that
+bills on the 1st, or in arrears, is wrong.**
+
+⚠️ **`CREDITALIGN` already mints entitlement monthly and expires it at the month boundary** — and the
+lessons funnel already carries *"First month can be prorated or book all your lessons for the month
+in the days remaining"* (the owner's own footnote copy, 2026-08-16). **The proration idea already
+exists in the business. Find whether it exists in the code**, and reuse it rather than writing a
+second one.
+
+- **Establish and state**: does anything raise a recurring charge today, or is the money handled by
+  hand while only the entitlement rolls? **Report the truth — do not assume a biller exists.**
+- **The money and the sessions are separate concerns.** Entitlement re-minting is `CREDITALIGN`'s and
+  must keep working regardless of what is decided about billing.
+- ⚠️ **If no biller exists, DO NOT BUILD ONE HERE.** Report it as wave-2 work with this rhythm
+  attached. Building a payment scheduler inside a catalog-configuration task is how this project got
+  its three duplicate credit-minting paths.
+
 # TRAPS
 - **Do not delete retired SKUs** — executed orders point at them.
 - **Never parse a name** for frequency, quantity or cadence. Catalog fields only.
@@ -178,6 +207,13 @@ handle *recurrence*; **what is missing is a fixed plan price that overrides the 
     rate. Prove the cost formula is `rate × sessions` with no quantity tiers.
 9c. **The staff-built monthly bundle is REPORTED, not built** (§P5) — with a stated view on whether
     it is the same work as per-order-line pricing.
+9d. ⚠️ **LESSONS ARE UNTOUCHED.** Prove `1x Weekly Lesson` and `2x Weekly Lesson` still exist as
+    separate SKUs with unchanged prices, copy and `weekly_frequency`, **and that their allotment
+    computes identically before and after** — query output both sides. **This is the regression most
+    likely to be caused by the P3 maths change.**
+9e. **The billing rhythm is reported** (§P6): whether any recurring charge is raised today, and — if
+    one exists — that it bills **in advance, on the last day of the prior month**, with the first
+    purchase prorated or billed in full. **No biller is built in this task.**
 10. Every DB claim is query output; render claims **NOT VERIFIED** with a numbered owner checklist.
 
 ---
@@ -188,13 +224,13 @@ handle *recurrence*; **what is missing is a fixed plan price that overrides the 
    discount — and CHANGE NO NUMBERS YET.** *"i dont have the prices yet, leave whatever we have in
    place for now."* See §P5. **Still to come from the owner: the actual figures**, and they are
    **not** required to build P2–P4.
-2. **Are riding lessons in scope?** `/lessons` currently sells **1x Weekly Lesson** and **2x Weekly
-   Lesson** as separate cards, which you designed and approved on 2026-08-15/16. Do they collapse to
-   à la carte + weekly like care, or **stay as they are**? *(Assuming they stay unless you say
-   otherwise.)*
-3. **Indefinite plans and payment — PARTLY ANSWERED.** The owner confirms a plan *"recurs until
-   cancelled and its paid monthly."* **Still open: is the monthly charge raised by the existing
-   monthly cycle, or invoiced by hand?** `CREDITALIGN`'s monthly roll already re-mints entitlement
-   each month — **the question is only about the money, not the sessions.**
+2. ~~Are riding lessons in scope?~~ ⚠️ **ANSWERED — NO. LESSONS ARE OUT OF SCOPE ENTIRELY.**
+   Owner, 2026-08-16: *"lessons are not in scope for this, we leave those exactly as designed."*
+   **`/lessons` keeps `1x Weekly Lesson` and `2x Weekly Lesson` as separate cards**, keeps its copy,
+   badges, gold price lines and footnote, and keeps whatever `weekly_frequency` those SKUs carry.
+   **Touch no lesson offering, no lesson price, and no lesson page copy.** If a change to the
+   recurring maths would alter a lesson SKU's behaviour, **that is a defect in your change** —
+   §"THE TEST" requires proving lesson allotments are unchanged.
+3. ~~Indefinite plans and payment~~ **ANSWERED — see §P6, the billing rhythm.**
 
 Report to `docs/reports/TASK-CAREPLANS-REPORT.md`. Do not push; the orchestrator merges.

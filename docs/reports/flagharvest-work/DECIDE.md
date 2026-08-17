@@ -6,36 +6,45 @@ decided for you; nothing was removed except on evidence, and the evidence for ea
 
 ```
 975 raw flags  →  609 families (deduped within and across all 8 slices)
-                  ─ 61 machine-closed (resolved / superseded, evidence in CLOSED.md)
-                  ─ 13 duplicate pointers folded into another family
-                  = 535 awaiting your decision
+                  ─  61 machine-closed (resolved / superseded, evidence in CLOSED.md)
+                  ─  13 duplicate pointers folded into another family
+                  =  535 awaiting your decision
+                     shown as 438 blocks below — 37 of them group several
+                     same-shape record-only families and say how many
 ```
 
-**Rank split of the 535:** rank 1 live defect **19** · rank 2 security or data integrity **72** ·
-rank 3 blocked or owed a decision **147** · rank 4 unviewed inventory **41** ·
-rank 5 correctness/consistency **131** · rank 6 cosmetic/cleanup/record-only **125**.
-**14 are flagged `MOOT?`** — the screen they concern is being rewritten this week.
+**Rank split of the 438 blocks:** rank 1 live defect **21** · rank 2 security or data integrity **61**
+· rank 3 blocked or owed a decision **123** · rank 4 unviewed inventory **37** ·
+rank 5 correctness/consistency **113** · rank 6 cosmetic/cleanup/record-only **83**.
+**14 are flagged `MOOT?` and sit at the top** — the screen they concern is being rewritten this week;
+3 more items further down carry a `moot?:` note as well.
 
-## Every rank-1 item, by title
-1. The ops document viewer offers a Sign button that always errors for an individual party
-2. Two documents point at a contract that no longer exists — signing either one will error
-3. …and any second staff action on those two documents aborts as well
-4. A member's document count says 13 on one page and 5 on another
-5. A blank insurance status prints as if the Lessee promised coverage
-6. Every lease prints "shall not exceed the Horse's current fair market value of." with nothing after it
-7. An active contract template would print raw {{placeholders}} to a signer
-8. Two more active templates have completely empty bodies
-9. The retainer and representation agreements cannot produce a complete document
-10. Money in a draft renders as a bare number every time it is re-composed
-11. Creating a person files them on the wrong list whatever tab you used
-12. Every row of the instructor's day is named "Client"
-13. Editing one field of a calendar booking silently wipes four of its links
-14. Contact preferences save on every keystroke and swallow the failure
-15. The member dashboard shows "you're all caught up" when a read fails
-16. The horse-care page's main button goes to a page that does not exist
-17. The calendar's "Review & sign paperwork" button goes to a page that does not exist
-18. A cancelled lesson still shows as Scheduled on the instructor's page
-19. The staff "Resend" button on a gift has never sent an email
+**Where the weight is:** items 198-201 (nothing has ever been looked at on a screen) sit under
+**62 reports** between them, and items 21-34 (the database's default-open permissions) are one root
+cause with thirteen symptoms. Deciding those two groups first collapses about a fifth of the sheet.
+
+## Every rank-1 item, by title (block number in brackets)
+- A Sign button in the document viewer that always fails for an individual party **[1]**
+- Two documents point at a contract that no longer exists — signing either will error **[2]**
+- …and any other staff action on those two aborts as well **[3]**
+- A member's document count says 13 on one page and 5 on another **[4]**
+- A blank insurance answer prints as if the Lessee promised coverage **[5]**
+- Every lease prints "…fair market value of." with nothing after it **[6]**
+- An active contract template would print raw {{placeholders}} to a signer **[7]**
+- Two more active templates have completely empty bodies **[8]**
+- The retainer and representation agreements cannot be completed **[9]**
+- Money in a draft rendered as a bare number — fixed, unseen **[10]**
+- New people land on the wrong list whatever tab you used **[11]**
+- Every row of the instructor's day says "Client" **[12]**
+- Editing one field of a booking silently wipes four of its links **[13]**
+- Contact preferences save on every keystroke and hide failures **[14]**
+- A failed dashboard read shows "you're all caught up" **[15]**
+- The calendar's "Review & sign paperwork" button goes nowhere **[16]**
+- A cancelled lesson still reads as Scheduled **[17]**
+- The gift "Resend" button has never sent an email **[18]**
+- Activating an account wipes the person's standing categories **[19]**
+- Breed and colour cannot take a typed-in value **[20]**
+- The horse-care page's main button goes nowhere **[M2, flagged moot]**
 
 ## Every rank-2 item, by title
 Grants/exposure: the schema still grants every new database function to the public · a revoke that
