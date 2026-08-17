@@ -78,6 +78,33 @@ interface RequestRow {
   created_at: string;
 }
 
+/** CAREPATH §C6 — what `inquiry_email_payload` returns (the shared reader both
+ *  inquiry emails use). */
+interface PayloadSelection {
+  label: string | null;
+  price_amount: number | string | null;
+  price_unit: string | null;
+}
+interface InquiryPayload {
+  selections: PayloadSelection[];
+  order: { display_code: string | null; status: string | null; current_status: string | null } | null;
+}
+
+/** A price where the offering carries one, "Price on inquiry" where it does
+ *  not. The number comes from the CATALOG, never from the browser. */
+function priceText(s: PayloadSelection): string {
+  if (s.price_amount == null) return 'Price on inquiry';
+  const n = Number(s.price_amount);
+  if (!Number.isFinite(n)) return 'Price on inquiry';
+  const money = `$${n.toLocaleString('en-US', {
+    minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2,
+  })}`;
+  const unit = (s.price_unit ?? '').trim();
+  if (!unit || unit === 'flat') return money;
+  if (unit === 'percent') return `${money}%`;
+  return `${money} / ${unit}`;
+}
+
 function esc(s: string): string {
   return s.replace(/[<>&]/g, (c) => (c === '<' ? '&lt;' : c === '>' ? '&gt;' : '&amp;'));
 }
@@ -132,6 +159,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         p_succeeded: succeeded,
         p_error: error,
         p_message_id: messageId,
+        p_kind: 'staff',
       });
     } catch (logErr) {
       console.error('request-received could not record its attempt', { requestId, logErr });
@@ -145,7 +173,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // failure leaves the door open, because a failed alert still owes the owner
     // a lead he has not heard about.
     const { data: maySend } = await db.rpc('claim_request_alert_send', {
-      p_request_id: requestId, p_key: attemptKey,
+      p_request_id: requestId, p_key: attemptKey, p_kind: 'staff',
     });
     if (maySend === false) {
       return res.status(200).json({ ok: true, emailed: false, reason: 'already alerted' });
@@ -185,6 +213,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const detailEntries = Object.entries(r.details ?? {}).filter(([, v]) => v != null && String(v).trim() !== '');
     const notes = (r.notes || '').trim();
 
+    /* CAREPATH §C6 — the alert must now carry WHAT THEY ASKED TO BUY, not just
+     * a bare notification. The step-2 answers already ride in REQ.DETAILS
+     * (ASKRIGHT §A5); the selections were never in this email at all, so an
+     * owner reading it could not tell what the person actually chose without
+     * opening the app. Read back through the same definer payload the buyer's
+     * copy uses, so the two emails cannot describe different submissions. */
+    const { data: payload } = await db.rpc('inquiry_email_payload', { p_request_id: requestId });
+    const pay = payload as InquiryPayload | null;
+    const selections = (pay?.selections ?? []).map((s) => ({
+      LABEL: esc(s.label ?? 'A service'),
+      PRICE: esc(priceText(s)),
+    }));
+
     // Every row label ("Phone:", "Interested in:", "Submitted:") is now in the
     // REQUEST_RECEIVED body, and each optional row is a {{#if}} there — so the
     // barn can reorder or re-word its own inquiry email without a deploy. What is
@@ -212,6 +253,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         VALUE: esc(String(v)),
       })),
       'REQ.NOTES_HTML': notes ? esc(notes) : '',
+      'REQ.SELECTIONS': selections,
+      'REQ.ORDER_CODE_HTML': pay?.order?.display_code ? esc(pay.order.display_code) : '',
+      'REQ.ORDER_STATUS_HTML': pay?.order
+        ? esc(pay.order.current_status === 'enquiry' ? 'awaiting your call' : (pay.order.status ?? ''))
+        : '',
     });
     if (!rendered) {
       // EMAILEXTRACT moved this email's prose into the REQUEST_RECEIVED template,
