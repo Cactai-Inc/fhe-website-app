@@ -175,12 +175,32 @@ flagged doesn't apply to a 3-track grid). Confirmed visually in
 `footer-desktop.png`: the copyright line sits centered on the full 1440px
 width, not just centered between the other two items.
 
-Owner question 1 (keep `San Diego, California`?) — **not answered**, so per
-the DEFAULTS section I kept it, on the right, unchanged text.
+Owner question 1 (keep `San Diego, California`?) — **answered later,
+2026-08-17: drop it.** *"we dont need san diego, california in the last line
+of the footer unless it helps with SEO."* Judgment call the owner explicitly
+handed me: it doesn't — it's bare, unlinked footer text repeating a city name
+already present in the page's `LocalBusiness` JSON-LD (`Layout.tsx`'s
+`ORG_JSONLD`, with a real address and geo-coordinates), in the meta
+description, and in the Find Us block two columns over. An isolated text
+fragment with no semantic markup adds nothing incremental for search engines
+over those. Removed the `<p>`, but **kept the `grid-cols-3` structure** with
+an empty `aria-hidden` third cell rather than collapsing to two columns —
+collapsing would have put the copyright off the page's true centre again
+(the exact `justify-between` problem this section exists to avoid), since two
+equal tracks don't have the same centre point as three.
 
-On mobile (`footer-mobile.png`) it collapses to one column, centered, in the
-order credit → copyright → San Diego, California — matches THE TEST item 3
-exactly.
+On mobile (`footer-mobile.png`) the empty third cell is `hidden` outright (no
+dead blank line), so it now stacks credit → copyright, two lines, not three.
+
+**Same owner message, a related redundancy in the Find Us column:** *"we say
+San Diego, CA in the text next to the map below the find us and we dont need
+it there either because we say it at the top of that section... leave the
+line 'Fully Licensed and Insured Equestrian Business.'"* The licensed-&-
+insured note used to read *"Fully licensed & insured equestrian business. /
+Operating at Carmel Creek Ranch, San Diego, CA."* — both "Carmel Creek Ranch"
+and "San Diego, CA" repeat verbatim from the MapPin block three lines above
+it in the same column. Cut the second sentence entirely, kept the first line
+standalone. Visible in both refreshed screenshots.
 
 ## F4 — the Cactai link: DONE
 
