@@ -4,6 +4,7 @@
  * RPCs so the gifts table is never exposed directly.
  */
 import { supabase } from './supabase';
+import { submitRequest, type InquirySendOutcome } from './api';
 
 export interface GiftReveal {
   item_type: string;
@@ -21,9 +22,11 @@ export interface GiftPurchaseInput {
   itemLabel: string;
   buyerName: string;
   buyerEmail: string;
+  buyerPhone: string;
   recipientName: string;
   recipientEmail?: string;
   message?: string;
+  occasion?: string;
 }
 
 /** Look up + open a gift by its code (marks it opened). Null if invalid. */
@@ -101,23 +104,59 @@ export async function createGift(input: CreateGiftInput): Promise<CreateGiftResu
   };
 }
 
+/** First-space split of a freeform full name (same rule LeadWorkDrawer uses for
+ *  requests.contact_name), since submit_public_request requires first + last. */
+function splitName(fullName: string): { first: string; last: string } {
+  const trimmed = fullName.trim();
+  const spaceAt = trimmed.indexOf(' ');
+  if (spaceAt <= 0) return { first: trimmed, last: trimmed };
+  return { first: trimmed.slice(0, spaceAt), last: trimmed.slice(spaceAt + 1).trim() };
+}
+
 /**
- * Submit a gift purchase as a request (invite-only model: FHE fulfills, generates
- * the code, and sends the recipient the reveal link). Records as a request with
- * the gift details in the notes/selection so it lands in the admin queue.
+ * Submit a gift enquiry as a request — routed through the SAME
+ * submit_public_request spine every other public intake path uses (INBOUNDALERT),
+ * not a raw table insert. That is what makes the staff alert (dashboard + email)
+ * and the buyer's own confirmation email fire at all: a direct `.insert()`
+ * bypasses submit_public_request's `notify_staff` call and the
+ * request-received/inquiry-confirmation dispatch entirely, which is exactly the
+ * silent-drop defect TASK-GIFTPATH exists to close (see
+ * orchestration/lessons/LESSONS.md, "FIRE-AND-FORGET PLUS BEST-EFFORT-200").
+ *
+ * No `request_selections` are sent — a gift enquiry is deliberately NOT an
+ * order (owner ruling: "no i want the chance to talk to a person buying a
+ * gift"), and submit_public_request only opens a draft purchase when a
+ * selection resolves to a real offering row. FHE creates the actual gift by
+ * hand afterward (GiftCreateForm → create_gift), once they've talked to the buyer.
+ *
+ * `sends` resolves to the REAL outcome of both emails (staff alert + buyer
+ * confirmation) — never assume; the caller reflects what actually happened.
  */
-export async function requestGift(input: GiftPurchaseInput): Promise<void> {
-  const { error } = await supabase.from('requests').insert({
-    contact_name: input.buyerName,
-    contact_email: input.buyerEmail,
-    notes:
-      `GIFT for ${input.recipientName}` +
-      (input.recipientEmail ? ` <${input.recipientEmail}>` : '') +
-      `: ${input.itemLabel} (${input.itemType}).` +
-      (input.message ? ` Message: "${input.message}"` : ''),
-    proposed_times: [],
-  });
-  if (error) throw error;
+export async function requestGift(
+  input: GiftPurchaseInput,
+): Promise<{ requestId: string; sends: Promise<InquirySendOutcome> }> {
+  const { first, last } = splitName(input.buyerName);
+  const details: Record<string, string> = { gift_item: input.itemLabel };
+  if (input.recipientName) details.recipient_name = input.recipientName;
+  if (input.recipientEmail) details.recipient_email = input.recipientEmail;
+  if (input.message) details.gift_message = input.message;
+  if (input.occasion) details.occasion = input.occasion;
+
+  return submitRequest(
+    {
+      first_name: first,
+      last_name: last,
+      contact_email: input.buyerEmail,
+      contact_phone: input.buyerPhone,
+      notes: undefined,
+      details,
+      category: 'gift',
+      channel: 'gift',
+      entry_location: input.itemType,
+      intent: 'gift',
+    },
+    [],
+  );
 }
 
 // ── Gift actions (Stage 4c) ──────────────────────────────────────────────────

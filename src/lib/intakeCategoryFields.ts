@@ -54,6 +54,13 @@ const EXTRA_DETAIL_LABELS: Record<string, string> = {
   age_bracket: 'Age',
   rider_declared_age: 'Declared age',
   guardian_approval_acknowledged: 'Guardian approval',
+  // TASK-GIFTPATH — the gift form's own fields, not part of CATEGORY_FIELDS
+  // because the gift form is hand-built (Gift.tsx), not the generic intake form.
+  gift_item: 'What they have in mind',
+  recipient_name: "Recipient's name",
+  recipient_email: "Recipient's email",
+  gift_message: 'Message for the recipient',
+  occasion: 'Occasion / timing',
 };
 
 /** Human label for a stored detail key (for the staff inbox). Falls back to a

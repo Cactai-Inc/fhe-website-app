@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Gift as GiftIcon, ArrowRight } from 'lucide-react';
 import { requestGift } from '../lib/gifts';
+import { BRAND } from '../lib/brand';
 import Seo from '../components/Seo';
 
 /* Owner, 2026-08-16: "what is most common is a spouse or parent purchasing a
@@ -29,26 +30,46 @@ export default function Gift() {
   const preset = params.get('item') || 'lessons';
 
   const [itemType, setItemType] = useState(GIFT_ITEMS.some((i) => i.value === preset) ? preset : 'lessons');
-  const [f, setF] = useState({ buyerName: '', buyerEmail: '', recipientName: '', recipientEmail: '', message: '' });
+  const [f, setF] = useState({
+    buyerName: '', buyerEmail: '', buyerPhone: '',
+    recipientName: '', recipientEmail: '', message: '', occasion: '',
+  });
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  // TASK-GIFTPATH P3 — the confirmation must reflect what actually happened,
+  // not assume it. null = the request row is saved but the staff alert hasn't
+  // reported back yet; true/false is the real, provable outcome.
+  const [staffAlerted, setStaffAlerted] = useState<boolean | null>(null);
   const upd = (k: string, v: string) => setF((s) => ({ ...s, [k]: v }));
+
+  const requiredOk = f.buyerName.trim() && f.buyerEmail.trim() && f.buyerPhone.trim() && f.recipientName.trim();
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!f.buyerName.trim() || !f.buyerEmail.trim() || !f.recipientName.trim()) return;
+    if (!requiredOk) return;
     setSending(true);
+    setError(null);
     try {
-      await requestGift({
+      const { sends } = await requestGift({
         itemType,
         itemLabel: GIFT_ITEMS.find((i) => i.value === itemType)?.label ?? itemType,
         buyerName: f.buyerName.trim(),
         buyerEmail: f.buyerEmail.trim(),
+        buyerPhone: f.buyerPhone.trim(),
         recipientName: f.recipientName.trim(),
         recipientEmail: f.recipientEmail.trim() || undefined,
         message: f.message.trim() || undefined,
+        occasion: f.occasion.trim() || undefined,
       });
       setSent(true);
+      void sends.then((outcome) => setStaffAlerted(outcome.staff));
+    } catch (err) {
+      setError(
+        err instanceof Error && err.message
+          ? err.message
+          : 'Something went wrong sending your gift request. Please try again or call us directly.',
+      );
     } finally {
       setSending(false);
     }
@@ -56,7 +77,7 @@ export default function Gift() {
 
   return (
     <>
-      <Seo title="Give the Gift of Riding | French Heritage Equestrian" description="Gift riding lessons, a membership, or any of our services. A beautiful digital gift the recipient opens, then redeems to book." path="/gift" noindex />
+      <Seo title="Give the Gift of Riding | French Heritage Equestrian" description="Gift riding lessons, horse care, or any of our services. A beautiful digital gift the recipient opens, then redeems to book." path="/gift" noindex />
       <section className="min-h-screen bg-cream pt-32 pb-20">
         <div className="container-site max-w-xl">
           <div className="text-center mb-10">
@@ -68,10 +89,26 @@ export default function Gift() {
           {sent ? (
             <div className="bg-green-50 border border-green-200 p-8 text-center">
               <h2 className="font-serif font-medium text-green-800 text-xl mb-2">Wonderful — we're on it.</h2>
-              <p className="body-text text-sm mb-4">
-                We'll confirm the details with you and prepare a beautiful digital gift your
-                recipient gets to open. You'll have everything you need to give it in time.
-              </p>
+              {/* P3 — honest, not optimistic. staffAlerted is null until the
+                  alert endpoint has actually reported back (it may take a
+                  moment), true once it has provably reached the team, and
+                  false when it could not be confirmed — in which case we say
+                  so and give the visitor a way to make sure it doesn't fall
+                  through. */}
+              {staffAlerted === false ? (
+                <p className="body-text text-sm mb-4">
+                  Your request is saved, but we couldn't confirm it reached our team
+                  automatically. To be sure it doesn't get missed, please also call us at{' '}
+                  <a href={BRAND.phoneHref} className="link-underline">{BRAND.phoneDisplay}</a> or email{' '}
+                  <a href={BRAND.emailHref} className="link-underline">{BRAND.email}</a>.
+                </p>
+              ) : (
+                <p className="body-text text-sm mb-4">
+                  We'll be in touch to talk through the details, then prepare a beautiful
+                  digital gift your recipient gets to open. You'll have everything you need
+                  to give it in time.
+                </p>
+              )}
               <Link to="/" className="link-underline">Back home <ArrowRight size={12} aria-hidden="true" /></Link>
             </div>
           ) : (
@@ -81,6 +118,10 @@ export default function Gift() {
                 <select id="g-item" className="form-input" value={itemType} onChange={(e) => setItemType(e.target.value)}>
                   {GIFT_ITEMS.map((i) => <option key={i.value} value={i.value}>{i.label}</option>)}
                 </select>
+              </div>
+              <div className="mb-5">
+                <label className="form-label" htmlFor="g-occasion">When is this for? (optional)</label>
+                <input id="g-occasion" className="form-input" value={f.occasion} onChange={(e) => upd('occasion', e.target.value)} placeholder="Birthday in two weeks, anytime this month…" />
               </div>
 
               <p className="eyebrow mb-3 mt-8">From you</p>
@@ -92,6 +133,14 @@ export default function Gift() {
                 <div>
                   <label className="form-label" htmlFor="g-bemail">Your email *</label>
                   <input id="g-bemail" type="email" className="form-input" required value={f.buyerEmail} onChange={(e) => upd('buyerEmail', e.target.value)} autoComplete="email" />
+                </div>
+                <div className="sm:col-span-2">
+                  {/* Owner, 2026-08-16: "i want the chance to talk to a person
+                      buying a gift" — a phone number is what makes that call
+                      possible, not optional for a path whose entire point is
+                      the conversation. */}
+                  <label className="form-label" htmlFor="g-bphone">Your phone *</label>
+                  <input id="g-bphone" type="tel" className="form-input" required value={f.buyerPhone} onChange={(e) => upd('buyerPhone', e.target.value)} autoComplete="tel" placeholder="So we can call you" />
                 </div>
               </div>
 
@@ -111,10 +160,11 @@ export default function Gift() {
                 </div>
               </div>
 
-              <button type="submit" disabled={sending || !f.buyerName.trim() || !f.buyerEmail.trim() || !f.recipientName.trim()} className="btn-primary mt-7 w-full justify-center">
+              <button type="submit" disabled={sending || !requiredOk} className="btn-primary mt-7 w-full justify-center">
                 {sending ? 'Sending…' : 'Send my gift request'}
                 {!sending && <ArrowRight size={16} />}
               </button>
+              {error && <p className="form-error mt-3 text-center" role="alert">{error}</p>}
               <p className="form-hint mt-3 text-center">
                 We'll confirm the details and payment with you, then prepare the gift to give.
               </p>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Check, ArrowRight, ArrowLeft } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Check, ArrowRight, ArrowLeft, Gift } from 'lucide-react';
 import { formatPrice } from '../lib/pricing';
 import { fetchPublicCatalog, type ServiceGroup } from '../lib/publicCatalog';
 import { useCart } from '../contexts/CartContext';
@@ -225,15 +225,24 @@ export default function BookSupport() {
             {step === 0 ? 'Back to Services' : 'Previous'}
           </button>
 
-          <button
-            type="button"
-            onClick={handleNext}
-            disabled={step === 0 ? !canProceedStep0 : false}
-            className="btn-primary"
-          >
-            {step === STEPS.length - 1 ? 'Continue to Submit Inquiry' : 'Continue'}
-            <ArrowRight size={16} />
-          </button>
+          <div className="flex items-center gap-6">
+            {/* TASK-GIFTPATH — reachable from acquisition, not just lessons. */}
+            {step === 0 && (
+              <Link to="/gift?item=acquisition" className="inline-flex items-center gap-2 text-sm font-sans text-secondary hover:text-green-800 transition-colors focus-ring">
+                <Gift size={15} aria-hidden="true" />
+                Gift our services to the horse lover in your life
+              </Link>
+            )}
+            <button
+              type="button"
+              onClick={handleNext}
+              disabled={step === 0 ? !canProceedStep0 : false}
+              className="btn-primary"
+            >
+              {step === STEPS.length - 1 ? 'Continue to Submit Inquiry' : 'Continue'}
+              <ArrowRight size={16} />
+            </button>
+          </div>
         </div>
 
         {step === 0 && !canProceedStep0 && (

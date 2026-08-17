@@ -41,6 +41,7 @@ export default function Footer() {
               { label: 'Book a Lesson', href: '/lessons' },
               { label: 'Horse Care', href: '/horse' },
               { label: 'Acquisition Support', href: '/acquisition' },
+              { label: 'Gift a Service', href: '/gift' },
               { label: 'FAQ', href: '/faq' },
             ].map((link) => (
               <Link

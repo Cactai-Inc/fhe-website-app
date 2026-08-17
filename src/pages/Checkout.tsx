@@ -24,6 +24,13 @@ import { useDocumentTitle } from '../lib/hooks';
  * What lives here and NOT in the shared form: the signed-in member's purchase
  * branch (a member does not send an inquiry — they open a draft order and go to
  * the order hub) and the cart summary rail.
+ *
+ * TASK-GIFTPATH (2026-08-17): there is NO gift toggle or gift line item here,
+ * deliberately — do not add one. Owner: "no i want the chance to talk to a
+ * person buying a gift." A gift is never self-serve; it is a conversation,
+ * captured by `/gift` (`Gift.tsx`) as a `requests` row (category 'gift'), not
+ * a purchase. Staff turn a reviewed gift enquiry into a real, priced gift by
+ * hand (`GiftCreateForm` → `create_gift`) once they've talked to the buyer.
  */
 
 const FUNNEL_LABELS: Record<string, string> = {
