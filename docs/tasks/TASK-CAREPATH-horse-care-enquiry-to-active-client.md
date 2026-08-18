@@ -555,7 +555,40 @@ Two client categories still come out of onboarding, but they are decided by **wh
 | category | who | onboarding |
 |---|---|---|
 | **horse-owner client** | their order contains a horse-related purchase — horse care, **or a lesson on their own horse** | **completes the horse intake + horse auth/liability documents** |
-| **deal client** | the order contains no horse-related purchase — acquisition only, or care for the horse we are finding them (§C5c splits that into held order B) | **NO horse intake and NO horse documents** — only the general liability waiver |
+| **deal client** | the order contains no horse-related purchase — acquisition only, or care for the horse we are finding them (§C5c splits that into held order B) | **NO horse intake and NO horse documents** — ~~only the general liability waiver~~ **the standard three (see below)** |
+
+### ⚠️ C10a-ii — THE OWNER CHANGED HIS MIND: A DEAL CLIENT SIGNS THE STANDARD THREE (2026-08-17)
+
+**This is a CHANGE OF MIND, not a correction of an error.** The ruling above — "only the general
+liability waiver" — was the owner's own, made on 2026-08-16 and implemented faithfully. On
+2026-08-17, asked *"do we use the standard 3 guest documents? release general, policies, and
+rules?"*, he answered **"Yes."**
+
+**A deal client is YOUR client.** They are leasing from you, buying through you, or having you find
+them a horse — and they come to the property to do it. They sign what any guest signs:
+`RELEASE_GENERAL`, `COMPANY_POLICIES`, `FACILITY_RULES`.
+
+⚠️ **The database was already doing this, and the screen was lying about it.** `CATEGORY_TOKEN` maps
+`'Deal client' → 'GUEST'` before the RPC is called, and `apply_category_documents` matches on the
+token, so the `Deal client → RELEASE_GENERAL` row in `category_document_requirements` never matched
+anything. The provisioning form read that dead row and promised one document; the RPC resolved
+Guest's three and wrote three. Under this ruling **the three are correct**, so `TASK-PARTYROLE`
+retired the dead row and made the form derive through `CATEGORY_TOKEN` — the same comparison the RPC
+makes. Nothing about the assignment behaviour changed.
+
+**Everything else in §C10a stands unchanged**: the `HORSE_OWNER` grant is still a document trigger,
+documents still follow the order, and a deal client still gets **no horse intake and no horse
+documents**. Only the size of their onboarding set moved, from one to three.
+
+⚠️ **The §C10a argument against a fifth `groups.group_type` — "~10 RLS-bearing surfaces" — is also
+withdrawn.** Measured 2026-08-17: **one** RLS policy reads `groups` (`evaluation_reports_owner_read`),
+11 functions reference the type strings, and one CHECK constraint. A fifth token is affordable. It
+was still not added, for a different and better reason: nothing would branch on it. See
+`docs/reports/TASK-PARTYROLE-REPORT.md` §R2.
+
+⚠️ **And a contract COUNTERPARTY is not a deal client.** The Lessor or Seller on the other side of
+the contract is a different person from the client, and the system requires **no document of them at
+all**. Conflating the two is what produced the live bug `TASK-PARTYROLE` fixed.
 
 ⚠️ **This breaks the straight line in §C10.** A client with no horse must **not** be shown "add your
 horse's information" — it is an unanswerable form and it tells them we were not listening.

@@ -548,13 +548,37 @@ export const CLIENT_CATEGORIES = ['Guest', 'Rider', 'Horse owner', 'Deal client'
  *  CAREPATH §C10a — 'Deal client' maps to GUEST. It is a DOCUMENT category, not
  *  a new standing affiliation: `groups.group_type` allows only GUEST / RIDER /
  *  HORSE_OWNER / PARENT_GUARDIAN, and inventing a fifth would have to be taught
- *  to `derive_affiliations`, `apply_affiliations` and ~10 RLS-bearing surfaces
- *  for no gain. What actually differs is the paperwork, and that is keyed on the
- *  DISPLAY category in `category_document_requirements`: a deal client signs the
- *  general liability waiver and nothing else, while Guest signs three. */
+ *  to `derive_affiliations` and `apply_affiliations` for no gain.
+ *
+ *  ⚠️ PARTYROLE 2026-08-17 — THE PAPERWORK IS KEYED ON THE TOKEN, NOT ON THIS
+ *  LABEL. §C10a's second half ("a deal client signs the general liability waiver
+ *  and nothing else, while Guest signs three") was never true in the database and
+ *  is withdrawn. `apply_category_documents` matches `category_document_requirements`
+ *  against the TOKEN this map produces, so the 'Deal client' requirements row
+ *  never matched anything: the screen read that row and promised one document
+ *  while the RPC resolved Guest's three and wrote three.
+ *
+ *  The owner has since ruled the THREE correct — a deal client is your client,
+ *  arriving at the property, and signs what any guest signs. So the dead row is
+ *  retired (migration 20260817T1800) and every surface derives its prefill
+ *  through `matchesCategoryToken` below, which is the same comparison the RPC
+ *  makes. The screen and the database can no longer disagree.
+ *
+ *  A contract COUNTERPARTY — the Lessor or Seller — is NOT on this list and needs
+ *  no entry: their role lives on the contract (`document_parties.party_role`), and
+ *  the system requires no document of them at all. */
 export const CATEGORY_TOKEN: Record<string, string> = {
   Guest: 'GUEST', Rider: 'RIDER', 'Horse owner': 'HORSE_OWNER', 'Deal client': 'GUEST',
 };
+
+/** The comparison `apply_category_documents` makes, in the browser: one canonical
+ *  form on both sides (upper, spaces → underscores). Pass a
+ *  `category_document_requirements.category` and the token a display category
+ *  resolved to; a true answer means the RPC will assign that row. */
+export function matchesCategoryToken(requirementCategory: string, token: string): boolean {
+  const norm = (s: string) => s.trim().replace(/ /g, '_').toUpperCase();
+  return norm(requirementCategory) === norm(token);
+}
 
 /** Signed-contact detection: the account category implied by a contact's already
  *  EXECUTED documents (kiosk walk-in), plus which templates they've signed — so
@@ -805,6 +829,22 @@ export async function categoryDocumentDefaults(): Promise<CategoryDocDefault[]> 
   const { data, error } = await supabase.rpc('category_document_defaults');
   if (error) throw error;
   return (data ?? []) as CategoryDocDefault[];
+}
+
+/** EVERY document staff may apply as first-login paperwork — the onboarding class
+ *  (`contract_templates.wall_gating`), not just the ones some category suggests.
+ *
+ *  PARTYROLE 2026-08-17 — the owner: *"so we can apply a document or set to them
+ *  but we dont have a requirement to do so."* The suggestion list
+ *  (`categoryDocumentDefaults`) covers 7 templates and is derived from the
+ *  categories; a contract counterparty has no category and therefore no
+ *  suggestions, so a control built only from it can never apply anything to them.
+ *  This is the universe to CHOOSE from — 9 templates today, including the two the
+ *  defaults never mention. It is a floor on staff's reach, never a ceiling. */
+export async function onboardingTemplateOptions(): Promise<{ template_key: string; title: string }[]> {
+  const { data, error } = await supabase.rpc('onboarding_template_options');
+  if (error) throw error;
+  return (data ?? []) as { template_key: string; title: string }[];
 }
 
 /** Replace the client's assigned first-login documents (the checkbox save). */
