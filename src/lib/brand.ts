@@ -15,7 +15,13 @@ export const BRAND = {
   // render shows. This value covers the prerender path (which passes no config)
   // and any tenant that has not set one. Changing what FHE displays is the
   // owner's own job at Admin → Branding → Tagline (D13), not a code edit.
-  tagline: 'Family-run full service equestrian program and riders community, rooted in classic European horsemanship.',
+  //
+  // Owner, 2026-08-17: the tagline and the description are ONE sentence — kept
+  // byte-identical to BUSINESS.description in src/lib/seo.ts. If you edit one,
+  // edit the other.
+  tagline: 'Family-run full-service equestrian program and rider community featuring riding '
+    + 'lessons and jumper training in the classic European style, alongside horse care '
+    + 'services, and purchase and leasing support, located in beautiful coastal San Diego.',
   email: 'Hello@FHEquestrian.com',
   emailHref: 'mailto:Hello@FHEquestrian.com',
   phoneDisplay: '858-439-3614',
