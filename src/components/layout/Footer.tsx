@@ -49,7 +49,7 @@ export default function Footer() {
 
         {/* Navigation */}
         <div>
-          <p className="eyebrow-on-dark mb-5">Navigation</p>
+          <p className="eyebrow-on-dark mb-5 text-center">Navigation</p>
           <nav className="flex flex-col items-center gap-3 text-center" aria-label="Footer">
             {[
               { label: 'Home', href: '/' },
@@ -94,11 +94,20 @@ export default function Footer() {
           <div className="flex flex-col gap-4">
             <div className="flex items-start gap-3">
               <MapPin size={16} className="text-gold-400 mt-0.5 flex-shrink-0" aria-hidden="true" />
-              <div>
+              {/* The full postal address, owner 2026-08-17. It is the business
+                  address that the file header above already names — Google's own
+                  number for the Business Profile, not the `locations` table's
+                  "11600", which still disagrees and is still flagged. The MAP pin
+                  deliberately does NOT use it: visitors are routed to the turn-in
+                  Plus Code instead, for the reason set out in that header. So this
+                  block and the map answer two different questions on purpose —
+                  "where are you" and "how do I get in". */}
+              <address className="not-italic">
                 <p className="text-sm font-sans text-white/85">Carmel Creek Ranch</p>
-                <p className="text-sm font-sans text-white/[0.7]">San Diego, CA</p>
+                <p className="text-sm font-sans text-white/[0.7]">11500 Clews Ranch Rd, Ste A</p>
+                <p className="text-sm font-sans text-white/[0.7]">San Diego, CA 92130</p>
                 <p className="text-xs font-sans text-white/[0.6] mt-0.5">2.5 miles from Torrey Pines Beach</p>
-              </div>
+              </address>
             </div>
             <div className="flex items-center gap-3">
               <Phone size={16} className="text-gold-400 flex-shrink-0" aria-hidden="true" />
@@ -127,7 +136,6 @@ export default function Footer() {
           <div className="mt-8 pt-8 border-t border-white/10">
             <p className="text-xs font-sans text-white/[0.6] leading-relaxed">
               Fully licensed &amp; insured equestrian business.
-              <br />Operating at Carmel Creek Ranch, San Diego, CA.
             </p>
           </div>
         </div>
@@ -147,17 +155,20 @@ export default function Footer() {
 
       {/* Bottom bar */}
       <div className="border-t border-white/10">
-        <div className="container-site py-5 grid grid-cols-1 sm:grid-cols-3 items-center gap-2 text-center sm:text-left">
-          <p className="text-xs font-sans text-white/[0.6] sm:justify-self-start">
+        {/* Owner, 2026-08-17: copyright LEFT, Cactai mark RIGHT — they swapped
+            sides and the copyright came off the centre line. The 3-track grid
+            existed only to hold that centre (its third track was a spacer), so
+            it goes: with two items pinned to opposite edges, `justify-between`
+            says what the layout means and there is no empty track to explain.
+            Below `sm` they stack centred, copyright first, as before. */}
+        <div className="container-site py-5 flex flex-col sm:flex-row items-center sm:justify-between gap-2 text-center sm:text-left">
+          <p className="text-xs font-sans text-white/[0.6]">
+            &copy; {new Date().getFullYear()} French Heritage Equestrian. All rights reserved.
+          </p>
+          <p className="text-xs font-sans text-white/[0.6]">
             {/* Cactai URL not yet supplied (F4) — wrap in <a href={CACTAI_URL}
                 target="_blank" rel="noopener noreferrer"> once the owner provides it. */}
             Designed, Built &amp; Maintained by Cactai Inc.
-          </p>
-          <p className="text-xs font-sans text-white/[0.6] sm:justify-self-center">
-            &copy; {new Date().getFullYear()} French Heritage Equestrian. All rights reserved.
-          </p>
-          <p className="text-xs font-sans text-white/[0.6] sm:justify-self-end">
-            San Diego, California
           </p>
         </div>
       </div>
