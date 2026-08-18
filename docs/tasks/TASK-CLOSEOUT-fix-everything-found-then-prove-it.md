@@ -70,10 +70,35 @@ Three distinct failures produce the same text, so staff cannot tell which they h
 - **Termination must be reachable** — an evergreen lease needs a way to end. Establish what ends one
   today (`workflow_state = 'terminated'` exists) and **report whether staff can actually reach it.**
 
-## 1.5 — locking silently creates two more unsigned documents (B2)
-Locking a lease generates `HORSE_EMERGENCY_VET` + `RELEASE_HORSE_CARE` and **tells nobody**.
-**They must be visible at the moment they are created**, not discovered later.
-**See §1.6 — the owner has now ruled on whether they belong at all.**
+## 1.5 — the horse documents are created TOO EARLY (B2) — ✅ **owner-ruled, 2026-08-18**
+
+**Owner:**
+> *"they should be surfaced first in the onboarding flow in theory, but a party looking at a contract
+> they might not sign doesn't need to complete documents that might not be needed."*
+
+**Measured — `ensure_horse_documents` is called from BOTH:**
+
+| caller | when | verdict |
+|---|---|---|
+| `advance_document_workflow` (line ~143, `is_horse_lease_template` branch, `p_include_care = true`) | **at LOCK — before anyone signs** | ⚠️ **WRONG. Remove this call.** |
+| `apply_contract_execution_effects` | **at EXECUTION — after both parties sign** | ✅ **correct. Keep it.** |
+
+**The lock-time call manufactures paperwork for a person who is still deciding.** If they decline the
+lease, those documents were never needed — and they were created in their name regardless.
+
+**THE FIX: delete the lock-time call. Keep the execution-time one.**
+- A party reviews the lease with **nothing else attached**.
+- They sign. Execution creates `HORSE_EMERGENCY_VET` + `RELEASE_HORSE_CARE` — **because only now is
+  the horse genuinely coming into your care.**
+- **This resolves B2 outright** rather than merely surfacing it: the right fix is not to announce the
+  documents earlier, it is **not to create them yet.**
+
+⚠️ **Prove the execution path still creates them** — removing the wrong call must not remove the
+right one. **Both counts, before and after, on a lease taken to EXECUTED.**
+⚠️ **Check nothing depends on them existing at lock time** — if a lock-time reader assumes they are
+there, it must be found now rather than by a lessor later.
+
+**See §1.6 for the escapes the owner wants once they ARE created.**
 
 ## 1.6 — the Lessor's documents: default ON, skippable, removable  ⟵ **OWNER RULING, 2026-08-17**
 > *"the lessor is categorized as horse owner and by default they should be assigned the documents,
