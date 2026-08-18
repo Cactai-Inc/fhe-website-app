@@ -58,11 +58,17 @@ fill.** The report lists all 31 fields, split 15 always-active / 16 conditional.
 Three distinct failures produce the same text, so staff cannot tell which they hit.
 **Give each its own message naming the actual cause and the actual next step.**
 
-## 1.4 — a lease can execute with no end date (A5)
-`TXN.LEASE_END` is not required, so a lease executes open-ended and writes a **permanent** stable
-entry with `lease_end = NULL`.
-⚠️ **OWNER RULING NEEDED before building:** is an open-ended lease legitimate (evergreen until
-terminated), or must every lease carry an end date? **Ask. Do not decide.**
+## 1.4 — a lease with no end date is LEGITIMATE (A5) — ✅ **owner-ruled: "Evergreen yes"**
+`TXN.LEASE_END` stays optional. An open-ended lease runs **until terminated**, and
+`horses.lease_end = NULL` is a correct, permanent state — **not a defect to close.**
+
+**So the work here is presentation, not validation:**
+- **A NULL end date must read as "Evergreen" or "until terminated" wherever a lease is shown** —
+  never as blank, never as "—", and never as an error. A staff member seeing an empty end date
+  should know it is deliberate.
+- ⚠️ **Do NOT add a required-field rule, a warning, or a default end date.**
+- **Termination must be reachable** — an evergreen lease needs a way to end. Establish what ends one
+  today (`workflow_state = 'terminated'` exists) and **report whether staff can actually reach it.**
 
 ## 1.5 — locking silently creates two more unsigned documents (B2)
 Locking a lease generates `HORSE_EMERGENCY_VET` + `RELEASE_HORSE_CARE` and **tells nobody**.
@@ -95,9 +101,46 @@ has zero. So `contracts.status` stays `draft` beside an `EXECUTED` document.
 leave a third dead notifier in this codebase** — this is the same shape as `INBOUNDALERT`,
 `GIFTPATH` and `schedule_lesson_session`.
 
-## 1.8 — notification resolution is a DELETE, not a resolve (B5)
-Resolved alerts are deleted, so **there is no record they ever existed.** Establish whether that
-loses anything the owner needs, and report before changing it.
+## 1.8 — notification resolution is a DELETE with no log (B5) — ✅ **owner-ruled**
+
+**Owner, 2026-08-18:**
+> *"Deleting a notification is only acceptable if the log for them is part of the contract docs set.
+> At minimum this should include (notification name/type/category, created timestamp, author, reason,
+> notified timestamp, recipients, locations, outcome, outcome timestamp) when resolved. The log is
+> our source of truth."*
+
+**And on what else one might do with a resolved notification: nothing.** It is a delivery artifact,
+not a record. **Deleting stays correct — writing the log first is what is missing.**
+
+**Measured:** `notifications` is `id · org_id · user_id · kind · title · body · link · read_at ·
+created_at · emailed_at`. **No status, no reason, no recipients, no outcome.** `audit_logs` cannot
+serve — it is a generic row-change audit (`old_value`/`new_value`), recording that a row vanished,
+not why it existed.
+
+**Build a notification log with the owner's fields, at minimum:**
+
+| field | notes |
+|---|---|
+| name / type / category | `kind` exists; **the category is new** |
+| created timestamp | `created_at` |
+| **author** | who or what raised it — ⚠️ **not currently captured at all** |
+| **reason** | why it was raised — ⚠️ **not captured** |
+| notified timestamp | `emailed_at` covers email; **in-app delivery is not timestamped** |
+| **recipients** | plural — one notification can reach several people |
+| **locations** | where it surfaced (dashboard, email, contract page) |
+| **outcome + outcome timestamp** | what resolved it, and when |
+
+- ⚠️ **Write the log BEFORE the delete, in the same transaction.** A log written after a delete that
+  fails is the bug this section exists to prevent.
+- **Follow the existing pattern, do not invent a new one.** `document_deliveries`,
+  `request_alert_sends`, `receipt_sends` and `signup_alert_sends` are four purpose-built send logs
+  already in this schema — **match their shape.**
+- **The log is the source of truth** — the owner's words. It outlives the notification and is never
+  swept.
+- ⚠️ **Contract-related entries must be readable AS PART OF THE CONTRACT'S DOCUMENT SET**, per the
+  ruling. **Build ONE log for all notifications and let the contract view filter to that contract**
+  — a contract-only log would leave lesson, payment and lead alerts unrecorded and need a second
+  mechanism later.
 
 ---
 
