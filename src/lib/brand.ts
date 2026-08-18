@@ -8,7 +8,14 @@ export const BRAND = {
   // unless explicitly requested. shortName intentionally holds the full name so
   // any consumer that renders it stays compliant.
   shortName: 'French Heritage Equestrian',
-  tagline: 'A family-run hunter/jumper ranch and community, rooted in classical European horsemanship.',
+  // ⚠️ This constant is the FALLBACK, not what FHE renders. `resolveBrand` reads
+  // `b.TAGLINE || BRAND.tagline`, and the live BRAND.TAGLINE row in
+  // `config_values` currently holds "Equestrian community by the sea - made for
+  // fun, friendships, and rider advancement" — so THAT is what a tenant-config
+  // render shows. This value covers the prerender path (which passes no config)
+  // and any tenant that has not set one. Changing what FHE displays is the
+  // owner's own job at Admin → Branding → Tagline (D13), not a code edit.
+  tagline: 'Family-run full service equestrian program and riders community, rooted in classic European horsemanship.',
   email: 'Hello@FHEquestrian.com',
   emailHref: 'mailto:Hello@FHEquestrian.com',
   phoneDisplay: '858-439-3614',

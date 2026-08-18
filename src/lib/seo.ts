@@ -10,8 +10,16 @@ export const SITE_URL = 'https://www.frenchheritageequestrian.com';
 export const BUSINESS = {
   name: 'French Heritage Equestrian',
   legalName: 'French Heritage Equestrian',
+  // The footer's own words, verbatim (owner, 2026-08-17). Length is not a problem
+  // HERE: this field feeds only `ORG_JSONLD.description`, the LocalBusiness
+  // structured data, which is not truncated in results the way a meta description
+  // is. The ~155-character ceiling applies to `ROUTE_SEO[].description`, which is
+  // a separate list and is deliberately NOT changed to this text — at 240
+  // characters it would be cut off mid-sentence in a search result.
   description:
-    'A family-run hunter/jumper ranch and community rooted in classical European horsemanship, offering riding lessons, horse training and care, and acquisition support in coastal San Diego.',
+    'Family-run full-service equestrian program and riders community featuring riding lessons '
+    + 'and jumper training in the classic European style, alongside horse care services and '
+    + 'horse acquisition support, located in beautiful coastal San Diego.',
   email: 'Hello@FHEquestrian.com',
   phone: '+1-858-439-3614',
   phoneDisplay: '858-439-3614',
