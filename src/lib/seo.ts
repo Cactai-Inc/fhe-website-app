@@ -18,7 +18,7 @@ export const BUSINESS = {
   // characters it would be cut off mid-sentence in a search result.
   description:
     'Family-run full-service equestrian program and rider community featuring riding lessons '
-    + 'and jumper training in the classic European style, alongside horse care services, and '
+    + 'and jumper training in the classical European style, alongside horse care services, and '
     + 'purchase and leasing support, located in beautiful coastal San Diego.',
   email: 'Hello@FHEquestrian.com',
   phone: '+1-858-439-3614',
