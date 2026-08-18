@@ -41,9 +41,9 @@ export default function Footer() {
             </p>
           </div>
           <p className="text-sm font-sans text-white/[0.7] leading-relaxed max-w-xs">
-            A family-run equestrian program and riders community featuring riding lessons and
-            jumper training in the classic European style, alongside horse care services and
-            horse acquisition support, located in beautiful coastal San Diego.
+            Family-run full-service equestrian program and riders community featuring riding
+            lessons and jumper training in the classic European style, alongside horse care
+            services and horse acquisition support, located in beautiful coastal San Diego.
           </p>
         </div>
 
