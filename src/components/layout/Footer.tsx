@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { MapPin, Phone, Mail, Clock } from 'lucide-react';
 import { BRAND } from '../../lib/brand';
+import { useCart } from '../../contexts/CartContext';
 
 // Owner, 2026-08-17: the geocoded business address (11500 Clews Ranch Rd
 // Ste A — Google's own number; the `locations` table's "11600" doesn't
@@ -24,8 +25,22 @@ const MAP_EMBED_SRC = `https://www.google.com/maps?q=${encodeURIComponent(MAP_QU
 
 export default function Footer() {
   const { user } = useAuth();
+  // ⚠️ THE SELECTION BAR IS `position: fixed`, SO IT IS OUT OF FLOW AND NOTHING
+  // BELOW IT KNOWS IT EXISTS. Owner, 2026-08-17: "the bottom of page continue
+  // overlay doesnt tell the page to provide more room at the bottom below the
+  // footer, so its overlapping it."
+  //
+  // The funnel pages each carry `pb-36`, which protects THEIR OWN last card —
+  // but the footer is a sibling rendered after them, so that padding does
+  // nothing for it and the bar sat on top of the copyright line. The reserve has
+  // to live on the last thing in the document, which is this. It is conditional
+  // because the bar itself is conditional: no selection, no bar, no dead space.
+  const { itemCount } = useCart();
   return (
-    <footer id="site-footer" className="bg-green-900 text-white">
+    <footer
+      id="site-footer"
+      className={`bg-green-900 text-white ${itemCount > 0 ? 'pb-24' : ''}`}
+    >
 
       {/* Main footer */}
       <div className="container-site py-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-10">

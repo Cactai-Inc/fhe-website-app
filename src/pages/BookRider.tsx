@@ -54,6 +54,10 @@ export default function BookRider() {
 
   const canProceedStep0 = itemCount > 0;
   const canProceedStep1 = !!ownsHorse;
+  /** Is the floating SelectionBar carrying the Continue right now? Mirrors both
+   *  of its render conditions: this page only mounts it on step 0, and the bar
+   *  itself returns null while nothing is selected. */
+  const barHasIt = step === 0 && itemCount > 0;
 
   function handleNext() {
     if (step < STEPS.length - 1) {
@@ -275,15 +279,25 @@ export default function BookRider() {
             {step === 0 ? 'Back to Services' : 'Previous'}
           </button>
 
-          <button
-            type="button"
-            onClick={handleNext}
-            disabled={step === 0 ? !canProceedStep0 : step === 1 ? !canProceedStep1 : false}
-            className="btn-primary"
-          >
-            {step === STEPS.length - 1 ? 'Continue to Submit Inquiry' : 'Continue'}
-            <ArrowRight size={16} />
-          </button>
+          {/* Owner, 2026-08-17: "we can remove the continue button on the product
+              pages because we added the one to the footer popup zone."
+              `barHasIt` is exactly when SelectionBar is on screen — step 0 with
+              something selected — and only then does this one stand down, so the
+              page never shows two Continues and never shows none. With nothing
+              selected the bar returns null, and the disabled button below is what
+              tells the visitor a next step exists at all; deleting it outright
+              would leave an empty rule and no forward affordance. */}
+          {!barHasIt && (
+            <button
+              type="button"
+              onClick={handleNext}
+              disabled={step === 0 ? !canProceedStep0 : step === 1 ? !canProceedStep1 : false}
+              className="btn-primary"
+            >
+              {step === STEPS.length - 1 ? 'Continue to Submit Inquiry' : 'Continue'}
+              <ArrowRight size={16} />
+            </button>
+          )}
         </div>
 
         {step === 0 && !canProceedStep0 && (

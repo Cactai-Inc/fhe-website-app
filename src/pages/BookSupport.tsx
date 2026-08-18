@@ -51,6 +51,10 @@ export default function BookSupport() {
   const hasQuestions = cartHasQuestions(state.items);
 
   const canProceedStep0 = itemCount > 0;
+  /** Is the floating SelectionBar carrying the Continue right now? Mirrors both
+   *  of its render conditions: this page only mounts it on step 0, and the bar
+   *  itself returns null while nothing is selected. */
+  const barHasIt = step === 0 && itemCount > 0;
 
   function handleNext() {
     if (step < STEPS.length - 1) {
@@ -233,15 +237,21 @@ export default function BookSupport() {
                 Gift our services to the horse lover in your life
               </Link>
             )}
-            <button
-              type="button"
-              onClick={handleNext}
-              disabled={step === 0 ? !canProceedStep0 : false}
-              className="btn-primary"
-            >
-              {step === STEPS.length - 1 ? 'Continue to Submit Inquiry' : 'Continue'}
-              <ArrowRight size={16} />
-            </button>
+            {/* Stands down while the floating SelectionBar is carrying the
+                Continue (owner, 2026-08-17) — see BookRider for the full note.
+                With nothing selected the bar is null, so this stays as the
+                disabled affordance that says a next step exists. */}
+            {!barHasIt && (
+              <button
+                type="button"
+                onClick={handleNext}
+                disabled={step === 0 ? !canProceedStep0 : false}
+                className="btn-primary"
+              >
+                {step === STEPS.length - 1 ? 'Continue to Submit Inquiry' : 'Continue'}
+                <ArrowRight size={16} />
+              </button>
+            )}
           </div>
         </div>
 
