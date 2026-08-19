@@ -1,5 +1,24 @@
 # HANDOFF → ORCH3
 
+## WHERE YOU ARE — read this before anything else
+
+```
+repo          /Users/cactai/Downloads/claude-code-repo/fhe-website-app
+branch        main            (clean, pushed)
+database      Supabase project lrstswfxfsezdmvkvukc — connection string in .env.db
+worktrees     /Users/cactai/Downloads/claude-code-repo/wt-*   (see §8a — one is unmerged)
+orchestration /Users/cactai/Downloads/claude-code-repo/orchestration/
+platform      macOS. Every path above is absolute and real; nothing is a placeholder.
+```
+
+⚠️ **`cd` into the repo first.** A Claude Code session often starts in `/Users/Cactai` or in
+`~/Downloads`, **not** in the repo — every relative path in this file and in `ORCHESTRATOR.md`
+resolves only from the repo root. **`.env` holds placeholder Supabase keys** (the real ones live in
+Vercel), so browser-path testing is impossible locally; **`.env.db` holds the real production
+connection string and direct `psql` is how everything gets verified.**
+
+---
+
 **Written by ORCH2 at its own close, 2026-08-18, for the thread that replaces it.**
 **This file instructs. It is not a status report.** If you finish reading it and still have to ask
 the owner how to operate or what to do first, this file failed and you should fix it rather than
@@ -257,7 +276,13 @@ week.** Do not infer liveness from the directory listing; check `git merge-base`
 ```
 FHE-ORCH-3
 
+cd /Users/cactai/Downloads/claude-code-repo/fhe-website-app
 Read docs/HANDOFF-ORCH3.md, then docs/ORCHESTRATOR.md, and take over.
 ```
 
 **Opus 5 · thinking ON · effort HIGH.**
+
+⚠️ **The `cd` line is not optional and was missing from the first draft of this file.** A fresh
+Claude Code session does not know which repo it serves — the prompt has to locate itself. **Any
+spawn prompt whose first file path is relative is broken**, and that includes every task prompt
+(§5 of `ORCHESTRATOR.md`, now corrected).

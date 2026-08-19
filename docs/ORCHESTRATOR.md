@@ -210,8 +210,14 @@ thread needs a change in a file it does not own, it **reports the diff** and you
 ```
 IDENTIFIER
 
+cd /Users/cactai/Downloads/claude-code-repo/fhe-website-app
 Read docs/tasks/TASK-<ID>-<slug>.md and build it.
 ```
+
+⚠️ **The `cd` line is mandatory.** A fresh Claude Code session starts wherever it starts — often
+`/Users/Cactai` or `~/Downloads`, not the repo — so a prompt whose first path is relative fails on
+line one. **Absolute location, then relative paths.** (Added 2026-08-18 after the owner caught the
+handoff prompt shipping without it.)
 
 **The ID alone on the first line** — it is the only shape that survives into the tab title.
 **Nothing else.** Restating the spec in the prompt creates a second source of truth that drifts
@@ -270,6 +276,8 @@ Before compaction or handoff:
    ambiguous instruction, which approach was rejected and why, **and where you turned out to be
    wrong** — that is not context, it is an unwritten decision, and the handoff is incomplete until
    it is written down. `docs/HANDOFF-ORCH3.md` is the worked example.
+   **It opens with a WHERE YOU ARE block** — absolute repo path, branch, database, worktrees — so
+   the thread can locate itself before it reads a single relative path. Every handoff carries one.
 3. **Record any new settled decision in `CLAUDE.md`** as a numbered D-rule.
 4. **Write a memory entry** for anything that outlives this repo.
 5. **Do not append role rules to the status doc, and do not append state to this file.**
@@ -279,6 +287,7 @@ Before compaction or handoff:
 ```
 FHE-ORCH-<n>
 
+cd /Users/cactai/Downloads/claude-code-repo/fhe-website-app
 Read docs/HANDOFF-ORCH<n>.md, then docs/ORCHESTRATOR.md, and take over.
 ```
 
