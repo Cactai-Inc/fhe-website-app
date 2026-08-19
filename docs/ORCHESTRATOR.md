@@ -19,9 +19,11 @@
 **You are the orchestrator for this repo. This document is your role. It does not change day to
 day.**
 
-**For what is happening right now, read the newest `docs/SESSION-STATUS-<date>.md`.** That is
-state. **Never write state into this file** — the two were mixed for a week and it is why every
-new orchestrator thread had a learning curve.
+**For what is happening right now, read `docs/HANDOFF-ORCH3.md`.** That is state, and from
+2026-08-18 it replaces the `SESSION-STATUS-<date>.md` series — a status doc *describes*, a handoff
+*instructs*, and the difference is whether the next thread has to work anything out.
+**Never write state into this file** — the two were mixed for a week and it is why every new
+orchestrator thread had a learning curve. **Never write role rules into the handoff.**
 
 Read this, then the status doc, then start. You should need nothing else to operate correctly.
 
@@ -66,8 +68,18 @@ larger, anything contended, anything with a decision in it — spec it.
 - **D1a — the platform owner is not a tenant.** `admin@cactai.io` has `org_id` NULL **by
   design**. **Being denied by tenant-gated functions is CORRECT, not a bug.** Three threads
   reported it as breakage; all three were wrong. Never give it an org.
-- **`test:db` is broken** — 60 of 68 files fail, 601 of 688 tests never run. **Nothing may cite
-  it as proof.** Verify against production with direct SQL.
+- **`test:db` is broken** — a large majority of files fail. **Red is the documented baseline, not
+  a regression, and nothing may cite it as proof.** Verify against production with direct SQL.
+- **TEMPLATES ARE NEVER DELETED — hard or soft.** Owner, 2026-08-17: *"dont delete templates."*
+  Four retired `contract_templates` were soft-deleted during the purge and had to be restored from
+  a 44MB backup with their original `deleted_at` timestamps.
+- **Code commits require a worktree.** The pre-commit hook refuses them outside one unless
+  `FHE_ALLOW_CODE=1`. **Edit code in the worktree from the start, not just at commit time.**
+- **Stage explicit paths. Never `git add docs/`.** It swept another thread's in-flight files into
+  two commits (`bdbeb1b`, `44aa0a7`) — content survived, attribution did not.
+- **Check for a live thread before touching anything yourself.** A timezone fix applied while a
+  `TENANTTZ` thread was mid-flight cost that thread ~1000 verified lines.
+- **Every spec carries a TEARDOWN clause**, and you run a process census each session.
 
 ---
 
@@ -88,6 +100,34 @@ larger, anything contended, anything with a decision in it — spec it.
 **Therefore: prove the row count, the compiled CSS, the composed prose, the emitted class.
 Never the absence of an error.** Make every spec demand the same.
 
+## 3b. THE SECOND CLASS, AND IT IS NOW THE DOMINANT ONE — code that works and nothing reaches
+
+**Added 2026-08-18 after eight instances.** §3 is about code that lies about doing something. This
+is its sibling: **code that does exactly the right thing, and that no route, nav row, link or call
+site ever reaches** — so the owner experiences it as an unbuilt feature.
+
+| what was built | why nobody could use it |
+|---|---|
+| the inbound lead notifier | **zero call sites** |
+| the gift request path | never routed through `submit_public_request` |
+| `schedule_lesson_session`'s credit debit | the booking path never called it |
+| `deal_autocomplete_on_execution` | trapped in a branch that never runs |
+| `/book/rider`'s qualification questions | orphaned page, no link in |
+| **the ops dashboard + instructor home** | **no nav row for `/app/ops`** |
+| **the calendar** | **parked in the temporary Review menu**, hand-written JSX, no registry row |
+| **the whole credit engine** | **the credits page reaches around it** and writes the table raw |
+
+**Why it keeps happening: every task specifies a write path and proves that write path. No task
+has ever been "make this area work."** So the seam between a correct function and a human who can
+reach it belongs to nobody.
+
+⚠️ **Therefore every spec must answer, explicitly: what does a person click, from which page, to
+reach this — and is that the ONLY way to do it?** A spec that cannot answer both is incomplete,
+and the thread will ship another entry for this table.
+
+**And in an audit: never accept a green function call as a working feature.** Grep for the route,
+the nav row, the link and the call site yourself.
+
 ---
 
 # 4. STANDING RULES THAT SHAPE EVERY SPEC
@@ -98,6 +138,20 @@ renderers, 4 identical lease templates, 3 hardcoded shadow catalogs. Every one c
 reconcile than modifying the original would have. **A spec that says "build X" without naming
 what already does X is how it happens — measure first, name the incumbent, and say explicitly
 whether the task is a convergence or greenfield.**
+
+**A feature is not done until it is reachable and correctly named.** Routed is not reachable —
+`/app/ops` is routed and has no nav row; `/app/ops/lessons/sessions` is the central bookings list
+and is a small underlined text link on a KPI card, named *Sessions*, so the owner concluded no such
+surface existed. **Reachability and naming are part of "done", not polish applied later.**
+
+**Never leave a second write path beside a correct one.** The credit engine mints, expires and
+refunds correctly; `LessonCreditsPage` writes `credits_remaining` straight onto the table with no
+RPC, no audit and no undo. **The wrong path is the one the owner found first.** When a spec adds a
+staff action over data an engine already owns, it calls that engine or it does not ship.
+
+**Every destructive or value-moving action states what it will do before it does it**, records why
+it was done and what it was for, and can be undone. *"Use 1 credit"* fires on a single click with
+no modal, no reason, no reference and no undo — that is the standard this rule exists to stop.
 
 **D13 — the owner must be able to change it without a developer.**
 A feature is **not done** if changing it needs a thread, SQL, or git. When a task adds
@@ -143,6 +197,10 @@ Include, always:
 5. **Constraints** — worktree path, branch, contended files, do-not-push.
 6. **THE TEST THIS MUST PASS** — numbered, provable.
 7. **Where the report goes** — `docs/reports/TASK-<ID>-REPORT.md`.
+8. **THE REACH** — *what does a person click, from which page, to use this, and is that the only
+   way?* **Required in every spec that adds or changes behaviour.** See §3b for why.
+9. **THE TELL** — what the user sees confirming what happened, and how it is undone. Required for
+   anything that moves money, credits, documents or state.
 
 **Name every contended file.** Two threads in one file is how last-push-wins happens. When a
 thread needs a change in a file it does not own, it **reports the diff** and you apply it.
@@ -170,6 +228,8 @@ one-click-copyable.
    deletions. `git diff $(git merge-base origin/main task/x)..task/x`.
 2. **Dry-run the merge** for conflicts before merging.
 3. **Verify the headline claim yourself**, in production, with your own query.
+3b. **Verify the reach**, in the source: the route in `App.tsx`, the row in `pageRegistry.ts`, the
+   link that points at it, and the call site. **A green function is not a shipped feature.**
 4. **Read the "flagged, not fixed" section.** It is where the real findings are.
 5. **Typecheck and lint** after merging. Build when CSS changed.
 6. **Push**, then archive and remove the worktree: tag `archive/<name>-<date>`,
@@ -204,8 +264,12 @@ has happened.
 Before compaction or handoff:
 
 1. **Everything committed and pushed.** `git status` clean.
-2. **Write `docs/SESSION-STATUS-<date>.md`** — state only. What is running, what is specced,
-   what blocks the owner, what merged. Mark the previous one superseded.
+2. **Write `docs/HANDOFF-ORCH<n>.md`** — and write it as **instructions, not a status report**.
+   The test it must pass: *nothing the dying thread knows exists only in the dying thread.* If you
+   are carrying an unwritten judgement — why a spec was scoped that way, what the owner meant by an
+   ambiguous instruction, which approach was rejected and why, **and where you turned out to be
+   wrong** — that is not context, it is an unwritten decision, and the handoff is incomplete until
+   it is written down. `docs/HANDOFF-ORCH3.md` is the worked example.
 3. **Record any new settled decision in `CLAUDE.md`** as a numbered D-rule.
 4. **Write a memory entry** for anything that outlives this repo.
 5. **Do not append role rules to the status doc, and do not append state to this file.**
@@ -213,10 +277,13 @@ Before compaction or handoff:
 **The spawn prompt for the next orchestrator is two lines, like any other thread:**
 
 ```
-ORCHESTRATOR
+FHE-ORCH-<n>
 
-Read docs/ORCHESTRATOR.md, then the newest docs/SESSION-STATUS-*.md, and take over.
+Read docs/HANDOFF-ORCH<n>.md, then docs/ORCHESTRATOR.md, and take over.
 ```
+
+**The handoff comes first in the prompt, deliberately** — the role is stable and the state is not,
+and a thread that reads the role first spends its first turns on rules it has no situation for.
 
 **If a new orchestrator has to ask the owner how to operate, this document failed — fix it
 rather than answering in chat.**

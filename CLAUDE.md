@@ -333,3 +333,38 @@ reporting success.
   **D11** (nothing is purged at this stage) and with the standing rule that executed
   documents are evidence. **An unlinked file the member uploaded and never shared is not
   covered by this ruling** — decide that separately if it ever matters.
+- **D16 — TEMPLATES ARE NEVER DELETED, HARD OR SOFT (owner, 2026-08-17).** Said during the
+  production test-data purge, after this repo's orchestrator soft-deleted four retired
+  `contract_templates` and had to restore them from a 44MB backup with their original
+  `deleted_at` timestamps. Owner: *"dont delete templates."* **A retired template is retired
+  behind a flag and kept.** It is the definition of a document that was executed under it, and
+  destroying it destroys the meaning of every signature that references it. **No exception for
+  "unused", "superseded", or "test" — the retirement decision and the template both survive.**
+- **D17 — A FEATURE IS NOT DONE UNTIL IT IS REACHABLE AND CORRECTLY NAMED (2026-08-18).**
+  Established by `docs/reports/OWNER-WALKTHROUGH-2026-08-18.md`, which found the eighth instance
+  of correct code that nothing reaches. **Routed is not reachable:** `/app/ops` is routed and has
+  no row in `pageRegistry.ts`; the calendar is hand-written JSX parked in the temporary Review
+  menu; the central bookings list at `/app/ops/lessons/sessions` is a small underlined text link
+  on a KPI card, named *Sessions*, so the owner concluded no such surface existed.
+  **Consequences.** (1) Every spec answers **THE REACH** — what a person clicks, from which page,
+  and whether that is the only way. (2) Every audit greps the route, the registry row, the link
+  and the call site — **a green function call is not a shipped feature.** (3) The owner's
+  *"there is so much work that hasnt run yet"* was, in nearly every case, work that had run and
+  could not be found.
+- **D18 — NEVER LEAVE A SECOND WRITE PATH BESIDE A CORRECT ENGINE (2026-08-18).** The credit
+  engine (`_mint_credits_for_purchase_item`, `_refund_booking_credit`, `complete_lesson_session`)
+  mints, expires, refunds and reconciles correctly. `LessonCreditsPage` writes `credits_remaining`
+  straight onto the table through PostgREST — no RPC, no audit row, no link to a lesson, no undo —
+  and *"Grant credits"* inserts an entitlement with no offering, no purchase, no period and **no
+  expiry**. **The wrong path is the one the owner found first.** When a staff action touches data
+  an engine already owns, it calls that engine or it does not ship. This is the standing
+  "never build a second implementation" rule, in its most expensive form yet.
+- **D19 — A VALUE-MOVING ACTION STATES ITSELF, RECORDS ITSELF, AND CAN BE UNDONE (2026-08-18).**
+  From the owner's account of the credits page: *"theres literally no transparency, no safety
+  protocols to back out of something before triggering it."* **Anything that moves money, credits,
+  documents or state** must (1) say what it will do **before** it does it, (2) capture a reason,
+  (3) record what it was for — the lesson, the purchase, the document — and (4) be reversible.
+  *"Use 1 credit"* firing on one click with none of the four is the standard this rule exists to
+  stop. **And the corollary the app fails completely today: four ledgers (`audit_logs`,
+  `notifications`, `document_deliveries`, `status_events`) are written and none is ever read back
+  to a human, so no staff member can answer "what does this client see?"**

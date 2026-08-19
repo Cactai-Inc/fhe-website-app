@@ -23,6 +23,19 @@ Nothing here is scheduled except where marked. **Grouped by what kind of thing i
 | G2 | **Riding experience is enforced client-side only** | LESSONREQUEST |
 | G4 | **The agreed-time panel exists on the lead path only** | LESSONREQUEST |
 | — | **`/book/rider` is orphaned** and contradicts the no-questions-page ruling | SESSIONBOOK |
+| W1 | **A booking outside business hours is invisible and unreachable** — the week grid renders only `openHour…closeHour`; one live 00:00 booking exists | WALKTHROUGH |
+| W2 | **Month view is read-only by construction** — items are `<div>`s; a click bubbles to the day cell and switches to week view | WALKTHROUGH |
+| W3 | **The booking editor has one entry point** — clicking an item in week view. No other path exists | WALKTHROUGH |
+| W4 | **275 `available` rows render as green items** — availability is drawn as content, camouflaging the 43 real bookings | WALKTHROUGH |
+| W5 | **Every client lesson is labelled the literal string `Booking`** to staff — name, service, horse and instructor all on the row, none read | WALKTHROUGH |
+| W6 | **`bookings` has three owner columns and no authority** — 32 of 43 scheduled bookings have NULL `account_contact_id`; account pages under-report by ~74% | WALKTHROUGH |
+| W7 | **No booking has ever been completed** — 43 still `scheduled`, oldest 2026-07-20. `complete_lesson_session` is correct and has never been called | WALKTHROUGH |
+| W8 | **"Grant credits" creates an orphan that never expires** — no offering, purchase, item, period or `expires_at` | WALKTHROUGH |
+| W9 | **"Use 1 credit" is a raw un-audited ledger decrement** — no modal, reason, reference or undo; bypasses the entire credit engine | WALKTHROUGH |
+| W10 | **`lesson_credits` and `bookings` are not in `audit_logs`** — the owner's clicks left no trace | WALKTHROUGH |
+| W11 | **No surface answers "what does this client see?"** — notifications, deliveries, audit and status ledgers are all written, none read back | WALKTHROUGH |
+| W12 | **No nav row exists for `/app/ops`** — both dashboards work; the only link is the temporary Review menu | WALKTHROUGH |
+| W13 | **The Calendar is parked in the temporary Review menu** — hand-written JSX, no registry row (`pageRegistry.ts:125` says so itself) | WALKTHROUGH |
 
 ---
 
@@ -41,9 +54,16 @@ Nothing here is scheduled except where marked. **Grouped by what kind of thing i
 
 ---
 
-# 3. BUILT BUT NEVER VERIFIED IN A BROWSER  ⚠️ **the largest single gap**
+# 3. BUILT, OPENED IN A BROWSER, AND NEVER WRITTEN DOWN  ⚠️ **the largest single gap**
 
-**Nothing from wave 1 or 2 has been opened in a browser.** Six checklists are stacked
+> **CORRECTED 2026-08-18.** This section said *"Nothing from wave 1 or 2 has been opened in a
+> browser."* **That was wrong.** Owner: *"everything has been opened in a browser."* The gap is
+> not that nobody looked — it is that **no finding from looking was ever recorded**, so the
+> checklists below are still unticked while the owner has been carrying the results in his head.
+> The first walkthrough ever written down is `docs/reports/OWNER-WALKTHROUGH-2026-08-18.md`, and
+> it found eight defects in one sitting.
+
+**No wave-1 or wave-2 checklist has been formally run and recorded.** Six checklists are stacked
 (CAREPATH 18 steps · LESSONREQUEST 9 · GIFTPATH 4 · PARTYROLE 6 · SESSIONBOOK · FOOTER).
 
 ⚠️ **They converge on one unproven thing: THAT EMAILS ACTUALLY SEND.** No thread has ever sent one —
