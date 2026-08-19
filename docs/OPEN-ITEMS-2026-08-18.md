@@ -37,6 +37,10 @@ Nothing here is scheduled except where marked. **Grouped by what kind of thing i
 | W12 | **`/app/ops` is reachable by URL only** — both dashboards work; its only nav row was in the Review group, deleted by `ab45b18` on 2026-08-15, and it had no permanent home to return to | WALKTHROUGH |
 | W13 | **The Review section is half-retired** — nav group gone (`ab45b18`), but `reviewSection.ts` (9 groups, 27 slots), 5 `ops/review*` routes and `pages/app/ops/review/` all still ship, URL-only. Its own header defines the teardown; nobody ran it | WALKTHROUGH |
 | W14 | **`pageRegistry.ts:125` is a stale comment** — says Calendar/Catalog are "parked in Review"; both were restored to permanent nav rows by `ab45b18` three days earlier | WALKTHROUGH |
+| W15 | **Two rosters of the people who work here** — Staff (`/app/ops/employees/staff`) and Team (`/app/ops/team`). Owner ruled ONE, and it is Team. `TASK-ONETEAM` written, not run | OWNER 2026-08-18 |
+| W16 | **`is_suspended` and `staff_active` are two independent booleans for one fact**, written by two pages that never read each other | ONETEAM |
+| W17 | **The Staff page renders empty with 2 matching rows in the DB** — leading suspect is an ambiguous PostgREST embed in `STAFF_SELECT` (two FKs between `profiles` and `contacts`, no hint; the sibling `SHIFT_SELECT` has one) | ONETEAM |
+| W18 | **`TASK-PAGEMERGE` skipped a consolidation on a 3-day-stale premise** — said `mod.employees` was off; `PAGEVIS` had enabled every module 3 days earlier | ONETEAM |
 
 ---
 

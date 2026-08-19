@@ -141,10 +141,14 @@ corrupting the ledger every time it is used.
 4. **Ask for the owner's list** (his step 3). It is the only input you cannot derive.
 5. **Resolve `task/partyrole`** (§8a) — 10 commits of owner-directed brand, header, footer and SEO
    work are unmerged and would be destroyed by a naive worktree cleanup.
-6. **Write the reachability + CRUD audit spec** while CLOSEOUT runs. It is read-only, touches no
+6. **Hand over `ONETEAM`** — `docs/tasks/TASK-ONETEAM-there-is-one-roster-and-it-is-team.md`.
+   Written 2026-08-18, never run. Small, bounded, and it closes an owner ruling a previous thread
+   skipped on a stale premise. **Sonnet 5 · thinking ON · effort MEDIUM.** It can run in parallel
+   with CLOSEOUT — no file overlap.
+7. **Write the reachability + CRUD audit spec** while CLOSEOUT runs. It is read-only, touches no
    file any thread owns, and can run fully in parallel. **Sonnet · thinking ON · effort MEDIUM** —
    it is breadth with the traps already written out, not judgement.
-7. **Do not start the UI rebuild until the audit has returned.** Rebuilding pages before knowing
+8. **Do not start the UI rebuild until the audit has returned.** Rebuilding pages before knowing
    which pages exist is the same mistake at a larger scale.
 
 ---

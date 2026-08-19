@@ -368,3 +368,18 @@ reporting success.
   stop. **And the corollary the app fails completely today: four ledgers (`audit_logs`,
   `notifications`, `document_deliveries`, `status_events`) are written and none is ever read back
   to a human, so no staff member can answer "what does this client see?"**
+- **D20 — ONE ROSTER OF THE PEOPLE WHO WORK HERE, AND IT IS TEAM (owner, 2026-08-18).** Owner:
+  *"i stated to consolidate by taking pages like staff and team and merge them into one. we either
+  have a staff or a team and we chose team but staff was in the original build and never revised
+  only written around."* **`StaffPage` (`/app/ops/employees/staff`) is retired into `TeamPage`
+  (`/app/ops/team`)**, which absorbs `profiles.title` and `profiles.pay_type`. Spec:
+  `docs/tasks/TASK-ONETEAM-there-is-one-roster-and-it-is-team.md`.
+  **The part that outlives this one merge:** `is_suspended` (Team) and `staff_active` (Staff) are
+  **two independent booleans for one fact**, written by two pages that never read each other —
+  that is the real defect, and the duplicate page is only how it became visible.
+  ⚠️ **And how it survived is the lesson.** `TASK-PAGEMERGE` had this exact pair in scope and
+  deferred it citing *"`mod.employees` still off for FHE"* — a claim already **three days stale**
+  (`TASK-PAGEVIS` enabled every module on 2026-08-12; PAGEMERGE ran 2026-08-15). The false premise
+  came from a comment in `reviewSection.ts` written within an hour of the module being turned on.
+  **A state claim in a doc is a hypothesis. Query `org_modules`, the live function body, or the
+  table — then act.** Same class as D17's stale `pageRegistry.ts:125` comment about the calendar.
