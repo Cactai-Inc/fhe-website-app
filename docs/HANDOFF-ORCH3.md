@@ -183,6 +183,7 @@ Recorded because a handoff that only carries conclusions hands over the errors a
 | *"prove `anon` has no INSERT on `purchases`"* | Anon holds INSERT/UPDATE/DELETE via the repo-wide default grant. **RLS is the denial**, not the grant. |
 | *"a party not required to sign the policies is prohibited from signing them"* | Owner: *"so we can apply a document or set to them but we dont have a requirement to do so."* **The rule is discretion.** A whitelist was built and withdrawn. |
 | *"CAREPLANS §5c2: ZERO credit rows"* | One allotment row (total = N, remaining = 0) is correct — it is the cap `_refund_booking_credit` restores into. The thread corrected this thread. |
+| *"the calendar is parked in the temporary Review menu"* | **It has a permanent nav row** — `AppLayout.tsx:415/1085/1130`, restored by `ab45b18`. The claim came from a **stale comment** at `pageRegistry.ts:125`. `/app/ops` is the one genuinely stranded surface, and it is worse than stated: **URL-only**, because the Review group was deleted on 2026-08-15 and it had no permanent home to return to. |
 | *"nothing has been opened in a browser"* | Owner: *"everything has been opened in a browser."* Corrected in `OPEN-ITEMS` §3. |
 
 **Threads have corrected this thread more often than the reverse. When one does, say so plainly

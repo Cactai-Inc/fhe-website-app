@@ -34,8 +34,9 @@ Nothing here is scheduled except where marked. **Grouped by what kind of thing i
 | W9 | **"Use 1 credit" is a raw un-audited ledger decrement** — no modal, reason, reference or undo; bypasses the entire credit engine | WALKTHROUGH |
 | W10 | **`lesson_credits` and `bookings` are not in `audit_logs`** — the owner's clicks left no trace | WALKTHROUGH |
 | W11 | **No surface answers "what does this client see?"** — notifications, deliveries, audit and status ledgers are all written, none read back | WALKTHROUGH |
-| W12 | **No nav row exists for `/app/ops`** — both dashboards work; the only link is the temporary Review menu | WALKTHROUGH |
-| W13 | **The Calendar is parked in the temporary Review menu** — hand-written JSX, no registry row (`pageRegistry.ts:125` says so itself) | WALKTHROUGH |
+| W12 | **`/app/ops` is reachable by URL only** — both dashboards work; its only nav row was in the Review group, deleted by `ab45b18` on 2026-08-15, and it had no permanent home to return to | WALKTHROUGH |
+| W13 | **The Review section is half-retired** — nav group gone (`ab45b18`), but `reviewSection.ts` (9 groups, 27 slots), 5 `ops/review*` routes and `pages/app/ops/review/` all still ship, URL-only. Its own header defines the teardown; nobody ran it | WALKTHROUGH |
+| W14 | **`pageRegistry.ts:125` is a stale comment** — says Calendar/Catalog are "parked in Review"; both were restored to permanent nav rows by `ab45b18` three days earlier | WALKTHROUGH |
 
 ---
 

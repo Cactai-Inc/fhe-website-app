@@ -28,7 +28,7 @@ case, to be correct. **That asymmetry is the single most important fact in this 
 | 4 | `deal_autocomplete_on_execution` | trapped in a branch that never runs | `CONTRACTWALK` |
 | 5 | `/book/rider`'s qualification questions | orphaned page, no link in | `SESSIONBOOK` |
 | 6 | **the ops dashboard + instructor home** (`OpsHome`, 275 + 187 lines) | **no nav row exists for `/app/ops`** | this walkthrough |
-| 7 | **the calendar** | **parked in a temporary Review menu**, hand-written JSX, no registry row | this walkthrough |
+| 7 | **the Review section itself** (`reviewSection.ts`, 20KB, 9 groups, 27 slots, 5 routes) | nav group deleted `ab45b18`; pages still live, URL-only | this walkthrough |
 | 8 | **the entire credit engine** (`_mint_credits_for_purchase_item`, `_refund_booking_credit`, `complete_lesson_session`) | **the credits page reaches around it** and writes the table directly | this walkthrough |
 
 ⚠️ **#8 is the worst of the eight, because it is not merely unreachable — a second, wrong path was
@@ -257,13 +257,31 @@ mounted at `/app/ops` (`App.tsx:304`). **Both dashboards work and are role-adapt
 **There is no registry row for `/app/ops`.** The only link to it anywhere in `src/` is
 `reviewSection.ts:113` — **the temporary admin-only Review menu** built by `TASK-REVIEWNAV`.
 
-**And `pageRegistry.ts:125` says the same of the calendar, in its own words:**
-> *"the App-pages block (Messages, and **Calendar/Catalog while they are parked in Review**) — it
-> is hand-written JSX, not a NavItem table, so it has no row to filter."*
+⚠️ **And that Review menu no longer exists.** Commit `ab45b18`, 2026-08-15, removed the Review
+nav group at the owner's instruction — *"put back all the pages in the nav where they belong…
+claire is flipping out she cant use the app."* Every row it had borrowed was returned to its
+permanent home. **`/app/ops` had no permanent home to return to, so it returned to nothing.**
 
-⚠️ **The two most operationally important surfaces in the product — the real dashboard and the
-calendar — are reachable only through scaffolding that was meant to be temporary.** The owner is
-not missing features. He is being shown the wrong front door.
+**So `/app/ops` — the real dashboard for both admins and trainers — is reachable by typing the URL
+and by no other means.** The two surviving references in the entire `src/` tree are both inside
+`reviewSection.ts`, whose nav group is gone.
+
+## 5b. CORRECTION — the calendar DOES have a nav row
+
+**An earlier draft of this document claimed the calendar was parked in Review too. That is wrong.**
+It was sourced from the comment at `pageRegistry.ts:125`, which is **stale** — written before
+`ab45b18` and never updated when the calendar's row was restored.
+
+**The calendar has a real, permanent nav row** for both staff and clients:
+`AppLayout.tsx:415` (`StaffNavItems`), `:1085` (`ClientNavItems`), `:1130`, plus a header icon at
+`:1738`. `ab45b18`'s own message records the restoration: *"Calendar + Catalog (StaffNavItems,
+recorded order)."*
+
+**This does not soften §1** — every calendar defect there stands. It sharpens it: the calendar is
+the one operational surface the owner CAN reach, which is why all his findings are in it.
+
+⚠️ **A stale comment was treated as current state. That is the same error class §0 is about, and
+it caught the orchestrator writing the document about it.**
 
 ---
 
