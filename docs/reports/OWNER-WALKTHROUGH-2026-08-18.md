@@ -273,9 +273,15 @@ It was sourced from the comment at `pageRegistry.ts:125`, which is **stale** —
 `ab45b18` and never updated when the calendar's row was restored.
 
 **The calendar has a real, permanent nav row** for both staff and clients:
-`AppLayout.tsx:415` (`StaffNavItems`), `:1085` (`ClientNavItems`), `:1130`, plus a header icon at
-`:1738`. `ab45b18`'s own message records the restoration: *"Calendar + Catalog (StaffNavItems,
-recorded order)."*
+`AppLayout.tsx:415` (`StaffNavItems`), `:1085` (`ClientNavItems`), `:1130`. `ab45b18`'s own message
+records the restoration: *"Calendar + Catalog (StaffNavItems, recorded order)."*
+
+⚠️ **But there is NO calendar icon in the tenant header.** Owner, 2026-08-18: *"calendar does not
+have a header icon for me in the ui as admin."* **Correct.** The icon at `AppLayout.tsx:1738` sits
+inside the **platform header** — the block carrying the "Cactai Platform" wordmark and linking to
+`/app/ops/superadmin/organizations`, rendered only for the super admin. THE ONE HEADER, which
+every FHE admin actually sees, carries a `Plus` and the avatar and nothing else. **So the nav rail
+row is the calendar's only entrance for a tenant admin.**
 
 **This does not soften §1** — every calendar defect there stands. It sharpens it: the calendar is
 the one operational surface the owner CAN reach, which is why all his findings are in it.

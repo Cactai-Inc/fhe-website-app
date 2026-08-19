@@ -252,6 +252,33 @@ f1cb01e  footer: full postal address in Find Us; copyright left, Cactai mark rig
 merge to `main`, so it auto-deploys and IS a release — that is why ORCH2 did not do it unasked.
 **Do not `git worktree remove` anything until this is resolved.**
 
+## 8b. THE REST OF THE BRANCH INVENTORY — audited 2026-08-18
+
+**79 local branches. Only two are unmerged, and only one matters.**
+
+| branch | verdict |
+|---|---|
+| `task/partyrole` | **11 commits — KEEP.** See §8a. |
+| `task/flagharvest` | **2 commits — fully superseded, safe to delete.** Checked file by file: main has every file it has, *plus* `DECIDE.md` (4,056 lines), `CLOSED.md` and `FAMILIES.md`, which the branch lacks. A stale WIP snapshot. |
+| `origin/task/uireview` | **Remote only, no local branch or worktree.** Its own reconciliation report says UIBUILD shipped the same code to main, so its 40 source files are redundant — **but six reference files are NOT on main**: `icon-phosphor-full-map.html`, `icon-set-nav-collisions.html`, `icon-set-horse-comparison.html`, `chrome-edge-weights.html`, `avatar-and-fill-options.html`, `icon-stable-lessons-care.html` (all under `docs/reference/`). ⚠️ **That is a Phosphor icon mapping across all 76 routes — exactly what §4(b)'s UI standard needs. Cherry-pick those six before anyone deletes the branch.** |
+| `origin/task/a11-13-lessee-horse` | One 61-line "blocked, spec missing" report. Drop it. |
+
+## 8c. ⚠️ THE CASE-VARIANT SYMLINK LANDMINE — still armed
+
+**Four worktrees have `node_modules` symlinked to `/Users/Cactai/...` — capital C — while the real
+path is `/Users/cactai`:** `wt-askright`, `wt-carepath`, `wt-careplans`, `wt-lessonrequest`.
+
+**This is the exact fault that corrupted `node_modules` on 2026-08-16**: macOS resolved both cases,
+loaded React twice, nulled every hook, and broke the build plus ~50 UI tests. A clean
+`npm install` fixed it then; the symlinks were never removed.
+
+```bash
+rm -f  ~/Downloads/claude-code-repo/wt-{askright,carepath,careplans,lessonrequest}/node_modules
+rm -rf ~/Downloads/claude-code-repo/wt-{footer,giftpath,sessionbook}/node_modules   # ~1.4 GB real dirs
+```
+**Never symlink `node_modules` into a worktree.** Every spec's TEARDOWN clause says to remove it;
+that is why.
+
 **The other eight worktrees are all merged and clean** (`wt-askright` has one uncommitted modified
 file, `docs/reports/TASK-ASKRIGHT-REPORT.md` — inspect before discarding). Per `ORCHESTRATOR.md`
 §6, archive-tag then remove each once verified.
