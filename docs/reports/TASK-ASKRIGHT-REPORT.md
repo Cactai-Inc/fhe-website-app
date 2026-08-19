@@ -409,6 +409,37 @@ rule on, not built**:
 | Training/Exercise Q7 *"What type of riding has the horse done…"* | **short text** | |
 | §A6 multi-service fallbacks | *"Inquire about these services"* / *"Inquire about booking and these services"* | **You asked to be shown these rather than have them invented.** Single service reads *"Inquire about Horse Clipping service"*, using the catalog's own name. |
 
+**Owner, 2026-08-17, on the list above:** *"i can edit them after they land and i see them in
+context."* Right instinct, and the reason they were built rather than held. **But see F10 — today
+that edit is a code change, not something you can do yourself.**
+
+### ⚠️ F10 — D13: THE QUESTION SETS SHIP WITHOUT AN EDITOR. THIS FEATURE IS NOT DONE.
+
+**D13 is an acceptance criterion, and this build does not meet it.** The question sets — every
+question, every answer option, every band, every section heading — live in
+`src/lib/questionSets.ts`. Changing a word requires a thread and a commit. By D13's own test
+(*"a feature is NOT DONE if changing it requires the owner to open a thread, write SQL, or touch
+git"*), **the question sets have no editor and the work is unfinished. Saying so here rather than
+calling it shipped.**
+
+**Why it was built this way anyway, and why that was still the right call:**
+- §A1 explicitly sanctioned it — *"a data structure, **or** `form_definitions`-style rows"*.
+- The sets need things `form_definitions`' schema cannot express: subject keying, the §A3b gate,
+  the `config_kind` condition, and the §A3c/§A3d derivation rules. Forcing them into today's row
+  shape would have meant either a weaker engine or a schema change this task was not scoped to make.
+- A DB read would also put a network failure between the visitor and page 2 of a funnel.
+
+**The follow-up that finishes it — naming it, per D13's corollary.** The natural home already exists
+and is already ruled on: **D12's Form builder**, whose whole purpose is authoring exactly this shape
+(*products, articles and guides are built with forms*). The work is to promote `SETS` from a TS
+constant to `form_definitions`-style rows with three added field properties (`subject`, `showWhen`,
+`appliesWhen`), and point the Form builder at them. **Until that lands, every change on the list
+above is one line and one commit — send them over and they are same-day.**
+
+**What IS already owner-editable today, so it is not overstated:** the section **headings** and the
+service name in the inquire wording both read `service_types.display_name` from the live catalog —
+renaming a service in the DB renames both, with no code change.
+
 ---
 
 ## 7. ⚠️ NOT VERIFIED — the render. A numbered click-through for the owner
