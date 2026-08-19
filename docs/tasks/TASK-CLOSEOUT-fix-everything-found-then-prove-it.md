@@ -30,33 +30,64 @@ Six threads and two walk-throughs have run since 2026-08-16. Each fixed what it 
 
 # PHASE 1 — THE LEASE FLOW (do this first; it is what the owner is waiting on)
 
-## 1.1 — `lock_and_sign_contract` skips its own gates exactly when they matter  ⟵ **the worst one**
-`CONTRACTWALK` A3, verified by the orchestrator:
+## 1.1 + 1.2 — ONE FIX FOR BOTH (A3 + A2): delegate the check, and always run it
+
+**These are the same defect wearing two faces, and one edit closes both.**
+
+### Why the gates are quarantined
 ```
-IF v_state NOT IN ('locked','editable','executed') THEN … END IF;
 IF v_state IN ('editable') THEN   ← gates 3,4,5,6 live ONLY in here
 ```
-**The UI only shows the sign button when the document is `locked`.** So in practice **none of those
-gates ever run at signing.** Proven: a locked document with a required field blanked and the horse
-unconfirmed **signed anyway**.
+The function is called **`lock_and_sign_contract`**: if the document is editable, check everything
+and lock it; if it is already locked, someone already checked. **The design assumes locked means
+unchanged.** `CONTRACTWALK` disproved that — it blanked a required field on a **locked** document,
+left the horse unconfirmed, and **signed anyway.**
 
-- **Real enforcement is at `advance_document_workflow(…,'locked')`.** That is defensible — check
-  once, then freeze — **but only if a locked document cannot then be altered.**
-- **Decide and implement one of:** re-run the gates at signature time regardless of state, **or**
-  make `locked` genuinely immutable so the earlier check still holds. **State which and why.**
-- ⚠️ **`executed` is also accepted by the state check.** Establish whether an executed document can
-  receive another signature, and if so, close it.
+### Why the two completeness checks disagree
+`lock_and_sign_contract` gate 4 counts naively:
+```sql
+SELECT count(*) FROM contract_fields
+ WHERE document_id = … AND required AND nullif(trim(coalesce(value,'')),'') IS NULL;
+```
+`contract_lock_blockers` is condition-aware:
+```sql
+AND (clause_condition_met(cd.conditional_on, v_vals)
+     OR (cd.conditional_on IS NOT NULL AND cd.conditional_on::text LIKE '%"' || cf.field_key || '"%'))
+AND clause_condition_met(cf.conditional_on, v_vals)
+```
+So the screen shows no blockers while the gate refuses with **"17 required field(s) still empty"** —
+all 17 being conditionals the UI hides and nobody can fill.
 
-## 1.2 — two completeness checks disagree (A2)
-`contract_lock_blockers` is condition-aware; **gate 4 is a naive `count(*)` of `required` fields.**
-Result: a screen showing no blockers, and a sign attempt refusing with
-`cannot sign: 17 required field(s) still empty` — **all 17 conditionals the UI hides and nobody can
-fill.** The report lists all 31 fields, split 15 always-active / 16 conditional.
-**Make the two agree. `contract_lock_blockers` is the correct one — gate 4 must use the same rule.**
+### THE FIX
+1. **Delete gate 4's own count. Call `contract_lock_blockers` instead.** ⚠️ **Do NOT copy the
+   condition logic across** — duplication is precisely how these two drifted apart. **One function
+   decides completeness; everything else asks it.**
+2. **Hoist the whole gate block OUT of the `IF v_state IN ('editable')` branch so it runs before
+   EVERY signature**, whatever the state. A correctly-locked document simply passes again — one
+   query, no user-visible cost.
+3. ⚠️ **`executed` is also accepted by the state check.** Establish whether an executed document can
+   take a further signature, and close it if so.
 
-## 1.3 — three dead ends, one identical message (A4)
-Three distinct failures produce the same text, so staff cannot tell which they hit.
-**Give each its own message naming the actual cause and the actual next step.**
+**Prove it on a document WITH conditionals** — the whole point is that a naive count and a
+condition-aware one disagree there, and nowhere else. **Show the screen and the gate agreeing.**
+⚠️ **Regression risk is real**: if `contract_lock_blockers` is stricter than gate 4 in some case,
+documents that used to sign will stop. **Compare both over every existing document before changing
+anything, and report any that would newly block.**
+
+## 1.3 — ONE dead end, not three (A4) — smaller than the heading suggests
+`redeem_invitation` raises one string for expired, superseded and already-redeemed. **But two of
+those three are already handled well in the browser:** `/activate` calls `validate_invitation` on
+load and shows *"This link isn't valid anymore"*, plus the masked address and a resend button when a
+newer invitation exists.
+
+⚠️ **Only ONE case is genuinely wrong: the client who has ALREADY ACTIVATED and clicks their old
+link.** No newer invitation exists, so they are told to *"check your inbox for a newer one"* — sent
+hunting for an email that does not exist, when the truth is **you already have an account, sign in.**
+
+**THE FIX — one branch, one sentence.** Detect it specifically: the invitation is `redeemed` **and**
+a profile exists for that email → say **"You've already activated this account — sign in"** with a
+sign-in link. **Everything else keeps today's behaviour**, and the wrong-email case
+(*"this invitation was issued to a different email address"*) already reads well and needs nothing.
 
 ## 1.4 — a lease with no end date is LEGITIMATE (A5) — ✅ **owner-ruled: "Evergreen yes"**
 `TXN.LEASE_END` stays optional. An open-ended lease runs **until terminated**, and
