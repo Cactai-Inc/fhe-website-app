@@ -120,10 +120,12 @@ corrupting the ledger every time it is used.
 2. **Flag the ORCH3 name collision** (top of this file) and get a ruling.
 3. **Hand over the `CLOSEOUT` prompt** (§3). It is ready; nothing blocks it.
 4. **Ask for the owner's list** (his step 3). It is the only input you cannot derive.
-5. **Write the reachability + CRUD audit spec** while CLOSEOUT runs. It is read-only, touches no
+5. **Resolve `task/partyrole`** (§8a) — 10 commits of owner-directed brand, header, footer and SEO
+   work are unmerged and would be destroyed by a naive worktree cleanup.
+6. **Write the reachability + CRUD audit spec** while CLOSEOUT runs. It is read-only, touches no
    file any thread owns, and can run fully in parallel. **Sonnet · thinking ON · effort MEDIUM** —
    it is breadth with the traps already written out, not judgement.
-6. **Do not start the UI rebuild until the audit has returned.** Rebuilding pages before knowing
+7. **Do not start the UI rebuild until the audit has returned.** Rebuilding pages before knowing
    which pages exist is the same mistake at a larger scale.
 
 ---
@@ -195,7 +197,43 @@ and move on.**
   unrun task docs, and the 535-item `DECIDE.md` sheet awaiting the owner's keep/remove pass.
 - **`main` is `5c5f9ee`**, clean. Production was purged of test data on 2026-08-17 — paper trail in
   `docs/PROD-TEST-DATA-PURGE-2026-08-17.md`. Two backups in `~/Downloads/claude-code-repo/backups/`.
-- **Nothing is running.** No live threads, no open worktrees assigned. You start clean.
+- **No live threads.** But **nine worktrees still exist**, and one of them holds unmerged work.
+
+## ⚠️ 8a. `task/partyrole` HOLDS 10 UNMERGED COMMITS — do not remove that worktree
+
+**`~/Downloads/claude-code-repo/wt-partyrole`, branch `task/partyrole`, head `b542009`.**
+`git merge-base --is-ancestor task/partyrole main` **fails** — it is NOT on main.
+
+**Despite the branch name, this is not PARTYROLE work** (that merged as `e237033`). The worktree
+was reused for a website copy/brand session, and it carries owner-directed work that exists
+nowhere else:
+
+```
+b542009  merge origin/main into task/partyrole
+a845c57  story: nudge the 'What we deliver' link up 5px
+b7e1d0b  header: the nav fits before it is shown, and the cart earns its room
+e4e3dd8  seo: the tagline is what a shared link says
+fb05d20  footer + seo: 'support for purchasing and leasing'
+44e9adc  copy: keep the live tagline, and 'classical' not 'classic'
+720ff9c  copy: one sentence in three places — footer, tagline, business description
+17b9548  brand + seo: the owner's new tagline and business description
+3dee9aa  footer: drop the leading 'A', make it full-service
+f799d10  footer: owner's new description copy
+f1cb01e  footer: full postal address in Find Us; copyright left, Cactai mark right
+```
+**10 files, +260/−74** — `Seo.tsx`, `Footer.tsx`, `Header.tsx`, `brand.ts`, `seo.ts`,
+`BookHorse/BookRider/BookSupport.tsx`, `Landing.tsx`, `Story.tsx`.
+
+**Your first housekeeping act: audit and merge it, or ask the owner whether to.** It is a code
+merge to `main`, so it auto-deploys and IS a release — that is why ORCH2 did not do it unasked.
+**Do not `git worktree remove` anything until this is resolved.**
+
+**The other eight worktrees are all merged and clean** (`wt-askright` has one uncommitted modified
+file, `docs/reports/TASK-ASKRIGHT-REPORT.md` — inspect before discarding). Per `ORCHESTRATOR.md`
+§6, archive-tag then remove each once verified.
+
+⚠️ **The convention that "a worktree's presence means the thread is live" has been false for a
+week.** Do not infer liveness from the directory listing; check `git merge-base` and `git status`.
 
 ---
 
