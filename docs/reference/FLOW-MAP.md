@@ -217,7 +217,20 @@ source at `48b5e21`, 2026-08-20.
 | 5 | they click it and set their login | ✅ | `/activate` → `Register` (`App.tsx:155`). |
 | 6 | **they land in an authenticated session with the contract first** | ✅ **already built** | `RegisterComplete.tsx:83-87` — `if (stash.kind === 'contract')` → `redeemContractInvitation(token)` → `dest = /app/contracts/${documentId}`, commented *"land ON the contract"*. |
 
-### The one gap, precisely
+### The architecture, as the owner states it (2026-08-20)
+
+> *"the contract template only supplies the email address, everything else is derived from the
+> contact record, which the onboarding flow enters the data into. when a person already in the
+> contact records system is selected, all of the information is pulled from the record into the
+> contract fields for the party."*
+
+**The contact record is the single source of truth for party data; the contract holds only the
+email and derives the rest.** The derivation engine already exists and is correct:
+`fill_party_fields_from_contacts(p_document_id)` → `remerge_contract_from_clauses(p_document_id)`,
+and `captureContactInfo()` (`src/lib/contracts.ts:680-698`) already runs the full
+update-contact → fill → remerge sequence.
+
+### The two gaps, precisely
 
 **GAP 1 — an email-only party is not representable, but nothing structural forbids it.**
 `contacts` requires **no name** (`first_name` is nullable and the table already carries a
@@ -253,4 +266,32 @@ contract's own field set, not in the front door that every deal party passes thr
   must flow through it, not around it, or the party's documents will not re-anchor.
 - **Step 6 already works — do not rebuild it.** It is the ninth thing in this app that exists and
   would have been built twice.
+
+**GAP 2 — ⚠️ THE DERIVATION NEVER RE-RUNS AFTER ONBOARDING. This is the hole in the architecture.**
+
+*(This is not the withdrawn form-fields finding above. That one was wrong. This is a different and
+real defect, found by tracing the owner's stated design through the call graph.)*
+
+`fill_party_fields_from_contacts` has **no trigger on `contacts`** — verified against
+`pg_trigger` in prod. It runs **only** at contract-start or party-change:
+`start_lease_contract_v2` · `start_sale_contract` · `start_bill_of_sale` ·
+`start_bill_of_sale_standalone` · `add_deal_document` · `reassign_document_party` ·
+`set_document_co_buyer` · `sync_contract_fields_from_defs`.
+
+**So in the owner's flow the order is exactly wrong:**
+
+1. Party is attached as an email-only stub → fill runs → **contact is empty, so the fields fill with nothing.**
+2. The person onboards and populates their contact record.
+3. **Nothing re-runs the fill.** `redeem_contract_invitation` calls `promote_contact_to_account`
+   (correctly — it is the sole writer of the contact↔account link) and re-anchors
+   documents/parties/signatures, but it **never calls `fill_party_fields_from_contacts` or
+   `remerge_contract_from_clauses`.**
+4. **The party opens the contract and their own details are blank**, with nothing to explain why.
+
+**The fix is two existing calls in one more place**, not new machinery: append the fill + remerge
+pair to the redemption path, exactly as `captureContactInfo` already does.
+
+⚠️ **Scope it to non-executed documents.** A blanket trigger on `contacts` would re-merge
+**EXECUTED** documents, which are evidence and are never rewritten (61 of them). Re-fill at
+redemption, guarded on document state — never a global contacts trigger.
 
