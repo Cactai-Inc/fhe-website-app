@@ -171,9 +171,11 @@ export default function HorsePage() {
                 <Detail label="Currently at" value={composeLocation(r.current_location, r.current_barn, r.current_stall)} />
                 <Detail label="Owner" value={r.owner_name} />
                 {r.lessee_name && (
+                  /* CLOSEOUT §1.4: no end date = evergreen (until terminated),
+                     stated rather than silently omitted. */
                   detail.viewer_is_lessee
-                    ? <Detail label="Your lease" value={`You lease this horse${r.lease_end ? ` through ${fmtDate(r.lease_end)}` : ''}`} />
-                    : <Detail label="Leased to" value={`${r.lessee_name}${r.lease_end ? ` (through ${fmtDate(r.lease_end)})` : ''}`} />
+                    ? <Detail label="Your lease" value={`You lease this horse${r.lease_end ? ` through ${fmtDate(r.lease_end)}` : ' — evergreen (until terminated)'}`} />
+                    : <Detail label="Leased to" value={`${r.lessee_name}${r.lease_end ? ` (through ${fmtDate(r.lease_end)})` : ' — evergreen (until terminated)'}`} />
                 )}
               </Card>
 
@@ -182,8 +184,8 @@ export default function HorsePage() {
                    display time — not stamped on the horse. Absent when no lease is active. */
                 <Card title="Lease" full>
                   {detail.viewer_is_lessee
-                    ? <Detail label="Term" value={`You lease this horse${detail.lease.lease_end ? ` through ${fmtDate(detail.lease.lease_end)}` : ''}`} />
-                    : <Detail label="Term" value={`Leased to ${detail.lease.lessee_name}${detail.lease.lease_end ? ` (through ${fmtDate(detail.lease.lease_end)})` : ''}`} />}
+                    ? <Detail label="Term" value={`You lease this horse${detail.lease.lease_end ? ` through ${fmtDate(detail.lease.lease_end)}` : ' — evergreen (until terminated)'}`} />
+                    : <Detail label="Term" value={`Leased to ${detail.lease.lessee_name}${detail.lease.lease_end ? ` (through ${fmtDate(detail.lease.lease_end)})` : ' — evergreen (until terminated)'}`} />}
                   <Detail label="Lease type" value={titleCase(detail.lease.lease_type)} />
                   {detail.lease.days_used && (
                     <div>

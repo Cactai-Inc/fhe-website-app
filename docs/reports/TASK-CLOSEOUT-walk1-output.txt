@@ -1,0 +1,243 @@
+Pager usage is off.
+Timing is off.
+################ BASELINE (outside txn) ################
+           t            | n  
+------------------------+----
+ documents              | 51
+ net.http_request_queue |  0
+ signatures             | 51
+(3 rows)
+
+--- the OLD gate body still carries the naive count (finding verified live):
+ has_naive_count | delegates_to_blockers 
+-----------------+-----------------------
+ t               | f
+(1 row)
+
+BEGIN
+CREATE TABLE
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+                 put                  |                 put                  |                 put                  |                 put                  |            put            |            put            
+--------------------------------------+--------------------------------------+--------------------------------------+--------------------------------------+---------------------------+---------------------------
+ e656f20b-ef43-4725-9029-19e7f0190d9c | b45a5503-89bc-489a-b012-c7fbf5c09632 | cccc0000-0000-4000-8000-00000000d001 | cccc0000-0000-4000-8000-00000000d002 | co-lessee@example.invalid | co-lessor@example.invalid
+(1 row)
+
+INSERT 0 2
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "b45a5503-89bc-489a-b012-c7fbf5c09632", "role" : "authenticated"}
+(1 row)
+
+psql:docs/reports/TASK-CLOSEOUT-walk1.sql:53: NOTICE:  table "_wanted" does not exist, skipping
+ provisioned 
+-------------
+ t
+(1 row)
+
+                 put                  |                               put                                
+--------------------------------------+------------------------------------------------------------------
+ a3df6e47-0c01-46b1-ba5e-fba0a85683e5 | 09c6942e61294ca18c68293c3054dc81cfba756037d84c64b12409e97a5ef4fe
+(1 row)
+
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "cccc0000-0000-4000-8000-00000000d001", "role" : "authenticated"}
+(1 row)
+
+ redeemed 
+----------
+ t
+(1 row)
+
+UPDATE 1
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "b45a5503-89bc-489a-b012-c7fbf5c09632", "role" : "authenticated"}
+(1 row)
+
+INSERT 0 1
+                 put                  
+--------------------------------------
+ d4a1ca44-4de1-469d-a14a-702467877ef3
+(1 row)
+
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+                 put                  
+--------------------------------------
+ da60c594-f296-4f80-9659-d6e137ae43d9
+(1 row)
+
+ lease_started 
+---------------
+ t
+(1 row)
+
+                 put                  |                 put                  
+--------------------------------------+--------------------------------------
+ ba9a6a99-d850-428c-aab8-ff37941fbcee | 90d217f0-4fa7-421f-ad5b-a44307ec8ba5
+(1 row)
+
+UPDATE 2
+UPDATE 1
+UPDATE 2
+UPDATE 1
+UPDATE 1
+UPDATE 7
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "cccc0000-0000-4000-8000-00000000d002", "role" : "authenticated"}
+(1 row)
+
+ horse_confirmed 
+-----------------
+ t
+(1 row)
+
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "cccc0000-0000-4000-8000-00000000d001", "role" : "authenticated"}
+(1 row)
+
+ wall_docs_generated 
+---------------------
+ t
+(1 row)
+
+UPDATE 3
+   template_key   |  status  
+------------------+----------
+ COMPANY_POLICIES | EXECUTED
+ FACILITY_RULES   | EXECUTED
+ RELEASE_GENERAL  | EXECUTED
+(3 rows)
+
+
+################ P0 — THE SCREEN AND THE OLD GATE DISAGREE ################
+--- WHAT THE SCREEN SAYS (contract_lock_blockers):
+ on_screen_blockers 
+--------------------
+ [                 +
+ ]
+(1 row)
+
+--- WHAT THE OLD GATE COUNTS (naive, condition-blind):
+ naive_required_empty | of_which_conditional 
+----------------------+----------------------
+                   17 |                   17
+(1 row)
+
+--- OLD GATE: the sign attempt with a CLEAN SCREEN (must refuse — the defect):
+psql:docs/reports/TASK-CLOSEOUT-walk1.sql:123: ERROR:  cannot sign: 17 required field(s) still empty
+CONTEXT:  PL/pgSQL function lock_and_sign_contract(uuid,text,text,boolean) line 26 at RAISE
+
+################ P1 — APPLY 20260819T0100 (in-txn dry-run) ################
+CREATE FUNCTION
+
+################ P2 — A3 CLOSED: SCREEN AND GATE AGREE ################
+SAVEPOINT
+--- same document, same clean screen, same 17 naive-empty conditionals — NEW gate:
+ signed_from_editable 
+----------------------
+ AWAITING_SIGNATURE
+(1 row)
+
+ROLLBACK
+
+################ P3 — A2 CLOSED: A LOCKED DOCUMENT CANNOT BE ALTERED AND SIGNED ################
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "b45a5503-89bc-489a-b012-c7fbf5c09632", "role" : "authenticated"}
+(1 row)
+
+ locked 
+--------
+ locked
+(1 row)
+
+SAVEPOINT
+UPDATE 1
+UPDATE 1
+ required_empty_while_locked 
+-----------------------------
+                           1
+(1 row)
+
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "cccc0000-0000-4000-8000-00000000d001", "role" : "authenticated"}
+(1 row)
+
+--- the CONTRACTWALK attack, replayed against the new gate (must refuse):
+psql:docs/reports/TASK-CLOSEOUT-walk1.sql:152: ERROR:  cannot sign: Required field(s) still empty: Lease start date; The horse information has not been confirmed by the Lessor
+CONTEXT:  PL/pgSQL function lock_and_sign_contract(uuid,text,text,boolean) line 27 at RAISE
+ROLLBACK
+
+################ P4 — THE REAL PATH STILL WORKS ################
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "b45a5503-89bc-489a-b012-c7fbf5c09632", "role" : "authenticated"}
+(1 row)
+
+UPDATE 1
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "cccc0000-0000-4000-8000-00000000d001", "role" : "authenticated"}
+(1 row)
+
+    after_lessee    
+--------------------
+ AWAITING_SIGNATURE
+(1 row)
+
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "cccc0000-0000-4000-8000-00000000d002", "role" : "authenticated"}
+(1 row)
+
+ after_lessor 
+--------------
+ EXECUTED
+(1 row)
+
+  status  | workflow_state | has_hash 
+----------+----------------+----------
+ EXECUTED | executed       | t
+(1 row)
+
+
+################ P5 — EXECUTED TAKES NO FURTHER SIGNATURE ################
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "cccc0000-0000-4000-8000-00000000d001", "role" : "authenticated"}
+(1 row)
+
+psql:docs/reports/TASK-CLOSEOUT-walk1.sql:171: ERROR:  document is already executed; changing it requires signatures to be removed first
+CONTEXT:  PL/pgSQL function lock_and_sign_contract(uuid,text,text,boolean) line 13 at RAISE
+
+--- pg_net queue inside txn (must be unchanged by the walk):
+ pg_net_queue_in_txn 
+---------------------
+                   0
+(1 row)
+
+ROLLBACK
+
+################ P6 — ROLLBACK PROVEN ################
+--- the live function body is the OLD one again (naive count back, no delegation):
+ has_naive_count | delegates_to_blockers 
+-----------------+-----------------------
+ t               | f
+(1 row)
+
+           t            | n  
+------------------------+----
+ documents              | 51
+ net.http_request_queue |  0
+ signatures             | 51
+(3 rows)
+

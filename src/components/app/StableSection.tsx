@@ -67,7 +67,9 @@ export function StableSection() {
         // no `discipline` — horses has no such column (see StableEditors)
         color: h.color ?? '', discipline: '',
         ownership: h.ownership === 'leased'
-          ? (h.lease_end ? `Leased through ${fmtDate(h.lease_end)}` : 'Leased')
+          /* CLOSEOUT §1.4 (owner-ruled): a NULL lease end is an EVERGREEN lease
+             running until terminated — deliberate, never a blank. */
+          ? (h.lease_end ? `Leased through ${fmtDate(h.lease_end)}` : 'Leased — evergreen')
           : 'Owned',
         location: h.location }))
     : (SEED_ENABLED ? SEED_STABLE_HORSES : []);
