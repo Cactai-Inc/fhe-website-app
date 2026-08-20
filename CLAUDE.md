@@ -435,6 +435,27 @@ reporting success.
   what the signature attests to; `.EMAIL`, `.PHONE` and `.ADDRESS` keep re-filling forever.
   **Do not invent a second locking concept** — this is an exclusion inside the existing fill, plus a
   remerge on generation which today runs only at edit points.
+  **7. THE OWNER'S CANONICAL RESTATEMENT (2026-08-20) — this is the design in one paragraph.**
+  *"only an email address is required for a contract to have a valid party and it must have a full
+  name for it to be signable, and only the name is locked after signing and all data comes from the
+  contact record or horse record, and the one exception is the email address — when its added to the
+  contract to create a party that information is matched, that means it isnt read from the client
+  record until they claim the contract by activating their account with a matching email."*
+  **Verified accurate, including the horse half:** `sync_horse_fields_to_documents` mirrors the
+  contact fill, and `template_tokens` declares `source_table='horses'` per horse token. The two
+  exceptions on the horse side (`HORSE.MICROCHIP`, `HORSE.LABEL`, plus vet/farrier details) carry no
+  source and are typed, because the horse record does not hold them.
+  **THE EMAIL IS THE ONE VALUE THAT FLOWS THE OTHER WAY.** Every other token reads
+  record → contract. The email is written contract → party as a **match key**, and nothing is read
+  back from the contact record until the person claims the contract by activating with that address.
+  **This is what makes an email-only party coherent rather than an empty one.**
+  ⚠️ **"Must have a full name to be signable" is NOT ENFORCED TODAY — it must be built.**
+  `contract_lock_blockers` raises `required_fields` and `party_type_mismatch` but **no
+  name-completeness blocker**, and it coalesces a party's display name to
+  `… c.email, 'A party'` — so a nameless party renders as their email address, or as the literal
+  string **"A party"**, and signing is not prevented. **A signature whose printed name is "A party"
+  is worthless, and the name is the one thing the signature attests to.** This blocker is part of
+  the work, not a separate cleanup.
   ⚠️ **EXCEPT where the snapshot never ran.** Flow-map finding X4: `sign_release` executes with a
   status-only UPDATE and therefore **skips all three execution triggers including
   `snapshot_execution_audit`.** Kiosk-executed documents have **no archived copy**, so for those the
