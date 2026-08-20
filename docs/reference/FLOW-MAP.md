@@ -212,7 +212,7 @@ source at `48b5e21`, 2026-08-20.
 |---|---|---|---|
 | 1 | **assign a party an email address** | ⚠️ **GAP** | `document_parties.contact_id` is **NOT NULL** and the table has **no email column**; `invite_contract_counterparty(doc, contact_id, email)` **refuses** unless that contact is already a party (*"contact % is not a party on this contract"*). There is no add-a-party-by-email path. |
 | 2 | text them the link | ✅ | `/sign/deal` (`SignChoose.tsx:74`) matches the visitor's email against parties with no account. **44 such parties exist in prod.** |
-| 3 | they fill in the form with what the contract requires about them | ✅ **BY DESIGN — not a gap** | `SignStart.tsx:275-279` collects first · last · phone · email · confirm-email, and **that is the complete requirement.** See the owner ruling below. |
+| 3 | they fill in the form with what the contract requires about them | ⚠️ **ONE FIELD MISSING** | The required set is **full name · phone · email · full address** (owner, 2026-08-20). `SignStart.tsx:275-279` collects first · last · phone · email · confirm-email — **there is no address input anywhere on the page.** Everything else is right. |
 | 4 | they get an activation email | ✅ | `invite_contract_counterparty` mints a `CONTRACT` invitation, 14-day expiry, carrying `document_id`. |
 | 5 | they click it and set their login | ✅ | `/activate` → `Register` (`App.tsx:155`). |
 | 6 | **they land in an authenticated session with the contract first** | ✅ **already built** | `RegisterComplete.tsx:83-87` — `if (stash.kind === 'contract')` → `redeemContractInvitation(token)` → `dest = /app/contracts/${documentId}`, commented *"land ON the contract"*. |
@@ -246,7 +246,8 @@ four-field form as a defect, reasoning from the kiosk's richer `sign_release` fi
 > without penalty, and since its being authored to only require the minimum which you just listed."*
 
 **The division of labour is deliberate and it is the architecture:**
-- **The form's only job is to produce an account.** Name, phone, email. Nothing else.
+- **The form's only job is to populate the contact record.** Full name · phone · email · **full
+  address** — the four values the five party tokens derive from. Nothing else.
 - **The contract is where contract fields are filled**, by the party, inside the authenticated
   session — F9 step 6 lands them there precisely so this can happen.
 - **Deal templates are AUTHORED to require only that minimum**, which is what makes the deal flow a
@@ -254,8 +255,11 @@ four-field form as a defect, reasoning from the kiosk's richer `sign_release` fi
 - **The onboarding flow is generative, so it expands without penalty** — adding a field later costs
   nothing, which is why starting minimal is correct rather than merely cheap.
 
-⚠️ **Do not "fix" this form by adding fields.** Anything a specific contract needs belongs in the
-contract's own field set, not in the front door that every deal party passes through.
+⚠️ **The address is the exception, and it is REQUIRED — the rest of the rule stands.** `.ADDRESS`
+is one of the five tokens `fill_party_fields_from_contacts` writes, so without it the contract's
+address line can never fill from any path. **Beyond those four, do not add fields to this form** —
+anything a specific contract needs belongs in the contract's own field set, not in the front door
+every deal party passes through.
 
 ### Traps for whoever builds this
 

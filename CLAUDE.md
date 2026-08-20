@@ -402,6 +402,10 @@ reporting success.
   contract record changes, email, name, phone, address, they need to be pushed to the contract
   fields."* And on why: *"otherwise we end up with a contract that is locked to only using the
   email address."*
+  **0. THE COLLECTED SET IS FOUR VALUES (owner, 2026-08-20):** *"the form they fill in when they use
+  the link for /sign/deal they enter their full name, phone number, email, and full address."*
+  **`SignStart.tsx` has no address input today — it is the one field to add**, and it is required
+  because `.ADDRESS` is one of the five party tokens and no other path populates it.
   **1. A contract party is an email plus a contact reference. Nothing else is stored on the
   contract.** Name, phone and address are DERIVED, never typed into the contract a second time.
   Selecting an existing contact pulls their record into the party fields; an email-only party
