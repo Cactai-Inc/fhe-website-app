@@ -194,3 +194,51 @@ completion. It works and has never once been used.
 **single-document** walk-in kiosk (`Release.tsx:110`, defaults to `RELEASE_GENERAL`) that shows the
 rules as an acknowledgment checkbox rather than executing them, and alerts nobody. It is not the
 guest flow and should not be made into one.
+
+---
+
+## F9-TARGET — THE EMAIL-ONLY CONTRACT PARTY (owner-articulated, 2026-08-20)
+
+> **Owner:** *"we can assign a party an email address and then text them the link… after they fill
+> in the form with the information about themselves that a contract requires and their email
+> address, they get an email with an activation link and they click that to set their login and
+> upon completion they enter into an authenticated session with the contract being the first thing
+> they see."*
+
+**This is the target state for F9. Four of its six steps already ship.** Verified against prod and
+source at `48b5e21`, 2026-08-20.
+
+| # | the owner's step | state | evidence |
+|---|---|---|---|
+| 1 | **assign a party an email address** | ⚠️ **GAP** | `document_parties.contact_id` is **NOT NULL** and the table has **no email column**; `invite_contract_counterparty(doc, contact_id, email)` **refuses** unless that contact is already a party (*"contact % is not a party on this contract"*). There is no add-a-party-by-email path. |
+| 2 | text them the link | ✅ | `/sign/deal` (`SignChoose.tsx:74`) matches the visitor's email against parties with no account. **44 such parties exist in prod.** |
+| 3 | **they fill in the form with what the contract requires about them** | ⚠️ **GAP** | `SignStart.tsx:275-279` collects **only** first · last · phone · email · confirm-email. The kiosk's `sign_release` by contrast collects address, DOB and emergency contacts. Contract party fields beyond a name are never asked for. |
+| 4 | they get an activation email | ✅ | `invite_contract_counterparty` mints a `CONTRACT` invitation, 14-day expiry, carrying `document_id`. |
+| 5 | they click it and set their login | ✅ | `/activate` → `Register` (`App.tsx:155`). |
+| 6 | **they land in an authenticated session with the contract first** | ✅ **already built** | `RegisterComplete.tsx:83-87` — `if (stash.kind === 'contract')` → `redeemContractInvitation(token)` → `dest = /app/contracts/${documentId}`, commented *"land ON the contract"*. |
+
+### The two gaps, precisely
+
+**GAP 1 — an email-only party is not representable, but nothing structural forbids it.**
+`contacts` requires **no name** (`first_name` is nullable and the table already carries a
+`name_needs_confirmation` flag built for exactly this shape). So the missing piece is not schema —
+it is **a stub-contact-from-email step** plus the surface that invokes it. Today: 0 contacts have an
+email and no name, so the shape has never been used.
+
+**GAP 2 — the form does not collect what the contract needs.**
+`fill_party_fields_from_contacts(p_document_id)` already pushes contact data into the contract's
+party tokens, so **whatever the form captures reaches the contract automatically.** The defect is
+purely that the form asks for four things. **Which fields to ask for is a per-template question**
+(`contract_field_defs`), not a fixed list — and per D13/D21 the answer should be read from the
+template, never hardcoded per contract type.
+
+### Traps for whoever builds this
+
+- **Do not add an `email` column to `document_parties`.** The contact IS the party identity, and
+  ~34 tables key on `contact_id`. An email column creates a second identity anchor — the exact
+  duplication this project keeps paying for.
+- **`promote_contact_to_account` is the SOLE writer of `profiles.contact_id`.** The stub contact
+  must flow through it, not around it, or the party's documents will not re-anchor.
+- **Step 6 already works — do not rebuild it.** It is the ninth thing in this app that exists and
+  would have been built twice.
+
