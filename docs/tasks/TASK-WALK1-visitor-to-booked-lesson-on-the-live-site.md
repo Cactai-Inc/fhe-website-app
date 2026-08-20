@@ -36,6 +36,11 @@ Selenium in `package.json` or `node_modules/.bin`.** Install **Playwright** in t
 a project dependency — a stray dependency in `package.json` deploys to Vercel. Keep it worktree-local
 and say in the report exactly what you installed and where.
 
+⚠️ **`.env.test` LIVES IN THE WORKTREE, NOT THE MAIN REPO.** It is gitignored, and **a gitignored
+file does not propagate to a worktree** — creating it in `fhe-website-app/` leaves `wt-<id>/` without
+it. This cost WALK1 three stops. **The orchestrator places it at `wt-<id>/.env.test` directly**, and
+the thread reads it from its own working directory.
+
 **Credentials** live in **`.env.test`** at the repo root (owner-supplied, gitignored — same pattern
 as `.env.db`). **Never echo a credential into the report, a commit, a screenshot, or the terminal.**
 If `.env.test` is absent, **STOP and report** — do not proceed and do not ask for it in chat.
