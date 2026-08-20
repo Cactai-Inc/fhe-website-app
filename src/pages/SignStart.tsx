@@ -14,6 +14,17 @@
  * never received it" — which raises an owner dashboard notice AND an owner email
  * carrying the transport's own error, and tells the person support was notified.
  *
+ * PARTYEMAIL §2 — THE FULL ADDRESS IS COLLECTED. D22 §0 (owner, 2026-08-20):
+ * "the form they fill in when they use the link for /sign/deal they enter their
+ * full name, phone number, email, and full address." The address was the one
+ * missing value, and it matters because `.ADDRESS` is one of the five party tokens
+ * a contract renders — no other self-service path populated it, so a party who
+ * onboarded themselves printed on the instrument with no address at all.
+ *
+ * It is on the shared form, not a deal-only branch: the collected set is four
+ * values for everybody, and the same record backs every path. api/sign-start.ts
+ * writes it through fill_claimant_details on both branches.
+ *
  * Anti-enumeration is unchanged: the outcome describes OUR send, never whether the
  * address was already known to us.
  */
@@ -28,6 +39,8 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 /** Deliberately loose: people write phones a dozen ways and we would rather have
  *  a real number formatted oddly than reject it. Ten digits somewhere is enough. */
 const PHONE_DIGITS_RE = /\d/g;
+/** US postal: 5 or 5+4 — the same rule CaptureInfoModal applies to a party's ZIP. */
+const ZIP_RE = /^\d{5}(-\d{4})?$/;
 
 /** `deal` (§1b) shares this page's form and send-state screen but not its meaning:
  *  the other four provision a new client, `deal` claims a contract that already
@@ -277,6 +290,11 @@ export default function SignStart() {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [confirmEmail, setConfirmEmail] = useState('');
+  const [line1, setLine1] = useState('');
+  const [line2, setLine2] = useState('');
+  const [city, setCity] = useState('');
+  const [stateV, setStateV] = useState('');
+  const [zip, setZip] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [outcome, setOutcome] = useState<SendOutcome | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -285,6 +303,9 @@ export default function SignStart() {
   const emailsMatch = emailValid && email.trim().toLowerCase() === confirmEmail.trim().toLowerCase();
   const phoneValid = (phone.match(PHONE_DIGITS_RE) ?? []).length >= 10;
   const namesFilled = firstName.trim() !== '' && lastName.trim() !== '';
+  /* Apt/suite stays optional — it is the one line a great many addresses do not
+     have, and requiring it would teach people to type a dash. */
+  const addressFilled = line1.trim() !== '' && city.trim() !== '' && stateV.trim() !== '' && zip.trim() !== '';
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -305,6 +326,14 @@ export default function SignStart() {
       setError('The two emails must match.');
       return;
     }
+    if (!addressFilled) {
+      setError('Please enter your full address.');
+      return;
+    }
+    if (!ZIP_RE.test(zip.trim())) {
+      setError('Please enter a valid ZIP code (e.g. 92109).');
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
@@ -318,6 +347,11 @@ export default function SignStart() {
           phone: phone.trim(),
           email: email.trim(),
           confirmEmail: confirmEmail.trim(),
+          addressLine1: line1.trim(),
+          addressLine2: line2.trim(),
+          city: city.trim(),
+          state: stateV.trim(),
+          postalCode: zip.trim(),
         }),
       });
       if (!res.ok) throw new Error('request failed');
@@ -472,12 +506,78 @@ export default function SignStart() {
                   autoComplete="email"
                 />
               </div>
+              {/* The fourth value (D22 §0). It lands on the contact record, and the
+                  contract composes {{...ADDRESS}} from it — nothing types an address
+                  into a contract a second time. */}
+              <div className="mb-5">
+                <label className="form-label" htmlFor="sign-address1">Street address *</label>
+                <input
+                  id="sign-address1"
+                  className="form-input"
+                  required
+                  value={line1}
+                  onChange={(e) => setLine1(e.target.value)}
+                  autoComplete="address-line1"
+                />
+              </div>
+              <div className="mb-5">
+                <label className="form-label" htmlFor="sign-address2">
+                  Apt / Suite <span className="text-muted font-normal">(optional)</span>
+                </label>
+                <input
+                  id="sign-address2"
+                  className="form-input"
+                  value={line2}
+                  onChange={(e) => setLine2(e.target.value)}
+                  autoComplete="address-line2"
+                />
+              </div>
+              <div className="grid grid-cols-[1fr_auto_auto] gap-3 mb-5">
+                <div>
+                  <label className="form-label" htmlFor="sign-city">City *</label>
+                  <input
+                    id="sign-city"
+                    className="form-input"
+                    required
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    autoComplete="address-level2"
+                  />
+                </div>
+                <div>
+                  <label className="form-label" htmlFor="sign-state">State *</label>
+                  <input
+                    id="sign-state"
+                    className="form-input w-16"
+                    required
+                    maxLength={2}
+                    value={stateV}
+                    onChange={(e) => setStateV(e.target.value.toUpperCase())}
+                    autoComplete="address-level1"
+                    placeholder="CA"
+                  />
+                </div>
+                <div>
+                  <label className="form-label" htmlFor="sign-zip">ZIP *</label>
+                  <input
+                    id="sign-zip"
+                    className="form-input w-24"
+                    required
+                    inputMode="numeric"
+                    value={zip}
+                    onChange={(e) => setZip(e.target.value)}
+                    autoComplete="postal-code"
+                    placeholder="92109"
+                  />
+                </div>
+              </div>
               {error && (
                 <p className="form-error mb-4" role="alert">{error}</p>
               )}
               <button
                 type="submit"
-                disabled={submitting || !firstName || !lastName || !phone || !email || !confirmEmail}
+                disabled={submitting || !firstName || !lastName || !phone || !email || !confirmEmail
+                  || !line1 || !city || !stateV || !zip}
                 className="btn-primary w-full justify-center"
               >
                 {submitting ? 'Sending…' : 'Continue'}

@@ -1,7 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Users, Pencil, Check, Plus, MapPin, Phone, Mail } from 'lucide-react';
+import { Users, Pencil, Check, Plus, MapPin, Phone, Mail, User } from 'lucide-react';
 import {
   documentPartiesSummary, reassignDocumentParty, attachHorseToDocument,
+  addDocumentPartyByEmail,
   type PartiesHorseSummary, type PartySummary, type PartyField,
 } from '../../lib/contracts';
 import { contractPartyOptions, staffHorseRecords, type PartyOption, type StaffHorseRecord } from '../../lib/horses';
@@ -12,6 +13,20 @@ import { CaptureInfoModal } from './CaptureInfoModal';
  * the Lessee / Lessor are and which horse the lease is for. Staff may reassign a
  * party or the horse in place (re-pick a contact / horse record) without recreating
  * the contract; reassigning refreshes the party auto-fill fields and re-merges.
+ *
+ * PARTYEMAIL (2026-08-20) adds two things, and they are two halves of one rule.
+ *
+ * 1. A party can be put on the contract from an EMAIL ADDRESS ALONE (D22 §7).
+ *    contract_party_options only offers contacts that already have a NAME, so a
+ *    counterparty we know only by email could not be named on a contract at all
+ *    without first being typed into the CRM as a person. The email box below the
+ *    picker is that door: the address is matched against the org's contacts, and
+ *    only an address we have never seen mints a stub.
+ *
+ * 2. The card SAYS a missing name blocks signing, in the same words the server's
+ *    blocker uses. A2 was two disagreeing completeness checks; the gate is
+ *    contract_lock_blockers' `party_name_required`, and this card must not imply a
+ *    nameless party is merely untidy when it is unsignable.
  */
 export function PartiesHorseCard({
   documentId, canEdit, onChanged, footer,
@@ -33,6 +48,8 @@ export function PartiesHorseCard({
   const [err, setErr] = useState<string | null>(null);
   // reusable capture modal: which party + which field(s) to collect
   const [capture, setCapture] = useState<{ party: PartySummary; fields?: PartyField[] } | null>(null);
+  // PARTYEMAIL: the email typed into a role's "add by email" box, keyed by role.
+  const [emailDraft, setEmailDraft] = useState<Record<string, string>>({});
 
   const load = () => { documentPartiesSummary(documentId).then(setSummary).catch(() => setSummary(null)); };
   useEffect(load, [documentId]);
@@ -55,6 +72,18 @@ export function PartiesHorseCard({
     try { await reassignDocumentParty(documentId, role, contactId); load(); onChanged(); }
     catch (e) { setErr(e instanceof Error ? e.message : 'Could not reassign.'); }
     finally { setBusy(false); }
+  }
+  async function addByEmail(role: string) {
+    const addr = (emailDraft[role] ?? '').trim();
+    if (!addr) return;
+    setBusy(true); setErr(null);
+    try {
+      await addDocumentPartyByEmail(documentId, role, addr);
+      setEmailDraft((d) => ({ ...d, [role]: '' }));
+      load(); onChanged();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Could not add that party.');
+    } finally { setBusy(false); }
   }
   async function reassignHorse(horseId: string) {
     setBusy(true); setErr(null);
@@ -86,14 +115,58 @@ export function PartiesHorseCard({
           <div key={p.party_role}>
             <dt className="text-[11px] uppercase tracking-wide text-muted">{roleLabel(p.party_role)}</dt>
             {editing && canEdit ? (
-              <select className="form-input mt-0.5" disabled={busy} value={p.contact_id ?? ''}
-                onChange={(e) => void reassign(p.party_role, e.target.value)}>
-                {!p.contact_id && <option value="">Select…</option>}
-                {contacts.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              <>
+                <select className="form-input mt-0.5" disabled={busy} value={p.contact_id ?? ''}
+                  onChange={(e) => void reassign(p.party_role, e.target.value)}>
+                  {!p.contact_id && <option value="">Select…</option>}
+                  {/* A party added by email has no name yet, so contract_party_options
+                      does not offer it. Show it here anyway, or the picker would read
+                      as though nobody is on the contract. */}
+                  {p.contact_id && !contacts.some((c) => c.id === p.contact_id) && (
+                    <option value={p.contact_id}>{p.name ?? p.email ?? 'Added by email'}</option>
+                  )}
+                  {contacts.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+                {/* Not in the list? An email address is enough to make them a party. */}
+                <div className="mt-1.5 flex items-center gap-1.5">
+                  <input type="email" inputMode="email" className="form-input text-[13px] py-1"
+                    placeholder="or add by email…" disabled={busy}
+                    value={emailDraft[p.party_role] ?? ''}
+                    onChange={(e) => setEmailDraft((d) => ({ ...d, [p.party_role]: e.target.value }))}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void addByEmail(p.party_role); } }}
+                    aria-label={`Add the ${roleLabel(p.party_role)} by email address`} />
+                  <button type="button" className="btn-outline-gold text-xs px-2.5 py-1 shrink-0"
+                    disabled={busy || !(emailDraft[p.party_role] ?? '').trim()}
+                    onClick={() => void addByEmail(p.party_role)}>Add</button>
+                </div>
+                <p className="text-[11px] text-muted mt-1">
+                  They fill in their own name, phone and address when they claim the contract.
+                </p>
+              </>
             ) : (
               <dd className="mt-0.5">
-                <span className="text-green-900 font-medium">{p.name ?? '—'}</span>
+                {p.name
+                  ? <span className="text-green-900 font-medium">{p.name}</span>
+                  : (
+                    /* NO NAME = NOT SIGNABLE. The server's party_name_required
+                       blocker refuses the lock, so this says the same thing rather
+                       than printing an em dash. */
+                    <span className="inline-flex flex-col gap-0.5">
+                      {canEdit && p.contact_id ? (
+                        <button type="button" onClick={() => setCapture({ party: p, fields: ['name'] })}
+                          className="inline-flex items-center gap-1.5 text-gold-ink hover:underline w-fit font-medium">
+                          <User size={12} /> Add their full name
+                        </button>
+                      ) : (
+                        <span className="text-muted italic inline-flex items-center gap-1.5">
+                          <User size={12} /> No name on file
+                        </span>
+                      )}
+                      <span className="text-[11px] text-red-700">
+                        A full name is required before signing.
+                      </span>
+                    </span>
+                  )}
                 {/* full contact detail — the value when present, an Add affordance when missing */}
                 <div className="mt-1 flex flex-col gap-0.5 text-[13px]">
                   <ContactLine icon={<MapPin size={12} />} value={p.address}

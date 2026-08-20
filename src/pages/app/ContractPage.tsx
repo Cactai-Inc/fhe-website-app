@@ -20,6 +20,7 @@ import {
   markDocumentOpened,
   setFieldResponsibility, setFieldIncluded, setFieldNa, setFieldControlOverride, setFieldStructured,
   documentPartiesSummary, captureContactInfo, captureHorseRecord,
+  regenerateContractDocument,
   saveContract,
   requestContractTermination, approveContractTermination, declineContractTermination,
   setDocumentPartyArchived, deleteContractWithCopy, clauseConditionMet,
@@ -415,9 +416,29 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
    * the current content stays on screen and is swapped when the new data arrives.
    * React reconciles in place, so nothing unmounts and the reader keeps their
    * position without needing it restored afterwards. */
+  /* PARTYEMAIL Phase 4 — FETCH AND READ ON GENERATION (D22 §6: "this requires a
+     fetch and read on generation for the contract even after its signed").
+     remerge_contract_from_clauses used to run only at EDIT points, so a contract
+     went on rendering whatever the contact and horse records held the last time
+     somebody happened to change a field. Opening the document now re-fills the
+     party tokens from the contact records and the HORSE.* tokens from the horse
+     record, recomposes, and replays the signatures.
+
+     ONCE PER DOCUMENT PER VISIT. load({blank:false}) runs after every field save
+     and after every realtime echo; re-generating on each of those would make a
+     full recompose the cost of a keystroke. `blank` is true only on a real open.
+
+     THE FAILURE IS SWALLOWED ON PURPOSE. A propagation that cannot run must never
+     stop the document from being read — the stored body is still the document. */
+  const regeneratedFor = useRef<string | null>(null);
   const load = useCallback(async ({ blank = true }: { blank?: boolean } = {}) => {
     if (!id) return;
     const requestedId = id;
+    if (blank && regeneratedFor.current !== requestedId) {
+      regeneratedFor.current = requestedId;
+      try { await regenerateContractDocument(requestedId); } catch { /* read the stored body */ }
+      if (idRef.current !== requestedId) return;
+    }
     if (blank) {
       setDetail(null);
       setSigningSet([]);
