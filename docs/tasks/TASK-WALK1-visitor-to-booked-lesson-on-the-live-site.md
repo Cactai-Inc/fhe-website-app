@@ -40,6 +40,30 @@ and say in the report exactly what you installed and where.
 as `.env.db`). **Never echo a credential into the report, a commit, a screenshot, or the terminal.**
 If `.env.test` is absent, **STOP and report** — do not proceed and do not ask for it in chat.
 
+### ⚠️ AUTHENTICATION — do NOT automate Google
+
+The site is **Google-first** at `/login`, but **email + password login is fully wired and is one tap
+behind it** (`Login.tsx:18-20,120-130` — *"Google-first: show the large Google button by default;
+the email/password [form] is one tap away"*, calling `signInWithPassword`). **Use that.**
+**Never attempt to drive Google's OAuth screens** — Google detects and blocks automated browsers,
+and a failed attempt can lock or challenge a real account.
+
+**Verified: no MFA factor is enrolled** on `admin@fhequestrian.com` or `hello@fhequestrian.com`
+(`auth.mfa_factors` is empty for both), so the TOTP step at `Login.tsx:82-93` is conditional and
+will not trigger. **If a verification-code screen appears anyway, STOP** — something changed and the
+orchestrator must know.
+
+**Two supported paths, in order of preference:**
+1. **`FHE_ADMIN_PASSWORD` in `.env.test`** — click *"Sign in with email and password"*, then submit.
+   This is the primary path.
+2. **`FHE_STORAGE_STATE=<path>`** — a Playwright `storageState` JSON the owner produced by signing
+   in once himself. If that variable is present, **load the session and skip the login form
+   entirely.** Expect it to expire; if the session is dead, STOP and report rather than falling back
+   to Google.
+
+**Test accounts you create yourself set their own password at activation** — they never involve
+Google, so the client-side half of the walk is unaffected either way.
+
 **Screenshots** to `docs/reports/walk1-shots/`, named by step. **Redact any credential or real
 third-party personal data before committing a shot.**
 
