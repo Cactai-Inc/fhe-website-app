@@ -88,6 +88,17 @@ the orchestrator more often than the reverse.
   every **system actor** (Stripe · the mail edge · each of the 5 crons · Google Maps · Supabase
   auth), each with the flows it participates in.
 - **Cross-flow findings** — anything true of many flows, which is where the expensive defects live.
+- **The areas each flow crosses.** For every flow, list the surfaces it touches **grouped by the
+  area of the app they belong to** (Records · Ops · Booking · Contracts · Catalog · Account · the
+  public site · Admin/Settings). ⚠️ **Do not invent an area taxonomy** — derive it from the nav
+  groups in `AppLayout.tsx` and `pageRegistry.ts` as they exist, and where a flow crosses areas,
+  **say so and name the seam**. A flow that crosses four areas is telling you either that the areas
+  are wrong or that the flow is — and which one is the most valuable judgement in this document.
+
+⚠️ **KNOW YOUR CONSUMER.** This map's next reader is a separate review thread producing the
+**refactor's area specification** — dividing the app into the areas it *should* have and speccing
+each. **That thread needs your seams, not your prose.** A flow whose sequence is described but
+whose area crossings are not recorded is only half-useful to it.
 
 ### 4b. `docs/reference/flows/<AREA>.md` — the sequences
 
