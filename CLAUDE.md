@@ -383,3 +383,16 @@ reporting success.
   came from a comment in `reviewSection.ts` written within an hour of the module being turned on.
   **A state claim in a doc is a hypothesis. Query `org_modules`, the live function body, or the
   table — then act.** Same class as D17's stale `pageRegistry.ts:125` comment about the calendar.
+- **D21 — AN ALGORITHM IS CONFIGURATION, NOT CODE. IT SHIPS WITH AN EDITOR (owner, 2026-08-20).**
+  Owner: *"pricing algorithms should have an editor to construct them built into the app, not hard
+  coded into the app via working with you."* **Extends D13 one level further than it has ever been
+  taken.** D13 said tenant-configurable *content* — copy, prices, templates, vocabularies — must
+  ship the surface that edits it. **D21 says the same of the RULE that computes a value.** The two
+  acquisition pricing algorithms (finder: fee against duration and volume; assistance: fixed fee
+  from a budget band) are **not to be designed by the owner and then hardcoded by a thread.** The
+  deliverable is the editor in which he constructs them himself, and re-constructs them whenever he
+  likes. **Consequence: "the owner has not designed the algorithm yet" stops being a blocker on
+  anything** — it is work the product absorbs, not a prerequisite a thread waits on.
+  ⚠️ **Generalise it.** Any future formula — a discount rule, a proration, a cancellation penalty,
+  a commission split — is subject to this. **A hardcoded business formula is now a defect by
+  default**, and a spec proposing one must say explicitly why an editor is impossible.

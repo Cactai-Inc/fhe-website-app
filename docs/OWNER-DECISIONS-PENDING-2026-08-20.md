@@ -81,11 +81,25 @@ Blocks building any biller at all. Source: `MONTHLY-BILLING-REVIEW.md`.
 The exact review day · do invoices send if nobody reviews · who is notified · does the client see
 anything at review time.
 
-## 7. The two pricing algorithms
+## 7. The two pricing algorithms — ✅ RULED 2026-08-20, and the ruling changes the task
 
-**The owner has not designed these yet and nobody can invent them for him.**
-Finder (fee against duration and volume) and acquisition assistance (fixed fee from a budget band).
-Source: `ACQUISITION-PRICING…md`.
+> **Owner, 2026-08-20:** *"pricing algorithms should have an editor to construct them built into
+> the app, not hard coded into the app via working with you."*
+
+**This is no longer a design question, it is a build instruction — and it inverts the task.**
+The old framing (the owner designs two formulas, a thread hardcodes them) is refused. **The
+deliverable is an ALGORITHM EDITOR**: the owner constructs, edits and re-edits the finder and
+assistance pricing rules himself, in the app, with no thread, no SQL and no git.
+
+**Consequence:** the two algorithms stop being a blocker on any other work. Nothing waits on the
+owner designing them, because designing them is something he does in the product afterwards, as
+many times as he likes. Recorded as **D21** in `CLAUDE.md`.
+
+**Not yet specced.** Open sub-questions the spec must answer: what primitives the editor exposes
+(bands, tiers, multipliers, floors/ceilings, rounding), whether a rule can be previewed against a
+worked example before publishing, and whether pricing rules use D12's shared draft/publish/version
+lifecycle — **recommendation: yes, they should**, because a mispriced published rule needs the
+same rollback story a template does.
 
 ---
 
