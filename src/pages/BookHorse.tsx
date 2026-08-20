@@ -73,6 +73,10 @@ export default function BookHorse() {
   const stage = STEPS[current].id;
 
   const canProceedStep0 = itemCount > 0;
+  /** Is the floating SelectionBar carrying the Continue right now? Mirrors both
+   *  of its render conditions: this page only mounts it in the 'select' stage,
+   *  and the bar itself returns null while nothing is selected. */
+  const barHasIt = stage === 'select' && itemCount > 0;
 
   function handleNext() {
     if (current < total - 1) {
@@ -258,20 +262,26 @@ export default function BookHorse() {
                   Gift our services to the horse lover in your life
                 </Link>
               )}
-              <button
-                type="button"
-                onClick={handleNext}
-                // Nothing on the questions step is required (§A5): these shape the
-                // conversation, they do not qualify anyone, and a required answer
-                // blocks a sale.
-                disabled={current === 0 ? !canProceedStep0 : false}
-                className="btn-primary"
-              >
-                {/* §C2/§A6: the questions page's forward button names the page it
-                    actually leads to. */}
-                {stage === 'questions' ? 'Continue to Submit Inquiry' : 'Continue'}
-                <ArrowRight size={16} />
-              </button>
+              {/* Stands down while the floating SelectionBar is carrying the
+                  Continue (owner, 2026-08-17) — see BookRider for the full note.
+                  With nothing selected the bar is null, so this stays as the
+                  disabled affordance that says a next step exists. */}
+              {!barHasIt && (
+                <button
+                  type="button"
+                  onClick={handleNext}
+                  // Nothing on the questions step is required (§A5): these shape the
+                  // conversation, they do not qualify anyone, and a required answer
+                  // blocks a sale.
+                  disabled={current === 0 ? !canProceedStep0 : false}
+                  className="btn-primary"
+                >
+                  {/* §C2/§A6: the questions page's forward button names the page it
+                      actually leads to. */}
+                  {stage === 'questions' ? 'Continue to Submit Inquiry' : 'Continue'}
+                  <ArrowRight size={16} />
+                </button>
+              )}
             </div>
           )}
         </div>

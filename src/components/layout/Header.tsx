@@ -39,7 +39,10 @@ const NAV_LINKS = [
   // Owner, 2026-08-16: 'Our Community' — bare 'Community' read as the in-app
   // members' community rather than the story of the place. Route stays /story.
   { label: 'Our Community', href: '/story' },
-  { label: 'Horse Care Services', href: '/horse' },
+  // 'Horse Care Services' was 194px of the row's 595 — a third of the nav for
+  // one label, and the single biggest reason the row could not fit. The FOOTER
+  // has always called this "Horse Care"; the header is the one that disagreed.
+  { label: 'Horse Care', href: '/horse' },
   { label: 'Find a Horse', href: '/acquisition' },
   { label: 'Book a Lesson', href: '/lessons' },
 ];
@@ -178,7 +181,14 @@ export default function Header() {
       }`}
     >
       <div
-        className={`container-site grid grid-cols-[auto_1fr_auto] items-center gap-2 transition-all duration-[450ms] ease-out ${
+        // ⚠️ THE GRID GAP IS THE WORDMARK'S BREATHING ROOM. The middle track is
+        // `1fr` holding the mobile-only cart, so on desktop it is an empty item
+        // that collapses to ZERO width — which left `gap-2` twice, 16px total,
+        // as the only thing between "FRENCH HERITAGE" and the first nav link.
+        // That is the crowding in the owner's screenshot: the nameplate and
+        // "OUR COMMUNITY" touching. xl:gap-8 guarantees 64px of air no matter
+        // how wide the right cluster gets.
+        className={`container-site grid grid-cols-[auto_1fr_auto] items-center gap-2 min-[940px]:gap-6 xl:gap-12 transition-all duration-[450ms] ease-out ${
           // Minify: a genuine ~33% height cut on scroll (padding shrinks together
           // with the logo + wordmark below). Naked ≈92px → scrolled ≈60px (~35%).
           scrolled ? 'py-3' : 'py-6 sm:py-7'
@@ -212,7 +222,13 @@ export default function Header() {
           {/* Unified nameplate — both words in the heritage serif (font-display).
               "Equestrian" is now larger and matched to the "French Heritage"
               face, so the three words read as one cohesive nameplate. */}
-          <span className={`flex flex-col items-start leading-[0.95] transition-colors duration-[400ms] ${wordmarkText} ${heroShadow}`}>
+          {/* whitespace-nowrap: the nameplate is TWO lines by design — "French
+              Heritage" over "Equestrian" — and it was breaking into THREE once
+              the nav squeezed the auto column ("FRENCH / HERITAGE /
+              EQUESTRIAN"). A wordmark is a logo, not copy; it does not reflow.
+              With this it holds its 208px and the row's slack comes out of the
+              gap instead, which is what the gap is for. */}
+          <span className={`flex flex-col items-start whitespace-nowrap leading-[0.95] transition-colors duration-[400ms] ${wordmarkText} ${heroShadow}`}>
             <span
               className={`font-display font-medium tracking-wide uppercase transition-all duration-[450ms] ${
                 scrolled ? 'text-sm sm:text-base' : 'text-base sm:text-lg'
@@ -230,13 +246,29 @@ export default function Header() {
           </span>
         </Link>
 
-        {/* Center — the cart, centered on MOBILE only (always visible, never in
-            the hamburger). On desktop this slot is empty; the cart sits top-right. */}
-        <div className="justify-self-center md:hidden">{cart('')}</div>
+        {/* Middle track: deliberately empty. The cart used to live here,
+            `justify-self-center`, which floated it in open space in the middle of
+            the header with no relationship to anything — the owner's note that it
+            "looks a bit odd". It now sits in the right cluster beside the
+            hamburger, where the other controls are. The track stays so the
+            wordmark and the right cluster keep their `auto 1fr auto` push-apart. */}
+        <div aria-hidden="true" />
 
         {/* Right cluster — desktop nav + cart (top-right) + sign in; hamburger. */}
-        <div className="justify-self-end flex items-center gap-6 lg:gap-9">
-          <nav className="hidden md:flex items-center gap-8 lg:gap-10" aria-label="Primary">
+        <div className="justify-self-end flex items-center gap-4 xl:gap-5">
+          {/* ⚠️ THE FULL NAV APPEARS AT xl, NOT md. Measured, not guessed: the
+              four labels are 595px of text at `tracking-widest` (0.25em — far
+              wider than it looks), and with the wordmark, the cart and Say Hello
+              the row needs ~1117px. It was switching on at md = 768px, roughly
+              350px before it could ever fit, and surviving on nothing but text
+              wrapping — which is exactly the two-line stacking the owner
+              reported. It was never the cart: the owner's 1030px capture has no
+              cart and is already broken, and at 775px the nameplate itself
+              breaks into three lines.
+              Below xl the hamburger takes over, which is the layout the owner's
+              726px capture shows working cleanly. Degrading to a menu that fits
+              beats degrading to a row that doesn't. */}
+          <nav className="hidden min-[940px]:flex items-center gap-4 xl:gap-6" aria-label="Primary">
             {NAV_LINKS.map((link) => {
               const current = location.pathname === link.href;
               return (
@@ -244,7 +276,19 @@ export default function Header() {
                   key={link.label}
                   to={link.href}
                   aria-current={current ? 'page' : undefined}
-                  className={`group relative inline-flex items-center min-h-[44px] text-xs font-sans tracking-widest uppercase transition-colors duration-[400ms] focus-ring-dark ${heroShadow} ${
+                  // whitespace-nowrap: a label is one line or it is not shown.
+                  // "HORSE CARE SERVICES" breaking into three stacked words is
+                  // what made the header look broken; the row now either fits or
+                  // hands over to the hamburger.
+                  // ⚠️ TRACKING IS THE HIDDEN WIDTH. `tracking-widest` is 0.25em
+                  // in this config — a quarter of the type size after EVERY
+                  // character, which on ~48 characters of nav is ~145px of pure
+                  // letter-spacing. It is the reason the row looked like it
+                  // should fit and never did. Below xl it tightens to 0.14em and
+                  // drops to 11px, which is still unmistakably the same nav and
+                  // buys back the ~150px that lets it survive down to ~900px
+                  // instead of collapsing to a hamburger on a 1200px laptop.
+                  className={`group relative inline-flex items-center whitespace-nowrap min-h-[44px] text-[11px] xl:text-xs font-sans tracking-[0.14em] xl:tracking-widest uppercase transition-colors duration-[400ms] focus-ring-dark ${heroShadow} ${
                     current
                       ? overDark ? 'text-white' : 'text-green-950'
                       : navText
@@ -262,8 +306,12 @@ export default function Header() {
             })}
           </nav>
 
-          {/* Cart — top-right on desktop. */}
-          {cart('hidden md:inline-flex')}
+          {/* Cart — ONE instance at every width, always in the right cluster.
+              It was previously rendered twice (a centered mobile copy and an
+              xl-only desktop copy) with mirrored breakpoints keeping exactly one
+              visible; a single node cannot fall out of step with itself. On
+              mobile it lands immediately left of the hamburger. */}
+          {cart('')}
 
           {/* Say Hello — the right corner. Member Area and Sign In used to sit
               here; both moved to the footer (owner, 2026-08-16), so a first-time
@@ -274,9 +322,24 @@ export default function Header() {
               (over the hero) and the deep gold (over cream pages) — the border
               and the fill are the same gold in both, so the button looks like one
               control everywhere. */}
+          {/* ⚠️ SAY HELLO STANDS DOWN ONCE THERE IS A CART. Owner, 2026-08-17:
+              "the hello button is not needed once we have items in the cart",
+              and "the cart replacing the hello button is a generous tradeoff
+              because the cart icon is very small comparatively" — ~110px of
+              bordered button swapped for a 20px glyph. Someone mid-selection has
+              already found their way in; the inquiry they are building IS the
+              conversation, and /contact stays one tap away in the hamburger and
+              in the footer. This is what lets the full nav survive down to ~900px
+              while shopping instead of collapsing to a menu. */}
+          {itemCount === 0 && (
           <Link
             to="/contact"
-            className={`hidden md:inline-flex items-center min-h-[40px] px-4 border text-[11px] font-sans tracking-widest uppercase transition-colors duration-300 focus-ring-dark hover:bg-gold-600 hover:text-green-950 hover:border-gold-600 ${heroShadow} ${
+            // px-3.5 + nowrap: the box is sized to its label. It looked oversized
+            // because the LABEL was wrapping to two lines inside a fixed
+            // min-height, not because the padding was generous. `tracking-widest`
+            // already puts 0.25em after the final "O", so the optical right
+            // padding runs wider than the left — hence 14px rather than 16.
+            className={`hidden min-[940px]:inline-flex items-center whitespace-nowrap min-h-[40px] px-3.5 border text-[11px] font-sans tracking-[0.14em] xl:tracking-widest uppercase transition-colors duration-300 focus-ring-dark hover:bg-gold-600 hover:text-green-950 hover:border-gold-600 ${heroShadow} ${
               overDark
                 ? 'border-gold-300/70 text-gold-300'
                 : 'border-gold-700/60 text-gold-800'
@@ -284,12 +347,13 @@ export default function Header() {
           >
             Say Hello
           </Link>
+          )}
 
           {/* Mobile menu button (nav links only — the cart is NOT in here). */}
           <button
             ref={menuButtonRef}
             type="button"
-            className={`md:hidden p-2.5 -mr-2 focus-ring-dark transition-colors duration-[400ms] ${
+            className={`min-[940px]:hidden p-2.5 -mr-2 focus-ring-dark transition-colors duration-[400ms] ${
               overDark ? 'text-white [filter:drop-shadow(0_1px_6px_rgba(0,0,0,0.5))]' : 'text-green-900'
             }`}
             onClick={() => setOpen((v) => !v)}
@@ -306,7 +370,7 @@ export default function Header() {
       {open && (
         <div
           id="mobile-menu"
-          className="md:hidden bg-green-900/95 backdrop-blur-md border-t border-gold-600/20"
+          className="min-[940px]:hidden bg-green-900/95 backdrop-blur-md border-t border-gold-600/20"
         >
           <nav className="container-site py-6 flex flex-col gap-5" aria-label="Mobile">
             {NAV_LINKS.map((link) => (

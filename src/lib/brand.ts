@@ -8,7 +8,20 @@ export const BRAND = {
   // unless explicitly requested. shortName intentionally holds the full name so
   // any consumer that renders it stays compliant.
   shortName: 'French Heritage Equestrian',
-  tagline: 'A family-run hunter/jumper ranch and community, rooted in classical European horsemanship.',
+  // ⚠️ THE TAGLINE IS NOT THE DESCRIPTION. Owner, 2026-08-17: he briefly asked
+  // for the two to match, saw the live one, and kept the live one — "that's a
+  // much better tagline". A tagline is short and says who you are; the long
+  // sentence is the description and lives in BUSINESS.description (src/lib/seo.ts)
+  // and the footer's brand column. They are deliberately different, so do not
+  // "fix" the divergence.
+  //
+  // This constant is the FALLBACK, not what FHE renders: `resolveBrand` reads
+  // `b.TAGLINE || BRAND.tagline`, and the live BRAND.TAGLINE row in
+  // `config_values` wins. It is set here byte-identical to that row so the
+  // prerender path (which passes no config) and a tenant-config render agree.
+  // Changing what FHE displays is the owner's own job at Admin → Branding →
+  // Tagline (D13) — editing this line does not do it.
+  tagline: 'Equestrian community by the sea - made for fun, friendships, and rider advancement',
   email: 'Hello@FHEquestrian.com',
   emailHref: 'mailto:Hello@FHEquestrian.com',
   phoneDisplay: '858-439-3614',

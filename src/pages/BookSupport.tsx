@@ -73,6 +73,10 @@ export default function BookSupport() {
   const stage = STEPS[current].id;
 
   const canProceedStep0 = itemCount > 0;
+  /** Is the floating SelectionBar carrying the Continue right now? Mirrors both
+   *  of its render conditions: this page only mounts it on step 0, and the bar
+   *  itself returns null while nothing is selected. */
+  const barHasIt = step === 0 && itemCount > 0;
 
   function handleNext() {
     if (current < total - 1) {
@@ -269,6 +273,10 @@ export default function BookSupport() {
             {current === 0 ? 'Back to Services' : 'Back'}
           </button>
 
+          {/* Merge resolution 2026-08-20: main had refactored `step` into the
+              derived `stage`, while task/partyrole added the SelectionBar
+              stand-down on the older `step` model. Both intents kept — main's
+              stage-based conditions, partyrole's `!barHasIt` guard. */}
           {stage !== 'details' && (
             <div className="flex items-center gap-6">
               {/* TASK-GIFTPATH — reachable from acquisition, not just lessons. */}
@@ -278,15 +286,21 @@ export default function BookSupport() {
                   Gift our services to the horse lover in your life
                 </Link>
               )}
-              <button
-                type="button"
-                onClick={handleNext}
-                disabled={current === 0 ? !canProceedStep0 : false}
-                className="btn-primary"
-              >
-                {stage === 'questions' ? 'Continue to Submit Inquiry' : 'Continue'}
-                <ArrowRight size={16} />
-              </button>
+              {/* Stands down while the floating SelectionBar is carrying the
+                  Continue (owner, 2026-08-17) — see BookRider for the full note.
+                  With nothing selected the bar is null, so this stays as the
+                  disabled affordance that says a next step exists. */}
+              {!barHasIt && (
+                <button
+                  type="button"
+                  onClick={handleNext}
+                  disabled={current === 0 ? !canProceedStep0 : false}
+                  className="btn-primary"
+                >
+                  {stage === 'questions' ? 'Continue to Submit Inquiry' : 'Continue'}
+                  <ArrowRight size={16} />
+                </button>
+              )}
             </div>
           )}
         </div>

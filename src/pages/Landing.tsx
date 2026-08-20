@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import Seo from '../components/Seo';
 import { seoForPath } from '../lib/seo';
+import { BRAND } from '../lib/brand';
 import Header from '../components/layout/Header';
 
 /* The front door — a single-viewport, no-scroll, no-footer cinematic hero.
@@ -36,7 +37,20 @@ export default function Landing() {
 
   return (
     <>
-      <Seo title={seo.title} description={seo.description} path="/" />
+      {/* Owner, 2026-08-17: *"it would be nice if that was what comes up when
+          people hover over a link to our site"* — the tagline, on the unfurl
+          card. This is the homepage, which is what a bare link to the site
+          resolves to, so it is the only page that takes the tagline; a shared
+          /lessons link still describes lessons.
+
+          ⚠️ It comes from the BRAND constant, not the live config row, and it
+          has to: the card is built by crawlers that read the PRERENDERED HTML
+          and do not run the runtime brand fetch. The constant is kept
+          byte-identical to the live row (src/lib/brand.ts), so the two agree —
+          but an edit at Admin → Branding will not reach a link preview until
+          the site is rebuilt and deployed. */}
+      <Seo title={seo.title} description={seo.description} path="/"
+        socialDescription={BRAND.tagline} />
 
       {/* The one shared header — naked over the hero. */}
       <Header />

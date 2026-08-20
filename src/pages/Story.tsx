@@ -449,8 +449,14 @@ export default function Story() {
               ))}
             </div>
 
-            {/* Continue out of Our Services into the closing section. */}
-            <p className="mt-12 sm:mt-16">
+            {/* Continue out of Our Services into the closing section.
+                Owner, 2026-08-18: "move the what we deliver link up 5px."
+                mt-[43px]/sm:mt-[59px] is mt-12/sm:mt-16 less those 5px. Written
+                as the reduced margin rather than a `relative -top-[5px]` nudge so
+                the link stays in normal flow -- a transform would lift it out of
+                the box the section reserves for it and let the strip above crowd
+                it at some widths. */}
+            <p className="mt-[43px] sm:mt-[59px]">
               <a href="#what-we-deliver" className="link-underline">
                 What we deliver <ArrowRight size={13} aria-hidden="true" />
               </a>

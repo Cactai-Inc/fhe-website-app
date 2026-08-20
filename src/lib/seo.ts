@@ -10,13 +10,25 @@ export const SITE_URL = 'https://www.frenchheritageequestrian.com';
 export const BUSINESS = {
   name: 'French Heritage Equestrian',
   legalName: 'French Heritage Equestrian',
+  // The footer's own words, verbatim (owner, 2026-08-17). Length is not a problem
+  // HERE: this field feeds only `ORG_JSONLD.description`, the LocalBusiness
+  // structured data, which is not truncated in results the way a meta description
+  // is. The ~155-character ceiling applies to `ROUTE_SEO[].description`, which is
+  // a separate list and is deliberately NOT changed to this text — at 240
+  // characters it would be cut off mid-sentence in a search result.
   description:
-    'A family-run hunter/jumper ranch and community rooted in classical European horsemanship, offering riding lessons, horse training and care, and acquisition support in coastal San Diego.',
+    'Family-run full-service equestrian program and rider community featuring riding lessons '
+    + 'and jumper training in the classical European style, alongside horse care services and '
+    + 'support for purchasing and leasing, located in beautiful coastal San Diego.',
   email: 'Hello@FHEquestrian.com',
   phone: '+1-858-439-3614',
   phoneDisplay: '858-439-3614',
-  // TODO: replace with the real street address + ZIP before launch.
-  streetAddress: 'Carmel Creek Ranch',
+  // The real street address, 2026-08-17 — this TODO is now closed. It comes from
+  // the tenant's own company contact record and is the same address the footer
+  // now prints; leaving 'Carmel Creek Ranch' here while the page shows a street
+  // number would put the LocalBusiness JSON-LD in visible disagreement with the
+  // page it describes. The ZIP was already correct.
+  streetAddress: '11500 Clews Ranch Rd, Ste A',
   addressLocality: 'San Diego',
   addressRegion: 'CA',
   postalCode: '92130',

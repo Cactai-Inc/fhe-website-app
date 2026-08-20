@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { MapPin, Phone, Mail, Clock } from 'lucide-react';
 import { BRAND } from '../../lib/brand';
+import { useCart } from '../../contexts/CartContext';
 
 // Owner, 2026-08-17: the geocoded business address (11500 Clews Ranch Rd
 // Ste A — Google's own number; the `locations` table's "11600" doesn't
@@ -24,8 +25,22 @@ const MAP_EMBED_SRC = `https://www.google.com/maps?q=${encodeURIComponent(MAP_QU
 
 export default function Footer() {
   const { user } = useAuth();
+  // ⚠️ THE SELECTION BAR IS `position: fixed`, SO IT IS OUT OF FLOW AND NOTHING
+  // BELOW IT KNOWS IT EXISTS. Owner, 2026-08-17: "the bottom of page continue
+  // overlay doesnt tell the page to provide more room at the bottom below the
+  // footer, so its overlapping it."
+  //
+  // The funnel pages each carry `pb-36`, which protects THEIR OWN last card —
+  // but the footer is a sibling rendered after them, so that padding does
+  // nothing for it and the bar sat on top of the copyright line. The reserve has
+  // to live on the last thing in the document, which is this. It is conditional
+  // because the bar itself is conditional: no selection, no bar, no dead space.
+  const { itemCount } = useCart();
   return (
-    <footer id="site-footer" className="bg-green-900 text-white">
+    <footer
+      id="site-footer"
+      className={`bg-green-900 text-white ${itemCount > 0 ? 'pb-24' : ''}`}
+    >
 
       {/* Main footer */}
       <div className="container-site py-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-10">
@@ -41,9 +56,9 @@ export default function Footer() {
             </p>
           </div>
           <p className="text-sm font-sans text-white/[0.7] leading-relaxed max-w-xs">
-            A family-run equestrian program and community featuring classical European style
-            riding and jumper training, offering lessons, horse care and acquisition services
-            in coastal San Diego.
+            Family-run full-service equestrian program and rider community featuring riding
+            lessons and jumper training in the classical European style, alongside horse care
+            services and support for purchasing and leasing, located in beautiful coastal San Diego.
           </p>
         </div>
 
@@ -94,11 +109,20 @@ export default function Footer() {
           <div className="flex flex-col gap-4">
             <div className="flex items-start gap-3">
               <MapPin size={16} className="text-gold-400 mt-0.5 flex-shrink-0" aria-hidden="true" />
-              <div>
+              {/* The full postal address, owner 2026-08-17. It is the business
+                  address that the file header above already names — Google's own
+                  number for the Business Profile, not the `locations` table's
+                  "11600", which still disagrees and is still flagged. The MAP pin
+                  deliberately does NOT use it: visitors are routed to the turn-in
+                  Plus Code instead, for the reason set out in that header. So this
+                  block and the map answer two different questions on purpose —
+                  "where are you" and "how do I get in". */}
+              <address className="not-italic">
                 <p className="text-sm font-sans text-white/85">Carmel Creek Ranch</p>
-                <p className="text-sm font-sans text-white/[0.7]">San Diego, CA</p>
+                <p className="text-sm font-sans text-white/[0.7]">11500 Clews Ranch Rd, Ste A</p>
+                <p className="text-sm font-sans text-white/[0.7]">San Diego, CA 92130</p>
                 <p className="text-xs font-sans text-white/[0.6] mt-0.5">2.5 miles from Torrey Pines Beach</p>
-              </div>
+              </address>
             </div>
             <div className="flex items-center gap-3">
               <Phone size={16} className="text-gold-400 flex-shrink-0" aria-hidden="true" />
@@ -146,21 +170,21 @@ export default function Footer() {
 
       {/* Bottom bar */}
       <div className="border-t border-white/10">
-        <div className="container-site py-5 grid grid-cols-1 sm:grid-cols-3 items-center gap-2 text-center sm:text-left">
-          <p className="text-xs font-sans text-white/[0.6] sm:justify-self-start">
+        {/* Owner, 2026-08-17: copyright LEFT, Cactai mark RIGHT — they swapped
+            sides and the copyright came off the centre line. The 3-track grid
+            existed only to hold that centre (its third track was a spacer), so
+            it goes: with two items pinned to opposite edges, `justify-between`
+            says what the layout means and there is no empty track to explain.
+            Below `sm` they stack centred, copyright first, as before. */}
+        <div className="container-site py-5 flex flex-col sm:flex-row items-center sm:justify-between gap-2 text-center sm:text-left">
+          <p className="text-xs font-sans text-white/[0.6]">
+            &copy; {new Date().getFullYear()} French Heritage Equestrian. All rights reserved.
+          </p>
+          <p className="text-xs font-sans text-white/[0.6]">
             {/* Cactai URL not yet supplied (F4) — wrap in <a href={CACTAI_URL}
                 target="_blank" rel="noopener noreferrer"> once the owner provides it. */}
             Designed, Built &amp; Maintained by Cactai Inc.
           </p>
-          <p className="text-xs font-sans text-white/[0.6] sm:justify-self-center">
-            &copy; {new Date().getFullYear()} French Heritage Equestrian. All rights reserved.
-          </p>
-          {/* Third grid track intentionally left empty (owner, 2026-08-17:
-              dropped "San Diego, California" here — redundant with Find Us
-              and the LocalBusiness JSON-LD, no SEO value from bare footer
-              text). Keeping the 3-track grid, not collapsing to 2 columns,
-              is what keeps the copyright on the page's true centre line. */}
-          <div aria-hidden="true" className="hidden sm:block" />
         </div>
       </div>
 
