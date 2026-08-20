@@ -64,6 +64,33 @@ orchestrator must know.
 **Test accounts you create yourself set their own password at activation** — they never involve
 Google, so the client-side half of the walk is unaffected either way.
 
+### ⚠️ YOU DO NOT NEED TO READ EMAIL TO PROCEED — build the link from the database
+
+**Magic-link login is not exposed** (`signInWithOtp` appears nowhere; the only magic link in this
+app is password reset). **And you do not need one.**
+
+**An activation link is reconstructable.** `invitations.token` is a real column, and
+`/activate?token=<token>` is exactly how `Register.tsx:23` reads it. So when a step says *"follow
+the email"*:
+
+```sql
+-- .env.db line 1 is the prod connection string
+SELECT token, status, expires_at FROM invitations
+WHERE lower(email) = lower('<the walk identity>') ORDER BY created_at DESC LIMIT 1;
+```
+then open `${FHE_SITE_URL}/activate?token=<token>`.
+
+⚠️ **THIS SEPARATES TWO QUESTIONS THAT MUST NOT BLOCK EACH OTHER:**
+- **"Does the flow work?"** — answered by the DB-built link. **The walk never stalls waiting on an
+  inbox.**
+- **"Did the email arrive?"** — answered by the owner from his own inbox. **Record every message
+  that should have fired: the step, the expected subject, the recipient, the time.**
+
+**Never conclude the flow is broken because an email did not arrive, or that email works because the
+flow completed.** They are independent findings and the report states them separately.
+**Use the same technique for any other token-bearing link** (contract invitations, counterparty
+invites) — the token is in the row.
+
 **Screenshots** to `docs/reports/walk1-shots/`, named by step. **Redact any credential or real
 third-party personal data before committing a shot.**
 
