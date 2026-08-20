@@ -420,6 +420,21 @@ reporting success.
   `contract_execution_audit` — `merged_body`, `execution_hash`, `change_log`, `comments`, written by
   the `snapshot_execution_audit` trigger. **The evidence is the snapshot, not the live row**, so
   re-merging the live document does not destroy what was signed.
+  **6. THE IMPLEMENTATION IS TOKEN-LEVEL, AND IT IS SMALL (owner direction, 2026-08-20).** Owner:
+  *"this requires a fetch and read on generation for the contract even after its signed… make only
+  the name fields lock with the rest of the contract and the phone, email, and address need to stay
+  unlocked and editable… the contracts are already created with a 'this value is changed in the
+  record where the data lives' rule."*
+  **Verified — the rule already exists as data.** `template_tokens` declares `source_table` and
+  `source_column` per token, and party identity is **tokens, not `contract_field_defs` entries** —
+  the party's name/email/phone/address are not editable contract fields at all, which is exactly why
+  they are edited at the record. `fill_party_fields_from_contacts` writes **five tokens** per party
+  namespace: `.FULL_NAME` · `.PRINTED_NAME` · `.EMAIL` · `.PHONE` · `.ADDRESS`.
+  **So the build is: freeze two of the five once signed, keep three live, and re-fill on
+  generation.** `.FULL_NAME` and `.PRINTED_NAME` lock with the rest of the contract because they are
+  what the signature attests to; `.EMAIL`, `.PHONE` and `.ADDRESS` keep re-filling forever.
+  **Do not invent a second locking concept** — this is an exclusion inside the existing fill, plus a
+  remerge on generation which today runs only at edit points.
   ⚠️ **EXCEPT where the snapshot never ran.** Flow-map finding X4: `sign_release` executes with a
   status-only UPDATE and therefore **skips all three execution triggers including
   `snapshot_execution_audit`.** Kiosk-executed documents have **no archived copy**, so for those the
