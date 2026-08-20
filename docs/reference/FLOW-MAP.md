@@ -212,12 +212,12 @@ source at `48b5e21`, 2026-08-20.
 |---|---|---|---|
 | 1 | **assign a party an email address** | ⚠️ **GAP** | `document_parties.contact_id` is **NOT NULL** and the table has **no email column**; `invite_contract_counterparty(doc, contact_id, email)` **refuses** unless that contact is already a party (*"contact % is not a party on this contract"*). There is no add-a-party-by-email path. |
 | 2 | text them the link | ✅ | `/sign/deal` (`SignChoose.tsx:74`) matches the visitor's email against parties with no account. **44 such parties exist in prod.** |
-| 3 | **they fill in the form with what the contract requires about them** | ⚠️ **GAP** | `SignStart.tsx:275-279` collects **only** first · last · phone · email · confirm-email. The kiosk's `sign_release` by contrast collects address, DOB and emergency contacts. Contract party fields beyond a name are never asked for. |
+| 3 | they fill in the form with what the contract requires about them | ✅ **BY DESIGN — not a gap** | `SignStart.tsx:275-279` collects first · last · phone · email · confirm-email, and **that is the complete requirement.** See the owner ruling below. |
 | 4 | they get an activation email | ✅ | `invite_contract_counterparty` mints a `CONTRACT` invitation, 14-day expiry, carrying `document_id`. |
 | 5 | they click it and set their login | ✅ | `/activate` → `Register` (`App.tsx:155`). |
 | 6 | **they land in an authenticated session with the contract first** | ✅ **already built** | `RegisterComplete.tsx:83-87` — `if (stash.kind === 'contract')` → `redeemContractInvitation(token)` → `dest = /app/contracts/${documentId}`, commented *"land ON the contract"*. |
 
-### The two gaps, precisely
+### The one gap, precisely
 
 **GAP 1 — an email-only party is not representable, but nothing structural forbids it.**
 `contacts` requires **no name** (`first_name` is nullable and the table already carries a
@@ -225,12 +225,24 @@ source at `48b5e21`, 2026-08-20.
 it is **a stub-contact-from-email step** plus the surface that invokes it. Today: 0 contacts have an
 email and no name, so the shape has never been used.
 
-**GAP 2 — the form does not collect what the contract needs.**
-`fill_party_fields_from_contacts(p_document_id)` already pushes contact data into the contract's
-party tokens, so **whatever the form captures reaches the contract automatically.** The defect is
-purely that the form asks for four things. **Which fields to ask for is a per-template question**
-(`contract_field_defs`), not a fixed list — and per D13/D21 the answer should be read from the
-template, never hardcoded per contract type.
+**NOT A GAP — the minimum IS the design (owner, 2026-08-20).** The orchestrator first recorded the
+four-field form as a defect, reasoning from the kiosk's richer `sign_release` field list. **Withdrawn.**
+
+> **Owner:** *"those are the only things we need to collect for the deal flow. thats the point of
+> using a deal flow and the point of using a generative onboarding flow is that we can expand it
+> without penalty, and since its being authored to only require the minimum which you just listed."*
+
+**The division of labour is deliberate and it is the architecture:**
+- **The form's only job is to produce an account.** Name, phone, email. Nothing else.
+- **The contract is where contract fields are filled**, by the party, inside the authenticated
+  session — F9 step 6 lands them there precisely so this can happen.
+- **Deal templates are AUTHORED to require only that minimum**, which is what makes the deal flow a
+  distinct flow rather than a heavier onboarding.
+- **The onboarding flow is generative, so it expands without penalty** — adding a field later costs
+  nothing, which is why starting minimal is correct rather than merely cheap.
+
+⚠️ **Do not "fix" this form by adding fields.** Anything a specific contract needs belongs in the
+contract's own field set, not in the front door that every deal party passes through.
 
 ### Traps for whoever builds this
 
