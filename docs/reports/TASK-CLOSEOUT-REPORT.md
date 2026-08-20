@@ -299,11 +299,36 @@ comment (same in-place string-replace mechanism as 20260816T2900, guards intact)
 
 # PHASE 4 — THE RETEST
 
-**`docs/reports/RETEST-CHECKLIST.md`** replaces the six stacked checklists: 30 steps in
-the order a real person moves (emails → visitor → staff → activation → lease →
-execution → visual once-overs), **the four email proofs lead**, every step names what to
-click and what should happen, each marked **[FIX]** (proves a fix; names it) or
-**[CONFIRM]** (existing behaviour never eyeballed), deduplicated across the six sources.
+**`docs/reports/RETEST-CHECKLIST.md`** replaces **seven** stacked checklists —
+ASKRIGHT §7 (16 steps, added by the owner's addendum), CAREPATH, LESSONREQUEST,
+GIFTPATH, SESSIONBOOK, PARTYROLE, FOOTER — with **40 steps** in the order a real person
+moves (emails → visitor → staff → activation → lease → execution → visual once-overs),
+**the four email proofs lead**, every step naming what to click and what should happen,
+each marked **[FIX]** (proves a fix; names it) or **[CONFIRM]** (existing behaviour
+never eyeballed).
+
+**ASKRIGHT §7's dedupe, specifically** — its 16 steps became 12 new ones (8–17 as the
+questions-engine run, plus the wording sweep at 40) because four of them already had a
+home in the walk and were merged rather than repeated:
+
+| ASKRIGHT §7 | disposition |
+|---|---|
+| 1–3 (one clip, the right 8 questions, conditional reveal, own/lease collapse) | new step 8 |
+| 4 (shared questions asked once) | new step 9 |
+| 5 (à la carte vs weekly exercise) | new step 10 |
+| 6 (Horse Finder set) | new step 11 — **and its second half** (the *"Noted for our conversation"* panel is gone) folded into step 5, which already opens `/acquisition` |
+| 7 (budget/age band wording) | new step 11 |
+| 8 (Finder + Evaluation share experience) | new step 12 |
+| 9 (cross-entry: horse cart → /lessons → questions) | new step 13 |
+| 10 (lessons alone skip the questions page) | new step 14 |
+| 11–12 (inference fills, announces, yields) | new step 15 |
+| 13 (the leased horse carries over) | new step 16 |
+| 14 (checkout's lesson-only fields come and go) | **merged into step 17**, which already covered LESSONREQUEST 1/G3's availability gate on the same screen |
+| 15 (lead Details list + the alert email renders it) | **split and merged**: the email half into step 1 (the email section leads), the lead-page half into step 20, which already opened that page |
+| 16 (wording sweep, nav unchanged) | new step 40 |
+
+The empty-cart precondition ASKRIGHT §7 opens with is now a standing note in the
+checklist header rather than a per-step repetition.
 
 ---
 
@@ -327,7 +352,9 @@ click and what should happen, each marked **[FIX]** (proves a fix; names it) or
 6. **`deal_autocomplete_on_execution` does something real** ✅ — the envelope follows its
    governing document (draft → executed proven); the deal half stays for DealsPage.
 7. **`/book/rider` redirects** ✅ (code + route; render step on the checklist).
-8. **`RETEST-CHECKLIST.md`** ✅ — exists, journey-ordered, deduplicated, emails first.
+8. **`RETEST-CHECKLIST.md`** ✅ — exists, journey-ordered, deduplicated, emails first;
+   40 steps absorbing **seven** source checklists (ASKRIGHT §7 added by the owner's
+   addendum, its 16 steps deduped to 12 — see the table in Phase 4).
 9. **Every DB claim is query output; render claims NOT VERIFIED** ✅ — throughout, and
    the checklist carries every render claim.
 
