@@ -1,7 +1,8 @@
 # TASK-WALK1 — visitor to booked lesson, on the LIVE SITE, with a real browser
 
-**RUN WITH: Opus 5 · thinking ON · effort HIGH.** It operates on production with real credentials,
-creates real rows and sends real email. Judgement about when to STOP is the main requirement.
+**RUN WITH: Sonnet 5 · thinking ON · effort MEDIUM.** Deliberate: the high-stakes decisions are
+**pre-decided in §3**, so what remains is disciplined rule-following and accurate recording, not
+judgement. **The judgement is escalated, not exercised — see §3.7.**
 
 ⚠️ **THIS RUNS AGAINST PRODUCTION.** The owner authorised it: *"yea test the live site."* Every row
 you create is real, every email you send actually goes to somebody, and there is no undo.
@@ -42,6 +43,16 @@ If `.env.test` is absent, **STOP and report** — do not proceed and do not ask 
 **Screenshots** to `docs/reports/walk1-shots/`, named by step. **Redact any credential or real
 third-party personal data before committing a shot.**
 
+⚠️ **SCREENSHOT AND DOM DISCIPLINE — this is the budget.** Image and DOM volume, not model choice,
+is what makes a browser walk expensive.
+- **Capture at decision points only** — a state that changed, a confirmation, an error, an empty
+  state, a price, a notification. **Never step-by-step narration shots.**
+- **Never dump full-page DOM or HTML into the transcript.** Query the specific element you need
+  (`text_content`, `inner_text` of one node). If you need a list, extract the list, not the page.
+- **One screenshot per numbered step, maximum.** If a step needs two, it is two steps.
+- Prefer **reading visible text** over screenshotting to answer a factual question (a price, a
+  label, a count). Screenshot to evidence what the owner must SEE.
+
 ---
 
 # 3. RULES OF ENGAGEMENT — production safety
@@ -75,6 +86,13 @@ third-party personal data before committing a shot.**
 5. **Email really sends.** Only ever to the WALKTEST address or the owner's own. Never to a client.
 6. **If anything is destructive, ambiguous, or would touch real data — STOP and report.**
    A half-finished walk with an honest stop beats a complete walk that damaged production.
+7. ⚠️ **ESCALATE, DO NOT REASON.** When the app does something you cannot classify as
+   right-or-wrong, **do not deliberate about it and do not investigate the cause.** Write down
+   exactly what you saw, what you expected, and the step number — then continue the walk if it is
+   safe, or stop if it is not. **Diagnosis is the orchestrator's job, not this thread's.** Attempting
+   root-cause analysis mid-walk is the single largest waste of budget available here.
+8. **NEVER read source code or query the database to explain a behaviour.** This thread observes the
+   running app. If you find yourself opening `src/` to work out *why*, you have left the task.
 
 ---
 
