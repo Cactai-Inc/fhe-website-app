@@ -34,3 +34,6 @@ supabase/.temp/
 
 # Local DB credential drop (never commit) — see conversation setup
 .fhe-db-url/
+
+# browser-walk credentials — never commit
+.env.test
