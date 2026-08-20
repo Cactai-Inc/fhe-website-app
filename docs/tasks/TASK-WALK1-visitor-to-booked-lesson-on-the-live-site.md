@@ -56,13 +56,49 @@ orchestrator must know.
 **Two supported paths, in order of preference:**
 1. **`FHE_ADMIN_PASSWORD` in `.env.test`** — click *"Sign in with email and password"*, then submit.
    This is the primary path.
-2. **`FHE_STORAGE_STATE=<path>`** — a Playwright `storageState` JSON the owner produced by signing
-   in once himself. If that variable is present, **load the session and skip the login form
-   entirely.** Expect it to expire; if the session is dead, STOP and report rather than falling back
-   to Google.
+2. **`FHE_STORAGE_STATE=<path>`** — a Playwright `storageState` JSON. If present, **load the session
+   and skip the login form entirely.** If the session is dead, STOP and report rather than falling
+   back to Google.
+3. **`FHE_MAGIC_LINK=<url>`** — a one-time sign-in link the owner generates from the Supabase
+   dashboard. ⚠️ **SINGLE USE AND SHORT-LIVED.** If this is how you authenticate:
+   **open it, and the moment the session is live, WRITE `storageState` to disk and use that for the
+   rest of the walk.** Never navigate to the magic link twice — the second visit fails and the
+   credential is spent. If it is already expired or consumed, **STOP and ask for a fresh one**;
+   do not attempt any other route in.
+
+**Whichever path is used, save and reuse the session.** The walk switches between the test identity
+and the admin account repeatedly — re-authenticating per switch is both fragile and wasteful. Keep
+one storage-state file per identity and swap contexts.
 
 **Test accounts you create yourself set their own password at activation** — they never involve
 Google, so the client-side half of the walk is unaffected either way.
+
+### ⚠️ YOU DO NOT NEED TO READ EMAIL TO PROCEED — build the link from the database
+
+**Magic-link login is not exposed** (`signInWithOtp` appears nowhere; the only magic link in this
+app is password reset). **And you do not need one.**
+
+**An activation link is reconstructable.** `invitations.token` is a real column, and
+`/activate?token=<token>` is exactly how `Register.tsx:23` reads it. So when a step says *"follow
+the email"*:
+
+```sql
+-- .env.db line 1 is the prod connection string
+SELECT token, status, expires_at FROM invitations
+WHERE lower(email) = lower('<the walk identity>') ORDER BY created_at DESC LIMIT 1;
+```
+then open `${FHE_SITE_URL}/activate?token=<token>`.
+
+⚠️ **THIS SEPARATES TWO QUESTIONS THAT MUST NOT BLOCK EACH OTHER:**
+- **"Does the flow work?"** — answered by the DB-built link. **The walk never stalls waiting on an
+  inbox.**
+- **"Did the email arrive?"** — answered by the owner from his own inbox. **Record every message
+  that should have fired: the step, the expected subject, the recipient, the time.**
+
+**Never conclude the flow is broken because an email did not arrive, or that email works because the
+flow completed.** They are independent findings and the report states them separately.
+**Use the same technique for any other token-bearing link** (contract invitations, counterparty
+invites) — the token is in the row.
 
 **Screenshots** to `docs/reports/walk1-shots/`, named by step. **Redact any credential or real
 third-party personal data before committing a shot.**
