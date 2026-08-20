@@ -410,9 +410,21 @@ reporting success.
   fields of that contact's contracts.** The engine already exists and must be reused, never
   rebuilt: `fill_party_fields_from_contacts(p_document_id)` → `remerge_contract_from_clauses(
   p_document_id)`, the pair `captureContactInfo()` already runs (`src/lib/contracts.ts:680-698`).
-  **3. ⚠️ EXECUTED DOCUMENTS ARE NEVER RE-FILLED.** They are evidence (61 of them) and record what
-  the parties actually signed. A party who moves house after signing does not retroactively change
-  the address on their executed contract — that is correct behaviour, not staleness to repair.
+  **3. THE NAME IS THE SIGNATURE AND CANNOT BE CHANGED. Contact details CAN (owner, 2026-08-20).**
+  Owner: *"even on a locked contract this information can be updated because we would have the
+  previous version archived and the contract information such as phone and email and address are not
+  part of the signature, only the name is… so that cannot be changed."*
+  **Phone · email · address propagate even on locked and executed documents. The party NAME does
+  not** — it is what the signature attests to, and on a signed document it is immutable.
+  **Verified, and this is why the ruling is safe:** execution snapshots the signed content into
+  `contract_execution_audit` — `merged_body`, `execution_hash`, `change_log`, `comments`, written by
+  the `snapshot_execution_audit` trigger. **The evidence is the snapshot, not the live row**, so
+  re-merging the live document does not destroy what was signed.
+  ⚠️ **EXCEPT where the snapshot never ran.** Flow-map finding X4: `sign_release` executes with a
+  status-only UPDATE and therefore **skips all three execution triggers including
+  `snapshot_execution_audit`.** Kiosk-executed documents have **no archived copy**, so for those the
+  live row IS the only evidence and propagation would destroy it. **Fix X4 before enabling
+  propagation on any kiosk-executed document.**
   **4. On a signable-but-unsigned document, a propagated change is a CHANGE, and D14 governs it** —
   surfaced to the party who did not make it, one at a time, seen-is-approved. Propagation does not
   get to bypass the review flow just because a machine made the edit rather than a person.
