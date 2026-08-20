@@ -396,3 +396,28 @@ reporting success.
   ⚠️ **Generalise it.** Any future formula — a discount rule, a proration, a cancellation penalty,
   a commission split — is subject to this. **A hardcoded business formula is now a defect by
   default**, and a spec proposing one must say explicitly why an editor is impossible.
+- **D22 — THE CONTACT RECORD IS THE SOURCE OF TRUTH FOR PARTY FIELDS, AND CHANGES PROPAGATE
+  (owner, 2026-08-20).** Owner: *"the contract template only supplies the email address, everything
+  else is derived from the contact record, which the onboarding flow enters the data into… if the
+  contract record changes, email, name, phone, address, they need to be pushed to the contract
+  fields."* And on why: *"otherwise we end up with a contract that is locked to only using the
+  email address."*
+  **1. A contract party is an email plus a contact reference. Nothing else is stored on the
+  contract.** Name, phone and address are DERIVED, never typed into the contract a second time.
+  Selecting an existing contact pulls their record into the party fields; an email-only party
+  derives nothing until the contact record is populated.
+  **2. A change to the contact record — email, name, phone, address — is pushed to the party
+  fields of that contact's contracts.** The engine already exists and must be reused, never
+  rebuilt: `fill_party_fields_from_contacts(p_document_id)` → `remerge_contract_from_clauses(
+  p_document_id)`, the pair `captureContactInfo()` already runs (`src/lib/contracts.ts:680-698`).
+  **3. ⚠️ EXECUTED DOCUMENTS ARE NEVER RE-FILLED.** They are evidence (61 of them) and record what
+  the parties actually signed. A party who moves house after signing does not retroactively change
+  the address on their executed contract — that is correct behaviour, not staleness to repair.
+  **4. On a signable-but-unsigned document, a propagated change is a CHANGE, and D14 governs it** —
+  surfaced to the party who did not make it, one at a time, seen-is-approved. Propagation does not
+  get to bypass the review flow just because a machine made the edit rather than a person.
+  **5. The defect this rule exists to close:** `fill_party_fields_from_contacts` has **no trigger on
+  `contacts`** and runs only at contract-start and party-change, so an email-only party fills from an
+  empty contact and **nothing ever re-fills it** — `redeem_contract_invitation` promotes and
+  re-anchors but never calls the pair. The party opens their contract and sees their own details
+  blank.

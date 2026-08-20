@@ -288,10 +288,20 @@ real defect, found by tracing the owner's stated design through the call graph.)
    `remerge_contract_from_clauses`.**
 4. **The party opens the contract and their own details are blank**, with nothing to explain why.
 
-**The fix is two existing calls in one more place**, not new machinery: append the fill + remerge
-pair to the redemption path, exactly as `captureContactInfo` already does.
+**OWNER RULING, 2026-08-20 — propagation is required, and it is broader than redemption.**
+*"yes it needs to refill otherwise we end up with a contract that is locked to only using the email
+address… if the contract record changes, email, name, phone, address, they need to be pushed to the
+contract fields."* **Recorded as D22.** Any change to the contact record propagates to that
+contact's contract party fields — not merely a one-off re-fill when they activate.
 
-⚠️ **Scope it to non-executed documents.** A blanket trigger on `contacts` would re-merge
-**EXECUTED** documents, which are evidence and are never rewritten (61 of them). Re-fill at
-redemption, guarded on document state — never a global contacts trigger.
+**The engine is not the work — the hook is.** `fill_party_fields_from_contacts` → 
+`remerge_contract_from_clauses` already does the job correctly and `captureContactInfo()` already
+runs the pair. What is missing is anything that invokes it when a contact changes outside a
+contract screen.
 
+⚠️ **Two boundaries the implementation must respect, both already settled — do not re-litigate:**
+- **EXECUTED documents are never re-filled.** They are evidence and record what was actually
+  signed. A party moving house does not rewrite their executed contract. This rules OUT a naive
+  `AFTER UPDATE ON contacts` trigger that re-merges everything.
+- **On a signable-but-unsigned document, a propagated change is a change, and D14 governs it** —
+  surfaced to the other party, seen-is-approved. A machine-made edit does not bypass review.
