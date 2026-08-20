@@ -6,20 +6,34 @@ import { fetchPublicCatalog, type ServiceGroup } from '../lib/publicCatalog';
 import { useCart } from '../contexts/CartContext';
 import ServiceSelector from '../components/ServiceSelector';
 import ServiceListState from '../components/ServiceListState';
-
-// Horse-care service_type codes used to gate the horse-care cross-sell note.
-const HORSE_CARE_CODES = ['HORSE_TRAINING', 'HORSE_EXERCISE', 'HORSE_CLIPPING'];
 import QuestionSections from '../components/QuestionSections';
+import InquiryForm from '../components/InquiryForm';
+import ContinueShoppingModal from '../components/ContinueShoppingModal';
 import { cartHasQuestions } from '../lib/questionSets';
 import Seo from '../components/Seo';
 import SelectionBar from '../components/SelectionBar';
 import { seoForPath } from '../lib/seo';
 
-const STEPS = [
-  { label: 'Select Services' },
-  { label: 'Your Situation' },
-  { label: 'Review & Continue' },
-];
+// Horse-care service_type codes used to gate the horse-care cross-sell note.
+const HORSE_CARE_CODES = ['HORSE_TRAINING', 'HORSE_EXERCISE', 'HORSE_CLIPPING'];
+
+/**
+ * THE ACQUISITION FUNNEL — CLOSEOUT §3.1 (CAREPATH G4): the same fix CAREPATH
+ * applied to BookHorse, in this lane.
+ *
+ * ⚠️ THE STEP COUNT IS DERIVED, NEVER HARDCODED. Until 2026-08-19 this page
+ * declared three steps, printed "Step 3 of 3" on the review screen, and then
+ * navigated to `/checkout` — a FOURTH screen the tracker never admitted to.
+ * The back control also read "Previous", which appears nowhere else.
+ *
+ * There are now three pages, and the third IS the submission:
+ *   1. Select Services
+ *   2. Your Situation    — the questions, and ONLY when the cart asks something
+ *   3. Your Details      — selections + Continue Shopping + the shared form
+ */
+const SELECT_STEP = { id: 'select', label: 'Select Services' } as const;
+const QUESTIONS_STEP = { id: 'questions', label: 'Your Situation' } as const;
+const DETAILS_STEP = { id: 'details', label: 'Your Details' } as const;
 
 const SEO = seoForPath('/acquisition')!;
 
@@ -28,6 +42,7 @@ export default function BookSupport() {
   const { state, setFunnel, itemCount } = useCart();
   const navigate = useNavigate();
   const [groups, setGroups] = useState<ServiceGroup[]>([]);
+  const [shopOpen, setShopOpen] = useState(false);
   // COUNTFIX 1.5: a failed fetch and an empty catalog looked identical — both
   // rendered a blank selection area with no explanation and a dead "Continue".
   // Distinguish the three states (the pattern Lessons.tsx already uses).
@@ -46,24 +61,29 @@ export default function BookSupport() {
   const anyHorseCareSelected = state.items.some(
     (i) => i.serviceType && HORSE_CARE_CODES.includes(i.serviceType));
 
-  // See BookHorse: the step exists when the CART asks something, not because of
-  // which page this is.
+  // ASKRIGHT — the questions step exists when something in the CART asks
+  // something, never because of which page this is.
   const hasQuestions = cartHasQuestions(state.items);
+  const STEPS = hasQuestions
+    ? [SELECT_STEP, QUESTIONS_STEP, DETAILS_STEP]
+    : [SELECT_STEP, DETAILS_STEP];
+  const total = STEPS.length;
+  // Clamp: emptying the cart on the last page can shorten the list underneath us.
+  const current = Math.min(step, total - 1);
+  const stage = STEPS[current].id;
 
   const canProceedStep0 = itemCount > 0;
 
   function handleNext() {
-    if (step < STEPS.length - 1) {
-      setStep((s) => (s === 0 && !hasQuestions ? 2 : s + 1));
+    if (current < total - 1) {
+      setStep(current + 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else {
-      navigate('/checkout');
     }
   }
 
   function handleBack() {
-    if (step > 0) {
-      setStep((s) => (s === 2 && !hasQuestions ? 0 : s - 1));
+    if (current > 0) {
+      setStep(current - 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
       navigate('/');
@@ -83,23 +103,24 @@ export default function BookSupport() {
           takes container-site's own max-w-7xl: ~325px of text per column. */}
       <div className="container-site">
 
-        {/* Step indicator */}
+        {/* Step indicator — reads the DERIVED list, so it can never claim a
+            page that will not be shown. */}
         <div className="mb-12">
           <ol className="flex items-center gap-3 mb-6">
             {STEPS.map((s, i) => (
-              <li key={i} className="flex items-center gap-3">
+              <li key={s.id} className="flex items-center gap-3">
                 <div
-                  aria-current={i === step ? 'step' : undefined}
-                  className={i < step ? 'step-complete' : i === step ? 'step-active' : 'step-inactive'}
+                  aria-current={i === current ? 'step' : undefined}
+                  className={i < current ? 'step-complete' : i === current ? 'step-active' : 'step-inactive'}
                 >
-                  {i < step ? <Check size={12} /> : i + 1}
+                  {i < current ? <Check size={12} /> : i + 1}
                 </div>
                 <span className={`text-xs font-sans tracking-wide hidden sm:block ${
-                  i === step ? 'text-green-800 font-medium' : 'text-muted'
+                  i === current ? 'text-green-800 font-medium' : 'text-muted'
                 }`}>
                   {s.label}
                 </span>
-                {i < STEPS.length - 1 && (
+                {i < total - 1 && (
                   <div className="w-8 h-px bg-green-800/15 hidden sm:block" />
                 )}
               </li>
@@ -108,10 +129,10 @@ export default function BookSupport() {
           <div className="rule-gold" />
         </div>
 
-        {/* Step 0: Select Services */}
-        {step === 0 && (
+        {/* Step 1: Select Services */}
+        {stage === 'select' && (
           <div>
-            <p className="eyebrow mb-3">Step 1 of 3</p>
+            <p className="eyebrow mb-3">Step 1 of {total}</p>
             <h1 className="heading-section text-green-800 mb-3">Acquisition Support Services</h1>
             <p className="body-text mb-10">
               Finding the right horse is one of the most significant decisions in an equestrian's life. Our support services provide expert guidance at each stage — from the first search to the final handshake.
@@ -137,10 +158,10 @@ export default function BookSupport() {
           </div>
         )}
 
-        {/* Step 1: Qualifier */}
-        {step === 1 && (
+        {/* Step 2: the questions the CART implies. */}
+        {stage === 'questions' && (
           <div>
-            <p className="eyebrow mb-3">Step 2 of 3</p>
+            <p className="eyebrow mb-3">Step 2 of {total}</p>
             <h1 className="heading-section text-green-800 mb-3">Your Situation</h1>
             <p className="body-text mb-10">
               A few questions help us shape the right experience for you — and ensure we recommend only what is genuinely relevant.
@@ -157,17 +178,20 @@ export default function BookSupport() {
           </div>
         )}
 
-        {/* Step 2: Review */}
-        {step === 2 && (
+        {/* Step 3 (or 2): YOUR DETAILS — the submission page. The old Review
+            screen's summary and cross-sell note live here, followed by the ONE
+            shared form; there is no /checkout hand-off any more. */}
+        {stage === 'details' && (
           <div>
-            <p className="eyebrow mb-3">Step 3 of 3</p>
-            <h1 className="heading-section text-green-800 mb-3">Review Your Selection</h1>
+            <p className="eyebrow mb-3">Step {total} of {total}</p>
+            <h1 className="heading-section text-green-800 mb-3">Your Details</h1>
             <p className="body-text mb-8">
-              Below is what you have selected, along with services that naturally complement your horse acquisition journey.
+              Tell us who you are and we will call to talk through your search and
+              how we can support it.
             </p>
 
-            {/* Summary */}
-            <div className="bg-white border border-green-800/10 p-8 mb-8">
+            {/* 1 — the selection summary */}
+            <div className="bg-white border border-green-800/10 p-8 mb-6">
               <p className="eyebrow mb-5">Your Selection</p>
               {state.items.length === 0 ? (
                 <p className="text-sm font-sans text-muted italic">No services selected yet.</p>
@@ -185,6 +209,22 @@ export default function BookSupport() {
                   ))}
                 </div>
               )}
+
+              {/* 2 — Continue Shopping. Secondary styling: the primary path on
+                  this page is the submit, and there must be exactly one of
+                  those. The cart survives the jump. */}
+              <div className="mt-6 pt-6 border-t border-green-800/[0.08]">
+                <button
+                  type="button"
+                  className="btn-outline-gold text-sm"
+                  onClick={() => setShopOpen(true)}
+                >
+                  Continue Shopping
+                </button>
+                <p className="text-xs font-sans text-muted mt-2">
+                  Add lessons or horse care — your selections stay in your inquiry.
+                </p>
+              </div>
             </div>
 
             {/*
@@ -208,44 +248,50 @@ export default function BookSupport() {
               </div>
             )}
 
-            {/* The "Noted for our conversation" lessons panel went with
-                `wants_lessons`: it existed to acknowledge a recorded intention,
-                and Continue Shopping now puts a real lesson in the cart instead. */}
+            {/* 3 + 4 — the ONE shared form, and its inquiryLabel() submit. */}
+            <InquiryForm onSubmitted={() => navigate('/confirmation')} />
           </div>
         )}
 
-        {/* Navigation */}
-        <div className="flex items-center justify-between mt-12 pt-8 border-t border-green-800/10">
+        {/* Navigation. The back control reads "Back" on every step past the
+            first — "Previous" appears nowhere in this funnel. On the submission
+            page the form's own submit is the single way forward, so no
+            competing primary is rendered. */}
+        <div className={`flex items-center justify-between mt-12 pt-8 border-t border-green-800/10 ${
+          stage === 'details' ? 'justify-start' : ''
+        }`}>
           <button
             type="button"
             onClick={handleBack}
             className="inline-flex items-center gap-2 text-sm font-sans text-secondary hover:text-green-800 transition-colors focus-ring"
           >
             <ArrowLeft size={16} />
-            {step === 0 ? 'Back to Services' : 'Previous'}
+            {current === 0 ? 'Back to Services' : 'Back'}
           </button>
 
-          <div className="flex items-center gap-6">
-            {/* TASK-GIFTPATH — reachable from acquisition, not just lessons. */}
-            {step === 0 && (
-              <Link to="/gift?item=acquisition" className="inline-flex items-center gap-2 text-sm font-sans text-secondary hover:text-green-800 transition-colors focus-ring">
-                <Gift size={15} aria-hidden="true" />
-                Gift our services to the horse lover in your life
-              </Link>
-            )}
-            <button
-              type="button"
-              onClick={handleNext}
-              disabled={step === 0 ? !canProceedStep0 : false}
-              className="btn-primary"
-            >
-              {step === STEPS.length - 1 ? 'Continue to Submit Inquiry' : 'Continue'}
-              <ArrowRight size={16} />
-            </button>
-          </div>
+          {stage !== 'details' && (
+            <div className="flex items-center gap-6">
+              {/* TASK-GIFTPATH — reachable from acquisition, not just lessons. */}
+              {stage === 'select' && (
+                <Link to="/gift?item=acquisition" className="inline-flex items-center gap-2 text-sm font-sans text-secondary hover:text-green-800 transition-colors focus-ring">
+                  <Gift size={15} aria-hidden="true" />
+                  Gift our services to the horse lover in your life
+                </Link>
+              )}
+              <button
+                type="button"
+                onClick={handleNext}
+                disabled={current === 0 ? !canProceedStep0 : false}
+                className="btn-primary"
+              >
+                {stage === 'questions' ? 'Continue to Submit Inquiry' : 'Continue'}
+                <ArrowRight size={16} />
+              </button>
+            </div>
+          )}
         </div>
 
-        {step === 0 && !canProceedStep0 && (
+        {stage === 'select' && !canProceedStep0 && (
           <p className="text-xs font-sans text-center text-muted mt-3">
             Select at least one service to continue.
           </p>
@@ -253,10 +299,13 @@ export default function BookSupport() {
       </div>
     </div>
 
-    {/* Floating selection bar — step 0 only, where the choosing happens. It
+    {/* Floating selection bar — step 1 only, where the choosing happens. It
         calls handleNext, the SAME handler the page's own Continue button uses,
-        so there is one path forward, not two. */}
-    {step === 0 && <SelectionBar onContinue={handleNext} disabled={!canProceedStep0} />}
+        so there is one path forward, not two, and it does not render on the
+        submission page. */}
+    {stage === 'select' && <SelectionBar onContinue={handleNext} disabled={!canProceedStep0} />}
+
+    <ContinueShoppingModal open={shopOpen} onClose={() => setShopOpen(false)} />
     </>
   );
 }

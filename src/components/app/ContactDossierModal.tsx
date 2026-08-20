@@ -8,6 +8,7 @@ import {
   AssignDocumentsModal, ClientHorseRecordsCard, AttachOfferingPanel, PaperworkEditor,
 } from './ClientRecordActions';
 import { ProvisionClientForm } from './ProvisionClientForm';
+import { AgreedLessonSection, type AgreedLesson } from './AgreedLessonPanel';
 
 /**
  * THE CONTACT DOSSIER — every person, one modal.
@@ -103,6 +104,8 @@ export function ContactDossierModal({
      rather than a separate hunt through another page. */
   const [assigning, setAssigning] = useState(false);
   const [invited, setInvited] = useState(false);
+  // CLOSEOUT §3.5: the agreed-time panel's derived slot, fed into provisioning.
+  const [agreedLesson, setAgreedLesson] = useState<AgreedLesson | null>(null);
 
   async function file(t: ContactType) {
     setErr(null);
@@ -337,7 +340,13 @@ export function ContactDossierModal({
                         email={(c.email as string | null) ?? undefined}
                         firstName={(c.first_name as string | null) ?? undefined}
                         lastName={(c.last_name as string | null) ?? undefined}
-                        onProvisioned={() => { setInvited(true); onChanged?.(); }} />
+                        agreedLesson={agreedLesson}
+                        onProvisioned={() => { setInvited(true); onChanged?.(); }}>
+                        {/* CLOSEOUT §3.5: a lesson agreed on the phone folds into
+                            the same act on every provisioning surface, not just
+                            the lead drawer. */}
+                        <AgreedLessonSection onAgreedChange={setAgreedLesson} />
+                      </ProvisionClientForm>
                     )}
                   </div>
                 )
